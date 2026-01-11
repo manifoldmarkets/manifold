@@ -703,146 +703,168 @@ function BanBannerPreview({
   const hasExistingBans = allExistingBans.length > 0
   const hasAnyBansToShow = modAlertOnly ? hasExistingBans : (hasNewBans || preservedBans.length > 0)
 
-  // Group reasons for display (matching ban-banner.tsx logic)
-  const reasonToBanTypes: Map<string, { banTypes: BanType[]; isNew: boolean }[]> = new Map()
-
-  // Add new bans with the new reason (only if not modAlertOnly)
-  if (!modAlertOnly && newBans.length > 0 && reason.trim()) {
-    const existing = reasonToBanTypes.get(reason.trim()) || []
-    existing.push({ banTypes: newBans.map(([bt]) => bt as BanType), isNew: true })
-    reasonToBanTypes.set(reason.trim(), existing)
-  }
-
-  // Add preserved/existing bans with their reasons
-  const bansToGroup = modAlertOnly ? allExistingBans : preservedBans
-  for (const { type, reason: existingReason } of bansToGroup) {
-    if (existingReason) {
-      const existing = reasonToBanTypes.get(existingReason) || []
-      const found = existing.find(e => !e.isNew)
-      if (found) {
-        found.banTypes.push(type)
-      } else {
-        existing.push({ banTypes: [type], isNew: false })
-      }
-      reasonToBanTypes.set(existingReason, existing)
-    }
-  }
-
-  const groupedReasons = Array.from(reasonToBanTypes.entries()).map(
-    ([reasonText, groups]) => ({ reason: reasonText, groups })
-  )
-
   return (
-    <Col className="gap-3">
-      {/* Ban section - matches ban-banner.tsx styling */}
+    <Col className="gap-4">
+      {/* Ban cards section - matches ban-banner.tsx modal styling */}
       {hasAnyBansToShow && (
-        <div className="rounded border-2 border-red-500 bg-red-100 p-4">
-          <Col className="gap-2">
-            <h3 className="font-bold text-red-900">Account Restricted</h3>
-            <p className="text-red-800">You have been restricted from:</p>
-            <ul className="list-inside list-disc space-y-1 text-red-800">
-              {!modAlertOnly && newBans.map(([banType]) => (
-                <li key={banType}>
-                  <strong>
-                    {getBanTypeDisplayName(banType as BanType)} ({getBanTypeDescription(banType as BanType)})
-                  </strong>
-                  {tempBanDays[banType] ? (
-                    <span className="text-sm">
-                      {' '}- Expires in {tempBanDays[banType]} days
+        <Col className="gap-3">
+          <Row className="items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
+              <span className="text-xs text-red-600">!</span>
+            </div>
+            <h3 className="font-semibold">Active Restrictions</h3>
+          </Row>
+
+          {/* New bans being added */}
+          {!modAlertOnly && newBans.map(([banType]) => {
+            const isPermanent = !tempBanDays[banType]
+            const daysRemaining = tempBanDays[banType]
+            return (
+              <div key={banType} className="rounded-lg border border-red-200 bg-red-50 p-3">
+                <Row className="items-start justify-between gap-2">
+                  <Col className="flex-1 gap-1">
+                    <Row className="items-center gap-2">
+                      <span className="font-medium text-red-900">
+                        {getBanTypeDisplayName(banType as BanType)}
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        isPermanent
+                          ? 'bg-red-200 text-red-800'
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {isPermanent ? 'Permanent' : `${daysRemaining} days`}
+                      </span>
+                      <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white">
+                        new
+                      </span>
+                    </Row>
+                    <span className="text-xs text-red-700">
+                      {getBanTypeDescription(banType as BanType)}
                     </span>
-                  ) : (
-                    <span className="text-sm"> - Permanent</span>
-                  )}
-                  <span className="ml-1 text-xs text-red-600">(new)</span>
-                </li>
-              ))}
-              {(modAlertOnly ? allExistingBans : preservedBans).map(({ type, endTime }) => (
-                <li key={type}>
-                  <strong>
-                    {getBanTypeDisplayName(type)} ({getBanTypeDescription(type)})
-                  </strong>
-                  {endTime ? (
-                    <span className="text-sm">
-                      {' '}- Expires in {formatBanTimeRemaining(new Date(endTime).getTime() - Date.now())}
-                    </span>
-                  ) : (
-                    <span className="text-sm"> - Permanent</span>
-                  )}
-                  {!modAlertOnly && <span className="ml-1 text-xs text-gray-500">(existing)</span>}
-                </li>
-              ))}
-            </ul>
-            {groupedReasons.length > 0 && (
-              <div className="border-ink-200 mt-2 rounded border bg-white p-3">
-                <p className="font-semibold text-red-900">
-                  {groupedReasons.length === 1 ? 'Reason:' : 'Reasons:'}
-                </p>
-                {groupedReasons.map(({ reason: reasonText, groups }) => (
-                  <div key={reasonText}>
-                    {groups.map((group, idx) => (
-                      <p key={idx} className="text-red-800">
-                        {groupedReasons.length > 1 && (
-                          <span className="font-medium">
-                            {group.banTypes.map((bt) => getBanTypeDisplayName(bt)).join(' + ')}:{' '}
-                          </span>
-                        )}
-                        {reasonText}
-                        {!modAlertOnly && group.isNew && <span className="ml-1 text-xs text-red-600">(new)</span>}
+                    {reason.trim() && (
+                      <p className="mt-1 text-sm text-red-800">
+                        <span className="font-medium">Reason:</span>{' '}
+                        <span className="italic">"{reason}"</span>
                       </p>
-                    ))}
-                  </div>
-                ))}
+                    )}
+                  </Col>
+                </Row>
               </div>
-            )}
-          </Col>
-        </div>
+            )
+          })}
+
+          {/* Existing/preserved bans */}
+          {(modAlertOnly ? allExistingBans : preservedBans).map(({ type, reason: existingReason, endTime }) => {
+            const isPermanent = !endTime
+            const timeRemaining = endTime ? new Date(endTime).getTime() - Date.now() : undefined
+            return (
+              <div key={type} className="rounded-lg border border-red-200 bg-red-50 p-3">
+                <Row className="items-start justify-between gap-2">
+                  <Col className="flex-1 gap-1">
+                    <Row className="items-center gap-2">
+                      <span className="font-medium text-red-900">
+                        {getBanTypeDisplayName(type)}
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        isPermanent
+                          ? 'bg-red-200 text-red-800'
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {isPermanent
+                          ? 'Permanent'
+                          : timeRemaining !== undefined && timeRemaining > 0
+                            ? formatBanTimeRemaining(timeRemaining)
+                            : 'Active'}
+                      </span>
+                      {!modAlertOnly && (
+                        <span className="rounded-full bg-gray-400 px-2 py-0.5 text-xs font-medium text-white">
+                          existing
+                        </span>
+                      )}
+                    </Row>
+                    <span className="text-xs text-red-700">
+                      {getBanTypeDescription(type)}
+                    </span>
+                    {existingReason && (
+                      <p className="mt-1 text-sm text-red-800">
+                        <span className="font-medium">Reason:</span>{' '}
+                        <span className="italic">"{existingReason}"</span>
+                      </p>
+                    )}
+                  </Col>
+                </Row>
+              </div>
+            )
+          })}
+        </Col>
       )}
 
-      {/* Existing mod alerts - shown first so mod can see what's already there */}
-      {existingModAlerts.map((alert) => (
-        <div
-          key={alert.id}
-          className="rounded border-2 border-yellow-500 bg-yellow-100 p-4"
-        >
-          <Row className="items-start justify-between">
-            <Col className="flex-1 gap-2">
-              <h3 className="font-bold text-yellow-900">Moderator Alert</h3>
-              <div className="border-ink-200 rounded border bg-white p-3">
-                <p className="text-yellow-900">{alert.reason}</p>
+      {/* Mod alerts section */}
+      {(existingModAlerts.length > 0 || (modAlertOnly && reason.trim())) && (
+        <Col className="gap-3">
+          {/* Only show section header if there are also bans */}
+          {hasAnyBansToShow && (
+            <Row className="items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100">
+                <span className="text-xs text-yellow-600">!</span>
               </div>
-            </Col>
-            <button
-              className="ml-2 text-xl text-yellow-700 opacity-50 cursor-not-allowed"
-              title="User can dismiss"
-              disabled
-            >
-              ×
-            </button>
-          </Row>
-          <p className="mt-1 text-xs text-yellow-700">(existing alert)</p>
-        </div>
-      ))}
+              <h3 className="font-semibold">Moderator Alerts</h3>
+            </Row>
+          )}
 
-      {/* New mod alert being added */}
-      {modAlertOnly && reason.trim() && (
-        <div className="rounded border-2 border-yellow-500 bg-yellow-100 p-4">
-          <Row className="items-start justify-between">
-            <Col className="flex-1 gap-2">
-              <h3 className="font-bold text-yellow-900">Moderator Alert</h3>
-              <div className="border-ink-200 rounded border bg-white p-3">
-                <p className="text-yellow-900">{reason}</p>
-              </div>
-            </Col>
-            <button
-              className="ml-2 text-xl text-yellow-700 opacity-50 cursor-not-allowed"
-              title="User can dismiss"
-              disabled
+          {/* Existing mod alerts */}
+          {existingModAlerts.map((alert) => (
+            <div
+              key={alert.id}
+              className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 shadow-sm"
             >
-              ×
-            </button>
-          </Row>
-          <p className="mt-1 text-xs text-yellow-700">(new alert)</p>
-        </div>
+              <Row className="items-start justify-between gap-3">
+                <Col className="flex-1 gap-1">
+                  <Row className="items-center gap-2">
+                    <span className="text-yellow-900">{alert.reason}</span>
+                    <span className="rounded-full bg-gray-400 px-2 py-0.5 text-xs font-medium text-white">
+                      existing
+                    </span>
+                  </Row>
+                </Col>
+                <button
+                  className="shrink-0 rounded-full p-1 text-yellow-600 opacity-50 cursor-not-allowed"
+                  title="User can dismiss"
+                  disabled
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </Row>
+            </div>
+          ))}
+
+          {/* New mod alert being added */}
+          {modAlertOnly && reason.trim() && (
+            <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 shadow-sm">
+              <Row className="items-start justify-between gap-3">
+                <Col className="flex-1 gap-1">
+                  <Row className="items-center gap-2">
+                    <span className="text-yellow-900">{reason}</span>
+                    <span className="rounded-full bg-yellow-600 px-2 py-0.5 text-xs font-medium text-white">
+                      new
+                    </span>
+                  </Row>
+                </Col>
+                <button
+                  className="shrink-0 rounded-full p-1 text-yellow-600 opacity-50 cursor-not-allowed"
+                  title="User can dismiss"
+                  disabled
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </Row>
+            </div>
+          )}
+        </Col>
       )}
     </Col>
   )

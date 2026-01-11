@@ -15,6 +15,7 @@ import {
 import clsx from 'clsx'
 import { FullUser } from 'common/api/user-types'
 import { userHasHovercardGlow } from 'common/shop/items'
+import { UserBan } from 'common/user'
 import dayjs from 'dayjs'
 import { Ref, forwardRef, useEffect, useState } from 'react'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
@@ -22,6 +23,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { getFullUserById } from 'web/lib/supabase/users'
+import { api } from 'web/lib/api/api'
 import { FollowButton } from '../buttons/follow-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -129,10 +131,14 @@ const FetchUserHovercardContent = forwardRef(
     ref: Ref<HTMLDivElement>
   ) => {
     const [user, setUser] = useState<FullUser | null>(null)
+    const [userBans, setUserBans] = useState<UserBan[]>([])
 
     useEffect(() => {
       getFullUserById(userId).then(setUser)
-    }, [])
+      api('get-user-bans', { userId })
+        .then((res) => setUserBans(res.bans as UserBan[]))
+        .catch(() => setUserBans([]))
+    }, [userId])
 
     const followingIds = useFollows(userId)
     const followerIds = useFollowers(userId)
@@ -172,6 +178,7 @@ const FetchUserHovercardContent = forwardRef(
             className={'text-lg font-bold'}
             user={user}
             followsYou={false}
+            bans={userBans}
           />
 
           {user.bio && (

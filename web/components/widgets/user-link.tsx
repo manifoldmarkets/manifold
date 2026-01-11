@@ -25,10 +25,12 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
-import { User } from 'common/user'
+import { User, UserBan } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
-// Note: Granular bans are now in user_bans table, enforced server-side
-// Frontend uses legacy isBannedFromPosting for display purposes
+import {
+  getActiveBlockingBans,
+  getBanTypeDescription,
+} from 'common/ban-utils'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -185,28 +187,58 @@ export function BannedBadge() {
   )
 }
 
-// Works with full User or DisplayUser - uses legacy isBannedFromPosting for display
-// Granular bans are enforced server-side via the user_bans table
+// Works with full User or DisplayUser
+// isBannedFromPosting is only true when ALL THREE ban types are permanently applied
+// bans prop allows showing partial restrictions with details
 type RestrictedBadgeUser = {
   isBannedFromPosting?: boolean
 }
 
-export function RestrictedBadge({ user }: { user: RestrictedBadgeUser }) {
-  // Check legacy ban field for display purposes
-  // Actual ban enforcement happens server-side
-  if (!user.isBannedFromPosting) {
-    return null
+export function RestrictedBadge({
+  user,
+  bans,
+}: {
+  user: RestrictedBadgeUser
+  bans?: UserBan[]
+}) {
+  // Check for granular bans first (if provided)
+  const activeBanTypes = bans ? getActiveBlockingBans(bans) : []
+  const hasPartialBans = activeBanTypes.length > 0 && activeBanTypes.length < 3
+
+  // Full permanent ban (all 3 types)
+  if (user.isBannedFromPosting) {
+    return (
+      <Tooltip
+        text="Permanently banned from posting, trading, and market control"
+        placement="bottom"
+      >
+        <span className="ml-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-700 dark:text-red-100">
+          Banned
+        </span>
+      </Tooltip>
+    )
   }
 
-  const tooltipText = "Can't create comments, messages, or questions"
+  // Partial restrictions (some but not all ban types, or temporary bans)
+  if (hasPartialBans || (bans && activeBanTypes.length === 3)) {
+    // Get detailed actions for each ban type and combine them into a unique list
+    const allActions = activeBanTypes.flatMap((bt) =>
+      getBanTypeDescription(bt).split(', ')
+    )
+    // Remove duplicates and join into a readable list
+    const uniqueActions = [...new Set(allActions)]
+    const tooltipText = `Restricted from: ${uniqueActions.join(', ')}`
 
-  return (
-    <Tooltip text={tooltipText} placement="bottom">
-      <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
-        Banned
-      </span>
-    </Tooltip>
-  )
+    return (
+      <Tooltip text={tooltipText} placement="bottom">
+        <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
+          Restricted
+        </span>
+      </Tooltip>
+    )
+  }
+
+  return null
 }
 
 export function UserBadge(props: {
@@ -342,10 +374,12 @@ export const StackedUserNames = (props: {
   followsYou?: boolean
   className?: string
   usernameClassName?: string
+  bans?: UserBan[]
 }) => {
-  const { user, followsYou, usernameClassName, className } = props
-  // Use legacy field for display - granular bans enforced server-side
-  const hasAnyBan = !!user.isBannedFromPosting
+  const { user, followsYou, usernameClassName, className, bans } = props
+  // Check for any active bans - use granular bans if available, else fall back to legacy field
+  const activeBanTypes = bans ? getActiveBlockingBans(bans) : []
+  const hasAnyBan = activeBanTypes.length > 0 || !!user.isBannedFromPosting
 
   return (
     <Col>
@@ -363,7 +397,7 @@ export const StackedUserNames = (props: {
             Deleted account
           </span>
         ) : hasAnyBan ? (
-          <RestrictedBadge user={user} />
+          <RestrictedBadge user={user} bans={bans} />
         ) : null}
       </div>
       <Row className={'flex-shrink flex-wrap gap-x-2'}>

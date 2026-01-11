@@ -179,15 +179,18 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
       }
     }
 
-    // Update legacy isBannedFromPosting if all three ban types are permanently applied
+    // Update legacy isBannedFromPosting - only true if ALL THREE ban types are permanently applied
+    // Otherwise, clear it so the frontend can use the new granular ban system
     const activeBans = await getActiveUserBans(pg, userId)
-    const hasPermanentPosting = activeBans.some(b => b.ban_type === 'posting' && !b.end_time)
-    const hasPermanentMarketControl = activeBans.some(b => b.ban_type === 'marketControl' && !b.end_time)
-    const hasPermanentTrading = activeBans.some(b => b.ban_type === 'trading' && !b.end_time)
+    const blockingBans = activeBans.filter(b => b.ban_type !== 'modAlert')
+    const hasPermanentPosting = blockingBans.some(b => b.ban_type === 'posting' && !b.end_time)
+    const hasPermanentMarketControl = blockingBans.some(b => b.ban_type === 'marketControl' && !b.end_time)
+    const hasPermanentTrading = blockingBans.some(b => b.ban_type === 'trading' && !b.end_time)
 
     if (hasPermanentPosting && hasPermanentMarketControl && hasPermanentTrading) {
       await updateUser(pg, userId, { isBannedFromPosting: true })
-    } else if (activeBans.length === 0) {
+    } else {
+      // Clear legacy field - partial/temporary bans are shown via the new system
       await updateUser(pg, userId, { isBannedFromPosting: false })
     }
 

@@ -11,12 +11,14 @@ import {
 } from 'common/ban-utils'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
 import { api } from 'web/lib/api/api'
 import { useState } from 'react'
 
 export function BanBanner({ bans }: { bans: UserBan[] }) {
-  // Track which alert IDs have been dismissed locally (before page refresh)
   const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<number>>(new Set())
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+
   const activeBanTypes = getActiveBlockingBans(bans)
   const modAlerts = getActiveModAlerts(bans).filter(a => !dismissedAlertIds.has(a.id))
 
@@ -34,102 +36,204 @@ export function BanBanner({ bans }: { bans: UserBan[] }) {
     }
   }
 
-  // Group ban reasons - same reason may apply to multiple ban types
-  const reasonToBanTypes: Map<string, BanType[]> = new Map()
-  for (const banType of activeBanTypes) {
-    const ban = getActiveBan(bans, banType)
-    if (ban?.reason) {
-      const existing = reasonToBanTypes.get(ban.reason) || []
-      existing.push(banType)
-      reasonToBanTypes.set(ban.reason, existing)
-    }
-  }
-  // Convert to array for rendering
-  const groupedReasons = Array.from(reasonToBanTypes.entries()).map(
-    ([reason, banTypes]) => ({ reason, banTypes })
-  )
+  // Build summary text
+  const hasBans = activeBanTypes.length > 0
+  const banSummary = hasBans
+    ? activeBanTypes.map(bt => getBanTypeDisplayName(bt)).join(', ')
+    : null
+  const alertCount = modAlerts.length
+  const alertsOnly = !hasBans && alertCount > 0
 
   return (
-    <Col className="mb-4 gap-3">
-      {/* Ban section */}
-      {activeBanTypes.length > 0 && (
-        <div className="rounded border-2 border-red-500 bg-red-100 p-4">
-          <Col className="gap-2">
-            <h3 className="font-bold text-red-900">Account Restricted</h3>
-            <p className="text-red-800">You have been restricted from:</p>
-            <ul className="list-inside list-disc space-y-1 text-red-800">
-              {activeBanTypes.map((banType) => (
-                <BanTypeDescription
-                  key={banType}
-                  bans={bans}
-                  banType={banType}
-                />
-              ))}
-            </ul>
-            {groupedReasons.length > 0 && (
-              <div className="border-ink-200 mt-2 rounded border bg-white p-3">
-                <p className="font-semibold text-red-900">
-                  {groupedReasons.length === 1 ? 'Reason:' : 'Reasons:'}
-                </p>
-                {groupedReasons.map(({ reason, banTypes }) => (
-                  <p key={reason} className="text-red-800">
-                    {groupedReasons.length > 1 && (
-                      <span className="font-medium">
-                        {banTypes.map((bt) => getBanTypeDisplayName(bt)).join(' + ')}:{' '}
-                      </span>
-                    )}
-                    {reason}
-                  </p>
-                ))}
-              </div>
+    <>
+      {/* Compact banner - scrolls with content */}
+      <div className="mb-3">
+        <Row className={`items-center justify-between gap-2 px-4 py-2.5 text-white ${
+          alertsOnly ? 'bg-yellow-600' : 'bg-red-600'
+        }`}>
+          <Row className="items-center gap-2 text-sm">
+            <span className="font-semibold">
+              {alertsOnly ? 'Moderator Alert' : 'Account Restricted'}
+            </span>
+            {!alertsOnly && (
+              <>
+                <span className="hidden sm:inline">-</span>
+                <span className={`hidden sm:inline ${alertsOnly ? 'text-yellow-100' : 'text-red-100'}`}>
+                  {banSummary && `${banSummary} banned`}
+                  {banSummary && alertCount > 0 && ', '}
+                  {alertCount > 0 && `${alertCount} alert${alertCount > 1 ? 's' : ''}`}
+                </span>
+              </>
             )}
-          </Col>
-        </div>
-      )}
+            {alertsOnly && (
+              <span className="hidden text-yellow-100 sm:inline">
+                {alertCount} message{alertCount > 1 ? 's' : ''} from moderators
+              </span>
+            )}
+          </Row>
+          <button
+            onClick={() => setShowDetailsModal(true)}
+            className="rounded bg-white/20 px-3 py-1 text-xs font-medium hover:bg-white/30"
+          >
+            View Details
+          </button>
+        </Row>
+      </div>
 
-      {/* Mod alerts section (each alert is separate and dismissable) */}
-      {modAlerts.map((alert) => (
-        <div
-          key={alert.id}
-          className="rounded border-2 border-yellow-500 bg-yellow-100 p-4"
-        >
-          <Row className="items-start justify-between">
-            <Col className="flex-1 gap-2">
-              <h3 className="font-bold text-yellow-900">Moderator Alert</h3>
-              <div className="border-ink-200 rounded border bg-white p-3">
-                <p className="text-yellow-900">{alert.reason}</p>
+      {/* Details Modal */}
+      <Modal open={showDetailsModal} setOpen={setShowDetailsModal} size="md">
+        <Col className="bg-canvas-0 gap-6 rounded-lg p-6">
+          {/* Header */}
+          <Row className="items-center justify-between border-b border-ink-200 pb-4">
+            <Row className="items-center gap-3">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                alertsOnly ? 'bg-yellow-100' : 'bg-red-100'
+              }`}>
+                <span className={`text-lg ${alertsOnly ? 'text-yellow-600' : 'text-red-600'}`}>!</span>
               </div>
-            </Col>
+              <div>
+                <h2 className="text-xl font-bold">
+                  {alertsOnly ? 'Moderator Alerts' : 'Account Status'}
+                </h2>
+                <p className="text-ink-500 text-sm">
+                  {alertsOnly ? (
+                    `${modAlerts.length} message${modAlerts.length !== 1 ? 's' : ''} from moderators`
+                  ) : (
+                    <>
+                      {activeBanTypes.length} restriction{activeBanTypes.length !== 1 ? 's' : ''}
+                      {modAlerts.length > 0 && `, ${modAlerts.length} alert${modAlerts.length !== 1 ? 's' : ''}`}
+                    </>
+                  )}
+                </p>
+              </div>
+            </Row>
             <button
-              onClick={() => handleDismissAlert(alert.id)}
-              className="ml-2 text-xl text-yellow-700 hover:text-yellow-900"
-              title="Dismiss alert"
+              onClick={() => setShowDetailsModal(false)}
+              className="text-ink-400 hover:text-ink-600 rounded-full p-1 transition-colors hover:bg-ink-100"
             >
-              ×
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </Row>
+
+          {/* Ban details */}
+          {activeBanTypes.length > 0 && (
+            <BanDetailsSection bans={bans} activeBanTypes={activeBanTypes} />
+          )}
+
+          {/* Mod alerts */}
+          {modAlerts.length > 0 && (
+            <Col className="gap-3">
+              {/* Only show section header if there are also bans */}
+              {!alertsOnly && (
+                <Row className="items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100">
+                    <span className="text-xs text-yellow-600">!</span>
+                  </div>
+                  <h3 className="font-semibold">Moderator Alerts</h3>
+                </Row>
+              )}
+              {modAlerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 shadow-sm"
+                >
+                  <Row className="items-start justify-between gap-3">
+                    <p className="text-yellow-900">{alert.reason}</p>
+                    <button
+                      onClick={() => handleDismissAlert(alert.id)}
+                      className="shrink-0 rounded-full p-1 text-yellow-600 transition-colors hover:bg-yellow-200 hover:text-yellow-800"
+                      title="Dismiss alert"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </Row>
+                </div>
+              ))}
+            </Col>
+          )}
+
+          {/* Footer */}
+          <div className="border-t border-ink-200 pt-4">
+            <button
+              onClick={() => setShowDetailsModal(false)}
+              className="bg-primary-500 hover:bg-primary-600 w-full rounded-lg px-4 py-2 font-medium text-white transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </Col>
+      </Modal>
+    </>
+  )
+}
+
+function BanDetailsSection({
+  bans,
+  activeBanTypes
+}: {
+  bans: UserBan[]
+  activeBanTypes: BanType[]
+}) {
+  return (
+    <Col className="gap-4">
+      <Row className="items-center gap-2">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
+          <span className="text-xs text-red-600">!</span>
         </div>
-      ))}
+        <h3 className="font-semibold">Active Restrictions</h3>
+      </Row>
+
+      {/* Ban type cards with integrated reasons */}
+      <div className="grid gap-3">
+        {activeBanTypes.map((banType) => (
+          <BanTypeCard key={banType} bans={bans} banType={banType} />
+        ))}
+      </div>
     </Col>
   )
 }
 
-function BanTypeDescription({ bans, banType }: { bans: UserBan[]; banType: BanType }) {
+function BanTypeCard({ bans, banType }: { bans: UserBan[]; banType: BanType }) {
   const timeRemaining = getBanTimeRemaining(bans, banType)
   const ban = getActiveBan(bans, banType)
+  const isPermanent = ban && !ban.end_time
 
   return (
-    <li>
-      <strong>
-        {getBanTypeDisplayName(banType)} ({getBanTypeDescription(banType)})
-      </strong>
-      {timeRemaining !== undefined && timeRemaining > 0 && (
-        <span className="text-sm">
-          {' '}
-          - Expires in {formatBanTimeRemaining(timeRemaining)}
-        </span>
-      )}
-      {ban && !ban.end_time && <span className="text-sm"> - Permanent</span>}
-    </li>
+    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+      <Row className="items-start justify-between gap-2">
+        <Col className="flex-1 gap-1">
+          <Row className="items-center gap-2">
+            <span className="font-medium text-red-900">
+              {getBanTypeDisplayName(banType)}
+            </span>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+              isPermanent
+                ? 'bg-red-200 text-red-800'
+                : 'bg-orange-100 text-orange-800'
+            }`}>
+              {isPermanent
+                ? 'Permanent'
+                : timeRemaining !== undefined && timeRemaining > 0
+                  ? formatBanTimeRemaining(timeRemaining)
+                  : 'Active'}
+            </span>
+          </Row>
+          <span className="text-xs text-red-700">
+            {getBanTypeDescription(banType)}
+          </span>
+          {ban?.reason && (
+            <p className="mt-1 text-sm text-red-800">
+              <span className="font-medium">Reason:</span>{' '}
+              <span className="italic">"{ban.reason}"</span>
+            </p>
+          )}
+        </Col>
+      </Row>
+    </div>
   )
 }
+
