@@ -39,6 +39,7 @@ export function DangerZone(props: {
     isResolved,
     resolution,
     resolutionTime,
+    resolverId,
     uniqueBettorCount,
     token,
   } = contract
@@ -54,6 +55,7 @@ export function DangerZone(props: {
     !!user &&
     !isCreator &&
     isResolved &&
+    resolverId === creatorId &&
     outcomeType !== 'STONK' &&
     mechanism !== 'none' &&
     !hasReviewed
@@ -62,6 +64,7 @@ export function DangerZone(props: {
     !!user &&
     !isCreator &&
     isResolved &&
+    resolverId === creatorId &&
     outcomeType !== 'STONK' &&
     mechanism !== 'none' &&
     hasReviewed

@@ -15,6 +15,7 @@ import { isEqual } from 'lodash'
 import { trackPublicAuditBetEvent } from 'shared/audit-events'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { payInterestOnSell } from 'shared/pay-interest-on-sell'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
@@ -206,7 +207,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       throw new APIError(503, 'Please try betting again.')
     }
     const betGroupId = randomString(12)
-    return await executeNewBetResult(
+    const betResult = await executeNewBetResult(
       pgTrans,
       newBetResult,
       contract,
@@ -218,6 +219,24 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       betGroupId,
       deterministic
     )
+
+    // Pay interest on sell
+    // Use the probability after the sell to value the shares
+    const probAfterSell = betResult.newBet.probAfter
+    const { interest } = await payInterestOnSell(
+      pgTrans,
+      contract.id,
+      uid,
+      answerId,
+      betResult.newBet.createdTime,
+      probAfterSell,
+      contract.token
+    )
+    if (interest > 0) {
+      log(`Paid ${interest} interest on sell for user ${uid}`)
+    }
+
+    return betResult
   })
 
   const { newBet, betId } = result

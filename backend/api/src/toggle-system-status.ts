@@ -10,8 +10,13 @@ export const toggleSystemTradingStatus: APIHandler<
   }
 
   const pg = createSupabaseDirectClient()
+  // Use upsert pattern: insert with false (disabled) if not exists, or toggle if exists
+  // This way, first toggle when row doesn't exist will disable the feature
   const result = await pg.one(
-    `UPDATE system_trading_status SET status = NOT status WHERE token = $1 RETURNING status`,
+    `INSERT INTO system_trading_status (token, status)
+     VALUES ($1, false)
+     ON CONFLICT (token) DO UPDATE SET status = NOT system_trading_status.status
+     RETURNING status`,
     [token]
   )
 

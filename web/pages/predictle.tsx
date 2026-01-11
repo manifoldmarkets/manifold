@@ -58,6 +58,11 @@ function PredicteGame(props: {
   const savedResultRef = useRef(false)
   const fetchedServerResultRef = useRef(false)
 
+  const [percentileData, setPercentileData] = useState<{
+    percentile: number
+    totalUsers: number
+  } | null>(null)
+
   const [gameState, setGameState, localReady] =
     usePersistentLocalState<GameState>(
       {
@@ -251,6 +256,26 @@ function PredicteGame(props: {
     dateString,
   ])
 
+  // Fetch percentile when user wins
+  useEffect(() => {
+    if (!gameState.completed || !gameState.won) {
+      setPercentileData(null)
+      return
+    }
+
+    const attemptCount = gameState.attempts[0]?.feedback.length || 0
+    if (attemptCount === 0) return
+
+    api('get-predictle-percentile', {
+      puzzleNumber,
+      attempts: attemptCount,
+    })
+      .then(setPercentileData)
+      .catch((e) => {
+        console.error('Failed to fetch percentile:', e)
+      })
+  }, [gameState.completed, gameState.won, gameState.attempts, puzzleNumber])
+
   // Check if a market is locked (correctly guessed)
   const isMarketLocked = (marketId: string): boolean => {
     const feedback = gameState.attempts.find(
@@ -380,8 +405,8 @@ function PredicteGame(props: {
   return (
     <Col className="w-full max-w-xl gap-6">
       {/* Header */}
-      <Col className="items-center gap-3 text-center">
-        <div className="text-5xl">🔮</div>
+      <Col className="items-center gap-2 text-center">
+        <img src="/predictle-logo.png" alt="Predictle" className="h-20 w-20" />
         <h1 className="inline-block bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-4xl font-black tracking-tight text-transparent [-webkit-background-clip:text]">
           Predictle
         </h1>
@@ -533,7 +558,9 @@ function PredicteGame(props: {
             </div>
             {gameState.won && (
               <div className="mt-1 text-sm opacity-90">
-                {attemptNumber === 1
+                {percentileData && percentileData.totalUsers > 1
+                  ? `You did better than ${percentileData.percentile}% of players today!`
+                  : attemptNumber === 1
                   ? 'Aced it on the first try!'
                   : attemptNumber === 2 || attemptNumber === 3
                   ? 'Great job!'
@@ -660,19 +687,7 @@ function MarketCard(props: {
           {feedback.length > 0 && (
             <Row className="gap-1 text-xl">
               {feedback.map((f, i) => (
-                <span
-                  key={i}
-                  className={clsx(
-                    'transition-transform',
-                    i === feedback.length - 1 && 'animate-bounce'
-                  )}
-                  style={{
-                    animationDuration: '0.5s',
-                    animationIterationCount: 1,
-                  }}
-                >
-                  {getFeedbackEmoji(f)}
-                </span>
+                <span key={i}>{getFeedbackEmoji(f)}</span>
               ))}
             </Row>
           )}
@@ -745,6 +760,22 @@ export default function PredictlePage() {
     )
   }, [])
 
+  // Prevent pull-to-refresh on Android (at body level)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const originalStyle = document.body.style.overscrollBehaviorY
+    // Only apply on non-iOS to avoid conflicts
+    if (!isIOS) {
+      document.body.style.overscrollBehaviorY = 'none'
+    }
+
+    return () => {
+      // Restore original style on unmount
+      document.body.style.overscrollBehaviorY = originalStyle
+    }
+  }, [isIOS])
+
   // Use absolute positioning on iOS (fixed has rendering bugs), fixed elsewhere
   const bgPositionClass = isIOS ? 'absolute' : 'fixed'
 
@@ -754,9 +785,15 @@ export default function PredictlePage() {
         title="Predictle"
         description="A daily game where you arrange prediction markets by probability."
         url="/predictle"
+        image="https://manifold.markets/predictle-logo.png"
       />
       {/* Wrapper needed for iOS absolute positioning */}
-      <div className={clsx(isIOS && 'relative min-h-screen w-full')}>
+      <div
+        className={clsx(
+          !isIOS && 'overscroll-y-none',
+          isIOS && 'relative min-h-screen w-full'
+        )}
+      >
         {/* Light mode gradient background */}
         <div
           className={clsx(
@@ -791,12 +828,16 @@ export default function PredictlePage() {
         />
 
         <Col
-          className="mx-auto w-full max-w-xl px-4 py-8"
+          className="mx-auto w-full max-w-xl overscroll-y-none px-4 py-8"
           style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
         >
           {loading || !data ? (
             <Col className="items-center gap-4 py-12">
-              <div className="text-5xl">🔮</div>
+              <img
+                src="/predictle-logo.png"
+                alt="Predictle"
+                className="h-20 w-20 animate-pulse"
+              />
               <LoadingIndicator />
               <p className="text-slate-500 dark:text-slate-400">
                 Loading today's puzzle...

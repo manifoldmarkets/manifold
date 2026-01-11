@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
+import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
@@ -11,12 +12,10 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Linkify } from 'web/components/widgets/linkify'
 import { SizedContainer } from 'web/components/sized-container'
 import { TrustPanel } from 'web/components/trust-panel'
-import ChevronDownIcon from '@heroicons/react/solid/ChevronDownIcon'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { getContract } from 'common/supabase/contracts'
-import { Card } from 'web/components/widgets/card'
 import { Row } from 'web/components/layout/row'
 
 const TRADER_THRESHOLD = 15
@@ -46,7 +45,7 @@ export const getStaticProps = async () => {
         gazaMarket,
         sbfMarket,
       },
-      revalidate: 60 * 60, // Regenerate after an hour
+      revalidate: 60 * 60,
     }
   } catch (err) {
     console.error(err)
@@ -73,11 +72,7 @@ export default function CalibrationPage(props: {
   sbfMarket: Contract | null
 }) {
   const { points, score, n, trumpMarket, gazaMarket, sbfMarket } = props
-  const [isCollapsed, setIsCollapsed] = useState(true)
-
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed)
-  }
+  const [isMethodologyOpen, setIsMethodologyOpen] = useState(false)
 
   if (!trumpMarket || !gazaMarket || !sbfMarket) {
     return <div>Contracts not found</div>
@@ -89,244 +84,339 @@ export default function CalibrationPage(props: {
         title={`Platform calibration`}
         description="Manifold's overall track record"
       />
-      <Col className="mx-auto max-w-4xl px-4 py-6">
-        <div className="mb-8">
-          <Title>Calibration</Title>
-          <p className="text-ink-600 max-w-2xl">
-            See how Manifold's predictions compare to real-world outcomes and
-            explore our track record of accuracy.
+
+      {/* Subtle background gradient */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="from-primary-100/30 via-canvas-0 to-canvas-0 dark:from-primary-900/10 absolute inset-0 bg-gradient-to-b" />
+        <div className="bg-primary-200/20 dark:bg-primary-800/5 absolute -right-64 -top-64 h-[600px] w-[600px] rounded-full blur-3xl" />
+        <div className="bg-yes-200/20 dark:bg-yes-800/5 absolute -bottom-32 -left-32 h-[400px] w-[400px] rounded-full blur-3xl" />
+      </div>
+
+      <Col className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Hero Section */}
+        <div className="mb-12">
+          <h1 className="text-ink-900 mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
+            Calibration
+          </h1>
+          <p className="text-ink-600 max-w-2xl text-lg leading-relaxed">
+            Explore how Manifold's predictions compare to real-world outcomes.
+            Our track record demonstrates the power of collective forecasting.
           </p>
         </div>
 
-        <TrustPanel className="mb-8" />
+        {/* Trust Panel */}
+        <TrustPanel className="mb-12" />
 
-        <Card className="mb-8 overflow-hidden shadow-md">
-          <div className="bg-canvas-50 border-ink-200 border-b p-4">
-            <h2 className="text-ink-900 text-lg font-semibold">
-              Overall Calibration
+        {/* Main Calibration Card */}
+        <section className="mb-12">
+          <CalibrationCard
+            points={points}
+            score={score}
+            n={n}
+            isMethodologyOpen={isMethodologyOpen}
+            setIsMethodologyOpen={setIsMethodologyOpen}
+          />
+        </section>
+
+        {/* Case Studies Section */}
+        <section className="mb-12">
+          <div className="mb-6">
+            <h2 className="text-ink-900 text-2xl font-semibold tracking-tight">
+              Case Studies
             </h2>
+            <p className="text-ink-500 mt-1 text-sm">
+              Notable examples of prediction market accuracy
+            </p>
           </div>
-          <div className="p-6">
-            <div className="text-ink-600 mb-6 space-y-2">
-              <p>
-                This chart shows whether events happened as often as we
-                predicted. We want the blue dots to be as close to the diagonal
-                line as possible!
-              </p>
-              <p>
-                A dot with a question probability of 70% means we have a group
-                of markets that were predicted to have a 70% chance of
-                occurring. If our predictions are perfectly calibrated, then 70%
-                of those markets should have resolved yes and it should appear
-                on the y-axis at 70%.
-              </p>
-            </div>
 
-            <div className="bg-canvas-50 border-ink-100 relative w-full rounded-md border p-4 pr-12">
-              <div className="absolute bottom-0 right-4 top-0 flex items-center">
-                <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
-                  Resolved Yes
-                </span>
-              </div>
+          <div className="space-y-6">
+            <CaseStudyCard
+              title="Predicting Trump's arrest"
+              contract={trumpMarket}
+              description="On March 18th Trump posted on Truth Social that he believes he was about to be arrested, causing our market to spike to 88%. However, since December our market had already been hovering around 40% on average before anyone else was even discussing it as a true possibility."
+            />
 
-              <SizedContainer className="aspect-video w-full pb-8 pr-8">
-                {(w, h) => (
-                  <CalibrationChart points={points} width={w} height={h} />
-                )}
-              </SizedContainer>
-              <div className="text-ink-800 text-center text-sm">
-                Question probability
-              </div>
-            </div>
+            <CaseStudyCard
+              title="Al-Ahli Arab hospital explosion"
+              contract={gazaMarket}
+              description={
+                <>
+                  Just 3 hours after initial local reports, this market was
+                  created. Within 1 hour it had already been pushed down to 6%,
+                  before settling between 6-20% as more news emerged. Meanwhile,
+                  major outlets still presented conflicting headlines, which led
+                  to the{' '}
+                  <a
+                    className="text-primary-600 dark:text-primary-400 decoration-primary-600/30 dark:decoration-primary-400/30 hover:decoration-primary-600 dark:hover:decoration-primary-400 underline transition-colors"
+                    target="_blank"
+                    href="https://www.theguardian.com/world/2023/oct/19/israel-accuses-bbc-of-modern-blood-libel-over-reporting-of-hospital-strike"
+                  >
+                    BBC conceding that a reporter had been wrong to speculate
+                  </a>
+                  .
+                </>
+              }
+            />
 
-            <div className="bg-primary-50 border-primary-100 mt-6 rounded-lg border p-4">
-              <Row className="items-center">
-                <div className="text-primary-800 mr-2 font-medium">
-                  Brier score:
-                </div>
-                <div className="text-primary-900 font-bold">
-                  {Math.round(score * 1e5) / 1e5}
-                </div>
-                <InfoTooltip text="Mean squared error of forecasted probability compared to the true outcome. Closer to 0 is better.">
-                  <div className="text-primary-500 hover:text-primary-700 ml-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                </InfoTooltip>
-              </Row>
-              <div className="text-primary-700 mt-1 text-sm">
-                A score between 0.1 and 0.2 is very good! Our data shows our
-                markets are very accurate.
-              </div>
+            <CaseStudyCard
+              title="Predicting SBF fraud"
+              contract={sbfMarket}
+              description="Manifold had a market stable between 5-10% that SBF would be convicted of a felony 1-month before there was any news about it. It then immediately reacted correctly to rumors before any official statements were made."
+            />
 
-              <div
-                className="text-primary-800 mt-3 flex cursor-pointer items-center"
-                onClick={toggleCollapse}
-              >
-                <span className="font-medium">Methodology details</span>
-                <ChevronDownIcon
-                  className={`text-primary-600 ml-1 h-5 w-5 transition-transform ${
-                    isCollapsed ? '' : 'rotate-180 transform'
-                  }`}
-                />
-              </div>
-
-              {!isCollapsed && (
-                <ol className="text-primary-800 mt-3 list-decimal space-y-2 pl-5 text-sm">
-                  <li>
-                    Every hour we sample {formatPct(SAMPLING_P)} of all past
-                    trades on resolved binary questions with {TRADER_THRESHOLD}{' '}
-                    or more traders. Current sample size: {formatLargeNumber(n)}{' '}
-                    trades.
-                  </li>
-                  <li>
-                    For each sampled trade, we find the average probability
-                    between the start and end.
-                  </li>
-                  <li>We group trades with similar probabilities together.</li>
-                  <li>
-                    Then, we check for trades that said there was e.g. a 60%
-                    chance, and how often those markets resolve yes. In this
-                    case we would expect 60% of them to have resolved yes for
-                    perfect calibration!
-                  </li>
-                  <li>
-                    We can repeat this at each probability interval to plot a
-                    graph showing how the probability of our trades compare to
-                    how often it actually happens!
-                  </li>
-                  <li>
-                    <strong>Limitations</strong>: This methodology uses
-                    trade-weighted rather than time-weighted calibration. Market
-                    accuracy may be better than what is reflected here, as large
-                    miscalibrated trades are usually corrected immediately!
-                  </li>
-                </ol>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        <Card className="mb-8 overflow-hidden shadow-md">
-          <div className="bg-canvas-50 border-ink-200 border-b p-4">
-            <h2 className="text-ink-900 text-lg font-semibold">Case Studies</h2>
-          </div>
-          <div className="p-6">
-            <div className="space-y-8">
-              <div className="border-ink-100 border-b pb-8">
-                <h3 className="text-ink-800 mb-3 text-xl font-medium">
-                  Predicting Trump's arrest
+            {/* 2022 Midterms - Text Only */}
+            <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 hover:border-ink-300 dark:hover:border-ink-200 hover:shadow-ink-900/5 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:shadow-lg">
+              <div className="from-primary-50/50 dark:from-primary-900/20 absolute inset-0 bg-gradient-to-br via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="relative">
+                <h3 className="text-ink-900 mb-3 text-lg font-semibold">
+                  2022 US Midterm Elections
                 </h3>
-                <div className="mb-4">
-                  <FeedContractCard contract={trumpMarket} showGraph={true} />
-                </div>
-                <div className="text-ink-600 bg-canvas-50 border-ink-100 rounded-md border p-4">
-                  On March 18th Trump posted on Truth Social that he believes he
-                  was about to be arrested, this caused our market to spike to
-                  88%. However, since December our market had already been
-                  hovering around 40% on average before anyone else was even
-                  discussing it as a true possibility of happening!
-                </div>
-              </div>
-
-              <div className="border-ink-100 border-b pb-8">
-                <h3 className="text-ink-800 mb-3 text-xl font-medium">
-                  Al-Ahli Arab hospital explosion
-                </h3>
-                <div className="mb-4">
-                  <FeedContractCard contract={gazaMarket} showGraph={true} />
-                </div>
-                <div className="text-ink-600 bg-canvas-50 border-ink-100 rounded-md border p-4">
-                  <p className="mb-2">
-                    Just 3 hours after the initial local reports of the
-                    explosion, we had this market made. Within 1 hour of
-                    creation it had already been pushed to down 6%, before
-                    eventually settling between 6-20% over the next few hours as
-                    more news came to light.
-                  </p>
-                  <p>
-                    Meanwhile, major news outlets still presented conflicting
-                    headlines, which eventually led to the{' '}
-                    <a
-                      className="text-primary-700 hover:underline"
-                      target="_blank"
-                      href="https://www.theguardian.com/world/2023/oct/19/israel-accuses-bbc-of-modern-blood-libel-over-reporting-of-hospital-strike"
-                    >
-                      BBC conceding that a reporter had been wrong to speculate
-                      in his analysis.
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-ink-100 border-b pb-8">
-                <h3 className="text-ink-800 mb-3 text-xl font-medium">
-                  Predicting SBF fraud
-                </h3>
-                <div className="mb-4">
-                  <FeedContractCard contract={sbfMarket} showGraph={true} />
-                </div>
-                <div className="text-ink-600 bg-canvas-50 border-ink-100 rounded-md border p-4">
-                  Manifold had a market stable between 5-10% that SBF would be
-                  convicted of a felony 1-month before there was any news about
-                  it. It then immediately reacted correctly to rumors before any
-                  official statements were made.
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-ink-800 mb-3 text-xl font-medium">
-                  How we performed on the 2022 US midterms
-                </h3>
-                <div className="text-ink-600 bg-canvas-50 border-ink-100 rounded-md border p-4">
+                <p className="text-ink-600 text-sm leading-relaxed">
                   Manifold{' '}
                   <a
-                    className="text-primary-700 hover:underline"
+                    className="text-primary-600 dark:text-primary-400 decoration-primary-600/30 dark:decoration-primary-400/30 hover:decoration-primary-600 dark:hover:decoration-primary-400 underline transition-colors"
                     target="_blank"
                     href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
                   >
-                    outperformed real money prediction markets and was almost as
-                    accurate as FiveThiryEight
+                    outperformed real money prediction markets
                   </a>{' '}
-                  when forecasting the 2022 US midterm elections.
-                </div>
+                  and was almost as accurate as FiveThirtyEight when forecasting
+                  the 2022 US midterm elections.
+                </p>
               </div>
             </div>
           </div>
-        </Card>
+        </section>
 
-        <Card className="overflow-hidden shadow-md">
-          <div className="bg-canvas-50 border-ink-200 border-b p-4">
-            <h2 className="text-ink-900 text-lg font-semibold">
-              Additional Resources
-            </h2>
-          </div>
-          <div className="p-6">
-            <div className="text-ink-700">
-              See more{' '}
-              <a
-                className="text-primary-700 font-medium hover:underline"
-                target="_blank"
-                href="https://wasabipesto.com/manifold/markets/"
-              >
-                charts and analysis
-              </a>{' '}
-              courtesy of <Linkify text="@wasabipesto" /> from our data in 2022.
+        {/* Resources Section */}
+        <section>
+          <div className="border-ink-200 dark:border-ink-300 from-canvas-0 to-canvas-50 hover:shadow-ink-900/5 group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-6 transition-all duration-300 hover:shadow-lg">
+            <div className="from-primary-200/40 to-yes-200/40 dark:from-primary-800/20 dark:to-yes-800/20 absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br blur-2xl transition-transform duration-300 group-hover:scale-150" />
+            <div className="relative">
+              <h2 className="text-ink-900 mb-2 text-lg font-semibold">
+                Additional Resources
+              </h2>
+              <p className="text-ink-600 text-sm leading-relaxed">
+                See more{' '}
+                <a
+                  className="text-primary-600 dark:text-primary-400 decoration-primary-600/30 dark:decoration-primary-400/30 hover:decoration-primary-600 dark:hover:decoration-primary-400 font-medium underline transition-colors"
+                  target="_blank"
+                  href="https://wasabipesto.com/manifold/markets/"
+                >
+                  charts and analysis
+                </a>{' '}
+                courtesy of <Linkify text="@wasabipesto" /> from our data in
+                2022.
+              </p>
             </div>
           </div>
-        </Card>
+        </section>
       </Col>
     </Page>
+  )
+}
+
+function CalibrationCard(props: {
+  points: { x: number; y: number }[]
+  score: number
+  n: number
+  isMethodologyOpen: boolean
+  setIsMethodologyOpen: (open: boolean) => void
+}) {
+  const { points, score, n, isMethodologyOpen, setIsMethodologyOpen } = props
+
+  return (
+    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 hover:shadow-ink-900/5 relative overflow-hidden rounded-2xl border shadow-sm transition-shadow duration-300 hover:shadow-lg">
+      {/* Card Header */}
+      <div className="border-ink-100 dark:border-ink-200 from-canvas-0 via-canvas-0 to-primary-50/30 dark:to-primary-900/10 border-b bg-gradient-to-r px-6 py-5">
+        <Row className="items-center justify-between">
+          <div>
+            <h2 className="text-ink-900 text-xl font-semibold tracking-tight">
+              Overall Calibration
+            </h2>
+            <p className="text-ink-500 mt-0.5 text-sm">
+              Predicted vs actual outcomes across all markets
+            </p>
+          </div>
+          <BrierScoreBadge score={score} />
+        </Row>
+      </div>
+
+      {/* Card Body */}
+      <div className="p-6">
+        {/* Explanation */}
+        <div className="text-ink-600 mb-6 text-sm leading-relaxed">
+          <p>
+            This chart shows whether events happened as often as we predicted.
+            The closer the blue dots are to the diagonal line, the better our
+            calibration. A dot at 70% on the x-axis should appear at 70% on the
+            y-axis if exactly 70% of those markets resolved yes.
+          </p>
+        </div>
+
+        {/* Chart Container */}
+        <div className="border-ink-100 dark:border-ink-200 from-canvas-50/50 to-canvas-0 relative rounded-xl border bg-gradient-to-br p-4 sm:p-6">
+          {/* Y-axis label */}
+          <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90">
+            <span className="text-ink-500 whitespace-nowrap text-xs font-medium uppercase tracking-wider">
+              Resolved Yes
+            </span>
+          </div>
+
+          {/* Chart */}
+          <div className="ml-4">
+            <SizedContainer className="aspect-[4/3] w-full sm:aspect-video">
+              {(w, h) => (
+                <CalibrationChart points={points} width={w} height={h} />
+              )}
+            </SizedContainer>
+          </div>
+
+          {/* X-axis label */}
+          <div className="mt-4 text-center">
+            <span className="text-ink-500 text-xs font-medium uppercase tracking-wider">
+              Market Probability
+            </span>
+          </div>
+        </div>
+
+        {/* Methodology Section */}
+        <div className="mt-6">
+          <button
+            onClick={() => setIsMethodologyOpen(!isMethodologyOpen)}
+            className="bg-canvas-50 hover:bg-ink-100 group flex w-full items-center justify-between rounded-lg px-4 py-3 text-left transition-colors"
+          >
+            <span className="text-ink-700 text-sm font-medium">
+              Methodology
+            </span>
+            <svg
+              className={clsx(
+                'text-ink-400 h-5 w-5 transition-transform duration-200',
+                isMethodologyOpen && 'rotate-180'
+              )}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+
+          <div
+            className={clsx(
+              'overflow-hidden transition-all duration-300 ease-in-out',
+              isMethodologyOpen
+                ? 'mt-4 max-h-[600px] opacity-100'
+                : 'max-h-0 opacity-0'
+            )}
+          >
+            <div className="border-ink-100 dark:border-ink-200 bg-canvas-50 rounded-lg border p-4">
+              <ol className="text-ink-600 space-y-3 text-sm leading-relaxed">
+                <MethodologyStep number={1}>
+                  Every hour we sample {formatPct(SAMPLING_P)} of all past
+                  trades on resolved binary questions with {TRADER_THRESHOLD} or
+                  more traders. Current sample size:{' '}
+                  <span className="text-ink-800 font-semibold">
+                    {formatLargeNumber(n)}
+                  </span>{' '}
+                  trades.
+                </MethodologyStep>
+                <MethodologyStep number={2}>
+                  For each sampled trade, we find the average probability
+                  between the start and end.
+                </MethodologyStep>
+                <MethodologyStep number={3}>
+                  We group trades with similar probabilities together.
+                </MethodologyStep>
+                <MethodologyStep number={4}>
+                  Then, we check for trades that said there was e.g. a 60%
+                  chance, and how often those markets resolve yes. For perfect
+                  calibration, we expect 60% of them to have resolved yes.
+                </MethodologyStep>
+                <MethodologyStep number={5}>
+                  We repeat this at each probability interval to plot the
+                  calibration curve.
+                </MethodologyStep>
+              </ol>
+              <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/50 dark:bg-amber-900/20">
+                <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+                  <span className="font-semibold">Note:</span> This methodology
+                  uses trade-weighted rather than time-weighted calibration.
+                  Market accuracy may be better than reflected here, as large
+                  miscalibrated trades are usually corrected immediately.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MethodologyStep(props: { number: number; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span className="bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold">
+        {props.number}
+      </span>
+      <span className="pt-0.5">{props.children}</span>
+    </li>
+  )
+}
+
+function BrierScoreBadge(props: { score: number }) {
+  const displayScore = Math.round(props.score * 1e5) / 1e5
+
+  return (
+    <div className="border-yes-200 dark:border-yes-800/50 bg-yes-50 dark:bg-yes-900/20 flex items-center gap-2 rounded-full border px-3 py-1.5">
+      <div className="bg-yes-500 h-2 w-2 animate-pulse rounded-full" />
+      <div className="flex items-center gap-1.5">
+        <span className="text-yes-700 dark:text-yes-300 text-sm font-semibold">
+          {displayScore}
+        </span>
+        <InfoTooltip
+          text="Brier score: Mean squared error of forecasted probability vs true outcome. Closer to 0 is better. A score between 0.1 and 0.2 is excellent."
+          className="text-yes-600 dark:text-yes-400"
+        >
+          <span className="text-yes-600 dark:text-yes-400 cursor-help text-xs">
+            Brier
+          </span>
+        </InfoTooltip>
+      </div>
+    </div>
+  )
+}
+
+function CaseStudyCard(props: {
+  title: string
+  contract: Contract
+  description: React.ReactNode
+}) {
+  const { title, contract, description } = props
+
+  return (
+    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 hover:border-ink-300 dark:hover:border-ink-200 hover:shadow-ink-900/5 group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg">
+      {/* Subtle gradient overlay on hover */}
+      <div className="from-primary-50/50 dark:from-primary-900/20 absolute inset-0 bg-gradient-to-br via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+      <div className="relative p-6">
+        <h3 className="text-ink-900 mb-4 text-lg font-semibold">{title}</h3>
+
+        {/* Contract Card */}
+        <div className="border-ink-100 dark:border-ink-200 mb-4 overflow-hidden rounded-xl border">
+          <FeedContractCard contract={contract} showGraph={true} />
+        </div>
+
+        {/* Description */}
+        <p className="text-ink-600 text-sm leading-relaxed">{description}</p>
+      </div>
+    </div>
   )
 }
 
@@ -356,7 +446,10 @@ function CalibrationChart(props: {
   const px = (p: { x: number; y: number }) => xScale(p.x)
   const py = (p: { x: number; y: number }) => yScale(p.y)
 
-  const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    x: number
+    y: number
+  } | null>(null)
 
   return (
     <SVGChart
@@ -364,37 +457,97 @@ function CalibrationChart(props: {
       h={height}
       xAxis={xAxis}
       yAxis={yAxis}
-      ttParams={point ? { x: px(point), y: py(point), point } : undefined}
-      Tooltip={({ point }) => {
-        return (
-          <div className="font-medium">
-            ({formatPct(point.x)}, {formatPct(point.y)})
+      ttParams={
+        hoveredPoint
+          ? { x: px(hoveredPoint), y: py(hoveredPoint), point: hoveredPoint }
+          : undefined
+      }
+      Tooltip={({ point }) => (
+        <div className="text-ink-900 text-sm">
+          <div className="text-ink-500 mb-1 text-xs uppercase tracking-wide">
+            Calibration Point
           </div>
-        )
-      }}
+          <div className="font-semibold">Predicted: {formatPct(point.x)}</div>
+          <div className="font-semibold">Actual: {formatPct(point.y)}</div>
+        </div>
+      )}
     >
-      {/* Diagonal reference line */}
+      {/* Grid pattern */}
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path
+            d="M 40 0 L 0 0 0 40"
+            fill="none"
+            className="stroke-ink-100 dark:stroke-ink-200"
+            strokeWidth="0.5"
+          />
+        </pattern>
+      </defs>
+      <rect
+        width={width}
+        height={height}
+        fill="url(#grid)"
+        className="opacity-50"
+      />
+
+      {/* Perfect calibration diagonal */}
       <line
         x1={xScale(0)}
         y1={yScale(0)}
         x2={xScale(1)}
         y2={yScale(1)}
+        className="stroke-ink-300 dark:stroke-ink-400"
+        strokeWidth={1}
+        strokeDasharray="6 4"
+      />
+
+      {/* Confidence band around diagonal */}
+      <path
+        d={`M ${xScale(0)} ${yScale(0.05)} 
+            L ${xScale(0.95)} ${yScale(1)} 
+            L ${xScale(1)} ${yScale(1)} 
+            L ${xScale(1)} ${yScale(0.95)} 
+            L ${xScale(0.05)} ${yScale(0)} 
+            L ${xScale(0)} ${yScale(0)} 
+            Z`}
+        className="fill-primary-100/50 dark:fill-primary-900/30"
+      />
+
+      {/* Connecting line between points */}
+      <path
+        d={`M ${points.map((p) => `${px(p)} ${py(p)}`).join(' L ')}`}
+        fill="none"
         className="stroke-primary-400"
-        strokeWidth={1.5}
-        strokeDasharray="4 8"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
       {/* Data points */}
       {points.map((p, i) => (
-        <circle
-          key={i}
-          cx={px(p)}
-          cy={py(p)}
-          r={6}
-          className="fill-primary-600 stroke-primary-800 hover:fill-primary-500 stroke-1 transition-colors"
-          onMouseEnter={() => setPoint(p)}
-          onMouseLeave={() => setPoint(null)}
-        />
+        <g key={i}>
+          {/* Glow effect */}
+          <circle
+            cx={px(p)}
+            cy={py(p)}
+            r={hoveredPoint === p ? 16 : 0}
+            className="fill-primary-400/20 transition-all duration-200"
+          />
+          {/* Main point */}
+          <circle
+            cx={px(p)}
+            cy={py(p)}
+            r={hoveredPoint === p ? 8 : 6}
+            className={clsx(
+              'cursor-pointer transition-all duration-200',
+              'fill-primary-500 stroke-canvas-0',
+              'hover:fill-primary-400'
+            )}
+            strokeWidth={2}
+            onMouseEnter={() => setHoveredPoint(p)}
+            onMouseLeave={() => setHoveredPoint(null)}
+          />
+        </g>
       ))}
     </SVGChart>
   )
@@ -402,18 +555,16 @@ function CalibrationChart(props: {
 
 export function WasabiCharts() {
   return (
-    <>
-      <div className="text-ink-600 mt-8">
-        See more {''}
-        <a
-          className="text-primary-700 hover:underline"
-          target="_blank"
-          href="https://wasabipesto.com/manifold/markets/"
-        >
-          charts
-        </a>
-        {''} courtesy of <Linkify text="@wasabipesto" /> from our data in 2022.
-      </div>
-    </>
+    <div className="text-ink-600 mt-8">
+      See more{' '}
+      <a
+        className="text-primary-700 hover:underline"
+        target="_blank"
+        href="https://wasabipesto.com/manifold/markets/"
+      >
+        charts
+      </a>{' '}
+      courtesy of <Linkify text="@wasabipesto" /> from our data in 2022.
+    </div>
   )
 }

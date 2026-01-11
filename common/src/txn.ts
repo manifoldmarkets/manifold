@@ -42,6 +42,7 @@ type AnyTxnType =
   | BountyCanceled
   | ManaPay
   | Loan
+  | LoanPayment
   | PushNotificationBonus
   | LikePurchase
   | ContractUndoOldResolutionPayout
@@ -62,6 +63,9 @@ type AnyTxnType =
   | UndoResolutionFee
   | ContractBoostPurchase
   | CharityGiveawayTicket
+  | ShopPurchase
+  | InterestPayout
+  | InterestUndoPayout
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -480,6 +484,14 @@ type Loan = {
   token: 'M$'
 }
 
+type LoanPayment = {
+  category: 'LOAN_PAYMENT'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data?: { amountRepaid: number }
+}
+
 type PushNotificationBonus = {
   category: 'PUSH_NOTIFICATION_BONUS'
   fromType: 'BANK'
@@ -616,6 +628,43 @@ type CharityGiveawayTicket = {
   }
 }
 
+type ShopPurchase = {
+  category: 'SHOP_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    itemId: string
+  }
+}
+
+type InterestPayout = {
+  category: 'INTEREST_PAYOUT'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    contractId: string
+    answerId?: string
+    yesShareDays: number
+    noShareDays: number
+    payoutStartTime: number
+    // For sell interest, includes the sell probability
+    sellProb?: number
+  }
+}
+
+type InterestUndoPayout = {
+  category: 'INTEREST_UNDO_PAYOUT'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    revertsTxnId: string
+    contractId: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -657,6 +706,7 @@ export type BountyAddedTxn = Txn & BountyAdded
 export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
 export type LoanTxn = Txn & Loan
+export type LoanPaymentTxn = Txn & LoanPayment
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
 export type LikePurchaseTxn = Txn & LikePurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
@@ -673,3 +723,6 @@ export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
 export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
+export type ShopPurchaseTxn = Txn & ShopPurchase
+export type InterestPayoutTxn = Txn & InterestPayout
+export type InterestUndoPayoutTxn = Txn & InterestUndoPayout

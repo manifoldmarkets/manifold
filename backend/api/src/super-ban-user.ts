@@ -6,7 +6,7 @@ import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { updateContract } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
-import { getUser, log } from 'shared/utils'
+import { getUser, log, revalidateContractStaticProps } from 'shared/utils'
 import { revalidatePost } from './create-post-comment'
 import { APIError, type APIHandler } from './helpers/endpoint'
 
@@ -68,7 +68,7 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     throw new APIError(500, 'Failed to update one or more contracts.')
   }
 
-  // Bulk-delete user's contract comments (including hidden) if there are not too many
+  // Bulk-delete user's contract comments (including hidden) if there are not too many, and revalidate affected contracts
   try {
     const { count } = await pg.one<{ count: number }>(
       `select count(*)::int as count
@@ -80,6 +80,18 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     if (count > 30) {
       log('Not deleting comments (>30).')
     } else if (count > 0) {
+      // Collect distinct contracts for revalidation
+      const affectedContracts = await pg.manyOrNone<{
+        slug: string
+        creatorUsername: string
+      }>(
+        `select distinct c.slug, c.data->>'creatorUsername' as "creatorUsername"
+         from contract_comments cc
+         join contracts c on c.id = cc.contract_id
+         where cc.user_id = $1`,
+        [userId]
+      )
+
       await pg.none(
         `update contract_comments
          set data = data
@@ -90,6 +102,12 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
         [userId, Date.now(), auth.uid]
       )
       log(`Deleted ${count} comments for user ${userId}.`)
+
+      // Revalidate all affected contracts
+      for (const contract of affectedContracts) {
+        await revalidateContractStaticProps(contract)
+      }
+      log(`Revalidated ${affectedContracts.length} contracts.`)
     } else {
       log('No comments found for this user.')
     }

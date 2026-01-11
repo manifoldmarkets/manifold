@@ -1,8 +1,24 @@
 #!/bin/bash
 
-ENV=${1:-dev}
-DEBUG=${2:-false}
-API_PORT=${3:-8088}
+# Parse arguments
+DEBUG=false
+POSITIONAL_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --debug)
+            DEBUG=true
+            shift
+            ;;
+        *)
+            POSITIONAL_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+ENV=${POSITIONAL_ARGS[0]:-dev}
+API_PORT=${POSITIONAL_ARGS[1]:-8088}
 
 # Set environment based on whether "prod" is in the ENV string
 if [[ "$ENV" == *"prod"* ]]; then

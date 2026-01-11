@@ -35,6 +35,7 @@ import {
 import { CandidateBet } from 'common/new-bet'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
+import { userHasPampuSkin } from 'common/shop/items'
 import {
   getTierIndexFromLiquidity,
   getTierIndexFromLiquidityAndAnswers,
@@ -122,6 +123,8 @@ export function BuyPanel(
     className,
   } = props
 
+  const user = useUser()
+  const hasPampu = userHasPampuSkin(user?.shopPurchases)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -170,7 +173,13 @@ export function BuyPanel(
                 onOutcomeChoice(choice)
               }}
               yesLabel={
-                isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : 'YES'
+                isPseudoNumeric
+                  ? 'HIGHER'
+                  : isStonk
+                  ? STONK_YES
+                  : hasPampu
+                  ? 'PAMPU'
+                  : 'YES'
               }
               noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
               includeWordBet={!isStonk}
@@ -229,6 +238,7 @@ export const BuyPanelBody = (
   } = props
 
   const user = useUser()
+  const hasPampu = userHasPampuSkin(user?.shopPurchases)
   const privateUser = usePrivateUser()
   const liquidityTier =
     'answers' in contract
@@ -625,10 +635,15 @@ export const BuyPanelBody = (
 
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
+    : hasPampu
+    ? { Pampu: 'YES', No: 'NO' }
     : { Yes: 'YES', No: 'NO' }
 
-  const { pseudonymName, pseudonymColor } =
+  const { pseudonymName: propPseudonymName, pseudonymColor } =
     props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
+  // Use PAMPU as pseudonym for YES outcome when user has the skin
+  const pseudonymName =
+    propPseudonymName ?? (hasPampu && outcome === 'YES' ? 'PAMPU' : undefined)
 
   const shouldPromptVerification =
     isCashContract &&

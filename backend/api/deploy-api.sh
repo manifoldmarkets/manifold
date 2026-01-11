@@ -133,8 +133,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
 # gcloud compute url-maps import api-lb \
 #         --source=url-map-config.yaml \
 #         --project ${GCLOUD_PROJECT} \
-#         --global \
-#         --quiet
+#         --global 
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
 gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \

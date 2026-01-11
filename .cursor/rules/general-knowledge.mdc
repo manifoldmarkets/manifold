@@ -507,6 +507,8 @@ When adding a new database table, don't create one-off tables in TypeScript. Eac
 
 This ensures that database schema is properly versioned and can be reproduced consistently.
 
+**Row Level Security (RLS):** Be cautious about adding "public read" policies to tables. Only add public read access if the data genuinely needs to be accessible from the client. Tables that are only accessed by the backend (via service role) should have RLS enabled but no public policies. This follows the principle of least privilege.
+
 ---
 
 ### Misc coding tips

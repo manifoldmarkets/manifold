@@ -14,14 +14,16 @@ import {
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
+import { calculateInterestPayouts } from './calculate-interest'
+import {
+  calculatePoolInterestCpmm1,
+  calculatePoolInterestMulti,
+} from './calculate-pool-interest'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import {
-  getLoanPayouts,
-  getPayouts,
-  groupPayoutsByUser,
-  Payout,
-} from 'common/payouts'
+import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
+import { LOAN_DAILY_INTEREST_RATE, MS_PER_DAY } from 'common/loans'
+import { getLoanTrackingForContract } from './helpers/user-contract-loans'
 import { convertTxn } from 'common/supabase/txns'
 import { CancelUniqueBettorBonusTxn, Txn } from 'common/txn'
 import { User } from 'common/user'
@@ -101,6 +103,33 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
+    // Calculate pool with interest before calculating payouts
+    // This ensures LPs receive interest on their locked capital
+    if (unresolvedContract.mechanism === 'cpmm-1') {
+      const poolWithInterest = calculatePoolInterestCpmm1(unresolvedContract)
+      unresolvedContract.pool.YES = poolWithInterest.YES
+      unresolvedContract.pool.NO = poolWithInterest.NO
+    } else if (unresolvedContract.mechanism === 'cpmm-multi-1') {
+      const multiContract = unresolvedContract as CPMMMultiContract
+      const answers = multiContract.answers
+      const poolUpdates = calculatePoolInterestMulti(multiContract, answers)
+      const updateMap = new Map(poolUpdates.map((u) => [u.id, u]))
+      for (const answer of answers) {
+        const update = updateMap.get(answer.id)
+        if (update) {
+          answer.poolYes = update.poolYes
+          answer.poolNo = update.poolNo
+        }
+      }
+    }
+
+    // Fetch loan tracking data for interest calculation
+    const loanTracking = await getLoanTrackingForContract(
+      tx,
+      contractId,
+      answerId
+    )
+
     const {
       resolutionProbability,
       payouts,
@@ -113,7 +142,8 @@ export const resolveMarketHelper = async (
       probabilityInt,
       answerId,
       contractMetrics,
-      liquidities
+      liquidities,
+      loanTracking
     )
     // Keep MKT resolution prob for consistency's sake
     const probBeforeResolution =
@@ -264,8 +294,80 @@ export const resolveMarketHelper = async (
       token === 'CASH'
         ? assessProfitFees(traderPayouts, updatedContractMetrics, answerId)
         : []
+
+    // Calculate interest payouts (MANA only)
+    // Determine resolution probability for interest valuation
+    const resolutionProb =
+      outcome === 'YES'
+        ? 1
+        : outcome === 'NO'
+        ? 0
+        : outcome === 'CANCEL'
+        ? 0.5 // CANCEL pays based on 50% value
+        : resolutionProbability ?? 0.5
+
+    // Query already-paid interest from sells
+    const alreadyPaidInterest = await tx.manyOrNone<{
+      user_id: string
+      answer_id: string | null
+      total_paid: number
+    }>(
+      `SELECT 
+        to_id as user_id,
+        data->'data'->>'answerId' as answer_id,
+        SUM(amount) as total_paid
+      FROM txns 
+      WHERE category = 'INTEREST_PAYOUT'
+        AND data->'data'->>'contractId' = $1
+        AND ($2::text IS NULL OR data->'data'->>'answerId' = $2)
+      GROUP BY to_id, data->'data'->>'answerId'`,
+      [contractId, answerId ?? null]
+    )
+    const paidInterestByUser = new Map(
+      alreadyPaidInterest.map((r) => [
+        `${r.user_id}-${r.answer_id ?? ''}`,
+        r.total_paid,
+      ])
+    )
+
+    const rawInterestPayouts = await calculateInterestPayouts(
+      tx,
+      contractId,
+      resolutionTime,
+      answerId,
+      token,
+      resolutionProb
+    )
+
+    // Subtract already-paid interest from sell transactions
+    const interestPayouts = rawInterestPayouts
+      .map((p) => {
+        const key = `${p.userId}-${p.answerId ?? ''}`
+        const alreadyPaid = paidInterestByUser.get(key) ?? 0
+        return {
+          ...p,
+          interest: Math.max(0, p.interest - alreadyPaid),
+        }
+      })
+      .filter((p) => p.interest > 0)
+
+    if (interestPayouts.length > 0) {
+      log('Interest payouts calculated', {
+        count: interestPayouts.length,
+        totalInterest: sumBy(interestPayouts, 'interest'),
+        alreadyPaid: sum(Array.from(paidInterestByUser.values())),
+      })
+    }
+
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
-      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
+      getPayUsersQueries(
+        payouts,
+        contractId,
+        answerId,
+        token,
+        payoutFees,
+        interestPayouts
+      )
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
@@ -351,7 +453,14 @@ export const getPayoutInfo = (
   probabilityInt: number | undefined,
   answerId: string | undefined,
   contractMetrics: ContractMetric[],
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  loanTracking?: {
+    user_id: string
+    contract_id: string
+    answer_id: string | null
+    loan_day_integral: number
+    last_loan_update_time: number
+  }[]
 ) => {
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -363,8 +472,12 @@ export const getPayoutInfo = (
       })()
     : undefined
 
-  // Calculate loan payouts from contract metrics
-  const loanPayouts = getLoanPayouts(contractMetrics, answerId)
+  // Calculate loan payouts with interest from loan tracking data
+  const loanPayouts = getLoanPayoutsWithInterest(
+    contractMetrics,
+    loanTracking ?? [],
+    answerId
+  )
 
   // Calculate payouts using contract metrics instead of bets
   const { traderPayouts, liquidityPayouts } = getPayouts(
@@ -404,6 +517,61 @@ export const getPayoutInfo = (
     payouts,
     traderPayouts,
   }
+}
+
+type LoanTrackingData = {
+  user_id: string
+  contract_id: string
+  answer_id: string | null
+  loan_day_integral: number
+  last_loan_update_time: number
+}
+
+const getLoanPayoutsWithInterest = (
+  contractMetrics: ContractMetric[],
+  loanTracking: LoanTrackingData[],
+  answerId?: string
+): Payout[] => {
+  const now = Date.now()
+  const metricsWithLoans = contractMetrics
+    .filter((metric) => metric.loan)
+    .filter((metric) => (answerId ? metric.answerId === answerId : true))
+
+  const trackingByKey = keyBy(
+    loanTracking,
+    (t) => `${t.user_id}-${t.answer_id ?? ''}`
+  )
+
+  const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
+
+  const loansByUser = mapValues(metricsByUser, (metrics) =>
+    sumBy(metrics, (metric) => {
+      const loan = metric.loan ?? 0
+      if (loan === 0) return 0
+
+      const key = `${metric.userId}-${metric.answerId ?? ''}`
+      const tracking = trackingByKey[key]
+
+      // If no tracking data, just return the loan (no interest for legacy loans)
+      if (!tracking) return -loan
+
+      // Finalize the integral up to now
+      const daysSinceLastUpdate =
+        (now - tracking.last_loan_update_time) / MS_PER_DAY
+      const finalIntegral =
+        tracking.loan_day_integral + loan * daysSinceLastUpdate
+
+      // Calculate interest
+      const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+
+      return -(loan + interest)
+    })
+  )
+
+  return Object.entries(loansByUser).map(([userId, payout]) => ({
+    userId,
+    payout,
+  }))
 }
 
 async function undoUniqueBettorRewardsIfCancelResolution(
@@ -451,7 +619,14 @@ export const getPayUsersQueries = (
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  payoutFees: Payout[]
+  payoutFees: Payout[],
+  interestPayouts: {
+    userId: string
+    answerId: string | null
+    interest: number
+    yesShareDays: number
+    noShareDays: number
+  }[] = []
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
@@ -522,6 +697,46 @@ export const getPayUsersQueries = (
         contractId,
         payoutStartTime,
         answerId,
+      }),
+    })
+  }
+
+  // Add interest payouts (MANA only)
+  for (const {
+    userId,
+    answerId: ansId,
+    interest,
+    yesShareDays,
+    noShareDays,
+  } of interestPayouts) {
+    if (interest <= 0) continue
+
+    const existingUpdate = balanceUpdates.find((b) => b.id === userId)
+    if (existingUpdate) {
+      existingUpdate.balance = (existingUpdate.balance ?? 0) + interest
+    } else {
+      balanceUpdates.push({
+        id: userId,
+        balance: interest,
+      })
+    }
+
+    txns.push({
+      category: 'INTEREST_PAYOUT',
+      fromType: 'BANK',
+      fromId: isProd()
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+      toType: 'USER',
+      toId: userId,
+      amount: interest,
+      token: 'M$',
+      data: removeUndefinedProps({
+        contractId,
+        answerId: ansId,
+        yesShareDays,
+        noShareDays,
+        payoutStartTime,
       }),
     })
   }
