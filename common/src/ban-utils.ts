@@ -1,3 +1,18 @@
+/**
+ * Ban System Utilities
+ *
+ * See backend/api/knowledge.md for full documentation on the ban system.
+ *
+ * Ban Types:
+ * - 'posting': blocks comments, messages, posts, answers, poll votes, managrams
+ * - 'marketControl': blocks creating/editing/resolving markets, hiding comments, answers, topics
+ * - 'trading': blocks betting, managrams, liquidity, answers, poll votes
+ *
+ * To add a new bannable action:
+ * 1. Add the action name to getBanTypesForAction() below
+ * 2. Use onlyUsersWhoCanPerformAction('actionName', handler) in your endpoint
+ */
+
 import { BanType, UserBan } from './user'
 
 export type { BanType } from './user'

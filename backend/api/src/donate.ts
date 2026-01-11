@@ -5,11 +5,20 @@ import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { MIN_CASH_DONATION } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
+import { getActiveUserBans } from './helpers/rate-limit'
+import { isUserBanned } from 'common/ban-utils'
+
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const charity = charities.find((c) => c.id === to)
   if (!charity) throw new APIError(404, 'Charity not found')
 
   const pg = createSupabaseDirectClient()
+
+  // Check for trading ban (donations involve cash transfer)
+  const userBans = await getActiveUserBans(auth.uid)
+  if (isUserBanned(userBans, 'trading')) {
+    throw new APIError(403, 'You are banned from trading')
+  }
 
   await pg.tx(async (tx) => {
     const user = await getUser(auth.uid, tx)
