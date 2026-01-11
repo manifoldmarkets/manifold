@@ -214,6 +214,9 @@ import { shopPurchase } from './shop-purchase'
 import { shopToggle } from './shop-toggle'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
+import { getCharityGiveaway } from './get-charity-giveaway'
+import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
+import { getCharityGiveawaySales } from './get-charity-giveaway-sales'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -425,6 +428,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-predictle-markets': getPredictle,
   'save-predictle-result': savePredicleResult,
   'get-predictle-result': getPredictleResult,
+  'get-charity-giveaway': getCharityGiveaway,
+  'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
+  'get-charity-giveaway-sales': getCharityGiveawaySales,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'shop-purchase': shopPurchase,

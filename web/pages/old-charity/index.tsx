@@ -112,7 +112,7 @@ export default function Charity(props: {
       <SEO
         title="Manifold for Charity"
         description="Donate your prediction market earnings to charity on Manifold."
-        url="/charity"
+        url="/old-charity"
       />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
@@ -137,7 +137,7 @@ export default function Charity(props: {
               {
                 name: 'Most recent donation',
                 stat: recentCharityName,
-                url: `/charity/${mostRecentCharityId}`,
+                url: `/old-charity/${mostRecentCharityId}`,
               },
             ]}
           />

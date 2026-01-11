@@ -12,7 +12,7 @@ export function CharityCard(props: { charity: Charity; raised: number }) {
   const { id, photo, preview, tags } = charity
 
   return (
-    <Link href={`/charity/${id}`} className="flex-1">
+    <Link href={`/old-charity/${id}`} className="flex-1">
       <Card className="!rounded-2xl">
         <Row className="mb-2 mt-6">{tags?.includes('New') && <NewBadge />}</Row>
         <div className="px-8">

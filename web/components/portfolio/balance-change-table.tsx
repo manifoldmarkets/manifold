@@ -597,7 +597,7 @@ const TxnBalanceChangeRow = (props: {
             </Link>
           ) : charity ? (
             <Link
-              href={`/charity/${charity.slug}`}
+              href={`/old-charity/${charity.slug}`}
               className={clsx('line-clamp-2', linkClass)}
             >
               {txnTitle(change)}

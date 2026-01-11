@@ -249,7 +249,7 @@ function CashoutOptionsContent(props: {
                 'text-xs sm:text-sm',
                 noHasMinRedeemableCash || allDisabled ? 'text-white' : ''
               )}
-              href="/charity"
+              href="/old-charity"
             >
               See eligible charities
             </Link>

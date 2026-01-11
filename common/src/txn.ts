@@ -62,6 +62,7 @@ type AnyTxnType =
   | ProfitFee
   | UndoResolutionFee
   | ContractBoostPurchase
+  | CharityGiveawayTicket
   | ShopPurchase
   | InterestPayout
   | InterestUndoPayout
@@ -614,6 +615,19 @@ type ContractBoostPurchase = {
   }
 }
 
+type CharityGiveawayTicket = {
+  category: 'CHARITY_GIVEAWAY_TICKET'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    giveawayNum: number
+    charityId: string
+    numTickets: number
+    ticketId: string
+  }
+}
+
 type ShopPurchase = {
   category: 'SHOP_PURCHASE'
   fromType: 'USER'
@@ -708,6 +722,7 @@ export type ProfitFeeTxn = Txn & ProfitFee
 export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
+export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type InterestPayoutTxn = Txn & InterestPayout
 export type InterestUndoPayoutTxn = Txn & InterestUndoPayout

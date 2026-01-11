@@ -2846,6 +2846,69 @@ export const API = (_apiTypeCheck = {
       }
     },
   },
+  'get-charity-giveaway': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      giveaway?: {
+        giveawayNum: number
+        name: string
+        prizeAmountUsd: number
+        closeTime: number
+        winningTicketId: string | null
+        createdTime: number
+      }
+      charityStats: {
+        charityId: string
+        totalTickets: number
+        totalManaSpent: number
+      }[]
+      totalTickets: number
+    },
+  },
+  'buy-charity-giveaway-tickets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        giveawayNum: z.number(),
+        charityId: z.string(),
+        numTickets: z.number().positive(),
+      })
+      .strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+      manaSpent: number
+    },
+  },
+  'get-charity-giveaway-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        giveawayNum: z.coerce.number(),
+        limit: z.coerce.number().min(1).max(100).default(50),
+        before: z.string().optional(),
+      })
+      .strict(),
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      sales: {
+        id: string
+        giveawayNum: number
+        charityId: string
+        userId: string
+        numTickets: number
+        manaSpent: number
+        createdTime: number
+      }[]
+    },
+  },
   'get-predictle-percentile': {
     method: 'GET',
     visibility: 'undocumented',
