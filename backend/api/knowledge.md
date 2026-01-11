@@ -176,3 +176,154 @@ const query = renderSql(
 ```
 
 Using these functions instead of string concatenation helps prevent SQL injection and makes queries easier to read and maintain.
+
+## User Bans and Moderation
+
+The ban system controls what actions users can perform. Bans and mod alerts are stored in the `user_bans` database table and checked server-side before allowing user actions.
+
+### Ban Types
+
+There are four ban types defined in `common/src/user.ts`:
+
+| Ban Type | What It Blocks |
+|----------|---------------|
+| `posting` | Commenting, messaging, creating posts, adding answers, poll voting, sending managrams |
+| `marketControl` | Creating/editing/resolving markets, hiding comments, adding/editing answers, poll voting, adding topics |
+| `trading` | Betting, managrams, liquidity changes, adding answers, poll voting |
+| `modAlert` | **Does NOT block any actions** - used for warning messages to users with full audit history |
+
+Some actions are blocked by multiple ban types (e.g., `pollVote` is blocked by all three blocking types).
+
+### How to Add Ban Checks to an Endpoint
+
+For new endpoints that perform user actions, use the `onlyUsersWhoCanPerformAction` wrapper from `helpers/rate-limit.ts`:
+
+```typescript
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
+
+export const myEndpoint: APIHandler<'my-endpoint'> = onlyUsersWhoCanPerformAction(
+  'actionName',  // Must be a key in getBanTypesForAction()
+  async (props, auth, req) => {
+    // Your endpoint logic here
+  }
+)
+```
+
+The action name must be registered in `getBanTypesForAction()` in `common/src/ban-utils.ts`:
+
+```typescript
+export function getBanTypesForAction(action: string): BanType[] {
+  const actionMap: Record<string, BanType[]> = {
+    'comment': ['posting'],
+    'createMarket': ['marketControl'],
+    'trade': ['trading'],
+    'myNewAction': ['posting'],  // Add your action here
+    // ...
+  }
+  return actionMap[action] || []
+}
+```
+
+### Manual Ban Checks
+
+For more complex scenarios (e.g., checking bans inside a transaction), use manual checks:
+
+```typescript
+import { getActiveUserBans } from './helpers/rate-limit'
+import { isUserBanned } from 'common/ban-utils'
+
+const userBans = await getActiveUserBans(auth.uid)
+if (isUserBanned(userBans, 'trading')) {
+  throw new APIError(403, 'You are banned from trading')
+}
+```
+
+### Endpoints Currently Using Ban Checks
+
+**Using `onlyUsersWhoCanPerformAction` wrapper:**
+- `create-market.ts` → `'createMarket'`
+- `create-comment.ts` → `'comment'`
+- `create-post.ts` → `'post'`
+- `update-post.ts` → `'post'`
+- `update-market.ts` → `'updateMarket'`
+- `create-answer-cpmm.ts` → `'createAnswer'`
+- `purchase-boost.ts` → `'boost'`
+- `add-topic-to-market.ts` → `'addTopic'`
+- `post.ts` (comments) → `'comment'`
+
+**Using manual ban checks:**
+- `resolve-market.ts` → checks `marketControl`
+- `unresolve.ts` → checks `marketControl`
+- `hide-comment.ts` → checks `marketControl`
+- `edit-answer.ts` → checks `marketControl`
+- `add-liquidity.ts` → checks `trading`
+- `remove-liquidity.ts` → checks `trading`
+- `cast-poll-vote.ts` → checks all ban types via `getBanTypesForAction('pollVote')`
+- `managram.ts` → checks via `canSendMana()` (posting + trading)
+- `create-private-user-message.ts` → checks `posting`
+- `create-private-user-message-channel.ts` → checks `posting`
+- `create-public-chat-message.ts` → checks `posting`
+- `create-post-comment.ts` → checks `posting`
+
+### Endpoints That Intentionally Skip Ban Checks
+
+Some endpoints don't require ban checks because they don't represent user "actions" that could be abused:
+
+- **`reaction.ts`** - Likes/dislikes are low-impact and can be removed; abuse is handled via other means
+- **Read-only endpoints** (get-*, search-*, etc.) - No state changes
+
+### Endpoints with Hidden Ban Checks (Deprecated Features)
+
+These endpoints have ban checks but the restrictions are not shown in the UI ban descriptions (because the features are deprecated):
+
+- **`add-bounty.ts`** - Checks `trading` ban (bounties are deprecated)
+- **`donate.ts`** - Checks `trading` ban (old charity donation system deprecated; new lottery system handles this separately)
+
+### Legacy Ban System
+
+There is a legacy ban field `isBannedFromPosting` on the User object. During the migration period:
+- Server-side checks use BOTH the new `user_bans` table AND the legacy field
+- Example: `isUserBanned(userBans, 'posting') || user.isBannedFromPosting`
+- The legacy `authEndpointUnbanned` function (in `endpoint.ts`) ONLY checks the legacy field and should be migrated to the new system
+
+### Database Schema
+
+Bans are stored in the `user_bans` table:
+
+```sql
+create table user_bans (
+  id serial primary key,
+  user_id text not null references users(id),
+  ban_type text not null,  -- 'posting', 'marketControl', or 'trading'
+  reason text,
+  created_at timestamptz not null default now(),
+  created_by text references users(id),
+  end_time timestamptz,     -- null = permanent ban
+  ended_by text references users(id),
+  ended_at timestamptz      -- set when ban is manually lifted
+);
+```
+
+Active bans are those where `ended_at IS NULL AND (end_time IS NULL OR end_time > now())`.
+
+### Mod Alerts
+
+Mod alerts are stored in the `user_bans` table with `ban_type = 'modAlert'`. This provides:
+- Full audit history (who sent which alerts, when they were dismissed, by whom)
+- Consistent querying with other bans
+- Multiple historical alerts can be tracked
+
+When a user dismisses their mod alert, it sets `ended_by = user_id` and `ended_at = now()`.
+When a mod clears a user's alert, it goes through the ban-user endpoint with `bans: { modAlert: false }`.
+
+### Related Files
+
+- `common/src/ban-utils.ts` - Ban checking utilities and action→ban type mapping
+- `common/src/user.ts` - `BanType` and `UserBan` type definitions
+- `backend/api/src/helpers/rate-limit.ts` - `getActiveUserBans()`, `onlyUsersWhoCanPerformAction()`
+- `backend/api/src/ban-user.ts` - Admin endpoint to ban/unban users and send mod alerts
+- `backend/api/src/get-user-bans.ts` - Endpoint to fetch user bans (users can fetch their own, mods can fetch anyone's)
+- `backend/api/src/dismiss-mod-alert.ts` - User endpoint to dismiss their own mod alert
+- `backend/scheduler/src/jobs/unban-users.ts` - Scheduled job to expire temporary bans
+- `web/components/moderation/ban-banner.tsx` - User-facing banner showing bans and mod alerts
+- `web/components/moderation/ban-modal.tsx` - Mod interface for managing bans and alerts

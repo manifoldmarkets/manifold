@@ -1,15 +1,17 @@
 import { JSONContent } from '@tiptap/core'
 import { createCommentOnContractInternal } from 'api/create-comment'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { getActiveBans } from 'common/ban-utils'
 import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 import { getComment } from 'shared/supabase/contract-comments'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser, log } from 'shared/utils'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction, getActiveUserBans } from './helpers/rate-limit'
 
-export const post: APIHandler<'post'> = onlyUnbannedUsers(
+export const post: APIHandler<'post'> = onlyUsersWhoCanPerformAction(
+  'post',
   async (props, auth) => {
     const { contractId, content, betId: passedBetId, commentId } = props
 
@@ -48,7 +50,13 @@ export const post: APIHandler<'post'> = onlyUnbannedUsers(
       const existingComment = await getComment(pg, commentId)
       if (existingComment.userId !== auth.uid) {
         const commenter = await getUser(existingComment.userId)
-        if (commenter?.isBannedFromPosting || commenter?.userDeleted)
+        const commenterBans = commenter
+          ? await getActiveUserBans(commenter.id)
+          : []
+        const commenterIsBanned = commenter
+          ? getActiveBans(commenterBans).length > 0 || commenter.isBannedFromPosting
+          : false
+        if (commenterIsBanned || commenter?.userDeleted)
           throw new APIError(400, 'Cannot post deleted/banned user comments')
       }
       if (existingComment.hidden)

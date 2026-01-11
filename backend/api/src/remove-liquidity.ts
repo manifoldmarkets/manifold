@@ -1,4 +1,5 @@
 import { removeCpmmLiquidity } from 'common/calculate-cpmm'
+import { isUserBanned } from 'common/ban-utils'
 import { CPMMContract } from 'common/contract'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { calculatePoolInterestCpmm1 } from 'shared/calculate-pool-interest'
@@ -8,6 +9,7 @@ import { FieldVal } from 'shared/supabase/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getContract, getUser, log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { insertLiquidity } from 'shared/supabase/liquidity'
@@ -22,11 +24,11 @@ export const removeLiquidity: APIHandler<
 > = async ({ contractId, amount: totalAmount }, auth) => {
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
-  if (user.isBannedFromPosting || user.userDeleted)
-    throw new APIError(
-      403,
-      'You are banned from posting or your account has been deleted'
-    )
+  if (user.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
+  const userBans = await getActiveUserBans(auth.uid)
+  if (isUserBanned(userBans, 'trading'))
+    throw new APIError(403, 'You are banned from trading, which includes removing liquidity')
   const liquidity = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, `Contract not found`)

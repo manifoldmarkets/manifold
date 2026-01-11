@@ -37,7 +37,6 @@ import { updatedashboard } from './update-dashboard'
 import { deletedashboard } from './delete-dashboard'
 import { getnews } from './get-news'
 import { getdashboardfromslug } from './get-dashboard-from-slug'
-import { banuser } from 'api/ban-user'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
@@ -122,7 +121,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/delete-dashboard', ...apiRoute(deletedashboard))
   app.get('/get-news-dashboards', ...apiRoute(getnews))
   app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
-  app.post('/ban-user', ...apiRoute(banuser))
   app.post(
     '/create-private-user-message',
     ...apiRoute(createprivateusermessage)

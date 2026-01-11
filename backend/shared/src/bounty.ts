@@ -4,6 +4,7 @@ import { updateData } from './supabase/utils'
 import { getContractSupabase, getUser } from 'shared/utils'
 import { APIError } from 'common/api/utils'
 import { canSendMana } from 'common/can-send-mana'
+import { UserBan } from 'common/user'
 
 export const awardBounty = async (props: {
   contractId: string
@@ -22,9 +23,18 @@ export const awardBounty = async (props: {
     amount,
   } = props
 
+  const pg = createSupabaseDirectClient()
+
   const user = await getUser(fromUserId)
   if (!user) throw new APIError(404, 'User not found')
-  const { canSend, message } = await canSendMana(user)
+
+  // Fetch bans for the user
+  const userBans = await pg.manyOrNone<UserBan>(
+    `SELECT * FROM user_bans WHERE user_id = $1 AND ended_at IS NULL AND (end_time IS NULL OR end_time > now())`,
+    [fromUserId]
+  )
+
+  const { canSend, message } = await canSendMana(user, userBans)
   if (!canSend) {
     throw new APIError(403, message)
   }
@@ -57,7 +67,6 @@ export const awardBounty = async (props: {
     )
   }
 
-  const pg = createSupabaseDirectClient()
   return await pg.tx(async (tx) => {
     await updateData(tx, 'contract_comments', 'comment_id', {
       comment_id: commentId,

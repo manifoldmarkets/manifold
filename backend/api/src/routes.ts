@@ -47,6 +47,8 @@ import { addLiquidity } from './add-liquidity'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { awardBounty } from './award-bounty'
+import { banuser } from './ban-user'
+import { getUserBans } from './get-user-bans'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
@@ -62,6 +64,7 @@ import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
 import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
+import { dismissmodalert } from './dismiss-mod-alert'
 import { donate } from './donate'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { followContract } from './follow-contract'
@@ -111,7 +114,7 @@ import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { getTopicDashboards } from './get-topic-dashboards'
 import { getTopicTopics } from './get-topic-topics'
 import { getTxns } from './get-txns'
-import { getLiteUser, getUser } from './get-user'
+import { getLiteUser, getUser, getUserByUsername } from './get-user'
 import { getUserPortfolio } from './get-user-portfolio'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { getUserPrivateData } from './get-user-private-data'
@@ -301,7 +304,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-user-private-data': getUserPrivateData,
   'user/by-id/:id': getUser,
   'user/by-id/:id/lite': getLiteUser,
-  'user/:username': getUser,
+  'user/:username': getUserByUsername,
   'user/:username/lite': getLiteUser,
   'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id/block': blockUser,
@@ -324,7 +327,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'get-market-context': getMarketContext,
+  'ban-user': banuser,
+  'dismiss-mod-alert': dismissmodalert,
   'super-ban-user': superBanUser,
+  'get-user-bans': getUserBans,
   'get-boost-analytics': getBoostAnalytics,
   'set-news': setnews,
   'search-groups': searchGroups,

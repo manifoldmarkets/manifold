@@ -8,6 +8,7 @@ import { bulkIncrementBalances } from 'shared/supabase/users'
 import { insertTxns } from 'shared/txn/run-txn'
 import { getUser, getUsers } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { UserBan } from 'common/user'
 
 import { BURN_MANA_USER_ID } from 'common/economy'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -45,7 +46,13 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
         throw new APIError(401, `User ${fromId} not found`)
       }
 
-      const { canSend, message: errorMessage } = await canSendMana(fromUser)
+      // Fetch bans for the sender
+      const fromUserBans = await tx.manyOrNone<UserBan>(
+        `SELECT * FROM user_bans WHERE user_id = $1 AND ended_at IS NULL AND (end_time IS NULL OR end_time > now())`,
+        [fromId]
+      )
+
+      const { canSend, message: errorMessage } = await canSendMana(fromUser, fromUserBans)
       if (!canSend) {
         throw new APIError(403, errorMessage)
       }

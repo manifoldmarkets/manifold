@@ -14,6 +14,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { searchUsers } from 'web/lib/supabase/users'
 import { Menu, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import toast from 'react-hot-toast'
 
 export default function NewMessageButton() {
   const [open, setOpen] = useState(false)
@@ -92,7 +93,10 @@ function NewMessageModal(props: {
     setIsCreating(true)
     const res = await createPrivateMessageChannelWithUsers({
       userIds: users.map((user) => user.id),
-    }).catch((e) => {
+    }).catch((e: any) => {
+      const errorMessage =
+        e?.message || 'Failed to create conversation'
+      toast.error(errorMessage)
       console.error(e)
       setIsCreating(false)
       return

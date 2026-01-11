@@ -12,10 +12,10 @@ import { updateContract } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { anythingToRichText } from 'shared/tiptap'
 import { getContract, log, revalidateContractStaticProps } from 'shared/utils'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> =
-  onlyUnbannedUsers(async (body, auth) => {
+  onlyUsersWhoCanPerformAction('updateMarket', async (body, auth) => {
     const { contractId, ...fields } = body
     if (isEmpty(fields))
       throw new APIError(400, 'Must provide some change to the contract')

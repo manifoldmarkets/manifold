@@ -2,6 +2,51 @@ import { ENV_CONFIG } from './envs/constants'
 import { notification_preferences } from './user-notification-preferences'
 import { DAY_MS, HOUR_MS } from './util/time'
 
+// New normalized user_bans table schema
+// modAlert is stored in user_bans for audit history but doesn't block any actions
+export type BanType = 'posting' | 'marketControl' | 'trading' | 'modAlert'
+
+export type UserBan = {
+  id: number
+  user_id: string
+  ban_type: BanType
+  reason: string | null
+  created_at: string  // ISO timestamp
+  created_by: string | null  // mod user ID
+  end_time: string | null  // ISO timestamp, null = permanent
+  ended_by: string | null  // mod user ID who ended the ban
+  ended_at: string | null  // ISO timestamp when ban was ended
+}
+
+// Helper type for active bans (not ended)
+export type ActiveBan = UserBan & {
+  ended_at: null
+  ended_by: null
+}
+
+/** @deprecated Use UserBan instead - kept for migration compatibility */
+export type BanDetails = {
+  bannedAt: number
+  bannedBy: string     // mod user ID
+  reason: string       // displayed to user
+  unbanTime?: number   // undefined = permanent, number = temp ban expiry
+}
+
+/** @deprecated Use UserBan instead - kept for migration compatibility */
+export type UnbanRecord = {
+  banType: 'posting' | 'marketControl' | 'trading' | 'usernameChange'
+  // Original ban info
+  bannedAt: number
+  bannedBy: string
+  banReason: string
+  wasTemporary: boolean
+  originalUnbanTime?: number
+  // Unban info
+  unbannedAt: number
+  unbannedBy: string  // mod user ID who removed the ban, or 'system' for auto-expiry
+  unbanNote?: string  // mod notes, not shown to user
+}
+
 export type User = {
   id: string
   createdTime: number
@@ -72,9 +117,33 @@ export type User = {
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   seenStreakModal?: boolean
+  /** @deprecated Use user_bans table instead */
   isBannedFromPosting?: boolean
-  /** @deprecated Not deprecated, only updated in native column though */
+  /** @deprecated Use user_bans table instead */
   unbanTime?: number
+  /** @deprecated Use user_bans table instead */
+  bans?: {
+    posting?: BanDetails
+    marketControl?: BanDetails
+    trading?: BanDetails
+  }
+  /** @deprecated Use user_bans table instead */
+  banHistory?: UnbanRecord[]
+
+  // MOD ALERTS (can exist without bans)
+  modAlert?: {
+    message: string
+    createdAt: number
+    createdBy: string  // mod user ID
+    dismissed?: boolean
+  }
+
+  // USERNAME CHANGE RESTRICTION
+  // When false, user cannot change their @username
+  // Automatically set to false when any ban is applied (unless mod opts out)
+  // Must be manually re-enabled by a mod
+  canChangeUsername?: boolean  // undefined = allowed, false = restricted
+
   userDeleted?: boolean
   optOutBetWarnings?: boolean
   signupBonusPaid?: number

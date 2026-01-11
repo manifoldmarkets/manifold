@@ -13,7 +13,7 @@ import { Row } from '../layout/row'
 import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { BannedBadge } from '../widgets/user-link'
+import { RestrictedBadge } from '../widgets/user-link'
 import NewMessageButton from './new-message-button'
 
 function ChatItem({
@@ -36,7 +36,7 @@ function ChatItem({
   const messages = usePrivateMessages(channel.channel_id, 50, userId)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
-  const isBanned = otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting
+  const singleOtherUser = otherUsers?.length === 1 ? otherUsers[0] : null
 
   // Check if everyone has left the channel (no other active members)
   const everyoneHasLeft = numOthers === 0 && chat
@@ -111,7 +111,7 @@ function ChatItem({
                   </span>
                 )
               )}
-              {isBanned && <BannedBadge />}
+              {singleOtherUser && <RestrictedBadge user={singleOtherUser} />}
             </span>
             <span
               className={clsx(

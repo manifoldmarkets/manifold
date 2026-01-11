@@ -17,14 +17,15 @@ import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getContract, getUser, log } from 'shared/utils'
 import { broadcastNewComment } from 'shared/websockets/helpers'
 import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
-export const createComment: APIHandler<'comment'> = onlyUnbannedUsers(
+export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction(
+  'comment',
   async (props, auth) => {
     const {
       contractId,

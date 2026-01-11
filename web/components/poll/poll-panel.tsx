@@ -46,6 +46,7 @@ export function PollPanel(props: {
   const [hasVoted, setHasVoted] = useState<boolean | undefined>(undefined)
   const [userVotedIds, setUserVotedIds] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // For multi-select: track selected options before submission
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -110,6 +111,7 @@ export function PollPanel(props: {
     }
 
     setIsSubmitting(true)
+    setError(null)
 
     try {
       if (pollType === 'single') {
@@ -125,6 +127,8 @@ export function PollPanel(props: {
       }
       setHasVoted(true)
       setUserVotedIds(pollType === 'ranked-choice' ? rankedIds : selectedIds)
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to cast vote')
     } finally {
       setIsSubmitting(false)
     }
@@ -137,9 +141,13 @@ export function PollPanel(props: {
     }
     setIsSubmitting(true)
     setUserVotedIds([voteId])
+    setError(null)
     try {
       await castPollVote({ contractId: contract.id, voteId })
       setHasVoted(true)
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to cast vote')
+      setUserVotedIds([]) // Reset on error
     } finally {
       setIsSubmitting(false)
     }
@@ -299,6 +307,13 @@ export function PollPanel(props: {
             pollType === 'multi-select' ? selectedIds.length : rankedIds.length
           )}
         </Button>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
       )}
 
       {optionsToShow.length < options.length && (

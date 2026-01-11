@@ -24,6 +24,7 @@ import { runTxnInBetQueue, TxnData } from 'shared/txn/run-txn'
 import { getContract, isProd } from 'shared/utils'
 import Stripe from 'stripe'
 import { APIError, APIHandler } from './helpers/endpoint'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
 const MAX_ACTIVE_BOOSTS = 5
 
@@ -34,10 +35,8 @@ const initStripe = () => {
 
 //TODO; we could add a 'paid' column that is default true but for those paying with USD,
 // defaults to false until the strpe webhook marks it as true
-export const purchaseContractBoost: APIHandler<'purchase-boost'> = async (
-  props,
-  auth
-) => {
+export const purchaseContractBoost: APIHandler<'purchase-boost'> =
+  onlyUsersWhoCanPerformAction('boost', async (props, auth) => {
   const { contractId, postId, startTime, method } = props
   const userId = auth.uid
 
@@ -226,7 +225,7 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> = async (
       }
     },
   }
-}
+})
 
 export const boostPostImmediately = async (
   pg: SupabaseDirectClient,

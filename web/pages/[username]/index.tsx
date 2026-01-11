@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { RanksType } from 'common/achievements'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { getUserForStaticProps } from 'common/supabase/users'
-import { isUserLikelySpammer } from 'common/user'
+import { isUserLikelySpammer, UserBan } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import {
@@ -68,6 +68,7 @@ import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
+import { api } from 'web/lib/api/api'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
@@ -195,7 +196,17 @@ function UserProfile(props: {
   }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
+  const [userBans, setUserBans] = useState<UserBan[]>([])
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
+
+  // Fetch the user's bans for the restricted badge
+  useEffect(() => {
+    if (user.id) {
+      api('get-user-bans', { userId: user.id })
+        .then((res) => setUserBans(res.bans as UserBan[]))
+        .catch(() => setUserBans([]))
+    }
+  }, [user.id])
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -305,6 +316,7 @@ function UserProfile(props: {
                 className={'font-bold sm:mr-0 sm:text-xl'}
                 user={user}
                 followsYou={followsYou}
+                bans={userBans}
               />
             </button>
           ) : (
@@ -325,6 +337,7 @@ function UserProfile(props: {
                 className={'font-bold sm:mr-0 sm:text-xl'}
                 user={user}
                 followsYou={followsYou}
+                bans={userBans}
               />
             </Row>
           )}

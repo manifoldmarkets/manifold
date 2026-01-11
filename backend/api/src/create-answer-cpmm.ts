@@ -56,10 +56,10 @@ import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { broadcastUpdatedMetrics } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { redeemShares } from './redeem-shares'
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> =
-  onlyUnbannedUsers(async (props, auth) => {
+  onlyUsersWhoCanPerformAction('createAnswer', async (props, auth) => {
     const { contractId, text } = props
     return await betsQueue.enqueueFn(
       () => createAnswerCpmmFull(contractId, text, auth.uid),

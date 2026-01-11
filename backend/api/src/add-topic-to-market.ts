@@ -14,10 +14,10 @@ import {
 } from 'shared/update-group-contracts-internal'
 import { getContract, revalidateContractStaticProps } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
 export const addOrRemoveTopicFromContract: APIHandler<'market/:contractId/group'> =
-  onlyUnbannedUsers(async (props, auth) => {
+  onlyUsersWhoCanPerformAction('addTopic', async (props, auth) => {
     const { contractId, groupId, remove } = props
 
     const pg = createSupabaseDirectClient()

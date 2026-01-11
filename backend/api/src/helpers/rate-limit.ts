@@ -4,6 +4,13 @@ import { HOUR_MS } from 'common/util/time'
 import { Request } from 'express'
 import { getIp } from 'shared/analytics'
 import { getUser, log } from 'shared/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { UserBan } from 'common/user'
+import {
+  isUserBanned,
+  getUserBanMessage,
+  getBanTypesForAction,
+} from 'common/ban-utils'
 
 type RateLimitOptions = {
   maxCalls?: number // Maximum number of calls allowed in the time window
@@ -126,17 +133,91 @@ export const rateLimitByIp = <N extends APIPath>(
   }
 }
 
+// Get active bans for a user from the database
+export async function getActiveUserBans(userId: string): Promise<UserBan[]> {
+  const pg = createSupabaseDirectClient()
+  return pg.manyOrNone<UserBan>(
+    `SELECT * FROM user_bans
+     WHERE user_id = $1
+       AND ended_at IS NULL
+       AND (end_time IS NULL OR end_time > now())`,
+    [userId]
+  )
+}
+
 export const onlyUnbannedUsers = <N extends APIPath>(f: APIHandler<N>) => {
   return async (props: any, auth: any, req: any) => {
     const user = await getUser(auth.uid)
     if (!user) {
       throw new APIError(404, 'User not found')
     }
-    if (user.isBannedFromPosting) {
+    if (user.userDeleted) {
+      throw new APIError(403, 'Your account has been deleted')
+    }
+
+    // Check for any active bans in the database
+    const activeBans = await getActiveUserBans(auth.uid)
+    if (activeBans.length > 0) {
       throw new APIError(403, 'You are banned from posting')
+    }
+
+    return f(props, auth, req)
+  }
+}
+
+// Map action names to human-readable descriptions for error messages
+const getActionDisplayName = (action: string): string => {
+  const actionNames: Record<string, string> = {
+    comment: 'commenting',
+    post: 'posting',
+    message: 'messaging',
+    createMarket: 'creating markets',
+    updateMarket: 'editing markets',
+    resolveMarket: 'resolving markets',
+    editAnswer: 'editing answers',
+    createAnswer: 'creating answers',
+    hideComment: 'hiding comments',
+    trade: 'trading',
+    bet: 'betting',
+    managram: 'sending managrams',
+    addLiquidity: 'adding liquidity',
+    removeLiquidity: 'removing liquidity',
+    boost: 'boosting markets',
+    review: 'leaving reviews',
+    addTopic: 'adding topics',
+    pollVote: 'voting in polls',
+  }
+  return actionNames[action] || action
+}
+
+// New granular ban check
+export const onlyUsersWhoCanPerformAction = <N extends APIPath>(
+  action: string,
+  f: APIHandler<N>
+) => {
+  return async (props: any, auth: any, req: any) => {
+    const user = await getUser(auth.uid)
+    if (!user) {
+      throw new APIError(404, 'User not found')
     }
     if (user.userDeleted) {
       throw new APIError(403, 'Your account has been deleted')
+    }
+
+    // Get active bans from database
+    const activeBans = await getActiveUserBans(auth.uid)
+
+    // Check all relevant ban types for this action
+    const banTypes = getBanTypesForAction(action)
+    for (const banType of banTypes) {
+      if (isUserBanned(activeBans, banType)) {
+        const message = getUserBanMessage(activeBans, banType)
+        const displayName = getActionDisplayName(action)
+        const errorMsg = message
+          ? `You are banned from ${displayName}. Reason: ${message}`
+          : `You are banned from ${displayName}`
+        throw new APIError(403, errorMsg)
+      }
     }
 
     return f(props, auth, req)

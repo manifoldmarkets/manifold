@@ -5,6 +5,7 @@ import { MultiContract, SORTS } from 'common/contract'
 import { getAnswerCostFromLiquidity } from 'common/tier'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { FaSearch } from 'react-icons/fa'
+import toast from 'react-hot-toast'
 import { api } from 'web/lib/api/api'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
@@ -81,7 +82,9 @@ export function SearchCreateAnswerPanel(props: {
           text,
         })
         setText('')
-      } catch (e) {}
+      } catch (e: any) {
+        toast.error(e?.message || 'Error adding answer')
+      }
 
       setIsSubmitting(false)
       setSort('new')

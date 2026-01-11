@@ -1,13 +1,15 @@
 import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { isUserBanned } from 'common/ban-utils'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { HOUR_MS } from 'common/util/time'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { getAnswer, updateAnswer } from 'shared/supabase/answers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getContract } from 'shared/utils'
+import { getContract, getUser } from 'shared/utils'
 import { z } from 'zod'
-import { APIError, authEndpointUnbanned, validate } from './helpers/endpoint'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 
 const bodySchema = z
   .object({
@@ -18,10 +20,19 @@ const bodySchema = z
   })
   .strict()
 
-export const editanswercpmm = authEndpointUnbanned(async (req, auth) => {
+export const editanswercpmm = authEndpoint(async (req, auth) => {
   const { contractId, answerId, text, color } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()
+
+  // Check for bans
+  const user = await getUser(auth.uid)
+  if (!user) throw new APIError(404, 'User not found')
+  if (user.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
+  const userBans = await getActiveUserBans(auth.uid)
+  if (isUserBanned(userBans, 'marketControl') || user.isBannedFromPosting)
+    throw new APIError(403, 'You are banned from editing answers')
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
 
