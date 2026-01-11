@@ -24,7 +24,7 @@ import {
   formatWithToken,
 } from 'common/util/format'
 import { uniq } from 'lodash'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useClaimableInterest } from 'web/hooks/use-claimable-interest'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -131,6 +131,23 @@ export function SellPanel(props: {
       ? getSharesFromStonkShares(contract, displayAmount ?? 0, shares)
       : displayAmount
   )
+
+  // Update default amount to include interest when interest loads
+  const [hasSetInterestDefault, setHasSetInterestDefault] = useState(false)
+  useEffect(() => {
+    if (interestShares > 0.01 && !hasSetInterestDefault && displayAmount !== undefined) {
+      const newAmount = isStonk
+        ? getStonkDisplayShares(contract, effectiveShares)
+        : effectiveShares
+      setDisplayAmount(newAmount)
+      setAmount(
+        isStonk
+          ? getSharesFromStonkShares(contract, newAmount, effectiveShares)
+          : newAmount
+      )
+      setHasSetInterestDefault(true)
+    }
+  }, [interestShares, hasSetInterestDefault, displayAmount, effectiveShares, isStonk, contract])
 
   // just for the input TODO: actually display somewhere
   const [error, setError] = useState<string | undefined>()
@@ -302,8 +319,7 @@ export function SellPanel(props: {
           Includes{' '}
           <span className="font-medium text-indigo-600 dark:text-indigo-400">
             +{formatShares(interestShares, isCashContract)} interest
-          </span>{' '}
-          (will be auto-claimed)
+          </span>
         </div>
       )}
 

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import clsx from 'clsx'
-import { GiOpenChest } from 'react-icons/gi'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { User } from 'common/user'
@@ -62,19 +61,16 @@ export function LoanButton(props: {
     <>
       <Tooltip text={getTooltipText()} placement="top">
         <Button
-          color={hasLoan ? 'amber-outline' : 'amber'}
+          color="gray-outline"
           size="xs"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             setShowLoansModal(true)
           }}
-          className={clsx('gap-1', className)}
+          className={clsx('!py-1', className)}
         >
-          <GiOpenChest className="h-4 w-4" />
-          <span className="text-xs">
-            {hasLoan ? formatMoney(currentLoan) : 'Loan'}
-          </span>
+          Loan
         </Button>
       </Tooltip>
 
