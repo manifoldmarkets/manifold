@@ -18,6 +18,8 @@ import {
   searchUsers,
   getFullUserById,
 } from 'web/lib/supabase/users'
+import { UserBan } from 'common/user'
+import { getActiveBlockingBans } from 'common/ban-utils'
 import { ConfirmActionModal } from 'web/components/admin/ConfirmActionModal'
 import { useRouter } from 'next/router'
 
@@ -53,6 +55,7 @@ export default function AdminUserInfoPage() {
         | 'managram'
       )[]
       netManagramAmount?: number
+      bans: UserBan[]
     }>
   >([])
   const [targetCreatedTime, setTargetCreatedTime] = useState<
@@ -588,7 +591,10 @@ export default function AdminUserInfoPage() {
                       ? relatedUsers
                       : relatedUsers.slice(0, 3)
                     ).map(
-                      ({ visibleUser, matchReasons, netManagramAmount }) => {
+                      ({ visibleUser, matchReasons, netManagramAmount, bans }) => {
+                        const activeBanTypes = getActiveBlockingBans(bans)
+                        const hasActiveBan = activeBanTypes.length > 0
+                        const hasHistoricalBan = bans.length > 0 && !hasActiveBan
                         const timeDiff =
                           targetCreatedTime && visibleUser.createdTime
                             ? Math.abs(
@@ -630,15 +636,20 @@ export default function AdminUserInfoPage() {
                                       [DELETED]
                                     </span>
                                   )}
-                                  {visibleUser.isBannedFromPosting && (
+                                  {hasActiveBan && (
                                     <span
-                                      className="ml-2 text-xs text-orange-600"
-                                      title={
-                                        (visibleUser as any).banReason ??
-                                        'No reason provided'
-                                      }
+                                      className="ml-2 text-xs text-red-600"
+                                      title={`Active bans: ${activeBanTypes.join(', ')}`}
                                     >
-                                      [BANNED]
+                                      [BAN]
+                                    </span>
+                                  )}
+                                  {hasHistoricalBan && (
+                                    <span
+                                      className="ml-2 text-xs text-orange-500"
+                                      title={`${bans.length} historical ban${bans.length > 1 ? 's' : ''}`}
+                                    >
+                                      [HIST]
                                     </span>
                                   )}
                                 </div>

@@ -38,7 +38,7 @@ import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
-import { PrivateUser, User } from '../user'
+import { PrivateUser, User, UserBan } from '../user'
 import { searchProps } from './market-search-types'
 import {
   FullMarket,
@@ -212,6 +212,7 @@ export const API = (_apiTypeCheck = {
           | 'managram'
         )[]
         netManagramAmount?: number
+        bans: UserBan[]
       }>
     },
   },
