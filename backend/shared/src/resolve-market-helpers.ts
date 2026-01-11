@@ -314,13 +314,13 @@ export const resolveMarketHelper = async (
     }>(
       `SELECT 
         to_id as user_id,
-        data->>'answerId' as answer_id,
+        data->'data'->>'answerId' as answer_id,
         SUM(amount) as total_paid
       FROM txns 
       WHERE category = 'INTEREST_PAYOUT'
-        AND data->>'contractId' = $1
-        AND ($2::text IS NULL OR data->>'answerId' = $2)
-      GROUP BY to_id, data->>'answerId'`,
+        AND data->'data'->>'contractId' = $1
+        AND ($2::text IS NULL OR data->'data'->>'answerId' = $2)
+      GROUP BY to_id, data->'data'->>'answerId'`,
       [contractId, answerId ?? null]
     )
     const paidInterestByUser = new Map(

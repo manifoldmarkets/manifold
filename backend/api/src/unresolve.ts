@@ -232,8 +232,8 @@ const undoResolution = async (
   const interestTxns = await pg.map(
     `SELECT * FROM txns WHERE category = 'INTEREST_PAYOUT'
       AND to_type = 'USER'
-      AND data->>'contractId' = $1
-      AND ($2::text IS NULL OR data->>'answerId' = $2)`,
+      AND data->'data'->>'contractId' = $1
+      AND ($2::text IS NULL OR data->'data'->>'answerId' = $2)`,
     [contractId, answerId ?? null],
     (r) => convertTxn(r) as InterestPayoutTxn
   )

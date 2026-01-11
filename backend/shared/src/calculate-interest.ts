@@ -267,8 +267,8 @@ export async function calculateInterestForSell(
      FROM txns 
      WHERE category = 'INTEREST_PAYOUT'
        AND to_id = $1
-       AND data->>'contractId' = $2
-       AND ($3::text IS NULL OR data->>'answerId' = $3)`,
+       AND data->'data'->>'contractId' = $2
+       AND ($3::text IS NULL OR data->'data'->>'answerId' = $3)`,
     [userId, contractId, answerId ?? null]
   )
 
