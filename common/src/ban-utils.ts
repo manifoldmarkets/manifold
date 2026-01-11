@@ -7,6 +7,7 @@
  * - 'posting': blocks comments, messages, posts, answers, poll votes, managrams
  * - 'marketControl': blocks creating/editing/resolving markets, hiding comments, answers, topics
  * - 'trading': blocks betting, managrams, liquidity, answers, poll votes
+ * - 'modAlert': does NOT block any actions, used for audit logging of mod alerts
  *
  * To add a new bannable action:
  * 1. Add the action name to getBanTypesForAction() below
@@ -126,6 +127,7 @@ export function getBanTypeDisplayName(banType: BanType): string {
     posting: 'Posting',
     marketControl: 'Market Control',
     trading: 'Trading',
+    modAlert: 'Mod Alert',
   }
   return names[banType]
 }
@@ -135,6 +137,17 @@ export function getBanTypeDescription(banType: BanType): string {
     posting: 'commenting, messaging, creating posts, adding answers, poll voting',
     marketControl: 'creating, editing, resolving markets, hiding comments, adding/editing answers, poll voting',
     trading: 'betting, managrams, liquidity changes, adding answers, poll voting',
+    modAlert: 'warning message from moderators (no actions blocked)',
   }
   return descriptions[banType]
+}
+
+// Get active bans that actually block actions (excludes modAlert)
+export function getActiveBlockingBans(bans: UserBan[]): BanType[] {
+  return getActiveBans(bans).filter(t => t !== 'modAlert')
+}
+
+// Get all active mod alerts (can be multiple - they stack)
+export function getActiveModAlerts(bans: UserBan[]): UserBan[] {
+  return bans.filter(ban => ban.ban_type === 'modAlert' && isBanActive(ban))
 }

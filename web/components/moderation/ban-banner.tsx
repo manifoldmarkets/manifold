@@ -1,38 +1,36 @@
-import { User, UserBan } from 'common/user'
+import { UserBan } from 'common/user'
 import {
   BanType,
-  getActiveBans,
   getActiveBan,
   getBanTimeRemaining,
   getBanTypeDisplayName,
   getBanTypeDescription,
   formatBanTimeRemaining,
+  getActiveBlockingBans,
+  getActiveModAlerts,
 } from 'common/ban-utils'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { api } from 'web/lib/api/api'
 import { useState } from 'react'
 
-export function BanBanner({ user, bans }: { user: User; bans: UserBan[] }) {
-  const [alertDismissed, setAlertDismissed] = useState(false)
-  const activeBanTypes = getActiveBans(bans)
-  const modAlert = user.modAlert
-  const showModAlert =
-    modAlert && !modAlert.dismissed && !alertDismissed
+export function BanBanner({ bans }: { bans: UserBan[] }) {
+  // Track which alert IDs have been dismissed locally (before page refresh)
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<number>>(new Set())
+  const activeBanTypes = getActiveBlockingBans(bans)
+  const modAlerts = getActiveModAlerts(bans).filter(a => !dismissedAlertIds.has(a.id))
 
-  // Don't show if no bans and no alert (or alert already dismissed)
-  if (activeBanTypes.length === 0 && !showModAlert) {
+  // Don't show if no bans and no alerts
+  if (activeBanTypes.length === 0 && modAlerts.length === 0) {
     return null
   }
 
-  const handleDismissAlert = async () => {
-    if (modAlert && !modAlert.dismissed) {
-      try {
-        await api('dismiss-mod-alert', {})
-        setAlertDismissed(true)
-      } catch (error) {
-        console.error('Failed to dismiss mod alert:', error)
-      }
+  const handleDismissAlert = async (alertId: number) => {
+    try {
+      await api('dismiss-mod-alert', { alertId })
+      setDismissedAlertIds(prev => new Set([...prev, alertId]))
+    } catch (error) {
+      console.error('Failed to dismiss mod alert:', error)
     }
   }
 
@@ -89,26 +87,29 @@ export function BanBanner({ user, bans }: { user: User; bans: UserBan[] }) {
         </div>
       )}
 
-      {/* Mod alert section (separate and dismissable) */}
-      {showModAlert && (
-        <div className="rounded border-2 border-yellow-500 bg-yellow-100 p-4">
+      {/* Mod alerts section (each alert is separate and dismissable) */}
+      {modAlerts.map((alert) => (
+        <div
+          key={alert.id}
+          className="rounded border-2 border-yellow-500 bg-yellow-100 p-4"
+        >
           <Row className="items-start justify-between">
             <Col className="flex-1 gap-2">
               <h3 className="font-bold text-yellow-900">Moderator Alert</h3>
               <div className="border-ink-200 rounded border bg-white p-3">
-                <p className="text-yellow-900">{modAlert.message}</p>
+                <p className="text-yellow-900">{alert.reason}</p>
               </div>
             </Col>
             <button
-              onClick={handleDismissAlert}
-              className="text-yellow-700 hover:text-yellow-900 ml-2 text-xl"
+              onClick={() => handleDismissAlert(alert.id)}
+              className="ml-2 text-xl text-yellow-700 hover:text-yellow-900"
               title="Dismiss alert"
             >
-              x
+              ×
             </button>
           </Row>
         </div>
-      )}
+      ))}
     </Col>
   )
 }

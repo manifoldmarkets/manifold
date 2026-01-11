@@ -12,6 +12,10 @@ import {
   getActiveBan,
   getBanTimeRemaining,
   getActiveBanRecords,
+  getActiveBlockingBans,
+  getActiveModAlerts,
+  getBanTypeDisplayName,
+  getBanTypeDescription,
 } from 'common/ban-utils'
 import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
@@ -65,24 +69,24 @@ export function BanModal({
   const [allowUsernameChange, setAllowUsernameChange] = useState<boolean | undefined>(undefined)
 
   // Get active and historical bans
-  const activeBanRecords = getActiveBanRecords(bans)
-  const activeBanTypes = getActiveBans(bans)
+  const activeBanRecords = getActiveBanRecords(bans).filter(b => b.ban_type !== 'modAlert')
+  const activeBanTypes = getActiveBlockingBans(bans)
+  const activeModAlerts = getActiveModAlerts(bans)
   const historicalBans = bans.filter(b => b.ended_at !== null)
   const isUsernameChangeRestricted = user.canChangeUsername === false
   const hasCurrentBansOrAlerts =
     activeBanTypes.length > 0 ||
-    (user.modAlert && !user.modAlert.dismissed) ||
+    activeModAlerts.length > 0 ||
     isUsernameChangeRestricted
 
   useEffect(() => {
     const modIds = new Set<string>()
 
-    // Collect mod IDs from bans
+    // Collect mod IDs from bans (including mod alerts which are now in bans)
     for (const ban of bans) {
       if (ban.created_by) modIds.add(ban.created_by)
       if (ban.ended_by && ban.ended_by !== 'system') modIds.add(ban.ended_by)
     }
-    if (user.modAlert?.createdBy) modIds.add(user.modAlert.createdBy)
 
     // Fetch usernames for all mod IDs
     const fetchModNames = async () => {
@@ -103,7 +107,7 @@ export function BanModal({
     if (modIds.size > 0) {
       fetchModNames()
     }
-  }, [user, bans])
+  }, [bans])
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -173,10 +177,14 @@ export function BanModal({
     }
   }
 
-  const handleClearAlert = async () => {
+  const handleClearAlert = async (alertId: number) => {
     setIsSubmitting(true)
     try {
-      await api('dismiss-mod-alert', {})
+      // Mods clear alerts via ban-user endpoint with specific alert ID
+      await api('ban-user', {
+        userId: user.id,
+        clearAlertId: alertId,
+      })
       toast.success('Cleared mod alert')
       window.location.reload()
     } catch (error) {
@@ -237,7 +245,7 @@ export function BanModal({
                 <span className="font-semibold">
                   Current Bans/Alerts ({activeBanTypes.length} ban
                   {activeBanTypes.length !== 1 ? 's' : ''}
-                  {user.modAlert && !user.modAlert.dismissed ? ', 1 alert' : ''})
+                  {activeModAlerts.length > 0 ? `, ${activeModAlerts.length} alert${activeModAlerts.length !== 1 ? 's' : ''}` : ''})
                 </span>
                 {showCurrentBans ? (
                   <ChevronUpIcon className="h-5 w-5 shrink-0" />
@@ -304,34 +312,38 @@ export function BanModal({
                     </div>
                   )
                 })}
-                {user.modAlert && !user.modAlert.dismissed && (
-                  <div className="rounded border border-yellow-300 bg-yellow-50 p-2">
-                    <Row className="items-center justify-between">
-                      <span className="font-medium text-yellow-900">
-                        Active Mod Alert
-                      </span>
-                      <Button
-                        color="gray-outline"
-                        size="2xs"
-                        loading={isSubmitting}
-                        onClick={handleClearAlert}
-                      >
-                        Clear
-                      </Button>
-                    </Row>
-                    <p className="mt-1 text-sm text-yellow-800">
-                      Message: {user.modAlert.message}
-                    </p>
-                    <p className="text-ink-500 mt-1 text-xs">
-                      Sent by: @
-                      {user.modAlert.createdBy
-                        ? modNames[user.modAlert.createdBy] ||
-                          user.modAlert.createdBy
-                        : 'Unknown'}{' '}
-                      on {new Date(user.modAlert.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
+                {activeModAlerts.map((alert) => {
+                  const modName = alert.created_by
+                    ? modNames[alert.created_by] || alert.created_by
+                    : 'Unknown'
+                  return (
+                    <div
+                      key={alert.id}
+                      className="rounded border border-yellow-300 bg-yellow-50 p-2"
+                    >
+                      <Row className="items-center justify-between">
+                        <span className="font-medium text-yellow-900">
+                          Active Mod Alert
+                        </span>
+                        <Button
+                          color="gray-outline"
+                          size="2xs"
+                          loading={isSubmitting}
+                          onClick={() => handleClearAlert(alert.id)}
+                        >
+                          Clear
+                        </Button>
+                      </Row>
+                      <p className="mt-1 text-sm text-yellow-800">
+                        Message: {alert.reason}
+                      </p>
+                      <p className="text-ink-500 mt-1 text-xs">
+                        Sent by: @{modName} on{' '}
+                        {new Date(alert.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )
+                })}
                 {isUsernameChangeRestricted && (
                   <div className="rounded border border-orange-300 bg-orange-50 p-2">
                     <Row className="items-center justify-between">
@@ -471,18 +483,20 @@ export function BanModal({
 
         {/* Preview */}
         {(anyBanSelected || modAlertOnly) && reason.trim() && (
-          <div className="rounded border-2 border-red-500 bg-red-50 p-4">
-            <h4 className="mb-2 font-semibold text-red-900">
+          <Col className="gap-2">
+            <h4 className="text-ink-700 font-semibold">
               Preview (User will see):
             </h4>
-            <BanBannerPreview
-              banTypes={banTypes}
-              tempBanDays={tempBanDays}
-              reason={reason}
-              modAlertOnly={modAlertOnly}
-              existingBans={bans}
-            />
-          </div>
+            <div className="bg-canvas-50 rounded border p-3">
+              <BanBannerPreview
+                banTypes={banTypes}
+                tempBanDays={tempBanDays}
+                reason={reason}
+                modAlertOnly={modAlertOnly}
+                existingBans={bans}
+              />
+            </div>
+          </Col>
         )}
 
         {/* Ban History Section */}
@@ -665,88 +679,172 @@ function BanBannerPreview({
 }) {
   const newBans = Object.entries(banTypes).filter(([_, active]) => active)
   const activeBanTypes = getActiveBans(existingBans)
+  const existingModAlerts = getActiveModAlerts(existingBans)
 
-  // Get existing bans that aren't being overwritten by new bans
-  const preservedBans: { type: BanType; reason: string | null; endTime: string | null }[] = []
+  // Get all existing active bans with their details
+  const allExistingBans: { type: BanType; reason: string | null; endTime: string | null }[] = []
   for (const banType of activeBanTypes) {
-    if (!banTypes[banType]) {
-      const ban = getActiveBan(existingBans, banType)
-      if (ban) {
-        preservedBans.push({
-          type: banType,
-          reason: ban.reason,
-          endTime: ban.end_time,
-        })
-      }
+    const ban = getActiveBan(existingBans, banType)
+    if (ban) {
+      allExistingBans.push({
+        type: banType,
+        reason: ban.reason,
+        endTime: ban.end_time,
+      })
     }
   }
 
-  const hasAnyBans = newBans.length > 0 || preservedBans.length > 0
+  // For non-modAlertOnly mode, filter out bans being overwritten by new ones
+  const preservedBans = modAlertOnly
+    ? allExistingBans
+    : allExistingBans.filter(({ type }) => !banTypes[type])
+
+  const hasNewBans = newBans.length > 0
+  const hasExistingBans = allExistingBans.length > 0
+  const hasAnyBansToShow = modAlertOnly ? hasExistingBans : (hasNewBans || preservedBans.length > 0)
+
+  // Group reasons for display (matching ban-banner.tsx logic)
+  const reasonToBanTypes: Map<string, { banTypes: BanType[]; isNew: boolean }[]> = new Map()
+
+  // Add new bans with the new reason (only if not modAlertOnly)
+  if (!modAlertOnly && newBans.length > 0 && reason.trim()) {
+    const existing = reasonToBanTypes.get(reason.trim()) || []
+    existing.push({ banTypes: newBans.map(([bt]) => bt as BanType), isNew: true })
+    reasonToBanTypes.set(reason.trim(), existing)
+  }
+
+  // Add preserved/existing bans with their reasons
+  const bansToGroup = modAlertOnly ? allExistingBans : preservedBans
+  for (const { type, reason: existingReason } of bansToGroup) {
+    if (existingReason) {
+      const existing = reasonToBanTypes.get(existingReason) || []
+      const found = existing.find(e => !e.isNew)
+      if (found) {
+        found.banTypes.push(type)
+      } else {
+        existing.push({ banTypes: [type], isNew: false })
+      }
+      reasonToBanTypes.set(existingReason, existing)
+    }
+  }
+
+  const groupedReasons = Array.from(reasonToBanTypes.entries()).map(
+    ([reasonText, groups]) => ({ reason: reasonText, groups })
+  )
 
   return (
-    <div className="rounded bg-white p-3">
-      <h3 className="mb-2 font-bold text-red-900">
-        {modAlertOnly ? 'Moderator Alert' : 'Account Restricted'}
-      </h3>
-
-      {!modAlertOnly && hasAnyBans && (
-        <>
-          <p className="mb-2 text-red-800">
-            You have been restricted from:
-          </p>
-          <ul className="mb-3 list-inside list-disc space-y-1 text-red-800">
-            {newBans.map(([banType]) => (
-              <li key={banType}>
-                <strong>{getBanTypeLabel(banType as BanType)}</strong>
-                {tempBanDays[banType] && (
-                  <span className="text-sm">
-                    {' '}
-                    - Expires in {tempBanDays[banType]} days
-                  </span>
-                )}
-                {!tempBanDays[banType] && (
-                  <span className="text-sm"> - Permanent</span>
-                )}
-                <span className="ml-1 text-xs text-red-600">(new)</span>
-              </li>
-            ))}
-            {preservedBans.map(({ type, endTime }) => (
-              <li key={type} className="text-red-700">
-                <strong>{getBanTypeLabel(type)}</strong>
-                {endTime && (
-                  <span className="text-sm">
-                    {' '}
-                    - Expires in {formatBanTimeRemaining(new Date(endTime).getTime() - Date.now())}
-                  </span>
-                )}
-                {!endTime && (
-                  <span className="text-sm"> - Permanent</span>
-                )}
-                <span className="ml-1 text-xs text-gray-500">(existing)</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {/* Show new reason */}
-      <div className="border-ink-200 rounded border bg-red-50 p-2">
-        <p className="mb-1 font-semibold text-red-900">Reason:</p>
-        <p className="text-red-800">{reason}</p>
-      </div>
-
-      {/* Show existing ban reasons if any are preserved */}
-      {preservedBans.length > 0 && (
-        <div className="border-ink-200 mt-2 rounded border bg-orange-50 p-2">
-          <p className="mb-1 font-semibold text-orange-900">Previous reason(s):</p>
-          {preservedBans.map(({ type, reason: existingReason }) => (
-            <p key={type} className="text-orange-800 text-sm">
-              <span className="font-medium">{getBanTypeLabel(type).split(' (')[0]}:</span> {existingReason || 'No reason'}
-            </p>
-          ))}
+    <Col className="gap-3">
+      {/* Ban section - matches ban-banner.tsx styling */}
+      {hasAnyBansToShow && (
+        <div className="rounded border-2 border-red-500 bg-red-100 p-4">
+          <Col className="gap-2">
+            <h3 className="font-bold text-red-900">Account Restricted</h3>
+            <p className="text-red-800">You have been restricted from:</p>
+            <ul className="list-inside list-disc space-y-1 text-red-800">
+              {!modAlertOnly && newBans.map(([banType]) => (
+                <li key={banType}>
+                  <strong>
+                    {getBanTypeDisplayName(banType as BanType)} ({getBanTypeDescription(banType as BanType)})
+                  </strong>
+                  {tempBanDays[banType] ? (
+                    <span className="text-sm">
+                      {' '}- Expires in {tempBanDays[banType]} days
+                    </span>
+                  ) : (
+                    <span className="text-sm"> - Permanent</span>
+                  )}
+                  <span className="ml-1 text-xs text-red-600">(new)</span>
+                </li>
+              ))}
+              {(modAlertOnly ? allExistingBans : preservedBans).map(({ type, endTime }) => (
+                <li key={type}>
+                  <strong>
+                    {getBanTypeDisplayName(type)} ({getBanTypeDescription(type)})
+                  </strong>
+                  {endTime ? (
+                    <span className="text-sm">
+                      {' '}- Expires in {formatBanTimeRemaining(new Date(endTime).getTime() - Date.now())}
+                    </span>
+                  ) : (
+                    <span className="text-sm"> - Permanent</span>
+                  )}
+                  {!modAlertOnly && <span className="ml-1 text-xs text-gray-500">(existing)</span>}
+                </li>
+              ))}
+            </ul>
+            {groupedReasons.length > 0 && (
+              <div className="border-ink-200 mt-2 rounded border bg-white p-3">
+                <p className="font-semibold text-red-900">
+                  {groupedReasons.length === 1 ? 'Reason:' : 'Reasons:'}
+                </p>
+                {groupedReasons.map(({ reason: reasonText, groups }) => (
+                  <div key={reasonText}>
+                    {groups.map((group, idx) => (
+                      <p key={idx} className="text-red-800">
+                        {groupedReasons.length > 1 && (
+                          <span className="font-medium">
+                            {group.banTypes.map((bt) => getBanTypeDisplayName(bt)).join(' + ')}:{' '}
+                          </span>
+                        )}
+                        {reasonText}
+                        {!modAlertOnly && group.isNew && <span className="ml-1 text-xs text-red-600">(new)</span>}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Col>
         </div>
       )}
-    </div>
+
+      {/* Existing mod alerts - shown first so mod can see what's already there */}
+      {existingModAlerts.map((alert) => (
+        <div
+          key={alert.id}
+          className="rounded border-2 border-yellow-500 bg-yellow-100 p-4"
+        >
+          <Row className="items-start justify-between">
+            <Col className="flex-1 gap-2">
+              <h3 className="font-bold text-yellow-900">Moderator Alert</h3>
+              <div className="border-ink-200 rounded border bg-white p-3">
+                <p className="text-yellow-900">{alert.reason}</p>
+              </div>
+            </Col>
+            <button
+              className="ml-2 text-xl text-yellow-700 opacity-50 cursor-not-allowed"
+              title="User can dismiss"
+              disabled
+            >
+              ×
+            </button>
+          </Row>
+          <p className="mt-1 text-xs text-yellow-700">(existing alert)</p>
+        </div>
+      ))}
+
+      {/* New mod alert being added */}
+      {modAlertOnly && reason.trim() && (
+        <div className="rounded border-2 border-yellow-500 bg-yellow-100 p-4">
+          <Row className="items-start justify-between">
+            <Col className="flex-1 gap-2">
+              <h3 className="font-bold text-yellow-900">Moderator Alert</h3>
+              <div className="border-ink-200 rounded border bg-white p-3">
+                <p className="text-yellow-900">{reason}</p>
+              </div>
+            </Col>
+            <button
+              className="ml-2 text-xl text-yellow-700 opacity-50 cursor-not-allowed"
+              title="User can dismiss"
+              disabled
+            >
+              ×
+            </button>
+          </Row>
+          <p className="mt-1 text-xs text-yellow-700">(new alert)</p>
+        </div>
+      )}
+    </Col>
   )
 }
 
@@ -755,6 +853,7 @@ function getBanTypeLabel(banType: BanType): string {
     posting: 'Posting (commenting, messaging, creating posts)',
     marketControl: 'Market Control (creating, editing, resolving markets, hiding comments)',
     trading: 'Trading (betting, managrams, liquidity)',
+    modAlert: 'Mod Alert (warning message)',
   }
   return labels[banType]
 }

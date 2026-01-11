@@ -84,7 +84,7 @@ export function Page(props: {
           className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
         >
           {banner}
-          {user && <BanBanner user={user} bans={bans} />}
+          {user && <BanBanner bans={bans} />}
           {children}
           {!props.hideFooter && <Footer />}
         </main>

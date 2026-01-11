@@ -179,19 +179,20 @@ Using these functions instead of string concatenation helps prevent SQL injectio
 
 ## User Bans and Moderation
 
-The ban system controls what actions users can perform. Bans are stored in the `user_bans` database table and checked server-side before allowing user actions.
+The ban system controls what actions users can perform. Bans and mod alerts are stored in the `user_bans` database table and checked server-side before allowing user actions.
 
 ### Ban Types
 
-There are three ban types defined in `common/src/user.ts`:
+There are four ban types defined in `common/src/user.ts`:
 
 | Ban Type | What It Blocks |
 |----------|---------------|
 | `posting` | Commenting, messaging, creating posts, adding answers, poll voting, sending managrams |
 | `marketControl` | Creating/editing/resolving markets, hiding comments, adding/editing answers, poll voting, adding topics |
 | `trading` | Betting, managrams, liquidity changes, adding answers, poll voting |
+| `modAlert` | **Does NOT block any actions** - used for warning messages to users with full audit history |
 
-Some actions are blocked by multiple ban types (e.g., `pollVote` is blocked by all three).
+Some actions are blocked by multiple ban types (e.g., `pollVote` is blocked by all three blocking types).
 
 ### How to Add Ban Checks to an Endpoint
 
@@ -305,10 +306,24 @@ create table user_bans (
 
 Active bans are those where `ended_at IS NULL AND (end_time IS NULL OR end_time > now())`.
 
+### Mod Alerts
+
+Mod alerts are stored in the `user_bans` table with `ban_type = 'modAlert'`. This provides:
+- Full audit history (who sent which alerts, when they were dismissed, by whom)
+- Consistent querying with other bans
+- Multiple historical alerts can be tracked
+
+When a user dismisses their mod alert, it sets `ended_by = user_id` and `ended_at = now()`.
+When a mod clears a user's alert, it goes through the ban-user endpoint with `bans: { modAlert: false }`.
+
 ### Related Files
 
 - `common/src/ban-utils.ts` - Ban checking utilities and action→ban type mapping
 - `common/src/user.ts` - `BanType` and `UserBan` type definitions
 - `backend/api/src/helpers/rate-limit.ts` - `getActiveUserBans()`, `onlyUsersWhoCanPerformAction()`
-- `backend/api/src/ban-user.ts` - Admin endpoint to ban/unban users
+- `backend/api/src/ban-user.ts` - Admin endpoint to ban/unban users and send mod alerts
+- `backend/api/src/get-user-bans.ts` - Endpoint to fetch user bans (users can fetch their own, mods can fetch anyone's)
+- `backend/api/src/dismiss-mod-alert.ts` - User endpoint to dismiss their own mod alert
 - `backend/scheduler/src/jobs/unban-users.ts` - Scheduled job to expire temporary bans
+- `web/components/moderation/ban-banner.tsx` - User-facing banner showing bans and mod alerts
+- `web/components/moderation/ban-modal.tsx` - Mod interface for managing bans and alerts

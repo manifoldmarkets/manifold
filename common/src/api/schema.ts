@@ -1486,6 +1486,7 @@ export const API = (_apiTypeCheck = {
             posting: z.boolean().optional(),
             marketControl: z.boolean().optional(),
             trading: z.boolean().optional(),
+            modAlert: z.boolean().optional(), // false to clear active mod alert
           })
           .optional(),
         unbanTimes: z
@@ -1493,6 +1494,7 @@ export const API = (_apiTypeCheck = {
             posting: z.number().optional(),
             marketControl: z.number().optional(),
             trading: z.number().optional(),
+            modAlert: z.number().optional(), // mod alerts don't auto-expire, but included for type consistency
           })
           .optional(),
         reason: z.string().optional(),
@@ -1507,6 +1509,8 @@ export const API = (_apiTypeCheck = {
         allowUsernameChange: z.boolean().optional(),
         // Remove all active bans at once, creates a single combined history record
         removeAllBans: z.boolean().optional(),
+        // Clear a specific mod alert by ID (used when multiple alerts exist)
+        clearAlertId: z.number().optional(),
       })
       .strict(),
     returns: {} as { success: boolean },
@@ -1515,7 +1519,9 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({}).strict(),
+    props: z.object({
+      alertId: z.number().optional(), // Specific alert to dismiss, or all if not provided
+    }).strict(),
     returns: {} as { success: boolean },
   },
   'super-ban-user': {

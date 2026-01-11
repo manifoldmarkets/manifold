@@ -5,6 +5,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
+import { FieldVal } from 'shared/supabase/utils'
 import { getUser, log } from 'shared/utils'
 
 // Get all bans for a user
@@ -56,7 +57,7 @@ async function endBan(
   )
 }
 
-// End all active bans for a user
+// End all active bans for a user (excludes mod alerts)
 async function endAllBans(
   pg: ReturnType<typeof createSupabaseDirectClient>,
   userId: string,
@@ -66,7 +67,8 @@ async function endAllBans(
     `UPDATE user_bans
      SET ended_by = $1, ended_at = now()
      WHERE user_id = $2
-       AND ended_at IS NULL`,
+       AND ended_at IS NULL
+       AND ban_type != 'modAlert'`,
     [endedBy, userId]
   )
   return result.rowCount
@@ -91,7 +93,7 @@ async function endBansByType(
 }
 
 export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
-  const { userId, unban, bans, unbanTimes, reason, modAlert, unbanNote, allowUsernameChange, removeAllBans } = props
+  const { userId, unban, bans, unbanTimes, reason, modAlert, unbanNote, allowUsernameChange, removeAllBans, clearAlertId } = props
   const pg = createSupabaseDirectClient()
   throwErrorIfNotMod(auth.uid)
   if (isAdminId(userId)) throw new APIError(403, 'Cannot ban admin')
@@ -99,12 +101,22 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
   const user = await getUser(userId)
   if (!user) throw new APIError(404, 'User not found')
 
-  // Handle legacy unban (clears all bans)
+  // Handle clearing a specific mod alert by ID
+  if (clearAlertId !== undefined) {
+    await pg.none(
+      `UPDATE user_bans SET ended_by = $1, ended_at = now()
+       WHERE id = $2 AND user_id = $3 AND ban_type = 'modAlert' AND ended_at IS NULL`,
+      [auth.uid, clearAlertId, userId]
+    )
+    log('cleared mod alert', userId, { alertId: clearAlertId })
+    return { success: true }
+  }
+
+  // Handle legacy unban (clears all bans but not mod alerts)
   if (unban) {
     const count = await endAllBans(pg, userId, auth.uid)
-    // Also clear mod alert and legacy fields
+    // Clear legacy field
     await updateUser(pg, userId, {
-      modAlert: undefined,
       isBannedFromPosting: false,
     })
     await trackPublicEvent(auth.uid, 'unban user', { userId, bansEnded: count })
@@ -191,7 +203,8 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
   // Handle standalone username change permission toggle
   if (!bans && allowUsernameChange !== undefined) {
     if (allowUsernameChange === true && user.canChangeUsername === false) {
-      await updateUser(pg, userId, { canChangeUsername: undefined } as any)
+      // Use FieldVal.delete() to remove the key from JSONB - setting undefined doesn't work
+      await updateUser(pg, userId, { canChangeUsername: FieldVal.delete() } as any)
       log('re-enabling username changes for user', userId)
     } else if (allowUsernameChange === false && user.canChangeUsername !== false) {
       await updateUser(pg, userId, { canChangeUsername: false })
@@ -200,15 +213,19 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
   }
 
   // Set mod alert (can exist without bans)
+  // Store in user_bans table for audit history
+  // Mod alerts stack - new ones don't end old ones
   if (modAlert) {
-    await updateUser(pg, userId, {
-      modAlert: {
-        message: modAlert.message,
-        createdAt: Date.now(),
-        createdBy: auth.uid,
-        dismissed: false,
-      },
-    })
+    // Create new mod alert in user_bans table (stacks with existing alerts)
+    await createBan(
+      pg,
+      userId,
+      'modAlert',
+      modAlert.message,
+      auth.uid,
+      undefined // mod alerts don't auto-expire
+    )
+
     await trackPublicEvent(auth.uid, 'send mod alert', { userId })
     log('sent mod alert to user', userId)
   }
