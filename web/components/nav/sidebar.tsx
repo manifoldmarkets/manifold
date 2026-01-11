@@ -1,6 +1,7 @@
 import {
   ChatIcon,
   DeviceMobileIcon,
+  HeartIcon,
   LoginIcon,
   LogoutIcon,
   MoonIcon,
@@ -207,6 +208,7 @@ const getMobileNav = (
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
+    { name: 'Charity', href: '/charity', icon: HeartIcon },
     {
       name: 'Share with friends',
       href: '/referrals',
