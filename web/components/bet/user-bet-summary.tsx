@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import toast from 'react-hot-toast'
 
 import { getProbability } from 'common/calculate'
 import {
@@ -12,7 +13,7 @@ import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
 import { noFees } from 'common/fees'
 import { User } from 'common/user'
-import { formatPercent } from 'common/util/format'
+import { formatPercent, formatShares } from 'common/util/format'
 import { useState } from 'react'
 import { LuShare } from 'react-icons/lu'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
@@ -20,9 +21,11 @@ import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel
 import { SellRow } from 'web/components/bet/sell-row'
 import { LoanButton } from 'web/components/bet/loan-button'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useClaimableInterest } from 'web/hooks/use-claimable-interest'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
 import { getPseudonym } from '../charts/contract/choice'
@@ -85,10 +88,45 @@ export function BetsSummary(props: {
   const user = useUser()
   const isAdmin = useAdmin()
   const bettor = useDisplayUserById(metric.userId)
+  const isCashContract = contract.token === 'CASH'
+
+  // Interest accrual (MANA only, unresolved contracts)
+  const shouldShowInterest =
+    areYourBets && contract.token === 'MANA' && !contract.isResolved && user
+  const {
+    interest,
+    hasClaimableInterest,
+    refetch: refetchInterest,
+  } = useClaimableInterest(
+    contract.id,
+    shouldShowInterest ? user?.id : undefined,
+    metric.answerId ?? undefined
+  )
+  const [claimingInterest, setClaimingInterest] = useState(false)
+
+  const handleClaimInterest = async () => {
+    if (!user || !hasClaimableInterest) return
+    setClaimingInterest(true)
+    try {
+      const result = await api('claim-interest', {
+        contractId: contract.id,
+        answerId: metric.answerId ?? undefined,
+      })
+      const totalClaimed = result.claimedYesShares + result.claimedNoShares
+      toast.success(
+        `Claimed ${formatShares(totalClaimed, isCashContract)} interest shares!`
+      )
+      refetchInterest()
+    } catch (error) {
+      console.error('Failed to claim interest:', error)
+      toast.error('Failed to claim interest')
+    } finally {
+      setClaimingInterest(false)
+    }
+  }
 
   if (metric.invested === 0 && metric.profit === 0) return null
 
-  const isCashContract = contract.token === 'CASH'
   const avgPrice = maxSharesOutcome
     ? metric.invested / metric.totalShares[maxSharesOutcome]
     : 0
@@ -251,6 +289,33 @@ export function BetsSummary(props: {
             <ProfitBadge profitPercent={profitPercent} round={true} />
           </div>
         </Col>
+
+        {/* Interest accrual display - only show when there's actual interest */}
+        {hasClaimableInterest &&
+          interest &&
+          interest.yesShares + interest.noShares > 0.01 && (
+            <Col>
+              <div className="text-ink-500 whitespace-nowrap text-sm">
+                Accrued interest{' '}
+                <InfoTooltip text="Shares earned from holding your position over time (5% annual rate). Claim them to add to your position." />
+              </div>
+              <Row className="items-center gap-2">
+                <span className="whitespace-nowrap text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                  +{formatShares(interest.yesShares + interest.noShares, false)}{' '}
+                  shares
+                </span>
+                <Button
+                  size="2xs"
+                  color="indigo-outline"
+                  loading={claimingInterest}
+                  onClick={handleClaimInterest}
+                >
+                  Claim
+                </Button>
+              </Row>
+            </Col>
+          )}
+
         {/* Loan button for multi-choice markets that don't have sell button next to payout */}
         {includeSellButton &&
           contract.token === 'MANA' &&

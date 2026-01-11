@@ -36,6 +36,8 @@ import { recordContractInteraction } from 'api/record-contract-interaction'
 import { recordContractView } from 'api/record-contract-view'
 import { requestLoan } from 'api/request-loan'
 import { repayLoan } from 'api/repay-loan'
+import { claimInterest } from 'api/claim-interest'
+import { getClaimableInterest } from 'api/get-claimable-interest'
 import { getTotalLoanAmount } from 'api/get-total-loan-amount'
 import { requestOTP } from 'api/request-phone-otp'
 import { searchContractPositions } from 'api/search-contract-positions'
@@ -320,6 +322,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestLoan,
   'repay-loan': repayLoan,
+  'claim-interest': claimInterest,
+  'get-claimable-interest': getClaimableInterest,
   'get-total-loan-amount': getTotalLoanAmount,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,

@@ -1043,6 +1043,34 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as { repaid: number; remainingLoan: number },
   },
+  'claim-interest': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      contractId: z.string(),
+      answerId: z.string().optional(),
+    }),
+    returns: {} as {
+      claimedYesShares: number
+      claimedNoShares: number
+    },
+  },
+  'get-claimable-interest': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      contractId: z.string(),
+      answerId: z.string().optional(),
+    }),
+    returns: {} as {
+      yesShares: number
+      noShares: number
+      yesShareDays: number
+      noShareDays: number
+    },
+  },
   'get-total-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',

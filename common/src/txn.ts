@@ -64,8 +64,6 @@ type AnyTxnType =
   | ContractBoostPurchase
   | CharityGiveawayTicket
   | ShopPurchase
-  | InterestPayout
-  | InterestUndoPayout
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -638,33 +636,6 @@ type ShopPurchase = {
   }
 }
 
-type InterestPayout = {
-  category: 'INTEREST_PAYOUT'
-  fromType: 'BANK'
-  toType: 'USER'
-  token: 'M$'
-  data: {
-    contractId: string
-    answerId?: string
-    yesShareDays: number
-    noShareDays: number
-    payoutStartTime: number
-    // For sell interest, includes the sell probability
-    sellProb?: number
-  }
-}
-
-type InterestUndoPayout = {
-  category: 'INTEREST_UNDO_PAYOUT'
-  fromType: 'USER'
-  toType: 'BANK'
-  token: 'M$'
-  data: {
-    revertsTxnId: string
-    contractId: string
-  }
-}
-
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -724,5 +695,3 @@ export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
 export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
-export type InterestPayoutTxn = Txn & InterestPayout
-export type InterestUndoPayoutTxn = Txn & InterestUndoPayout

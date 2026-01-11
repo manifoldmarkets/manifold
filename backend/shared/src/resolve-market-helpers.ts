@@ -12,13 +12,16 @@ import {
   CPMMMultiContract,
   MarketContract,
 } from 'common/contract'
+import { Bet } from 'common/bet'
 import { ContractMetric } from 'common/contract-metric'
+import { noFees } from 'common/fees'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
-import { calculateInterestPayouts } from './calculate-interest'
 import {
   calculatePoolInterestCpmm1,
   calculatePoolInterestMulti,
 } from './calculate-pool-interest'
+import { calculateBulkInterestShares } from './calculate-interest-shares'
+import { bulkInsertBets } from './supabase/bets'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
@@ -129,6 +132,95 @@ export const resolveMarketHelper = async (
       contractId,
       answerId
     )
+
+    // Bulk claim interest shares for all users with positions
+    // This ensures users receive their accrued interest as actual shares before payout calculation
+    const interestSharesResults = await calculateBulkInterestShares(
+      tx,
+      contractId,
+      answerId,
+      resolutionTime,
+      unresolvedContract.token
+    )
+
+    if (interestSharesResults.length > 0) {
+      // Get current probability for interest claim bets
+      let prob: number
+      if (unresolvedContract.mechanism === 'cpmm-1') {
+        prob = unresolvedContract.prob
+      } else if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
+        const answer = unresolvedContract.answers?.find(
+          (a) => a.id === answerId
+        )
+        prob = answer?.prob ?? 0.5
+      } else {
+        prob = 0.5
+      }
+
+      // Create interest claim bets for all users
+      const interestClaimBets: Omit<Bet, 'id'>[] = []
+
+      for (const result of interestSharesResults) {
+        if (result.yesShares > 0) {
+          interestClaimBets.push(
+            removeUndefinedProps({
+              contractId,
+              userId: result.userId,
+              answerId,
+              createdTime: resolutionTime,
+              amount: 0,
+              shares: result.yesShares,
+              outcome: 'YES',
+              probBefore: prob,
+              probAfter: prob,
+              fees: noFees,
+              isRedemption: false,
+              isInterestClaim: true,
+            })
+          )
+        }
+
+        if (result.noShares > 0) {
+          interestClaimBets.push(
+            removeUndefinedProps({
+              contractId,
+              userId: result.userId,
+              answerId,
+              createdTime: resolutionTime,
+              amount: 0,
+              shares: result.noShares,
+              outcome: 'NO',
+              probBefore: prob,
+              probAfter: prob,
+              fees: noFees,
+              isRedemption: false,
+              isInterestClaim: true,
+            })
+          )
+        }
+
+        // Update contract metrics with claimed interest shares
+        const userMetric = contractMetrics.find(
+          (m) => m.userId === result.userId && m.answerId == answerId
+        )
+        if (userMetric) {
+          userMetric.totalShares['YES'] =
+            (userMetric.totalShares['YES'] ?? 0) + result.yesShares
+          userMetric.totalShares['NO'] =
+            (userMetric.totalShares['NO'] ?? 0) + result.noShares
+        }
+      }
+
+      // Insert all interest claim bets
+      if (interestClaimBets.length > 0) {
+        await bulkInsertBets(tx, interestClaimBets as Bet[], contractMetrics)
+        log('Bulk claimed interest shares for resolution', {
+          count: interestSharesResults.length,
+          totalYesShares: sumBy(interestSharesResults, 'yesShares'),
+          totalNoShares: sumBy(interestSharesResults, 'noShares'),
+        })
+      }
+    }
 
     const {
       resolutionProbability,
@@ -295,79 +387,8 @@ export const resolveMarketHelper = async (
         ? assessProfitFees(traderPayouts, updatedContractMetrics, answerId)
         : []
 
-    // Calculate interest payouts (MANA only)
-    // Determine resolution probability for interest valuation
-    const resolutionProb =
-      outcome === 'YES'
-        ? 1
-        : outcome === 'NO'
-        ? 0
-        : outcome === 'CANCEL'
-        ? 0.5 // CANCEL pays based on 50% value
-        : resolutionProbability ?? 0.5
-
-    // Query already-paid interest from sells
-    const alreadyPaidInterest = await tx.manyOrNone<{
-      user_id: string
-      answer_id: string | null
-      total_paid: number
-    }>(
-      `SELECT 
-        to_id as user_id,
-        data->'data'->>'answerId' as answer_id,
-        SUM(amount) as total_paid
-      FROM txns 
-      WHERE category = 'INTEREST_PAYOUT'
-        AND data->'data'->>'contractId' = $1
-        AND ($2::text IS NULL OR data->'data'->>'answerId' = $2)
-      GROUP BY to_id, data->'data'->>'answerId'`,
-      [contractId, answerId ?? null]
-    )
-    const paidInterestByUser = new Map(
-      alreadyPaidInterest.map((r) => [
-        `${r.user_id}-${r.answer_id ?? ''}`,
-        r.total_paid,
-      ])
-    )
-
-    const rawInterestPayouts = await calculateInterestPayouts(
-      tx,
-      contractId,
-      resolutionTime,
-      answerId,
-      token,
-      resolutionProb
-    )
-
-    // Subtract already-paid interest from sell transactions
-    const interestPayouts = rawInterestPayouts
-      .map((p) => {
-        const key = `${p.userId}-${p.answerId ?? ''}`
-        const alreadyPaid = paidInterestByUser.get(key) ?? 0
-        return {
-          ...p,
-          interest: Math.max(0, p.interest - alreadyPaid),
-        }
-      })
-      .filter((p) => p.interest > 0)
-
-    if (interestPayouts.length > 0) {
-      log('Interest payouts calculated', {
-        count: interestPayouts.length,
-        totalInterest: sumBy(interestPayouts, 'interest'),
-        alreadyPaid: sum(Array.from(paidInterestByUser.values())),
-      })
-    }
-
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
-      getPayUsersQueries(
-        payouts,
-        contractId,
-        answerId,
-        token,
-        payoutFees,
-        interestPayouts
-      )
+      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
@@ -619,14 +640,7 @@ export const getPayUsersQueries = (
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  payoutFees: Payout[],
-  interestPayouts: {
-    userId: string
-    answerId: string | null
-    interest: number
-    yesShareDays: number
-    noShareDays: number
-  }[] = []
+  payoutFees: Payout[]
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
@@ -697,46 +711,6 @@ export const getPayUsersQueries = (
         contractId,
         payoutStartTime,
         answerId,
-      }),
-    })
-  }
-
-  // Add interest payouts (MANA only)
-  for (const {
-    userId,
-    answerId: ansId,
-    interest,
-    yesShareDays,
-    noShareDays,
-  } of interestPayouts) {
-    if (interest <= 0) continue
-
-    const existingUpdate = balanceUpdates.find((b) => b.id === userId)
-    if (existingUpdate) {
-      existingUpdate.balance = (existingUpdate.balance ?? 0) + interest
-    } else {
-      balanceUpdates.push({
-        id: userId,
-        balance: interest,
-      })
-    }
-
-    txns.push({
-      category: 'INTEREST_PAYOUT',
-      fromType: 'BANK',
-      fromId: isProd()
-        ? HOUSE_LIQUIDITY_PROVIDER_ID
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-      toType: 'USER',
-      toId: userId,
-      amount: interest,
-      token: 'M$',
-      data: removeUndefinedProps({
-        contractId,
-        answerId: ansId,
-        yesShareDays,
-        noShareDays,
-        payoutStartTime,
       }),
     })
   }
