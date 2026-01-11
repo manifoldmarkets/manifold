@@ -280,7 +280,8 @@ export const CharityGiveawayBanner = () => {
       <Row className="items-center gap-2">
         <span>🎟️</span>
         <div>
-          <span className="font-semibold">Charity is back!</span> Help your favorite charity win $1,000
+          <span className="font-semibold">Charity is back!</span> Help your
+          favorite charity win $1,000
         </div>
         <ArrowRightIcon className="ml-1 h-4 w-4" />
       </Row>
