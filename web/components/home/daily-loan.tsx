@@ -13,6 +13,7 @@ import { GiOpenChest } from 'react-icons/gi'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { DAY_MS } from 'common/util/time'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -28,6 +29,7 @@ export function DailyLoan(props: {
   const [showLoansModal, setShowLoansModal] = useState(false)
   const { data } = useAPIGetter('get-next-loan-amount', { userId: user.id })
   const notEligibleForLoan = (data?.available ?? 0) < 1
+  const isMobile = useIsMobile()
 
   const handleButtonClick = () => {
     setShowLoansModal(true)
@@ -42,7 +44,9 @@ export function DailyLoan(props: {
       <>
         <Tooltip
           text={
-            notEligibleForLoan
+            isMobile
+              ? undefined
+              : notEligibleForLoan
               ? 'Not eligible for loan'
               : `Request a loan on your ${TRADE_TERM}s`
           }
@@ -90,7 +94,9 @@ export function DailyLoan(props: {
     >
       <Tooltip
         text={
-          notEligibleForLoan
+          isMobile
+            ? undefined
+            : notEligibleForLoan
             ? 'Not eligible for loan'
             : `Request a loan on your ${TRADE_TERM}s`
         }
