@@ -1,6 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { getCpmmProbability } from 'common/calculate-cpmm'
