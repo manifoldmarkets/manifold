@@ -58,11 +58,15 @@ export function BanBanner({ bans }: { bans: UserBan[] }) {
             {!alertsOnly && (
               <>
                 <span className="hidden sm:inline">-</span>
-                <span className={`hidden sm:inline ${alertsOnly ? 'text-yellow-100' : 'text-red-100'}`}>
+                <span className="hidden text-red-100 sm:inline">
                   {banSummary && `${banSummary} banned`}
-                  {banSummary && alertCount > 0 && ', '}
-                  {alertCount > 0 && `${alertCount} alert${alertCount > 1 ? 's' : ''}`}
                 </span>
+                {alertCount > 0 && (
+                  <Row className="hidden items-center gap-1 sm:flex">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-[10px] font-bold text-yellow-900">!</span>
+                    <span className="text-yellow-200">{alertCount} alert{alertCount > 1 ? 's' : ''}</span>
+                  </Row>
+                )}
               </>
             )}
             {alertsOnly && (
@@ -84,38 +88,21 @@ export function BanBanner({ bans }: { bans: UserBan[] }) {
       <Modal open={showDetailsModal} setOpen={setShowDetailsModal} size="md">
         <Col className="bg-canvas-0 gap-6 rounded-lg p-6">
           {/* Header */}
-          <Row className="items-center justify-between border-b border-ink-200 pb-4">
-            <Row className="items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                alertsOnly ? 'bg-yellow-100' : 'bg-red-100'
-              }`}>
-                <span className={`text-lg ${alertsOnly ? 'text-yellow-600' : 'text-red-600'}`}>!</span>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">
-                  {alertsOnly ? 'Moderator Alerts' : 'Account Status'}
-                </h2>
-                <p className="text-ink-500 text-sm">
-                  {alertsOnly ? (
-                    `${modAlerts.length} message${modAlerts.length !== 1 ? 's' : ''} from moderators`
-                  ) : (
-                    <>
-                      {activeBanTypes.length} restriction{activeBanTypes.length !== 1 ? 's' : ''}
-                      {modAlerts.length > 0 && `, ${modAlerts.length} alert${modAlerts.length !== 1 ? 's' : ''}`}
-                    </>
-                  )}
-                </p>
-              </div>
-            </Row>
-            <button
-              onClick={() => setShowDetailsModal(false)}
-              className="text-ink-400 hover:text-ink-600 rounded-full p-1 transition-colors hover:bg-ink-100"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </Row>
+          <div className="border-b border-ink-200 pb-4">
+            <h2 className="text-xl font-bold">
+              {alertsOnly ? 'Moderator Alerts' : 'Account Status'}
+            </h2>
+            <p className="text-ink-500 text-sm">
+              {alertsOnly ? (
+                `${modAlerts.length} message${modAlerts.length !== 1 ? 's' : ''} from moderators`
+              ) : (
+                <>
+                  {activeBanTypes.length} restriction{activeBanTypes.length !== 1 ? 's' : ''}
+                  {modAlerts.length > 0 && `, ${modAlerts.length} alert${modAlerts.length !== 1 ? 's' : ''}`}
+                </>
+              )}
+            </p>
+          </div>
 
           {/* Ban details */}
           {activeBanTypes.length > 0 && (
@@ -129,7 +116,7 @@ export function BanBanner({ bans }: { bans: UserBan[] }) {
               {!alertsOnly && (
                 <Row className="items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100">
-                    <span className="text-xs text-yellow-600">!</span>
+                    <span className="text-xs font-bold text-yellow-600">!</span>
                   </div>
                   <h3 className="font-semibold">Moderator Alerts</h3>
                 </Row>
@@ -143,12 +130,9 @@ export function BanBanner({ bans }: { bans: UserBan[] }) {
                     <p className="text-yellow-900">{alert.reason}</p>
                     <button
                       onClick={() => handleDismissAlert(alert.id)}
-                      className="shrink-0 rounded-full p-1 text-yellow-600 transition-colors hover:bg-yellow-200 hover:text-yellow-800"
-                      title="Dismiss alert"
+                      className="shrink-0 rounded px-2 py-1 text-xs font-medium text-yellow-700 transition-colors hover:bg-yellow-200 hover:text-yellow-800"
                     >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      Dismiss
                     </button>
                   </Row>
                 </div>
@@ -179,14 +163,13 @@ function BanDetailsSection({
   activeBanTypes: BanType[]
 }) {
   return (
-    <Col className="gap-4">
+    <Col className="gap-3">
       <Row className="items-center gap-2">
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
-          <span className="text-xs text-red-600">!</span>
+          <span className="text-xs font-bold text-red-600">!</span>
         </div>
         <h3 className="font-semibold">Active Restrictions</h3>
       </Row>
-
       {/* Ban type cards with integrated reasons */}
       <div className="grid gap-3">
         {activeBanTypes.map((banType) => (
