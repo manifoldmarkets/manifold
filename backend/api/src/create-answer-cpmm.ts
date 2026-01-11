@@ -134,6 +134,7 @@ const createAnswerCpmmMain = async (
       })
 
       const answers = await getAnswersForContract(pgTrans, contract.id)
+
       const unresolvedAnswers = answers.filter((a) => !a.resolution)
       const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
       if (unresolvedAnswers.length >= maxAnswers) {

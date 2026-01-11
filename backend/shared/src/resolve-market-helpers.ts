@@ -15,6 +15,10 @@ import {
 import { ContractMetric } from 'common/contract-metric'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
 import { calculateInterestPayouts } from './calculate-interest'
+import {
+  calculatePoolInterestCpmm1,
+  calculatePoolInterestMulti,
+} from './calculate-pool-interest'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
@@ -98,6 +102,26 @@ export const resolveMarketHelper = async (
     const newCloseTime = closeTime
       ? Math.min(closeTime, resolutionTime)
       : closeTime
+
+    // Calculate pool with interest before calculating payouts
+    // This ensures LPs receive interest on their locked capital
+    if (unresolvedContract.mechanism === 'cpmm-1') {
+      const poolWithInterest = calculatePoolInterestCpmm1(unresolvedContract)
+      unresolvedContract.pool.YES = poolWithInterest.YES
+      unresolvedContract.pool.NO = poolWithInterest.NO
+    } else if (unresolvedContract.mechanism === 'cpmm-multi-1') {
+      const multiContract = unresolvedContract as CPMMMultiContract
+      const answers = multiContract.answers
+      const poolUpdates = calculatePoolInterestMulti(multiContract, answers)
+      const updateMap = new Map(poolUpdates.map((u) => [u.id, u]))
+      for (const answer of answers) {
+        const update = updateMap.get(answer.id)
+        if (update) {
+          answer.poolYes = update.poolYes
+          answer.poolNo = update.poolNo
+        }
+      }
+    }
 
     // Fetch loan tracking data for interest calculation
     const loanTracking = await getLoanTrackingForContract(
