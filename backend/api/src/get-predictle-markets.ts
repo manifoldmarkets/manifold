@@ -157,7 +157,8 @@ async function fetchEligibleMarkets(
     FROM contracts
     WHERE visibility = 'public'
       AND resolution_time IS NULL
-      AND (close_time > NOW() OR close_time IS NULL)
+      AND (close_time IS NULL OR close_time > NOW() + INTERVAL '7 days')
+      AND created_time < NOW() - INTERVAL '1 day'
       AND outcome_type = 'BINARY'
       AND mechanism = 'cpmm-1'
       AND deleted = false
