@@ -1,22 +1,22 @@
+import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { uniq } from 'lodash'
 import { useMemo, useState } from 'react'
-import { useEvent } from 'client-common/hooks/use-event'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import {
-  ReplyToUserInfo,
-  ParentFeedComment,
   FeedComment,
+  ParentFeedComment,
+  ReplyToUserInfo,
   roundThreadColor,
 } from './comment'
 import { ContractCommentInput } from './comment-input'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
-import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 
 export function FeedCommentThread(props: {
   playContract: Contract
@@ -31,6 +31,7 @@ export function FeedCommentThread(props: {
   childrenBountyTotal?: number
   className?: string
   bets?: Bet[]
+  blockedUserIds?: string[]
 }) {
   const {
     playContract,
@@ -45,6 +46,7 @@ export function FeedCommentThread(props: {
     childrenBountyTotal,
     className,
     bets,
+    blockedUserIds,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
@@ -93,6 +95,7 @@ export function FeedCommentThread(props: {
         inTimeline={inTimeline}
         childrenBountyTotal={childrenBountyTotal}
         bets={bets?.filter((bet) => bet.replyToCommentId === parentComment.id)}
+        blockedUserIds={blockedUserIds}
       />
       {seeReplies &&
         threadComments
@@ -108,6 +111,7 @@ export function FeedCommentThread(props: {
               trackingLocation={trackingLocation}
               bets={bets?.filter((bet) => bet.replyToCommentId === comment.id)}
               lastInReplyChain={i === threadComments.length - 1}
+              blockedUserIds={blockedUserIds}
             />
           ))}
       {seeReplies && threadComments.length > collapseToIndex && (
