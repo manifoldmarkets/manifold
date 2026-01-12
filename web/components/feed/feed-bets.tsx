@@ -54,8 +54,11 @@ function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
   const { bet, isCashContract } = props
   const formatAmount = isCashContract ? formatSweepies : formatMoney
 
-  // Get bet IDs from fills that matched against user bets
-  const fillsToShow = bet.fills?.slice(0, MAX_FILLS_TO_SHOW) ?? []
+  // Get bet IDs from fills that matched against user bets, sorted most recent first
+  const sortedFills = [...(bet.fills ?? [])].sort(
+    (a, b) => b.timestamp - a.timestamp
+  )
+  const fillsToShow = sortedFills.slice(0, MAX_FILLS_TO_SHOW)
   const matchedBetIds = fillsToShow
     .map((f) => f.matchedBetId)
     .filter((id): id is string => id !== null)
@@ -84,8 +87,16 @@ function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
       })
   }, [bet.id])
 
-  const renderFillLine = (f: fill, i: number) => {
-    const fillTime = dayjs(f.timestamp).format('h:mm:ss A')
+  const totalFills = bet.fills?.length ?? 0
+
+  const renderFillLine = (f: fill, displayIndex: number) => {
+    // Number fills from most recent (total) down to oldest
+    const fillNumber = totalFills - displayIndex
+    const fillDate = dayjs(f.timestamp)
+    const isToday = fillDate.isSame(dayjs(), 'day')
+    const fillTime = isToday
+      ? fillDate.format('h:mm:ss A')
+      : fillDate.format('MMM D, h:mm:ss A')
     const bettor = f.matchedBetId ? bettorsByBetId[f.matchedBetId] : null
     const matchInfo = bettor
       ? `@${bettor.username}`
@@ -96,8 +107,8 @@ function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
       : 'pool'
 
     return (
-      <div key={i} className="ml-2">
-        {i + 1}. {formatAmount(f.amount)} @ {fillTime} ({matchInfo})
+      <div key={displayIndex} className="ml-2">
+        {fillNumber}. {formatAmount(f.amount)} @ {fillTime} ({matchInfo})
       </div>
     )
   }
