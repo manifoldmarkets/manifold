@@ -270,13 +270,11 @@ export function UserBetsTable(props: { user: User }) {
       label: 'Highest Loan',
       field: 'loan',
       direction: 'desc',
-      hiddenUntilSorted: true,
     },
     {
       label: 'Lowest Loan',
       field: 'loan',
       direction: 'asc',
-      hiddenUntilSorted: true,
     },
     {
       label: '↓ ∆ Last Trade',
