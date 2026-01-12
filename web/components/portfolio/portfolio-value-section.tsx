@@ -322,7 +322,11 @@ function TwombaPortfolioValueSkeleton(props: {
             {!hideSweepsToggle && (
               <SweepsToggle sweepsEnabled={true} isPlay={prefersPlay} />
             )}
-            <AddFundsButton userId={userId} size="xs" className="hidden sm:flex" />
+            <AddFundsButton
+              userId={userId}
+              size="xs"
+              className="hidden sm:flex"
+            />
           </Row>
         </Row>
         <Col className="bg-canvas-0 w-full rounded-lg p-4">
