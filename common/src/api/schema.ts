@@ -2997,6 +2997,21 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean; deletedCount: number },
   },
+  'get-bettors-from-bet-ids': {
+    method: 'GET',
+    visibility: 'undocumented',
+    cache: 'public, max-age=600, stale-while-revalidate=30',
+    authed: false,
+    props: z
+      .object({
+        betIds: z.array(z.string()).max(50),
+      })
+      .strict(),
+    returns: {} as Record<
+      string,
+      { id: string; username: string; name: string }
+    >,
+  },
 } as const)
 
 export type APIPath = keyof typeof API

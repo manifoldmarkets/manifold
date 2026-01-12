@@ -1,7 +1,7 @@
 import { ReplyIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DisplayUser } from 'common/api/user-types'
-import { Bet } from 'common/bet'
+import { Bet, fill } from 'common/bet'
 import {
   Contract,
   getBinaryMCProb,
@@ -20,7 +20,7 @@ import {
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import dayjs from 'dayjs'
 import { sumBy, uniq } from 'lodash'
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { FaArrowTrendUp } from 'react-icons/fa6'
 import { LuShare } from 'react-icons/lu'
 import { Button } from 'web/components/buttons/button'
@@ -40,6 +40,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
 import { ShareBetModal } from '../bet/share-bet'
@@ -47,65 +48,92 @@ import { getPseudonym } from '../charts/contract/choice'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
+const MAX_FILLS_TO_SHOW = 10
+
 function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
   const { bet, isCashContract } = props
   const formatAmount = isCashContract ? formatSweepies : formatMoney
 
-  const lines: string[] = []
+  // Get bet IDs from fills that matched against user bets
+  const fillsToShow = bet.fills?.slice(0, MAX_FILLS_TO_SHOW) ?? []
+  const matchedBetIds = fillsToShow
+    .map((f) => f.matchedBetId)
+    .filter((id): id is string => id !== null)
 
-  // Exact amount
-  lines.push(`Amount: ${formatAmount(Math.abs(bet.amount))}`)
+  // Fetch bettor info for matched bets
+  const [bettorsByBetId, setBettorsByBetId] = useState<
+    Record<string, { id: string; username: string; name: string }>
+  >({})
+  const [loading, setLoading] = useState(matchedBetIds.length > 0)
 
-  // Order amount if limit order
-  if (bet.orderAmount !== undefined) {
-    lines.push(`Order: ${formatAmount(bet.orderAmount)}`)
-  }
-
-  // Limit probability
-  if (bet.limitProb !== undefined) {
-    lines.push(`Limit: ${formatPercent(bet.limitProb)}`)
-  }
-
-  // Shares
-  lines.push(`Shares: ${Math.abs(bet.shares).toFixed(2)}`)
-
-  // Exact creation time
-  lines.push(`Time: ${dayjs(bet.createdTime).format('MMM D, YYYY h:mm:ss A')}`)
-
-  // Fills information
-  if (bet.fills && bet.fills.length > 0) {
-    lines.push(`Fills: ${bet.fills.length}`)
-    bet.fills.slice(0, 5).forEach((fill, i) => {
-      const fillTime = dayjs(fill.timestamp).format('h:mm:ss A')
-      const matchType = fill.matchedBetId ? 'user' : 'pool'
-      lines.push(
-        `  ${i + 1}. ${formatAmount(fill.amount)} @ ${fillTime} (${matchType})`
-      )
-    })
-    if (bet.fills.length > 5) {
-      lines.push(`  ... and ${bet.fills.length - 5} more`)
+  useEffect(() => {
+    if (matchedBetIds.length === 0) {
+      setLoading(false)
+      return
     }
-  }
 
-  // Status flags
-  if (bet.isCancelled) lines.push('Status: Cancelled')
-  if (bet.isFilled) lines.push('Status: Filled')
-  if (bet.expiresAt) {
-    const expired = bet.expiresAt < Date.now()
-    lines.push(
-      `Expires: ${dayjs(bet.expiresAt).format('MMM D, h:mm A')}${
-        expired ? ' (expired)' : ''
-      }`
+    api('get-bettors-from-bet-ids', { betIds: matchedBetIds })
+      .then((result) => {
+        setBettorsByBetId(result)
+      })
+      .catch((err) => {
+        console.error('Failed to fetch bettors:', err)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [bet.id])
+
+  const renderFillLine = (f: fill, i: number) => {
+    const fillTime = dayjs(f.timestamp).format('h:mm:ss A')
+    const bettor = f.matchedBetId ? bettorsByBetId[f.matchedBetId] : null
+    const matchInfo = bettor
+      ? `@${bettor.username}`
+      : f.matchedBetId
+      ? loading
+        ? '...'
+        : 'user'
+      : 'pool'
+
+    return (
+      <div key={i} className="ml-2">
+        {i + 1}. {formatAmount(f.amount)} @ {fillTime} ({matchInfo})
+      </div>
     )
   }
 
   return (
     <div className="text-left">
-      {lines.map((line, i) => (
-        <div key={i} className={line.startsWith('  ') ? 'ml-2' : ''}>
-          {line}
+      <div>Amount: {formatAmount(Math.abs(bet.amount))}</div>
+      {bet.orderAmount !== undefined && (
+        <div>Order: {formatAmount(bet.orderAmount)}</div>
+      )}
+      {bet.limitProb !== undefined && (
+        <div>Limit: {formatPercent(bet.limitProb)}</div>
+      )}
+      <div>Shares: {Math.abs(bet.shares).toFixed(2)}</div>
+      <div>Time: {dayjs(bet.createdTime).format('MMM D, YYYY h:mm:ss A')}</div>
+
+      {bet.fills && bet.fills.length > 0 && (
+        <>
+          <div>Fills: {bet.fills.length}</div>
+          {fillsToShow.map((fill, i) => renderFillLine(fill, i))}
+          {bet.fills.length > MAX_FILLS_TO_SHOW && (
+            <div className="ml-2">
+              ... and {bet.fills.length - MAX_FILLS_TO_SHOW} more
+            </div>
+          )}
+        </>
+      )}
+
+      {bet.isCancelled && <div>Status: Cancelled</div>}
+      {bet.isFilled && <div>Status: Filled</div>}
+      {bet.expiresAt && (
+        <div>
+          Expires: {dayjs(bet.expiresAt).format('MMM D, h:mm A')}
+          {bet.expiresAt < Date.now() ? ' (expired)' : ''}
         </div>
-      ))}
+      )}
     </div>
   )
 }

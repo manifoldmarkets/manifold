@@ -16,6 +16,7 @@ import {
 } from 'api/get-private-messages'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
+import { getTotalLoanAmount } from 'api/get-total-loan-amount'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
@@ -34,9 +35,8 @@ import { post } from 'api/post'
 import { recordCommentView } from 'api/record-comment-view'
 import { recordContractInteraction } from 'api/record-contract-interaction'
 import { recordContractView } from 'api/record-contract-view'
-import { requestLoan } from 'api/request-loan'
 import { repayLoan } from 'api/repay-loan'
-import { getTotalLoanAmount } from 'api/get-total-loan-amount'
+import { requestLoan } from 'api/request-loan'
 import { requestOTP } from 'api/request-phone-otp'
 import { searchContractPositions } from 'api/search-contract-positions'
 import { updateMarket } from 'api/update-market'
@@ -70,6 +70,7 @@ import { generateAIDescription } from './generate-ai-description'
 import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
 import { getSingleAnswer } from './get-answer'
 import { getBetPointsBetween, getBets } from './get-bets'
+import { getBettorsFromBetIds } from './get-bettors-from-bet-ids'
 import { getCashouts } from './get-cashouts'
 import {
   getCommentThread,
@@ -92,6 +93,7 @@ import { getManaSupply } from './get-mana-supply'
 import { getManagrams } from './get-managrams'
 import { getMarket } from './get-market'
 import { getMarketContext } from './get-market-context'
+import { getMarketLoanMax } from './get-market-loan-max'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
 import { getMarketsByIds } from './get-markets'
@@ -100,7 +102,6 @@ import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
-import { getMarketLoanMax } from './get-market-loan-max'
 import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getPredictle } from './get-predictle-markets'
@@ -160,6 +161,7 @@ import { adminGetUserInfo } from './admin-get-user-info'
 import { adminRecoverUser } from './admin-recover-user'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
+import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -175,6 +177,8 @@ import {
   regenerateNumericMidpoints,
 } from './generate-ai-numeric-ranges'
 import { generateConciseTitle } from './generate-concise-title'
+import { getCharityGiveaway } from './get-charity-giveaway'
+import { getCharityGiveawaySales } from './get-charity-giveaway-sales'
 import { getCloseDateEndpoint } from './get-close-date'
 import {
   getContractOptionVoters,
@@ -214,9 +218,6 @@ import { shopPurchase } from './shop-purchase'
 import { shopToggle } from './shop-toggle'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
-import { getCharityGiveaway } from './get-charity-giveaway'
-import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
-import { getCharityGiveawaySales } from './get-charity-giveaway-sales'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -233,6 +234,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/sell': sellShares,
   bets: getBets,
   'bet-points': getBetPointsBetween,
+  'get-bettors-from-bet-ids': getBettorsFromBetIds,
   'get-notifications': getNotifications,
   'get-channel-memberships': getChannelMemberships,
   'get-channel-messages': getChannelMessages,
