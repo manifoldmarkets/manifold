@@ -1,4 +1,3 @@
-import { getBanTypesForAction, getUserBanMessage, isUserBanned } from 'common/ban-utils'
 import { PollContract, PollType } from 'common/contract'
 import { PollOption } from 'common/poll-option'
 import { createVotedOnPollNotification } from 'shared/create-notification'
@@ -11,58 +10,22 @@ import {
   revalidateContractStaticProps,
 } from 'shared/utils'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { getActiveUserBans } from './helpers/rate-limit'
+import { APIError, authEndpointUnbanned, validate } from './helpers/endpoint'
 
-// Schema supports all poll types:
-// - Single vote: { contractId, voteId }
-// - Multi-select: { contractId, voteIds }
-// - Ranked-choice: { contractId, rankedVoteIds }
-const schema = z
-  .object({
-    contractId: z.string(),
-    // For single vote polls
-    voteId: z.string().optional(),
-    // For multi-select polls
-    voteIds: z.array(z.string()).optional(),
-    // For ranked-choice polls (ordered by preference, first = most preferred)
-    rankedVoteIds: z.array(z.string()).optional(),
-  })
-  .strict()
-  .refine(
-    (data) => data.voteId || data.voteIds || data.rankedVoteIds,
-    'Must provide voteId, voteIds, or rankedVoteIds'
-  )
+const schema = z.object({
+  contractId: z.string(),
+  voteId: z.string().optional(),
+  voteIds: z.array(z.string()).optional(),
+  rankedVoteIds: z.array(z.string()).optional(),
+})
 
-export const castpollvote = authEndpoint(async (req, auth) => {
+export const castpollvote = authEndpointUnbanned(async (req, auth) => {
   const { contractId, voteId, voteIds, rankedVoteIds } = validate(
     schema,
     req.body
   )
 
-  // Check granular bans for poll voting
-  const user = await getUser(auth.uid)
-  if (!user) {
-    throw new APIError(404, 'User not found')
-  }
-  if (user.userDeleted) {
-    throw new APIError(403, 'Your account has been deleted')
-  }
-
-  // Poll voting is blocked by all ban types
-  const userBans = await getActiveUserBans(auth.uid)
-  const banTypes = getBanTypesForAction('pollVote')
-  for (const banType of banTypes) {
-    if (isUserBanned(userBans, banType)) {
-      const reason = getUserBanMessage(userBans, banType)
-      const errorMsg = reason
-        ? `You are banned from voting in polls. Reason: ${reason}`
-        : 'You are banned from voting in polls'
-      throw new APIError(403, errorMsg)
-    }
-  }
-
-  return await pollQueue.enqueueFn(
+  const result = await pollQueue.enqueueFn(
     () =>
       castPollVoteMain(contractId, auth.uid, {
         voteId,
@@ -71,6 +34,11 @@ export const castpollvote = authEndpoint(async (req, auth) => {
       }),
     [contractId]
   )
+
+  // Fire-and-forget the continue function (revalidate static props)
+  result.continue().catch((e) => console.error('castpollvote continue error', e))
+
+  return result.result
 })
 
 type VoteInput = {

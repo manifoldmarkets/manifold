@@ -8,14 +8,6 @@ import { updateUser } from 'shared/supabase/users'
 import { FieldVal } from 'shared/supabase/utils'
 import { getUser, log } from 'shared/utils'
 
-// Get all bans for a user
-async function getUserBans(pg: ReturnType<typeof createSupabaseDirectClient>, userId: string): Promise<UserBan[]> {
-  return pg.manyOrNone<UserBan>(
-    `SELECT * FROM user_bans WHERE user_id = $1 ORDER BY created_at DESC`,
-    [userId]
-  )
-}
-
 // Get active bans for a user (not ended)
 async function getActiveUserBans(pg: ReturnType<typeof createSupabaseDirectClient>, userId: string): Promise<UserBan[]> {
   return pg.manyOrNone<UserBan>(
@@ -42,18 +34,6 @@ async function createBan(
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
     [userId, banType, reason, createdBy, endTime?.toISOString() ?? null]
-  )
-}
-
-// End a specific ban
-async function endBan(
-  pg: ReturnType<typeof createSupabaseDirectClient>,
-  banId: number,
-  endedBy: string
-): Promise<void> {
-  await pg.none(
-    `UPDATE user_bans SET ended_by = $1, ended_at = now() WHERE id = $2`,
-    [endedBy, banId]
   )
 }
 

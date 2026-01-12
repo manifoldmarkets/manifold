@@ -1,5 +1,5 @@
 import { BOT_USERNAMES, ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
-import { BanDetails, User } from 'common/user'
+import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 
 export type DisplayUser = {
@@ -10,8 +10,16 @@ export type DisplayUser = {
   isBannedFromPosting?: boolean
 }
 
+// Type for individual ban entries in the legacy bans field
+type LegacyBanDetails = {
+  bannedAt: number
+  bannedBy: string
+  reason: string
+  unbanTime?: number
+}
+
 // Ban details with mod identity removed (for public display)
-export type PublicBanDetails = Omit<BanDetails, 'bannedBy'>
+export type PublicBanDetails = Omit<LegacyBanDetails, 'bannedBy'>
 
 export type FullUser = User & {
   url: string
@@ -55,7 +63,7 @@ function sanitizeBanFields(
       if (banDetails) {
         const { bannedBy, ...publicBanDetails } = banDetails
         sanitizedBans[banType as keyof typeof user.bans] =
-          publicBanDetails as BanDetails
+          publicBanDetails as LegacyBanDetails
       }
     }
     sanitized.bans = sanitizedBans

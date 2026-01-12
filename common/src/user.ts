@@ -11,40 +11,19 @@ export type UserBan = {
   user_id: string
   ban_type: BanType
   reason: string | null
-  created_at: string  // ISO timestamp
-  created_by: string | null  // mod user ID
-  end_time: string | null  // ISO timestamp, null = permanent
-  ended_by: string | null  // mod user ID who ended the ban
-  ended_at: string | null  // ISO timestamp when ban was ended
+  created_at: string // ISO timestamp
+  created_by: string | null // mod user ID
+  // Scheduled expiry for temp bans (null = permanent)
+  end_time: string | null
+  ended_by: string | null // mod user ID who ended the ban
+  // When manually lifted by mod (null = still active or expired naturally)
+  ended_at: string | null
 }
 
 // Helper type for active bans (not ended)
 export type ActiveBan = UserBan & {
   ended_at: null
   ended_by: null
-}
-
-/** @deprecated Use UserBan instead - kept for migration compatibility */
-export type BanDetails = {
-  bannedAt: number
-  bannedBy: string     // mod user ID
-  reason: string       // displayed to user
-  unbanTime?: number   // undefined = permanent, number = temp ban expiry
-}
-
-/** @deprecated Use UserBan instead - kept for migration compatibility */
-export type UnbanRecord = {
-  banType: 'posting' | 'marketControl' | 'trading' | 'usernameChange'
-  // Original ban info
-  bannedAt: number
-  bannedBy: string
-  banReason: string
-  wasTemporary: boolean
-  originalUnbanTime?: number
-  // Unban info
-  unbannedAt: number
-  unbannedBy: string  // mod user ID who removed the ban, or 'system' for auto-expiry
-  unbanNote?: string  // mod notes, not shown to user
 }
 
 export type User = {
@@ -123,12 +102,22 @@ export type User = {
   unbanTime?: number
   /** @deprecated Use user_bans table instead */
   bans?: {
-    posting?: BanDetails
-    marketControl?: BanDetails
-    trading?: BanDetails
+    posting?: { bannedAt: number; bannedBy: string; reason: string; unbanTime?: number }
+    marketControl?: { bannedAt: number; bannedBy: string; reason: string; unbanTime?: number }
+    trading?: { bannedAt: number; bannedBy: string; reason: string; unbanTime?: number }
   }
   /** @deprecated Use user_bans table instead */
-  banHistory?: UnbanRecord[]
+  banHistory?: Array<{
+    banType: 'posting' | 'marketControl' | 'trading' | 'usernameChange'
+    bannedAt: number
+    bannedBy: string
+    banReason: string
+    wasTemporary: boolean
+    originalUnbanTime?: number
+    unbannedAt: number
+    unbannedBy: string
+    unbanNote?: string
+  }>
 
   // MOD ALERTS (can exist without bans)
   modAlert?: {

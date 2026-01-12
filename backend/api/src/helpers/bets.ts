@@ -2,6 +2,7 @@ import { NewBetResult } from 'api/place-bet'
 import { redeemShares } from 'api/redeem-shares'
 import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
+import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
 import { LimitBet, maker } from 'common/bet'
 import { MarginalBet } from 'common/calculate-metrics'
 import {
@@ -22,7 +23,7 @@ import { convertBet } from 'common/supabase/bets'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { convertUser } from 'common/supabase/users'
 import { UniqueBettorBonusTxn } from 'common/txn'
-import { User } from 'common/user'
+import { User, UserBan } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { groupBy, mapValues, orderBy, sumBy, uniq, uniqBy } from 'lodash'
@@ -113,6 +114,7 @@ export const fetchContractBetDataAndValidate = async (
       and (answer_id in (select answer_id from matching_user_answer_pairs)
         or answer_id is null);
     select status from system_trading_status where token = (select token from contracts where id = $2);
+    select * from user_bans where user_id = $1 and ended_at is null and (end_time is null or end_time > now());
   `,
     [uid, contractId, answerIds ?? null, outcome]
   )
@@ -139,6 +141,7 @@ export const fetchContractBetDataAndValidate = async (
     (m) => m.userId + m.answerId + m.contractId
   )
   const systemStatus = results[6][0]
+  const userBans = results[7] as UserBan[]
 
   if (!systemStatus.status) {
     throw new APIError(
@@ -210,17 +213,12 @@ export const fetchContractBetDataAndValidate = async (
   }
 
   // Check new granular trading ban
-  if (!isAdminTrade) {
-    const { isUserBanned, getUserBanMessage } = await import('common/ban-utils')
-    const { getActiveUserBans } = await import('./rate-limit')
-    const userBans = await getActiveUserBans(user.id)
-    if (isUserBanned(userBans, 'trading')) {
-      const message = getUserBanMessage(userBans, 'trading')
-      const errorMsg = message
-        ? `You are banned from trading. Reason: ${message}`
-        : 'You are banned from trading'
-      throw new APIError(403, errorMsg)
-    }
+  if (!isAdminTrade && isUserBanned(userBans, 'trading')) {
+    const message = getUserBanMessage(userBans, 'trading')
+    const errorMsg = message
+      ? `You are banned from trading. Reason: ${message}`
+      : 'You are banned from trading'
+    throw new APIError(403, errorMsg)
   }
   if (contract.outcomeType === 'STONK' && isApi) {
     throw new APIError(403, 'API users cannot bet on STONK contracts.')

@@ -11,6 +11,9 @@ export const dismissmodalert: APIHandler<'dismiss-mod-alert'> = async (
   let result
   if (alertId !== undefined) {
     // Dismiss a specific alert (must belong to the user)
+    // ended_at IS NULL check ensures we only dismiss active alerts:
+    // - Alerts with ended_at set were already lifted by a mod
+    // - Prevents overwriting mod's ended_at timestamp with user's dismiss time
     result = await pg.result(
       `UPDATE user_bans
        SET ended_by = $1, ended_at = now()
