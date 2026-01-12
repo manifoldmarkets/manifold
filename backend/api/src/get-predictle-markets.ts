@@ -3,6 +3,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
 import { APIError } from 'common/api/utils'
 import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
+import { promptAI, aiModels } from 'shared/helpers/prompt-ai'
+import { log } from 'shared/utils'
 
 type PredicleMarket = {
   id: string
@@ -19,6 +21,86 @@ type PredictleData = {
 }
 
 const MIN_MARKETS_REQUIRED = 5
+
+// Check if a market question is clear, objective, and easy to understand
+async function isMarketQuestionClear(question: string): Promise<boolean> {
+  try {
+    const prompt = `### Role
+You are an expert Prediction Market Quality Controller. Your task is to determine if a question is tradable.
+
+### Evaluation Criteria
+A question is tradable (Output: Yes) ONLY if it meets all three:
+1. **Objective:** Outcome depends on facts, not opinions.
+2. **Specific:** Includes a clear deadline and a specific metric/source.
+3. **Resolvable:** A stranger could look at a data source on the end date and give an indisputable answer.
+
+A question is NOT tradable (Output: No) if it is Subjective, Vague, or lacks a clear timestamp/source.
+
+### Output Format
+Return ONLY the word "Yes" or "No". Do not include any other text, punctuation, or explanation.
+
+### Examples
+Input: "Will Venezuelans be better off at the end of 2026?"
+Output: No
+
+Input: "Will Trump finish his second term?"
+Output: Yes
+
+Input: "Will Elon Musk tweet something funny this week?"
+Output: No
+
+Input: "Bitcoin $95K in January?"
+Output: Yes
+
+### Evaluation Task
+Input: "${question}"
+Output: `
+
+    const response = await promptAI(prompt, {
+      model: aiModels.flash,
+      thinkingLevel: 'minimal',
+    })
+
+    return response.toLowerCase().trim().startsWith('yes')
+  } catch (e) {
+    log.error('Error checking market question clarity:', { error: e })
+    // On error, assume the question is fine to avoid blocking
+    return true
+  }
+}
+
+// Filter markets for quality using LLM
+async function filterMarketsForQuality(
+  markets: Contract[]
+): Promise<Contract[]> {
+  // Check markets in batches for efficiency
+  const BATCH_SIZE = 10
+  const qualityMarkets: Contract[] = []
+
+  for (
+    let i = 0;
+    i < markets.length && qualityMarkets.length < 20;
+    i += BATCH_SIZE
+  ) {
+    const batch = markets.slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(
+      batch.map(async (market) => ({
+        market,
+        isClear: await isMarketQuestionClear(market.question),
+      }))
+    )
+
+    for (const { market, isClear } of results) {
+      if (isClear) {
+        qualityMarkets.push(market)
+      } else {
+        log('Filtered out unclear market:', market.question)
+      }
+    }
+  }
+
+  return qualityMarkets
+}
 
 // Seeded random number generator for deterministic results
 function seededRandom(seed: number): number {
@@ -85,12 +167,14 @@ async function fetchEligibleMarkets(
       AND (data->>'prob')::numeric < 0.95
       AND NOT (group_slugs && $1::text[])
     ORDER BY importance_score DESC
-    LIMIT 100
+    LIMIT 300
     `,
     [HIDE_FROM_NEW_USER_SLUGS],
     (r) => r.data as Contract
   )
 }
+
+const MIN_PROB_DIFFERENCE = 0.05 // Markets must be at least this percentage apart
 
 // Select and prepare markets for today's puzzle
 function prepareMarkets(
@@ -100,9 +184,33 @@ function prepareMarkets(
   predictleMarkets: PredicleMarket[]
   correctOrder: Record<string, number>
 } {
-  // Shuffle with today's seed and pick 5
+  // Shuffle with today's seed
   const shuffled = shuffleWithSeed(markets, seed)
-  const selectedMarkets = shuffled.slice(0, MIN_MARKETS_REQUIRED)
+
+  // Select markets that are at least 5% apart from each other
+  const selectedMarkets: Contract[] = []
+  for (const market of shuffled) {
+    if (selectedMarkets.length >= MIN_MARKETS_REQUIRED) break
+
+    const prob = 'prob' in market ? market.prob : 0.5
+    const isFarEnough = selectedMarkets.every((selected) => {
+      const selectedProb = 'prob' in selected ? selected.prob : 0.5
+      return Math.abs(prob - selectedProb) >= MIN_PROB_DIFFERENCE
+    })
+
+    if (isFarEnough) {
+      selectedMarkets.push(market)
+    }
+  }
+
+  // If we couldn't find 5 markets that are 5% apart, throw an error
+  if (selectedMarkets.length < MIN_MARKETS_REQUIRED) {
+    throw new Error(
+      `Could not find ${MIN_MARKETS_REQUIRED} markets that are at least ${
+        MIN_PROB_DIFFERENCE * 100
+      }% apart. Found ${selectedMarkets.length}.`
+    )
+  }
 
   // Sort by probability for the correct order (high to low)
   const sortedByProb = [...selectedMarkets].sort((a, b) => {
@@ -147,12 +255,24 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
 
   // No cache - compute today's markets
   const seed = dateToSeed(todayDate)
-  const markets = await fetchEligibleMarkets(pg)
+  const rawMarkets = await fetchEligibleMarkets(pg)
+
+  if (rawMarkets.length < MIN_MARKETS_REQUIRED) {
+    throw new APIError(
+      500,
+      `Not enough markets available for today's puzzle. Found ${rawMarkets.length}, need ${MIN_MARKETS_REQUIRED}.`
+    )
+  }
+
+  // Filter markets for quality using LLM
+  log('Filtering markets for quality...')
+  const markets = await filterMarketsForQuality(rawMarkets)
+  log(`Filtered to ${markets.length} quality markets from ${rawMarkets.length}`)
 
   if (markets.length < MIN_MARKETS_REQUIRED) {
     throw new APIError(
       500,
-      `Not enough markets available for today's puzzle. Found ${markets.length}, need ${MIN_MARKETS_REQUIRED}.`
+      `Not enough quality markets for today's puzzle. Found ${markets.length} quality markets, need ${MIN_MARKETS_REQUIRED}.`
     )
   }
 

@@ -1,18 +1,5 @@
-import { Row } from '../layout/row'
-import { Ref, forwardRef, useEffect, useState } from 'react'
-import { getFullUserById } from 'web/lib/supabase/users'
-import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { useAdminOrMod } from 'web/hooks/use-admin'
-import { Avatar } from '../widgets/avatar'
-import { FollowButton } from '../buttons/follow-button'
-import { StackedUserNames } from '../widgets/user-link'
-import { Linkify } from '../widgets/linkify'
-import dayjs from 'dayjs'
-import { Col } from '../layout/col'
-import { FullUser } from 'common/api/user-types'
-import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import {
+  FloatingPortal,
   autoUpdate,
   flip,
   offset,
@@ -24,10 +11,24 @@ import {
   useHover,
   useInteractions,
   useRole,
-  FloatingPortal,
 } from '@floating-ui/react'
 import clsx from 'clsx'
+import { FullUser } from 'common/api/user-types'
 import { userHasHovercardGlow } from 'common/shop/items'
+import dayjs from 'dayjs'
+import { Ref, forwardRef, useEffect, useState } from 'react'
+import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
+import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useFollowers, useFollows } from 'web/hooks/use-follows'
+import { getFullUserById } from 'web/lib/supabase/users'
+import { FollowButton } from '../buttons/follow-button'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import SuperBanControl from '../SuperBanControl'
+import { Avatar } from '../widgets/avatar'
+import { Linkify } from '../widgets/linkify'
+import { StackedUserNames } from '../widgets/user-link'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -65,10 +66,15 @@ export function UserHovercard({
   className,
 }: UserHovercardProps) {
   const [open, setOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const { refs, floatingStyles, context } = useFloating({
     open,
-    onOpenChange: setOpen,
+    onOpenChange: (newOpen) => {
+      // Don't close while modal is open
+      if (!newOpen && modalOpen) return
+      setOpen(newOpen)
+    },
     whileElementsMounted: autoUpdate,
     placement: 'bottom-start',
     middleware: [offset(8), flip(), shift({ padding: 4 })],
@@ -79,9 +85,10 @@ export function UserHovercard({
     useHover(context, {
       delay: { open: 150, close: 300 },
       handleClose: safePolygon({ buffer: -0.5 }),
+      enabled: !modalOpen,
     }),
     useFocus(context),
-    useDismiss(context),
+    useDismiss(context, { enabled: !modalOpen }),
     useRole(context, { role: 'dialog' }),
   ])
 
@@ -102,7 +109,10 @@ export function UserHovercard({
             style={floatingStyles}
             {...getFloatingProps()}
           >
-            <FetchUserHovercardContent userId={userId} />
+            <FetchUserHovercardContent
+              userId={userId}
+              onModalOpenChange={setModalOpen}
+            />
           </div>
         </FloatingPortal>
       )}
@@ -111,7 +121,13 @@ export function UserHovercard({
 }
 
 const FetchUserHovercardContent = forwardRef(
-  ({ userId }: { userId: string }, ref: Ref<HTMLDivElement>) => {
+  (
+    {
+      userId,
+      onModalOpenChange,
+    }: { userId: string; onModalOpenChange?: (open: boolean) => void },
+    ref: Ref<HTMLDivElement>
+  ) => {
     const [user, setUser] = useState<FullUser | null>(null)
 
     useEffect(() => {
@@ -137,7 +153,7 @@ const FetchUserHovercardContent = forwardRef(
         className={clsx(
           'animate-slide-up-and-fade divide-ink-300 bg-canvas-0 text-ink-1000 z-30 w-56 divide-y rounded-md shadow-lg focus:outline-none',
           hasGlow
-            ? 'ring-2 ring-violet-400 shadow-[0_0_15px_rgba(167,139,250,0.5)]'
+            ? 'shadow-[0_0_15px_rgba(167,139,250,0.5)] ring-2 ring-violet-400'
             : 'ring-ink-1000 ring-1 ring-opacity-5'
         )}
       >
@@ -197,10 +213,18 @@ const FetchUserHovercardContent = forwardRef(
         </div>
 
         <div className="py-1">
-          <div className="text-ink-700 block px-4 py-2 text-sm">
-            <span className="font-semibold">Last active:</span>{' '}
-            {formatLastActive(lastActiveTime)}
-          </div>
+          <Row className="items-center justify-between px-4 py-2">
+            <div className="text-ink-700 text-sm">
+              <span className="font-semibold">Last active:</span>{' '}
+              {formatLastActive(lastActiveTime)}
+            </div>
+            {isMod && (
+              <SuperBanControl
+                userId={userId}
+                onModalOpenChange={onModalOpenChange}
+              />
+            )}
+          </Row>
         </div>
       </div>
     ) : null

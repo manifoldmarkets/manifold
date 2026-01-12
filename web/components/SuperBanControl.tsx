@@ -1,23 +1,37 @@
 import { useState } from 'react'
-import { Modal } from './layout/modal'
 import { superBanUser } from 'web/lib/supabase/super-ban-user'
-import { Col } from './layout/col'
 import { Button } from './buttons/button'
+import { Col } from './layout/col'
+import { Modal } from './layout/modal'
 
 const SuperBanControl = (props: {
   userId: string
   onBan?: () => void
   disabled?: boolean
+  onModalOpenChange?: (open: boolean) => void
 }) => {
-  const { userId, onBan, disabled } = props
+  const { userId, onBan, disabled, onModalOpenChange } = props
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [summaryMessage, setSummaryMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const setConfirmModal = (open: boolean) => {
+    setShowConfirmModal(open)
+    // Keep hovercard open if any modal is open OR if we're loading
+    onModalOpenChange?.(open || showSummaryModal || loading)
+  }
+
+  const setSummaryModal = (open: boolean) => {
+    setShowSummaryModal(open)
+    onModalOpenChange?.(open || showConfirmModal || loading)
+  }
+
   async function handleSuperBan() {
-    setShowConfirmModal(false)
     setLoading(true)
+    // Notify parent we're busy (loading) before closing modal
+    onModalOpenChange?.(true)
+    setShowConfirmModal(false)
     try {
       const message = await superBanUser(userId)
       setSummaryMessage(message)
@@ -25,6 +39,8 @@ const SuperBanControl = (props: {
       onBan?.()
     } catch (error) {
       console.error('Superban failed:', error)
+      // On error, close everything
+      onModalOpenChange?.(false)
     } finally {
       setLoading(false)
     }
@@ -35,14 +51,14 @@ const SuperBanControl = (props: {
       <Button
         color="red"
         size="xs"
-        onClick={() => setShowConfirmModal(true)}
+        onClick={() => setConfirmModal(true)}
         disabled={loading || disabled}
         loading={loading}
       >
         Superban
       </Button>
 
-      <Modal open={showConfirmModal} setOpen={setShowConfirmModal} size="md">
+      <Modal open={showConfirmModal} setOpen={setConfirmModal} size="md">
         <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
           <div className="text-left">
             <p>
@@ -53,7 +69,7 @@ const SuperBanControl = (props: {
               <Button color="red" onClick={() => handleSuperBan()}>
                 Yes, superban
               </Button>
-              <Button color="gray" onClick={() => setShowConfirmModal(false)}>
+              <Button color="gray" onClick={() => setConfirmModal(false)}>
                 No, cancel
               </Button>
             </div>
@@ -61,7 +77,7 @@ const SuperBanControl = (props: {
         </Col>
       </Modal>
 
-      <Modal open={showSummaryModal} setOpen={setShowSummaryModal} size="md">
+      <Modal open={showSummaryModal} setOpen={setSummaryModal} size="md">
         <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
           <div className="text-center">{summaryMessage}</div>
         </Col>

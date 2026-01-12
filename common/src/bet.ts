@@ -45,6 +45,8 @@ export type Bet = {
 
   replyToCommentId?: string
   betGroupId?: string // Used to group buys on MC sumsToOne contracts
+
+  isInterestClaim?: boolean // true if this bet represents claimed interest shares (amount=0)
 } & Partial<LimitProps>
 
 export type NumericBet = Bet & {

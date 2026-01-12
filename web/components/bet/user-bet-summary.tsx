@@ -14,10 +14,10 @@ import { noFees } from 'common/fees'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { useState } from 'react'
-import { LuShare } from 'react-icons/lu'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 import { SellRow } from 'web/components/bet/sell-row'
+import { LoanButton } from 'web/components/bet/loan-button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -84,10 +84,10 @@ export function BetsSummary(props: {
   const user = useUser()
   const isAdmin = useAdmin()
   const bettor = useDisplayUserById(metric.userId)
+  const isCashContract = contract.token === 'CASH'
 
   if (metric.invested === 0 && metric.profit === 0) return null
 
-  const isCashContract = contract.token === 'CASH'
   const avgPrice = maxSharesOutcome
     ? metric.invested / metric.totalShares[maxSharesOutcome]
     : 0
@@ -186,26 +186,64 @@ export function BetsSummary(props: {
                 </div>
               </Col>
             )}
-            {includeSellButton && (
-              <SellRow
-                contract={contract as CPMMContract}
-                user={includeSellButton}
-                hideStatus={true}
-                className={'-mt-1'}
-              />
-            )}
+            {includeSellButton &&
+              (contract.mechanism !== 'cpmm-multi-1' ||
+                isBinaryMulti(contract)) && (
+                <Row className="items-center gap-2">
+                  <SellRow
+                    contract={contract as CPMMContract}
+                    user={includeSellButton}
+                    hideStatus={true}
+                  />
+                  {contract.token === 'MANA' && !contract.isResolved && (
+                    <LoanButton
+                      contractId={contract.id}
+                      user={includeSellButton}
+                    />
+                  )}
+                  {maxSharesOutcome &&
+                    (yesWinnings > 1 || noWinnings > 1) &&
+                    (resolution === undefined || resolution !== 'CANCEL') && (
+                      <Button
+                        className="!py-1"
+                        size="xs"
+                        color="gray-outline"
+                        onClick={() => setShowShareModal(true)}
+                      >
+                        Share
+                      </Button>
+                    )}
+                </Row>
+              )}
           </Row>
         )}
 
-        <Col>
-          <div className="text-ink-500 whitespace-nowrap text-sm">
-            Spent{' '}
-            <InfoTooltip text="Cost basis. Cash originally invested in this question, using average cost accounting." />
-          </div>
-          <div className="whitespace-nowrap">
-            <MoneyDisplay amount={invested} isCashContract={isCashContract} />
-          </div>
-        </Col>
+        <Row className="gap-4 sm:contents">
+          <Col>
+            <div className="text-ink-500 whitespace-nowrap text-sm">
+              Spent{' '}
+              <InfoTooltip text="Cost basis. Cash originally invested in this question, using average cost accounting." />
+            </div>
+            <div className="whitespace-nowrap">
+              <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+            </div>
+          </Col>
+
+          <Col>
+            <div className="text-ink-500 whitespace-nowrap text-sm">
+              Profit{' '}
+              <InfoTooltip
+                text={`How much ${
+                  areYourBets ? "you've" : "they've"
+                } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
+              />
+            </div>
+            <div className="whitespace-nowrap">
+              <MoneyDisplay amount={profit} isCashContract={isCashContract} />
+              <ProfitBadge profitPercent={profitPercent} round={true} />
+            </div>
+          </Col>
+        </Row>
 
         {isBinary && !resolution && (
           <Col className="hidden sm:inline">
@@ -226,63 +264,40 @@ export function BetsSummary(props: {
           </Col>
         )}
 
-        <Col>
-          <div className="text-ink-500 whitespace-nowrap text-sm">
-            Profit{' '}
-            <InfoTooltip
-              text={`How much ${
-                areYourBets ? "you've" : "they've"
-              } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
-            />
-          </div>
-          <div className="whitespace-nowrap">
-            <MoneyDisplay amount={profit} isCashContract={isCashContract} />
-            <ProfitBadge profitPercent={profitPercent} round={true} />
-          </div>
-        </Col>
-        {(contract.mechanism !== 'cpmm-multi-1' || isBinaryMulti(contract)) &&
-          maxSharesOutcome &&
-          (yesWinnings > 1 || noWinnings > 1) &&
-          (resolution === undefined || resolution !== 'CANCEL') && (
-            <>
-              <Button
-                className="h-10"
-                size={'lg'}
-                color={'green-outline'}
-                onClick={() => setShowShareModal(true)}
-              >
-                <Row className="items-center gap-2">
-                  <LuShare className="h-5 w-5" aria-hidden />
-                  Share
-                </Row>
-              </Button>
-              {showShareModal && bettor && (
-                <ShareBetModal
-                  open={showShareModal}
-                  setOpen={setShowShareModal}
-                  questionText={contract.question}
-                  outcome={mainBinaryMCAnswer ? 'YES' : maxSharesOutcome}
-                  answer={
-                    getPseudonym(contract)?.[maxSharesOutcome as 'YES' | 'NO']
-                      ?.pseudonymName
-                  }
-                  avgPrice={formatPercent(
-                    maxSharesOutcome === 'YES' ? avgPrice : 1 - avgPrice
-                  )}
-                  betAmount={metric.invested}
-                  winAmount={metric.totalShares[maxSharesOutcome]}
-                  resolution={resolution}
-                  profit={metric.profit}
-                  bettor={{
-                    id: bettor.id,
-                    name: bettor.name,
-                    username: bettor.username,
-                    avatarUrl: bettor.avatarUrl,
-                  }}
-                />
-              )}
-            </>
+        {/* Loan button for multi-choice markets that don't have sell button next to payout */}
+        {includeSellButton &&
+          contract.token === 'MANA' &&
+          !contract.isResolved &&
+          contract.mechanism === 'cpmm-multi-1' &&
+          !isBinaryMulti(contract) && (
+            <LoanButton contractId={contract.id} user={includeSellButton} />
           )}
+        {/* Share modal - button is now in the Sell/Loan row */}
+        {showShareModal && bettor && maxSharesOutcome && (
+          <ShareBetModal
+            open={showShareModal}
+            setOpen={setShowShareModal}
+            questionText={contract.question}
+            outcome={mainBinaryMCAnswer ? 'YES' : maxSharesOutcome}
+            answer={
+              getPseudonym(contract)?.[maxSharesOutcome as 'YES' | 'NO']
+                ?.pseudonymName
+            }
+            avgPrice={formatPercent(
+              maxSharesOutcome === 'YES' ? avgPrice : 1 - avgPrice
+            )}
+            betAmount={metric.invested}
+            winAmount={metric.totalShares[maxSharesOutcome]}
+            resolution={resolution}
+            profit={metric.profit}
+            bettor={{
+              id: bettor.id,
+              name: bettor.name,
+              username: bettor.username,
+              avatarUrl: bettor.avatarUrl,
+            }}
+          />
+        )}
         {/* Admin sell button - only show for admins viewing other users' bets */}
         {isAdmin &&
           user &&

@@ -237,7 +237,7 @@ export function SellPanel(props: {
       : displayAmount
     setAmount(realAmount)
 
-    // Check for errors.
+    // Check for errors
     if (realAmount !== undefined && realAmount > shares) {
       setError(
         `Maximum ${formatShares(Math.floor(shares), isCashContract)} shares`

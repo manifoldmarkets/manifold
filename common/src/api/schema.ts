@@ -69,13 +69,13 @@ import { notification_preference } from 'common/user-notification-preferences'
 
 import { JSONContent } from '@tiptap/core'
 import { RanksType } from 'common/achievements'
-import { ShopItem } from 'common/shop/items'
-import { UserShopPurchase } from 'common/user'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
+import { ShopItem } from 'common/shop/items'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
+import { UserShopPurchase } from 'common/user'
 import { YEAR_MS } from 'common/util/time'
 import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
@@ -118,7 +118,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z
       .object({
-        token: z.enum(['MANA', 'CASH']),
+        token: z.enum(['MANA', 'CASH', 'LOAN']),
       })
       .strict(),
     returns: {} as { status: boolean },
@@ -1014,11 +1014,41 @@ export const API = (_apiTypeCheck = {
     props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
   },
   'request-loan': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      amount: z.number().positive(),
+      contractId: z.string().optional(),
+      answerId: z.string().optional(),
+    }),
+    returns: {} as {
+      success: boolean
+      amount: number
+      distributed: Array<{
+        contractId: string
+        answerId: string | null
+        loanAmount: number
+      }>
+    },
+  },
+  'repay-loan': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      amount: z.number().positive(),
+      contractId: z.string().optional(),
+      answerId: z.string().optional(),
+    }),
+    returns: {} as { repaid: number; remainingLoan: number },
+  },
+  'get-total-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
     props: z.object({}),
-    returns: {} as { payout: number },
+    returns: {} as { totalOwed: number },
   },
   // deprecated. use /txns instead
   managrams: {
@@ -2028,9 +2058,50 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     cache: DEFAULT_CACHE_STRATEGY,
     authed: false,
-    returns: {} as { amount: number },
+    returns: {} as {
+      maxGeneralLoan: number
+      currentLoan: number
+      available: number
+      dailyLimit: number
+      todayLoans: number
+      availableToday: number
+    },
     props: z.object({
       userId: z.string(),
+    }),
+  },
+  'get-market-loan-max': {
+    method: 'GET',
+    visibility: 'undocumented',
+    cache: DEFAULT_CACHE_STRATEGY,
+    authed: true,
+    returns: {} as {
+      maxLoan: number
+      currentLoan: number
+      available: number
+      netWorthLimit: number
+      positionLimit: number
+      totalPositionValue: number
+      eligible: boolean
+      eligibilityReason?: string
+      // Aggregate limits (80% of net worth across all markets)
+      aggregateLimit: number
+      totalLoanAllMarkets: number
+      availableAggregate: number
+      // Daily limits (10% of net worth per day)
+      dailyLimit: number
+      todayLoans: number
+      availableToday: number
+      // Per-answer loan data (for multi-choice markets)
+      answerLoans?: Array<{
+        answerId: string
+        loan: number
+        positionValue: number
+      }>
+    },
+    props: z.object({
+      contractId: z.string(),
+      answerId: z.string().optional(),
     }),
   },
   'create-task': {
@@ -2134,6 +2205,47 @@ export const API = (_apiTypeCheck = {
       modTicketsResolved: number
       charityDonatedMana: number
       ranks: RanksType
+    },
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+  },
+  'get-user-calibration': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // Heavy endpoint - cache for 24 hours with 1 hour stale-while-revalidate
+    cache: 'public, max-age=86400, stale-while-revalidate=3600',
+    returns: {} as {
+      calibration: {
+        yesPoints: { x: number; y: number }[]
+        noPoints: { x: number; y: number }[]
+        totalBets: number
+      }
+      performanceStats: {
+        totalProfit: number
+        profit365: number
+        totalVolume: number
+        winRate: number
+        totalMarkets: number
+        resolvedMarkets: number
+        volatility: number
+        sharpeRatio: number
+        maxDrawdown: number
+      }
+      portfolioHistory: {
+        timestamp: number
+        value: number
+        profit: number
+      }[]
+      profitByTopic: {
+        topic: string
+        profit: number
+        volume: number
+        marketCount: number
+      }[]
     },
     props: z
       .object({
@@ -2411,7 +2523,7 @@ export const API = (_apiTypeCheck = {
         utcOffset: z.number().optional(),
       })
       .strict(),
-    returns: {} as { closeTime: number },
+    returns: {} as { closeTime: number; confidence: number },
   },
   'refer-user': {
     method: 'POST',
@@ -2734,6 +2846,84 @@ export const API = (_apiTypeCheck = {
       }
     },
   },
+  'get-charity-giveaway': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      giveaway?: {
+        giveawayNum: number
+        name: string
+        prizeAmountUsd: number
+        closeTime: number
+        winningTicketId: string | null
+        createdTime: number
+      }
+      charityStats: {
+        charityId: string
+        totalTickets: number
+        totalManaSpent: number
+      }[]
+      totalTickets: number
+    },
+  },
+  'buy-charity-giveaway-tickets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        giveawayNum: z.number(),
+        charityId: z.string(),
+        numTickets: z.number().positive(),
+      })
+      .strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+      manaSpent: number
+    },
+  },
+  'get-charity-giveaway-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        giveawayNum: z.coerce.number(),
+        limit: z.coerce.number().min(1).max(100).default(50),
+        before: z.string().optional(),
+      })
+      .strict(),
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      sales: {
+        id: string
+        giveawayNum: number
+        charityId: string
+        userId: string
+        numTickets: number
+        manaSpent: number
+        createdTime: number
+      }[]
+    },
+  },
+  'get-predictle-percentile': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        puzzleNumber: z.coerce.number(),
+        attempts: z.coerce.number(),
+      })
+      .strict(),
+    returns: {} as {
+      percentile: number // 0-100, percentage of users you beat
+      totalUsers: number
+    },
+  },
   // Shop endpoints
   'get-shop-items': {
     method: 'GET',
@@ -2764,6 +2954,48 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean },
+  },
+  // Admin spam detection endpoints
+  'get-suspected-spam-comments': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limit: z.coerce.number().min(1).max(1000).default(20),
+        offset: z.coerce.number().default(0),
+        ignoredIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      comments: {
+        commentId: string
+        contractId: string
+        content: JSONContent | null
+        commentText: string
+        marketTitle: string
+        marketSlug: string
+        creatorUsername: string
+        userId: string
+        userName: string
+        userUsername: string
+        userAvatarUrl: string | null
+        createdTime: number
+        isSpam: boolean | null
+      }[]
+      total: number
+    },
+  },
+  'delete-spam-comments': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        commentIds: z.array(z.string()),
+      })
+      .strict(),
+    returns: {} as { success: boolean; deletedCount: number },
   },
 } as const)
 

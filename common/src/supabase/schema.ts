@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '12.2.3 (519615d)'
+  }
   public: {
     Tables: {
       answers: {
@@ -15,8 +20,10 @@ export type Database = {
           contract_id: string | null
           created_time: string | null
           id: string
+          image_url: string | null
           index: number | null
           is_other: boolean
+          midpoint: number | null
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
@@ -27,14 +34,12 @@ export type Database = {
           resolution_probability: number | null
           resolution_time: string | null
           resolver_id: string | null
+          short_text: string | null
           subsidy_pool: number | null
           text: string | null
-          text_fts: unknown | null
+          text_fts: unknown
           total_liquidity: number | null
           user_id: string | null
-          image_url: string | null
-          short_text: string | null
-          midpoint: number | null
           volume: number | null
         }
         Insert: {
@@ -42,8 +47,10 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           id?: string
+          image_url?: string | null
           index?: number | null
           is_other?: boolean
+          midpoint?: number | null
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
@@ -54,14 +61,12 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           resolver_id?: string | null
+          short_text?: string | null
           subsidy_pool?: number | null
           text?: string | null
-          text_fts?: unknown | null
+          text_fts?: unknown
           total_liquidity?: number | null
           user_id?: string | null
-          image_url?: string | null
-          short_text?: string | null
-          midpoint?: number | null
           volume?: number | null
         }
         Update: {
@@ -69,8 +74,10 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           id?: string
+          image_url?: string | null
           index?: number | null
           is_other?: boolean
+          midpoint?: number | null
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
@@ -81,20 +88,19 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           resolver_id?: string | null
+          short_text?: string | null
           subsidy_pool?: number | null
           text?: string | null
-          text_fts?: unknown | null
+          text_fts?: unknown
           total_liquidity?: number | null
           user_id?: string | null
-          image_url?: string | null
-          short_text?: string | null
-          midpoint?: number | null
           volume?: number | null
         }
         Relationships: []
       }
       audit_events: {
         Row: {
+          bet_id: string | null
           comment_id: string | null
           contract_id: string | null
           created_time: string
@@ -104,6 +110,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
           created_time?: string
@@ -113,6 +120,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
           created_time?: string
@@ -122,6 +130,101 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      categories: {
+        Row: {
+          archived: boolean
+          color: string | null
+          created_time: string
+          display_order: number
+          id: number
+          name: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          color?: string | null
+          created_time?: string
+          display_order?: number
+          id?: never
+          name: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          color?: string | null
+          created_time?: string
+          display_order?: number
+          id?: never
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      charity_lotteries: {
+        Row: {
+          close_time: string
+          created_time: string
+          lottery_num: number
+          name: string
+          prize_amount_usd: number
+          winning_ticket_id: string | null
+        }
+        Insert: {
+          close_time: string
+          created_time?: string
+          lottery_num: number
+          name: string
+          prize_amount_usd: number
+          winning_ticket_id?: string | null
+        }
+        Update: {
+          close_time?: string
+          created_time?: string
+          lottery_num?: number
+          name?: string
+          prize_amount_usd?: number
+          winning_ticket_id?: string | null
+        }
+        Relationships: []
+      }
+      charity_lottery_tickets: {
+        Row: {
+          charity_id: string
+          created_time: string
+          id: string
+          lottery_num: number
+          mana_spent: number
+          num_tickets: number
+          user_id: string
+        }
+        Insert: {
+          charity_id: string
+          created_time?: string
+          id?: string
+          lottery_num: number
+          mana_spent: number
+          num_tickets: number
+          user_id: string
+        }
+        Update: {
+          charity_id?: string
+          created_time?: string
+          id?: string
+          lottery_num?: number
+          mana_spent?: number
+          num_tickets?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'charity_lottery_tickets_lottery_num_fkey'
+            columns: ['lottery_num']
+            isOneToOne: false
+            referencedRelation: 'charity_lotteries'
+            referencedColumns: ['lottery_num']
+          }
+        ]
       }
       chart_annotations: {
         Row: {
@@ -273,33 +376,33 @@ export type Database = {
       contract_boosts: {
         Row: {
           contract_id: string | null
-          post_id: string | null
+          created_time: string
           end_time: string
+          funded: boolean
           id: number
+          post_id: string | null
           start_time: string
           user_id: string
-          created_time: string
-          funded: boolean
         }
         Insert: {
           contract_id?: string | null
-          post_id?: string | null
+          created_time?: string
           end_time: string
+          funded?: boolean
           id?: never
+          post_id?: string | null
           start_time: string
           user_id: string
-          created_time?: string
-          funded?: boolean
         }
         Update: {
           contract_id?: string | null
-          post_id?: string | null
+          created_time?: string
           end_time?: string
+          funded?: boolean
           id?: never
+          post_id?: string | null
           start_time?: string
           user_id?: string
-          created_time?: string
-          funded?: boolean
         }
         Relationships: [
           {
@@ -308,6 +411,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'contracts'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'old_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
           },
           {
             foreignKeyName: 'contract_boosts_user_id_fkey'
@@ -358,9 +475,8 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          downvotes: number | null
+          dislikes: number | null
           likes: number
-          upvotes: number | null
           user_id: string
           visibility: string | null
         }
@@ -369,9 +485,8 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          downvotes?: number | null
+          dislikes?: number | null
           likes?: number
-          upvotes?: number | null
           user_id: string
           visibility?: string | null
         }
@@ -380,9 +495,8 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          downvotes?: number | null
+          dislikes?: number | null
           likes?: number
-          upvotes?: number | null
           user_id?: string
           visibility?: string | null
         }
@@ -457,18 +571,24 @@ export type Database = {
       contract_liquidity: {
         Row: {
           contract_id: string
+          created_time: string | null
           data: Json
           liquidity_id: string
+          user_id: string | null
         }
         Insert: {
           contract_id: string
+          created_time?: string | null
           data: Json
           liquidity_id: string
+          user_id?: string | null
         }
         Update: {
           contract_id?: string
+          created_time?: string | null
           data?: Json
           liquidity_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -479,11 +599,12 @@ export type Database = {
           created_time: string
           destination: string
           id: number
-          user_id: string
           new_val: number
           new_val_start_time: string
+          notification_id: string | null
           prev_val: number
           prev_val_start_time: string
+          user_id: string
         }
         Insert: {
           answer_id?: string | null
@@ -491,11 +612,12 @@ export type Database = {
           created_time?: string
           destination: string
           id?: never
-          user_id: string
           new_val: number
           new_val_start_time?: string
+          notification_id?: string | null
           prev_val: number
           prev_val_start_time?: string
+          user_id: string
         }
         Update: {
           answer_id?: string | null
@@ -503,11 +625,12 @@ export type Database = {
           created_time?: string
           destination?: string
           id?: never
-          user_id?: string
           new_val?: number
           new_val_start_time?: string
+          notification_id?: string | null
           prev_val?: number
           prev_val_start_time?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -516,6 +639,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'contracts'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_user_id'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
           },
           {
             foreignKeyName: 'fk_user_id'
@@ -535,6 +665,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          boosted: boolean
           close_time: string | null
           conversion_score: number
           created_time: string | null
@@ -542,7 +673,7 @@ export type Database = {
           daily_score: number
           data: Json
           deleted: boolean | null
-          description_fts: unknown | null
+          description_fts: unknown
           freshness_score: number
           group_slugs: string[] | null
           id: string
@@ -555,20 +686,19 @@ export type Database = {
           outcome_type: string | null
           popularity_score: number
           question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
+          question_fts: unknown
+          question_nostop_fts: unknown
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          tier: string | null
           token: string
           unique_bettor_count: number
           view_count: number
           visibility: string | null
-          boosted: boolean | null
         }
         Insert: {
+          boosted?: boolean
           close_time?: string | null
           conversion_score?: number
           created_time?: string | null
@@ -576,7 +706,7 @@ export type Database = {
           daily_score?: number
           data: Json
           deleted?: boolean | null
-          description_fts?: unknown | null
+          description_fts?: unknown
           freshness_score?: number
           group_slugs?: string[] | null
           id: string
@@ -589,20 +719,19 @@ export type Database = {
           outcome_type?: string | null
           popularity_score?: number
           question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
+          question_fts?: unknown
+          question_nostop_fts?: unknown
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          tier?: string | null
           token?: string
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
-          boosted?: boolean | null
         }
         Update: {
+          boosted?: boolean
           close_time?: string | null
           conversion_score?: number
           created_time?: string | null
@@ -610,7 +739,7 @@ export type Database = {
           daily_score?: number
           data?: Json
           deleted?: boolean | null
-          description_fts?: unknown | null
+          description_fts?: unknown
           freshness_score?: number
           group_slugs?: string[] | null
           id?: string
@@ -623,18 +752,16 @@ export type Database = {
           outcome_type?: string | null
           popularity_score?: number
           question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
+          question_fts?: unknown
+          question_nostop_fts?: unknown
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          tier?: string | null
           token?: string
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
-          boosted?: boolean | null
         }
         Relationships: []
       }
@@ -675,40 +802,40 @@ export type Database = {
           avg_user_actions: number | null
           bet_amount: number | null
           bet_count: number | null
+          cash_avg_user_actions: number | null
           cash_bet_amount: number | null
+          cash_bet_count: number | null
+          cash_comment_count: number | null
+          cash_contract_count: number | null
+          cash_d1: number | null
+          cash_dau: number | null
+          cash_m1: number | null
+          cash_mau: number | null
+          cash_sales: number | null
+          cash_w1: number | null
+          cash_wau: number | null
           comment_count: number | null
           contract_count: number | null
           d1: number | null
           d1_bet_3_day_average: number | null
           d1_bet_average: number | null
           dau: number | null
+          dav: number | null
           engaged_users: number | null
           feed_conversion: number | null
           m1: number | null
           mau: number | null
+          mav: number | null
           nd1: number | null
           nw1: number | null
           sales: number | null
-          cash_sales: number | null
           signups: number | null
           signups_real: number | null
           start_date: string
-          w1: number | null
-          dav: number | null
-          wav: number | null
-          mav: number | null
-          wau: number | null
           topic_daus: Json | null
-          cash_bet_count: number | null
-          cash_d1: number | null
-          cash_w1: number | null
-          cash_m1: number | null
-          cash_dau: number | null
-          cash_wau: number | null
-          cash_mau: number | null
-          cash_comment_count: number | null
-          cash_contract_count: number | null
-          cash_avg_user_actions: number | null
+          w1: number | null
+          wau: number | null
+          wav: number | null
         }
         Insert: {
           activation?: number | null
@@ -716,40 +843,40 @@ export type Database = {
           avg_user_actions?: number | null
           bet_amount?: number | null
           bet_count?: number | null
+          cash_avg_user_actions?: number | null
           cash_bet_amount?: number | null
+          cash_bet_count?: number | null
+          cash_comment_count?: number | null
+          cash_contract_count?: number | null
+          cash_d1?: number | null
+          cash_dau?: number | null
+          cash_m1?: number | null
+          cash_mau?: number | null
+          cash_sales?: number | null
+          cash_w1?: number | null
+          cash_wau?: number | null
           comment_count?: number | null
           contract_count?: number | null
           d1?: number | null
           d1_bet_3_day_average?: number | null
           d1_bet_average?: number | null
           dau?: number | null
+          dav?: number | null
           engaged_users?: number | null
           feed_conversion?: number | null
           m1?: number | null
           mau?: number | null
+          mav?: number | null
           nd1?: number | null
           nw1?: number | null
           sales?: number | null
-          cash_sales?: number | null
           signups?: number | null
           signups_real?: number | null
           start_date: string
-          w1?: number | null
-          dav?: number | null
-          wav?: number | null
-          mav?: number | null
-          wau?: number | null
           topic_daus?: Json | null
-          cash_bet_count?: number | null
-          cash_d1?: number | null
-          cash_w1?: number | null
-          cash_m1?: number | null
-          cash_dau?: number | null
-          cash_wau?: number | null
-          cash_mau?: number | null
-          cash_comment_count?: number | null
-          cash_contract_count?: number | null
-          cash_avg_user_actions?: number | null
+          w1?: number | null
+          wau?: number | null
+          wav?: number | null
         }
         Update: {
           activation?: number | null
@@ -757,40 +884,40 @@ export type Database = {
           avg_user_actions?: number | null
           bet_amount?: number | null
           bet_count?: number | null
+          cash_avg_user_actions?: number | null
           cash_bet_amount?: number | null
+          cash_bet_count?: number | null
+          cash_comment_count?: number | null
+          cash_contract_count?: number | null
+          cash_d1?: number | null
+          cash_dau?: number | null
+          cash_m1?: number | null
+          cash_mau?: number | null
+          cash_sales?: number | null
+          cash_w1?: number | null
+          cash_wau?: number | null
           comment_count?: number | null
           contract_count?: number | null
           d1?: number | null
           d1_bet_3_day_average?: number | null
           d1_bet_average?: number | null
           dau?: number | null
+          dav?: number | null
           engaged_users?: number | null
           feed_conversion?: number | null
           m1?: number | null
-          dav?: number | null
-          wav?: number | null
-          mav?: number | null
           mau?: number | null
+          mav?: number | null
           nd1?: number | null
           nw1?: number | null
           sales?: number | null
-          cash_sales?: number | null
           signups?: number | null
           signups_real?: number | null
           start_date?: string
+          topic_daus?: Json | null
           w1?: number | null
           wau?: number | null
-          topic_daus?: Json | null
-          cash_bet_count?: number | null
-          cash_d1?: number | null
-          cash_w1?: number | null
-          cash_m1?: number | null
-          cash_dau?: number | null
-          cash_wau?: number | null
-          cash_mau?: number | null
-          cash_comment_count?: number | null
-          cash_contract_count?: number | null
-          cash_avg_user_actions?: number | null
+          wav?: number | null
         }
         Relationships: []
       }
@@ -863,7 +990,7 @@ export type Database = {
           politics_importance_score: number
           slug: string
           title: string
-          title_fts: unknown | null
+          title_fts: unknown
           visibility: string | null
         }
         Insert: {
@@ -879,7 +1006,7 @@ export type Database = {
           politics_importance_score?: number
           slug: string
           title: string
-          title_fts?: unknown | null
+          title_fts?: unknown
           visibility?: string | null
         }
         Update: {
@@ -895,10 +1022,17 @@ export type Database = {
           politics_importance_score?: number
           slug?: string
           title?: string
-          title_fts?: unknown | null
+          title_fts?: unknown
           visibility?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'dashboards_creator_id_fkey'
+            columns: ['creator_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
           {
             foreignKeyName: 'dashboards_creator_id_fkey'
             columns: ['creator_id']
@@ -935,6 +1069,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'delete_after_reading_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
           {
             foreignKeyName: 'delete_after_reading_user_id_fkey'
             columns: ['user_id']
@@ -1074,6 +1215,13 @@ export type Database = {
             foreignKeyName: 'gidx_receipts_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
@@ -1196,7 +1344,7 @@ export type Database = {
       group_invites: {
         Row: {
           created_time: string
-          duration: unknown | null
+          duration: unknown
           expire_time: string | null
           group_id: string
           id: string
@@ -1207,7 +1355,7 @@ export type Database = {
         }
         Insert: {
           created_time?: string
-          duration?: unknown | null
+          duration?: unknown
           expire_time?: string | null
           group_id: string
           id?: string
@@ -1218,7 +1366,7 @@ export type Database = {
         }
         Update: {
           created_time?: string
-          duration?: unknown | null
+          duration?: unknown
           expire_time?: string | null
           group_id?: string
           id?: string
@@ -1289,7 +1437,7 @@ export type Database = {
           id: string
           importance_score: number | null
           name: string
-          name_fts: unknown | null
+          name_fts: unknown
           privacy_status: string | null
           slug: string
           total_members: number | null
@@ -1302,7 +1450,7 @@ export type Database = {
           id?: string
           importance_score?: number | null
           name: string
-          name_fts?: unknown | null
+          name_fts?: unknown
           privacy_status?: string | null
           slug: string
           total_members?: number | null
@@ -1315,7 +1463,7 @@ export type Database = {
           id?: string
           importance_score?: number | null
           name?: string
-          name_fts?: unknown | null
+          name_fts?: unknown
           privacy_status?: string | null
           slug?: string
           total_members?: number | null
@@ -1345,6 +1493,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
           {
             foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
             columns: ['user_id']
@@ -1424,6 +1579,24 @@ export type Database = {
           rank_snapshot?: number | null
           season?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      leagues_season_end_times: {
+        Row: {
+          end_time: string
+          season: number
+          status: string
+        }
+        Insert: {
+          end_time: string
+          season: number
+          status?: string
+        }
+        Update: {
+          end_time?: string
+          season?: number
+          status?: string
         }
         Relationships: []
       }
@@ -1957,6 +2130,52 @@ export type Database = {
           }
         ]
       }
+      market_drafts: {
+        Row: {
+          created_at: string | null
+          data: Json
+          id: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          id?: never
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          id?: never
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'market_drafts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'market_drafts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_drafts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       mod_reports: {
         Row: {
           comment_id: string
@@ -2064,31 +2283,34 @@ export type Database = {
       }
       old_posts: {
         Row: {
+          boosted: boolean
           created_time: string | null
           creator_id: string | null
           data: Json
           group_id: string | null
           id: string
+          importance_score: number
           visibility: string | null
-          importance_score: number | null
         }
         Insert: {
+          boosted?: boolean
           created_time?: string | null
           creator_id?: string | null
           data: Json
           group_id?: string | null
           id?: string
+          importance_score?: number
           visibility?: string | null
-          importance_score?: number | null
         }
         Update: {
+          boosted?: boolean
           created_time?: string | null
           creator_id?: string | null
           data?: Json
           group_id?: string | null
           id?: string
+          importance_score?: number
           visibility?: string | null
-          importance_score?: number | null
         }
         Relationships: [
           {
@@ -2103,6 +2325,44 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      pending_clarifications: {
+        Row: {
+          applied_time: string | null
+          cancelled_time: string | null
+          comment_id: string
+          contract_id: string
+          created_time: string
+          data: Json
+          id: number
+        }
+        Insert: {
+          applied_time?: string | null
+          cancelled_time?: string | null
+          comment_id: string
+          contract_id: string
+          created_time?: string
+          data: Json
+          id?: never
+        }
+        Update: {
+          applied_time?: string | null
+          cancelled_time?: string | null
+          comment_id?: string
+          contract_id?: string
+          created_time?: string
+          data?: Json
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pending_clarifications_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
             referencedColumns: ['id']
           }
         ]
@@ -2152,6 +2412,66 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolios_processed: {
+        Row: {
+          last_processed: string
+          user_id: string
+        }
+        Insert: {
+          last_processed?: string
+          user_id: string
+        }
+        Update: {
+          last_processed?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      post_comment_edits: {
+        Row: {
+          comment_id: string
+          created_time: string
+          data: Json
+          editor_id: string
+          id: number
+          post_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_time?: string
+          data: Json
+          editor_id: string
+          id?: never
+          post_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_time?: string
+          data?: Json
+          editor_id?: string
+          id?: never
+          post_id?: string
+        }
+        Relationships: []
+      }
+      post_follows: {
+        Row: {
+          created_time: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           bet_id: string | null
@@ -2185,6 +2505,51 @@ export type Database = {
           user_id?: string
           user_name?: string
           user_username?: string
+        }
+        Relationships: []
+      }
+      predictle_daily: {
+        Row: {
+          created_time: string | null
+          data: Json
+          date_pt: string
+        }
+        Insert: {
+          created_time?: string | null
+          data: Json
+          date_pt: string
+        }
+        Update: {
+          created_time?: string | null
+          data?: Json
+          date_pt?: string
+        }
+        Relationships: []
+      }
+      predictle_results: {
+        Row: {
+          attempts: number
+          created_time: string | null
+          id: number
+          puzzle_number: number
+          user_id: string
+          won: boolean
+        }
+        Insert: {
+          attempts: number
+          created_time?: string | null
+          id?: number
+          puzzle_number: number
+          user_id: string
+          won: boolean
+        }
+        Update: {
+          attempts?: number
+          created_time?: string | null
+          id?: number
+          puzzle_number?: number
+          user_id?: string
+          won?: boolean
         }
         Relationships: []
       }
@@ -2455,6 +2820,13 @@ export type Database = {
             foreignKeyName: 'redemption_status_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'redemption_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
@@ -2474,11 +2846,11 @@ export type Database = {
           content_type: string
           created_time: string | null
           description: string | null
+          dismissed_by_user_id: string | null
           id: string
           parent_id: string | null
           parent_type: string | null
           user_id: string
-          dismissed_by_user_id: string | null
         }
         Insert: {
           content_id: string
@@ -2486,11 +2858,11 @@ export type Database = {
           content_type: string
           created_time?: string | null
           description?: string | null
+          dismissed_by_user_id?: string | null
           id?: string
           parent_id?: string | null
           parent_type?: string | null
           user_id: string
-          dismissed_by_user_id?: string | null
         }
         Update: {
           content_id?: string
@@ -2498,13 +2870,20 @@ export type Database = {
           content_type?: string
           created_time?: string | null
           description?: string | null
+          dismissed_by_user_id?: string | null
           id?: string
           parent_id?: string | null
           parent_type?: string | null
           user_id?: string
-          dismissed_by_user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
           {
             foreignKeyName: 'reports_content_owner_id_fkey'
             columns: ['content_owner_id']
@@ -2518,6 +2897,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
           },
           {
             foreignKeyName: 'reports_user_id_fkey'
@@ -2636,6 +3022,85 @@ export type Database = {
           token?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          archived: boolean
+          assignee_id: string
+          category_id: number
+          completed: boolean
+          created_time: string
+          creator_id: string
+          id: number
+          priority: number
+          text: string
+        }
+        Insert: {
+          archived?: boolean
+          assignee_id: string
+          category_id: number
+          completed?: boolean
+          created_time?: string
+          creator_id: string
+          id?: never
+          priority?: number
+          text: string
+        }
+        Update: {
+          archived?: boolean
+          assignee_id?: string
+          category_id?: number
+          completed?: boolean
+          created_time?: string
+          creator_id?: string
+          id?: never
+          priority?: number
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'tasks_assignee_id_fkey'
+            columns: ['assignee_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'tasks_assignee_id_fkey'
+            columns: ['assignee_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_assignee_id_fkey'
+            columns: ['assignee_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_creator_id_fkey'
+            columns: ['creator_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'tasks_creator_id_fkey'
+            columns: ['creator_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_creator_id_fkey'
+            columns: ['creator_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       topic_embeddings: {
         Row: {
@@ -2835,6 +3300,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_contract_loans: {
+        Row: {
+          answer_id: string | null
+          contract_id: string
+          id: number
+          last_loan_update_time: number
+          loan_day_integral: number
+          user_id: string
+        }
+        Insert: {
+          answer_id?: string | null
+          contract_id: string
+          id?: never
+          last_loan_update_time: number
+          loan_day_integral?: number
+          user_id: string
+        }
+        Update: {
+          answer_id?: string | null
+          contract_id?: string
+          id?: never
+          last_loan_update_time?: number
+          loan_day_integral?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_contract_metrics: {
         Row: {
           answer_id: string | null
@@ -2844,6 +3336,7 @@ export type Database = {
           has_shares: boolean | null
           has_yes_shares: boolean | null
           id: number
+          loan: number
           profit: number | null
           total_shares_no: number | null
           total_shares_yes: number | null
@@ -2857,6 +3350,7 @@ export type Database = {
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
           id?: never
+          loan?: number
           profit?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null
@@ -2870,6 +3364,7 @@ export type Database = {
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
           id?: never
+          loan?: number
           profit?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null
@@ -3051,6 +3546,13 @@ export type Database = {
             foreignKeyName: 'user_monitor_status_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'user_monitor_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
@@ -3082,6 +3584,51 @@ export type Database = {
         Relationships: []
       }
       user_portfolio_history: {
+        Row: {
+          balance: number | null
+          cash_balance: number
+          cash_investment_value: number
+          id: number
+          investment_value: number | null
+          loan_total: number | null
+          profit: number | null
+          spice_balance: number
+          total_cash_deposits: number
+          total_deposits: number | null
+          ts: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          cash_balance?: number
+          cash_investment_value?: number
+          id?: never
+          investment_value?: number | null
+          loan_total?: number | null
+          profit?: number | null
+          spice_balance?: number
+          total_cash_deposits?: number
+          total_deposits?: number | null
+          ts?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          cash_balance?: number
+          cash_investment_value?: number
+          id?: never
+          investment_value?: number | null
+          loan_total?: number | null
+          profit?: number | null
+          spice_balance?: number
+          total_cash_deposits?: number
+          total_deposits?: number | null
+          ts?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_portfolio_history_archive: {
         Row: {
           balance: number | null
           cash_balance: number
@@ -3323,12 +3870,12 @@ export type Database = {
           data: Json
           id: string
           name: string
-          name_username_vector: unknown | null
+          name_username_vector: unknown
           spice_balance: number
           total_cash_deposits: number
           total_deposits: number
-          username: string
           unban_time: string | null
+          username: string
         }
         Insert: {
           balance?: number
@@ -3337,12 +3884,12 @@ export type Database = {
           data: Json
           id?: string
           name: string
-          name_username_vector?: unknown | null
+          name_username_vector?: unknown
           spice_balance?: number
           total_cash_deposits?: number
           total_deposits?: number
-          username: string
           unban_time?: string | null
+          username: string
         }
         Update: {
           balance?: number
@@ -3351,12 +3898,12 @@ export type Database = {
           data?: Json
           id?: string
           name?: string
-          name_username_vector?: unknown | null
+          name_username_vector?: unknown
           spice_balance?: number
           total_cash_deposits?: number
           total_deposits?: number
-          username?: string
           unban_time?: string | null
+          username?: string
         }
         Relationships: []
       }
@@ -3365,18 +3912,21 @@ export type Database = {
           contract_id: string
           created_time: string
           id: string
+          rank: number | null
           user_id: string
         }
         Insert: {
           contract_id: string
           created_time?: string
           id: string
+          rank?: number | null
           user_id: string
         }
         Update: {
           contract_id?: string
           created_time?: string
           id?: string
+          rank?: number | null
           user_id?: string
         }
         Relationships: []
@@ -3415,6 +3965,66 @@ export type Database = {
         }
         Relationships: []
       }
+      mv_user_achievement_stats: {
+        Row: {
+          comments_percentile: number | null
+          comments_rank: number | null
+          highest_balance_mana: number | null
+          highest_balance_percentile: number | null
+          highest_balance_rank: number | null
+          highest_invested_mana: number | null
+          highest_invested_percentile: number | null
+          highest_invested_rank: number | null
+          highest_loan_mana: number | null
+          highest_loan_percentile: number | null
+          highest_loan_rank: number | null
+          highest_networth_mana: number | null
+          highest_networth_percentile: number | null
+          highest_networth_rank: number | null
+          largest_league_season_earnings: number | null
+          largest_league_season_earnings_percentile: number | null
+          largest_league_season_earnings_rank: number | null
+          largest_profitable_trade_percentile: number | null
+          largest_profitable_trade_rank: number | null
+          largest_profitable_trade_value: number | null
+          largest_unprofitable_trade_percentile: number | null
+          largest_unprofitable_trade_rank: number | null
+          largest_unprofitable_trade_value: number | null
+          liquidity_percentile: number | null
+          liquidity_rank: number | null
+          markets_created_percentile: number | null
+          markets_created_rank: number | null
+          number_of_comments: number | null
+          profitable_markets_count: number | null
+          profitable_markets_percentile: number | null
+          profitable_markets_rank: number | null
+          seasons_diamond_or_higher: number | null
+          seasons_gold_or_higher: number | null
+          seasons_masters: number | null
+          seasons_masters_percentile: number | null
+          seasons_masters_rank: number | null
+          seasons_platinum_or_higher: number | null
+          seasons_rank1_by_cohort: number | null
+          seasons_rank1_by_cohort_percentile: number | null
+          seasons_rank1_by_cohort_rank: number | null
+          seasons_rank1_masters: number | null
+          seasons_rank1_masters_percentile: number | null
+          seasons_rank1_masters_rank: number | null
+          total_liquidity_created_markets: number | null
+          total_markets_created: number | null
+          total_trades_count: number | null
+          total_volume_mana: number | null
+          trades_percentile: number | null
+          trades_rank: number | null
+          unprofitable_markets_count: number | null
+          unprofitable_markets_percentile: number | null
+          unprofitable_markets_rank: number | null
+          user_id: string | null
+          volume_percentile: number | null
+          volume_rank: number | null
+        }
+        Relationships: []
+      }
       user_league_info: {
         Row: {
           cohort: string | null
@@ -3441,114 +4051,65 @@ export type Database = {
       }
     }
     Functions: {
-      add_creator_name_to_description: {
-        Args: {
-          data: Json
-        }
-        Returns: string
-      }
-      binary_quantize:
-        | {
-            Args: {
-              '': string
-            }
-            Returns: unknown
-          }
-        | {
-            Args: {
-              '': unknown
-            }
-            Returns: unknown
-          }
+      add_creator_name_to_description: { Args: { data: Json }; Returns: string }
       calculate_earth_distance_km: {
-        Args: {
-          lat1: number
-          lon1: number
-          lat2: number
-          lon2: number
-        }
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
       can_access_private_messages: {
-        Args: {
-          channel_id: number
-          user_id: string
-        }
+        Args: { channel_id: number; user_id: string }
         Returns: boolean
       }
       close_contract_embeddings: {
         Args: {
           input_contract_id: string
-          similarity_threshold: number
           match_count: number
+          similarity_threshold: number
         }
         Returns: {
           contract_id: string
-          similarity: number
           data: Json
+          similarity: number
         }[]
       }
-      count_recent_comments: {
-        Args: {
-          contract_id: string
-        }
-        Returns: number
-      }
+      count_recent_comments: { Args: { contract_id: string }; Returns: number }
       count_recent_comments_by_contract: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
-          contract_id: string
           comment_count: number
+          contract_id: string
         }[]
       }
       creator_leaderboard: {
-        Args: {
-          limit_n: number
-        }
+        Args: { limit_n: number }
         Returns: {
-          user_id: string
-          total_traders: number
-          name: string
-          username: string
           avatar_url: string
+          name: string
+          total_traders: number
+          user_id: string
+          username: string
         }[]
       }
-      creator_rank: {
-        Args: {
-          uid: string
-        }
-        Returns: number
-      }
-      date_to_midnight_pt: {
-        Args: {
-          d: string
-        }
-        Returns: string
-      }
+      creator_rank: { Args: { uid: string }; Returns: number }
+      date_to_midnight_pt: { Args: { d: string }; Returns: string }
       extract_text_from_rich_text_json: {
-        Args: {
-          description: Json
-        }
+        Args: { description: Json }
         Returns: string
       }
-      firebase_uid: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_average_rating: {
-        Args: {
-          user_id: string
-        }
-        Returns: number
-      }
+      firebase_uid: { Args: never; Returns: string }
+      get_average_rating: { Args: { user_id: string }; Returns: number }
       get_compatibility_questions_with_answer_count: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
+        SetofOptions: {
+          from: '*'
+          to: 'love_question_with_count_type'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_contract_voters: {
-        Args: {
-          this_contract_id: string
-        }
+        Args: { this_contract_id: string }
         Returns: {
           data: Json
         }[]
@@ -3556,31 +4117,23 @@ export type Database = {
       get_contracts_in_group_slugs_1: {
         Args: {
           contract_ids: string[]
-          p_group_slugs: string[]
           ignore_slugs: string[]
+          p_group_slugs: string[]
         }
         Returns: {
           data: Json
           importance_score: number
         }[]
       }
-      get_cpmm_pool_prob: {
-        Args: {
-          pool: Json
-          p: number
-        }
-        Returns: number
-      }
+      get_cpmm_pool_prob: { Args: { p: number; pool: Json }; Returns: number }
       get_daily_claimed_boosts: {
-        Args: {
-          user_id: string
-        }
+        Args: { user_id: string }
         Returns: {
           total: number
         }[]
       }
       get_donations_by_charity: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           charity_id: string
           num_supporters: number
@@ -3588,25 +4141,27 @@ export type Database = {
         }[]
       }
       get_group_contracts: {
-        Args: {
-          this_group_id: string
-        }
+        Args: { this_group_id: string }
         Returns: {
           data: Json
         }[]
       }
       get_love_question_answers_and_lovers: {
-        Args: {
-          p_question_id: number
-        }
+        Args: { p_question_id: number }
         Returns: Database['public']['CompositeTypes']['other_lover_answers_type'][]
+        SetofOptions: {
+          from: '*'
+          to: 'other_lover_answers_type'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_non_empty_private_message_channel_ids:
         | {
             Args: {
-              p_user_id: string
               p_ignored_statuses: string[]
               p_limit: number
+              p_user_id: string
             }
             Returns: {
               created_time: string
@@ -3614,19 +4169,23 @@ export type Database = {
               last_updated_time: string
               title: string | null
             }[]
+            SetofOptions: {
+              from: '*'
+              to: 'private_user_message_channels'
+              isOneToOne: false
+              isSetofReturn: true
+            }
           }
         | {
-            Args: {
-              p_user_id: string
-              p_limit?: number
-            }
+            Args: { p_limit?: number; p_user_id: string }
             Returns: {
               id: number
             }[]
           }
       get_noob_questions: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
+          boosted: boolean
           close_time: string | null
           conversion_score: number
           created_time: string | null
@@ -3634,7 +4193,7 @@ export type Database = {
           daily_score: number
           data: Json
           deleted: boolean | null
-          description_fts: unknown | null
+          description_fts: unknown
           freshness_score: number
           group_slugs: string[] | null
           id: string
@@ -3647,75 +4206,61 @@ export type Database = {
           outcome_type: string | null
           popularity_score: number
           question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
+          question_fts: unknown
+          question_nostop_fts: unknown
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          tier: string | null
           token: string
           unique_bettor_count: number
           view_count: number
           visibility: string | null
         }[]
+        SetofOptions: {
+          from: '*'
+          to: 'contracts'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_option_voters: {
-        Args: {
-          this_contract_id: string
-          this_option_id: string
-        }
+        Args: { this_contract_id: string; this_option_id: string }
         Returns: {
           data: Json
         }[]
       }
       get_rating: {
-        Args: {
-          user_id: string
-        }
+        Args: { user_id: string }
         Returns: {
           count: number
           rating: number
         }[]
       }
       get_recently_active_contracts_in_group_slugs_1: {
-        Args: {
-          p_group_slugs: string[]
-          ignore_slugs: string[]
-          max: number
-        }
+        Args: { ignore_slugs: string[]; max: number; p_group_slugs: string[] }
         Returns: {
           data: Json
           importance_score: number
         }[]
       }
       get_user_bet_contracts: {
-        Args: {
-          this_user_id: string
-          this_limit: number
-        }
+        Args: { this_limit: number; this_user_id: string }
         Returns: {
           data: Json
         }[]
       }
-      get_user_group_id_for_current_user: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_user_group_id_for_current_user: { Args: never; Returns: string }
       get_user_manalink_claims: {
-        Args: {
-          creator_id: string
-        }
+        Args: { creator_id: string }
         Returns: {
-          manalink_id: string
           claimant_id: string
+          manalink_id: string
           ts: number
         }[]
       }
       get_user_topic_interests_2: {
-        Args: {
-          p_user_id: string
-        }
+        Args: { p_user_id: string }
         Returns: {
           group_id: string
           score: number
@@ -3723,383 +4268,113 @@ export type Database = {
       }
       get_your_contract_ids:
         | {
-            Args: {
-              uid: string
-            }
+            Args: { uid: string }
             Returns: {
               contract_id: string
             }[]
           }
         | {
-            Args: {
-              uid: string
-              n: number
-              start: number
-            }
+            Args: { n: number; start: number; uid: string }
             Returns: {
               contract_id: string
             }[]
           }
       get_your_daily_changed_contracts: {
-        Args: {
-          uid: string
-          n: number
-          start: number
-        }
+        Args: { n: number; start: number; uid: string }
         Returns: {
-          data: Json
           daily_score: number
+          data: Json
         }[]
       }
       get_your_recent_contracts: {
-        Args: {
-          uid: string
-          n: number
-          start: number
-        }
+        Args: { n: number; start: number; uid: string }
         Returns: {
           data: Json
           max_ts: number
         }[]
       }
-      gtrgm_compress: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: {
-          '': unknown
-        }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      halfvec_avg: {
-        Args: {
-          '': number[]
-        }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: {
-          '': unknown
-        }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: {
-          '': unknown[]
-        }
-        Returns: number
-      }
       has_moderator_or_above_role: {
-        Args: {
-          this_group_id: string
-          this_user_id: string
-        }
+        Args: { this_group_id: string; this_user_id: string }
         Returns: boolean
       }
-      hnsw_bit_support: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      install_available_extensions_and_test: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin: {
-        Args: {
-          input_string: string
-        }
-        Returns: boolean
-      }
+      install_available_extensions_and_test: { Args: never; Returns: boolean }
+      is_admin: { Args: { input_string: string }; Returns: boolean }
       is_group_member: {
-        Args: {
-          this_group_id: string
-          this_user_id: string
-        }
+        Args: { this_group_id: string; this_user_id: string }
         Returns: boolean
       }
       is_valid_contract: {
-        Args: {
-          ct: unknown
-        }
+        Args: { ct: Database['public']['Tables']['contracts']['Row'] }
         Returns: boolean
       }
-      ivfflat_bit_support: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      jsonb_array_to_text_array: {
-        Args: {
-          _js: Json
-        }
-        Returns: string[]
-      }
-      l2_norm:
-        | {
-            Args: {
-              '': unknown
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              '': unknown
-            }
-            Returns: number
-          }
-      l2_normalize:
-        | {
-            Args: {
-              '': string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              '': unknown
-            }
-            Returns: unknown
-          }
-        | {
-            Args: {
-              '': unknown
-            }
-            Returns: unknown
-          }
+      jsonb_array_to_text_array: { Args: { _js: Json }; Returns: string[] }
       millis_interval: {
-        Args: {
-          start_millis: number
-          end_millis: number
-        }
+        Args: { end_millis: number; start_millis: number }
         Returns: unknown
       }
-      millis_to_ts: {
-        Args: {
-          millis: number
-        }
-        Returns: string
-      }
+      millis_to_ts: { Args: { millis: number }; Returns: string }
+      normalize_hyphens: { Args: { input_text: string }; Returns: string }
       profit_leaderboard: {
-        Args: {
-          limit_n: number
-        }
+        Args: { limit_n: number }
         Returns: {
-          user_id: string
-          profit: number
-          name: string
-          username: string
           avatar_url: string
+          name: string
+          profit: number
+          user_id: string
+          username: string
         }[]
       }
       profit_rank: {
-        Args: {
-          uid: string
-          excluded_ids?: string[]
-        }
+        Args: { excluded_ids?: string[]; uid: string }
         Returns: number
       }
-      random_alphanumeric: {
-        Args: {
-          length: number
-        }
-        Returns: string
-      }
+      random_alphanumeric: { Args: { length: number }; Returns: string }
       recently_liked_contract_counts: {
-        Args: {
-          since: number
-        }
+        Args: { since: number }
         Returns: {
           contract_id: string
           n: number
         }[]
       }
       sample_resolved_bets: {
-        Args: {
-          trader_threshold: number
-          p: number
-        }
+        Args: { p: number; trader_threshold: number }
         Returns: {
-          prob: number
           is_yes: boolean
+          prob: number
         }[]
       }
       save_user_topics_blank: {
-        Args: {
-          p_user_id: string
-        }
+        Args: { p_user_id: string }
         Returns: undefined
       }
       search_contract_embeddings: {
         Args: {
+          match_count: number
           query_embedding: string
           similarity_threshold: number
-          match_count: number
         }
         Returns: {
           contract_id: string
           similarity: number
         }[]
       }
-      set_limit: {
-        Args: {
-          '': number
-        }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: {
-          '': string
-        }
-        Returns: string[]
-      }
-      sparsevec_out: {
-        Args: {
-          '': unknown
-        }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: {
-          '': unknown
-        }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: {
-          '': unknown[]
-        }
-        Returns: number
-      }
-      test: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      to_jsonb: {
-        Args: {
-          '': Json
-        }
-        Returns: Json
-      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { '': string }; Returns: string[] }
+      test: { Args: never; Returns: undefined }
+      to_jsonb: { Args: { '': Json }; Returns: Json }
       ts_to_millis:
         | {
-            Args: {
-              ts: string
-            }
-            Returns: number
+            Args: { ts: string }
+            Returns: {
+              error: true
+            } & 'Could not choose the best candidate function between: public.ts_to_millis(ts => timestamp), public.ts_to_millis(ts => timestamptz). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
           }
         | {
-            Args: {
-              ts: string
-            }
-            Returns: number
+            Args: { ts: string }
+            Returns: {
+              error: true
+            } & 'Could not choose the best candidate function between: public.ts_to_millis(ts => timestamp), public.ts_to_millis(ts => timestamptz). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
           }
-      vector_avg: {
-        Args: {
-          '': number[]
-        }
-        Returns: string
-      }
-      vector_dims:
-        | {
-            Args: {
-              '': string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              '': unknown
-            }
-            Returns: number
-          }
-      vector_norm: {
-        Args: {
-          '': string
-        }
-        Returns: number
-      }
-      vector_out: {
-        Args: {
-          '': string
-        }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: {
-          '': string
-        }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: {
-          '': unknown[]
-        }
-        Returns: number
-      }
     }
     Enums: {
       status_type: 'new' | 'under review' | 'resolved' | 'needs admin'
@@ -4130,27 +4405,33 @@ export type Database = {
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, 'public'>]
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-        Database[PublicTableNameOrOptions['schema']]['Views'])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-      Database[PublicTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] &
-      PublicSchema['Views'])
-  ? (PublicSchema['Tables'] &
-      PublicSchema['Views'])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+      DefaultSchema['Views'])
+  ? (DefaultSchema['Tables'] &
+      DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
       Row: infer R
     }
     ? R
@@ -4158,20 +4439,24 @@ export type Tables<
   : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema['Tables']
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-  ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+  ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
       Insert: infer I
     }
     ? I
@@ -4179,20 +4464,24 @@ export type TablesInsert<
   : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema['Tables']
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-  ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+  ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
       Update: infer U
     }
     ? U
@@ -4200,29 +4489,43 @@ export type TablesUpdate<
   : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema['Enums']
-    | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions['schema']]['Enums']
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema['Enums']
-  ? PublicSchema['Enums'][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+  ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
   : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema['CompositeTypes']
-    | { schema: keyof Database },
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema['CompositeTypes']
-  ? PublicSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+  ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
   : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      status_type: ['new', 'under review', 'resolved', 'needs admin'],
+    },
+  },
+} as const

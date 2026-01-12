@@ -1,5 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import {
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
