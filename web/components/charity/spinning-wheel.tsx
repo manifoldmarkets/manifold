@@ -342,10 +342,7 @@ export function SpinningWheel(props: SpinningWheelProps) {
                   avatarUrl={winner.avatarUrl}
                   size="xs"
                 />
-                <UserLink
-                  user={winner}
-                  className="text-ink-900 font-medium"
-                />
+                <UserLink user={winner} className="text-ink-900 font-medium" />
               </Row>
             )}
           </Col>
