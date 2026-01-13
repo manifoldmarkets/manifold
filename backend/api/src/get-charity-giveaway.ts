@@ -1,6 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
 import { tsToMillis } from 'common/supabase/utils'
+import { createHash } from 'crypto'
 
 export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
   props
@@ -16,6 +17,7 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
     prize_amount_usd: number
     close_time: string
     winning_ticket_id: string | null
+    nonce: string
     created_time: string
   }>(
     giveawayNum
@@ -31,6 +33,11 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
   if (!giveaway) {
     return { charityStats: [], totalTickets: 0 }
   }
+
+  // Calculate MD5 hash of the nonce for provably fair verification
+  // IMPORTANT: Only reveal the actual nonce AFTER the winner is selected.
+  // Before that, only the hash should be shared so users can record it for verification.
+  const nonceHash = createHash('md5').update(giveaway.nonce).digest('hex')
 
   // Get ticket stats per charity for this giveaway
   const charityStats = await pg.manyOrNone<{
@@ -110,5 +117,8 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
     totalTickets,
     winningCharity,
     winner,
+    // Provably fair: always share hash, only reveal nonce AFTER winner is selected
+    nonceHash,
+    nonce: giveaway.winning_ticket_id ? giveaway.nonce : undefined,
   }
 }

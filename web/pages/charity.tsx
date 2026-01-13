@@ -19,6 +19,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { SpinningWheel } from 'web/components/charity/spinning-wheel'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import toast from 'react-hot-toast'
@@ -98,6 +99,8 @@ export default function CharityGiveawayPage() {
   const totalTickets = data ? data.totalTickets : 0
   const winningCharity = data ? data.winningCharity : undefined
   const winner = data ? data.winner : undefined
+  const nonceHash = data ? data.nonceHash : undefined
+  const nonce = data ? data.nonce : undefined
   const totalManaSpent = charityStats.reduce(
     (sum, s) => sum + s.totalManaSpent,
     0
@@ -157,17 +160,27 @@ export default function CharityGiveawayPage() {
   // Initialize hasSeenReveal from localStorage once giveaway is loaded
   useEffect(() => {
     if (giveaway && typeof window !== 'undefined') {
-      const seen = localStorage.getItem(`giveaway-reveal-${giveaway.giveawayNum}`) === 'true'
+      const seen =
+        localStorage.getItem(`giveaway-reveal-${giveaway.giveawayNum}`) ===
+        'true'
       setHasSeenReveal(seen)
     }
   }, [giveaway?.giveawayNum])
 
   // Auto-show spinning wheel if there's a winner and user hasn't seen it
   useEffect(() => {
-    if (hasWinner && winningCharity && !hasSeenReveal && charityStats.length > 0 && giveaway) {
+    if (
+      hasWinner &&
+      winningCharity &&
+      !hasSeenReveal &&
+      charityStats.length > 0 &&
+      giveaway
+    ) {
       // Small delay to ensure localStorage check has completed
       const timer = setTimeout(() => {
-        const seen = localStorage.getItem(`giveaway-reveal-${giveaway.giveawayNum}`) === 'true'
+        const seen =
+          localStorage.getItem(`giveaway-reveal-${giveaway.giveawayNum}`) ===
+          'true'
         if (!seen) {
           setShowSpinningWheel(true)
           setPendingWinningCharity(winningCharity)
@@ -175,7 +188,13 @@ export default function CharityGiveawayPage() {
       }, 100)
       return () => clearTimeout(timer)
     }
-  }, [hasWinner, winningCharity, hasSeenReveal, charityStats.length, giveaway?.giveawayNum])
+  }, [
+    hasWinner,
+    winningCharity,
+    hasSeenReveal,
+    charityStats.length,
+    giveaway?.giveawayNum,
+  ])
 
   const handleSelectWinner = async () => {
     if (!giveaway || isSelectingWinner) return
@@ -196,8 +215,7 @@ export default function CharityGiveawayPage() {
       setPendingWinningCharity(result.charityId)
       setShowSpinningWheel(true)
     } catch (e) {
-      const msg =
-        e instanceof APIError ? e.message : 'Failed to select winner'
+      const msg = e instanceof APIError ? e.message : 'Failed to select winner'
       toast.error(msg)
     } finally {
       setIsSelectingWinner(false)
@@ -438,6 +456,15 @@ export default function CharityGiveawayPage() {
           giveawayNum={giveaway.giveawayNum}
           refreshKey={salesRefreshKey}
         />
+
+        {/* Provably Fair Banner */}
+        {nonceHash && (
+          <ProvablyFairBanner
+            nonceHash={nonceHash}
+            nonce={nonce}
+            hasWinner={hasWinner}
+          />
+        )}
       </Col>
     </Page>
   )
@@ -1062,15 +1089,22 @@ function WinnerCard(props: {
   totalTickets: number
   onReplay: () => void
 }) {
-  const { winningCharity, winner, prizeAmount, charityStats, totalTickets, onReplay } =
-    props
+  const {
+    winningCharity,
+    winner,
+    prizeAmount,
+    charityStats,
+    totalTickets,
+    onReplay,
+  } = props
   const charity = charities.find((c) => c.id === winningCharity)
   const charityTickets =
     charityStats.find((s) => s.charityId === winningCharity)?.totalTickets ?? 0
-  const percentage = totalTickets > 0 ? (charityTickets / totalTickets) * 100 : 0
+  const percentage =
+    totalTickets > 0 ? (charityTickets / totalTickets) * 100 : 0
 
   return (
-    <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/30 dark:via-yellow-950/30 dark:to-orange-950/30 overflow-hidden rounded-xl border border-amber-200 p-6 shadow-lg dark:border-amber-800">
+    <div className="overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 shadow-lg dark:border-amber-800 dark:from-amber-950/30 dark:via-yellow-950/30 dark:to-orange-950/30">
       <Col className="items-center gap-4">
         <div className="text-5xl">🏆</div>
         <h2 className="text-ink-900 text-2xl font-bold">Winner!</h2>
@@ -1085,7 +1119,9 @@ function WinnerCard(props: {
               />
             )}
             <Col className="min-w-0 flex-1 gap-1">
-              <div className="text-ink-900 text-lg font-bold">{charity.name}</div>
+              <div className="text-ink-900 text-lg font-bold">
+                {charity.name}
+              </div>
               <div className="text-ink-500 line-clamp-2 text-sm">
                 {charity.preview}
               </div>
@@ -1127,5 +1163,88 @@ function WinnerCard(props: {
         </button>
       </Col>
     </div>
+  )
+}
+
+function ProvablyFairBanner(props: {
+  nonceHash: string
+  nonce?: string
+  hasWinner: boolean
+}) {
+  const { nonceHash, nonce, hasWinner } = props
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  return (
+    <>
+      <Row className="items-center justify-center">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="dark:from-indigo-400/15 dark:via-purple-400/15 dark:to-pink-400/15 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 px-4 py-2 ring-1 ring-indigo-500/20 transition-all hover:ring-indigo-500/40 dark:ring-indigo-400/25 dark:hover:ring-indigo-400/40"
+        >
+          <span className="text-base">⚖️</span>
+          <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-sm font-semibold text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
+            Provably fair
+          </span>
+        </button>
+      </Row>
+
+      <Modal open={isModalOpen} setOpen={setIsModalOpen} size="md">
+        <Col className={clsx(MODAL_CLASS, 'gap-4')}>
+          <Row className="items-center gap-3">
+            <span className="text-2xl">⚖️</span>
+            <h2 className="text-ink-900 text-xl font-bold">Provably Fair</h2>
+          </Row>
+
+          <p className="text-ink-700 text-sm leading-relaxed">
+            Before the drawing, we publish a hash of a secret nonce. When it's
+            time to pick a winner, we combine the nonce with the timestamps of
+            the last 10 purchases to generate a random number that determines
+            the winning ticket. After the drawing, we reveal the nonce so you
+            can verify the result wasn't manipulated.
+          </p>
+
+          <Col className="bg-canvas-50 gap-3 rounded-lg p-4">
+            <Col className="gap-1">
+              <span className="text-ink-600 text-sm font-medium">
+                Nonce Hash (MD5)
+              </span>
+              <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
+                {nonceHash}
+              </code>
+            </Col>
+
+            {hasWinner && nonce && (
+              <Col className="gap-1">
+                <span className="text-ink-600 text-sm font-medium">
+                  Revealed Nonce
+                </span>
+                <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
+                  {nonce}
+                </code>
+              </Col>
+            )}
+          </Col>
+
+          {hasWinner && nonce ? (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
+              <p className="text-sm text-green-800 dark:text-green-300">
+                ✓ Winner has been selected. You can verify by computing{' '}
+                <code className="rounded bg-green-100 px-1 dark:bg-green-900/50">
+                  MD5(nonce)
+                </code>{' '}
+                and confirming it matches the hash above.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                ⏳ Record the hash above. After the drawing, the full nonce will
+                be revealed so you can verify the result.
+              </p>
+            </div>
+          )}
+        </Col>
+      </Modal>
+    </>
   )
 }

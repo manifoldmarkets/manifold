@@ -2873,6 +2873,9 @@ export const API = (_apiTypeCheck = {
         name: string
         avatarUrl: string
       }
+      // Provably fair fields
+      nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists
+      nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
     },
   },
   'buy-charity-giveaway-tickets': {
