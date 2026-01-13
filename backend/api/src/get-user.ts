@@ -18,9 +18,9 @@ function getVisibilityForAuth(
 }
 
 // API handler for public user endpoints - visibility based on auth
-export const getUser: APIHandler<'user/by-id/:id'> = async (props, auth) => {
+export const getUserById: APIHandler<'user/by-id/:id'> = async (props, auth) => {
   const visibility = getVisibilityForAuth(auth?.uid, props.id)
-  return getUserWithVisibility(props, { visibility })
+  return getUser(props, { visibility })
 }
 
 // API handler for getting user by username - need to fetch user first to check visibility
@@ -29,7 +29,6 @@ export const getUserByUsername: APIHandler<'user/:username'> = async (
   auth
 ) => {
   // For username lookup, we need to fetch the user first to determine visibility
-  // Pass undefined visibility initially, then apply correct visibility in getUserWithVisibility
   const pg = createSupabaseDirectClient()
   const userId = await pg.oneOrNone(
     `select id from users where username = $1`,
@@ -39,11 +38,11 @@ export const getUserByUsername: APIHandler<'user/:username'> = async (
   if (!userId) throw new APIError(404, 'User not found')
 
   const visibility = getVisibilityForAuth(auth?.uid, userId)
-  return getUserWithVisibility(props, { visibility })
+  return getUser(props, { visibility })
 }
 
-// Internal function that can be called with visibility options
-export const getUserWithVisibility = async (
+// Get user by id or username with optional visibility filtering
+export const getUser = async (
   props: { id: string } | { username: string },
   options?: { visibility?: 'public' | 'self' | 'admin' }
 ) => {

@@ -23,7 +23,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContract, log, metrics } from 'shared/utils'
 import { z } from 'zod'
 import { getBets } from './get-bets'
-import { getUserWithVisibility } from './get-user'
+import { getUser } from './get-user'
 import { searchMarketsLite } from './search-contracts'
 import { searchUsers } from './search-users'
 
@@ -328,7 +328,7 @@ function getServer(): Server {
           const { username } = API['user/:username'].props.parse(args)
 
           try {
-            const user = await getUserWithVisibility({ username })
+            const user = await getUser({ username })
             return {
               content: [
                 {

@@ -114,7 +114,7 @@ import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { getTopicDashboards } from './get-topic-dashboards'
 import { getTopicTopics } from './get-topic-topics'
 import { getTxns } from './get-txns'
-import { getLiteUser, getUser, getUserByUsername } from './get-user'
+import { getLiteUser, getUserById, getUserByUsername } from './get-user'
 import { getUserPortfolio } from './get-user-portfolio'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { getUserPrivateData } from './get-user-private-data'
@@ -302,7 +302,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'me/private': getCurrentPrivateUser,
   'me/private/update': updatePrivateUser,
   'get-user-private-data': getUserPrivateData,
-  'user/by-id/:id': getUser,
+  'user/by-id/:id': getUserById,
   'user/by-id/:id/lite': getLiteUser,
   'user/:username': getUserByUsername,
   'user/:username/lite': getLiteUser,
