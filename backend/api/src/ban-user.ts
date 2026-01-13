@@ -73,7 +73,7 @@ async function endBansByType(
 }
 
 export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
-  const { userId, unban, bans, unbanTimes, reason, modAlert, unbanNote, allowUsernameChange, removeAllBans, clearAlertId } = props
+  const { userId, unban, bans, unbanTimes, reason, modAlert, allowUsernameChange, removeAllBans, clearAlertId } = props
   const pg = createSupabaseDirectClient()
   throwErrorIfNotMod(auth.uid)
   if (isAdminId(userId)) throw new APIError(403, 'Cannot ban admin')
