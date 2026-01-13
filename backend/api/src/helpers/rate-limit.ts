@@ -3,9 +3,10 @@ import { APIPath, APISchema, ValidatedAPIParams } from 'common/api/schema'
 import { HOUR_MS } from 'common/util/time'
 import { Request } from 'express'
 import { getIp } from 'shared/analytics'
-import { getUser, log } from 'shared/utils'
+import { log } from 'shared/utils'
 import { createSupabaseDirectClient, SupabaseDirectClient } from 'shared/supabase/init'
 import { UserBan } from 'common/user'
+import { convertUser } from 'common/supabase/users'
 import {
   isUserBanned,
   getUserBanMessage,
@@ -151,7 +152,15 @@ export async function getActiveUserBans(
 
 export const onlyUnbannedUsers = <N extends APIPath>(f: APIHandler<N>) => {
   return async (props: any, auth: any, req: any) => {
-    const user = await getUser(auth.uid)
+    const pg = createSupabaseDirectClient()
+    const results = await pg.multi(
+      `select * from users where id = $1;
+       select * from user_bans where user_id = $1 and ended_at is null and (end_time is null or end_time > now());`,
+      [auth.uid]
+    )
+    const user = results[0][0] ? convertUser(results[0][0]) : null
+    const activeBans = results[1] as UserBan[]
+
     if (!user) {
       throw new APIError(404, 'User not found')
     }
@@ -159,8 +168,6 @@ export const onlyUnbannedUsers = <N extends APIPath>(f: APIHandler<N>) => {
       throw new APIError(403, 'Your account has been deleted')
     }
 
-    // Check for any active bans in the database
-    const activeBans = await getActiveUserBans(auth.uid)
     if (activeBans.length > 0) {
       throw new APIError(403, 'You are banned from posting')
     }
@@ -194,22 +201,27 @@ const getActionDisplayName = (action: string): string => {
   return actionNames[action] || action
 }
 
-// New granular ban check
+// New granular ban check - uses pg.multi for single roundtrip
 export const onlyUsersWhoCanPerformAction = <N extends APIPath>(
   action: string,
   f: APIHandler<N>
 ) => {
   return async (props: any, auth: any, req: any) => {
-    const user = await getUser(auth.uid)
+    const pg = createSupabaseDirectClient()
+    const results = await pg.multi(
+      `select * from users where id = $1;
+       select * from user_bans where user_id = $1 and ended_at is null and (end_time is null or end_time > now());`,
+      [auth.uid]
+    )
+    const user = results[0][0] ? convertUser(results[0][0]) : null
+    const activeBans = results[1] as UserBan[]
+
     if (!user) {
       throw new APIError(404, 'User not found')
     }
     if (user.userDeleted) {
       throw new APIError(403, 'Your account has been deleted')
     }
-
-    // Get active bans from database
-    const activeBans = await getActiveUserBans(auth.uid)
 
     // Check all relevant ban types for this action
     const banTypes = getBanTypesForAction(action)
