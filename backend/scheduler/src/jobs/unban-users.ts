@@ -25,21 +25,4 @@ export async function unbanUsers() {
   } else {
     console.log('No temporary bans to expire')
   }
-
-  // Also handle legacy bans (for backward compatibility during migration)
-  const legacyResult = await pg.result(
-    `UPDATE users
-     SET data = data - 'isBannedFromPosting',
-         unban_time = null
-     WHERE (data->>'isBannedFromPosting')::boolean = true
-       AND unban_time IS NOT NULL
-       AND unban_time <= now()
-     RETURNING id, username`
-  )
-
-  if (legacyResult.rowCount > 0) {
-    console.log(`Unbanned ${legacyResult.rowCount} users (legacy)`)
-  }
-
-  console.log(`Total bans processed: ${expiredBans.length + legacyResult.rowCount}`)
 }
