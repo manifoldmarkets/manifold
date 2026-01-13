@@ -10,8 +10,9 @@ import {
   APISchema,
   ValidatedAPIParams,
 } from 'common/api/schema'
-import { PrivateUser } from 'common/user'
+import { PrivateUser, UserBan } from 'common/user'
 import { getUnbannedPrivateUserByKey, getUser, log } from 'shared/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 export { APIError } from 'common//api/utils'
 
 export type Json = Record<string, unknown> | Json[]
@@ -133,15 +134,27 @@ export const authEndpointUnbanned = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      const user = await getUser(authedUser.uid)
+      const pg = createSupabaseDirectClient()
+      const [user, activeBans] = await Promise.all([
+        getUser(authedUser.uid),
+        pg.manyOrNone<UserBan>(
+          `SELECT * FROM user_bans
+           WHERE user_id = $1
+             AND ended_at IS NULL
+             AND (end_time IS NULL OR end_time > now())`,
+          [authedUser.uid]
+        ),
+      ])
       if (!user) {
         throw new APIError(404, 'User not found')
       }
-      if (user.isBannedFromPosting) {
-        throw new APIError(403, 'You are banned from posting')
-      }
       if (user.userDeleted) {
         throw new APIError(403, 'Your account has been deleted')
+      }
+      // Check for any active posting bans (legacy or new system)
+      const hasPostingBan = activeBans.some((b) => b.ban_type === 'posting')
+      if (user.isBannedFromPosting || hasPostingBan) {
+        throw new APIError(403, 'You are banned from posting')
       }
       res.status(200).json(await fn(req, authedUser, res))
     } catch (e) {
