@@ -2,7 +2,7 @@ import { isUserBanned } from './ban-utils'
 import { BANNED_TRADING_USER_IDS } from './envs/constants'
 import { User, UserBan } from './user'
 
-export async function canSendMana(user: User, bans: UserBan[]) {
+export function canSendMana(user: User, bans: UserBan[]) {
   if (user.userDeleted) {
     return {
       canSend: false,

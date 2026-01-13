@@ -10,17 +10,6 @@ export type DisplayUser = {
   isBannedFromPosting?: boolean
 }
 
-// Type for individual ban entries in the legacy bans field
-type LegacyBanDetails = {
-  bannedAt: number
-  bannedBy: string
-  reason: string
-  unbanTime?: number
-}
-
-// Ban details with mod identity removed (for public display)
-export type PublicBanDetails = Omit<LegacyBanDetails, 'bannedBy'>
-
 export type FullUser = User & {
   url: string
   isBot?: boolean
@@ -33,15 +22,11 @@ export type FullUser = User & {
  *
  * Visibility levels:
  * - 'public': Other users viewing this profile
- *   - Removes bannedBy from bans
  *   - Removes modAlert entirely
- *   - Removes banHistory entirely
  *
  * - 'self': User viewing their own profile via /me
- *   - Removes bannedBy from bans (protects mod identity)
  *   - KEEPS modAlert (user needs to see warnings)
  *   - Removes createdBy from modAlert (protects mod identity)
- *   - Removes banHistory (internal audit)
  *
  * - 'admin': Mods/admins viewing via admin endpoints
  *   - Returns everything unsanitized
@@ -56,19 +41,6 @@ function sanitizeBanFields(
 
   const sanitized: Partial<User> = {}
 
-  // Sanitize bans - remove bannedBy from each ban type
-  if (user.bans) {
-    const sanitizedBans: User['bans'] = {}
-    for (const [banType, banDetails] of Object.entries(user.bans)) {
-      if (banDetails) {
-        const { bannedBy, ...publicBanDetails } = banDetails
-        sanitizedBans[banType as keyof typeof user.bans] =
-          publicBanDetails as LegacyBanDetails
-      }
-    }
-    sanitized.bans = sanitizedBans
-  }
-
   // Handle modAlert based on visibility
   if (visibility === 'public') {
     // Public: remove modAlert entirely
@@ -78,9 +50,6 @@ function sanitizeBanFields(
     const { createdBy, ...publicModAlert } = user.modAlert
     sanitized.modAlert = publicModAlert as User['modAlert']
   }
-
-  // Always remove banHistory (internal audit trail with mod IDs)
-  sanitized.banHistory = undefined
 
   return sanitized
 }

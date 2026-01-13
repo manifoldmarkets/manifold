@@ -55,7 +55,7 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
           [fromId]
         )
 
-        const { canSend, message: errorMessage } = await canSendMana(
+        const { canSend, message: errorMessage } = canSendMana(
           fromUser,
           fromUserBans
         )

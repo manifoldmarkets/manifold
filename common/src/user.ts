@@ -100,24 +100,6 @@ export type User = {
   isBannedFromPosting?: boolean
   /** @deprecated Use user_bans table instead */
   unbanTime?: number
-  /** @deprecated Use user_bans table instead */
-  bans?: {
-    posting?: { bannedAt: number; bannedBy: string; reason: string; unbanTime?: number }
-    marketControl?: { bannedAt: number; bannedBy: string; reason: string; unbanTime?: number }
-    trading?: { bannedAt: number; bannedBy: string; reason: string; unbanTime?: number }
-  }
-  /** @deprecated Use user_bans table instead */
-  banHistory?: Array<{
-    banType: 'posting' | 'marketControl' | 'trading' | 'usernameChange'
-    bannedAt: number
-    bannedBy: string
-    banReason: string
-    wasTemporary: boolean
-    originalUnbanTime?: number
-    unbannedAt: number
-    unbannedBy: string
-    unbanNote?: string
-  }>
 
   // MOD ALERTS (can exist without bans)
   modAlert?: {

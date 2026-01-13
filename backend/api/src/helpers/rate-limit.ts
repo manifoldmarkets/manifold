@@ -4,7 +4,7 @@ import { HOUR_MS } from 'common/util/time'
 import { Request } from 'express'
 import { getIp } from 'shared/analytics'
 import { getUser, log } from 'shared/utils'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient, SupabaseDirectClient } from 'shared/supabase/init'
 import { UserBan } from 'common/user'
 import {
   isUserBanned,
@@ -134,9 +134,13 @@ export const rateLimitByIp = <N extends APIPath>(
 }
 
 // Get active bans for a user from the database
-export async function getActiveUserBans(userId: string): Promise<UserBan[]> {
-  const pg = createSupabaseDirectClient()
-  return pg.manyOrNone<UserBan>(
+// Accepts optional pg client for use within transactions
+export async function getActiveUserBans(
+  userId: string,
+  pg?: SupabaseDirectClient
+): Promise<UserBan[]> {
+  const client = pg ?? createSupabaseDirectClient()
+  return client.manyOrNone<UserBan>(
     `SELECT * FROM user_bans
      WHERE user_id = $1
        AND ended_at IS NULL

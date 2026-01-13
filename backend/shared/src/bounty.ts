@@ -34,7 +34,7 @@ export const awardBounty = async (props: {
     [fromUserId]
   )
 
-  const { canSend, message } = await canSendMana(user, userBans)
+  const { canSend, message } = canSendMana(user, userBans)
   if (!canSend) {
     throw new APIError(403, message)
   }

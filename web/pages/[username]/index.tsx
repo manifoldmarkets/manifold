@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { RanksType } from 'common/achievements'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { getUserForStaticProps } from 'common/supabase/users'
-import { isUserLikelySpammer, UserBan } from 'common/user'
+import { isUserLikelySpammer } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import {
@@ -65,6 +65,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
+import { useUserBans } from 'web/hooks/use-user-bans'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
@@ -196,17 +197,8 @@ function UserProfile(props: {
   }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
-  const [userBans, setUserBans] = useState<UserBan[]>([])
+  const { bans: userBans } = useUserBans(user.id)
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
-
-  // Fetch the user's bans for the restricted badge
-  useEffect(() => {
-    if (user.id) {
-      api('get-user-bans', { userId: user.id })
-        .then((res) => setUserBans(res.bans as UserBan[]))
-        .catch(() => setUserBans([]))
-    }
-  }, [user.id])
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'

@@ -1,11 +1,11 @@
 import { z } from 'zod'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { getUser } from 'shared/utils'
-import { UserBan } from 'common/user'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
 
@@ -66,12 +66,9 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     }
 
     // Fetch bans for the sender
-    const fromUserBans = await tx.manyOrNone<UserBan>(
-      `SELECT * FROM user_bans WHERE user_id = $1 AND ended_at IS NULL AND (end_time IS NULL OR end_time > now())`,
-      [creator_id]
-    )
+    const fromUserBans = await getActiveUserBans(creator_id, tx)
 
-    const { canSend, message } = await canSendMana(fromUser, fromUserBans)
+    const { canSend, message } = canSendMana(fromUser, fromUserBans)
     if (!canSend) {
       throw new APIError(403, message)
     }
