@@ -90,6 +90,9 @@ export function FeedCommentHeader(props: {
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const answer = useLiveAnswer(betAnswerId)
 
+  // Fetch user with entitlements for badge display
+  const displayUser = useDisplayUserById(userId)
+
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
@@ -99,11 +102,13 @@ export function FeedCommentHeader(props: {
         <span className="items-center gap-x-1">
           <UserHovercard userId={userId}>
             <UserLink
-              user={{
-                id: userId,
-                name: userName,
-                username: userUsername,
-              }}
+              user={
+                displayUser ?? {
+                  id: userId,
+                  name: userName,
+                  username: userUsername,
+                }
+              }
               marketCreator={inTimeline ? false : marketCreator}
               className={'font-semibold'}
             />

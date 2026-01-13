@@ -9,6 +9,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useIsVisible } from 'web/hooks/use-is-visible'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { ReplyToggle } from './reply-toggle'
@@ -21,6 +22,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import Link from 'next/link'
 import { CommentReplyHeader, FeedCommentHeader } from './comment-header'
 import { CommentActions } from './comment-actions'
+import { userHasSupporterBadge } from 'common/shop/items'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -106,6 +108,8 @@ export const FeedComment = memo(function FeedComment(props: {
   }, [bets?.length])
 
   const { userUsername, userAvatarUrl, userId } = comment
+  const displayUser = useDisplayUserById(userId)
+  const isCommenterSupporter = userHasSupporterBadge(displayUser?.entitlements)
   const ref = useRef<HTMLDivElement>(null)
   const isBetParent = !!bets?.length
 
@@ -144,6 +148,7 @@ export const FeedComment = memo(function FeedComment(props: {
               username={userUsername}
               size={isParent ? 'sm' : '2xs'}
               avatarUrl={userAvatarUrl}
+              entitlements={displayUser?.entitlements}
             />
           </UserHovercard>
 
@@ -178,6 +183,8 @@ export const FeedComment = memo(function FeedComment(props: {
               ? 'bg-primary-100 border-primary-300 border-2'
               : isPinned
               ? 'bg-canvas-50 border-primary-300 border-2'
+              : isCommenterSupporter
+              ? 'bg-amber-50/40 dark:bg-amber-900/10 border-l-2 border-amber-400'
               : 'bg-canvas-50'
           )}
         >

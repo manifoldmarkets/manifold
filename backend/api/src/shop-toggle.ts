@@ -1,8 +1,12 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser } from 'shared/utils'
-import { getShopItem } from 'common/shop/items'
-import { updateUser } from 'shared/supabase/users'
+import {
+  getShopItem,
+  getEntitlementId,
+  EXCLUSIVE_CATEGORIES,
+  getEntitlementIdsForCategory,
+} from 'common/shop/items'
+import { convertEntitlement } from 'common/shop/types'
 
 export const shopToggle: APIHandler<'shop-toggle'> = async (
   { itemId, enabled },
@@ -22,35 +26,59 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
     throw new APIError(400, 'This item cannot be toggled')
   }
 
+  // Items marked as alwaysEnabled cannot be toggled
+  if (item.alwaysEnabled) {
+    throw new APIError(400, 'This item is always enabled and cannot be toggled')
+  }
+
+  const entitlementId = getEntitlementId(item)
   const pg = createSupabaseDirectClient()
 
-  const user = await getUser(auth.uid, pg)
-  if (!user) throw new APIError(401, 'Your account was not found')
+  const result = await pg.tx(async (tx) => {
+    // If enabling an item in an exclusive category, disable others first
+    if (enabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
+      const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+      await tx.none(
+        `UPDATE user_entitlements
+         SET enabled = false
+         WHERE user_id = $1
+         AND entitlement_id = ANY($2)
+         AND entitlement_id != $3`,
+        [auth.uid, categoryEntitlementIds, entitlementId]
+      )
+    }
 
-  const purchases = user.shopPurchases ?? []
-  const purchaseIndex = purchases.findIndex((p) => p.itemId === itemId)
+    // Update the enabled status in user_entitlements table
+    const updateResult = await tx.oneOrNone(
+      `UPDATE user_entitlements
+       SET enabled = $1
+       WHERE user_id = $2 AND entitlement_id = $3
+         AND (expires_time IS NULL OR expires_time > NOW())
+       RETURNING *`,
+      [enabled, auth.uid, entitlementId]
+    )
 
-  if (purchaseIndex === -1) {
-    throw new APIError(404, 'You do not own this item')
-  }
+    if (!updateResult) {
+      // Check if they own it but it's expired
+      const expired = await tx.oneOrNone(
+        `SELECT 1 FROM user_entitlements
+         WHERE user_id = $1 AND entitlement_id = $2 AND expires_time <= NOW()`,
+        [auth.uid, entitlementId]
+      )
+      if (expired) {
+        throw new APIError(400, 'This item has expired')
+      }
+      throw new APIError(404, 'You do not own this item')
+    }
 
-  const purchase = purchases[purchaseIndex]
+    // Fetch all entitlements after the transaction to return updated state
+    const allEntitlements = await tx.manyOrNone(
+      `SELECT * FROM user_entitlements WHERE user_id = $1`,
+      [auth.uid]
+    )
 
-  // Check if item has expired
-  if (purchase.expiresAt && purchase.expiresAt < Date.now()) {
-    throw new APIError(400, 'This item has expired')
-  }
-
-  // Update the enabled status
-  const updatedPurchases = [...purchases]
-  updatedPurchases[purchaseIndex] = {
-    ...purchase,
-    enabled,
-  }
-
-  await updateUser(pg, auth.uid, {
-    shopPurchases: updatedPurchases,
+    return { entitlements: allEntitlements.map(convertEntitlement) }
   })
 
-  return { success: true }
+  return { success: true, entitlements: result.entitlements }
 }

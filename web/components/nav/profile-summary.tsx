@@ -1,6 +1,10 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import {
+  mergeEntitlements,
+  useOptimisticEntitlements,
+} from 'web/hooks/use-optimistic-entitlements'
 import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Avatar } from '../widgets/avatar'
@@ -8,6 +12,13 @@ import { TokenNumber } from '../widgets/token-number'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
+  const optimisticContext = useOptimisticEntitlements()
+
+  // Merge server entitlements with optimistic updates from shop
+  const effectiveEntitlements = mergeEntitlements(
+    user.entitlements,
+    optimisticContext?.optimisticEntitlements ?? []
+  )
 
   const currentPage = usePathname() ?? ''
   const url = `/${user.username}`
@@ -27,6 +38,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
         username={user.username}
         noLink
         size="md"
+        entitlements={effectiveEntitlements}
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">

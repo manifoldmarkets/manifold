@@ -64,6 +64,7 @@ type AnyTxnType =
   | ContractBoostPurchase
   | CharityGiveawayTicket
   | ShopPurchase
+  | ShopRefund
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -634,6 +635,13 @@ type ShopPurchase = {
   data: {
     itemId: string
   }
+}
+
+type ShopRefund = {
+  category: 'SHOP_REFUND'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
 }
 
 export type AddSubsidyTxn = Txn & AddSubsidy

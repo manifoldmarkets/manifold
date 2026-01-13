@@ -211,6 +211,7 @@ import {
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { shopPurchase } from './shop-purchase'
+import { shopResetAll } from './shop-reset-all'
 import { shopToggle } from './shop-toggle'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
@@ -434,6 +435,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'shop-purchase': shopPurchase,
+  'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,

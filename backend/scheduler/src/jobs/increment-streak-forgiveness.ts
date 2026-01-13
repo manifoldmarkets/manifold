@@ -63,5 +63,11 @@ const bulkUpdateUsersByChunk = async (
 
 export const incrementStreakForgiveness = async () => {
   const pg = createSupabaseDirectClient()
+
+  // All users get +1 streak forgiveness per month
+  // Note: Supporter benefit is higher PURCHASE cap (maxStreakFreezes), not extra monthly grants
+  // Monthly grants are the same for everyone - supporters just can store more via purchases
   await bulkUpdateUsersByChunk(pg, 15)
+
+  log('Finished incrementing streak forgiveness for all users')
 }

@@ -15,6 +15,7 @@ import {
 import clsx from 'clsx'
 import { FullUser } from 'common/api/user-types'
 import { userHasHovercardGlow } from 'common/shop/items'
+import { getBenefit } from 'common/supporter-config'
 import dayjs from 'dayjs'
 import { Ref, forwardRef, useEffect, useState } from 'react'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
@@ -145,7 +146,8 @@ const FetchUserHovercardContent = forwardRef(
       user?.lastBetTime ?? 0
     )
 
-    const hasGlow = userHasHovercardGlow(user?.shopPurchases)
+    const hasGlow = userHasHovercardGlow(user?.entitlements)
+    const hasBadgeAnimation = getBenefit(user?.entitlements, 'badgeAnimation', false)
 
     return user ? (
       <div
@@ -163,6 +165,7 @@ const FetchUserHovercardContent = forwardRef(
               username={user.username}
               avatarUrl={user.avatarUrl}
               size="lg"
+              entitlements={user.entitlements}
             />
             <FollowButton userId={userId} size="xs" />
           </Row>
@@ -172,6 +175,7 @@ const FetchUserHovercardContent = forwardRef(
             className={'text-lg font-bold'}
             user={user}
             followsYou={false}
+            animateSupporterBadge={hasBadgeAnimation}
           />
 
           {user.bio && (

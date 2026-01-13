@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "serve": "next dev --webpack",
+    "serve": "next dev",
     "ts-watch": "tsc --watch --noEmit --incremental --preserveWatchOutput --pretty",
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"yarn serve\" \"yarn ts-watch\"",
     "dev:dev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV yarn dev",

@@ -361,6 +361,18 @@ module.exports = {
             transform: 'translateX(8px)',
           },
         },
+        'supporter-shimmer': {
+          '0%, 100%': {
+            opacity: 1,
+            transform: 'scale(1)',
+            filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.5))',
+          },
+          '50%': {
+            opacity: 0.85,
+            transform: 'scale(1.1)',
+            filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))',
+          },
+        },
       },
       animation: {
         progress: 'progress linear forwards',
@@ -394,6 +406,7 @@ module.exports = {
         'grow-up': 'grow-up 1s',
         'slide-up-and-fade': 'slide-up-and-fade 150ms',
         shake: 'shake 0.5s ease-in-out',
+        'supporter-shimmer': 'supporter-shimmer 2s ease-in-out infinite',
       },
       colors: {
         ink: {

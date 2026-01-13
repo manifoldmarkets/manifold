@@ -1,7 +1,7 @@
 # Manifold Shop Implementation Plan - v3
 
 **Created:** December 2024
-**Last Updated:** January 8, 2025
+**Last Updated:** January 12, 2025
 **Status:** Schema Migration In Progress
 **Branch:** `shop`
 
@@ -18,8 +18,8 @@
 - `shop_orders` - Tracks purchase history (future: Printful merch orders)
 
 **Migration Tasks:**
-- [ ] Create `user_entitlements` table in Supabase
-- [ ] Create `shop_orders` table in Supabase
+- [x] Create `user_entitlements` table in Supabase (dev)
+- [x] Create `shop_orders` table in Supabase (dev)
 - [ ] Remove `shopPurchases` field from User type
 - [ ] Update `shop-purchase` API to write to tables
 - [ ] Update `shop-toggle` API to update `user_entitlements`
@@ -49,43 +49,21 @@
 
 ---
 
-## Database Schema
+## Database Schema (Created in Dev)
 
 ### Table 1: `user_entitlements`
 
 Tracks active digital items a user owns. Simple, fast lookups.
 
 ```sql
-CREATE TABLE IF NOT EXISTS user_entitlements (
+CREATE TABLE user_entitlements (
   user_id TEXT NOT NULL,
   entitlement_id TEXT NOT NULL,       -- matches ShopItem.id (e.g., 'pampu-skin')
   granted_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_time TIMESTAMPTZ,           -- null = permanent
   enabled BOOLEAN NOT NULL DEFAULT TRUE,  -- for toggleable items
-  metadata JSONB,                      -- future extensibility
   PRIMARY KEY (user_id, entitlement_id)
 );
-
--- Index for user lookups
-CREATE INDEX IF NOT EXISTS user_entitlements_user_idx
-  ON user_entitlements (user_id);
-
--- Index for finding all users with a specific entitlement (admin queries)
-CREATE INDEX IF NOT EXISTS user_entitlements_entitlement_idx
-  ON user_entitlements (entitlement_id);
-
--- Enable RLS
-ALTER TABLE user_entitlements ENABLE ROW LEVEL SECURITY;
-
--- Users can read their own entitlements
-CREATE POLICY "Users can view own entitlements"
-  ON user_entitlements FOR SELECT
-  USING (user_id = auth.uid()::text);
-
--- Public read for displaying other users' cosmetics
-CREATE POLICY "Public read for cosmetics display"
-  ON user_entitlements FOR SELECT
-  USING (true);
 ```
 
 **Usage:**
@@ -98,46 +76,25 @@ CREATE POLICY "Public read for cosmetics display"
 Records all purchases. Also designed for future Printful merch integration.
 
 ```sql
-CREATE TABLE IF NOT EXISTS shop_orders (
+CREATE TABLE shop_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   item_id TEXT NOT NULL,              -- matches ShopItem.id
-  item_type TEXT NOT NULL DEFAULT 'digital',  -- 'digital', 'printful', 'other'
   price_mana BIGINT NOT NULL,
   quantity INT NOT NULL DEFAULT 1,
   txn_id TEXT,                        -- reference to txns table
-  -- Printful fields (future use)
-  printful_order_id TEXT,
-  printful_status TEXT,
-  -- Status tracking
-  status TEXT NOT NULL DEFAULT 'COMPLETED',  -- digital items complete immediately
-  metadata JSONB,                     -- variant info, size, color, etc.
+  printful_order_id TEXT,             -- from Printful API (future)
+  printful_status TEXT,               -- synced from Printful (future)
+  status TEXT NOT NULL DEFAULT 'CREATED',
+  metadata JSONB,                     -- size, color, variant, etc.
   created_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  delivered_time TIMESTAMPTZ,
-
-  CONSTRAINT valid_item_type CHECK (item_type IN ('digital', 'printful', 'other'))
+  shipped_time TIMESTAMPTZ,
+  delivered_time TIMESTAMPTZ
 );
-
--- Index for user order history
-CREATE INDEX IF NOT EXISTS shop_orders_user_idx
-  ON shop_orders (user_id, created_time DESC);
-
--- Index for Printful status syncing
-CREATE INDEX IF NOT EXISTS shop_orders_printful_idx
-  ON shop_orders (printful_order_id)
-  WHERE printful_order_id IS NOT NULL;
-
--- Enable RLS
-ALTER TABLE shop_orders ENABLE ROW LEVEL SECURITY;
-
--- Users can view their own orders
-CREATE POLICY "Users can view own orders"
-  ON shop_orders FOR SELECT
-  USING (user_id = auth.uid()::text);
 ```
 
 **Usage:**
-- Record purchase: `INSERT INTO shop_orders (user_id, item_id, item_type, price_mana, txn_id) VALUES ($1, $2, 'digital', $3, $4)`
+- Record purchase: `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status) VALUES ($1, $2, $3, $4, 'COMPLETED')`
 - Get user's order history: `SELECT * FROM shop_orders WHERE user_id = $1 ORDER BY created_time DESC`
 - Admin stats: `SELECT item_id, COUNT(*), SUM(price_mana) FROM shop_orders GROUP BY item_id`
 
@@ -155,7 +112,6 @@ export type UserEntitlement = {
   grantedTime: number    // timestamp
   expiresTime?: number   // null = permanent
   enabled: boolean
-  metadata?: Record<string, any>
 }
 
 // Shop order record from database
@@ -163,15 +119,15 @@ export type ShopOrder = {
   id: string
   userId: string
   itemId: string
-  itemType: 'digital' | 'printful' | 'other'
   priceMana: number
   quantity: number
   txnId?: string
   printfulOrderId?: string
   printfulStatus?: string
-  status: 'CREATED' | 'PAID' | 'COMPLETED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'FAILED'
+  status: 'CREATED' | 'COMPLETED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'FAILED'
   metadata?: Record<string, any>
   createdTime: number
+  shippedTime?: number
   deliveredTime?: number
 }
 
@@ -237,8 +193,8 @@ export const shopPurchase = async ({ itemId }, auth) => {
 
     // 3. Create shop_order record
     await tx.none(`
-      INSERT INTO shop_orders (user_id, item_id, item_type, price_mana, txn_id, status)
-      VALUES ($1, $2, 'digital', $3, $4, 'COMPLETED')
+      INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status)
+      VALUES ($1, $2, $3, $4, 'COMPLETED')
     `, [auth.uid, itemId, item.price, txnId])
 
     // 4. Create/update entitlement (for non-instant items)
@@ -421,18 +377,17 @@ export default function ShopPage() {
 
 When ready to add physical merchandise:
 
-1. **Shop items config** - Add items with `itemType: 'printful'` and `printfulProductId`
+1. **Shop items config** - Add items with `category: 'merch'` and `printfulProductId`
 2. **Purchase flow** - Collect shipping info in modal, send directly to Printful API
 3. **Order tracking** - Use `shop_orders.printful_order_id` and `printful_status`
 4. **Status sync** - Webhook or polling to update order status from Printful
 5. **No shipping storage** - Shipping info sent to Printful, not stored in our DB
 
 The `shop_orders` table is already designed to support this with:
-- `item_type = 'printful'`
 - `printful_order_id` - ID from Printful API
 - `printful_status` - 'pending', 'fulfilled', 'shipped', etc.
 - `metadata` - Can store variant/size/color selections
-- `delivered_time` - Set when Printful confirms delivery
+- `shipped_time` / `delivered_time` - Tracking timestamps
 
 ---
 

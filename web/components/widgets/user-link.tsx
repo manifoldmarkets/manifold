@@ -25,8 +25,12 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
+import { FaStar } from 'react-icons/fa'
 import { User } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
+import { UserEntitlement } from 'common/shop/types'
+import { userHasSupporterBadge } from 'common/shop/items'
+import { getUserSupporterTier, SUPPORTER_TIERS } from 'common/supporter-config'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -91,7 +95,13 @@ export function UserAvatar(props: {
 
 export function UserLink(props: {
   user?:
-    | { id: string; name?: string; username?: string; createdTime?: number }
+    | {
+        id: string
+        name?: string
+        username?: string
+        createdTime?: number
+        entitlements?: UserEntitlement[]
+      }
     | undefined
     | null
   className?: string
@@ -118,7 +128,7 @@ export function UserLink(props: {
     )
   }
 
-  const { id, name, username, createdTime } = user
+  const { id, name, username, createdTime, entitlements } = user
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name, maxLength) : name
   const children = (
@@ -130,6 +140,7 @@ export function UserLink(props: {
           username={username}
           fresh={fresh}
           marketCreator={marketCreator}
+          entitlements={entitlements}
         />
       )}
     </span>
@@ -187,8 +198,10 @@ export function UserBadge(props: {
   username: string
   fresh?: boolean
   marketCreator?: boolean
+  entitlements?: UserEntitlement[]
+  animateSupporterBadge?: boolean
 }) {
-  const { userId, username, fresh, marketCreator } = props
+  const { userId, username, fresh, marketCreator, entitlements, animateSupporterBadge } = props
   const badges = []
   if (BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
@@ -213,6 +226,9 @@ export function UserBadge(props: {
   }
   if (BEING_DEAD_HEADS.includes(userId)) {
     badges.push(<BeingDeadHead key="being-dead" />)
+  }
+  if (userHasSupporterBadge(entitlements)) {
+    badges.push(<SupporterBadge key="supporter" entitlements={entitlements} animate={animateSupporterBadge} />)
   }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
@@ -310,13 +326,57 @@ function MarketCreatorBadge() {
   )
 }
 
+// Show a star for Manifold Supporters with tier-appropriate color
+// Note: Premium animation only appears on hovercard, not inline
+function SupporterBadge({
+  entitlements,
+  animate,
+}: {
+  entitlements?: UserEntitlement[]
+  animate?: boolean
+}) {
+  const tier = getUserSupporterTier(entitlements)
+  if (!tier) return null
+
+  const tierConfig = SUPPORTER_TIERS[tier]
+  const showAnimation = animate && tier === 'premium'
+
+  return (
+    <Tooltip text={`${tierConfig.name} Supporter`} placement="right">
+      <span className="relative inline-flex">
+        <FaStar
+          className={clsx(
+            'h-4 w-4',
+            tier === 'basic' && 'text-gray-400',
+            tier === 'plus' && 'text-indigo-500',
+            tier === 'premium' && 'text-amber-500'
+          )}
+          aria-hidden="true"
+          style={
+            tier === 'premium'
+              ? { filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.5))' }
+              : undefined
+          }
+        />
+        {showAnimation && (
+          <FaStar
+            className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]"
+            aria-hidden="true"
+          />
+        )}
+      </span>
+    </Tooltip>
+  )
+}
+
 export const StackedUserNames = (props: {
   user: User
   followsYou?: boolean
   className?: string
   usernameClassName?: string
+  animateSupporterBadge?: boolean
 }) => {
-  const { user, followsYou, usernameClassName, className } = props
+  const { user, followsYou, usernameClassName, className, animateSupporterBadge } = props
   return (
     <Col>
       <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
@@ -326,6 +386,8 @@ export const StackedUserNames = (props: {
             userId={user.id}
             username={user.username}
             fresh={isFresh(user.createdTime)}
+            entitlements={user.entitlements}
+            animateSupporterBadge={animateSupporterBadge}
           />
         }
         {user.userDeleted ? (

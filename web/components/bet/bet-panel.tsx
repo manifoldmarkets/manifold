@@ -124,7 +124,7 @@ export function BuyPanel(
   } = props
 
   const user = useUser()
-  const hasPampu = userHasPampuSkin(user?.shopPurchases)
+  const hasPampu = userHasPampuSkin(user?.entitlements)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -238,7 +238,7 @@ export const BuyPanelBody = (
   } = props
 
   const user = useUser()
-  const hasPampu = userHasPampuSkin(user?.shopPurchases)
+  const hasPampu = userHasPampuSkin(user?.entitlements)
   const privateUser = usePrivateUser()
   const liquidityTier =
     'answers' in contract

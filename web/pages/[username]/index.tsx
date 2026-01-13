@@ -289,6 +289,7 @@ function UserProfile(props: {
                       size={'lg'}
                       className="bg-ink-1000"
                       noLink
+                      entitlements={user.entitlements}
                     />
                   }
                 />
@@ -317,6 +318,7 @@ function UserProfile(props: {
                     size={'lg'}
                     className="bg-ink-1000"
                     noLink
+                    entitlements={user.entitlements}
                   />
                 }
               />

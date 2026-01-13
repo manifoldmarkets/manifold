@@ -5,7 +5,9 @@ import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
 import { isFresh } from './user-link'
-import { LuSprout } from 'react-icons/lu'
+import { LuSprout, LuCrown, LuGraduationCap } from 'react-icons/lu'
+import { UserEntitlement } from 'common/shop/types'
+import { userHasAvatarDecoration } from 'common/shop/items'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export const Avatar = memo(
@@ -17,11 +19,30 @@ export const Avatar = memo(
     className?: string
     preventDefault?: boolean
     createdTime?: number
+    entitlements?: UserEntitlement[]
   }) => {
-    const { username, noLink, size, className, preventDefault, createdTime } =
-      props
+    const {
+      username,
+      noLink,
+      size,
+      className,
+      preventDefault,
+      createdTime,
+      entitlements,
+    } = props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
+
+    // Check for avatar decorations
+    const hasGoldenBorder = userHasAvatarDecoration(
+      entitlements,
+      'avatar-golden-border'
+    )
+    const hasCrown = userHasAvatarDecoration(entitlements, 'avatar-crown')
+    const hasGraduationCap = userHasAvatarDecoration(
+      entitlements,
+      'avatar-graduation-cap'
+    )
     const s =
       size == '2xs'
         ? 4
@@ -54,10 +75,18 @@ export const Avatar = memo(
       }
     }
 
+    // Determine if we need a relative wrapper for overlays
+    const needsRelativeWrapper =
+      isUserFresh || hasCrown || hasGraduationCap || hasGoldenBorder
+
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
     return (
-      <div className={isUserFresh ? 'relative' : ''}>
+      <div className={needsRelativeWrapper ? 'relative' : ''}>
+        {/* Golden border glow effect */}
+        {hasGoldenBorder && (
+          <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-75 blur-sm" />
+        )}
         {shouldShowImage ? (
           <Image
             width={sizeInPx}
@@ -67,7 +96,8 @@ export const Avatar = memo(
               `w-${s} h-${s}`,
               !noLink && 'cursor-pointer',
               className,
-              isUserFresh && 'ring-1 ring-green-500'
+              isUserFresh && 'ring-1 ring-green-500',
+              hasGoldenBorder && 'relative ring-2 ring-amber-400'
             )}
             style={{ maxWidth: `${s * 0.25}rem` }}
             src={avatarUrl}
@@ -84,14 +114,28 @@ export const Avatar = memo(
             className={clsx(
               `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
               className,
-              isUserFresh && 'ring-1 ring-green-500'
+              isUserFresh && 'ring-1 ring-green-500',
+              hasGoldenBorder && 'relative ring-2 ring-amber-400'
             )}
             onClick={onClick}
           />
         )}
+        {/* Fresh user sprout */}
         {isUserFresh && (
           <div className="absolute -right-2 -top-[0.41rem] rotate-45">
             <LuSprout className="h-4 w-4 text-green-500" />
+          </div>
+        )}
+        {/* Crown overlay */}
+        {hasCrown && (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45">
+            <LuCrown className="h-5 w-5 text-amber-500" />
+          </div>
+        )}
+        {/* Graduation cap overlay */}
+        {hasGraduationCap && (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45">
+            <LuGraduationCap className="h-5 w-5 text-indigo-500" />
           </div>
         )}
       </div>

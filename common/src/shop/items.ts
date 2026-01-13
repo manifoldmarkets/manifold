@@ -1,4 +1,5 @@
 import { DAY_MS } from '../util/time'
+import { UserEntitlement } from './types'
 
 export type ShopItemType =
   | 'instant' // Execute immediately (e.g., streak forgiveness)
@@ -9,10 +10,26 @@ export type ShopItemCategory =
   | 'badge'
   | 'avatar-border'
   | 'avatar-overlay'
-  | 'username-color'
   | 'skin'
   | 'consumable'
   | 'hovercard'
+
+// Categories where only one item can be enabled at a time
+export const EXCLUSIVE_CATEGORIES: ShopItemCategory[] = [
+  'avatar-border',
+  'avatar-overlay',
+  'hovercard',
+  'skin',
+]
+
+// Get all entitlement IDs for items in a given category
+export const getEntitlementIdsForCategory = (
+  category: ShopItemCategory
+): string[] => {
+  return SHOP_ITEMS.filter((item) => item.category === category).map(
+    (item) => item.entitlementId ?? item.id
+  )
+}
 
 export type ShopItem = {
   id: string
@@ -24,34 +41,56 @@ export type ShopItem = {
   limit: 'one-time' | 'unlimited' // per-user purchase limit
   category: ShopItemCategory
   imageUrl?: string
+  // Optional: different items can share an entitlement (e.g., 1mo and 1yr supporter badges)
+  entitlementId?: string
+  // If true, item has no toggle switch (always active when owned)
+  alwaysEnabled?: boolean
 }
 
+// Get the entitlement ID for a shop item (defaults to item.id)
+export const getEntitlementId = (item: ShopItem): string =>
+  item.entitlementId ?? item.id
+
 export const SHOP_ITEMS: ShopItem[] = [
+  // Supporter tiers - payment-based (Basic/Plus/Premium)
   {
-    id: 'supporter-badge-30d',
-    name: 'Manifold Supporter (1 month)',
-    description: 'Show your support with a badge next to your name for 30 days',
-    price: 100000, // 100k mana
+    id: 'supporter-basic',
+    name: 'Basic Supporter',
+    description: 'Support Manifold and get 1.5x quest rewards',
+    price: 500,
     type: 'time-limited',
     duration: 30 * DAY_MS,
-    limit: 'unlimited', // can re-purchase when expired
-    category: 'badge',
-  },
-  {
-    id: 'supporter-badge-1y',
-    name: 'Manifold Supporter (1 year)',
-    description: 'Show your support with a badge next to your name for a full year',
-    price: 1000000, // 1M mana (slight discount vs 12x monthly)
-    type: 'time-limited',
-    duration: 365 * DAY_MS,
     limit: 'unlimited',
     category: 'badge',
+    alwaysEnabled: true,
+  },
+  {
+    id: 'supporter-plus',
+    name: 'Plus Supporter',
+    description: '2x quest rewards, 5% shop discount, +1 streak freeze/mo',
+    price: 2500,
+    type: 'time-limited',
+    duration: 30 * DAY_MS,
+    limit: 'unlimited',
+    category: 'badge',
+    alwaysEnabled: true,
+  },
+  {
+    id: 'supporter-premium',
+    name: 'Premium Supporter',
+    description: '3x quest rewards, 10% shop discount, +4 max streak freezes, animated badge',
+    price: 10000,
+    type: 'time-limited',
+    duration: 30 * DAY_MS,
+    limit: 'unlimited',
+    category: 'badge',
+    alwaysEnabled: true,
   },
   {
     id: 'avatar-golden-border',
     name: 'Golden Border',
     description: 'A prestigious golden glow around your avatar',
-    price: 125000,
+    price: 25000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
@@ -60,7 +99,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-crown',
     name: 'Crown',
     description: 'A royal crown overlay on your avatar',
-    price: 100000000,
+    price: 1000000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -69,7 +108,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-graduation-cap',
     name: 'Graduation Cap',
     description: 'A scholarly graduation cap on your avatar',
-    price: 100000,
+    price: 10000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -78,7 +117,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'streak-forgiveness',
     name: 'Streak Freeze',
     description: 'Protect your betting streak - adds one forgiveness point',
-    price: 10000,
+    price: 500,
     type: 'instant',
     limit: 'unlimited',
     category: 'consumable',
@@ -87,7 +126,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'pampu-skin',
     name: 'PAMPU Skin',
     description: 'Replace your YES button with PAMPU everywhere',
-    price: 25000,
+    price: 10000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'skin',
@@ -96,7 +135,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'hovercard-glow',
     name: 'Profile Glow',
     description: 'Add a glowing border to your profile popup',
-    price: 75000,
+    price: 10000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
@@ -106,42 +145,57 @@ export const SHOP_ITEMS: ShopItem[] = [
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
 
-// Helper to check if a purchase is currently active (not expired)
-export const isPurchaseActive = (purchase: {
-  expiresAt?: number
-  enabled?: boolean
-}): boolean => {
-  if (purchase.expiresAt && purchase.expiresAt < Date.now()) {
+// Helper to check if an entitlement is currently active (not expired, enabled)
+export const isEntitlementActive = (entitlement: UserEntitlement): boolean => {
+  if (entitlement.expiresTime && entitlement.expiresTime < Date.now()) {
     return false
   }
-  // For toggleable items, check enabled flag (default to true if not set)
-  if (purchase.enabled === false) {
+  if (!entitlement.enabled) {
     return false
   }
   return true
 }
 
-// Helper to check if user owns an active instance of an item
-export const userOwnsItem = (
-  shopPurchases: Array<{ itemId: string; expiresAt?: number; enabled?: boolean }> | undefined,
+// Helper to check if user has an active entitlement for an item
+export const hasActiveEntitlement = (
+  entitlements: UserEntitlement[] | undefined,
   itemId: string
 ): boolean => {
-  if (!shopPurchases) return false
-  return shopPurchases.some(
-    (p) => p.itemId === itemId && isPurchaseActive(p)
-  )
+  if (!entitlements) return false
+  const entitlement = entitlements.find((e) => e.entitlementId === itemId)
+  if (!entitlement) return false
+  return isEntitlementActive(entitlement)
 }
 
 // Helper to check if user has PAMPU skin enabled
 export const userHasPampuSkin = (
-  shopPurchases: Array<{ itemId: string; expiresAt?: number; enabled?: boolean }> | undefined
+  entitlements: UserEntitlement[] | undefined
 ): boolean => {
-  return userOwnsItem(shopPurchases, 'pampu-skin')
+  return hasActiveEntitlement(entitlements, 'pampu-skin')
 }
 
 // Helper to check if user has hovercard glow
 export const userHasHovercardGlow = (
-  shopPurchases: Array<{ itemId: string; expiresAt?: number; enabled?: boolean }> | undefined
+  entitlements: UserEntitlement[] | undefined
 ): boolean => {
-  return userOwnsItem(shopPurchases, 'hovercard-glow')
+  return hasActiveEntitlement(entitlements, 'hovercard-glow')
+}
+
+// Helper to check if user has any supporter tier active
+export const userHasSupporterBadge = (
+  entitlements: UserEntitlement[] | undefined
+): boolean => {
+  return (
+    hasActiveEntitlement(entitlements, 'supporter-basic') ||
+    hasActiveEntitlement(entitlements, 'supporter-plus') ||
+    hasActiveEntitlement(entitlements, 'supporter-premium')
+  )
+}
+
+// Helper to check if user has a specific avatar decoration
+export const userHasAvatarDecoration = (
+  entitlements: UserEntitlement[] | undefined,
+  decorationId: 'avatar-golden-border' | 'avatar-crown' | 'avatar-graduation-cap'
+): boolean => {
+  return hasActiveEntitlement(entitlements, decorationId)
 }

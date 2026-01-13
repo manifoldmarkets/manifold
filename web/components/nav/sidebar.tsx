@@ -99,7 +99,10 @@ export default function Sidebar(props: {
     />
   )
 
-  const spendManaButton = user && !isMobile && SPEND_MANA_ENABLED && (
+  // Show shop button when enabled OR for admins (testing)
+  const spendManaButton = user &&
+    !isMobile &&
+    (SPEND_MANA_ENABLED || isAdminOrMod) && (
     <Link
       href="/shop"
       className="group relative flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-violet-600 hover:to-purple-700 hover:shadow-md"
