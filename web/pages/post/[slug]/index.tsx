@@ -44,20 +44,28 @@ import Custom404 from 'web/pages/404'
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
 
-  const postData = await getPostBySlug(slug)
-  const creator = postData ? await getUserById(postData.creatorId) : null
-  const comments = postData ? await getCommentsOnPost(postData.id) : []
-  const watched: string[] = []
-  const skipped: string[] = []
+  try {
+    const postData = await getPostBySlug(slug)
+    if (!postData) {
+      return { notFound: true }
+    }
+    const creator = await getUserById(postData.creatorId)
+    const comments = await getCommentsOnPost(postData.id)
+    const watched: string[] = []
+    const skipped: string[] = []
 
-  return {
-    props: {
-      post: postData,
-      creator,
-      comments,
-      watched,
-      skipped,
-    },
+    return {
+      props: {
+        post: postData,
+        creator,
+        comments,
+        watched,
+        skipped,
+      },
+    }
+  } catch (e) {
+    console.error('Error fetching post:', slug, e)
+    return { notFound: true, revalidate: 60 }
   }
 }
 
