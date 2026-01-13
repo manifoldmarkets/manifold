@@ -2129,6 +2129,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'cast-poll-vote': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { status: string; voteId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        voteId: z.string().optional(),
+        voteIds: z.array(z.string()).optional(),
+        rankedVoteIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
   'get-next-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',

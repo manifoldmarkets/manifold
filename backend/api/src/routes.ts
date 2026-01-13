@@ -53,6 +53,7 @@ import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
 import { cancelBet } from './cancel-bet'
+import { castpollvote } from './cast-poll-vote'
 import { checkPollSuggestion } from './check-poll-suggestion'
 import { checkSportsEvent } from './check-sports-event'
 import { closeMarket } from './close-market'
@@ -381,6 +382,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-description': generateAIDescription,
   'generate-ai-answers': generateAIAnswers,
   'check-poll-suggestion': checkPollSuggestion,
+  'cast-poll-vote': castpollvote,
   'get-next-loan-amount': getNextLoanAmount,
   'get-market-loan-max': getMarketLoanMax,
   'check-sports-event': checkSportsEvent,

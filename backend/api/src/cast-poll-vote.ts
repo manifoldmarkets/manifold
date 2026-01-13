@@ -9,37 +9,30 @@ import {
   getUser,
   revalidateContractStaticProps,
 } from 'shared/utils'
-import { z } from 'zod'
-import { APIError, authEndpointUnbanned, validate } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-const schema = z.object({
-  contractId: z.string(),
-  voteId: z.string().optional(),
-  voteIds: z.array(z.string()).optional(),
-  rankedVoteIds: z.array(z.string()).optional(),
-})
+export const castpollvote: APIHandler<'cast-poll-vote'> =
+  onlyUsersWhoCanPerformAction('pollVote', async (props, auth) => {
+    const { contractId, voteId, voteIds, rankedVoteIds } = props
 
-export const castpollvote = authEndpointUnbanned(async (req, auth) => {
-  const { contractId, voteId, voteIds, rankedVoteIds } = validate(
-    schema,
-    req.body
-  )
+    const result = await pollQueue.enqueueFn(
+      () =>
+        castPollVoteMain(contractId, auth.uid, {
+          voteId,
+          voteIds,
+          rankedVoteIds,
+        }),
+      [contractId]
+    )
 
-  const result = await pollQueue.enqueueFn(
-    () =>
-      castPollVoteMain(contractId, auth.uid, {
-        voteId,
-        voteIds,
-        rankedVoteIds,
-      }),
-    [contractId]
-  )
+    // Fire-and-forget the continue function (revalidate static props)
+    result
+      .continue()
+      .catch((e) => console.error('castpollvote continue error', e))
 
-  // Fire-and-forget the continue function (revalidate static props)
-  result.continue().catch((e) => console.error('castpollvote continue error', e))
-
-  return result.result
-})
+    return result.result
+  })
 
 type VoteInput = {
   voteId?: string

@@ -24,7 +24,6 @@ import { cancelbounty } from './cancel-bounty'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { leavereview } from './leave-review'
-import { castpollvote } from './cast-poll-vote'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
 import { report } from './report'
@@ -101,7 +100,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/searchgiphy', ...apiRoute(searchgiphy))
   app.post('/manachantweet', ...apiRoute(manachantweet))
   app.post('/leave-review', ...apiRoute(leavereview))
-  app.post('/cast-poll-vote', ...apiRoute(castpollvote))
   app.post(
     '/get-similar-groups-to-contract',
     ...apiRoute(getsimilargroupstocontract)
