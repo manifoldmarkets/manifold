@@ -162,6 +162,7 @@ import { adminRecoverUser } from './admin-recover-user'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
+import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -433,6 +434,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-charity-giveaway': getCharityGiveaway,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
+  'select-charity-giveaway-winner': selectCharityGiveawayWinner,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'shop-purchase': shopPurchase,

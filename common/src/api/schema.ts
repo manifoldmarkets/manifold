@@ -2866,6 +2866,13 @@ export const API = (_apiTypeCheck = {
         totalManaSpent: number
       }[]
       totalTickets: number
+      winningCharity?: string
+      winner?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+      }
     },
   },
   'buy-charity-giveaway-tickets': {
@@ -2907,6 +2914,17 @@ export const API = (_apiTypeCheck = {
         manaSpent: number
         createdTime: number
       }[]
+    },
+  },
+  'select-charity-giveaway-winner': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ giveawayNum: z.number() }).strict(),
+    returns: {} as {
+      ticketId: string
+      charityId: string
+      userId: string
     },
   },
   'get-predictle-percentile': {

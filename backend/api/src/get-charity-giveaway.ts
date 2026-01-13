@@ -54,6 +54,45 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
     0
   )
 
+  // If there's a winning ticket, get the winner details
+  let winningCharity: string | undefined
+  let winner:
+    | { id: string; username: string; name: string; avatarUrl: string }
+    | undefined
+
+  if (giveaway.winning_ticket_id) {
+    const winningTicket = await pg.oneOrNone<{
+      charity_id: string
+      user_id: string
+    }>(
+      `SELECT charity_id, user_id FROM charity_giveaway_tickets WHERE id = $1`,
+      [giveaway.winning_ticket_id]
+    )
+
+    if (winningTicket) {
+      winningCharity = winningTicket.charity_id
+
+      const winnerUser = await pg.oneOrNone<{
+        id: string
+        username: string
+        name: string
+        avatar_url: string
+      }>(
+        `SELECT id, username, name, data->>'avatarUrl' as avatar_url FROM users WHERE id = $1`,
+        [winningTicket.user_id]
+      )
+
+      if (winnerUser) {
+        winner = {
+          id: winnerUser.id,
+          username: winnerUser.username,
+          name: winnerUser.name,
+          avatarUrl: winnerUser.avatar_url,
+        }
+      }
+    }
+  }
+
   return {
     giveaway: {
       giveawayNum: giveaway.giveaway_num,
@@ -69,5 +108,7 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
       totalManaSpent: parseFloat(s.total_mana_spent),
     })),
     totalTickets,
+    winningCharity,
+    winner,
   }
 }
