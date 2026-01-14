@@ -106,11 +106,7 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
     })
   }
 
-  // Return with appropriate visibility based on who is requesting
-  return toUserAPIResponse(
-    { ...user, ...update },
-    { visibility: isAdminUpdate ? 'admin' : 'self' }
-  )
+  return toUserAPIResponse({ ...user, ...update })
 }
 
 const updateUserDenormalizedFields = async (

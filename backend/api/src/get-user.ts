@@ -4,47 +4,17 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { removeNullOrUndefinedProps } from 'common/util/object'
 import { APIHandler } from './helpers/endpoint'
-import { isAdminId, isModId } from 'common/envs/constants'
 
-// Determine visibility level based on auth context
-function getVisibilityForAuth(
-  authUid: string | undefined,
-  targetUserId: string
-): 'public' | 'self' | 'admin' {
-  if (!authUid) return 'public'
-  if (isAdminId(authUid) || isModId(authUid)) return 'admin'
-  if (authUid === targetUserId) return 'self'
-  return 'public'
+export const getUserById: APIHandler<'user/by-id/:id'> = async (props) => {
+  return getUser(props)
 }
 
-// API handler for public user endpoints - visibility based on auth
-export const getUserById: APIHandler<'user/by-id/:id'> = async (props, auth) => {
-  const visibility = getVisibilityForAuth(auth?.uid, props.id)
-  return getUser(props, { visibility })
+export const getUserByUsername: APIHandler<'user/:username'> = async (props) => {
+  return getUser(props)
 }
 
-// API handler for getting user by username - need to fetch user first to check visibility
-export const getUserByUsername: APIHandler<'user/:username'> = async (
-  props,
-  auth
-) => {
-  // For username lookup, we need to fetch the user first to determine visibility
-  const pg = createSupabaseDirectClient()
-  const userId = await pg.oneOrNone(
-    `select id from users where username = $1`,
-    [props.username],
-    (r) => r?.id as string | null
-  )
-  if (!userId) throw new APIError(404, 'User not found')
-
-  const visibility = getVisibilityForAuth(auth?.uid, userId)
-  return getUser(props, { visibility })
-}
-
-// Get user by id or username with optional visibility filtering
 export const getUser = async (
-  props: { id: string } | { username: string },
-  options?: { visibility?: 'public' | 'self' | 'admin' }
+  props: { id: string } | { username: string }
 ) => {
   const pg = createSupabaseDirectClient()
   const user = await pg.oneOrNone(
@@ -55,7 +25,7 @@ export const getUser = async (
   )
   if (!user) throw new APIError(404, 'User not found')
 
-  return toUserAPIResponse(user, options)
+  return toUserAPIResponse(user)
 }
 
 export const getLiteUser = async (

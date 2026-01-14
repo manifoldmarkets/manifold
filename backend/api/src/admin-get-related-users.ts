@@ -146,8 +146,7 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
       }
 
       return {
-        // Admin visibility: include full ban data including mod IDs
-        visibleUser: toUserAPIResponse(user, { visibility: 'admin' }),
+        visibleUser: toUserAPIResponse(user),
         matchReasons,
         netManagramAmount: managramUserMap.get(user.id),
         bans: bansByUserId.get(user.id) || [],

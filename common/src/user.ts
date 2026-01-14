@@ -101,14 +101,6 @@ export type User = {
   /** @deprecated Use user_bans table instead */
   unbanTime?: number
 
-  // MOD ALERTS (can exist without bans)
-  modAlert?: {
-    message: string
-    createdAt: number
-    createdBy: string  // mod user ID
-    dismissed?: boolean
-  }
-
   // USERNAME CHANGE RESTRICTION
   // When false, user cannot change their @username
   // Automatically set to false when any ban is applied (unless mod opts out)

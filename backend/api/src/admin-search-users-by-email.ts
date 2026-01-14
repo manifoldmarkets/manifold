@@ -32,8 +32,7 @@ export const adminSearchUsersByEmail: APIHandler<
   )
 
   return (results || []).map((row) => ({
-    // Admin visibility: include full ban data including mod IDs
-    user: toUserAPIResponse(convertUser(row), { visibility: 'admin' }),
+    user: toUserAPIResponse(convertUser(row)),
     matchedEmail: row.matched_email || row.matched_old_email,
     matchedOnOldEmail: !row.matched_email && !!row.matched_old_email,
   }))
