@@ -116,13 +116,13 @@ export function DailyLoan(props: {
       return `Claim ${formatMoney(freeLoanAmount)} daily free loan!`
     }
     if (alreadyClaimedToday) {
-      return 'View your loans'
+      return 'Daily loan already claimed'
     }
     if (atMaxLoanLimit) {
-      return 'At maximum loan limit - click to repay'
+      return 'At maximum loan limit'
     }
     if (hasNoEligiblePositions) {
-      return 'Invest more to earn free loans'
+      return 'Invest more to earn daily loan'
     }
     return 'View your loans'
   }
