@@ -6,15 +6,21 @@ import {
 import { onCreateBets } from 'api/on-create-bet'
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
+import { MS_PER_DAY } from 'common/loans'
 import { MarketContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { floatingLesserEqual } from 'common/util/math'
 import { randomString } from 'common/util/random'
-import { isEqual } from 'lodash'
+import { isEqual, keyBy } from 'lodash'
 import { trackPublicAuditBetEvent } from 'shared/audit-events'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import {
+  getLoanTrackingRows,
+  upsertLoanTrackingQuery,
+  LoanTrackingRow,
+} from 'shared/helpers/user-contract-loans'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
@@ -190,6 +196,9 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       (m) => m.answerId == answerId && m.userId === uid
     )!
 
+    // Capture margin loan before selling for loan tracking update
+    const marginLoanBefore = userMetric.marginLoan ?? 0
+
     const newBetResult = calculateSellResult(
       contract,
       answers,
@@ -225,6 +234,61 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       betGroupId,
       deterministic
     )
+
+    // Update loan tracking if margin loan was repaid
+    if (marginLoanBefore > 0) {
+      const now = Date.now()
+      const loanTracking = await getLoanTrackingRows(pgTrans, uid, [contractId])
+      const trackingKey = `${contractId}-${answerId ?? ''}`
+      const trackingByKey = keyBy(
+        loanTracking,
+        (t) => `${t.contract_id}-${t.answer_id ?? ''}`
+      )
+      const tracking = trackingByKey[trackingKey]
+
+      // Calculate loan repayment from the bet
+      const loanRepayment = -(newBetResult.newBet.loanAmount ?? 0)
+      if (loanRepayment > 0) {
+        // Calculate how much of the repayment went to margin loan (proportional split)
+        const totalLoanBefore =
+          (userMetric.loan ?? 0) + (userMetric.marginLoan ?? 0)
+        const marginLoanRatio =
+          totalLoanBefore > 0 ? marginLoanBefore / totalLoanBefore : 0
+        const marginLoanRepaid = loanRepayment * marginLoanRatio
+
+        if (marginLoanRepaid > 0) {
+          // Finalize the integral up to now
+          const lastUpdate = tracking?.last_loan_update_time ?? now
+          const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+          const finalIntegral =
+            (tracking?.loan_day_integral ?? 0) +
+            marginLoanBefore * daysSinceLastUpdate
+
+          // Reduce integral proportionally based on repayment
+          const repaymentRatio = Math.min(
+            1,
+            marginLoanRepaid / marginLoanBefore
+          )
+          const newIntegral = finalIntegral * (1 - repaymentRatio)
+
+          const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'>[] = [
+            {
+              user_id: uid,
+              contract_id: contractId,
+              answer_id: answerId ?? null,
+              loan_day_integral: Math.max(0, newIntegral),
+              last_loan_update_time: now,
+            },
+          ]
+          await pgTrans.none(upsertLoanTrackingQuery(loanTrackingUpdate))
+          log(
+            `Updated loan tracking for ${uid} on ${contractId}: integral ${
+              tracking?.loan_day_integral ?? 0
+            } -> ${newIntegral}`
+          )
+        }
+      }
+    }
 
     return betResult
   })
