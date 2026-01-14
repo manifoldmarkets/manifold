@@ -166,7 +166,6 @@ export function DailyLoan(props: {
             isOpen={showFreeLoanModal}
             setOpen={setShowFreeLoanModal}
             user={user}
-            refreshPortfolio={refreshPortfolio}
           />
         )}
       </>
