@@ -23,6 +23,8 @@ export const Avatar = memo(
     animateHatOnHover?: boolean
     // Direct control for hat animation (for mobile expand/collapse)
     animateHat?: boolean
+    // Enable golden glow animation (only on profile, shop, hovercard - not comments/feed)
+    animateGoldenGlow?: boolean
   }) => {
     const {
       username,
@@ -34,6 +36,7 @@ export const Avatar = memo(
       entitlements,
       animateHatOnHover,
       animateHat,
+      animateGoldenGlow,
     } = props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
@@ -88,6 +91,25 @@ export const Avatar = memo(
     // item with a fake grey user circle guy even if you aren't signed in
     const hasHat = hasCrown || hasGraduationCap
 
+    // Scale hat/overlay icons based on avatar size
+    const hatSizeClass =
+      size === '2xs' || size === 'xs'
+        ? 'h-3 w-3'
+        : size === 'sm'
+        ? 'h-4 w-4'
+        : 'h-5 w-5'
+
+    // Scale position offset based on avatar size
+    // For small avatars, position crown more towards top-right corner to avoid golden glow overlap
+    const hatPositionClass =
+      size === '2xs' || size === 'xs'
+        ? '-right-0.5 -top-1.5'
+        : size === 'sm'
+        ? '-right-1 -top-2'
+        : '-right-2 -top-[0.41rem]'
+
+
+
     return (
       <div
         className={clsx(
@@ -95,9 +117,14 @@ export const Avatar = memo(
           // Note: parent element must have 'group' class for animateHatOnHover to work
         )}
       >
-        {/* Golden border glow effect */}
+        {/* Golden border glow effect - only animate when explicitly enabled */}
         {hasGoldenBorder && (
-          <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-75 blur-sm" />
+          <div
+            className={clsx(
+              'absolute -inset-1 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-75 blur-sm',
+              animateGoldenGlow && 'animate-pulse'
+            )}
+          />
         )}
         {shouldShowImage ? (
           <Image
@@ -142,24 +169,29 @@ export const Avatar = memo(
         {hasCrown && (
           <div
             className={clsx(
-              'absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300',
+              'absolute rotate-45 transition-transform duration-300',
+              hatPositionClass,
               animateHatOnHover && 'group-hover:scale-110 group-hover:-translate-y-0.5',
               animateHat && 'scale-110 -translate-y-0.5'
             )}
           >
-            <LuCrown className="h-5 w-5 text-amber-500" />
+            <LuCrown
+              className={clsx(hatSizeClass, 'text-amber-500')}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
           </div>
         )}
         {/* Graduation cap overlay */}
         {hasGraduationCap && (
           <div
             className={clsx(
-              'absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300',
+              'absolute rotate-45 transition-transform duration-300',
+              hatPositionClass,
               animateHatOnHover && 'group-hover:scale-110 group-hover:-translate-y-0.5',
               animateHat && 'scale-110 -translate-y-0.5'
             )}
           >
-            <LuGraduationCap className="h-5 w-5 text-indigo-500" />
+            <LuGraduationCap className={clsx(hatSizeClass, 'text-indigo-500')} />
           </div>
         )}
       </div>

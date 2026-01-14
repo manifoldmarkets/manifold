@@ -69,7 +69,7 @@ export const SUPPORTER_BENEFITS: Record<
     referralMultiplier: number
     shopDiscount: number
     maxStreakFreezes: number // Max purchasable streak freezes (non-supporters: 1)
-    badgeAnimation: boolean // Note: Premium animates on hovercard only, not inline
+    badgeAnimation: boolean // Animated star badge on hovercard for Premium
   }
 > = {
   basic: {
@@ -91,7 +91,7 @@ export const SUPPORTER_BENEFITS: Record<
     referralMultiplier: 2,
     shopDiscount: 0.1,
     maxStreakFreezes: 5, // +4 over non-supporter
-    badgeAnimation: true, // Animates on hovercard only
+    badgeAnimation: true,
   },
 }
 

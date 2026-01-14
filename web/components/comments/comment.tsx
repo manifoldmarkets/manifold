@@ -22,7 +22,6 @@ import { UserHovercard } from '../user/user-hovercard'
 import Link from 'next/link'
 import { CommentReplyHeader, FeedCommentHeader } from './comment-header'
 import { CommentActions } from './comment-actions'
-import { userHasSupporterBadge } from 'common/shop/items'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -109,7 +108,6 @@ export const FeedComment = memo(function FeedComment(props: {
 
   const { userUsername, userAvatarUrl, userId } = comment
   const displayUser = useDisplayUserById(userId)
-  const isCommenterSupporter = userHasSupporterBadge(displayUser?.entitlements)
   const ref = useRef<HTMLDivElement>(null)
   const isBetParent = !!bets?.length
 
@@ -183,8 +181,6 @@ export const FeedComment = memo(function FeedComment(props: {
               ? 'bg-primary-100 border-primary-300 border-2'
               : isPinned
               ? 'bg-canvas-50 border-primary-300 border-2'
-              : isCommenterSupporter
-              ? 'bg-amber-50/40 dark:bg-amber-900/10 border-l-2 border-amber-400'
               : 'bg-canvas-50'
           )}
         >

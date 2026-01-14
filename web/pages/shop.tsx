@@ -529,6 +529,7 @@ function SupporterCard(props: {
                   noLink
                   entitlements={entitlements}
                   animateHatOnHover
+                  animateGoldenGlow
                 />
                 <Col className="gap-0.5">
                   <Row className="items-center gap-1.5">
@@ -808,6 +809,7 @@ function SupporterModal(props: {
                       size="lg"
                       noLink
                       entitlements={entitlements}
+                      animateGoldenGlow
                     />
                     <Col className="gap-0.5">
                       <Row className="items-center gap-2">
@@ -854,6 +856,7 @@ function SupporterModal(props: {
                       size="lg"
                       noLink
                       entitlements={entitlements}
+                      animateGoldenGlow
                     />
                     <Col className="gap-0.5">
                       <Row className="items-center gap-2">
