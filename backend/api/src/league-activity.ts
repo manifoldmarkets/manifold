@@ -52,8 +52,8 @@ export const getLeagueActivity = async (
     from contract_bets cb
     where
       cb.user_id = any($1)
-      and cb.created_time >= $2
-      and cb.created_time < $3
+      and cb.created_time >= millis_to_ts($2)
+      and cb.created_time < millis_to_ts($3)
       and is_redemption = false
     order by cb.created_time desc
     limit 10000
@@ -69,8 +69,8 @@ export const getLeagueActivity = async (
     from contract_comments cc
     where
       cc.user_id = any($1)
-      and cc.created_time >= $2
-      and cc.created_time < $3
+      and cc.created_time >= millis_to_ts($2)
+      and cc.created_time < millis_to_ts($3)
     order by cc.created_time desc
     limit 1000
   `,
