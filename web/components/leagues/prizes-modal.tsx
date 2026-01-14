@@ -20,17 +20,18 @@ export function PrizesModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <Col className="bg-canvas-0 text-ink-1000 gap-0 rounded-2xl overflow-hidden">
+      <Col className="bg-canvas-0 text-ink-1000 gap-0 overflow-hidden rounded-2xl">
         {/* Header */}
         <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-500 px-6 py-8">
           <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/20 blur-2xl" />
           <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-          
+
           <Col className="relative z-10 items-center gap-2">
             <span className="text-5xl">🏆</span>
             <h2 className="text-2xl font-black text-white">Season Prizes</h2>
             <p className="text-center text-sm text-amber-100">
-              Win mana at the end of the season based on your division and finishing rank
+              Win mana at the end of the season based on your division and
+              finishing rank
             </p>
           </Col>
         </div>

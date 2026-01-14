@@ -334,7 +334,9 @@ export default function Leaderboards() {
           <Row className="mb-4 items-center gap-2">
             {(() => {
               const Icon = currentTypeConfig.icon
-              return <Icon className={clsx('h-5 w-5', currentTypeConfig.color)} />
+              return (
+                <Icon className={clsx('h-5 w-5', currentTypeConfig.color)} />
+              )
             })()}
             <span className={clsx('font-semibold', currentTypeConfig.color)}>
               Top 50 by {currentTypeConfig.name}

@@ -142,7 +142,8 @@ export function BetsSummary(props: {
                           isCashContract={isCashContract}
                         />{' '}
                         otherwise). You're earning{' '}
-                        {formatPercent(ANNUAL_INTEREST_RATE)} annual interest on this position.
+                        {formatPercent(ANNUAL_INTEREST_RATE)} annual interest on
+                        this position.
                       </>
                     }
                   />

@@ -88,9 +88,7 @@ export function DailyFreeLoanModal(props: {
               <h2 className="text-2xl font-bold text-white drop-shadow-sm">
                 Daily Loan
               </h2>
-              <p className="text-sm text-white/80">
-                Free loans every day!
-              </p>
+              <p className="text-sm text-white/80">Free loans every day!</p>
             </Col>
 
             {/* Main Status */}
