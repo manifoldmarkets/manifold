@@ -35,6 +35,7 @@ import {
 import { Slider } from 'web/components/widgets/slider'
 import { formatWithToken } from 'common/util/format'
 import { PayBackLoanForm } from 'web/components/bet/pay-back-loan-form'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export function LoansModal(props: {
   user: User
@@ -47,6 +48,7 @@ export function LoansModal(props: {
   const { isOpen, user, setOpen, refreshPortfolio, contractId, answerId } =
     props
   const [loaning, setLoaning] = useState(false)
+  const [quickLoanLoading, setQuickLoanLoading] = useState<number | null>(null)
   const [loanAmount, setLoanAmount] = useState<number | undefined>()
   const [requestLoanError, setRequestLoanError] = useState<string | undefined>()
   const { latestPortfolio, isEligible } = useIsEligibleForLoans(user.id)
@@ -158,7 +160,8 @@ export function LoansModal(props: {
 
   const requestLoan = async (
     amountOverride?: number,
-    closeOnSuccess?: boolean
+    closeOnSuccess?: boolean,
+    isQuickLoan?: number
   ) => {
     let amountToRequest = amountOverride ?? loanAmount
     if (!amountToRequest || amountToRequest <= 0) {
@@ -186,6 +189,9 @@ export function LoansModal(props: {
     }
 
     setLoaning(true)
+    if (isQuickLoan) {
+      setQuickLoanLoading(isQuickLoan)
+    }
     try {
       const res = await api('request-loan', {
         amount: amountToRequest,
@@ -214,6 +220,7 @@ export function LoansModal(props: {
       toast.error(e.message || 'Error requesting loan')
     } finally {
       setLoaning(false)
+      setQuickLoanLoading(null)
       if (refreshPortfolio) {
         setTimeout(refreshPortfolio, 1000)
       }
@@ -431,20 +438,20 @@ export function LoansModal(props: {
                     availableGeneralLoan,
                     availableToday
                   )
+                  const isButtonLoading = quickLoanLoading === quickAmount
                   const isDisabled =
                     loaning ||
                     quickAmount > maxAvailable ||
                     quickAmount > availableGeneralLoan ||
                     quickAmount > availableToday
-                  const isLoading = loaning && loanAmount === quickAmount
 
                   return (
                     <button
                       key={quickAmount}
-                      disabled={isDisabled || isLoading}
+                      disabled={isDisabled}
                       onClick={() => {
-                        if (!isDisabled && !isLoading) {
-                          requestLoan(quickAmount, true)
+                        if (!isDisabled) {
+                          requestLoan(quickAmount, true, quickAmount)
                         }
                       }}
                       className={clsx(
@@ -463,12 +470,25 @@ export function LoansModal(props: {
                         'before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent',
                         'before:translate-x-[-200%] before:skew-x-12',
                         'hover:before:translate-x-[200%] hover:before:transition-transform hover:before:duration-1000 hover:before:ease-out',
-                        isLoading && 'pointer-events-none'
+                        isButtonLoading && 'pointer-events-none'
                       )}
                     >
-                      <span className="relative z-10">
+                      <span
+                        className={clsx(
+                          'relative z-10 flex items-center justify-center gap-2',
+                          isButtonLoading && 'opacity-0'
+                        )}
+                      >
                         {formatMoney(quickAmount)}
                       </span>
+                      {isButtonLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <LoadingIndicator
+                            size="sm"
+                            spinnerColor="border-yellow-900"
+                          />
+                        </div>
+                      )}
                     </button>
                   )
                 })}
