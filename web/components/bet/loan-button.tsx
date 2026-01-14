@@ -18,18 +18,12 @@ export function LoanButton(props: {
 
   const { data: marketLoanData } = useAPIGetter('get-market-loan-max', {
     contractId,
-  })
-
-  const { data: loanData } = useAPIGetter('get-next-loan-amount', {
-    userId: user.id,
+    answerId,
   })
 
   const currentMarketLoan = marketLoanData?.currentLoan ?? 0
-
-  // Total loan across all markets (free + margin)
-  const totalFreeLoan = loanData?.currentFreeLoan ?? 0
-  const totalMarginLoan = loanData?.currentMarginLoan ?? 0
-  const totalLoan = totalFreeLoan + totalMarginLoan
+  const currentFreeLoan = marketLoanData?.currentFreeLoan ?? 0
+  const currentMarginLoan = marketLoanData?.currentMarginLoan ?? 0
 
   const hasLoan = currentMarketLoan > 0
 
@@ -37,10 +31,12 @@ export function LoanButton(props: {
     if (!hasLoan) {
       return 'No loan on this market'
     }
-    if (totalLoan > 0) {
-      return `Total loan: ${formatMoney(totalLoan)} (Daily: ${formatMoney(
-        totalFreeLoan
-      )}, Margin: ${formatMoney(totalMarginLoan)})`
+    if (currentMarketLoan > 0) {
+      return `Loan on this market: ${formatMoney(
+        currentMarketLoan
+      )} (Daily: ${formatMoney(currentFreeLoan)}, Margin: ${formatMoney(
+        currentMarginLoan
+      )})`
     }
     return 'View loan details'
   }

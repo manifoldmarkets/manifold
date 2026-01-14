@@ -2083,6 +2083,8 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       maxLoan: number
       currentLoan: number
+      currentFreeLoan: number
+      currentMarginLoan: number
       available: number
       netWorthLimit: number
       positionLimit: number
@@ -2101,6 +2103,8 @@ export const API = (_apiTypeCheck = {
       answerLoans?: Array<{
         answerId: string
         loan: number
+        freeLoan: number
+        marginLoan: number
         positionValue: number
       }>
     },

@@ -16,9 +16,10 @@ export function MarketLoanModal(props: {
   contractId: string
   answerId?: string
 }) {
-  const { isOpen, user, setOpen, contractId } = props
-  const { data: loanData } = useAPIGetter('get-next-loan-amount', {
-    userId: user.id,
+  const { isOpen, user, setOpen, contractId, answerId } = props
+  const { data: loanData } = useAPIGetter('get-market-loan-max', {
+    contractId,
+    answerId,
   })
 
   useEffect(() => {
