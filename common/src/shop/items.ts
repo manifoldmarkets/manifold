@@ -126,7 +126,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'pampu-skin',
     name: 'PAMPU Skin',
     description: 'Replace your YES button with PAMPU everywhere',
-    price: 10000,
+    price: 1000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'skin',

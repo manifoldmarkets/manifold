@@ -56,6 +56,35 @@ const isEntitlementOwned = (e: UserEntitlement) => {
   return e.expiresTime > Date.now()
 }
 
+// Default item order (manual curation)
+const ITEM_ORDER: Record<string, number> = {
+  'streak-forgiveness': 1,
+  'pampu-skin': 2,
+  'avatar-golden-border': 3,
+  'avatar-crown': 4,
+  'hovercard-glow': 5,
+  'avatar-graduation-cap': 6,
+}
+
+type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'
+
+const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
+  const sorted = [...items]
+  switch (sort) {
+    case 'price-asc':
+      return sorted.sort((a, b) => a.price - b.price)
+    case 'price-desc':
+      return sorted.sort((a, b) => b.price - a.price)
+    case 'name-asc':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name))
+    case 'name-desc':
+      return sorted.sort((a, b) => b.name.localeCompare(a.name))
+    case 'default':
+    default:
+      return sorted.sort((a, b) => (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99))
+  }
+}
+
 export default function ShopPage() {
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
@@ -67,6 +96,7 @@ export default function ShopPage() {
   )
   const [justPurchased, setJustPurchased] = useState<string | null>(null)
   const [localStreakBonus, setLocalStreakBonus] = useState(0) // Track streak purchases
+  const [sortOption, setSortOption] = useState<SortOption>('default')
 
   // Track toggle version to ignore stale server responses during rapid toggling
   const toggleVersionRef = useRef(0)
@@ -302,14 +332,32 @@ export default function ShopPage() {
           onPurchaseComplete={handlePurchaseComplete}
         />
 
+        {/* Sort dropdown */}
+        <Row className="mb-2 items-center justify-end">
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value as SortOption)}
+            className="bg-canvas-0 border-ink-300 text-ink-700 rounded-md border px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="default">Default order</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="name-asc">Name: A to Z</option>
+            <option value="name-desc">Name: Z to A</option>
+          </select>
+        </Row>
+
         {/* Shop items grid - exclude supporter tiers (handled on /supporter page) */}
         {/* Single column on very narrow screens (<360px), 2 columns otherwise */}
         <div className="grid grid-cols-1 gap-4 min-[360px]:grid-cols-2">
-          {SHOP_ITEMS.filter(
-            (item) =>
-              !SUPPORTER_ENTITLEMENT_IDS.includes(
-                item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-              )
+          {sortItems(
+            SHOP_ITEMS.filter(
+              (item) =>
+                !SUPPORTER_ENTITLEMENT_IDS.includes(
+                  item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+                )
+            ),
+            sortOption
           ).map((item) => {
             const entitlementId = getEntitlementId(item)
             const entitlement = effectiveEntitlements.find(

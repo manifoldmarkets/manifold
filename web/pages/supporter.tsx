@@ -91,12 +91,8 @@ export default function SupporterPage() {
 
       <Col className="mx-auto max-w-3xl gap-6">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 dark:from-amber-950/40 dark:via-yellow-950/40 dark:to-orange-950/40">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-orange-200/30 blur-3xl" />
-
-          <div className="relative">
-            <Row className="items-center justify-between gap-4">
+        <div className="rounded-xl border border-ink-200 bg-canvas-0 p-4">
+          <Row className="items-center justify-between gap-4">
               {/* Left: Avatar + Name + Badge (changes on hover/select) */}
               <Row className="items-center gap-3">
                 <Avatar
@@ -150,8 +146,7 @@ export default function SupporterPage() {
                   <span className="text-ink-500 text-xs">Unlock premium benefits</span>
                 </Col>
               )}
-            </Row>
-          </div>
+          </Row>
         </div>
 
         {/* Horizontal Tier Selector */}
