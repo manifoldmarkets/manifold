@@ -41,7 +41,7 @@ import { useTVIsLive } from '../tv/tv-schedule'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
-export const SPEND_MANA_ENABLED = false
+export const SPEND_MANA_ENABLED = true
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean

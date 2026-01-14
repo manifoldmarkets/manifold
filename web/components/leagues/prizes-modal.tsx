@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { range, sortBy } from 'lodash'
+import { sortBy } from 'lodash'
 
 import { DIVISION_NAMES, prizesByDivisionAndRank } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
@@ -19,103 +19,100 @@ export function PrizesModal(props: {
   )
 
   return (
-    <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <Col className="bg-canvas-0 text-ink-1000 gap-0 overflow-hidden rounded-2xl">
+    <Modal open={open} setOpen={setOpen} size="lg">
+      <Col className="bg-canvas-0 text-ink-1000 gap-0 overflow-hidden rounded-lg">
         {/* Header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-500 px-6 py-8">
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/20 blur-2xl" />
-          <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-
-          <Col className="relative z-10 items-center gap-2">
-            <span className="text-5xl">🏆</span>
-            <h2 className="text-2xl font-black text-white">Season Prizes</h2>
-            <p className="text-center text-sm text-amber-100">
-              Win mana at the end of the season based on your division and
-              finishing rank
-            </p>
-          </Col>
+        <div className="border-ink-200 border-b px-6 py-5">
+          <h2 className="text-ink-900 text-lg font-semibold">Season Prizes</h2>
+          <p className="text-ink-500 mt-1 text-sm">
+            Prizes awarded at the end of each season based on your division and
+            final rank
+          </p>
         </div>
 
         {/* Prizes Grid */}
-        <Col className="gap-4 p-4">
+        <Col className="max-h-[60vh] gap-6 overflow-y-auto p-6">
           {divisions.map(([divisionNum, divisionName]) => {
             const div = +divisionNum
             const style = DIVISION_STYLES[div] ?? DIVISION_STYLES[1]
             const prizes = prizesByDivisionAndRank[div - 1] ?? []
 
             return (
-              <Col key={div} className="gap-2">
+              <Col key={div} className="gap-3">
                 {/* Division Header */}
                 <Row className="items-center gap-2">
-                  <span className="text-xl">{style.icon}</span>
-                  <span className={clsx('font-bold', style.text)}>
-                    {divisionName}
-                  </span>
+                  <div
+                    className={clsx(
+                      'flex h-6 w-6 items-center justify-center rounded text-xs font-semibold',
+                      style.bg,
+                      style.border,
+                      style.text,
+                      'border'
+                    )}
+                  >
+                    {div}
+                  </div>
+                  <span className="text-ink-900 font-medium">{divisionName}</span>
                 </Row>
 
                 {/* Prizes Row */}
-                <Row className="scrollbar-hide -mx-4 gap-2 overflow-x-auto px-4 pb-2">
+                <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
                   {prizes.map((prize, idx) => (
                     <PrizeCard
                       key={idx}
                       rank={idx + 1}
                       prize={prize}
-                      divisionStyle={style}
+                      isTopThree={idx < 3}
                     />
                   ))}
-                </Row>
+                </div>
               </Col>
             )
           })}
         </Col>
 
         {/* Footer */}
-        <div className="bg-ink-100 px-6 py-4 text-center">
-          <span className="text-ink-600 text-sm">
-            Top performers in higher divisions earn more! 💪
-          </span>
+        <div className="border-ink-200 bg-canvas-50 border-t px-6 py-4">
+          <p className="text-ink-500 text-center text-sm">
+            Higher divisions offer larger prizes for top performers
+          </p>
         </div>
       </Col>
     </Modal>
   )
 }
 
-function PrizeCard(props: {
-  rank: number
-  prize: number
-  divisionStyle: (typeof DIVISION_STYLES)[number]
-}) {
-  const { rank, prize, divisionStyle } = props
+function PrizeCard(props: { rank: number; prize: number; isTopThree: boolean }) {
+  const { rank, prize, isTopThree } = props
 
-  const getRankDisplay = () => {
-    if (rank === 1) return { emoji: '🥇', label: '1st' }
-    if (rank === 2) return { emoji: '🥈', label: '2nd' }
-    if (rank === 3) return { emoji: '🥉', label: '3rd' }
-    return { emoji: '', label: `${rank}th` }
+  const getRankLabel = () => {
+    if (rank === 1) return '1st'
+    if (rank === 2) return '2nd'
+    if (rank === 3) return '3rd'
+    return `${rank}th`
   }
-
-  const rankDisplay = getRankDisplay()
-  const isTopThree = rank <= 3
 
   return (
     <Col
       className={clsx(
-        'shrink-0 items-center gap-1 rounded-xl p-3',
-        'border transition-all',
+        'items-center gap-0.5 rounded-md p-2 text-center',
         isTopThree
-          ? `${divisionStyle.bg} ${divisionStyle.border} shadow-md`
-          : 'border-ink-200 bg-canvas-50'
+          ? 'bg-primary-50 border-primary-200 border'
+          : 'bg-canvas-50'
       )}
-      style={{ minWidth: 70 }}
     >
-      <span className="text-lg">{rankDisplay.emoji || rankDisplay.label}</span>
-      {rankDisplay.emoji && (
-        <span className="text-ink-500 text-xs">{rankDisplay.label}</span>
-      )}
       <span
         className={clsx(
-          'font-bold tabular-nums',
-          isTopThree ? divisionStyle.text : 'text-ink-700'
+          'text-xs font-medium',
+          isTopThree ? 'text-primary-700' : 'text-ink-500'
+        )}
+      >
+        {getRankLabel()}
+      </span>
+      <span
+        className={clsx(
+          'text-sm font-semibold tabular-nums',
+          isTopThree ? 'text-primary-700' : 'text-ink-700'
         )}
       >
         {formatMoney(prize)}
