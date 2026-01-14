@@ -4,6 +4,7 @@ import { getUser } from 'shared/utils'
 import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
+  calculateMarketLoanMax,
   calculatePositionFreeLoan,
   canClaimDailyFreeLoan,
   isMarketEligibleForLoan,
@@ -103,24 +104,118 @@ export const getFreeLoanAvailable: APIHandler<
     return eligibility.eligible
   })
 
-  // Calculate free loan contribution per position
-  const positions = eligibleMetrics.map((m) => ({
-    contractId: m.contractId,
-    answerId: m.answerId,
-    payout: m.payout ?? 0,
-    invested: m.invested ?? 0,
-    freeLoanContribution: calculatePositionFreeLoan(
+  // Group metrics by contractId for per-market limit calculations
+  const metricsGroupedByContract: Record<string, typeof metrics> = {}
+  for (const m of metrics) {
+    if (!metricsGroupedByContract[m.contractId]) {
+      metricsGroupedByContract[m.contractId] = []
+    }
+    metricsGroupedByContract[m.contractId].push(m)
+  }
+
+  // Calculate per-market/per-answer loan limits (same logic as claim-free-loan.ts)
+  type LoanLimitInfo = {
+    currentLoan: number
+    positionValue: number
+    maxLoan: number
+    remainingCapacity: number
+  }
+
+  // Per-market aggregate info (for sums-to-one markets)
+  const marketLoanInfo: Record<string, LoanLimitInfo> = {}
+  // Per-answer info (for independent markets)
+  const answerLoanInfo: Record<string, LoanLimitInfo> = {}
+
+  for (const contractId in metricsGroupedByContract) {
+    const contractMetrics = metricsGroupedByContract[contractId]
+    const contract = contractsById[contractId]
+    const isIndependent =
+      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+
+    if (isIndependent) {
+      // For independent markets, calculate limits per answer
+      for (const m of contractMetrics) {
+        const key = `${m.contractId}-${m.answerId ?? ''}`
+        const currentLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
+        const positionValue = m.payout ?? 0
+        const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+        answerLoanInfo[key] = {
+          currentLoan,
+          positionValue,
+          maxLoan,
+          remainingCapacity: Math.max(0, maxLoan - currentLoan),
+        }
+      }
+    } else {
+      // For sums-to-one markets, aggregate across all answers
+      const currentLoan = sumBy(
+        contractMetrics,
+        (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
+      )
+      const positionValue = sumBy(contractMetrics, (m) => m.payout ?? 0)
+      const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+      marketLoanInfo[contractId] = {
+        currentLoan,
+        positionValue,
+        maxLoan,
+        remainingCapacity: Math.max(0, maxLoan - currentLoan),
+      }
+    }
+  }
+
+  // Calculate free loan per position, capped by per-market/per-answer limits
+  const positions = eligibleMetrics.map((m) => {
+    const baseFreeLoan = calculatePositionFreeLoan(
       m.payout ?? 0,
       m.invested ?? 0
-    ),
-  }))
+    )
+
+    const contract = contractsById[m.contractId]
+    const isIndependent =
+      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+
+    let freeLoanContribution = baseFreeLoan
+
+    if (isIndependent) {
+      // For independent markets, use per-answer limit
+      const key = `${m.contractId}-${m.answerId ?? ''}`
+      const info = answerLoanInfo[key]
+      if (info) {
+        freeLoanContribution = Math.min(baseFreeLoan, info.remainingCapacity)
+        // Reduce remaining capacity for this answer
+        info.remainingCapacity = Math.max(
+          0,
+          info.remainingCapacity - freeLoanContribution
+        )
+      }
+    } else {
+      // For sums-to-one markets, use per-market limit (shared capacity)
+      const info = marketLoanInfo[m.contractId]
+      if (info) {
+        freeLoanContribution = Math.min(baseFreeLoan, info.remainingCapacity)
+        // Reduce remaining capacity for this market
+        info.remainingCapacity = Math.max(
+          0,
+          info.remainingCapacity - freeLoanContribution
+        )
+      }
+    }
+
+    return {
+      contractId: m.contractId,
+      answerId: m.answerId,
+      payout: m.payout ?? 0,
+      invested: m.invested ?? 0,
+      freeLoanContribution,
+    }
+  })
 
   // Sum up current loans
   const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
   const currentMarginLoan = sumBy(metrics, (m) => m.marginLoan ?? 0)
   const totalLoan = currentFreeLoan + currentMarginLoan
 
-  // Calculate total free loan available (before applying limits)
+  // Calculate total free loan available (with per-market limits already applied)
   const totalFreeLoanAvailable = sumBy(positions, (p) => p.freeLoanContribution)
 
   // Apply limits
