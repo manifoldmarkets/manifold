@@ -89,7 +89,7 @@ export function DailyFreeLoanModal(props: {
                 Daily Loan
               </h2>
               <p className="text-sm text-white/80">
-                Free interest-free loans every day!
+                Free loans every day!
               </p>
             </Col>
 

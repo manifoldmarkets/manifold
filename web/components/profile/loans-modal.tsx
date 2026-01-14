@@ -28,6 +28,7 @@ import { Slider } from 'web/components/widgets/slider'
 import { formatWithToken } from 'common/util/format'
 import { PayBackLoanForm } from 'web/components/bet/pay-back-loan-form'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export function LoansModal(props: {
   user: User
@@ -360,7 +361,8 @@ export function LoansModal(props: {
                   You're earning {formatPercent(ANNUAL_INTEREST_RATE)} annual
                   interest
                 </span>{' '}
-                on all your open positions, including trades made with loans.
+                on all listed and ranked markets, including trades made with
+                loans.
               </p>
             </div>
           </Col>
