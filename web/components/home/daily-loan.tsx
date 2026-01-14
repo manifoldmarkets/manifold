@@ -9,7 +9,7 @@ import { Button } from 'web/components/buttons/button'
 import clsx from 'clsx'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Row } from 'web/components/layout/row'
-import { GiChest, GiOpenChest, GiTwoCoins } from 'react-icons/gi'
+import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { DAY_MS } from 'common/util/time'
@@ -153,7 +153,7 @@ export function DailyLoan(props: {
               )}
             >
               {isGolden ? (
-                <GiChest className="h-6 w-6 text-amber-700" />
+                <GiTwoCoins className="h-6 w-6 text-amber-500" />
               ) : (
                 <GiOpenChest className="h-6 w-6 text-amber-700" />
               )}
