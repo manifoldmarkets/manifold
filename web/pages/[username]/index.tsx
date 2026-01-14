@@ -290,6 +290,8 @@ function UserProfile(props: {
                       className="bg-ink-1000"
                       noLink
                       entitlements={user.entitlements}
+                      animateHatOnHover
+                      animateHat={expandProfileInfo}
                     />
                   }
                 />
@@ -309,7 +311,7 @@ function UserProfile(props: {
               />
             </button>
           ) : (
-            <Row className="gap-2 py-1">
+            <Row className="group gap-2 py-1">
               <ImageWithBlurredShadow
                 image={
                   <Avatar
@@ -319,6 +321,7 @@ function UserProfile(props: {
                     className="bg-ink-1000"
                     noLink
                     entitlements={user.entitlements}
+                    animateHatOnHover
                   />
                 }
               />
