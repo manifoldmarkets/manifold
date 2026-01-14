@@ -49,8 +49,7 @@ export function BetButton(props: {
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
-        {labels?.yes ??
-          `${capitalize(TRADE_TERM)} ${hasPampu ? 'Pampu' : 'Yes'}`}
+        {labels?.yes ?? (hasPampu ? 'PAMPU' : `${capitalize(TRADE_TERM)} Yes`)}
       </Button>
 
       <Button

@@ -20,6 +20,9 @@ export const Avatar = memo(
     preventDefault?: boolean
     createdTime?: number
     entitlements?: UserEntitlement[]
+    animateHatOnHover?: boolean
+    // Direct control for hat animation (for mobile expand/collapse)
+    animateHat?: boolean
   }) => {
     const {
       username,
@@ -29,6 +32,8 @@ export const Avatar = memo(
       preventDefault,
       createdTime,
       entitlements,
+      animateHatOnHover,
+      animateHat,
     } = props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
@@ -81,8 +86,15 @@ export const Avatar = memo(
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
+    const hasHat = hasCrown || hasGraduationCap
+
     return (
-      <div className={needsRelativeWrapper ? 'relative' : ''}>
+      <div
+        className={clsx(
+          needsRelativeWrapper && 'relative'
+          // Note: parent element must have 'group' class for animateHatOnHover to work
+        )}
+      >
         {/* Golden border glow effect */}
         {hasGoldenBorder && (
           <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-75 blur-sm" />
@@ -128,13 +140,25 @@ export const Avatar = memo(
         )}
         {/* Crown overlay */}
         {hasCrown && (
-          <div className="absolute -right-2 -top-[0.41rem] rotate-45">
+          <div
+            className={clsx(
+              'absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300',
+              animateHatOnHover && 'group-hover:scale-110 group-hover:-translate-y-0.5',
+              animateHat && 'scale-110 -translate-y-0.5'
+            )}
+          >
             <LuCrown className="h-5 w-5 text-amber-500" />
           </div>
         )}
         {/* Graduation cap overlay */}
         {hasGraduationCap && (
-          <div className="absolute -right-2 -top-[0.41rem] rotate-45">
+          <div
+            className={clsx(
+              'absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300',
+              animateHatOnHover && 'group-hover:scale-110 group-hover:-translate-y-0.5',
+              animateHat && 'scale-110 -translate-y-0.5'
+            )}
+          >
             <LuGraduationCap className="h-5 w-5 text-indigo-500" />
           </div>
         )}

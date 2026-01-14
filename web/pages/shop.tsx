@@ -1,8 +1,10 @@
+import { ArrowUpIcon } from '@heroicons/react/solid'
 import { DAY_MS } from 'common/util/time'
 import {
   SHOP_ITEMS,
   ShopItem,
   getEntitlementId,
+  getShopItem,
   EXCLUSIVE_CATEGORIES,
   getEntitlementIdsForCategory,
 } from 'common/shop/items'
@@ -16,9 +18,7 @@ import {
   SUPPORTER_ENTITLEMENT_IDS,
   SUPPORTER_BENEFITS,
   SupporterTier,
-  canUpgradeTo,
-  TIER_ORDER,
-  BENEFIT_DEFINITIONS,
+  getBenefit,
 } from 'common/supporter-config'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -37,12 +37,18 @@ import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useOptimisticEntitlements } from 'web/hooks/use-optimistic-entitlements'
 import { api } from 'web/lib/api/api'
 import Custom404 from './404'
+import {
+  BenefitsTable,
+  TierSelector,
+  SubscribeButton,
+  PurchaseConfirmation,
+  TIER_ITEMS,
+} from 'web/components/shop/supporter'
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -119,6 +125,34 @@ export default function ShopPage() {
     if (entitlements) {
       // Replace all local entitlements with the server's updated state
       setLocalEntitlements(entitlements)
+
+      // Also update global context so sidebar/mobile profile avatar updates instantly
+      // Find the newly purchased entitlement and push it to the global context
+      const item = getShopItem(itemId)
+      if (item) {
+        const entitlementId = getEntitlementId(item)
+        const purchased = entitlements.find(
+          (e) => e.entitlementId === entitlementId
+        )
+        if (purchased) {
+          optimisticContext?.setOptimisticEntitlement(purchased)
+
+          // For exclusive categories, also disable other items in the same category
+          // (matching the toggle behavior)
+          if (EXCLUSIVE_CATEGORIES.includes(item.category)) {
+            const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+            for (const ent of entitlements) {
+              if (
+                categoryEntitlementIds.includes(ent.entitlementId) &&
+                ent.entitlementId !== entitlementId &&
+                !ent.enabled
+              ) {
+                optimisticContext?.setOptimisticEntitlement(ent)
+              }
+            }
+          }
+        }
+      }
     }
     if (itemId === 'streak-forgiveness') {
       setLocalStreakBonus((prev) => prev + 1)
@@ -177,7 +211,7 @@ export default function ShopPage() {
     const updated = { ...existing, enabled: actualEnabled }
 
     // Build optimistic state - update the toggled item AND disable others in same category
-    setLocalEntitlements((prev) => {
+    setLocalEntitlements((_prev) => {
       // Start with a copy of all effective entitlements to get full picture
       let newState = [...effectiveEntitlements]
 
@@ -225,11 +259,6 @@ export default function ShopPage() {
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
 
-  // Get current supporter entitlement for duration display
-  const getSupporterEntitlement = () => {
-    return getSupporterEnt(effectiveEntitlements)
-  }
-
   return (
     <Page trackPageView="shop page" className="p-3">
       <SEO
@@ -274,7 +303,8 @@ export default function ShopPage() {
         />
 
         {/* Shop items grid - exclude supporter tiers (handled on /supporter page) */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Single column on very narrow screens (<360px), 2 columns otherwise */}
+        <div className="grid grid-cols-1 gap-4 min-[360px]:grid-cols-2">
           {SHOP_ITEMS.filter(
             (item) =>
               !SUPPORTER_ENTITLEMENT_IDS.includes(
@@ -292,12 +322,12 @@ export default function ShopPage() {
                 user={user}
                 owned={ownedItemIds.has(entitlementId)}
                 entitlement={entitlement}
+                allEntitlements={effectiveEntitlements}
                 justPurchased={justPurchased === item.id}
                 onPurchaseComplete={handlePurchaseComplete}
                 onToggleComplete={handleToggleComplete}
                 getToggleVersion={getToggleVersion}
                 localStreakBonus={localStreakBonus}
-                supporterEntitlement={getSupporterEntitlement() ?? undefined}
               />
             )
           })}
@@ -358,6 +388,8 @@ function SupporterCard(props: {
   const { entitlements, onPurchaseComplete } = props
   const user = useUser()
   const [showModal, setShowModal] = useState(false)
+  const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
+  const [modalInitialTier, setModalInitialTier] = useState<SupporterTier | null>(null)
 
   const currentTier = getUserSupporterTier(entitlements)
   const supporterEntitlement = getSupporterEnt(entitlements)
@@ -367,23 +399,53 @@ function SupporterCard(props: {
     ? Math.max(0, Math.ceil((supporterEntitlement.expiresTime - Date.now()) / DAY_MS))
     : 0
 
-  // Display tier for badge (current tier or default to plus for preview)
-  const displayTier = currentTier ?? 'plus'
-
   const tierPrices = {
     basic: 500,
     plus: 2500,
     premium: 10000,
   }
 
+  // Reset modal initial tier and hover state when modal closes
+  const handleSetShowModal = (open: boolean) => {
+    setShowModal(open)
+    if (!open) {
+      setModalInitialTier(null)
+      setHoveredTier(null) // Clear hover state on modal close
+    }
+  }
+
+  // Check if device supports hover (desktop)
+  const supportsHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
+
   return (
     <>
       <button
-        onClick={() => setShowModal(true)}
-        className="group relative mb-4 w-full overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-1 text-left transition-all duration-200 hover:shadow-xl hover:shadow-amber-200/50 dark:from-amber-950/30 dark:via-yellow-950/30 dark:to-orange-950/30 dark:hover:shadow-amber-900/30"
+        onClick={() => handleSetShowModal(true)}
+        className={clsx(
+          'group relative mb-4 w-full overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
+          'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800',
+          // Default state (no tier owned, no hover)
+          !hoveredTier && !currentTier && 'hover:shadow-xl hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
+          // Owned tier glow (default state when not hovering)
+          !hoveredTier && currentTier === 'basic' && 'shadow-[0_0_12px_rgba(107,114,128,0.4)] dark:shadow-[0_0_12px_rgba(156,163,175,0.3)]',
+          !hoveredTier && currentTier === 'plus' && 'shadow-[0_0_16px_rgba(99,102,241,0.5)] animate-glow-indigo-subtle dark:shadow-[0_0_16px_rgba(129,140,248,0.4)]',
+          !hoveredTier && currentTier === 'premium' && 'shadow-[0_0_20px_rgba(245,158,11,0.5)] animate-glow-amber-subtle dark:shadow-[0_0_20px_rgba(251,191,36,0.4)]',
+          // Hovered tier glow (intensified)
+          hoveredTier === 'basic' && 'shadow-[0_0_20px_rgba(107,114,128,0.6),0_0_30px_rgba(107,114,128,0.3)] dark:shadow-[0_0_24px_rgba(156,163,175,0.5),0_0_36px_rgba(156,163,175,0.25)]',
+          hoveredTier === 'plus' && 'shadow-[0_0_24px_rgba(99,102,241,0.7),0_0_40px_rgba(99,102,241,0.4)] animate-glow-indigo dark:shadow-[0_0_28px_rgba(129,140,248,0.6),0_0_48px_rgba(129,140,248,0.35)]',
+          hoveredTier === 'premium' && 'shadow-[0_0_28px_rgba(245,158,11,0.7),0_0_50px_rgba(245,158,11,0.4)] animate-glow-amber dark:shadow-[0_0_32px_rgba(251,191,36,0.6),0_0_56px_rgba(251,191,36,0.35)]'
+        )}
       >
-        {/* Animated gradient border */}
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 transition-opacity duration-200 group-hover:opacity-75" />
+        {/* Animated gradient border - color changes based on tier */}
+        <div
+          className={clsx(
+            'absolute inset-0 transition-all duration-300',
+            !hoveredTier && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-600/50 dark:via-yellow-500/50 dark:to-orange-600/50 dark:opacity-30 dark:group-hover:opacity-50',
+            hoveredTier === 'basic' && 'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-40',
+            hoveredTier === 'plus' && 'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-40',
+            hoveredTier === 'premium' && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-50'
+          )}
+        />
 
         <div className="bg-canvas-0 relative rounded-lg p-5">
           {/* Header */}
@@ -407,49 +469,101 @@ function SupporterCard(props: {
             )}
           </Row>
 
-          {/* Live Badge Preview - shows user's actual entitlements */}
-          <div className="my-4 flex items-center justify-center rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 py-4 dark:from-amber-950/20 dark:to-orange-950/20">
-            <Row className="items-center gap-3">
-              <Avatar
-                username={user?.username}
-                avatarUrl={user?.avatarUrl}
-                size="md"
-                noLink
-                entitlements={entitlements}
-              />
-              <span className="font-semibold">{user?.name ?? 'YourName'}</span>
-              <div className="relative">
-                <FaStar
-                  className={clsx(
-                    'h-5 w-5',
-                    displayTier === 'basic' && 'text-gray-400',
-                    displayTier === 'plus' && 'text-indigo-500',
-                    displayTier === 'premium' && 'text-amber-500'
-                  )}
-                  style={displayTier === 'premium' ? { filter: 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.6))' } : undefined}
+          {/* Profile Preview - horizontal layout like modal */}
+          <div className="my-4 rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-4 py-3 dark:from-slate-700/50 dark:to-slate-700/50">
+            <Row className="flex-wrap items-center justify-between gap-3">
+              {/* Left: Avatar + Name + Current Badge */}
+              <Row className="items-center gap-3">
+                <Avatar
+                  username={user?.username}
+                  avatarUrl={user?.avatarUrl}
+                  size="md"
+                  noLink
+                  entitlements={entitlements}
+                  animateHatOnHover
                 />
-                {displayTier === 'premium' && (
-                  <FaStar
-                    className="absolute inset-0 h-5 w-5 animate-pulse text-amber-500 opacity-50 blur-sm"
-                  />
-                )}
-              </div>
+                <Col className="gap-0.5">
+                  <Row className="items-center gap-1.5">
+                    <span className="font-semibold">{user?.name ?? 'YourName'}</span>
+                    {/* Show hovered tier star, or current tier star, or nothing */}
+                    {(hoveredTier || currentTier) && (
+                      <div className="relative">
+                        <FaStar
+                          className={clsx(
+                            'h-4 w-4 transition-colors duration-150',
+                            (hoveredTier ?? currentTier) === 'basic' && 'text-gray-400',
+                            (hoveredTier ?? currentTier) === 'plus' && 'text-indigo-500',
+                            (hoveredTier ?? currentTier) === 'premium' && 'text-amber-500'
+                          )}
+                          style={(hoveredTier ?? currentTier) === 'premium' ? { filter: 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.6))' } : undefined}
+                        />
+                        {(hoveredTier ?? currentTier) === 'premium' && (
+                          <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-sm" />
+                        )}
+                      </div>
+                    )}
+                  </Row>
+                  {/* Show hovered tier text, or current tier text, or "Not a supporter yet" */}
+                  {hoveredTier ? (
+                    <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[hoveredTier].textColor)}>
+                      {SUPPORTER_TIERS[hoveredTier].name} Supporter
+                    </span>
+                  ) : isSupporter ? (
+                    <span className={clsx('text-sm font-medium', SUPPORTER_TIERS[currentTier].textColor)}>
+                      {SUPPORTER_TIERS[currentTier].name} Supporter
+                    </span>
+                  ) : (
+                    <span className="text-ink-500 text-sm">Not a supporter yet</span>
+                  )}
+                </Col>
+              </Row>
+
+              {/* Right: Time remaining (only show if supporter) */}
+              {isSupporter && (
+                <Col className="items-end gap-0.5">
+                  <div className="text-ink-500 text-xs">Time remaining</div>
+                  <Row className="items-center gap-1.5">
+                    <span className="text-lg font-bold text-amber-600">{daysRemaining}d</span>
+                    {/* Show +30d when hovering same tier (renewal) */}
+                    {hoveredTier === currentTier && (
+                      <>
+                        <span className="text-ink-400 text-sm">→</span>
+                        <span className="text-lg font-bold text-green-600">{daysRemaining + 30}d</span>
+                      </>
+                    )}
+                  </Row>
+                </Col>
+              )}
             </Row>
           </div>
 
-          {/* Mini Tier Selector (shows current tier) */}
+          {/* Mini Tier Selector (interactive with hover) */}
           <div className="mb-4 grid grid-cols-3 gap-2">
             {(['basic', 'plus', 'premium'] as const).map((tier) => {
               const isCurrentUserTier = currentTier === tier
+              const isHovered = hoveredTier === tier
               return (
-                <div
+                <button
                   key={tier}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setModalInitialTier(tier)
+                    handleSetShowModal(true)
+                  }}
+                  onMouseEnter={() => supportsHover && setHoveredTier(tier)}
+                  onMouseLeave={() => supportsHover && setHoveredTier(null)}
                   className={clsx(
                     'relative flex flex-col items-center rounded-lg border-2 px-2 py-2 transition-all duration-150',
+                    // Current user's tier styling
                     isCurrentUserTier && tier === 'basic' && 'border-gray-400 bg-gray-50 dark:bg-gray-900/30',
                     isCurrentUserTier && tier === 'plus' && 'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-200/50 dark:bg-indigo-950/30',
                     isCurrentUserTier && tier === 'premium' && 'border-amber-400 bg-amber-50 shadow-lg shadow-amber-200/50 dark:bg-amber-950/30',
-                    !isCurrentUserTier && 'border-ink-200 bg-canvas-0'
+                    // Hover styling (when not current tier)
+                    !isCurrentUserTier && isHovered && tier === 'basic' && 'border-gray-400 bg-gray-50 shadow-[0_0_8px_rgba(107,114,128,0.4)] dark:bg-gray-900/30',
+                    !isCurrentUserTier && isHovered && tier === 'plus' && 'border-indigo-400 bg-indigo-50 shadow-[0_0_12px_rgba(99,102,241,0.5)] dark:bg-indigo-950/30',
+                    !isCurrentUserTier && isHovered && tier === 'premium' && 'border-amber-400 bg-amber-50 shadow-[0_0_16px_rgba(245,158,11,0.5)] dark:bg-amber-950/30',
+                    // Default state
+                    !isCurrentUserTier && !isHovered && 'border-ink-200 bg-canvas-0 hover:border-ink-300'
                   )}
                 >
                   {isCurrentUserTier && (
@@ -476,7 +590,7 @@ function SupporterCard(props: {
                   <div className="text-ink-500 text-[10px]">
                     {formatMoney(tierPrices[tier])}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -494,20 +608,15 @@ function SupporterCard(props: {
 
       <SupporterModal
         open={showModal}
-        setOpen={setShowModal}
+        setOpen={handleSetShowModal}
         entitlements={entitlements}
         onPurchaseComplete={onPurchaseComplete}
+        initialTier={modalInitialTier}
       />
     </>
   )
 }
 
-// Get shop items for each tier
-const tierItems = {
-  basic: SHOP_ITEMS.find((i) => i.id === 'supporter-basic')!,
-  plus: SHOP_ITEMS.find((i) => i.id === 'supporter-plus')!,
-  premium: SHOP_ITEMS.find((i) => i.id === 'supporter-premium')!,
-}
 
 // Modal containing the supporter page content
 function SupporterModal(props: {
@@ -515,8 +624,9 @@ function SupporterModal(props: {
   setOpen: (open: boolean) => void
   entitlements?: UserEntitlement[]
   onPurchaseComplete?: (itemId: string, entitlements?: UserEntitlement[]) => void
+  initialTier?: SupporterTier | null
 }) {
-  const { open, setOpen, entitlements, onPurchaseComplete } = props
+  const { open, setOpen, entitlements, onPurchaseComplete, initialTier } = props
   const user = useUser()
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
@@ -525,13 +635,17 @@ function SupporterModal(props: {
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
   const [selectedTier, setSelectedTier] = useState<SupporterTier>('plus')
 
-  // Reset celebration state when modal opens
+  // Reset celebration state and set initial tier when modal opens
   useEffect(() => {
     if (open) {
       setShowCelebration(false)
       setPurchasedTier(null)
+      // Set the initial tier if provided, otherwise default to 'plus'
+      if (initialTier) {
+        setSelectedTier(initialTier)
+      }
     }
-  }, [open])
+  }, [open, initialTier])
 
   const currentTier = getUserSupporterTier(entitlements)
   const currentEntitlement = getSupporterEnt(entitlements)
@@ -543,7 +657,7 @@ function SupporterModal(props: {
 
   const handlePurchase = async (tier: SupporterTier) => {
     if (!user) return
-    const item = tierItems[tier]
+    const item = TIER_ITEMS[tier]
     setPurchasing(item.id)
     try {
       const result = await api('shop-purchase', { itemId: item.id })
@@ -631,13 +745,14 @@ function SupporterModal(props: {
       <Modal open={open} setOpen={setOpen} size="lg">
         <Col className="bg-canvas-0 max-w-3xl gap-6 rounded-xl p-6">
           {/* Hero Section */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 dark:from-amber-950/40 dark:via-yellow-950/40 dark:to-orange-950/40">
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-orange-200/30 blur-3xl" />
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 dark:from-slate-800/90 dark:via-slate-800/80 dark:to-slate-800/90">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl dark:bg-amber-500/10" />
+            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-orange-200/30 blur-3xl dark:bg-orange-500/10" />
 
             <div className="relative">
               {isSupporter ? (
-                <Col className="items-center gap-3">
+                <Row className="flex-wrap items-center justify-between gap-3">
+                  {/* Left: Avatar + Name + Badge */}
                   <Row className="items-center gap-3">
                     <Avatar
                       username={user?.username}
@@ -646,132 +761,110 @@ function SupporterModal(props: {
                       noLink
                       entitlements={entitlements}
                     />
-                    <Col>
+                    <Col className="gap-0.5">
                       <Row className="items-center gap-2">
-                        <span className="text-xl font-bold">{user?.name}</span>
+                        <span className="text-lg font-bold">{user?.name}</span>
                         <span className="relative inline-flex">
                           <FaStar className={clsx(
-                            'h-5 w-5',
+                            'h-4 w-4',
                             currentTier === 'basic' && 'text-gray-400',
                             currentTier === 'plus' && 'text-indigo-500',
                             currentTier === 'premium' && 'text-amber-500'
                           )} />
                           {currentTier === 'premium' && (
-                            <FaStar className="absolute inset-0 h-5 w-5 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
+                            <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
                           )}
                         </span>
                       </Row>
-                      <span className="text-ink-600 text-sm">@{user?.username}</span>
+                      <span className={clsx('text-sm font-medium', SUPPORTER_TIERS[currentTier].textColor)}>
+                        {SUPPORTER_TIERS[currentTier].name} Supporter
+                      </span>
                     </Col>
                   </Row>
 
-                  <div className={clsx(
-                    'rounded-full px-4 py-2 text-center',
-                    SUPPORTER_TIERS[currentTier].bgColor
-                  )}>
-                    <span className={clsx('font-bold', SUPPORTER_TIERS[currentTier].textColor)}>
-                      {SUPPORTER_TIERS[currentTier].name} Supporter
-                    </span>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="text-ink-600 text-sm">Time remaining</div>
-                    <div className="text-2xl font-bold text-amber-600">{daysRemaining} days</div>
-                  </div>
-                </Col>
+                  {/* Right: Time remaining */}
+                  <Col className="items-end gap-0.5">
+                    <div className="text-ink-500 text-xs">Time remaining</div>
+                    <Row className="items-center gap-1.5">
+                      <span className="text-lg font-bold text-amber-600">{daysRemaining}d</span>
+                      {selectedTier === currentTier && (
+                        <>
+                          <span className="text-ink-400 text-sm">→</span>
+                          <span className="text-lg font-bold text-green-600">{daysRemaining + 30}d</span>
+                        </>
+                      )}
+                    </Row>
+                  </Col>
+                </Row>
               ) : (
-                <Col className="items-center gap-3 text-center">
-                  <FaStar className="h-12 w-12 text-amber-500" />
-                  <h1 className="text-2xl font-bold">Become a Supporter</h1>
-                  <p className="text-ink-600 max-w-md text-sm">
-                    Support Manifold's development and unlock premium benefits
-                  </p>
-                </Col>
+                <Row className="items-center justify-between gap-4">
+                  {/* Left: Avatar + Name + Badge (changes on hover/select) */}
+                  <Row className="items-center gap-3">
+                    <Avatar
+                      username={user?.username}
+                      avatarUrl={user?.avatarUrl}
+                      size="lg"
+                      noLink
+                      entitlements={entitlements}
+                    />
+                    <Col className="gap-0.5">
+                      <Row className="items-center gap-2">
+                        <span className="text-lg font-bold">{user?.name ?? 'You'}</span>
+                        <span className="relative inline-flex">
+                          <FaStar className={clsx(
+                            'h-4 w-4 transition-colors duration-150',
+                            activeTier === 'basic' && 'text-gray-400',
+                            activeTier === 'plus' && 'text-indigo-500',
+                            activeTier === 'premium' && 'text-amber-500'
+                          )} />
+                          {activeTier === 'premium' && (
+                            <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
+                          )}
+                        </span>
+                      </Row>
+                      <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[activeTier].textColor)}>
+                        {SUPPORTER_TIERS[activeTier].name} Supporter
+                      </span>
+                    </Col>
+                  </Row>
+
+                  {/* Right: Tagline - hidden on small screens */}
+                  <Col className="hidden items-end gap-0.5 sm:flex">
+                    <span className="text-ink-600 text-sm font-medium">Support Manifold</span>
+                    <span className="text-ink-500 text-xs">Unlock premium benefits</span>
+                  </Col>
+                </Row>
               )}
             </div>
           </div>
 
           {/* Horizontal Tier Selector */}
-          <div className="grid grid-cols-3 gap-3">
-            {TIER_ORDER.map((tier) => {
-              const tierConfig = SUPPORTER_TIERS[tier]
-              const item = tierItems[tier]
-              const canAfford = effectiveBalance >= item.price
-              const isCurrentTier = currentTier === tier
-              const canUpgradeToTier = canUpgradeTo(currentTier, tier)
-              const isLowerTier = !!currentTier && !canUpgradeToTier && !isCurrentTier
-              const isActive = activeTier === tier
-              const isSelected = selectedTier === tier
-              const isHoveredOnly = hoveredTier === tier && !isSelected
-
-              return (
-                <button
-                  key={tier}
-                  onClick={() => !isLowerTier && setSelectedTier(tier)}
-                  onMouseEnter={() => setHoveredTier(tier)}
-                  onMouseLeave={() => setHoveredTier(null)}
-                  style={{ outline: 'none' }}
-                  className={clsx(
-                    'relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200',
-                    'outline-none focus:outline-none focus-visible:outline-none',
-                    isLowerTier && 'opacity-60',
-                    // Selected state - stronger glow
-                    isSelected && tier === 'basic' && 'border-gray-500 bg-gray-100 shadow-[0_0_0_4px_rgba(107,114,128,0.4),0_4px_12px_rgba(107,114,128,0.25)] dark:bg-gray-900/50',
-                    isSelected && tier === 'plus' && 'border-indigo-500 bg-indigo-100 shadow-[0_0_0_4px_rgba(99,102,241,0.5),0_4px_20px_rgba(99,102,241,0.35)] dark:bg-indigo-950/50',
-                    isSelected && tier === 'premium' && 'border-amber-500 bg-amber-100 shadow-[0_0_0_4px_rgba(245,158,11,0.5),0_4px_24px_rgba(245,158,11,0.4)] dark:bg-amber-950/50',
-                    // Hover only state - lighter glow
-                    isHoveredOnly && tier === 'basic' && 'border-gray-400 bg-gray-50 shadow-[0_0_0_2px_rgba(156,163,175,0.25)] dark:bg-gray-900/30',
-                    isHoveredOnly && tier === 'plus' && 'border-indigo-400 bg-indigo-50 shadow-[0_0_0_2px_rgba(129,140,248,0.3),0_2px_8px_rgba(99,102,241,0.15)] dark:bg-indigo-950/30',
-                    isHoveredOnly && tier === 'premium' && 'border-amber-400 bg-amber-50 shadow-[0_0_0_2px_rgba(251,191,36,0.3),0_2px_12px_rgba(245,158,11,0.2)] dark:bg-amber-950/30',
-                    // Default state
-                    !isActive && 'border-ink-200 bg-canvas-0 hover:border-ink-300'
-                  )}
-                >
-                  {isCurrentTier && (
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-green-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                      OWNED
-                    </div>
-                  )}
-
-                  <div className="relative">
-                    <FaStar className={clsx(
-                      'h-6 w-6',
-                      tier === 'basic' && 'text-gray-400',
-                      tier === 'plus' && 'text-indigo-500',
-                      tier === 'premium' && 'text-amber-500'
-                    )} />
-                    {tier === 'premium' && isActive && (
-                      <div className="absolute inset-0 animate-pulse">
-                        <FaStar className="h-6 w-6 text-amber-500 opacity-50 blur-sm" />
-                      </div>
-                    )}
-                  </div>
-
-                  <span className={clsx('font-bold', tierConfig.textColor)}>
-                    {tierConfig.name}
-                  </span>
-                  <span className="text-ink-600 text-sm font-medium">
-                    {formatMoney(item.price)}/mo
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+          <TierSelector
+            currentTier={currentTier}
+            selectedTier={selectedTier}
+            hoveredTier={hoveredTier}
+            onSelect={setSelectedTier}
+            onHover={setHoveredTier}
+            onHoverEnd={() => setHoveredTier(null)}
+            effectiveBalance={effectiveBalance}
+            variant="modal"
+          />
 
           {/* Subscribe/Upgrade Button */}
           {activeTier && (
-            <ModalSubscribeButton
+            <SubscribeButton
               tier={activeTier}
               currentTier={currentTier}
               effectiveBalance={effectiveBalance}
-              loading={purchasing === tierItems[activeTier].id}
+              loading={purchasing === TIER_ITEMS[activeTier].id}
               disabled={!user || !!purchasing}
+              entitlements={entitlements}
               onClick={() => setConfirmingPurchase(activeTier)}
             />
           )}
 
           {/* Benefits Comparison Table */}
-          <ModalBenefitsTable currentTier={currentTier} activeTier={activeTier} />
+          <BenefitsTable currentTier={currentTier} activeTier={activeTier} />
 
           {/* Balance display */}
           {user && (
@@ -802,11 +895,11 @@ function SupporterModal(props: {
         setOpen={(open) => !open && setConfirmingPurchase(null)}
       >
         {confirmingPurchase && (
-          <ModalPurchaseConfirmation
+          <PurchaseConfirmation
             tier={confirmingPurchase}
             currentTier={currentTier}
             daysRemaining={daysRemaining}
-            loading={purchasing === tierItems[confirmingPurchase].id}
+            loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)
               setConfirmingPurchase(null)
@@ -819,332 +912,13 @@ function SupporterModal(props: {
   )
 }
 
-function ModalSubscribeButton(props: {
-  tier: SupporterTier
-  currentTier: SupporterTier | null
-  effectiveBalance: number
-  loading: boolean
-  disabled: boolean
-  onClick: () => void
-}) {
-  const { tier, currentTier, effectiveBalance, loading, disabled, onClick } = props
-  const tierConfig = SUPPORTER_TIERS[tier]
-  const item = tierItems[tier]
-  const canAfford = effectiveBalance >= item.price
-  const isCurrentTier = currentTier === tier
-  const canUpgradeToTier = canUpgradeTo(currentTier, tier)
-  const isLowerTier = !!currentTier && !canUpgradeToTier && !isCurrentTier
-
-  const buttonText = isCurrentTier
-    ? `Renew ${tierConfig.name}`
-    : canUpgradeToTier && !isCurrentTier
-      ? `Upgrade to ${tierConfig.name}`
-      : `Subscribe to ${tierConfig.name}`
-
-  return (
-    <Button
-      color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray'}
-      size="xl"
-      className={clsx(
-        'w-full transition-all duration-200',
-        tier === 'premium' && 'shadow-lg shadow-amber-500/25',
-        tier === 'plus' && 'shadow-lg shadow-indigo-500/25'
-      )}
-      onClick={onClick}
-      disabled={disabled || !canAfford || isLowerTier}
-      loading={loading}
-    >
-      {isLowerTier
-        ? 'Already have higher tier'
-        : !canAfford
-          ? 'Insufficient balance'
-          : `${buttonText} - ${formatMoney(item.price)}/mo`}
-    </Button>
-  )
-}
-
-function ModalBenefitsTable(props: {
-  currentTier: SupporterTier | null
-  activeTier: SupporterTier | null
-}) {
-  const { currentTier, activeTier } = props
-
-  return (
-    <div className="bg-canvas-0 rounded-xl border border-ink-200">
-      <div className="overflow-x-auto">
-        <table className="w-full border-separate border-spacing-0">
-          <thead>
-            {/* Header row with title and OWNED badge */}
-            <tr>
-              <th className="p-4 text-left">
-                <h2 className="text-lg font-semibold">Benefits Comparison</h2>
-              </th>
-              {TIER_ORDER.map((tier) => {
-                const isCurrentTier = currentTier === tier
-                return (
-                  <th key={tier} className="px-2 sm:px-4 pt-2 pb-0 align-bottom">
-                    {isCurrentTier && (
-                      <div className={clsx(
-                        'mx-auto w-fit rounded-t-md px-1.5 py-0.5 text-[8px] font-bold',
-                        'sm:px-2 sm:text-[10px]',
-                        // Border width: 1px mobile, 2px desktop
-                        'border-l border-r border-t',
-                        'sm:border-l-2 sm:border-r-2 sm:border-t-2',
-                        tier === 'basic' && 'border-gray-400 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
-                        tier === 'plus' && 'border-indigo-400 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200',
-                        tier === 'premium' && 'border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200'
-                      )}>
-                        OWNED
-                      </div>
-                    )}
-                  </th>
-                )
-              })}
-            </tr>
-            {/* Column headers row */}
-            <tr>
-              <th className="text-ink-600 border-ink-200 border-b p-2 sm:p-3 text-left text-sm font-medium">
-                Benefit
-              </th>
-              {TIER_ORDER.map((tier) => {
-                const isCurrentTier = currentTier === tier
-                const isActiveTier = activeTier === tier
-                return (
-                  <th
-                    key={tier}
-                    className={clsx(
-                      'p-2 sm:p-3 text-center text-sm font-medium transition-all duration-200',
-                      isActiveTier && tier === 'basic' && 'bg-gray-100 dark:bg-gray-800/50',
-                      isActiveTier && tier === 'plus' && 'bg-indigo-100 dark:bg-indigo-900/30',
-                      isActiveTier && tier === 'premium' && 'bg-amber-100 dark:bg-amber-900/30',
-                      isCurrentTier && `border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2 ${SUPPORTER_TIERS[tier].borderColor} rounded-t-lg`,
-                      !isCurrentTier && 'border-ink-200 border-b'
-                    )}
-                  >
-                    <Row className="items-center justify-center gap-1">
-                      <FaStar className={clsx(
-                        'h-4 w-4',
-                        tier === 'basic' && 'text-gray-400',
-                        tier === 'plus' && 'text-indigo-500',
-                        tier === 'premium' && 'text-amber-500'
-                      )} />
-                      <span className={clsx('hidden sm:inline', SUPPORTER_TIERS[tier].textColor)}>
-                        {SUPPORTER_TIERS[tier].name}
-                      </span>
-                    </Row>
-                  </th>
-                )
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {BENEFIT_DEFINITIONS.map((benefit, idx) => {
-              const isLastRow = idx === BENEFIT_DEFINITIONS.length - 1
-              return (
-                <tr key={benefit.id}>
-                  <td className={clsx(
-                    'py-2 pl-2 pr-1 sm:p-3',
-                    !isLastRow && 'border-ink-200 border-b'
-                  )}>
-                    <Row className="items-center gap-1 sm:gap-2">
-                      <span className="text-base sm:text-lg">{benefit.icon}</span>
-                      <span className="text-xs sm:text-sm font-medium">{benefit.title}</span>
-                    </Row>
-                  </td>
-                  {TIER_ORDER.map((tier) => {
-                    const isCurrentTier = currentTier === tier
-                    const isActiveTier = activeTier === tier
-                    const value = benefit.getValueForTier(tier)
-
-                    return (
-                      <td
-                        key={tier}
-                        className={clsx(
-                          'p-2 sm:p-3 text-center text-sm transition-all duration-200',
-                          isActiveTier && tier === 'basic' && 'bg-gray-100 dark:bg-gray-800/50',
-                          isActiveTier && tier === 'plus' && 'bg-indigo-100 dark:bg-indigo-900/30',
-                          isActiveTier && tier === 'premium' && 'bg-amber-100 dark:bg-amber-900/30',
-                          isCurrentTier && `border-l border-r sm:border-l-2 sm:border-r-2 ${SUPPORTER_TIERS[tier].borderColor}`,
-                          isCurrentTier && isLastRow && `border-b sm:border-b-2 rounded-b-lg`,
-                          !isCurrentTier && !isLastRow && 'border-ink-200 border-b'
-                        )}
-                      >
-                        <span className={clsx(
-                          value !== '-' && 'font-semibold',
-                          value !== '-' && tier === 'basic' && 'text-gray-600 dark:text-gray-300',
-                          value !== '-' && tier === 'plus' && 'text-indigo-600 dark:text-indigo-400',
-                          value !== '-' && tier === 'premium' && 'text-amber-600 dark:text-amber-400',
-                          value === '-' && 'text-ink-400'
-                        )}>
-                          {value}
-                        </span>
-                      </td>
-                    )
-                  })}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function ModalPurchaseConfirmation(props: {
-  tier: SupporterTier
-  currentTier: SupporterTier | null
-  daysRemaining: number
-  loading: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  const { tier, currentTier, daysRemaining, loading, onConfirm, onCancel } = props
-  const tierConfig = SUPPORTER_TIERS[tier]
-  const item = tierItems[tier]
-  const isUpgrade = currentTier && canUpgradeTo(currentTier, tier)
-  const isSameTierRenewal = currentTier === tier
-
-  // Calculate upgrade credit (matches backend logic)
-  const upgradeCredit =
-    isUpgrade && daysRemaining > 0
-      ? Math.floor(daysRemaining * (tierItems[currentTier!].price / 30))
-      : 0
-  const finalPrice = Math.max(0, item.price - upgradeCredit)
-
-  return (
-    <Col className="bg-canvas-0 max-w-md rounded-xl p-6">
-      <h2 className="mb-2 text-xl font-bold">Confirm Purchase</h2>
-
-      {/* Same-tier renewal - show time stacking info */}
-      {isSameTierRenewal && daysRemaining > 0 ? (
-        <>
-          <p className="text-ink-600 mb-4">
-            You're about to renew{' '}
-            <strong>{tierConfig.name} Supporter</strong> for{' '}
-            <span className="font-semibold text-amber-600">
-              {formatMoney(item.price)}
-            </span>
-          </p>
-          <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-            <div className="font-medium">Time will be added to your subscription:</div>
-            <div className="mt-1">
-              {daysRemaining} days remaining + 30 days ={' '}
-              <span className="font-bold">{daysRemaining + 30} days total</span>
-            </div>
-          </div>
-        </>
-      ) : isUpgrade && upgradeCredit > 0 ? (
-        /* Upgrade with credit */
-        <>
-          <p className="text-ink-600 mb-2">
-            You're about to upgrade to{' '}
-            <strong>{tierConfig.name} Supporter</strong>
-          </p>
-          <div className="mb-4 rounded-lg bg-green-50 p-3 dark:bg-green-900/20">
-            <div className="space-y-1 text-sm">
-              <Row className="justify-between text-green-800 dark:text-green-200">
-                <span>{tierConfig.name} price:</span>
-                <span className="text-ink-500 line-through">
-                  {formatMoney(item.price)}
-                </span>
-              </Row>
-              <Row className="justify-between text-green-800 dark:text-green-200">
-                <span>
-                  Credit ({daysRemaining}d of {SUPPORTER_TIERS[currentTier!].name}):
-                </span>
-                <span className="text-green-600 dark:text-green-400">
-                  -{formatMoney(upgradeCredit)}
-                </span>
-              </Row>
-              <Row className="justify-between border-t border-green-200 pt-1 font-bold text-green-800 dark:border-green-700 dark:text-green-200">
-                <span>Final price:</span>
-                <span className="text-amber-600">{formatMoney(finalPrice)}</span>
-              </Row>
-            </div>
-          </div>
-        </>
-      ) : (
-        /* Normal purchase */
-        <p className="text-ink-600 mb-4">
-          You're about to {isUpgrade ? 'upgrade to' : 'purchase'}{' '}
-          <strong>{tierConfig.name} Supporter</strong> for{' '}
-          <span className="font-semibold text-amber-600">
-            {formatMoney(item.price)}
-          </span>
-        </p>
-      )}
-
-      <Row className="justify-end gap-2">
-        <Button color="gray-outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray'}
-          loading={loading}
-          onClick={onConfirm}
-        >
-          {isSameTierRenewal ? 'Renew' : isUpgrade ? 'Upgrade' : 'Purchase'}
-        </Button>
-      </Row>
-    </Col>
-  )
-}
-
 // Preview components for each shop item type
-
-function SupporterBadgePreview(props: {
-  user: User | null | undefined
-  itemId: string
-  currentEntitlement?: UserEntitlement
-}) {
-  const { user, itemId, currentEntitlement } = props
-  const displayName = user?.name ?? 'YourName'
-
-  // Calculate current active time remaining
-  const currentDaysRemaining = currentEntitlement?.expiresTime
-    ? Math.max(
-        0,
-        Math.ceil((currentEntitlement.expiresTime - Date.now()) / DAY_MS)
-      )
-    : 0
-
-  // Duration this item adds
-  const durationDays = itemId === 'supporter-badge-1y' ? 365 : 30
-
-  return (
-    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-3 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20">
-      <Row className="items-center gap-2">
-        <Avatar
-          username={user?.username}
-          avatarUrl={user?.avatarUrl}
-          size="sm"
-          noLink
-        />
-        <span className="font-medium">{displayName}</span>
-        <Tooltip text="Manifold Supporter" placement="right">
-          <FaStar className="h-4 w-4 text-amber-500" />
-        </Tooltip>
-      </Row>
-
-      {/* Active duration indicator */}
-      <div className="text-ink-600 text-sm">
-        Active for:{' '}
-        <span className="text-ink-500">{currentDaysRemaining}d</span>
-        <span className="text-ink-400 mx-1">→</span>
-        <span className="font-semibold text-amber-600">
-          {currentDaysRemaining + durationDays}d
-        </span>
-      </div>
-    </div>
-  )
-}
 
 function GoldenBorderPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
         <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-75 blur-sm" />
         <Avatar
@@ -1163,7 +937,7 @@ function CrownPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -1171,8 +945,8 @@ function CrownPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        <div className="absolute -right-2 -top-[0.41rem] rotate-45">
-          <LuCrown className="h-5 w-5 text-amber-500" />
+        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5">
+          <LuCrown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" />
         </div>
       </div>
     </div>
@@ -1183,7 +957,7 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -1191,8 +965,8 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        <div className="absolute -right-2 -top-[0.41rem] rotate-45">
-          <LuGraduationCap className="h-5 w-5 text-indigo-500" />
+        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5">
+          <LuGraduationCap className="h-5 w-5 text-indigo-500 drop-shadow-[0_0_4px_rgba(99,102,241,0.5)]" />
         </div>
       </div>
     </div>
@@ -1208,13 +982,15 @@ function StreakFreezePreview(props: {
   const currentFreezes = (user?.streakForgiveness ?? 0) + localBonus
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20">
-      <Row className="items-center gap-2">
-        <span className="text-ink-600 text-sm">Your freezes:</span>
-        <span className="text-lg">❄️</span>
-        <span className="font-bold text-blue-500">{currentFreezes}</span>
-        <span className="text-ink-500">→</span>
-        <span className="font-bold text-blue-500">{currentFreezes + 1}</span>
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <span className="text-ink-600 text-xs sm:text-sm">Your freezes:</span>
+        <Row className="items-center gap-1.5">
+          <span className="text-base sm:text-lg">❄️</span>
+          <span className="font-bold text-blue-500">{currentFreezes}</span>
+          <span className="text-ink-500">→</span>
+          <span className="font-bold text-blue-500">{currentFreezes + 1}</span>
+        </Row>
       </Row>
     </div>
   )
@@ -1222,12 +998,16 @@ function StreakFreezePreview(props: {
 
 function PampuSkinPreview() {
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Col className="items-center gap-2">
         <span className="text-ink-500 text-xs">Your YES button becomes:</span>
         <Row className="items-center gap-2">
-          <Button color="green-outline" size="sm">
-            PAMPU
+          <Button
+            color="green-outline"
+            size="sm"
+            className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-green-500/30"
+          >
+            PAMPU <ArrowUpIcon className="ml-1 h-4 w-4" />
           </Button>
           <Button color="red-outline" size="sm" disabled>
             No
@@ -1244,8 +1024,8 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
   const username = user?.username ?? 'username'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20">
-      <div className="bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md shadow-[0_0_15px_rgba(167,139,250,0.5)] ring-2 ring-violet-400">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md shadow-[0_0_15px_rgba(167,139,250,0.5)] ring-2 ring-violet-400 transition-shadow duration-500 group-hover:shadow-[0_0_25px_rgba(167,139,250,0.7)]">
         <div className="px-3 py-2">
           <Row className="items-start justify-between">
             <Avatar
@@ -1281,20 +1061,10 @@ function ItemPreview(props: {
   itemId: string
   user: User | null | undefined
   localStreakBonus?: number
-  supporterEntitlement?: UserEntitlement
 }) {
-  const { itemId, user, localStreakBonus, supporterEntitlement } = props
+  const { itemId, user, localStreakBonus } = props
 
   switch (itemId) {
-    case 'supporter-badge-30d':
-    case 'supporter-badge-1y':
-      return (
-        <SupporterBadgePreview
-          user={user}
-          itemId={itemId}
-          currentEntitlement={supporterEntitlement}
-        />
-      )
     case 'avatar-golden-border':
       return <GoldenBorderPreview user={user} />
     case 'avatar-crown':
@@ -1317,6 +1087,7 @@ function ShopItemCard(props: {
   user: User | null | undefined
   owned: boolean
   entitlement?: UserEntitlement
+  allEntitlements?: UserEntitlement[]
   justPurchased?: boolean
   onPurchaseComplete: (itemId: string, entitlements?: UserEntitlement[]) => void
   onToggleComplete: (
@@ -1330,24 +1101,30 @@ function ShopItemCard(props: {
   ) => void
   getToggleVersion: () => number
   localStreakBonus: number
-  supporterEntitlement?: UserEntitlement
 }) {
   const {
     item,
     user,
     owned,
     entitlement,
+    allEntitlements,
     justPurchased,
     onPurchaseComplete,
     onToggleComplete,
     getToggleVersion,
     localStreakBonus,
-    supporterEntitlement,
   } = props
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
 
-  const canPurchase = user && user.balance >= item.price
+  // Calculate supporter discount
+  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
+  const discountedPrice = shopDiscount > 0
+    ? Math.floor(item.price * (1 - shopDiscount))
+    : item.price
+  const hasDiscount = shopDiscount > 0 && !owned
+
+  const canPurchase = user && user.balance >= discountedPrice
   // Items are toggleable unless they're always enabled (like supporter badges)
   const isToggleable =
     (item.type === 'permanent-toggleable' || item.type === 'time-limited') &&
@@ -1355,9 +1132,6 @@ function ShopItemCard(props: {
 
   // Use entitlement state directly - optimistic updates handled by parent
   const isEnabled = entitlement?.enabled ?? false
-
-  const isSupporterBadge =
-    item.id === 'supporter-badge-30d' || item.id === 'supporter-badge-1y'
 
   const handlePurchase = async () => {
     if (!user) return
@@ -1404,34 +1178,58 @@ function ShopItemCard(props: {
 
   const cardRef = useRef<HTMLDivElement>(null)
 
+  // Premium items (over 100k mana) get special styling
+  const isPremiumItem = item.price >= 100000
+
   return (
     <>
       <Card
         ref={cardRef}
-        className={`group relative flex cursor-default flex-col gap-3 p-4 transition-all duration-200 ${
-          justPurchased
-            ? 'ring-2 ring-indigo-500 ring-offset-2'
-            : 'hover:ring-2 hover:ring-indigo-500 hover:shadow-xl hover:shadow-indigo-200/50 hover:-translate-y-1 dark:hover:shadow-indigo-900/30'
-        }`}
+        className={clsx(
+          'group relative flex cursor-default flex-col gap-3 p-4 transition-all duration-200',
+          justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
+          !justPurchased && 'hover:ring-2 hover:shadow-xl hover:-translate-y-1',
+          !justPurchased && isPremiumItem && 'hover:ring-amber-500 hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
+          !justPurchased && !isPremiumItem && 'hover:ring-indigo-500 hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30',
+          isPremiumItem && 'bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20 dark:to-yellow-900/15'
+        )}
       >
-        {/* OWNED badge */}
-        {owned && (
-          <div className="absolute right-2 top-2 rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-            OWNED
+        {/* Loading overlay during purchase */}
+        {purchasing && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/80">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+              <span className="text-ink-600 text-xs">Purchasing...</span>
+            </div>
           </div>
         )}
 
-        {/* Card header - special formatting for supporter badges */}
-        {isSupporterBadge ? (
-          <div className="pr-16">
-            <div className="text-lg font-semibold">Manifold Supporter</div>
-            <div className="text-ink-500 text-sm">
-              {item.id === 'supporter-badge-1y' ? '1 year' : '1 month'}
-            </div>
+        {/* Card header with badge inline */}
+        <Row className="items-start justify-between gap-2">
+          <div className={clsx(
+            'text-base font-semibold sm:text-lg',
+            isPremiumItem && 'text-amber-700 dark:text-amber-400'
+          )}>
+            {item.name}
           </div>
-        ) : (
-          <div className="text-lg font-semibold">{item.name}</div>
-        )}
+          {/* OWNED badge for purchased items */}
+          {owned && (
+            <div className={clsx(
+              'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
+              isPremiumItem
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+            )}>
+              OWNED
+            </div>
+          )}
+          {/* LEGENDARY badge for premium items (not owned) */}
+          {isPremiumItem && !owned && (
+            <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+              LEGENDARY
+            </div>
+          )}
+        </Row>
 
         <p className="text-ink-600 text-sm">{item.description}</p>
 
@@ -1440,7 +1238,6 @@ function ShopItemCard(props: {
           itemId={item.id}
           user={user}
           localStreakBonus={localStreakBonus}
-          supporterEntitlement={supporterEntitlement}
         />
 
         {/* Footer: different layouts for owned vs non-owned */}
@@ -1507,30 +1304,72 @@ function ShopItemCard(props: {
             )}
           </Col>
         ) : (
-          // Non-owned item layout
+          // Non-owned item layout - stacks vertically on very narrow screens
           <>
-            <Row className="mt-auto items-center justify-between pt-2">
-              <div className="font-semibold text-teal-600">
-                {formatMoney(item.price)}
-              </div>
+            <Col className="mt-auto gap-2 pt-2">
+              <Row className="items-center justify-between">
+                {hasDiscount ? (
+                  <Col className="gap-0.5">
+                    <Row className="items-center gap-1.5">
+                      <span className="text-ink-400 text-xs line-through">
+                        {formatMoney(item.price)}
+                      </span>
+                      <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                        -{Math.round(shopDiscount * 100)}%
+                      </span>
+                    </Row>
+                    <div className="font-semibold text-teal-600">
+                      {formatMoney(discountedPrice)}
+                    </div>
+                  </Col>
+                ) : (
+                  <div className="font-semibold text-teal-600">
+                    {formatMoney(item.price)}
+                  </div>
+                )}
 
-              {!canPurchase && user ? (
-                <Link href="/checkout">
-                  <Button size="sm" color="gradient-pink">
-                    Buy mana
+                {/* Buy button inline on wider screens */}
+                <div className="hidden min-[360px]:block">
+                  {!canPurchase && user ? (
+                    <Link href="/checkout">
+                      <Button size="sm" color="gradient-pink">
+                        Buy mana
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      size="sm"
+                      color="indigo"
+                      disabled={!user}
+                      onClick={() => setShowConfirmModal(true)}
+                    >
+                      Buy
+                    </Button>
+                  )}
+                </div>
+              </Row>
+
+              {/* Full-width button on very narrow screens */}
+              <div className="min-[360px]:hidden">
+                {!canPurchase && user ? (
+                  <Link href="/checkout" className="block">
+                    <Button size="sm" color="gradient-pink" className="w-full">
+                      Buy mana
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    size="sm"
+                    color="indigo"
+                    disabled={!user}
+                    onClick={() => setShowConfirmModal(true)}
+                    className="w-full"
+                  >
+                    Buy
                   </Button>
-                </Link>
-              ) : (
-                <Button
-                  size="sm"
-                  color="indigo"
-                  disabled={!user}
-                  onClick={() => setShowConfirmModal(true)}
-                >
-                  Buy
-                </Button>
-              )}
-            </Row>
+                )}
+              </div>
+            </Col>
 
             {item.duration && (
               <div className="text-ink-500 text-xs">
@@ -1547,9 +1386,23 @@ function ShopItemCard(props: {
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
             Are you sure you want to purchase <strong>{item.name}</strong> for{' '}
-            <span className="font-semibold text-teal-600">
-              {formatMoney(item.price)}
-            </span>
+            {hasDiscount ? (
+              <>
+                <span className="text-ink-400 line-through">
+                  {formatMoney(item.price)}
+                </span>{' '}
+                <span className="font-semibold text-teal-600">
+                  {formatMoney(discountedPrice)}
+                </span>
+                <span className="ml-1 text-xs text-green-600">
+                  ({Math.round(shopDiscount * 100)}% supporter discount)
+                </span>
+              </>
+            ) : (
+              <span className="font-semibold text-teal-600">
+                {formatMoney(item.price)}
+              </span>
+            )}
             ?
           </p>
 
@@ -1558,7 +1411,6 @@ function ShopItemCard(props: {
             itemId={item.id}
             user={user}
             localStreakBonus={localStreakBonus}
-            supporterEntitlement={supporterEntitlement}
           />
 
           {item.duration && (

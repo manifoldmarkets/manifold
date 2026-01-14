@@ -226,6 +226,20 @@ const getMobileNav = (
       name: 'Reports',
       href: '/reports',
       icon: ReportsIcon,
+    },
+    // Show shop when enabled OR for admins (testing)
+    (SPEND_MANA_ENABLED || isAdminOrMod) && {
+      name: 'Shop',
+      href: '/shop',
+      icon: FaGem,
+      children: (
+        <>
+          Shop
+          <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+            NEW
+          </span>
+        </>
+      ),
     }
   )
 }

@@ -153,6 +153,16 @@ export function isSupporter(
   return getUserSupporterTier(entitlements) !== null
 }
 
+// Check if user was ever a supporter (has any supporter entitlement, even expired)
+export function wasEverSupporter(
+  entitlements: UserEntitlement[] | undefined
+): boolean {
+  if (!entitlements) return false
+  return entitlements.some((e) =>
+    SUPPORTER_ENTITLEMENT_IDS.includes(e.entitlementId as any)
+  )
+}
+
 // Check if user can upgrade from current tier to target tier
 export function canUpgradeTo(
   current: SupporterTier | null,

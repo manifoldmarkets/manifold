@@ -14,7 +14,7 @@ import {
 } from '@floating-ui/react'
 import clsx from 'clsx'
 import { FullUser } from 'common/api/user-types'
-import { userHasHovercardGlow } from 'common/shop/items'
+import { userHasHovercardGlow, userHasAvatarDecoration } from 'common/shop/items'
 import { getBenefit } from 'common/supporter-config'
 import dayjs from 'dayjs'
 import { Ref, forwardRef, useEffect, useState } from 'react'
@@ -147,6 +147,7 @@ const FetchUserHovercardContent = forwardRef(
     )
 
     const hasGlow = userHasHovercardGlow(user?.entitlements)
+    const hasGoldenBorder = userHasAvatarDecoration(user?.entitlements, 'avatar-golden-border')
     const hasBadgeAnimation = getBenefit(user?.entitlements, 'badgeAnimation', false)
 
     return user ? (
@@ -156,17 +157,22 @@ const FetchUserHovercardContent = forwardRef(
           'animate-slide-up-and-fade divide-ink-300 bg-canvas-0 text-ink-1000 z-30 w-56 divide-y rounded-md shadow-lg focus:outline-none',
           hasGlow
             ? 'shadow-[0_0_15px_rgba(167,139,250,0.5)] ring-2 ring-violet-400'
-            : 'ring-ink-1000 ring-1 ring-opacity-5'
+            : hasGoldenBorder
+              ? 'shadow-[0_0_15px_rgba(251,191,36,0.5)] ring-2 ring-amber-400'
+              : 'ring-ink-1000 ring-1 ring-opacity-5'
         )}
       >
         <div className="px-4 py-3">
           <Row className="items-start justify-between">
-            <Avatar
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              size="lg"
-              entitlements={user.entitlements}
-            />
+            <div className="group">
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size="lg"
+                entitlements={user.entitlements}
+                animateHatOnHover
+              />
+            </div>
             <FollowButton userId={userId} size="xs" />
           </Row>
 

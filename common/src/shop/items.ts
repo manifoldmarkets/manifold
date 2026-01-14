@@ -88,7 +88,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-golden-border',
-    name: 'Golden Border',
+    name: 'Golden Glow',
     description: 'A prestigious golden glow around your avatar',
     price: 25000,
     type: 'permanent-toggleable',
@@ -133,8 +133,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'hovercard-glow',
-    name: 'Profile Glow',
-    description: 'Add a glowing border to your profile popup',
+    name: 'Profile Border',
+    description: 'Add a special border effect to your profile popup',
     price: 10000,
     type: 'permanent-toggleable',
     limit: 'one-time',

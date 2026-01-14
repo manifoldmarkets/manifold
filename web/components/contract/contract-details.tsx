@@ -40,6 +40,7 @@ export function AuthorInfo(props: {
     resolverId,
   } = props
   const resolver = useDisplayUserById(resolverId)
+  const creator = useDisplayUserById(creatorId)
   return (
     <Row className="grow flex-wrap items-center gap-4">
       <UserHovercard userId={creatorId} className="flex items-center gap-2">
@@ -47,6 +48,7 @@ export function AuthorInfo(props: {
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
           size={'xs'}
+          entitlements={creator?.entitlements}
         />
 
         <UserLink
