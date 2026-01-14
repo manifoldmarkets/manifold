@@ -56,15 +56,17 @@ export function DailyFreeLoanModal(props: {
             canClaim && freeLoanAvailable >= 1
               ? 'bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-400'
               : alreadyClaimedToday
-              ? 'bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500'
+              ? 'bg-canvas-0'
               : 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600'
           )}
         >
           {/* Decorative coins */}
-          <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-20">
-            <div className="absolute -right-4 -top-4 text-8xl">💰</div>
-            <div className="absolute -bottom-2 -left-2 text-6xl">🪙</div>
-          </div>
+          {!alreadyClaimedToday && (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-20">
+              <div className="absolute -right-4 -top-4 text-8xl">💰</div>
+              <div className="absolute -bottom-2 -left-2 text-6xl">🪙</div>
+            </div>
+          )}
 
           <Col className="relative z-10 items-center gap-4">
             {/* Icon */}
@@ -73,11 +75,13 @@ export function DailyFreeLoanModal(props: {
                 'flex h-20 w-20 items-center justify-center rounded-full',
                 canClaim && freeLoanAvailable >= 1
                   ? 'animate-pulse bg-white/30 shadow-lg shadow-amber-600/30'
+                  : alreadyClaimedToday
+                  ? 'bg-amber-100 dark:bg-amber-900/40'
                   : 'bg-white/20'
               )}
             >
               {alreadyClaimedToday ? (
-                <GiOpenChest className="h-12 w-12 text-white drop-shadow-md" />
+                <GiOpenChest className="h-12 w-12 text-amber-700 dark:text-amber-500" />
               ) : (
                 <GiTwoCoins className="h-12 w-12 text-white drop-shadow-md" />
               )}
@@ -85,44 +89,25 @@ export function DailyFreeLoanModal(props: {
 
             {/* Title */}
             <Col className="items-center gap-1 text-center">
-              <h2 className="text-2xl font-bold text-white drop-shadow-sm">
+              <h2
+                className={clsx(
+                  'text-2xl font-bold',
+                  alreadyClaimedToday
+                    ? 'text-ink-900'
+                    : 'text-white drop-shadow-sm'
+                )}
+              >
                 Daily Loan
               </h2>
-              <p className="text-sm text-white/80">Free loans every day!</p>
+              <p
+                className={clsx(
+                  'text-sm',
+                  alreadyClaimedToday ? 'text-ink-600' : 'text-white/80'
+                )}
+              >
+                Free loans every day
+              </p>
             </Col>
-
-            {/* Main Status */}
-            {canClaim && freeLoanAvailable >= 1 ? (
-              <div className="rounded-full bg-white/90 px-6 py-2 shadow-lg">
-                <span className="text-lg font-bold text-amber-700">
-                  {formatMoney(freeLoanAvailable)} ready to claim!
-                </span>
-              </div>
-            ) : alreadyClaimedToday ? (
-              <div className="rounded-full bg-white/90 px-6 py-2 shadow-lg">
-                <span className="text-lg font-bold text-emerald-700">
-                  ✓ Claimed {formatMoney(todaysClaim)} today
-                </span>
-              </div>
-            ) : atMaxLoanLimit ? (
-              <div className="rounded-full bg-white/90 px-6 py-2 shadow-lg">
-                <span className="font-semibold text-slate-700">
-                  🔒 Max loan limit reached
-                </span>
-              </div>
-            ) : noEligiblePositions ? (
-              <div className="rounded-full bg-white/90 px-6 py-2 shadow-lg">
-                <span className="font-semibold text-slate-700">
-                  📊 Need eligible positions
-                </span>
-              </div>
-            ) : (
-              <div className="rounded-full bg-white/90 px-6 py-2 shadow-lg">
-                <span className="font-semibold text-slate-700">
-                  ⏰ Come back tomorrow!
-                </span>
-              </div>
-            )}
           </Col>
         </div>
 
@@ -131,7 +116,7 @@ export function DailyFreeLoanModal(props: {
           <Row className="gap-4">
             <Col className="flex-1 items-center gap-1 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 p-3 dark:from-green-900/20 dark:to-emerald-900/20">
               <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                TODAY
+                CLAIMED TODAY
               </span>
               <span className="text-xl font-bold text-green-700 dark:text-green-300">
                 {formatMoney(todaysClaim)}
@@ -146,12 +131,15 @@ export function DailyFreeLoanModal(props: {
               </span>
             </Col>
           </Row>
-          {totalLoan > 0 && (
-            <p className="text-ink-500 mt-2 text-center text-xs">
-              Daily: {formatMoney(currentFreeLoan)} • Margin:{' '}
-              {formatMoney(currentMarginLoan)}
-            </p>
-          )}
+          <p className="text-ink-500 mt-2 text-center text-xs">
+            {totalLoan > 0 && (
+              <>
+                Daily: {formatMoney(currentFreeLoan)} • Margin:{' '}
+                {formatMoney(currentMarginLoan)} •{' '}
+              </>
+            )}
+            Max: {formatMoney(freeLoanData.maxLoan)}
+          </p>
         </div>
 
         {/* Action Hint */}
@@ -167,33 +155,30 @@ export function DailyFreeLoanModal(props: {
           </div>
         )}
 
-        {/* Status-specific messages */}
-        {atMaxLoanLimit && (
-          <div className="bg-amber-50 px-6 py-3 dark:bg-amber-900/20">
-            <p className="text-center text-sm text-amber-700 dark:text-amber-300">
-              Repay some of your existing loan to unlock more daily bonuses.
-            </p>
-          </div>
-        )}
-
-        {noEligiblePositions && (
+        {/* Status message */}
+        {!(canClaim && freeLoanAvailable >= 1) && (
           <div className="bg-canvas-50 px-6 py-3">
             <p className="text-ink-600 text-center text-sm">
-              Invest in{' '}
-              <Tooltip text="Listed, ranked markets with 10+ traders that are 24+ hours old">
-                <span className="cursor-help underline decoration-dotted">
-                  eligible markets
-                </span>
-              </Tooltip>{' '}
-              to start earning daily bonuses!
-            </p>
-          </div>
-        )}
-
-        {alreadyClaimedToday && (
-          <div className="bg-emerald-50 px-6 py-3 dark:bg-emerald-900/20">
-            <p className="text-center text-sm text-emerald-700 dark:text-emerald-300">
-              🌙 Next bonus available after midnight PT
+              {atMaxLoanLimit ? (
+                <>
+                  🔒 Max loan ({formatMoney(freeLoanData.maxLoan)}) reached.
+                  Repay some to unlock more.
+                </>
+              ) : noEligiblePositions ? (
+                <>
+                  📊 Invest in{' '}
+                  <Tooltip text="Listed, ranked markets with 10+ traders that are 24+ hours old">
+                    <span className="cursor-help underline decoration-dotted">
+                      eligible markets
+                    </span>
+                  </Tooltip>{' '}
+                  to start earning daily loans!
+                </>
+              ) : alreadyClaimedToday ? (
+                <>🌙 Next loan available after midnight PT</>
+              ) : (
+                <>⏰ Come back tomorrow!</>
+              )}
             </p>
           </div>
         )}
@@ -219,7 +204,7 @@ export function DailyFreeLoanModal(props: {
             <div className="bg-canvas-50 flex-1 rounded-lg p-3 text-center">
               <div className="mb-1 text-2xl">✨</div>
               <p className="text-ink-700 text-xs font-medium">Auto-repaid</p>
-              <p className="text-ink-500 text-xs">on resolve</p>
+              <p className="text-ink-500 text-xs">on resolution</p>
             </div>
           </Row>
         </Col>
