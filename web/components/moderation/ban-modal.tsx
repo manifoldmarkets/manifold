@@ -97,7 +97,7 @@ export function BanModal({
           if (modUser) {
             names[modId] = modUser.username
           }
-        } catch (e) {
+        } catch {
           // Ignore errors
         }
       }
@@ -281,11 +281,7 @@ export function BanModal({
                     >
                       <Row className="items-center justify-between">
                         <span className="font-medium text-red-900">
-                          {ban.ban_type === 'posting'
-                            ? 'Posting Ban'
-                            : ban.ban_type === 'marketControl'
-                              ? 'Market Control Ban'
-                              : 'Trading Ban'}
+                          {getBanTypeDisplayName(ban.ban_type)}
                         </span>
                         <Row className="items-center gap-2">
                           <span className="text-sm text-red-700">
@@ -518,7 +514,7 @@ export function BanModal({
             </button>
             {showBanHistory && (
               <div className="border-ink-200 space-y-3 border-t p-3">
-                {[...historicalBans].reverse().map((record) => (
+                {historicalBans.map((record) => (
                   <BanHistoryRecord
                     key={record.id}
                     record={record}
@@ -870,16 +866,6 @@ function BanBannerPreview({
   )
 }
 
-function getBanTypeLabel(banType: BanType): string {
-  const labels: Record<BanType, string> = {
-    posting: 'Posting (commenting, messaging, creating posts)',
-    marketControl: 'Market Control (creating, editing, resolving markets, hiding comments)',
-    trading: 'Trading (betting, managrams, liquidity)',
-    modAlert: 'Mod Alert (warning message)',
-  }
-  return labels[banType]
-}
-
 function BanHistoryRecord({
   record,
   modNames,
@@ -901,11 +887,7 @@ function BanHistoryRecord({
     <div className="bg-canvas-50 rounded border p-2">
       <Row className="items-center justify-between">
         <span className="font-medium">
-          {record.ban_type === 'posting'
-            ? 'Posting Ban'
-            : record.ban_type === 'marketControl'
-              ? 'Market Control Ban'
-              : 'Trading Ban'}
+          {getBanTypeDisplayName(record.ban_type)}
         </span>
         <span className="text-ink-500 text-xs">
           {record.end_time ? 'Temporary' : 'Permanent'}
