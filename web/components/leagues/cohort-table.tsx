@@ -75,7 +75,7 @@ export const CohortTable = (props: {
   return (
     <Col className="gap-2">
       {division === 1 && (
-        <div className="bg-amber-500/10 text-amber-600 mb-2 rounded-lg border border-amber-500/30 px-3 py-2 text-sm">
+        <div className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-600">
           💡 Requires 100 mana earned to promote from Bronze
         </div>
       )}
@@ -180,7 +180,10 @@ export const CohortTable = (props: {
   )
 }
 
-function ZoneDivider(props: { label: string; color: 'emerald' | 'teal' | 'rose' }) {
+function ZoneDivider(props: {
+  label: string
+  color: 'emerald' | 'teal' | 'rose'
+}) {
   const { label, color } = props
   const colorClasses = {
     emerald: 'border-emerald-500/50 text-emerald-600 bg-emerald-500/10',
@@ -190,7 +193,13 @@ function ZoneDivider(props: { label: string; color: 'emerald' | 'teal' | 'rose' 
 
   return (
     <Row className="items-center gap-2 py-2">
-      <div className={clsx('h-px flex-1', `border-t-2 border-dashed`, colorClasses[color].split(' ')[0])} />
+      <div
+        className={clsx(
+          'h-px flex-1',
+          `border-t-2 border-dashed`,
+          colorClasses[color].split(' ')[0]
+        )}
+      />
       <span
         className={clsx(
           'shrink-0 rounded-full px-3 py-1 text-xs font-medium',
@@ -199,7 +208,13 @@ function ZoneDivider(props: { label: string; color: 'emerald' | 'teal' | 'rose' 
       >
         {label}
       </span>
-      <div className={clsx('h-px flex-1', `border-t-2 border-dashed`, colorClasses[color].split(' ')[0])} />
+      <div
+        className={clsx(
+          'h-px flex-1',
+          `border-t-2 border-dashed`,
+          colorClasses[color].split(' ')[0]
+        )}
+      />
     </Row>
   )
 }
@@ -261,7 +276,9 @@ const UserRow = (props: {
             <Tooltip
               text={
                 rankDiff
-                  ? `${rankDiff < 0 ? 'Gained' : 'Lost'} ${Math.abs(rankDiff)} rank${Math.abs(rankDiff) > 1 ? 's' : ''} today`
+                  ? `${rankDiff < 0 ? 'Gained' : 'Lost'} ${Math.abs(
+                      rankDiff
+                    )} rank${Math.abs(rankDiff) > 1 ? 's' : ''} today`
                   : undefined
               }
             >
@@ -283,7 +300,9 @@ const UserRow = (props: {
                     getRankBadgeStyle()
                   )}
                 >
-                  {rank === 1 && <StarIcon className="absolute -right-1 -top-1 h-3 w-3 text-yellow-300" />}
+                  {rank === 1 && (
+                    <StarIcon className="absolute -right-1 -top-1 h-3 w-3 text-yellow-300" />
+                  )}
                   {rank}
                 </div>
               </Row>

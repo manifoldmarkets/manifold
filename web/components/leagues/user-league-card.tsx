@@ -6,7 +6,11 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/solid'
 
-import { DIVISION_NAMES, getDemotionAndPromotionCountBySeason, league_user_info } from 'common/leagues'
+import {
+  DIVISION_NAMES,
+  getDemotionAndPromotionCountBySeason,
+  league_user_info,
+} from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { toLabel } from 'common/util/adjective-animal'
 import { Avatar } from '../widgets/avatar'
@@ -30,34 +34,70 @@ export function UserLeagueCard(props: {
   // Calculate zone
   const getZone = () => {
     if (rank <= doublePromotion)
-      return { type: 'double-promote', label: 'Double Promote Zone!', icon: ChevronDoubleUpIcon, color: 'text-emerald-400' }
+      return {
+        type: 'double-promote',
+        label: 'Double Promote Zone!',
+        icon: ChevronDoubleUpIcon,
+        color: 'text-emerald-400',
+      }
     if (rank <= promotion)
-      return { type: 'promote', label: 'Promotion Zone!', icon: ChevronUpIcon, color: 'text-teal-400' }
+      return {
+        type: 'promote',
+        label: 'Promotion Zone!',
+        icon: ChevronUpIcon,
+        color: 'text-teal-400',
+      }
     if (rank > cohortSize - demotion)
-      return { type: 'demote', label: 'Demotion Zone', icon: ChevronDownIcon, color: 'text-rose-400' }
-    return { type: 'safe', label: 'Safe Zone', icon: null, color: 'text-ink-500' }
+      return {
+        type: 'demote',
+        label: 'Demotion Zone',
+        icon: ChevronDownIcon,
+        color: 'text-rose-400',
+      }
+    return {
+      type: 'safe',
+      label: 'Safe Zone',
+      icon: null,
+      color: 'text-ink-500',
+    }
   }
 
   const zone = getZone()
   const ZoneIcon = zone.icon
 
   // Calculate progress within the cohort
-  const progressPercent = Math.max(0, ((cohortSize - rank + 1) / cohortSize) * 100)
+  const progressPercent = Math.max(
+    0,
+    ((cohortSize - rank + 1) / cohortSize) * 100
+  )
 
   // Calculate distance to next zone
   const getNextZoneInfo = () => {
     if (zone.type === 'double-promote') return null
     if (zone.type === 'promote') {
       const ranksToDoublePromo = rank - doublePromotion
-      return { label: `${ranksToDoublePromo} rank${ranksToDoublePromo > 1 ? 's' : ''} to double promotion`, direction: 'up' }
+      return {
+        label: `${ranksToDoublePromo} rank${
+          ranksToDoublePromo > 1 ? 's' : ''
+        } to double promotion`,
+        direction: 'up',
+      }
     }
     if (zone.type === 'safe') {
       const ranksToPromo = rank - promotion
-      return { label: `${ranksToPromo} rank${ranksToPromo > 1 ? 's' : ''} to promotion zone`, direction: 'up' }
+      return {
+        label: `${ranksToPromo} rank${
+          ranksToPromo > 1 ? 's' : ''
+        } to promotion zone`,
+        direction: 'up',
+      }
     }
     // demote zone
-    const ranksToDemote = (cohortSize - demotion + 1) - rank
-    return { label: `${ranksToDemote} rank${ranksToDemote > 1 ? 's' : ''} until safe`, direction: 'up' }
+    const ranksToDemote = cohortSize - demotion + 1 - rank
+    return {
+      label: `${ranksToDemote} rank${ranksToDemote > 1 ? 's' : ''} until safe`,
+      direction: 'up',
+    }
   }
 
   const nextZoneInfo = getNextZoneInfo()
@@ -151,9 +191,12 @@ export function RankBadge(props: {
   const { rank, rankDiff, isHighlighted } = props
 
   const getRankStyle = () => {
-    if (rank === 1) return 'bg-gradient-to-r from-yellow-500 to-amber-400 text-black'
-    if (rank === 2) return 'bg-gradient-to-r from-slate-300 to-slate-200 text-slate-800'
-    if (rank === 3) return 'bg-gradient-to-r from-amber-600 to-amber-500 text-white'
+    if (rank === 1)
+      return 'bg-gradient-to-r from-yellow-500 to-amber-400 text-black'
+    if (rank === 2)
+      return 'bg-gradient-to-r from-slate-300 to-slate-200 text-slate-800'
+    if (rank === 3)
+      return 'bg-gradient-to-r from-amber-600 to-amber-500 text-white'
     return 'bg-ink-200 text-ink-700'
   }
 
@@ -172,7 +215,7 @@ export function RankBadge(props: {
         className={clsx(
           'flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold',
           getRankStyle(),
-          isHighlighted && 'ring-2 ring-primary-500 ring-offset-2'
+          isHighlighted && 'ring-primary-500 ring-2 ring-offset-2'
         )}
       >
         {rank}
