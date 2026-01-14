@@ -2984,6 +2984,116 @@ export const API = (_apiTypeCheck = {
       userId: string
     },
   },
+  'get-sweepstakes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ sweepstakesNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      sweepstakes?: {
+        sweepstakesNum: number
+        name: string
+        prizes: {
+          rank?: number
+          rankStart?: number
+          rankEnd?: number
+          amountUsdc: number
+          label: string
+        }[]
+        closeTime: number
+        winningTicketIds: string[] | null
+        createdTime: number
+      }
+      userStats: {
+        userId: string
+        totalTickets: number
+        totalManaSpent: number
+      }[]
+      totalTickets: number
+      winners?: {
+        rank: number
+        label: string
+        prizeUsdc: number
+        ticketId: string
+        user: {
+          id: string
+          username: string
+          name: string
+          avatarUrl: string
+        }
+      }[]
+      // Provably fair fields
+      nonceHash?: string // MD5 hash of nonce, always shown when sweepstakes exists
+      nonce?: string // Actual nonce, only revealed AFTER winners are selected for verification
+      // Free ticket status for current user
+      hasClaimedFreeTicket?: boolean
+    },
+  },
+  'buy-sweepstakes-tickets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        numTickets: z.number().positive(),
+      })
+      .strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+      manaSpent: number
+    },
+  },
+  'claim-free-sweepstakes-ticket': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.number() }).strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+    },
+  },
+  'get-sweepstakes-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        sweepstakesNum: z.coerce.number(),
+        limit: z.coerce.number().min(1).max(100).default(50),
+        before: z.string().optional(),
+      })
+      .strict(),
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      sales: {
+        id: string
+        sweepstakesNum: number
+        userId: string
+        numTickets: number
+        manaSpent: number
+        isFree: boolean
+        createdTime: number
+      }[]
+    },
+  },
+  'select-sweepstakes-winners': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.number() }).strict(),
+    returns: {} as {
+      winners: {
+        rank: number
+        label: string
+        prizeUsdc: number
+        ticketId: string
+        userId: string
+      }[]
+    },
+  },
   'get-predictle-percentile': {
     method: 'GET',
     visibility: 'undocumented',
