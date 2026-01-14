@@ -24,6 +24,8 @@ import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { DailyLeagueStat } from '../home/daily-league-stat'
 import { AddFundsButton } from '../profile/add-funds-button'
+import { DailyLoan } from '../home/daily-loan'
+import { useUser } from 'web/hooks/use-user'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -322,11 +324,8 @@ function TwombaPortfolioValueSkeleton(props: {
             {!hideSweepsToggle && (
               <SweepsToggle sweepsEnabled={true} isPlay={prefersPlay} />
             )}
-            <AddFundsButton
-              userId={userId}
-              size="xs"
-              className="hidden sm:flex"
-            />
+            <PortfolioLoanButton userId={userId} />
+            <AddFundsButton userId={userId} size="md" />
           </Row>
         </Row>
         <Col className="bg-canvas-0 w-full rounded-lg p-4">
@@ -467,4 +466,16 @@ function displayAmounts(
     return currentNumber ?? undefined
   }
   return graphNumber ?? undefined
+}
+
+function PortfolioLoanButton(props: { userId?: string }) {
+  const { userId } = props
+  const currentUser = useUser()
+
+  // Only show for current user viewing their own portfolio
+  if (!userId || !currentUser || currentUser.id !== userId) {
+    return null
+  }
+
+  return <DailyLoan user={currentUser} showChest={false} />
 }

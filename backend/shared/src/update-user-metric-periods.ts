@@ -149,7 +149,7 @@ export async function updateUserMetricPeriods(
 
       ${
         contractIdsWithBets.length > 0
-          ? `select id, data from user_contract_metrics
+          ? `select id, data, margin_loan, loan from user_contract_metrics
               where user_id in ($2:list)
               and contract_id in ($3:list)`
           : `select 1 where false;`
@@ -169,7 +169,15 @@ export async function updateUserMetricPeriods(
     })
 
     const currentContractMetrics = results[2]
-      .map((r) => ({ id: r.id, ...r.data } as ContractMetric))
+      .map(
+        (r) =>
+          ({
+            id: r.id,
+            ...r.data,
+            loan: r.loan ?? r.data.loan ?? 0,
+            marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+          } as ContractMetric)
+      )
       .concat(contractMetricsWithoutRecentBets)
 
     log(
@@ -324,7 +332,7 @@ const getContractMetricsWithoutRecentBets = async (
 
   const metrics = await pg.map(
     `
-    select ucm.id, ucm.data
+    select ucm.id, ucm.data, ucm.margin_loan, ucm.loan
     from user_contract_metrics ucm
     join contracts c on ucm.contract_id = c.id
     left join answers a on ucm.answer_id = a.id
@@ -339,6 +347,8 @@ const getContractMetricsWithoutRecentBets = async (
       ({
         id: r.id as number,
         ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
       } as ContractMetric)
   )
 

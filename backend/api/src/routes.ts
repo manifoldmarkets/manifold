@@ -7,6 +7,7 @@ import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
+import { getTopMarketsYesterday } from 'api/get-top-markets-yesterday'
 import { getNotifications } from 'api/get-notifications'
 import {
   getChannelMemberships,
@@ -102,6 +103,8 @@ import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
+import { getFreeLoanAvailable } from './get-free-loan-available'
+import { claimFreeLoan } from './claim-free-loan'
 import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getPredictle } from './get-predictle-markets'
@@ -358,6 +361,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
   'get-active-user-mana-stats': getActiveUserManaStats,
+  'get-top-markets-yesterday': getTopMarketsYesterday,
   'register-gidx': register,
   'get-checkout-session-gidx': getCheckoutSession,
   'complete-checkout-session-gidx': completeCheckoutSession,
@@ -379,6 +383,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-answers': generateAIAnswers,
   'check-poll-suggestion': checkPollSuggestion,
   'get-next-loan-amount': getNextLoanAmount,
+  'get-free-loan-available': getFreeLoanAvailable,
+  'claim-free-loan': claimFreeLoan,
   'get-market-loan-max': getMarketLoanMax,
   'check-sports-event': checkSportsEvent,
   'create-task': createTask,

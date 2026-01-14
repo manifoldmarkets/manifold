@@ -34,6 +34,7 @@ import {
 } from 'web/components/bet/bet-slider'
 import { Slider } from 'web/components/widgets/slider'
 import { formatWithToken } from 'common/util/format'
+import { PayBackLoanForm } from 'web/components/bet/pay-back-loan-form'
 
 export function LoansModal(props: {
   user: User
@@ -46,11 +47,8 @@ export function LoansModal(props: {
   const { isOpen, user, setOpen, refreshPortfolio, contractId, answerId } =
     props
   const [loaning, setLoaning] = useState(false)
-  const [repaying, setRepaying] = useState(false)
   const [loanAmount, setLoanAmount] = useState<number | undefined>()
-  const [repaymentAmount, setRepaymentAmount] = useState<number | undefined>()
   const [requestLoanError, setRequestLoanError] = useState<string | undefined>()
-  const [repayLoanError, setRepayLoanError] = useState<string | undefined>()
   const { latestPortfolio, isEligible } = useIsEligibleForLoans(user.id)
   const { data: loanData, refresh: refetchLoanData } = useAPIGetter(
     'get-next-loan-amount',
@@ -74,7 +72,6 @@ export function LoansModal(props: {
   const dailyLimit = loanData?.dailyLimit ?? 0
   const todayLoans = loanData?.todayLoans ?? 0
   const availableToday = loanData?.availableToday ?? 0
-  const totalOwed = totalLoanData?.totalOwed ?? 0
   const hasOutstandingLoan = (latestPortfolio?.loanTotal ?? 0) > 0
 
   // Market-specific loan data
@@ -223,66 +220,6 @@ export function LoansModal(props: {
     }
   }
 
-  const repayLoan = async () => {
-    if (!repaymentAmount || repaymentAmount <= 0) {
-      toast.error('Please enter a valid repayment amount')
-      return
-    }
-
-    // Round input to whole number for display
-    let amountToRepay = Math.floor(repaymentAmount)
-
-    // Clamp to maximum available (use actual max, not rounded)
-    const maxAvailable = paybackMaxActual
-
-    // If user selected the rounded max (or slider is at max), send the actual max
-    if (amountToRepay === paybackMax && paybackMax < maxAvailable) {
-      amountToRepay = maxAvailable
-    } else if (amountToRepay > maxAvailable) {
-      amountToRepay = maxAvailable
-      setRepaymentAmount(Math.floor(maxAvailable))
-    } else {
-      // For display, keep the rounded amount
-      setRepaymentAmount(amountToRepay)
-    }
-
-    setRepaying(true)
-    try {
-      const res = await api('repay-loan', {
-        amount: amountToRepay,
-        contractId,
-        answerId,
-      })
-      if (res) {
-        toast.success(
-          `Repaid ${formatMoney(res.repaid)}. Remaining: ${formatMoney(
-            res.remainingLoan
-          )}`
-        )
-        setRepaymentAmount(undefined)
-        refetchTotalLoan()
-        refetchLoanData()
-        if (contractId) {
-          refetchMarketLoan()
-        }
-        track('repay loan', {
-          amount: res.repaid,
-          remaining: res.remainingLoan,
-          contractId,
-          answerId,
-        })
-      }
-    } catch (e: any) {
-      console.error(e)
-      toast.error(e.message || 'Error repaying loan')
-    } finally {
-      setRepaying(false)
-      if (refreshPortfolio) {
-        setTimeout(refreshPortfolio, 1000)
-      }
-    }
-  }
-
   useEffect(() => {
     if (isOpen && !user.hasSeenLoanModal)
       api('me/update', { hasSeenLoanModal: true })
@@ -294,11 +231,6 @@ export function LoansModal(props: {
   const requestLoanMaxActual = Math.min(availableGeneralLoan, availableToday)
   // Round down for display/slider max
   const requestLoanMax = Math.floor(requestLoanMaxActual)
-
-  // Store actual max (before rounding) for use in API calls and validation
-  const paybackMaxActual = Math.min(totalOwed, user.balance)
-  // Round down for display/slider max
-  const paybackMax = Math.floor(paybackMaxActual)
 
   // Create filtered slider values that respect the max (rounded down)
   // Ensures the rounded max is included as the last value
@@ -338,22 +270,6 @@ export function LoansModal(props: {
       ? createFilteredSliderValues(marketLoanMax, !hasLotsOfMoney)
       : []
 
-  // Create filtered slider values for payback
-  const paybackSliderValues =
-    !isMarketSpecific && paybackMax > 0
-      ? createFilteredSliderValues(paybackMax, !hasLotsOfMoney)
-      : []
-
-  // Market-specific payback max (repay up to current loan or balance)
-  const marketPaybackMaxActual = Math.min(currentMarketLoan, user.balance)
-  const marketPaybackMax = Math.floor(marketPaybackMaxActual)
-
-  // Create filtered slider values for market-specific payback
-  const marketPaybackSliderValues =
-    isMarketSpecific && marketPaybackMax > 0
-      ? createFilteredSliderValues(marketPaybackMax, !hasLotsOfMoney)
-      : []
-
   // Get slider index for request loan
   const getRequestLoanSliderIndex = (amount: number | undefined) => {
     if (!amount || requestLoanSliderValues.length === 0) return 0
@@ -372,26 +288,6 @@ export function LoansModal(props: {
       return marketRequestLoanSliderValues.length - 1
     }
     return marketRequestLoanSliderValues.findLastIndex((v) => amount >= v) || 0
-  }
-
-  // Get slider index for payback
-  const getPaybackSliderIndex = (amount: number | undefined) => {
-    if (!amount || paybackSliderValues.length === 0) return 0
-    // If amount is at or above the rounded max, show slider at max position
-    if (amount >= paybackMax) {
-      return paybackSliderValues.length - 1
-    }
-    return paybackSliderValues.findLastIndex((v) => amount >= v) || 0
-  }
-
-  // Get slider index for market-specific payback
-  const getMarketPaybackSliderIndex = (amount: number | undefined) => {
-    if (!amount || marketPaybackSliderValues.length === 0) return 0
-    // If amount is at or above the rounded max, show slider at max position
-    if (amount >= marketPaybackMax) {
-      return marketPaybackSliderValues.length - 1
-    }
-    return marketPaybackSliderValues.findLastIndex((v) => amount >= v) || 0
   }
 
   // Create marks for slider (filtered labels)
@@ -423,22 +319,6 @@ export function LoansModal(props: {
     marketRequestLoanSliderValues.length > 0
       ? createSliderMarks(
           marketRequestLoanSliderValues,
-          hasLotsOfMoney ? LARGE_SLIDER_VALUE_LABELS : SMALL_SLIDER_VALUE_LABELS
-        )
-      : []
-
-  const paybackSliderMarks =
-    paybackSliderValues.length > 0
-      ? createSliderMarks(
-          paybackSliderValues,
-          hasLotsOfMoney ? LARGE_SLIDER_VALUE_LABELS : SMALL_SLIDER_VALUE_LABELS
-        )
-      : []
-
-  const marketPaybackSliderMarks =
-    marketPaybackSliderValues.length > 0
-      ? createSliderMarks(
-          marketPaybackSliderValues,
           hasLotsOfMoney ? LARGE_SLIDER_VALUE_LABELS : SMALL_SLIDER_VALUE_LABELS
         )
       : []
@@ -493,10 +373,17 @@ export function LoansModal(props: {
             <span className="text-ink-900 text-2xl font-semibold">
               {isMarketSpecific
                 ? formatMoney(currentMarketLoan)
-                : totalOwed > 0
-                ? formatMoney(totalOwed)
-                : formatMoney(0)}
+                : formatMoney(
+                    (loanData?.currentFreeLoan ?? 0) +
+                      (loanData?.currentMarginLoan ?? 0)
+                  )}
             </span>
+            {!isMarketSpecific && (
+              <span className="text-ink-500 text-xs">
+                Free: {formatMoney(loanData?.currentFreeLoan ?? 0)} • Margin:{' '}
+                {formatMoney(loanData?.currentMarginLoan ?? 0)}
+              </span>
+            )}
             {isMarketSpecific && currentMarketLoan > 0 && (
               <span className="text-ink-500 text-xs">
                 Max: {formatMoney(maxMarketLoan)} ({bindingLimitReason})
@@ -646,11 +533,27 @@ export function LoansModal(props: {
                 </>
               )}
               <div>
-                <p className="text-ink-900 mb-1 font-medium">Interest rate</p>
-                <p>
-                  {LOAN_DAILY_INTEREST_RATE * 100}% per day accrues on your
-                  outstanding loan balance. Principal + interest is
-                  automatically deducted when the question resolves or you sell.
+                <p className="text-ink-900 mb-1 font-medium">
+                  Loan types & interest
+                </p>
+                <ul className="list-disc space-y-1 pl-4">
+                  <li>
+                    <span className="font-medium text-green-600">
+                      Free loans
+                    </span>
+                    : Claimed daily via the golden chest. Interest-free forever!
+                  </li>
+                  <li>
+                    <span className="font-medium text-amber-600">
+                      Margin loans
+                    </span>
+                    : Requested here. {LOAN_DAILY_INTEREST_RATE * 100}% interest
+                    per day.
+                  </li>
+                </ul>
+                <p className="text-ink-500 mt-2 text-xs">
+                  Repayments go to margin loans first (to stop interest), then
+                  free loans. All loans are deducted when the question resolves.
                 </p>
               </div>
             </Col>
@@ -781,99 +684,33 @@ export function LoansModal(props: {
 
         {/* Repayment Section */}
         {(isMarketSpecific ? currentMarketLoan > 0 : hasOutstandingLoan) && (
-          <div className="border-ink-200 bg-canvas-50 border-t px-6 py-5">
-            <Col className="gap-4">
-              <div>
-                <h3 className="text-ink-900 mb-1 text-base font-semibold">
-                  Pay back loan
-                </h3>
-                <p className="text-ink-600 text-xs">
-                  {isMarketSpecific
-                    ? 'Repay any amount of your loan on this market.'
-                    : 'Repay any amount of your outstanding loan. Payments are distributed proportionally by loan amount across all markets.'}
-                </p>
-              </div>
-              <Col className="gap-3">
-                <BuyAmountInput
-                  parentClassName="max-w-full"
-                  amount={
-                    repaymentAmount ? Math.floor(repaymentAmount) : undefined
-                  }
-                  onChange={(newAmount) => {
-                    if (!newAmount || newAmount <= 0) {
-                      setRepaymentAmount(undefined)
-                      return
-                    }
-                    // Round to whole number
-                    const roundedAmount = Math.floor(newAmount)
-                    const maxAvailable = isMarketSpecific
-                      ? marketPaybackMaxActual
-                      : paybackMaxActual
-                    // Clamp to max available
-                    if (roundedAmount > maxAvailable) {
-                      setRepaymentAmount(Math.floor(maxAvailable))
-                    } else {
-                      setRepaymentAmount(roundedAmount)
-                    }
-                  }}
-                  error={repayLoanError}
-                  setError={setRepayLoanError}
-                  disabled={repaying}
-                  maximumAmount={
-                    isMarketSpecific ? marketPaybackMaxActual : paybackMaxActual
-                  }
-                  showSlider={false}
-                  token="M$"
-                />
-                {!isMarketSpecific && paybackSliderValues.length > 0 && (
-                  <Slider
-                    className="mt-3"
-                    min={0}
-                    max={paybackSliderValues.length - 1}
-                    amount={getPaybackSliderIndex(repaymentAmount)}
-                    onChange={(index) => {
-                      const newAmount = paybackSliderValues[index] ?? 0
-                      // Store rounded amount for display
-                      // If user selects the max slider value (rounded max), we'll send actual max in API call
-                      setRepaymentAmount(Math.floor(newAmount))
-                    }}
-                    step={1}
-                    disabled={repaying}
-                    color="indigo"
-                    marks={paybackSliderMarks}
-                  />
-                )}
-                {isMarketSpecific && marketPaybackSliderValues.length > 0 && (
-                  <Slider
-                    className="mt-3"
-                    min={0}
-                    max={marketPaybackSliderValues.length - 1}
-                    amount={getMarketPaybackSliderIndex(repaymentAmount)}
-                    onChange={(index) => {
-                      const newAmount = marketPaybackSliderValues[index] ?? 0
-                      setRepaymentAmount(Math.floor(newAmount))
-                    }}
-                    step={1}
-                    disabled={repaying}
-                    color="indigo"
-                    marks={marketPaybackSliderMarks}
-                  />
-                )}
-                <Button
-                  color="indigo"
-                  size="xl"
-                  loading={repaying}
-                  disabled={
-                    repaying || !repaymentAmount || repaymentAmount <= 0
-                  }
-                  onClick={repayLoan}
-                  className="w-full"
-                >
-                  Pay Back Loan
-                </Button>
-              </Col>
-            </Col>
-          </div>
+          <PayBackLoanForm
+            user={user}
+            totalLoan={
+              isMarketSpecific
+                ? currentMarketLoan
+                : (loanData?.currentFreeLoan ?? 0) +
+                  (loanData?.currentMarginLoan ?? 0)
+            }
+            hasLotsOfMoney={hasLotsOfMoney}
+            onSuccess={() => {
+              refetchTotalLoan()
+              refetchLoanData()
+              if (contractId) {
+                refetchMarketLoan()
+              }
+              if (refreshPortfolio) {
+                setTimeout(refreshPortfolio, 1000)
+              }
+            }}
+            contractId={contractId}
+            answerId={answerId}
+            description={
+              isMarketSpecific
+                ? 'Repay any amount of your loan on this market.'
+                : undefined
+            }
+          />
         )}
       </Col>
     </Modal>

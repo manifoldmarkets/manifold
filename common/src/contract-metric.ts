@@ -11,7 +11,8 @@ export type ContractMetric = {
   hasShares: boolean
   hasYesShares: boolean
   invested: number
-  loan: number
+  loan: number // Free loan (interest-free)
+  marginLoan: number // Margin loan (with interest)
   maxSharesOutcome: string | null
   totalShares: {
     [outcome: string]: number

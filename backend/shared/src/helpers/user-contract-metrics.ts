@@ -32,6 +32,7 @@ const getColumnsFromMetrics = (metrics: Omit<ContractMetric, 'id'>[]) =>
         total_shares_yes: m.totalShares['YES'] ?? null,
         answer_id: m.answerId,
         loan: m.loan,
+        margin_loan: m.marginLoan ?? 0,
       } as Tables['user_contract_metrics']['Insert'])
   )
 
@@ -174,13 +175,18 @@ export const getContractMetrics = async (
   const answerClause = `(${answerConditions.join(' or ')})`
 
   return await pg.map<ContractMetric>(
-    `select data from user_contract_metrics
+    `select data, margin_loan, loan from user_contract_metrics
        where contract_id = $1
          and user_id = any ($2)
          and ${answerClause}
     `,
     [contractId, userIds, hasAnswerIds ? answerIds : null],
-    (row) => row.data as ContractMetric
+    (row) =>
+      ({
+        ...row.data,
+        loan: row.loan ?? row.data.loan ?? 0,
+        marginLoan: row.margin_loan ?? row.data.marginLoan ?? 0,
+      } as ContractMetric)
   )
 }
 export const getContractMetricsForContract = async (
@@ -189,11 +195,16 @@ export const getContractMetricsForContract = async (
   answerIds: string[] | null
 ) => {
   return await pg.map<ContractMetric>(
-    `select data from user_contract_metrics
+    `select data, margin_loan, loan from user_contract_metrics
        where contract_id = $1
          and ($2 is null or answer_id = any ($2))
     `,
     [contractId, answerIds?.length ? answerIds : null],
-    (row) => row.data as ContractMetric
+    (row) =>
+      ({
+        ...row.data,
+        loan: row.loan ?? row.data.loan ?? 0,
+        marginLoan: row.margin_loan ?? row.data.marginLoan ?? 0,
+      } as ContractMetric)
   )
 }

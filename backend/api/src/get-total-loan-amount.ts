@@ -28,7 +28,10 @@ export const getTotalLoanAmount: APIHandler<'get-total-loan-amount'> = async (
   const { metrics } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   
-  const metricsWithLoans = metrics.filter((m) => (m.loan ?? 0) > 0)
+  // Include both free loans and margin loans
+  const metricsWithLoans = metrics.filter(
+    (m) => (m.loan ?? 0) > 0 || (m.marginLoan ?? 0) > 0
+  )
   
   if (metricsWithLoans.length === 0) {
     return { totalOwed: 0 }

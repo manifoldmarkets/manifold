@@ -9,6 +9,7 @@ import {
   isUserEligibleForGeneralLoan,
   isUserEligibleForMarketLoan,
   isMarketEligibleForLoan,
+  getMidnightPacific,
   MS_PER_DAY,
 } from 'common/loans'
 import { LoanTxn } from 'common/txn'
@@ -119,8 +120,9 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       )
     }
 
+    // Calculate total loan (free + margin) for limit checking
     const totalMarketLoan = contractMetrics.reduce(
-      (sum, m) => sum + (m.loan ?? 0),
+      (sum, m) => sum + (m.loan ?? 0) + (m.marginLoan ?? 0),
       0
     )
     const totalPositionValue = contractMetrics.reduce(
@@ -164,16 +166,16 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       )
     }
 
-    // Check daily loan limit (10% of net worth per day)
+    // Check daily loan limit (10% of net worth per day, resets at midnight PT)
     const dailyLimit = calculateDailyLoanLimit(netWorth)
-    const oneDayAgo = Date.now() - MS_PER_DAY
+    const midnightPT = getMidnightPacific()
     const todayLoansResult = await pg.oneOrNone<{ total: number }>(
       `select coalesce(sum(amount), 0) as total
        from txns
        where to_id = $1
-       and category = 'LOAN'
+       and category IN ('LOAN', 'DAILY_FREE_LOAN')
        and created_time >= $2`,
-      [user.id, new Date(oneDayAgo).toISOString()]
+      [user.id, midnightPT.toISOString()]
     )
     const todayLoans = todayLoansResult?.total ?? 0
 
@@ -183,7 +185,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
         400,
         `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
           2
-        )} per day (10% of net worth). You've already borrowed ${todayLoans.toFixed(
+        )} per day (10% of net worth, resets at midnight PT). You've already borrowed ${todayLoans.toFixed(
           2
         )} today. Available today: ${availableToday.toFixed(2)}`
       )
@@ -216,17 +218,18 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
         )
       }
 
-      // Add loan to this specific answer's metric
-      const currentAnswerLoan = metric.loan ?? 0
+      // Add loan to this specific answer's metric (margin loan with interest)
+      const currentAnswerMarginLoan = metric.marginLoan ?? 0
       const updatedMetric = {
         ...metric,
-        loan: currentAnswerLoan + amount,
+        marginLoan: currentAnswerMarginLoan + amount,
       }
 
       const key = `${contractId}-${answerId ?? ''}`
       const tracking = trackingByKey[key]
 
-      const oldLoan = currentAnswerLoan
+      // Interest tracking is based on marginLoan
+      const oldLoan = currentAnswerMarginLoan
       const lastUpdate = tracking?.last_loan_update_time ?? now
       const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
       const newIntegral =
@@ -260,8 +263,13 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       }, [auth.uid])
 
       broadcastUserUpdates(userUpdates)
+
       log(
-        `User ${user.id} took market-specific loan of ${amount} on contract ${contractId}${answerId ? ` answer ${answerId}` : ''}`
+        `User ${
+          user.id
+        } took market-specific loan of ${amount} on contract ${contractId}${
+          answerId ? ` answer ${answerId}` : ''
+        }`
       )
 
       return {
@@ -295,7 +303,11 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       0
     )
 
-    const distributions: { contractId: string; answerId: string | null; loanAmount: number }[] = []
+    const distributions: {
+      contractId: string
+      answerId: string | null
+      loanAmount: number
+    }[] = []
     const updatedMetrics: ContractMetric[] = []
     const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
 
@@ -311,14 +323,16 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
           loanAmount: loanForAnswer,
         })
 
+        // Add to marginLoan (interest-bearing)
         updatedMetrics.push({
           ...metric,
-          loan: (metric.loan ?? 0) + loanForAnswer,
+          marginLoan: (metric.marginLoan ?? 0) + loanForAnswer,
         })
 
         const key = `${contractId}-${metric.answerId ?? ''}`
         const tracking = trackingByKey[key]
-        const oldLoan = metric.loan ?? 0
+        // Interest tracking is based on marginLoan
+        const oldLoan = metric.marginLoan ?? 0
         const lastUpdate = tracking?.last_loan_update_time ?? now
         const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
         const newIntegral =
@@ -353,6 +367,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     }, [auth.uid])
 
     broadcastUserUpdates(userUpdates)
+
     log(
       `User ${user.id} took market-specific loan of ${amount} on multi-choice contract ${contractId}, distributed across ${distributions.length} answers`
     )
@@ -385,16 +400,16 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
-  // Check daily loan limit (5% of net worth per day)
+  // Check daily loan limit (10% of net worth per day, resets at midnight PT)
   const dailyLimit = calculateDailyLoanLimit(netWorth)
-  const oneDayAgo = Date.now() - MS_PER_DAY
+  const midnightPT = getMidnightPacific()
   const todayLoansResult = await pg.oneOrNone<{ total: number }>(
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category = 'LOAN'
+     and category IN ('LOAN', 'DAILY_FREE_LOAN')
      and created_time >= $2`,
-    [user.id, new Date(oneDayAgo).toISOString()]
+    [user.id, midnightPT.toISOString()]
   )
   const todayLoans = todayLoansResult?.total ?? 0
 
@@ -404,7 +419,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       400,
       `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
         2
-      )} per day. You've already borrowed ${todayLoans.toFixed(
+      )} per day (resets at midnight PT). You've already borrowed ${todayLoans.toFixed(
         2
       )} today. Available today: ${availableToday.toFixed(2)}`
     )
@@ -445,7 +460,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
-  // Build updated metrics
+  // Build updated metrics (add to marginLoan for interest-bearing loans)
   const metricsById = keyBy(
     metrics,
     (m) => `${m.contractId}-${m.answerId ?? ''}`
@@ -458,7 +473,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
 
       return {
         ...metric,
-        loan: (metric.loan ?? 0) + dist.loanAmount,
+        marginLoan: (metric.marginLoan ?? 0) + dist.loanAmount,
       }
     })
   )
@@ -475,13 +490,14 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     (t) => `${t.contract_id}-${t.answer_id ?? ''}`
   )
 
-  // Build loan tracking updates
+  // Build loan tracking updates (only tracks marginLoan for interest)
   const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
   for (const dist of distributions) {
     const key = `${dist.contractId}-${dist.answerId ?? ''}`
     const tracking = trackingByKey[key]
     const metric = metricsById[key]
-    const oldLoan = metric?.loan ?? 0
+    // Interest tracking is based on marginLoan
+    const oldLoan = metric?.marginLoan ?? 0
     const lastUpdate = tracking?.last_loan_update_time ?? now
     const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
     const newIntegral =

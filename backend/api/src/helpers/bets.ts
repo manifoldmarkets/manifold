@@ -92,7 +92,7 @@ export const fetchContractBetDataAndValidate = async (
     select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
-    select data from user_contract_metrics ucm where 
+    select data, margin_loan, loan from user_contract_metrics ucm where 
       contract_id = $2 and user_id = $1
       and (
         -- Get metrics for selected answers
@@ -107,7 +107,7 @@ export const fetchContractBetDataAndValidate = async (
       from contract_bets b
       where ${whereLimitOrderBets}
     )
-    select data from user_contract_metrics ucm
+    select data, margin_loan, loan from user_contract_metrics ucm
     where contract_id = $2
       and user_id in (select user_id from matching_user_answer_pairs)
       and (answer_id in (select answer_id from matching_user_answer_pairs)
@@ -123,11 +123,25 @@ export const fetchContractBetDataAndValidate = async (
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
   })[]
-  const myContractMetrics = results[4].map((r) => r.data as ContractMetric)
+  const myContractMetrics = results[4].map(
+    (r) =>
+      ({
+        ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+      } as ContractMetric)
+  )
   // We get slightly more contract metrics than we need bc the contract_metrics index works poorly when selecting
   // (user_id, answer_id) in (select user_id, answer_id from matching_user_answer_pairs)
   const limitOrderersContractMetrics = results[5]
-    .map((r) => r.data as ContractMetric)
+    .map(
+      (r) =>
+        ({
+          ...r.data,
+          loan: r.loan ?? r.data.loan ?? 0,
+          marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+        } as ContractMetric)
+    )
     .filter((m) =>
       unfilledBets.some(
         (b) =>
@@ -256,7 +270,7 @@ export const getUserBalancesAndMetrics = async (
   const results = await pgTrans.multi(
     `
       SELECT balance, id FROM users WHERE id = ANY($1);
-      select data from user_contract_metrics where user_id = any($1) and contract_id = $2 and
+      select data, margin_loan, loan from user_contract_metrics where user_id = any($1) and contract_id = $2 and
            ($3 is null or answer_id = $3 or answer_id is null);
     `,
     [userIds, contractId, sumsToOne ? null : answerId ?? null]
@@ -264,7 +278,11 @@ export const getUserBalancesAndMetrics = async (
   const balanceByUserId: Record<string, number> = Object.fromEntries(
     results[0].map((user) => [user.id, user.balance])
   )
-  const contractMetrics = results[1].map((r) => r.data) as ContractMetric[]
+  const contractMetrics = results[1].map((r) => ({
+    ...r.data,
+    loan: r.loan ?? r.data.loan ?? 0,
+    marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+  })) as ContractMetric[]
   log(`Fetch user balances and metrics took ${Date.now() - startTime}ms`)
   return { balanceByUserId, contractMetrics }
 }

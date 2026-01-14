@@ -43,18 +43,18 @@ export function LoanButton(props: {
       if (!eligible) {
         return `Current loan: ${formatMoney(currentLoan)}. ${
           eligibilityReason ?? 'Not eligible for more loans.'
-        }`
+        } (Click to repay)`
       }
       return `Current loan: ${formatMoney(currentLoan)}. ${
         hasAvailable
-          ? `${formatMoney(available)} more available.`
+          ? `${formatMoney(available)} margin loan available.`
           : 'Max loan reached.'
       }`
     }
     if (!eligible) {
       return eligibilityReason ?? 'Market not eligible for loans'
     }
-    return `Borrow up to ${formatMoney(available)} on this market`
+    return `Borrow margin loan up to ${formatMoney(available)} on this market`
   }
 
   return (

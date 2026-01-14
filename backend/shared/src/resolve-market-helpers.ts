@@ -486,8 +486,9 @@ const getLoanPayoutsWithInterest = (
   answerId?: string
 ): Payout[] => {
   const now = Date.now()
+  // Include metrics with either free loans or margin loans
   const metricsWithLoans = contractMetrics
-    .filter((metric) => metric.loan)
+    .filter((metric) => (metric.loan ?? 0) > 0 || (metric.marginLoan ?? 0) > 0)
     .filter((metric) => (answerId ? metric.answerId === answerId : true))
 
   const trackingByKey = keyBy(
@@ -499,25 +500,32 @@ const getLoanPayoutsWithInterest = (
 
   const loansByUser = mapValues(metricsByUser, (metrics) =>
     sumBy(metrics, (metric) => {
-      const loan = metric.loan ?? 0
-      if (loan === 0) return 0
+      const freeLoan = metric.loan ?? 0
+      const marginLoan = metric.marginLoan ?? 0
+
+      if (freeLoan === 0 && marginLoan === 0) return 0
 
       const key = `${metric.userId}-${metric.answerId ?? ''}`
       const tracking = trackingByKey[key]
 
-      // If no tracking data, just return the loan (no interest for legacy loans)
-      if (!tracking) return -loan
+      // Free loan (loan field) - never has interest
+      const freeLoanDeduction = -freeLoan
 
-      // Finalize the integral up to now
-      const daysSinceLastUpdate =
-        (now - tracking.last_loan_update_time) / MS_PER_DAY
-      const finalIntegral =
-        tracking.loan_day_integral + loan * daysSinceLastUpdate
+      // Margin loan (marginLoan field) - has interest
+      let marginLoanDeduction = -marginLoan
+      if (marginLoan > 0 && tracking) {
+        // Finalize the integral up to now
+        const daysSinceLastUpdate =
+          (now - tracking.last_loan_update_time) / MS_PER_DAY
+        const finalIntegral =
+          tracking.loan_day_integral + marginLoan * daysSinceLastUpdate
 
-      // Calculate interest
-      const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+        // Calculate interest only on margin loan
+        const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+        marginLoanDeduction = -(marginLoan + interest)
+      }
 
-      return -(loan + interest)
+      return freeLoanDeduction + marginLoanDeduction
     })
   )
 

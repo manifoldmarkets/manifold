@@ -32,7 +32,10 @@ const calculateSellResult = (
   contractMetric: ContractMetric
 ) => {
   const { mechanism } = contract
-  const { totalShares: sharesByOutcome, loan: loanAmount } = contractMetric
+  const { totalShares: sharesByOutcome } = contractMetric
+  // Include both free loans and margin loans in total loan amount
+  const loanAmount =
+    (contractMetric.loan ?? 0) + (contractMetric.marginLoan ?? 0)
 
   const maxShares = sharesByOutcome[outcome]
   const sharesToSell = shares ?? maxShares

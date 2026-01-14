@@ -42,7 +42,6 @@ import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
@@ -330,18 +329,12 @@ function UserProfile(props: {
           )}
 
           <Row className={'items-center gap-1 sm:gap-2'}>
-            {isCurrentUser ? (
-              <AddFundsButton
-                userId={user.id}
-                className="mr-2 w-full whitespace-nowrap px-8 lg:hidden"
-              />
-            ) : (
+            {!isCurrentUser && (
               <>
                 <SendMessageButton toUser={user} currentUser={currentUser} />
                 <FollowButton userId={user.id} />
               </>
             )}
-
             {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>

@@ -249,7 +249,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
   ]
   const metricsSql = renderSql(
     select(
-      `ucm.data, coalesce((c.data->'isRanked')::boolean, true) as is_ranked`
+      `ucm.data, ucm.loan, ucm.margin_loan, coalesce((c.data->'isRanked')::boolean, true) as is_ranked`
     ),
     from('user_contract_metrics ucm'),
     join('contracts as c on ucm.contract_id = c.id'),
@@ -280,7 +280,13 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     [userIds]
   )
   const metrics = results[0].map(
-    (r) => ({ ...r.data, isRanked: r.is_ranked } as RankedContractMetric)
+    (r) =>
+      ({
+        ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+        isRanked: r.is_ranked,
+      } as RankedContractMetric)
   )
   const contracts = results[1].map<MarketContract>(convertContract)
   const answers = results[2].map(convertAnswer)
@@ -358,23 +364,27 @@ export const getUnresolvedStatsForToken = (
           dailyProfit: cm.from?.day?.profit ?? 0,
           loan: 0,
         }
+      // Include both free loans and margin loans
+      const totalLoan = (cm.loan ?? 0) + (cm.marginLoan ?? 0)
       return {
         value:
           calculateProfitMetricsAtProbOrCancel(answer.prob, cm).payout -
-          (cm.loan ?? 0),
+          totalLoan,
         invested: cm.invested ?? 0,
         dailyProfit: cm.from?.day?.profit ?? 0,
-        loan: cm.loan ?? 0,
+        loan: totalLoan,
       }
     }
 
+    // Include both free loans and margin loans
+    const totalLoan = (cm.loan ?? 0) + (cm.marginLoan ?? 0)
     return {
       value:
         calculateProfitMetricsAtProbOrCancel(contract.prob, cm).payout -
-        (cm.loan ?? 0),
+        totalLoan,
       invested: cm.invested ?? 0,
       dailyProfit: cm.from?.day?.profit ?? 0,
-      loan: cm.loan ?? 0,
+      loan: totalLoan,
     }
   })
 
@@ -401,7 +411,8 @@ export const calculateNewPortfolioMetricsWithContractMetrics = (
     contractMetrics,
     contractsById
   ).value
-  const loanTotal = sumBy(contractMetrics, (cm) => cm.loan)
+  // Sum both free loans (loan) and margin loans (marginLoan)
+  const loanTotal = sumBy(contractMetrics, (cm) => (cm.loan ?? 0) + (cm.marginLoan ?? 0))
   return {
     investmentValue: manaPayouts,
     cashInvestmentValue: cashPayouts,

@@ -1085,7 +1085,7 @@ function BetsTable(props: {
                             {value === 'loan' && (
                               <div className="text-ink-900 font-semibold">
                                 {formatWithToken({
-                                  amount: metric.loan,
+                                  amount: (metric.loan ?? 0) + (metric.marginLoan ?? 0),
                                   token: contract.token,
                                 })}
                               </div>

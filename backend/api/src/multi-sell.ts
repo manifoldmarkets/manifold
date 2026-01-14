@@ -92,7 +92,8 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         allMyMetrics.filter((m) => !isSummary(m)),
         'answerId'
       ),
-      (m) => m.loan ?? 0
+      // Include both free loans and margin loans
+      (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
     )
 
     const nonRedemptionBetsByAnswerId = groupBy(

@@ -2065,6 +2065,11 @@ export const API = (_apiTypeCheck = {
       dailyLimit: number
       todayLoans: number
       availableToday: number
+      // Free/margin loan breakdown
+      currentFreeLoan?: number
+      currentMarginLoan?: number
+      freeLoanAvailable?: number
+      canClaimFreeLoan?: boolean
     },
     props: z.object({
       userId: z.string(),
@@ -2103,6 +2108,51 @@ export const API = (_apiTypeCheck = {
       contractId: z.string(),
       answerId: z.string().optional(),
     }),
+  },
+  'get-free-loan-available': {
+    method: 'GET',
+    visibility: 'undocumented',
+    cache: DEFAULT_CACHE_STRATEGY,
+    authed: true,
+    returns: {} as {
+      available: number
+      canClaim: boolean
+      lastClaimTime: number | null
+      // Breakdown by position
+      positions: Array<{
+        contractId: string
+        answerId: string | null
+        payout: number
+        invested: number
+        freeLoanContribution: number
+      }>
+      // Current totals
+      currentFreeLoan: number
+      currentMarginLoan: number
+      totalLoan: number
+      // Limits
+      maxLoan: number
+      dailyLimit: number
+      todayLoans: number
+      // Today's claimed free loan
+      todaysFreeLoan: number
+    },
+    props: z.object({}),
+  },
+  'claim-free-loan': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      success: boolean
+      amount: number
+      distributed: Array<{
+        contractId: string
+        answerId: string | null
+        amount: number
+      }>
+    },
+    props: z.object({}),
   },
   'create-task': {
     method: 'POST',
@@ -3032,6 +3082,23 @@ export const API = (_apiTypeCheck = {
       string,
       { id: string; username: string; name: string }
     >,
+  },
+  'get-top-markets-yesterday': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=3600, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    returns: {} as {
+      topByTraders: {
+        contract: Contract
+        tradersYesterday: number
+      }[]
+      topByViews: {
+        contract: Contract
+        viewsYesterday: number
+      }[]
+    },
   },
 } as const)
 
