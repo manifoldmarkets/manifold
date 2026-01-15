@@ -757,6 +757,9 @@ export function AnswerComponent(props: {
         }
         end={
           <Row className={'items-center gap-1'}>
+            {shouldShowLimitOrderChart && isClient && !!hasLimitOrders && (
+              <MiniDepthChart limitOrders={unfilledBets} prob={prob} />
+            )}
             <BetButtons
               contract={contract}
               answer={answer}
@@ -772,16 +775,6 @@ export function AnswerComponent(props: {
               withinOverflowContainer
             />
           </Row>
-        }
-        renderBackgroundLayer={
-          shouldShowLimitOrderChart &&
-          isClient && (
-            <LimitOrderBarChart
-              limitOrders={unfilledBets}
-              prob={prob}
-              activeColor={color}
-            />
-          )
         }
       />
 
@@ -954,5 +947,184 @@ export function LimitOrderBarChart({
         )
       })}
     </div>
+  )
+}
+
+// Mini vertical depth chart for display next to Yes/No buttons
+export function MiniDepthChart({
+  limitOrders,
+  prob,
+  height = 32,
+  width = 48,
+}: {
+  limitOrders?: Array<LimitBet>
+  prob: number
+  height?: number
+  width?: number
+}) {
+  const { yesBets, noBets, maxAmount } = useMemo(() => {
+    if (!limitOrders || limitOrders.length === 0) {
+      return { yesBets: [], noBets: [], maxAmount: 0 }
+    }
+
+    const filtered = limitOrders.filter(
+      (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
+    )
+
+    // Sort YES bets by limitProb descending (highest price first)
+    const yes = filtered
+      .filter((bet) => bet.outcome === 'YES')
+      .sort((a, b) => b.limitProb - a.limitProb)
+
+    // Sort NO bets by limitProb ascending (lowest price first)
+    const no = filtered
+      .filter((bet) => bet.outcome === 'NO')
+      .sort((a, b) => a.limitProb - b.limitProb)
+
+    // Calculate cumulative amounts
+    const orderSize = (bet: LimitBet) => {
+      const price = bet.outcome === 'YES' ? bet.limitProb : 1 - bet.limitProb
+      return (bet.orderAmount - bet.amount) / price
+    }
+
+    let yesTotal = 0
+    const yesCumulative = yes.map((bet) => {
+      yesTotal += orderSize(bet)
+      return { prob: bet.limitProb, cumulative: yesTotal }
+    })
+
+    let noTotal = 0
+    const noCumulative = no.map((bet) => {
+      noTotal += orderSize(bet)
+      return { prob: bet.limitProb, cumulative: noTotal }
+    })
+
+    const max = Math.max(yesTotal || 0, noTotal || 0)
+
+    return { yesBets: yesCumulative, noBets: noCumulative, maxAmount: max }
+  }, [limitOrders])
+
+  if (yesBets.length === 0 && noBets.length === 0) {
+    return null
+  }
+
+  // Build SVG path for YES orders (green, left side going up)
+  // YES orders: buyers willing to buy at or below their limit price
+  // Rendered from current prob down to 0
+  const buildYesPath = () => {
+    if (yesBets.length === 0) return ''
+    const points: string[] = []
+    const xScale = (amount: number) =>
+      maxAmount > 0 ? (amount / maxAmount) * (width / 2) : 0
+    const yScale = (p: number) => (1 - p) * height
+
+    // Start at current prob with 0 depth
+    points.push(`M ${width / 2} ${yScale(prob)}`)
+
+    // Move to first YES order
+    if (yesBets.length > 0 && yesBets[0].prob <= prob) {
+      points.push(`L ${width / 2} ${yScale(yesBets[0].prob)}`)
+    }
+
+    // Step through YES orders (they want to buy at lower prices)
+    for (const order of yesBets) {
+      if (order.prob > prob) continue // Skip orders above current price
+      const x = width / 2 - xScale(order.cumulative)
+      points.push(`L ${x} ${yScale(order.prob)}`)
+    }
+
+    // Extend to bottom (prob = 0)
+    const lastYes = yesBets[yesBets.length - 1]
+    if (lastYes && lastYes.prob <= prob) {
+      const x = width / 2 - xScale(lastYes.cumulative)
+      points.push(`L ${x} ${yScale(0)}`)
+    } else {
+      points.push(`L ${width / 2} ${yScale(0)}`)
+    }
+
+    // Close path back to center
+    points.push(`L ${width / 2} ${yScale(0)}`)
+    points.push('Z')
+
+    return points.join(' ')
+  }
+
+  // Build SVG path for NO orders (red, right side going up)
+  // NO orders: sellers willing to sell at or above their limit price
+  // Rendered from current prob up to 1
+  const buildNoPath = () => {
+    if (noBets.length === 0) return ''
+    const points: string[] = []
+    const xScale = (amount: number) =>
+      maxAmount > 0 ? (amount / maxAmount) * (width / 2) : 0
+    const yScale = (p: number) => (1 - p) * height
+
+    // Start at current prob with 0 depth
+    points.push(`M ${width / 2} ${yScale(prob)}`)
+
+    // Move to first NO order
+    if (noBets.length > 0 && noBets[0].prob >= prob) {
+      points.push(`L ${width / 2} ${yScale(noBets[0].prob)}`)
+    }
+
+    // Step through NO orders (they want to sell at higher prices)
+    for (const order of noBets) {
+      if (order.prob < prob) continue // Skip orders below current price
+      const x = width / 2 + xScale(order.cumulative)
+      points.push(`L ${x} ${yScale(order.prob)}`)
+    }
+
+    // Extend to top (prob = 1)
+    const lastNo = noBets[noBets.length - 1]
+    if (lastNo && lastNo.prob >= prob) {
+      const x = width / 2 + xScale(lastNo.cumulative)
+      points.push(`L ${x} ${yScale(1)}`)
+    } else {
+      points.push(`L ${width / 2} ${yScale(1)}`)
+    }
+
+    // Close path back to center
+    points.push(`L ${width / 2} ${yScale(1)}`)
+    points.push('Z')
+
+    return points.join(' ')
+  }
+
+  const yesPath = buildYesPath()
+  const noPath = buildNoPath()
+
+  // Don't render anything if there are no paths to show
+  if (!yesPath && !noPath) {
+    return null
+  }
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      className="flex-shrink-0"
+      viewBox={`0 0 ${width} ${height}`}
+    >
+      {/* YES orders - green area on left */}
+      {yesPath && (
+        <path
+          d={yesPath}
+          fill="rgb(16 185 129)"
+          fillOpacity={0.6}
+          stroke="rgb(16 185 129)"
+          strokeWidth={1}
+        />
+      )}
+      {/* NO orders - red area on right */}
+      {noPath && (
+        <path
+          d={noPath}
+          fill="rgb(239 68 68)"
+          fillOpacity={0.6}
+          stroke="rgb(239 68 68)"
+          strokeWidth={1}
+        />
+      )}
+    </svg>
   )
 }
