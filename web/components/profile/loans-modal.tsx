@@ -351,7 +351,6 @@ export function LoansModal(props: {
           </Col>
 
           <div className="bg-ink-200 h-px" />
-
         </Col>
 
         {/* Loan Request Section */}
