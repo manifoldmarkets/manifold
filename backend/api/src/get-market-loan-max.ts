@@ -73,7 +73,9 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     ? contractMetrics.filter((m) => m.answerId === answerId)
     : contractMetrics
 
-  const currentLoan = sumBy(relevantMetrics, (m) => m.loan ?? 0)
+  const currentFreeLoan = sumBy(relevantMetrics, (m) => m.loan ?? 0)
+  const currentMarginLoan = sumBy(relevantMetrics, (m) => m.marginLoan ?? 0)
+  const currentLoan = currentFreeLoan + currentMarginLoan
   const totalPositionValue = sumBy(relevantMetrics, (m) => m.payout ?? 0)
 
   // Calculate per-market limits
@@ -110,16 +112,24 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
 
   // Build per-answer loan breakdown for multi-choice markets
   const answerLoans = contractMetrics
-    .filter((m) => m.answerId !== null && ((m.loan ?? 0) > 0 || (m.payout ?? 0) > 0))
+    .filter(
+      (m) =>
+        m.answerId !== null &&
+        ((m.loan ?? 0) > 0 || (m.marginLoan ?? 0) > 0 || (m.payout ?? 0) > 0)
+    )
     .map((m) => ({
       answerId: m.answerId!,
-      loan: m.loan ?? 0,
+      loan: (m.loan ?? 0) + (m.marginLoan ?? 0),
+      freeLoan: m.loan ?? 0,
+      marginLoan: m.marginLoan ?? 0,
       positionValue: m.payout ?? 0,
     }))
 
   return {
     maxLoan,
     currentLoan,
+    currentFreeLoan,
+    currentMarginLoan,
     available,
     netWorthLimit,
     positionLimit,

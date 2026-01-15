@@ -42,6 +42,7 @@ type AnyTxnType =
   | BountyCanceled
   | ManaPay
   | Loan
+  | DailyFreeLoan
   | LoanPayment
   | PushNotificationBonus
   | LikePurchase
@@ -478,6 +479,13 @@ type ManaPay = {
 
 type Loan = {
   category: 'LOAN'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
+type DailyFreeLoan = {
+  category: 'DAILY_FREE_LOAN'
   fromType: 'BANK'
   toType: 'USER'
   token: 'M$'

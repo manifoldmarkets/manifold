@@ -12,16 +12,13 @@ import {
   CPMMMultiContract,
   MarketContract,
 } from 'common/contract'
-import { Bet } from 'common/bet'
 import { ContractMetric } from 'common/contract-metric'
-import { noFees } from 'common/fees'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
 import {
   calculatePoolInterestCpmm1,
   calculatePoolInterestMulti,
 } from './calculate-pool-interest'
-import { calculateBulkInterestShares } from './calculate-interest-shares'
-import { bulkInsertBets } from './supabase/bets'
+import { calculateInterestPayouts } from './calculate-interest-shares'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
@@ -133,98 +130,9 @@ export const resolveMarketHelper = async (
       answerId
     )
 
-    // Bulk claim interest shares for all users with positions
-    // This ensures users receive their accrued interest as actual shares before payout calculation
-    const interestSharesResults = await calculateBulkInterestShares(
-      tx,
-      contractId,
-      answerId,
-      resolutionTime,
-      unresolvedContract.token
-    )
-
-    if (interestSharesResults.length > 0) {
-      // Get current probability for interest claim bets
-      let prob: number
-      if (unresolvedContract.mechanism === 'cpmm-1') {
-        prob = unresolvedContract.prob
-      } else if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
-        const answer = unresolvedContract.answers?.find(
-          (a) => a.id === answerId
-        )
-        prob = answer?.prob ?? 0.5
-      } else {
-        prob = 0.5
-      }
-
-      // Create interest claim bets for all users
-      const interestClaimBets: Omit<Bet, 'id'>[] = []
-
-      for (const result of interestSharesResults) {
-        if (result.yesShares > 0) {
-          interestClaimBets.push(
-            removeUndefinedProps({
-              contractId,
-              userId: result.userId,
-              answerId,
-              createdTime: resolutionTime,
-              amount: 0,
-              shares: result.yesShares,
-              outcome: 'YES',
-              probBefore: prob,
-              probAfter: prob,
-              fees: noFees,
-              isRedemption: false,
-              isInterestClaim: true,
-            })
-          )
-        }
-
-        if (result.noShares > 0) {
-          interestClaimBets.push(
-            removeUndefinedProps({
-              contractId,
-              userId: result.userId,
-              answerId,
-              createdTime: resolutionTime,
-              amount: 0,
-              shares: result.noShares,
-              outcome: 'NO',
-              probBefore: prob,
-              probAfter: prob,
-              fees: noFees,
-              isRedemption: false,
-              isInterestClaim: true,
-            })
-          )
-        }
-
-        // Update contract metrics with claimed interest shares
-        const userMetric = contractMetrics.find(
-          (m) => m.userId === result.userId && m.answerId == answerId
-        )
-        if (userMetric) {
-          userMetric.totalShares['YES'] =
-            (userMetric.totalShares['YES'] ?? 0) + result.yesShares
-          userMetric.totalShares['NO'] =
-            (userMetric.totalShares['NO'] ?? 0) + result.noShares
-        }
-      }
-
-      // Insert all interest claim bets
-      if (interestClaimBets.length > 0) {
-        await bulkInsertBets(tx, interestClaimBets as Bet[], contractMetrics)
-        log('Bulk claimed interest shares for resolution', {
-          count: interestSharesResults.length,
-          totalYesShares: sumBy(interestSharesResults, 'yesShares'),
-          totalNoShares: sumBy(interestSharesResults, 'noShares'),
-        })
-      }
-    }
-
     const {
       resolutionProbability,
-      payouts,
+      payouts: basePayouts,
       payoutsWithoutLoans,
       traderPayouts,
     } = getPayoutInfo(
@@ -236,6 +144,30 @@ export const resolveMarketHelper = async (
       contractMetrics,
       liquidities,
       loanTracking
+    )
+
+    // Calculate interest payouts as mana for all users who ever held positions
+    // This includes users who sold out before resolution
+    const interestPayouts = await calculateInterestPayouts(
+      tx,
+      contractId,
+      answerId,
+      resolutionTime,
+      unresolvedContract.token,
+      outcome,
+      resolutionProbability
+    )
+
+    if (interestPayouts.length > 0) {
+      log('Calculated interest payouts for resolution', {
+        count: interestPayouts.length,
+        totalInterestMana: sumBy(interestPayouts, 'payout'),
+      })
+    }
+
+    // Combine base payouts with interest payouts
+    const payouts = [...basePayouts, ...interestPayouts].filter(
+      (p) => p.payout !== 0
     )
     // Keep MKT resolution prob for consistency's sake
     const probBeforeResolution =
@@ -554,8 +486,9 @@ const getLoanPayoutsWithInterest = (
   answerId?: string
 ): Payout[] => {
   const now = Date.now()
+  // Include metrics with either free loans or margin loans
   const metricsWithLoans = contractMetrics
-    .filter((metric) => metric.loan)
+    .filter((metric) => (metric.loan ?? 0) > 0 || (metric.marginLoan ?? 0) > 0)
     .filter((metric) => (answerId ? metric.answerId === answerId : true))
 
   const trackingByKey = keyBy(
@@ -567,25 +500,32 @@ const getLoanPayoutsWithInterest = (
 
   const loansByUser = mapValues(metricsByUser, (metrics) =>
     sumBy(metrics, (metric) => {
-      const loan = metric.loan ?? 0
-      if (loan === 0) return 0
+      const freeLoan = metric.loan ?? 0
+      const marginLoan = metric.marginLoan ?? 0
+
+      if (freeLoan === 0 && marginLoan === 0) return 0
 
       const key = `${metric.userId}-${metric.answerId ?? ''}`
       const tracking = trackingByKey[key]
 
-      // If no tracking data, just return the loan (no interest for legacy loans)
-      if (!tracking) return -loan
+      // Free loan (loan field) - never has interest
+      const freeLoanDeduction = -freeLoan
 
-      // Finalize the integral up to now
-      const daysSinceLastUpdate =
-        (now - tracking.last_loan_update_time) / MS_PER_DAY
-      const finalIntegral =
-        tracking.loan_day_integral + loan * daysSinceLastUpdate
+      // Margin loan (marginLoan field) - has interest
+      let marginLoanDeduction = -marginLoan
+      if (marginLoan > 0 && tracking) {
+        // Finalize the integral up to now
+        const daysSinceLastUpdate =
+          (now - tracking.last_loan_update_time) / MS_PER_DAY
+        const finalIntegral =
+          tracking.loan_day_integral + marginLoan * daysSinceLastUpdate
 
-      // Calculate interest
-      const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+        // Calculate interest only on margin loan
+        const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+        marginLoanDeduction = -(marginLoan + interest)
+      }
 
-      return -(loan + interest)
+      return freeLoanDeduction + marginLoanDeduction
     })
   )
 

@@ -42,24 +42,12 @@ export const ManaEarnedBreakdown = (props: {
   const { user, season, showDialog, setShowDialog, mana_earned_breakdown } =
     props
 
-  // const breakdown = {
-  //   PROFIT: mana_earned_breakdown.profit,
-  //   ...mana_earned_breakdown,
-  //   MARKET_BOOST_REDEEM:
-  //     (mana_earned_breakdown.MARKET_BOOST_REDEEM ?? 0) +
-  //     (mana_earned_breakdown.AD_REDEEM ?? 0),
-  // } as { [key: string]: number }
-
-  // Get the authoritative season boundaries from the database
   const { data: seasonInfo } = useAPIGetter('get-season-info', { season })
-  // Use proper start time from API, fall back to approximate if not loaded yet
   const { start: approxStart, approxEnd } = getApproximateSeasonDates(season)
   const start = seasonInfo?.startTime
     ? new Date(seasonInfo.startTime)
     : approxStart
 
-  // For end time: use API value if available (will be null for active seasons),
-  // otherwise fall back to approximate end for display
   const end = seasonInfo?.endTime ? new Date(seasonInfo.endTime) : approxEnd
   const loadingBets = useBetsOnce((params) => api('bets', params), {
     userId: user.id,
@@ -85,11 +73,7 @@ export const ManaEarnedBreakdown = (props: {
       const contract = contractsById[contractId]
       if (!contract) return undefined
 
-      // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
-      // Adjust bets to exclude portions that filled against user's own limit orders
       const nonSelfTradeBets = excludeSelfTrades(bets, user.id)
-
-      // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
       const relevantBets = filterBetsForLeagueScoring(
         nonSelfTradeBets,
         contract,
@@ -118,76 +102,51 @@ export const ManaEarnedBreakdown = (props: {
 
   return (
     <Modal
-      className={clsx(MODAL_CLASS, '')}
+      className={clsx(MODAL_CLASS)}
       open={showDialog}
       setOpen={(open) => setShowDialog(open)}
     >
-      <Col>
-        <Row className="mb-2 items-center gap-4">
+      <Col className="gap-4">
+        {/* Header */}
+        <Row className="items-center gap-3">
           <UserAvatarAndBadge user={user} />
         </Row>
-        <Row className="items-baseline justify-between">
-          <span className="text-primary-700 mb-2 text-lg">
-            Profit on trades placed this season:
-          </span>
-          {formatMoney(mana_earned_breakdown?.profit ?? 0)}
-        </Row>
-        <Row className="items-baseline justify-between">
-          <span className="text-primary-700 mb-2 text-lg">
-            Mana earned from Unique Trader Bonuses:
-          </span>
-          {formatMoney(mana_earned_breakdown?.UNIQUE_BETTOR_BONUS ?? 0)}
-        </Row>
-        <span className="text-ink-600 text-sm">
-          Only counts profit on trades placed on/after{' '}
+
+        {/* Summary Stats */}
+        <div className="bg-canvas-50 divide-ink-100 border-ink-200 divide-y rounded-lg border">
+          <Row className="items-center justify-between p-3">
+            <span className="text-ink-600 text-sm">Trading profit</span>
+            <span className="text-ink-900 font-medium">
+              {formatMoney(mana_earned_breakdown?.profit ?? 0)}
+            </span>
+          </Row>
+          <Row className="items-center justify-between p-3">
+            <span className="text-ink-600 text-sm">Unique trader bonuses</span>
+            <span className="text-ink-900 font-medium">
+              {formatMoney(mana_earned_breakdown?.UNIQUE_BETTOR_BONUS ?? 0)}
+            </span>
+          </Row>
+        </div>
+
+        <p className="text-ink-500 text-xs">
+          Only counts profit on trades placed on or after{' '}
           {start.toLocaleDateString()}.
-        </span>
-        {/* <Table className="text-base">
-           <thead className={clsx('text-ink-600 text-left font-semibold')}>
-            <tr>
-              <th className={clsx('px-2 pb-1')}>Category</th>
-              <th className={clsx('px-2 pb-1 text-right')}>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-             {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) =>
-              (category === 'CREATOR_FEE' ||
-                category === 'UNIQUE_BETTOR_BONUS') &&
-              !breakdown[category] ? null : (
-                <tr key={category}>
-                  <td className={clsx('pl-2')}>
-                    {MANA_EARNED_CATEGORY_LABELS[category]}
-                  </td>
-                  <td className={clsx('pr-2 text-right')}>
-                    {formatMoney(breakdown[category] ?? 0)}
-                  </td>
-                </tr>
-              )
-            )}
-            <tr className="font-semibold">
-              <td className={clsx('pl-2')}>Total</td>
-              <td className={clsx('pr-2 text-right')}>
-                {formatMoney(mana_earned)}
-              </td>
-            </tr>
-          </tbody>
-        </Table> */}
+        </p>
 
         {contracts && contracts.length > 0 && (
-          <Col>
-            <Row className="my-4 gap-2">
-              <ShortToggle on={showHighestFirst} setOn={setShowHighestFirst} />{' '}
-              Highest first
-            </Row>
-          </Col>
+          <Row className="items-center gap-2">
+            <ShortToggle on={showHighestFirst} setOn={setShowHighestFirst} />
+            <span className="text-ink-600 text-sm">Highest first</span>
+          </Row>
         )}
 
         {contracts === undefined && (
-          <div className="h-[500px]">
-            <LoadingIndicator className="mt-6" />
+          <div className="py-12">
+            <LoadingIndicator />
           </div>
         )}
-        <Col className="gap-6">
+
+        <Col className="gap-4">
           {contracts &&
             contractsSortedByProfit &&
             metricsByContract &&
@@ -196,11 +155,7 @@ export const ManaEarnedBreakdown = (props: {
               const metrics = metricsByContract[contract.id]
               if (!bets || !metrics) return null
 
-              // Filter bets: if it's user's own market, only show bets placed 1+ hour after creation
-              // Adjust bets to exclude portions that filled against user's own limit orders
               const nonSelfTradeBets = excludeSelfTrades(bets, user.id)
-
-              // Filter bets: if it's user's own market, only show bets placed 1+ hour after creation
               const relevantBets = filterBetsForLeagueScoring(
                 nonSelfTradeBets,
                 contract,
@@ -236,56 +191,49 @@ const ContractBetsEntry = (props: {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <Col>
-      <Row className="gap-2">
+    <Col className="border-ink-100 border-t pt-4 first:border-t-0 first:pt-0">
+      <Row className="gap-3">
         <Link
           href={contractPath(contract)}
-          className="text-primary-700 hover:decoration-primary-400 flex-1 font-medium hover:underline hover:decoration-2"
+          className="text-ink-900 flex-1 text-sm font-medium hover:underline"
           onClick={(e) => e.stopPropagation()}
         >
           {contract.question}
         </Link>
 
-        <Col>
-          <div className="whitespace-nowrap text-right text-lg">
+        <Col className="shrink-0 items-end">
+          <span className="text-ink-900 font-medium tabular-nums">
             {formatMoney(profit)}
-          </div>
-          <ProfitBadge className="text-right" profitPercent={profitPercent} />
+          </span>
+          <ProfitBadge className="text-xs" profitPercent={profitPercent} />
         </Col>
       </Row>
 
       {showExpander && (
-        <Row
-          className="cursor-pointer items-center gap-2 self-start"
-          tabIndex={0}
+        <button
+          className="text-ink-500 hover:text-ink-700 mt-2 flex items-center gap-1 self-start text-sm"
           onClick={() => setExpanded(!expanded)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') setExpanded(!expanded)
-          }}
         >
           {expanded ? (
-            <ChevronUpIcon className="h-5 w-5" />
+            <ChevronUpIcon className="h-4 w-4" />
           ) : (
-            <ChevronDownIcon className="h-5 w-5" />
+            <ChevronDownIcon className="h-4 w-4" />
           )}
           {capitalize(TRADE_TERM)}s
-        </Row>
+        </button>
       )}
 
       {(!showExpander || expanded) && (
-        <ContractBetsTable
-          contract={contract}
-          bets={bets}
-          isYourBets={false}
-          contractMetric={metrics}
-          hideRedemptionAndLoanMessages
-        />
+        <div className="mt-2">
+          <ContractBetsTable
+            contract={contract}
+            bets={bets}
+            isYourBets={false}
+            contractMetric={metrics}
+            hideRedemptionAndLoanMessages
+          />
+        </div>
       )}
     </Col>
   )
 }
-
-// const MANA_EARNED_CATEGORY_LABELS = {
-//   PROFIT: 'Profit',
-//   UNIQUE_BETTOR_BONUS: 'Trader bonuses',
-// } as { [key: string]: string }

@@ -72,7 +72,8 @@ export const redeemShares = async (
             myMetrics.filter((m) => !isSummary(m)),
             'answerId'
           ),
-          (metrics) => sumBy(metrics, (m) => m.loan ?? 0)
+          // Include both free loans and margin loans
+          (metrics) => sumBy(metrics, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
         )
 
         const saleBets = getSellAllRedemptionPreliminaryBets(

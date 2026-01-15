@@ -5,21 +5,23 @@ import {
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { Answer } from 'common/answer'
-import { Bet, LimitBet } from 'common/bet'
+import { LimitBet } from 'common/bet'
+import { MS_PER_DAY } from 'common/loans'
 import { MarketContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { noFees } from 'common/fees'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { floatingLesserEqual } from 'common/util/math'
-import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
-import { isEqual } from 'lodash'
+import { isEqual, keyBy } from 'lodash'
 import { trackPublicAuditBetEvent } from 'shared/audit-events'
-import { calculateInterestShares } from 'shared/calculate-interest-shares'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { createSupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
-import { insertBet } from 'shared/supabase/bets'
+import {
+  getLoanTrackingRows,
+  upsertLoanTrackingQuery,
+  LoanTrackingRow,
+} from 'shared/helpers/user-contract-loans'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -36,7 +38,10 @@ const calculateSellResult = (
   contractMetric: ContractMetric
 ) => {
   const { mechanism } = contract
-  const { totalShares: sharesByOutcome, loan: loanAmount } = contractMetric
+  const { totalShares: sharesByOutcome } = contractMetric
+  // Include both free loans and margin loans in total loan amount
+  const loanAmount =
+    (contractMetric.loan ?? 0) + (contractMetric.marginLoan ?? 0)
 
   const maxShares = sharesByOutcome[outcome]
   const sharesToSell = shares ?? maxShares
@@ -187,46 +192,12 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       }
     }
 
-    // Find user's contract metric and calculate interest
     const userMetric = contractMetrics.find(
       (m) => m.answerId == answerId && m.userId === uid
     )!
 
-    // Calculate claimable interest shares
-    const interestResult = await calculateInterestShares(
-      pgTrans,
-      contractId,
-      uid,
-      answerId,
-      Date.now(),
-      contract.token
-    )
-
-    // Get effective shares (base + interest)
-    const baseShares = userMetric.totalShares[outcome] ?? 0
-    const interestShares =
-      outcome === 'YES' ? interestResult.yesShares : interestResult.noShares
-    const effectiveMaxShares = baseShares + interestShares
-
-    // If selling more than base shares, we need to auto-claim interest first
-    const sharesToSell = shares ?? effectiveMaxShares
-    const needsInterestClaim = sharesToSell > baseShares && interestShares > 0
-
-    if (needsInterestClaim) {
-      // Claim the necessary interest shares
-      await autoClaimInterestForSell(
-        pgTrans,
-        contractId,
-        uid,
-        answerId,
-        interestResult,
-        contractMetrics,
-        contract
-      )
-
-      // Update the contract metric to reflect the claimed interest
-      userMetric.totalShares[outcome] = effectiveMaxShares
-    }
+    // Capture margin loan before selling for loan tracking update
+    const marginLoanBefore = userMetric.marginLoan ?? 0
 
     const newBetResult = calculateSellResult(
       contract,
@@ -264,6 +235,61 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       deterministic
     )
 
+    // Update loan tracking if margin loan was repaid
+    if (marginLoanBefore > 0) {
+      const now = Date.now()
+      const loanTracking = await getLoanTrackingRows(pgTrans, uid, [contractId])
+      const trackingKey = `${contractId}-${answerId ?? ''}`
+      const trackingByKey = keyBy(
+        loanTracking,
+        (t) => `${t.contract_id}-${t.answer_id ?? ''}`
+      )
+      const tracking = trackingByKey[trackingKey]
+
+      // Calculate loan repayment from the bet
+      const loanRepayment = -(newBetResult.newBet.loanAmount ?? 0)
+      if (loanRepayment > 0) {
+        // Calculate how much of the repayment went to margin loan (proportional split)
+        const totalLoanBefore =
+          (userMetric.loan ?? 0) + (userMetric.marginLoan ?? 0)
+        const marginLoanRatio =
+          totalLoanBefore > 0 ? marginLoanBefore / totalLoanBefore : 0
+        const marginLoanRepaid = loanRepayment * marginLoanRatio
+
+        if (marginLoanRepaid > 0) {
+          // Finalize the integral up to now
+          const lastUpdate = tracking?.last_loan_update_time ?? now
+          const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+          const finalIntegral =
+            (tracking?.loan_day_integral ?? 0) +
+            marginLoanBefore * daysSinceLastUpdate
+
+          // Reduce integral proportionally based on repayment
+          const repaymentRatio = Math.min(
+            1,
+            marginLoanRepaid / marginLoanBefore
+          )
+          const newIntegral = finalIntegral * (1 - repaymentRatio)
+
+          const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'>[] = [
+            {
+              user_id: uid,
+              contract_id: contractId,
+              answer_id: answerId ?? null,
+              loan_day_integral: Math.max(0, newIntegral),
+              last_loan_update_time: now,
+            },
+          ]
+          await pgTrans.none(upsertLoanTrackingQuery(loanTrackingUpdate))
+          log(
+            `Updated loan tracking for ${uid} on ${contractId}: integral ${
+              tracking?.loan_day_integral ?? 0
+            } -> ${newIntegral}`
+          )
+        }
+      }
+    }
+
     return betResult
   })
 
@@ -284,71 +310,4 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     await onCreateBets(result)
   }
   return { result: { ...newBet, betId }, continue: continuation }
-}
-
-/**
- * Auto-claim interest shares when user is selling more than their base shares.
- * This creates interest claim bets to convert accrued interest into actual shares.
- */
-async function autoClaimInterestForSell(
-  pgTrans: SupabaseTransaction,
-  contractId: string,
-  userId: string,
-  answerId: string | undefined,
-  interestResult: { yesShares: number; noShares: number },
-  contractMetrics: ContractMetric[],
-  contract: MarketContract
-) {
-  // Get current probability for the bet record
-  let prob: number
-  if (contract.mechanism === 'cpmm-1') {
-    prob = contract.prob
-  } else if (contract.mechanism === 'cpmm-multi-1' && answerId) {
-    const answer = contract.answers?.find((a) => a.id === answerId)
-    prob = answer?.prob ?? 0.5
-  } else {
-    prob = 0.5
-  }
-
-  // Claim YES interest shares if any
-  if (interestResult.yesShares > 0) {
-    const yesBet: Omit<Bet, 'id'> = removeUndefinedProps({
-      contractId,
-      userId,
-      answerId,
-      createdTime: Date.now(),
-      amount: 0,
-      shares: interestResult.yesShares,
-      outcome: 'YES',
-      probBefore: prob,
-      probAfter: prob,
-      fees: noFees,
-      isRedemption: false,
-      isInterestClaim: true,
-    })
-
-    await insertBet(yesBet, pgTrans, contractMetrics)
-    log(`Auto-claimed ${interestResult.yesShares} YES interest shares for sell`)
-  }
-
-  // Claim NO interest shares if any
-  if (interestResult.noShares > 0) {
-    const noBet: Omit<Bet, 'id'> = removeUndefinedProps({
-      contractId,
-      userId,
-      answerId,
-      createdTime: Date.now(),
-      amount: 0,
-      shares: interestResult.noShares,
-      outcome: 'NO',
-      probBefore: prob,
-      probAfter: prob,
-      fees: noFees,
-      isRedemption: false,
-      isInterestClaim: true,
-    })
-
-    await insertBet(noBet, pgTrans, contractMetrics)
-    log(`Auto-claimed ${interestResult.noShares} NO interest shares for sell`)
-  }
 }

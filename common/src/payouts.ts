@@ -33,11 +33,13 @@ export const getLoanPayouts = (
   answerId?: string
 ): Payout[] => {
   const metricsWithLoans = contractMetrics
-    .filter((metric) => metric.loan)
+    // Include both free loans and margin loans
+    .filter((metric) => (metric.loan ?? 0) > 0 || (metric.marginLoan ?? 0) > 0)
     .filter((metric) => (answerId ? metric.answerId === answerId : true))
   const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
   const loansByUser = mapValues(metricsByUser, (metrics) =>
-    sumBy(metrics, (metric) => -(metric.loan ?? 0))
+    // Sum both free loans and margin loans as negative (to deduct from payouts)
+    sumBy(metrics, (metric) => -((metric.loan ?? 0) + (metric.marginLoan ?? 0)))
   )
   return Object.entries(loansByUser).map(([userId, payout]) => ({
     userId,

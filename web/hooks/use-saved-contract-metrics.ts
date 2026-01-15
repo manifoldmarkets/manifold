@@ -50,12 +50,16 @@ export const useAllSavedContractMetrics = (
 
     let q = db
       .from('user_contract_metrics')
-      .select('data')
+      .select('data, margin_loan, loan')
       .eq('contract_id', contract.id)
       .eq('user_id', user.id)
     if (answerId) q = q.eq('answer_id', answerId)
     const { data } = await q
-    const metrics = data?.map((m) => m.data) as ContractMetric[]
+    const metrics = (data as any[] | null)?.map((m) => ({
+      ...(m.data as ContractMetric),
+      loan: m.loan ?? (m.data as any).loan ?? 0,
+      marginLoan: m.margin_loan ?? (m.data as any).marginLoan ?? 0,
+    })) as ContractMetric[]
 
     if (!metrics.length) {
       setSavedMetrics([])

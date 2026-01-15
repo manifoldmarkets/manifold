@@ -67,6 +67,7 @@ type BetSort =
   | 'volume24h'
   | 'liquidity'
   | 'priceDiff'
+  | 'loan'
 export type BetFilter =
   | 'open'
   | 'sold'
@@ -250,6 +251,7 @@ export function UserBetsTable(props: { user: User }) {
     label: string
     field: BetSort
     direction: 'asc' | 'desc'
+    hiddenUntilSorted?: boolean
   }[] = [
     { label: 'Newest', field: 'newest', direction: 'desc' },
     { label: 'Oldest', field: 'newest', direction: 'asc' },
@@ -264,8 +266,28 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
     { label: 'Lowest 1w Change', field: 'week', direction: 'asc' },
     { label: 'Closing Soon', field: 'closeTime', direction: 'asc' },
-    { label: '↓ ∆ Last Trade', field: 'priceDiff', direction: 'desc' },
-    { label: '↑ ∆ Last Trade', field: 'priceDiff', direction: 'asc' },
+    {
+      label: 'Highest Loan',
+      field: 'loan',
+      direction: 'desc',
+    },
+    {
+      label: 'Lowest Loan',
+      field: 'loan',
+      direction: 'asc',
+    },
+    {
+      label: '↓ ∆ Last Trade',
+      field: 'priceDiff',
+      direction: 'desc',
+      hiddenUntilSorted: true,
+    },
+    {
+      label: '↑ ∆ Last Trade',
+      field: 'priceDiff',
+      direction: 'asc',
+      hiddenUntilSorted: true,
+    },
   ]
 
   // Restore sort state here, replacing sortDropdownOption
@@ -392,25 +414,31 @@ export function UserBetsTable(props: { user: User }) {
                       <ChevronDownIcon className="ml-2 h-4 w-4" />
                     </MenuButton>
                     <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 max-h-80 w-48 overflow-y-auto rounded-md border shadow-lg sm:max-h-none ">
-                      {sortOptions.map((option) => (
-                        <MenuItem key={`${option.field}-${option.direction}`}>
-                          {({ focus }) => (
-                            <button
-                              className={clsx(
-                                'w-full px-4 py-2 text-left text-sm',
-                                focus ? 'bg-primary-50' : '',
-                                sortOption.field === option.field &&
-                                  sortOption.direction === option.direction
-                                  ? 'bg-primary-100'
-                                  : ''
-                              )}
-                              onClick={() => onSelectSortOption(option)}
-                            >
-                              {option.label}
-                            </button>
-                          )}
-                        </MenuItem>
-                      ))}
+                      {sortOptions
+                        .filter(
+                          (option) =>
+                            !option.hiddenUntilSorted ||
+                            sortOption.field === option.field
+                        )
+                        .map((option) => (
+                          <MenuItem key={`${option.field}-${option.direction}`}>
+                            {({ focus }) => (
+                              <button
+                                className={clsx(
+                                  'w-full px-4 py-2 text-left text-sm',
+                                  focus ? 'bg-primary-50' : '',
+                                  sortOption.field === option.field &&
+                                    sortOption.direction === option.direction
+                                    ? 'bg-primary-100'
+                                    : ''
+                                )}
+                                onClick={() => onSelectSortOption(option)}
+                              >
+                                {option.label}
+                              </button>
+                            )}
+                          </MenuItem>
+                        ))}
                     </MenuItems>
                   </Menu>
                 </Col>
@@ -491,6 +519,11 @@ const availableColumns: { value: BetSort; label: string; tooltip?: string }[] =
     { value: 'week', label: '1w Profit' },
     { value: 'closeTime', label: 'Close Time' },
     { value: 'costBasis', label: 'Cost Basis' },
+    {
+      value: 'loan',
+      label: 'Loan',
+      tooltip: 'Outstanding loan amount on this position',
+    },
     { value: 'dayPriceChange', label: '1d Price' },
     { value: 'volume24h', label: '1d Volume' },
     { value: 'liquidity', label: 'Liquidity' },
@@ -560,6 +593,7 @@ function BetsTable(props: {
     dayPctChange: (c) =>
       -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     costBasis: (c) => -(metricsByContractId[c.id].invested ?? 0),
+    loan: (c) => -(metricsByContractId[c.id].loan ?? 0),
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
     liquidity: (c) => -c.totalLiquidity,
@@ -1044,6 +1078,16 @@ function BetsTable(props: {
                               <div className="text-ink-900 font-semibold">
                                 {formatWithToken({
                                   amount: metric.invested,
+                                  token: contract.token,
+                                })}
+                              </div>
+                            )}
+                            {value === 'loan' && (
+                              <div className="text-ink-900 font-semibold">
+                                {formatWithToken({
+                                  amount:
+                                    (metric.loan ?? 0) +
+                                    (metric.marginLoan ?? 0),
                                   token: contract.token,
                                 })}
                               </div>

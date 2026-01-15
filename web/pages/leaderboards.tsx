@@ -1,5 +1,8 @@
 import { RefreshIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import {
   Leaderboard,
   LoadingLeaderboard,
@@ -9,7 +12,6 @@ import {
 import { Page } from 'web/components/layout/page'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
@@ -18,19 +20,33 @@ import { getUserReferralsInfo } from 'common/supabase/referrals'
 import { db } from 'web/lib/supabase/db'
 import { getCreatorRank, getProfitRank } from 'web/lib/supabase/users'
 import { type LiteGroup, TOPIC_KEY } from 'common/group'
-import { Row } from 'web/components/layout/row'
 import { TopicPillSelector } from 'web/components/topics/topic-selector'
-import DropdownMenu from 'web/components/widgets/dropdown-menu'
-import { DropdownPill } from 'web/components/search/filter-pills'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
-import { BackButton } from 'web/components/contract/back-button'
-import { SweepsToggle } from 'web/components/sweeps/sweeps-toggle'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Button } from 'web/components/buttons/button'
 import { buildArray } from 'common/util/array'
 import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
+import Link from 'next/link'
+
+const LEADERBOARD_TYPES = [
+  { name: 'Profit', value: 'profit' },
+  { name: 'Loss', value: 'loss' },
+  { name: 'Volume', value: 'volume' },
+  { name: 'Creators', value: 'creator' },
+  { name: 'Referrals', value: 'referral' },
+] as const
+
+type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
+
+type Entry = LeaderboardEntry & {
+  totalReferredProfit?: number
+  isBannedFromPosting?: boolean
+}
+type MyEntry = Omit<Entry, 'userId'>
+type MyScores = {
+  [key in LeaderboardType]?: { mana: MyEntry; cash: MyEntry }
+}
 
 export default function Leaderboards() {
   const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
@@ -62,7 +78,6 @@ export default function Leaderboards() {
         .from('users')
         .select('*', { head: true, count: 'exact' })
 
-      // TODO: my ranks are inaccurate for cash stats
       setMyScores({
         profit: {
           mana: { rank: profitRank, score: manaProfit },
@@ -103,8 +118,7 @@ export default function Leaderboards() {
     }
   }, [topic])
 
-  const { prefersPlay } = useSweepstakes()
-  const token = prefersPlay ? 'MANA' : 'CASH'
+  const token = 'MANA'
 
   const {
     data: entries,
@@ -120,7 +134,7 @@ export default function Leaderboards() {
 
   const shouldInsertMe =
     user && entries && !entries.find((e) => e.userId === user.id) && !topic
-  const data = myScores?.[type]?.[token === 'CASH' ? 'cash' : 'mana']
+  const data = myScores?.[type]?.mana
   const myEntry = shouldInsertMe && data ? { userId: user.id, ...data } : null
 
   const allColumns: { [key in LeaderboardType]: LeaderboardColumn<Entry>[] } = {
@@ -151,9 +165,9 @@ export default function Leaderboards() {
       { header: 'Referrals', renderCell: (c) => c.score },
       {
         header: (
-          <span>
+          <span className="flex items-center gap-1">
             Referred profits
-            <InfoTooltip text={'Total profit earned by referred users'} />
+            <InfoTooltip text="Total profit earned by referred users" />
           </span>
         ),
         renderCell: (c) => formatMoney(c.totalReferredProfit ?? 0, token),
@@ -164,108 +178,104 @@ export default function Leaderboards() {
   const columns = allColumns[type]
 
   return (
-    <Page trackPageView={'leaderboards'} className="!mt-0">
+    <Page trackPageView={'leaderboards'}>
       <SEO
         title="Leaderboards"
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
         url="/leaderboards"
       />
-      <Col className="mx-4 mb-10 w-full items-stretch self-center p-2 sm:mx-0 sm:w-[36rem]">
-        <Col className={'mb-4 w-full gap-2 self-start'}>
-          <Row className={'items-center gap-2'}>
-            <BackButton className={'md:hidden'} />
-            <Title className={'!mb-0'}>Leaderboard</Title>
-          </Row>
-          <div className="flex flex-wrap gap-2">
-            <SweepsToggle sweepsEnabled isSmall />
-            <TypePillSelector type={type} setType={setType} />
-            {type != 'referral' && (
-              <>
-                <TopicPillSelector topic={topic} setTopic={setTopic} />
-              </>
-            )}
-            <button
-              onClick={refresh}
-              className="hover:bg-ink-300 active:bg-ink-300 flex items-center rounded-full px-1 transition-colors"
+
+      <Col className="mx-auto w-full max-w-2xl gap-6 px-4 pb-8 pt-4">
+        {/* Header */}
+        <Col className="gap-1">
+          <Row className="items-center justify-between">
+            <h1 className="text-primary-700 text-2xl font-semibold">
+              Leaderboard
+            </h1>
+            <Link
+              href="/leagues"
+              className="text-ink-500 hover:text-ink-700 text-sm"
             >
-              <RefreshIcon className="text-ink-600 h-4 w-4" />
-            </button>
-          </div>
+              Monthly leagues →
+            </Link>
+          </Row>
+          <p className="text-ink-500 text-sm">
+            All-time top traders on Manifold
+          </p>
         </Col>
-        {loading ? (
-          <LoadingLeaderboard columns={columns} />
-        ) : entries ? (
-          <Leaderboard
-            entries={buildArray(entries, myEntry)}
-            columns={columns}
-            highlightUserId={user?.id}
-          />
-        ) : error ? (
-          <div className="text-error h-10 w-full text-center">
-            <div>
-              Error loading leaderboard
-              <div />
-              <div>{error.message}</div>
-              <Button onClick={refresh}>Try again</Button>
-            </div>
+
+        {/* User's rank if available */}
+        {user && myScores?.[type] && (
+          <div className="bg-canvas-50 border-ink-200 rounded-lg border px-4 py-3">
+            <Row className="items-center justify-between">
+              <span className="text-ink-600 text-sm">Your rank</span>
+              <span className="text-ink-900 text-lg font-semibold tabular-nums">
+                #{data?.rank?.toLocaleString() ?? '—'}
+              </span>
+            </Row>
           </div>
-        ) : null}
+        )}
+
+        {/* Filters */}
+        <Row className="flex-wrap items-center gap-3">
+          {type !== 'referral' && (
+            <TopicPillSelector topic={topic} setTopic={setTopic} />
+          )}
+          <button
+            onClick={refresh}
+            className="text-ink-400 hover:text-ink-600 hover:bg-canvas-100 rounded p-1.5 transition-colors"
+            title="Refresh"
+          >
+            <RefreshIcon className="h-4 w-4" />
+          </button>
+        </Row>
+
+        {/* Type Tabs */}
+        <div className="border-ink-200 border-b">
+          <Row className="-mb-px gap-1">
+            {LEADERBOARD_TYPES.map((t) => {
+              const isSelected = t.value === type
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setType(t.value)}
+                  className={clsx(
+                    'border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                    isSelected
+                      ? 'border-primary-500 text-primary-600'
+                      : 'text-ink-500 hover:text-ink-700 border-transparent'
+                  )}
+                >
+                  {t.name}
+                </button>
+              )
+            })}
+          </Row>
+        </div>
+
+        {/* Leaderboard Table */}
+        <div className="bg-canvas-0 border-ink-200 overflow-hidden rounded-lg border">
+          {loading ? (
+            <LoadingLeaderboard columns={columns} />
+          ) : entries ? (
+            <Leaderboard
+              entries={buildArray(entries, myEntry)}
+              columns={columns}
+              highlightUserId={user?.id}
+            />
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <span className="text-ink-600 text-sm">
+                Error loading leaderboard
+              </span>
+              <span className="text-ink-400 text-xs">{error.message}</span>
+              <Button onClick={refresh} size="sm" color="gray-outline">
+                Try again
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </Col>
     </Page>
-  )
-}
-
-const LEADERBOARD_TYPES = [
-  {
-    name: 'Profit',
-    value: 'profit',
-  },
-  {
-    name: 'Loss',
-    value: 'loss',
-  },
-  {
-    name: 'Volume',
-    value: 'volume',
-  },
-  {
-    name: 'Top creators',
-    value: 'creator',
-  },
-  {
-    name: 'Most referrals',
-    value: 'referral',
-  },
-] as const
-
-type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
-
-type Entry = LeaderboardEntry & {
-  totalReferredProfit?: number
-  isBannedFromPosting?: boolean
-}
-type MyEntry = Omit<Entry, 'userId'>
-type MyScores = {
-  [key in LeaderboardType]?: { mana: MyEntry; cash: MyEntry }
-}
-
-const TypePillSelector = (props: {
-  type: LeaderboardType
-  setType: (type: LeaderboardType) => void
-}) => {
-  const { type, setType } = props
-  const currentEntry = LEADERBOARD_TYPES.find((t) => t.value === type)!
-  return (
-    <DropdownMenu
-      closeOnClick
-      selectedItemName={currentEntry.name}
-      items={LEADERBOARD_TYPES.map((t) => ({
-        name: t.name,
-        onClick: () => setType(t.value),
-      }))}
-      buttonContent={(open) => (
-        <DropdownPill open={open}>{currentEntry.name}</DropdownPill>
-      )}
-    />
   )
 }

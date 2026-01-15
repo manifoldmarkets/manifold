@@ -17,7 +17,6 @@ import { useState } from 'react'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 import { SellRow } from 'web/components/bet/sell-row'
-import { LoanButton } from 'web/components/bet/loan-button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -33,6 +32,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
 import { SellSharesModal } from './sell-row'
 import { ShareBetModal } from './share-bet'
+import { ANNUAL_INTEREST_RATE } from 'common/economy'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -141,7 +141,9 @@ export function BetsSummary(props: {
                           amount={0}
                           isCashContract={isCashContract}
                         />{' '}
-                        otherwise).
+                        otherwise). You're earning{' '}
+                        {formatPercent(ANNUAL_INTEREST_RATE)} annual interest on
+                        this position.
                       </>
                     }
                   />
@@ -195,12 +197,6 @@ export function BetsSummary(props: {
                     user={includeSellButton}
                     hideStatus={true}
                   />
-                  {contract.token === 'MANA' && !contract.isResolved && (
-                    <LoanButton
-                      contractId={contract.id}
-                      user={includeSellButton}
-                    />
-                  )}
                   {maxSharesOutcome &&
                     (yesWinnings > 1 || noWinnings > 1) &&
                     (resolution === undefined || resolution !== 'CANCEL') && (
@@ -264,14 +260,6 @@ export function BetsSummary(props: {
           </Col>
         )}
 
-        {/* Loan button for multi-choice markets that don't have sell button next to payout */}
-        {includeSellButton &&
-          contract.token === 'MANA' &&
-          !contract.isResolved &&
-          contract.mechanism === 'cpmm-multi-1' &&
-          !isBinaryMulti(contract) && (
-            <LoanButton contractId={contract.id} user={includeSellButton} />
-          )}
         {/* Share modal - button is now in the Sell/Loan row */}
         {showShareModal && bettor && maxSharesOutcome && (
           <ShareBetModal

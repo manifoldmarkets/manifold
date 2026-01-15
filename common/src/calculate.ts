@@ -335,7 +335,7 @@ export const getContractBetMetrics = (
   contract: Contract,
   yourBets: Bet[],
   answerId?: string
-): Omit<ContractMetric, 'id' | 'from' | 'userId' | 'loan'> => {
+): Omit<ContractMetric, 'id' | 'from' | 'userId' | 'loan' | 'marginLoan'> => {
   const { mechanism } = contract
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const {
@@ -502,6 +502,7 @@ export function getContractBetNullMetrics() {
   return {
     invested: 0,
     loan: 0,
+    marginLoan: 0,
     payout: 0,
     profit: 0,
     profitPercent: 0,

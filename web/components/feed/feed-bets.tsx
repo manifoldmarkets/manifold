@@ -1,7 +1,7 @@
 import { ReplyIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DisplayUser } from 'common/api/user-types'
-import { Bet } from 'common/bet'
+import { Bet, fill } from 'common/bet'
 import {
   Contract,
   getBinaryMCProb,
@@ -11,11 +11,16 @@ import {
 import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BETTOR } from 'common/user'
-import { formatOutcomeLabel, formatPercent } from 'common/util/format'
+import {
+  formatMoney,
+  formatOutcomeLabel,
+  formatPercent,
+  formatSweepies,
+} from 'common/util/format'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import dayjs from 'dayjs'
 import { sumBy, uniq } from 'lodash'
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { FaArrowTrendUp } from 'react-icons/fa6'
 import { LuShare } from 'react-icons/lu'
 import { Button } from 'web/components/buttons/button'
@@ -35,12 +40,114 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
 import { ShareBetModal } from '../bet/share-bet'
 import { getPseudonym } from '../charts/contract/choice'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
+
+const MAX_FILLS_TO_SHOW = 10
+
+function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
+  const { bet, isCashContract } = props
+  const formatAmount = isCashContract ? formatSweepies : formatMoney
+
+  // Get bet IDs from fills that matched against user bets, sorted most recent first
+  const sortedFills = [...(bet.fills ?? [])].sort(
+    (a, b) => b.timestamp - a.timestamp
+  )
+  const fillsToShow = sortedFills.slice(0, MAX_FILLS_TO_SHOW)
+  const matchedBetIds = fillsToShow
+    .map((f) => f.matchedBetId)
+    .filter((id): id is string => id !== null)
+
+  // Fetch bettor info for matched bets
+  const [bettorsByBetId, setBettorsByBetId] = useState<
+    Record<string, { id: string; username: string; name: string }>
+  >({})
+  const [loading, setLoading] = useState(matchedBetIds.length > 0)
+
+  useEffect(() => {
+    if (matchedBetIds.length === 0) {
+      setLoading(false)
+      return
+    }
+
+    api('get-bettors-from-bet-ids', { betIds: matchedBetIds })
+      .then((result) => {
+        setBettorsByBetId(result)
+      })
+      .catch((err) => {
+        console.error('Failed to fetch bettors:', err)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [bet.id])
+
+  const totalFills = bet.fills?.length ?? 0
+
+  const renderFillLine = (f: fill, displayIndex: number) => {
+    // Number fills from most recent (total) down to oldest
+    const fillNumber = totalFills - displayIndex
+    const fillDate = dayjs(f.timestamp)
+    const isToday = fillDate.isSame(dayjs(), 'day')
+    const fillTime = isToday
+      ? fillDate.format('h:mm:ss A')
+      : fillDate.format('MMM D, h:mm:ss A')
+    const bettor = f.matchedBetId ? bettorsByBetId[f.matchedBetId] : null
+    const matchInfo = bettor
+      ? `@${bettor.username}`
+      : f.matchedBetId
+      ? loading
+        ? '...'
+        : 'user'
+      : 'pool'
+
+    return (
+      <div key={displayIndex} className="ml-2">
+        {fillNumber}. {formatAmount(f.amount)} @ {fillTime} ({matchInfo})
+      </div>
+    )
+  }
+
+  return (
+    <div className="text-left">
+      <div>Amount: {formatAmount(Math.abs(bet.amount))}</div>
+      {bet.orderAmount !== undefined && (
+        <div>Order: {formatAmount(bet.orderAmount)}</div>
+      )}
+      {bet.limitProb !== undefined && (
+        <div>Limit: {formatPercent(bet.limitProb)}</div>
+      )}
+      <div>Shares: {Math.abs(bet.shares).toFixed(2)}</div>
+      <div>Time: {dayjs(bet.createdTime).format('MMM D, YYYY h:mm:ss A')}</div>
+
+      {bet.fills && bet.fills.length > 0 && (
+        <>
+          <div>Fills: {bet.fills.length}</div>
+          {fillsToShow.map((fill, i) => renderFillLine(fill, i))}
+          {bet.fills.length > MAX_FILLS_TO_SHOW && (
+            <div className="ml-2">
+              ... and {bet.fills.length - MAX_FILLS_TO_SHOW} more
+            </div>
+          )}
+        </>
+      )}
+
+      {bet.isCancelled && <div>Status: Cancelled</div>}
+      {bet.isFilled && <div>Status: Filled</div>}
+      {bet.expiresAt && (
+        <div>
+          Expires: {dayjs(bet.expiresAt).format('MMM D, h:mm A')}
+          {bet.expiresAt < Date.now() ? ' (expired)' : ''}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: MarketContract
@@ -54,6 +161,7 @@ export const FeedBet = memo(function FeedBet(props: {
   const { createdTime, userId } = bet
   const user = useDisplayUserById(userId)
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <Col className={'w-full'}>
@@ -70,12 +178,15 @@ export const FeedBet = memo(function FeedBet(props: {
           ) : (
             <EmptyAvatar className="mx-1" />
           )}
-          <BetStatusText
-            bet={bet}
-            contract={contract}
-            hideUser={!showUser}
+          <Tooltip
+            text={
+              <BetTooltipContent bet={bet} isCashContract={isCashContract} />
+            }
+            placement="top"
             className="flex-1"
-          />
+          >
+            <BetStatusText bet={bet} contract={contract} hideUser={!showUser} />
+          </Tooltip>
         </Row>
         {!hideActions && (
           <BetActions onReply={onReply} bet={bet} contract={contract} />
@@ -107,6 +218,7 @@ export const FeedBetWithGraphAction = memo(
     const { createdTime, userId } = bet
     const user = useDisplayUserById(userId)
     const showUser = dayjs(createdTime).isAfter('2022-06-01')
+    const isCashContract = contract.token === 'CASH'
 
     return (
       <Col className={'w-full'}>
@@ -123,12 +235,19 @@ export const FeedBetWithGraphAction = memo(
             ) : (
               <EmptyAvatar className="mx-1" />
             )}
-            <BetStatusText
-              bet={bet}
-              contract={contract}
-              hideUser={!showUser}
+            <Tooltip
+              text={
+                <BetTooltipContent bet={bet} isCashContract={isCashContract} />
+              }
+              placement="top"
               className="flex-1"
-            />
+            >
+              <BetStatusText
+                bet={bet}
+                contract={contract}
+                hideUser={!showUser}
+              />
+            </Tooltip>
           </Row>
           <BetActionsWithGraph
             onReply={onReply}
@@ -153,6 +272,7 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
 }) {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
+  const isCashContract = contract.token === 'CASH'
 
   const users = useUsers(bets.map((b) => b.userId))
 
@@ -201,12 +321,22 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
           )}
         >
           {bets.length === 1 ? (
-            <BetStatusText
-              bet={bets[0]}
-              contract={contract}
-              hideUser={!showUser}
+            <Tooltip
+              text={
+                <BetTooltipContent
+                  bet={bets[0]}
+                  isCashContract={isCashContract}
+                />
+              }
+              placement="top"
               className="flex-1"
-            />
+            >
+              <BetStatusText
+                bet={bets[0]}
+                contract={contract}
+                hideUser={!showUser}
+              />
+            </Tooltip>
           ) : (
             <BetStatusesText bets={bets} contract={contract} />
           )}

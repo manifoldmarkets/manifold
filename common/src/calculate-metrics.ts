@@ -201,7 +201,11 @@ export const calculateMetricsByContractAndAnswer = (
         cm.answerId == m.answerId &&
         cm.userId === m.userId
     )
-    return { ...m, loan: currentMetric?.loan ?? m.loan ?? 0 }
+    return {
+      ...m,
+      loan: currentMetric?.loan ?? m.loan ?? 0,
+      marginLoan: currentMetric?.marginLoan ?? m.marginLoan ?? 0,
+    }
   })
 }
 
@@ -211,6 +215,7 @@ export const isEmptyMetric = (m: ContractMetric) => {
     m.profit === 0 &&
     m.invested === 0 &&
     m.loan === 0 &&
+    (m.marginLoan ?? 0) === 0 &&
     m.payout === 0 &&
     !m.hasShares &&
     sum(Object.values(m.totalSpent ?? {})) === 0
@@ -279,7 +284,30 @@ export const calculateUserMetricsWithNewBetsOnly = (
   )
 
   const invested = sum(Object.values(totalSpent))
-  const loan = sumBy(newBets, (b) => b.loanAmount ?? 0) + um.loan
+
+  // Calculate loan changes - distribute repayments between free and margin loans proportionally
+  const loanChange = sumBy(newBets, (b) => b.loanAmount ?? 0)
+  let newLoan = um.loan
+  let newMarginLoan = um.marginLoan ?? 0
+
+  if (loanChange < 0) {
+    // Repayment - distribute proportionally between loan types
+    const totalCurrentLoan = um.loan + (um.marginLoan ?? 0)
+    if (totalCurrentLoan > 0) {
+      const repayment = -loanChange
+      const freeLoanRatio = um.loan / totalCurrentLoan
+      const marginLoanRatio = (um.marginLoan ?? 0) / totalCurrentLoan
+      newLoan = Math.max(0, um.loan - repayment * freeLoanRatio)
+      newMarginLoan = Math.max(0, (um.marginLoan ?? 0) - repayment * marginLoanRatio)
+    } else {
+      // No existing loans - shouldn't happen but handle gracefully
+      newLoan = 0
+      newMarginLoan = 0
+    }
+  } else {
+    // New loan (positive) - add to free loan (this shouldn't happen from bets though)
+    newLoan = um.loan + loanChange
+  }
 
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
@@ -314,7 +342,8 @@ export const calculateUserMetricsWithNewBetsOnly = (
 
   return {
     ...um,
-    loan: floatingEqual(loan, 0) ? 0 : loan,
+    loan: floatingEqual(newLoan, 0) ? 0 : newLoan,
+    marginLoan: floatingEqual(newMarginLoan, 0) ? 0 : newMarginLoan,
     invested: floatingEqual(invested, 0) ? 0 : invested,
     totalShares,
     hasNoShares,
@@ -422,6 +451,7 @@ export const getDefaultMetric = (
   contractId,
   answerId,
   loan: 0,
+  marginLoan: 0,
   invested: 0,
   totalShares: { NO: 0, YES: 0 },
   totalSpent: { NO: 0, YES: 0 },
@@ -466,6 +496,7 @@ export const applyMetricToSummary = <
     summary.totalSpent['YES'] += sign * (metric.totalSpent['YES'] ?? 0)
   }
   summary.loan += sign * metric.loan
+  summary.marginLoan += sign * (metric.marginLoan ?? 0)
   summary.invested += sign * metric.invested
   summary.payout += sign * metric.payout
   summary.profit += sign * metric.profit

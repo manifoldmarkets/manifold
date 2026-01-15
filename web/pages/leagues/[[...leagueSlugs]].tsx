@@ -1,7 +1,9 @@
 import { ClockIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import {
@@ -21,8 +23,8 @@ import {
   parseLeaguePath,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
+import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -31,13 +33,13 @@ import { CohortTable } from 'web/components/leagues/cohort-table'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { SEO } from 'web/components/SEO'
+import { Avatar } from 'web/components/widgets/avatar'
 import { Countdown } from 'web/components/widgets/countdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Select } from 'web/components/widgets/select'
-import { Title } from 'web/components/widgets/title'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useUser } from 'web/hooks/use-user'
+import { useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { getLeagueRows } from 'web/lib/supabase/leagues'
 
@@ -49,7 +51,6 @@ export async function getStaticProps(props: {
   params: { leagueSlugs: string[] }
 }) {
   try {
-    // Extract season from URL if available
     const leagueSlugs = props.params?.leagueSlugs || []
     const seasonParam = leagueSlugs[0]
     const season =
@@ -64,7 +65,7 @@ export async function getStaticProps(props: {
         initialSeasonInfo: seasonInfo,
         currentSeasonInfo,
       },
-      revalidate: 60, // Revalidate every minute
+      revalidate: 60,
     }
   } catch (err) {
     console.error('Error fetching season info:', err)
@@ -72,7 +73,7 @@ export async function getStaticProps(props: {
       props: {
         initialSeasonInfo: null,
       },
-      revalidate: 60, // Retry sooner if there was an error
+      revalidate: 60,
     }
   }
 }
@@ -135,9 +136,6 @@ export default function Leagues(props: LeaguesProps) {
     string | undefined
   >()
   const [prizesModalOpen, setPrizesModalOpen] = useState(false)
-  const togglePrizesModal = () => {
-    setPrizesModalOpen(!prizesModalOpen)
-  }
 
   const { query, isReady, replace } = useRouter()
   const { leagueSlugs } = query as { leagueSlugs: string[] }
@@ -176,7 +174,6 @@ export default function Leagues(props: LeaguesProps) {
 
   useEffectCheckEquality(() => {
     if (!isReady || !seasonLoaded) return
-    console.log('leagueSlugs', leagueSlugs, 'user', user?.id)
 
     const { season, division, cohort, highlightedUserId } = parseLeaguePath(
       leagueSlugs ?? [],
@@ -184,20 +181,12 @@ export default function Leagues(props: LeaguesProps) {
       seasons,
       user?.id
     )
-    console.log(
-      'setting league',
-      season,
-      division,
-      cohort,
-      highlightedUserId ?? ''
-    )
     setSeason(season)
     setDivision(division)
     setCohort(cohort)
     setHighlightedUserId(highlightedUserId)
   }, [isReady, seasonLoaded, leagueSlugs, user?.id])
 
-  const MARKER = '★'
   const seasonStatus = seasonInfo?.status
   const countdownEnd = getSeasonCountdownEnd(season)
   const { approxEnd: seasonEnd } = getApproximateSeasonDates(season)
@@ -208,6 +197,12 @@ export default function Leagues(props: LeaguesProps) {
   const userRow = seasonRows.find((row) => row.user_id === user?.id)
   const userDivision = userRow?.division
   const userCohort = userRow?.cohort
+
+  const userCohortRows = userRow
+    ? seasonRows.filter(
+        (r) => r.cohort === userRow.cohort && r.division === userRow.division
+      )
+    : []
 
   const url = cohort
     ? `/leagues/${season}/${DIVISION_NAMES[division]}/${cohort}`
@@ -221,102 +216,137 @@ export default function Leagues(props: LeaguesProps) {
         url={url}
       />
 
-      <Col className="mx-auto w-full max-w-xl gap-2 px-1 pt-4">
-        <Col className="px-2">
-          <Row className="mb-2 items-center justify-between gap-4">
-            <Title className="!mb-0">Leagues</Title>
-            <Select
-              className="!border-ink-200 !h-10"
-              value={season}
-              onChange={(e) => onSetSeason(+e.target.value)}
+      <Col className="mx-auto w-full max-w-2xl gap-6 px-4 pb-8 pt-4">
+        {/* Header */}
+        <Col className="gap-1">
+          <Row className="items-center justify-between">
+            <h1 className="text-primary-700 text-2xl font-semibold">Leagues</h1>
+            <Link
+              href="/leaderboards"
+              className="text-ink-500 hover:text-ink-700 text-sm"
             >
-              {seasons.map((season) => (
-                <option key={season} value={season}>
-                  Season {season}: {getSeasonMonth(season)}
-                </option>
-              ))}
-            </Select>
+              All-time leaderboard →
+            </Link>
           </Row>
-          <Col className="text-ink-700 my-2 justify-center gap-1">
-            <div>
-              Win{' '}
-              <span
-                className="border-primary-600 text-primary-600 hover:text-primary-800 cursor-help border-b border-dotted"
-                onClick={togglePrizesModal}
-              >
-                prizes
-              </span>{' '}
-              for the most profit (realized and unrealized) on trades placed
-              this month!
-              <span className={'ml-1'}>
-                {closingPeriod && (
-                  <>
-                    Ends randomly within <br />
-                    <ClockIcon className="text-ink-1000 inline h-4 w-4" />{' '}
-                    {getCountdownStringHoursMinutes(randomPeriodEnd)}
-                  </>
-                )}
-                {seasonStatus === 'complete' && (
-                  <>Ended {formatTime(seasonEnd)}</>
-                )}
-                {seasonStatus === 'active' && (
-                  <>
-                    Season ends in:{' '}
-                    <InfoTooltip
-                      text={
-                        'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
-                      }
-                    >
-                      <Countdown className=" text-sm" endDate={countdownEnd} />
-                    </InfoTooltip>
-                  </>
-                )}
-              </span>
-            </div>
-            <div>
-              All-time leaderboard is{' '}
-              <Link
-                href="/leaderboards"
-                className="text-primary-600 hover:text-primary-800 underline-offset-2 hover:underline"
-              >
-                here
-              </Link>
-              .
-            </div>
-          </Col>
+          <p className="text-ink-500 text-sm">
+            Compete monthly for prizes based on your trading profit.
+          </p>
+        </Col>
 
-          <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
-
-          {cohort && (
-            <Row className="mt-2 gap-2">
-              <Select
-                className="!border-ink-200"
-                value={division}
-                onChange={(e) => onSetDivision(+e.target.value)}
+        {/* Season Status Bar */}
+        <div className="bg-canvas-50 border-ink-200 rounded-lg border px-4 py-3">
+          <Row className="items-center justify-between gap-4">
+            <Row className="items-center gap-3">
+              <select
+                className="bg-canvas-0 border-ink-200 text-ink-600 focus:border-primary-500 focus:ring-primary-500 rounded border px-2 py-1 text-sm focus:outline-none focus:ring-1"
+                value={season}
+                onChange={(e) => onSetSeason(+e.target.value)}
               >
-                {divisions.map((division) => (
-                  <option key={division} value={division}>
-                    {division === userDivision ? MARKER : ''}{' '}
-                    {DIVISION_NAMES[division]}
+                {seasons.map((s) => (
+                  <option key={s} value={s}>
+                    Season {s}: {getSeasonMonth(s)}
                   </option>
                 ))}
-              </Select>
+              </select>
+              <Row className="items-center gap-2">
+                <ClockIcon className="text-ink-400 h-4 w-4" />
+                {closingPeriod ? (
+                  <span className="text-ink-600 text-sm">
+                    Finals — ends within{' '}
+                    <span className="font-medium">
+                      {getCountdownStringHoursMinutes(randomPeriodEnd)}
+                    </span>
+                  </span>
+                ) : seasonStatus === 'complete' ? (
+                  <span className="text-ink-600 text-sm">
+                    Ended {formatTime(seasonEnd)}
+                  </span>
+                ) : (
+                  <span className="text-ink-600 text-sm">
+                    Ends in{' '}
+                    <InfoTooltip text="Once the countdown ends, leaderboards freeze at a random time in the following 24h.">
+                      <Countdown
+                        className="font-mono text-sm font-medium"
+                        endDate={countdownEnd}
+                      />
+                    </InfoTooltip>
+                  </span>
+                )}
+              </Row>
+            </Row>
+            <button
+              onClick={() => setPrizesModalOpen(true)}
+              className="text-ink-500 hover:text-ink-700 text-sm"
+            >
+              View prizes
+            </button>
+          </Row>
+        </div>
 
-              <Select
-                className="!border-ink-200"
+        <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
+
+        {/* User's Current Status */}
+        {userRow && user && seasonLoaded && (
+          <UserLeagueStatus
+            userRow={userRow}
+            userId={user.id}
+            season={season}
+            cohortSize={userCohortRows.length}
+          />
+        )}
+
+        {/* Division & Cohort Selection */}
+        {cohort && seasonLoaded && (
+          <Col className="gap-4">
+            {/* Division Tabs */}
+            <div className="border-ink-200 border-b">
+              <Row className="scrollbar-hide -mb-px gap-1 overflow-x-auto">
+                {divisions.map((div) => {
+                  const isSelected = div === division
+                  const isUserDivision = div === userDivision
+                  return (
+                    <button
+                      key={div}
+                      onClick={() => onSetDivision(div)}
+                      className={clsx(
+                        'flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                        isSelected
+                          ? 'border-primary-500 text-primary-600'
+                          : 'text-ink-500 hover:text-ink-700 border-transparent'
+                      )}
+                    >
+                      <span>{DIVISION_NAMES[div]}</span>
+                      {isUserDivision && (
+                        <span className="bg-primary-100 text-primary-700 rounded px-1.5 py-0.5 text-xs font-medium">
+                          You
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </Row>
+            </div>
+
+            {/* Cohort Selector */}
+            <Row className="items-center gap-3">
+              <span className="text-ink-500 text-sm">Group:</span>
+              <select
+                className="bg-canvas-0 border-ink-200 text-ink-700 focus:border-primary-500 focus:ring-primary-500 rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-1"
                 value={cohort}
                 onChange={(e) => onSetCohort(e.target.value)}
               >
-                {divisionToCohorts[division]?.map((cohort) => (
-                  <option key={cohort} value={cohort}>
-                    {cohort === userCohort ? MARKER : ''} {toLabel(cohort)}
+                {divisionToCohorts[division]?.map((c) => (
+                  <option key={c} value={c}>
+                    {c === userCohort ? '★ ' : ''}
+                    {toLabel(c)}
                   </option>
                 ))}
-              </Select>
+              </select>
             </Row>
-          )}
-        </Col>
+          </Col>
+        )}
 
+        {/* Rankings / Activity Tabs */}
         {seasonLoaded && cohort ? (
           <LeaguesInnerPage
             seasonRows={seasonRows}
@@ -330,6 +360,161 @@ export default function Leagues(props: LeaguesProps) {
         )}
       </Col>
     </Page>
+  )
+}
+
+// Division styling for the user card
+const DIVISION_CARD_STYLES: {
+  [key: number]: { border: string; bg: string; text: string; icon: string }
+} = {
+  0: {
+    border: 'border-slate-400',
+    bg: 'bg-slate-50 dark:bg-slate-800/30',
+    text: 'text-slate-600 dark:text-slate-300',
+    icon: '🤖',
+  },
+  1: {
+    border: 'border-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/20',
+    text: 'text-amber-600 dark:text-amber-400',
+    icon: '🥉',
+  },
+  2: {
+    border: 'border-slate-400',
+    bg: 'bg-slate-50 dark:bg-slate-800/30',
+    text: 'text-slate-600 dark:text-slate-300',
+    icon: '🥈',
+  },
+  3: {
+    border: 'border-yellow-500',
+    bg: 'bg-yellow-50 dark:bg-yellow-950/20',
+    text: 'text-yellow-600 dark:text-yellow-400',
+    icon: '🥇',
+  },
+  4: {
+    border: 'border-cyan-400',
+    bg: 'bg-cyan-50 dark:bg-cyan-950/20',
+    text: 'text-cyan-600 dark:text-cyan-400',
+    icon: '💿',
+  },
+  5: {
+    border: 'border-violet-400',
+    bg: 'bg-violet-50 dark:bg-violet-950/20',
+    text: 'text-violet-600 dark:text-violet-400',
+    icon: '💎',
+  },
+  6: {
+    border: 'border-rose-400',
+    bg: 'bg-rose-50 dark:bg-rose-950/20',
+    text: 'text-rose-600 dark:text-rose-400',
+    icon: '🎖️',
+  },
+}
+
+function UserLeagueStatus(props: {
+  userRow: league_user_info
+  userId: string
+  season: number
+  cohortSize: number
+}) {
+  const { userRow, userId, season, cohortSize } = props
+  const users = useUsers([userId])
+  const userData = users?.[0]
+
+  if (!userData) return null
+
+  const { division, cohort, rank, mana_earned } = userRow
+
+  const { demotion, promotion, doublePromotion } =
+    getDemotionAndPromotionCountBySeason(season, division, cohortSize)
+
+  const nextDivision = DIVISION_NAMES[division + 1]
+  const nextNextDivision = DIVISION_NAMES[division + 2]
+  const prevDivision = DIVISION_NAMES[Math.max(division - 1, 1)]
+  const currentDivision = DIVISION_NAMES[division]
+
+  const divisionStyle =
+    DIVISION_CARD_STYLES[division] ?? DIVISION_CARD_STYLES[1]
+
+  const getZone = () => {
+    if (rank <= doublePromotion && nextNextDivision)
+      return {
+        label: `Promoting to ${nextNextDivision}`,
+        color: 'text-teal-600',
+      }
+    if (rank <= promotion && nextDivision)
+      return { label: `Promoting to ${nextDivision}`, color: 'text-teal-600' }
+    if (rank > cohortSize - demotion && demotion > 0)
+      return { label: `Demoting to ${prevDivision}`, color: 'text-scarlet-600' }
+    return { label: `Remaining in ${currentDivision}`, color: 'text-ink-500' }
+  }
+
+  const zone = getZone()
+
+  return (
+    <div
+      className={clsx(
+        'rounded-lg border-l-4 p-4',
+        'bg-canvas-0 border border-l-4',
+        divisionStyle.border
+      )}
+    >
+      <Row className="items-center gap-4">
+        {/* Division badge */}
+        <div
+          className={clsx(
+            'flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg',
+            divisionStyle.bg
+          )}
+        >
+          <span className="text-2xl">{divisionStyle.icon}</span>
+          <span className={clsx('text-xs font-semibold', divisionStyle.text)}>
+            {currentDivision}
+          </span>
+        </div>
+
+        {/* User info */}
+        <Col className="flex-1 gap-1">
+          <Row className="items-center gap-2">
+            <Avatar
+              avatarUrl={userData.avatarUrl ?? ''}
+              username={userData.username}
+              size="xs"
+              noLink
+            />
+            <Link
+              href={`/${userData.username}`}
+              className="text-ink-900 font-medium hover:underline"
+            >
+              {userData.name}
+            </Link>
+          </Row>
+          <span className="text-ink-500 text-sm">{toLabel(cohort)}</span>
+        </Col>
+
+        {/* Rank and earnings */}
+        <Col className="items-end">
+          <span className="text-ink-900 text-2xl font-bold">#{rank}</span>
+          <span
+            className={clsx(
+              'text-sm font-medium',
+              mana_earned > 0
+                ? 'text-teal-600'
+                : mana_earned < 0
+                ? 'text-scarlet-500'
+                : 'text-ink-500'
+            )}
+          >
+            {mana_earned > 0 ? '+' : ''}
+            {formatMoney(mana_earned)}
+          </span>
+        </Col>
+      </Row>
+
+      <Row className="border-ink-100 mt-3 border-t pt-3 text-sm">
+        <span className={zone.color}>{zone.label}</span>
+      </Row>
+    </div>
   )
 }
 
@@ -350,32 +535,30 @@ function LeaguesInnerPage(props: {
     )
 
   return (
-    <>
-      <QueryUncontrolledTabs
-        trackingName="league tabs"
-        labelClassName={'!pb-3 !pt-0'}
-        key={`${season}-${division}-${cohort}`}
-        tabs={[
-          {
-            title: 'Rankings',
-            content: cohorts[cohort] && (
-              <CohortTable
-                season={season}
-                cohort={cohort}
-                rows={cohorts[cohort]}
-                highlightedUserId={highlightedUserId}
-                demotionCount={demotion}
-                promotionCount={promotion}
-                doublePromotionCount={doublePromotion}
-              />
-            ),
-          },
-          {
-            title: 'Activity',
-            content: <LeagueFeed season={season} cohort={cohort} />,
-          },
-        ]}
-      />
-    </>
+    <QueryUncontrolledTabs
+      trackingName="league tabs"
+      labelClassName="!pb-3 !pt-0"
+      key={`${season}-${division}-${cohort}`}
+      tabs={[
+        {
+          title: 'Rankings',
+          content: cohorts[cohort] && (
+            <CohortTable
+              season={season}
+              cohort={cohort}
+              rows={cohorts[cohort]}
+              highlightedUserId={highlightedUserId}
+              demotionCount={demotion}
+              promotionCount={promotion}
+              doublePromotionCount={doublePromotion}
+            />
+          ),
+        },
+        {
+          title: 'Activity',
+          content: <LeagueFeed season={season} cohort={cohort} />,
+        },
+      ]}
+    />
   )
 }

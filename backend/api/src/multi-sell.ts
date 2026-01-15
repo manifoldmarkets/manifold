@@ -3,6 +3,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { CPMMMultiContract } from 'common/contract'
 import { isSummary } from 'common/contract-metric'
+import { MS_PER_DAY } from 'common/loans'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { convertBet } from 'common/supabase/bets'
 import * as crypto from 'crypto'
@@ -10,6 +11,11 @@ import { groupBy, keyBy, mapValues, sumBy } from 'lodash'
 import { calculatePoolInterestMulti } from 'shared/calculate-pool-interest'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import {
+  getLoanTrackingRows,
+  upsertLoanTrackingQuery,
+  LoanTrackingRow,
+} from 'shared/helpers/user-contract-loans'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContract, getUser, log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -87,12 +93,28 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       convertBet
     )
 
-    const loanAmountByAnswerId = mapValues(
+    // Capture margin loan amounts before selling for loan tracking update
+    const marginLoanByAnswerId = mapValues(
+      keyBy(
+        allMyMetrics.filter((m) => !isSummary(m)),
+        'answerId'
+      ),
+      (m) => m.marginLoan ?? 0
+    )
+    const freeLoanByAnswerId = mapValues(
       keyBy(
         allMyMetrics.filter((m) => !isSummary(m)),
         'answerId'
       ),
       (m) => m.loan ?? 0
+    )
+    const loanAmountByAnswerId = mapValues(
+      keyBy(
+        allMyMetrics.filter((m) => !isSummary(m)),
+        'answerId'
+      ),
+      // Include both free loans and margin loans
+      (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
     )
 
     const nonRedemptionBetsByAnswerId = groupBy(
@@ -138,6 +160,78 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       )
       results.push(result)
     }
+
+    // Update loan tracking for any margin loans that were repaid
+    const now = Date.now()
+    const answersWithMarginLoans = answersToSell.filter(
+      (a) => (marginLoanByAnswerId[a.id] ?? 0) > 0
+    )
+    if (answersWithMarginLoans.length > 0) {
+      const loanTracking = await getLoanTrackingRows(pgTrans, uid, [contractId])
+      const trackingByKey = keyBy(
+        loanTracking,
+        (t) => `${t.contract_id}-${t.answer_id ?? ''}`
+      )
+
+      const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
+
+      for (const answer of answersWithMarginLoans) {
+        const marginLoanBefore = marginLoanByAnswerId[answer.id] ?? 0
+        if (marginLoanBefore <= 0) continue
+
+        const totalLoanBefore =
+          (freeLoanByAnswerId[answer.id] ?? 0) + marginLoanBefore
+
+        // Find the bet result for this answer to get loan repayment
+        const answerBetResult = betResults.find(
+          (br) => br.newBet.answerId === answer.id
+        )
+        if (!answerBetResult) continue
+
+        const loanRepayment = -(answerBetResult.newBet.loanAmount ?? 0)
+        if (loanRepayment <= 0) continue
+
+        // Calculate how much went to margin loan (proportional split)
+        const marginLoanRatio =
+          totalLoanBefore > 0 ? marginLoanBefore / totalLoanBefore : 0
+        const marginLoanRepaid = loanRepayment * marginLoanRatio
+
+        if (marginLoanRepaid > 0) {
+          const trackingKey = `${contractId}-${answer.id}`
+          const tracking = trackingByKey[trackingKey]
+
+          // Finalize the integral up to now
+          const lastUpdate = tracking?.last_loan_update_time ?? now
+          const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+          const finalIntegral =
+            (tracking?.loan_day_integral ?? 0) +
+            marginLoanBefore * daysSinceLastUpdate
+
+          // Reduce integral proportionally based on repayment
+          const repaymentRatio = Math.min(
+            1,
+            marginLoanRepaid / marginLoanBefore
+          )
+          const newIntegral = finalIntegral * (1 - repaymentRatio)
+
+          loanTrackingUpdates.push({
+            user_id: uid,
+            contract_id: contractId,
+            answer_id: answer.id,
+            loan_day_integral: Math.max(0, newIntegral),
+            last_loan_update_time: now,
+          })
+        }
+      }
+
+      if (loanTrackingUpdates.length > 0) {
+        await pgTrans.none(upsertLoanTrackingQuery(loanTrackingUpdates))
+        log(
+          `Updated loan tracking for ${uid} on ${contractId} for ${loanTrackingUpdates.length} answers`
+        )
+      }
+    }
+
     return results
   })
 

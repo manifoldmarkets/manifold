@@ -8,6 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
+import { useAdmin } from 'web/hooks/use-admin'
 import { api, APIError } from 'web/lib/api/api'
 import { Select } from 'web/components/widgets/select'
 import { Button } from 'web/components/buttons/button'
@@ -18,6 +19,9 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { SpinningWheel } from 'web/components/charity/spinning-wheel'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
@@ -71,6 +75,7 @@ const COLORS = [
 
 export default function CharityGiveawayPage() {
   const user = useUser()
+  const isAdmin = useAdmin()
   const { data, refresh } = useAPIGetter('get-charity-giveaway', {})
 
   const [selectedCharityId, setSelectedCharityId] = useState<string>('')
@@ -79,11 +84,23 @@ export default function CharityGiveawayPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [salesRefreshKey, setSalesRefreshKey] = useState(0)
 
+  // Winner reveal state
+  const [isSelectingWinner, setIsSelectingWinner] = useState(false)
+  const [showSpinningWheel, setShowSpinningWheel] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [pendingWinningCharity, setPendingWinningCharity] = useState<
+    string | null
+  >(null)
+
   const previewCharityId = hoveredCharityId || selectedCharityId
 
   const giveaway = data ? data.giveaway : undefined
   const charityStats = data ? data.charityStats : []
   const totalTickets = data ? data.totalTickets : 0
+  const winningCharity = data ? data.winningCharity : undefined
+  const winner = data ? data.winner : undefined
+  const nonceHash = data ? data.nonceHash : undefined
+  const nonce = data ? data.nonce : undefined
   const totalManaSpent = charityStats.reduce(
     (sum, s) => sum + s.totalManaSpent,
     0
@@ -135,6 +152,86 @@ export default function CharityGiveawayPage() {
 
   const currentPrice = getCurrentGiveawayTicketPrice(totalTickets)
   const isClosed = giveaway && giveaway.closeTime <= Date.now()
+  const hasWinner = !!giveaway?.winningTicketId
+
+  // Check if user has already seen the reveal animation
+  const [hasSeenReveal, setHasSeenReveal] = useState(false)
+
+  // Initialize hasSeenReveal from localStorage once giveaway is loaded
+  useEffect(() => {
+    if (giveaway && typeof window !== 'undefined') {
+      const seen =
+        localStorage.getItem(`giveaway-reveal-${giveaway.giveawayNum}`) ===
+        'true'
+      setHasSeenReveal(seen)
+    }
+  }, [giveaway?.giveawayNum])
+
+  // Auto-show spinning wheel if there's a winner and user hasn't seen it
+  useEffect(() => {
+    if (
+      hasWinner &&
+      winningCharity &&
+      !hasSeenReveal &&
+      charityStats.length > 0 &&
+      giveaway
+    ) {
+      // Small delay to ensure localStorage check has completed
+      const timer = setTimeout(() => {
+        const seen =
+          localStorage.getItem(`giveaway-reveal-${giveaway.giveawayNum}`) ===
+          'true'
+        if (!seen) {
+          setShowSpinningWheel(true)
+          setPendingWinningCharity(winningCharity)
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [
+    hasWinner,
+    winningCharity,
+    hasSeenReveal,
+    charityStats.length,
+    giveaway?.giveawayNum,
+  ])
+
+  const handleSelectWinner = async () => {
+    if (!giveaway || isSelectingWinner) return
+    setIsSelectingWinner(true)
+    try {
+      const result = await api('select-charity-giveaway-winner', {
+        giveawayNum: giveaway.giveawayNum,
+      })
+      toast.success('Winner selected!')
+      track('charity giveaway winner selected', {
+        giveawayNum: giveaway.giveawayNum,
+        charityId: result.charityId,
+        charityName: charities.find((c) => c.id === result.charityId)?.name,
+      })
+      // Refresh data to get the winner details
+      await refresh()
+      // Start the spinning wheel animation
+      setPendingWinningCharity(result.charityId)
+      setShowSpinningWheel(true)
+    } catch (e) {
+      const msg = e instanceof APIError ? e.message : 'Failed to select winner'
+      toast.error(msg)
+    } finally {
+      setIsSelectingWinner(false)
+    }
+  }
+
+  const handleWheelComplete = () => {
+    setShowConfetti(true)
+    // Mark as seen in localStorage
+    if (giveaway) {
+      localStorage.setItem(`giveaway-reveal-${giveaway.giveawayNum}`, 'true')
+      setHasSeenReveal(true)
+    }
+    // Hide confetti after a few seconds
+    setTimeout(() => setShowConfetti(false), 5000)
+  }
 
   const handleBuyTickets = async () => {
     if (!giveaway || !selectedCharityId || numTickets <= 0) return
@@ -252,14 +349,16 @@ export default function CharityGiveawayPage() {
           />
         </div>
 
-        {/* Pie Chart */}
-        <GiveawayPieChart
-          charityStats={charityStats}
-          totalTickets={totalTickets}
-          hoveredCharityId={hoveredCharityId}
-          onHoverCharity={setHoveredCharityId}
-          onSelectCharity={setSelectedCharityId}
-        />
+        {/* Pie Chart - hide when winner is being displayed */}
+        {!hasWinner && (
+          <GiveawayPieChart
+            charityStats={charityStats}
+            totalTickets={totalTickets}
+            hoveredCharityId={hoveredCharityId}
+            onHoverCharity={setHoveredCharityId}
+            onSelectCharity={setSelectedCharityId}
+          />
+        )}
 
         {/* Purchase Form */}
         {!isClosed && user && (
@@ -283,23 +382,89 @@ export default function CharityGiveawayPage() {
           <SignInPrompt previewCharityId={previewCharityId} />
         )}
 
-        {isClosed && (
+        {/* Winner Reveal Section */}
+        {isClosed && showSpinningWheel && pendingWinningCharity && (
+          <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border p-8 shadow-sm">
+            <SpinningWheel
+              charityStats={charityStats}
+              totalTickets={totalTickets}
+              winningCharityId={pendingWinningCharity}
+              onComplete={handleWheelComplete}
+              autoStart={true}
+              showLegend={true}
+              winner={winner}
+            />
+          </div>
+        )}
+
+        {/* Winner Display (after animation or if already seen) */}
+        {isClosed && hasWinner && winningCharity && !showSpinningWheel && (
+          <WinnerCard
+            winningCharity={winningCharity}
+            winner={winner}
+            prizeAmount={giveaway.prizeAmountUsd}
+            charityStats={charityStats}
+            totalTickets={totalTickets}
+            onReplay={() => {
+              setShowSpinningWheel(true)
+              setPendingWinningCharity(winningCharity)
+            }}
+          />
+        )}
+
+        {/* Admin Select Winner Button */}
+        {isClosed && !hasWinner && isAdmin && (
+          <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border p-6 shadow-sm">
+            <Col className="items-center gap-4">
+              <div className="text-4xl">🎰</div>
+              <h3 className="text-ink-900 text-lg font-semibold">
+                Ready to Draw Winner
+              </h3>
+              <p className="text-ink-600 text-center text-sm">
+                The giveaway has closed. Click below to randomly select the
+                winning charity.
+              </p>
+              <Button
+                color="indigo"
+                size="lg"
+                onClick={handleSelectWinner}
+                loading={isSelectingWinner}
+                disabled={isSelectingWinner}
+              >
+                🎟️ Draw Winning Ticket
+              </Button>
+            </Col>
+          </div>
+        )}
+
+        {/* Waiting for winner (non-admin view) */}
+        {isClosed && !hasWinner && !isAdmin && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-950/30">
-            <div className="mb-2 text-2xl">🏆</div>
+            <div className="mb-2 text-2xl">⏳</div>
             <h3 className="text-ink-900 font-semibold">Giveaway Closed</h3>
             <p className="text-ink-600 mt-1 text-sm">
-              {giveaway.winningTicketId
-                ? 'A winner has been selected!'
-                : 'The winning ticket will be drawn soon.'}
+              The winning ticket will be drawn soon. Check back!
             </p>
           </div>
         )}
+
+        {/* Confetti */}
+        {showConfetti && <FullscreenConfetti />}
 
         {/* Sales History */}
         <SalesHistory
           giveawayNum={giveaway.giveawayNum}
           refreshKey={salesRefreshKey}
         />
+
+        {/* Provably Fair Banner */}
+        {nonceHash && (
+          <ProvablyFairBanner
+            nonceHash={nonceHash}
+            nonce={nonce}
+            hasWinner={hasWinner}
+          />
+        )}
       </Col>
     </Page>
   )
@@ -913,5 +1078,173 @@ function SaleRow(props: {
         <RelativeTimestamp time={sale.createdTime} />
       </td>
     </tr>
+  )
+}
+
+function WinnerCard(props: {
+  winningCharity: string
+  winner?: { id: string; username: string; name: string; avatarUrl: string }
+  prizeAmount: number
+  charityStats: { charityId: string; totalTickets: number }[]
+  totalTickets: number
+  onReplay: () => void
+}) {
+  const {
+    winningCharity,
+    winner,
+    prizeAmount,
+    charityStats,
+    totalTickets,
+    onReplay,
+  } = props
+  const charity = charities.find((c) => c.id === winningCharity)
+  const charityTickets =
+    charityStats.find((s) => s.charityId === winningCharity)?.totalTickets ?? 0
+  const percentage =
+    totalTickets > 0 ? (charityTickets / totalTickets) * 100 : 0
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 shadow-lg dark:border-amber-800 dark:from-amber-950/30 dark:via-yellow-950/30 dark:to-orange-950/30">
+      <Col className="items-center gap-4">
+        <div className="text-5xl">🏆</div>
+        <h2 className="text-ink-900 text-2xl font-bold">Winner!</h2>
+
+        {charity && (
+          <Row className="w-full max-w-md items-center gap-4 rounded-xl border border-amber-200 bg-white/80 p-4 dark:border-amber-700 dark:bg-gray-900/50">
+            {charity.photo && (
+              <img
+                src={charity.photo}
+                alt={charity.name}
+                className="h-16 w-16 flex-shrink-0 rounded-lg object-cover shadow"
+              />
+            )}
+            <Col className="min-w-0 flex-1 gap-1">
+              <div className="text-ink-900 text-lg font-bold">
+                {charity.name}
+              </div>
+              <div className="text-ink-500 line-clamp-2 text-sm">
+                {charity.preview}
+              </div>
+              <div className="text-ink-600 mt-1 text-sm">
+                <span className="font-semibold text-amber-600 dark:text-amber-400">
+                  {percentage.toFixed(1)}%
+                </span>{' '}
+                of tickets ({formatTickets(charityTickets)})
+              </div>
+            </Col>
+          </Row>
+        )}
+
+        <div className="text-center">
+          <p className="text-ink-900 text-lg">
+            <span className="font-bold text-teal-600 dark:text-teal-400">
+              ${prizeAmount.toLocaleString()}
+            </span>{' '}
+            will be donated!
+          </p>
+          {winner && (
+            <Row className="text-ink-600 mt-2 items-center justify-center gap-2 text-sm">
+              <span>Winning ticket purchased by</span>
+              <Avatar
+                username={winner.username}
+                avatarUrl={winner.avatarUrl}
+                size="xs"
+              />
+              <UserLink user={winner} className="text-ink-900 font-medium" />
+            </Row>
+          )}
+        </div>
+
+        <button
+          onClick={onReplay}
+          className="text-ink-500 hover:text-ink-700 mt-2 text-sm underline transition-colors"
+        >
+          🎡 Watch the spin again
+        </button>
+      </Col>
+    </div>
+  )
+}
+
+function ProvablyFairBanner(props: {
+  nonceHash: string
+  nonce?: string
+  hasWinner: boolean
+}) {
+  const { nonceHash, nonce, hasWinner } = props
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  return (
+    <>
+      <Row className="items-center justify-center">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="dark:from-indigo-400/15 dark:via-purple-400/15 dark:to-pink-400/15 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 px-4 py-2 ring-1 ring-indigo-500/20 transition-all hover:ring-indigo-500/40 dark:ring-indigo-400/25 dark:hover:ring-indigo-400/40"
+        >
+          <span className="text-base">⚖️</span>
+          <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-sm font-semibold text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
+            Provably fair
+          </span>
+        </button>
+      </Row>
+
+      <Modal open={isModalOpen} setOpen={setIsModalOpen} size="md">
+        <Col className={clsx(MODAL_CLASS, 'gap-4')}>
+          <Row className="items-center gap-3">
+            <span className="text-2xl">⚖️</span>
+            <h2 className="text-ink-900 text-xl font-bold">Provably Fair</h2>
+          </Row>
+
+          <p className="text-ink-700 text-sm leading-relaxed">
+            Before the drawing, we publish a hash of a secret nonce. When it's
+            time to pick a winner, we combine the nonce with the timestamps of
+            the last 10 purchases to generate a random number that determines
+            the winning ticket. After the drawing, we reveal the nonce so you
+            can verify the result wasn't manipulated.
+          </p>
+
+          <Col className="bg-canvas-50 gap-3 rounded-lg p-4">
+            <Col className="gap-1">
+              <span className="text-ink-600 text-sm font-medium">
+                Nonce Hash (MD5)
+              </span>
+              <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
+                {nonceHash}
+              </code>
+            </Col>
+
+            {hasWinner && nonce && (
+              <Col className="gap-1">
+                <span className="text-ink-600 text-sm font-medium">
+                  Revealed Nonce
+                </span>
+                <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
+                  {nonce}
+                </code>
+              </Col>
+            )}
+          </Col>
+
+          {hasWinner && nonce ? (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
+              <p className="text-sm text-green-800 dark:text-green-300">
+                ✓ Winner has been selected. You can verify by computing{' '}
+                <code className="rounded bg-green-100 px-1 dark:bg-green-900/50">
+                  MD5(nonce)
+                </code>{' '}
+                and confirming it matches the hash above.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                ⏳ Record the hash above. After the drawing, the full nonce will
+                be revealed so you can verify the result.
+              </p>
+            </div>
+          )}
+        </Col>
+      </Modal>
+    </>
   )
 }

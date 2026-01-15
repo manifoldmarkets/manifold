@@ -4,8 +4,10 @@ import { Contract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { sortBy, uniqBy } from 'lodash'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { LoanButton } from 'web/components/bet/loan-button'
 import { YourOrders } from 'web/components/bet/order-book'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
@@ -46,6 +48,10 @@ export function YourTrades(props: {
     (bet) => bet.userId === user?.id
   ) as LimitBet[]
 
+  // Show loan button for MANA markets that are not resolved
+  const showLoanButton =
+    user && contract.token === 'MANA' && !contract.isResolved
+
   if (
     (userLimitBets.length === 0 || contract.mechanism != 'cpmm-1') &&
     visibleUserBets.length === 0
@@ -65,7 +71,12 @@ export function YourTrades(props: {
 
       {visibleUserBets.length > 0 && contractMetric && (
         <>
-          <div className="pl-2 font-semibold">Your trades</div>
+          <Row className="items-center justify-between pl-2">
+            <div className="font-semibold">Your trades</div>
+            {showLoanButton && (
+              <LoanButton contractId={contract.id} user={user} />
+            )}
+          </Row>
           <ContractBetsTable
             contractMetric={contractMetric}
             contract={contract}

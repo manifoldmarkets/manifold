@@ -1,5 +1,6 @@
 import { DailyChart } from 'web/components/charts/stats'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
@@ -29,26 +30,35 @@ import { capitalize, partition } from 'lodash'
 import { formatTimeShort } from 'client-common/lib/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { TopicDauSummary } from 'web/components/stats/topic-dau-summary'
+import { Contract, contractPath } from 'common/contract'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { UserIcon, EyeIcon } from '@heroicons/react/solid'
 
 export const getStaticProps = async () => {
   try {
-    const stats = await getStats()
-    const manaSupplyOverTime = await api('get-mana-summary-stats', {
-      limitDays: 100,
-    })
-    const fromBankSummary = await api('get-txn-summary-stats', {
-      ignoreCategories: ['RECLAIM_MANA', 'AIR_DROP', 'EXTRA_PURCHASED_MANA'],
-      fromType: 'BANK',
-      limitDays: 100,
-    })
-    const toBankSummary = await api('get-txn-summary-stats', {
-      toType: 'BANK',
-      ignoreCategories: ['RECLAIM_MANA'],
-      limitDays: 100,
-    })
-    const activeUserManaStats = await api('get-active-user-mana-stats', {
-      limitDays: 100,
-    })
+    const [
+      stats,
+      manaSupplyOverTime,
+      fromBankSummary,
+      toBankSummary,
+      activeUserManaStats,
+      topMarketsYesterday,
+    ] = await Promise.all([
+      getStats(),
+      api('get-mana-summary-stats', { limitDays: 100 }),
+      api('get-txn-summary-stats', {
+        ignoreCategories: ['RECLAIM_MANA', 'AIR_DROP', 'EXTRA_PURCHASED_MANA'],
+        fromType: 'BANK',
+        limitDays: 100,
+      }),
+      api('get-txn-summary-stats', {
+        toType: 'BANK',
+        ignoreCategories: ['RECLAIM_MANA'],
+        limitDays: 100,
+      }),
+      api('get-active-user-mana-stats', { limitDays: 100 }),
+      api('get-top-markets-yesterday', {}),
+    ])
 
     return {
       props: {
@@ -57,6 +67,7 @@ export const getStaticProps = async () => {
         toBankSummary,
         manaSupplyOverTime,
         activeUserManaStats,
+        topMarketsYesterday,
         totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
@@ -72,12 +83,18 @@ type ActiveUserManaStats = {
   activeBalance: number
 }
 
+type TopMarketsYesterdayData = {
+  topByTraders: { contract: Contract; tradersYesterday: number }[]
+  topByViews: { contract: Contract; viewsYesterday: number }[]
+}
+
 export default function Analytics(props: {
   stats: rowfor<'daily_stats'>[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
   activeUserManaStats: ActiveUserManaStats[]
+  topMarketsYesterday?: TopMarketsYesterdayData
   totalRedeemable: number
 }) {
   const {
@@ -86,6 +103,7 @@ export default function Analytics(props: {
     fromBankSummary,
     toBankSummary,
     activeUserManaStats,
+    topMarketsYesterday,
   } = props
 
   if (!stats) {
@@ -105,6 +123,7 @@ export default function Analytics(props: {
         fromBankSummary={fromBankSummary}
         toBankSummary={toBankSummary}
         activeUserManaStats={activeUserManaStats}
+        topMarketsYesterday={topMarketsYesterday}
       />
     </Page>
   )
@@ -113,8 +132,9 @@ export default function Analytics(props: {
 function ActivityTab(props: {
   stats: rowfor<'daily_stats'>[]
   setStats: (stats: rowfor<'daily_stats'>[]) => void
+  topMarketsYesterday?: TopMarketsYesterdayData
 }) {
-  const { stats, setStats } = props
+  const { stats, setStats, topMarketsYesterday } = props
   const dataFor = useCallback(dataForStats(stats), [stats])
   const current = stats[stats.length - 1]
   const avgDAUlastWeek = average(
@@ -406,7 +426,89 @@ function ActivityTab(props: {
       <Spacer h={8} />
       <TopicDauSummary stats={stats} />
       <Spacer h={8} />
+      {topMarketsYesterday && (
+        <TopMarketsYesterday data={topMarketsYesterday} />
+      )}
     </Col>
+  )
+}
+
+function TopMarketsYesterday(props: { data: TopMarketsYesterdayData }) {
+  const { data } = props
+  const { topByTraders, topByViews } = data
+
+  return (
+    <Col>
+      <Title>Top markets yesterday</Title>
+      <p className="text-ink-500 mb-4">
+        Markets with the most activity in the past 24 hours.
+      </p>
+
+      <Row className="flex-col gap-8 lg:flex-row">
+        <Col className="flex-1">
+          <h3 className="text-ink-800 mb-2 font-semibold">Most traders</h3>
+          <Col className="bg-canvas-50 divide-ink-200 divide-y rounded-lg">
+            {topByTraders.map(({ contract, tradersYesterday }) => (
+              <TopMarketRow
+                key={contract.id}
+                contract={contract}
+                stat={tradersYesterday}
+                icon={<UserIcon className="text-ink-400 h-4 w-4" />}
+              />
+            ))}
+            {topByTraders.length === 0 && (
+              <div className="text-ink-500 p-4 text-sm">No data available</div>
+            )}
+          </Col>
+        </Col>
+
+        <Col className="flex-1">
+          <h3 className="text-ink-800 mb-2 font-semibold">Most views</h3>
+          <Col className="bg-canvas-50 divide-ink-200 divide-y rounded-lg">
+            {topByViews.map(({ contract, viewsYesterday }) => (
+              <TopMarketRow
+                key={contract.id}
+                contract={contract}
+                stat={viewsYesterday}
+                icon={<EyeIcon className="text-ink-400 h-4 w-4" />}
+              />
+            ))}
+            {topByViews.length === 0 && (
+              <div className="text-ink-500 p-4 text-sm">No data available</div>
+            )}
+          </Col>
+        </Col>
+      </Row>
+      <Spacer h={8} />
+    </Col>
+  )
+}
+
+function TopMarketRow(props: {
+  contract: Contract
+  stat: number
+  icon: React.ReactNode
+}) {
+  const { contract, stat, icon } = props
+
+  return (
+    <Link
+      href={contractPath(contract)}
+      className="hover:bg-canvas-100 flex items-center gap-3 px-3 py-2 transition-colors"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="text-ink-900 line-clamp-2 text-sm font-medium">
+          {contract.question}
+        </div>
+      </div>
+      <Row className="text-ink-600 items-center gap-1 text-sm">
+        {icon}
+        <span>{formatLargeNumber(stat)}</span>
+      </Row>
+      <div className="text-ink-700 w-16 text-right text-sm font-semibold">
+        <ContractStatusLabel contract={contract} />
+      </div>
+    </Link>
   )
 }
 
@@ -586,6 +688,7 @@ export function CustomAnalytics(props: {
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
   activeUserManaStats?: ActiveUserManaStats[]
+  topMarketsYesterday?: TopMarketsYesterdayData
 }) {
   const {
     stats,
@@ -593,6 +696,7 @@ export function CustomAnalytics(props: {
     fromBankSummary,
     toBankSummary,
     activeUserManaStats,
+    topMarketsYesterday,
   } = props
   const [localStats, setLocalStats] = useState(stats)
 
@@ -605,7 +709,11 @@ export function CustomAnalytics(props: {
           {
             title: 'Activity',
             content: (
-              <ActivityTab stats={localStats} setStats={setLocalStats} />
+              <ActivityTab
+                stats={localStats}
+                setStats={setLocalStats}
+                topMarketsYesterday={topMarketsYesterday}
+              />
             ),
           },
           {
