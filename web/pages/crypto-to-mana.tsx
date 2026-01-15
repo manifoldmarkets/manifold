@@ -13,7 +13,6 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -33,25 +32,9 @@ function CryptoToManaContent() {
   >('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handlePaymentStarted = async (payment: {
-    intentAddr?: string
-    [key: string]: unknown
-  }) => {
-    if (!user) return
-
+  const handlePaymentStarted = () => {
     setPaymentStatus('started')
     setErrorMessage(null)
-
-    try {
-      // Record the payment intent with user ID for webhook matching
-      await api('record-crypto-payment-intent', {
-        intentId: payment.intentAddr || '',
-        userId: user.id,
-      })
-    } catch (e) {
-      console.error('Failed to record payment intent:', e)
-      // Don't block the payment flow if recording fails
-    }
   }
 
   const handlePaymentCompleted = (payment: { [key: string]: unknown }) => {

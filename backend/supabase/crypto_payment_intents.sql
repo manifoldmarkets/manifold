@@ -1,13 +1,11 @@
--- Table for tracking Daimo Pay crypto payment intents
--- Used for matching webhook payments to users and preventing double-processing
+-- Table for tracking processed Daimo Pay crypto payments
+-- Used for idempotency to prevent double-crediting mana
 create table if not exists
   crypto_payment_intents (
     id bigint primary key generated always as identity not null,
     intent_id text not null,
     user_id text not null,
     created_time timestamp with time zone default now() not null,
-    processed boolean default false not null,
-    processed_at timestamp with time zone,
     usdc_amount numeric(20, 6),
     mana_amount integer
   );
@@ -31,7 +29,3 @@ create unique index crypto_payment_intents_intent_id_idx on public.crypto_paymen
 drop index if exists crypto_payment_intents_user_id_idx;
 
 create index crypto_payment_intents_user_id_idx on public.crypto_payment_intents using btree (user_id);
-
-drop index if exists crypto_payment_intents_processed_idx;
-
-create index crypto_payment_intents_processed_idx on public.crypto_payment_intents using btree (processed) where processed = false;

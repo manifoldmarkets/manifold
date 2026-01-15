@@ -21,6 +21,10 @@ type DaimoWebhookEvent = {
     destFinalCallTokenAmount?: string // Amount in token units (USDC has 6 decimals)
     destChainId?: number
     destTokenAddr?: string
+    metadata?: {
+      userId?: string
+      [key: string]: unknown
+    }
     [key: string]: unknown
   }
 }
@@ -74,34 +78,24 @@ export const daimowebhook = async (req: Request, res: Response) => {
   res.status(200).send('success')
 }
 
-const handlePaymentCompleted = async (payment: DaimoWebhookEvent['payment']) => {
-  const { intentAddr, destFinalCallTokenAmount } = payment
+const handlePaymentCompleted = async (
+  payment: DaimoWebhookEvent['payment']
+) => {
+  const { intentAddr, destFinalCallTokenAmount, metadata } = payment
 
   if (!intentAddr) {
     log.error('Missing intentAddr in payment')
     return
   }
 
+  // Get userId from metadata (sent by frontend)
+  const userId = metadata?.userId
+  if (!userId) {
+    log.error('Missing userId in payment metadata', { intentAddr })
+    return
+  }
+
   const pg = createSupabaseDirectClient()
-
-  // Look up the user from the stored payment intent
-  const paymentIntent = await pg.oneOrNone(
-    `SELECT user_id, processed FROM crypto_payment_intents 
-     WHERE intent_id = $1`,
-    [intentAddr]
-  )
-
-  if (!paymentIntent) {
-    log.error('Payment intent not found', { intentAddr })
-    return
-  }
-
-  if (paymentIntent.processed) {
-    log('Payment already processed:', intentAddr)
-    return
-  }
-
-  const userId = paymentIntent.user_id
 
   // Parse the USDC amount (6 decimals)
   // destFinalCallTokenAmount is in the smallest unit (e.g., "1000000" = 1 USDC)
@@ -118,7 +112,12 @@ const handlePaymentCompleted = async (payment: DaimoWebhookEvent['payment']) => 
   const manaAmount = Math.floor(usdcAmount * CRYPTO_MANA_PER_DOLLAR)
   const paidInCents = Math.round(usdcAmount * 100)
 
-  log('Processing crypto payment:', { userId, usdcAmount, manaAmount, intentAddr })
+  log('Processing crypto payment:', {
+    userId,
+    usdcAmount,
+    manaAmount,
+    intentAddr,
+  })
 
   const manaPurchaseTxn = {
     fromId: 'EXTERNAL',
@@ -139,17 +138,24 @@ const handlePaymentCompleted = async (payment: DaimoWebhookEvent['payment']) => 
   let success = false
   try {
     await pg.tx(async (tx) => {
-      // Mark payment as processed first (idempotency)
-      const updated = await tx.result(
-        `UPDATE crypto_payment_intents 
-         SET processed = true, processed_at = NOW(), mana_amount = $2, usdc_amount = $3
-         WHERE intent_id = $1 AND processed = false`,
-        [intentAddr, manaAmount, usdcAmount]
-      )
-
-      if (updated.rowCount === 0) {
-        // Already processed by another request
-        throw new Error('Payment already processed')
+      // Insert for idempotency - will fail if already processed
+      try {
+        await tx.none(
+          `INSERT INTO crypto_payment_intents (intent_id, user_id, mana_amount, usdc_amount)
+           VALUES ($1, $2, $3, $4)`,
+          [intentAddr, userId, manaAmount, usdcAmount]
+        )
+      } catch (e: unknown) {
+        // Check if it's a unique constraint violation (already processed)
+        if (
+          e &&
+          typeof e === 'object' &&
+          'code' in e &&
+          (e as { code: string }).code === '23505'
+        ) {
+          throw new Error('Payment already processed')
+        }
+        throw e
       }
 
       await runTxnInBetQueue(tx, manaPurchaseTxn)
