@@ -50,7 +50,9 @@ import {
   PurchaseConfirmation,
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
+import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
 import { CharityGiveawayCard } from 'web/components/shop/charity-giveaway-card'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -91,6 +93,9 @@ export default function ShopPage() {
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
   const optimisticContext = useOptimisticEntitlements()
+
+  // Fetch charity giveaway data once for both cards
+  const { data: charityGiveawayData, loading: charityGiveawayLoading } = useAPIGetter('get-charity-giveaway', {})
 
   // Local state for optimistic updates
   const [localEntitlements, setLocalEntitlements] = useState<UserEntitlement[]>(
@@ -349,7 +354,7 @@ export default function ShopPage() {
           </select>
         </Row>
 
-        {/* Shop items grid - exclude supporter tiers (handled on /supporter page) */}
+        {/* Shop items grid - exclude supporter tiers (handled on /supporter page) and earned items */}
         {/* Single column on very narrow screens (<360px), 2 columns otherwise */}
         <div className="grid grid-cols-1 gap-4 min-[360px]:grid-cols-2">
           {sortItems(
@@ -357,7 +362,8 @@ export default function ShopPage() {
               (item) =>
                 !SUPPORTER_ENTITLEMENT_IDS.includes(
                   item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-                )
+                ) &&
+                item.type !== 'earned' // Earned items have their own special cards
             ),
             sortOption
           ).map((item) => {
@@ -383,8 +389,22 @@ export default function ShopPage() {
           })}
         </div>
 
-        {/* Charity giveaway card at bottom */}
-        <CharityGiveawayCard variant="full" className="mt-6" />
+        {/* Charity giveaway and trophy cards - side by side on desktop */}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <CharityGiveawayCard
+            data={charityGiveawayData}
+            isLoading={charityGiveawayLoading}
+          />
+          <CharityChampionCard
+            data={charityGiveawayData}
+            isLoading={charityGiveawayLoading}
+            user={user}
+            entitlements={effectiveEntitlements}
+            onEntitlementsChange={(newEntitlements) => {
+              setLocalEntitlements(newEntitlements)
+            }}
+          />
+        </div>
 
         {/* Admin testing tools */}
         {isAdminOrMod && (

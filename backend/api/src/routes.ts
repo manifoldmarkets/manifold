@@ -165,6 +165,7 @@ import { adminRecoverUser } from './admin-recover-user'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
+import { claimCharityChampion } from './claim-charity-champion'
 import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
@@ -440,6 +441,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-predictle-result': getPredictleResult,
   'get-charity-giveaway': getCharityGiveaway,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
+  'claim-charity-champion': claimCharityChampion,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
   'get-predictle-percentile': getPredictlePercentile,

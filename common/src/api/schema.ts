@@ -2905,6 +2905,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
     returns: {} as {
       giveaway?: {
@@ -2928,6 +2929,21 @@ export const API = (_apiTypeCheck = {
         name: string
         avatarUrl: string
       }
+      champion?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+      }
+      trophyHolder?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        claimedTime: number
+      }
       // Provably fair fields
       nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists
       nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
@@ -2948,6 +2964,22 @@ export const API = (_apiTypeCheck = {
       ticketId: string
       numTickets: number
       manaSpent: number
+    },
+  },
+  'claim-charity-champion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ enabled: z.boolean().optional() }).strict(),
+    returns: {} as {
+      success: boolean
+      entitlements: {
+        userId: string
+        entitlementId: string
+        grantedTime: number
+        expiresTime?: number
+        enabled: boolean
+      }[]
     },
   },
   'get-charity-giveaway-sales': {

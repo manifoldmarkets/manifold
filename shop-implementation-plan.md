@@ -391,6 +391,208 @@ The `shop_orders` table is already designed to support this with:
 
 ---
 
+## Charity Champion Trophy System
+
+A special "earned" item that cannot be purchased - only the #1 ticket buyer in the charity raffle can claim it.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              SHOP PAGE (shop.tsx)                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  useAPIGetter('get-charity-giveaway')  ← Single API call            │   │
+│  │           ↓                                                          │   │
+│  │    charityGiveawayData (shared state)                               │   │
+│  │           ↓                        ↓                                 │   │
+│  │  ┌─────────────────┐    ┌─────────────────────────┐                 │   │
+│  │  │ GiveawayCard    │    │ ChampionCard            │                 │   │
+│  │  │ (data prop)     │    │ (data prop + user)      │                 │   │
+│  │  └─────────────────┘    └─────────────────────────┘                 │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         BACKEND API LAYER                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  get-charity-giveaway.ts                                            │   │
+│  │  ├── Returns: giveaway, champion, trophyHolder, winner, etc.       │   │
+│  │  └── Runs 4 parallel DB queries via Promise.all()                  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  claim-charity-champion.ts                                          │   │
+│  │  ├── Validates caller is #1 ticket buyer                           │   │
+│  │  ├── Revokes trophy from previous holder                           │   │
+│  │  └── Grants/updates entitlement for new champion                   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            DATABASE TABLES                                   │
+│  ┌─────────────────────────┐    ┌─────────────────────────────────────┐    │
+│  │ charity_giveaway_tickets│    │ user_entitlements                   │    │
+│  │ (ticket purchases)      │    │ (trophy ownership)                  │    │
+│  └─────────────────────────┘    └─────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Concepts
+
+| Term | Definition | Storage |
+|------|------------|---------|
+| **Champion** | User with most total tickets in current raffle | Computed dynamically from `charity_giveaway_tickets` |
+| **Trophy Holder** | User who claimed the trophy entitlement | Stored in `user_entitlements` with `enabled=true` |
+| **Ticket Champion** | Same as Champion - displayed on giveaway card | Computed |
+
+**Important:** Champion and Trophy Holder can be different people:
+- Champion hasn't claimed yet
+- Previous champion still holds trophy (new champion hasn't claimed)
+- Trophy holder disabled their trophy display
+
+### Files Reference
+
+| Layer | File | Purpose |
+|-------|------|---------|
+| **Frontend** | `web/pages/shop.tsx` | Fetches data once, passes to both cards |
+| **Frontend** | `web/components/shop/charity-giveaway-card.tsx` | Shows raffle info + "Ticket Champion" |
+| **Frontend** | `web/components/shop/charity-champion-card.tsx` | Trophy card with claim/toggle UI |
+| **Frontend** | `web/components/widgets/user-link.tsx` | `CharityChampionBadge` component |
+| **Backend** | `backend/api/src/get-charity-giveaway.ts` | Main API - returns champion + trophyHolder |
+| **Backend** | `backend/api/src/claim-charity-champion.ts` | Claim/toggle trophy API |
+| **Backend** | `backend/api/src/routes.ts` | Route registration |
+| **Common** | `common/src/api/schema.ts` | API types + `LIGHT_CACHE_STRATEGY` |
+| **Common** | `common/src/shop/items.ts` | `CHARITY_CHAMPION_ENTITLEMENT_ID`, helpers |
+
+### API Schema
+
+```typescript
+// GET /api/get-charity-giveaway
+returns: {
+  giveaway?: { giveawayNum, name, prizeAmountUsd, closeTime, winningTicketId, createdTime }
+  charityStats: { charityId, totalTickets, totalManaSpent }[]
+  totalTickets: number
+  winningCharity?: string
+  winner?: { id, username, name, avatarUrl }
+  champion?: { id, username, name, avatarUrl, totalTickets }      // ← #1 ticket buyer
+  trophyHolder?: { id, username, name, avatarUrl, totalTickets, claimedTime }  // ← Has trophy
+  nonceHash?: string
+  nonce?: string  // Only revealed after winner selected
+}
+
+// POST /api/claim-charity-champion
+props: { enabled?: boolean }  // Toggle trophy visibility
+returns: { success: boolean, entitlements: UserEntitlement[] }
+```
+
+### Shop Item Type: 'earned'
+
+```typescript
+// In common/src/shop/items.ts
+{
+  id: 'charity-champion-trophy',
+  name: 'Charity Champion Trophy',
+  description: 'Exclusive trophy for the #1 ticket buyer in the charity raffle',
+  price: 0,           // Cannot be purchased
+  type: 'earned',     // Special type - excluded from shop grid
+  limit: 'one-time',
+  category: 'badge',
+}
+```
+
+Items with `type: 'earned'` are:
+- Filtered out of the regular shop item grid (`item.type !== 'earned'`)
+- Displayed in their own special cards
+- Managed by custom claim APIs (not `shop-purchase`)
+
+### Trophy Transfer Logic
+
+When someone new becomes champion and claims:
+1. Previous holder's entitlement is set to `enabled = false`
+2. New champion gets the entitlement (or existing one updated to `enabled = true`)
+3. Trophy badge moves to new holder's profile immediately
+
+### Performance Optimizations
+
+1. **Single API call** - `shop.tsx` fetches once, passes data to both cards
+2. **Parallel DB queries** - `get-charity-giveaway.ts` uses `Promise.all()` for 4 queries
+3. **Light caching** - `LIGHT_CACHE_STRATEGY` reduces redundant API calls
+4. **Loading skeletons** - Cards show skeleton UI while data loads
+
+### How to Remove This Feature
+
+To completely remove the Charity Champion Trophy:
+
+1. **Frontend cleanup:**
+   ```bash
+   # Delete component
+   rm web/components/shop/charity-champion-card.tsx
+
+   # Remove from shop.tsx:
+   # - Delete CharityChampionCard import
+   # - Delete CharityChampionCard usage in JSX
+   # - Optionally remove charityGiveawayData if only used by champion card
+
+   # Remove badge from user-link.tsx:
+   # - Delete CharityChampionBadge component
+   # - Remove userHasCharityChampionTrophy import and usage
+   ```
+
+2. **Backend cleanup:**
+   ```bash
+   # Delete claim API
+   rm backend/api/src/claim-charity-champion.ts
+
+   # Remove from routes.ts:
+   # - Delete import { claimCharityChampion }
+   # - Delete 'claim-charity-champion': claimCharityChampion
+
+   # In get-charity-giveaway.ts:
+   # - Remove champion and trophyHolder queries from Promise.all
+   # - Remove champion and trophyHolder from return object
+   ```
+
+3. **Common cleanup:**
+   ```bash
+   # In common/src/api/schema.ts:
+   # - Remove champion and trophyHolder from get-charity-giveaway returns
+   # - Delete claim-charity-champion schema entry
+
+   # In common/src/shop/items.ts:
+   # - Delete charity-champion-trophy from SHOP_ITEMS
+   # - Delete userHasCharityChampionTrophy helper
+   # - Delete CHARITY_CHAMPION_ENTITLEMENT_ID export
+   ```
+
+4. **Database cleanup (optional):**
+   ```sql
+   -- Remove trophy entitlements
+   DELETE FROM user_entitlements WHERE entitlement_id = 'charity-champion-trophy';
+   ```
+
+### How to Modify/Improve
+
+**Change trophy criteria (e.g., most tickets in last 7 days):**
+- Edit the champion query in `get-charity-giveaway.ts`
+
+**Add multiple trophy tiers (gold/silver/bronze):**
+- Add new entitlement IDs to `items.ts`
+- Modify `get-charity-giveaway.ts` to return top 3 users
+- Update `charity-champion-card.tsx` to show all three
+- Update `claim-charity-champion.ts` to handle position parameter
+
+**Auto-claim trophy (no manual claim needed):**
+- Remove `claim-charity-champion.ts` API
+- Add a scheduled function that updates `user_entitlements` when champion changes
+- Remove claim button from `charity-champion-card.tsx`
+
+**Show trophy on charity page instead of shop:**
+- Move `CharityChampionCard` to `/charity` page
+- Pass giveaway data via props or fetch there
+
+---
+
 ## Future: Achievement-Gated Items
 
 Items that require specific achievements to unlock before purchasing.

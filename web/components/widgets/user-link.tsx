@@ -25,11 +25,11 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
-import { FaStar } from 'react-icons/fa'
+import { FaStar, FaTrophy } from 'react-icons/fa'
 import { User } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
 import { UserEntitlement } from 'common/shop/types'
-import { userHasSupporterBadge } from 'common/shop/items'
+import { userHasSupporterBadge, userHasCharityChampionTrophy } from 'common/shop/items'
 import { getUserSupporterTier, SUPPORTER_TIERS } from 'common/supporter-config'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -230,6 +230,9 @@ export function UserBadge(props: {
   if (userHasSupporterBadge(entitlements)) {
     badges.push(<SupporterBadge key="supporter" entitlements={entitlements} animate={animateSupporterBadge} />)
   }
+  if (userHasCharityChampionTrophy(entitlements)) {
+    badges.push(<CharityChampionBadge key="charity-champion" />)
+  }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
   }
@@ -322,6 +325,19 @@ function MarketCreatorBadge() {
   return (
     <Tooltip text="Question Creator" placement="right">
       <ScalesIcon className="h-4 w-4 text-amber-400" aria-hidden="true" />
+    </Tooltip>
+  )
+}
+
+// Show a trophy for the Charity Champion
+function CharityChampionBadge() {
+  return (
+    <Tooltip text="#1 Charity Champion" placement="right">
+      <FaTrophy
+        className="h-3.5 w-3.5 text-amber-500"
+        aria-hidden="true"
+        style={{ filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))' }}
+      />
     </Tooltip>
   )
 }
