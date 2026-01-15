@@ -244,44 +244,42 @@ export default function Leagues(props: LeaguesProps) {
 
         {/* Season Status Bar */}
         <div className="border-ink-200 rounded-lg border px-4 py-3">
-          <Row className="items-center justify-between gap-4">
-            <Row className="items-center gap-3">
-              <select
-                className="bg-canvas-0 border-ink-200 text-ink-600 focus:border-primary-500 focus:ring-primary-500 rounded border px-2 py-1 text-sm focus:outline-none focus:ring-1"
-                value={season}
-                onChange={(e) => onSetSeason(+e.target.value)}
-              >
-                {seasons.map((s) => (
-                  <option key={s} value={s}>
-                    Season {s}: {getSeasonMonth(s)}
-                  </option>
-                ))}
-              </select>
-              <Row className="items-center gap-2">
-                <ClockIcon className="text-ink-400 h-4 w-4" />
-                {closingPeriod ? (
-                  <span className="text-ink-600 text-sm">
-                    Finals — ends within{' '}
-                    <span className="font-medium">
-                      {getCountdownStringHoursMinutes(randomPeriodEnd)}
-                    </span>
+          <Row className="flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <select
+              className="bg-canvas-0 border-ink-200 text-ink-600 focus:border-primary-500 focus:ring-primary-500 rounded border px-2 py-1 text-sm focus:outline-none focus:ring-1"
+              value={season}
+              onChange={(e) => onSetSeason(+e.target.value)}
+            >
+              {seasons.map((s) => (
+                <option key={s} value={s}>
+                  Season {s}: {getSeasonMonth(s)}
+                </option>
+              ))}
+            </select>
+            <Row className="items-center gap-2">
+              <ClockIcon className="text-ink-400 h-4 w-4" />
+              {closingPeriod ? (
+                <span className="text-ink-600 text-sm">
+                  Finals — ends within{' '}
+                  <span className="font-medium">
+                    {getCountdownStringHoursMinutes(randomPeriodEnd)}
                   </span>
-                ) : seasonStatus === 'complete' ? (
-                  <span className="text-ink-600 text-sm">
-                    Ended {formatTime(seasonEnd)}
-                  </span>
-                ) : (
-                  <span className="text-ink-600 text-sm">
-                    Ends in{' '}
-                    <InfoTooltip text="Once the countdown ends, leaderboards freeze at a random time in the following 24h.">
-                      <Countdown
-                        className="font-mono text-sm font-medium"
-                        endDate={countdownEnd}
-                      />
-                    </InfoTooltip>
-                  </span>
-                )}
-              </Row>
+                </span>
+              ) : seasonStatus === 'complete' ? (
+                <span className="text-ink-600 text-sm">
+                  Ended {formatTime(seasonEnd)}
+                </span>
+              ) : (
+                <span className="text-ink-600 text-sm">
+                  Ends in{' '}
+                  <InfoTooltip text="Once the countdown ends, leaderboards freeze at a random time in the following 24h.">
+                    <Countdown
+                      className="font-mono text-sm font-medium"
+                      endDate={countdownEnd}
+                    />
+                  </InfoTooltip>
+                </span>
+              )}
             </Row>
             <button
               onClick={() => setPrizesModalOpen(true)}
