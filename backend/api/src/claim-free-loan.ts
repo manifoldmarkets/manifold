@@ -145,7 +145,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
         const key = `${m.contractId}-${m.answerId ?? ''}`
         const currentLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
         const positionValue = m.payout ?? 0
-        const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+        const maxLoan = calculateMarketLoanMax(netWorth)
         answerLoanInfo[key] = {
           currentLoan,
           positionValue,
@@ -160,7 +160,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
         (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
       )
       const positionValue = sumBy(contractMetrics, (m) => m.payout ?? 0)
-      const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+      const maxLoan = calculateMarketLoanMax(netWorth)
       marketLoanInfo[contractId] = {
         currentLoan,
         positionValue,

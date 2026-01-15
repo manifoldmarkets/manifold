@@ -2087,7 +2087,6 @@ export const API = (_apiTypeCheck = {
       currentMarginLoan: number
       available: number
       netWorthLimit: number
-      positionLimit: number
       totalPositionValue: number
       eligible: boolean
       eligibilityReason?: string

@@ -138,7 +138,7 @@ export const getFreeLoanAvailable: APIHandler<
         const key = `${m.contractId}-${m.answerId ?? ''}`
         const currentLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
         const positionValue = m.payout ?? 0
-        const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+        const maxLoan = calculateMarketLoanMax(netWorth)
         answerLoanInfo[key] = {
           currentLoan,
           positionValue,
@@ -153,7 +153,7 @@ export const getFreeLoanAvailable: APIHandler<
         (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
       )
       const positionValue = sumBy(contractMetrics, (m) => m.payout ?? 0)
-      const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+      const maxLoan = calculateMarketLoanMax(netWorth)
       marketLoanInfo[contractId] = {
         currentLoan,
         positionValue,
