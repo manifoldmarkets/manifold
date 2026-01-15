@@ -367,13 +367,48 @@ export default function Leagues(props: LeaguesProps) {
 const DIVISION_CARD_STYLES: {
   [key: number]: { border: string; bg: string; text: string; icon: string }
 } = {
-  0: { border: 'border-slate-400', bg: 'bg-slate-50 dark:bg-slate-800/30', text: 'text-slate-600 dark:text-slate-300', icon: '🤖' },
-  1: { border: 'border-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', text: 'text-amber-600 dark:text-amber-400', icon: '🥉' },
-  2: { border: 'border-slate-400', bg: 'bg-slate-50 dark:bg-slate-800/30', text: 'text-slate-600 dark:text-slate-300', icon: '🥈' },
-  3: { border: 'border-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-950/20', text: 'text-yellow-600 dark:text-yellow-400', icon: '🥇' },
-  4: { border: 'border-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/20', text: 'text-cyan-600 dark:text-cyan-400', icon: '💿' },
-  5: { border: 'border-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/20', text: 'text-violet-600 dark:text-violet-400', icon: '💎' },
-  6: { border: 'border-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', text: 'text-rose-600 dark:text-rose-400', icon: '🎖️' },
+  0: {
+    border: 'border-slate-400',
+    bg: 'bg-slate-50 dark:bg-slate-800/30',
+    text: 'text-slate-600 dark:text-slate-300',
+    icon: '🤖',
+  },
+  1: {
+    border: 'border-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/20',
+    text: 'text-amber-600 dark:text-amber-400',
+    icon: '🥉',
+  },
+  2: {
+    border: 'border-slate-400',
+    bg: 'bg-slate-50 dark:bg-slate-800/30',
+    text: 'text-slate-600 dark:text-slate-300',
+    icon: '🥈',
+  },
+  3: {
+    border: 'border-yellow-500',
+    bg: 'bg-yellow-50 dark:bg-yellow-950/20',
+    text: 'text-yellow-600 dark:text-yellow-400',
+    icon: '🥇',
+  },
+  4: {
+    border: 'border-cyan-400',
+    bg: 'bg-cyan-50 dark:bg-cyan-950/20',
+    text: 'text-cyan-600 dark:text-cyan-400',
+    icon: '💿',
+  },
+  5: {
+    border: 'border-violet-400',
+    bg: 'bg-violet-50 dark:bg-violet-950/20',
+    text: 'text-violet-600 dark:text-violet-400',
+    icon: '💎',
+  },
+  6: {
+    border: 'border-rose-400',
+    bg: 'bg-rose-50 dark:bg-rose-950/20',
+    text: 'text-rose-600 dark:text-rose-400',
+    icon: '🎖️',
+  },
 }
 
 function UserLeagueStatus(props: {
@@ -398,7 +433,8 @@ function UserLeagueStatus(props: {
   const prevDivision = DIVISION_NAMES[Math.max(division - 1, 1)]
   const currentDivision = DIVISION_NAMES[division]
 
-  const divisionStyle = DIVISION_CARD_STYLES[division] ?? DIVISION_CARD_STYLES[1]
+  const divisionStyle =
+    DIVISION_CARD_STYLES[division] ?? DIVISION_CARD_STYLES[1]
 
   const getZone = () => {
     if (rank <= doublePromotion && nextNextDivision)
@@ -465,8 +501,8 @@ function UserLeagueStatus(props: {
               mana_earned > 0
                 ? 'text-teal-600'
                 : mana_earned < 0
-                  ? 'text-scarlet-500'
-                  : 'text-ink-500'
+                ? 'text-scarlet-500'
+                : 'text-ink-500'
             )}
           >
             {mana_earned > 0 ? '+' : ''}
