@@ -57,7 +57,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
@@ -74,6 +73,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { Tooltip } from '../widgets/tooltip'
 import {
   AnswerBar,
   AnswerPosition,
@@ -83,7 +83,6 @@ import {
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 
-export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // the offset in which the top of answers is visible
@@ -171,15 +170,13 @@ export function AnswersPanel(props: {
   }
 
   const isAdvancedTrader = useIsAdvancedTrader()
-  const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
-    usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
 
   const unfilledBets = useUnfilledBets(
     contract.id,
     (params) => api('bets', params),
     useIsPageVisible,
     {
-      enabled: isAdvancedTrader && shouldShowLimitOrderChart,
+      enabled: isAdvancedTrader,
     }
   )
 
@@ -292,9 +289,7 @@ export function AnswersPanel(props: {
                   (b) => b.answerId === answer.id
                 )}
                 color={getAnswerColor(answer)}
-                shouldShowLimitOrderChart={
-                  isAdvancedTrader && shouldShowLimitOrderChart
-                }
+                shouldShowLimitOrderChart={isAdvancedTrader}
               />
             ))}
 
@@ -316,44 +311,23 @@ export function AnswersPanel(props: {
           </Col>
         )}
       </Col>
-      <Row className="justify-end gap-4">
-        {!floatingEqual(metrics?.invested ?? 0, 0) && (
-          <Row className="mt-2 items-center gap-2">
-            <input
-              id="positions"
-              type="checkbox"
-              className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
-              checked={shouldShowPositions}
-              onChange={() => setShouldShowPositions(!shouldShowPositions)}
-            />
-            <label
-              htmlFor="positions"
-              className="text-ink-500 text-sm font-medium"
-            >
-              Show your positions
-            </label>
-          </Row>
-        )}
-        {isAdvancedTrader && (
-          <Row className="mt-2 items-center gap-2">
-            <input
-              id="limitOrderChart"
-              type="checkbox"
-              className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
-              checked={shouldShowLimitOrderChart}
-              onChange={() =>
-                setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
-              }
-            />
-            <label
-              htmlFor="limitOrderChart"
-              className="text-ink-500 text-sm font-medium"
-            >
-              Show limit orders
-            </label>
-          </Row>
-        )}
-      </Row>
+      {!floatingEqual(metrics?.invested ?? 0, 0) && (
+        <Row className="mt-2 items-center justify-end gap-2">
+          <input
+            id="positions"
+            type="checkbox"
+            className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+            checked={shouldShowPositions}
+            onChange={() => setShouldShowPositions(!shouldShowPositions)}
+          />
+          <label
+            htmlFor="positions"
+            className="text-ink-500 text-sm font-medium"
+          >
+            Show your positions
+          </label>
+        </Row>
+      )}
     </Col>
   )
 }
@@ -532,10 +506,6 @@ export function SimpleAnswerBars(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const isAdvancedTrader = useIsAdvancedTrader()
-  const [shouldShowLimitOrderChart] = usePersistentLocalState<boolean>(
-    true,
-    SHOW_LIMIT_ORDER_CHARTS_KEY
-  )
 
   return (
     <Col className="mx-[2px] gap-2">
@@ -551,9 +521,7 @@ export function SimpleAnswerBars(props: {
               contract={contract}
               color={getAnswerColor(answer)}
               barColor={barColor}
-              shouldShowLimitOrderChart={
-                isAdvancedTrader && shouldShowLimitOrderChart
-              }
+              shouldShowLimitOrderChart={isAdvancedTrader}
               feedReason={feedReason}
             />
           ))}
@@ -758,7 +726,12 @@ export function AnswerComponent(props: {
         end={
           <Row className={'items-center gap-1'}>
             {shouldShowLimitOrderChart && isClient && !!hasLimitOrders && (
-              <MiniDepthChart limitOrders={unfilledBets} prob={prob} />
+              <MiniDepthChart
+                limitOrders={unfilledBets}
+                prob={prob}
+                onClick={() => setLimitBetModalOpen(true)}
+                numOrders={unfilledBets?.length}
+              />
             )}
             <BetButtons
               contract={contract}
@@ -950,181 +923,104 @@ export function LimitOrderBarChart({
   )
 }
 
-// Mini vertical depth chart for display next to Yes/No buttons
+// Mini limit order bar chart for display next to Yes/No buttons
+// X-axis: probability (0% to 100%)
+// Y-axis: order volume at each price point
 export function MiniDepthChart({
   limitOrders,
   prob,
-  height = 32,
-  width = 48,
+  height = 24,
+  width = 40,
+  onClick,
+  numOrders,
 }: {
   limitOrders?: Array<LimitBet>
   prob: number
   height?: number
   width?: number
+  onClick?: () => void
+  numOrders?: number
 }) {
-  const { yesBets, noBets, maxAmount } = useMemo(() => {
+  const { ordersByProb, maxVolume } = useMemo(() => {
     if (!limitOrders || limitOrders.length === 0) {
-      return { yesBets: [], noBets: [], maxAmount: 0 }
+      return { ordersByProb: [], maxVolume: 0 }
     }
 
     const filtered = limitOrders.filter(
       (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
     )
 
-    // Sort YES bets by limitProb descending (highest price first)
-    const yes = filtered
-      .filter((bet) => bet.outcome === 'YES')
-      .sort((a, b) => b.limitProb - a.limitProb)
-
-    // Sort NO bets by limitProb ascending (lowest price first)
-    const no = filtered
-      .filter((bet) => bet.outcome === 'NO')
-      .sort((a, b) => a.limitProb - b.limitProb)
-
-    // Calculate cumulative amounts
-    const orderSize = (bet: LimitBet) => {
-      const price = bet.outcome === 'YES' ? bet.limitProb : 1 - bet.limitProb
-      return (bet.orderAmount - bet.amount) / price
-    }
-
-    let yesTotal = 0
-    const yesCumulative = yes.map((bet) => {
-      yesTotal += orderSize(bet)
-      return { prob: bet.limitProb, cumulative: yesTotal }
+    // Group by limitProb and calculate volume at each price
+    const grouped = groupBy(filtered, 'limitProb')
+    const orders = Object.entries(grouped).map(([limitProb, bets]) => {
+      const volume = sumBy(bets, (bet) => bet.orderAmount - bet.amount)
+      const isYes = bets[0].outcome === 'YES'
+      return { prob: Number(limitProb), volume, isYes }
     })
 
-    let noTotal = 0
-    const noCumulative = no.map((bet) => {
-      noTotal += orderSize(bet)
-      return { prob: bet.limitProb, cumulative: noTotal }
-    })
-
-    const max = Math.max(yesTotal || 0, noTotal || 0)
-
-    return { yesBets: yesCumulative, noBets: noCumulative, maxAmount: max }
+    const max = Math.max(...orders.map((o) => o.volume), 0)
+    return { ordersByProb: orders, maxVolume: max }
   }, [limitOrders])
 
-  if (yesBets.length === 0 && noBets.length === 0) {
+  if (ordersByProb.length === 0) {
     return null
   }
 
-  // Build SVG path for YES orders (green, left side going up)
-  // YES orders: buyers willing to buy at or below their limit price
-  // Rendered from current prob down to 0
-  const buildYesPath = () => {
-    if (yesBets.length === 0) return ''
-    const points: string[] = []
-    const xScale = (amount: number) =>
-      maxAmount > 0 ? (amount / maxAmount) * (width / 2) : 0
-    const yScale = (p: number) => (1 - p) * height
+  const xScale = (p: number) => p * width
+  const yScale = (v: number) =>
+    maxVolume > 0 ? (v / maxVolume) * (height - 2) : 0
 
-    // Start at current prob with 0 depth
-    points.push(`M ${width / 2} ${yScale(prob)}`)
-
-    // Move to first YES order
-    if (yesBets.length > 0 && yesBets[0].prob <= prob) {
-      points.push(`L ${width / 2} ${yScale(yesBets[0].prob)}`)
-    }
-
-    // Step through YES orders (they want to buy at lower prices)
-    for (const order of yesBets) {
-      if (order.prob > prob) continue // Skip orders above current price
-      const x = width / 2 - xScale(order.cumulative)
-      points.push(`L ${x} ${yScale(order.prob)}`)
-    }
-
-    // Extend to bottom (prob = 0)
-    const lastYes = yesBets[yesBets.length - 1]
-    if (lastYes && lastYes.prob <= prob) {
-      const x = width / 2 - xScale(lastYes.cumulative)
-      points.push(`L ${x} ${yScale(0)}`)
-    } else {
-      points.push(`L ${width / 2} ${yScale(0)}`)
-    }
-
-    // Close path back to center
-    points.push(`L ${width / 2} ${yScale(0)}`)
-    points.push('Z')
-
-    return points.join(' ')
-  }
-
-  // Build SVG path for NO orders (red, right side going up)
-  // NO orders: sellers willing to sell at or above their limit price
-  // Rendered from current prob up to 1
-  const buildNoPath = () => {
-    if (noBets.length === 0) return ''
-    const points: string[] = []
-    const xScale = (amount: number) =>
-      maxAmount > 0 ? (amount / maxAmount) * (width / 2) : 0
-    const yScale = (p: number) => (1 - p) * height
-
-    // Start at current prob with 0 depth
-    points.push(`M ${width / 2} ${yScale(prob)}`)
-
-    // Move to first NO order
-    if (noBets.length > 0 && noBets[0].prob >= prob) {
-      points.push(`L ${width / 2} ${yScale(noBets[0].prob)}`)
-    }
-
-    // Step through NO orders (they want to sell at higher prices)
-    for (const order of noBets) {
-      if (order.prob < prob) continue // Skip orders below current price
-      const x = width / 2 + xScale(order.cumulative)
-      points.push(`L ${x} ${yScale(order.prob)}`)
-    }
-
-    // Extend to top (prob = 1)
-    const lastNo = noBets[noBets.length - 1]
-    if (lastNo && lastNo.prob >= prob) {
-      const x = width / 2 + xScale(lastNo.cumulative)
-      points.push(`L ${x} ${yScale(1)}`)
-    } else {
-      points.push(`L ${width / 2} ${yScale(1)}`)
-    }
-
-    // Close path back to center
-    points.push(`L ${width / 2} ${yScale(1)}`)
-    points.push('Z')
-
-    return points.join(' ')
-  }
-
-  const yesPath = buildYesPath()
-  const noPath = buildNoPath()
-
-  // Don't render anything if there are no paths to show
-  if (!yesPath && !noPath) {
-    return null
-  }
+  const tooltipText = numOrders
+    ? `${numOrders} limit order${numOrders === 1 ? '' : 's'}`
+    : undefined
 
   return (
-    <svg
-      width={width}
-      height={height}
-      className="flex-shrink-0"
-      viewBox={`0 0 ${width} ${height}`}
-    >
-      {/* YES orders - green area on left */}
-      {yesPath && (
-        <path
-          d={yesPath}
-          fill="rgb(16 185 129)"
-          fillOpacity={0.6}
-          stroke="rgb(16 185 129)"
+    <Tooltip text={tooltipText}>
+      <svg
+        width={width}
+        height={height}
+        className={clsx('flex-shrink-0', onClick && 'cursor-pointer')}
+        viewBox={`0 0 ${width} ${height}`}
+        onClick={onClick}
+      >
+        {/* Border */}
+        <rect
+          x={0.5}
+          y={0.5}
+          width={width - 1}
+          height={height - 1}
+          fill="none"
+          stroke="rgb(var(--color-ink-300))"
           strokeWidth={1}
+          rx={2}
         />
-      )}
-      {/* NO orders - red area on right */}
-      {noPath && (
-        <path
-          d={noPath}
-          fill="rgb(239 68 68)"
-          fillOpacity={0.6}
-          stroke="rgb(239 68 68)"
+        {/* Vertical bars for each limit order */}
+        {ordersByProb.map((order, i) => {
+          const x = xScale(order.prob)
+          const barHeight = Math.max(2, yScale(order.volume))
+          const color = order.isYes ? 'rgb(16 185 129)' : 'rgb(239 68 68)'
+          return (
+            <rect
+              key={i}
+              x={x - 0.5}
+              y={height - barHeight}
+              width={1}
+              height={barHeight}
+              fill={color}
+            />
+          )
+        })}
+        {/* Current price dashed line */}
+        <line
+          x1={xScale(prob)}
+          y1={0}
+          x2={xScale(prob)}
+          y2={height}
+          stroke="rgb(99 102 241)"
           strokeWidth={1}
+          strokeDasharray="2 2"
         />
-      )}
-    </svg>
+      </svg>
+    </Tooltip>
   )
 }
