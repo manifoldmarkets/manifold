@@ -20,6 +20,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import {
@@ -30,9 +31,17 @@ import {
   PurchaseConfirmation,
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
+import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
+import Custom404 from 'web/pages/404'
 
 export default function SupporterPage() {
   const user = useUser()
+  const isAdminOrMod = useAdminOrMod()
+
+  // Allow admins to access supporter page for testing even when feature flag is off
+  if (!SPEND_MANA_ENABLED && !isAdminOrMod) {
+    return <Custom404 />
+  }
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)

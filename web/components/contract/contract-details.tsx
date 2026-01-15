@@ -57,6 +57,7 @@ export function AuthorInfo(props: {
             name: creatorName,
             username: creatorUsername,
             createdTime: creatorCreatedTime,
+            entitlements: creator?.entitlements,
           }}
           className={'mr-1'}
         />

@@ -100,12 +100,12 @@ export const Avatar = memo(
         : 'h-5 w-5'
 
     // Scale position offset based on avatar size
-    // For small avatars, position crown more towards top-right corner to avoid golden glow overlap
+    // For small avatars, position hat more towards top-right corner to avoid golden glow overlap
     const hatPositionClass =
       size === '2xs' || size === 'xs'
-        ? '-right-0.5 -top-1.5'
+        ? '-right-1.5 -top-1.5'
         : size === 'sm'
-        ? '-right-1 -top-2'
+        ? '-right-1.5 -top-2'
         : '-right-2 -top-[0.41rem]'
 
 

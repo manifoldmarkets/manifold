@@ -343,7 +343,7 @@ function SupporterBadge({
 
   return (
     <Tooltip text={`${tierConfig.name} Supporter`} placement="right">
-      <span className="relative inline-flex">
+      <span className="relative inline-flex items-center translate-y-[1px]">
         <FaStar
           className={clsx(
             'h-4 w-4',

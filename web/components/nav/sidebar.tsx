@@ -99,21 +99,6 @@ export default function Sidebar(props: {
     />
   )
 
-  // Show shop button when enabled OR for admins (testing)
-  const spendManaButton = user &&
-    !isMobile &&
-    (SPEND_MANA_ENABLED || isAdminOrMod) && (
-    <Link
-      href="/shop"
-      className="group relative flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-violet-600 hover:to-purple-700 hover:shadow-md"
-    >
-      <FaGem className="h-4 w-4" />
-      Spend mana
-      <span className="absolute -right-1 -top-1 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 shadow-sm">
-        NEW
-      </span>
-    </Link>
-  )
 
   return (
     <nav
@@ -140,7 +125,6 @@ export default function Sidebar(props: {
         <Col className="gap-2">
           {createMarketButton}
           {addFundsButton}
-          {spendManaButton}
         </Col>
       </div>
       <div
@@ -186,7 +170,20 @@ const getDesktopNav = (
         href: '/posts',
         icon: ChatIcon,
       },
-
+      // Show shop when enabled OR for admins (testing)
+      (SPEND_MANA_ENABLED || options.isAdminOrMod) && {
+        name: 'Shop',
+        href: '/shop',
+        icon: FaGem,
+        children: (
+          <>
+            Shop
+            <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+              NEW
+            </span>
+          </>
+        ),
+      },
       options.isAdminOrMod && {
         name: 'Reports',
         href: '/reports',
