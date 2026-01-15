@@ -363,6 +363,19 @@ export default function Leagues(props: LeaguesProps) {
   )
 }
 
+// Division styling for the user card
+const DIVISION_CARD_STYLES: {
+  [key: number]: { border: string; bg: string; text: string; icon: string }
+} = {
+  0: { border: 'border-slate-400', bg: 'bg-slate-50 dark:bg-slate-800/30', text: 'text-slate-600 dark:text-slate-300', icon: '🤖' },
+  1: { border: 'border-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', text: 'text-amber-600 dark:text-amber-400', icon: '🥉' },
+  2: { border: 'border-slate-400', bg: 'bg-slate-50 dark:bg-slate-800/30', text: 'text-slate-600 dark:text-slate-300', icon: '🥈' },
+  3: { border: 'border-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-950/20', text: 'text-yellow-600 dark:text-yellow-400', icon: '🥇' },
+  4: { border: 'border-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/20', text: 'text-cyan-600 dark:text-cyan-400', icon: '💿' },
+  5: { border: 'border-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/20', text: 'text-violet-600 dark:text-violet-400', icon: '💎' },
+  6: { border: 'border-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', text: 'text-rose-600 dark:text-rose-400', icon: '🎖️' },
+}
+
 function UserLeagueStatus(props: {
   userRow: league_user_info
   userId: string
@@ -385,6 +398,8 @@ function UserLeagueStatus(props: {
   const prevDivision = DIVISION_NAMES[Math.max(division - 1, 1)]
   const currentDivision = DIVISION_NAMES[division]
 
+  const divisionStyle = DIVISION_CARD_STYLES[division] ?? DIVISION_CARD_STYLES[1]
+
   const getZone = () => {
     if (rank <= doublePromotion && nextNextDivision)
       return {
@@ -401,30 +416,60 @@ function UserLeagueStatus(props: {
   const zone = getZone()
 
   return (
-    <div className="bg-canvas-0 border-ink-200 rounded-lg border p-4">
-      <Row className="items-center gap-3">
-        <Avatar
-          avatarUrl={userData.avatarUrl ?? ''}
-          username={userData.username}
-          size="sm"
-          noLink
-        />
-
-        <Col className="flex-1 gap-0.5">
-          <Link
-            href={`/${userData.username}`}
-            className="text-ink-900 font-medium hover:underline"
-          >
-            {userData.name}
-          </Link>
-          <span className="text-ink-500 text-sm">
-            {DIVISION_NAMES[division]} · {toLabel(cohort)}
+    <div
+      className={clsx(
+        'rounded-lg border-l-4 p-4',
+        'bg-canvas-0 border border-l-4',
+        divisionStyle.border
+      )}
+    >
+      <Row className="items-center gap-4">
+        {/* Division badge */}
+        <div
+          className={clsx(
+            'flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg',
+            divisionStyle.bg
+          )}
+        >
+          <span className="text-2xl">{divisionStyle.icon}</span>
+          <span className={clsx('text-xs font-semibold', divisionStyle.text)}>
+            {currentDivision}
           </span>
+        </div>
+
+        {/* User info */}
+        <Col className="flex-1 gap-1">
+          <Row className="items-center gap-2">
+            <Avatar
+              avatarUrl={userData.avatarUrl ?? ''}
+              username={userData.username}
+              size="xs"
+              noLink
+            />
+            <Link
+              href={`/${userData.username}`}
+              className="text-ink-900 font-medium hover:underline"
+            >
+              {userData.name}
+            </Link>
+          </Row>
+          <span className="text-ink-500 text-sm">{toLabel(cohort)}</span>
         </Col>
 
-        <Col className="items-end gap-0.5">
-          <span className="text-ink-900 text-xl font-semibold">#{rank}</span>
-          <span className="text-sm font-medium text-teal-600">
+        {/* Rank and earnings */}
+        <Col className="items-end">
+          <span className="text-ink-900 text-2xl font-bold">#{rank}</span>
+          <span
+            className={clsx(
+              'text-sm font-medium',
+              mana_earned > 0
+                ? 'text-teal-600'
+                : mana_earned < 0
+                  ? 'text-scarlet-500'
+                  : 'text-ink-500'
+            )}
+          >
+            {mana_earned > 0 ? '+' : ''}
             {formatMoney(mana_earned)}
           </span>
         </Col>
