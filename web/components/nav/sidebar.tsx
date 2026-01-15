@@ -21,7 +21,7 @@ import { DAY_MS } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { FaGem } from 'react-icons/fa6'
+import { LuGem } from 'react-icons/lu'
 import { IoCompassOutline } from 'react-icons/io5'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
@@ -174,7 +174,7 @@ const getDesktopNav = (
       (SPEND_MANA_ENABLED || options.isAdminOrMod) && {
         name: 'Shop',
         href: '/shop',
-        icon: FaGem,
+        icon: LuGem,
         children: (
           <>
             Shop
@@ -228,7 +228,7 @@ const getMobileNav = (
     (SPEND_MANA_ENABLED || isAdminOrMod) && {
       name: 'Shop',
       href: '/shop',
-      icon: FaGem,
+      icon: LuGem,
       children: (
         <>
           Shop
