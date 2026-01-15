@@ -222,6 +222,7 @@ import { shopPurchase } from './shop-purchase'
 import { shopToggle } from './shop-toggle'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
+import { recordCryptoPaymentIntent } from './record-crypto-payment-intent'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -447,4 +448,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'shop-toggle': shopToggle,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,
+  'record-crypto-payment-intent': recordCryptoPaymentIntent,
 } as const

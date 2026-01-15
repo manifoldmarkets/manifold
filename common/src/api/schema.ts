@@ -3104,6 +3104,19 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  // Crypto payment endpoints
+  'record-crypto-payment-intent': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        intentId: z.string(),
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
