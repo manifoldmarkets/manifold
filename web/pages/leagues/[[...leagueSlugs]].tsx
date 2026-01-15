@@ -221,17 +221,12 @@ export default function Leagues(props: LeaguesProps) {
         <Col className="gap-1">
           <Row className="items-center justify-between">
             <h1 className="text-primary-700 text-2xl font-semibold">Leagues</h1>
-            <select
-              className="bg-canvas-0 border-ink-200 text-ink-700 rounded-lg border px-3 py-1.5 text-sm font-medium focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              value={season}
-              onChange={(e) => onSetSeason(+e.target.value)}
+            <Link
+              href="/leaderboards"
+              className="text-ink-500 hover:text-ink-700 text-sm"
             >
-              {seasons.map((s) => (
-                <option key={s} value={s}>
-                  Season {s}: {getSeasonMonth(s)}
-                </option>
-              ))}
-            </select>
+              All-time leaderboard →
+            </Link>
           </Row>
           <p className="text-ink-500 text-sm">
             Compete monthly for prizes based on your trading profit.
@@ -241,46 +236,50 @@ export default function Leagues(props: LeaguesProps) {
         {/* Season Status Bar */}
         <div className="bg-canvas-50 border-ink-200 rounded-lg border px-4 py-3">
           <Row className="items-center justify-between gap-4">
-            <Row className="items-center gap-2">
-              <ClockIcon className="text-ink-400 h-4 w-4" />
-              {closingPeriod ? (
-                <span className="text-ink-600 text-sm">
-                  Finals period — ends randomly within{' '}
-                  <span className="font-medium">
-                    {getCountdownStringHoursMinutes(randomPeriodEnd)}
+            <Row className="items-center gap-3">
+              <select
+                className="bg-canvas-0 border-ink-200 text-ink-600 rounded border px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                value={season}
+                onChange={(e) => onSetSeason(+e.target.value)}
+              >
+                {seasons.map((s) => (
+                  <option key={s} value={s}>
+                    Season {s}: {getSeasonMonth(s)}
+                  </option>
+                ))}
+              </select>
+              <Row className="items-center gap-2">
+                <ClockIcon className="text-ink-400 h-4 w-4" />
+                {closingPeriod ? (
+                  <span className="text-ink-600 text-sm">
+                    Finals — ends within{' '}
+                    <span className="font-medium">
+                      {getCountdownStringHoursMinutes(randomPeriodEnd)}
+                    </span>
                   </span>
-                </span>
-              ) : seasonStatus === 'complete' ? (
-                <span className="text-ink-600 text-sm">
-                  Season ended {formatTime(seasonEnd)}
-                </span>
-              ) : (
-                <span className="text-ink-600 text-sm">
-                  Ends in{' '}
-                  <InfoTooltip text="Once the countdown ends, leaderboards freeze at a random time in the following 24h.">
-                    <Countdown
-                      className="font-mono text-sm font-medium"
-                      endDate={countdownEnd}
-                    />
-                  </InfoTooltip>
-                </span>
-              )}
+                ) : seasonStatus === 'complete' ? (
+                  <span className="text-ink-600 text-sm">
+                    Ended {formatTime(seasonEnd)}
+                  </span>
+                ) : (
+                  <span className="text-ink-600 text-sm">
+                    Ends in{' '}
+                    <InfoTooltip text="Once the countdown ends, leaderboards freeze at a random time in the following 24h.">
+                      <Countdown
+                        className="font-mono text-sm font-medium"
+                        endDate={countdownEnd}
+                      />
+                    </InfoTooltip>
+                  </span>
+                )}
+              </Row>
             </Row>
-            <Row className="items-center gap-2">
-              <button
-                onClick={() => setPrizesModalOpen(true)}
-                className="text-ink-500 hover:text-ink-700 text-sm"
-              >
-                View prizes
-              </button>
-              <span className="text-ink-300">·</span>
-              <Link
-                href="/leaderboards"
-                className="text-ink-500 hover:text-ink-700 text-sm"
-              >
-                All-time leaderboard
-              </Link>
-            </Row>
+            <button
+              onClick={() => setPrizesModalOpen(true)}
+              className="text-ink-500 hover:text-ink-700 text-sm"
+            >
+              View prizes
+            </button>
           </Row>
         </div>
 
@@ -332,7 +331,7 @@ export default function Leagues(props: LeaguesProps) {
             <Row className="items-center gap-3">
               <span className="text-ink-500 text-sm">Group:</span>
               <select
-                className="bg-canvas-0 border-ink-200 text-ink-700 rounded-md border px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="bg-canvas-0 border-ink-200 text-ink-700 focus:border-primary-500 focus:ring-primary-500 rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-1"
                 value={cohort}
                 onChange={(e) => onSetCohort(e.target.value)}
               >
@@ -388,7 +387,10 @@ function UserLeagueStatus(props: {
 
   const getZone = () => {
     if (rank <= doublePromotion && nextNextDivision)
-      return { label: `Promoting to ${nextNextDivision}`, color: 'text-teal-600' }
+      return {
+        label: `Promoting to ${nextNextDivision}`,
+        color: 'text-teal-600',
+      }
     if (rank <= promotion && nextDivision)
       return { label: `Promoting to ${nextDivision}`, color: 'text-teal-600' }
     if (rank > cohortSize - demotion && demotion > 0)
@@ -422,13 +424,13 @@ function UserLeagueStatus(props: {
 
         <Col className="items-end gap-0.5">
           <span className="text-ink-900 text-xl font-semibold">#{rank}</span>
-          <span className="text-teal-600 text-sm font-medium">
+          <span className="text-sm font-medium text-teal-600">
             {formatMoney(mana_earned)}
           </span>
         </Col>
       </Row>
 
-      <Row className="mt-3 border-t border-ink-100 pt-3 text-sm">
+      <Row className="border-ink-100 mt-3 border-t pt-3 text-sm">
         <span className={zone.color}>{zone.label}</span>
       </Row>
     </div>
