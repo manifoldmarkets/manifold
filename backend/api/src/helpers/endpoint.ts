@@ -11,8 +11,7 @@ import {
   ValidatedAPIParams,
 } from 'common/api/schema'
 import { PrivateUser } from 'common/user'
-import { getUnbannedPrivateUserByKey, getUser, log } from 'shared/utils'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUnbannedPrivateUserByKey, log } from 'shared/utils'
 export { APIError } from 'common//api/utils'
 
 export type Json = Record<string, unknown> | Json[]
