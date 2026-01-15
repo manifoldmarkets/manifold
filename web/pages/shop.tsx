@@ -19,6 +19,7 @@ import {
   SUPPORTER_BENEFITS,
   SupporterTier,
   getBenefit,
+  getMaxStreakFreezes,
 } from 'common/supporter-config'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -1027,10 +1028,14 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
 function StreakFreezePreview(props: {
   user: User | null | undefined
   localBonus?: number
+  allEntitlements?: UserEntitlement[]
 }) {
-  const { user, localBonus = 0 } = props
+  const { user, localBonus = 0, allEntitlements } = props
   // Include local bonus for optimistic display
   const currentFreezes = (user?.streakForgiveness ?? 0) + localBonus
+  // Max is only a purchase cap, not an accumulation cap
+  const maxPurchasable = getMaxStreakFreezes(allEntitlements)
+  const isAtPurchaseMax = currentFreezes >= maxPurchasable
 
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
@@ -1038,9 +1043,17 @@ function StreakFreezePreview(props: {
         <span className="text-ink-600 text-xs sm:text-sm">Your freezes:</span>
         <Row className="items-center gap-1.5">
           <span className="text-base sm:text-lg">❄️</span>
-          <span className="font-bold text-blue-500">{currentFreezes}</span>
-          <span className="text-ink-500">→</span>
-          <span className="font-bold text-blue-500">{currentFreezes + 1}</span>
+          {isAtPurchaseMax ? (
+            <span className="font-bold text-blue-500">
+              {currentFreezes}/{maxPurchasable} owned (max)
+            </span>
+          ) : (
+            <>
+              <span className="font-bold text-blue-500">{currentFreezes}</span>
+              <span className="text-ink-500">→</span>
+              <span className="font-bold text-blue-500">{currentFreezes + 1}</span>
+            </>
+          )}
         </Row>
       </Row>
     </div>
@@ -1112,8 +1125,9 @@ function ItemPreview(props: {
   itemId: string
   user: User | null | undefined
   localStreakBonus?: number
+  allEntitlements?: UserEntitlement[]
 }) {
-  const { itemId, user, localStreakBonus } = props
+  const { itemId, user, localStreakBonus, allEntitlements } = props
 
   switch (itemId) {
     case 'avatar-golden-border':
@@ -1123,7 +1137,7 @@ function ItemPreview(props: {
     case 'avatar-graduation-cap':
       return <GraduationCapPreview user={user} />
     case 'streak-forgiveness':
-      return <StreakFreezePreview user={user} localBonus={localStreakBonus} />
+      return <StreakFreezePreview user={user} localBonus={localStreakBonus} allEntitlements={allEntitlements} />
     case 'pampu-skin':
       return <PampuSkinPreview />
     case 'hovercard-glow':
@@ -1183,6 +1197,13 @@ function ShopItemCard(props: {
 
   // Use entitlement state directly - optimistic updates handled by parent
   const isEnabled = entitlement?.enabled ?? false
+
+  // Check if streak freeze is at purchase max (only applies to streak-forgiveness item)
+  const isStreakFreezeAtMax =
+    item.id === 'streak-forgiveness' &&
+    user &&
+    (user.streakForgiveness ?? 0) + localStreakBonus >=
+      getMaxStreakFreezes(allEntitlements)
 
   const handlePurchase = async () => {
     if (!user) return
@@ -1289,6 +1310,7 @@ function ShopItemCard(props: {
           itemId={item.id}
           user={user}
           localStreakBonus={localStreakBonus}
+          allEntitlements={allEntitlements}
         />
 
         {/* Footer: different layouts for owned vs non-owned */}
@@ -1381,7 +1403,11 @@ function ShopItemCard(props: {
 
                 {/* Buy button inline on wider screens */}
                 <div className="hidden min-[360px]:block">
-                  {!canPurchase && user ? (
+                  {isStreakFreezeAtMax ? (
+                    <Button size="sm" color="gray" disabled>
+                      Max owned
+                    </Button>
+                  ) : !canPurchase && user ? (
                     <Link href="/checkout">
                       <Button size="sm" color="gradient-pink">
                         Buy mana
@@ -1402,7 +1428,11 @@ function ShopItemCard(props: {
 
               {/* Full-width button on very narrow screens */}
               <div className="min-[360px]:hidden">
-                {!canPurchase && user ? (
+                {isStreakFreezeAtMax ? (
+                  <Button size="sm" color="gray" disabled className="w-full">
+                    Max owned
+                  </Button>
+                ) : !canPurchase && user ? (
                   <Link href="/checkout" className="block">
                     <Button size="sm" color="gradient-pink" className="w-full">
                       Buy mana
