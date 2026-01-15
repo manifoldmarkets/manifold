@@ -16,14 +16,12 @@ import { saveTopic } from './save-topic'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { followtopic } from './follow-topic'
-import { editcomment } from 'api/edit-comment'
 import { leagueActivity } from './league-activity'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { cancelbounty } from './cancel-bounty'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
-import { leavereview } from './leave-review'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
 import { report } from './report'
@@ -61,7 +59,6 @@ const apiRoute = (endpoint: RequestHandler) => {
 export const addOldRoutes = (app: express.Application) => {
   app.get('/health', ...apiRoute(health))
   app.get('/unsubscribe', ...apiRoute(unsubscribe))
-  app.post('/editcomment', ...apiRoute(editcomment))
 
   app.post('/claimmanalink', ...apiRoute(claimmanalink))
   app.post('/creategroup', ...apiRoute(creategroup))
@@ -99,7 +96,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
   app.post('/searchgiphy', ...apiRoute(searchgiphy))
   app.post('/manachantweet', ...apiRoute(manachantweet))
-  app.post('/leave-review', ...apiRoute(leavereview))
   app.post(
     '/get-similar-groups-to-contract',
     ...apiRoute(getsimilargroupstocontract)

@@ -284,7 +284,6 @@ These endpoints have ban checks but the restrictions are not shown in the UI ban
 There is a legacy ban field `isBannedFromPosting` on the User object. During the migration period:
 - Server-side checks use BOTH the new `user_bans` table AND the legacy field
 - Example: `isUserBanned(userBans, 'posting') || user.isBannedFromPosting`
-- The legacy `authEndpointUnbanned` function (in `endpoint.ts`) ONLY checks the legacy field and should be migrated to the new system
 
 ### Database Schema
 

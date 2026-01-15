@@ -123,7 +123,9 @@ import { getUsers } from './get-users'
 import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 import { type APIHandler } from './helpers/endpoint'
+import { editComment } from './edit-comment'
 import { hideComment } from './hide-comment'
+import { leaveReview } from './leave-review'
 import { managram } from './managram'
 import { pinComment } from './pin-comment'
 import { placeBet } from './place-bet'
@@ -247,6 +249,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'comment-threads': getContractCommentThreads,
   'comment-thread': getCommentThread,
   'hide-comment': hideComment,
+  'edit-comment': editComment,
+  'leave-review': leaveReview,
   'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,

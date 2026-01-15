@@ -286,6 +286,34 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'edit-comment': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        contractId: z.string(),
+        commentId: z.string(),
+        content: contentSchema.optional(),
+        html: z.string().optional(),
+        markdown: z.string().optional(),
+      })
+      .strict(),
+  },
+  'leave-review': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        marketId: z.string(),
+        review: contentSchema.optional(),
+        rating: z.number().gte(0).lte(5).int(),
+      })
+      .strict(),
+  },
   'pin-comment': {
     method: 'POST',
     visibility: 'undocumented',
