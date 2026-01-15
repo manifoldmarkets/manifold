@@ -810,14 +810,12 @@ export function AnswerComponent(props: {
           setOpen={setLimitBetModalOpen}
           size="md"
         >
-          <Col className="bg-canvas-0">
-            <OrderBookPanel
-              limitBets={unfilledBets}
-              contract={contract}
-              answer={answer}
-              showTitle
-            />
-          </Col>
+          <OrderBookPanel
+            limitBets={unfilledBets}
+            contract={contract}
+            answer={answer}
+            showTitle
+          />
         </Modal>
       )}
     </Col>
