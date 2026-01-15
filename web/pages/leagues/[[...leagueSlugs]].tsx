@@ -238,7 +238,7 @@ export default function Leagues(props: LeaguesProps) {
           <Row className="items-center justify-between gap-4">
             <Row className="items-center gap-3">
               <select
-                className="bg-canvas-0 border-ink-200 text-ink-600 rounded border px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="bg-canvas-0 border-ink-200 text-ink-600 focus:border-primary-500 focus:ring-primary-500 rounded border px-2 py-1 text-sm focus:outline-none focus:ring-1"
                 value={season}
                 onChange={(e) => onSetSeason(+e.target.value)}
               >

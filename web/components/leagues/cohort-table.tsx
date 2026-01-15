@@ -276,7 +276,11 @@ const UserRow = (props: {
           <span
             className={clsx(
               'shrink-0 text-sm font-medium tabular-nums',
-              mana_earned > 0 ? 'text-teal-600' : 'text-ink-500'
+              mana_earned > 0
+                ? 'text-teal-600'
+                : mana_earned < 0
+                  ? 'text-scarlet-500'
+                  : 'text-ink-1000'
             )}
           >
             {mana_earned > 0 ? '+' : ''}
