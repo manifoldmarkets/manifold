@@ -52,7 +52,9 @@ export function PrizesModal(props: {
                   >
                     {div}
                   </div>
-                  <span className="text-ink-900 font-medium">{divisionName}</span>
+                  <span className="text-ink-900 font-medium">
+                    {divisionName}
+                  </span>
                 </Row>
 
                 {/* Prizes Row */}
@@ -82,7 +84,11 @@ export function PrizesModal(props: {
   )
 }
 
-function PrizeCard(props: { rank: number; prize: number; isTopThree: boolean }) {
+function PrizeCard(props: {
+  rank: number
+  prize: number
+  isTopThree: boolean
+}) {
   const { rank, prize, isTopThree } = props
 
   const getRankLabel = () => {
@@ -96,9 +102,7 @@ function PrizeCard(props: { rank: number; prize: number; isTopThree: boolean }) 
     <Col
       className={clsx(
         'items-center gap-0.5 rounded-md p-2 text-center',
-        isTopThree
-          ? 'bg-primary-50 border-primary-200 border'
-          : 'bg-canvas-50'
+        isTopThree ? 'bg-primary-50 border-primary-200 border' : 'bg-canvas-50'
       )}
     >
       <span

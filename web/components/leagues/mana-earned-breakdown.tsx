@@ -113,7 +113,7 @@ export const ManaEarnedBreakdown = (props: {
         </Row>
 
         {/* Summary Stats */}
-        <div className="bg-canvas-50 divide-ink-100 divide-y rounded-lg border border-ink-200">
+        <div className="bg-canvas-50 divide-ink-100 border-ink-200 divide-y rounded-lg border">
           <Row className="items-center justify-between p-3">
             <span className="text-ink-600 text-sm">Trading profit</span>
             <span className="text-ink-900 font-medium">

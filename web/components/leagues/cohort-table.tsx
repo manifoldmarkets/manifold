@@ -75,8 +75,7 @@ export const CohortTable = (props: {
         </p>
       )}
 
-
-      <Col className="bg-canvas-0 divide-ink-100 divide-y rounded-lg border border-ink-200">
+      <Col className="bg-canvas-0 divide-ink-100 border-ink-200 divide-y rounded-lg border">
         {rows.map((row, i) => {
           const user = users[i]
           if (!user) return null
@@ -213,7 +212,7 @@ const UserRow = (props: {
     <>
       <div
         className={clsx(
-          'group cursor-pointer transition-colors hover:bg-canvas-50',
+          'hover:bg-canvas-50 group cursor-pointer transition-colors',
           isHighlighted && 'bg-primary-50',
           zoneClasses,
           isFirst && 'rounded-t-lg',
@@ -227,7 +226,9 @@ const UserRow = (props: {
             <Tooltip
               text={
                 rankDiff
-                  ? `${rankDiff < 0 ? 'Up' : 'Down'} ${Math.abs(rankDiff)} today`
+                  ? `${rankDiff < 0 ? 'Up' : 'Down'} ${Math.abs(
+                      rankDiff
+                    )} today`
                   : undefined
               }
             >
@@ -238,9 +239,9 @@ const UserRow = (props: {
                   ) : rankDiff === -1 ? (
                     <ChevronUpIcon className="h-4 w-4 text-teal-500" />
                   ) : rankDiff === 1 ? (
-                    <ChevronDownIcon className="h-4 w-4 text-scarlet-500" />
+                    <ChevronDownIcon className="text-scarlet-500 h-4 w-4" />
                   ) : rankDiff > 1 ? (
-                    <ChevronDoubleDownIcon className="h-4 w-4 text-scarlet-500" />
+                    <ChevronDoubleDownIcon className="text-scarlet-500 h-4 w-4" />
                   ) : null}
                 </div>
                 <span
@@ -279,8 +280,8 @@ const UserRow = (props: {
               mana_earned > 0
                 ? 'text-teal-600'
                 : mana_earned < 0
-                  ? 'text-scarlet-500'
-                  : 'text-ink-1000'
+                ? 'text-scarlet-500'
+                : 'text-ink-1000'
             )}
           >
             {mana_earned > 0 ? '+' : ''}

@@ -223,7 +223,7 @@ export default function Leaderboards() {
           )}
           <button
             onClick={refresh}
-            className="text-ink-400 hover:text-ink-600 rounded p-1.5 transition-colors hover:bg-canvas-100"
+            className="text-ink-400 hover:text-ink-600 hover:bg-canvas-100 rounded p-1.5 transition-colors"
             title="Refresh"
           >
             <RefreshIcon className="h-4 w-4" />

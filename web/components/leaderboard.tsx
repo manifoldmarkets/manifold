@@ -38,7 +38,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="[&>tbody_tr:nth-child(odd)]:bg-canvas-50 [&>tbody_tr]:transition-colors [&>tbody_tr:hover]:bg-canvas-100">
+          <Table className="[&>tbody_tr:nth-child(odd)]:bg-canvas-50 [&>tbody_tr:hover]:bg-canvas-100 [&>tbody_tr]:transition-colors">
             <thead>
               <tr className="border-ink-200 border-b">
                 <th className="text-ink-500 w-12 py-3 text-left text-xs font-medium uppercase tracking-wide">

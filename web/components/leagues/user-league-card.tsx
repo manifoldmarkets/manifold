@@ -1,9 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import {
-  ChevronUpIcon,
-  ChevronDownIcon,
-} from '@heroicons/react/solid'
+import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/solid'
 
 import {
   DIVISION_NAMES,
@@ -31,11 +28,23 @@ export function UserLeagueCard(props: {
 
   const getZone = () => {
     if (rank <= doublePromotion)
-      return { type: 'double-promote', label: 'Double promotion', color: 'text-teal-600' }
+      return {
+        type: 'double-promote',
+        label: 'Double promotion',
+        color: 'text-teal-600',
+      }
     if (rank <= promotion)
-      return { type: 'promote', label: 'Promotion zone', color: 'text-teal-600' }
+      return {
+        type: 'promote',
+        label: 'Promotion zone',
+        color: 'text-teal-600',
+      }
     if (rank > cohortSize - demotion)
-      return { type: 'demote', label: 'Demotion zone', color: 'text-scarlet-600' }
+      return {
+        type: 'demote',
+        label: 'Demotion zone',
+        color: 'text-scarlet-600',
+      }
     return { type: 'safe', label: 'Safe', color: 'text-ink-500' }
   }
 
@@ -70,13 +79,13 @@ export function UserLeagueCard(props: {
 
         <Col className="items-end gap-0.5">
           <span className="text-ink-900 text-xl font-semibold">#{rank}</span>
-          <span className="text-teal-600 text-sm font-medium">
+          <span className="text-sm font-medium text-teal-600">
             {formatMoney(mana_earned)}
           </span>
         </Col>
       </Row>
 
-      <Row className="mt-3 items-center justify-between border-t border-ink-100 pt-3 text-sm">
+      <Row className="border-ink-100 mt-3 items-center justify-between border-t pt-3 text-sm">
         <span className={zone.color}>{zone.label}</span>
         <span className="text-ink-500">{cohortSize} in group</span>
       </Row>
@@ -97,7 +106,7 @@ export function RankBadge(props: {
         {rankDiff < 0 ? (
           <ChevronUpIcon className="h-4 w-4 text-teal-500" />
         ) : rankDiff > 0 ? (
-          <ChevronDownIcon className="h-4 w-4 text-scarlet-500" />
+          <ChevronDownIcon className="text-scarlet-500 h-4 w-4" />
         ) : null}
       </div>
       <span
