@@ -2,73 +2,63 @@ import clsx from 'clsx'
 import { DIVISION_NAMES } from 'common/leagues'
 import { Col } from '../layout/col'
 
-// Division colors and styling - inspired by gaming/esports aesthetics
-// Text colors use darker shades for light mode visibility
+// Division colors - clean, professional design with subtle color accents
+// Uses muted colors that work well in both light and dark mode
 export const DIVISION_STYLES: {
   [key: number]: {
     bg: string
     border: string
     text: string
-    glow: string
-    icon: string
-    gradient: string
+    accent: string
   }
 } = {
   0: {
-    bg: 'bg-slate-500/20',
-    border: 'border-slate-400',
-    text: 'text-slate-600 dark:text-slate-300',
-    glow: 'shadow-slate-500/30',
-    icon: '💿',
-    gradient: 'from-slate-600 to-slate-400',
+    bg: 'bg-ink-100 dark:bg-ink-800',
+    border: 'border-ink-200 dark:border-ink-700',
+    text: 'text-ink-600 dark:text-ink-400',
+    accent: 'bg-ink-400',
   },
   1: {
-    bg: 'bg-amber-900/30',
-    border: 'border-amber-600',
-    text: 'text-amber-700 dark:text-amber-500',
-    glow: 'shadow-amber-500/40',
-    icon: '🥉',
-    gradient: 'from-amber-700 to-amber-500',
+    // Bronze
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    border: 'border-amber-200 dark:border-amber-800',
+    text: 'text-amber-700 dark:text-amber-400',
+    accent: 'bg-amber-500',
   },
   2: {
-    bg: 'bg-slate-400/20',
-    border: 'border-slate-400 dark:border-slate-300',
+    // Silver
+    bg: 'bg-slate-50 dark:bg-slate-900/50',
+    border: 'border-slate-300 dark:border-slate-600',
     text: 'text-slate-600 dark:text-slate-300',
-    glow: 'shadow-slate-400/40',
-    icon: '🥈',
-    gradient: 'from-slate-500 to-slate-300',
+    accent: 'bg-slate-400',
   },
   3: {
-    bg: 'bg-yellow-500/20',
-    border: 'border-yellow-500 dark:border-yellow-400',
-    text: 'text-yellow-600 dark:text-yellow-400',
-    glow: 'shadow-yellow-400/50',
-    icon: '🥇',
-    gradient: 'from-yellow-500 to-yellow-300',
+    // Gold
+    bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+    border: 'border-yellow-300 dark:border-yellow-700',
+    text: 'text-yellow-700 dark:text-yellow-400',
+    accent: 'bg-yellow-500',
   },
   4: {
-    bg: 'bg-cyan-500/20',
-    border: 'border-cyan-500 dark:border-cyan-400',
-    text: 'text-cyan-600 dark:text-cyan-400',
-    glow: 'shadow-cyan-400/50',
-    icon: '💍',
-    gradient: 'from-cyan-500 to-cyan-300',
+    // Platinum
+    bg: 'bg-cyan-50 dark:bg-cyan-950/30',
+    border: 'border-cyan-200 dark:border-cyan-800',
+    text: 'text-cyan-700 dark:text-cyan-400',
+    accent: 'bg-cyan-500',
   },
   5: {
-    bg: 'bg-violet-500/20',
-    border: 'border-violet-500 dark:border-violet-400',
-    text: 'text-violet-600 dark:text-violet-400',
-    glow: 'shadow-violet-400/50',
-    icon: '💠',
-    gradient: 'from-violet-500 to-violet-300',
+    // Diamond
+    bg: 'bg-violet-50 dark:bg-violet-950/30',
+    border: 'border-violet-200 dark:border-violet-800',
+    text: 'text-violet-700 dark:text-violet-400',
+    accent: 'bg-violet-500',
   },
   6: {
-    bg: 'bg-rose-500/20',
-    border: 'border-rose-500 dark:border-rose-400',
-    text: 'text-rose-600 dark:text-rose-400',
-    glow: 'shadow-rose-400/60',
-    icon: '👑',
-    gradient: 'from-rose-500 via-orange-400 to-yellow-400',
+    // Masters
+    bg: 'bg-rose-50 dark:bg-rose-950/30',
+    border: 'border-rose-200 dark:border-rose-800',
+    text: 'text-rose-700 dark:text-rose-400',
+    accent: 'bg-rose-500',
   },
 }
 
@@ -77,50 +67,35 @@ export function DivisionBadge(props: {
   size?: 'sm' | 'md' | 'lg'
   showName?: boolean
   className?: string
-  glow?: boolean
 }) {
-  const {
-    division,
-    size = 'md',
-    showName = true,
-    className,
-    glow = false,
-  } = props
+  const { division, size = 'md', showName = true, className } = props
   const style = DIVISION_STYLES[division] ?? DIVISION_STYLES[1]
   const name = DIVISION_NAMES[division] ?? 'Unknown'
 
   const sizeClasses = {
-    sm: 'w-8 h-8 text-lg',
-    md: 'w-12 h-12 text-2xl',
-    lg: 'w-16 h-16 text-3xl',
+    sm: 'h-6 w-6 text-xs',
+    md: 'h-8 w-8 text-sm',
+    lg: 'h-10 w-10 text-base',
   }
 
   const textSizeClasses = {
     sm: 'text-xs',
-    md: 'text-sm font-medium',
-    lg: 'text-base font-semibold',
+    md: 'text-sm',
+    lg: 'text-sm font-medium',
   }
 
   return (
     <Col className={clsx('items-center gap-1', className)}>
       <div
         className={clsx(
-          'relative flex items-center justify-center rounded-xl border-2',
-          'transition-all duration-300',
+          'flex items-center justify-center rounded-lg border font-semibold',
           sizeClasses[size],
           style.bg,
           style.border,
-          glow && `shadow-lg ${style.glow}`
+          style.text
         )}
       >
-        <span className="relative z-10">{style.icon}</span>
-        {/* Subtle inner glow effect */}
-        <div
-          className={clsx(
-            'absolute inset-0 rounded-xl opacity-30',
-            `bg-gradient-to-br ${style.gradient}`
-          )}
-        />
+        {division}
       </div>
       {showName && (
         <span className={clsx(textSizeClasses[size], style.text)}>{name}</span>
@@ -140,21 +115,21 @@ export function DivisionBadgeInline(props: {
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5',
-        'border font-medium',
+        'inline-flex items-center gap-1.5 rounded-md px-2 py-0.5',
+        'border text-sm font-medium',
         style.bg,
         style.border,
         style.text,
         className
       )}
     >
-      <span className="text-sm">{style.icon}</span>
-      <span className="text-xs">{name}</span>
+      <span className="font-semibold">{division}</span>
+      <span>{name}</span>
     </span>
   )
 }
 
-// Helper to get a color class for a division rank zone
+// Helper to get styling for rank zones - subtle, professional indicators
 export function getRankZoneStyles(
   rank: number,
   totalUsers: number,
@@ -165,22 +140,19 @@ export function getRankZoneStyles(
   if (rank <= doublePromotionCount) {
     return {
       zone: 'double-promote',
-      classes:
-        'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-l-4 border-emerald-400',
+      classes: 'bg-teal-50 dark:bg-teal-950/30',
     }
   }
   if (rank <= promotionCount) {
     return {
       zone: 'promote',
-      classes:
-        'bg-gradient-to-r from-teal-500/10 to-cyan-500/10 border-l-4 border-teal-400',
+      classes: 'bg-teal-50/50 dark:bg-teal-950/20',
     }
   }
   if (rank > totalUsers - demotionCount) {
     return {
       zone: 'demote',
-      classes:
-        'bg-gradient-to-r from-rose-500/10 to-red-500/10 border-l-4 border-rose-400',
+      classes: 'bg-scarlet-50 dark:bg-scarlet-950/30',
     }
   }
   return {

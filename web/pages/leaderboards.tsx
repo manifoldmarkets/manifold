@@ -1,14 +1,6 @@
-import {
-  RefreshIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-  ChartBarIcon,
-  UserGroupIcon,
-  SparklesIcon,
-} from '@heroicons/react/outline'
-import { StarIcon } from '@heroicons/react/solid'
+import { RefreshIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
+
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import {
@@ -35,48 +27,14 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Button } from 'web/components/buttons/button'
 import { buildArray } from 'common/util/array'
 import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
+import Link from 'next/link'
 
 const LEADERBOARD_TYPES = [
-  {
-    name: 'Profit',
-    value: 'profit',
-    icon: TrendingUpIcon,
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-500/20',
-    borderColor: 'border-emerald-500',
-  },
-  {
-    name: 'Loss',
-    value: 'loss',
-    icon: TrendingDownIcon,
-    color: 'text-rose-500',
-    bgColor: 'bg-rose-500/20',
-    borderColor: 'border-rose-500',
-  },
-  {
-    name: 'Volume',
-    value: 'volume',
-    icon: ChartBarIcon,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/20',
-    borderColor: 'border-blue-500',
-  },
-  {
-    name: 'Creators',
-    value: 'creator',
-    icon: UserGroupIcon,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/20',
-    borderColor: 'border-purple-500',
-  },
-  {
-    name: 'Referrals',
-    value: 'referral',
-    icon: StarIcon,
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-500/20',
-    borderColor: 'border-amber-500',
-  },
+  { name: 'Profit', value: 'profit' },
+  { name: 'Loss', value: 'loss' },
+  { name: 'Volume', value: 'volume' },
+  { name: 'Creators', value: 'creator' },
+  { name: 'Referrals', value: 'referral' },
 ] as const
 
 type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
@@ -179,8 +137,6 @@ export default function Leaderboards() {
   const data = myScores?.[type]?.mana
   const myEntry = shouldInsertMe && data ? { userId: user.id, ...data } : null
 
-  const currentTypeConfig = LEADERBOARD_TYPES.find((t) => t.value === type)!
-
   const allColumns: { [key in LeaderboardType]: LeaderboardColumn<Entry>[] } = {
     profit: [
       { header: 'Profit', renderCell: (c) => formatMoney(c.score, token) },
@@ -209,9 +165,9 @@ export default function Leaderboards() {
       { header: 'Referrals', renderCell: (c) => c.score },
       {
         header: (
-          <span>
+          <span className="flex items-center gap-1">
             Referred profits
-            <InfoTooltip text={'Total profit earned by referred users'} />
+            <InfoTooltip text="Total profit earned by referred users" />
           </span>
         ),
         renderCell: (c) => formatMoney(c.totalReferredProfit ?? 0, token),
@@ -222,127 +178,83 @@ export default function Leaderboards() {
   const columns = allColumns[type]
 
   return (
-    <Page trackPageView={'leaderboards'} hideFooter className="!bg-transparent">
+    <Page trackPageView={'leaderboards'}>
       <SEO
         title="Leaderboards"
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
         url="/leaderboards"
       />
 
-      {/* Funky gradient backgrounds */}
-      {/* Light mode */}
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-white dark:hidden" />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-amber-50/80 to-white dark:hidden" />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-yellow-100/50 via-transparent to-transparent dark:hidden" />
-      {/* Dark mode */}
-      <div className="pointer-events-none fixed inset-0 -z-10 hidden bg-slate-900 dark:block" />
-      <div className="pointer-events-none fixed inset-0 -z-10 hidden bg-gradient-to-br from-amber-950/30 via-slate-900 to-yellow-950/20 dark:block" />
-      <div className="pointer-events-none fixed inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-800/20 via-transparent to-transparent dark:block" />
-      <div className="pointer-events-none fixed inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-yellow-900/30 via-transparent to-transparent dark:block" />
-
-      <Col className="mx-auto w-full max-w-xl gap-4 px-2 pb-8 pt-4">
-        {/* Hero Section */}
-        <div
-          className={clsx(
-            'relative overflow-hidden rounded-2xl p-6',
-            'bg-gradient-to-br from-amber-100 via-yellow-100 to-orange-100',
-            'dark:from-amber-900 dark:via-yellow-900 dark:to-orange-900'
-          )}
-        >
-          {/* Decorative elements */}
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-yellow-300/30 blur-3xl dark:bg-yellow-500/20" />
-          <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-amber-300/30 blur-2xl dark:bg-amber-500/20" />
-          <SparklesIcon className="absolute right-4 top-4 h-6 w-6 text-yellow-500/60 dark:text-yellow-400/60" />
-
-          <Row className="relative z-10 items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg shadow-amber-500/30">
-              <TrophyIcon className="h-10 w-10 text-white" />
-            </div>
-            <Col className="gap-1">
-              <h1 className="text-3xl font-black text-amber-900 dark:text-white">
-                Leaderboard
-              </h1>
-              <p className="text-sm text-amber-700 dark:text-amber-200">
-                The all-time greatest traders on Manifold
-              </p>
-            </Col>
+      <Col className="mx-auto w-full max-w-2xl gap-6 px-4 pb-8 pt-4">
+        {/* Header */}
+        <Col className="gap-1">
+          <Row className="items-center justify-between">
+            <h1 className="text-primary-700 text-2xl font-semibold">
+              Leaderboard
+            </h1>
+            <Link
+              href="/leagues"
+              className="text-ink-500 hover:text-ink-700 text-sm"
+            >
+              Monthly leagues →
+            </Link>
           </Row>
+          <p className="text-ink-500 text-sm">
+            All-time top traders on Manifold
+          </p>
+        </Col>
 
-          {/* User's rank summary if available */}
-          {user && myScores?.[type] && (
-            <div className="relative z-10 mt-4 rounded-xl bg-amber-200/50 px-4 py-3 backdrop-blur dark:bg-black/20">
-              <Row className="items-center justify-between">
-                <span className="text-sm text-amber-800 dark:text-amber-200">
-                  Your rank
-                </span>
-                <span className="text-xl font-bold text-amber-900 dark:text-white">
-                  #{data?.rank?.toLocaleString() ?? '—'}
-                </span>
-              </Row>
-            </div>
-          )}
-        </div>
+        {/* User's rank if available */}
+        {user && myScores?.[type] && (
+          <div className="bg-canvas-50 border-ink-200 rounded-lg border px-4 py-3">
+            <Row className="items-center justify-between">
+              <span className="text-ink-600 text-sm">Your rank</span>
+              <span className="text-ink-900 text-lg font-semibold tabular-nums">
+                #{data?.rank?.toLocaleString() ?? '—'}
+              </span>
+            </Row>
+          </div>
+        )}
 
-        {/* Filters Row */}
-        <Row className="flex-wrap items-center gap-2">
+        {/* Filters */}
+        <Row className="flex-wrap items-center gap-3">
           {type !== 'referral' && (
             <TopicPillSelector topic={topic} setTopic={setTopic} />
           )}
           <button
             onClick={refresh}
-            className={clsx(
-              'flex items-center justify-center rounded-full p-2 transition-all',
-              'hover:bg-ink-200 active:bg-ink-300'
-            )}
+            className="text-ink-400 hover:text-ink-600 rounded p-1.5 transition-colors hover:bg-canvas-100"
+            title="Refresh"
           >
-            <RefreshIcon className="text-ink-500 h-4 w-4" />
+            <RefreshIcon className="h-4 w-4" />
           </button>
         </Row>
 
-        {/* Type Pills */}
-        <Row className="scrollbar-hide -mx-2 gap-2 overflow-x-auto px-2 pb-1">
-          {LEADERBOARD_TYPES.map((t) => {
-            const isSelected = t.value === type
-            const Icon = t.icon
-            return (
-              <button
-                key={t.value}
-                onClick={() => setType(t.value)}
-                className={clsx(
-                  'flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 transition-all',
-                  'border-2',
-                  isSelected
-                    ? `${t.bgColor} ${t.borderColor} ${t.color} shadow-lg`
-                    : 'border-ink-200 hover:border-ink-300 bg-canvas-0 text-ink-600'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="font-medium">{t.name}</span>
-              </button>
-            )
-          })}
-        </Row>
+        {/* Type Tabs */}
+        <div className="border-ink-200 border-b">
+          <Row className="-mb-px gap-1">
+            {LEADERBOARD_TYPES.map((t) => {
+              const isSelected = t.value === type
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setType(t.value)}
+                  className={clsx(
+                    'border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+                    isSelected
+                      ? 'border-primary-500 text-primary-600'
+                      : 'text-ink-500 hover:text-ink-700 border-transparent'
+                  )}
+                >
+                  {t.name}
+                </button>
+              )
+            })}
+          </Row>
+        </div>
 
         {/* Leaderboard Table */}
-        <div
-          className={clsx(
-            'rounded-2xl border-2 p-4',
-            currentTypeConfig.borderColor,
-            currentTypeConfig.bgColor
-          )}
-        >
-          <Row className="mb-4 items-center gap-2">
-            {(() => {
-              const Icon = currentTypeConfig.icon
-              return (
-                <Icon className={clsx('h-5 w-5', currentTypeConfig.color)} />
-              )
-            })()}
-            <span className={clsx('font-semibold', currentTypeConfig.color)}>
-              Top 50 by {currentTypeConfig.name}
-            </span>
-          </Row>
-
+        <div className="bg-canvas-0 border-ink-200 overflow-hidden rounded-lg border">
           {loading ? (
             <LoadingLeaderboard columns={columns} />
           ) : entries ? (
@@ -352,10 +264,14 @@ export default function Leaderboards() {
               highlightUserId={user?.id}
             />
           ) : error ? (
-            <div className="text-error flex h-32 w-full flex-col items-center justify-center gap-2 text-center">
-              <span>Error loading leaderboard</span>
-              <span className="text-sm">{error.message}</span>
-              <Button onClick={refresh}>Try again</Button>
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <span className="text-ink-600 text-sm">
+                Error loading leaderboard
+              </span>
+              <span className="text-ink-400 text-xs">{error.message}</span>
+              <Button onClick={refresh} size="sm" color="gray-outline">
+                Try again
+              </Button>
             </div>
           ) : null}
         </div>
