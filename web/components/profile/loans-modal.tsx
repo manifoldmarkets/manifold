@@ -9,7 +9,6 @@ import {
   MAX_LOAN_NET_WORTH_PERCENT,
   DAILY_LOAN_NET_WORTH_PERCENT,
 } from 'common/loans'
-import { ANNUAL_INTEREST_RATE } from 'common/economy'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -353,19 +352,6 @@ export function LoansModal(props: {
 
           <div className="bg-ink-200 h-px" />
 
-          <Col className="gap-2">
-            <div className="bg-primary-50 border-primary-200 flex items-center gap-2 rounded-lg border p-3">
-              <span className="text-lg">💡</span>
-              <p className="text-primary-900 text-sm">
-                <span className="font-medium">
-                  You're earning {formatPercent(ANNUAL_INTEREST_RATE)} annual
-                  interest
-                </span>{' '}
-                on all listed and ranked markets, including trades made with
-                loans.
-              </p>
-            </div>
-          </Col>
         </Col>
 
         {/* Loan Request Section */}

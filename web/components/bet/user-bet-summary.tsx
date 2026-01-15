@@ -32,7 +32,6 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
 import { SellSharesModal } from './sell-row'
 import { ShareBetModal } from './share-bet'
-import { ANNUAL_INTEREST_RATE } from 'common/economy'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -141,9 +140,7 @@ export function BetsSummary(props: {
                           amount={0}
                           isCashContract={isCashContract}
                         />{' '}
-                        otherwise). You're earning{' '}
-                        {formatPercent(ANNUAL_INTEREST_RATE)} annual interest on
-                        this position.
+                        otherwise).
                       </>
                     }
                   />
