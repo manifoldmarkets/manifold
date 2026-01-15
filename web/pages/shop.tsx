@@ -50,6 +50,7 @@ import {
   PurchaseConfirmation,
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
+import { CharityGiveawayCard } from 'web/components/shop/charity-giveaway-card'
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -327,7 +328,7 @@ export default function ShopPage() {
           </Row>
         )}
 
-        {/* Supporter Card - links to /supporter page */}
+        {/* Featured supporter card */}
         <SupporterCard
           entitlements={effectiveEntitlements}
           onPurchaseComplete={handlePurchaseComplete}
@@ -381,6 +382,9 @@ export default function ShopPage() {
             )
           })}
         </div>
+
+        {/* Charity giveaway card at bottom */}
+        <CharityGiveawayCard variant="full" className="mt-6" />
 
         {/* Admin testing tools */}
         {isAdminOrMod && (
@@ -485,14 +489,20 @@ function SupporterCard(props: {
           hoveredTier === 'premium' && 'shadow-[0_0_28px_rgba(245,158,11,0.7),0_0_50px_rgba(245,158,11,0.4)] animate-glow-amber dark:shadow-[0_0_32px_rgba(251,191,36,0.6),0_0_56px_rgba(251,191,36,0.35)]'
         )}
       >
-        {/* Animated gradient border - color changes based on tier */}
+        {/* Animated gradient border - color changes based on hovered tier or owned tier */}
         <div
           className={clsx(
             'absolute inset-0 transition-all duration-300',
-            !hoveredTier && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-600/50 dark:via-yellow-500/50 dark:to-orange-600/50 dark:opacity-30 dark:group-hover:opacity-50',
+            // Hovered tier takes priority
             hoveredTier === 'basic' && 'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-40',
             hoveredTier === 'plus' && 'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-40',
-            hoveredTier === 'premium' && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-50'
+            hoveredTier === 'premium' && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-50',
+            // When not hovering, show owned tier's border color
+            !hoveredTier && currentTier === 'basic' && 'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-50 group-hover:opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-30 dark:group-hover:opacity-40',
+            !hoveredTier && currentTier === 'plus' && 'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-50 group-hover:opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-30 dark:group-hover:opacity-40',
+            !hoveredTier && currentTier === 'premium' && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-30 dark:group-hover:opacity-50',
+            // Default (no tier owned, not hovering) - amber/gold default
+            !hoveredTier && !currentTier && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-600/50 dark:via-yellow-500/50 dark:to-orange-600/50 dark:opacity-30 dark:group-hover:opacity-50'
           )}
         />
 
@@ -512,7 +522,7 @@ function SupporterCard(props: {
               </p>
             </Col>
             {isSupporter && (
-              <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+              <div className="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                 {SUPPORTER_TIERS[currentTier].name.toUpperCase()}
               </div>
             )}
