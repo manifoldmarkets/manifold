@@ -768,7 +768,7 @@ export function AnswerComponent(props: {
                 myMetric={myMetric}
               />
             )}
-            {userHasLimitOrders && (
+            {shouldShowPositions && userHasLimitOrders && (
               <AnswerOrdersButton
                 contract={contract}
                 yourUnfilledBets={yourUnfilledBets}
