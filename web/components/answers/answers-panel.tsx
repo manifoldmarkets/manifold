@@ -834,7 +834,7 @@ function AnswerOrdersButton(props: {
       <button className={buttonClassName} onClick={() => setOpen(true)}>
         Your Orders
       </button>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} size="sm">
         <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
           <YourOrders
             contract={contract}
