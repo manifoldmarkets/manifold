@@ -32,6 +32,11 @@ import {
   LoanTrackingRow,
 } from 'shared/helpers/user-contract-loans'
 import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
+import {
+  canAccessMarginLoans,
+  SUPPORTER_ENTITLEMENT_IDS,
+} from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
 
 export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { amount, contractId, answerId: _answerId } = props
@@ -55,6 +60,31 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const user = await getUser(auth.uid)
   if (!user) {
     throw new APIError(404, `User ${auth.uid} not found`)
+  }
+
+  // Check if user has margin loan access (Pro or Premium tier required)
+  const supporterEntitlementRows = await pg.manyOrNone<{
+    user_id: string
+    entitlement_id: string
+    granted_time: string
+    expires_time: string | null
+    enabled: boolean
+  }>(
+    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
+     FROM user_entitlements
+     WHERE user_id = $1
+     AND entitlement_id = ANY($2)
+     AND enabled = true
+     AND (expires_time IS NULL OR expires_time > NOW())`,
+    [auth.uid, [...SUPPORTER_ENTITLEMENT_IDS]]
+  )
+  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+
+  if (!canAccessMarginLoans(entitlements)) {
+    throw new APIError(
+      403,
+      'Margin loans require Manifold Pro or Premium. Upgrade at manifold.markets/shop'
+    )
   }
 
   const portfolioMetric = await pg.oneOrNone(

@@ -11,6 +11,7 @@ export const SUPPORTER_TIERS: Record<
   {
     id: string
     name: string
+    displayName: string
     price: number
     color: string
     textColor: string
@@ -21,7 +22,8 @@ export const SUPPORTER_TIERS: Record<
 > = {
   basic: {
     id: 'supporter-basic',
-    name: 'Basic',
+    name: 'Plus',
+    displayName: 'Manifold Plus',
     price: 500,
     color: 'gray',
     textColor: 'text-gray-500',
@@ -31,7 +33,8 @@ export const SUPPORTER_TIERS: Record<
   },
   plus: {
     id: 'supporter-plus',
-    name: 'Plus',
+    name: 'Pro',
+    displayName: 'Manifold Pro',
     price: 2500,
     color: 'indigo',
     textColor: 'text-indigo-500',
@@ -42,6 +45,7 @@ export const SUPPORTER_TIERS: Record<
   premium: {
     id: 'supporter-premium',
     name: 'Premium',
+    displayName: 'Manifold Premium',
     price: 10000,
     color: 'amber',
     textColor: 'text-amber-500',
@@ -70,6 +74,8 @@ export const SUPPORTER_BENEFITS: Record<
     shopDiscount: number
     maxStreakFreezes: number // Max purchasable streak freezes (non-supporters: 1)
     badgeAnimation: boolean // Animated star badge on hovercard for Premium
+    freeLoanRate: number // Daily free loan percentage (0.01 = 1%)
+    marginLoanAccess: boolean // Whether user can request margin loans
   }
 > = {
   basic: {
@@ -78,6 +84,8 @@ export const SUPPORTER_BENEFITS: Record<
     shopDiscount: 0,
     maxStreakFreezes: 2, // +1 over non-supporter
     badgeAnimation: false,
+    freeLoanRate: 0.01, // 1% (same as free users)
+    marginLoanAccess: false,
   },
   plus: {
     questMultiplier: 2,
@@ -85,6 +93,8 @@ export const SUPPORTER_BENEFITS: Record<
     shopDiscount: 0.05,
     maxStreakFreezes: 3, // +2 over non-supporter
     badgeAnimation: false,
+    freeLoanRate: 0.02, // 2%
+    marginLoanAccess: true,
   },
   premium: {
     questMultiplier: 3,
@@ -92,6 +102,8 @@ export const SUPPORTER_BENEFITS: Record<
     shopDiscount: 0.1,
     maxStreakFreezes: 5, // +4 over non-supporter
     badgeAnimation: true,
+    freeLoanRate: 0.03, // 3%
+    marginLoanAccess: true,
   },
 }
 
@@ -140,6 +152,8 @@ export function getBenefit<K extends keyof (typeof SUPPORTER_BENEFITS)['basic']>
       shopDiscount: 0,
       maxStreakFreezes: 1, // Non-supporters can only store 1
       badgeAnimation: false,
+      freeLoanRate: 0.01, // Free users get 1%
+      marginLoanAccess: false,
     }
     return defaults[benefit]
   }
@@ -204,11 +218,26 @@ export function getTierInfo(tier: SupporterTier) {
 export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 
 // Get max streak freezes for a user based on their tier
-// Non-supporters: 1, Basic: 2, Plus: 3, Premium: 5
+// Non-supporters: 1, Plus: 2, Pro: 3, Premium: 5
 export function getMaxStreakFreezes(
   entitlements: UserEntitlement[] | undefined
 ): number {
   return getBenefit(entitlements, 'maxStreakFreezes')
+}
+
+// Get free loan rate for a user based on their tier
+// Free users: 1%, Plus: 1%, Pro: 2%, Premium: 3%
+export function getFreeLoanRate(
+  entitlements: UserEntitlement[] | undefined
+): number {
+  return getBenefit(entitlements, 'freeLoanRate')
+}
+
+// Check if user can access margin loans (Pro and Premium only)
+export function canAccessMarginLoans(
+  entitlements: UserEntitlement[] | undefined
+): boolean {
+  return getBenefit(entitlements, 'marginLoanAccess')
 }
 
 // ============================================
@@ -259,9 +288,27 @@ export const BENEFIT_DEFINITIONS = [
     baseValue: '1 max',
   },
   {
+    id: 'freeLoan',
+    icon: '💰',
+    title: 'Daily Free Loan',
+    description: 'Interest-free daily loan percentage',
+    getValueForTier: (tier: SupporterTier) =>
+      `${Math.round(SUPPORTER_BENEFITS[tier].freeLoanRate * 100)}%`,
+    baseValue: '1%',
+  },
+  {
+    id: 'marginLoan',
+    icon: '🏦',
+    title: 'Margin Loans',
+    description: 'Access to interest-bearing margin loans',
+    getValueForTier: (tier: SupporterTier) =>
+      SUPPORTER_BENEFITS[tier].marginLoanAccess ? '✓' : '-',
+    baseValue: '-',
+  },
+  {
     id: 'badge',
     icon: '⭐',
-    title: 'Supporter Badge',
+    title: 'Member Badge',
     description: 'Star badge next to your name',
     getValueForTier: () => '✓',
     baseValue: '-',

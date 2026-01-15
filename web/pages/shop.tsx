@@ -515,10 +515,10 @@ function SupporterCard(props: {
                   className="h-6 w-6 text-amber-500"
                   style={{ filter: 'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))' }}
                 />
-                <span className="text-xl font-bold">Manifold Supporter</span>
+                <span className="text-xl font-bold">Manifold Membership</span>
               </Row>
               <p className="text-ink-600 text-sm">
-                Support Manifold, unlock exclusive benefits
+                Unlock premium benefits
               </p>
             </Col>
             {isSupporter && (
@@ -563,17 +563,17 @@ function SupporterCard(props: {
                       </div>
                     )}
                   </Row>
-                  {/* Show hovered tier text, or current tier text, or "Not a supporter yet" */}
+                  {/* Show hovered tier text, or current tier text, or "Not a member yet" */}
                   {hoveredTier ? (
                     <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[hoveredTier].textColor)}>
-                      {SUPPORTER_TIERS[hoveredTier].name} Supporter
+                      Manifold {SUPPORTER_TIERS[hoveredTier].name}
                     </span>
                   ) : isSupporter ? (
                     <span className={clsx('text-sm font-medium', SUPPORTER_TIERS[currentTier].textColor)}>
-                      {SUPPORTER_TIERS[currentTier].name} Supporter
+                      Manifold {SUPPORTER_TIERS[currentTier].name}
                     </span>
                   ) : (
-                    <span className="text-ink-500 text-sm">Not a supporter yet</span>
+                    <span className="text-ink-500 text-sm">Not a member yet</span>
                   )}
                 </Col>
               </Row>
@@ -766,7 +766,7 @@ function SupporterModal(props: {
                 {SUPPORTER_TIERS[purchasedTier].name}
               </>
             )}{' '}
-            Supporter!
+            member!
           </p>
 
           <Col className="mb-6 gap-2 text-left">
@@ -812,7 +812,7 @@ function SupporterModal(props: {
             <div className="relative">
               {isSupporter ? (
                 <Row className="flex-wrap items-center justify-between gap-3">
-                  {/* Left: Avatar + Name + Badge */}
+                  {/* Left: Avatar + Name + Badge (changes on hover/select) */}
                   <Row className="items-center gap-3">
                     <Avatar
                       username={user?.username}
@@ -827,18 +827,18 @@ function SupporterModal(props: {
                         <span className="text-lg font-bold">{user?.name}</span>
                         <span className="relative inline-flex">
                           <FaStar className={clsx(
-                            'h-4 w-4',
-                            currentTier === 'basic' && 'text-gray-400',
-                            currentTier === 'plus' && 'text-indigo-500',
-                            currentTier === 'premium' && 'text-amber-500'
+                            'h-4 w-4 transition-colors duration-150',
+                            activeTier === 'basic' && 'text-gray-400',
+                            activeTier === 'plus' && 'text-indigo-500',
+                            activeTier === 'premium' && 'text-amber-500'
                           )} />
-                          {currentTier === 'premium' && (
+                          {activeTier === 'premium' && (
                             <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
                           )}
                         </span>
                       </Row>
-                      <span className={clsx('text-sm font-medium', SUPPORTER_TIERS[currentTier].textColor)}>
-                        {SUPPORTER_TIERS[currentTier].name} Supporter
+                      <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[activeTier].textColor)}>
+                        Manifold {SUPPORTER_TIERS[activeTier].name}
                       </span>
                     </Col>
                   </Row>
@@ -848,7 +848,7 @@ function SupporterModal(props: {
                     <div className="text-ink-500 text-xs">Time remaining</div>
                     <Row className="items-center gap-1.5">
                       <span className="text-lg font-bold text-amber-600">{daysRemaining}d</span>
-                      {selectedTier === currentTier && (
+                      {activeTier === currentTier && (
                         <>
                           <span className="text-ink-400 text-sm">→</span>
                           <span className="text-lg font-bold text-green-600">{daysRemaining + 30}d</span>
@@ -885,14 +885,14 @@ function SupporterModal(props: {
                         </span>
                       </Row>
                       <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[activeTier].textColor)}>
-                        {SUPPORTER_TIERS[activeTier].name} Supporter
+                        Manifold {SUPPORTER_TIERS[activeTier].name}
                       </span>
                     </Col>
                   </Row>
 
                   {/* Right: Tagline - hidden on small screens */}
                   <Col className="hidden items-end gap-0.5 sm:flex">
-                    <span className="text-ink-600 text-sm font-medium">Support Manifold</span>
+                    <span className="text-ink-600 text-sm font-medium">Manifold Membership</span>
                     <span className="text-ink-500 text-xs">Unlock premium benefits</span>
                   </Col>
                 </Row>
@@ -921,6 +921,7 @@ function SupporterModal(props: {
               loading={purchasing === TIER_ITEMS[activeTier].id}
               disabled={!user || !!purchasing}
               entitlements={entitlements}
+              daysRemaining={daysRemaining}
               onClick={() => setConfirmingPurchase(activeTier)}
             />
           )}

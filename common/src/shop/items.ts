@@ -52,11 +52,11 @@ export const getEntitlementId = (item: ShopItem): string =>
   item.entitlementId ?? item.id
 
 export const SHOP_ITEMS: ShopItem[] = [
-  // Supporter tiers - payment-based (Basic/Plus/Premium)
+  // Membership tiers - Plus/Pro/Premium
   {
     id: 'supporter-basic',
-    name: 'Basic Supporter',
-    description: 'Support Manifold and get 1.5x quest rewards',
+    name: 'Manifold Plus',
+    description: '1.5x quest rewards, 1% daily free loans',
     price: 500,
     type: 'time-limited',
     duration: 30 * DAY_MS,
@@ -66,8 +66,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'supporter-plus',
-    name: 'Plus Supporter',
-    description: '2x quest rewards, 5% shop discount, +1 streak freeze/mo',
+    name: 'Manifold Pro',
+    description: '2x quest rewards, 5% shop discount, 2% daily free loans, margin loan access',
     price: 2500,
     type: 'time-limited',
     duration: 30 * DAY_MS,
@@ -77,8 +77,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'supporter-premium',
-    name: 'Premium Supporter',
-    description: '3x quest rewards, 10% shop discount, +4 max streak freezes, animated badge',
+    name: 'Manifold Premium',
+    description: '3x quest rewards, 10% shop discount, 3% daily free loans, margin loan access, animated badge',
     price: 10000,
     type: 'time-limited',
     duration: 30 * DAY_MS,

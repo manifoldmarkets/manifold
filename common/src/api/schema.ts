@@ -2070,6 +2070,7 @@ export const API = (_apiTypeCheck = {
       currentMarginLoan?: number
       freeLoanAvailable?: number
       canClaimFreeLoan?: boolean
+      hasMarginLoanAccess?: boolean
     },
     props: z.object({
       userId: z.string(),

@@ -10,6 +10,11 @@ import {
   getMidnightPacific,
 } from 'common/loans'
 import {
+  canAccessMarginLoans,
+  SUPPORTER_ENTITLEMENT_IDS,
+} from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
+import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
@@ -86,6 +91,25 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const lastClaimTime = lastClaimResult?.last_free_loan_claim ?? null
   const canClaimFreeLoan = canClaimDailyFreeLoan(lastClaimTime)
 
+  // Check if user has margin loan access (Pro or Premium tier required)
+  const supporterEntitlementRows = await pg.manyOrNone<{
+    user_id: string
+    entitlement_id: string
+    granted_time: string
+    expires_time: string | null
+    enabled: boolean
+  }>(
+    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
+     FROM user_entitlements
+     WHERE user_id = $1
+     AND entitlement_id = ANY($2)
+     AND enabled = true
+     AND (expires_time IS NULL OR expires_time > NOW())`,
+    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
+  )
+  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const hasMarginLoanAccess = canAccessMarginLoans(entitlements)
+
   // Calculate free loan available
   const eligibleMetrics = metrics.filter((m) => {
     const contract = contractsById[m.contractId]
@@ -126,5 +150,6 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     currentMarginLoan,
     freeLoanAvailable,
     canClaimFreeLoan: canClaimFreeLoan && freeLoanAvailable >= 1,
+    hasMarginLoanAccess,
   }
 }

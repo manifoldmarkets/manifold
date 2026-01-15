@@ -342,7 +342,7 @@ function SupporterBadge({
   const showAnimation = animate && tier === 'premium'
 
   return (
-    <Tooltip text={`${tierConfig.name} Supporter`} placement="right">
+    <Tooltip text={`Manifold ${tierConfig.name}`} placement="right">
       <span className="relative inline-flex items-center translate-y-[1px]">
         <FaStar
           className={clsx(

@@ -13,7 +13,6 @@ import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 import {
   SUPPORTER_ENTITLEMENT_IDS,
   getBenefit,
-  getUserSupporterTier,
   getMaxStreakFreezes,
 } from 'common/supporter-config'
 import { DAY_MS } from 'common/util/time'

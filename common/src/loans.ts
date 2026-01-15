@@ -68,23 +68,28 @@ export const canClaimDailyFreeLoan = (
 
 /**
  * Calculate free loan available for a single position.
- * Free loan = min(1% of payout value, cost basis/invested amount)
+ * Free loan = min(X% of payout value, cost basis/invested amount)
+ * Rate is tier-based: Free/Plus=1%, Pro=2%, Premium=3%
  */
 export const calculatePositionFreeLoan = (
   positionPayout: number,
-  invested: number
+  invested: number,
+  freeLoanRate: number = FREE_LOAN_POSITION_PERCENT
 ): number => {
   if (positionPayout <= 0 || invested <= 0) return 0
-  return Math.min(positionPayout * FREE_LOAN_POSITION_PERCENT, invested)
+  return Math.min(positionPayout * freeLoanRate, invested)
 }
 
 /**
  * Calculate total free loan available across all eligible positions.
  */
 export const calculateTotalFreeLoanAvailable = (
-  metrics: Array<{ payout: number; invested: number }>
+  metrics: Array<{ payout: number; invested: number }>,
+  freeLoanRate: number = FREE_LOAN_POSITION_PERCENT
 ): number => {
-  return sumBy(metrics, (m) => calculatePositionFreeLoan(m.payout, m.invested))
+  return sumBy(metrics, (m) =>
+    calculatePositionFreeLoan(m.payout, m.invested, freeLoanRate)
+  )
 }
 
 export type MarketLoanEligibility = {

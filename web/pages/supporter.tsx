@@ -86,8 +86,8 @@ export default function SupporterPage() {
   return (
     <Page trackPageView="supporter page" className="p-3">
       <SEO
-        title="Become a Supporter"
-        description="Support Manifold and unlock premium benefits"
+        title="Manifold Membership"
+        description="Unlock premium benefits with Manifold Plus, Pro, or Premium"
         url="/supporter"
       />
 
@@ -130,7 +130,7 @@ export default function SupporterPage() {
                   </Row>
                   {/* Show hovered tier text, or current tier text */}
                   <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier].textColor)}>
-                    {SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier].name} Supporter
+                    Manifold {SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier].name}
                   </span>
                 </Col>
               </Row>
@@ -181,6 +181,7 @@ export default function SupporterPage() {
             disabled={!user || !!purchasing}
             onClick={() => setConfirmingPurchase(activeTier)}
             entitlements={user?.entitlements}
+            daysRemaining={daysRemaining}
           />
         )}
 
@@ -238,10 +239,10 @@ export default function SupporterPage() {
             {purchasedTier && (
               <>
                 <TierBadge tier={purchasedTier} animate={purchasedTier === 'premium'} />{' '}
-                {SUPPORTER_TIERS[purchasedTier].name}
+                Manifold {SUPPORTER_TIERS[purchasedTier].name}
               </>
             )}{' '}
-            Supporter!
+            member!
           </p>
 
           <Col className="mb-6 gap-2 text-left">

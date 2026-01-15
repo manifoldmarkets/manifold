@@ -18,6 +18,7 @@ export function SubscribeButton({
   disabled,
   onClick,
   entitlements,
+  daysRemaining = 0,
 }: {
   tier: SupporterTier
   currentTier: SupporterTier | null
@@ -26,13 +27,21 @@ export function SubscribeButton({
   disabled: boolean
   onClick: () => void
   entitlements?: UserEntitlement[]
+  daysRemaining?: number
 }) {
   const tierConfig = SUPPORTER_TIERS[tier]
   const item = TIER_ITEMS[tier]
-  const canAfford = effectiveBalance >= item.price
   const isCurrentTier = currentTier === tier
   const canUpgrade = canUpgradeTo(currentTier, tier)
   const isLowerTier = !!currentTier && !canUpgrade && !isCurrentTier
+
+  // Calculate upgrade credit (matches backend logic)
+  const upgradeCredit =
+    canUpgrade && currentTier && daysRemaining > 0
+      ? Math.floor(daysRemaining * (TIER_ITEMS[currentTier].price / 30))
+      : 0
+  const finalPrice = Math.max(0, item.price - upgradeCredit)
+  const canAfford = effectiveBalance >= finalPrice
 
   // Check if user was ever a supporter (for "Renew" text on expired subscriptions)
   const wasSupporter = wasEverSupporter(entitlements)
@@ -44,7 +53,13 @@ export function SubscribeButton({
       ? `Upgrade to ${tierConfig.name}`
       : isExpiredSupporter
         ? `Renew ${tierConfig.name}`
-        : `Become a ${tierConfig.name} Supporter`
+        : `Become a ${tierConfig.name} member`
+
+  // Show different price text for upgrades with credit
+  const priceText =
+    upgradeCredit > 0
+      ? formatMoney(finalPrice)
+      : `${formatMoney(item.price)}/mo`
 
   return (
     <Button
@@ -63,7 +78,7 @@ export function SubscribeButton({
         ? 'Already have higher tier'
         : !canAfford
           ? 'Insufficient balance'
-          : `${buttonText} - ${formatMoney(item.price)}/mo`}
+          : `${buttonText} - ${priceText}`}
     </Button>
   )
 }
