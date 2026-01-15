@@ -381,14 +381,19 @@ function UserLeagueStatus(props: {
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCountBySeason(season, division, cohortSize)
 
+  const nextDivision = DIVISION_NAMES[division + 1]
+  const nextNextDivision = DIVISION_NAMES[division + 2]
+  const prevDivision = DIVISION_NAMES[Math.max(division - 1, 1)]
+  const currentDivision = DIVISION_NAMES[division]
+
   const getZone = () => {
-    if (rank <= doublePromotion)
-      return { type: 'double-promote', label: 'Double promotion', color: 'text-teal-600' }
-    if (rank <= promotion)
-      return { type: 'promote', label: 'Promotion zone', color: 'text-teal-600' }
-    if (rank > cohortSize - demotion)
-      return { type: 'demote', label: 'Demotion zone', color: 'text-scarlet-600' }
-    return { type: 'safe', label: 'Safe', color: 'text-ink-500' }
+    if (rank <= doublePromotion && nextNextDivision)
+      return { label: `Promoting to ${nextNextDivision}`, color: 'text-teal-600' }
+    if (rank <= promotion && nextDivision)
+      return { label: `Promoting to ${nextDivision}`, color: 'text-teal-600' }
+    if (rank > cohortSize - demotion && demotion > 0)
+      return { label: `Demoting to ${prevDivision}`, color: 'text-scarlet-600' }
+    return { label: `Remaining in ${currentDivision}`, color: 'text-ink-500' }
   }
 
   const zone = getZone()

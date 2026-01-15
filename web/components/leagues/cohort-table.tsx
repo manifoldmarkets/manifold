@@ -75,29 +75,6 @@ export const CohortTable = (props: {
         </p>
       )}
 
-      {/* Zone Legend */}
-      {!noPromotionDemotion && (
-        <Row className="gap-4 text-xs">
-          {adjustedDoublePromotionCount > 0 && (
-            <Row className="items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-sm bg-teal-500" />
-              <span className="text-ink-600">Double promote</span>
-            </Row>
-          )}
-          {adjustedPromotionCount > adjustedDoublePromotionCount && (
-            <Row className="items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-sm bg-teal-400" />
-              <span className="text-ink-600">Promote</span>
-            </Row>
-          )}
-          {demotionCount > 0 && (
-            <Row className="items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-sm bg-scarlet-500" />
-              <span className="text-ink-600">Demote</span>
-            </Row>
-          )}
-        </Row>
-      )}
 
       <Col className="bg-canvas-0 divide-ink-100 divide-y rounded-lg border border-ink-200">
         {rows.map((row, i) => {
