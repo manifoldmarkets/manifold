@@ -157,17 +157,18 @@ async function fetchEligibleMarkets(
     FROM contracts
     WHERE visibility = 'public'
       AND resolution_time IS NULL
-      AND (close_time > NOW() OR close_time IS NULL)
+      AND (close_time IS NULL OR close_time > NOW() + INTERVAL '7 days')
+      AND created_time < NOW() - INTERVAL '1 day'
       AND outcome_type = 'BINARY'
       AND mechanism = 'cpmm-1'
       AND deleted = false
-      AND (data->>'uniqueBettorCount')::int > 25
+      AND (data->>'uniqueBettorCount')::int > 20
       AND token = 'MANA'
       AND (data->>'prob')::numeric > 0.05
       AND (data->>'prob')::numeric < 0.95
       AND NOT (group_slugs && $1::text[])
     ORDER BY importance_score DESC
-    LIMIT 300
+    LIMIT 500
     `,
     [HIDE_FROM_NEW_USER_SLUGS],
     (r) => r.data as Contract

@@ -5,22 +5,22 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract, MarketContract } from 'common/contract'
 import { CommentView } from 'common/events'
+import { HOUR_MS } from 'common/util/time'
+import { last, orderBy, sumBy } from 'lodash'
+import Link from 'next/link'
+import { FeedReplyBet } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useIsVisible } from 'web/hooks/use-is-visible'
+import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { ReplyToggle } from './reply-toggle'
-import { Content } from '../widgets/editor'
-import { usePartialUpdater } from 'web/hooks/use-partial-updater'
-import { FeedReplyBet } from 'web/components/feed/feed-bets'
-import { HOUR_MS } from 'common/util/time'
-import { last, orderBy, sumBy } from 'lodash'
 import { UserHovercard } from '../user/user-hovercard'
-import Link from 'next/link'
-import { CommentReplyHeader, FeedCommentHeader } from './comment-header'
+import { Content } from '../widgets/editor'
 import { CommentActions } from './comment-actions'
+import { CommentReplyHeader, FeedCommentHeader } from './comment-header'
+import { ReplyToggle } from './reply-toggle'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -41,6 +41,7 @@ export const FeedComment = memo(function FeedComment(props: {
   lastInReplyChain?: boolean
   isPinned?: boolean
   showParentLine?: boolean
+  blockedUserIds?: string[]
 }) {
   const {
     playContract,
@@ -55,6 +56,7 @@ export const FeedComment = memo(function FeedComment(props: {
     lastInReplyChain,
     isPinned,
     showParentLine,
+    blockedUserIds,
   } = props
   // for optimistic updates
   const [comment, updateComment] = usePartialUpdater(props.comment)
@@ -193,7 +195,7 @@ export const FeedComment = memo(function FeedComment(props: {
             isPinned={isPinned}
           />
 
-          <HideableContent comment={comment} />
+          <HideableContent comment={comment} blockedUserIds={blockedUserIds} />
           <Row>
             {children}
             <CommentActions
@@ -263,6 +265,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   childrenBountyTotal?: number
   bets?: Bet[]
   isPinned?: boolean
+  blockedUserIds?: string[]
 }) {
   const {
     playContract,
@@ -278,6 +281,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     childrenBountyTotal,
     bets,
     isPinned,
+    blockedUserIds,
   } = props
 
   const { ref } = useIsVisible(
@@ -307,6 +311,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       bets={bets}
       isPinned={isPinned}
       showParentLine={seeReplies && numReplies > 0}
+      blockedUserIds={blockedUserIds}
     >
       {isPinned && (
         <Link
@@ -329,15 +334,19 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   )
 })
 
-function HideableContent(props: { comment: ContractComment }) {
-  const { comment } = props
+function HideableContent(props: {
+  comment: ContractComment
+  blockedUserIds?: string[]
+}) {
+  const { comment, blockedUserIds } = props
   const { text, content } = comment
 
   //hides if enough dislikes
   const dislikes = comment.dislikes ?? 0
   const likes = comment.likes ?? 0
   const majorityDislikes = dislikes > 10 && dislikes / (likes + dislikes) >= 0.8
-  const initiallyHidden = majorityDislikes || comment.hidden
+  const isBlocked = blockedUserIds?.includes(comment.userId)
+  const initiallyHidden = majorityDislikes || comment.hidden || isBlocked
   const [showHidden, setShowHidden] = useState(false)
 
   return initiallyHidden && !showHidden ? (
@@ -347,7 +356,7 @@ function HideableContent(props: { comment: ContractComment }) {
         setShowHidden(!showHidden)
       }}
     >
-      Comment hidden
+      {isBlocked ? 'Commentor blocked' : 'Comment hidden'}
     </div>
   ) : (
     <Content size="sm" className="mt-1 grow" content={content || text} />

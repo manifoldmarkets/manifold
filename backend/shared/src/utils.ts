@@ -154,12 +154,12 @@ export const getContractAndMetricsAndLiquidities = async (
   const sumsToOne = isMulti && unresolvedContract.shouldAnswersSumToOne
   const metricsQuery = sumsToOne
     ? `
-     select data from user_contract_metrics
+     select data, margin_loan, loan from user_contract_metrics
      where contract_id = $1 and
      answer_id is not null`
     : isMulti
     ? `
-    select data from user_contract_metrics
+    select data, margin_loan, loan from user_contract_metrics
       where contract_id = $1
       and (answer_id = $2 or (
             -- Only get summary metric if they've bet on the answer
@@ -171,7 +171,7 @@ export const getContractAndMetricsAndLiquidities = async (
               )
             )
           )`
-    : `select data from user_contract_metrics where contract_id = $1`
+    : `select data, margin_loan, loan from user_contract_metrics where contract_id = $1`
 
   const results = await pg.multi(
     `select ${contractColumnsToSelect} from contracts where id = $1;
@@ -188,7 +188,14 @@ export const getContractAndMetricsAndLiquidities = async (
     contract.answers = answers
   }
   // We don't get the summary metric, we recreate them from all the answer metrics
-  const contractMetrics = results[2].map((row) => row.data as ContractMetric)
+  const contractMetrics = results[2].map(
+    (row) =>
+      ({
+        ...row.data,
+        loan: row.loan ?? row.data.loan ?? 0,
+        marginLoan: row.margin_loan ?? row.data.marginLoan ?? 0,
+      } as ContractMetric)
+  )
   const liquidities = results[3].map(convertLiquidity)
 
   return { contract, contractMetrics, liquidities }

@@ -1,7 +1,5 @@
 import { removeCpmmLiquidity } from 'common/calculate-cpmm'
-import { CPMMContract } from 'common/contract'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import { calculatePoolInterestCpmm1 } from 'shared/calculate-pool-interest'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
@@ -51,22 +49,17 @@ export const removeLiquidity: APIHandler<
           throw new APIError(403, 'You are not the creator of this market')
       }
 
-      // Calculate pool with interest before removing liquidity
-      const accruedPool = calculatePoolInterestCpmm1(contract as CPMMContract)
-      contract.pool.YES = accruedPool.YES
-      contract.pool.NO = accruedPool.NO
-
-      const { subsidyPool: pendingLiquidity } = contract
+    const { subsidyPool: pendingLiquidity } = contract
 
       const takeFromPending = Math.min(pendingLiquidity, totalAmount)
       const takeFromPool = totalAmount - takeFromPending
 
-      if (takeFromPool > 0) {
-        const { newPool, newP, error } = removeCpmmLiquidity(
-          accruedPool,
-          contract.p,
-          takeFromPool
-        )
+    if (takeFromPool > 0) {
+      const { newPool, newP, error } = removeCpmmLiquidity(
+        contract.pool,
+        contract.p,
+        takeFromPool
+      )
 
         if (error) {
           throw new APIError(403, `Remaining liquidity too low`)
@@ -87,9 +80,10 @@ export const removeLiquidity: APIHandler<
       }
 
       await updateContract(pgTrans, contractId, {
-        subsidyPool: FieldVal.increment(-takeFromPending),
-        totalLiquidity: FieldVal.increment(-totalAmount),
+        pool: newPool,
+        p: newP,
       })
+    }
 
       await runTxnInBetQueue(pgTrans, {
         fromType: 'CONTRACT',

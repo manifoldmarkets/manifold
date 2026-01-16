@@ -72,7 +72,7 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
     and data->>'pinned' = 'true'
     order by created_time desc;
 
-    select data
+    select data, margin_loan, loan
     from user_contract_metrics
     where contract_id = $1
     and has_yes_shares
@@ -80,7 +80,7 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
     order by total_shares_yes desc
     limit 50;
 
-    select data
+    select data, margin_loan, loan
     from user_contract_metrics
     where contract_id = $1
     and has_no_shares 
@@ -88,7 +88,7 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
     order by total_shares_no desc
     limit 50;
 
-    select data
+    select data, margin_loan, loan
     from user_contract_metrics
     where contract_id = $1
     and exists (select 1 from contracts where id = $1 and resolution_time is not null)
@@ -134,9 +134,30 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
   const allComments = results[3].map(convertContractComment)
   const comments = filterComments(allComments)
   const pinnedComments = results[4].map(convertContractComment)
-  const yesMetrics = results[5].map((r) => r.data as ContractMetric)
-  const noMetrics = results[6].map((r) => r.data as ContractMetric)
-  const topContractMetrics = results[7].map((r) => r.data as ContractMetric)
+  const yesMetrics = results[5].map(
+    (r) =>
+      ({
+        ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+      } as ContractMetric)
+  )
+  const noMetrics = results[6].map(
+    (r) =>
+      ({
+        ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+      } as ContractMetric)
+  )
+  const topContractMetrics = results[7].map(
+    (r) =>
+      ({
+        ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+      } as ContractMetric)
+  )
   const totalPositions = results[8]?.[0]?.count ?? 0
   const dashboards = results[9]
   const siblingContract = first(

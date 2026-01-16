@@ -3,7 +3,6 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import {
   calculateLoanWithInterest,
-  distributeRepaymentProportionally,
   LoanWithInterest,
   MS_PER_DAY,
 } from 'common/loans'
@@ -11,7 +10,7 @@ import { Txn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
 import { getUnresolvedContractMetricsContractsAnswers } from 'shared/update-user-portfolio-histories-core'
-import { keyBy } from 'lodash'
+import { keyBy, sumBy } from 'lodash'
 import { getInsertQuery } from 'shared/supabase/utils'
 import {
   broadcastUserUpdates,
@@ -25,6 +24,7 @@ import {
   LoanTrackingRow,
 } from 'shared/helpers/user-contract-loans'
 import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
+import { ContractMetric } from 'common/contract-metric'
 
 export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   const { amount, contractId, answerId } = props
@@ -51,26 +51,52 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
 
   // Market-specific repayment
   if (contractId) {
-    const metric = metrics.find(
-      (m) =>
-        m.contractId === contractId &&
-        (answerId ? m.answerId === answerId : m.answerId === null)
-    )
+    const contractMetrics = metrics.filter((m) => m.contractId === contractId)
 
-    if (!metric || (metric.loan ?? 0) <= 0) {
+    // If answerId is provided, only repay on that specific answer
+    // Otherwise, repay across all metrics on this contract
+    const metricsToRepay = answerId
+      ? contractMetrics.filter((m) => m.answerId === answerId)
+      : contractMetrics.filter((m) => (m.loan ?? 0) + (m.marginLoan ?? 0) > 0)
+
+    if (metricsToRepay.length === 0) {
       throw new APIError(400, 'No outstanding loan on this market')
     }
 
-    // Get loan tracking data
+    // Get loan tracking data for interest calculation
     const loanTracking = await getLoanTrackingRows(pg, user.id, [contractId])
-    const tracking = loanTracking.find(
-      (t) =>
-        t.contract_id === contractId &&
-        (answerId ? t.answer_id === answerId : t.answer_id === null)
+    const trackingByKey = keyBy(
+      loanTracking,
+      (t) => `${t.contract_id}-${t.answer_id ?? ''}`
     )
 
-    const loanWithInterest = calculateLoanWithInterest(metric, tracking, now)
-    const totalOwed = loanWithInterest.total
+    // Calculate margin loans with interest for all metrics
+    const marginLoansWithInterest: (LoanWithInterest & {
+      metricKey: string
+      metric: ContractMetric
+    })[] = filterDefined(
+      metricsToRepay.map((metric) => {
+        const marginLoan = metric.marginLoan ?? 0
+        if (marginLoan <= 0) return undefined
+        const key = `${metric.contractId}-${metric.answerId ?? ''}`
+        const tracking = trackingByKey[key]
+        const loanWithInterest = calculateLoanWithInterest(
+          metric,
+          tracking,
+          now
+        )
+        return { ...loanWithInterest, metricKey: key, metric }
+      })
+    )
+
+    // Calculate totals across all metrics on this contract
+    const totalMarginOwed = sumBy(marginLoansWithInterest, (l) => l.total)
+    const totalFreeLoan = sumBy(metricsToRepay, (m) => m.loan ?? 0)
+    const totalOwed = totalMarginOwed + totalFreeLoan
+
+    if (totalOwed <= 0) {
+      throw new APIError(400, 'No outstanding loan on this market')
+    }
 
     if (amount > totalOwed) {
       throw new APIError(
@@ -79,43 +105,118 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       )
     }
 
-    const repaymentAmount = amount
-    const principalRatio = loanWithInterest.principal / loanWithInterest.total
+    // Distribute repayment: margin loans first, then free loans
+    let remainingRepayment = amount
+    const metricUpdates: Map<
+      string,
+      { freeLoanRepaid: number; marginPrincipalRepaid: number }
+    > = new Map()
 
-    const principalRepaid = repaymentAmount * principalRatio
-
-    // Update metric
-    const updatedMetric = {
-      ...metric,
-      loan: Math.max(0, (metric.loan ?? 0) - principalRepaid),
+    // Initialize all metrics
+    for (const metric of metricsToRepay) {
+      const key = `${metric.contractId}-${metric.answerId ?? ''}`
+      metricUpdates.set(key, { freeLoanRepaid: 0, marginPrincipalRepaid: 0 })
     }
 
-    // Update loan tracking
-    const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'>[] = []
-    if (tracking) {
-      const daysSinceLastUpdate =
-        (now - tracking.last_loan_update_time) / MS_PER_DAY
-      const finalIntegral =
-        tracking.loan_day_integral +
-        loanWithInterest.principal * daysSinceLastUpdate
-      const repaymentRatio = repaymentAmount / loanWithInterest.total
-      const newIntegral = finalIntegral * (1 - repaymentRatio)
+    // First pass: repay margin loans proportionally
+    let totalMarginRepaid = 0
+    let totalInterestRepaid = 0
+    if (totalMarginOwed > 0 && remainingRepayment > 0) {
+      const marginRepayment = Math.min(remainingRepayment, totalMarginOwed)
+      for (const loan of marginLoansWithInterest) {
+        const proportion = loan.total / totalMarginOwed
+        const amountForLoan = marginRepayment * proportion
+        const principalRatio = loan.principal / loan.total
+        const principalRepaid = amountForLoan * principalRatio
+        const interestRepaid = amountForLoan * (1 - principalRatio)
 
-      loanTrackingUpdate.push({
-        user_id: user.id,
-        contract_id: contractId,
-        answer_id: answerId ?? null,
-        loan_day_integral: newIntegral,
-        last_loan_update_time: now,
+        const update = metricUpdates.get(loan.metricKey)!
+        update.marginPrincipalRepaid = principalRepaid
+        totalInterestRepaid += interestRepaid
+      }
+      totalMarginRepaid = marginRepayment
+      remainingRepayment -= marginRepayment
+    }
+
+    // Second pass: repay free loans proportionally
+    let totalFreeLoanRepaid = 0
+    if (totalFreeLoan > 0 && remainingRepayment > 0) {
+      const freeLoanRepayment = Math.min(remainingRepayment, totalFreeLoan)
+      for (const metric of metricsToRepay) {
+        const freeLoan = metric.loan ?? 0
+        if (freeLoan <= 0) continue
+        const proportion = freeLoan / totalFreeLoan
+        const amountForLoan = freeLoanRepayment * proportion
+
+        const key = `${metric.contractId}-${metric.answerId ?? ''}`
+        const update = metricUpdates.get(key)!
+        update.freeLoanRepaid = amountForLoan
+      }
+      totalFreeLoanRepaid = freeLoanRepayment
+      remainingRepayment -= freeLoanRepayment
+    }
+
+    const repaymentAmount = totalMarginRepaid + totalFreeLoanRepaid
+
+    // Build contract metric updates
+    const metricsById = keyBy(
+      metricsToRepay,
+      (m) => `${m.contractId}-${m.answerId ?? ''}`
+    )
+    const updatedMetrics: ContractMetric[] = filterDefined(
+      Array.from(metricUpdates.entries()).map(([key, update]) => {
+        const metric = metricsById[key]
+        if (!metric) return undefined
+        if (update.freeLoanRepaid === 0 && update.marginPrincipalRepaid === 0)
+          return undefined
+
+        return {
+          ...metric,
+          loan: Math.max(0, (metric.loan ?? 0) - update.freeLoanRepaid),
+          marginLoan: Math.max(
+            0,
+            (metric.marginLoan ?? 0) - update.marginPrincipalRepaid
+          ),
+        }
       })
-    } else {
-      loanTrackingUpdate.push({
-        user_id: user.id,
-        contract_id: contractId,
-        answer_id: answerId ?? null,
-        loan_day_integral: 0,
-        last_loan_update_time: now,
-      })
+    )
+
+    // Build loan tracking updates (only for margin loans)
+    const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'>[] = []
+    for (const loan of marginLoansWithInterest) {
+      const update = metricUpdates.get(loan.metricKey)
+      if (!update || update.marginPrincipalRepaid === 0) continue
+
+      const tracking = trackingByKey[loan.metricKey]
+      if (tracking) {
+        const daysSinceLastUpdate =
+          (now - tracking.last_loan_update_time) / MS_PER_DAY
+        const finalIntegral =
+          tracking.loan_day_integral + loan.principal * daysSinceLastUpdate
+
+        const amountRepaidOnThisLoan =
+          update.marginPrincipalRepaid +
+          (update.marginPrincipalRepaid / loan.principal) *
+            (loan.total - loan.principal)
+        const repaymentRatio = amountRepaidOnThisLoan / loan.total
+        const newIntegral = finalIntegral * (1 - repaymentRatio)
+
+        loanTrackingUpdate.push({
+          user_id: user.id,
+          contract_id: loan.contractId,
+          answer_id: loan.answerId,
+          loan_day_integral: Math.max(0, newIntegral),
+          last_loan_update_time: now,
+        })
+      } else {
+        loanTrackingUpdate.push({
+          user_id: user.id,
+          contract_id: loan.contractId,
+          answer_id: loan.answerId,
+          loan_day_integral: 0,
+          last_loan_update_time: now,
+        })
+      }
     }
 
     // Create transaction
@@ -129,6 +230,9 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       category: 'LOAN_PAYMENT',
       data: {
         amountRepaid: repaymentAmount,
+        marginRepaid: totalMarginRepaid,
+        freeLoanRepaid: totalFreeLoanRepaid,
+        interestRepaid: totalInterestRepaid,
       },
     }
 
@@ -137,10 +241,12 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       balance: -repaymentAmount,
     }
 
-    const bulkUpdateContractMetricsQ = bulkUpdateContractMetricsQuery([
-      updatedMetric,
-    ])
-    const loanTrackingQ = upsertLoanTrackingQuery(loanTrackingUpdate)
+    const bulkUpdateContractMetricsQ =
+      bulkUpdateContractMetricsQuery(updatedMetrics)
+    const loanTrackingQ =
+      loanTrackingUpdate.length > 0
+        ? upsertLoanTrackingQuery(loanTrackingUpdate)
+        : 'SELECT 1'
     const balanceUpdateQuery = bulkIncrementBalancesQuery([balanceUpdate])
     const txnQuery = getInsertQuery('txns', txnToRow(loanPaymentTxn))
 
@@ -158,7 +264,9 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     }, [auth.uid])
 
     broadcastUserUpdates(userUpdates)
-    log(`User ${user.id} repaid ${repaymentAmount} on market ${contractId}`)
+    log(
+      `User ${user.id} repaid ${repaymentAmount} on market ${contractId} (margin: ${totalMarginRepaid}, free: ${totalFreeLoanRepaid})`
+    )
 
     const remainingLoan = totalOwed - repaymentAmount
 
@@ -168,14 +276,16 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     }
   }
 
-  // General repayment - proportional distribution
-  const metricsWithLoans = metrics.filter((m) => (m.loan ?? 0) > 0)
+  // General repayment - repay margin loans first, then free loans
+  const metricsWithLoans = metrics.filter(
+    (m) => (m.loan ?? 0) > 0 || (m.marginLoan ?? 0) > 0
+  )
 
   if (metricsWithLoans.length === 0) {
     throw new APIError(400, 'No outstanding loans to repay')
   }
 
-  // Get loan tracking data
+  // Get loan tracking data for margin loans
   const contractIds = [...new Set(metricsWithLoans.map((m) => m.contractId))]
   const loanTracking = await getLoanTrackingRows(pg, user.id, contractIds)
   const trackingByKey = keyBy(
@@ -183,82 +293,133 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     (t) => `${t.contract_id}-${t.answer_id ?? ''}`
   )
 
-  // Calculate loans with interest
-  const loansWithInterest: LoanWithInterest[] = filterDefined(
-    metricsWithLoans.map((metric) => {
-      const key = `${metric.contractId}-${metric.answerId ?? ''}`
-      const tracking = trackingByKey[key]
-      return calculateLoanWithInterest(metric, tracking, now)
-    })
-  )
+  // Calculate margin loans with interest
+  const marginLoansWithInterest: (LoanWithInterest & { metricKey: string })[] =
+    filterDefined(
+      metricsWithLoans.map((metric) => {
+        const marginLoan = metric.marginLoan ?? 0
+        if (marginLoan <= 0) return undefined
+        const key = `${metric.contractId}-${metric.answerId ?? ''}`
+        const tracking = trackingByKey[key]
+        const loanWithInterest = calculateLoanWithInterest(
+          metric,
+          tracking,
+          now
+        )
+        return { ...loanWithInterest, metricKey: key }
+      })
+    )
 
-  const totalOwed = loansWithInterest.reduce((sum, loan) => sum + loan.total, 0)
+  // Calculate totals
+  const totalMarginOwed = sumBy(marginLoansWithInterest, (l) => l.total)
+  const totalFreeLoan = sumBy(metricsWithLoans, (m) => m.loan ?? 0)
+  const totalOwed = totalMarginOwed + totalFreeLoan
   const repaymentAmount = Math.min(amount, totalOwed)
 
   if (repaymentAmount <= 0) {
     throw new APIError(400, 'No outstanding loans to repay')
   }
 
-  // Distribute repayment proportionally
-  const distributions = distributeRepaymentProportionally(
-    repaymentAmount,
-    loansWithInterest
-  )
+  // Distribute repayment: margin loans first, then free loans
+  let remainingRepayment = repaymentAmount
+  const metricUpdates: Map<
+    string,
+    { freeLoanRepaid: number; marginPrincipalRepaid: number }
+  > = new Map()
+
+  // Initialize all metrics
+  for (const metric of metricsWithLoans) {
+    const key = `${metric.contractId}-${metric.answerId ?? ''}`
+    metricUpdates.set(key, { freeLoanRepaid: 0, marginPrincipalRepaid: 0 })
+  }
+
+  // First pass: repay margin loans proportionally
+  if (totalMarginOwed > 0 && remainingRepayment > 0) {
+    const marginRepayment = Math.min(remainingRepayment, totalMarginOwed)
+    for (const loan of marginLoansWithInterest) {
+      const proportion = loan.total / totalMarginOwed
+      const amountForLoan = marginRepayment * proportion
+      const principalRatio = loan.principal / loan.total
+      const principalRepaid = amountForLoan * principalRatio
+
+      const update = metricUpdates.get(loan.metricKey)!
+      update.marginPrincipalRepaid = principalRepaid
+    }
+    remainingRepayment -= marginRepayment
+  }
+
+  // Second pass: repay free loans proportionally
+  if (totalFreeLoan > 0 && remainingRepayment > 0) {
+    const freeLoanRepayment = Math.min(remainingRepayment, totalFreeLoan)
+    for (const metric of metricsWithLoans) {
+      const freeLoan = metric.loan ?? 0
+      if (freeLoan <= 0) continue
+      const proportion = freeLoan / totalFreeLoan
+      const amountForLoan = freeLoanRepayment * proportion
+
+      const key = `${metric.contractId}-${metric.answerId ?? ''}`
+      const update = metricUpdates.get(key)!
+      update.freeLoanRepaid = amountForLoan
+    }
+    remainingRepayment -= freeLoanRepayment
+  }
 
   // Build contract metric updates
   const metricsById = keyBy(
     metrics,
     (m) => `${m.contractId}-${m.answerId ?? ''}`
   )
-  const updatedMetrics = filterDefined(
-    distributions.map((dist) => {
-      const key = `${dist.contractId}-${dist.answerId ?? ''}`
+  const updatedMetrics: ContractMetric[] = filterDefined(
+    Array.from(metricUpdates.entries()).map(([key, update]) => {
       const metric = metricsById[key]
       if (!metric) return undefined
+      if (update.freeLoanRepaid === 0 && update.marginPrincipalRepaid === 0)
+        return undefined
 
-      const newLoan = Math.max(0, (metric.loan ?? 0) - dist.principalRepaid)
       return {
         ...metric,
-        loan: newLoan,
+        loan: Math.max(0, (metric.loan ?? 0) - update.freeLoanRepaid),
+        marginLoan: Math.max(
+          0,
+          (metric.marginLoan ?? 0) - update.marginPrincipalRepaid
+        ),
       }
     })
   )
 
-  // Build loan tracking updates
+  // Build loan tracking updates (only for margin loans)
   const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
-  for (const dist of distributions) {
-    const key = `${dist.contractId}-${dist.answerId ?? ''}`
-    const tracking = trackingByKey[key]
-    const loan = loansWithInterest.find(
-      (l) => l.contractId === dist.contractId && l.answerId === dist.answerId
-    )
+  for (const loan of marginLoansWithInterest) {
+    const update = metricUpdates.get(loan.metricKey)
+    if (!update || update.marginPrincipalRepaid === 0) continue
 
-    if (!loan) continue
-
+    const tracking = trackingByKey[loan.metricKey]
     if (tracking) {
-      // Finalize integral up to now
       const daysSinceLastUpdate =
         (now - tracking.last_loan_update_time) / MS_PER_DAY
       const finalIntegral =
         tracking.loan_day_integral + loan.principal * daysSinceLastUpdate
 
-      // Reduce integral proportionally for repaid amount
-      const repaymentRatio = dist.amountRepaid / loan.total
+      // Calculate what fraction of the margin loan was repaid
+      const amountRepaidOnThisLoan =
+        update.marginPrincipalRepaid +
+        (update.marginPrincipalRepaid / loan.principal) *
+          (loan.total - loan.principal)
+      const repaymentRatio = amountRepaidOnThisLoan / loan.total
       const newIntegral = finalIntegral * (1 - repaymentRatio)
 
       loanTrackingUpdates.push({
         user_id: user.id,
-        contract_id: dist.contractId,
-        answer_id: dist.answerId,
-        loan_day_integral: newIntegral,
+        contract_id: loan.contractId,
+        answer_id: loan.answerId,
+        loan_day_integral: Math.max(0, newIntegral),
         last_loan_update_time: now,
       })
     } else {
-      // No tracking data - create new entry with zero integral
       loanTrackingUpdates.push({
         user_id: user.id,
-        contract_id: dist.contractId,
-        answer_id: dist.answerId,
+        contract_id: loan.contractId,
+        answer_id: loan.answerId,
         loan_day_integral: 0,
         last_loan_update_time: now,
       })
@@ -286,7 +447,10 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
 
   const bulkUpdateContractMetricsQ =
     bulkUpdateContractMetricsQuery(updatedMetrics)
-  const loanTrackingQ = upsertLoanTrackingQuery(loanTrackingUpdates)
+  const loanTrackingQ =
+    loanTrackingUpdates.length > 0
+      ? upsertLoanTrackingQuery(loanTrackingUpdates)
+      : 'SELECT 1'
   const balanceUpdateQuery = bulkIncrementBalancesQuery([balanceUpdate])
   const txnQuery = getInsertQuery('txns', txnToRow(loanPaymentTxn))
 

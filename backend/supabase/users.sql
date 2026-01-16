@@ -6,6 +6,7 @@ create table if not exists
     created_time timestamp with time zone default now() not null,
     data jsonb not null,
     id text primary key default random_alphanumeric (12) not null,
+    last_free_loan_claim timestamp with time zone,
     name text not null,
     name_username_vector tsvector generated always as (
       to_tsvector(

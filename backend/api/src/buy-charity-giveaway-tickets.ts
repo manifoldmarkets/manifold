@@ -23,9 +23,10 @@ export const buyCharityGiveawayTickets: APIHandler<
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
       close_time: string
-    }>(`SELECT giveaway_num, close_time FROM charity_giveaways WHERE giveaway_num = $1`, [
-      giveawayNum,
-    ])
+    }>(
+      `SELECT giveaway_num, close_time FROM charity_giveaways WHERE giveaway_num = $1`,
+      [giveawayNum]
+    )
 
     if (!giveaway) {
       throw new APIError(404, 'Giveaway not found')
@@ -46,6 +47,11 @@ export const buyCharityGiveawayTickets: APIHandler<
 
     // Calculate cost
     const manaSpent = calculateGiveawayTicketCost(currentTickets, numTickets)
+
+    // Minimum purchase of 1 mana
+    if (manaSpent < 1) {
+      throw new APIError(400, 'Minimum purchase is 1 mana')
+    }
 
     // Check user balance
     const user = await getUser(auth.uid, tx)

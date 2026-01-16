@@ -1,3 +1,6 @@
+import { animated } from '@react-spring/web'
+import clsx from 'clsx'
+import { getDisplayProbability, getProbability } from 'common/calculate'
 import {
   BinaryContract,
   CPMMNumericContract,
@@ -6,30 +9,26 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { formatExpectedDate, getExpectedDate } from 'common/multi-date'
+import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
+import { getMappedValue } from 'common/pseudo-numeric'
+import {
+  answerTextToRange,
+  formatNumberExpectedValue,
+  getNumberExpectedValue,
+} from 'common/src/number'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
+import { getTextColor } from 'web/components/contract/text-color'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import {
   BinaryContractOutcomeLabel,
   CancelLabel,
   MultiNumericValueLabel,
   NumericValueLabel,
 } from 'web/components/outcome-label'
-import { getMappedValue } from 'common/pseudo-numeric'
-import { getDisplayProbability, getProbability } from 'common/calculate'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { animated } from '@react-spring/web'
-import { getTextColor } from 'web/components/contract/text-color'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import {
-  formatNumberExpectedValue,
-  getNumberExpectedValue,
-  answerTextToRange,
-} from 'common/src/number'
-import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
-import { formatExpectedDate } from 'common/multi-date'
-import { getExpectedDate } from 'common/multi-date'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { Clock } from '../clock/clock'
 
 export function BinaryResolutionOrChance(props: {
@@ -183,7 +182,7 @@ export function MultiNumericResolutionOrExpectation(props: {
   className?: string
 }) {
   const { contract, className } = props
-  const { answers, resolution } = contract
+  const { answers, resolution, shouldAnswersSumToOne } = contract
   const resolvedAnswer = answers.find((a) => a.id === resolution)
   const value = getExpectedValue(contract)
   const formattedValue = formatExpectedValue(value, contract)
@@ -202,9 +201,14 @@ export function MultiNumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <MultiNumericValueLabel
-              formattedValue={resolvedAnswer?.text ?? formattedValue}
-            />
+            <>
+              <span className="text-sky-600">
+                {!shouldAnswersSumToOne ? '~' : ''}
+              </span>
+              <MultiNumericValueLabel
+                formattedValue={resolvedAnswer?.text ?? formattedValue}
+              />
+            </>
           )}
         </>
       ) : (

@@ -5,12 +5,7 @@ import { APIError } from 'common/api/utils'
 import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
 import { LimitBet, maker } from 'common/bet'
 import { MarginalBet } from 'common/calculate-metrics'
-import {
-  Contract,
-  CPMMContract,
-  CPMMMultiContract,
-  MarketContract,
-} from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { getUniqueBettorBonusAmount } from 'common/economy'
 import {
@@ -37,10 +32,6 @@ import {
 import { getInsertQuery } from 'shared/supabase/utils'
 import { txnToRow } from 'shared/txn/run-txn'
 import { contractColumnsToSelect } from 'shared/utils'
-import {
-  calculatePoolInterestCpmm1,
-  calculatePoolInterestMulti,
-} from 'shared/calculate-pool-interest'
 
 export const fetchContractBetDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
@@ -93,7 +84,7 @@ export const fetchContractBetDataAndValidate = async (
     select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
-    select data from user_contract_metrics ucm where 
+    select data, margin_loan, loan from user_contract_metrics ucm where 
       contract_id = $2 and user_id = $1
       and (
         -- Get metrics for selected answers
@@ -108,7 +99,7 @@ export const fetchContractBetDataAndValidate = async (
       from contract_bets b
       where ${whereLimitOrderBets}
     )
-    select data from user_contract_metrics ucm
+    select data, margin_loan, loan from user_contract_metrics ucm
     where contract_id = $2
       and user_id in (select user_id from matching_user_answer_pairs)
       and (answer_id in (select answer_id from matching_user_answer_pairs)
@@ -125,11 +116,25 @@ export const fetchContractBetDataAndValidate = async (
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
   })[]
-  const myContractMetrics = results[4].map((r) => r.data as ContractMetric)
+  const myContractMetrics = results[4].map(
+    (r) =>
+      ({
+        ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+      } as ContractMetric)
+  )
   // We get slightly more contract metrics than we need bc the contract_metrics index works poorly when selecting
   // (user_id, answer_id) in (select user_id, answer_id from matching_user_answer_pairs)
   const limitOrderersContractMetrics = results[5]
-    .map((r) => r.data as ContractMetric)
+    .map(
+      (r) =>
+        ({
+          ...r.data,
+          loan: r.loan ?? r.data.loan ?? 0,
+          marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+        } as ContractMetric)
+    )
     .filter((m) =>
       unfilledBets.some(
         (b) =>
@@ -157,37 +162,6 @@ export const fetchContractBetDataAndValidate = async (
 
   if (contract.mechanism === 'cpmm-multi-1')
     contract.answers = uniqBy([...answers, ...contract.answers], 'id')
-
-  // Calculate pool with interest and update local objects before bet calculations
-  if (contract.mechanism === 'cpmm-1') {
-    const poolWithInterest = calculatePoolInterestCpmm1(
-      contract as CPMMContract
-    )
-    contract.pool.YES = poolWithInterest.YES
-    contract.pool.NO = poolWithInterest.NO
-  } else if (contract.mechanism === 'cpmm-multi-1') {
-    const poolUpdates = calculatePoolInterestMulti(
-      contract as CPMMMultiContract,
-      answers
-    )
-    const updateMap = new Map(poolUpdates.map((u) => [u.id, u]))
-    for (const answer of answers) {
-      const update = updateMap.get(answer.id)
-      if (update) {
-        answer.poolYes = update.poolYes
-        answer.poolNo = update.poolNo
-      }
-    }
-    if (contract.answers) {
-      for (const answer of contract.answers) {
-        const update = updateMap.get(answer.id)
-        if (update) {
-          answer.poolYes = update.poolYes
-          answer.poolNo = update.poolNo
-        }
-      }
-    }
-  }
 
   const { closeTime, isResolved } = contract
   if (closeTime && Date.now() > closeTime)
@@ -268,7 +242,7 @@ export const getUserBalancesAndMetrics = async (
   const results = await pgTrans.multi(
     `
       SELECT balance, id FROM users WHERE id = ANY($1);
-      select data from user_contract_metrics where user_id = any($1) and contract_id = $2 and
+      select data, margin_loan, loan from user_contract_metrics where user_id = any($1) and contract_id = $2 and
            ($3 is null or answer_id = $3 or answer_id is null);
     `,
     [userIds, contractId, sumsToOne ? null : answerId ?? null]
@@ -276,7 +250,11 @@ export const getUserBalancesAndMetrics = async (
   const balanceByUserId: Record<string, number> = Object.fromEntries(
     results[0].map((user) => [user.id, user.balance])
   )
-  const contractMetrics = results[1].map((r) => r.data) as ContractMetric[]
+  const contractMetrics = results[1].map((r) => ({
+    ...r.data,
+    loan: r.loan ?? r.data.loan ?? 0,
+    marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+  })) as ContractMetric[]
   log(`Fetch user balances and metrics took ${Date.now() - startTime}ms`)
   return { balanceByUserId, contractMetrics }
 }

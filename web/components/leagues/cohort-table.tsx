@@ -5,18 +5,20 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@heroicons/react/solid'
-
 import { Fragment, useState } from 'react'
+import Link from 'next/link'
+
 import { Row } from '../layout/row'
 import { DIVISION_NAMES, league_user_info } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { UserAvatarAndBadge } from '../widgets/user-link'
+import { Avatar } from '../widgets/avatar'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
 import { DisplayUser } from 'common/api/user-types'
+import { getRankZoneStyles } from './division-badge'
 
 export const CohortTable = (props: {
   season: number
@@ -66,98 +68,115 @@ export const CohortTable = (props: {
       : promotionCount
 
   return (
-    <Col>
+    <Col className="gap-3">
       {division === 1 && (
-        <div className="mb-4">Requires 100 mana earned to promote.</div>
+        <p className="text-ink-500 text-sm">
+          Requires 100 mana earned to promote from Bronze
+        </p>
       )}
-      <table>
-        <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
-          <tr>
-            <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
-            <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
-              Mana earned
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => {
-            const user = users[i]
-            if (!user) return null
-            return (
-              <Fragment key={user.id}>
-                {user &&
-                  (!shouldTruncateZeros ||
-                    !!row.mana_earned ||
-                    highlightedUserId === user.id) && (
-                    <UserRow
-                      {...row}
-                      user={user}
-                      isHighlighted={highlightedUserId === user.id}
-                      mana_earned_breakdown={row.mana_earned_breakdown as any}
-                      season={season}
-                    />
-                  )}
-                {user &&
-                  shouldTruncateZeros &&
-                  row.mana_earned === 0 &&
-                  (i === rows.length - 1 || rows[i + 1].mana_earned !== 0) && (
-                    <tr>
-                      <td className="pl-9">
-                        <div className="">...</div>
-                      </td>
-                      <td />
-                    </tr>
-                  )}
-                {!noPromotionDemotion && (
-                  <>
-                    {adjustedDoublePromotionCount > 0 &&
-                      i + 1 === adjustedDoublePromotionCount && (
-                        <tr>
-                          <td colSpan={2}>
-                            <Col className="mb-2 w-full items-center gap-1">
-                              <div className="text-ink-500 text-xs">
-                                ▲ Promotes to {nextNextDivisionName}{' '}
-                              </div>
-                              <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                            </Col>
-                          </td>
-                        </tr>
-                      )}
-                    {adjustedDoublePromotionCount !== adjustedPromotionCount &&
-                      adjustedPromotionCount > 0 &&
-                      i + 1 === adjustedPromotionCount && (
-                        <tr>
-                          <td colSpan={2}>
-                            <Col className="mb-2 w-full items-center gap-1">
-                              <div className="text-ink-500 text-xs">
-                                ▲ Promotes to {nextDivisionName}
-                              </div>
-                              <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                            </Col>
-                          </td>
-                        </tr>
-                      )}
-                    {demotionCount > 0 &&
-                      rows.length - (i + 1) === demotionCount && (
-                        <tr>
-                          <td colSpan={2}>
-                            <Col className="mt-2 w-full items-center gap-1">
-                              <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                              <div className="text-ink-500 text-xs">
-                                ▼ Demotes to {prevDivisionName}
-                              </div>
-                            </Col>
-                          </td>
-                        </tr>
-                      )}
-                  </>
+
+      <Col className="bg-canvas-0 divide-ink-100 border-ink-200 divide-y rounded-lg border">
+        {rows.map((row, i) => {
+          const user = users[i]
+          if (!user) return null
+
+          const zoneStyles = !noPromotionDemotion
+            ? getRankZoneStyles(
+                row.rank,
+                rows.length,
+                adjustedPromotionCount,
+                adjustedDoublePromotionCount,
+                demotionCount
+              )
+            : { zone: 'stay' as const, classes: '' }
+
+          const shouldShow =
+            !shouldTruncateZeros ||
+            !!row.mana_earned ||
+            highlightedUserId === user.id
+
+          return (
+            <Fragment key={user.id}>
+              {user && shouldShow && (
+                <UserRow
+                  {...row}
+                  user={user}
+                  isHighlighted={highlightedUserId === user.id}
+                  mana_earned_breakdown={row.mana_earned_breakdown as any}
+                  season={season}
+                  zoneClasses={zoneStyles.classes}
+                  isFirst={i === 0}
+                  isLast={i === rows.length - 1}
+                />
+              )}
+              {user &&
+                shouldTruncateZeros &&
+                row.mana_earned === 0 &&
+                (i === rows.length - 1 || rows[i + 1].mana_earned !== 0) && (
+                  <Row className="text-ink-400 justify-center py-3 text-sm">
+                    ···
+                  </Row>
                 )}
-              </Fragment>
-            )
-          })}
-        </tbody>
-      </table>
+              {!noPromotionDemotion && (
+                <>
+                  {adjustedDoublePromotionCount > 0 &&
+                    i + 1 === adjustedDoublePromotionCount && (
+                      <ZoneDivider
+                        label={`Promotes to ${nextNextDivisionName}`}
+                        type="promote"
+                      />
+                    )}
+                  {adjustedDoublePromotionCount !== adjustedPromotionCount &&
+                    adjustedPromotionCount > 0 &&
+                    i + 1 === adjustedPromotionCount && (
+                      <ZoneDivider
+                        label={`Promotes to ${nextDivisionName}`}
+                        type="promote"
+                      />
+                    )}
+                  {demotionCount > 0 &&
+                    rows.length - (i + 1) === demotionCount && (
+                      <ZoneDivider
+                        label={`Demotes to ${prevDivisionName}`}
+                        type="demote"
+                      />
+                    )}
+                </>
+              )}
+            </Fragment>
+          )
+        })}
+      </Col>
     </Col>
+  )
+}
+
+function ZoneDivider(props: { label: string; type: 'promote' | 'demote' }) {
+  const { label, type } = props
+
+  return (
+    <Row className="items-center gap-3 px-4 py-2">
+      <div
+        className={clsx(
+          'h-px flex-1',
+          type === 'promote' ? 'bg-teal-300' : 'bg-scarlet-300'
+        )}
+      />
+      <span
+        className={clsx(
+          'text-xs font-medium',
+          type === 'promote' ? 'text-teal-600' : 'text-scarlet-600'
+        )}
+      >
+        {label}
+      </span>
+      <div
+        className={clsx(
+          'h-px flex-1',
+          type === 'promote' ? 'bg-teal-300' : 'bg-scarlet-300'
+        )}
+      />
+    </Row>
   )
 }
 
@@ -169,6 +188,9 @@ const UserRow = (props: {
   rank: number
   rank_snapshot: number | null
   isHighlighted: boolean
+  zoneClasses: string
+  isFirst: boolean
+  isLast: boolean
 }) => {
   const {
     user,
@@ -178,52 +200,95 @@ const UserRow = (props: {
     rank,
     rank_snapshot,
     isHighlighted,
+    zoneClasses,
+    isFirst,
+    isLast,
   } = props
 
   const [showDialog, setShowDialog] = useState(false)
-
   const rankDiff = rank_snapshot ? rank - rank_snapshot : 0
 
   return (
-    <tr
-      className={clsx(
-        'hover:bg-primary-100 group cursor-pointer',
-        isHighlighted && 'bg-primary-100 sticky bottom-[58px] lg:bottom-0'
-      )}
-      onClick={() => {
-        setShowDialog(true)
-      }}
-    >
-      <td className="pl-2">
-        <Row className="my-2 items-center gap-4">
-          <Tooltip
-            text={
-              rankDiff
-                ? `${rankDiff < 0 ? 'Gained' : 'Lost'} ${Math.abs(
-                    rankDiff
-                  )} rank${Math.abs(rankDiff) > 1 ? 's' : ''} today`
-                : undefined
-            }
+    <>
+      <div
+        className={clsx(
+          'hover:bg-canvas-50 group cursor-pointer transition-colors',
+          isHighlighted && 'bg-primary-50',
+          zoneClasses,
+          isFirst && 'rounded-t-lg',
+          isLast && 'rounded-b-lg'
+        )}
+        onClick={() => setShowDialog(true)}
+      >
+        <Row className="items-center gap-3 px-4 py-3">
+          {/* Rank */}
+          <Row className="w-14 shrink-0 items-center gap-1">
+            <Tooltip
+              text={
+                rankDiff
+                  ? `${rankDiff < 0 ? 'Up' : 'Down'} ${Math.abs(
+                      rankDiff
+                    )} today`
+                  : undefined
+              }
+            >
+              <Row className="items-center gap-0.5">
+                <div className="w-4">
+                  {rankDiff < -1 ? (
+                    <ChevronDoubleUpIcon className="h-4 w-4 text-teal-500" />
+                  ) : rankDiff === -1 ? (
+                    <ChevronUpIcon className="h-4 w-4 text-teal-500" />
+                  ) : rankDiff === 1 ? (
+                    <ChevronDownIcon className="text-scarlet-500 h-4 w-4" />
+                  ) : rankDiff > 1 ? (
+                    <ChevronDoubleDownIcon className="text-scarlet-500 h-4 w-4" />
+                  ) : null}
+                </div>
+                <span
+                  className={clsx(
+                    'text-sm font-medium tabular-nums',
+                    rank <= 3 ? 'text-ink-900' : 'text-ink-600'
+                  )}
+                >
+                  {rank}
+                </span>
+              </Row>
+            </Tooltip>
+          </Row>
+
+          {/* User info */}
+          <Row className="min-w-0 flex-1 items-center gap-2.5">
+            <Avatar
+              avatarUrl={user.avatarUrl}
+              username={user.username}
+              size="sm"
+              noLink
+            />
+            <Link
+              href={`/${user.username}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-ink-900 truncate text-sm font-medium hover:underline"
+            >
+              {user.name}
+            </Link>
+          </Row>
+
+          {/* Mana earned */}
+          <span
+            className={clsx(
+              'shrink-0 text-sm font-medium tabular-nums',
+              mana_earned > 0
+                ? 'text-teal-600'
+                : mana_earned < 0
+                ? 'text-scarlet-500'
+                : 'text-ink-1000'
+            )}
           >
-            <Row>
-              {rankDiff < -1 ? (
-                <ChevronDoubleUpIcon className="h-6 w-6 text-teal-500" />
-              ) : rankDiff === -1 ? (
-                <ChevronUpIcon className="h-6 w-6 text-teal-500" />
-              ) : rankDiff === 1 ? (
-                <ChevronDownIcon className="text-scarlet-500 h-6 w-6" />
-              ) : rankDiff > 1 ? (
-                <ChevronDoubleDownIcon className="text-scarlet-500 h-6 w-6" />
-              ) : (
-                <div className="h-6 w-6" />
-              )}
-              <div className="w-4 text-right font-semibold">{rank}</div>
-            </Row>
-          </Tooltip>
-          <UserAvatarAndBadge user={user} noLink />
+            {mana_earned > 0 ? '+' : ''}
+            {formatMoney(mana_earned)}
+          </span>
         </Row>
-      </td>
-      <td className="pr-2 text-right sm:pr-10">{formatMoney(mana_earned)}</td>
+      </div>
 
       {showDialog && (
         <ManaEarnedBreakdown
@@ -235,6 +300,6 @@ const UserRow = (props: {
           mana_earned_breakdown={mana_earned_breakdown}
         />
       )}
-    </tr>
+    </>
   )
 }

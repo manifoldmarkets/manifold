@@ -11,14 +11,80 @@ export type LoanTrackingRow = {
   last_loan_update_time: number
 }
 
-export const MAX_LOAN_NET_WORTH_PERCENT = 0.5 // 50% max total for general loans
+export const MAX_LOAN_NET_WORTH_PERCENT = 1.0 // 100% max total for all loans (free + margin)
 export const DAILY_LOAN_NET_WORTH_PERCENT = 0.1 // 10% max per day for general loans
 export const MAX_MARKET_LOAN_NET_WORTH_PERCENT = 0.05 // 5% of net worth per market
-export const MAX_MARKET_LOAN_POSITION_PERCENT = 0.25 // 25% of position value per market
-export const LOAN_DAILY_INTEREST_RATE = 0.0003 // 0.03% per day
+export const LOAN_DAILY_INTEREST_RATE = 0.0003 // 0.03% per day (margin loans only)
+export const FREE_LOAN_POSITION_PERCENT = 0.01 // 1% of position value for daily free loan
 export const MS_PER_DAY = 24 * 60 * 60 * 1000
 export const MIN_TRADERS_FOR_MARKET_LOAN = 10
 export const MIN_AGE_HOURS_FOR_MARKET_LOAN = 24
+
+// Pacific timezone offset handling for daily free loan reset
+export const PACIFIC_TIMEZONE = 'America/Los_Angeles'
+
+/**
+ * Get midnight Pacific Time for today or a given date.
+ * Returns a Date representing 00:00:00 Pacific Time on the given date.
+ */
+export const getMidnightPacific = (date: Date = new Date()): Date => {
+  // Get the date string in Pacific timezone (YYYY-MM-DD format)
+  const pacificDateStr = date.toLocaleDateString('en-CA', {
+    timeZone: PACIFIC_TIMEZONE,
+  })
+
+  // Parse it back as a date and get the Pacific timezone offset at that time
+  // We need to find what UTC time corresponds to midnight Pacific
+  const [year, month, day] = pacificDateStr.split('-').map(Number)
+
+  // Create a date at noon UTC on that day (to avoid DST edge cases)
+  const noonUtc = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+
+  // Get the Pacific time string at noon UTC
+  const pacificTimeAtNoon = noonUtc.toLocaleString('en-US', {
+    timeZone: PACIFIC_TIMEZONE,
+    hour: 'numeric',
+    hour12: false,
+  })
+  const pacificHourAtNoon = parseInt(pacificTimeAtNoon, 10)
+
+  // The offset in hours from UTC is (12 - pacificHourAtNoon)
+  // So midnight Pacific = midnight UTC + offset hours
+  const offsetHours = 12 - pacificHourAtNoon
+  return new Date(Date.UTC(year, month - 1, day, offsetHours, 0, 0))
+}
+
+/**
+ * Check if user can claim daily free loan (hasn't claimed since midnight PT today).
+ */
+export const canClaimDailyFreeLoan = (
+  lastClaimTime: Date | null | undefined
+): boolean => {
+  if (!lastClaimTime) return true
+  const midnightPT = getMidnightPacific()
+  return new Date(lastClaimTime) < midnightPT
+}
+
+/**
+ * Calculate free loan available for a single position.
+ * Free loan = min(1% of payout value, cost basis/invested amount)
+ */
+export const calculatePositionFreeLoan = (
+  positionPayout: number,
+  invested: number
+): number => {
+  if (positionPayout <= 0 || invested <= 0) return 0
+  return Math.min(positionPayout * FREE_LOAN_POSITION_PERCENT, invested)
+}
+
+/**
+ * Calculate total free loan available across all eligible positions.
+ */
+export const calculateTotalFreeLoanAvailable = (
+  metrics: Array<{ payout: number; invested: number }>
+): number => {
+  return sumBy(metrics, (m) => calculatePositionFreeLoan(m.payout, m.invested))
+}
 
 export type MarketLoanEligibility = {
   eligible: boolean
@@ -91,10 +157,9 @@ export const isUserEligibleForGeneralLoan = (
 export const isUserEligibleForMarketLoan = (
   currentMarketLoan: number,
   requestedAmount: number,
-  netWorth: number,
-  totalMarketPositionValue?: number
+  netWorth: number
 ): boolean => {
-  const maxLoan = calculateMarketLoanMax(netWorth, totalMarketPositionValue)
+  const maxLoan = calculateMarketLoanMax(netWorth)
   return currentMarketLoan + requestedAmount <= maxLoan
 }
 
@@ -107,12 +172,18 @@ export type LoanWithInterest = {
   lastUpdateTime: number
 }
 
+/**
+ * Calculate margin loan with accrued interest.
+ * Only margin loans (marginLoan field) accrue interest.
+ * Free loans (loan field) are interest-free forever.
+ */
 export const calculateLoanWithInterest = (
   metric: ContractMetric,
   tracking: LoanTrackingRow | undefined,
   now: number = Date.now()
 ): LoanWithInterest => {
-  const principal = metric.loan ?? 0
+  // Only margin loans accrue interest
+  const principal = metric.marginLoan ?? 0
   if (principal === 0) {
     return {
       contractId: metric.contractId,
@@ -125,7 +196,7 @@ export const calculateLoanWithInterest = (
   }
 
   if (!tracking) {
-    // Legacy loan without tracking - no interest
+    // Margin loan without tracking - treat as no interest yet
     return {
       contractId: metric.contractId,
       answerId: metric.answerId,
@@ -152,6 +223,13 @@ export const calculateLoanWithInterest = (
   }
 }
 
+/**
+ * Get total loan amount (free + margin) for a metric.
+ */
+export const getTotalLoan = (metric: ContractMetric): number => {
+  return (metric.loan ?? 0) + (metric.marginLoan ?? 0)
+}
+
 export type RepaymentDistribution = {
   contractId: string
   answerId: string | null
@@ -168,15 +246,8 @@ export const calculateDailyLoanLimit = (netWorth: number): number => {
   return netWorth * DAILY_LOAN_NET_WORTH_PERCENT
 }
 
-export const calculateMarketLoanMax = (
-  netWorth: number,
-  totalMarketPositionValue?: number
-): number => {
-  const netWorthLimit = netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
-  if (totalMarketPositionValue === undefined) return netWorthLimit
-  const positionLimit =
-    totalMarketPositionValue * MAX_MARKET_LOAN_POSITION_PERCENT
-  return Math.min(netWorthLimit, positionLimit)
+export const calculateMarketLoanMax = (netWorth: number): number => {
+  return netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
 }
 
 export type LoanDistribution = {

@@ -25,19 +25,20 @@ export type Payout = {
   deposit?: number
 }
 
-// Returns loan principal payouts (negative values, as loans are deducted from payouts).
-// Note: Interest is calculated at resolution time using the separate user_contract_loans table,
-// not from ContractMetric fields. See getLoanPayoutsWithInterest in resolve-market-helpers.ts.
+// Returns loan payouts (negative values, as loans are deducted from payouts).
+// Margin loan interest is calculated using the user_contract_loans table in resolve-market-helpers.ts.
 export const getLoanPayouts = (
   contractMetrics: ContractMetric[],
   answerId?: string
 ): Payout[] => {
   const metricsWithLoans = contractMetrics
-    .filter((metric) => metric.loan)
+    // Include both free loans and margin loans
+    .filter((metric) => (metric.loan ?? 0) > 0 || (metric.marginLoan ?? 0) > 0)
     .filter((metric) => (answerId ? metric.answerId === answerId : true))
   const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
   const loansByUser = mapValues(metricsByUser, (metrics) =>
-    sumBy(metrics, (metric) => -(metric.loan ?? 0))
+    // Sum both free loans and margin loans as negative (to deduct from payouts)
+    sumBy(metrics, (metric) => -((metric.loan ?? 0) + (metric.marginLoan ?? 0)))
   )
   return Object.entries(loansByUser).map(([userId, payout]) => ({
     userId,

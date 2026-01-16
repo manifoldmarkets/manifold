@@ -10,14 +10,20 @@ export async function getTopContractMetrics(
   const { data } = await run(
     db
       .from('user_contract_metrics')
-      .select('data')
+      .select('data, margin_loan, loan')
       .eq('contract_id', contractId)
       .order('profit', { ascending: false } as any)
       .is('answer_id', null)
       .limit(limit)
   )
 
-  return data ? data.map((doc) => doc.data as ContractMetric) : []
+  return data
+    ? (data as any[]).map((doc) => ({
+        ...(doc.data as ContractMetric),
+        loan: doc.loan ?? (doc.data as any).loan ?? 0,
+        marginLoan: doc.margin_loan ?? (doc.data as any).marginLoan ?? 0,
+      } as ContractMetric))
+    : []
 }
 
 export async function getRanking(
@@ -48,7 +54,7 @@ export async function getCPMMContractUserContractMetrics(
     const totalSharesColumn = `total_shares_${outcome}`
     let q = db
       .from('user_contract_metrics')
-      .select('data')
+      .select('data, margin_loan, loan')
       .eq('contract_id', contractId)
       .eq(hasSharesColumn, true)
       .order(totalSharesColumn, { ascending: false } as any)
@@ -60,7 +66,11 @@ export async function getCPMMContractUserContractMetrics(
       throw error
     }
 
-    return data.map((doc) => doc.data as ContractMetric)
+    return (data as any[]).map((doc) => ({
+      ...(doc.data as ContractMetric),
+      loan: doc.loan ?? (doc.data as any).loan ?? 0,
+      marginLoan: doc.margin_loan ?? (doc.data as any).marginLoan ?? 0,
+    } as ContractMetric))
   }
 
   try {
@@ -87,7 +97,7 @@ export async function getUsersContractMetricsOrderedByProfit(
     const { data: negative } = await run(
       db
         .from('user_contract_metrics')
-        .select('data')
+        .select('data, margin_loan, loan')
         .in('user_id', chunk)
         .is('answer_id', null)
         .order(orderString, { ascending: true })
@@ -95,15 +105,17 @@ export async function getUsersContractMetricsOrderedByProfit(
     const { data: profit } = await run(
       db
         .from('user_contract_metrics')
-        .select('data')
+        .select('data, margin_loan, loan')
         .in('user_id', chunk)
         .is('answer_id', null)
         .order(orderString, { ascending: false, nullsFirst: false })
     )
     // We want most profitable and least profitable
-    return [...profit, ...negative.reverse()].map(
-      (d) => d.data
-    ) as ContractMetric[]
+    return ([...profit, ...negative.reverse()] as any[]).map((d) => ({
+      ...(d.data as ContractMetric),
+      loan: d.loan ?? (d.data as any).loan ?? 0,
+      marginLoan: d.margin_loan ?? (d.data as any).marginLoan ?? 0,
+    })) as ContractMetric[]
   })
   const results = await Promise.all(promises)
   const allContractMetrics: { [key: string]: ContractMetric[] } = groupBy(
@@ -147,7 +159,11 @@ export const convertContractMetricRows = (
   docs: Row<'user_contract_metrics'>[]
 ) =>
   uniqBy(
-    docs.map((doc) => doc.data as ContractMetric),
+    docs.map((doc) => ({
+      ...(doc.data as ContractMetric),
+      loan: doc.loan ?? (doc.data as any)?.loan ?? 0,
+      marginLoan: (doc as any).margin_loan ?? (doc.data as any)?.marginLoan ?? 0,
+    } as ContractMetric)),
     (cm) => cm.userId + cm.answerId + cm.contractId
   )
 

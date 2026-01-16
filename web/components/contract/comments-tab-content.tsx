@@ -95,8 +95,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         ...highlightedComments,
       ],
       'id'
-    ).filter((c) => !blockedUserIds.includes(c.userId))
-  }, [newComments, staticComments, threads, highlightedThreads, blockedUserIds])
+    )
+  }, [newComments, staticComments, threads, highlightedThreads])
 
   const commentExistsLocally = useMemo(
     () => allComments.some((c) => c.id === highlightCommentId),
@@ -379,6 +379,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             seeReplies={false}
             numReplies={0}
             isPinned
+            blockedUserIds={blockedUserIds}
           />
         </div>
       ))}
@@ -414,6 +415,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                   .map((c) => c.id)
                   .includes(b.replyToCommentId)
             )}
+            blockedUserIds={blockedUserIds}
           />
         ))
       )}

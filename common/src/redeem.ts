@@ -12,7 +12,8 @@ export const getBinaryRedeemableAmountFromContractMetric = (
   const shares = Math.max(Math.min(yesShares, noShares), 0)
   const soldFrac = shares > 0 ? shares / Math.max(yesShares, noShares) : 0
 
-  const loanAmount = contractMetric.loan ?? 0
+  // Include both free loans and margin loans
+  const loanAmount = (contractMetric.loan ?? 0) + (contractMetric.marginLoan ?? 0)
   const loanPayment = loanAmount * soldFrac
   const netAmount = shares - loanPayment
   return { shares, loanPayment, netAmount }

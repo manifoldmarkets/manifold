@@ -23,6 +23,9 @@ import { useSweepstakes } from '../sweepstakes-provider'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { DailyLeagueStat } from '../home/daily-league-stat'
+import { AddFundsButton } from '../profile/add-funds-button'
+import { DailyLoan } from '../home/daily-loan'
+import { useUser } from 'web/hooks/use-user'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -317,9 +320,13 @@ function TwombaPortfolioValueSkeleton(props: {
       <Col className={clsx('gap-2')}>
         <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
           Portfolio
-          {!hideSweepsToggle && (
-            <SweepsToggle sweepsEnabled={true} isPlay={prefersPlay} />
-          )}
+          <Row className="items-center gap-2">
+            {!hideSweepsToggle && (
+              <SweepsToggle sweepsEnabled={true} isPlay={prefersPlay} />
+            )}
+            <PortfolioLoanButton userId={userId} />
+            <AddFundsButton userId={userId} size="md" />
+          </Row>
         </Row>
         <Col className="bg-canvas-0 w-full rounded-lg p-4">
           <Col>
@@ -459,4 +466,16 @@ function displayAmounts(
     return currentNumber ?? undefined
   }
   return graphNumber ?? undefined
+}
+
+function PortfolioLoanButton(props: { userId?: string }) {
+  const { userId } = props
+  const currentUser = useUser()
+
+  // Only show for current user viewing their own portfolio
+  if (!userId || !currentUser || currentUser.id !== userId) {
+    return null
+  }
+
+  return <DailyLoan user={currentUser} showChest={false} />
 }

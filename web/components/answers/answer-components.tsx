@@ -16,7 +16,7 @@ import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
 import { capitalize } from 'lodash'
-import { ReactNode, useState, useEffect } from 'react'
+import { ReactNode, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -545,7 +545,6 @@ export function AnswerPosition(props: {
   addDot?: boolean
 }) {
   const { contract, user, answer, className, addDot, myMetric } = props
-  const [showLoanModal, setShowLoanModal] = useState(false)
 
   const { invested, totalShares, loan } = myMetric ?? {
     invested: 0,
@@ -566,16 +565,6 @@ export function AnswerPosition(props: {
 
   const answerLoan = loan ?? 0
   const hasLoan = answerLoan > 0
-  // Only show per-answer loan buttons for independent/set markets (not sums-to-one)
-  // Sums-to-one markets use the market-level loan button which aggregates all answers
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-  const isIndependentMarket = !shouldAnswersSumToOne
-  const showLoanButton =
-    contract.token === 'MANA' &&
-    !contract.isResolved &&
-    canSell &&
-    isIndependentMarket
 
   return (
     <>
@@ -621,31 +610,13 @@ export function AnswerPosition(props: {
             <MoneyDisplay amount={invested} isCashContract={isCashContract} />
           </div>
         </Row>
-        {showLoanButton && (
+        {hasLoan && (
           <>
             &middot;
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setShowLoanModal(true)
-              }}
-              className={clsx(
-                'hover:underline',
-                hasLoan
-                  ? 'text-amber-700 hover:text-amber-900'
-                  : 'text-ink-500 hover:text-ink-700'
-              )}
-            >
-              {hasLoan ? (
-                <Row className="gap-1">
-                  <span>Loan</span>
-                  <MoneyDisplay amount={answerLoan} isCashContract={false} />
-                </Row>
-              ) : (
-                'Loan'
-              )}
-            </button>
+            <Row className="gap-1 text-amber-700">
+              <span>Loan</span>
+              <MoneyDisplay amount={answerLoan} isCashContract={false} />
+            </Row>
           </>
         )}
         {canSell && (
@@ -661,47 +632,6 @@ export function AnswerPosition(props: {
         )}
       </Row>
       {addDot && <span>&middot;</span>}
-      {showLoanModal && (
-        <AnswerLoanModal
-          user={user}
-          contract={contract}
-          answerId={answer.id}
-          isOpen={showLoanModal}
-          setOpen={setShowLoanModal}
-        />
-      )}
     </>
-  )
-}
-
-function AnswerLoanModal(props: {
-  user: User
-  contract: MultiContract
-  answerId: string
-  isOpen: boolean
-  setOpen: (open: boolean) => void
-}) {
-  const { user, contract, answerId, isOpen, setOpen } = props
-  // Dynamically import LoansModal to avoid circular dependency
-  const [LoansModal, setLoansModal] = useState<React.ComponentType<any> | null>(
-    null
-  )
-
-  useEffect(() => {
-    import('web/components/profile/loans-modal').then((mod) => {
-      setLoansModal(() => mod.LoansModal)
-    })
-  }, [])
-
-  if (!LoansModal) return null
-
-  return (
-    <LoansModal
-      user={user}
-      isOpen={isOpen}
-      setOpen={setOpen}
-      contractId={contract.id}
-      answerId={answerId}
-    />
   )
 }

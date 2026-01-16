@@ -62,12 +62,17 @@ export async function updateUserMetricsWithBets(
       const [contracts, currentContractMetrics] = await Promise.all([
         getContractsDirect(betContractIds, pg),
         pg.map(
-          `select data from user_contract_metrics
+          `select data, margin_loan, loan from user_contract_metrics
           where user_id in ($1:list)
           and contract_id in ($2:list)
           `,
           [userBatch, betContractIds],
-          (r) => r.data as ContractMetric
+          (r) =>
+            ({
+              ...r.data,
+              loan: r.loan ?? r.data.loan ?? 0,
+              marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+            } as ContractMetric)
         ),
       ])
       const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))

@@ -6,18 +6,21 @@ create table if not exists
     prize_amount_usd numeric not null,
     close_time timestamp with time zone not null,
     winning_ticket_id text,
+    -- Provably fair: nonce is secret UNTIL winner is selected.
+    -- Before: only share MD5(nonce) so users can record it.
+    -- After: reveal nonce so users can verify MD5(nonce) matches.
+    nonce text not null default encode(gen_random_bytes (32), 'hex'),
     created_time timestamp with time zone default now() not null
   );
 
 -- Row Level Security
+-- IMPORTANT: No public read policy! The nonce column is sensitive and must
+-- only be exposed through the API after winner selection.
+-- All access goes through the backend API which uses service role.
 alter table charity_giveaways enable row level security;
 
--- Policies
+-- Drop any existing public read policy
 drop policy if exists "public read" on charity_giveaways;
-
-create policy "public read" on charity_giveaways for
-select
-  using (true);
 
 -- Indexes
 drop index if exists charity_giveaways_pkey;
