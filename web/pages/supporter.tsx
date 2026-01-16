@@ -110,7 +110,7 @@ export default function SupporterPage() {
                   size="lg"
                   noLink
                   entitlements={user?.entitlements}
-                  animateGoldenGlow
+                  displayContext="shop"
                 />
                 <Col className="gap-0.5">
                   <Row className="items-center gap-2">

@@ -49,6 +49,7 @@ export function AuthorInfo(props: {
           avatarUrl={creatorAvatarUrl}
           size={'xs'}
           entitlements={creator?.entitlements}
+          displayContext="market_creator"
         />
 
         <UserLink
@@ -60,6 +61,7 @@ export function AuthorInfo(props: {
             entitlements: creator?.entitlements,
           }}
           className={'mr-1'}
+          displayContext="market_creator"
         />
       </UserHovercard>
 

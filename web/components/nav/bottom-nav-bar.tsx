@@ -214,6 +214,7 @@ function NavBarItem(props: {
               avatarUrl={user.avatarUrl}
               noLink
               entitlements={effectiveEntitlements}
+              displayContext="profile_sidebar"
             />
           </div>
           <Row className="mt-0.5 gap-1">

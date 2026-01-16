@@ -583,6 +583,323 @@ getMaxStreakFreezes(entitlements): number
 
 ---
 
+## Entitlement Display Configuration
+
+Central configuration system that controls which entitlements (avatar decorations, badges) appear in which areas of the site, and which animations are enabled.
+
+**File**: `common/src/shop/display-config.ts`
+
+### Core Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **DisplayContext** | Where in the UI entitlements can appear (e.g., `profile_page`, `shop`, `hovercard`) |
+| **EntitlementGroup** | Category of visual effect (`avatar-border`, `avatar-overlay`, `badge`, `hovercard`) |
+| **AnimationType** | Animation effects (`hat-hover`, `golden-glow`, `badge-pulse`) |
+
+### Fail-Safe Default Behavior
+
+**CRITICAL**: When `displayContext` prop is NOT passed to a component:
+- **Avatar**: Shows NO entitlements (border, hats) - filtered to empty
+- **UserBadge**: Shows NO supporter badge
+
+This ensures the config controls everything. To enable entitlements in a new area, you MUST add `displayContext` prop.
+
+### Current Configuration
+
+```typescript
+const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
+  // ✅ FUNCTIONAL - fully wired with displayContext
+  profile_page:     { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: ['hat-hover'] },
+  profile_sidebar:  { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: ['hat-hover'] },
+  shop:             { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: ['hat-hover', 'golden-glow'] },
+  market_creator:   { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: [] },
+  market_comments:  { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: [] },
+  posts:            { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: [] },
+  hovercard:        { groups: ['avatar-border', 'avatar-overlay', 'badge', 'hovercard'], animations: ['hat-hover', 'golden-glow', 'badge-pulse'] },
+  leagues:          { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: [] },
+  leaderboard:      { groups: ['avatar-border', 'avatar-overlay'], animations: [] },  // No badges - rows too compact
+  managrams:        { groups: ['avatar-border', 'avatar-overlay', 'badge'], animations: [] },
+
+  // ⚠️ NOT YET WIRED - need useDisplayUserById pattern; not necessary for launch
+  browse:           { groups: [], animations: [] },
+  explore:          { groups: [], animations: [] },
+  feed:             { groups: [], animations: [] },
+
+  // ❌ NO EFFECT - notification data doesn't include entitlements
+  notifications:    { groups: [], animations: [] },
+}
+```
+
+### Entitlement Groups Explained
+
+| Group | Visual Effect | Shop Items |
+|-------|--------------|------------|
+| `avatar-border` | Golden glow ring around avatar | `avatar-golden-border` |
+| `avatar-overlay` | Hat icons on avatar (crown, graduation cap) | `avatar-crown`, `avatar-graduation-cap` |
+| `badge` | Supporter star badge next to username | `supporter-basic`, `supporter-plus`, `supporter-premium` |
+| `hovercard` | Purple glow border on hovercard popup | `hovercard-glow` |
+
+### Animation Types Explained
+
+| Animation | Effect | Where Typically Used |
+|-----------|--------|---------------------|
+| `hat-hover` | Hat lifts up on hover | Profile pages, shop, hovercard |
+| `golden-glow` | Golden border pulses | Shop preview, hovercard |
+| `badge-pulse` | Premium badge has pulsing glow | Hovercard only |
+
+### Helper Functions
+
+```typescript
+// Filter entitlements for a context (used by Avatar internally)
+filterEntitlementsForContext(entitlements, context): UserEntitlement[] | undefined
+
+// Check if badges should show in context (used by UserBadge internally)
+shouldShowBadges(context): boolean
+
+// Animation checks (used by Avatar/UserBadge internally)
+shouldAnimateHatOnHover(context): boolean
+shouldAnimateGoldenGlow(context): boolean
+shouldAnimateBadge(context): boolean
+```
+
+---
+
+### How to Enable Entitlements for a New Display Area
+
+Follow this checklist when adding entitlements to a new area of the site:
+
+#### Step 1: Add DisplayContext (if new area)
+
+In `common/src/shop/display-config.ts`:
+
+```typescript
+// Add to DisplayContext type
+export type DisplayContext =
+  | 'profile_page'
+  | 'my_new_area'  // ← Add here
+  // ...
+
+// Add to CONTEXT_CONFIG
+const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
+  // ...existing...
+  my_new_area: {
+    groups: ['avatar-border', 'avatar-overlay', 'badge'],  // Choose which to show
+    animations: [],  // Choose which animations
+  },
+}
+```
+
+#### Step 2: Ensure Entitlement Data is Available
+
+The component needs access to `user.entitlements`. There are two patterns:
+
+**Pattern A: User object already has entitlements**
+If you have a full `User` or `DisplayUser` object, entitlements are already available:
+```typescript
+<Avatar
+  avatarUrl={user.avatarUrl}
+  username={user.username}
+  entitlements={user.entitlements}      // ← Pass entitlements
+  displayContext="my_new_area"          // ← Pass context
+/>
+```
+
+**Pattern B: Only have userId - use `useDisplayUserById`**
+If you only have a user ID (common in feed items, contracts, etc.):
+```typescript
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+
+function MyComponent({ userId }: { userId: string }) {
+  const user = useDisplayUserById(userId)  // ← Fetches user WITH entitlements
+
+  return (
+    <Avatar
+      avatarUrl={user?.avatarUrl}
+      username={user?.username}
+      entitlements={user?.entitlements}  // ← Now available
+      displayContext="my_new_area"
+    />
+  )
+}
+```
+
+#### Step 3: Pass displayContext to Components
+
+**For Avatar (avatar decorations)**:
+```typescript
+<Avatar
+  avatarUrl={user.avatarUrl}
+  username={user.username}
+  entitlements={user.entitlements}
+  displayContext="my_new_area"  // ← REQUIRED for entitlements to show
+/>
+```
+
+**For UserLink (supporter badge)**:
+```typescript
+<UserLink
+  user={user}
+  displayContext="my_new_area"  // ← REQUIRED for badge to show
+/>
+```
+
+**For UserAvatarAndBadge (both avatar + badge)**:
+```typescript
+<UserAvatarAndBadge
+  user={user}
+  displayContext="my_new_area"  // ← Passes to both Avatar and UserLink
+/>
+```
+
+**For StackedUserNames (profile header style)**:
+```typescript
+<StackedUserNames
+  user={user}
+  displayContext="my_new_area"  // ← Passes to UserBadge
+/>
+```
+
+#### Step 4: Update Config Status Comment
+
+In `display-config.ts`, update the status annotation:
+- `// ✅ FUNCTIONAL` - Fully wired, config controls everything
+- `// ⚠️ NOT YET WIRED` - Some components missing displayContext
+- `// ❌ NO EFFECT` - Data not available, config has no effect
+
+---
+
+### How to Add a New Entitlement Group
+
+When adding a new category of visual entitlement (e.g., a new type of avatar decoration):
+
+#### Step 1: Add the EntitlementGroup type
+
+```typescript
+export type EntitlementGroup =
+  | 'avatar-border'
+  | 'avatar-overlay'
+  | 'badge'
+  | 'hovercard'
+  | 'my-new-group'  // ← Add here
+```
+
+#### Step 2: Map ShopItemCategory to EntitlementGroup
+
+In the `categoryToGroup` function:
+```typescript
+const categoryToGroup = (category: ShopItemCategory): EntitlementGroup | null => {
+  switch (category) {
+    // ...existing...
+    case 'my-new-category':
+      return 'my-new-group'
+    default:
+      return null
+  }
+}
+```
+
+#### Step 3: Enable in desired contexts
+
+Add `'my-new-group'` to the `groups` array for each context where it should appear:
+```typescript
+profile_page: {
+  groups: ['avatar-border', 'avatar-overlay', 'badge', 'my-new-group'],
+  animations: ['hat-hover'],
+},
+```
+
+#### Step 4: Implement rendering in Avatar/UserBadge
+
+The component needs to actually render the new decoration. See `avatar.tsx` for examples of how crown/graduation cap are rendered.
+
+---
+
+### How to Add a New Animation Type
+
+#### Step 1: Add to AnimationType
+
+```typescript
+export type AnimationType = 'hat-hover' | 'golden-glow' | 'badge-pulse' | 'my-new-animation'
+```
+
+#### Step 2: Create helper function
+
+```typescript
+export const shouldAnimateMyNewThing = (context: DisplayContext): boolean => {
+  return isAnimationEnabled(context, 'my-new-animation')
+}
+```
+
+#### Step 3: Enable in desired contexts
+
+```typescript
+hovercard: {
+  groups: ['avatar-border', 'avatar-overlay', 'badge', 'hovercard'],
+  animations: ['hat-hover', 'golden-glow', 'badge-pulse', 'my-new-animation'],  // ← Add here
+},
+```
+
+#### Step 4: Use in component
+
+```typescript
+const animateMyThing = displayContext ? shouldAnimateMyNewThing(displayContext) : false
+
+// Then use animateMyThing to conditionally apply CSS classes/animations
+```
+
+---
+
+### Implementation Status by Area
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Profile page | ✅ | Avatar + badges fully working |
+| Profile sidebar | ✅ | Sidebar navigation avatar |
+| Shop page | ✅ | Preview cards with animations |
+| Market creator | ✅ | Contract details page |
+| Market comments | ✅ | Comment section avatars/badges |
+| Posts | ✅ | Post author avatars/badges |
+| Hovercard | ✅ | Full effects including glow |
+| Leagues | ✅ | League standings |
+| Leaderboard | ✅ | Compact view - no badges |
+| Managrams | ✅ | Payments page |
+| Browse | ⚠️ | Needs `useDisplayUserById` for contract creators |
+| Explore | ⚠️ | Needs `useDisplayUserById` for contract creators |
+| Feed | ⚠️ | Needs `useDisplayUserById` for contract creators |
+| Notifications | ❌ | Data doesn't include entitlements |
+
+### Wiring New Areas (browse/explore/feed)
+
+These areas show contract cards where the creator is displayed. The contract object only has basic creator info (`creatorId`, `creatorName`, `creatorAvatarUrl`), NOT entitlements.
+
+**To wire these areas:**
+
+1. In the component that renders the contract card:
+```typescript
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+
+function ContractCard({ contract }: { contract: Contract }) {
+  // Fetch full user data with entitlements
+  const creator = useDisplayUserById(contract.creatorId)
+
+  return (
+    <Avatar
+      avatarUrl={creator?.avatarUrl ?? contract.creatorAvatarUrl}
+      username={creator?.username ?? contract.creatorUsername}
+      entitlements={creator?.entitlements}  // ← Now available
+      displayContext="browse"               // ← Enable filtering
+    />
+  )
+}
+```
+
+2. Update config status from `⚠️` to `✅`
+
+**Trade-off:** This adds a user fetch per contract card. Consider batching or caching strategies for lists with many cards.
+
+---
+
 ## Removed/Skipped Features
 
 Features that were considered but intentionally not implemented. Documented here for future reference.

@@ -149,6 +149,7 @@ export const FeedComment = memo(function FeedComment(props: {
               size={isParent ? 'sm' : '2xs'}
               avatarUrl={userAvatarUrl}
               entitlements={displayUser?.entitlements}
+              displayContext="market_comments"
             />
           </UserHovercard>
 

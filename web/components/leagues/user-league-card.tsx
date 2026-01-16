@@ -13,10 +13,17 @@ import { Avatar } from '../widgets/avatar'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { DivisionBadge } from './division-badge'
+import { UserEntitlement } from 'common/shop/types'
 
 export function UserLeagueCard(props: {
   userRow: league_user_info
-  user: { id: string; name: string; username: string; avatarUrl: string }
+  user: {
+    id: string
+    name: string
+    username: string
+    avatarUrl: string
+    entitlements?: UserEntitlement[]
+  }
   season: number
   cohortSize: number
 }) {
@@ -62,6 +69,8 @@ export function UserLeagueCard(props: {
               username={user.username}
               size="sm"
               noLink
+              entitlements={user.entitlements}
+              displayContext="leagues"
             />
             <Col>
               <Link

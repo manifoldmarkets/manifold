@@ -47,6 +47,7 @@ import { getRecentActiveContractsOnTopics } from 'web/lib/supabase/contracts'
 import { Bet } from 'common/bet'
 import { UserHovercard } from './user/user-hovercard'
 import { api } from 'web/lib/api/api'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function ActivityLog(props: {
   count: number
@@ -326,16 +327,26 @@ const MarketCreatedLog = memo((props: { contract: Contract }) => {
     createdTime,
   } = props.contract
 
+  const creator = useDisplayUserById(creatorId)
+
   return (
     <UserHovercard userId={creatorId}>
       <Row className="text-ink-600 items-center gap-2 text-sm">
         <Avatar
-          avatarUrl={creatorAvatarUrl}
-          username={creatorUsername}
+          avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
+          username={creator?.username ?? creatorUsername}
           size="xs"
+          entitlements={creator?.entitlements}
+          displayContext="feed"
         />
         <UserLink
-          user={{ id: creatorId, name: creatorName, username: creatorUsername }}
+          user={{
+            id: creatorId,
+            name: creator?.name ?? creatorName,
+            username: creator?.username ?? creatorUsername,
+            entitlements: creator?.entitlements,
+          }}
+          displayContext="feed"
         />
         <Row className="text-ink-400">
           created
@@ -360,6 +371,8 @@ const CommentLog = memo(function FeedComment(props: {
     createdTime,
   } = comment
 
+  const commenter = useDisplayUserById(userId)
+
   return (
     <Col>
       <Row
@@ -367,12 +380,24 @@ const CommentLog = memo(function FeedComment(props: {
         className="text-ink-500 mb-1 items-center gap-2 text-sm"
       >
         <UserHovercard userId={userId}>
-          <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
+          <Avatar
+            size="xs"
+            username={commenter?.username ?? userUsername}
+            avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
+            entitlements={commenter?.entitlements}
+            displayContext="feed"
+          />
         </UserHovercard>
         <span>
           <UserHovercard userId={userId}>
             <UserLink
-              user={{ id: userId, name: userName, username: userUsername }}
+              user={{
+                id: userId,
+                name: commenter?.name ?? userName,
+                username: commenter?.username ?? userUsername,
+                entitlements: commenter?.entitlements,
+              }}
+              displayContext="feed"
             />
           </UserHovercard>{' '}
           commented

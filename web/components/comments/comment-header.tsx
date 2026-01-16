@@ -344,6 +344,7 @@ export function ReplyToBetRow(props: {
             <UserLink
               short={(isLimitBet || betAnswer) && isMobile}
               user={user}
+              displayContext="market_comments"
             />
           </UserHovercard>
         )}
@@ -355,6 +356,7 @@ export function ReplyToBetRow(props: {
               name: bettorName,
               username: bettorUsername,
             }}
+            displayContext="market_comments"
           />
         )}
         {isLimitBet ? (

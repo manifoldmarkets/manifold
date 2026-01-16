@@ -8,6 +8,12 @@ import { isFresh } from './user-link'
 import { LuSprout, LuCrown, LuGraduationCap } from 'react-icons/lu'
 import { UserEntitlement } from 'common/shop/types'
 import { userHasAvatarDecoration } from 'common/shop/items'
+import {
+  DisplayContext,
+  filterEntitlementsForContext,
+  shouldAnimateHatOnHover,
+  shouldAnimateGoldenGlow,
+} from 'common/shop/display-config'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export const Avatar = memo(
@@ -20,11 +26,11 @@ export const Avatar = memo(
     preventDefault?: boolean
     createdTime?: number
     entitlements?: UserEntitlement[]
-    animateHatOnHover?: boolean
-    // Direct control for hat animation (for mobile expand/collapse)
+    // Filter entitlements based on display context
+    // REQUIRED for entitlements to show - if not provided, no entitlements displayed
+    displayContext?: DisplayContext
+    // Direct control for hat animation (for mobile expand/collapse on profile page)
     animateHat?: boolean
-    // Enable golden glow animation (only on profile, shop, hovercard - not comments/feed)
-    animateGoldenGlow?: boolean
   }) => {
     const {
       username,
@@ -33,11 +39,25 @@ export const Avatar = memo(
       className,
       preventDefault,
       createdTime,
-      entitlements,
-      animateHatOnHover,
+      entitlements: rawEntitlements,
+      displayContext,
       animateHat,
-      animateGoldenGlow,
     } = props
+
+    // Get animation settings from config (based on displayContext)
+    const animateHatOnHover = displayContext
+      ? shouldAnimateHatOnHover(displayContext)
+      : false
+    const animateGoldenGlow = displayContext
+      ? shouldAnimateGoldenGlow(displayContext)
+      : false
+
+    // Filter entitlements based on display context
+    // FAIL-SAFE: If no displayContext provided, show NO entitlements
+    // This ensures the config controls everything - add displayContext to enable
+    const entitlements = displayContext
+      ? filterEntitlementsForContext(rawEntitlements, displayContext)
+      : undefined
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
 

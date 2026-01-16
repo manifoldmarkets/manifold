@@ -539,8 +539,7 @@ function SupporterCard(props: {
                   size="md"
                   noLink
                   entitlements={entitlements}
-                  animateHatOnHover
-                  animateGoldenGlow
+                  displayContext="shop"
                 />
                 <Col className="gap-0.5">
                   <Row className="items-center gap-1.5">
@@ -820,7 +819,7 @@ function SupporterModal(props: {
                       size="lg"
                       noLink
                       entitlements={entitlements}
-                      animateGoldenGlow
+                      displayContext="shop"
                     />
                     <Col className="gap-0.5">
                       <Row className="items-center gap-2">
@@ -867,7 +866,7 @@ function SupporterModal(props: {
                       size="lg"
                       noLink
                       entitlements={entitlements}
-                      animateGoldenGlow
+                      displayContext="shop"
                     />
                     <Col className="gap-0.5">
                       <Row className="items-center gap-2">
@@ -1503,6 +1502,7 @@ function ShopItemCard(props: {
             itemId={item.id}
             user={user}
             localStreakBonus={localStreakBonus}
+            allEntitlements={allEntitlements}
           />
 
           {item.duration && (

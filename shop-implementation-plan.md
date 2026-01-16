@@ -9,9 +9,34 @@ This document tracks future features to implement. For current system documentat
 
 ## Table of Contents
 
-1. [Charity Champion Trophy System](#charity-champion-trophy-system) - Fully implemented, reverted for later
-2. [Printful Merch Integration](#printful-merch-integration) - Physical merchandise
-3. [Achievement-Gated Items](#achievement-gated-items) - Items requiring achievements
+1. [Entitlement Display Configuration](#entitlement-display-configuration) - Centralized visibility control
+2. [Charity Champion Trophy System](#charity-champion-trophy-system) - Fully implemented, reverted for later
+3. [Printful Merch Integration](#printful-merch-integration) - Physical merchandise
+4. [Achievement-Gated Items](#achievement-gated-items) - Items requiring achievements
+
+---
+
+## Entitlement Display Configuration
+
+**Status:** ✅ Implemented (January 2026)
+
+Centralized configuration system controlling which entitlements (avatar decorations, badges) and animations are shown in each display area.
+
+**Full documentation moved to:** `SHOP_SYSTEM.md` → "Entitlement Display Configuration" section
+
+### Quick Reference
+
+- **Config file:** `common/src/shop/display-config.ts`
+- **Key components:** `Avatar`, `UserLink`, `UserBadge`, `UserAvatarAndBadge`, `StackedUserNames`
+- **Data hook:** `useDisplayUserById` (for areas with only userId)
+
+### Known Limitations (Future Work)
+
+| Area | Issue | Solution |
+|------|-------|----------|
+| browse/explore/feed | Contract cards only have `creatorId`, not entitlements | Use `useDisplayUserById(creatorId)` |
+| notifications | Notification data doesn't include entitlements | Accept limitation or modify API |
+| System badges | Staff/mod/MVP badges not controlled by config | Future: unify with display config |
 
 ---
 

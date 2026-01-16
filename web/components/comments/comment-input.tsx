@@ -116,6 +116,7 @@ export function CommentInput(props: {
           username={user?.username}
           size="sm"
           entitlements={user?.entitlements}
+          displayContext="market_comments"
         />
       </div>
       <CommentInputTextArea

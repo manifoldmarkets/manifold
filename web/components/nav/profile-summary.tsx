@@ -39,7 +39,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
         noLink
         size="md"
         entitlements={effectiveEntitlements}
-        animateHatOnHover
+        displayContext="profile_sidebar"
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">

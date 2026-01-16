@@ -31,6 +31,7 @@ import { LuSprout } from 'react-icons/lu'
 import { UserEntitlement } from 'common/shop/types'
 import { userHasSupporterBadge } from 'common/shop/items'
 import { getUserSupporterTier, SUPPORTER_TIERS } from 'common/supporter-config'
+import { DisplayContext, shouldShowBadges, shouldAnimateBadge } from 'common/shop/display-config'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -52,8 +53,9 @@ export function UserAvatarAndBadge(props: {
   noLink?: boolean
   className?: string
   short?: boolean
+  displayContext?: DisplayContext
 }) {
-  const { noLink, className, short } = props
+  const { noLink, className, short, displayContext } = props
   const user = useDisplayUserById(props.user.id) ?? props.user
   const { username, avatarUrl } = user
   return (
@@ -64,8 +66,10 @@ export function UserAvatarAndBadge(props: {
           username={username}
           size={'sm'}
           noLink={noLink}
+          entitlements={'entitlements' in user ? (user.entitlements as UserEntitlement[] | undefined) : undefined}
+          displayContext={displayContext}
         />
-        <UserLink short={short} user={user} noLink={noLink} />
+        <UserLink short={short} user={user} noLink={noLink} displayContext={displayContext} />
       </Row>
     </UserHovercard>
   )
@@ -75,8 +79,9 @@ export function UserAvatar(props: {
   noLink?: boolean
   className?: string
   size?: AvatarSizeType
+  displayContext?: DisplayContext
 }) {
-  const { noLink, className, size } = props
+  const { noLink, className, size, displayContext } = props
   const user = useDisplayUserById(props.user.id) ?? props.user
   const { username, avatarUrl } = user
   return (
@@ -87,6 +92,8 @@ export function UserAvatar(props: {
           username={username}
           size={size}
           noLink={noLink}
+          entitlements={'entitlements' in user ? (user.entitlements as UserEntitlement[] | undefined) : undefined}
+          displayContext={displayContext}
         />
       </Row>
     </UserHovercard>
@@ -110,6 +117,7 @@ export function UserLink(props: {
   noLink?: boolean
   hideBadge?: boolean
   marketCreator?: boolean
+  displayContext?: DisplayContext
 }) {
   const {
     user,
@@ -119,6 +127,7 @@ export function UserLink(props: {
     noLink,
     hideBadge,
     marketCreator,
+    displayContext,
   } = props
 
   if (!user || !user.name || !user.username) {
@@ -141,6 +150,7 @@ export function UserLink(props: {
           fresh={fresh}
           marketCreator={marketCreator}
           entitlements={entitlements}
+          displayContext={displayContext}
         />
       )}
     </span>
@@ -199,9 +209,24 @@ export function UserBadge(props: {
   fresh?: boolean
   marketCreator?: boolean
   entitlements?: UserEntitlement[]
-  animateSupporterBadge?: boolean
+  // Filter supporter badge based on display context
+  // REQUIRED for badge to show - if not provided, no badge displayed
+  displayContext?: DisplayContext
 }) {
-  const { userId, username, fresh, marketCreator, entitlements, animateSupporterBadge } = props
+  const { userId, username, fresh, marketCreator, entitlements, displayContext } = props
+
+  // Check if we should show supporter badge in this context
+  // FAIL-SAFE: If no displayContext provided, show NO supporter badge
+  // This ensures the config controls everything - add displayContext to enable
+  const showSupporterBadge = displayContext
+    ? shouldShowBadges(displayContext) && userHasSupporterBadge(entitlements)
+    : false
+
+  // Get animation setting from config
+  const animateSupporterBadge = displayContext
+    ? shouldAnimateBadge(displayContext)
+    : false
+
   const badges = []
   if (BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
@@ -227,7 +252,7 @@ export function UserBadge(props: {
   if (BEING_DEAD_HEADS.includes(userId)) {
     badges.push(<BeingDeadHead key="being-dead" />)
   }
-  if (userHasSupporterBadge(entitlements)) {
+  if (showSupporterBadge) {
     badges.push(<SupporterBadge key="supporter" entitlements={entitlements} animate={animateSupporterBadge} />)
   }
   if (fresh) {
@@ -374,9 +399,9 @@ export const StackedUserNames = (props: {
   followsYou?: boolean
   className?: string
   usernameClassName?: string
-  animateSupporterBadge?: boolean
+  displayContext?: DisplayContext
 }) => {
-  const { user, followsYou, usernameClassName, className, animateSupporterBadge } = props
+  const { user, followsYou, usernameClassName, className, displayContext } = props
   return (
     <Col>
       <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
@@ -385,9 +410,9 @@ export const StackedUserNames = (props: {
           <UserBadge
             userId={user.id}
             username={user.username}
-            fresh={isFresh(user.createdTime)}
+            fresh={user.createdTime ? isFresh(user.createdTime) : false}
             entitlements={user.entitlements}
-            animateSupporterBadge={animateSupporterBadge}
+            displayContext={displayContext}
           />
         }
         {user.userDeleted ? (

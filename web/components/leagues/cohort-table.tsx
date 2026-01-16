@@ -263,6 +263,8 @@ const UserRow = (props: {
               username={user.username}
               size="sm"
               noLink
+              entitlements={user.entitlements}
+              displayContext="leagues"
             />
             <Link
               href={`/${user.username}`}

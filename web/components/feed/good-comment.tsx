@@ -17,6 +17,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { Content } from 'web/components/widgets/editor'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BottomActionRow } from 'web/components/feed/repost-feed-card'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
   window.location.toString().includes('localhost:3000')
@@ -29,6 +30,7 @@ export const GoodComment = memo(function (props: {
   const { contract, user, comment } = props
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl, userId } = comment
+  const commentUser = useDisplayUserById(userId)
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const { ref } = useIsVisible(
     () => {
@@ -73,9 +75,11 @@ export const GoodComment = memo(function (props: {
               <Row className="gap-2">
                 <UserHovercard userId={userId}>
                   <Avatar
-                    username={userUsername}
+                    username={commentUser?.username ?? userUsername}
                     size={'sm'}
-                    avatarUrl={userAvatarUrl}
+                    avatarUrl={commentUser?.avatarUrl ?? userAvatarUrl}
+                    entitlements={commentUser?.entitlements}
+                    displayContext="feed"
                   />
                 </UserHovercard>
                 <Col>

@@ -676,6 +676,7 @@ function MultiUserNotificationModal(props: {
                   username={notif.sourceUserUsername}
                   avatarUrl={notif.sourceUserAvatarUrl}
                   size={'sm'}
+                  displayContext="notifications"
                 />
                 <UserLink
                   user={{
@@ -684,6 +685,7 @@ function MultiUserNotificationModal(props: {
                     name: notif.sourceUserName,
                   }}
                   short={short}
+                  displayContext="notifications"
                 />
                 {notif.data?.bet && notif.data?.outcomeType && (
                   <BettorStatusLabel

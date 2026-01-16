@@ -179,19 +179,21 @@ const PaymentCards = (props: {
                     <Avatar
                       avatarUrl={fromUser.avatarUrl}
                       username={fromUser.username}
+                      entitlements={fromUser.entitlements}
+                      displayContext="managrams"
                     />
                   </UserHovercard>
                   <Col className={'w-full'}>
                     <Row className={'flex-wrap gap-x-1'}>
                       <span className={'ml-1'}>
                         <UserHovercard userId={fromUser.id}>
-                          <UserLink user={fromUser} />
+                          <UserLink user={fromUser} displayContext="managrams" />
                         </UserHovercard>
                       </span>
                       <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
                       <span>
                         <UserHovercard userId={toUser.id}>
-                          <UserLink user={toUser} />
+                          <UserLink user={toUser} displayContext="managrams" />
                         </UserHovercard>
                       </span>
                     </Row>
@@ -280,7 +282,7 @@ export const PaymentsModal = (props: {
               {toUser && !removedToUser ? (
                 <Col className={'mt-2'}>
                   <Row className={'items-center gap-1'}>
-                    <UserAvatarAndBadge user={toUser} />
+                    <UserAvatarAndBadge user={toUser} displayContext="managrams" />
                     <XIcon
                       onClick={() => {
                         setToUsers([])
