@@ -50,9 +50,25 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 
 const MAX_FILLS_TO_SHOW = 10
 
-function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
-  const { bet, isCashContract } = props
+const isNormalLimitOrder = (bet: Bet) =>
+  bet.limitProb !== undefined && bet.orderAmount !== undefined && !bet.silent
+
+function BetTooltipContent(props: {
+  bet: Bet
+  isCashContract: boolean
+  contract: MarketContract
+}) {
+  const { bet, isCashContract, contract } = props
   const formatAmount = isCashContract ? formatSweepies : formatMoney
+  const answer =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers?.find((a) => a.id === bet.answerId)
+      : undefined
+  const isLimitOrder = isNormalLimitOrder(bet)
+  const isOrderSale = (bet.orderAmount ?? 0) < 0
+  const isAmountSale = bet.amount < 0
+  const amountLabelBase = isLimitOrder ? 'Amount filled' : 'Amount'
+  const amountLabel = isAmountSale ? `${amountLabelBase} sold` : amountLabelBase
 
   // Get bet IDs from fills that matched against user bets, sorted most recent first
   const sortedFills = [...(bet.fills ?? [])].sort(
@@ -108,21 +124,37 @@ function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
 
     return (
       <div key={displayIndex} className="ml-2">
-        {fillNumber}. {formatAmount(f.amount)} @ {fillTime} ({matchInfo})
+        {fillNumber}. {formatAmount(Math.abs(f.amount))} @ {fillTime} (
+        {matchInfo})
       </div>
     )
   }
 
   return (
     <div className="text-left">
-      <div>Amount: {formatAmount(Math.abs(bet.amount))}</div>
       {bet.orderAmount !== undefined && (
-        <div>Order: {formatAmount(bet.orderAmount)}</div>
+        <div>
+          Order: {isOrderSale ? 'Sell ' : ''}
+          {formatAmount(Math.abs(bet.orderAmount))}{' '}
+          <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
+            outcome={bet.outcome}
+            answer={answer}
+            contract={contract}
+            truncate="short"
+          />
+        </div>
       )}
+      <div>
+        {amountLabel}: {formatAmount(Math.abs(bet.amount))}
+      </div>
       {bet.limitProb !== undefined && (
         <div>Limit: {formatPercent(bet.limitProb)}</div>
       )}
-      <div>Shares: {Math.abs(bet.shares).toFixed(2)}</div>
+      <div>
+        {isLimitOrder ? 'Shares filled' : 'Shares'}:{' '}
+        {Math.abs(bet.shares).toFixed(2)}
+      </div>
       <div>Time: {dayjs(bet.createdTime).format('MMM D, YYYY h:mm:ss A')}</div>
 
       {bet.fills && bet.fills.length > 0 && (
@@ -146,6 +178,19 @@ function BetTooltipContent(props: { bet: Bet; isCashContract: boolean }) {
         </div>
       )}
     </div>
+  )
+}
+
+function BetUserLink(props: {
+  userId: string
+  user: DisplayUser | null | undefined
+}) {
+  const { userId, user } = props
+
+  return (
+    <UserHovercard userId={userId}>
+      <UserLink user={user} className={'font-semibold'} />
+    </UserHovercard>
   )
 }
 
@@ -178,14 +223,24 @@ export const FeedBet = memo(function FeedBet(props: {
           ) : (
             <EmptyAvatar className="mx-1" />
           )}
+          {showUser && <BetUserLink userId={userId} user={user} />}
           <Tooltip
             text={
-              <BetTooltipContent bet={bet} isCashContract={isCashContract} />
+              <BetTooltipContent
+                bet={bet}
+                isCashContract={isCashContract}
+                contract={contract}
+              />
             }
             placement="top"
             className="flex-1"
           >
-            <BetStatusText bet={bet} contract={contract} hideUser={!showUser} />
+            <BetStatusText
+              bet={bet}
+              contract={contract}
+              hideUser={!showUser}
+              omitUser={showUser}
+            />
           </Tooltip>
         </Row>
         {!hideActions && (
@@ -235,9 +290,14 @@ export const FeedBetWithGraphAction = memo(
             ) : (
               <EmptyAvatar className="mx-1" />
             )}
+            {showUser && <BetUserLink userId={userId} user={user} />}
             <Tooltip
               text={
-                <BetTooltipContent bet={bet} isCashContract={isCashContract} />
+                <BetTooltipContent
+                  bet={bet}
+                  isCashContract={isCashContract}
+                  contract={contract}
+                />
               }
               placement="top"
               className="flex-1"
@@ -246,6 +306,7 @@ export const FeedBetWithGraphAction = memo(
                 bet={bet}
                 contract={contract}
                 hideUser={!showUser}
+                omitUser={showUser}
               />
             </Tooltip>
           </Row>
@@ -321,22 +382,29 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
           )}
         >
           {bets.length === 1 ? (
-            <Tooltip
-              text={
-                <BetTooltipContent
+            <>
+              {showUser && (
+                <BetUserLink userId={bets[0].userId} user={users?.[0]} />
+              )}
+              <Tooltip
+                text={
+                  <BetTooltipContent
+                    bet={bets[0]}
+                    isCashContract={isCashContract}
+                    contract={contract}
+                  />
+                }
+                placement="top"
+                className="flex-1"
+              >
+                <BetStatusText
                   bet={bets[0]}
-                  isCashContract={isCashContract}
+                  contract={contract}
+                  hideUser={!showUser}
+                  omitUser={showUser}
                 />
-              }
-              placement="top"
-              className="flex-1"
-            >
-              <BetStatusText
-                bet={bets[0]}
-                contract={contract}
-                hideUser={!showUser}
-              />
-            </Tooltip>
+              </Tooltip>
+            </>
           ) : (
             <BetStatusesText bets={bets} contract={contract} />
           )}
@@ -396,10 +464,11 @@ export function BetStatusText(props: {
   contract: Contract
   bet: Bet
   hideUser?: boolean
+  omitUser?: boolean
   className?: string
   inTimeline?: boolean
 }) {
-  const { bet, contract, hideUser, className, inTimeline } = props
+  const { bet, contract, hideUser, omitUser, className, inTimeline } = props
   const isCashContract = contract.token === 'CASH'
   const betUser = useDisplayUserById(bet.userId)
   const self = useUser()
@@ -421,8 +490,6 @@ export function BetStatusText(props: {
   const money = (
     <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
   )
-  const isNormalLimitOrder =
-    bet.limitProb !== undefined && bet.orderAmount !== undefined && !silent
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
       <MoneyDisplay amount={bet.orderAmount} isCashContract={isCashContract} />
@@ -448,7 +515,9 @@ export function BetStatusText(props: {
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
       {!inTimeline ? (
-        !hideUser ? (
+        omitUser ? (
+          <></>
+        ) : !hideUser ? (
           <UserHovercard userId={bet.userId}>
             <UserLink user={betUser} className={'font-semibold'} />
           </UserHovercard>
@@ -458,7 +527,7 @@ export function BetStatusText(props: {
       ) : (
         <></>
       )}{' '}
-      {isNormalLimitOrder ? (
+      {isNormalLimitOrder(bet) ? (
         <span>
           {anyFilled ? (
             <>
