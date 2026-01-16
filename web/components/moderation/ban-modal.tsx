@@ -688,7 +688,7 @@ function BanBannerPreview({
   existingBans: UserBan[]
 }) {
   const newBans = Object.entries(banTypes).filter(([_, active]) => active)
-  const activeBanTypes = getActiveBans(existingBans)
+  const activeBanTypes = getActiveBlockingBans(existingBans)
   const existingModAlerts = getActiveModAlerts(existingBans)
 
   // Get all existing active bans with their details
