@@ -492,7 +492,7 @@ export function BanModal({
                 ? 'Enter message to show user...'
                 : 'Explain why this user is being banned...'
             }
-            className="border-ink-300 min-h-[100px] rounded border p-2"
+            className="bg-canvas-0 text-ink-1000 placeholder-ink-400 border-ink-300 min-h-[100px] rounded border p-2"
           />
         </Col>
 
