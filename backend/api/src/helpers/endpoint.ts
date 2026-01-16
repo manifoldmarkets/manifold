@@ -11,7 +11,7 @@ import {
   ValidatedAPIParams,
 } from 'common/api/schema'
 import { PrivateUser } from 'common/user'
-import { getUnbannedPrivateUserByKey, getUser, log } from 'shared/utils'
+import { getUnbannedPrivateUserByKey, log } from 'shared/utils'
 export { APIError } from 'common//api/utils'
 
 export type Json = Record<string, unknown> | Json[]
@@ -122,27 +122,6 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      res.status(200).json(await fn(req, authedUser, res))
-    } catch (e) {
-      next(e)
-    }
-  }
-}
-
-export const authEndpointUnbanned = <T extends Json>(fn: AuthedHandler<T>) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authedUser = await lookupUser(await parseCredentials(req))
-      const user = await getUser(authedUser.uid)
-      if (!user) {
-        throw new APIError(404, 'User not found')
-      }
-      if (user.isBannedFromPosting) {
-        throw new APIError(403, 'You are banned from posting')
-      }
-      if (user.userDeleted) {
-        throw new APIError(403, 'Your account has been deleted')
-      }
       res.status(200).json(await fn(req, authedUser, res))
     } catch (e) {
       next(e)

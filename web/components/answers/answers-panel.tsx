@@ -22,6 +22,8 @@ import {
 } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
+// Note: getActiveBans requires UserBan[] from the database, not available on frontend
+// For now we rely on the legacy isBannedFromPosting field for UI checks
 import {
   CPMMMultiContract,
   Contract,
@@ -198,9 +200,12 @@ export function AnswersPanel(props: {
 
   const privateUser = usePrivateUser()
   const unresolvedAnswers = answers.filter((a) => !a.resolution)
+  // Adding answers is blocked by any ban type - check legacy field for now
+  // (granular bans are enforced server-side via rate-limit middleware)
+  const userHasAnyBan = user ? !!user.isBannedFromPosting : false
   const canAddAnswer = Boolean(
     user &&
-      !user.isBannedFromPosting &&
+      !userHasAnyBan &&
       (addAnswersMode === 'ANYONE' ||
         (addAnswersMode === 'ONLY_CREATOR' &&
           user.id === contract.creatorId)) &&

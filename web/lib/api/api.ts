@@ -221,8 +221,27 @@ export function banUser(params: {
   userId: string
   unban?: boolean
   unbanTime?: number
+  // New granular ban fields
+  bans?: {
+    posting?: boolean
+    marketControl?: boolean
+    trading?: boolean
+  }
+  unbanTimes?: {
+    posting?: number
+    marketControl?: number
+    trading?: number
+  }
+  reason?: string
+  modAlert?: {
+    message: string
+  }
 }) {
   return call(getApiUrl('ban-user'), 'POST', params)
+}
+
+export function dismissModAlert() {
+  return call(getApiUrl('dismiss-mod-alert'), 'POST', {})
 }
 export function createPrivateMessageChannelWithUsers(params: {
   userIds: string[]

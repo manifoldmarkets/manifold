@@ -6,9 +6,9 @@ import { getPost } from 'shared/supabase/posts'
 import { updateData } from 'shared/supabase/utils'
 import { revalidatePost } from './create-post-comment'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-export const updatePost: APIHandler<'update-post'> = onlyUnbannedUsers(
+export const updatePost: APIHandler<'update-post'> = onlyUsersWhoCanPerformAction('post',
   async (props, auth) => {
     const { id, title, content, visibility } = props
     const pg = createSupabaseDirectClient()

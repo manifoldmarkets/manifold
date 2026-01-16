@@ -48,10 +48,13 @@ import { addLiquidity } from './add-liquidity'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { awardBounty } from './award-bounty'
+import { banuser } from './ban-user'
+import { getUserBans } from './get-user-bans'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
 import { cancelBet } from './cancel-bet'
+import { castpollvote } from './cast-poll-vote'
 import { checkPollSuggestion } from './check-poll-suggestion'
 import { checkSportsEvent } from './check-sports-event'
 import { closeMarket } from './close-market'
@@ -63,6 +66,7 @@ import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
 import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
+import { dismissmodalert } from './dismiss-mod-alert'
 import { donate } from './donate'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { followContract } from './follow-contract'
@@ -115,7 +119,7 @@ import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { getTopicDashboards } from './get-topic-dashboards'
 import { getTopicTopics } from './get-topic-topics'
 import { getTxns } from './get-txns'
-import { getLiteUser, getUser } from './get-user'
+import { getLiteUser, getUserById, getUserByUsername } from './get-user'
 import { getUserPortfolio } from './get-user-portfolio'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { getUserPrivateData } from './get-user-private-data'
@@ -123,7 +127,9 @@ import { getUsers } from './get-users'
 import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 import { type APIHandler } from './helpers/endpoint'
+import { editComment } from './edit-comment'
 import { hideComment } from './hide-comment'
+import { leaveReview } from './leave-review'
 import { managram } from './managram'
 import { pinComment } from './pin-comment'
 import { placeBet } from './place-bet'
@@ -249,6 +255,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'comment-threads': getContractCommentThreads,
   'comment-thread': getCommentThread,
   'hide-comment': hideComment,
+  'edit-comment': editComment,
+  'leave-review': leaveReview,
   'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
@@ -305,9 +313,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'me/private': getCurrentPrivateUser,
   'me/private/update': updatePrivateUser,
   'get-user-private-data': getUserPrivateData,
-  'user/by-id/:id': getUser,
+  'user/by-id/:id': getUserById,
   'user/by-id/:id/lite': getLiteUser,
-  'user/:username': getUser,
+  'user/:username': getUserByUsername,
   'user/:username/lite': getLiteUser,
   'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id/block': blockUser,
@@ -330,7 +338,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'get-market-context': getMarketContext,
+  'ban-user': banuser,
+  'dismiss-mod-alert': dismissmodalert,
   'super-ban-user': superBanUser,
+  'get-user-bans': getUserBans,
   'get-boost-analytics': getBoostAnalytics,
   'set-news': setnews,
   'search-groups': searchGroups,
@@ -382,6 +393,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-description': generateAIDescription,
   'generate-ai-answers': generateAIAnswers,
   'check-poll-suggestion': checkPollSuggestion,
+  'cast-poll-vote': castpollvote,
   'get-next-loan-amount': getNextLoanAmount,
   'get-free-loan-available': getFreeLoanAvailable,
   'claim-free-loan': claimFreeLoan,

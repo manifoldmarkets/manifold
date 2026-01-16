@@ -45,6 +45,13 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
   }
 
   if (update.username) {
+    // Check if user is restricted from changing username (self-update only, admins can bypass)
+    if (!isAdminUpdate && user.canChangeUsername === false) {
+      throw new APIError(
+        403,
+        'You are not allowed to change your username. Contact support if you believe this is an error.'
+      )
+    }
     const cleanedUsername = cleanUsername(update.username)
     if (!cleanedUsername) throw new APIError(400, 'Invalid username')
     const reservedName = RESERVED_PATHS.includes(cleanedUsername)

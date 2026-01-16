@@ -90,8 +90,10 @@ export const EditProfile = (props: {
       try {
         await api('me/update', updates)
         toast.success('Profile updated successfully')
-      } catch (e) {
-        toast.error('Failed to update profile')
+      } catch (e: any) {
+        // Show the specific error message from the API if available
+        const errorMessage = e?.message || 'Failed to update profile'
+        toast.error(errorMessage)
         console.error(e)
       } finally {
         setLoading(false)

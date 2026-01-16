@@ -1,5 +1,6 @@
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { SUBSIDY_FEE } from 'common/economy'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -10,11 +11,13 @@ import { convertLiquidity } from 'common/supabase/liquidity'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
-export const addLiquidity: APIHandler<
-  'market/:contractId/add-liquidity'
-> = async ({ contractId, amount }, auth) => {
-  return addContractLiquidity(contractId, amount, auth.uid)
-}
+export const addLiquidity: APIHandler<'market/:contractId/add-liquidity'> =
+  onlyUsersWhoCanPerformAction(
+    'addLiquidity',
+    async ({ contractId, amount }, auth) => {
+      return addContractLiquidity(contractId, amount, auth.uid)
+    }
+  )
 
 export const addContractLiquidity = async (
   contractId: string,
@@ -52,6 +55,8 @@ export const addContractLiquidity = async (
 
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
+    if (user.userDeleted)
+      throw new APIError(403, 'Your account has been deleted')
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 

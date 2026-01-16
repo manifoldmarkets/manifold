@@ -9,44 +9,30 @@ import {
   getUser,
   revalidateContractStaticProps,
 } from 'shared/utils'
-import { z } from 'zod'
-import { APIError, authEndpointUnbanned, validate } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-// Schema supports all poll types:
-// - Single vote: { contractId, voteId }
-// - Multi-select: { contractId, voteIds }
-// - Ranked-choice: { contractId, rankedVoteIds }
-const schema = z
-  .object({
-    contractId: z.string(),
-    // For single vote polls
-    voteId: z.string().optional(),
-    // For multi-select polls
-    voteIds: z.array(z.string()).optional(),
-    // For ranked-choice polls (ordered by preference, first = most preferred)
-    rankedVoteIds: z.array(z.string()).optional(),
+export const castpollvote: APIHandler<'cast-poll-vote'> =
+  onlyUsersWhoCanPerformAction('pollVote', async (props, auth) => {
+    const { contractId, voteId, voteIds, rankedVoteIds } = props
+
+    const result = await pollQueue.enqueueFn(
+      () =>
+        castPollVoteMain(contractId, auth.uid, {
+          voteId,
+          voteIds,
+          rankedVoteIds,
+        }),
+      [contractId]
+    )
+
+    // Fire-and-forget the continue function (revalidate static props)
+    result
+      .continue()
+      .catch((e) => console.error('castpollvote continue error', e))
+
+    return result.result
   })
-  .strict()
-  .refine(
-    (data) => data.voteId || data.voteIds || data.rankedVoteIds,
-    'Must provide voteId, voteIds, or rankedVoteIds'
-  )
-
-export const castpollvote = authEndpointUnbanned(async (req, auth) => {
-  const { contractId, voteId, voteIds, rankedVoteIds } = validate(
-    schema,
-    req.body
-  )
-  return await pollQueue.enqueueFn(
-    () =>
-      castPollVoteMain(contractId, auth.uid, {
-        voteId,
-        voteIds,
-        rankedVoteIds,
-      }),
-    [contractId]
-  )
-})
 
 type VoteInput = {
   voteId?: string

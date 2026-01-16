@@ -8,6 +8,8 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 import Link from 'next/link'
+import { UserBan } from 'common/user'
+import { getActiveBlockingBans } from 'common/ban-utils'
 
 type MatchReason = 'ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram'
 
@@ -15,6 +17,7 @@ type RelatedMatch = {
   visibleUser: FullUser
   matchReasons: MatchReason[]
   netManagramAmount?: number
+  bans: UserBan[]
 }
 
 // Scoring: deviceToken (3) > IP (2) > referral (1) > managram (0.5)
@@ -57,6 +60,7 @@ function RelatedUserRow(props: {
   rootUserId: string
   depth?: number
   netManagramAmount?: number
+  bans?: UserBan[]
 }) {
   const {
     user,
@@ -65,7 +69,11 @@ function RelatedUserRow(props: {
     rootUserId,
     depth = 0,
     netManagramAmount,
+    bans = [],
   } = props
+  const activeBanTypes = getActiveBlockingBans(bans)
+  const hasActiveBan = activeBanTypes.length > 0
+  const hasHistoricalBan = bans.length > 0 && !hasActiveBan
   const [expanded, setExpanded] = useState(false)
   const [subMatches, setSubMatches] = useState<RelatedMatch[]>([])
   const [subTargetCreatedTime, setSubTargetCreatedTime] = useState<
@@ -119,8 +127,21 @@ function RelatedUserRow(props: {
             {user.userDeleted && (
               <span className="ml-1 text-xs text-red-600">[DEL]</span>
             )}
-            {user.isBannedFromPosting && (
-              <span className="ml-1 text-xs text-orange-600">[BAN]</span>
+            {hasActiveBan && (
+              <span
+                className="ml-1 text-xs text-red-600"
+                title={`Active bans: ${activeBanTypes.join(', ')}`}
+              >
+                [BAN]
+              </span>
+            )}
+            {hasHistoricalBan && (
+              <span
+                className="ml-1 text-xs text-orange-500"
+                title={`${bans.length} historical ban${bans.length > 1 ? 's' : ''}`}
+              >
+                [HIST]
+              </span>
             )}
             <span className="text-ink-500 ml-1 truncate">@{user.username}</span>
           </div>
@@ -186,6 +207,7 @@ function RelatedUserRow(props: {
               rootUserId={rootUserId}
               depth={depth + 1}
               netManagramAmount={match.netManagramAmount}
+              bans={match.bans}
             />
           ))}
           {subMatches.length > 5 && (
@@ -295,6 +317,7 @@ export function AdminPrivateUserData(props: { userId: string }) {
                 visibleUser,
                 matchReasons,
                 netManagramAmount,
+                bans,
               }: RelatedMatch) => (
                 <RelatedUserRow
                   key={visibleUser.id}
@@ -306,6 +329,7 @@ export function AdminPrivateUserData(props: { userId: string }) {
                   )}
                   rootUserId={userId}
                   netManagramAmount={netManagramAmount}
+                  bans={bans}
                 />
               )
             )}

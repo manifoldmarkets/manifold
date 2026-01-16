@@ -1,7 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import {
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { onlyUsersWhoCanPerformAction } from 'api/helpers/rate-limit'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -16,6 +15,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { MINUTE_MS } from 'common/util/time'
 import { trackPublicEvent } from 'shared/analytics'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { getUser } from 'shared/utils'
 import {
   bulkUpdateContractMetrics,
   getContractMetricsForContract,
@@ -35,16 +35,15 @@ import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
-export const unresolve: APIHandler<'unresolve'> = async (
-  props,
-  auth,
-  request
-) => {
-  return await betsQueue.enqueueFn(
-    () => unresolveMain(props, auth, request),
-    [props.contractId, auth.uid]
-  )
-}
+export const unresolve: APIHandler<'unresolve'> = onlyUsersWhoCanPerformAction(
+  'resolveMarket',
+  async (props, auth, request) => {
+    return await betsQueue.enqueueFn(
+      () => unresolveMain(props, auth, request),
+      [props.contractId, auth.uid]
+    )
+  }
+)
 
 export const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
@@ -74,6 +73,11 @@ const verifyUserCanUnresolve = async (
   answerId?: string
 ) => {
   const isMod = isModId(userId) || isAdminId(userId)
+
+  const user = await getUser(userId, pg)
+  if (!user) throw new APIError(404, 'User not found')
+  if (user.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
 
   const { creatorId, mechanism, isSpicePayout, token } = contract
 
