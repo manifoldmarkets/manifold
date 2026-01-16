@@ -504,6 +504,8 @@ const TxnBalanceChangeRow = (props: {
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     PUSH_NOTIFICATION_BONUS: 'bg-pink-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    CHARITY_GIVEAWAY_TICKET:
+      'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     CONTRACT_RESOLUTION_FEE:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
@@ -546,6 +548,8 @@ const TxnBalanceChangeRow = (props: {
               type === 'CONVERT_CASH' ||
               type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
+            ) : type === 'CHARITY_GIVEAWAY_TICKET' ? (
+              '🎟️'
             ) : type === 'CHARITY' ||
               type === 'REFERRAL' ||
               type === 'ADMIN_REWARD' ? (
@@ -707,6 +711,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return ''
     case 'PUSH_NOTIFICATION_BONUS':
       return 'Push notification bonus'
+    case 'CHARITY_GIVEAWAY_TICKET':
+      return 'Charity giveaway tickets'
     default:
       return type
   }
@@ -764,6 +770,8 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'User payment'
     case 'CHARITY':
       return 'Donation'
+    case 'CHARITY_GIVEAWAY_TICKET':
+      return 'Charity raffle tickets'
     case 'LOAN':
       return ''
     default:
