@@ -6,15 +6,15 @@
 
 | Item | Price | Type | File |
 |------|-------|------|------|
-| Basic Supporter | M$500/mo | time-limited (30 days) | `common/src/shop/items.ts` |
-| Plus Supporter | M$2,500/mo | time-limited (30 days) | `common/src/shop/items.ts` |
-| Premium Supporter | M$10,000/mo | time-limited (30 days) | `common/src/shop/items.ts` |
-| Golden Border | M$25,000 | permanent-toggleable | `common/src/shop/items.ts` |
+| Manifold Plus | M$500/mo | time-limited (30 days) | `common/src/shop/items.ts` |
+| Manifold Pro | M$2,500/mo | time-limited (30 days) | `common/src/shop/items.ts` |
+| Manifold Premium | M$10,000/mo | time-limited (30 days) | `common/src/shop/items.ts` |
+| Golden Glow | M$25,000 | permanent-toggleable | `common/src/shop/items.ts` |
 | Crown | M$1,000,000 | permanent-toggleable | `common/src/shop/items.ts` |
 | Graduation Cap | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
 | Streak Freeze | M$500 | instant | `common/src/shop/items.ts` |
-| PAMPU Skin | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
-| Profile Glow | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
+| PAMPU Skin | M$1,000 | permanent-toggleable | `common/src/shop/items.ts` |
+| Profile Border | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
 
 ---
 
@@ -87,6 +87,7 @@ export type ShopItemType =
   | 'instant'              // Execute immediately (e.g., streak forgiveness)
   | 'time-limited'         // Has expiration (e.g., supporter badge)
   | 'permanent-toggleable' // Owned forever, can enable/disable (e.g., PAMPU skin)
+  | 'earned'               // Cannot be purchased, must be earned (for future use)
 ```
 
 ### Item Categories
@@ -144,11 +145,12 @@ export type ShopItem = {
 ### Current Items Configuration
 ```typescript
 export const SHOP_ITEMS: ShopItem[] = [
-  // Supporter tiers - payment-based (Basic/Plus/Premium)
+  // Membership tiers - Plus/Pro/Premium
   // Each tier has separate entitlement ID - upgrading REPLACES lower tier (no stacking)
   {
     id: 'supporter-basic',
-    name: 'Basic Supporter',
+    name: 'Manifold Plus',
+    description: '1.5x quest rewards, 1% daily free loans',
     price: 500,
     type: 'time-limited',
     duration: 30 * DAY_MS,
@@ -158,7 +160,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'supporter-plus',
-    name: 'Plus Supporter',
+    name: 'Manifold Pro',
+    description: '2x quest rewards, 5% shop discount, 2% daily free loans, margin loan access',
     price: 2500,
     type: 'time-limited',
     duration: 30 * DAY_MS,
@@ -168,18 +171,18 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'supporter-premium',
-    name: 'Premium Supporter',
+    name: 'Manifold Premium',
+    description: '3x quest rewards, 10% shop discount, 3% daily free loans, margin loan access, animated badge',
     price: 10000,
     type: 'time-limited',
     duration: 30 * DAY_MS,
     limit: 'unlimited',
     category: 'badge',
     alwaysEnabled: true,
-    // Benefits: 3x quest rewards, 10% shop discount, +4 streak freezes, badge animation
   },
   {
     id: 'avatar-golden-border',
-    name: 'Golden Border',
+    name: 'Golden Glow',
     price: 25000,
     type: 'permanent-toggleable',
     limit: 'one-time',
@@ -212,14 +215,14 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'pampu-skin',
     name: 'PAMPU Skin',
-    price: 10000,
+    price: 1000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'skin',
   },
   {
     id: 'hovercard-glow',
-    name: 'Profile Glow',
+    name: 'Profile Border',
     price: 10000,
     type: 'permanent-toggleable',
     limit: 'one-time',
@@ -475,12 +478,12 @@ Add item to the Quick Reference table in this document.
 
 ## Item-Specific Implementation Details
 
-### Supporter Tiers (Basic/Plus/Premium)
+### Membership Tiers (Plus/Pro/Premium)
 - Central config in `common/src/supporter-config.ts`
-- Three separate entitlement IDs: `supporter-basic`, `supporter-plus`, `supporter-premium`
+- Three separate entitlement IDs: `supporter-basic` (Plus), `supporter-plus` (Pro), `supporter-premium` (Premium)
 - **Upgrading REPLACES lower tier** (no stacking across tiers)
-- Benefits scale by tier (quest multiplier, shop discount, streak freezes, etc.)
-- Badge colors: Gray (Basic), Indigo (Plus), Amber/Gold (Premium)
+- Benefits scale by tier (quest multiplier, shop discount, free loans, streak freezes, etc.)
+- Badge colors: Gray (Plus), Indigo (Pro), Amber/Gold (Premium)
 - Premium badge animates on hovercard only, static elsewhere
 - Dedicated `/supporter` page for tier selection
 
@@ -525,12 +528,14 @@ All supporter benefits are centrally configured in `common/src/supporter-config.
 
 ### Benefit Values by Tier
 
-| Benefit | Basic | Plus | Premium | Non-Supporter |
-|---------|-------|------|---------|---------------|
+| Benefit | Plus | Pro | Premium | Non-Member |
+|---------|------|-----|---------|------------|
 | Quest Multiplier | 1.5x | 2x | 3x | 1x |
 | Referral Multiplier | 1x | 1.5x | 2x | 1x |
 | Shop Discount | 0% | 5% | 10% | 0% |
 | Max Streak Freezes | 2 | 3 | 5 | 1 |
+| Daily Free Loan Rate | 1% | 2% | 3% | 1% |
+| Margin Loan Access | No | Yes | Yes | No |
 | Badge Animation | No | No | Hovercard only | No |
 
 ### Benefit Implementation Locations
@@ -539,30 +544,34 @@ All supporter benefits are centrally configured in `common/src/supporter-config.
 |---------|------|--------------|
 | Quest Multiplier | `backend/shared/src/complete-quest-internal.ts` | Multiplies quest reward in `awardQuestBonus()` |
 | Referral Multiplier | `backend/api/src/refer-user.ts` | Multiplies referrer's bonus (not new user's) |
-| Shop Discount | `backend/api/src/shop-purchase.ts` | Applied to all items EXCEPT supporter tiers |
+| Shop Discount | `backend/api/src/shop-purchase.ts` | Applied to all items EXCEPT membership tiers |
 | Max Streak Freezes | `backend/api/src/shop-purchase.ts` | Caps how many freezes user can purchase |
+| Daily Free Loan Rate | `backend/api/src/request-loan.ts` | Daily free loan as % of portfolio value |
+| Margin Loan Access | `backend/api/src/request-loan.ts` | Unlocks margin loans for Pro/Premium |
 | Badge Animation | `web/components/user/user-hovercard.tsx` | Premium badge pulses on hovercard only |
 
-### Supporter Helper Functions
+### Membership Helper Functions
 
 **File**: `common/src/supporter-config.ts`
 
 ```typescript
-// Get user's current tier (null if not supporter)
+// Get user's current tier (null if not member)
 getUserSupporterTier(entitlements): 'basic' | 'plus' | 'premium' | null
+// Note: 'basic' = Plus, 'plus' = Pro, 'premium' = Premium (legacy naming)
 
 // Get specific benefit value for user
 getBenefit(entitlements, 'questMultiplier'): number
 getBenefit(entitlements, 'shopDiscount'): number
+getBenefit(entitlements, 'freeLoanRate'): number
 // etc.
 
-// Check if user is any tier of supporter
+// Check if user is any tier of member
 isSupporter(entitlements): boolean
 
 // Check if user can upgrade from current tier to target
 canUpgradeTo(currentTier, targetTier): boolean
 
-// Get the supporter entitlement object
+// Get the membership entitlement object
 getSupporterEntitlement(entitlements): UserEntitlement | null
 
 // Get tier display info (name, colors, etc.)
@@ -609,6 +618,10 @@ Features that were considered but intentionally not implemented. Documented here
 
 | Date | Change | Modified By |
 |------|--------|-------------|
+| 2026-01-16 | Rebranded tiers to Plus/Pro/Premium, added loan benefits | Claude |
+| | - Updated Quick Reference with correct prices and names | |
+| | - Added daily free loan rate and margin loan access benefits | |
+| | - PAMPU Skin price corrected to M$1,000 | |
 | 2026-01-13 | Documentation consolidation | Claude |
 | | - Deleted outdated SUPPORTER_SYSTEM.md | |
 | | - Added Supporter Benefits System section | |
@@ -672,11 +685,11 @@ Features that were considered but intentionally not implemented. Documented here
 - [ ] Supporter discount applies (tier-based, except on supporter tiers)
 - [ ] Insufficient balance shows "Buy mana" button
 
-### Supporter Tiers Testing
-- [ ] Non-supporter can purchase any tier from /supporter page
-- [ ] Upgrading (Basic→Plus, Plus→Premium) deletes old entitlement
+### Membership Tiers Testing
+- [ ] Non-member can purchase any tier from /supporter page
+- [ ] Upgrading (Plus→Pro, Pro→Premium) deletes old entitlement
 - [ ] Lower tiers hidden when user has higher tier
-- [ ] Badge shows correct color: Gray (Basic), Indigo (Plus), Amber (Premium)
+- [ ] Badge shows correct color: Gray (Plus), Indigo (Pro), Amber (Premium)
 - [ ] Premium badge has glow effect but no animation inline
 - [ ] Benefits comparison table shows correct values
 - [ ] /supporter page works well on mobile (stacked cards)

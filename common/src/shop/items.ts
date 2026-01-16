@@ -5,7 +5,6 @@ export type ShopItemType =
   | 'instant' // Execute immediately (e.g., streak forgiveness)
   | 'time-limited' // Has expiration (e.g., 30-day badge)
   | 'permanent-toggleable' // Owned forever, can enable/disable (e.g., PAMPU skin)
-  | 'earned' // Cannot be purchased, must be earned/claimed (e.g., charity champion)
 
 export type ShopItemCategory =
   | 'badge'
@@ -141,16 +140,6 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'hovercard',
   },
-  // Special earned items (not purchasable)
-  {
-    id: 'charity-champion-trophy',
-    name: 'Charity Champion Trophy',
-    description: 'Exclusive trophy for the #1 ticket buyer in the charity raffle',
-    price: 0, // Cannot be purchased
-    type: 'earned',
-    limit: 'one-time',
-    category: 'badge',
-  },
 ]
 
 export const getShopItem = (id: string): ShopItem | undefined =>
@@ -210,13 +199,3 @@ export const userHasAvatarDecoration = (
 ): boolean => {
   return hasActiveEntitlement(entitlements, decorationId)
 }
-
-// Helper to check if user has the charity champion trophy
-export const userHasCharityChampionTrophy = (
-  entitlements: UserEntitlement[] | undefined
-): boolean => {
-  return hasActiveEntitlement(entitlements, 'charity-champion-trophy')
-}
-
-// Entitlement ID for charity champion trophy
-export const CHARITY_CHAMPION_ENTITLEMENT_ID = 'charity-champion-trophy'

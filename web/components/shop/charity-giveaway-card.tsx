@@ -2,58 +2,23 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FaGift } from 'react-icons/fa6'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Button } from '../buttons/button'
 import { charities } from 'common/charity'
 
-// Type for giveaway data passed from parent
-export type CharityGiveawayData = {
-  giveaway?: {
-    giveawayNum: number
-    name: string
-    prizeAmountUsd: number
-    closeTime: number
-    winningTicketId: string | null
-    createdTime: number
-  }
-  totalTickets: number
-  winningCharity?: string
-  winner?: {
-    id: string
-    username: string
-    name: string
-    avatarUrl: string
-  }
-  champion?: {
-    id: string
-    username: string
-    name: string
-    avatarUrl: string
-    totalTickets: number
-  }
-  trophyHolder?: {
-    id: string
-    username: string
-    name: string
-    avatarUrl: string
-    totalTickets: number
-    claimedTime: number
-  }
-}
-
 export function CharityGiveawayCard(props: {
-  data?: CharityGiveawayData
-  isLoading?: boolean
+  variant?: 'full' | 'compact'
   className?: string
 }) {
-  const { data, isLoading = false, className } = props
+  const { variant = 'full', className } = props
+  const { data } = useAPIGetter('get-charity-giveaway', {})
 
   const giveaway = data?.giveaway
   const totalTickets = data?.totalTickets ?? 0
   const winningCharity = data?.winningCharity
   const winner = data?.winner
-  const champion = data?.champion
 
   // Time remaining countdown
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -84,47 +49,8 @@ export function CharityGiveawayCard(props: {
     return () => clearInterval(interval)
   }, [giveaway?.closeTime])
 
-  // Show loading skeleton while data is being fetched
-  if (isLoading) {
-    return (
-      <div className={clsx('block', className)}>
-        <div
-          className={clsx(
-            'relative overflow-hidden rounded-xl p-1',
-            'bg-gradient-to-br from-gray-300 via-gray-200 to-gray-300 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700'
-          )}
-        >
-          <div className="animate-pulse rounded-lg bg-white p-4 dark:bg-gray-900">
-            <Row className="mb-3 items-center gap-2">
-              <div className="h-5 w-5 rounded bg-gray-200 dark:bg-gray-700" />
-              <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-700" />
-            </Row>
-            <Row className="mb-3 gap-4">
-              <Col className="flex-1 items-center">
-                <div className="h-8 w-16 rounded bg-gray-200 dark:bg-gray-700" />
-                <div className="mt-1 h-3 w-12 rounded bg-gray-200 dark:bg-gray-700" />
-              </Col>
-              <Col className="flex-1 items-center">
-                <div className="h-8 w-16 rounded bg-gray-200 dark:bg-gray-700" />
-                <div className="mt-1 h-3 w-12 rounded bg-gray-200 dark:bg-gray-700" />
-              </Col>
-              <Col className="flex-1 items-center">
-                <div className="h-8 w-16 rounded bg-gray-200 dark:bg-gray-700" />
-                <div className="mt-1 h-3 w-12 rounded bg-gray-200 dark:bg-gray-700" />
-              </Col>
-            </Row>
-            <div className="mb-3 h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // No giveaway data available - don't render card
-  if (!giveaway) {
-    return null
-  }
+  // Don't render if no giveaway data
+  if (!giveaway) return null
 
   const hasWinner = !!giveaway.winningTicketId
   const isClosed = giveaway.closeTime <= Date.now()
@@ -187,16 +113,6 @@ export function CharityGiveawayCard(props: {
               Buy tickets with mana to support charities and win prizes!
             </p>
 
-            {/* Current leader */}
-            {champion && (
-              <div className="text-ink-500 mb-3 text-sm">
-                <span className="font-medium">Ticket Champion:</span> @{champion.username}
-                <span className="text-ink-400 ml-1 text-xs">
-                  ({champion.totalTickets.toLocaleString()} tickets)
-                </span>
-              </div>
-            )}
-
             {/* CTA */}
             <Button
               color="green"
@@ -228,6 +144,9 @@ export function CharityGiveawayCard(props: {
           <Row className="mb-3 items-center gap-2">
             <FaGift className="h-5 w-5 text-amber-500" />
             <span className="text-lg font-semibold">Charity Giveaway</span>
+            <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+              WINNER
+            </span>
           </Row>
 
           {/* Winner info */}
@@ -242,14 +161,6 @@ export function CharityGiveawayCard(props: {
             {winner && (
               <div className="text-ink-500 mt-1 text-sm">
                 Winning ticket by @{winner.username}
-              </div>
-            )}
-            {champion && (
-              <div className="text-ink-500 mt-2 text-sm">
-                <span className="font-medium">Ticket Champion:</span> @{champion.username}
-                <div className="text-ink-400 text-xs">
-                  {champion.totalTickets.toLocaleString()} tickets purchased
-                </div>
               </div>
             )}
           </Col>
