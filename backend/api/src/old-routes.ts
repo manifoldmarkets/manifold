@@ -96,7 +96,12 @@ export const addOldRoutes = (app: express.Application) => {
     express.raw({ type: '*/*' }),
     stripewebhook
   )
-  app.post('/daimowebhook', allowCorsUnrestricted, express.json(), daimowebhook)
+  app.post(
+    '/daimo-webhook',
+    allowCorsUnrestricted,
+    express.json(),
+    daimowebhook
+  ) // FYI: on dev this is /v0/daimo-webhook
   app.post('/follow-topic', ...apiRoute(followtopic))
   app.post('/league-activity', ...apiRoute(leagueActivity))
   app.post('/cancel-bounty', ...apiRoute(cancelbounty))

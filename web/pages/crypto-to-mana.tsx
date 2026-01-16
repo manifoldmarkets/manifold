@@ -71,7 +71,7 @@ function CryptoToManaContent() {
       ) : (
         <Row className="justify-center">
           <DaimoPayButton.Custom
-            appId="pay-demo" // TODO: get approval and change to manifold-markets
+            appId="pay-manifoldmarkets-C5iZ9eKA8sFTUanLHufQZj"
             toAddress={HOT_WALLET_ADDRESS}
             toChain={baseUSDC.chainId}
             toToken={getAddress(baseUSDC.token)}

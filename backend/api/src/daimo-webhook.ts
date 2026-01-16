@@ -9,23 +9,47 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { CRYPTO_MANA_PER_DOLLAR } from 'common/economy'
 
-// Daimo Pay webhook event types
+// Daimo Pay webhook event types (based on actual payload structure)
 type DaimoWebhookEvent = {
   type:
     | 'payment_started'
     | 'payment_completed'
     | 'payment_bounced'
     | 'payment_refunded'
+  paymentId: string
+  chainId?: number
+  txHash?: string
   payment: {
-    intentAddr: string
-    destFinalCallTokenAmount?: string // Amount in token units (USDC has 6 decimals)
-    destChainId?: number
-    destTokenAddr?: string
+    id: string
+    status: string
+    createdAt: string
+    display?: {
+      intent: string
+      paymentValue: string
+      currency: string
+    }
+    source?: {
+      payerAddress: string
+      txHash: string
+      chainId: string
+      amountUnits: string // Amount in USDC (e.g., "1" = $1 USDC)
+      tokenSymbol: string
+      tokenAddress: string
+    }
+    destination?: {
+      destinationAddress: string
+      txHash: string
+      chainId: string
+      amountUnits: string // Amount in USDC (e.g., "1" = $1 USDC)
+      tokenSymbol: string
+      tokenAddress: string
+      callData: string
+    }
+    externalId?: string | null
     metadata?: {
       userId?: string
       [key: string]: unknown
     }
-    [key: string]: unknown
   }
 }
 
@@ -62,7 +86,7 @@ export const daimowebhook = async (req: Request, res: Response) => {
     return
   }
 
-  log('Daimo webhook received:', event.type, event.payment?.intentAddr)
+  log('Daimo webhook received:', event.type, event.paymentId)
 
   // Only process completed payments
   if (event.type === 'payment_completed') {
@@ -81,30 +105,28 @@ export const daimowebhook = async (req: Request, res: Response) => {
 const handlePaymentCompleted = async (
   payment: DaimoWebhookEvent['payment']
 ) => {
-  const { intentAddr, destFinalCallTokenAmount, metadata } = payment
+  const paymentId = payment.id
 
-  if (!intentAddr) {
-    log.error('Missing intentAddr in payment')
+  if (!paymentId) {
+    log.error('Missing payment id')
     return
   }
 
   // Get userId from metadata (sent by frontend)
-  const userId = metadata?.userId
+  const userId = payment.metadata?.userId
   if (!userId) {
-    log.error('Missing userId in payment metadata', { intentAddr })
+    log.error('Missing userId in payment metadata', { paymentId })
     return
   }
 
   const pg = createSupabaseDirectClient()
 
-  // Parse the USDC amount (6 decimals)
-  // destFinalCallTokenAmount is in the smallest unit (e.g., "1000000" = 1 USDC)
-  const usdcAmount = destFinalCallTokenAmount
-    ? Number(destFinalCallTokenAmount) / 1_000_000
-    : 0
+  // Parse the USDC amount - amountUnits is already in USDC (e.g., "1" = $1 USDC)
+  const amountUnits = payment.destination?.amountUnits
+  const usdcAmount = amountUnits ? Number(amountUnits) : 0
 
   if (usdcAmount <= 0) {
-    log.error('Invalid USDC amount', { destFinalCallTokenAmount })
+    log.error('Invalid USDC amount', { amountUnits, paymentId })
     return
   }
 
@@ -116,7 +138,7 @@ const handlePaymentCompleted = async (
     userId,
     usdcAmount,
     manaAmount,
-    intentAddr,
+    paymentId,
   })
 
   const manaPurchaseTxn = {
@@ -128,7 +150,7 @@ const handlePaymentCompleted = async (
     token: 'M$',
     category: 'MANA_PURCHASE',
     data: {
-      daimoIntentId: intentAddr,
+      daimoPaymentId: paymentId,
       type: 'crypto',
       paidInCents,
     },
@@ -143,7 +165,7 @@ const handlePaymentCompleted = async (
         await tx.none(
           `INSERT INTO crypto_payment_intents (intent_id, user_id, mana_amount, usdc_amount)
            VALUES ($1, $2, $3, $4)`,
-          [intentAddr, userId, manaAmount, usdcAmount]
+          [paymentId, userId, manaAmount, usdcAmount]
         )
       } catch (e: unknown) {
         // Check if it's a unique constraint violation (already processed)
@@ -166,7 +188,7 @@ const handlePaymentCompleted = async (
     success = true
   } catch (e) {
     if (e instanceof Error && e.message === 'Payment already processed') {
-      log('Payment already processed (concurrent request):', intentAddr)
+      log('Payment already processed (concurrent request):', paymentId)
       return
     }
     log.error(
@@ -199,7 +221,7 @@ const handlePaymentCompleted = async (
     await trackPublicEvent(
       userId,
       'M$ purchase',
-      { amount: manaAmount, intentAddr, usdcAmount },
+      { amount: manaAmount, paymentId, usdcAmount },
       { revenue: usdcAmount }
     )
   }

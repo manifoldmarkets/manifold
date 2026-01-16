@@ -39,6 +39,7 @@ export const secrets = (
     'SPORTSDB_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
+    'DAIMO_WEBHOOK_SECRET',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
