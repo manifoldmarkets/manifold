@@ -78,7 +78,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category IN ('LOAN', 'DAILY_FREE_LOAN')
+     and category IN ('MARGIN_LOAN', 'LOAN')
      and created_time >= $2`,
     [userId, midnightPT.toISOString()]
   )
@@ -262,7 +262,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
 
   // Create transaction for the loan
   const txn: Omit<Txn, 'id' | 'createdTime'> = {
-    category: 'DAILY_FREE_LOAN',
+    category: 'LOAN',
     fromType: 'BANK',
     fromId: 'BANK',
     toType: 'USER',

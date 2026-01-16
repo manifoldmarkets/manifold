@@ -10,7 +10,7 @@ import {
   getMidnightPacific,
   MS_PER_DAY,
 } from 'common/loans'
-import { LoanTxn } from 'common/txn'
+import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
 import {
@@ -106,7 +106,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category IN ('LOAN', 'DAILY_FREE_LOAN')
+     and category IN ('MARGIN_LOAN', 'LOAN')
      and created_time >= $2`,
     [user.id, midnightPT.toISOString()]
   )
@@ -240,14 +240,14 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
 }
 
 const payUserLoan = (userId: string, payout: number) => {
-  const loanTxn: Omit<LoanTxn, 'id' | 'createdTime'> = {
+  const loanTxn: Omit<MarginLoanTxn, 'id' | 'createdTime'> = {
     fromId: 'BANK',
     fromType: 'BANK',
     toId: userId,
     toType: 'USER',
     amount: payout,
     token: 'M$',
-    category: 'LOAN',
+    category: 'MARGIN_LOAN',
     data: {
       // Distinguishes correct loans from erroneous old loans that were marked as deposits instead of profit.
       countsAsProfit: true,

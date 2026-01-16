@@ -92,7 +92,7 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category = 'LOAN'
+     and category = 'MARGIN_LOAN'
      and created_time >= $2`,
     [auth.uid, new Date(oneDayAgo).toISOString()]
   )

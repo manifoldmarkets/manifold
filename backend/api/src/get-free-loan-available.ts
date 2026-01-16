@@ -69,7 +69,7 @@ export const getFreeLoanAvailable: APIHandler<
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category IN ('LOAN', 'DAILY_FREE_LOAN')
+     and category IN ('MARGIN_LOAN', 'LOAN')
      and created_time >= $2`,
     [userId, midnightPT.toISOString()]
   )
@@ -80,7 +80,7 @@ export const getFreeLoanAvailable: APIHandler<
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category = 'DAILY_FREE_LOAN'
+     and category = 'LOAN'
      and created_time >= $2`,
     [userId, midnightPT.toISOString()]
   )

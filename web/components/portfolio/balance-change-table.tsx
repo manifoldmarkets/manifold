@@ -498,6 +498,7 @@ const TxnBalanceChangeRow = (props: {
     BOUNTY_AWARDED: 'bg-teal-600',
     MANA_PAYMENT: 'bg-teal-400',
     LOAN: 'bg-amber-500',
+    MARGIN_LOAN: 'bg-amber-500',
     CASH_OUT: 'bg-amber-500',
     CONTRACT_BOOST_PURCHASE: 'bg-scarlet-400',
     ADD_SUBSIDY: 'bg-red-100',
@@ -555,6 +556,7 @@ const TxnBalanceChangeRow = (props: {
               type === 'ADMIN_REWARD' ? (
               '❤️'
             ) : type === 'LOAN' ||
+              type === 'MARGIN_LOAN' ||
               type === 'CASH_OUT' ||
               type === 'CONTRACT_RESOLUTION_FEE' ? (
               '🏦'
@@ -684,6 +686,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Mod task completed'
     case 'LOAN':
       return 'Loan'
+    case 'MARGIN_LOAN':
+      return 'Margin Loan'
     case 'LEAGUE_PRIZE':
       return 'League prize'
     case 'MANA_PURCHASE':
@@ -773,6 +777,8 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CHARITY_GIVEAWAY_TICKET':
       return 'Charity raffle tickets'
     case 'LOAN':
+      return ''
+    case 'MARGIN_LOAN':
       return ''
     default:
       return null
