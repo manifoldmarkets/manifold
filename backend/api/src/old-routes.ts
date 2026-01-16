@@ -47,6 +47,7 @@ import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 
 import { deletetv, settv } from './set-tv'
+import { idenfyCallback } from './idenfy/callback'
 
 import { allowCorsUnrestricted, apiErrorHandler } from './app'
 import { RequestHandler } from 'express'
@@ -94,6 +95,12 @@ export const addOldRoutes = (app: express.Application) => {
     allowCorsUnrestricted,
     express.raw({ type: '*/*' }),
     stripewebhook
+  )
+  app.post(
+    '/v0/idenfy-callback',
+    allowCorsUnrestricted,
+    express.json(),
+    idenfyCallback
   )
   app.post('/follow-topic', ...apiRoute(followtopic))
   app.post('/league-activity', ...apiRoute(leagueActivity))

@@ -82,6 +82,10 @@ export type User = {
   purchasedMana?: boolean
   verifiedPhone?: boolean
 
+  // iDenfy identity verification
+  idenfyStatus?: 'pending' | 'approved' | 'denied' | 'suspected'
+  idenfyVerifiedTime?: number
+
   // Shop purchases - digital goods owned by this user
   shopPurchases?: UserShopPurchase[]
 }

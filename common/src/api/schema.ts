@@ -3103,6 +3103,24 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  // iDenfy identity verification endpoints
+  'create-idenfy-session': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { redirectUrl: string; scanRef: string },
+  },
+  'get-idenfy-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'pending' | 'approved' | 'denied' | 'suspected' | null
+      verifiedTime: number | null
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
