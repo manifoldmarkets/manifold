@@ -49,17 +49,17 @@ export const removeLiquidity: APIHandler<
           throw new APIError(403, 'You are not the creator of this market')
       }
 
-    const { subsidyPool: pendingLiquidity } = contract
+      const { subsidyPool: pendingLiquidity } = contract
 
       const takeFromPending = Math.min(pendingLiquidity, totalAmount)
       const takeFromPool = totalAmount - takeFromPending
 
-    if (takeFromPool > 0) {
-      const { newPool, newP, error } = removeCpmmLiquidity(
-        contract.pool,
-        contract.p,
-        takeFromPool
-      )
+      if (takeFromPool > 0) {
+        const { newPool, newP, error } = removeCpmmLiquidity(
+          contract.pool,
+          contract.p,
+          takeFromPool
+        )
 
         if (error) {
           throw new APIError(403, `Remaining liquidity too low`)
@@ -69,21 +69,12 @@ export const removeLiquidity: APIHandler<
           pool: newPool,
           p: newP,
         })
-      } else if (
-        accruedPool.YES !== contract.pool.YES ||
-        accruedPool.NO !== contract.pool.NO
-      ) {
-        // Still persist accrued pool even if only taking from subsidy
-        await updateContract(pgTrans, contractId, {
-          pool: accruedPool,
-        })
       }
 
       await updateContract(pgTrans, contractId, {
-        pool: newPool,
-        p: newP,
+        subsidyPool: FieldVal.increment(-takeFromPending),
+        totalLiquidity: FieldVal.increment(-totalAmount),
       })
-    }
 
       await runTxnInBetQueue(pgTrans, {
         fromType: 'CONTRACT',
