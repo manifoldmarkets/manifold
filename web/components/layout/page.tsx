@@ -43,11 +43,13 @@ export function Page(props: {
 
   useEffect(() => {
     if (user) {
-      api('get-user-bans', { userId: user.id }).then((res) => {
-        setBans(res.bans as UserBan[])
-      }).catch(() => {
-        // Ignore errors fetching bans
-      })
+      api('get-user-bans', { userId: user.id })
+        .then((res) => {
+          setBans(res.bans as UserBan[])
+        })
+        .catch(() => {
+          // Ignore errors fetching bans
+        })
     }
   }, [user?.id])
 

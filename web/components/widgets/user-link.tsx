@@ -27,10 +27,7 @@ import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User, UserBan } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
-import {
-  getActiveBlockingBans,
-  getBanTypeDescription,
-} from 'common/ban-utils'
+import { getActiveBlockingBans, getBanTypeDescription } from 'common/ban-utils'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 

@@ -138,7 +138,9 @@ function RelatedUserRow(props: {
             {hasHistoricalBan && (
               <span
                 className="ml-1 text-xs text-orange-500"
-                title={`${bans.length} historical ban${bans.length > 1 ? 's' : ''}`}
+                title={`${bans.length} historical ban${
+                  bans.length > 1 ? 's' : ''
+                }`}
               >
                 [HIST]
               </span>

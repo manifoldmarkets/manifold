@@ -546,7 +546,9 @@ function DotMenu(props: {
               } catch (e: any) {
                 const errorMessage =
                   e?.message ||
-                  (wasHidden ? 'Error unhiding comment' : 'Error hiding comment')
+                  (wasHidden
+                    ? 'Error unhiding comment'
+                    : 'Error hiding comment')
                 toast.error(errorMessage)
                 console.error(e)
                 // undo optimistic update

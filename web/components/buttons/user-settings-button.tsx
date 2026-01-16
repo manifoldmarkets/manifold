@@ -65,11 +65,13 @@ export function UserSettingButton(props: { user: User }) {
   // Fetch bans when ban modal is opened
   useEffect(() => {
     if (showBanModal) {
-      api('get-user-bans', { userId }).then((res) => {
-        setBans(res.bans as UserBan[])
-      }).catch(() => {
-        // Ignore errors
-      })
+      api('get-user-bans', { userId })
+        .then((res) => {
+          setBans(res.bans as UserBan[])
+        })
+        .catch(() => {
+          // Ignore errors
+        })
     }
   }, [showBanModal, userId])
 

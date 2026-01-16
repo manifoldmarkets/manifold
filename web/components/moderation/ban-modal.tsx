@@ -66,13 +66,17 @@ export function BanModal({
   const [removeAllBansModalOpen, setRemoveAllBansModalOpen] = useState(false)
 
   // Username change restriction - default to true (restrict) when any ban is selected
-  const [allowUsernameChange, setAllowUsernameChange] = useState<boolean | undefined>(undefined)
+  const [allowUsernameChange, setAllowUsernameChange] = useState<
+    boolean | undefined
+  >(undefined)
 
   // Get active and historical bans
-  const activeBanRecords = getActiveBanRecords(bans).filter(b => b.ban_type !== 'modAlert')
+  const activeBanRecords = getActiveBanRecords(bans).filter(
+    (b) => b.ban_type !== 'modAlert'
+  )
   const activeBanTypes = getActiveBlockingBans(bans)
   const activeModAlerts = getActiveModAlerts(bans)
-  const historicalBans = bans.filter(b => b.ended_at !== null)
+  const historicalBans = bans.filter((b) => b.ended_at !== null)
   const isUsernameChangeRestricted = user.canChangeUsername === false
   const hasCurrentBansOrAlerts =
     activeBanTypes.length > 0 ||
@@ -137,14 +141,20 @@ export function BanModal({
 
       await api('ban-user', {
         userId: user.id,
-        bans: modAlertOnly ? undefined : (Object.keys(bansToSend).length > 0 ? bansToSend : undefined),
+        bans: modAlertOnly
+          ? undefined
+          : Object.keys(bansToSend).length > 0
+          ? bansToSend
+          : undefined,
         unbanTimes: modAlertOnly ? undefined : unbanTimes,
         reason: reason.trim(),
         modAlert: modAlertOnly ? { message: reason.trim() } : undefined,
         allowUsernameChange: modAlertOnly ? undefined : allowUsernameChange,
       })
 
-      toast.success(modAlertOnly ? 'Mod alert sent' : 'Ban updated successfully')
+      toast.success(
+        modAlertOnly ? 'Mod alert sent' : 'Ban updated successfully'
+      )
       onClose()
       window.location.reload()
     } catch (error) {
@@ -245,7 +255,12 @@ export function BanModal({
                 <span className="font-semibold">
                   Current Bans/Alerts ({activeBanTypes.length} ban
                   {activeBanTypes.length !== 1 ? 's' : ''}
-                  {activeModAlerts.length > 0 ? `, ${activeModAlerts.length} alert${activeModAlerts.length !== 1 ? 's' : ''}` : ''})
+                  {activeModAlerts.length > 0
+                    ? `, ${activeModAlerts.length} alert${
+                        activeModAlerts.length !== 1 ? 's' : ''
+                      }`
+                    : ''}
+                  )
                 </span>
                 {showCurrentBans ? (
                   <ChevronUpIcon className="h-5 w-5 shrink-0" />
@@ -286,7 +301,9 @@ export function BanModal({
                         <Row className="items-center gap-2">
                           <span className="text-sm text-red-700">
                             {timeRemaining
-                              ? `Expires in ${formatBanTimeRemaining(timeRemaining)}`
+                              ? `Expires in ${formatBanTimeRemaining(
+                                  timeRemaining
+                                )}`
                               : 'Permanent'}
                           </span>
                           <Button
@@ -440,7 +457,9 @@ export function BanModal({
                     type="checkbox"
                     checked={allowUsernameChange !== true}
                     onChange={(e) =>
-                      setAllowUsernameChange(e.target.checked ? undefined : true)
+                      setAllowUsernameChange(
+                        e.target.checked ? undefined : true
+                      )
                     }
                     className="h-4 w-4"
                   />
@@ -552,23 +571,16 @@ export function BanModal({
               {unbanBanType === 'posting'
                 ? 'Posting'
                 : unbanBanType === 'marketControl'
-                  ? 'Market Control'
-                  : 'Trading'}
+                ? 'Market Control'
+                : 'Trading'}
             </strong>{' '}
             ban from {user.name}?
           </p>
           <Row className="gap-2">
-            <Button
-              color="green"
-              loading={isSubmitting}
-              onClick={handleUnban}
-            >
+            <Button color="green" loading={isSubmitting} onClick={handleUnban}>
               Remove Ban
             </Button>
-            <Button
-              color="gray-white"
-              onClick={() => setUnbanModalOpen(false)}
-            >
+            <Button color="gray-white" onClick={() => setUnbanModalOpen(false)}>
               Cancel
             </Button>
           </Row>
@@ -585,7 +597,7 @@ export function BanModal({
           <p className="text-ink-500 text-sm">
             This will remove: {activeBanTypes.join(', ')} bans.
             {isUsernameChangeRestricted && (
-              <span className="block mt-1">
+              <span className="mt-1 block">
                 Note: @username change restriction will NOT be removed.
               </span>
             )}
@@ -647,7 +659,9 @@ function BanTypeToggle({
             placeholder="Permanent"
             value={tempDays || ''}
             onChange={(e) =>
-              onTempDaysChange(e.target.value ? parseInt(e.target.value) : undefined)
+              onTempDaysChange(
+                e.target.value ? parseInt(e.target.value) : undefined
+              )
             }
             className="w-24"
           />
@@ -678,7 +692,11 @@ function BanBannerPreview({
   const existingModAlerts = getActiveModAlerts(existingBans)
 
   // Get all existing active bans with their details
-  const allExistingBans: { type: BanType; reason: string | null; endTime: string | null }[] = []
+  const allExistingBans: {
+    type: BanType
+    reason: string | null
+    endTime: string | null
+  }[] = []
   for (const banType of activeBanTypes) {
     const ban = getActiveBan(existingBans, banType)
     if (ban) {
@@ -697,7 +715,9 @@ function BanBannerPreview({
 
   const hasNewBans = newBans.length > 0
   const hasExistingBans = allExistingBans.length > 0
-  const hasAnyBansToShow = modAlertOnly ? hasExistingBans : (hasNewBans || preservedBans.length > 0)
+  const hasAnyBansToShow = modAlertOnly
+    ? hasExistingBans
+    : hasNewBans || preservedBans.length > 0
 
   return (
     <Col className="gap-4">
@@ -712,86 +732,101 @@ function BanBannerPreview({
           </Row>
 
           {/* New bans being added */}
-          {!modAlertOnly && newBans.map(([banType]) => {
-            const isPermanent = !tempBanDays[banType]
-            const daysRemaining = tempBanDays[banType]
-            return (
-              <div key={banType} className="rounded-lg border border-red-200 bg-red-50 p-3">
-                <Row className="items-start justify-between gap-2">
-                  <Col className="flex-1 gap-1">
-                    <Row className="items-center gap-2">
-                      <span className="font-medium text-red-900">
-                        {getBanTypeDisplayName(banType as BanType)}
+          {!modAlertOnly &&
+            newBans.map(([banType]) => {
+              const isPermanent = !tempBanDays[banType]
+              const daysRemaining = tempBanDays[banType]
+              return (
+                <div
+                  key={banType}
+                  className="rounded-lg border border-red-200 bg-red-50 p-3"
+                >
+                  <Row className="items-start justify-between gap-2">
+                    <Col className="flex-1 gap-1">
+                      <Row className="items-center gap-2">
+                        <span className="font-medium text-red-900">
+                          {getBanTypeDisplayName(banType as BanType)}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            isPermanent
+                              ? 'bg-red-200 text-red-800'
+                              : 'bg-orange-100 text-orange-800'
+                          }`}
+                        >
+                          {isPermanent ? 'Permanent' : `${daysRemaining} days`}
+                        </span>
+                        <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white">
+                          new
+                        </span>
+                      </Row>
+                      <span className="text-xs text-red-700">
+                        {getBanTypeDescription(banType as BanType)}
                       </span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        isPermanent
-                          ? 'bg-red-200 text-red-800'
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {isPermanent ? 'Permanent' : `${daysRemaining} days`}
-                      </span>
-                      <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white">
-                        new
-                      </span>
-                    </Row>
-                    <span className="text-xs text-red-700">
-                      {getBanTypeDescription(banType as BanType)}
-                    </span>
-                    {reason.trim() && (
-                      <p className="mt-1 text-sm text-red-800">
-                        <span className="font-medium">Reason:</span>{' '}
-                        <span className="italic">"{reason}"</span>
-                      </p>
-                    )}
-                  </Col>
-                </Row>
-              </div>
-            )
-          })}
+                      {reason.trim() && (
+                        <p className="mt-1 text-sm text-red-800">
+                          <span className="font-medium">Reason:</span>{' '}
+                          <span className="italic">"{reason}"</span>
+                        </p>
+                      )}
+                    </Col>
+                  </Row>
+                </div>
+              )
+            })}
 
           {/* Existing/preserved bans */}
-          {(modAlertOnly ? allExistingBans : preservedBans).map(({ type, reason: existingReason, endTime }) => {
-            const isPermanent = !endTime
-            const timeRemaining = endTime ? new Date(endTime).getTime() - Date.now() : undefined
-            return (
-              <div key={type} className="rounded-lg border border-red-200 bg-red-50 p-3">
-                <Row className="items-start justify-between gap-2">
-                  <Col className="flex-1 gap-1">
-                    <Row className="items-center gap-2">
-                      <span className="font-medium text-red-900">
-                        {getBanTypeDisplayName(type)}
-                      </span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        isPermanent
-                          ? 'bg-red-200 text-red-800'
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {isPermanent
-                          ? 'Permanent'
-                          : timeRemaining !== undefined && timeRemaining > 0
+          {(modAlertOnly ? allExistingBans : preservedBans).map(
+            ({ type, reason: existingReason, endTime }) => {
+              const isPermanent = !endTime
+              const timeRemaining = endTime
+                ? new Date(endTime).getTime() - Date.now()
+                : undefined
+              return (
+                <div
+                  key={type}
+                  className="rounded-lg border border-red-200 bg-red-50 p-3"
+                >
+                  <Row className="items-start justify-between gap-2">
+                    <Col className="flex-1 gap-1">
+                      <Row className="items-center gap-2">
+                        <span className="font-medium text-red-900">
+                          {getBanTypeDisplayName(type)}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            isPermanent
+                              ? 'bg-red-200 text-red-800'
+                              : 'bg-orange-100 text-orange-800'
+                          }`}
+                        >
+                          {isPermanent
+                            ? 'Permanent'
+                            : timeRemaining !== undefined && timeRemaining > 0
                             ? formatBanTimeRemaining(timeRemaining)
                             : 'Active'}
-                      </span>
-                      {!modAlertOnly && (
-                        <span className="rounded-full bg-gray-400 px-2 py-0.5 text-xs font-medium text-white">
-                          existing
                         </span>
+                        {!modAlertOnly && (
+                          <span className="rounded-full bg-gray-400 px-2 py-0.5 text-xs font-medium text-white">
+                            existing
+                          </span>
+                        )}
+                      </Row>
+                      <span className="text-xs text-red-700">
+                        {getBanTypeDescription(type)}
+                      </span>
+                      {existingReason && (
+                        <p className="mt-1 text-sm text-red-800">
+                          <span className="font-medium">Reason:</span>{' '}
+                          <span className="italic">"{existingReason}"</span>
+                        </p>
                       )}
-                    </Row>
-                    <span className="text-xs text-red-700">
-                      {getBanTypeDescription(type)}
-                    </span>
-                    {existingReason && (
-                      <p className="mt-1 text-sm text-red-800">
-                        <span className="font-medium">Reason:</span>{' '}
-                        <span className="italic">"{existingReason}"</span>
-                      </p>
-                    )}
-                  </Col>
-                </Row>
-              </div>
-            )
-          })}
+                    </Col>
+                  </Row>
+                </div>
+              )
+            }
+          )}
         </Col>
       )}
 
@@ -824,12 +859,22 @@ function BanBannerPreview({
                   </Row>
                 </Col>
                 <button
-                  className="shrink-0 rounded-full p-1 text-yellow-600 opacity-50 cursor-not-allowed"
+                  className="shrink-0 cursor-not-allowed rounded-full p-1 text-yellow-600 opacity-50"
                   title="User can dismiss"
                   disabled
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </Row>
@@ -849,12 +894,22 @@ function BanBannerPreview({
                   </Row>
                 </Col>
                 <button
-                  className="shrink-0 rounded-full p-1 text-yellow-600 opacity-50 cursor-not-allowed"
+                  className="shrink-0 cursor-not-allowed rounded-full p-1 text-yellow-600 opacity-50"
                   title="User can dismiss"
                   disabled
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </Row>
@@ -880,8 +935,8 @@ function BanHistoryRecord({
     record.ended_by === 'system'
       ? 'System (auto-expired)'
       : record.ended_by
-        ? modNames[record.ended_by] || record.ended_by
-        : 'Unknown'
+      ? modNames[record.ended_by] || record.ended_by
+      : 'Unknown'
 
   return (
     <div className="bg-canvas-50 rounded border p-2">

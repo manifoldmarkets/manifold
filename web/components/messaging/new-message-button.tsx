@@ -94,8 +94,7 @@ function NewMessageModal(props: {
     const res = await createPrivateMessageChannelWithUsers({
       userIds: users.map((user) => user.id),
     }).catch((e: any) => {
-      const errorMessage =
-        e?.message || 'Failed to create conversation'
+      const errorMessage = e?.message || 'Failed to create conversation'
       toast.error(errorMessage)
       console.error(e)
       setIsCreating(false)

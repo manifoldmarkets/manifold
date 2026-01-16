@@ -591,10 +591,16 @@ export default function AdminUserInfoPage() {
                       ? relatedUsers
                       : relatedUsers.slice(0, 3)
                     ).map(
-                      ({ visibleUser, matchReasons, netManagramAmount, bans }) => {
+                      ({
+                        visibleUser,
+                        matchReasons,
+                        netManagramAmount,
+                        bans,
+                      }) => {
                         const activeBanTypes = getActiveBlockingBans(bans)
                         const hasActiveBan = activeBanTypes.length > 0
-                        const hasHistoricalBan = bans.length > 0 && !hasActiveBan
+                        const hasHistoricalBan =
+                          bans.length > 0 && !hasActiveBan
                         const timeDiff =
                           targetCreatedTime && visibleUser.createdTime
                             ? Math.abs(
@@ -639,7 +645,9 @@ export default function AdminUserInfoPage() {
                                   {hasActiveBan && (
                                     <span
                                       className="ml-2 text-xs text-red-600"
-                                      title={`Active bans: ${activeBanTypes.join(', ')}`}
+                                      title={`Active bans: ${activeBanTypes.join(
+                                        ', '
+                                      )}`}
                                     >
                                       [BAN]
                                     </span>
@@ -647,7 +655,9 @@ export default function AdminUserInfoPage() {
                                   {hasHistoricalBan && (
                                     <span
                                       className="ml-2 text-xs text-orange-500"
-                                      title={`${bans.length} historical ban${bans.length > 1 ? 's' : ''}`}
+                                      title={`${bans.length} historical ban${
+                                        bans.length > 1 ? 's' : ''
+                                      }`}
                                     >
                                       [HIST]
                                     </span>
