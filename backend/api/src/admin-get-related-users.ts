@@ -5,6 +5,7 @@ import { convertUser } from 'common/supabase/users'
 import { toUserAPIResponse } from 'common/api/user-types'
 import { getPrivateUser } from 'shared/utils'
 import { tsToMillis } from 'common/supabase/utils'
+import { UserBan } from 'common/user'
 
 export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
   async (props, auth) => {
@@ -105,6 +106,21 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
       convertUser
     )
 
+    // Get ban data for all related users in a single query
+    // Returns both active and historical bans
+    const allBans = await pg.manyOrNone<UserBan>(
+      `SELECT * FROM user_bans WHERE user_id = ANY($1) ORDER BY created_at DESC`,
+      [allRelatedIds]
+    )
+
+    // Group bans by user_id
+    const bansByUserId = new Map<string, UserBan[]>()
+    for (const ban of allBans) {
+      const existing = bansByUserId.get(ban.user_id) || []
+      existing.push(ban)
+      bansByUserId.set(ban.user_id, existing)
+    }
+
     // Build match results with reasons
     const matches = users.map((user) => {
       const privateMatch = ipDeviceMatches.find((m) => m.id === user.id)
@@ -133,6 +149,7 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
         visibleUser: toUserAPIResponse(user),
         matchReasons,
         netManagramAmount: managramUserMap.get(user.id),
+        bans: bansByUserId.get(user.id) || [],
       }
     })
 

@@ -16,15 +16,12 @@ import { saveTopic } from './save-topic'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { followtopic } from './follow-topic'
-import { editcomment } from 'api/edit-comment'
 import { leagueActivity } from './league-activity'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { cancelbounty } from './cancel-bounty'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
-import { leavereview } from './leave-review'
-import { castpollvote } from './cast-poll-vote'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
 import { report } from './report'
@@ -37,7 +34,6 @@ import { updatedashboard } from './update-dashboard'
 import { deletedashboard } from './delete-dashboard'
 import { getnews } from './get-news'
 import { getdashboardfromslug } from './get-dashboard-from-slug'
-import { banuser } from 'api/ban-user'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
@@ -63,7 +59,6 @@ const apiRoute = (endpoint: RequestHandler) => {
 export const addOldRoutes = (app: express.Application) => {
   app.get('/health', ...apiRoute(health))
   app.get('/unsubscribe', ...apiRoute(unsubscribe))
-  app.post('/editcomment', ...apiRoute(editcomment))
 
   app.post('/claimmanalink', ...apiRoute(claimmanalink))
   app.post('/creategroup', ...apiRoute(creategroup))
@@ -101,8 +96,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
   app.post('/searchgiphy', ...apiRoute(searchgiphy))
   app.post('/manachantweet', ...apiRoute(manachantweet))
-  app.post('/leave-review', ...apiRoute(leavereview))
-  app.post('/cast-poll-vote', ...apiRoute(castpollvote))
   app.post(
     '/get-similar-groups-to-contract',
     ...apiRoute(getsimilargroupstocontract)
@@ -122,7 +115,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/delete-dashboard', ...apiRoute(deletedashboard))
   app.get('/get-news-dashboards', ...apiRoute(getnews))
   app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
-  app.post('/ban-user', ...apiRoute(banuser))
   app.post(
     '/create-private-user-message',
     ...apiRoute(createprivateusermessage)

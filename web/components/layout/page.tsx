@@ -8,6 +8,10 @@ import { ConfettiOnDemand } from '../confetti-on-demand'
 import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Col } from './col'
+import { useUser } from 'web/hooks/use-user'
+import { BanBanner } from '../moderation/ban-banner'
+import { UserBan } from 'common/user'
+import { api } from 'web/lib/api/api'
 
 import { Footer } from '../footer'
 import { FirstStreakModalManager } from '../profile/first-streak-modal'
@@ -34,6 +38,20 @@ export function Page(props: {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   if (trackPageView) useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
+  const user = useUser()
+  const [bans, setBans] = useState<UserBan[]>([])
+
+  useEffect(() => {
+    if (user) {
+      api('get-user-bans', { userId: user.id })
+        .then((res) => {
+          setBans(res.bans as UserBan[])
+        })
+        .catch(() => {
+          // Ignore errors fetching bans
+        })
+    }
+  }, [user?.id])
 
   const [isIOS, setIsIOS] = useState(false)
   useEffect(() => {
@@ -68,6 +86,7 @@ export function Page(props: {
           className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
         >
           {banner}
+          {user && <BanBanner bans={bans} />}
           {children}
           {!props.hideFooter && <Footer />}
         </main>

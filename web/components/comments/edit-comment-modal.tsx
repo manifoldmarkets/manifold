@@ -46,7 +46,7 @@ export const EditCommentModal = (props: {
 
     const content = editor.getJSON()
 
-    await call(getApiUrl('editcomment'), 'POST', {
+    await call(getApiUrl('edit-comment'), 'POST', {
       commentId: comment.id,
       content: content,
       contractId: contract.id,

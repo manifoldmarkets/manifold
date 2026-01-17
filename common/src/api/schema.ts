@@ -38,7 +38,7 @@ import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
-import { PrivateUser, User } from '../user'
+import { PrivateUser, User, UserBan } from '../user'
 import { searchProps } from './market-search-types'
 import {
   FullMarket,
@@ -212,6 +212,7 @@ export const API = (_apiTypeCheck = {
           | 'managram'
         )[]
         netManagramAmount?: number
+        bans: UserBan[]
       }>
     },
   },
@@ -282,6 +283,34 @@ export const API = (_apiTypeCheck = {
       .object({
         commentPath: z.string(),
         action: z.enum(['hide', 'delete']).optional().default('hide'),
+      })
+      .strict(),
+  },
+  'edit-comment': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        contractId: z.string(),
+        commentId: z.string(),
+        content: contentSchema.optional(),
+        html: z.string().optional(),
+        markdown: z.string().optional(),
+      })
+      .strict(),
+  },
+  'leave-review': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        marketId: z.string(),
+        review: contentSchema.optional(),
+        rating: z.number().gte(0).lte(5).int(),
       })
       .strict(),
   },
@@ -1444,6 +1473,58 @@ export const API = (_apiTypeCheck = {
       context: JSONContent | undefined
     },
   },
+  'ban-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        unban: z.boolean().optional(),
+        unbanTime: z.number().optional(),
+        bans: z
+          .object({
+            posting: z.boolean().optional(),
+            marketControl: z.boolean().optional(),
+            trading: z.boolean().optional(),
+            modAlert: z.boolean().optional(), // false to clear active mod alert
+          })
+          .optional(),
+        unbanTimes: z
+          .object({
+            posting: z.number().optional(),
+            marketControl: z.number().optional(),
+            trading: z.number().optional(),
+            modAlert: z.number().optional(), // mod alerts don't auto-expire, but included for type consistency
+          })
+          .optional(),
+        reason: z.string().optional(),
+        modAlert: z
+          .object({
+            message: z.string(),
+          })
+          .optional(),
+        unbanNote: z.string().optional(), // mod notes when removing a ban (not shown to user)
+        // Username change restriction - defaults to restricting when any ban is applied
+        // Set to true to allow username changes, false to restrict, undefined to use default behavior
+        allowUsernameChange: z.boolean().optional(),
+        // Remove all active bans at once, creates a single combined history record
+        removeAllBans: z.boolean().optional(),
+        // Clear a specific mod alert by ID (used when multiple alerts exist)
+        clearAlertId: z.number().optional(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
+  'dismiss-mod-alert': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      alertId: z.number().optional(), // Specific alert to dismiss, or all if not provided
+    }).strict(),
+    returns: {} as { success: boolean },
+  },
   'super-ban-user': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1453,6 +1534,29 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
       })
       .strict(),
+  },
+  'get-user-bans': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      bans: {
+        id: number
+        user_id: string
+        ban_type: string
+        reason: string | null
+        created_at: string
+        created_by: string | null
+        end_time: string | null
+        ended_by: string | null
+        ended_at: string | null
+      }[]
+    },
   },
   'get-boost-analytics': {
     method: 'POST',
@@ -2053,6 +2157,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'cast-poll-vote': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { status: string; voteId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        voteId: z.string().optional(),
+        voteIds: z.array(z.string()).optional(),
+        rankedVoteIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
   'get-next-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',
@@ -2088,7 +2206,6 @@ export const API = (_apiTypeCheck = {
       currentMarginLoan: number
       available: number
       netWorthLimit: number
-      positionLimit: number
       totalPositionValue: number
       eligible: boolean
       eligibilityReason?: string

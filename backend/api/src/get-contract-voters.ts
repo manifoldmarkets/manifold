@@ -1,4 +1,5 @@
 import { APIError, APIHandler, AuthedUser } from 'api/helpers/endpoint'
+import { toUserAPIResponse } from 'common/api/user-types'
 import { convertUser, prefixedDisplayUserColumns } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContract } from 'shared/utils'
@@ -11,12 +12,13 @@ export const getContractVoters: APIHandler<'get-contract-voters'> = async (
   const { contractId } = props
   const pg = createSupabaseDirectClient()
   await checkAccess(contractId, auth)
-  return await pg.map(
+  const users = await pg.map(
     `select ${prefixedDisplayUserColumns} from users u
      join votes on votes.user_id = u.id where votes.contract_id = $1`,
     [contractId],
     convertUser
   )
+  return users.map((u) => toUserAPIResponse(u))
 }
 const checkAccess = async (contractId: string, auth: AuthedUser) => {
   const pg = createSupabaseDirectClient()
@@ -39,10 +41,11 @@ export const getContractOptionVoters: APIHandler<
   const { contractId, optionId } = props
   const pg = createSupabaseDirectClient()
   await checkAccess(contractId, auth)
-  return await pg.map(
+  const users = await pg.map(
     `select ${prefixedDisplayUserColumns} from users u
      join votes on votes.user_id = u.id where votes.contract_id = $1 and votes.id = $2`,
     [contractId, optionId],
     convertUser
   )
+  return users.map((u) => toUserAPIResponse(u))
 }

@@ -4,6 +4,8 @@ import { APIError } from 'common/api/utils'
 import { filterDefined } from 'common/util/array'
 import { addUsersToPrivateMessageChannel } from 'shared/supabase/private-messages'
 
+// Note: Ban checks are done in the API handler (create-private-user-message-channel.ts)
+// which has special logic for allowing banned users to message admins
 export const createPrivateUserMessageChannelMain = async (
   creatorId: string,
   userIds: string[],
@@ -11,7 +13,7 @@ export const createPrivateUserMessageChannelMain = async (
 ) => {
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(401, 'Your account was not found')
-  if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
+
   const creatorShouldJoinChannel = userIds.includes(creatorId)
   const toPrivateUsers = filterDefined(
     await Promise.all(userIds.map((id) => getPrivateUser(id)))

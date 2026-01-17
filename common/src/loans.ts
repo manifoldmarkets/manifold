@@ -14,7 +14,6 @@ export type LoanTrackingRow = {
 export const MAX_LOAN_NET_WORTH_PERCENT = 1.0 // 100% max total for all loans (free + margin)
 export const DAILY_LOAN_NET_WORTH_PERCENT = 0.1 // 10% max per day for general loans
 export const MAX_MARKET_LOAN_NET_WORTH_PERCENT = 0.05 // 5% of net worth per market
-export const MAX_MARKET_LOAN_POSITION_PERCENT = 0.25 // 25% of position value per market
 export const LOAN_DAILY_INTEREST_RATE = 0.0003 // 0.03% per day (margin loans only)
 export const FREE_LOAN_POSITION_PERCENT = 0.01 // 1% of position value for daily free loan
 export const MS_PER_DAY = 24 * 60 * 60 * 1000
@@ -163,10 +162,9 @@ export const isUserEligibleForGeneralLoan = (
 export const isUserEligibleForMarketLoan = (
   currentMarketLoan: number,
   requestedAmount: number,
-  netWorth: number,
-  totalMarketPositionValue?: number
+  netWorth: number
 ): boolean => {
-  const maxLoan = calculateMarketLoanMax(netWorth, totalMarketPositionValue)
+  const maxLoan = calculateMarketLoanMax(netWorth)
   return currentMarketLoan + requestedAmount <= maxLoan
 }
 
@@ -253,15 +251,8 @@ export const calculateDailyLoanLimit = (netWorth: number): number => {
   return netWorth * DAILY_LOAN_NET_WORTH_PERCENT
 }
 
-export const calculateMarketLoanMax = (
-  netWorth: number,
-  totalMarketPositionValue?: number
-): number => {
-  const netWorthLimit = netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
-  if (totalMarketPositionValue === undefined) return netWorthLimit
-  const positionLimit =
-    totalMarketPositionValue * MAX_MARKET_LOAN_POSITION_PERCENT
-  return Math.min(netWorthLimit, positionLimit)
+export const calculateMarketLoanMax = (netWorth: number): number => {
+  return netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
 }
 
 export type LoanDistribution = {

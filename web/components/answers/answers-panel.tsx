@@ -22,6 +22,8 @@ import {
 } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
+// Note: getActiveBans requires UserBan[] from the database, not available on frontend
+// For now we rely on the legacy isBannedFromPosting field for UI checks
 import {
   CPMMMultiContract,
   Contract,
@@ -57,7 +59,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
@@ -74,6 +75,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { Tooltip } from '../widgets/tooltip'
 import {
   AnswerBar,
   AnswerPosition,
@@ -83,7 +85,6 @@ import {
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 
-export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // the offset in which the top of answers is visible
@@ -171,15 +172,13 @@ export function AnswersPanel(props: {
   }
 
   const isAdvancedTrader = useIsAdvancedTrader()
-  const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
-    usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
 
   const unfilledBets = useUnfilledBets(
     contract.id,
     (params) => api('bets', params),
     useIsPageVisible,
     {
-      enabled: isAdvancedTrader && shouldShowLimitOrderChart,
+      enabled: isAdvancedTrader,
     }
   )
 
@@ -201,9 +200,12 @@ export function AnswersPanel(props: {
 
   const privateUser = usePrivateUser()
   const unresolvedAnswers = answers.filter((a) => !a.resolution)
+  // Adding answers is blocked by any ban type - check legacy field for now
+  // (granular bans are enforced server-side via rate-limit middleware)
+  const userHasAnyBan = user ? !!user.isBannedFromPosting : false
   const canAddAnswer = Boolean(
     user &&
-      !user.isBannedFromPosting &&
+      !userHasAnyBan &&
       (addAnswersMode === 'ANYONE' ||
         (addAnswersMode === 'ONLY_CREATOR' &&
           user.id === contract.creatorId)) &&
@@ -292,9 +294,7 @@ export function AnswersPanel(props: {
                   (b) => b.answerId === answer.id
                 )}
                 color={getAnswerColor(answer)}
-                shouldShowLimitOrderChart={
-                  isAdvancedTrader && shouldShowLimitOrderChart
-                }
+                shouldShowLimitOrderChart={isAdvancedTrader}
               />
             ))}
 
@@ -316,44 +316,23 @@ export function AnswersPanel(props: {
           </Col>
         )}
       </Col>
-      <Row className="justify-end gap-4">
-        {!floatingEqual(metrics?.invested ?? 0, 0) && (
-          <Row className="mt-2 items-center gap-2">
-            <input
-              id="positions"
-              type="checkbox"
-              className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
-              checked={shouldShowPositions}
-              onChange={() => setShouldShowPositions(!shouldShowPositions)}
-            />
-            <label
-              htmlFor="positions"
-              className="text-ink-500 text-sm font-medium"
-            >
-              Show your positions
-            </label>
-          </Row>
-        )}
-        {isAdvancedTrader && (
-          <Row className="mt-2 items-center gap-2">
-            <input
-              id="limitOrderChart"
-              type="checkbox"
-              className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
-              checked={shouldShowLimitOrderChart}
-              onChange={() =>
-                setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
-              }
-            />
-            <label
-              htmlFor="limitOrderChart"
-              className="text-ink-500 text-sm font-medium"
-            >
-              Show limit orders
-            </label>
-          </Row>
-        )}
-      </Row>
+      {!floatingEqual(metrics?.invested ?? 0, 0) && (
+        <Row className="mt-2 items-center justify-end gap-2">
+          <input
+            id="positions"
+            type="checkbox"
+            className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+            checked={shouldShowPositions}
+            onChange={() => setShouldShowPositions(!shouldShowPositions)}
+          />
+          <label
+            htmlFor="positions"
+            className="text-ink-500 text-sm font-medium"
+          >
+            Show your positions
+          </label>
+        </Row>
+      )}
     </Col>
   )
 }
@@ -532,10 +511,6 @@ export function SimpleAnswerBars(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const isAdvancedTrader = useIsAdvancedTrader()
-  const [shouldShowLimitOrderChart] = usePersistentLocalState<boolean>(
-    true,
-    SHOW_LIMIT_ORDER_CHARTS_KEY
-  )
 
   return (
     <Col className="mx-[2px] gap-2">
@@ -551,9 +526,7 @@ export function SimpleAnswerBars(props: {
               contract={contract}
               color={getAnswerColor(answer)}
               barColor={barColor}
-              shouldShowLimitOrderChart={
-                isAdvancedTrader && shouldShowLimitOrderChart
-              }
+              shouldShowLimitOrderChart={isAdvancedTrader}
               feedReason={feedReason}
             />
           ))}
@@ -757,6 +730,14 @@ export function AnswerComponent(props: {
         }
         end={
           <Row className={'items-center gap-1'}>
+            {shouldShowLimitOrderChart && isClient && !!hasLimitOrders && (
+              <MiniDepthChart
+                limitOrders={unfilledBets}
+                prob={prob}
+                onClick={() => setLimitBetModalOpen(true)}
+                numOrders={unfilledBets?.length}
+              />
+            )}
             <BetButtons
               contract={contract}
               answer={answer}
@@ -772,16 +753,6 @@ export function AnswerComponent(props: {
               withinOverflowContainer
             />
           </Row>
-        }
-        renderBackgroundLayer={
-          shouldShowLimitOrderChart &&
-          isClient && (
-            <LimitOrderBarChart
-              limitOrders={unfilledBets}
-              prob={prob}
-              activeColor={color}
-            />
-          )
         }
       />
 
@@ -802,7 +773,7 @@ export function AnswerComponent(props: {
                 myMetric={myMetric}
               />
             )}
-            {userHasLimitOrders && (
+            {shouldShowPositions && userHasLimitOrders && (
               <AnswerOrdersButton
                 contract={contract}
                 yourUnfilledBets={yourUnfilledBets}
@@ -844,14 +815,12 @@ export function AnswerComponent(props: {
           setOpen={setLimitBetModalOpen}
           size="md"
         >
-          <Col className="bg-canvas-0">
-            <OrderBookPanel
-              limitBets={unfilledBets}
-              contract={contract}
-              answer={answer}
-              showTitle
-            />
-          </Col>
+          <OrderBookPanel
+            limitBets={unfilledBets}
+            contract={contract}
+            answer={answer}
+            showTitle
+          />
         </Modal>
       )}
     </Col>
@@ -870,7 +839,7 @@ function AnswerOrdersButton(props: {
       <button className={buttonClassName} onClick={() => setOpen(true)}>
         Your Orders
       </button>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} size="sm">
         <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
           <YourOrders
             contract={contract}
@@ -954,5 +923,107 @@ export function LimitOrderBarChart({
         )
       })}
     </div>
+  )
+}
+
+// Mini limit order bar chart for display next to Yes/No buttons
+// X-axis: probability (0% to 100%)
+// Y-axis: order volume at each price point
+export function MiniDepthChart({
+  limitOrders,
+  prob,
+  height = 24,
+  width = 40,
+  onClick,
+  numOrders,
+}: {
+  limitOrders?: Array<LimitBet>
+  prob: number
+  height?: number
+  width?: number
+  onClick?: () => void
+  numOrders?: number
+}) {
+  const { ordersByProb, maxVolume } = useMemo(() => {
+    if (!limitOrders || limitOrders.length === 0) {
+      return { ordersByProb: [], maxVolume: 0 }
+    }
+
+    const filtered = limitOrders.filter(
+      (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
+    )
+
+    // Group by limitProb and calculate volume at each price
+    const grouped = groupBy(filtered, 'limitProb')
+    const orders = Object.entries(grouped).map(([limitProb, bets]) => {
+      const volume = sumBy(bets, (bet) => bet.orderAmount - bet.amount)
+      const isYes = bets[0].outcome === 'YES'
+      return { prob: Number(limitProb), volume, isYes }
+    })
+
+    const max = Math.max(...orders.map((o) => o.volume), 0)
+    return { ordersByProb: orders, maxVolume: max }
+  }, [limitOrders])
+
+  if (ordersByProb.length === 0) {
+    return null
+  }
+
+  const xScale = (p: number) => p * width
+  const yScale = (v: number) =>
+    maxVolume > 0 ? (v / maxVolume) * (height - 2) : 0
+
+  const tooltipText = numOrders
+    ? `${numOrders} limit order${numOrders === 1 ? '' : 's'}`
+    : undefined
+
+  return (
+    <Tooltip text={tooltipText}>
+      <svg
+        width={width}
+        height={height}
+        className={clsx('flex-shrink-0', onClick && 'cursor-pointer')}
+        viewBox={`0 0 ${width} ${height}`}
+        onClick={onClick}
+      >
+        {/* Border */}
+        <rect
+          x={0.5}
+          y={0.5}
+          width={width - 1}
+          height={height - 1}
+          fill="none"
+          stroke="rgb(var(--color-ink-300))"
+          strokeWidth={1}
+          rx={2}
+        />
+        {/* Vertical bars for each limit order */}
+        {ordersByProb.map((order, i) => {
+          const x = xScale(order.prob)
+          const barHeight = Math.max(2, yScale(order.volume))
+          const color = order.isYes ? 'rgb(16 185 129)' : 'rgb(239 68 68)'
+          return (
+            <rect
+              key={i}
+              x={x - 0.5}
+              y={height - barHeight}
+              width={1}
+              height={barHeight}
+              fill={color}
+            />
+          )
+        })}
+        {/* Current price dashed line */}
+        <line
+          x1={xScale(prob)}
+          y1={0}
+          x2={xScale(prob)}
+          y2={height}
+          stroke="rgb(99 102 241)"
+          strokeWidth={1}
+          strokeDasharray="2 2"
+        />
+      </svg>
+    </Tooltip>
   )
 }

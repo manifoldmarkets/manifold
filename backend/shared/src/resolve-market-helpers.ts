@@ -14,11 +14,6 @@ import {
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
-import {
-  calculatePoolInterestCpmm1,
-  calculatePoolInterestMulti,
-} from './calculate-pool-interest'
-import { calculateInterestPayouts } from './calculate-interest-shares'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
@@ -103,27 +98,7 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
-    // Calculate pool with interest before calculating payouts
-    // This ensures LPs receive interest on their locked capital
-    if (unresolvedContract.mechanism === 'cpmm-1') {
-      const poolWithInterest = calculatePoolInterestCpmm1(unresolvedContract)
-      unresolvedContract.pool.YES = poolWithInterest.YES
-      unresolvedContract.pool.NO = poolWithInterest.NO
-    } else if (unresolvedContract.mechanism === 'cpmm-multi-1') {
-      const multiContract = unresolvedContract as CPMMMultiContract
-      const answers = multiContract.answers
-      const poolUpdates = calculatePoolInterestMulti(multiContract, answers)
-      const updateMap = new Map(poolUpdates.map((u) => [u.id, u]))
-      for (const answer of answers) {
-        const update = updateMap.get(answer.id)
-        if (update) {
-          answer.poolYes = update.poolYes
-          answer.poolNo = update.poolNo
-        }
-      }
-    }
-
-    // Fetch loan tracking data for interest calculation
+    // Fetch loan tracking data for loan deduction calculation
     const loanTracking = await getLoanTrackingForContract(
       tx,
       contractId,
@@ -146,29 +121,7 @@ export const resolveMarketHelper = async (
       loanTracking
     )
 
-    // Calculate interest payouts as mana for all users who ever held positions
-    // This includes users who sold out before resolution
-    const interestPayouts = await calculateInterestPayouts(
-      tx,
-      contractId,
-      answerId,
-      resolutionTime,
-      unresolvedContract.token,
-      outcome,
-      resolutionProbability
-    )
-
-    if (interestPayouts.length > 0) {
-      log('Calculated interest payouts for resolution', {
-        count: interestPayouts.length,
-        totalInterestMana: sumBy(interestPayouts, 'payout'),
-      })
-    }
-
-    // Combine base payouts with interest payouts
-    const payouts = [...basePayouts, ...interestPayouts].filter(
-      (p) => p.payout !== 0
-    )
+    const payouts = basePayouts.filter((p) => p.payout !== 0)
     // Keep MKT resolution prob for consistency's sake
     const probBeforeResolution =
       outcome === 'MKT'

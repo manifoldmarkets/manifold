@@ -3,6 +3,30 @@ import { notification_preferences } from './user-notification-preferences'
 import { UserEntitlement } from './shop/types'
 import { DAY_MS, HOUR_MS } from './util/time'
 
+// New normalized user_bans table schema
+// modAlert is stored in user_bans for audit history but doesn't block any actions
+export type BanType = 'posting' | 'marketControl' | 'trading' | 'modAlert'
+
+export type UserBan = {
+  id: number
+  user_id: string
+  ban_type: BanType
+  reason: string | null
+  created_at: string // ISO timestamp
+  created_by: string | null // mod user ID
+  // Scheduled expiry for temp bans (null = permanent)
+  end_time: string | null
+  ended_by: string | null // mod user ID who ended the ban
+  // When manually lifted by mod (null = still active or expired naturally)
+  ended_at: string | null
+}
+
+// Helper type for active bans (not ended)
+export type ActiveBan = UserBan & {
+  ended_at: null
+  ended_by: null
+}
+
 export type User = {
   id: string
   createdTime: number
@@ -73,9 +97,17 @@ export type User = {
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   seenStreakModal?: boolean
+  /** @deprecated Use user_bans table instead */
   isBannedFromPosting?: boolean
-  /** @deprecated Not deprecated, only updated in native column though */
+  /** @deprecated Use user_bans table instead */
   unbanTime?: number
+
+  // USERNAME CHANGE RESTRICTION
+  // When false, user cannot change their @username
+  // Automatically set to false when any ban is applied (unless mod opts out)
+  // Must be manually re-enabled by a mod
+  canChangeUsername?: boolean  // undefined = allowed, false = restricted
+
   userDeleted?: boolean
   optOutBetWarnings?: boolean
   signupBonusPaid?: number

@@ -27,7 +27,7 @@ import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import {
-  BannedBadge,
+  RestrictedBadge,
   UserAvatarAndBadge,
 } from 'web/components/widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -234,9 +234,7 @@ export const PrivateChat = (props: {
                 .join(', ')}
               {members.length > 2 && ` & ${members.length - 2} more`}
             </span>
-            {members.length == 1 && members[0].isBannedFromPosting && (
-              <BannedBadge />
-            )}
+            {members.length === 1 && <RestrictedBadge user={members[0]} />}
           </>
         ) : (
           <span className="text-ink-400 ml-1 italic">

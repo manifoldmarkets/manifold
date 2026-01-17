@@ -498,12 +498,15 @@ const TxnBalanceChangeRow = (props: {
     BOUNTY_AWARDED: 'bg-teal-600',
     MANA_PAYMENT: 'bg-teal-400',
     LOAN: 'bg-amber-500',
+    MARGIN_LOAN: 'bg-amber-500',
     CASH_OUT: 'bg-amber-500',
     CONTRACT_BOOST_PURCHASE: 'bg-scarlet-400',
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     PUSH_NOTIFICATION_BONUS: 'bg-pink-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    CHARITY_GIVEAWAY_TICKET:
+      'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     CONTRACT_RESOLUTION_FEE:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
@@ -546,11 +549,14 @@ const TxnBalanceChangeRow = (props: {
               type === 'CONVERT_CASH' ||
               type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
+            ) : type === 'CHARITY_GIVEAWAY_TICKET' ? (
+              '🎟️'
             ) : type === 'CHARITY' ||
               type === 'REFERRAL' ||
               type === 'ADMIN_REWARD' ? (
               '❤️'
             ) : type === 'LOAN' ||
+              type === 'MARGIN_LOAN' ||
               type === 'CASH_OUT' ||
               type === 'CONTRACT_RESOLUTION_FEE' ? (
               '🏦'
@@ -680,6 +686,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Mod task completed'
     case 'LOAN':
       return 'Loan'
+    case 'MARGIN_LOAN':
+      return 'Margin Loan'
     case 'LEAGUE_PRIZE':
       return 'League prize'
     case 'MANA_PURCHASE':
@@ -707,6 +715,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return ''
     case 'PUSH_NOTIFICATION_BONUS':
       return 'Push notification bonus'
+    case 'CHARITY_GIVEAWAY_TICKET':
+      return 'Charity giveaway tickets'
     default:
       return type
   }
@@ -764,7 +774,11 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'User payment'
     case 'CHARITY':
       return 'Donation'
+    case 'CHARITY_GIVEAWAY_TICKET':
+      return 'Charity raffle tickets'
     case 'LOAN':
+      return ''
+    case 'MARGIN_LOAN':
       return ''
     default:
       return null

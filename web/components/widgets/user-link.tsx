@@ -26,12 +26,17 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { FaStar } from 'react-icons/fa'
-import { User } from 'common/user'
+import { User, UserBan } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
 import { UserEntitlement } from 'common/shop/types'
 import { userHasSupporterBadge } from 'common/shop/items'
 import { getUserSupporterTier, SUPPORTER_TIERS } from 'common/supporter-config'
-import { DisplayContext, shouldShowBadges, shouldAnimateBadge } from 'common/shop/display-config'
+import {
+  DisplayContext,
+  shouldShowBadges,
+  shouldAnimateBadge,
+} from 'common/shop/display-config'
+import { getActiveBlockingBans, getBanTypeDescription } from 'common/ban-utils'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -66,10 +71,19 @@ export function UserAvatarAndBadge(props: {
           username={username}
           size={'sm'}
           noLink={noLink}
-          entitlements={'entitlements' in user ? (user.entitlements as UserEntitlement[] | undefined) : undefined}
+          entitlements={
+            'entitlements' in user
+              ? (user.entitlements as UserEntitlement[] | undefined)
+              : undefined
+          }
           displayContext={displayContext}
         />
-        <UserLink short={short} user={user} noLink={noLink} displayContext={displayContext} />
+        <UserLink
+          short={short}
+          user={user}
+          noLink={noLink}
+          displayContext={displayContext}
+        />
       </Row>
     </UserHovercard>
   )
@@ -92,7 +106,11 @@ export function UserAvatar(props: {
           username={username}
           size={size}
           noLink={noLink}
-          entitlements={'entitlements' in user ? (user.entitlements as UserEntitlement[] | undefined) : undefined}
+          entitlements={
+            'entitlements' in user
+              ? (user.entitlements as UserEntitlement[] | undefined)
+              : undefined
+          }
           displayContext={displayContext}
         />
       </Row>
@@ -190,6 +208,7 @@ function BotBadge() {
   )
 }
 
+/** @deprecated Use RestrictedBadge instead */
 export function BannedBadge() {
   return (
     <Tooltip
@@ -203,6 +222,60 @@ export function BannedBadge() {
   )
 }
 
+// Works with full User or DisplayUser
+// isBannedFromPosting is only true when ALL THREE ban types are permanently applied
+// bans prop allows showing partial restrictions with details
+type RestrictedBadgeUser = {
+  isBannedFromPosting?: boolean
+}
+
+export function RestrictedBadge({
+  user,
+  bans,
+}: {
+  user: RestrictedBadgeUser
+  bans?: UserBan[]
+}) {
+  // Check for granular bans first (if provided)
+  const activeBanTypes = bans ? getActiveBlockingBans(bans) : []
+  const hasPartialBans = activeBanTypes.length > 0 && activeBanTypes.length < 3
+
+  // Full permanent ban (all 3 types)
+  if (user.isBannedFromPosting) {
+    return (
+      <Tooltip
+        text="Permanently banned from posting, trading, and market control"
+        placement="bottom"
+      >
+        <span className="ml-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-700 dark:text-red-100">
+          Banned
+        </span>
+      </Tooltip>
+    )
+  }
+
+  // Partial restrictions (some but not all ban types, or temporary bans)
+  if (hasPartialBans || (bans && activeBanTypes.length === 3)) {
+    // Get detailed actions for each ban type and combine them into a unique list
+    const allActions = activeBanTypes.flatMap((bt) =>
+      getBanTypeDescription(bt).split(', ')
+    )
+    // Remove duplicates and join into a readable list
+    const uniqueActions = [...new Set(allActions)]
+    const tooltipText = `Restricted from: ${uniqueActions.join(', ')}`
+
+    return (
+      <Tooltip text={tooltipText} placement="bottom">
+        <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
+          Restricted
+        </span>
+      </Tooltip>
+    )
+  }
+
+  return null
+}
+
 export function UserBadge(props: {
   userId: string
   username: string
@@ -213,7 +286,14 @@ export function UserBadge(props: {
   // REQUIRED for badge to show - if not provided, no badge displayed
   displayContext?: DisplayContext
 }) {
-  const { userId, username, fresh, marketCreator, entitlements, displayContext } = props
+  const {
+    userId,
+    username,
+    fresh,
+    marketCreator,
+    entitlements,
+    displayContext,
+  } = props
 
   // Check if we should show supporter badge in this context
   // FAIL-SAFE: If no displayContext provided, show NO supporter badge
@@ -253,7 +333,13 @@ export function UserBadge(props: {
     badges.push(<BeingDeadHead key="being-dead" />)
   }
   if (showSupporterBadge) {
-    badges.push(<SupporterBadge key="supporter" entitlements={entitlements} animate={animateSupporterBadge} />)
+    badges.push(
+      <SupporterBadge
+        key="supporter"
+        entitlements={entitlements}
+        animate={animateSupporterBadge}
+      />
+    )
   }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
@@ -368,7 +454,7 @@ function SupporterBadge({
 
   return (
     <Tooltip text={`Manifold ${tierConfig.name}`} placement="right">
-      <span className="relative inline-flex items-center translate-y-[1px]">
+      <span className="relative inline-flex translate-y-[1px] items-center">
         <FaStar
           className={clsx(
             'h-4 w-4',
@@ -400,8 +486,20 @@ export const StackedUserNames = (props: {
   className?: string
   usernameClassName?: string
   displayContext?: DisplayContext
+  bans?: UserBan[]
 }) => {
-  const { user, followsYou, usernameClassName, className, displayContext } = props
+  const {
+    user,
+    followsYou,
+    usernameClassName,
+    className,
+    displayContext,
+    bans,
+  } = props
+  // Check for any active bans - use granular bans if available, else fall back to legacy field
+  const activeBanTypes = bans ? getActiveBlockingBans(bans) : []
+  const hasAnyBan = activeBanTypes.length > 0 || !!user.isBannedFromPosting
+
   return (
     <Col>
       <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
@@ -419,8 +517,8 @@ export const StackedUserNames = (props: {
           <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-center text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
             Deleted account
           </span>
-        ) : user.isBannedFromPosting ? (
-          <BannedBadge />
+        ) : hasAnyBan ? (
+          <RestrictedBadge user={user} bans={bans} />
         ) : null}
       </div>
       <Row className={'flex-shrink flex-wrap gap-x-2'}>

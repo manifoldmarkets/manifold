@@ -64,9 +64,11 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
+import { useUserBans } from 'web/hooks/use-user-bans'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
+import { api } from 'web/lib/api/api'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
@@ -194,6 +196,7 @@ function UserProfile(props: {
   }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
+  const { bans: userBans } = useUserBans(user.id)
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   useEffect(() => {
@@ -308,6 +311,7 @@ function UserProfile(props: {
                 user={user}
                 followsYou={followsYou}
                 displayContext="profile_page"
+                bans={userBans}
               />
             </button>
           ) : (
@@ -331,6 +335,7 @@ function UserProfile(props: {
                 user={user}
                 followsYou={followsYou}
                 displayContext="profile_page"
+                bans={userBans}
               />
             </Row>
           )}

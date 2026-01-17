@@ -69,7 +69,7 @@ export const getFreeLoanAvailable: APIHandler<
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category IN ('LOAN', 'DAILY_FREE_LOAN')
+     and category IN ('MARGIN_LOAN', 'LOAN')
      and created_time >= $2`,
     [userId, midnightPT.toISOString()]
   )
@@ -80,7 +80,7 @@ export const getFreeLoanAvailable: APIHandler<
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category = 'DAILY_FREE_LOAN'
+     and category = 'LOAN'
      and created_time >= $2`,
     [userId, midnightPT.toISOString()]
   )
@@ -138,7 +138,7 @@ export const getFreeLoanAvailable: APIHandler<
         const key = `${m.contractId}-${m.answerId ?? ''}`
         const currentLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
         const positionValue = m.payout ?? 0
-        const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+        const maxLoan = calculateMarketLoanMax(netWorth)
         answerLoanInfo[key] = {
           currentLoan,
           positionValue,
@@ -153,7 +153,7 @@ export const getFreeLoanAvailable: APIHandler<
         (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
       )
       const positionValue = sumBy(contractMetrics, (m) => m.payout ?? 0)
-      const maxLoan = calculateMarketLoanMax(netWorth, positionValue)
+      const maxLoan = calculateMarketLoanMax(netWorth)
       marketLoanInfo[contractId] = {
         currentLoan,
         positionValue,

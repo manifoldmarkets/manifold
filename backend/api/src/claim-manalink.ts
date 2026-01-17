@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
@@ -64,7 +65,10 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(500, `User ${creator_id} not found`)
     }
 
-    const { canSend, message } = await canSendMana(fromUser)
+    // Fetch bans for the sender
+    const fromUserBans = await getActiveUserBans(creator_id, tx)
+
+    const { canSend, message } = canSendMana(fromUser, fromUserBans)
     if (!canSend) {
       throw new APIError(403, message)
     }

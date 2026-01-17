@@ -41,8 +41,8 @@ type AnyTxnType =
   | BountyAdded
   | BountyCanceled
   | ManaPay
+  | MarginLoan
   | Loan
-  | DailyFreeLoan
   | LoanPayment
   | PushNotificationBonus
   | LikePurchase
@@ -477,15 +477,15 @@ type ManaPay = {
   }
 }
 
-type Loan = {
-  category: 'LOAN'
+type MarginLoan = {
+  category: 'MARGIN_LOAN'
   fromType: 'BANK'
   toType: 'USER'
   token: 'M$'
 }
 
-type DailyFreeLoan = {
-  category: 'DAILY_FREE_LOAN'
+type Loan = {
+  category: 'LOAN'
   fromType: 'BANK'
   toType: 'USER'
   token: 'M$'
@@ -692,6 +692,7 @@ export type BountyPostedTxn = Txn & BountyPosted
 export type BountyAddedTxn = Txn & BountyAdded
 export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
+export type MarginLoanTxn = Txn & MarginLoan
 export type LoanTxn = Txn & Loan
 export type LoanPaymentTxn = Txn & LoanPayment
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus

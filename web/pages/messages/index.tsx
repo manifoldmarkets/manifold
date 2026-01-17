@@ -17,7 +17,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
-import { BannedBadge } from 'web/components/widgets/user-link'
+import { RestrictedBadge } from 'web/components/widgets/user-link'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 
 export default function MessagesPage() {
@@ -91,7 +91,7 @@ export const MessageChannelRow = (props: {
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
 
-  const isBanned = otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting
+  const singleOtherUser = otherUsers?.length === 1 ? otherUsers[0] : null
   return (
     <Link
       className="hover:bg-canvas-0 rounded p-2 transition-colors"
@@ -118,7 +118,7 @@ export const MessageChannelRow = (props: {
                   {otherUsers.length > 2 && ` & ${otherUsers.length - 2} more`}
                 </span>
               )}
-              {isBanned && <BannedBadge />}
+              {singleOtherUser && <RestrictedBadge user={singleOtherUser} />}
             </span>
             <span className={'text-ink-400 dark:text-ink-500 text-xs'}>
               {chat && <RelativeTimestamp time={chat.createdTime} />}

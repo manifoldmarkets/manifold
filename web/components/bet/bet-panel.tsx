@@ -1183,7 +1183,7 @@ export const BuyPanelBody = (
 
       {contract.mechanism === 'cpmm-multi-1' && (
         <YourOrders
-          className="mt-2 rounded-lg bg-indigo-200/10 py-4"
+          className="mt-2 py-4"
           contract={contract}
           bets={unfilledBetsMatchingAnswer}
         />

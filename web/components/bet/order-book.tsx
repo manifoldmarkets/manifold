@@ -75,39 +75,54 @@ export function YourOrders(props: {
   const moreOrders = yourBets.length - maxShownNotExpanded
 
   return (
-    <Col className={clsx(className, 'gap-2 overflow-x-auto')}>
-      <Row className="items-center justify-between">
+    <Col
+      className={clsx(
+        className,
+        'bg-canvas-0 border-ink-200 overflow-hidden border-y'
+      )}
+    >
+      {/* Header */}
+      <div className="px-4 pb-1 pt-3">
         {deemphasizedHeader ? (
-          <div className="text-ink-700 text-lg">Your orders</div>
+          <span className="text-ink-700 text-base font-medium">
+            Your orders
+          </span>
         ) : (
-          <Subtitle className="!my-0 mx-2">Your orders</Subtitle>
+          <span className="text-ink-900 text-base font-semibold">
+            Your orders
+          </span>
         )}
-      </Row>
+      </div>
 
-      <OrderTable
-        limitBets={yourBets.slice(
-          0,
-          isExpanded ? yourBets.length : maxShownNotExpanded
-        )}
-        contract={contract}
-        isYou
-      />
+      {/* Table */}
+      <div className="overflow-x-auto px-4 pb-2">
+        <OrderTable
+          limitBets={yourBets.slice(
+            0,
+            isExpanded ? yourBets.length : maxShownNotExpanded
+          )}
+          contract={contract}
+          isYou
+        />
+      </div>
 
+      {/* Show More */}
       {yourBets.length > maxShownNotExpanded && (
-        <Button
-          className="w-full"
-          color="gray-white"
+        <button
+          className="text-ink-600 hover:text-ink-900 border-ink-200 w-full border-t px-4 py-2 text-sm font-medium transition-colors"
           onClick={() => setIsExpanded((b) => !b)}
         >
-          {isExpanded ? (
-            <ChevronUpIcon className="mr-1 h-4 w-4" />
-          ) : (
-            <ChevronDownIcon className="mr-1 h-4 w-4" />
-          )}
-          {isExpanded
-            ? 'Show fewer orders'
-            : `Show ${moreOrders} more order${moreOrders === 1 ? '' : 's'}`}
-        </Button>
+          <Row className="items-center justify-center gap-1">
+            {isExpanded ? (
+              <ChevronUpIcon className="h-4 w-4" />
+            ) : (
+              <ChevronDownIcon className="h-4 w-4" />
+            )}
+            {isExpanded
+              ? 'Show fewer orders'
+              : `Show ${moreOrders} more order${moreOrders === 1 ? '' : 's'}`}
+          </Row>
+        </button>
       )}
     </Col>
   )
@@ -144,7 +159,6 @@ export function OrderTable(props: {
 
   // If showAnswers is true and we have answers, group bets by answerId
   if (showAnswers && answers && answers.length > 0) {
-    // Group bets by answerId
     const betsByAnswerId = groupBy(limitBets, 'answerId')
 
     return (
@@ -154,52 +168,58 @@ export function OrderTable(props: {
           if (answerBets.length === 0) return null
 
           return (
-            <Col key={answer.id} className="">
-              <span className="font-bold">{answer.text}</span>
-              <Table className="rounded">
-                <thead>
-                  <tr>
-                    {!isYou && <th></th>}
-                    <th>Outcome</th>
-                    <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
-                    <th>Amount</th>
-                    <th>
-                      <Row
-                        className={
-                          'mt-1 justify-between gap-1 sm:justify-start'
-                        }
-                      >
-                        Expires
-                        {isYou &&
-                          answerBets.length > 1 &&
-                          answerBets.some(
-                            (b) => !b.isCancelled && b.amount < b.orderAmount
-                          ) && (
-                            <Button
-                              loading={isCancelling}
-                              size={'2xs'}
-                              color={'gray-outline'}
-                              onClick={onCancel}
-                              className={'ml-1 whitespace-normal'}
-                            >
-                              Cancel all
-                            </Button>
-                          )}
-                      </Row>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {answerBets.map((bet) => (
-                    <OrderRow
-                      key={bet.id}
-                      bet={bet}
-                      contract={contract}
-                      isYou={!!isYou}
-                    />
-                  ))}
-                </tbody>
-              </Table>
+            <Col
+              key={answer.id}
+              className="bg-canvas-0 border-ink-200 overflow-hidden border-y"
+            >
+              <div className="px-4 pb-1 pt-3">
+                <span className="text-ink-900 font-semibold">
+                  {answer.text}
+                </span>
+              </div>
+              <div className="px-4 pb-2">
+                <Table>
+                  <thead>
+                    <tr className="text-ink-500 text-xs uppercase tracking-wide">
+                      {!isYou && <th className="pb-2 font-medium"></th>}
+                      <th className="pb-2 font-medium">Outcome</th>
+                      <th className="pb-2 font-medium">
+                        {isPseudoNumeric ? 'Value' : 'Prob'}
+                      </th>
+                      <th className="pb-2 font-medium">Amount</th>
+                      <th className="pb-2 font-medium">
+                        <Row className="items-center justify-between gap-2">
+                          <span>Expires</span>
+                          {isYou &&
+                            answerBets.length > 1 &&
+                            answerBets.some(
+                              (b) => !b.isCancelled && b.amount < b.orderAmount
+                            ) && (
+                              <Button
+                                loading={isCancelling}
+                                size="2xs"
+                                color="gray-outline"
+                                onClick={onCancel}
+                              >
+                                Cancel all
+                              </Button>
+                            )}
+                        </Row>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-ink-100 divide-y">
+                    {answerBets.map((bet) => (
+                      <OrderRow
+                        key={bet.id}
+                        bet={bet}
+                        contract={contract}
+                        isYou={!!isYou}
+                      />
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
             </Col>
           )
         })}
@@ -209,48 +229,47 @@ export function OrderTable(props: {
 
   // Original behavior when showAnswers is false or no answers found
   return (
-    <Col>
-      <Table className="rounded">
-        <thead>
-          <tr>
-            {!isYou && <th></th>}
-            <th>Outcome</th>
-            <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
-            <th>Amount</th>
-            <th>
-              <Row className={'mt-1 justify-between gap-1 sm:justify-start'}>
-                Expires
-                {isYou &&
-                  limitBets.length > 1 &&
-                  limitBets.some(
-                    (b) => !b.isCancelled && b.amount < b.orderAmount
-                  ) && (
-                    <Button
-                      loading={isCancelling}
-                      size={'2xs'}
-                      color={'gray-outline'}
-                      onClick={onCancel}
-                      className={'ml-1 whitespace-normal'}
-                    >
-                      Cancel all
-                    </Button>
-                  )}
-              </Row>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {limitBets.map((bet) => (
-            <OrderRow
-              key={bet.id}
-              bet={bet}
-              contract={contract}
-              isYou={!!isYou}
-            />
-          ))}
-        </tbody>
-      </Table>
-    </Col>
+    <Table>
+      <thead>
+        <tr className="text-ink-500 text-xs uppercase tracking-wide">
+          {!isYou && <th className="pb-2 font-medium"></th>}
+          <th className="pb-2 font-medium">Outcome</th>
+          <th className="pb-2 font-medium">
+            {isPseudoNumeric ? 'Value' : 'Prob'}
+          </th>
+          <th className="pb-2 font-medium">Amount</th>
+          <th className="pb-2 font-medium">
+            <Row className="items-center justify-between gap-2">
+              <span>Expires</span>
+              {isYou &&
+                limitBets.length > 1 &&
+                limitBets.some(
+                  (b) => !b.isCancelled && b.amount < b.orderAmount
+                ) && (
+                  <Button
+                    loading={isCancelling}
+                    size="2xs"
+                    color="gray-outline"
+                    onClick={onCancel}
+                  >
+                    Cancel all
+                  </Button>
+                )}
+            </Row>
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-ink-100 divide-y">
+        {limitBets.map((bet) => (
+          <OrderRow
+            key={bet.id}
+            bet={bet}
+            contract={contract}
+            isYou={!!isYou}
+          />
+        ))}
+      </tbody>
+    </Table>
   )
 }
 
@@ -281,15 +300,16 @@ function OrderRow(props: {
   const expired = bet.expiresAt && bet.expiresAt < Date.now()
   const filled = bet.amount >= bet.orderAmount
   const cancelled = bet.isCancelled
+  const isInactive = expired || filled || cancelled
 
   return (
-    <tr>
+    <tr className={clsx(isInactive && 'opacity-50')}>
       {!isYou && user && (
-        <td>
+        <td className="py-3">
           <a href={`/${user.username}`}>
             <UserHovercard userId={bet.userId}>
               <Avatar
-                size={'sm'}
+                size="xs"
                 avatarUrl={user.avatarUrl}
                 username={user.username}
                 noLink={true}
@@ -298,73 +318,67 @@ function OrderRow(props: {
           </a>
         </td>
       )}
-      <td>
-        <div className="">
-          {isPseudoNumeric ? (
-            <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
-          ) : isBinaryMC ? (
-            <OutcomeLabel
-              pseudonym={getPseudonym(contract)}
-              contract={contract}
-              outcome={outcome}
-              truncate={'short'}
-            />
-          ) : (
-            <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
-          )}
-        </div>
+      <td className="py-3">
+        {isPseudoNumeric ? (
+          <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+        ) : isBinaryMC ? (
+          <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
+            contract={contract}
+            outcome={outcome}
+            truncate={'short'}
+          />
+        ) : (
+          <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+        )}
       </td>
-      <td>
+      <td className="text-ink-600 py-3">
         {isPseudoNumeric
           ? getFormattedMappedValue(contract, limitProb)
           : isBinaryMC
           ? formatPercent(getBinaryMCProb(limitProb, outcome))
           : formatPercent(limitProb)}
       </td>
-      <td>
+      <td className="text-ink-900 py-3 font-medium">
         <MoneyDisplay
           amount={orderAmount - amount}
           isCashContract={isCashContract}
         />
       </td>
       {isYou && (
-        <td>
-          <Row className={'justify-between gap-1 sm:justify-start'}>
-            <Col className={'sm:flex-row sm:gap-1'}>
-              <span>
-                {expired ? (
-                  'Expired'
-                ) : filled ? (
-                  'Filled'
-                ) : cancelled ? (
-                  'Cancelled'
-                ) : bet.expiresAt ? (
-                  <Tooltip
-                    text={`${new Date(
-                      bet.expiresAt
-                    ).toLocaleDateString()} ${new Date(
-                      bet.expiresAt
-                    ).toLocaleTimeString()}`}
-                  >
-                    {getCountdownString(new Date(bet.expiresAt))}
-                  </Tooltip>
-                ) : (
-                  'Never'
-                )}
-              </span>
-            </Col>
-            <div>
-              {filled || cancelled ? null : (
-                <Button
-                  loading={isCancelling}
-                  size="2xs"
-                  color="gray-outline"
-                  onClick={onCancel}
+        <td className="py-3">
+          <Row className="items-center justify-between gap-2">
+            <span className="text-ink-500">
+              {expired ? (
+                'Expired'
+              ) : filled ? (
+                'Filled'
+              ) : cancelled ? (
+                'Cancelled'
+              ) : bet.expiresAt ? (
+                <Tooltip
+                  text={`${new Date(
+                    bet.expiresAt
+                  ).toLocaleDateString()} ${new Date(
+                    bet.expiresAt
+                  ).toLocaleTimeString()}`}
                 >
-                  Cancel
-                </Button>
+                  {getCountdownString(new Date(bet.expiresAt))}
+                </Tooltip>
+              ) : (
+                'Never'
               )}
-            </div>
+            </span>
+            {!filled && !cancelled && (
+              <Button
+                loading={isCancelling}
+                size="2xs"
+                color="gray-outline"
+                onClick={onCancel}
+              >
+                Cancel
+              </Button>
+            )}
           </Row>
         </td>
       )}
@@ -598,14 +612,12 @@ export function OrderBookButton(props: {
       </button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="bg-canvas-0">
-          <OrderBookPanel
-            limitBets={limitBets}
-            contract={contract}
-            answer={answer}
-            showTitle
-          />
-        </Col>
+        <OrderBookPanel
+          limitBets={limitBets}
+          contract={contract}
+          answer={answer}
+          showTitle
+        />
       </Modal>
     </>
   )
@@ -661,40 +673,50 @@ export function OrderBookPanel(props: {
   if (limitBets.length === 0) return <></>
 
   return (
-    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 px-2 py-4 sm:px-4">
-      <Subtitle className="!my-0">
-        Order book{' '}
-        <InfoTooltip
-          text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
-          className="ml-1"
-        />
-      </Subtitle>
+    <Col className="text-ink-900 bg-canvas-0 border-ink-200 overflow-hidden border-y">
+      {/* Header */}
+      <div className="border-ink-200 border-b px-5 py-4">
+        <Row className="items-center gap-2">
+          <h2 className="text-lg font-semibold">Order Book</h2>
+          <InfoTooltip
+            text="Active limit orders from traders waiting to buy at specific prices"
+            className="text-ink-400"
+          />
+        </Row>
+        {showTitle && isCPMMMulti && answer && (
+          <p className="text-ink-600 mt-1 text-sm">{answer.text}</p>
+        )}
+      </div>
 
-      {showTitle && isCPMMMulti && answer && <div>{answer.text}</div>}
+      {/* Order Tables */}
+      <div className="border-ink-200 divide-ink-200 grid grid-cols-2 divide-x">
+        <div className="bg-canvas-0 p-4">
+          <OrderBookSide
+            limitBets={yesBets}
+            contract={contract}
+            side="YES"
+            pseudonym={pseudonym}
+            onOrderClick={onOrderClick}
+          />
+        </div>
+        <div className="bg-canvas-0 p-4">
+          <OrderBookSide
+            limitBets={noBets}
+            contract={contract}
+            side="NO"
+            pseudonym={pseudonym}
+            onOrderClick={onOrderClick}
+          />
+        </div>
+      </div>
 
-      <Row className="items-start justify-around gap-4">
-        <CollatedOrderTable
-          limitBets={yesBets}
-          contract={contract}
-          side="YES"
-          pseudonym={pseudonym}
-          onOrderClick={onOrderClick}
-        />
-        <CollatedOrderTable
-          limitBets={noBets}
-          contract={contract}
-          side="NO"
-          pseudonym={pseudonym}
-          onOrderClick={onOrderClick}
-        />
-      </Row>
-
+      {/* Depth Chart */}
       {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
-        <>
-          <h2 className="text-center text-sm">
-            Cumulative shares vs probability
-          </h2>
-          <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
+        <div className="border-ink-200 border-t px-5 py-4">
+          <h3 className="text-ink-600 mb-3 text-center text-xs font-medium uppercase tracking-wide">
+            Market Depth
+          </h3>
+          <SizedContainer className="h-[140px] w-full sm:h-[180px]">
             {(w, h) => (
               <DepthChart
                 contract={contract as any}
@@ -707,8 +729,194 @@ export function OrderBookPanel(props: {
               />
             )}
           </SizedContainer>
-        </>
+        </div>
       )}
     </Col>
+  )
+}
+
+function OrderBookSide(props: {
+  limitBets: LimitBet[]
+  contract:
+    | BinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+    | MultiContract
+  side: 'YES' | 'NO'
+  pseudonym?: {
+    YES: { pseudonymName: string; pseudonymColor: string }
+    NO: { pseudonymName: string; pseudonymColor: string }
+  }
+  onOrderClick?: (data: OrderClickData) => void
+}) {
+  const { contract, side, pseudonym, onOrderClick } = props
+  const limitBets = props.limitBets.filter(
+    (b) => !b.expiresAt || b.expiresAt > Date.now()
+  )
+  const isBinaryMC = isBinaryMulti(contract)
+  const groupedBets = groupBy(limitBets, (b) => b.limitProb)
+
+  const sideColor = side === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
+  const sideBgHover =
+    side === 'YES' ? 'hover:bg-teal-500/10' : 'hover:bg-scarlet-500/10'
+
+  return (
+    <div>
+      <Row className="mb-3 items-center gap-1.5">
+        <span className="text-ink-500 text-sm font-medium">Buy</span>
+        {isBinaryMC || !!pseudonym ? (
+          <OutcomeLabel
+            contract={contract}
+            outcome={side}
+            truncate={'short'}
+            pseudonym={pseudonym}
+          />
+        ) : (
+          <span className={clsx('text-sm font-semibold', sideColor)}>
+            {side}
+          </span>
+        )}
+      </Row>
+
+      {limitBets.length === 0 ? (
+        <div className="text-ink-400 py-4 text-center text-sm">No orders</div>
+      ) : (
+        <div className="space-y-1">
+          {Object.entries(groupedBets).map(([prob, bets]) => (
+            <OrderBookRow
+              key={prob}
+              contract={contract}
+              limitProb={Number(prob)}
+              bets={bets}
+              onOrderClick={onOrderClick}
+              sideBgHover={sideBgHover}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function OrderBookRow(props: {
+  contract:
+    | BinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+    | MultiContract
+  limitProb: number
+  bets: LimitBet[]
+  onOrderClick?: (data: OrderClickData) => void
+  sideBgHover: string
+}) {
+  const { contract, limitProb, bets, onOrderClick, sideBgHover } = props
+  const { outcome } = bets[0]
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isBinaryMC = isBinaryMulti(contract)
+
+  const total = sumBy(bets, (b) => b.orderAmount - b.amount)
+
+  const allUsers = useUsers(uniq(bets.map((b) => b.userId)))?.filter(
+    (a) => a != null
+  ) as DisplayUser[] | undefined
+  const usersById = keyBy(allUsers, (u) => u.id)
+
+  const userBets = groupBy(bets, (b) => b.userId)
+  const userSums = Object.entries(userBets).map(
+    ([userId, bets]) =>
+      [userId, sumBy(bets, (b) => b.orderAmount - b.amount)] as const
+  )
+  const largest = sortBy(userSums, ([, sum]) => -sum)
+    .slice(0, 3)
+    .map(([userId]) => usersById[userId])
+    .filter((u) => u != null)
+    .reverse()
+
+  const [expanded, setExpanded] = useState(false)
+
+  const handleOrderClick = () => {
+    if (onOrderClick) {
+      onOrderClick({
+        outcome: outcome as 'YES' | 'NO',
+        limitProb,
+        amount: total,
+      })
+    }
+  }
+
+  const isClickable = !!onOrderClick
+
+  return (
+    <div>
+      <Row
+        className={clsx(
+          'items-center justify-between rounded-lg px-2 py-1.5 transition-colors',
+          isClickable && sideBgHover,
+          isClickable && 'cursor-pointer'
+        )}
+        onClick={isClickable ? handleOrderClick : undefined}
+      >
+        <Row className="items-center gap-2">
+          <span className="text-ink-600 w-10 text-sm font-medium">
+            {isPseudoNumeric
+              ? getFormattedMappedValue(contract, limitProb)
+              : isBinaryMC
+              ? formatPercent(getBinaryMCProb(limitProb, outcome))
+              : formatPercent(limitProb)}
+          </span>
+          <div
+            onClick={(e) => {
+              e.stopPropagation()
+              setExpanded((c) => !c)
+            }}
+            className="cursor-pointer"
+          >
+            <MultipleOrSingleAvatars
+              className="!items-end"
+              avatars={largest}
+              total={userSums.length}
+              size="xs"
+              spacing={0.3}
+              startLeft={0.6}
+            />
+          </div>
+        </Row>
+        <span className="text-ink-900 text-sm font-semibold">
+          <MoneyDisplay
+            amount={total}
+            numberType="short"
+            isCashContract={contract.token === 'CASH'}
+          />
+        </span>
+      </Row>
+
+      {expanded && (
+        <div className="bg-ink-50 mb-1 ml-2 space-y-1 rounded-lg p-2">
+          {bets.map((b) => {
+            const u = usersById[b.userId] as DisplayUser | undefined
+            return (
+              <Row key={b.id} className="items-center justify-between text-sm">
+                <Row className="items-center gap-2">
+                  <Avatar
+                    avatarUrl={u?.avatarUrl}
+                    username={u?.username}
+                    size="2xs"
+                  />
+                  <UserLink user={u} short className="text-ink-600" />
+                </Row>
+                <span className="text-ink-600">
+                  <MoneyDisplay
+                    amount={b.orderAmount - b.amount}
+                    isCashContract={contract.token === 'CASH'}
+                  />
+                </span>
+              </Row>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }

@@ -7,9 +7,10 @@ import { trackPublicEvent } from 'shared/analytics'
 import { getComment } from 'shared/supabase/contract-comments'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser, log } from 'shared/utils'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-export const post: APIHandler<'post'> = onlyUnbannedUsers(
+export const post: APIHandler<'post'> = onlyUsersWhoCanPerformAction(
+  'post',
   async (props, auth) => {
     const { contractId, content, betId: passedBetId, commentId } = props
 
@@ -46,11 +47,6 @@ export const post: APIHandler<'post'> = onlyUnbannedUsers(
       if (!commentId)
         throw new APIError(400, 'Must specify at least a commentId')
       const existingComment = await getComment(pg, commentId)
-      if (existingComment.userId !== auth.uid) {
-        const commenter = await getUser(existingComment.userId)
-        if (commenter?.isBannedFromPosting || commenter?.userDeleted)
-          throw new APIError(400, 'Cannot post deleted/banned user comments')
-      }
       if (existingComment.hidden)
         throw new APIError(400, 'Cannot post hidden comments')
       if (existingComment.replyToCommentId) {

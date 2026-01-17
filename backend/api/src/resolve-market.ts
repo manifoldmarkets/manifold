@@ -3,6 +3,7 @@ import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { Contract, MarketContract, MultiContract } from 'common/contract'
 import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -16,16 +17,13 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
 import { SWEEPSTAKES_MOD_IDS } from 'common/envs/constants'
 
-export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
-  props,
-  auth,
-  request
-) => {
-  return await betsQueue.enqueueFnFirst(
-    () => resolveMarketMain(props, auth, request),
-    [props.contractId, auth.uid]
-  )
-}
+export const resolveMarket: APIHandler<'market/:contractId/resolve'> =
+  onlyUsersWhoCanPerformAction('resolveMarket', async (props, auth, request) => {
+    return await betsQueue.enqueueFnFirst(
+      () => resolveMarketMain(props, auth, request),
+      [props.contractId, auth.uid]
+    )
+  })
 
 export const resolveMarketMain: APIHandler<
   'market/:contractId/resolve'
@@ -43,8 +41,8 @@ export const resolveMarketMain: APIHandler<
 
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')
-  if (caller.isBannedFromPosting || caller.userDeleted)
-    throw new APIError(403, 'Deleted or banned user cannot resolve markets')
+  if (caller.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
   if (creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
 
   if (

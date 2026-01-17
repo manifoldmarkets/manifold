@@ -140,19 +140,19 @@ export function getRankZoneStyles(
   if (rank <= doublePromotionCount) {
     return {
       zone: 'double-promote',
-      classes: 'bg-teal-50 dark:bg-teal-950/30',
+      classes: 'bg-teal-50/80 dark:bg-teal-1000/80',
     }
   }
   if (rank <= promotionCount) {
     return {
       zone: 'promote',
-      classes: 'bg-teal-50/50 dark:bg-teal-950/20',
+      classes: 'bg-teal-50/50 dark:bg-teal-1000/40',
     }
   }
   if (rank > totalUsers - demotionCount) {
     return {
       zone: 'demote',
-      classes: 'bg-scarlet-50 dark:bg-scarlet-950/30',
+      classes: 'bg-scarlet-50/40 dark:bg-scarlet-1000/40',
     }
   }
   return {

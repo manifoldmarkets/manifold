@@ -6,7 +6,6 @@ import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
   MAX_MARKET_LOAN_NET_WORTH_PERCENT,
-  MAX_MARKET_LOAN_POSITION_PERCENT,
   MS_PER_DAY,
   isMarketEligibleForLoan,
 } from 'common/loans'
@@ -78,10 +77,9 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const currentLoan = currentFreeLoan + currentMarginLoan
   const totalPositionValue = sumBy(relevantMetrics, (m) => m.payout ?? 0)
 
-  // Calculate per-market limits
+  // Calculate per-market limit (5% of net worth)
   const netWorthLimit = netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
-  const positionLimit = totalPositionValue * MAX_MARKET_LOAN_POSITION_PERCENT
-  const maxLoan = calculateMarketLoanMax(netWorth, totalPositionValue)
+  const maxLoan = calculateMarketLoanMax(netWorth)
 
   // Calculate aggregate limit (80% of net worth total across ALL markets)
   const maxAggregateLoan = calculateMaxGeneralLoanAmount(netWorth)
@@ -94,7 +92,7 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     `select coalesce(sum(amount), 0) as total
      from txns
      where to_id = $1
-     and category = 'LOAN'
+     and category = 'MARGIN_LOAN'
      and created_time >= $2`,
     [auth.uid, new Date(oneDayAgo).toISOString()]
   )
@@ -132,7 +130,6 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     currentMarginLoan,
     available,
     netWorthLimit,
-    positionLimit,
     totalPositionValue,
     eligible: eligibility.eligible,
     eligibilityReason: eligibility.reason,

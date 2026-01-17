@@ -13,6 +13,15 @@ export function PrizesModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { open, setOpen } = props
+  const divisionIcons: { [key: number]: string } = {
+    0: '🤖',
+    1: '🥉',
+    2: '🥈',
+    3: '🥇',
+    4: '💿',
+    5: '💎',
+    6: '🎖️',
+  }
   const divisions = sortBy(
     Object.entries(DIVISION_NAMES).filter(([division]) => +division > 0),
     ([division]) => division
@@ -50,7 +59,7 @@ export function PrizesModal(props: {
                       'border'
                     )}
                   >
-                    {div}
+                    {divisionIcons[div] ?? div}
                   </div>
                   <span className="text-ink-900 font-medium">
                     {divisionName}

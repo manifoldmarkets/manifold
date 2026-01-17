@@ -4,6 +4,17 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { removeNullOrUndefinedProps } from 'common/util/object'
 import { convertEntitlement } from 'common/shop/types'
+import { APIHandler } from './helpers/endpoint'
+
+export const getUserById: APIHandler<'user/by-id/:id'> = async (props) => {
+  return getUser(props)
+}
+
+export const getUserByUsername: APIHandler<'user/:username'> = async (
+  props
+) => {
+  return getUser(props)
+}
 
 export const getUser = async (props: { id: string } | { username: string }) => {
   const pg = createSupabaseDirectClient()

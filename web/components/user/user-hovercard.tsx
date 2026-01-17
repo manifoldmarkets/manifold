@@ -21,6 +21,7 @@ import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
+import { useUserBans } from 'web/hooks/use-user-bans'
 import { getFullUserById } from 'web/lib/supabase/users'
 import { FollowButton } from '../buttons/follow-button'
 import { Col } from '../layout/col'
@@ -105,7 +106,7 @@ export function UserHovercard({
         <FloatingPortal>
           <div
             ref={refs.setFloating}
-            className="fixed"
+            className="fixed z-[60]"
             style={floatingStyles}
             {...getFloatingProps()}
           >
@@ -129,10 +130,11 @@ const FetchUserHovercardContent = forwardRef(
     ref: Ref<HTMLDivElement>
   ) => {
     const [user, setUser] = useState<FullUser | null>(null)
+    const { bans: userBans } = useUserBans(userId)
 
     useEffect(() => {
       getFullUserById(userId).then(setUser)
-    }, [])
+    }, [userId])
 
     const followingIds = useFollows(userId)
     const followerIds = useFollowers(userId)
@@ -177,6 +179,7 @@ const FetchUserHovercardContent = forwardRef(
             user={user}
             followsYou={false}
             displayContext="hovercard"
+            bans={userBans}
           />
 
           {user.bio && (
