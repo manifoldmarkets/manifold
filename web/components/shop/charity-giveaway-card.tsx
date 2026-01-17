@@ -102,7 +102,7 @@ export function CharityGiveawayCard(props: {
               </Col>
               <Col className="flex-1">
                 <div className="text-2xl font-bold text-cyan-600">
-                  {totalTickets.toLocaleString()}
+                  {Math.floor(totalTickets).toLocaleString()}
                 </div>
                 <div className="text-ink-500 text-xs">Tickets</div>
               </Col>
@@ -110,7 +110,7 @@ export function CharityGiveawayCard(props: {
 
             {/* Description */}
             <p className="text-ink-600 mb-3 text-sm">
-              Buy tickets with mana to support charities and win prizes!
+              Support your favorite charity with mana.
             </p>
 
             {/* CTA */}
