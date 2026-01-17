@@ -312,7 +312,7 @@ export default function ShopPage() {
           Mana Shop
         </Row>
         {user && (
-          <Row className="text-ink-700 mb-4 items-center gap-4 text-sm">
+          <Row className="text-ink-700 mb-6 items-center gap-4 text-sm">
             <span>
               Your balance:{' '}
               <span className="font-semibold text-teal-600">
@@ -335,7 +335,8 @@ export default function ShopPage() {
         />
 
         {/* Sort dropdown */}
-        <Row className="mb-2 items-center justify-end">
+        <Row className="mb-4 mt-8 items-center justify-between">
+          <span className="text-lg font-semibold">Digital goods & cosmetics</span>
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value as SortOption)}
@@ -384,7 +385,7 @@ export default function ShopPage() {
         </div>
 
         {/* Charity giveaway card at bottom */}
-        <CharityGiveawayCard variant="full" className="mt-6" />
+        <CharityGiveawayCard variant="full" className="mt-8" />
 
         {/* Admin testing tools */}
         {isAdminOrMod && (
