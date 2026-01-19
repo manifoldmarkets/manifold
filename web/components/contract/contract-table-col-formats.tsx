@@ -12,7 +12,7 @@ import {
   getTierIndexFromLiquidity,
   getTierIndexFromLiquidityAndAnswers,
 } from 'common/src/tier'
-import { shortFormatNumber } from 'common/util/format'
+import { formatWithToken } from 'common/util/format'
 import { BsDroplet, BsDropletFill, BsDropletHalf } from 'react-icons/bs'
 import clsx from 'clsx'
 
@@ -116,6 +116,7 @@ export const liquidityColumn = {
     const { contract } = props
 
     const hasAnswers = contract.mechanism === 'cpmm-multi-1'
+    const isCashContract = contract.token === 'CASH'
     const totalLiquidity =
       'totalLiquidity' in contract ? contract.totalLiquidity : 0
     const liquidityTier = hasAnswers
@@ -130,8 +131,18 @@ export const liquidityColumn = {
       : totalLiquidity
     return (
       <Tooltip
-        text={`Total liquidity: ${shortFormatNumber(totalLiquidity)} ${
-          hasAnswers ? `(per answer: ${shortFormatNumber(shownLiquidity)})` : ''
+        text={`Total liquidity: ${formatWithToken({
+          amount: totalLiquidity,
+          token: isCashContract ? 'CASH' : 'M$',
+          short: true,
+        })} ${
+          hasAnswers
+            ? `(per answer: ${formatWithToken({
+                amount: shownLiquidity,
+                token: isCashContract ? 'CASH' : 'M$',
+                short: true,
+              })})`
+            : ''
         }`}
       >
         <Row className="text-ink-500 items-center justify-start gap-0.5">
@@ -143,7 +154,11 @@ export const liquidityColumn = {
             <BsDropletFill className={clsx('h-3.5 w-3.5')} />
           )}
           <span className="text-ink-700 block sm:hidden">
-            {shortFormatNumber(shownLiquidity)}
+            {formatWithToken({
+              amount: shownLiquidity,
+              token: isCashContract ? 'CASH' : 'M$',
+              short: true,
+            })}
           </span>
         </Row>
       </Tooltip>
