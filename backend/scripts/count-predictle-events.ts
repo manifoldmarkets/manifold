@@ -1,7 +1,7 @@
 import { runScript } from './run-script'
 
 // Script to count how many users have completed Predictle today
-// Run with: npx ts-node count-predictle-completions.ts [dev|prod]
+// Run with: npx ts-node count-predictle-events.ts [dev|prod]
 
 runScript(async ({ pg }) => {
   // Get today's date string in Pacific Time (YYYY-MM-DD)
@@ -24,7 +24,20 @@ runScript(async ({ pg }) => {
     []
   )
 
-  // Also get total event count (including anonymous users)
+  // Get distinct anonymous users (using deviceId from data jsonb)
+  const anonResult = await pg.one<{ count: number }>(
+    `
+    SELECT COUNT(DISTINCT data->>'deviceId') as count
+    FROM user_events
+    WHERE name = 'predictle completed'
+      AND ts >= (TIMESTAMP '${todayPTString} 00:00:00') AT TIME ZONE 'America/Los_Angeles'
+      AND user_id IS NULL
+      AND data->>'deviceId' IS NOT NULL
+    `,
+    []
+  )
+
+  // Also get total event count for reference
   const totalResult = await pg.one<{ count: number }>(
     `
     SELECT COUNT(*) as count
@@ -37,6 +50,6 @@ runScript(async ({ pg }) => {
 
   console.log('\n=== Predictle Completions Today ===')
   console.log(`Logged-in users: ${result.count}`)
-  console.log(`Total events (including anonymous): ${totalResult.count}`)
-  console.log(`Anonymous users: ${totalResult.count - result.count}`)
+  console.log(`Anonymous users: ${anonResult.count}`)
+  console.log(`Total events: ${totalResult.count}`)
 })
