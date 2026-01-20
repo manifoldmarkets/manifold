@@ -253,6 +253,13 @@ export function getMaxLoanNetWorthPercent(
   return getBenefit(entitlements, 'maxLoanNetWorthPercent')
 }
 
+// Check if user's subscription is cancelled (has entitlement but auto_renew is false)
+export function isSubscriptionCancelled(
+  entitlement: UserEntitlement | null
+): boolean {
+  return entitlement !== null && !entitlement.autoRenew
+}
+
 // ============================================
 // BENEFIT DISPLAY DEFINITIONS (for UI)
 // ============================================

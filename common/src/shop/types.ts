@@ -5,6 +5,7 @@ export type UserEntitlement = {
   grantedTime: number // timestamp
   expiresTime?: number // null = permanent
   enabled: boolean
+  autoRenew: boolean // for membership subscriptions
 }
 
 // Database row from shop_orders table
@@ -37,12 +38,14 @@ export const convertEntitlement = (row: {
   granted_time: string
   expires_time?: string | null
   enabled: boolean
+  auto_renew?: boolean // Optional for backwards compatibility with existing queries
 }): UserEntitlement => ({
   userId: row.user_id,
   entitlementId: row.entitlement_id,
   grantedTime: new Date(row.granted_time).getTime(),
   expiresTime: row.expires_time ? new Date(row.expires_time).getTime() : undefined,
   enabled: row.enabled,
+  autoRenew: row.auto_renew ?? false, // Default to false if not selected
 })
 
 export const convertShopOrder = (row: {

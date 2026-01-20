@@ -162,17 +162,30 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       descriptionParts.push(`(M$${upgradeCredit} credit from previous tier)`)
     }
 
-    const txnData: TxnData = {
-      category: 'SHOP_PURCHASE',
-      fromType: 'USER',
-      fromId: auth.uid,
-      toType: 'BANK',
-      toId: 'BANK',
-      amount: price,
-      token: 'M$',
-      description: descriptionParts.join(' '),
-      data: { itemId, supporterDiscount: shopDiscount, upgradeCredit },
-    }
+    // Use different transaction types for memberships vs cosmetics
+    const txnData: TxnData = isSupporterTierPurchase
+      ? {
+          category: 'MEMBERSHIP_PAYMENT',
+          fromType: 'USER',
+          fromId: auth.uid,
+          toType: 'BANK',
+          toId: 'BANK',
+          amount: price,
+          token: 'M$',
+          description: descriptionParts.join(' '),
+          data: { itemId, upgradeCredit },
+        }
+      : {
+          category: 'SHOP_PURCHASE',
+          fromType: 'USER',
+          fromId: auth.uid,
+          toType: 'BANK',
+          toId: 'BANK',
+          amount: price,
+          token: 'M$',
+          description: descriptionParts.join(' '),
+          data: { itemId, supporterDiscount: shopDiscount },
+        }
 
     const txn = await runTxnInBetQueue(tx, txnData)
 
@@ -249,13 +262,22 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
         }
       }
 
+      // For memberships: set auto_renew = true; for other items: default to false
       await tx.one(
-        `INSERT INTO user_entitlements (user_id, entitlement_id, expires_time, enabled)
-         VALUES ($1, $2, $3, true)
-         ON CONFLICT (user_id, entitlement_id) DO UPDATE SET
-           expires_time = EXCLUDED.expires_time,
-           enabled = true
-         RETURNING *`,
+        isSupporterTierPurchase
+          ? `INSERT INTO user_entitlements (user_id, entitlement_id, expires_time, enabled, auto_renew)
+             VALUES ($1, $2, $3, true, true)
+             ON CONFLICT (user_id, entitlement_id) DO UPDATE SET
+               expires_time = EXCLUDED.expires_time,
+               enabled = true,
+               auto_renew = true
+             RETURNING *`
+          : `INSERT INTO user_entitlements (user_id, entitlement_id, expires_time, enabled)
+             VALUES ($1, $2, $3, true)
+             ON CONFLICT (user_id, entitlement_id) DO UPDATE SET
+               expires_time = EXCLUDED.expires_time,
+               enabled = true
+             RETURNING *`,
         [auth.uid, entitlementId, expiresTime]
       )
     }

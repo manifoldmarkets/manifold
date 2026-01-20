@@ -27,6 +27,7 @@ import { drizzleLiquidity } from './drizzle-liquidity'
 import { createJob } from './helpers'
 import { incrementStreakForgiveness } from './increment-streak-forgiveness'
 import { pollPollResolutions } from './poll-poll-resolutions'
+import { processMembershipRenewals } from './process-membership-renewals'
 import {
   refreshAchAccountAge,
   refreshAchComments,
@@ -152,6 +153,11 @@ export function createJobs() {
       applyPendingClarifications
     ),
     // Daily jobs:
+    createJob(
+      'process-membership-renewals',
+      '0 0 8 * * *', // 8 AM UTC daily (midnight PT)
+      processMembershipRenewals
+    ),
     createJob(
       'send-unseen-notifications',
       '0 0 13 * * *', // 1 PM daily

@@ -3152,6 +3152,13 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
+  'shop-cancel-subscription': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
   'shop-reset-all': {
     method: 'POST',
     visibility: 'undocumented',

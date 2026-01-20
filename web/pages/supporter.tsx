@@ -47,6 +47,8 @@ export default function SupporterPage() {
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
   const [confirmingPurchase, setConfirmingPurchase] =
     useState<SupporterTier | null>(null)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
   const [selectedTier, setSelectedTier] = useState<SupporterTier>('plus')
 
@@ -78,7 +80,21 @@ export default function SupporterPage() {
     }
   }
 
+  const handleCancelSubscription = async () => {
+    setCancelling(true)
+    try {
+      await api('shop-cancel-subscription', {})
+      toast.success('Subscription cancelled. Your membership will remain active until the end of the current period.')
+      setConfirmingCancel(false)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to cancel subscription')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   const effectiveBalance = user?.balance ?? 0
+  const isAutoRenewing = currentEntitlement?.autoRenew ?? false
 
   // Active tier for highlighting (hovered or selected)
   const activeTier = hoveredTier ?? selectedTier
@@ -138,9 +154,16 @@ export default function SupporterPage() {
               {/* Right: Time remaining (for supporters) or tagline (for non-supporters) */}
               {isSupporter ? (
                 <Col className="items-end gap-0.5">
-                  <div className="text-ink-500 text-xs">Time remaining</div>
+                  <div className="text-ink-500 text-xs">
+                    {isAutoRenewing ? 'Auto-renews in' : 'Expires in'}
+                  </div>
                   <Row className="items-center gap-1.5">
-                    <span className="text-lg font-bold text-amber-600">{daysRemaining}d</span>
+                    <span className={clsx(
+                      'text-lg font-bold',
+                      isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
+                    )}>
+                      {daysRemaining}d
+                    </span>
                     {/* Show +30d when hovering/selecting same tier (renewal) */}
                     {activeTier === currentTier && (
                       <>
@@ -149,6 +172,9 @@ export default function SupporterPage() {
                       </>
                     )}
                   </Row>
+                  {!isAutoRenewing && (
+                    <span className="text-ink-400 text-xs">(cancelled)</span>
+                  )}
                 </Col>
               ) : (
                 <Col className="hidden items-end gap-0.5 sm:flex">
@@ -207,6 +233,18 @@ export default function SupporterPage() {
             Back to Shop
           </Link>
         </div>
+
+        {/* Cancel subscription option for active auto-renewing subscribers */}
+        {isSupporter && isAutoRenewing && (
+          <div className="border-ink-200 border-t pt-4 text-center">
+            <button
+              onClick={() => setConfirmingCancel(true)}
+              className="text-ink-400 hover:text-ink-600 text-sm underline"
+            >
+              Cancel subscription
+            </button>
+          </div>
+        )}
       </Col>
 
       {/* Purchase Confirmation Modal */}
@@ -271,6 +309,41 @@ export default function SupporterPage() {
           <Button color="amber" onClick={() => setShowCelebration(false)}>
             Continue to Manifold
           </Button>
+        </Col>
+      </Modal>
+
+      {/* Cancel Subscription Confirmation Modal */}
+      <Modal open={confirmingCancel} setOpen={setConfirmingCancel}>
+        <Col className="bg-canvas-0 max-w-md rounded-xl p-6">
+          <h2 className="mb-2 text-xl font-bold">Cancel Subscription?</h2>
+          <p className="text-ink-600 mb-4">
+            Your membership will remain active until{' '}
+            <span className="font-semibold">
+              {currentEntitlement?.expiresTime
+                ? new Date(currentEntitlement.expiresTime).toLocaleDateString()
+                : 'the end of the current period'}
+            </span>
+            , but will not automatically renew.
+          </p>
+          <p className="text-ink-500 mb-6 text-sm">
+            You can resubscribe at any time to continue enjoying your benefits.
+          </p>
+          <Row className="justify-end gap-3">
+            <Button
+              color="gray-outline"
+              onClick={() => setConfirmingCancel(false)}
+              disabled={cancelling}
+            >
+              Keep Subscription
+            </Button>
+            <Button
+              color="red"
+              onClick={handleCancelSubscription}
+              loading={cancelling}
+            >
+              Cancel Subscription
+            </Button>
+          </Row>
         </Col>
       </Modal>
     </Page>
