@@ -56,7 +56,11 @@ export function LiquidityTooltip(props: {
       ) : (
         <BsDropletFill className={iconClassName} />
       )}
-      {formatWithToken({ amount, token: isCashContract ? 'CASH' : 'M$', short: true })}
+      {formatWithToken({
+        amount,
+        token: isCashContract ? 'CASH' : 'M$',
+        short: true,
+      })}
     </Tooltip>
   )
 }
