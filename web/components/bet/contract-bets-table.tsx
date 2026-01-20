@@ -45,7 +45,7 @@ export function ContractBetsTable(props: {
     contractMetric,
     defaultExpanded = false,
   } = props
-  const { isResolved, mechanism, outcomeType } = contract
+  const { mechanism, outcomeType } = contract
 
   const bets = sortBy(
     props.bets.filter((b) => b.amount !== 0 || b.loanAmount),
@@ -60,8 +60,6 @@ export function ContractBetsTable(props: {
       (b) => -1 * b.shares
     )
   )
-
-  const amountLoaned = contractMetric.loan
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
@@ -93,19 +91,19 @@ export function ContractBetsTable(props: {
     <div className="overflow-x-auto">
       <Table>
         <thead>
-          <tr className="p-2">
+          <tr className="border-ink-200 border-b">
             {(isCPMM || isCpmmMulti) && <th>Type</th>}
             {isCpmmMulti && !isBinaryMC && !isMultiNumber && <th>Answer</th>}
             {isMultiNumber && <th>Range</th>}
             {!isMultiNumber && <th>Outcome</th>}
-            <th>Amount</th>
-            <th>Shares</th>
+            <th className="text-right">Amount</th>
+            <th className="text-right">Shares</th>
             {isPseudoNumeric || isMultiNumber ? (
               <th>Value</th>
             ) : isStonk ? (
               <th>Stock price</th>
             ) : (
-              <th>Probability</th>
+              <th>Prob</th>
             )}
             <th>Date</th>
           </tr>
@@ -128,12 +126,10 @@ export function ContractBetsTable(props: {
               ))}
         </tbody>
       </Table>
-      <Row className={''}>
+      <Row className="mt-1 px-1">
         {!expanded && normalBets.length > unexpandedBetsPerPage && (
           <button
-            className={
-              'hover:bg-canvas-100 text-primary-700 mb-1 rounded-md p-2 text-sm'
-            }
+            className="text-primary-600 hover:text-primary-700 py-2 text-sm font-medium transition-colors"
             onClick={(e) => {
               e.stopPropagation()
               setExpanded(true)
@@ -144,9 +140,7 @@ export function ContractBetsTable(props: {
         )}
         {expanded && !paginate && normalBets.length > unexpandedBetsPerPage && (
           <button
-            className={
-              'hover:bg-canvas-100 text-primary-700 mb-1 rounded-md p-2 text-sm'
-            }
+            className="text-primary-600 hover:text-primary-700 py-2 text-sm font-medium transition-colors"
             onClick={(e) => {
               e.stopPropagation()
               setExpanded(false)
@@ -180,30 +174,6 @@ export function ContractBetsTable(props: {
               .
             </div>
           )}
-          {!hideRedemptionAndLoanMessages &&
-            !isResolved &&
-            amountLoaned > 0 && (
-              <div className="text-ink-500 mt-2 pl-2 text-sm">
-                {isYourBets ? (
-                  <>
-                    You currently have a loan of{' '}
-                    <MoneyDisplay
-                      amount={amountLoaned}
-                      isCashContract={isCashContract}
-                    />
-                  </>
-                ) : (
-                  <>
-                    This user currently has a loan of{' '}
-                    <MoneyDisplay
-                      amount={amountLoaned}
-                      isCashContract={isCashContract}
-                    />
-                    .
-                  </>
-                )}
-              </div>
-            )}
         </>
       )}
     </div>
@@ -239,13 +209,15 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
   const sharesOrShortSellShares = Math.abs(shares)
   return (
     <tr>
-      {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
+      {(isCPMM || isCpmmMulti) && (
+        <td className="text-ink-500">{shares >= 0 ? 'BUY' : 'SELL'}</td>
+      )}
       {isCpmmMulti && !isBinaryMC && (
-        <td className="max-w-[200px] truncate sm:max-w-[250px]">
+        <td className="text-ink-600 max-w-[200px] truncate sm:max-w-[250px]">
           {contract.answers.find((a) => a.id === bet.answerId)?.text ?? ''}
         </td>
       )}
-      <td>
+      <td className="font-medium">
         <OutcomeLabel
           pseudonym={getPseudonym(contract)}
           outcome={outcome}
@@ -253,35 +225,41 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
           truncate="short"
         />
       </td>
-      <td>
+      <td className="text-right font-medium tabular-nums">
         <MoneyDisplay
           amount={Math.abs(amount)}
           isCashContract={isCashContract}
         />
-        {ofTotalAmount}
+        {ofTotalAmount && (
+          <span className="text-ink-400 font-normal">{ofTotalAmount}</span>
+        )}
       </td>
-      <td>
+      <td className="text-ink-600 text-right tabular-nums">
         {isStonk
           ? getStonkDisplayShares(contract, sharesOrShortSellShares, 2)
           : formatShares(sharesOrShortSellShares, isCashContract)}
       </td>
 
-      <td>
+      <td className="text-ink-600 tabular-nums">
         {hadPoolMatch ? (
           isStonk || isPseudoNumeric ? (
-            <>
-              {getFormattedMappedValue(contract, probBefore)} →{' '}
-              {getFormattedMappedValue(contract, probAfter)}
-            </>
+            <span className="inline-flex items-center gap-1">
+              <span>{getFormattedMappedValue(contract, probBefore)}</span>
+              <span className="text-ink-400">→</span>
+              <span>{getFormattedMappedValue(contract, probAfter)}</span>
+            </span>
           ) : isBinaryMC ? (
-            <>
-              {formatPercent(getBinaryMCProb(probBefore, outcome))} →{' '}
-              {formatPercent(getBinaryMCProb(probAfter, outcome))}
-            </>
+            <span className="inline-flex items-center gap-1">
+              <span>{formatPercent(getBinaryMCProb(probBefore, outcome))}</span>
+              <span className="text-ink-400">→</span>
+              <span>{formatPercent(getBinaryMCProb(probAfter, outcome))}</span>
+            </span>
           ) : (
-            <>
-              {formatPercent(probBefore)} → {formatPercent(probAfter)}
-            </>
+            <span className="inline-flex items-center gap-1">
+              <span>{formatPercent(probBefore)}</span>
+              <span className="text-ink-400">→</span>
+              <span>{formatPercent(probAfter)}</span>
+            </span>
           )
         ) : isBinaryMC ? (
           formatPercent(getBinaryMCProb(bet.limitProb ?? 0, outcome))
@@ -289,7 +267,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
           formatPercent(bet.limitProb ?? 0)
         )}
       </td>
-      <td>{formatTimeShort(createdTime)}</td>
+      <td className="text-ink-500">{formatTimeShort(createdTime)}</td>
     </tr>
   )
 }
@@ -368,23 +346,31 @@ function MultiNumberBetRow(props: {
 
   return (
     <tr>
-      <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>
-      <td className="max-w-[200px] truncate sm:max-w-[250px]">
+      <td className="text-ink-500">{shares >= 0 ? 'BUY' : 'SELL'}</td>
+      <td className="text-ink-600 max-w-[200px] truncate sm:max-w-[250px]">
         {lowerRange} - {higherRange}
       </td>
-      <td>
+      <td className="text-right font-medium tabular-nums">
         <MoneyDisplay
           amount={Math.abs(amount)}
           isCashContract={isCashContract}
         />
-        {ofTotalAmount}
+        {ofTotalAmount && (
+          <span className="text-ink-400 font-normal">{ofTotalAmount}</span>
+        )}
       </td>
-      <td>{formatShares(Math.abs(shares), isCashContract)}</td>
+      <td className="text-ink-600 text-right tabular-nums">
+        {formatShares(Math.abs(shares), isCashContract)}
+      </td>
 
-      <td>
-        {expectedValueBefore} → {expectedValueAfter}
+      <td className="text-ink-600 tabular-nums">
+        <span className="inline-flex items-center gap-1">
+          <span>{expectedValueBefore}</span>
+          <span className="text-ink-400">→</span>
+          <span>{expectedValueAfter}</span>
+        </span>
       </td>
-      <td>{formatTimeShort(createdTime)}</td>
+      <td className="text-ink-500">{formatTimeShort(createdTime)}</td>
     </tr>
   )
 }

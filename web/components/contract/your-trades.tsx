@@ -60,7 +60,7 @@ export function YourTrades(props: {
   }
 
   return (
-    <Col className="bg-canvas-50 rounded py-4 pb-0 sm:px-3">
+    <Col className="bg-canvas-50 rounded py-4 pb-0 sm:px-3 my-4">
       {contract.mechanism === 'cpmm-1' && (
         <YourOrders
           contract={contract}
@@ -71,8 +71,10 @@ export function YourTrades(props: {
 
       {visibleUserBets.length > 0 && contractMetric && (
         <>
-          <Row className="items-center justify-between pl-2">
-            <div className="font-semibold">Your trades</div>
+          <Row className="items-center justify-between px-3 pb-1">
+            <span className="text-ink-800 text-sm font-semibold">
+              Your trades
+            </span>
             {showLoanButton && (
               <LoanButton contractId={contract.id} user={user} />
             )}

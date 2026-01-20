@@ -10,7 +10,11 @@ export const Table = (props: {
   return (
     <table
       className={clsx(
-        'text-ink-700 w-full whitespace-nowrap text-left text-sm [&>thead]:font-bold [&_td]:p-2 [&_th]:p-2',
+        'text-ink-700 w-full whitespace-nowrap text-left text-sm',
+        '[&>thead]:text-ink-500 [&>thead]:text-xs [&>thead]:font-medium [&>thead]:uppercase [&>thead]:tracking-wider',
+        '[&_td]:px-3 [&_td]:py-2.5 [&_th]:px-3 [&_th]:py-2',
+        '[&>tbody>tr]:border-ink-200 [&>tbody>tr]:border-b [&>tbody>tr:last-child]:border-b-0',
+        '[&>tbody>tr]:transition-colors [&>tbody>tr:hover]:bg-ink-100/50',
         className
       )}
     >
