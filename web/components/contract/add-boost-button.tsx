@@ -47,12 +47,12 @@ export function AddBoostButton(props: {
     <>
       <Button
         onClick={handleButtonClick}
-        color={contract.boosted ? 'indigo-outline' : 'gradient-pink'}
+        color={contract.boosted ? 'gray-outline' : 'gradient-pink'}
         size="sm"
         className={className}
         data-boost-button
       >
-        <BsRocketTakeoff className="mr-1 h-5 w-5" />
+        <BsRocketTakeoff className="mr-1 h-4 w-4" />
         {contract.boosted ? 'Boosted' : 'Boost'}
       </Button>
 
