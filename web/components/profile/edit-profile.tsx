@@ -15,21 +15,23 @@ import { uploadPublicImage } from 'web/lib/firebase/storage'
 import { RefreshIcon } from '@heroicons/react/solid'
 
 export function EditUserField(props: {
-  label: ReactNode
+  label: string
   field: string
   value: string
   setValue: (value: string) => void
+  placeholder?: string
 }) {
-  const { label, field, value, setValue } = props
+  const { label, field, value, setValue, placeholder } = props
 
   return (
-    <Col>
-      {label}
+    <Col className="gap-2">
+      <label className="text-ink-600 text-sm font-medium">{label}</label>
       {field === 'bio' ? (
         <ExpandingInput
-          className="w-full"
+          className="min-h-[80px] w-full !py-3 text-sm"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          placeholder={placeholder}
         />
       ) : (
         <Input
@@ -37,6 +39,7 @@ export function EditUserField(props: {
           className={'w-full sm:w-96'}
           value={value}
           onChange={(e) => setValue(e.target.value || '')}
+          placeholder={placeholder}
         />
       )}
     </Col>
@@ -150,122 +153,139 @@ export const EditProfile = (props: {
   }
 
   return (
-    <Col className="gap-4">
-      <Row className="items-center gap-4">
-        {avatarLoading ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            <img
-              alt={`${user.username}'s avatar`}
-              src={avatarUrl}
-              width={80}
-              height={80}
-              className="bg-ink-400 h-20 w-20 rounded-full"
-            />
-            <Col className="items-start gap-2">
-              <input
-                type="file"
-                name="file"
-                onChange={fileHandler}
-                accept="image/*"
-                className="min-w-0 flex-1"
+    <Col className="gap-5">
+      {/* Avatar Section */}
+      <Col className="gap-2">
+        <label className="text-ink-600 text-sm font-medium">
+          Profile Picture
+        </label>
+        <Row className="items-center gap-4">
+          {avatarLoading ? (
+            <div className="flex h-20 w-20 items-center justify-center">
+              <LoadingIndicator />
+            </div>
+          ) : (
+            <>
+              <img
+                alt={`${user.username}'s avatar`}
+                src={avatarUrl}
+                width={80}
+                height={80}
+                className="bg-ink-400 h-20 w-20 rounded-full object-cover ring-2 ring-white/20"
               />
-              {avatarUrl && (
-                <Button
-                  loading={avatarLoading}
-                  disabled={avatarLoading}
-                  color="gray-outline"
-                  onClick={removeAvatar}
-                  size="xs"
-                >
-                  <RefreshIcon className="mr-1 h-4 w-4" /> Random avatar
-                </Button>
-              )}
-            </Col>
-          </>
-        )}
-      </Row>
-
-      <Col>
-        <label className="mb-1 block">Display name</label>
-        <Row className={'items-center gap-2'}>
-          <Input
-            disabled={loadingName}
-            type="text"
-            placeholder="Display name"
-            value={name}
-            onChange={(e) => updateUserState({ name: e.target.value || '' })}
-          />
+              <Col className="items-start gap-2">
+                <label className="bg-primary-100 text-primary-700 hover:bg-primary-200 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+                  Choose File
+                  <input
+                    type="file"
+                    name="file"
+                    onChange={fileHandler}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </label>
+                {avatarUrl && (
+                  <Button
+                    loading={avatarLoading}
+                    disabled={avatarLoading}
+                    color="gray-outline"
+                    onClick={removeAvatar}
+                    size="xs"
+                  >
+                    <RefreshIcon className="mr-1 h-4 w-4" /> Random avatar
+                  </Button>
+                )}
+              </Col>
+            </>
+          )}
         </Row>
-        {loadingName && (
-          <Row className={'mt-2 items-center gap-4'}>
-            <LoadingIndicator />
-            <span>Loading... This may take a while.</span>
-          </Row>
-        )}
-        {errorName && <span className="text-error text-sm">{errorName}</span>}
       </Col>
 
-      <Col>
-        <label className="mb-1 block">Username</label>
-        <Row>
-          <Input
-            disabled={loadingUsername}
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) =>
-              updateUserState({ username: e.target.value || '' })
-            }
-          />
-        </Row>
+      {/* Display Name */}
+      <Col className="gap-2">
+        <label className="text-ink-600 text-sm font-medium">Display name</label>
+        <Input
+          disabled={loadingName}
+          type="text"
+          placeholder="Display name"
+          value={name}
+          onChange={(e) => updateUserState({ name: e.target.value || '' })}
+          className="w-full sm:w-96"
+        />
+        {loadingName && (
+          <Row className="items-center gap-2 text-sm">
+            <LoadingIndicator size="sm" />
+            <span className="text-ink-500">Updating...</span>
+          </Row>
+        )}
+        {errorName && <span className="text-scarlet-500 text-sm">{errorName}</span>}
+      </Col>
+
+      {/* Username */}
+      <Col className="gap-2">
+        <label className="text-ink-600 text-sm font-medium">Username</label>
+        <Input
+          disabled={loadingUsername}
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => updateUserState({ username: e.target.value || '' })}
+          className="w-full sm:w-96"
+        />
         {loadingUsername && (
-          <Row className={'mt-2 items-center gap-4'}>
-            <LoadingIndicator />
-            <span>Loading... This may take a while.</span>
+          <Row className="items-center gap-2 text-sm">
+            <LoadingIndicator size="sm" />
+            <span className="text-ink-500">Updating...</span>
           </Row>
         )}
         {errorUsername && (
-          <span className="text-error text-sm">{errorUsername}</span>
+          <span className="text-scarlet-500 text-sm">{errorUsername}</span>
         )}
       </Col>
 
       <EditUserField
-        label={<label className="mb-1 block">Bio</label>}
+        label="Bio"
         field="bio"
         value={bio}
         setValue={setBio}
+        placeholder="Tell us about yourself..."
       />
       <EditUserField
-        label={<label className="mb-1 block">Website URL</label>}
+        label="Website URL"
         field="website"
         value={website}
         setValue={setWebsite}
+        placeholder="https://example.com"
       />
       <EditUserField
-        label={<label className="mb-1 block">Twitter</label>}
+        label="Twitter"
         field="twitterHandle"
         value={twitterHandle}
         setValue={setTwitterHandle}
+        placeholder="username"
       />
       <EditUserField
-        label={<label className="mb-1 block">Discord</label>}
+        label="Discord"
         field="discordHandle"
         value={discordHandle}
         setValue={setDiscordHandle}
+        placeholder="username#0000"
       />
 
-      <div className={'mt-2'}>
-        <label className="mb-1 block">Email</label>
-        <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
-      </div>
+      {/* Email (read-only) */}
+      <Col className="gap-2">
+        <label className="text-ink-600 text-sm font-medium">Email</label>
+        <div className="text-ink-500 text-sm">{privateUser.email ?? '—'}</div>
+      </Col>
 
+      {/* Save Button */}
       <Button
         onClick={handleSave}
         disabled={loading || Object.keys(updates).length === 0}
+        className="mt-2 self-start"
+        size="lg"
       >
-        {loading ? <LoadingIndicator /> : 'Save'}
+        {loading ? <LoadingIndicator /> : 'Save Changes'}
       </Button>
     </Col>
   )
