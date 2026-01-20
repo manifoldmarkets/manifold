@@ -271,8 +271,7 @@ export default function SupporterPage() {
       <Modal open={showCelebration} setOpen={setShowCelebration}>
         <Col className="bg-canvas-0 max-w-md rounded-xl p-8 text-center">
           <div className="mb-4 text-5xl">🎉</div>
-          <h2 className="mb-2 text-2xl font-bold">Welcome to the Family!</h2>
-          <p className="text-ink-600 mb-6">
+          <h2 className="mb-6 text-2xl font-bold">
             You're now a{' '}
             {purchasedTier && (
               <>
@@ -281,7 +280,7 @@ export default function SupporterPage() {
               </>
             )}{' '}
             member!
-          </p>
+          </h2>
 
           <Col className="mb-6 gap-2 text-left">
             {purchasedTier && (
@@ -300,6 +299,18 @@ export default function SupporterPage() {
                   <BenefitRow
                     icon="❄️"
                     label={`${SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes} max streak freezes`}
+                  />
+                )}
+                {SUPPORTER_BENEFITS[purchasedTier].freeLoanRate > 0.01 && (
+                  <BenefitRow
+                    icon="💰"
+                    label={`${Math.round(SUPPORTER_BENEFITS[purchasedTier].freeLoanRate * 100)}% daily free loans`}
+                  />
+                )}
+                {SUPPORTER_BENEFITS[purchasedTier].marginLoanAccess && (
+                  <BenefitRow
+                    icon="📈"
+                    label={`${SUPPORTER_BENEFITS[purchasedTier].maxLoanNetWorthPercent + 1}x leverage boost`}
                   />
                 )}
               </>
