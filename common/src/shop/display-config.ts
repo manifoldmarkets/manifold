@@ -77,7 +77,7 @@ const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
     animations: [],
   },
   leaderboard: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay'], // No badges - rows too compact
     animations: [],
   },
   managrams: {
