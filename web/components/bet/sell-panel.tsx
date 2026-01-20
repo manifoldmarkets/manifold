@@ -269,7 +269,7 @@ export function SellPanel(props: {
         quickAddMoreButton={
           <button
             className={clsx(
-              'text-ink-500 hover:bg-ink-200 border-ink-300 m-[1px] rounded-r-md px-2.5 transition-colors'
+              'text-ink-500 hover:text-ink-700 px-3 text-sm font-medium transition-colors'
             )}
             onClick={() =>
               onAmountChange(
@@ -281,13 +281,13 @@ export function SellPanel(props: {
           </button>
         }
       />
-      <div className="text-error mb-2 mt-1 h-1 text-xs">{error}</div>
+      <div className="text-error mt-1 h-4 text-xs">{error}</div>
 
-      <Col className="mt-3 w-full gap-3 text-sm">
+      <Col className="mt-2 w-full gap-2.5 text-sm">
         {!isStonk && (
-          <Row className="text-ink-500 items-center justify-between gap-2">
-            Sale value
-            <span className="text-ink-700">
+          <Row className="items-center justify-between">
+            <span className="text-ink-500">Sale value</span>
+            <span className="text-ink-900 tabular-nums">
               <MoneyDisplay
                 amount={saleValue + totalFees}
                 isCashContract={isCashContract}
@@ -296,9 +296,9 @@ export function SellPanel(props: {
           </Row>
         )}
         {!isLoadPaid && (
-          <Row className="text-ink-500  items-center justify-between gap-2">
-            Loan repayment
-            <span className="text-ink-700">
+          <Row className="items-center justify-between">
+            <span className="text-ink-500">Loan repayment</span>
+            <span className="text-ink-900 tabular-nums">
               <MoneyDisplay
                 amount={Math.floor(-loanPaid)}
                 isCashContract={isCashContract}
@@ -306,35 +306,39 @@ export function SellPanel(props: {
             </span>
           </Row>
         )}
-        {/* <Row className="text-ink-500 items-center justify-between gap-2">
-          Fees
-          <FeeDisplay totalFees={totalFees} amount={saleValue + totalFees} />
-        </Row> */}
 
-        <Row className="text-ink-500 items-center justify-between gap-2">
-          Profit
-          <span className="text-ink-700">
+        <Row className="items-center justify-between">
+          <span className="text-ink-500">Profit</span>
+          <span
+            className={clsx(
+              'tabular-nums',
+              profit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+            )}
+          >
             <MoneyDisplay amount={profit} isCashContract={isCashContract} />
           </span>
         </Row>
+
         <Row className="items-center justify-between">
-          <div className="text-ink-500">
+          <span className="text-ink-500">
             {isPseudoNumeric
               ? 'Estimated value'
               : isStonk
               ? 'Stock price'
               : 'Probability'}
-          </div>
-          <div>
-            {getFormattedMappedValue(contract, initialProb)}
-            <span className="mx-2">→</span>
-            {getFormattedMappedValue(contract, resultProb)}
-          </div>
+          </span>
+          <span className="text-ink-600 inline-flex items-center gap-1.5 tabular-nums">
+            <span>{getFormattedMappedValue(contract, initialProb)}</span>
+            <span className="text-ink-400">→</span>
+            <span>{getFormattedMappedValue(contract, resultProb)}</span>
+          </span>
         </Row>
 
-        <Row className="text-ink-1000 mt-4 items-center justify-between gap-2 text-xl">
-          Payout
-          <span className="text-ink-700">
+        <div className="border-ink-200 my-2 border-t" />
+
+        <Row className="items-center justify-between">
+          <span className="text-ink-900 font-medium">Payout</span>
+          <span className="text-ink-900 text-lg font-semibold tabular-nums">
             <MoneyDisplay
               amount={netProceeds}
               isCashContract={isCashContract}
@@ -343,7 +347,7 @@ export function SellPanel(props: {
         </Row>
       </Col>
 
-      <Spacer h={8} />
+      <Spacer h={6} />
 
       <WarningConfirmationButton
         marketType="binary"
@@ -366,7 +370,11 @@ export function SellPanel(props: {
         inModal={true}
       />
 
-      {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
+      {wasSubmitted && (
+        <div className="text-teal-600 mt-4 text-sm font-medium">
+          Sell submitted!
+        </div>
+      )}
     </>
   )
 }
