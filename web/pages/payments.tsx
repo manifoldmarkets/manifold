@@ -18,7 +18,7 @@ import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { uniq } from 'lodash'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
-import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -34,7 +34,6 @@ import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TokenNumber } from 'web/components/widgets/token-number'
 
 export default function Payments() {
@@ -258,132 +257,167 @@ export const PaymentsModal = (props: {
   const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isCash, setIsCash] = useState(false)
   const [toUsers, setToUsers] = useState<DisplayUser[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
   const isAdmin = isAdminId(fromUser.id)
+
   useEffect(() => {
     if (toUser) setToUsers([toUser])
   }, [toUser])
 
-  const showCash = isAdminId(fromUser.id)
+  const canSubmit =
+    canSend && amount && (amount >= 10 || isAdmin) && toUsers.length > 0
+
   return (
-    <Modal open={show} setOpen={setShow}>
-      <Col className={'bg-canvas-0 rounded-md p-4'}>
-        <div className="my-2 text-xl">Send mana</div>
-        <Row className={'text-error'}>{!canSend ? cannotSendMessage : ''}</Row>
-        <Col className={'gap-3'}>
-          <Row className={'items-center justify-between'}>
-            <Col>
-              <div>To</div>
-              {toUser && !removedToUser ? (
-                <Col className={'mt-2'}>
-                  <Row className={'items-center gap-1'}>
-                    <UserAvatarAndBadge user={toUser} />
-                    <XIcon
-                      onClick={() => {
-                        setToUsers([])
-                        setRemovedToUser(true)
-                      }}
-                      className="text-ink-400 hover:text-ink-700 h-5 w-5 cursor-pointer rounded-full"
-                      aria-hidden="true"
-                    />
-                  </Row>
-                </Col>
-              ) : (
-                <SelectUsers
-                  className={'w-64'}
-                  setSelectedUsers={setToUsers}
-                  selectedUsers={toUsers}
-                  ignoreUserIds={[fromUser.id]}
-                />
-              )}
-            </Col>
-          </Row>
-          <Row className={'items-center justify-between'}>
-            {showCash && (
-              <Col>
-                <span>Token</span>
-                <ChoicesToggleGroup
-                  currentChoice={isCash ? 'CASH' : 'M$'}
-                  setChoice={(val) => setIsCash(val === 'CASH')}
-                  choicesMap={{
-                    Mana: 'M$',
-                    Sweepcash: 'CASH',
-                  }}
-                />
-              </Col>
-            )}
-            <Col>
-              <span>Amount</span>
-              <AmountInput
-                amount={amount}
-                allowNegative={isAdmin}
-                onChangeAmount={setAmount}
-                label={
-                  <TokenNumber
-                    coinType={showCash && isCash ? 'CASH' : 'MANA'}
-                    hideAmount
+    <Modal open={show} setOpen={setShow} size="sm">
+      <Col className="bg-canvas-0 overflow-hidden rounded-xl shadow-xl">
+        {/* Header */}
+        <div className="from-primary-600 to-primary-500 bg-gradient-to-r px-6 py-5">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Send Mana</h2>
+            <p className="text-sm text-white/70">
+              Transfer mana to another user
+            </p>
+          </div>
+        </div>
+
+        {/* Body */}
+        <Col className="gap-5 p-6">
+          {!canSend && (
+            <div className="bg-scarlet-50 dark:bg-scarlet-900/20 border-scarlet-200 dark:border-scarlet-800 text-scarlet-700 dark:text-scarlet-400 rounded-lg border px-4 py-3 text-sm">
+              {cannotSendMessage}
+            </div>
+          )}
+
+          {/* Recipient Section */}
+          <Col className="gap-2">
+            <label className="text-ink-600 text-sm font-medium">
+              Recipient
+            </label>
+            {toUser && !removedToUser ? (
+              <div className="border-ink-200 dark:border-ink-300 bg-canvas-50 flex items-center justify-between rounded-lg border px-4 py-3">
+                <Row className="items-center gap-3">
+                  <Avatar
+                    avatarUrl={toUser.avatarUrl}
+                    username={toUser.username}
+                    size="sm"
                   />
-                }
-                inputClassName={'w-52'}
-                onBlur={() => {
-                  if (amount && amount < 10 && !isAdmin) {
-                    setError('Amount must be 10 or more')
-                  } else {
-                    setError('')
-                  }
-                }}
+                  <Col className="gap-0.5">
+                    <span className="text-ink-900 font-medium">
+                      {toUser.name}
+                    </span>
+                    <span className="text-ink-500 text-xs">
+                      @{toUser.username}
+                    </span>
+                  </Col>
+                </Row>
+                <button
+                  onClick={() => {
+                    setToUsers([])
+                    setRemovedToUser(true)
+                  }}
+                  className="text-ink-400 hover:text-ink-600 hover:bg-ink-100 rounded-full p-1.5 transition-colors"
+                >
+                  <XIcon className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+            ) : (
+              <SelectUsers
+                setSelectedUsers={setToUsers}
+                selectedUsers={toUsers}
+                ignoreUserIds={[fromUser.id]}
+                showUserUsername
               />
-            </Col>
-          </Row>
-          <Row className={'items-center justify-between'}>
-            <Col className={'w-full'}>
-              <span>Message</span>
-              <ExpandingInput
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className={'w-full'}
-              />
-              {error && <span className={'text-error'}>{error}</span>}
-            </Col>
-          </Row>
-          <Row className={'justify-end'}>
-            <Button
-              size={'lg'}
-              onClick={async () => {
-                if (!amount || !toUsers.length) return
-                setLoading(true)
-                try {
-                  await api('managram', {
-                    toIds: toUsers.map((user) => user.id),
-                    amount,
-                    message,
-                    groupId,
-                    token: showCash && isCash ? 'CASH' : 'M$',
-                  })
+            )}
+          </Col>
+
+          {/* Amount Section */}
+          <Col className="gap-2">
+            <label className="text-ink-600 text-sm font-medium">Amount</label>
+            <AmountInput
+              amount={amount}
+              allowNegative={isAdmin}
+              onChangeAmount={setAmount}
+              label={<TokenNumber coinType="MANA" hideAmount />}
+              inputClassName="w-full !text-lg"
+              onBlur={() => {
+                if (amount && amount < 10 && !isAdmin) {
+                  setError('Minimum amount is 10 mana')
+                } else {
                   setError('')
-                  setShow(false)
-                } catch (e: any) {
-                  setError(e.message)
-                  console.error(e)
                 }
-                setLoading(false)
               }}
-              disabled={
-                loading ||
-                !amount ||
-                (amount < 10 && !isAdmin) ||
-                !toUsers.length ||
-                !canSend
-              }
-              loading={loading}
-            >
-              Send
-            </Button>
-          </Row>
+            />
+            {!isAdmin && (
+              <p className="text-ink-500 text-xs">Minimum: 10 mana</p>
+            )}
+          </Col>
+
+          {/* Message Section */}
+          <Col className="gap-2">
+            <label className="text-ink-600 text-sm font-medium">
+              Message{' '}
+              <span className="text-ink-400 font-normal">(optional)</span>
+            </label>
+            <ExpandingInput
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Add a note to your transfer..."
+              className="min-h-[80px] w-full !py-3 text-sm"
+            />
+          </Col>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-scarlet-50 dark:bg-scarlet-900/20 border-scarlet-200 dark:border-scarlet-800 text-scarlet-600 dark:text-scarlet-400 rounded-lg border px-4 py-3 text-sm">
+              {error}
+            </div>
+          )}
         </Col>
+
+        {/* Footer */}
+        <div className="border-ink-100 dark:border-ink-300 flex items-center justify-between border-t px-6 py-4">
+          <button
+            onClick={() => setShow(false)}
+            className="text-ink-600 hover:text-ink-800 text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <Button
+            onClick={async () => {
+              if (!amount || !toUsers.length) return
+              setLoading(true)
+              try {
+                await api('managram', {
+                  toIds: toUsers.map((user) => user.id),
+                  amount,
+                  message,
+                  groupId,
+                  token: 'M$',
+                })
+                setError('')
+                setShow(false)
+              } catch (e: any) {
+                setError(e.message)
+                console.error(e)
+              }
+              setLoading(false)
+            }}
+            disabled={!canSubmit || loading}
+            loading={loading}
+            size="lg"
+            className="min-w-[120px]"
+          >
+            {loading ? (
+              'Sending...'
+            ) : (
+              <Row className="items-center gap-1">
+                Send <TokenNumber coinType="MANA" amount={amount} />
+              </Row>
+            )}
+          </Button>
+        </div>
       </Col>
     </Modal>
   )
@@ -405,36 +439,63 @@ export const QRModal = (props: {
     }` + (message && `&msg=${encodeURIComponent(message)}`)
 
   return (
-    <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
-      <div className="flex flex-col items-center p-8">
-        <div className="text-primary-700 mb-4 text-2xl">
-          Scan to send mana to {user.name}
+    <Modal open={show} setOpen={setShow} size="sm">
+      <Col className="bg-canvas-0 overflow-hidden rounded-xl shadow-xl">
+        {/* Header */}
+        <div className="from-primary-600 to-primary-500 bg-gradient-to-r px-6 py-5">
+          <h2 className="text-lg font-semibold text-white">Receive Mana</h2>
+          <p className="text-sm text-white/70">
+            Share this QR code to receive mana from {user.name}
+          </p>
         </div>
 
-        <CopyLinkRow
-          url={url}
-          eventTrackingName="copy managram page"
-          linkBoxClassName="mb-4 w-full ellipsis"
-        />
-        <QRCode url={url} width={300} height={300} className="self-center" />
+        {/* Body */}
+        <Col className="gap-5 p-6">
+          {/* QR Code */}
+          <div className="flex justify-center">
+            <QRCode url={url} width={220} height={220} className="rounded-lg" />
+          </div>
 
-        <details className="flex flex-col self-stretch">
-          <summary className="text-ink-700 mt-4">Advanced Options</summary>
-          <span className="mt-2">Default Amount</span>
-          <AmountInput
-            amount={amount}
-            onChangeAmount={setAmount}
-            placeholder="10"
+          {/* Copy Link */}
+          <CopyLinkRow
+            url={url}
+            eventTrackingName="copy managram page"
+            linkBoxClassName="w-full"
           />
-          <span className="mt-2">Default Message</span>
-          <ExpandingInput
-            placeholder="What this transaction is for (e.g. tacos)"
-            className="w-full"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-        </details>
-      </div>
+
+          {/* Advanced Options */}
+          <details className="group">
+            <summary className="text-ink-600 hover:text-ink-800 cursor-pointer text-sm font-medium transition-colors">
+              Advanced Options
+            </summary>
+            <Col className="mt-4 gap-4">
+              <Col className="gap-2">
+                <label className="text-ink-600 text-sm font-medium">
+                  Default Amount
+                </label>
+                <AmountInput
+                  amount={amount}
+                  onChangeAmount={setAmount}
+                  placeholder="10"
+                  label={<TokenNumber coinType="MANA" hideAmount />}
+                />
+              </Col>
+              <Col className="gap-2">
+                <label className="text-ink-600 text-sm font-medium">
+                  Default Message
+                </label>
+                <ExpandingInput
+                  placeholder="What this transaction is for (e.g. tacos)"
+                  className="min-h-[60px] w-full !py-3 text-sm"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+              </Col>
+            </Col>
+          </details>
+        </Col>
+
+      </Col>
     </Modal>
   )
 }

@@ -170,18 +170,18 @@ export function SelectUsers(props: {
             {selectedUsers.map((user) => (
               <div
                 key={user.id}
-                className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-sm font-medium"
+                className="bg-primary-100 text-primary-700 dark:text-white flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-sm font-medium"
               >
                 <Avatar
                   username={user.username}
                   avatarUrl={user.avatarUrl}
                   size="2xs"
-                  className="ring-primary-200 dark:ring-primary-700 ring-1"
+                  className="ring-primary-200 dark:ring-ink-800 ring-1"
                 />
                 <UserLink user={user} className="!text-current" />
                 <button
                   onClick={() => removeUser(user.id)}
-                  className="hover:bg-primary-200 dark:hover:bg-primary-800 -mr-0.5 rounded-full p-0.5 transition-colors"
+                  className="hover:bg-primary-200 -mr-0.5 rounded-full p-0.5 transition-colors"
                 >
                   <XIcon className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
