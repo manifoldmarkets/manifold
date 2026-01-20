@@ -25,7 +25,6 @@ import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
 import { createJob } from './helpers'
-import { incrementStreakForgiveness } from './increment-streak-forgiveness'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
 import {
@@ -290,12 +289,6 @@ export function createJobs() {
       'downsample-portfolio-history',
       '0 50 4 * * *', // every day at 4:50am
       downsamplePortfolioHistory
-    ),
-    // Monthly jobs:
-    createJob(
-      'increment-streak-forgiveness',
-      '0 0 3 1 * *', // 3am PST on the 1st day of the month
-      incrementStreakForgiveness
     ),
   ]
 }
