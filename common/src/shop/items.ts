@@ -117,7 +117,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'streak-forgiveness',
     name: 'Streak Freeze',
     description: 'Protect your betting streak - adds one forgiveness point',
-    price: 500,
+    price: 150,
     type: 'instant',
     limit: 'unlimited',
     category: 'consumable',
