@@ -452,6 +452,10 @@ function SupporterCard(props: {
   const daysRemaining = supporterEntitlement?.expiresTime
     ? Math.max(0, Math.ceil((supporterEntitlement.expiresTime - Date.now()) / DAY_MS))
     : 0
+  const isAutoRenewing = supporterEntitlement?.autoRenew ?? false
+  const renewalDate = supporterEntitlement?.expiresTime
+    ? new Date(supporterEntitlement.expiresTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : null
 
   const tierPrices = {
     basic: 500,
@@ -578,20 +582,18 @@ function SupporterCard(props: {
                 </Col>
               </Row>
 
-              {/* Right: Time remaining (only show if supporter) */}
-              {isSupporter && (
+              {/* Right: Renewal/expiry info (only show if supporter) */}
+              {isSupporter && renewalDate && (
                 <Col className="items-end gap-0.5">
-                  <div className="text-ink-500 text-xs">Time remaining</div>
-                  <Row className="items-center gap-1.5">
-                    <span className="text-lg font-bold text-amber-600">{daysRemaining}d</span>
-                    {/* Show +30d when hovering same tier (renewal) */}
-                    {hoveredTier === currentTier && (
-                      <>
-                        <span className="text-ink-400 text-sm">→</span>
-                        <span className="text-lg font-bold text-green-600">{daysRemaining + 30}d</span>
-                      </>
-                    )}
-                  </Row>
+                  <div className="text-ink-500 text-xs">
+                    {isAutoRenewing ? 'Renews' : 'Expires'}
+                  </div>
+                  <span className={clsx(
+                    'text-lg font-bold',
+                    isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
+                  )}>
+                    {renewalDate}
+                  </span>
                 </Col>
               )}
             </Row>
@@ -658,9 +660,9 @@ function SupporterCard(props: {
           {/* CTA */}
           <div className="text-primary-600 text-center text-sm font-medium group-hover:underline">
             {isSupporter
-              ? daysRemaining > 0
-                ? `Manage Subscription (${daysRemaining}d left) →`
-                : 'Renew Subscription →'
+              ? isAutoRenewing
+                ? `Manage Subscription →`
+                : 'Resubscribe →'
               : 'See details & subscribe →'}
           </div>
         </div>
@@ -717,6 +719,9 @@ function SupporterModal(props: {
     ? Math.max(0, Math.ceil((currentEntitlement.expiresTime - Date.now()) / DAY_MS))
     : 0
   const isAutoRenewing = currentEntitlement?.autoRenew ?? false
+  const renewalDate = currentEntitlement?.expiresTime
+    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : null
 
   const handlePurchase = async (tier: SupporterTier) => {
     if (!user) return
@@ -870,15 +875,17 @@ function SupporterModal(props: {
                     </Col>
                   </Row>
 
-                  {/* Right: Time remaining */}
+                  {/* Right: Renewal/expiry info */}
                   <Col className="items-end gap-0.5">
-                    <div className="text-ink-500 text-xs">Time remaining</div>
-                    <Row className="items-center gap-1.5">
-                      <span className="text-lg font-bold text-amber-600">{daysRemaining}d</span>
-                    </Row>
-                    {!isAutoRenewing && (
-                      <span className="text-ink-400 text-xs">(cancelled)</span>
-                    )}
+                    <div className="text-ink-500 text-xs">
+                      {isAutoRenewing ? 'Renews' : 'Expires'}
+                    </div>
+                    <span className={clsx(
+                      'text-lg font-bold',
+                      isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
+                    )}>
+                      {renewalDate}
+                    </span>
                   </Col>
                 </Row>
               ) : (

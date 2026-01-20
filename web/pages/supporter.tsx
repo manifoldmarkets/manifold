@@ -63,6 +63,9 @@ export default function SupporterPage() {
         Math.ceil((currentEntitlement.expiresTime - Date.now()) / DAY_MS)
       )
     : 0
+  const renewalDate = currentEntitlement?.expiresTime
+    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : null
 
   const handlePurchase = async (tier: SupporterTier) => {
     if (!user) return
@@ -151,30 +154,18 @@ export default function SupporterPage() {
                 </Col>
               </Row>
 
-              {/* Right: Time remaining (for supporters) or tagline (for non-supporters) */}
-              {isSupporter ? (
+              {/* Right: Renewal/expiry info (for supporters) or tagline (for non-supporters) */}
+              {isSupporter && renewalDate ? (
                 <Col className="items-end gap-0.5">
                   <div className="text-ink-500 text-xs">
-                    {isAutoRenewing ? 'Auto-renews in' : 'Expires in'}
+                    {isAutoRenewing ? 'Renews' : 'Expires'}
                   </div>
-                  <Row className="items-center gap-1.5">
-                    <span className={clsx(
-                      'text-lg font-bold',
-                      isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
-                    )}>
-                      {daysRemaining}d
-                    </span>
-                    {/* Show +30d when hovering/selecting same tier (renewal) */}
-                    {activeTier === currentTier && (
-                      <>
-                        <span className="text-ink-400 text-sm">→</span>
-                        <span className="text-lg font-bold text-green-600">{daysRemaining + 30}d</span>
-                      </>
-                    )}
-                  </Row>
-                  {!isAutoRenewing && (
-                    <span className="text-ink-400 text-xs">(cancelled)</span>
-                  )}
+                  <span className={clsx(
+                    'text-lg font-bold',
+                    isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
+                  )}>
+                    {renewalDate}
+                  </span>
                 </Col>
               ) : (
                 <Col className="hidden items-end gap-0.5 sm:flex">
