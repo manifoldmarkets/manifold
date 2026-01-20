@@ -203,11 +203,13 @@ export default function SupporterPage() {
             tier={activeTier}
             currentTier={currentTier}
             effectiveBalance={effectiveBalance}
-            loading={purchasing === TIER_ITEMS[activeTier].id}
-            disabled={!user || !!purchasing}
+            loading={purchasing === TIER_ITEMS[activeTier].id || cancelling}
+            disabled={!user || !!purchasing || cancelling}
             onClick={() => setConfirmingPurchase(activeTier)}
+            onCancelClick={() => setConfirmingCancel(true)}
             entitlements={user?.entitlements}
             daysRemaining={daysRemaining}
+            isAutoRenewing={isAutoRenewing}
           />
         )}
 

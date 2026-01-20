@@ -692,6 +692,8 @@ function SupporterModal(props: {
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
   const [confirmingPurchase, setConfirmingPurchase] = useState<SupporterTier | null>(null)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
   const [selectedTier, setSelectedTier] = useState<SupporterTier>('plus')
 
@@ -714,6 +716,7 @@ function SupporterModal(props: {
   const daysRemaining = currentEntitlement?.expiresTime
     ? Math.max(0, Math.ceil((currentEntitlement.expiresTime - Date.now()) / DAY_MS))
     : 0
+  const isAutoRenewing = currentEntitlement?.autoRenew ?? false
 
   const handlePurchase = async (tier: SupporterTier) => {
     if (!user) return
@@ -732,6 +735,19 @@ function SupporterModal(props: {
       toast.error(e.message || 'Failed to purchase')
     } finally {
       setPurchasing(null)
+    }
+  }
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true)
+    try {
+      await api('shop-cancel-subscription', {})
+      toast.success('Subscription cancelled. Your membership will remain active until the end of the current period.')
+      setConfirmingCancel(false)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to cancel subscription')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -859,13 +875,10 @@ function SupporterModal(props: {
                     <div className="text-ink-500 text-xs">Time remaining</div>
                     <Row className="items-center gap-1.5">
                       <span className="text-lg font-bold text-amber-600">{daysRemaining}d</span>
-                      {activeTier === currentTier && (
-                        <>
-                          <span className="text-ink-400 text-sm">→</span>
-                          <span className="text-lg font-bold text-green-600">{daysRemaining + 30}d</span>
-                        </>
-                      )}
                     </Row>
+                    {!isAutoRenewing && (
+                      <span className="text-ink-400 text-xs">(cancelled)</span>
+                    )}
                   </Col>
                 </Row>
               ) : (
@@ -929,11 +942,13 @@ function SupporterModal(props: {
               tier={activeTier}
               currentTier={currentTier}
               effectiveBalance={effectiveBalance}
-              loading={purchasing === TIER_ITEMS[activeTier].id}
-              disabled={!user || !!purchasing}
+              loading={purchasing === TIER_ITEMS[activeTier].id || cancelling}
+              disabled={!user || !!purchasing || cancelling}
               entitlements={entitlements}
               daysRemaining={daysRemaining}
+              isAutoRenewing={isAutoRenewing}
               onClick={() => setConfirmingPurchase(activeTier)}
+              onCancelClick={() => setConfirmingCancel(true)}
             />
           )}
 
@@ -981,6 +996,38 @@ function SupporterModal(props: {
             onCancel={() => setConfirmingPurchase(null)}
           />
         )}
+      </Modal>
+
+      {/* Cancel Subscription Confirmation Modal */}
+      <Modal open={confirmingCancel} setOpen={setConfirmingCancel}>
+        <Col className="bg-canvas-0 max-w-md rounded-xl p-6">
+          <h2 className="mb-2 text-xl font-bold">Cancel Subscription?</h2>
+          <p className="text-ink-600 mb-4">
+            Your membership will remain active until{' '}
+            <span className="font-semibold">
+              {currentEntitlement?.expiresTime
+                ? new Date(currentEntitlement.expiresTime).toLocaleDateString()
+                : 'the end of the current period'}
+            </span>
+            , but will not automatically renew.
+          </p>
+          <Row className="justify-end gap-2">
+            <Button
+              color="gray-outline"
+              onClick={() => setConfirmingCancel(false)}
+              disabled={cancelling}
+            >
+              Keep Subscription
+            </Button>
+            <Button
+              color="red"
+              onClick={handleCancelSubscription}
+              loading={cancelling}
+            >
+              Cancel Subscription
+            </Button>
+          </Row>
+        </Col>
       </Modal>
     </>
   )
