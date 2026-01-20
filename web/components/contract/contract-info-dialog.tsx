@@ -31,6 +31,8 @@ import { ContractHistoryButton } from './contract-edit-history-button'
 import { useSweepstakes } from '../sweepstakes-provider'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
+import { formatWithCommas } from 'common/util/format'
+
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
@@ -240,12 +242,12 @@ export const Stats = (props: {
 
             <tr>
               <td>{capitalize(BETTORS)}</td>
-              <td>{uniqueBettorCount ?? '0'}</td>
+              <td>{formatWithCommas(uniqueBettorCount ?? 0)}</td>
             </tr>
 
             <tr>
               <td>Views</td>
-              <td>{viewCount ?? '0'}</td>
+              <td>{formatWithCommas(viewCount ?? 0)}</td>
             </tr>
           </>
         )}
@@ -324,12 +326,12 @@ export const Stats = (props: {
             <td>Pool</td>
             <td>
               {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
-                ? `${Math.round(contract.pool.YES)} YES, ${Math.round(
-                    contract.pool.NO
+                ? `${formatWithCommas(Math.round(contract.pool.YES))} YES, ${formatWithCommas(
+                    Math.round(contract.pool.NO)
                   )} NO`
                 : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
-                ? `${Math.round(contract.pool.YES)} HIGHER, ${Math.round(
-                    contract.pool.NO
+                ? `${formatWithCommas(Math.round(contract.pool.YES))} HIGHER, ${formatWithCommas(
+                    Math.round(contract.pool.NO)
                   )} LOWER`
                 : contractPool(contract)}
             </td>
@@ -381,38 +383,6 @@ export const Stats = (props: {
               {addAnswersMode === 'DISABLED' && <span>(Disabled for all)</span>}
             </td>
           </tr>
-        )}
-
-        {/* Show a path to Firebase if user is an admin, or we're on localhost */}
-        {(isAdmin || isDev) && (
-          <>
-            <tr className="bg-purple-500/30">
-              <td>Supabase link</td>
-              <td>
-                <a
-                  href={supabaseConsoleContractPath(id)}
-                  target="_blank"
-                  className="text-primary-600"
-                  rel="noreferrer"
-                >
-                  {id}
-                </a>
-              </td>
-            </tr>
-            <tr className="bg-purple-500/30">
-              <td>SQL query</td>
-              <td>
-                <span className="truncate">select * from contracts...</span>
-                <CopyLinkOrShareButton
-                  url={`select * from contracts where id = '${id}';`}
-                  tooltip="Copy sql query to contract id"
-                  eventTrackingName={'admin copy contract id'}
-                  className="!py-0 align-middle"
-                  trackingInfo={{ contractId: id }}
-                />
-              </td>
-            </tr>
-          </>
         )}
 
         {!hideAdvanced && (
@@ -503,6 +473,38 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+
+        {/* Admin debug info - show at the very end */}
+        {(isAdmin || isDev) && (
+          <>
+            <tr className="bg-purple-500/30">
+              <td>Supabase link</td>
+              <td>
+                <a
+                  href={supabaseConsoleContractPath(id)}
+                  target="_blank"
+                  className="text-primary-600"
+                  rel="noreferrer"
+                >
+                  {id}
+                </a>
+              </td>
+            </tr>
+            <tr className="bg-purple-500/30">
+              <td>SQL query</td>
+              <td>
+                <span className="truncate">select * from contracts...</span>
+                <CopyLinkOrShareButton
+                  url={`select * from contracts where id = '${id}';`}
+                  tooltip="Copy sql query to contract id"
+                  eventTrackingName={'admin copy contract id'}
+                  className="!py-0 align-middle"
+                  trackingInfo={{ contractId: id }}
+                />
+              </td>
+            </tr>
+          </>
+        )}
       </tbody>
     </Table>
   )
@@ -548,19 +550,16 @@ export function ContractInfoDialog(props: {
       <Stats contract={contract} user={user} />
 
       {!!user && (
-        <>
-          <Row className="my-2 flex-wrap gap-2">
-            <ContractHistoryButton contract={contract} />
-            <ShareQRButton contract={contract} />
-            <ShareIRLButton contract={contract} />
-            <ShareEmbedButton contract={contract} />
-          </Row>
-          <Row className="flex-wrap gap-2">
-            {isAdmin || isTrusted ? (
-              <SuperBanControl userId={contract.creatorId} />
-            ) : null}
-          </Row>
-        </>
+        <Row className="flex-wrap gap-2">
+          <ContractHistoryButton contract={contract} />
+          <ShareQRButton contract={contract} />
+          <ShareIRLButton contract={contract} />
+          <ShareEmbedButton contract={contract} />
+        </Row>
+      )}
+
+      {(isAdmin || isTrusted) && (
+        <SuperBanControl userId={contract.creatorId} />
       )}
     </Modal>
   )
