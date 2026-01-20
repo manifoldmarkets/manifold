@@ -6,9 +6,8 @@ import { Row } from 'web/components/layout/row'
 import { LogoIcon } from 'web/components/icons/logo-icon'
 import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
-import { LuCrown, LuSprout } from 'react-icons/lu'
+import { LuSprout } from 'react-icons/lu'
 import { GiBurningSkull, GiOpenChest, GiTwoCoins } from 'react-icons/gi'
-import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import Foldy from 'web/public/logo.svg'
 import { useState } from 'react'
@@ -74,24 +73,6 @@ export default function PressPage() {
       icon: <BadgeCheckIcon className="text-primary-700 h-5 w-5" />,
       largeIcon: <BadgeCheckIcon className="text-primary-700 h-32 w-32" />,
       iconDesc: 'BadgeCheckIcon (Heroicons)',
-      color: 'Primary-700',
-    },
-    {
-      title: 'Partner',
-      description: 'Official partners',
-      icon: <LuCrown className="text-primary-700 h-5 w-5" />,
-      largeIcon: <LuCrown className="text-primary-700 h-32 w-32" />,
-      iconDesc: 'LuCrown (Lucide)',
-      color: 'Primary-700',
-    },
-    {
-      title: 'Institutional Partner',
-      description: 'Institutional partners',
-      icon: <HiOutlineBuildingLibrary className="text-primary-700 h-5 w-5" />,
-      largeIcon: (
-        <HiOutlineBuildingLibrary className="text-primary-700 h-32 w-32" />
-      ),
-      iconDesc: 'HiOutlineBuildingLibrary',
       color: 'Primary-700',
     },
     {
