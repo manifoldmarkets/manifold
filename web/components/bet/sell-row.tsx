@@ -135,7 +135,12 @@ export function SellSharesModal(props: {
 
   return (
     <Modal open={true} setOpen={setOpen}>
-      <Col className={clsx('bg-canvas-0 rounded-xl px-6 py-5 sm:px-8 sm:py-6', className)}>
+      <Col
+        className={clsx(
+          'bg-canvas-0 rounded-xl px-6 py-5 sm:px-8 sm:py-6',
+          className
+        )}
+      >
         <h2 className="text-ink-900 mb-4 text-xl font-semibold">
           {sellForUserId ? 'Admin: Sell user position' : 'Sell position'}
         </h2>

@@ -170,7 +170,7 @@ export function SelectUsers(props: {
             {selectedUsers.map((user) => (
               <div
                 key={user.id}
-                className="bg-primary-100 text-primary-700 dark:text-white flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-sm font-medium"
+                className="bg-primary-100 text-primary-700 flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-sm font-medium dark:text-white"
               >
                 <Avatar
                   username={user.username}

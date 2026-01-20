@@ -280,7 +280,7 @@ const PaymentRow = (props: {
             )}
           >
             {decreasedBalance ? (
-              <ArrowUpIcon className="h-3 w-3 text-scarlet-600 dark:text-white" />
+              <ArrowUpIcon className="text-scarlet-600 h-3 w-3 dark:text-white" />
             ) : (
               <ArrowDownIcon className="h-3 w-3 text-teal-600 dark:text-white" />
             )}
@@ -318,8 +318,8 @@ const PaymentRow = (props: {
           !hasUserContext || payment.fromId === payment.toId
             ? 'text-ink-700'
             : decreasedBalance
-              ? 'text-scarlet-600 dark:text-scarlet-400'
-              : 'text-teal-600 dark:text-teal-400'
+            ? 'text-scarlet-600 dark:text-scarlet-400'
+            : 'text-teal-600 dark:text-teal-400'
         )}
       >
         {hasUserContext && (decreasedBalance ? '-' : '+')}
@@ -588,7 +588,6 @@ export const QRModal = (props: {
             </Col>
           </details>
         </Col>
-
       </Col>
     </Modal>
   )

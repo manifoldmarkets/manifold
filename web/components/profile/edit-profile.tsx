@@ -218,7 +218,9 @@ export const EditProfile = (props: {
             <span className="text-ink-500">Updating...</span>
           </Row>
         )}
-        {errorName && <span className="text-scarlet-500 text-sm">{errorName}</span>}
+        {errorName && (
+          <span className="text-scarlet-500 text-sm">{errorName}</span>
+        )}
       </Col>
 
       {/* Username */}

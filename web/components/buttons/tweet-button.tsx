@@ -16,11 +16,7 @@ export function TweetButton(props: { tweetText: string; className?: string }) {
 
   return (
     <a
-      className={clsx(
-        buttonClass('sm', 'gray-outline'),
-        'gap-1.5',
-        className
-      )}
+      className={clsx(buttonClass('sm', 'gray-outline'), 'gap-1.5', className)}
       href={getTweetHref(tweetText)}
       onClick={trackCallback('share tweet')}
       target="_blank"

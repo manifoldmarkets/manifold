@@ -60,7 +60,7 @@ export function YourTrades(props: {
   }
 
   return (
-    <Col className="bg-canvas-50 rounded py-4 pb-0 sm:px-3 my-4">
+    <Col className="bg-canvas-50 my-4 rounded py-4 pb-0 sm:px-3">
       {contract.mechanism === 'cpmm-1' && (
         <YourOrders
           contract={contract}

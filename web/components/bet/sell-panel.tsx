@@ -371,7 +371,7 @@ export function SellPanel(props: {
       />
 
       {wasSubmitted && (
-        <div className="text-teal-600 mt-4 text-sm font-medium">
+        <div className="mt-4 text-sm font-medium text-teal-600">
           Sell submitted!
         </div>
       )}

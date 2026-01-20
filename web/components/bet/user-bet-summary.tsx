@@ -244,17 +244,16 @@ export function BetsSummary(props: {
                 user={includeSellButton}
                 hideStatus={true}
               />
-              {maxSharesOutcome &&
-                (yesWinnings > 1 || noWinnings > 1) && (
-                  <Button
-                    className="!py-1"
-                    size="xs"
-                    color="gray-outline"
-                    onClick={() => setShowShareModal(true)}
-                  >
-                    Share
-                  </Button>
-                )}
+              {maxSharesOutcome && (yesWinnings > 1 || noWinnings > 1) && (
+                <Button
+                  className="!py-1"
+                  size="xs"
+                  color="gray-outline"
+                  onClick={() => setShowShareModal(true)}
+                >
+                  Share
+                </Button>
+              )}
             </Row>
           )}
 

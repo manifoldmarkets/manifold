@@ -326,11 +326,13 @@ export const Stats = (props: {
             <td>Pool</td>
             <td>
               {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
-                ? `${formatWithCommas(Math.round(contract.pool.YES))} YES, ${formatWithCommas(
-                    Math.round(contract.pool.NO)
-                  )} NO`
+                ? `${formatWithCommas(
+                    Math.round(contract.pool.YES)
+                  )} YES, ${formatWithCommas(Math.round(contract.pool.NO))} NO`
                 : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
-                ? `${formatWithCommas(Math.round(contract.pool.YES))} HIGHER, ${formatWithCommas(
+                ? `${formatWithCommas(
+                    Math.round(contract.pool.YES)
+                  )} HIGHER, ${formatWithCommas(
                     Math.round(contract.pool.NO)
                   )} LOWER`
                 : contractPool(contract)}
