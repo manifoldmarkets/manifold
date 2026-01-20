@@ -6,13 +6,13 @@
 
 | Item | Price | Type | File |
 |------|-------|------|------|
-| Manifold Plus | M$500/mo | time-limited (30 days) | `common/src/shop/items.ts` |
-| Manifold Pro | M$2,500/mo | time-limited (30 days) | `common/src/shop/items.ts` |
-| Manifold Premium | M$10,000/mo | time-limited (30 days) | `common/src/shop/items.ts` |
+| Manifold Plus | M$500/mo | subscription (auto-renew) | `common/src/shop/items.ts` |
+| Manifold Pro | M$2,500/mo | subscription (auto-renew) | `common/src/shop/items.ts` |
+| Manifold Premium | M$10,000/mo | subscription (auto-renew) | `common/src/shop/items.ts` |
 | Golden Glow | M$25,000 | permanent-toggleable | `common/src/shop/items.ts` |
 | Crown | M$1,000,000 | permanent-toggleable | `common/src/shop/items.ts` |
 | Graduation Cap | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
-| Streak Freeze | M$500 | instant | `common/src/shop/items.ts` |
+| Streak Freeze | M$150 | instant | `common/src/shop/items.ts` |
 | PAMPU Skin | M$1,000 | permanent-toggleable | `common/src/shop/items.ts` |
 | Profile Border | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
 
@@ -52,9 +52,12 @@ CREATE TABLE user_entitlements (
   granted_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_time TIMESTAMPTZ,       -- null = permanent
   enabled BOOLEAN NOT NULL DEFAULT TRUE,  -- for toggleable items
+  auto_renew BOOLEAN NOT NULL DEFAULT FALSE,  -- for subscription items
   PRIMARY KEY (user_id, entitlement_id)
 );
 ```
+
+> **Note on `auto_renew`**: Currently only used for membership subscriptions. Could be extended to other time-limited items in the future (e.g., seasonal cosmetics, limited-time boosts).
 
 ### shop_orders (for Printful merch, future)
 ```sql
@@ -207,7 +210,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'streak-forgiveness',
     name: 'Streak Freeze',
-    price: 500,
+    price: 150,
     type: 'instant',
     limit: 'unlimited',
     category: 'consumable',
@@ -254,10 +257,12 @@ export const SHOP_ITEMS: ShopItem[] = [
 
 **Special behaviors**:
 - **Supporter tiers: Upgrade REPLACES lower tier** (no stacking across tiers)
+- **Membership purchases set `auto_renew = true`** (subscriptions auto-renew by default)
 - Time-limited items (non-supporter): Expiration stacks on same entitlement
 - Instant items (streak freeze): Adds to `user.data.streakForgiveness`
 - Supporter discount: Tier-based (Basic: 0%, Plus: 5%, Premium: 10%)
 - **Exclusive categories**: Auto-disables other items in same category (see above)
+- **Transaction type**: Membership purchases use `MEMBERSHIP_PAYMENT`, other items use `SHOP_PURCHASE`
 
 ### shop-toggle
 **File**: `backend/api/src/shop-toggle.ts`
@@ -273,10 +278,105 @@ export const SHOP_ITEMS: ShopItem[] = [
 
 **Note**: Toggling OFF does not auto-enable anything else - user explicitly chooses what to enable.
 
+### shop-cancel-subscription
+**File**: `backend/api/src/shop-cancel-subscription.ts`
+
+**Request**: `{}` (no parameters - cancels current membership)
+
+**Flow**:
+1. Find user's active supporter entitlement
+2. Set `auto_renew = false`
+3. Return updated entitlements
+
+**Behavior**:
+- Subscription remains active until `expires_time`
+- No refund is given
+- User can re-subscribe at any time (resets to new 30-day period with `auto_renew = true`)
+
 ### shop-reset-all (Admin Only)
 **File**: `backend/api/src/shop-reset-all.ts`
 
 Deletes all user entitlements and refunds mana. For testing only.
+
+---
+
+## Membership Subscriptions & Auto-Renewal
+
+Membership tiers (Plus/Pro/Premium) are implemented as **auto-renewing subscriptions**. This is distinct from other time-limited items.
+
+> **Current Scope**: Auto-renewal is only implemented for membership subscriptions (`supporter-basic`, `supporter-plus`, `supporter-premium`). The `auto_renew` column exists on all entitlements and could be extended to other items in the future.
+
+### How Auto-Renewal Works
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    SUBSCRIPTION LIFECYCLE                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  User purchases membership                                           │
+│           │                                                          │
+│           ▼                                                          │
+│  Entitlement created: expires_time = NOW + 30 days, auto_renew = true│
+│           │                                                          │
+│           ├──── User cancels ────▶ auto_renew = false               │
+│           │                        (still active until expiration)   │
+│           │                                                          │
+│           ▼                                                          │
+│  Scheduler job runs daily (8 AM UTC)                                 │
+│           │                                                          │
+│           ├──── auto_renew = false ────▶ Subscription expires        │
+│           │                                                          │
+│           ├──── Balance < price ────▶ auto_renew = false, expires   │
+│           │                                                          │
+│           └──── Balance >= price ────▶ Charge, extend 30 days       │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Scheduler Job
+
+**File**: `backend/scheduler/src/jobs/process-membership-renewals.ts`
+
+**Schedule**: Daily at 8 AM UTC (midnight PT)
+
+**Logic**:
+1. Find all supporter entitlements where `auto_renew = true` AND `expires_time <= NOW()`
+2. For each expired subscription:
+   - If user has sufficient balance: Charge tier price, extend `expires_time` by 30 days
+   - If insufficient balance: Set `auto_renew = false` (subscription ends)
+3. Renewal charges create `MEMBERSHIP_PAYMENT` transaction with `isAutoRenewal: true`
+
+### User Actions
+
+| Action | Result |
+|--------|--------|
+| **Subscribe** | Creates entitlement with `auto_renew = true`, charges immediately |
+| **Upgrade** | Deletes old entitlement, creates new tier with prorated credit, `auto_renew = true` |
+| **Cancel** | Sets `auto_renew = false`, membership active until expiration |
+| **Re-subscribe** | Creates fresh 30-day period, `auto_renew = true` (no credit for lapsed time) |
+
+### Transaction Types
+
+| Transaction | When Used |
+|-------------|-----------|
+| `MEMBERSHIP_PAYMENT` | New subscription, upgrade, or auto-renewal |
+| `SHOP_PURCHASE` | All non-membership shop items |
+| `SHOP_REFUND` | Admin refund via `shop-reset-all` |
+
+### UI Display
+
+On `/supporter` page:
+- Active subscription shows "Auto-renews in X days"
+- Cancelled subscription shows "Expires in X days (cancelled)"
+- "Cancel subscription" link available for active subscribers
+
+### Future Extension
+
+To add auto-renewal to other items:
+1. Set `auto_renew = true` when purchasing the item in `shop-purchase.ts`
+2. Add the entitlement ID to the scheduler job's query
+3. Add cancellation UI for that item type
+4. Consider adding a `shop-cancel-item` API that takes `itemId` parameter
 
 ---
 
@@ -482,10 +582,11 @@ Add item to the Quick Reference table in this document.
 - Central config in `common/src/supporter-config.ts`
 - Three separate entitlement IDs: `supporter-basic` (Plus), `supporter-plus` (Pro), `supporter-premium` (Premium)
 - **Upgrading REPLACES lower tier** (no stacking across tiers)
+- **Auto-renewing subscriptions** - see [Membership Subscriptions & Auto-Renewal](#membership-subscriptions--auto-renewal) section
 - Benefits scale by tier (quest multiplier, shop discount, free loans, streak freezes, etc.)
 - Badge colors: Gray (Plus), Indigo (Pro), Amber/Gold (Premium)
 - Premium badge animates on hovercard only, static elsewhere
-- Dedicated `/supporter` page for tier selection
+- Dedicated `/supporter` page for tier selection and subscription management
 
 ### Golden Border
 - Renders golden glow ring around avatar
@@ -579,6 +680,9 @@ getTierInfo(tier): TierConfig
 
 // Get max streak freezes for user
 getMaxStreakFreezes(entitlements): number
+
+// Check if subscription is cancelled (active but won't renew)
+isSubscriptionCancelled(entitlement): boolean
 ```
 
 ---
@@ -935,6 +1039,14 @@ Features that were considered but intentionally not implemented. Documented here
 
 | Date | Change | Modified By |
 |------|--------|-------------|
+| 2026-01-19 | Added auto-renewing subscriptions for memberships | Claude |
+| | - Added `auto_renew` column to `user_entitlements` table | |
+| | - New `shop-cancel-subscription` API endpoint | |
+| | - New `process-membership-renewals` scheduler job (daily 8 AM UTC) | |
+| | - New `MEMBERSHIP_PAYMENT` transaction type (distinct from `SHOP_PURCHASE`) | |
+| | - UI: Shows "Auto-renews in X days" or "Expires in X days (cancelled)" | |
+| | - Insufficient balance at renewal → subscription auto-cancels | |
+| 2026-01-19 | Documentation: Streak Freeze price corrected to M$150 | Claude |
 | 2026-01-16 | Rebranded tiers to Plus/Pro/Premium, added loan benefits | Claude |
 | | - Updated Quick Reference with correct prices and names | |
 | | - Added daily free loan rate and margin loan access benefits | |
@@ -975,7 +1087,7 @@ Features that were considered but intentionally not implemented. Documented here
 | | - Golden Border: M$125k→M$25k | |
 | | - Crown: M$100M→M$1M | |
 | | - Graduation Cap: M$100k→M$10k | |
-| | - Streak Freeze: M$10k→M$500 | |
+| | - Streak Freeze: M$10k→M$150 | |
 | | - PAMPU Skin: M$25k→M$10k | |
 | | - Profile Glow: M$75k→M$10k | |
 | 2026-01-12 | Shop UI improvements | Claude |
@@ -1011,6 +1123,18 @@ Features that were considered but intentionally not implemented. Documented here
 - [ ] Benefits comparison table shows correct values
 - [ ] /supporter page works well on mobile (stacked cards)
 - [ ] Shop SupporterCard links to /supporter
+
+### Subscription Auto-Renewal Testing
+- [ ] New subscription: `auto_renew = true` in database
+- [ ] UI shows "Auto-renews in X days" for active subscription
+- [ ] Cancel subscription: `auto_renew = false`, membership still active
+- [ ] UI shows "Expires in X days (cancelled)" after cancellation
+- [ ] Re-subscribe after cancellation: New 30-day period starts
+- [ ] Re-subscribe after expiration: New 30-day period starts
+- [ ] Upgrade: New tier inherits `auto_renew = true`
+- [ ] Auto-renewal with sufficient balance: Extends 30 days, charges user
+- [ ] Auto-renewal with insufficient balance: Sets `auto_renew = false`, expires
+- [ ] Transaction type is `MEMBERSHIP_PAYMENT` for subscriptions
 
 ### Exclusive Categories Testing
 - [ ] Purchasing Crown while owning Grad Cap → Cap auto-disables
