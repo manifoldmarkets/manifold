@@ -103,7 +103,7 @@ export const SUPPORTER_BENEFITS: Record<
     questMultiplier: 3,
     referralMultiplier: 2,
     shopDiscount: 0.1,
-    maxStreakFreezes: 5, // +4 over non-supporter
+    maxStreakFreezes: 10, // +9 over non-supporter
     badgeAnimation: true,
     freeLoanRate: 0.03, // 3%
     marginLoanAccess: true,
