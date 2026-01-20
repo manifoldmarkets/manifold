@@ -91,7 +91,7 @@ export function formatSpice(amount: number) {
 
 export function formatMoneyShort(amount: number) {
   const newAmount = getMoneyNumber(amount)
-  return ENV_CONFIG.moneyMoniker + formatLargeNumber(newAmount)
+  return ENV_CONFIG.moneyMoniker + shortFormatNumber(newAmount)
 }
 
 export function formatMoneyUSD(amount: number, fraction?: boolean) {
