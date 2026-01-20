@@ -6,7 +6,6 @@ import { User } from 'common/user'
 import clsx from 'clsx'
 import {
   LOAN_DAILY_INTEREST_RATE,
-  MAX_LOAN_NET_WORTH_PERCENT,
   DAILY_LOAN_NET_WORTH_PERCENT,
 } from 'common/loans'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
@@ -318,13 +317,53 @@ export function LoansModal(props: {
             <h3 className="text-ink-900 text-sm font-semibold">How it works</h3>
             <Col className="text-ink-700 gap-3 text-sm">
               <div>
-                <p className="text-ink-900 mb-1 font-medium">General loans</p>
+                <p className="text-ink-900 mb-1 font-medium">Loan limits</p>
                 <p>
-                  Borrow up to {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of
-                  your net worth total, with a daily limit of{' '}
-                  {formatPercent(DAILY_LOAN_NET_WORTH_PERCENT)} per day. The
-                  loan is distributed proportionally across all your unresolved
-                  market positions.
+                  Daily limit is {formatPercent(DAILY_LOAN_NET_WORTH_PERCENT)}{' '}
+                  of net worth. Loans are distributed proportionally across your
+                  unresolved positions.
+                </p>
+                <p className="mt-2">
+                  Your current max total loan is{' '}
+                  <span className="font-semibold">
+                    {formatMoney(maxGeneralLoan)}
+                  </span>
+                  {latestPortfolio && latestPortfolio.balance + latestPortfolio.investmentValue > 0 && (
+                    <>
+                      , which is{' '}
+                      {formatPercent(
+                        maxGeneralLoan /
+                          (latestPortfolio.balance + latestPortfolio.investmentValue)
+                      )}{' '}
+                      of your net worth
+                    </>
+                  )}
+                  .{' '}
+                  {hasMarginLoanAccess ? (
+                    <>
+                      Upgrade your membership at the{' '}
+                      <Link
+                        href="/shop"
+                        className="text-primary-600 hover:underline"
+                      >
+                        shop
+                      </Link>{' '}
+                      to increase this limit (Plus: 100%, Pro: 200%, Premium:
+                      300%).
+                    </>
+                  ) : (
+                    <>
+                      Subscribe to a membership at the{' '}
+                      <Link
+                        href="/shop"
+                        className="text-primary-600 hover:underline"
+                      >
+                        shop
+                      </Link>{' '}
+                      to unlock margin loans with higher limits (Plus: 100%,
+                      Pro: 200%, Premium: 300%).
+                    </>
+                  )}
                 </p>
               </div>
               <div>
@@ -437,9 +476,8 @@ export function LoansModal(props: {
                   Upgrade to unlock margin loans
                 </h3>
                 <p className="text-ink-600 max-w-sm text-sm">
-                  Margin loans are available to Manifold Pro and Premium
-                  members. Upgrade to borrow against your positions and leverage
-                  your trading.
+                  Margin loans are available to all Manifold members. Upgrade to
+                  borrow against your positions and leverage your trading.
                 </p>
               </Col>
               <Link href="/shop" onClick={() => setOpen(false)}>

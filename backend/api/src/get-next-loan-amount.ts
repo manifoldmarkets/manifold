@@ -11,6 +11,8 @@ import {
 } from 'common/loans'
 import {
   canAccessMarginLoans,
+  getFreeLoanRate,
+  getMaxLoanNetWorthPercent,
   SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
@@ -56,13 +58,34 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     }
   }
 
+  // Fetch supporter entitlements for tier-specific benefits
+  const supporterEntitlementRows = await pg.manyOrNone<{
+    user_id: string
+    entitlement_id: string
+    granted_time: string
+    expires_time: string | null
+    enabled: boolean
+  }>(
+    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
+     FROM user_entitlements
+     WHERE user_id = $1
+     AND entitlement_id = ANY($2)
+     AND enabled = true
+     AND (expires_time IS NULL OR expires_time > NOW())`,
+    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
+  )
+  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const hasMarginLoanAccess = canAccessMarginLoans(entitlements)
+  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
+  const freeLoanRate = getFreeLoanRate(entitlements)
+
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
   const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
   const netWorth = user.balance + value
 
-  const maxGeneralLoan = calculateMaxGeneralLoanAmount(netWorth)
+  const maxGeneralLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
   // Total loan includes both free loans and margin loans
   const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
   const currentMarginLoan = sumBy(metrics, (m) => m.marginLoan ?? 0)
@@ -91,25 +114,6 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const lastClaimTime = lastClaimResult?.last_free_loan_claim ?? null
   const canClaimFreeLoan = canClaimDailyFreeLoan(lastClaimTime)
 
-  // Check if user has margin loan access (Pro or Premium tier required)
-  const supporterEntitlementRows = await pg.manyOrNone<{
-    user_id: string
-    entitlement_id: string
-    granted_time: string
-    expires_time: string | null
-    enabled: boolean
-  }>(
-    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
-     FROM user_entitlements
-     WHERE user_id = $1
-     AND entitlement_id = ANY($2)
-     AND enabled = true
-     AND (expires_time IS NULL OR expires_time > NOW())`,
-    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
-  )
-  const entitlements = supporterEntitlementRows.map(convertEntitlement)
-  const hasMarginLoanAccess = canAccessMarginLoans(entitlements)
-
   // Calculate free loan available
   const eligibleMetrics = metrics.filter((m) => {
     const contract = contractsById[m.contractId]
@@ -131,7 +135,8 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
           eligibleMetrics.map((m) => ({
             payout: m.payout ?? 0,
             invested: m.invested ?? 0,
-          }))
+          })),
+          freeLoanRate
         ),
         available,
         availableToday

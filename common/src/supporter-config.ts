@@ -76,6 +76,7 @@ export const SUPPORTER_BENEFITS: Record<
     badgeAnimation: boolean // Animated star badge on hovercard for Premium
     freeLoanRate: number // Daily free loan percentage (0.01 = 1%)
     marginLoanAccess: boolean // Whether user can request margin loans
+    maxLoanNetWorthPercent: number // Max loan as % of net worth (1.0 = 100% = 2x leverage)
   }
 > = {
   basic: {
@@ -85,7 +86,8 @@ export const SUPPORTER_BENEFITS: Record<
     maxStreakFreezes: 2, // +1 over non-supporter
     badgeAnimation: false,
     freeLoanRate: 0.01, // 1% (same as free users)
-    marginLoanAccess: false,
+    marginLoanAccess: true,
+    maxLoanNetWorthPercent: 1.0, // 100% = 2x leverage
   },
   plus: {
     questMultiplier: 2,
@@ -95,6 +97,7 @@ export const SUPPORTER_BENEFITS: Record<
     badgeAnimation: false,
     freeLoanRate: 0.02, // 2%
     marginLoanAccess: true,
+    maxLoanNetWorthPercent: 2.0, // 200% = 3x leverage
   },
   premium: {
     questMultiplier: 3,
@@ -104,6 +107,7 @@ export const SUPPORTER_BENEFITS: Record<
     badgeAnimation: true,
     freeLoanRate: 0.03, // 3%
     marginLoanAccess: true,
+    maxLoanNetWorthPercent: 3.0, // 300% = 4x leverage
   },
 }
 
@@ -154,6 +158,7 @@ export function getBenefit<K extends keyof (typeof SUPPORTER_BENEFITS)['basic']>
       badgeAnimation: false,
       freeLoanRate: 0.01, // Free users get 1%
       marginLoanAccess: false,
+      maxLoanNetWorthPercent: 1.0, // Non-supporters: 100% = 2x leverage (if they had access)
     }
     return defaults[benefit]
   }
@@ -233,11 +238,19 @@ export function getFreeLoanRate(
   return getBenefit(entitlements, 'freeLoanRate')
 }
 
-// Check if user can access margin loans (Pro and Premium only)
+// Check if user can access margin loans (all supporter tiers)
 export function canAccessMarginLoans(
   entitlements: UserEntitlement[] | undefined
 ): boolean {
   return getBenefit(entitlements, 'marginLoanAccess')
+}
+
+// Get max loan as percentage of net worth based on tier
+// Plus: 100% (2x leverage), Pro: 200% (3x), Premium: 300% (4x)
+export function getMaxLoanNetWorthPercent(
+  entitlements: UserEntitlement[] | undefined
+): number {
+  return getBenefit(entitlements, 'maxLoanNetWorthPercent')
 }
 
 // ============================================
@@ -303,6 +316,18 @@ export const BENEFIT_DEFINITIONS = [
     description: 'Access to interest-bearing margin loans',
     getValueForTier: (tier: SupporterTier) =>
       SUPPORTER_BENEFITS[tier].marginLoanAccess ? '✓' : '-',
+    baseValue: '-',
+  },
+  {
+    id: 'maxLeverage',
+    icon: '📈',
+    title: 'Max Leverage',
+    description: 'Maximum loan as percentage of net worth',
+    getValueForTier: (tier: SupporterTier) => {
+      const percent = SUPPORTER_BENEFITS[tier].maxLoanNetWorthPercent
+      const leverage = percent + 1 // 100% loan = 2x leverage
+      return `${leverage}x`
+    },
     baseValue: '-',
   },
   {

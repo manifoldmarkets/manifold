@@ -34,6 +34,7 @@ import {
 import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
 import {
   canAccessMarginLoans,
+  getMaxLoanNetWorthPercent,
   SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
@@ -83,9 +84,12 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   if (!canAccessMarginLoans(entitlements)) {
     throw new APIError(
       403,
-      'Margin loans require Manifold Pro or Premium. Upgrade at manifold.markets/shop'
+      'Margin loans require a Manifold membership. Upgrade at manifold.markets/shop'
     )
   }
+
+  // Get tier-specific max loan percent
+  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
 
   const portfolioMetric = await pg.oneOrNone(
     `select *
@@ -115,9 +119,11 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
   const netWorth = user.balance + value
 
-  // Check total loan limit
-  if (!isUserEligibleForGeneralLoan(portfolioMetric, netWorth, amount)) {
-    const maxLoan = calculateMaxGeneralLoanAmount(netWorth)
+  // Check total loan limit (tier-specific)
+  if (
+    !isUserEligibleForGeneralLoan(portfolioMetric, netWorth, amount, maxLoanPercent)
+  ) {
+    const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
     const currentLoan = portfolioMetric.loanTotal ?? 0
     throw new APIError(
       400,

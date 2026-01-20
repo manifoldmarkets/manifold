@@ -149,12 +149,13 @@ export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
 export const isUserEligibleForGeneralLoan = (
   portfolio: PortfolioMetrics,
   netWorth: number,
-  requestedAmount: number
+  requestedAmount: number,
+  maxLoanPercent: number = MAX_LOAN_NET_WORTH_PERCENT
 ): boolean => {
   const { loanTotal } = portfolio
   if (netWorth <= 0) return false
 
-  const maxLoan = calculateMaxGeneralLoanAmount(netWorth)
+  const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
   const currentLoan = loanTotal ?? 0
   return currentLoan + requestedAmount <= maxLoan
 }
@@ -243,8 +244,11 @@ export type RepaymentDistribution = {
   interestRepaid: number
 }
 
-export const calculateMaxGeneralLoanAmount = (netWorth: number): number => {
-  return netWorth * MAX_LOAN_NET_WORTH_PERCENT
+export const calculateMaxGeneralLoanAmount = (
+  netWorth: number,
+  maxLoanPercent: number = MAX_LOAN_NET_WORTH_PERCENT
+): number => {
+  return netWorth * maxLoanPercent
 }
 
 export const calculateDailyLoanLimit = (netWorth: number): number => {

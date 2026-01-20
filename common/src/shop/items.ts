@@ -56,7 +56,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'supporter-basic',
     name: 'Manifold Plus',
-    description: '1.5x quest rewards, 1% daily free loans',
+    description: '1.5x quest rewards, 1% daily free loans, margin loans (2x leverage)',
     price: 500,
     type: 'time-limited',
     duration: 30 * DAY_MS,
@@ -67,7 +67,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'supporter-plus',
     name: 'Manifold Pro',
-    description: '2x quest rewards, 5% shop discount, 2% daily free loans, margin loan access',
+    description: '2x quest rewards, 5% shop discount, 2% daily free loans, margin loans (3x leverage)',
     price: 2500,
     type: 'time-limited',
     duration: 30 * DAY_MS,
@@ -78,7 +78,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'supporter-premium',
     name: 'Manifold Premium',
-    description: '3x quest rewards, 10% shop discount, 3% daily free loans, margin loan access, animated badge',
+    description: '3x quest rewards, 10% shop discount, 3% daily free loans, margin loans (4x leverage), animated badge',
     price: 10000,
     type: 'time-limited',
     duration: 30 * DAY_MS,
