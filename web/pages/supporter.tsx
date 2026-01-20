@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import Link from 'next/link'
 import clsx from 'clsx'
 import { FaStar } from 'react-icons/fa'
-import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
 import {
   SUPPORTER_TIERS,
@@ -206,38 +204,6 @@ export default function SupporterPage() {
 
         {/* Benefits Comparison Table with Column Highlight */}
         <BenefitsTable currentTier={currentTier} activeTier={activeTier} />
-
-        {/* Balance display */}
-        {user && (
-          <div className="text-ink-500 text-center text-sm">
-            Your balance:{' '}
-            <span className="font-semibold text-violet-600">
-              {formatMoney(effectiveBalance)}
-            </span>
-          </div>
-        )}
-
-        {/* Back to shop link */}
-        <div className="text-center">
-          <Link
-            href="/shop"
-            className="text-primary-600 hover:text-primary-700 font-medium"
-          >
-            Back to Shop
-          </Link>
-        </div>
-
-        {/* Cancel subscription option for active auto-renewing subscribers */}
-        {isSupporter && isAutoRenewing && (
-          <div className="border-ink-200 border-t pt-4 text-center">
-            <button
-              onClick={() => setConfirmingCancel(true)}
-              className="text-ink-400 hover:text-ink-600 text-sm underline"
-            >
-              Cancel subscription
-            </button>
-          </div>
-        )}
       </Col>
 
       {/* Purchase Confirmation Modal */}

@@ -962,16 +962,6 @@ function SupporterModal(props: {
           {/* Benefits Comparison Table */}
           <BenefitsTable currentTier={currentTier} activeTier={activeTier} />
 
-          {/* Balance display */}
-          {user && (
-            <div className="text-ink-500 text-center text-sm">
-              Your balance:{' '}
-              <span className="font-semibold text-violet-600">
-                {formatMoney(effectiveBalance)}
-              </span>
-            </div>
-          )}
-
           {/* Link to full page */}
           <div className="text-center">
             <Link
