@@ -3138,6 +3138,7 @@ export const API = (_apiTypeCheck = {
       success: boolean
       entitlement?: UserEntitlement
       entitlements: UserEntitlement[]
+      upgradeCredit?: number
     },
   },
   'shop-toggle': {
