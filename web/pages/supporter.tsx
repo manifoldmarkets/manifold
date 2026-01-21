@@ -149,6 +149,11 @@ export default function SupporterPage() {
                   <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier].textColor)}>
                     Manifold {SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier].name}
                   </span>
+                  {currentEntitlement?.grantedTime && (
+                    <span className="text-ink-400 text-xs">
+                      Member since {new Date(currentEntitlement.grantedTime).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
                 </Col>
               </Row>
 
