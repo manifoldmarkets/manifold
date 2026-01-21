@@ -2041,10 +2041,13 @@ function MerchItemCard(props: {
         </Col>
 
         {/* Price and buy button */}
-        <Row className="mt-auto items-center justify-between pt-2">
-          <div className="font-semibold text-teal-600">
-            {formatMoney(item.price)}
-          </div>
+        <Row className="mt-auto items-center justify-between border-t border-ink-200 pt-3">
+          <Col>
+            <div className="text-lg font-bold text-teal-600">
+              {formatMoney(item.price)}
+            </div>
+            <span className="text-ink-500 text-xs">+ shipping (paid in mana)</span>
+          </Col>
           {!canPurchase && user ? (
             <Link href="/checkout">
               <Button size="sm" color="gradient-pink">
@@ -2076,6 +2079,10 @@ function MerchItemCard(props: {
             <span className="font-semibold text-teal-600">
               {formatMoney(item.price)}
             </span>
+            <span className="text-ink-500 text-sm"> + shipping</span>
+          </p>
+          <p className="text-ink-500 text-sm">
+            All costs (item + shipping) are paid in mana.
           </p>
 
           {/* Size Guide */}
@@ -2259,7 +2266,10 @@ function MerchItemCard(props: {
           {/* Shipping rates display */}
           {shippingRates && shippingRates.length > 0 && (
             <Col className="gap-2">
-              <div className="text-sm font-medium">Select shipping option:</div>
+              <Row className="items-center justify-between">
+                <div className="text-sm font-medium">Select shipping option:</div>
+                <span className="text-ink-500 text-xs">Prices in mana</span>
+              </Row>
               {shippingRates.map((rate) => {
                 // Convert USD to mana (100 mana = $1 USD)
                 const shippingMana = Math.round(parseFloat(rate.rate) * 100)
@@ -2381,7 +2391,7 @@ function MerchItemCard(props: {
               </Row>
             )}
             <Row className="justify-between text-base font-semibold">
-              <span>Total:</span>
+              <span>Total (mana):</span>
               <span className="text-teal-600">
                 {formatMoney(
                   item.price +

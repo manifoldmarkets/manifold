@@ -15,6 +15,7 @@
 | Streak Freeze | M$150 | instant | `common/src/shop/items.ts` |
 | PAMPU Skin | M$1,000 | permanent-toggleable | `common/src/shop/items.ts` |
 | Profile Border | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
+| AGGC T-Shirt | M$5,000 + shipping | instant (merch) | `common/src/shop/items.ts` |
 
 ---
 
@@ -27,15 +28,16 @@
 │                                                              │
 │  common/src/shop/items.ts    ←── Item definitions & prices  │
 │           │                                                  │
-│           ▼                                                  │
-│  backend/api/src/shop-purchase.ts  ←── Purchase API         │
-│           │                                                  │
-│           ▼                                                  │
-│  Database: user_entitlements  ←── Ownership tracking        │
-│  Database: shop_orders        ←── Order history             │
-│           │                                                  │
-│           ▼                                                  │
-│  web/pages/shop.tsx           ←── Shop UI                   │
+│           ├─────────────────────────────────────┐            │
+│           ▼                                     ▼            │
+│  shop-purchase.ts (digital)      shop-purchase-merch.ts     │
+│           │                                     │            │
+│           ▼                                     ▼            │
+│  Database: user_entitlements     Printful API (orders)      │
+│  Database: shop_orders           Database: shop_orders       │
+│           │                                     │            │
+│           ▼                                     ▼            │
+│  web/pages/shop.tsx           ←── Shop UI (both types)      │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -59,7 +61,7 @@ CREATE TABLE user_entitlements (
 
 > **Note on `auto_renew`**: Currently only used for membership subscriptions. Could be extended to other time-limited items in the future (e.g., seasonal cosmetics, limited-time boosts).
 
-### shop_orders (for Printful merch, future)
+### shop_orders (for Printful merch and order tracking)
 ```sql
 CREATE TABLE shop_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -102,6 +104,7 @@ export type ShopItemCategory =
   | 'skin'            // PAMPU skin
   | 'consumable'      // Streak freeze
   | 'hovercard'       // Profile glow
+  | 'merch'           // Physical merchandise (via Printful)
 ```
 
 ### Exclusive Categories (IMPORTANT)
@@ -142,6 +145,13 @@ export type ShopItem = {
   imageUrl?: string       // Optional preview image
   entitlementId?: string  // Optional: share entitlement across items
   alwaysEnabled?: boolean // If true, no toggle switch (e.g., supporter badge)
+  variants?: MerchVariant[] // Merch only: size variants with Printful IDs
+}
+
+// Merch size variant (for clothing items)
+export type MerchVariant = {
+  size: string                 // Display size (e.g., 'S', 'M', 'L')
+  printfulSyncVariantId: string // Printful sync variant ID (hex string)
 }
 ```
 
@@ -231,6 +241,25 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'hovercard',
   },
+  // Merch items (physical goods via Printful)
+  {
+    id: 'merch-aggc-tshirt',
+    name: 'AGGC T-Shirt',
+    description: 'Embroidered Manifold logo on front, "Anti Gambling Gambling Club" print on back',
+    price: 5000,  // Base price in mana (shipping added separately)
+    type: 'instant',
+    limit: 'unlimited',
+    category: 'merch',
+    imageUrl: '/merch/AGGC-front-ghost.png',
+    variants: [
+      { size: 'S', printfulSyncVariantId: '69026b955ba991' },
+      { size: 'M', printfulSyncVariantId: '69026b955baa12' },
+      { size: 'L', printfulSyncVariantId: '69026b955baa92' },
+      { size: 'XL', printfulSyncVariantId: '69026b955bab14' },
+      { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
+      { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
+    ],
+  },
 ]
 ```
 
@@ -297,6 +326,88 @@ export const SHOP_ITEMS: ShopItem[] = [
 **File**: `backend/api/src/shop-reset-all.ts`
 
 Deletes all user entitlements and refunds mana. For testing only.
+
+### shop-shipping-rates (Merch)
+**File**: `backend/api/src/shop-shipping-rates.ts`
+
+**Request**:
+```typescript
+{
+  variantId: string,  // Printful sync variant ID
+  address: {
+    address1: string,
+    city: string,
+    state?: string,
+    zip: string,
+    country: string,  // ISO country code (e.g., 'US', 'GB')
+  }
+}
+```
+
+**Flow**:
+1. Validate user is logged in
+2. Call Printful `/shipping/rates` API with address and variant
+3. Return available shipping options with costs
+
+**Returns**:
+```typescript
+{
+  rates: Array<{
+    id: string,
+    name: string,        // e.g., "STANDARD", "EXPRESS"
+    rate: string,        // Cost in USD (e.g., "4.99")
+    currency: string,    // "USD"
+    minDeliveryDays: number,
+    maxDeliveryDays: number,
+  }>
+}
+```
+
+**Note**: Shipping costs are returned in USD - the frontend converts to mana at 100 mana = $1 USD.
+
+### shop-purchase-merch
+**File**: `backend/api/src/shop-purchase-merch.ts`
+
+**Request**:
+```typescript
+{
+  itemId: string,    // e.g., 'merch-aggc-tshirt'
+  variantId: string, // Printful sync variant ID
+  shipping: {
+    name: string,
+    address1: string,
+    address2?: string,
+    city: string,
+    state: string,
+    zip: string,
+    country: string,
+  }
+}
+```
+
+**Flow**:
+1. Validate item exists and is merch
+2. Validate variant exists for this item
+3. Check user is logged in and not banned
+4. Check user balance >= item price (shipping charged by Printful separately)
+5. Create `SHOP_PURCHASE` transaction (deduct mana)
+6. Create Printful order (draft mode - `confirm: false`)
+7. Create `shop_orders` record linking user → Printful order
+
+**Returns**:
+```typescript
+{
+  success: true,
+  printfulOrderId: string,
+  printfulStatus: string,  // e.g., "draft"
+}
+```
+
+**Order Matching**:
+- `shop_orders.user_id` links to Manifold user
+- `shop_orders.printful_order_id` links to Printful order
+- `shop_orders.txn_id` links to mana transaction
+- Printful receives `external_id: manifold-${txn.id}` for reverse lookup
 
 ---
 
@@ -576,6 +687,88 @@ Add item to the Quick Reference table in this document.
 
 ---
 
+## How to Add a New Merch Item
+
+Adding merch requires both Printful setup and code changes.
+
+### Step 1: Set Up Product in Printful
+
+1. Log into Printful dashboard: https://www.printful.com/dashboard
+2. Go to **Stores** → Select "Manifold" store
+3. Click **Add product** → Choose product type (t-shirt, mug, etc.)
+4. Upload design, configure mockups, set retail price
+5. **Important**: After creating, note the **Sync Variant IDs** for each size/color
+
+### Step 2: Get Printful Sync Variant IDs
+
+Run the helper script to fetch all variant IDs:
+
+```bash
+npx ts-node backend/scripts/get-printful-variants.ts
+```
+
+This outputs something like:
+```
+Product: AGGC T-Shirt
+Product ID: 123456789
+
+Variants (use these IDs in items.ts):
+variants: [
+  { size: 'S', printfulSyncVariantId: '69026b955ba991' },
+  { size: 'M', printfulSyncVariantId: '69026b955baa12' },
+  ...
+]
+```
+
+### Step 3: Add Item to SHOP_ITEMS
+
+In `common/src/shop/items.ts`:
+
+```typescript
+{
+  id: 'merch-my-new-item',        // Must start with 'merch-'
+  name: 'My New Item',
+  description: 'Description here',
+  price: 5000,                    // Base price in mana (shipping separate)
+  type: 'instant',                // Merch is always 'instant'
+  limit: 'unlimited',             // Users can buy multiple
+  category: 'merch',              // Must be 'merch'
+  imageUrl: '/merch/my-item.png', // Optional preview image
+  variants: [                     // From Step 2
+    { size: 'S', printfulSyncVariantId: 'abc123...' },
+    { size: 'M', printfulSyncVariantId: 'def456...' },
+    // ... all sizes
+  ],
+}
+```
+
+### Step 4: Add Preview Image (Optional)
+
+Place the preview image in `web/public/merch/` directory.
+
+### Step 5: Test the Purchase Flow
+
+1. Verify item appears in shop
+2. Select size, enter shipping address
+3. Click "Get Shipping Rates" - verify rates load
+4. Complete purchase flow
+5. Check Printful dashboard for draft order
+
+### Printful API Notes
+
+- **Draft orders**: Orders are created with `confirm: false` - they won't be produced until manually confirmed in Printful
+- **External ID**: Each order has `external_id: manifold-${txn.id}` for cross-reference
+- **Shipping rates**: Fetched in real-time from Printful based on destination
+- **Supported countries**: Currently 44 countries in dropdown (expandable)
+
+### Printful Secret Setup
+
+The `PRINTFUL_API_TOKEN` secret must be configured in Google Cloud Secret Manager:
+- Prod: https://console.cloud.google.com/security/secret-manager?project=mantic-markets
+- Dev: https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
+
+---
+
 ## Item-Specific Implementation Details
 
 ### Membership Tiers (Plus/Pro/Premium)
@@ -621,6 +814,15 @@ Add item to the Quick Reference table in this document.
 - Check with `userHasHovercardGlow(entitlements)`
 - Implementation in hovercard component
 
+### Merch (Physical Goods via Printful)
+- Physical merchandise fulfilled by Printful print-on-demand service
+- Uses separate API endpoint: `shop-purchase-merch` (not `shop-purchase`)
+- Orders created as drafts (`confirm: false`) - must be manually confirmed in Printful dashboard
+- Shipping costs fetched via `shop-shipping-rates` API, converted to mana (100 mana = $1 USD)
+- Orders tracked in `shop_orders` table with `printful_order_id` and `printful_status`
+- No entitlements created - merch is not a digital item
+- Helpers: `getMerchItems()`, `isMerchItem(item)`
+
 ---
 
 ## Supporter Benefits System
@@ -636,7 +838,7 @@ All supporter benefits are centrally configured in `common/src/supporter-config.
 | Shop Discount | 0% | 5% | 10% | 0% |
 | Max Streak Freezes | 2 | 3 | 5 | 1 |
 | Daily Free Loan Rate | 1% | 2% | 3% | 1% |
-| Margin Loan Access | No | Yes | Yes | No |
+| Margin Loan Access | Yes | Yes | Yes | No |
 | Badge Animation | No | No | Hovercard only | No |
 
 ### Benefit Implementation Locations
@@ -648,7 +850,7 @@ All supporter benefits are centrally configured in `common/src/supporter-config.
 | Shop Discount | `backend/api/src/shop-purchase.ts` | Applied to all items EXCEPT membership tiers |
 | Max Streak Freezes | `backend/api/src/shop-purchase.ts` | Caps how many freezes user can purchase |
 | Daily Free Loan Rate | `backend/api/src/request-loan.ts` | Daily free loan as % of portfolio value |
-| Margin Loan Access | `backend/api/src/request-loan.ts` | Unlocks margin loans for Pro/Premium |
+| Margin Loan Access | `backend/api/src/request-loan.ts` | Unlocks margin loans for all supporter tiers |
 | Badge Animation | `web/components/user/user-hovercard.tsx` | Premium badge pulses on hovercard only |
 
 ### Membership Helper Functions
@@ -1039,6 +1241,15 @@ Features that were considered but intentionally not implemented. Documented here
 
 | Date | Change | Modified By |
 |------|--------|-------------|
+| 2026-01-22 | Added Printful merch integration | Claude |
+| | - New `merch` category for physical goods | |
+| | - New `shop-shipping-rates` API for real-time shipping costs | |
+| | - New `shop-purchase-merch` API for placing Printful orders | |
+| | - Added AGGC T-Shirt as first merch item (M$5,000 + shipping) | |
+| | - Shipping costs converted from USD to mana (100 mana = $1) | |
+| | - Orders created as drafts for manual confirmation | |
+| | - Helper script: `backend/scripts/get-printful-variants.ts` | |
+| | - Added "How to Add a New Merch Item" documentation section | |
 | 2026-01-19 | Added auto-renewing subscriptions for memberships | Claude |
 | | - Added `auto_renew` column to `user_entitlements` table | |
 | | - New `shop-cancel-subscription` API endpoint | |
@@ -1159,3 +1370,18 @@ Features that were considered but intentionally not implemented. Documented here
 - [ ] Shop SupporterCard: Avatar shows user's entitlements (crown, border, etc.)
 - [ ] Shop SupporterCard: Premium star has animated glow effect
 - [ ] Shop modal: Same hover/selected distinction as /supporter page
+
+### Merch (Printful) Testing
+- [ ] Merch item appears in shop with correct price and image
+- [ ] Size selector shows all variants
+- [ ] Country dropdown lists all 44 supported countries
+- [ ] "Get Shipping Rates" button fetches rates from Printful
+- [ ] Shipping costs display in mana (not USD)
+- [ ] Shipping method selector shows all options with delivery times
+- [ ] Confirmation modal shows order summary with 5-second countdown
+- [ ] Confirm button disabled until countdown completes
+- [ ] Purchase deducts mana (item price only, shipping billed by Printful)
+- [ ] Draft order created in Printful dashboard
+- [ ] `shop_orders` record created with `printful_order_id`
+- [ ] Form validates required fields (name, address, city, zip, country)
+- [ ] Mobile responsive: Address form doesn't overflow on narrow screens
