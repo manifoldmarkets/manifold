@@ -288,3 +288,25 @@ export const CharityGiveawayBanner = () => {
     </Banner>
   )
 }
+
+export const ShopBanner = () => {
+  const [showBanner, hideBanner] = useBanner('shop-launch-2026')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-violet-100 to-amber-100 py-2 transition-colors hover:from-violet-200 hover:to-amber-200 dark:from-violet-900/30 dark:to-amber-900/30 dark:hover:from-violet-900/50 dark:hover:to-amber-900/50"
+      link="/shop"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>✨</span>
+        <div className="text-ink-700">
+          <span className="font-semibold">Mana Shop is live!</span> Get
+          membership perks & digital goods
+        </div>
+        <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
