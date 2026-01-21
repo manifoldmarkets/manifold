@@ -2407,8 +2407,11 @@ function MembershipSubscriptionNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const { tierName, amount, type, newExpiresTime } =
-    notification.data as MembershipSubscriptionData
+  const data = notification.data as MembershipSubscriptionData | undefined
+  const tierName = data?.tierName ?? 'Membership'
+  const amount = data?.amount ?? 0
+  const type = data?.type ?? 'renewed'
+  const newExpiresTime = data?.newExpiresTime
 
   const isRenewal = type === 'renewed'
 

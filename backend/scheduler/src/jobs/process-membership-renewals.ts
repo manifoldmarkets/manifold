@@ -117,8 +117,15 @@ export async function processMembershipRenewals() {
       continue
     }
 
+    // Track what happened in the transaction so we can send notifications after
+    type NotificationInfo = {
+      type: 'renewed' | 'cancelled'
+      newExpiresTime?: number
+    }
+    let notificationToSend: NotificationInfo | null = null
+
     try {
-      await pg.tx(async (tx) => {
+      const result = await pg.tx(async (tx) => {
         // Get user's current balance
         const user = await tx.oneOrNone<{ balance: number }>(
           `SELECT balance FROM users WHERE id = $1`,
@@ -127,7 +134,7 @@ export async function processMembershipRenewals() {
 
         if (!user) {
           log(`User ${user_id} not found, skipping renewal`)
-          return
+          return null
         }
 
         if (user.balance >= tierInfo.price) {
@@ -159,14 +166,10 @@ export async function processMembershipRenewals() {
           log(`Successfully renewed ${tierInfo.name} for user ${user_id}`)
           renewedCount++
 
-          // Send renewal notification
-          await createMembershipNotification(
-            user_id,
-            tierInfo.name,
-            tierInfo.price,
-            'renewed',
-            newExpiresTime.getTime()
-          )
+          return {
+            type: 'renewed' as const,
+            newExpiresTime: newExpiresTime.getTime(),
+          }
         } else {
           // Insufficient balance - cancel auto-renewal
           await tx.none(
@@ -179,15 +182,27 @@ export async function processMembershipRenewals() {
           log(`Cancelled ${tierInfo.name} auto-renewal for user ${user_id} (insufficient balance: ${user.balance} < ${tierInfo.price})`)
           failedCount++
 
-          // Send cancellation notification
+          return { type: 'cancelled' as const }
+        }
+      })
+
+      notificationToSend = result
+
+      // Send notification AFTER transaction commits successfully
+      if (notificationToSend) {
+        try {
           await createMembershipNotification(
             user_id,
             tierInfo.name,
             tierInfo.price,
-            'cancelled'
+            notificationToSend.type,
+            notificationToSend.newExpiresTime
           )
+        } catch (notifError) {
+          // Log but don't fail the renewal if notification fails
+          log(`Failed to send ${notificationToSend.type} notification for user ${user_id}: ${notifError}`)
         }
-      })
+      }
     } catch (error) {
       log(`Error processing renewal for user ${user_id}: ${error}`)
       failedCount++
