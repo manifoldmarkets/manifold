@@ -124,7 +124,7 @@ export function BuyPanel(
   } = props
 
   const user = useUser()
-  const hasPampu = userHasPampuSkin(user?.shopPurchases)
+  const hasPampu = userHasPampuSkin(user?.entitlements)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -182,7 +182,7 @@ export function BuyPanel(
                   : 'YES'
               }
               noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
-              includeWordBet={!isStonk}
+              includeWordBet={!isStonk && !hasPampu}
             />
           </Row>
         </Col>
@@ -238,7 +238,7 @@ export const BuyPanelBody = (
   } = props
 
   const user = useUser()
-  const hasPampu = userHasPampuSkin(user?.shopPurchases)
+  const hasPampu = userHasPampuSkin(user?.entitlements)
   const privateUser = usePrivateUser()
   const liquidityTier =
     'answers' in contract
@@ -633,10 +633,9 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
+  // Toggle always shows Yes/No - only the main bet button shows PAMPU
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
-    : hasPampu
-    ? { Pampu: 'YES', No: 'NO' }
     : { Yes: 'YES', No: 'NO' }
 
   const { pseudonymName: propPseudonymName, pseudonymColor } =
@@ -720,7 +719,8 @@ export const BuyPanelBody = (
             <Row
               className={clsx(
                 ' gap-1',
-                (isBinaryMC || pseudonymName) && 'invisible'
+                // Hide toggle for binary MC questions or prop-provided pseudonyms (but NOT for PAMPU skin)
+                (isBinaryMC || propPseudonymName) && 'invisible'
               )}
             >
               <ChoicesToggleGroup
@@ -1001,7 +1001,7 @@ export const BuyPanelBody = (
                         </span>
                       ) : (
                         <span>
-                          Buy{' '}
+                          {hasPampu ? '' : 'Buy '}
                           {binaryMCOutcomeLabel ??
                             formatOutcomeLabel(
                               contract,

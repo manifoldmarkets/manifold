@@ -65,16 +65,16 @@ export function BettingStreakModal(props: {
             • Can I save my streak if I forget?
           </span>
           <span className={'ml-2'}>
-            You get 1 streak forgiveness per month that prevents your streak
-            from resetting.
-            {currentUser && (
+            Streak freezes protect your streak from resetting. You can purchase
+            them in the shop.
+            {currentUser && (currentUser.streakForgiveness ?? 0) > 0 && (
               <span>
                 {' '}
                 Right now you have
                 <span className={'mx-1 font-bold'}>
                   {currentUser.streakForgiveness}
                 </span>
-                left.
+                available.
               </span>
             )}
           </span>

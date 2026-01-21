@@ -26,6 +26,12 @@ import {
 } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
+import {
+  getFreeLoanRate,
+  getMaxLoanNetWorthPercent,
+  SUPPORTER_ENTITLEMENT_IDS,
+} from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
 
 export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
@@ -35,6 +41,26 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
   if (!user) {
     throw new APIError(404, `User ${userId} not found`)
   }
+
+  // Fetch user's supporter entitlements to determine loan rate
+  const supporterEntitlementRows = await pg.manyOrNone<{
+    user_id: string
+    entitlement_id: string
+    granted_time: string
+    expires_time: string | null
+    enabled: boolean
+  }>(
+    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
+     FROM user_entitlements
+     WHERE user_id = $1
+     AND entitlement_id = ANY($2)
+     AND enabled = true
+     AND (expires_time IS NULL OR expires_time > NOW())`,
+    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
+  )
+  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const freeLoanRate = getFreeLoanRate(entitlements)
+  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
 
   // Check if loans are globally disabled
   const loanStatus = await pg.oneOrNone<{ status: boolean }>(
@@ -68,8 +94,8 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
   const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
   const netWorth = user.balance + value
 
-  // Calculate limits
-  const maxLoan = calculateMaxGeneralLoanAmount(netWorth)
+  // Calculate limits (tier-specific max loan)
+  const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
   const dailyLimit = calculateDailyLoanLimit(netWorth)
 
   // Get today's loans (since midnight PT)
@@ -174,7 +200,8 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
   const positionFreeLoan = eligibleMetrics.map((m) => {
     const baseFreeLoan = calculatePositionFreeLoan(
       m.payout ?? 0,
-      m.invested ?? 0
+      m.invested ?? 0,
+      freeLoanRate
     )
 
     const contract = contractsById[m.contractId]

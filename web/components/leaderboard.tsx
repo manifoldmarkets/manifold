@@ -70,8 +70,10 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                   </td>
                   <td className="py-3">
                     <UserAvatarAndBadge
-                      className="overflow-hidden max-[400px]:max-w-[160px] sm:max-w-[200px] xl:max-w-none"
+                      className="max-[400px]:max-w-[160px] sm:max-w-[200px] xl:max-w-none"
                       user={{ id: entry.userId, ...entry }}
+                      short
+                      displayContext="leaderboard"
                     />
                   </td>
                   {columns.map((column, colIndex) => (

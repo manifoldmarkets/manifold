@@ -15,6 +15,12 @@ import {
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
+import {
+  getFreeLoanRate,
+  getMaxLoanNetWorthPercent,
+  SUPPORTER_ENTITLEMENT_IDS,
+} from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
 
 export const getFreeLoanAvailable: APIHandler<
   'get-free-loan-available'
@@ -40,6 +46,26 @@ export const getFreeLoanAvailable: APIHandler<
     }
   }
 
+  // Fetch supporter entitlements for tier-specific max loan
+  const supporterEntitlementRows = await pg.manyOrNone<{
+    user_id: string
+    entitlement_id: string
+    granted_time: string
+    expires_time: string | null
+    enabled: boolean
+  }>(
+    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
+     FROM user_entitlements
+     WHERE user_id = $1
+     AND entitlement_id = ANY($2)
+     AND enabled = true
+     AND (expires_time IS NULL OR expires_time > NOW())`,
+    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
+  )
+  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
+  const freeLoanRate = getFreeLoanRate(entitlements)
+
   // Get last claim time from users table
   const lastClaimResult = await pg.oneOrNone<{ last_free_loan_claim: Date }>(
     `SELECT last_free_loan_claim FROM users WHERE id = $1`,
@@ -59,8 +85,8 @@ export const getFreeLoanAvailable: APIHandler<
   const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
   const netWorth = user.balance + value
 
-  // Calculate limits
-  const maxLoan = calculateMaxGeneralLoanAmount(netWorth)
+  // Calculate limits (tier-specific max loan)
+  const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
   const dailyLimit = calculateDailyLoanLimit(netWorth)
 
   // Get today's loans (since midnight PT)
@@ -167,7 +193,8 @@ export const getFreeLoanAvailable: APIHandler<
   const positions = eligibleMetrics.map((m) => {
     const baseFreeLoan = calculatePositionFreeLoan(
       m.payout ?? 0,
-      m.invested ?? 0
+      m.invested ?? 0,
+      freeLoanRate
     )
 
     const contract = contractsById[m.contractId]

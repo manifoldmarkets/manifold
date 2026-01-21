@@ -147,7 +147,7 @@ const FetchUserHovercardContent = forwardRef(
       user?.lastBetTime ?? 0
     )
 
-    const hasGlow = userHasHovercardGlow(user?.shopPurchases)
+    const hasGlow = userHasHovercardGlow(user?.entitlements)
 
     return user ? (
       <div
@@ -161,11 +161,15 @@ const FetchUserHovercardContent = forwardRef(
       >
         <div className="px-4 py-3">
           <Row className="items-start justify-between">
-            <Avatar
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              size="lg"
-            />
+            <div className="group">
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size="lg"
+                entitlements={user.entitlements}
+                displayContext="hovercard"
+              />
+            </div>
             <FollowButton userId={userId} size="xs" />
           </Row>
 
@@ -174,6 +178,7 @@ const FetchUserHovercardContent = forwardRef(
             className={'text-lg font-bold'}
             user={user}
             followsYou={false}
+            displayContext="hovercard"
             bans={userBans}
           />
 

@@ -75,7 +75,7 @@ import { ShopItem } from 'common/shop/items'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
-import { UserShopPurchase } from 'common/user'
+import { UserEntitlement } from 'common/shop/types'
 import { YEAR_MS } from 'common/util/time'
 import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
@@ -2188,6 +2188,7 @@ export const API = (_apiTypeCheck = {
       currentMarginLoan?: number
       freeLoanAvailable?: number
       canClaimFreeLoan?: boolean
+      hasMarginLoanAccess?: boolean
     },
     props: z.object({
       userId: z.string(),
@@ -3133,7 +3134,12 @@ export const API = (_apiTypeCheck = {
         itemId: z.string(),
       })
       .strict(),
-    returns: {} as { success: boolean; purchase: UserShopPurchase },
+    returns: {} as {
+      success: boolean
+      entitlement?: UserEntitlement
+      entitlements: UserEntitlement[]
+      upgradeCredit?: number
+    },
   },
   'shop-toggle': {
     method: 'POST',
@@ -3145,7 +3151,21 @@ export const API = (_apiTypeCheck = {
         enabled: z.boolean(),
       })
       .strict(),
-    returns: {} as { success: boolean },
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
+  'shop-cancel-subscription': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
+  'shop-reset-all': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { success: boolean; refundedAmount: number },
   },
   // Admin spam detection endpoints
   'get-suspected-spam-comments': {

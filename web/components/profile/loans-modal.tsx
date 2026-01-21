@@ -6,7 +6,6 @@ import { User } from 'common/user'
 import clsx from 'clsx'
 import {
   LOAN_DAILY_INTEREST_RATE,
-  MAX_LOAN_NET_WORTH_PERCENT,
   DAILY_LOAN_NET_WORTH_PERCENT,
 } from 'common/loans'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
@@ -28,6 +27,7 @@ import { formatWithToken } from 'common/util/format'
 import { PayBackLoanForm } from 'web/components/bet/pay-back-loan-form'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import Link from 'next/link'
 
 export function LoansModal(props: {
   user: User
@@ -55,6 +55,7 @@ export function LoansModal(props: {
   const dailyLimit = loanData?.dailyLimit ?? 0
   const availableToday = loanData?.availableToday ?? 0
   const hasOutstandingLoan = (latestPortfolio?.loanTotal ?? 0) > 0
+  const hasMarginLoanAccess = loanData?.hasMarginLoanAccess ?? false
 
   const requestLoan = async (
     amountOverride?: number,
@@ -238,75 +239,77 @@ export function LoansModal(props: {
           </Col>
         </Row>
 
-        {/* Quick Loans Section */}
-        <div className="border-ink-200 border-t px-6 py-4">
-          <Col className="gap-3">
-            <h3 className="text-ink-900 mb-1 text-sm font-semibold">
-              One-click loans
-            </h3>
-            <Row className="flex-wrap gap-2">
-              {[50, 100, 1000, 5000].map((quickAmount) => {
-                const maxAvailable = Math.min(
-                  availableGeneralLoan,
-                  availableToday
-                )
-                const isButtonLoading = quickLoanLoading === quickAmount
-                const isDisabled =
-                  loaning ||
-                  quickAmount > maxAvailable ||
-                  quickAmount > availableGeneralLoan ||
-                  quickAmount > availableToday
+        {/* Quick Loans Section - only show if user has access */}
+        {hasMarginLoanAccess && (
+          <div className="border-ink-200 border-t px-6 py-4">
+            <Col className="gap-3">
+              <h3 className="text-ink-900 mb-1 text-sm font-semibold">
+                One-click loans
+              </h3>
+              <Row className="flex-wrap gap-2">
+                {[50, 100, 1000, 5000].map((quickAmount) => {
+                  const maxAvailable = Math.min(
+                    availableGeneralLoan,
+                    availableToday
+                  )
+                  const isButtonLoading = quickLoanLoading === quickAmount
+                  const isDisabled =
+                    loaning ||
+                    quickAmount > maxAvailable ||
+                    quickAmount > availableGeneralLoan ||
+                    quickAmount > availableToday
 
-                return (
-                  <button
-                    key={quickAmount}
-                    disabled={isDisabled}
-                    onClick={() => {
-                      if (!isDisabled) {
-                        requestLoan(quickAmount, true, quickAmount)
-                      }
-                    }}
-                    className={clsx(
-                      'group relative min-w-[80px] flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold',
-                      'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500',
-                      'dark:from-yellow-400 dark:via-yellow-500 dark:to-amber-600',
-                      'text-yellow-900 shadow-lg shadow-yellow-500/30',
-                      'border-2 border-yellow-500/50 dark:border-yellow-600/50',
-                      'transition-all duration-200 ease-out',
-                      'transform hover:scale-105 hover:border-yellow-400 hover:shadow-xl hover:shadow-yellow-500/50',
-                      'dark:hover:border-yellow-500',
-                      'active:scale-95 active:shadow-md active:brightness-95',
-                      'disabled:transform-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg',
-                      'overflow-hidden',
-                      'before:pointer-events-none before:absolute before:inset-0 before:rounded-lg',
-                      'before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent',
-                      'before:translate-x-[-200%] before:skew-x-12',
-                      'hover:before:translate-x-[200%] hover:before:transition-transform hover:before:duration-1000 hover:before:ease-out',
-                      isButtonLoading && 'pointer-events-none'
-                    )}
-                  >
-                    <span
+                  return (
+                    <button
+                      key={quickAmount}
+                      disabled={isDisabled}
+                      onClick={() => {
+                        if (!isDisabled) {
+                          requestLoan(quickAmount, true, quickAmount)
+                        }
+                      }}
                       className={clsx(
-                        'relative z-10 flex items-center justify-center gap-2',
-                        isButtonLoading && 'opacity-0'
+                        'group relative min-w-[80px] flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold',
+                        'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500',
+                        'dark:from-yellow-400 dark:via-yellow-500 dark:to-amber-600',
+                        'text-yellow-900 shadow-lg shadow-yellow-500/30',
+                        'border-2 border-yellow-500/50 dark:border-yellow-600/50',
+                        'transition-all duration-200 ease-out',
+                        'transform hover:scale-105 hover:border-yellow-400 hover:shadow-xl hover:shadow-yellow-500/50',
+                        'dark:hover:border-yellow-500',
+                        'active:scale-95 active:shadow-md active:brightness-95',
+                        'disabled:transform-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg',
+                        'overflow-hidden',
+                        'before:pointer-events-none before:absolute before:inset-0 before:rounded-lg',
+                        'before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent',
+                        'before:translate-x-[-200%] before:skew-x-12',
+                        'hover:before:translate-x-[200%] hover:before:transition-transform hover:before:duration-1000 hover:before:ease-out',
+                        isButtonLoading && 'pointer-events-none'
                       )}
                     >
-                      {formatMoney(quickAmount)}
-                    </span>
-                    {isButtonLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <LoadingIndicator
-                          size="sm"
-                          spinnerColor="border-yellow-900"
-                        />
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-            </Row>
-          </Col>
-        </div>
+                      <span
+                        className={clsx(
+                          'relative z-10 flex items-center justify-center gap-2',
+                          isButtonLoading && 'opacity-0'
+                        )}
+                      >
+                        {formatMoney(quickAmount)}
+                      </span>
+                      {isButtonLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <LoadingIndicator
+                            size="sm"
+                            spinnerColor="border-yellow-900"
+                          />
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </Row>
+            </Col>
+          </div>
+        )}
 
         {/* Information Section */}
         <Col className="gap-4 px-6 py-5">
@@ -314,13 +317,53 @@ export function LoansModal(props: {
             <h3 className="text-ink-900 text-sm font-semibold">How it works</h3>
             <Col className="text-ink-700 gap-3 text-sm">
               <div>
-                <p className="text-ink-900 mb-1 font-medium">General loans</p>
+                <p className="text-ink-900 mb-1 font-medium">Loan limits</p>
                 <p>
-                  Borrow up to {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of
-                  your net worth total, with a daily limit of{' '}
-                  {formatPercent(DAILY_LOAN_NET_WORTH_PERCENT)} per day. The
-                  loan is distributed proportionally across all your unresolved
-                  market positions.
+                  Daily limit is {formatPercent(DAILY_LOAN_NET_WORTH_PERCENT)}{' '}
+                  of net worth. Loans are distributed proportionally across your
+                  unresolved positions.
+                </p>
+                <p className="mt-2">
+                  Your current max total loan is{' '}
+                  <span className="font-semibold">
+                    {formatMoney(maxGeneralLoan)}
+                  </span>
+                  {latestPortfolio && latestPortfolio.balance + latestPortfolio.investmentValue > 0 && (
+                    <>
+                      , which is{' '}
+                      {formatPercent(
+                        maxGeneralLoan /
+                          (latestPortfolio.balance + latestPortfolio.investmentValue)
+                      )}{' '}
+                      of your net worth
+                    </>
+                  )}
+                  .{' '}
+                  {hasMarginLoanAccess ? (
+                    <>
+                      Upgrade your membership at the{' '}
+                      <Link
+                        href="/shop"
+                        className="text-primary-600 hover:underline"
+                      >
+                        shop
+                      </Link>{' '}
+                      to increase this limit (Plus: 100%, Pro: 200%, Premium:
+                      300%).
+                    </>
+                  ) : (
+                    <>
+                      Subscribe to a membership at the{' '}
+                      <Link
+                        href="/shop"
+                        className="text-primary-600 hover:underline"
+                      >
+                        shop
+                      </Link>{' '}
+                      to unlock margin loans with higher limits (Plus: 100%,
+                      Pro: 200%, Premium: 300%).
+                    </>
+                  )}
                 </p>
               </div>
               <div>
@@ -353,74 +396,100 @@ export function LoansModal(props: {
           <div className="bg-ink-200 h-px" />
         </Col>
 
-        {/* Loan Request Section */}
+        {/* Loan Request Section - show upgrade prompt if no access */}
         <div className="border-ink-200 bg-canvas-50 border-t px-6 py-5">
-          <Col className="gap-4">
-            <div>
-              <h3 className="text-ink-900 mb-1 text-base font-semibold">
-                Request loan
-              </h3>
-              <p className="text-ink-600 text-xs">
-                Enter the amount you want to borrow. It will be distributed
-                proportionally across your positions.
-              </p>
-            </div>
-            <Col className="gap-3">
-              <BuyAmountInput
-                parentClassName="max-w-full"
-                amount={loanAmount ? Math.floor(loanAmount) : undefined}
-                onChange={(newAmount) => {
-                  if (!newAmount || newAmount <= 0) {
-                    setLoanAmount(undefined)
-                    return
-                  }
-                  // Round to whole number
-                  const roundedAmount = Math.floor(newAmount)
-                  const maxAvailable = requestLoanMaxActual
-                  // Clamp to max available
-                  if (roundedAmount > maxAvailable) {
-                    setLoanAmount(Math.floor(maxAvailable))
-                  } else {
-                    setLoanAmount(roundedAmount)
-                  }
-                }}
-                error={requestLoanError}
-                setError={setRequestLoanError}
-                disabled={loaning}
-                maximumAmount={requestLoanMaxActual}
-                showSlider={false}
-                token="M$"
-              />
-              {requestLoanSliderValues.length > 0 && (
-                <Slider
-                  className="mt-3"
-                  min={0}
-                  max={requestLoanSliderValues.length - 1}
-                  amount={getRequestLoanSliderIndex(loanAmount)}
-                  onChange={(index) => {
-                    const newAmount = requestLoanSliderValues[index] ?? 0
-                    // Store rounded amount for display
-                    // If user selects the max slider value (rounded max), we'll send actual max in API call
-                    setLoanAmount(Math.floor(newAmount))
+          {hasMarginLoanAccess ? (
+            <Col className="gap-4">
+              <div>
+                <h3 className="text-ink-900 mb-1 text-base font-semibold">
+                  Request loan
+                </h3>
+                <p className="text-ink-600 text-xs">
+                  Enter the amount you want to borrow. It will be distributed
+                  proportionally across your positions.
+                </p>
+              </div>
+              <Col className="gap-3">
+                <BuyAmountInput
+                  parentClassName="max-w-full"
+                  amount={loanAmount ? Math.floor(loanAmount) : undefined}
+                  onChange={(newAmount) => {
+                    if (!newAmount || newAmount <= 0) {
+                      setLoanAmount(undefined)
+                      return
+                    }
+                    // Round to whole number
+                    const roundedAmount = Math.floor(newAmount)
+                    const maxAvailable = requestLoanMaxActual
+                    // Clamp to max available
+                    if (roundedAmount > maxAvailable) {
+                      setLoanAmount(Math.floor(maxAvailable))
+                    } else {
+                      setLoanAmount(roundedAmount)
+                    }
                   }}
-                  step={1}
+                  error={requestLoanError}
+                  setError={setRequestLoanError}
                   disabled={loaning}
-                  color="green"
-                  marks={requestLoanSliderMarks}
+                  maximumAmount={requestLoanMaxActual}
+                  showSlider={false}
+                  token="M$"
+                  disregardUserBalance
                 />
-              )}
-              <Button
-                color="green"
-                size="xl"
-                loading={loaning}
-                disabled={loaning || !loanAmount || loanAmount <= 0}
-                onClick={() => requestLoan()}
-                className="w-full"
-              >
-                Request Loan
-              </Button>
+                {requestLoanSliderValues.length > 0 && (
+                  <Slider
+                    className="mt-3"
+                    min={0}
+                    max={requestLoanSliderValues.length - 1}
+                    amount={getRequestLoanSliderIndex(loanAmount)}
+                    onChange={(index) => {
+                      const newAmount = requestLoanSliderValues[index] ?? 0
+                      // Store rounded amount for display
+                      // If user selects the max slider value (rounded max), we'll send actual max in API call
+                      setLoanAmount(Math.floor(newAmount))
+                    }}
+                    step={1}
+                    disabled={loaning}
+                    color="green"
+                    marks={requestLoanSliderMarks}
+                  />
+                )}
+                <Button
+                  color="green"
+                  size="xl"
+                  loading={loaning}
+                  disabled={loaning || !loanAmount || loanAmount <= 0}
+                  onClick={() => requestLoan()}
+                  className="w-full"
+                >
+                  Request Loan
+                </Button>
+              </Col>
             </Col>
-          </Col>
+          ) : (
+            <Col className="items-center gap-4 py-4 text-center">
+              <div className="rounded-full bg-indigo-100 p-4 dark:bg-indigo-900/30">
+                <span className="text-4xl">🔒</span>
+              </div>
+              <Col className="gap-2">
+                <h3 className="text-ink-900 text-lg font-semibold">
+                  Upgrade to unlock margin loans
+                </h3>
+                <p className="text-ink-600 max-w-sm text-sm">
+                  Margin loans are available to all Manifold members. Upgrade to
+                  borrow against your positions and leverage your trading.
+                </p>
+              </Col>
+              <Link href="/shop" onClick={() => setOpen(false)}>
+                <Button color="indigo" size="lg">
+                  View membership options
+                </Button>
+              </Link>
+              <p className="text-ink-500 text-xs">
+                Free daily loans are still available via the golden chest!
+              </p>
+            </Col>
+          )}
         </div>
 
         {/* Repayment Section */}

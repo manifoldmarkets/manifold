@@ -13,6 +13,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useIsVisible } from 'web/hooks/use-is-visible'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
@@ -108,6 +109,7 @@ export const FeedComment = memo(function FeedComment(props: {
   }, [bets?.length])
 
   const { userUsername, userAvatarUrl, userId } = comment
+  const displayUser = useDisplayUserById(userId)
   const ref = useRef<HTMLDivElement>(null)
   const isBetParent = !!bets?.length
 
@@ -146,6 +148,8 @@ export const FeedComment = memo(function FeedComment(props: {
               username={userUsername}
               size={isParent ? 'sm' : '2xs'}
               avatarUrl={userAvatarUrl}
+              entitlements={displayUser?.entitlements}
+              displayContext="market_comments"
             />
           </UserHovercard>
 

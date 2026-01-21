@@ -27,6 +27,10 @@ import { FaSearch as SearchIconSolid } from 'react-icons/fa'
 import { IoCompass, IoCompassOutline } from 'react-icons/io5'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
+import {
+  mergeEntitlements,
+  useOptimisticEntitlements,
+} from 'web/hooks/use-optimistic-entitlements'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -173,9 +177,16 @@ function NavBarItem(props: {
   const { item, currentPage, children, user, className } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
+  const optimisticContext = useOptimisticEntitlements()
 
   if (item.name === 'Profile' && user) {
     const isOnUserProfile = currentPage === `/${user.username}`
+
+    // Merge server entitlements with optimistic updates from shop
+    const effectiveEntitlements = mergeEntitlements(
+      user.entitlements,
+      optimisticContext?.optimisticEntitlements ?? []
+    )
 
     return (
       <Link
@@ -198,7 +209,13 @@ function NavBarItem(props: {
               isOnUserProfile && 'ring-2 ring-violet-600'
             )}
           >
-            <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
+            <Avatar
+              size="sm"
+              avatarUrl={user.avatarUrl}
+              noLink
+              entitlements={effectiveEntitlements}
+              displayContext="profile_sidebar"
+            />
           </div>
           <Row className="mt-0.5 gap-1">
             <TokenNumber

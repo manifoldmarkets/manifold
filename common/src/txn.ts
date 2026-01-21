@@ -65,6 +65,8 @@ type AnyTxnType =
   | ContractBoostPurchase
   | CharityGiveawayTicket
   | ShopPurchase
+  | ShopRefund
+  | MembershipPayment
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -644,6 +646,25 @@ type ShopPurchase = {
   }
 }
 
+type ShopRefund = {
+  category: 'SHOP_REFUND'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
+type MembershipPayment = {
+  category: 'MEMBERSHIP_PAYMENT'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    itemId: string // e.g., 'supporter-plus'
+    upgradeCredit?: number // prorated credit from previous tier
+    isAutoRenewal?: boolean // true if from scheduler job
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -704,3 +725,4 @@ export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
 export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
+export type MembershipPaymentTxn = Txn & MembershipPayment

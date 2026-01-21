@@ -47,6 +47,7 @@ import { ShareBetModal } from '../bet/share-bet'
 import { getPseudonym } from '../charts/contract/choice'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { DisplayContext } from 'common/shop/display-config'
 
 const MAX_FILLS_TO_SHOW = 10
 
@@ -201,8 +202,9 @@ export const FeedBet = memo(function FeedBet(props: {
   className?: string
   onReply?: (bet: Bet) => void
   hideActions?: boolean
+  displayContext?: DisplayContext
 }) {
-  const { contract, bet, avatarSize, className, onReply, hideActions } = props
+  const { contract, bet, avatarSize, className, onReply, hideActions, displayContext = 'activity' } = props
   const { createdTime, userId } = bet
   const user = useDisplayUserById(userId)
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
@@ -218,6 +220,8 @@ export const FeedBet = memo(function FeedBet(props: {
                 size={avatarSize}
                 avatarUrl={user?.avatarUrl}
                 username={user?.username}
+                entitlements={user?.entitlements}
+                displayContext={displayContext}
               />
             </UserHovercard>
           ) : (
@@ -285,6 +289,8 @@ export const FeedBetWithGraphAction = memo(
                   size={avatarSize}
                   avatarUrl={user?.avatarUrl}
                   username={user?.username}
+                  entitlements={user?.entitlements}
+                  displayContext="feed"
                 />
               </UserHovercard>
             ) : (
@@ -349,6 +355,8 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
               size={avatarSize}
               avatarUrl={users[0]?.avatarUrl}
               username={users[0]?.username}
+              entitlements={users[0]?.entitlements}
+              displayContext="feed"
             />
           </UserHovercard>
         ) : (
@@ -437,7 +445,7 @@ export function BetStatusesText(props: {
       {!inTimeline &&
         (uniqueUsers.length === 1 ? (
           <UserHovercard userId={userId}>
-            <UserLink user={user} className={'font-semibold'} />
+            <UserLink user={user} className={'font-semibold'} displayContext="feed" />
           </UserHovercard>
         ) : (
           <span>{`${uniq(bets.map((b) => b.userId)).length} traders`}</span>
@@ -519,7 +527,7 @@ export function BetStatusText(props: {
           <></>
         ) : !hideUser ? (
           <UserHovercard userId={bet.userId}>
-            <UserLink user={betUser} className={'font-semibold'} />
+            <UserLink user={betUser} className={'font-semibold'} displayContext="feed" />
           </UserHovercard>
         ) : (
           <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>

@@ -28,6 +28,7 @@ import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
 import { APIResponse } from 'common/src/api/schema'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { Bet } from 'common/bet'
 import { YourMetricsFooter } from './contract/feed-contract-card'
 import Image from 'next/image'
@@ -433,22 +434,28 @@ const MarketCreatedLog = memo(
     } = props.contract
     const { showDescription = false } = props
 
+    const creator = useDisplayUserById(creatorId)
+
     return (
       <Col className="gap-2">
         <Row className="text-ink-1000 items-center gap-2 text-sm">
           <UserHovercard userId={creatorId}>
             <Row className="items-center gap-2 font-semibold">
               <Avatar
-                avatarUrl={creatorAvatarUrl}
-                username={creatorUsername}
+                avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
+                username={creator?.username ?? creatorUsername}
                 size="xs"
+                entitlements={creator?.entitlements}
+                displayContext="activity"
               />
               <UserLink
                 user={{
                   id: creatorId,
-                  name: creatorName,
-                  username: creatorUsername,
+                  name: creator?.name ?? creatorName,
+                  username: creator?.username ?? creatorUsername,
+                  entitlements: creator?.entitlements,
                 }}
+                displayContext="activity"
               />
             </Row>
           </UserHovercard>
@@ -653,6 +660,8 @@ const CommentLog = memo(function FeedComment(props: {
     contractSlug,
   } = comment
 
+  const commenter = useDisplayUserById(userId)
+
   return (
     <Col
       className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md p-1')}
@@ -669,16 +678,20 @@ const CommentLog = memo(function FeedComment(props: {
         <UserHovercard userId={userId}>
           <Row className="items-center gap-2 font-semibold">
             <Avatar
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
+              avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
+              username={commenter?.username ?? userUsername}
               size="xs"
+              entitlements={commenter?.entitlements}
+              displayContext="activity"
             />
             <UserLink
               user={{
                 id: userId,
-                name: userName,
-                username: userUsername,
+                name: commenter?.name ?? userName,
+                username: commenter?.username ?? userUsername,
+                entitlements: commenter?.entitlements,
               }}
+              displayContext="activity"
             />
           </Row>
         </UserHovercard>

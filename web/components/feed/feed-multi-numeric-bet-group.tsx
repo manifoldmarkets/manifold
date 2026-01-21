@@ -33,6 +33,8 @@ export const MultiNumericBetGroup = memo(function FeedBet(props: {
               size={avatarSize}
               avatarUrl={first?.avatarUrl}
               username={first?.username}
+              entitlements={first?.entitlements}
+              displayContext="feed"
             />
           </UserHovercard>
           <BetGroupStatusText

@@ -11,6 +11,7 @@ import toast from 'react-hot-toast'
 import { IoWarning } from 'react-icons/io5'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { getNumPostComments } from 'web/lib/supabase/comments'
@@ -30,6 +31,7 @@ export function PostCard(props: {
   const { post, featured, className } = props
   const isAdminOrMod = useAdminOrMod()
   const currentUser = useUser()
+  const creator = useDisplayUserById(post.creatorId)
   const [commentCount, setCommentCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -102,18 +104,20 @@ export function PostCard(props: {
         <Row className="items-start justify-between gap-3">
           <Row className="min-w-0 flex-1 items-center gap-3">
             <Avatar
-              username={post.creatorUsername}
-              avatarUrl={post.creatorAvatarUrl}
+              username={creator?.username ?? post.creatorUsername}
+              avatarUrl={creator?.avatarUrl ?? post.creatorAvatarUrl}
               size="sm"
-              className="ring-canvas-0 dark:ring-ink-100 ring-2"
+              entitlements={creator?.entitlements}
+              displayContext="posts"
             />
             <Col className="min-w-0 flex-1 gap-0.5">
               <UserLink
                 className="text-ink-900 text-sm font-medium hover:underline"
                 user={{
                   id: post.creatorId,
-                  name: post.creatorName,
-                  username: post.creatorUsername,
+                  name: creator?.name ?? post.creatorName,
+                  username: creator?.username ?? post.creatorUsername,
+                  entitlements: creator?.entitlements,
                 }}
               />
               <Row className="text-ink-500 items-center gap-1.5 text-xs">
