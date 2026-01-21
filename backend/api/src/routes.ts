@@ -199,6 +199,7 @@ import { getPosts } from './get-posts'
 import { getReactions } from './get-reactions'
 import { getSeasonInfo } from './get-season-info'
 import { getShopItems } from './get-shop-items'
+import { getShopStats } from './get-shop-stats'
 import { getSiteActivity } from './get-site-activity'
 import { getSportsGames } from './get-sports-games'
 import { getSuspectedSpamComments } from './get-suspected-spam-comments'
@@ -457,6 +458,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
+  'get-shop-stats': getShopStats,
   'shop-purchase': shopPurchase,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,

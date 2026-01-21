@@ -3241,6 +3241,43 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  'get-shop-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z
+      .object({
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+    returns: {} as {
+      subscriptionSales: {
+        date: string
+        itemId: string
+        quantity: number
+        revenue: number
+      }[]
+      digitalGoodsSales: {
+        date: string
+        itemId: string
+        quantity: number
+        revenue: number
+      }[]
+      subscribersByTier: {
+        tier: 'basic' | 'plus' | 'premium'
+        count: number
+        autoRenewCount: number
+      }[]
+      subscriptionsOverTime: {
+        date: string
+        basicCount: number
+        plusCount: number
+        premiumCount: number
+        totalCount: number
+      }[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
