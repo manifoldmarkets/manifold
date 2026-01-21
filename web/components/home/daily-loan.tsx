@@ -194,7 +194,7 @@ export function DailyLoan(props: {
             setShowLoansModal(true)
           }}
         >
-          Loans <GiTwoCoins className="ml-1 h-5 w-5 text-amber-500" />
+          Loans
         </Button>
       </Tooltip>
       {showLoansModal && (

@@ -185,29 +185,6 @@ export function BetsSummary(props: {
                 </div>
               </Col>
             )}
-            {includeSellButton &&
-              (contract.mechanism !== 'cpmm-multi-1' ||
-                isBinaryMulti(contract)) && (
-                <Row className="items-center gap-2">
-                  <SellRow
-                    contract={contract as CPMMContract}
-                    user={includeSellButton}
-                    hideStatus={true}
-                  />
-                  {maxSharesOutcome &&
-                    (yesWinnings > 1 || noWinnings > 1) &&
-                    (resolution === undefined || resolution !== 'CANCEL') && (
-                      <Button
-                        className="!py-1"
-                        size="xs"
-                        color="gray-outline"
-                        onClick={() => setShowShareModal(true)}
-                      >
-                        Share
-                      </Button>
-                    )}
-                </Row>
-              )}
           </Row>
         )}
 
@@ -256,6 +233,29 @@ export function BetsSummary(props: {
             </div>
           </Col>
         )}
+
+        {includeSellButton &&
+          !resolution &&
+          (contract.mechanism !== 'cpmm-multi-1' ||
+            isBinaryMulti(contract)) && (
+            <Row className="items-center gap-2">
+              <SellRow
+                contract={contract as CPMMContract}
+                user={includeSellButton}
+                hideStatus={true}
+              />
+              {maxSharesOutcome && (yesWinnings > 1 || noWinnings > 1) && (
+                <Button
+                  className="!py-1"
+                  size="xs"
+                  color="gray-outline"
+                  onClick={() => setShowShareModal(true)}
+                >
+                  Share
+                </Button>
+              )}
+            </Row>
+          )}
 
         {/* Share modal - button is now in the Sell/Loan row */}
         {showShareModal && bettor && maxSharesOutcome && (

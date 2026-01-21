@@ -6,7 +6,7 @@ import {
 } from 'common/calculate-cpmm'
 import { type MarketContract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -18,11 +18,10 @@ import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
 import { Button } from '../buttons/button'
 import { MODAL_CLASS, Modal } from '../layout/modal'
+import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Title } from '../widgets/title'
 
 export function AddLiquidityModal(props: {
   contract: MarketContract
@@ -37,31 +36,88 @@ export function AddLiquidityModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm" className={MODAL_CLASS}>
-      <Title>Liquidity</Title>
-
-      {lps.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {lps.map((lp) => (
-            <FeedLiquidity
-              key={lp.id}
-              liquidity={lp}
-              isCashContract={contract.token === 'CASH'}
-              avatarSize="xs"
-            />
-          ))}
+      <Col className="gap-6">
+        {/* Header */}
+        <div>
+          <h2 className="text-primary-700 text-2xl font-semibold tracking-tight">
+            Liquidity
+          </h2>
+          <p className="text-ink-500 mt-1 text-sm">
+            Subsidize this market to incentivize more accurate predictions
+          </p>
         </div>
-      ) : (
-        <NoLiquidityCopy />
-      )}
 
-      <div className="h-8" />
+        {/* Stats Section */}
+        <LiquidityStats contract={contract} />
 
-      <AddLiquidityControl
-        contract={contract}
-        amount={amount}
-        setAmount={setAmount}
-      />
+        {/* Action Section */}
+        <AddLiquidityControl
+          contract={contract}
+          amount={amount}
+          setAmount={setAmount}
+        />
+
+        {/* Contributors Section */}
+        {lps.length > 0 && (
+          <div>
+            <div className="text-ink-600 mb-2 text-xs font-medium uppercase tracking-wide">
+              Contributors
+            </div>
+            <div className="bg-canvas-50 divide-ink-200 divide-y rounded-lg border">
+              {lps.map((lp) => (
+                <div key={lp.id} className="px-3 py-2.5">
+                  <FeedLiquidity
+                    liquidity={lp}
+                    isCashContract={contract.token === 'CASH'}
+                    avatarSize="xs"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Col>
     </Modal>
+  )
+}
+
+function LiquidityStats(props: { contract: MarketContract }) {
+  const { contract } = props
+  const isCashContract = contract.token === 'CASH'
+
+  // Calculate drizzled amount (total minus pending)
+  const drizzled =
+    contract.mechanism === 'cpmm-1'
+      ? contract.totalLiquidity - contract.subsidyPool
+      : contract.totalLiquidity
+
+  return (
+    <Row className="bg-canvas-50 text-ink-600 flex-wrap gap-x-6 gap-y-2 rounded-lg border px-4 py-3 text-sm">
+      <Row className="items-center gap-1.5">
+        <span className="text-ink-500">Liquidity:</span>
+        <span className="text-ink-900 font-medium">
+          <MoneyDisplay amount={drizzled} isCashContract={isCashContract} />
+          {' / '}
+          <MoneyDisplay
+            amount={contract.totalLiquidity}
+            isCashContract={isCashContract}
+          />
+        </span>
+        <InfoTooltip
+          text="Subsidies trickle in over time to prevent manipulation. Shows active / total liquidity."
+          size="sm"
+        />
+      </Row>
+      {contract.mechanism === 'cpmm-1' && (
+        <Row className="items-center gap-1.5">
+          <span className="text-ink-500">Pool:</span>
+          <span className="text-ink-900 font-medium">
+            {formatWithCommas(Math.round(contract.pool.YES))} YES,{' '}
+            {formatWithCommas(Math.round(contract.pool.NO))} NO shares
+          </span>
+        </Row>
+      )}
+    </Row>
   )
 }
 
@@ -164,128 +220,148 @@ export function AddLiquidityControl(props: {
     }
   }
 
-  return (
-    <>
-      {canWithdraw && addLiquidityEnabled && (
-        <ChoicesToggleGroup
-          currentChoice={mode}
-          setChoice={(mode) => {
-            setMode(mode as 'add' | 'remove')
-            if (mode === 'remove' && !amount) {
-              setAmount(Math.floor(maxWithdrawable))
-            }
-          }}
-          choicesMap={{
-            'Add subsidy': 'add',
-            Withdraw: 'remove',
-          }}
-        />
-      )}
-      <div className="my-4 flex flex-col gap-1">
-        {contract.mechanism === 'cpmm-1' && (
-          <>
-            <div>
-              Trickling in:{' '}
-              <span className={clsx(!newTrickleQueue && 'font-semibold')}>
-                {formatMoney(contract.subsidyPool, contract.token)}
-              </span>
-              {newTrickleQueue != undefined &&
-                !floatingEqual(newTrickleQueue, contract.subsidyPool) && (
-                  <>
-                    <span className="text-ink-600 mx-1">&rarr;</span>
-                    <span className="font-semibold">
-                      {formatMoney(newTrickleQueue, contract.token)}
-                    </span>
-                  </>
-                )}
-              <InfoTooltip
-                text="When you subsidize, the liquidity is added over time to prevent exploits"
-                className="ml-1"
-              />
-            </div>
-            <div>
-              <span>Subsidy pool:</span>{' '}
-              <span className="whitespace-nowrap">
-                {shortFormatNumber(contract.pool.YES)} <span>YES</span>
-                {' / '}
-                {shortFormatNumber(contract.pool.NO)} <span>NO</span>
-              </span>
-              {newPool && (
-                <>
-                  <span className="text-ink-600 mx-1">&rarr;</span>
+  if (!addLiquidityEnabled) return null
 
-                  <span
-                    className={clsx(
-                      'whitespace-nowrap font-semibold',
-                      aboveMax && 'text-scarlet-500'
-                    )}
-                  >
-                    {shortFormatNumber(newPool.YES)} <span>YES</span>
-                    {' / '}
-                    {shortFormatNumber(newPool.NO)} <span>NO</span>
-                  </span>
-                </>
-              )}
-            </div>
-          </>
-        )}
-        <div>
-          Total liquidity:{' '}
-          <span className={clsx(!amount && 'font-semibold')}>
-            <MoneyDisplay
-              amount={totalLiquidity}
-              isCashContract={isCashContract}
-            />
-          </span>
-          {!!amount && (
-            <>
-              <span className="text-ink-600 mx-1">&rarr;</span>
-              <span className="font-semibold">
+  const hasChanges = !!amount && amount > 0
+
+  return (
+    <Col className="gap-4">
+      {/* Mode Toggle */}
+      {canWithdraw && (
+        <div className="bg-canvas-50 inline-flex self-start rounded-lg p-1">
+          <button
+            onClick={() => setMode('add')}
+            className={clsx(
+              'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+              mode === 'add'
+                ? 'bg-canvas-0 text-ink-900 shadow-sm'
+                : 'text-ink-500 hover:text-ink-700'
+            )}
+          >
+            Add
+          </button>
+          <button
+            onClick={() => {
+              setMode('remove')
+              if (!amount) setAmount(Math.floor(maxWithdrawable))
+            }}
+            className={clsx(
+              'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+              mode === 'remove'
+                ? 'bg-canvas-0 text-ink-900 shadow-sm'
+                : 'text-ink-500 hover:text-ink-700'
+            )}
+          >
+            Withdraw
+          </button>
+        </div>
+      )}
+
+      {/* Amount Input */}
+      <div>
+        <BuyAmountInput
+          amount={amount}
+          onChange={setAmount}
+          error={error}
+          setError={setError}
+          disabled={false}
+          quickButtonAmountSize="large"
+          token={isCashContract ? 'CASH' : 'M$'}
+          disregardUserBalance={mode === 'remove'}
+          maximumAmount={mode === 'remove' ? maxWithdrawable : undefined}
+        />
+      </div>
+
+      {/* Preview Changes */}
+      {hasChanges && contract.mechanism === 'cpmm-1' && (
+        <div className="bg-canvas-50 rounded-lg border px-4 py-3">
+          <div className="text-ink-600 mb-2 text-xs font-medium uppercase tracking-wide">
+            Preview
+          </div>
+          <div className="space-y-1.5 text-sm">
+            <PreviewRow
+              label="Total liquidity"
+              from={
+                <MoneyDisplay
+                  amount={totalLiquidity}
+                  isCashContract={isCashContract}
+                />
+              }
+              to={
                 <MoneyDisplay
                   amount={newTotal}
                   isCashContract={isCashContract}
                 />
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      {addLiquidityEnabled && (
-        <>
-          <Row className="mb-4">
-            <BuyAmountInput
-              amount={amount}
-              onChange={setAmount}
-              error={error}
-              setError={setError}
-              disabled={false}
-              quickButtonAmountSize="large"
-              token={isCashContract ? 'CASH' : 'M$'}
-              disregardUserBalance={mode === 'remove'}
-              maximumAmount={mode === 'remove' ? maxWithdrawable : undefined}
+              }
             />
-          </Row>
-          <Button
-            onClick={submit}
-            disabled={isLoading || !!error || !amount}
-            color={mode === 'add' ? 'indigo' : 'yellow'}
-            size="sm"
-            className="mb-2 w-full"
-          >
-            {mode === 'add' ? 'Add liquidity' : 'Withdraw liquidity'}
-          </Button>
-          {isLoading && <div className="text-ink-700">Processing...</div>}
-        </>
+            {newTrickleQueue != undefined &&
+              !floatingEqual(newTrickleQueue, contract.subsidyPool) && (
+                <PreviewRow
+                  label="Pending subsidy"
+                  from={
+                    <MoneyDisplay
+                      amount={contract.subsidyPool}
+                      isCashContract={isCashContract}
+                    />
+                  }
+                  to={
+                    <MoneyDisplay
+                      amount={newTrickleQueue}
+                      isCashContract={isCashContract}
+                    />
+                  }
+                />
+              )}
+            {newPool && (
+              <PreviewRow
+                label="Pool"
+                from={
+                  <>
+                    {formatWithCommas(Math.round(contract.pool.YES))} /{' '}
+                    {formatWithCommas(Math.round(contract.pool.NO))}
+                  </>
+                }
+                to={
+                  <span className={clsx(aboveMax && 'text-scarlet-500')}>
+                    {formatWithCommas(Math.round(newPool.YES))} /{' '}
+                    {formatWithCommas(Math.round(newPool.NO))}
+                  </span>
+                }
+              />
+            )}
+          </div>
+        </div>
       )}
-    </>
+
+      {/* Submit Button */}
+      <Button
+        onClick={submit}
+        disabled={isLoading || !!error || !amount}
+        loading={isLoading}
+        color={mode === 'add' ? 'indigo' : 'yellow'}
+        size="xl"
+        className="w-full"
+      >
+        {mode === 'add' ? 'Add liquidity' : 'Withdraw liquidity'}
+      </Button>
+    </Col>
   )
 }
 
-const NoLiquidityCopy = () => (
-  <div className="text-ink-600">
-    {/* The higher the stakes, the more winners make!
-  <br /> */}
-    Add to the subsidy pool to incentivize traders to make the question
-    probability more precise.
-  </div>
-)
+function PreviewRow(props: {
+  label: string
+  from: React.ReactNode
+  to: React.ReactNode
+}) {
+  const { label, from, to } = props
+  return (
+    <Row className="items-center justify-between">
+      <span className="text-ink-500">{label}</span>
+      <Row className="items-center gap-2">
+        <span className="text-ink-400">{from}</span>
+        <span className="text-ink-400">&rarr;</span>
+        <span className="text-ink-900 font-medium">{to}</span>
+      </Row>
+    </Row>
+  )
+}

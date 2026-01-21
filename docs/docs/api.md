@@ -70,7 +70,17 @@ APIs that require authentication accept an `Authorization` header in one of two 
 
 ## Usage Guidelines
 
-Feel free to use the API for any purpose you'd like. There is a rate limit of 500 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
+There is a rate limit of 500 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
+
+## Licensing
+
+Use of the Manifold API is subject to our [Terms of Service](./terms). Key points:
+
+- **Permitted uses**: Building bots, automated trading systems, algorithmic tools, and integrations that interact with Manifold.
+- **Prohibited uses**: Scraping the site through means other than the API; circumventing rate limits or security measures.
+- **AI training data**: You may not use API data to train AI/ML models for commercial purposes without obtaining a data license from us. Academic research, personal projects, and non-commercial use are permitted. Contact **data@manifold.markets** for commercial licensing.
+
+We reserve the right to modify, suspend, or terminate API access at any time for abuse, excessive usage, or violation of our Terms.
 
 ## Fees
 

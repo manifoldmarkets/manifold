@@ -6,8 +6,6 @@ import {
   MVP,
   ENV_CONFIG,
   MOD_IDS,
-  PARTNER_USER_IDS,
-  INSTITUTIONAL_PARTNER_USER_IDS,
   BEING_DEAD_HEADS,
 } from 'common/envs/constants'
 import { Tooltip } from './tooltip'
@@ -20,11 +18,9 @@ import { linkClass } from './site-link'
 import Foldy from 'web/public/logo.svg'
 import { Col } from 'web/components/layout/col'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
-import { LuCrown } from 'react-icons/lu'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
-import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { FaStar } from 'react-icons/fa'
 import { User, UserBan } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
@@ -323,12 +319,6 @@ export function UserBadge(props: {
   if (VERIFIED_USERNAMES.includes(username)) {
     badges.push(<VerifiedBadge key="check" />)
   }
-  if (PARTNER_USER_IDS.includes(userId)) {
-    badges.push(<PartnerBadge key="partner" />)
-  }
-  if (INSTITUTIONAL_PARTNER_USER_IDS.includes(userId)) {
-    badges.push(<InstitutionalPartnerBadge key="institutional-partner" />)
-  }
   if (BEING_DEAD_HEADS.includes(userId)) {
     badges.push(<BeingDeadHead key="being-dead" />)
   }
@@ -389,25 +379,6 @@ function VerifiedBadge() {
   return (
     <Tooltip text="Verified" placement="right">
       <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden />
-    </Tooltip>
-  )
-}
-
-// Show a crown for our partners
-function PartnerBadge() {
-  return (
-    <Tooltip text="Partner" placement="right">
-      <LuCrown className="text-primary-700 h-3.5 w-3.5" aria-hidden />
-    </Tooltip>
-  )
-}
-function InstitutionalPartnerBadge() {
-  return (
-    <Tooltip text="Institutional Partner" placement="right">
-      <HiOutlineBuildingLibrary
-        className="text-primary-700 h-3.5 w-3.5"
-        aria-hidden
-      />
     </Tooltip>
   )
 }

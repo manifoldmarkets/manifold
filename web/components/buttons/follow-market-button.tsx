@@ -25,7 +25,7 @@ export const FollowMarketButton = (props: {
   return (
     <Button
       size="sm"
-      color={following ? 'gray-outline' : 'indigo'}
+      color="gray-outline"
       onClick={async () => {
         if (!user) return firebaseLogin()
         if (following) {
@@ -44,13 +44,13 @@ export const FollowMarketButton = (props: {
       }}
     >
       {following ? (
-        <Row className={'items-center gap-x-2'}>
-          <FilledBookmarkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+        <Row className="items-center gap-1.5">
+          <FilledBookmarkIcon className="h-4 w-4" aria-hidden="true" />
           Unfollow
         </Row>
       ) : (
-        <Row className={'items-center gap-x-2'}>
-          <BookmarkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+        <Row className="items-center gap-1.5">
+          <BookmarkIcon className="h-4 w-4" aria-hidden="true" />
           Follow
         </Row>
       )}

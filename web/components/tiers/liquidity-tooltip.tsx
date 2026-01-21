@@ -1,7 +1,7 @@
 import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { formatWithToken, shortFormatNumber } from 'common/util/format'
+import { formatWithToken } from 'common/util/format'
 
 import { Tooltip } from '../widgets/tooltip'
 import { BsDroplet, BsDropletFill, BsDropletHalf } from 'react-icons/bs'
@@ -38,9 +38,11 @@ export function LiquidityTooltip(props: {
         token: isCashContract ? 'CASH' : 'M$',
       })} in liquidity subsidies ${
         hasAnswers
-          ? `(per answer: ${shortFormatNumber(
-              amount / contract.answers.length
-            )})`
+          ? `(per answer: ${formatWithToken({
+              amount: amount / contract.answers.length,
+              token: isCashContract ? 'CASH' : 'M$',
+              short: true,
+            })})`
           : ''
       }`}
       placement={placement}
@@ -54,7 +56,11 @@ export function LiquidityTooltip(props: {
       ) : (
         <BsDropletFill className={iconClassName} />
       )}
-      {shortFormatNumber(amount)}
+      {formatWithToken({
+        amount,
+        token: isCashContract ? 'CASH' : 'M$',
+        short: true,
+      })}
     </Tooltip>
   )
 }

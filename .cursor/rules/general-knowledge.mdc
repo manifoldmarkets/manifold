@@ -580,3 +580,9 @@ try {
   )
 }
 ```
+
+---
+
+## Deprecated Features
+
+**Sweepstakes / CASH markets are deprecated.** Do not implement support for sweepstakes or CASH markets in any new features. Legacy code may still reference these, but they should be ignored for all new development.
