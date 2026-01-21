@@ -175,8 +175,11 @@ export function BenefitsTable({
                     <td
                       className={clsx(
                         'text-ink-400 p-2 text-center text-sm font-semibold transition-all duration-200 sm:p-3',
-                        isFreeUser && 'border-ink-300 border-l border-r sm:border-l-2 sm:border-r-2',
-                        isFreeUser && isLastRow && 'rounded-b-lg border-b sm:border-b-2'
+                        isFreeUser &&
+                          'border-ink-300 border-l border-r sm:border-l-2 sm:border-r-2',
+                        isFreeUser &&
+                          isLastRow &&
+                          'rounded-b-lg border-b sm:border-b-2'
                       )}
                     >
                       {benefit.baseValue}
