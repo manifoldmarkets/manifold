@@ -630,7 +630,7 @@ function SupporterCard(props: {
                 >
                   {isCurrentUserTier && (
                     <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 rounded bg-green-500 px-1 text-[8px] font-bold text-white">
-                      OWNED
+                      CURRENT
                     </div>
                   )}
                   <div className="relative">

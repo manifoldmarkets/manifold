@@ -51,7 +51,7 @@ export function BenefitsTable({
                         tier === 'plus' && 'border-indigo-400 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200',
                         tier === 'premium' && 'border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200'
                       )}>
-                        OWNED
+                        CURRENT
                       </div>
                     )}
                   </th>

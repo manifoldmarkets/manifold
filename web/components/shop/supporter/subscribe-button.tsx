@@ -61,7 +61,7 @@ export function SubscribeButton({
     const canAfford = effectiveBalance >= item.price
     return (
       <Button
-        color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray'}
+        color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray-outline'}
         size="xl"
         className={clsx(
           'w-full transition-all duration-200',
@@ -99,17 +99,17 @@ export function SubscribeButton({
         ? `Renew ${tierConfig.name}`
         : `Become a ${tierConfig.name} member`
 
-  // Show different price text for tier changes with credit
+  // Show different price text for tier changes with credit (no price shown for downgrades)
   const priceText =
-    tierChangeCredit > 0
-      ? finalPrice === 0
-        ? 'Free'
-        : formatMoney(finalPrice)
-      : `${formatMoney(item.price)}/mo`
+    isDowngrade
+      ? null
+      : tierChangeCredit > 0
+        ? formatMoney(finalPrice)
+        : `${formatMoney(item.price)}/mo`
 
   return (
     <Button
-      color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray'}
+      color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray-outline'}
       size="xl"
       className={clsx(
         'w-full transition-all duration-200',
@@ -122,7 +122,9 @@ export function SubscribeButton({
     >
       {!canAfford
         ? 'Insufficient balance'
-        : `${buttonText} - ${priceText}`}
+        : priceText
+          ? `${buttonText} - ${priceText}`
+          : buttonText}
     </Button>
   )
 }

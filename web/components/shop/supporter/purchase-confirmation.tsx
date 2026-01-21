@@ -132,7 +132,7 @@ export function PurchaseConfirmation({
           Cancel
         </Button>
         <Button
-          color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray'}
+          color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray-outline'}
           loading={loading}
           onClick={onConfirm}
         >
