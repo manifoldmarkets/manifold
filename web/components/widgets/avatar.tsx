@@ -128,8 +128,6 @@ export const Avatar = memo(
         ? '-right-1.5 -top-2'
         : '-right-2 -top-[0.41rem]'
 
-
-
     return (
       <div
         className={clsx(
@@ -191,8 +189,9 @@ export const Avatar = memo(
             className={clsx(
               'absolute rotate-45 transition-transform duration-300',
               hatPositionClass,
-              animateHatOnHover && 'group-hover:scale-110 group-hover:-translate-y-0.5',
-              animateHat && 'scale-110 -translate-y-0.5'
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
             )}
           >
             <LuCrown
@@ -207,11 +206,14 @@ export const Avatar = memo(
             className={clsx(
               'absolute rotate-45 transition-transform duration-300',
               hatPositionClass,
-              animateHatOnHover && 'group-hover:scale-110 group-hover:-translate-y-0.5',
-              animateHat && 'scale-110 -translate-y-0.5'
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
             )}
           >
-            <LuGraduationCap className={clsx(hatSizeClass, 'text-indigo-500')} />
+            <LuGraduationCap
+              className={clsx(hatSizeClass, 'text-indigo-500')}
+            />
           </div>
         )}
       </div>

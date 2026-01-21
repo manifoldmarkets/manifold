@@ -62,7 +62,10 @@ export default function SupporterPage() {
       )
     : 0
   const renewalDate = currentEntitlement?.expiresTime
-    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      })
     : null
 
   const handlePurchase = async (tier: SupporterTier) => {
@@ -85,7 +88,9 @@ export default function SupporterPage() {
     setCancelling(true)
     try {
       await api('shop-cancel-subscription', {})
-      toast.success('Subscription cancelled. Your membership will remain active until the end of the current period.')
+      toast.success(
+        'Subscription cancelled. Your membership will remain active until the end of the current period.'
+      )
       setConfirmingCancel(false)
     } catch (e: any) {
       toast.error(e.message || 'Failed to cancel subscription')
@@ -117,65 +122,95 @@ export default function SupporterPage() {
 
       <Col className="mx-auto max-w-3xl gap-6">
         {/* Hero Section */}
-        <div className="rounded-xl border border-ink-200 bg-canvas-0 p-4">
+        <div className="border-ink-200 bg-canvas-0 rounded-xl border p-4">
           <Row className="items-center justify-between gap-4">
-              {/* Left: Avatar + Name + Badge (changes on hover/select) */}
-              <Row className="items-center gap-3">
-                <Avatar
-                  username={user?.username}
-                  avatarUrl={user?.avatarUrl}
-                  size="lg"
-                  noLink
-                  entitlements={user?.entitlements}
-                  displayContext="shop"
-                />
-                <Col className="gap-0.5">
-                  <Row className="items-center gap-2">
-                    <span className="text-lg font-bold">{user?.name ?? 'You'}</span>
-                    {/* Show hovered tier star, or current tier star */}
-                    <span className="relative inline-flex">
-                      <FaStar className={clsx(
-                        'h-4 w-4 transition-colors duration-150',
-                        (hoveredTier ?? currentTier ?? activeTier) === 'basic' && 'text-gray-400',
-                        (hoveredTier ?? currentTier ?? activeTier) === 'plus' && 'text-indigo-500',
-                        (hoveredTier ?? currentTier ?? activeTier) === 'premium' && 'text-amber-500'
-                      )} />
-                      {(hoveredTier ?? currentTier ?? activeTier) === 'premium' && (
-                        <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
-                      )}
-                    </span>
-                  </Row>
-                  {/* Show hovered tier text, or current tier text */}
-                  <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier].textColor)}>
-                    Manifold {SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier].name}
+            {/* Left: Avatar + Name + Badge (changes on hover/select) */}
+            <Row className="items-center gap-3">
+              <Avatar
+                username={user?.username}
+                avatarUrl={user?.avatarUrl}
+                size="lg"
+                noLink
+                entitlements={user?.entitlements}
+                displayContext="shop"
+              />
+              <Col className="gap-0.5">
+                <Row className="items-center gap-2">
+                  <span className="text-lg font-bold">
+                    {user?.name ?? 'You'}
                   </span>
-                  {currentEntitlement?.grantedTime && (
-                    <span className="text-ink-400 text-xs">
-                      Member since {new Date(currentEntitlement.grantedTime).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-                    </span>
+                  {/* Show hovered tier star, or current tier star */}
+                  <span className="relative inline-flex">
+                    <FaStar
+                      className={clsx(
+                        'h-4 w-4 transition-colors duration-150',
+                        (hoveredTier ?? currentTier ?? activeTier) ===
+                          'basic' && 'text-gray-400',
+                        (hoveredTier ?? currentTier ?? activeTier) === 'plus' &&
+                          'text-indigo-500',
+                        (hoveredTier ?? currentTier ?? activeTier) ===
+                          'premium' && 'text-amber-500'
+                      )}
+                    />
+                    {(hoveredTier ?? currentTier ?? activeTier) ===
+                      'premium' && (
+                      <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
+                    )}
+                  </span>
+                </Row>
+                {/* Show hovered tier text, or current tier text */}
+                <span
+                  className={clsx(
+                    'text-sm font-medium transition-colors duration-150',
+                    SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier]
+                      .textColor
                   )}
-                </Col>
-              </Row>
+                >
+                  Manifold{' '}
+                  {
+                    SUPPORTER_TIERS[hoveredTier ?? currentTier ?? activeTier]
+                      .name
+                  }
+                </span>
+                {currentEntitlement?.grantedTime && (
+                  <span className="text-ink-400 text-xs">
+                    Member since{' '}
+                    {new Date(
+                      currentEntitlement.grantedTime
+                    ).toLocaleDateString(undefined, {
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                )}
+              </Col>
+            </Row>
 
-              {/* Right: Renewal/expiry info (for supporters) or tagline (for non-supporters) */}
-              {isSupporter && renewalDate ? (
-                <Col className="items-end gap-0.5">
-                  <div className="text-ink-500 text-xs">
-                    {isAutoRenewing ? 'Renews' : 'Expires'}
-                  </div>
-                  <span className={clsx(
+            {/* Right: Renewal/expiry info (for supporters) or tagline (for non-supporters) */}
+            {isSupporter && renewalDate ? (
+              <Col className="items-end gap-0.5">
+                <div className="text-ink-500 text-xs">
+                  {isAutoRenewing ? 'Renews' : 'Expires'}
+                </div>
+                <span
+                  className={clsx(
                     'text-lg font-bold',
                     isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
-                  )}>
-                    {renewalDate}
-                  </span>
-                </Col>
-              ) : (
-                <Col className="hidden items-end gap-0.5 sm:flex">
-                  <span className="text-ink-600 text-sm font-medium">Support Manifold</span>
-                  <span className="text-ink-500 text-xs">Unlock premium benefits</span>
-                </Col>
-              )}
+                  )}
+                >
+                  {renewalDate}
+                </span>
+              </Col>
+            ) : (
+              <Col className="hidden items-end gap-0.5 sm:flex">
+                <span className="text-ink-600 text-sm font-medium">
+                  Support Manifold
+                </span>
+                <span className="text-ink-500 text-xs">
+                  Unlock premium benefits
+                </span>
+              </Col>
+            )}
           </Row>
         </div>
 
@@ -240,7 +275,10 @@ export default function SupporterPage() {
             You're now a{' '}
             {purchasedTier && (
               <>
-                <TierBadge tier={purchasedTier} animate={purchasedTier === 'premium'} />{' '}
+                <TierBadge
+                  tier={purchasedTier}
+                  animate={purchasedTier === 'premium'}
+                />{' '}
                 Manifold {SUPPORTER_TIERS[purchasedTier].name}
               </>
             )}{' '}
@@ -257,7 +295,9 @@ export default function SupporterPage() {
                 {SUPPORTER_BENEFITS[purchasedTier].shopDiscount > 0 && (
                   <BenefitRow
                     icon="🛍️"
-                    label={`${Math.round(SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100)}% shop discount`}
+                    label={`${Math.round(
+                      SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
+                    )}% shop discount`}
                   />
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes > 1 && (
@@ -269,13 +309,18 @@ export default function SupporterPage() {
                 {SUPPORTER_BENEFITS[purchasedTier].freeLoanRate > 0.01 && (
                   <BenefitRow
                     icon="💰"
-                    label={`${Math.round(SUPPORTER_BENEFITS[purchasedTier].freeLoanRate * 100)}% daily free loans`}
+                    label={`${Math.round(
+                      SUPPORTER_BENEFITS[purchasedTier].freeLoanRate * 100
+                    )}% daily free loans`}
                   />
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].marginLoanAccess && (
                   <BenefitRow
                     icon="📈"
-                    label={`${SUPPORTER_BENEFITS[purchasedTier].maxLoanNetWorthPercent + 1}x leverage boost`}
+                    label={`${
+                      SUPPORTER_BENEFITS[purchasedTier].maxLoanNetWorthPercent +
+                      1
+                    }x leverage boost`}
                   />
                 )}
               </>

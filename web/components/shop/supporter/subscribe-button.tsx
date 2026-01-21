@@ -61,7 +61,13 @@ export function SubscribeButton({
     const canAfford = effectiveBalance >= item.price
     return (
       <Button
-        color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray-outline'}
+        color={
+          tier === 'premium'
+            ? 'amber'
+            : tier === 'plus'
+            ? 'indigo'
+            : 'gray-outline'
+        }
         size="xl"
         className={clsx(
           'w-full transition-all duration-200',
@@ -72,17 +78,23 @@ export function SubscribeButton({
         disabled={disabled || !canAfford}
         loading={loading}
       >
-        {!canAfford ? 'Insufficient balance' : `Resubscribe - ${formatMoney(item.price)}/mo`}
+        {!canAfford
+          ? 'Insufficient balance'
+          : `Resubscribe - ${formatMoney(item.price)}/mo`}
       </Button>
     )
   }
 
   // Calculate credit for tier changes (matches backend logic - uses fractional days)
-  const msRemaining = currentExpiresTime ? Math.max(0, currentExpiresTime - Date.now()) : 0
+  const msRemaining = currentExpiresTime
+    ? Math.max(0, currentExpiresTime - Date.now())
+    : 0
   const fractionalDaysRemaining = msRemaining / DAY_MS
   const tierChangeCredit =
     currentTier && !isCurrentTier && fractionalDaysRemaining > 0
-      ? Math.floor(fractionalDaysRemaining * (TIER_ITEMS[currentTier].price / 30))
+      ? Math.floor(
+          fractionalDaysRemaining * (TIER_ITEMS[currentTier].price / 30)
+        )
       : 0
   const finalPrice = Math.max(0, item.price - tierChangeCredit)
   const canAfford = effectiveBalance >= finalPrice
@@ -94,22 +106,27 @@ export function SubscribeButton({
   const buttonText = isDowngrade
     ? `Downgrade to ${tierConfig.name}`
     : currentTier && canUpgrade
-      ? `Upgrade to ${tierConfig.name}`
-      : isExpiredSupporter
-        ? `Renew ${tierConfig.name}`
-        : `Become a ${tierConfig.name} member`
+    ? `Upgrade to ${tierConfig.name}`
+    : isExpiredSupporter
+    ? `Renew ${tierConfig.name}`
+    : `Become a ${tierConfig.name} member`
 
   // Show different price text for tier changes with credit (no price shown for downgrades)
-  const priceText =
-    isDowngrade
-      ? null
-      : tierChangeCredit > 0
-        ? formatMoney(finalPrice)
-        : `${formatMoney(item.price)}/mo`
+  const priceText = isDowngrade
+    ? null
+    : tierChangeCredit > 0
+    ? formatMoney(finalPrice)
+    : `${formatMoney(item.price)}/mo`
 
   return (
     <Button
-      color={tier === 'premium' ? 'amber' : tier === 'plus' ? 'indigo' : 'gray-outline'}
+      color={
+        tier === 'premium'
+          ? 'amber'
+          : tier === 'plus'
+          ? 'indigo'
+          : 'gray-outline'
+      }
       size="xl"
       className={clsx(
         'w-full transition-all duration-200',
@@ -123,8 +140,8 @@ export function SubscribeButton({
       {!canAfford
         ? 'Insufficient balance'
         : priceText
-          ? `${buttonText} - ${priceText}`
-          : buttonText}
+        ? `${buttonText} - ${priceText}`
+        : buttonText}
     </Button>
   )
 }

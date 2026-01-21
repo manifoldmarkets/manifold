@@ -1,5 +1,11 @@
 import { UserEntitlement } from 'common/shop/types'
-import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react'
 
 type OptimisticEntitlementsContextType = {
   optimisticEntitlements: UserEntitlement[]
@@ -17,19 +23,22 @@ export function OptimisticEntitlementsProvider(props: {
     UserEntitlement[]
   >([])
 
-  const setOptimisticEntitlement = useCallback((entitlement: UserEntitlement) => {
-    setOptimisticEntitlements((prev) => {
-      const idx = prev.findIndex(
-        (e) => e.entitlementId === entitlement.entitlementId
-      )
-      if (idx >= 0) {
-        const newPrev = [...prev]
-        newPrev[idx] = entitlement
-        return newPrev
-      }
-      return [...prev, entitlement]
-    })
-  }, [])
+  const setOptimisticEntitlement = useCallback(
+    (entitlement: UserEntitlement) => {
+      setOptimisticEntitlements((prev) => {
+        const idx = prev.findIndex(
+          (e) => e.entitlementId === entitlement.entitlementId
+        )
+        if (idx >= 0) {
+          const newPrev = [...prev]
+          newPrev[idx] = entitlement
+          return newPrev
+        }
+        return [...prev, entitlement]
+      })
+    },
+    []
+  )
 
   const clearOptimisticEntitlements = useCallback(() => {
     setOptimisticEntitlements([])
@@ -41,7 +50,11 @@ export function OptimisticEntitlementsProvider(props: {
       setOptimisticEntitlement,
       clearOptimisticEntitlements,
     }),
-    [optimisticEntitlements, setOptimisticEntitlement, clearOptimisticEntitlements]
+    [
+      optimisticEntitlements,
+      setOptimisticEntitlement,
+      clearOptimisticEntitlements,
+    ]
   )
 
   return (

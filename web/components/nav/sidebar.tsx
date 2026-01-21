@@ -101,7 +101,6 @@ export default function Sidebar(props: {
     />
   )
 
-
   return (
     <nav
       aria-label="Sidebar"

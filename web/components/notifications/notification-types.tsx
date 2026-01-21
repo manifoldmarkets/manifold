@@ -2417,7 +2417,9 @@ function MembershipSubscriptionNotification(props: {
 
   const subtitle = isRenewal
     ? newExpiresTime
-      ? `Your membership will renew again on ${new Date(newExpiresTime).toLocaleDateString()}`
+      ? `Your membership will renew again on ${new Date(
+          newExpiresTime
+        ).toLocaleDateString()}`
       : undefined
     : `Add funds to resubscribe at the shop`
 

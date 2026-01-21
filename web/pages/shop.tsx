@@ -68,7 +68,12 @@ const ITEM_ORDER: Record<string, number> = {
   'avatar-graduation-cap': 6,
 }
 
-type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'
+type SortOption =
+  | 'default'
+  | 'price-asc'
+  | 'price-desc'
+  | 'name-asc'
+  | 'name-desc'
 
 const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
   const sorted = [...items]
@@ -83,7 +88,9 @@ const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
       return sorted.sort((a, b) => b.name.localeCompare(a.name))
     case 'default':
     default:
-      return sorted.sort((a, b) => (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99))
+      return sorted.sort(
+        (a, b) => (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99)
+      )
   }
 }
 
@@ -172,7 +179,9 @@ export default function ShopPage() {
           // For exclusive categories, also disable other items in the same category
           // (matching the toggle behavior)
           if (EXCLUSIVE_CATEGORIES.includes(item.category)) {
-            const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+            const categoryEntitlementIds = getEntitlementIdsForCategory(
+              item.category
+            )
             for (const ent of entitlements) {
               if (
                 categoryEntitlementIds.includes(ent.entitlementId) &&
@@ -249,7 +258,9 @@ export default function ShopPage() {
 
       // If enabling an item in an exclusive category, disable others first
       if (actualEnabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
-        const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+        const categoryEntitlementIds = getEntitlementIdsForCategory(
+          item.category
+        )
         newState = newState.map((e) => {
           if (
             categoryEntitlementIds.includes(e.entitlementId) &&
@@ -282,7 +293,10 @@ export default function ShopPage() {
           ent.entitlementId !== entitlementId &&
           ent.enabled
         ) {
-          optimisticContext?.setOptimisticEntitlement({ ...ent, enabled: false })
+          optimisticContext?.setOptimisticEntitlement({
+            ...ent,
+            enabled: false,
+          })
         }
       }
     }
@@ -336,7 +350,9 @@ export default function ShopPage() {
 
         {/* Sort dropdown */}
         <Row className="mb-4 mt-8 items-center justify-between">
-          <span className="text-lg font-semibold">Digital goods & cosmetics</span>
+          <span className="text-lg font-semibold">
+            Digital goods & cosmetics
+          </span>
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value as SortOption)}
@@ -388,9 +404,7 @@ export default function ShopPage() {
         <CharityGiveawayCard variant="full" className="mt-8" />
 
         {/* Admin testing tools */}
-        {isAdminOrMod && (
-          <AdminTestingTools user={user} />
-        )}
+        {isAdminOrMod && <AdminTestingTools user={user} />}
       </Col>
     </Page>
   )
@@ -402,7 +416,12 @@ function AdminTestingTools(props: { user: User | null | undefined }) {
 
   const handleResetCosmetics = async () => {
     if (!user) return
-    if (!confirm('This will delete all your cosmetics and refund the mana. Continue?')) return
+    if (
+      !confirm(
+        'This will delete all your cosmetics and refund the mana. Continue?'
+      )
+    )
+      return
 
     setResetting(true)
     try {
@@ -437,24 +456,34 @@ function AdminTestingTools(props: { user: User | null | undefined }) {
 // Simplified Supporter card that opens a modal
 function SupporterCard(props: {
   entitlements?: UserEntitlement[]
-  onPurchaseComplete?: (itemId: string, entitlements?: UserEntitlement[]) => void
+  onPurchaseComplete?: (
+    itemId: string,
+    entitlements?: UserEntitlement[]
+  ) => void
 }) {
   const { entitlements, onPurchaseComplete } = props
   const user = useUser()
   const [showModal, setShowModal] = useState(false)
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
-  const [modalInitialTier, setModalInitialTier] = useState<SupporterTier | null>(null)
+  const [modalInitialTier, setModalInitialTier] =
+    useState<SupporterTier | null>(null)
 
   const currentTier = getUserSupporterTier(entitlements)
   const supporterEntitlement = getSupporterEnt(entitlements)
   const isSupporter = currentTier !== null
 
   const daysRemaining = supporterEntitlement?.expiresTime
-    ? Math.max(0, Math.ceil((supporterEntitlement.expiresTime - Date.now()) / DAY_MS))
+    ? Math.max(
+        0,
+        Math.ceil((supporterEntitlement.expiresTime - Date.now()) / DAY_MS)
+      )
     : 0
   const isAutoRenewing = supporterEntitlement?.autoRenew ?? false
   const renewalDate = supporterEntitlement?.expiresTime
-    ? new Date(supporterEntitlement.expiresTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    ? new Date(supporterEntitlement.expiresTime).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      })
     : null
 
   const tierPrices = {
@@ -473,7 +502,8 @@ function SupporterCard(props: {
   }
 
   // Check if device supports hover (desktop)
-  const supportsHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
+  const supportsHover =
+    typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 
   return (
     <>
@@ -483,15 +513,26 @@ function SupporterCard(props: {
           'group relative mb-4 w-full overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
           'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800',
           // Default state (no tier owned, no hover)
-          !hoveredTier && !currentTier && 'hover:shadow-xl hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
+          !hoveredTier &&
+            !currentTier &&
+            'hover:shadow-xl hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
           // Owned tier glow (default state when not hovering)
-          !hoveredTier && currentTier === 'basic' && 'shadow-[0_0_12px_rgba(107,114,128,0.4)] dark:shadow-[0_0_12px_rgba(156,163,175,0.3)]',
-          !hoveredTier && currentTier === 'plus' && 'shadow-[0_0_16px_rgba(99,102,241,0.5)] animate-glow-indigo-subtle dark:shadow-[0_0_16px_rgba(129,140,248,0.4)]',
-          !hoveredTier && currentTier === 'premium' && 'shadow-[0_0_20px_rgba(245,158,11,0.5)] animate-glow-amber-subtle dark:shadow-[0_0_20px_rgba(251,191,36,0.4)]',
+          !hoveredTier &&
+            currentTier === 'basic' &&
+            'shadow-[0_0_12px_rgba(107,114,128,0.4)] dark:shadow-[0_0_12px_rgba(156,163,175,0.3)]',
+          !hoveredTier &&
+            currentTier === 'plus' &&
+            'animate-glow-indigo-subtle shadow-[0_0_16px_rgba(99,102,241,0.5)] dark:shadow-[0_0_16px_rgba(129,140,248,0.4)]',
+          !hoveredTier &&
+            currentTier === 'premium' &&
+            'animate-glow-amber-subtle shadow-[0_0_20px_rgba(245,158,11,0.5)] dark:shadow-[0_0_20px_rgba(251,191,36,0.4)]',
           // Hovered tier glow (intensified)
-          hoveredTier === 'basic' && 'shadow-[0_0_20px_rgba(107,114,128,0.6),0_0_30px_rgba(107,114,128,0.3)] dark:shadow-[0_0_24px_rgba(156,163,175,0.5),0_0_36px_rgba(156,163,175,0.25)]',
-          hoveredTier === 'plus' && 'shadow-[0_0_24px_rgba(99,102,241,0.7),0_0_40px_rgba(99,102,241,0.4)] animate-glow-indigo dark:shadow-[0_0_28px_rgba(129,140,248,0.6),0_0_48px_rgba(129,140,248,0.35)]',
-          hoveredTier === 'premium' && 'shadow-[0_0_28px_rgba(245,158,11,0.7),0_0_50px_rgba(245,158,11,0.4)] animate-glow-amber dark:shadow-[0_0_32px_rgba(251,191,36,0.6),0_0_56px_rgba(251,191,36,0.35)]'
+          hoveredTier === 'basic' &&
+            'shadow-[0_0_20px_rgba(107,114,128,0.6),0_0_30px_rgba(107,114,128,0.3)] dark:shadow-[0_0_24px_rgba(156,163,175,0.5),0_0_36px_rgba(156,163,175,0.25)]',
+          hoveredTier === 'plus' &&
+            'animate-glow-indigo shadow-[0_0_24px_rgba(99,102,241,0.7),0_0_40px_rgba(99,102,241,0.4)] dark:shadow-[0_0_28px_rgba(129,140,248,0.6),0_0_48px_rgba(129,140,248,0.35)]',
+          hoveredTier === 'premium' &&
+            'animate-glow-amber shadow-[0_0_28px_rgba(245,158,11,0.7),0_0_50px_rgba(245,158,11,0.4)] dark:shadow-[0_0_32px_rgba(251,191,36,0.6),0_0_56px_rgba(251,191,36,0.35)]'
         )}
       >
         {/* Animated gradient border - color changes based on hovered tier or owned tier */}
@@ -499,15 +540,26 @@ function SupporterCard(props: {
           className={clsx(
             'absolute inset-0 transition-all duration-300',
             // Hovered tier takes priority
-            hoveredTier === 'basic' && 'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-40',
-            hoveredTier === 'plus' && 'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-40',
-            hoveredTier === 'premium' && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-50',
+            hoveredTier === 'basic' &&
+              'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-40',
+            hoveredTier === 'plus' &&
+              'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-40',
+            hoveredTier === 'premium' &&
+              'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-50',
             // When not hovering, show owned tier's border color
-            !hoveredTier && currentTier === 'basic' && 'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-50 group-hover:opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-30 dark:group-hover:opacity-40',
-            !hoveredTier && currentTier === 'plus' && 'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-50 group-hover:opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-30 dark:group-hover:opacity-40',
-            !hoveredTier && currentTier === 'premium' && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-30 dark:group-hover:opacity-50',
+            !hoveredTier &&
+              currentTier === 'basic' &&
+              'bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 opacity-50 group-hover:opacity-60 dark:from-gray-500/50 dark:via-gray-400/50 dark:to-gray-500/50 dark:opacity-30 dark:group-hover:opacity-40',
+            !hoveredTier &&
+              currentTier === 'plus' &&
+              'bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-400 opacity-50 group-hover:opacity-60 dark:from-indigo-500/50 dark:via-indigo-400/50 dark:to-indigo-500/50 dark:opacity-30 dark:group-hover:opacity-40',
+            !hoveredTier &&
+              currentTier === 'premium' &&
+              'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-500/60 dark:via-yellow-400/60 dark:to-orange-500/60 dark:opacity-30 dark:group-hover:opacity-50',
             // Default (no tier owned, not hovering) - amber/gold default
-            !hoveredTier && !currentTier && 'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-600/50 dark:via-yellow-500/50 dark:to-orange-600/50 dark:opacity-30 dark:group-hover:opacity-50'
+            !hoveredTier &&
+              !currentTier &&
+              'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 opacity-50 group-hover:opacity-75 dark:from-amber-600/50 dark:via-yellow-500/50 dark:to-orange-600/50 dark:opacity-30 dark:group-hover:opacity-50'
           )}
         />
 
@@ -518,13 +570,13 @@ function SupporterCard(props: {
               <Row className="items-center gap-2">
                 <FaStar
                   className="h-6 w-6 text-amber-500"
-                  style={{ filter: 'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))' }}
+                  style={{
+                    filter: 'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))',
+                  }}
                 />
                 <span className="text-xl font-bold">Manifold Membership</span>
               </Row>
-              <p className="text-ink-600 text-sm">
-                Unlock premium benefits
-              </p>
+              <p className="text-ink-600 text-sm">Unlock premium benefits</p>
             </Col>
             {isSupporter && (
               <div className="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900 dark:text-amber-300">
@@ -548,18 +600,30 @@ function SupporterCard(props: {
                 />
                 <Col className="gap-0.5">
                   <Row className="items-center gap-1.5">
-                    <span className="font-semibold">{user?.name ?? 'YourName'}</span>
+                    <span className="font-semibold">
+                      {user?.name ?? 'YourName'}
+                    </span>
                     {/* Show hovered tier star, or current tier star, or nothing */}
                     {(hoveredTier || currentTier) && (
                       <div className="relative">
                         <FaStar
                           className={clsx(
                             'h-4 w-4 transition-colors duration-150',
-                            (hoveredTier ?? currentTier) === 'basic' && 'text-gray-400',
-                            (hoveredTier ?? currentTier) === 'plus' && 'text-indigo-500',
-                            (hoveredTier ?? currentTier) === 'premium' && 'text-amber-500'
+                            (hoveredTier ?? currentTier) === 'basic' &&
+                              'text-gray-400',
+                            (hoveredTier ?? currentTier) === 'plus' &&
+                              'text-indigo-500',
+                            (hoveredTier ?? currentTier) === 'premium' &&
+                              'text-amber-500'
                           )}
-                          style={(hoveredTier ?? currentTier) === 'premium' ? { filter: 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.6))' } : undefined}
+                          style={
+                            (hoveredTier ?? currentTier) === 'premium'
+                              ? {
+                                  filter:
+                                    'drop-shadow(0 0 4px rgba(245, 158, 11, 0.6))',
+                                }
+                              : undefined
+                          }
                         />
                         {(hoveredTier ?? currentTier) === 'premium' && (
                           <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-sm" />
@@ -569,15 +633,27 @@ function SupporterCard(props: {
                   </Row>
                   {/* Show hovered tier text, or current tier text, or "Not a member yet" */}
                   {hoveredTier ? (
-                    <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[hoveredTier].textColor)}>
+                    <span
+                      className={clsx(
+                        'text-sm font-medium transition-colors duration-150',
+                        SUPPORTER_TIERS[hoveredTier].textColor
+                      )}
+                    >
                       Manifold {SUPPORTER_TIERS[hoveredTier].name}
                     </span>
                   ) : isSupporter ? (
-                    <span className={clsx('text-sm font-medium', SUPPORTER_TIERS[currentTier].textColor)}>
+                    <span
+                      className={clsx(
+                        'text-sm font-medium',
+                        SUPPORTER_TIERS[currentTier].textColor
+                      )}
+                    >
                       Manifold {SUPPORTER_TIERS[currentTier].name}
                     </span>
                   ) : (
-                    <span className="text-ink-500 text-sm">Not a member yet</span>
+                    <span className="text-ink-500 text-sm">
+                      Not a member yet
+                    </span>
                   )}
                 </Col>
               </Row>
@@ -588,10 +664,12 @@ function SupporterCard(props: {
                   <div className="text-ink-500 text-xs">
                     {isAutoRenewing ? 'Renews' : 'Expires'}
                   </div>
-                  <span className={clsx(
-                    'text-lg font-bold',
-                    isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
-                  )}>
+                  <span
+                    className={clsx(
+                      'text-lg font-bold',
+                      isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
+                    )}
+                  >
                     {renewalDate}
                   </span>
                 </Col>
@@ -617,15 +695,32 @@ function SupporterCard(props: {
                   className={clsx(
                     'relative flex flex-col items-center rounded-lg border-2 px-2 py-2 transition-all duration-150',
                     // Current user's tier styling
-                    isCurrentUserTier && tier === 'basic' && 'border-gray-400 bg-gray-50 dark:bg-gray-900/30',
-                    isCurrentUserTier && tier === 'plus' && 'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-200/50 dark:bg-indigo-950/30',
-                    isCurrentUserTier && tier === 'premium' && 'border-amber-400 bg-amber-50 shadow-lg shadow-amber-200/50 dark:bg-amber-950/30',
+                    isCurrentUserTier &&
+                      tier === 'basic' &&
+                      'border-gray-400 bg-gray-50 dark:bg-gray-900/30',
+                    isCurrentUserTier &&
+                      tier === 'plus' &&
+                      'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-200/50 dark:bg-indigo-950/30',
+                    isCurrentUserTier &&
+                      tier === 'premium' &&
+                      'border-amber-400 bg-amber-50 shadow-lg shadow-amber-200/50 dark:bg-amber-950/30',
                     // Hover styling (when not current tier)
-                    !isCurrentUserTier && isHovered && tier === 'basic' && 'border-gray-400 bg-gray-50 shadow-[0_0_8px_rgba(107,114,128,0.4)] dark:bg-gray-900/30',
-                    !isCurrentUserTier && isHovered && tier === 'plus' && 'border-indigo-400 bg-indigo-50 shadow-[0_0_12px_rgba(99,102,241,0.5)] dark:bg-indigo-950/30',
-                    !isCurrentUserTier && isHovered && tier === 'premium' && 'border-amber-400 bg-amber-50 shadow-[0_0_16px_rgba(245,158,11,0.5)] dark:bg-amber-950/30',
+                    !isCurrentUserTier &&
+                      isHovered &&
+                      tier === 'basic' &&
+                      'border-gray-400 bg-gray-50 shadow-[0_0_8px_rgba(107,114,128,0.4)] dark:bg-gray-900/30',
+                    !isCurrentUserTier &&
+                      isHovered &&
+                      tier === 'plus' &&
+                      'border-indigo-400 bg-indigo-50 shadow-[0_0_12px_rgba(99,102,241,0.5)] dark:bg-indigo-950/30',
+                    !isCurrentUserTier &&
+                      isHovered &&
+                      tier === 'premium' &&
+                      'border-amber-400 bg-amber-50 shadow-[0_0_16px_rgba(245,158,11,0.5)] dark:bg-amber-950/30',
                     // Default state
-                    !isCurrentUserTier && !isHovered && 'border-ink-200 bg-canvas-0 hover:border-ink-300'
+                    !isCurrentUserTier &&
+                      !isHovered &&
+                      'border-ink-200 bg-canvas-0 hover:border-ink-300'
                   )}
                 >
                   {isCurrentUserTier && (
@@ -634,19 +729,32 @@ function SupporterCard(props: {
                     </div>
                   )}
                   <div className="relative">
-                    <FaStar className={clsx(
-                      'h-4 w-4',
-                      tier === 'basic' && 'text-gray-400',
-                      tier === 'plus' && 'text-indigo-500',
-                      tier === 'premium' && 'text-amber-500'
-                    )}
-                    style={tier === 'premium' ? { filter: 'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))' } : undefined}
+                    <FaStar
+                      className={clsx(
+                        'h-4 w-4',
+                        tier === 'basic' && 'text-gray-400',
+                        tier === 'plus' && 'text-indigo-500',
+                        tier === 'premium' && 'text-amber-500'
+                      )}
+                      style={
+                        tier === 'premium'
+                          ? {
+                              filter:
+                                'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))',
+                            }
+                          : undefined
+                      }
                     />
                     {tier === 'premium' && (
                       <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-40 blur-[2px]" />
                     )}
                   </div>
-                  <div className={clsx('text-xs font-semibold', SUPPORTER_TIERS[tier].textColor)}>
+                  <div
+                    className={clsx(
+                      'text-xs font-semibold',
+                      SUPPORTER_TIERS[tier].textColor
+                    )}
+                  >
                     {SUPPORTER_TIERS[tier].name}
                   </div>
                   <div className="text-ink-500 text-[10px]">
@@ -679,13 +787,15 @@ function SupporterCard(props: {
   )
 }
 
-
 // Modal containing the supporter page content
 function SupporterModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   entitlements?: UserEntitlement[]
-  onPurchaseComplete?: (itemId: string, entitlements?: UserEntitlement[]) => void
+  onPurchaseComplete?: (
+    itemId: string,
+    entitlements?: UserEntitlement[]
+  ) => void
   initialTier?: SupporterTier | null
 }) {
   const { open, setOpen, entitlements, onPurchaseComplete, initialTier } = props
@@ -693,7 +803,8 @@ function SupporterModal(props: {
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
-  const [confirmingPurchase, setConfirmingPurchase] = useState<SupporterTier | null>(null)
+  const [confirmingPurchase, setConfirmingPurchase] =
+    useState<SupporterTier | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
@@ -716,11 +827,17 @@ function SupporterModal(props: {
   const isSupporter = currentTier !== null
 
   const daysRemaining = currentEntitlement?.expiresTime
-    ? Math.max(0, Math.ceil((currentEntitlement.expiresTime - Date.now()) / DAY_MS))
+    ? Math.max(
+        0,
+        Math.ceil((currentEntitlement.expiresTime - Date.now()) / DAY_MS)
+      )
     : 0
   const isAutoRenewing = currentEntitlement?.autoRenew ?? false
   const renewalDate = currentEntitlement?.expiresTime
-    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      })
     : null
 
   const handlePurchase = async (tier: SupporterTier) => {
@@ -747,7 +864,9 @@ function SupporterModal(props: {
     setCancelling(true)
     try {
       await api('shop-cancel-subscription', {})
-      toast.success('Subscription cancelled. Your membership will remain active until the end of the current period.')
+      toast.success(
+        'Subscription cancelled. Your membership will remain active until the end of the current period.'
+      )
       setConfirmingCancel(false)
     } catch (e: any) {
       toast.error(e.message || 'Failed to cancel subscription')
@@ -773,12 +892,14 @@ function SupporterModal(props: {
             {purchasedTier && (
               <>
                 <span className="relative inline-flex">
-                  <FaStar className={clsx(
-                    'inline h-4 w-4',
-                    purchasedTier === 'basic' && 'text-gray-400',
-                    purchasedTier === 'plus' && 'text-indigo-500',
-                    purchasedTier === 'premium' && 'text-amber-500'
-                  )} />
+                  <FaStar
+                    className={clsx(
+                      'inline h-4 w-4',
+                      purchasedTier === 'basic' && 'text-gray-400',
+                      purchasedTier === 'plus' && 'text-indigo-500',
+                      purchasedTier === 'premium' && 'text-amber-500'
+                    )}
+                  />
                   {purchasedTier === 'premium' && (
                     <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
                   )}
@@ -794,30 +915,50 @@ function SupporterModal(props: {
               <>
                 <Row className="items-center gap-2">
                   <span>🎯</span>
-                  <span>{SUPPORTER_BENEFITS[purchasedTier].questMultiplier}x quest rewards</span>
+                  <span>
+                    {SUPPORTER_BENEFITS[purchasedTier].questMultiplier}x quest
+                    rewards
+                  </span>
                 </Row>
                 {SUPPORTER_BENEFITS[purchasedTier].shopDiscount > 0 && (
                   <Row className="items-center gap-2">
                     <span>🛍️</span>
-                    <span>{Math.round(SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100)}% shop discount</span>
+                    <span>
+                      {Math.round(
+                        SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
+                      )}
+                      % shop discount
+                    </span>
                   </Row>
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes > 1 && (
                   <Row className="items-center gap-2">
                     <span>❄️</span>
-                    <span>{SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes} max streak freezes</span>
+                    <span>
+                      {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes} max
+                      streak freezes
+                    </span>
                   </Row>
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].freeLoanRate > 0.01 && (
                   <Row className="items-center gap-2">
                     <span>💰</span>
-                    <span>{Math.round(SUPPORTER_BENEFITS[purchasedTier].freeLoanRate * 100)}% daily free loans</span>
+                    <span>
+                      {Math.round(
+                        SUPPORTER_BENEFITS[purchasedTier].freeLoanRate * 100
+                      )}
+                      % daily free loans
+                    </span>
                   </Row>
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].marginLoanAccess && (
                   <Row className="items-center gap-2">
                     <span>📈</span>
-                    <span>{SUPPORTER_BENEFITS[purchasedTier].maxLoanNetWorthPercent + 1}x leverage boost</span>
+                    <span>
+                      {SUPPORTER_BENEFITS[purchasedTier]
+                        .maxLoanNetWorthPercent + 1}
+                      x leverage boost
+                    </span>
                   </Row>
                 )}
               </>
@@ -825,7 +966,7 @@ function SupporterModal(props: {
           </Col>
 
           <Button color="amber" onClick={() => setOpen(false)}>
-            Continue 
+            Continue
           </Button>
         </Col>
       </Modal>
@@ -858,23 +999,36 @@ function SupporterModal(props: {
                       <Row className="items-center gap-2">
                         <span className="text-lg font-bold">{user?.name}</span>
                         <span className="relative inline-flex">
-                          <FaStar className={clsx(
-                            'h-4 w-4 transition-colors duration-150',
-                            activeTier === 'basic' && 'text-gray-400',
-                            activeTier === 'plus' && 'text-indigo-500',
-                            activeTier === 'premium' && 'text-amber-500'
-                          )} />
+                          <FaStar
+                            className={clsx(
+                              'h-4 w-4 transition-colors duration-150',
+                              activeTier === 'basic' && 'text-gray-400',
+                              activeTier === 'plus' && 'text-indigo-500',
+                              activeTier === 'premium' && 'text-amber-500'
+                            )}
+                          />
                           {activeTier === 'premium' && (
                             <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
                           )}
                         </span>
                       </Row>
-                      <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[activeTier].textColor)}>
+                      <span
+                        className={clsx(
+                          'text-sm font-medium transition-colors duration-150',
+                          SUPPORTER_TIERS[activeTier].textColor
+                        )}
+                      >
                         Manifold {SUPPORTER_TIERS[activeTier].name}
                       </span>
                       {currentEntitlement?.grantedTime && (
                         <span className="text-ink-400 text-xs">
-                          Member since {new Date(currentEntitlement.grantedTime).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                          Member since{' '}
+                          {new Date(
+                            currentEntitlement.grantedTime
+                          ).toLocaleDateString(undefined, {
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </span>
                       )}
                     </Col>
@@ -885,10 +1039,12 @@ function SupporterModal(props: {
                     <div className="text-ink-500 text-xs">
                       {isAutoRenewing ? 'Renews' : 'Expires'}
                     </div>
-                    <span className={clsx(
-                      'text-lg font-bold',
-                      isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
-                    )}>
+                    <span
+                      className={clsx(
+                        'text-lg font-bold',
+                        isAutoRenewing ? 'text-amber-600' : 'text-ink-500'
+                      )}
+                    >
                       {renewalDate}
                     </span>
                   </Col>
@@ -907,20 +1063,29 @@ function SupporterModal(props: {
                     />
                     <Col className="gap-0.5">
                       <Row className="items-center gap-2">
-                        <span className="text-lg font-bold">{user?.name ?? 'You'}</span>
+                        <span className="text-lg font-bold">
+                          {user?.name ?? 'You'}
+                        </span>
                         <span className="relative inline-flex">
-                          <FaStar className={clsx(
-                            'h-4 w-4 transition-colors duration-150',
-                            activeTier === 'basic' && 'text-gray-400',
-                            activeTier === 'plus' && 'text-indigo-500',
-                            activeTier === 'premium' && 'text-amber-500'
-                          )} />
+                          <FaStar
+                            className={clsx(
+                              'h-4 w-4 transition-colors duration-150',
+                              activeTier === 'basic' && 'text-gray-400',
+                              activeTier === 'plus' && 'text-indigo-500',
+                              activeTier === 'premium' && 'text-amber-500'
+                            )}
+                          />
                           {activeTier === 'premium' && (
                             <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]" />
                           )}
                         </span>
                       </Row>
-                      <span className={clsx('text-sm font-medium transition-colors duration-150', SUPPORTER_TIERS[activeTier].textColor)}>
+                      <span
+                        className={clsx(
+                          'text-sm font-medium transition-colors duration-150',
+                          SUPPORTER_TIERS[activeTier].textColor
+                        )}
+                      >
                         Manifold {SUPPORTER_TIERS[activeTier].name}
                       </span>
                     </Col>
@@ -928,8 +1093,12 @@ function SupporterModal(props: {
 
                   {/* Right: Tagline - hidden on small screens */}
                   <Col className="hidden items-end gap-0.5 sm:flex">
-                    <span className="text-ink-600 text-sm font-medium">Manifold Membership</span>
-                    <span className="text-ink-500 text-xs">Unlock premium benefits</span>
+                    <span className="text-ink-600 text-sm font-medium">
+                      Manifold Membership
+                    </span>
+                    <span className="text-ink-500 text-xs">
+                      Unlock premium benefits
+                    </span>
                   </Col>
                 </Row>
               )}
@@ -1069,7 +1238,7 @@ function CrownPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5">
+        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
           <LuCrown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" />
         </div>
       </div>
@@ -1089,7 +1258,7 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5">
+        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
           <LuGraduationCap className="h-5 w-5 text-indigo-500 drop-shadow-[0_0_4px_rgba(99,102,241,0.5)]" />
         </div>
       </div>
@@ -1123,7 +1292,9 @@ function StreakFreezePreview(props: {
             <>
               <span className="font-bold text-blue-500">{currentFreezes}</span>
               <span className="text-ink-500">→</span>
-              <span className="font-bold text-blue-500">{currentFreezes + 1}</span>
+              <span className="font-bold text-blue-500">
+                {currentFreezes + 1}
+              </span>
             </>
           )}
         </Row>
@@ -1209,7 +1380,13 @@ function ItemPreview(props: {
     case 'avatar-graduation-cap':
       return <GraduationCapPreview user={user} />
     case 'streak-forgiveness':
-      return <StreakFreezePreview user={user} localBonus={localStreakBonus} allEntitlements={allEntitlements} />
+      return (
+        <StreakFreezePreview
+          user={user}
+          localBonus={localStreakBonus}
+          allEntitlements={allEntitlements}
+        />
+      )
     case 'pampu-skin':
       return <PampuSkinPreview />
     case 'hovercard-glow':
@@ -1256,9 +1433,8 @@ function ShopItemCard(props: {
 
   // Calculate supporter discount
   const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
-  const discountedPrice = shopDiscount > 0
-    ? Math.floor(item.price * (1 - shopDiscount))
-    : item.price
+  const discountedPrice =
+    shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
   const hasDiscount = shopDiscount > 0 && !owned
 
   const canPurchase = user && user.balance >= discountedPrice
@@ -1332,10 +1508,15 @@ function ShopItemCard(props: {
         className={clsx(
           'group relative flex cursor-default flex-col gap-3 p-4 transition-all duration-200',
           justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
-          !justPurchased && 'hover:ring-2 hover:shadow-xl hover:-translate-y-1',
-          !justPurchased && isPremiumItem && 'hover:ring-amber-500 hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
-          !justPurchased && !isPremiumItem && 'hover:ring-indigo-500 hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30',
-          isPremiumItem && 'bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20 dark:to-yellow-900/15'
+          !justPurchased && 'hover:-translate-y-1 hover:shadow-xl hover:ring-2',
+          !justPurchased &&
+            isPremiumItem &&
+            'hover:shadow-amber-200/50 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
+          !justPurchased &&
+            !isPremiumItem &&
+            'hover:shadow-indigo-200/50 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30',
+          isPremiumItem &&
+            'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
         )}
       >
         {/* Loading overlay during purchase */}
@@ -1350,20 +1531,24 @@ function ShopItemCard(props: {
 
         {/* Card header with badge inline */}
         <Row className="items-start justify-between gap-2">
-          <div className={clsx(
-            'text-base font-semibold sm:text-lg',
-            isPremiumItem && 'text-amber-700 dark:text-amber-400'
-          )}>
+          <div
+            className={clsx(
+              'text-base font-semibold sm:text-lg',
+              isPremiumItem && 'text-amber-700 dark:text-amber-400'
+            )}
+          >
             {item.name}
           </div>
           {/* OWNED badge for purchased items */}
           {owned && (
-            <div className={clsx(
-              'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
-              isPremiumItem
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-            )}>
+            <div
+              className={clsx(
+                'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
+                isPremiumItem
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                  : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+              )}
+            >
               OWNED
             </div>
           )}
@@ -1419,13 +1604,12 @@ function ShopItemCard(props: {
             {/* Expiration date for time-limited items */}
             {entitlement?.expiresTime && (
               <div className="text-ink-500 text-center text-xs">
-                Expires{' '}
-                {new Date(entitlement.expiresTime).toLocaleDateString()}
+                Expires {new Date(entitlement.expiresTime).toLocaleDateString()}
               </div>
             )}
             {/* Buy more button for unlimited items (like supporter badges that stack) */}
             {item.limit === 'unlimited' && (
-              <Row className="items-center justify-between border-t border-ink-200 pt-2 mt-1">
+              <Row className="border-ink-200 mt-1 items-center justify-between border-t pt-2">
                 <div className="font-semibold text-teal-600">
                   {formatMoney(item.price)}
                 </div>

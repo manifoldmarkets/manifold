@@ -328,16 +328,19 @@ export function LoansModal(props: {
                   <span className="font-semibold">
                     {formatMoney(maxGeneralLoan)}
                   </span>
-                  {latestPortfolio && latestPortfolio.balance + latestPortfolio.investmentValue > 0 && (
-                    <>
-                      , which is{' '}
-                      {formatPercent(
-                        maxGeneralLoan /
-                          (latestPortfolio.balance + latestPortfolio.investmentValue)
-                      )}{' '}
-                      of your net worth
-                    </>
-                  )}
+                  {latestPortfolio &&
+                    latestPortfolio.balance + latestPortfolio.investmentValue >
+                      0 && (
+                      <>
+                        , which is{' '}
+                        {formatPercent(
+                          maxGeneralLoan /
+                            (latestPortfolio.balance +
+                              latestPortfolio.investmentValue)
+                        )}{' '}
+                        of your net worth
+                      </>
+                    )}
                   .{' '}
                   {hasMarginLoanAccess ? (
                     <>

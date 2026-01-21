@@ -27,7 +27,7 @@ export function BenefitsTable({
   activeTier: SupporterTier | null
 }) {
   return (
-    <div className="bg-canvas-0 rounded-xl border border-ink-200">
+    <div className="bg-canvas-0 border-ink-200 rounded-xl border">
       <div className="overflow-x-auto">
         <table className="w-full border-separate border-spacing-0">
           <thead>
@@ -39,18 +39,26 @@ export function BenefitsTable({
               {TIER_ORDER.map((tier) => {
                 const isCurrentTier = currentTier === tier
                 return (
-                  <th key={tier} className="px-2 sm:px-4 pt-2 pb-0 align-bottom">
+                  <th
+                    key={tier}
+                    className="px-2 pb-0 pt-2 align-bottom sm:px-4"
+                  >
                     {isCurrentTier && (
-                      <div className={clsx(
-                        'mx-auto w-fit rounded-t-md px-1.5 py-0.5 text-[8px] font-bold',
-                        'sm:px-2 sm:text-[10px]',
-                        // Border width: 1px mobile, 2px desktop
-                        'border-l border-r border-t',
-                        'sm:border-l-2 sm:border-r-2 sm:border-t-2',
-                        tier === 'basic' && 'border-gray-400 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
-                        tier === 'plus' && 'border-indigo-400 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200',
-                        tier === 'premium' && 'border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200'
-                      )}>
+                      <div
+                        className={clsx(
+                          'mx-auto w-fit rounded-t-md px-1.5 py-0.5 text-[8px] font-bold',
+                          'sm:px-2 sm:text-[10px]',
+                          // Border width: 1px mobile, 2px desktop
+                          'border-l border-r border-t',
+                          'sm:border-l-2 sm:border-r-2 sm:border-t-2',
+                          tier === 'basic' &&
+                            'border-gray-400 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+                          tier === 'plus' &&
+                            'border-indigo-400 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200',
+                          tier === 'premium' &&
+                            'border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200'
+                        )}
+                      >
                         CURRENT
                       </div>
                     )}
@@ -60,7 +68,7 @@ export function BenefitsTable({
             </tr>
             {/* Column headers row */}
             <tr>
-              <th className="text-ink-600 border-ink-200 border-b p-2 sm:p-3 text-left text-sm font-medium">
+              <th className="text-ink-600 border-ink-200 border-b p-2 text-left text-sm font-medium sm:p-3">
                 Benefit
               </th>
               {TIER_ORDER.map((tier) => {
@@ -70,17 +78,29 @@ export function BenefitsTable({
                   <th
                     key={tier}
                     className={clsx(
-                      'p-2 sm:p-3 text-center text-sm font-medium transition-all duration-200',
-                      isActiveTier && tier === 'basic' && 'bg-gray-100 dark:bg-gray-700/40',
-                      isActiveTier && tier === 'plus' && 'bg-indigo-100 dark:bg-indigo-800/30',
-                      isActiveTier && tier === 'premium' && 'bg-amber-100/80 dark:bg-amber-800/25',
-                      isCurrentTier && `border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2 ${SUPPORTER_TIERS[tier].borderColor} rounded-t-lg`,
+                      'p-2 text-center text-sm font-medium transition-all duration-200 sm:p-3',
+                      isActiveTier &&
+                        tier === 'basic' &&
+                        'bg-gray-100 dark:bg-gray-700/40',
+                      isActiveTier &&
+                        tier === 'plus' &&
+                        'bg-indigo-100 dark:bg-indigo-800/30',
+                      isActiveTier &&
+                        tier === 'premium' &&
+                        'bg-amber-100/80 dark:bg-amber-800/25',
+                      isCurrentTier &&
+                        `border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2 ${SUPPORTER_TIERS[tier].borderColor} rounded-t-lg`,
                       !isCurrentTier && 'border-ink-200 border-b'
                     )}
                   >
                     <Row className="items-center justify-center gap-1">
                       <TierBadge tier={tier} animate={tier === 'premium'} />
-                      <span className={clsx('hidden sm:inline', SUPPORTER_TIERS[tier].textColor)}>
+                      <span
+                        className={clsx(
+                          'hidden sm:inline',
+                          SUPPORTER_TIERS[tier].textColor
+                        )}
+                      >
                         {SUPPORTER_TIERS[tier].name}
                       </span>
                     </Row>
@@ -102,9 +122,13 @@ export function BenefitsTable({
                     )}
                   >
                     <Row className="items-center gap-1 sm:gap-2">
-                      <span className="text-base sm:text-lg">{benefit.icon}</span>
+                      <span className="text-base sm:text-lg">
+                        {benefit.icon}
+                      </span>
                       <Col>
-                        <span className="text-xs sm:text-sm font-medium">{benefit.title}</span>
+                        <span className="text-xs font-medium sm:text-sm">
+                          {benefit.title}
+                        </span>
                         <span className="text-ink-500 hidden text-xs sm:block">
                           {benefit.description}
                         </span>
@@ -119,14 +143,23 @@ export function BenefitsTable({
                       <td
                         key={tier}
                         className={clsx(
-                          'p-2 sm:p-3 text-center text-sm font-semibold transition-all duration-200',
+                          'p-2 text-center text-sm font-semibold transition-all duration-200 sm:p-3',
                           // Active tier highlight
-                          isActiveTier && tier === 'basic' && 'bg-gray-100 dark:bg-gray-700/40',
-                          isActiveTier && tier === 'plus' && 'bg-indigo-100 dark:bg-indigo-800/30',
-                          isActiveTier && tier === 'premium' && 'bg-amber-100/80 dark:bg-amber-800/25',
+                          isActiveTier &&
+                            tier === 'basic' &&
+                            'bg-gray-100 dark:bg-gray-700/40',
+                          isActiveTier &&
+                            tier === 'plus' &&
+                            'bg-indigo-100 dark:bg-indigo-800/30',
+                          isActiveTier &&
+                            tier === 'premium' &&
+                            'bg-amber-100/80 dark:bg-amber-800/25',
                           // Current tier border
-                          isCurrentTier && `border-l border-r sm:border-l-2 sm:border-r-2 ${SUPPORTER_TIERS[tier].borderColor}`,
-                          isCurrentTier && isLastRow && 'border-b sm:border-b-2 rounded-b-lg',
+                          isCurrentTier &&
+                            `border-l border-r sm:border-l-2 sm:border-r-2 ${SUPPORTER_TIERS[tier].borderColor}`,
+                          isCurrentTier &&
+                            isLastRow &&
+                            'rounded-b-lg border-b sm:border-b-2',
                           // Text colors - keep tier colors even when active for better visibility
                           benefit.isUniform
                             ? 'text-green-600'
@@ -135,7 +168,10 @@ export function BenefitsTable({
                       >
                         {benefit.id === 'badge' ? (
                           <Row className="justify-center">
-                            <TierBadge tier={tier} animate={tier === 'premium'} />
+                            <TierBadge
+                              tier={tier}
+                              animate={tier === 'premium'}
+                            />
                           </Row>
                         ) : (
                           value

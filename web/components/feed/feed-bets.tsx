@@ -204,7 +204,15 @@ export const FeedBet = memo(function FeedBet(props: {
   hideActions?: boolean
   displayContext?: DisplayContext
 }) {
-  const { contract, bet, avatarSize, className, onReply, hideActions, displayContext = 'activity' } = props
+  const {
+    contract,
+    bet,
+    avatarSize,
+    className,
+    onReply,
+    hideActions,
+    displayContext = 'activity',
+  } = props
   const { createdTime, userId } = bet
   const user = useDisplayUserById(userId)
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
@@ -445,7 +453,11 @@ export function BetStatusesText(props: {
       {!inTimeline &&
         (uniqueUsers.length === 1 ? (
           <UserHovercard userId={userId}>
-            <UserLink user={user} className={'font-semibold'} displayContext="feed" />
+            <UserLink
+              user={user}
+              className={'font-semibold'}
+              displayContext="feed"
+            />
           </UserHovercard>
         ) : (
           <span>{`${uniq(bets.map((b) => b.userId)).length} traders`}</span>
@@ -527,7 +539,11 @@ export function BetStatusText(props: {
           <></>
         ) : !hideUser ? (
           <UserHovercard userId={bet.userId}>
-            <UserLink user={betUser} className={'font-semibold'} displayContext="feed" />
+            <UserLink
+              user={betUser}
+              className={'font-semibold'}
+              displayContext="feed"
+            />
           </UserHovercard>
         ) : (
           <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>

@@ -312,20 +312,26 @@ text {
 
 /* Animated glow effects for supporter tier selector */
 @keyframes glow-indigo {
-  0%, 100% {
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6), 0 0 24px rgba(99, 102, 241, 0.4);
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6),
+      0 0 24px rgba(99, 102, 241, 0.4);
   }
   50% {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 40px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.8),
+      0 0 40px rgba(99, 102, 241, 0.5);
   }
 }
 
 @keyframes glow-amber {
-  0%, 100% {
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.6), 0 0 32px rgba(245, 158, 11, 0.4);
+  0%,
+  100% {
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.6),
+      0 0 32px rgba(245, 158, 11, 0.4);
   }
   50% {
-    box-shadow: 0 0 24px rgba(245, 158, 11, 0.8), 0 0 48px rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 24px rgba(245, 158, 11, 0.8),
+      0 0 48px rgba(245, 158, 11, 0.5);
   }
 }
 
@@ -339,7 +345,8 @@ text {
 
 /* Subtle glow variants for owned tier default state (less intense) */
 @keyframes glow-indigo-subtle {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 16px rgba(99, 102, 241, 0.5);
   }
   50% {
@@ -348,7 +355,8 @@ text {
 }
 
 @keyframes glow-amber-subtle {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
   }
   50% {
