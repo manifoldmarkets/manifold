@@ -63,7 +63,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     throw new APIError(404, `User ${auth.uid} not found`)
   }
 
-  // Check if user has margin loan access (Pro or Premium tier required)
+  // Check if user has margin loan access (any supporter tier)
   const supporterEntitlementRows = await pg.manyOrNone<{
     user_id: string
     entitlement_id: string

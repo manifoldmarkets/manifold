@@ -3167,6 +3167,58 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
   },
+  'shop-purchase-merch': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        variantId: z.string(),
+        shipping: z.object({
+          name: z.string(),
+          address1: z.string(),
+          address2: z.string().optional(),
+          city: z.string(),
+          state: z.string(),
+          zip: z.string(),
+          country: z.string(),
+        }),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      printfulOrderId: string
+      printfulStatus: string
+    },
+  },
+  'shop-shipping-rates': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        variantId: z.string(),
+        address: z.object({
+          address1: z.string(),
+          city: z.string(),
+          state: z.string().optional(),
+          zip: z.string(),
+          country: z.string(), // ISO 2-letter country code
+        }),
+      })
+      .strict(),
+    returns: {} as {
+      rates: Array<{
+        id: string
+        name: string
+        rate: string // USD price as string e.g. "4.99"
+        currency: string
+        minDeliveryDays: number
+        maxDeliveryDays: number
+      }>
+    },
+  },
   // Admin spam detection endpoints
   'get-suspected-spam-comments': {
     method: 'GET',

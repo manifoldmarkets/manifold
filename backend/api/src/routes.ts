@@ -226,6 +226,8 @@ import {
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { shopPurchase } from './shop-purchase'
+import { shopPurchaseMerch } from './shop-purchase-merch'
+import { shopShippingRates } from './shop-shipping-rates'
 import { shopResetAll } from './shop-reset-all'
 import { shopToggle } from './shop-toggle'
 import { shopCancelSubscription } from './shop-cancel-subscription'
@@ -460,6 +462,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-shop-items': getShopItems,
   'get-shop-stats': getShopStats,
   'shop-purchase': shopPurchase,
+  'shop-purchase-merch': shopPurchaseMerch,
+  'shop-shipping-rates': shopShippingRates,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
   'shop-cancel-subscription': shopCancelSubscription,

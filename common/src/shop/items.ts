@@ -13,6 +13,13 @@ export type ShopItemCategory =
   | 'skin'
   | 'consumable'
   | 'hovercard'
+  | 'merch'
+
+// Merch size variant for clothing items
+export type MerchVariant = {
+  size: string
+  printfulSyncVariantId: string
+}
 
 // Categories where only one item can be enabled at a time
 export const EXCLUSIVE_CATEGORIES: ShopItemCategory[] = [
@@ -45,6 +52,8 @@ export type ShopItem = {
   entitlementId?: string
   // If true, item has no toggle switch (always active when owned)
   alwaysEnabled?: boolean
+  // Merch-specific fields
+  variants?: MerchVariant[] // Size variants for clothing
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -140,10 +149,37 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'hovercard',
   },
+  // Merch items
+  {
+    id: 'merch-aggc-tshirt',
+    name: 'AGGC T-Shirt',
+    description: 'Embroidered Manifold logo on front, "Anti Gambling Gambling Club" print on back',
+    price: 5000,
+    type: 'instant', // Merch is "instant" - order placed immediately
+    limit: 'unlimited', // Can buy multiple
+    category: 'merch',
+    imageUrl: '/merch/AGGC-front-ghost.png',
+    variants: [
+      { size: 'S', printfulSyncVariantId: '69026b955ba991' },
+      { size: 'M', printfulSyncVariantId: '69026b955baa12' },
+      { size: 'L', printfulSyncVariantId: '69026b955baa92' },
+      { size: 'XL', printfulSyncVariantId: '69026b955bab14' },
+      { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
+      { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
+    ],
+  },
 ]
 
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
+
+// Get all merch items
+export const getMerchItems = (): ShopItem[] =>
+  SHOP_ITEMS.filter((item) => item.category === 'merch')
+
+// Check if an item is merch
+export const isMerchItem = (item: ShopItem): boolean =>
+  item.category === 'merch'
 
 // Helper to check if an entitlement is currently active (not expired, enabled)
 export const isEntitlementActive = (entitlement: UserEntitlement): boolean => {
