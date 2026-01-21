@@ -402,54 +402,8 @@ export default function ShopPage() {
 
         {/* Charity giveaway card at bottom */}
         <CharityGiveawayCard variant="full" className="mt-8" />
-
-        {/* Admin testing tools */}
-        {isAdminOrMod && <AdminTestingTools user={user} />}
       </Col>
     </Page>
-  )
-}
-
-function AdminTestingTools(props: { user: User | null | undefined }) {
-  const { user } = props
-  const [resetting, setResetting] = useState(false)
-
-  const handleResetCosmetics = async () => {
-    if (!user) return
-    if (
-      !confirm(
-        'This will delete all your cosmetics and refund the mana. Continue?'
-      )
-    )
-      return
-
-    setResetting(true)
-    try {
-      await api('shop-reset-all', {})
-      toast.success('All cosmetics returned and mana refunded!')
-      // Force page reload to refresh user data
-      window.location.reload()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to reset cosmetics')
-    } finally {
-      setResetting(false)
-    }
-  }
-
-  return (
-    <div className="border-ink-300 mt-8 border-t pt-4">
-      <div className="text-ink-500 mb-2 text-xs font-semibold uppercase">
-        Admin Testing Tools
-      </div>
-      <Button
-        color="red-outline"
-        size="sm"
-        loading={resetting}
-        onClick={handleResetCosmetics}
-      >
-        Return All Cosmetics (Refund Mana)
-      </Button>
-    </div>
   )
 }
 
