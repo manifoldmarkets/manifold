@@ -739,17 +739,14 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
   const totalAutoRenew = sumBy(subscribersByTier, 'autoRenewCount')
 
   // Aggregate subscription sales by date
-  const subSalesByDate = subscriptionSales.reduce(
-    (acc, sale) => {
-      if (!acc[sale.date]) {
-        acc[sale.date] = { quantity: 0, revenue: 0 }
-      }
-      acc[sale.date].quantity += sale.quantity
-      acc[sale.date].revenue += sale.revenue
-      return acc
-    },
-    {} as Record<string, { quantity: number; revenue: number }>
-  )
+  const subSalesByDate = subscriptionSales.reduce((acc, sale) => {
+    if (!acc[sale.date]) {
+      acc[sale.date] = { quantity: 0, revenue: 0 }
+    }
+    acc[sale.date].quantity += sale.quantity
+    acc[sale.date].revenue += sale.revenue
+    return acc
+  }, {} as Record<string, { quantity: number; revenue: number }>)
   const dailySubSales = Object.entries(subSalesByDate)
     .map(([date, data]) => ({ x: date, y: data.quantity }))
     .sort((a, b) => a.x.localeCompare(b.x))
@@ -758,17 +755,14 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
     .sort((a, b) => a.x.localeCompare(b.x))
 
   // Aggregate digital goods sales by date
-  const goodsSalesByDate = digitalGoodsSales.reduce(
-    (acc, sale) => {
-      if (!acc[sale.date]) {
-        acc[sale.date] = { quantity: 0, revenue: 0 }
-      }
-      acc[sale.date].quantity += sale.quantity
-      acc[sale.date].revenue += sale.revenue
-      return acc
-    },
-    {} as Record<string, { quantity: number; revenue: number }>
-  )
+  const goodsSalesByDate = digitalGoodsSales.reduce((acc, sale) => {
+    if (!acc[sale.date]) {
+      acc[sale.date] = { quantity: 0, revenue: 0 }
+    }
+    acc[sale.date].quantity += sale.quantity
+    acc[sale.date].revenue += sale.revenue
+    return acc
+  }, {} as Record<string, { quantity: number; revenue: number }>)
   const dailyGoodsSales = Object.entries(goodsSalesByDate)
     .map(([date, data]) => ({ x: date, y: data.quantity }))
     .sort((a, b) => a.x.localeCompare(b.x))
@@ -794,17 +788,14 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
     .reduce((sum, s) => sum + s.revenue, 0)
 
   // Get sales breakdown by item for subscriptions
-  const subItemSales = subscriptionSales.reduce(
-    (acc, sale) => {
-      if (!acc[sale.itemId]) {
-        acc[sale.itemId] = { quantity: 0, revenue: 0 }
-      }
-      acc[sale.itemId].quantity += sale.quantity
-      acc[sale.itemId].revenue += sale.revenue
-      return acc
-    },
-    {} as Record<string, { quantity: number; revenue: number }>
-  )
+  const subItemSales = subscriptionSales.reduce((acc, sale) => {
+    if (!acc[sale.itemId]) {
+      acc[sale.itemId] = { quantity: 0, revenue: 0 }
+    }
+    acc[sale.itemId].quantity += sale.quantity
+    acc[sale.itemId].revenue += sale.revenue
+    return acc
+  }, {} as Record<string, { quantity: number; revenue: number }>)
   const subItemSalesArray = orderBy(
     Object.entries(subItemSales).map(([itemId, data]) => ({
       itemId,
@@ -815,17 +806,14 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
   )
 
   // Get sales breakdown by item for digital goods
-  const goodsItemSales = digitalGoodsSales.reduce(
-    (acc, sale) => {
-      if (!acc[sale.itemId]) {
-        acc[sale.itemId] = { quantity: 0, revenue: 0 }
-      }
-      acc[sale.itemId].quantity += sale.quantity
-      acc[sale.itemId].revenue += sale.revenue
-      return acc
-    },
-    {} as Record<string, { quantity: number; revenue: number }>
-  )
+  const goodsItemSales = digitalGoodsSales.reduce((acc, sale) => {
+    if (!acc[sale.itemId]) {
+      acc[sale.itemId] = { quantity: 0, revenue: 0 }
+    }
+    acc[sale.itemId].quantity += sale.quantity
+    acc[sale.itemId].revenue += sale.revenue
+    return acc
+  }, {} as Record<string, { quantity: number; revenue: number }>)
   const goodsItemSalesArray = orderBy(
     Object.entries(goodsItemSales).map(([itemId, data]) => ({
       itemId,
@@ -873,16 +861,14 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
       <Spacer h={4} />
       <h3 className="text-lg font-semibold">Current Subscribers</h3>
       <p className="text-ink-500 mb-4">
-        <b>{totalSubscribers}</b> active subscribers ({totalAutoRenew} auto-renewing)
+        <b>{totalSubscribers}</b> active subscribers ({totalAutoRenew}{' '}
+        auto-renewing)
       </p>
       <div className="mb-8 grid grid-cols-3 gap-4">
         {(['basic', 'plus', 'premium'] as const).map((tier) => {
           const tierData = subscribersByTier.find((t) => t.tier === tier)
           return (
-            <div
-              key={tier}
-              className="bg-canvas-50 rounded-lg p-4 text-center"
-            >
+            <div key={tier} className="bg-canvas-50 rounded-lg p-4 text-center">
               <div className={`text-2xl font-bold ${tierColors[tier]}`}>
                 {tierData?.count ?? 0}
               </div>
@@ -909,7 +895,8 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
       <Spacer h={8} />
       <h3 className="text-lg font-semibold">Subscription Sales</h3>
       <p className="text-ink-500">
-        <b>{formatMoney(last30dSubRevenue)}</b> from subscriptions in the last 30d
+        <b>{formatMoney(last30dSubRevenue)}</b> from subscriptions in the last
+        30d
       </p>
       <Spacer h={4} />
       <Tabs
@@ -918,19 +905,23 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
         tabs={[
           {
             title: 'Daily Purchases',
-            content: dailySubSales.length > 0 ? (
-              <DailyChart values={dailySubSales} />
-            ) : (
-              <p className="text-ink-500">No subscription sales data available.</p>
-            ),
+            content:
+              dailySubSales.length > 0 ? (
+                <DailyChart values={dailySubSales} />
+              ) : (
+                <p className="text-ink-500">
+                  No subscription sales data available.
+                </p>
+              ),
           },
           {
             title: 'Daily Revenue (÷1000)',
-            content: dailySubRevenue.length > 0 ? (
-              <DailyChart values={dailySubRevenue} />
-            ) : (
-              <p className="text-ink-500">No revenue data available.</p>
-            ),
+            content:
+              dailySubRevenue.length > 0 ? (
+                <DailyChart values={dailySubRevenue} />
+              ) : (
+                <p className="text-ink-500">No revenue data available.</p>
+              ),
           },
         ]}
       />
@@ -948,7 +939,8 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
       <Spacer h={4} />
       <h3 className="text-lg font-semibold">Digital Goods Sales</h3>
       <p className="text-ink-500">
-        <b>{formatMoney(last30dGoodsRevenue)}</b> from digital goods in the last 30d
+        <b>{formatMoney(last30dGoodsRevenue)}</b> from digital goods in the last
+        30d
       </p>
       <Spacer h={4} />
       <Tabs
@@ -957,19 +949,23 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
         tabs={[
           {
             title: 'Daily Items Sold',
-            content: dailyGoodsSales.length > 0 ? (
-              <DailyChart values={dailyGoodsSales} />
-            ) : (
-              <p className="text-ink-500">No digital goods sales data available.</p>
-            ),
+            content:
+              dailyGoodsSales.length > 0 ? (
+                <DailyChart values={dailyGoodsSales} />
+              ) : (
+                <p className="text-ink-500">
+                  No digital goods sales data available.
+                </p>
+              ),
           },
           {
             title: 'Daily Revenue (÷1000)',
-            content: dailyGoodsRevenue.length > 0 ? (
-              <DailyChart values={dailyGoodsRevenue} />
-            ) : (
-              <p className="text-ink-500">No revenue data available.</p>
-            ),
+            content:
+              dailyGoodsRevenue.length > 0 ? (
+                <DailyChart values={dailyGoodsRevenue} />
+              ) : (
+                <p className="text-ink-500">No revenue data available.</p>
+              ),
           },
         ]}
       />
