@@ -272,18 +272,16 @@ export const BENEFIT_DEFINITIONS = [
     description: 'Multiplied mana from daily and weekly quests',
     getValueForTier: (tier: SupporterTier) =>
       `${SUPPORTER_BENEFITS[tier].questMultiplier}x`,
-    baseValue: '-',
+    baseValue: '1x',
   },
   {
     id: 'referrals',
     icon: '👥',
     title: 'Referral Bonus',
     description: 'Multiplied mana when you refer new users',
-    getValueForTier: (tier: SupporterTier) => {
-      const mult = SUPPORTER_BENEFITS[tier].referralMultiplier
-      return mult === 1 ? '-' : `${mult}x`
-    },
-    baseValue: '-',
+    getValueForTier: (tier: SupporterTier) =>
+      `${SUPPORTER_BENEFITS[tier].referralMultiplier}x`,
+    baseValue: '1x',
   },
   {
     id: 'shop',
