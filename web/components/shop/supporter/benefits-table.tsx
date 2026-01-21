@@ -22,20 +22,42 @@ import { TierBadge } from './tier-badge'
 export function BenefitsTable({
   currentTier,
   activeTier,
+  showFreeColumn = true,
 }: {
   currentTier: SupporterTier | null
   activeTier: SupporterTier | null
+  showFreeColumn?: boolean
 }) {
+  const isFreeUser = currentTier === null
+
   return (
     <div className="bg-canvas-0 border-ink-200 rounded-xl border">
       <div className="overflow-x-auto">
         <table className="w-full border-separate border-spacing-0">
           <thead>
-            {/* Header row with title and OWNED badge */}
+            {/* Header row with title and CURRENT badge */}
             <tr>
               <th className="p-4 text-left">
                 <h2 className="text-lg font-semibold">Benefits Comparison</h2>
               </th>
+              {/* Free column header - CURRENT badge */}
+              {showFreeColumn && (
+                <th className="px-2 pb-0 pt-2 align-bottom sm:px-4">
+                  {isFreeUser && (
+                    <div
+                      className={clsx(
+                        'mx-auto w-fit rounded-t-md px-1.5 py-0.5 text-[8px] font-bold',
+                        'sm:px-2 sm:text-[10px]',
+                        'border-l border-r border-t',
+                        'sm:border-l-2 sm:border-r-2 sm:border-t-2',
+                        'border-ink-300 bg-ink-100 text-ink-600 dark:bg-ink-700 dark:text-ink-300'
+                      )}
+                    >
+                      CURRENT
+                    </div>
+                  )}
+                </th>
+              )}
               {TIER_ORDER.map((tier) => {
                 const isCurrentTier = currentTier === tier
                 return (
@@ -71,6 +93,19 @@ export function BenefitsTable({
               <th className="text-ink-600 border-ink-200 border-b p-2 text-left text-sm font-medium sm:p-3">
                 Benefit
               </th>
+              {/* Free column header */}
+              {showFreeColumn && (
+                <th
+                  className={clsx(
+                    'p-2 text-center text-sm font-medium transition-all duration-200 sm:p-3',
+                    isFreeUser &&
+                      'border-ink-300 rounded-t-lg border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2',
+                    !isFreeUser && 'border-ink-200 border-b'
+                  )}
+                >
+                  <span className="text-ink-500">Free</span>
+                </th>
+              )}
               {TIER_ORDER.map((tier) => {
                 const isCurrentTier = currentTier === tier
                 const isActiveTier = activeTier === tier
@@ -135,6 +170,18 @@ export function BenefitsTable({
                       </Col>
                     </Row>
                   </td>
+                  {/* Free column value */}
+                  {showFreeColumn && (
+                    <td
+                      className={clsx(
+                        'text-ink-400 p-2 text-center text-sm font-semibold transition-all duration-200 sm:p-3',
+                        isFreeUser && 'border-ink-300 border-l border-r sm:border-l-2 sm:border-r-2',
+                        isFreeUser && isLastRow && 'rounded-b-lg border-b sm:border-b-2'
+                      )}
+                    >
+                      {benefit.baseValue}
+                    </td>
+                  )}
                   {TIER_ORDER.map((tier) => {
                     const isCurrentTier = currentTier === tier
                     const isActiveTier = activeTier === tier

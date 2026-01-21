@@ -272,7 +272,7 @@ export const BENEFIT_DEFINITIONS = [
     description: 'Multiplied mana from daily and weekly quests',
     getValueForTier: (tier: SupporterTier) =>
       `${SUPPORTER_BENEFITS[tier].questMultiplier}x`,
-    baseValue: '1x',
+    baseValue: '-',
   },
   {
     id: 'referrals',
@@ -283,7 +283,7 @@ export const BENEFIT_DEFINITIONS = [
       const mult = SUPPORTER_BENEFITS[tier].referralMultiplier
       return mult === 1 ? '-' : `${mult}x`
     },
-    baseValue: '1x',
+    baseValue: '-',
   },
   {
     id: 'shop',
@@ -294,7 +294,7 @@ export const BENEFIT_DEFINITIONS = [
       const discount = SUPPORTER_BENEFITS[tier].shopDiscount
       return discount === 0 ? '-' : `${Math.round(discount * 100)}%`
     },
-    baseValue: '0%',
+    baseValue: '-',
   },
   {
     id: 'streaks',
@@ -335,7 +335,7 @@ export const BENEFIT_DEFINITIONS = [
       const leverage = percent + 1 // 100% loan = 2x leverage
       return `${leverage}x`
     },
-    baseValue: '-',
+    baseValue: '2x',
   },
   {
     id: 'badge',
