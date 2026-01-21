@@ -6,13 +6,80 @@ import {
   SupporterTier,
 } from 'common/supporter-config'
 import { DAY_MS } from 'common/util/time'
-import { log } from 'shared/utils'
+import { getPrivateUser, log } from 'shared/utils'
+import { MembershipSubscriptionData, Notification } from 'common/notification'
+import { nanoid } from 'common/util/random'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { createPushNotifications } from 'shared/create-push-notifications'
+import { MANIFOLD_AVATAR_URL, MANIFOLD_USER_NAME, MANIFOLD_USER_USERNAME } from 'common/user'
 
 // Map entitlement IDs to their tier info
 const ENTITLEMENT_TO_TIER: Record<string, { tier: SupporterTier; price: number; name: string }> = {
   'supporter-basic': { tier: 'basic', price: SUPPORTER_TIERS.basic.price, name: SUPPORTER_TIERS.basic.displayName },
   'supporter-plus': { tier: 'plus', price: SUPPORTER_TIERS.plus.price, name: SUPPORTER_TIERS.plus.displayName },
   'supporter-premium': { tier: 'premium', price: SUPPORTER_TIERS.premium.price, name: SUPPORTER_TIERS.premium.displayName },
+}
+
+async function createMembershipNotification(
+  userId: string,
+  tierName: string,
+  amount: number,
+  type: 'renewed' | 'cancelled',
+  newExpiresTime?: number
+) {
+  const pg = createSupabaseDirectClient()
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+
+  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
+    privateUser,
+    'membership_subscription'
+  )
+
+  if (!sendToBrowser && !sendToMobile) return
+
+  const id = nanoid(6)
+  const notificationData: MembershipSubscriptionData = {
+    tierName,
+    amount,
+    type,
+    newExpiresTime,
+  }
+
+  const notification: Notification = {
+    id,
+    userId,
+    reason: 'membership_subscription',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: id,
+    sourceType: 'membership_subscription',
+    sourceUpdateType: type === 'renewed' ? 'updated' : 'canceled',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: amount.toString(),
+    sourceSlug: '/shop',
+    data: notificationData,
+  }
+
+  if (sendToBrowser) {
+    await insertNotificationToSupabase(notification, pg)
+  }
+
+  if (sendToMobile) {
+    const title =
+      type === 'renewed'
+        ? `${tierName} Membership Renewed`
+        : `${tierName} Membership Cancelled`
+    const body =
+      type === 'renewed'
+        ? `Your ${tierName} membership has been auto-renewed for M$${amount}.`
+        : `Your ${tierName} membership was cancelled due to insufficient balance.`
+
+    await createPushNotifications([[privateUser, notification, title, body]])
+  }
 }
 
 export async function processMembershipRenewals() {
@@ -91,6 +158,15 @@ export async function processMembershipRenewals() {
 
           log(`Successfully renewed ${tierInfo.name} for user ${user_id}`)
           renewedCount++
+
+          // Send renewal notification
+          await createMembershipNotification(
+            user_id,
+            tierInfo.name,
+            tierInfo.price,
+            'renewed',
+            newExpiresTime.getTime()
+          )
         } else {
           // Insufficient balance - cancel auto-renewal
           await tx.none(
@@ -102,6 +178,14 @@ export async function processMembershipRenewals() {
 
           log(`Cancelled ${tierInfo.name} auto-renewal for user ${user_id} (insufficient balance: ${user.balance} < ${tierInfo.price})`)
           failedCount++
+
+          // Send cancellation notification
+          await createMembershipNotification(
+            user_id,
+            tierInfo.name,
+            tierInfo.price,
+            'cancelled'
+          )
         }
       })
     } catch (error) {

@@ -8,6 +8,7 @@ import {
   ContractResolutionData,
   ExtraPurchasedManaData,
   getSourceUrl,
+  MembershipSubscriptionData,
   Notification,
   PaymentCompletedData,
   ReactionNotificationTypes,
@@ -475,6 +476,15 @@ export function NotificationItem(props: {
   } else if (reason === 'market_movements') {
     return (
       <MarketMovementNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'membership_subscription') {
+    return (
+      <MembershipSubscriptionNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -2386,6 +2396,60 @@ function ReviewUpdatedNotification(props: {
           </span>
         )}
       </span>
+    </NotificationFrame>
+  )
+}
+
+function MembershipSubscriptionNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { tierName, amount, type, newExpiresTime } =
+    notification.data as MembershipSubscriptionData
+
+  const isRenewal = type === 'renewed'
+
+  const subtitle = isRenewal
+    ? newExpiresTime
+      ? `Your membership will renew again on ${new Date(newExpiresTime).toLocaleDateString()}`
+      : undefined
+    : `Add funds to resubscribe at the shop`
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link="/shop"
+      icon={
+        <NotificationIcon
+          symbol={isRenewal ? '✨' : '⚠️'}
+          symbolBackgroundClass={
+            isRenewal
+              ? 'bg-gradient-to-br from-amber-400 to-amber-200'
+              : 'bg-gradient-to-br from-red-400 to-red-200'
+          }
+        />
+      }
+      subtitle={subtitle}
+    >
+      {isRenewal ? (
+        <span>
+          Your <span className="font-semibold">{tierName}</span> membership was
+          auto-renewed for{' '}
+          <span className="font-semibold">{formatMoney(amount)}</span>
+        </span>
+      ) : (
+        <span>
+          Your <span className="font-semibold">{tierName}</span> membership was
+          cancelled due to insufficient balance (
+          <span className="font-semibold">{formatMoney(amount)}</span> needed)
+        </span>
+      )}
     </NotificationFrame>
   )
 }
