@@ -152,48 +152,52 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       throw new APIError(403, 'Insufficient balance')
     }
 
-    // Create transaction using the standard pattern
-    const discountPercent = Math.round(shopDiscount * 100)
-    const descriptionParts = [`Purchased ${item.name}`]
-    if (discountPercent > 0) {
-      descriptionParts.push(`(${discountPercent}% supporter discount)`)
-    }
-    if (upgradeCredit > 0) {
-      descriptionParts.push(`(M$${upgradeCredit} credit from previous tier)`)
-    }
+    // Create transaction using the standard pattern (skip if price is 0, e.g., downgrade fully covered by credit)
+    let txnId: string | null = null
+    if (price > 0) {
+      const discountPercent = Math.round(shopDiscount * 100)
+      const descriptionParts = [`Purchased ${item.name}`]
+      if (discountPercent > 0) {
+        descriptionParts.push(`(${discountPercent}% supporter discount)`)
+      }
+      if (upgradeCredit > 0) {
+        descriptionParts.push(`(M$${upgradeCredit} credit from previous tier)`)
+      }
 
-    // Use different transaction types for memberships vs cosmetics
-    const txnData: TxnData = isSupporterTierPurchase
-      ? {
-          category: 'MEMBERSHIP_PAYMENT',
-          fromType: 'USER',
-          fromId: auth.uid,
-          toType: 'BANK',
-          toId: 'BANK',
-          amount: price,
-          token: 'M$',
-          description: descriptionParts.join(' '),
-          data: { itemId, upgradeCredit },
-        }
-      : {
-          category: 'SHOP_PURCHASE',
-          fromType: 'USER',
-          fromId: auth.uid,
-          toType: 'BANK',
-          toId: 'BANK',
-          amount: price,
-          token: 'M$',
-          description: descriptionParts.join(' '),
-          data: { itemId, supporterDiscount: shopDiscount },
-        }
+      // Use different transaction types for memberships vs cosmetics
+      const txnData: TxnData = isSupporterTierPurchase
+        ? {
+            category: 'MEMBERSHIP_PAYMENT',
+            fromType: 'USER',
+            fromId: auth.uid,
+            toType: 'BANK',
+            toId: 'BANK',
+            amount: price,
+            token: 'M$',
+            description: descriptionParts.join(' '),
+            data: { itemId, upgradeCredit },
+          }
+        : {
+            category: 'SHOP_PURCHASE',
+            fromType: 'USER',
+            fromId: auth.uid,
+            toType: 'BANK',
+            toId: 'BANK',
+            amount: price,
+            token: 'M$',
+            description: descriptionParts.join(' '),
+            data: { itemId, supporterDiscount: shopDiscount },
+          }
 
-    const txn = await runTxnInBetQueue(tx, txnData)
+      const txn = await runTxnInBetQueue(tx, txnData)
+      txnId = txn.id
+    }
 
     // Create shop_order record
     await tx.none(
       `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status)
        VALUES ($1, $2, $3, $4, 'COMPLETED')`,
-      [auth.uid, itemId, price, txn.id]
+      [auth.uid, itemId, price, txnId]
     )
 
     // Create/update entitlement (for non-instant items)

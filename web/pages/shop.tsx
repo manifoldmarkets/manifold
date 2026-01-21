@@ -952,7 +952,7 @@ function SupporterModal(props: {
               loading={purchasing === TIER_ITEMS[activeTier].id || cancelling}
               disabled={!user || !!purchasing || cancelling}
               entitlements={entitlements}
-              daysRemaining={daysRemaining}
+              currentExpiresTime={currentEntitlement?.expiresTime}
               isAutoRenewing={isAutoRenewing}
               onClick={() => setConfirmingPurchase(activeTier)}
               onCancelClick={() => setConfirmingCancel(true)}
@@ -985,6 +985,7 @@ function SupporterModal(props: {
             tier={confirmingPurchase}
             currentTier={currentTier}
             daysRemaining={daysRemaining}
+            currentExpiresTime={currentEntitlement?.expiresTime}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)

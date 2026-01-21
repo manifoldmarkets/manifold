@@ -197,7 +197,7 @@ export default function SupporterPage() {
             onClick={() => setConfirmingPurchase(activeTier)}
             onCancelClick={() => setConfirmingCancel(true)}
             entitlements={user?.entitlements}
-            daysRemaining={daysRemaining}
+            currentExpiresTime={currentEntitlement?.expiresTime}
             isAutoRenewing={isAutoRenewing}
           />
         )}
@@ -216,6 +216,7 @@ export default function SupporterPage() {
             tier={confirmingPurchase}
             currentTier={currentTier}
             daysRemaining={daysRemaining}
+            currentExpiresTime={currentEntitlement?.expiresTime}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)

@@ -9,6 +9,7 @@ import {
 import { UserEntitlement } from 'common/shop/types'
 import { Button } from 'web/components/buttons/button'
 import { TIER_ITEMS } from './tier-items'
+import { DAY_MS } from 'common/util/time'
 
 export function SubscribeButton({
   tier,
@@ -19,7 +20,7 @@ export function SubscribeButton({
   onClick,
   onCancelClick,
   entitlements,
-  daysRemaining = 0,
+  currentExpiresTime,
   isAutoRenewing = false,
 }: {
   tier: SupporterTier
@@ -30,14 +31,14 @@ export function SubscribeButton({
   onClick: () => void
   onCancelClick?: () => void
   entitlements?: UserEntitlement[]
-  daysRemaining?: number
+  currentExpiresTime?: number // expiration timestamp for accurate credit calculation
   isAutoRenewing?: boolean
 }) {
   const tierConfig = SUPPORTER_TIERS[tier]
   const item = TIER_ITEMS[tier]
   const isCurrentTier = currentTier === tier
   const canUpgrade = canUpgradeTo(currentTier, tier)
-  const isLowerTier = !!currentTier && !canUpgrade && !isCurrentTier
+  const isDowngrade = !!currentTier && !canUpgrade && !isCurrentTier
 
   // If user is on their current tier and auto-renewing, show cancel button
   if (isCurrentTier && isAutoRenewing) {
@@ -76,28 +77,34 @@ export function SubscribeButton({
     )
   }
 
-  // Calculate upgrade credit (matches backend logic)
-  const upgradeCredit =
-    canUpgrade && currentTier && daysRemaining > 0
-      ? Math.floor(daysRemaining * (TIER_ITEMS[currentTier].price / 30))
+  // Calculate credit for tier changes (matches backend logic - uses fractional days)
+  const msRemaining = currentExpiresTime ? Math.max(0, currentExpiresTime - Date.now()) : 0
+  const fractionalDaysRemaining = msRemaining / DAY_MS
+  const tierChangeCredit =
+    currentTier && !isCurrentTier && fractionalDaysRemaining > 0
+      ? Math.floor(fractionalDaysRemaining * (TIER_ITEMS[currentTier].price / 30))
       : 0
-  const finalPrice = Math.max(0, item.price - upgradeCredit)
+  const finalPrice = Math.max(0, item.price - tierChangeCredit)
   const canAfford = effectiveBalance >= finalPrice
 
   // Check if user was ever a supporter (for "Renew" text on expired subscriptions)
   const wasSupporter = wasEverSupporter(entitlements)
   const isExpiredSupporter = wasSupporter && !currentTier
 
-  const buttonText = currentTier && canUpgrade
-    ? `Upgrade to ${tierConfig.name}`
-    : isExpiredSupporter
-      ? `Renew ${tierConfig.name}`
-      : `Become a ${tierConfig.name} member`
+  const buttonText = isDowngrade
+    ? `Downgrade to ${tierConfig.name}`
+    : currentTier && canUpgrade
+      ? `Upgrade to ${tierConfig.name}`
+      : isExpiredSupporter
+        ? `Renew ${tierConfig.name}`
+        : `Become a ${tierConfig.name} member`
 
-  // Show different price text for upgrades with credit
+  // Show different price text for tier changes with credit
   const priceText =
-    upgradeCredit > 0
-      ? formatMoney(finalPrice)
+    tierChangeCredit > 0
+      ? finalPrice === 0
+        ? 'Free'
+        : formatMoney(finalPrice)
       : `${formatMoney(item.price)}/mo`
 
   return (
@@ -110,14 +117,12 @@ export function SubscribeButton({
         tier === 'plus' && 'shadow-lg shadow-indigo-500/25'
       )}
       onClick={onClick}
-      disabled={disabled || !canAfford || isLowerTier}
+      disabled={disabled || !canAfford}
       loading={loading}
     >
-      {isLowerTier
-        ? 'Already have higher tier'
-        : !canAfford
-          ? 'Insufficient balance'
-          : `${buttonText} - ${priceText}`}
+      {!canAfford
+        ? 'Insufficient balance'
+        : `${buttonText} - ${priceText}`}
     </Button>
   )
 }
