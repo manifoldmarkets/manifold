@@ -89,7 +89,7 @@ export const RepostFeedCard = memo(function (props: {
         <Col className={'w-full gap-2'}>
           <Col className={'w-full pl-1 pr-2  transition-colors'}>
             <Row className="w-full items-center justify-between">
-              <Row className="min-w-0 flex-shrink items-center gap-1 overflow-hidden">
+              <Row className="min-w-0 flex-shrink items-center gap-1">
                 <UserHovercard userId={userId}>
                   <Avatar
                     username={commenter?.username ?? userUsername}
