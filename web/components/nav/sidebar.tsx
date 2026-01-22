@@ -67,7 +67,7 @@ export default function Sidebar(props: {
   const isLiveTV = useTVIsLive(10)
 
   const navOptions = isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
+    ? getMobileNav(!!user, () => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
@@ -201,6 +201,7 @@ const getDesktopNav = (
 }
 
 const getMobileNav = (
+  loggedIn: boolean,
   toggleModal: () => void,
   options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
@@ -210,7 +211,7 @@ const getMobileNav = (
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
-    {
+    loggedIn && {
       name: 'Share with friends',
       href: '/referrals',
       icon: StarIcon,
@@ -251,11 +252,12 @@ const bottomNav = (
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    !isMobile && {
-      name: 'Share with friends',
-      href: '/referrals',
-      icon: StarIcon,
-    },
+    loggedIn &&
+      !isMobile && {
+        name: 'Share with friends',
+        href: '/referrals',
+        icon: StarIcon,
+      },
     {
       name: theme ?? 'auto',
       children:
