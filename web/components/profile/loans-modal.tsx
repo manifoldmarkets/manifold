@@ -338,35 +338,54 @@ export function LoansModal(props: {
                             (latestPortfolio.balance +
                               latestPortfolio.investmentValue)
                         )}{' '}
-                        of your net worth
+                        of your net worth (
+                        {Math.round(
+                          1 +
+                            maxGeneralLoan /
+                              (latestPortfolio.balance +
+                                latestPortfolio.investmentValue)
+                        )}
+                        x leverage)
                       </>
                     )}
                   .{' '}
-                  {hasMarginLoanAccess ? (
-                    <>
-                      Upgrade your membership at the{' '}
-                      <Link
-                        href="/shop"
-                        className="text-primary-600 hover:underline"
-                      >
-                        shop
-                      </Link>{' '}
-                      to increase this limit (Plus: 100%, Pro: 200%, Premium:
-                      300%).
-                    </>
-                  ) : (
-                    <>
-                      Subscribe to a membership at the{' '}
-                      <Link
-                        href="/shop"
-                        className="text-primary-600 hover:underline"
-                      >
-                        shop
-                      </Link>{' '}
-                      to unlock margin loans with higher limits (Plus: 100%,
-                      Pro: 200%, Premium: 300%).
-                    </>
-                  )}
+                  {(() => {
+                    const netWorth = latestPortfolio
+                      ? latestPortfolio.balance + latestPortfolio.investmentValue
+                      : 0
+                    const leverage =
+                      netWorth > 0 ? Math.round(1 + maxGeneralLoan / netWorth) : 0
+                    const hasPremium = leverage >= 4
+                    if (hasPremium) return null
+                    if (hasMarginLoanAccess) {
+                      return (
+                        <>
+                          Upgrade your membership at the{' '}
+                          <Link
+                            href="/shop"
+                            className="text-primary-600 hover:underline"
+                          >
+                            shop
+                          </Link>{' '}
+                          to increase this limit (Pro: 3x leverage, Premium: 4x
+                          leverage).
+                        </>
+                      )
+                    }
+                    return (
+                      <>
+                        Subscribe to a membership at the{' '}
+                        <Link
+                          href="/shop"
+                          className="text-primary-600 hover:underline"
+                        >
+                          shop
+                        </Link>{' '}
+                        to unlock margin loans with higher limits (Pro: 3x
+                        leverage, Premium: 4x leverage)
+                      </>
+                    )
+                  })()}
                 </p>
               </div>
               <div>
