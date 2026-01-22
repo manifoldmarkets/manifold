@@ -60,32 +60,30 @@ export function YourTrades(props: {
   }
 
   return (
-    <Col className="bg-canvas-50 my-4 rounded py-4 pb-0 sm:px-3">
+    <Col className="my-4 gap-4">
       {contract.mechanism === 'cpmm-1' && (
-        <YourOrders
-          contract={contract}
-          bets={userLimitBets}
-          deemphasizedHeader
-        />
+        <YourOrders contract={contract} bets={userLimitBets} />
       )}
 
       {visibleUserBets.length > 0 && contractMetric && (
-        <>
-          <Row className="items-center justify-between px-3 pb-1">
-            <span className="text-ink-800 text-sm font-semibold">
+        <Col className="bg-canvas-0 overflow-hidden">
+          <Row className="items-center justify-between px-4 pb-1 pt-3">
+            <span className="text-ink-900 text-base font-semibold">
               Your trades
             </span>
             {showLoanButton && (
               <LoanButton contractId={contract.id} user={user} />
             )}
           </Row>
-          <ContractBetsTable
-            contractMetric={contractMetric}
-            contract={contract}
-            bets={userBets}
-            isYourBets
-          />
-        </>
+          <div className="overflow-x-auto px-4 pb-2">
+            <ContractBetsTable
+              contractMetric={contractMetric}
+              contract={contract}
+              bets={userBets}
+              isYourBets
+            />
+          </div>
+        </Col>
       )}
     </Col>
   )
