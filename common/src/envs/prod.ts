@@ -70,9 +70,8 @@ export const PROD_CONFIG: EnvConfig = {
   cloudRunRegion: 'uc',
 
   adminIds: [
-    'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
-    'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
     'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
+    'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
     'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
     'KHX2ThSFtLQlau58hrjtCX7OL2h2', // stefanie
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
