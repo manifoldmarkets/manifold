@@ -298,7 +298,7 @@ const TopicsSidebar = (props: {
               selectedIds={above.map((g) => g.id)}
               onCreateTopic={(group) => setAbove((a) => [...a, group])}
               addingToContract={false}
-              className="[&_input]:bg-canvas-0 [&_input]:text-sm focus:[&_input]:bg-canvas-0"
+              className="[&_input]:bg-canvas-0 focus:[&_input]:bg-canvas-0 [&_input]:text-sm"
             />
           </div>
         )}
@@ -334,7 +334,7 @@ const TopicsSidebar = (props: {
               selectedIds={below.map((g) => g.id)}
               onCreateTopic={(group) => setBelow((b) => [...b, group])}
               addingToContract={false}
-              className="[&_input]:bg-canvas-0 [&_input]:text-sm focus:[&_input]:bg-canvas-0"
+              className="[&_input]:bg-canvas-0 focus:[&_input]:bg-canvas-0 [&_input]:text-sm"
             />
           </div>
         )}

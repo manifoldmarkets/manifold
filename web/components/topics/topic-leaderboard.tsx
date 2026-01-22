@@ -59,7 +59,10 @@ export function TopicLeaderboard(props: { topicId: string }) {
           {creatorResult.loading ? (
             <LoadingLeaderboard columns={creatorColumns} maxToShow={10} />
           ) : creatorResult.data ? (
-            <Leaderboard entries={creatorResult.data} columns={creatorColumns} />
+            <Leaderboard
+              entries={creatorResult.data}
+              columns={creatorColumns}
+            />
           ) : (
             <div className="text-ink-400 py-8 text-center text-sm">
               No data available

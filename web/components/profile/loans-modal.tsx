@@ -351,10 +351,13 @@ export function LoansModal(props: {
                   .{' '}
                   {(() => {
                     const netWorth = latestPortfolio
-                      ? latestPortfolio.balance + latestPortfolio.investmentValue
+                      ? latestPortfolio.balance +
+                        latestPortfolio.investmentValue
                       : 0
                     const leverage =
-                      netWorth > 0 ? Math.round(1 + maxGeneralLoan / netWorth) : 0
+                      netWorth > 0
+                        ? Math.round(1 + maxGeneralLoan / netWorth)
+                        : 0
                     const hasPremium = leverage >= 4
                     if (hasPremium) return null
                     if (hasMarginLoanAccess) {
