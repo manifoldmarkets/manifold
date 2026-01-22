@@ -212,7 +212,7 @@ const getMobileNav = (
     { name: 'Forum', href: '/posts', icon: ChatIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
     loggedIn && {
-      name: 'Share with friends',
+      name: 'Referrals',
       href: '/referrals',
       icon: StarIcon,
     },
@@ -254,7 +254,7 @@ const bottomNav = (
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     loggedIn &&
       !isMobile && {
-        name: 'Share with friends',
+        name: 'Referrals',
         href: '/referrals',
         icon: StarIcon,
       },

@@ -149,16 +149,16 @@ export default function ReferralsPage() {
         </div>
 
         {/* Pro Tip */}
-        <div className="bg-primary-50 dark:bg-primary-950/30 border-primary-200 dark:border-primary-800 rounded-xl border p-4">
+        <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-4">
           <Row className="items-start gap-3">
-            <div className="bg-primary-100 dark:bg-primary-900/50 rounded-lg p-2">
-              <LightBulbIcon className="text-primary-600 dark:text-primary-400 h-5 w-5" />
+            <div className="bg-ink-100 dark:bg-ink-800 rounded-lg p-2">
+              <LightBulbIcon className="text-primary-600 h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-primary-900 dark:text-primary-100 font-medium">
+              <h3 className="font-medium">
                 Pro tip
               </h3>
-              <p className="text-primary-700 dark:text-primary-300 mt-1 text-sm">
+              <p className="text-ink-600 mt-1 text-sm">
                 You can also earn the referral bonus by sharing a link to any
                 question or group! Your referral code is automatically included.
               </p>
