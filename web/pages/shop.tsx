@@ -367,8 +367,8 @@ export default function ShopPage() {
         </Row>
 
         {/* Shop items grid - exclude supporter tiers (handled on /supporter page) */}
-        {/* Single column on very narrow screens (<360px), 2 columns otherwise */}
-        <div className="grid grid-cols-1 gap-4 min-[360px]:grid-cols-2">
+        {/* Single column on mobile (<480px), 2 columns on wider screens */}
+        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
           {sortItems(
             SHOP_ITEMS.filter(
               (item) =>
@@ -1612,7 +1612,7 @@ function ShopItemCard(props: {
                 )}
 
                 {/* Buy button inline on wider screens */}
-                <div className="hidden min-[360px]:block">
+                <div className="hidden min-[480px]:block">
                   {isStreakFreezeAtMax ? (
                     <Button size="sm" color="gray" disabled>
                       Max owned
@@ -1636,8 +1636,8 @@ function ShopItemCard(props: {
                 </div>
               </Row>
 
-              {/* Full-width button on very narrow screens */}
-              <div className="min-[360px]:hidden">
+              {/* Full-width button on narrow screens */}
+              <div className="min-[480px]:hidden">
                 {isStreakFreezeAtMax ? (
                   <Button size="sm" color="gray" disabled className="w-full">
                     Max owned
