@@ -80,13 +80,13 @@ export default function ReferralsPage() {
 
             {/* Stats row */}
             <Row className="flex-wrap gap-4">
-              <div className="rounded-xl bg-white/15 px-4 py-3 backdrop-blur-sm">
+              <div className="bg-white/15 rounded-xl px-4 py-3 backdrop-blur-sm">
                 <div className="text-2xl font-bold">{referralCount}</div>
                 <div className="text-sm text-white/80">
                   {referralCount === 1 ? 'Friend referred' : 'Friends referred'}
                 </div>
               </div>
-              <div className="rounded-xl bg-white/15 px-4 py-3 backdrop-blur-sm">
+              <div className="bg-white/15 rounded-xl px-4 py-3 backdrop-blur-sm">
                 <div className="text-2xl font-bold">
                   {formatMoney(referralCount * REFERRAL_AMOUNT)}
                 </div>
@@ -97,7 +97,7 @@ export default function ReferralsPage() {
         </div>
 
         {/* Share Section */}
-        <div className="bg-canvas-0 rounded-xl border border-ink-200 p-5 shadow-sm dark:border-ink-300 sm:p-6">
+        <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
           <Row className="mb-4 items-center gap-2">
             <ShareIcon className="text-primary-600 h-5 w-5" />
             <h2 className="text-lg font-semibold">Share your link</h2>
@@ -123,7 +123,7 @@ export default function ReferralsPage() {
         </div>
 
         {/* How It Works Section */}
-        <div className="bg-canvas-0 rounded-xl border border-ink-200 p-5 shadow-sm dark:border-ink-300 sm:p-6">
+        <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
           <Row className="mb-5 items-center gap-2">
             <SparklesIcon className="text-primary-600 h-5 w-5" />
             <h2 className="text-lg font-semibold">How it works</h2>
@@ -167,7 +167,7 @@ export default function ReferralsPage() {
         </div>
 
         {/* Your Referrals Section */}
-        <div className="bg-canvas-0 rounded-xl border border-ink-200 p-5 shadow-sm dark:border-ink-300 sm:p-6">
+        <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
           <Row className="mb-4 items-center justify-between">
             <Row className="items-center gap-2">
               <UserAddIcon className="text-primary-600 h-5 w-5" />

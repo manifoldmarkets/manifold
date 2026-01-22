@@ -331,7 +331,9 @@ function SitemapLink(props: {
             <ExternalLinkIcon className="text-ink-400 h-3.5 w-3.5 flex-shrink-0" />
           )}
         </Row>
-        <p className="text-ink-500 mt-0.5 text-sm leading-snug">{description}</p>
+        <p className="text-ink-500 mt-0.5 text-sm leading-snug">
+          {description}
+        </p>
       </div>
     </Link>
   )

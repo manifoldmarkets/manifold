@@ -97,7 +97,7 @@ const SocialLink = (props: {
       target={target}
       className={clsx(
         'bg-canvas-0 border-ink-200 text-ink-700 flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium',
-        'transition-all hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
+        'hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition-all'
       )}
     >
       <Icon className="h-5 w-5" />
