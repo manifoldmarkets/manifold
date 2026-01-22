@@ -521,7 +521,6 @@ export function ContractPageContent(props: ContractParams) {
             </div>
             {showExplainerPanel && (
               <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
-                <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
                 <ExplainerPanel />
               </div>
             )}
@@ -535,7 +534,6 @@ export function ContractPageContent(props: ContractParams) {
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && (
             <div>
-              <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
               <ExplainerPanel />
             </div>
           )}
