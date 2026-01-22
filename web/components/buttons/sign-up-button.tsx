@@ -24,6 +24,21 @@ export const SidebarSignUpButton = (props: { className?: string }) => {
   )
 }
 
+export const SignUpButton = (props: { className?: string }) => {
+  const { className } = props
+
+  return (
+    <Button
+      color="gradient"
+      size="md"
+      onClick={firebaseLogin}
+      className={className}
+    >
+      Sign up
+    </Button>
+  )
+}
+
 export const GoogleSignInButton = (props: { onClick: () => any }) => {
   return (
     <Button
