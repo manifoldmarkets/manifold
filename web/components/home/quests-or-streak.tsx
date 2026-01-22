@@ -19,6 +19,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
 } from 'common/economy'
 import { QUEST_DETAILS } from 'common/quest'
+import { getBenefit } from 'common/supporter-config'
 import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
@@ -89,6 +90,9 @@ export function QuestsModal(props: {
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
 
+  // Get quest multiplier from membership tier (1x for non-supporters)
+  const questMultiplier = getBenefit(user.entitlements, 'questMultiplier')
+
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-3">
@@ -114,9 +118,11 @@ export function QuestsModal(props: {
             }
             complete={streakStatus.currentCount >= streakStatus.requiredCount}
             status={`(${streakStatus.currentCount}/${streakStatus.requiredCount})`}
-            reward={Math.min(
-              BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
-              BETTING_STREAK_BONUS_MAX
+            reward={Math.floor(
+              Math.min(
+                BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
+                BETTING_STREAK_BONUS_MAX
+              ) * questMultiplier
             )}
             onClick={() => setShowStreakModal(true)}
           />
@@ -124,6 +130,7 @@ export function QuestsModal(props: {
             <Row className="-mt-2 w-full px-2 pl-12">
               <StreakProgressBar
                 currentStreak={user?.currentBettingStreak ?? 0}
+                questMultiplier={questMultiplier}
               />
             </Row>
           )}
@@ -132,7 +139,9 @@ export function QuestsModal(props: {
             title={`Share ${shareStatus.requiredCount} market today`}
             complete={shareStatus.currentCount >= shareStatus.requiredCount}
             status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
-            reward={QUEST_DETAILS.SHARES.rewardAmount}
+            reward={Math.floor(
+              QUEST_DETAILS.SHARES.rewardAmount * questMultiplier
+            )}
             info={'Share a question with a friend!'}
           />
           <Row className={'text-primary-700'}>Weekly</Row>
@@ -141,7 +150,9 @@ export function QuestsModal(props: {
             title={`Create a market this week`}
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
-            reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+            reward={Math.floor(
+              QUEST_DETAILS.MARKETS_CREATED.rewardAmount * questMultiplier
+            )}
             href={'/create'}
           />
           {/* <QuestRow

@@ -5,13 +5,16 @@ import { BETTING_STREAK_BONUS_MAX } from 'common/economy'
 import { range } from 'd3-array'
 import { BETTING_STREAK_BONUS_AMOUNT } from 'common/economy'
 
-export function StreakProgressBar(props: { currentStreak: number }) {
-  const { currentStreak } = props
+export function StreakProgressBar(props: {
+  currentStreak: number
+  questMultiplier?: number
+}) {
+  const { currentStreak, questMultiplier = 1 } = props
   const bonuses = range(1, 6).map((day) => ({
     day,
-    amount: Math.min(
-      BETTING_STREAK_BONUS_AMOUNT * day,
-      BETTING_STREAK_BONUS_MAX
+    amount: Math.floor(
+      Math.min(BETTING_STREAK_BONUS_AMOUNT * day, BETTING_STREAK_BONUS_MAX) *
+        questMultiplier
     ),
   }))
   const numDays = bonuses.length
