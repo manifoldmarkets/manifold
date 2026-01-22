@@ -10,13 +10,13 @@ import {
 } from 'web/components/topics/topics-button'
 import { TopicOptions } from 'web/components/topics/topic-options'
 import { Row } from 'web/components/layout/row'
+import { Col } from 'web/components/layout/col'
 import { useIsFollowingTopic } from 'web/hooks/use-group-supabase'
 import { forwardRef, Ref, useState } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { getTopicShareUrl } from 'common/util/share'
 import { useUser } from 'web/hooks/use-user'
-import { Tooltip } from '../widgets/tooltip'
 
 export const QuestionsTopicTitle = forwardRef(
   (props: { topic: Group; addAbout: () => void }, ref: Ref<HTMLDivElement>) => {
@@ -28,31 +28,30 @@ export const QuestionsTopicTitle = forwardRef(
     const isMobile = useIsMobile()
 
     return (
-      <Row
-        className={
-          'col-span-8 h-11 justify-between gap-1 sm:mb-1 xl:col-span-7'
-        }
-        ref={ref}
-      >
-        <h1 className="text-primary-700 self-center truncate text-2xl">
-          <Tooltip text={topic.name}>{topic.name}</Tooltip>
+      <Col className="mb-4 gap-4" ref={ref}>
+        {/* Topic name */}
+        <h1 className="text-ink-900 text-2xl font-semibold tracking-tight sm:text-3xl">
+          {topic.name}
         </h1>
-        <Row>
+
+        {/* Action buttons */}
+        <Row className="flex-wrap gap-2">
           <CopyLinkOrShareButton
             url={getTopicShareUrl(topic.slug, user?.username)}
-            className={'gap-1 whitespace-nowrap'}
+            className="border-ink-200 bg-canvas-0 hover:bg-canvas-50 text-ink-600 gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors"
             eventTrackingName={'copy questions page link'}
-            size={isMobile ? 'sm' : 'md'}
+            size="sm"
           >
             Share
           </CopyLinkOrShareButton>
+
           {!TOPIC_IDS_YOU_CANT_FOLLOW.includes(topic.id) && (
             <Button
-              color={'gray-white'}
-              className={'whitespace-nowrap'}
+              color={isFollowing ? 'indigo' : 'indigo-outline'}
+              className="gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium shadow-sm"
               loading={loading}
               disabled={loading || !user || isFollowing === undefined}
-              size={isMobile ? 'sm' : 'md'}
+              size="sm"
               onClick={async () => {
                 setLoading(true)
                 if (isFollowing) {
@@ -66,27 +65,26 @@ export const QuestionsTopicTitle = forwardRef(
               }}
             >
               {loading ? null : isFollowing ? (
-                <FilledBookmark className={'mr-1 h-5 w-5'} />
+                <FilledBookmark className="h-4 w-4" />
               ) : (
-                <BookmarkIcon className={'mr-1 h-5 w-5'} />
+                <BookmarkIcon className="h-4 w-4" />
               )}
               {isFollowing ? 'Following' : 'Follow'}
             </Button>
           )}
-          {isFollowing && !isMobile && user ? (
+
+          {isFollowing && !isMobile && user && (
             <>
               <Button
-                color={'gray-white'}
-                size={isMobile ? 'sm' : 'md'}
-                className={'whitespace-nowrap'}
+                color="gray-outline"
+                size="sm"
+                className="gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium shadow-sm"
                 onClick={() => setShowAddContract(true)}
               >
-                <Row>
-                  <PlusCircleIcon className={'mr-1 h-5 w-5'} />
-                  Add questions
-                </Row>
+                <PlusCircleIcon className="h-4 w-4" />
+                Add questions
               </Button>
-              {showAddContract && user && (
+              {showAddContract && (
                 <AddContractToGroupModal
                   group={topic}
                   open={showAddContract}
@@ -95,7 +93,7 @@ export const QuestionsTopicTitle = forwardRef(
                 />
               )}
             </>
-          ) : null}
+          )}
 
           <TopicOptions
             group={topic}
@@ -103,16 +101,15 @@ export const QuestionsTopicTitle = forwardRef(
             unfollow={() => {
               setIsFollowing(false)
               internalUnfollowTopic(user, topic).catch(() =>
-                // undo optimistic update
                 setIsFollowing(true)
               )
             }}
             addAbout={addAbout}
             user={user}
-            className={'flex [&_*]:flex [&_button]:pr-2'}
+            className="flex [&_*]:flex [&_button]:pr-2"
           />
         </Row>
-      </Row>
+      </Col>
     )
   }
 )

@@ -24,14 +24,14 @@ export const BrowseTopicPills = (props: {
 
   return (
     <Col className={className}>
-      <Row className={clsx('flex-wrap gap-1 text-sm')}>
+      <Row className={clsx('flex-wrap gap-1.5 text-sm')}>
         {shownTopics.map((g) => (
           <Link
             prefetch={false}
             key={g.slug}
             href={groupPath(g.slug)}
             className={clsx(
-              'bg-ink-100 hover:bg-ink-200 text-ink-600 rounded p-1'
+              'bg-canvas-50 hover:bg-primary-50 text-ink-600 hover:text-primary-700 rounded-md px-2.5 py-1 font-medium transition-colors'
             )}
           >
             {removeEmojis(g.name)}
@@ -40,9 +40,9 @@ export const BrowseTopicPills = (props: {
         {topics.length > maxShown && (
           <button
             onClick={() => setShowMore(!showMore)}
-            className="text-primary-700 bg-ink-100 hover:bg-ink-200 flex flex-row items-center gap-1 rounded p-2 py-1"
+            className="text-primary-600 hover:text-primary-700 bg-canvas-50 hover:bg-primary-50 flex flex-row items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors"
           >
-            {showMore ? `Show less` : `Show ${topics.length - maxShown} more`}
+            {showMore ? `Show less` : `+${topics.length - maxShown} more`}
           </button>
         )}
       </Row>
