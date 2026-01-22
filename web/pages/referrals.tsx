@@ -155,9 +155,7 @@ export default function ReferralsPage() {
               <LightBulbIcon className="text-primary-600 h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-medium">
-                Pro tip
-              </h3>
+              <h3 className="font-medium">Pro tip</h3>
               <p className="text-ink-600 mt-1 text-sm">
                 You can also earn the referral bonus by sharing a link to any
                 question or group! Your referral code is automatically included.

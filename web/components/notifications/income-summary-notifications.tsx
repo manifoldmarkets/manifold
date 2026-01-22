@@ -311,11 +311,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         noBonus && user && !humanish(user) ? (
           <span>
             Verify your phone number to get up to{' '}
-            <TokenNumber
-              amount={maxBonus}
-              className={'font-bold'}
-              isInline
-            />{' '}
+            <TokenNumber amount={maxBonus} className={'font-bold'} isInline />{' '}
             per streak day!
           </span>
         ) : (

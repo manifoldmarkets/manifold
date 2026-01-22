@@ -26,7 +26,10 @@ export function BettingStreakModal(props: {
   const missingStreak = currentUser && !hasCompletedStreakToday(currentUser)
 
   // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(currentUser?.entitlements, 'questMultiplier')
+  const questMultiplier = getBenefit(
+    currentUser?.entitlements,
+    'questMultiplier'
+  )
   const bonusAmount = Math.floor(BETTING_STREAK_BONUS_AMOUNT * questMultiplier)
   const bonusMax = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
 
@@ -63,11 +66,14 @@ export function BettingStreakModal(props: {
             ) : (
               'You'
             )}{' '}
-            get {formatMoney(bonusAmount)} for each consecutive
-            day of predicting, up to {formatMoney(bonusMax)}.
-            The more days you predict in a row, the more you earn!
+            get {formatMoney(bonusAmount)} for each consecutive day of
+            predicting, up to {formatMoney(bonusMax)}. The more days you predict
+            in a row, the more you earn!
             {questMultiplier > 1 && (
-              <span className="text-primary-600"> ({questMultiplier}x membership bonus!)</span>
+              <span className="text-primary-600">
+                {' '}
+                ({questMultiplier}x membership bonus!)
+              </span>
             )}
           </span>
           <span className={'text-primary-700'}>
