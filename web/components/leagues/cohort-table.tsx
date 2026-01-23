@@ -15,6 +15,7 @@ import { useUsers } from 'web/hooks/use-user-supabase'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Avatar } from '../widgets/avatar'
+import { UserBadge } from '../widgets/user-link'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
 import { DisplayUser } from 'common/api/user-types'
@@ -269,9 +270,15 @@ const UserRow = (props: {
             <Link
               href={`/${user.username}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-ink-900 truncate text-sm font-medium hover:underline"
+              className="text-ink-900 inline-flex items-center gap-1 truncate text-sm font-medium hover:underline"
             >
-              {user.name}
+              <span className="truncate">{user.name}</span>
+              <UserBadge
+                userId={user.id}
+                username={user.username}
+                entitlements={user.entitlements}
+                displayContext="leagues"
+              />
             </Link>
           </Row>
 

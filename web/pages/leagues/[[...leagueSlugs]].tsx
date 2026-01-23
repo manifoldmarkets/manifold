@@ -34,6 +34,7 @@ import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
+import { UserBadge } from 'web/components/widgets/user-link'
 import { Countdown } from 'web/components/widgets/countdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -494,9 +495,15 @@ function UserLeagueStatus(props: {
             />
             <Link
               href={`/${userData.username}`}
-              className="text-ink-900 font-medium hover:underline"
+              className="text-ink-900 inline-flex items-center gap-1 font-medium hover:underline"
             >
               {userData.name}
+              <UserBadge
+                userId={userData.id}
+                username={userData.username}
+                entitlements={userData.entitlements}
+                displayContext="leagues"
+              />
             </Link>
           </Row>
           <span className="text-ink-500 text-sm">{toLabel(cohort)}</span>
