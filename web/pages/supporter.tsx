@@ -438,16 +438,16 @@ function MonthlyValueBreakdown({
     <div className="bg-canvas-0 border-ink-200 rounded-xl border px-3 py-3 sm:p-4">
       <Row className="mb-2 flex-wrap items-center justify-between gap-1">
         <h3 className="text-sm font-semibold sm:text-base">Monthly Value</h3>
-        <Row className="gap-0.5">
+        <Row className="bg-ink-100 gap-0.5 rounded-full p-0.5">
           {(['basic', 'plus', 'premium'] as const).map((tier) => (
             <button
               key={tier}
               onClick={() => onSelectTier(tier)}
               className={clsx(
-                'rounded-full px-2 py-0.5 text-xs font-medium transition-colors sm:px-2.5 sm:text-sm',
+                'rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:text-sm',
                 selectedTier === tier
-                  ? `${SUPPORTER_TIERS[tier].bgColor} ${SUPPORTER_TIERS[tier].textColor}`
-                  : 'bg-ink-100 text-ink-500 hover:bg-ink-200'
+                  ? `${SUPPORTER_TIERS[tier].bgColor} ${SUPPORTER_TIERS[tier].textColor} shadow-sm`
+                  : 'text-ink-500 hover:text-ink-700'
               )}
             >
               {SUPPORTER_TIERS[tier].name}
