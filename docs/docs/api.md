@@ -1229,6 +1229,7 @@ Parameters:
 - `visibility`: Optional. `public` (default) or `unlisted`. Controls whether the market can be shown on homepage and in search results.
 - `groupIds`: Optional. An array of topics to tag this market with.
 - `extraLiquidity`: Optional.
+- 'liquidityTier': The amount of liquidity you are adding to the question.
 
 For binary markets, you must also provide:
 
