@@ -35,6 +35,7 @@ import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserBadge } from 'web/components/widgets/user-link'
+import { UserHovercard } from 'web/components/user/user-hovercard'
 import { Countdown } from 'web/components/widgets/countdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -484,28 +485,30 @@ function UserLeagueStatus(props: {
 
         {/* User info */}
         <Col className="flex-1 gap-1">
-          <Row className="items-center gap-2">
-            <Avatar
-              avatarUrl={userData.avatarUrl ?? ''}
-              username={userData.username}
-              size="xs"
-              noLink
-              entitlements={userData.entitlements}
-              displayContext="leagues"
-            />
-            <Link
-              href={`/${userData.username}`}
-              className="text-ink-900 inline-flex items-center gap-1 font-medium hover:underline"
-            >
-              {userData.name}
-              <UserBadge
-                userId={userData.id}
+          <UserHovercard userId={userData.id}>
+            <Row className="items-center gap-2">
+              <Avatar
+                avatarUrl={userData.avatarUrl ?? ''}
                 username={userData.username}
+                size="xs"
+                noLink
                 entitlements={userData.entitlements}
                 displayContext="leagues"
               />
-            </Link>
-          </Row>
+              <Link
+                href={`/${userData.username}`}
+                className="text-ink-900 inline-flex items-center gap-1 font-medium hover:underline"
+              >
+                {userData.name}
+                <UserBadge
+                  userId={userData.id}
+                  username={userData.username}
+                  entitlements={userData.entitlements}
+                  displayContext="leagues"
+                />
+              </Link>
+            </Row>
+          </UserHovercard>
           <span className="text-ink-500 text-sm">{toLabel(cohort)}</span>
         </Col>
 
