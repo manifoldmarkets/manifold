@@ -461,10 +461,10 @@ function SupporterCard(props: {
 
   return (
     <>
-      <button
+      <div
         onClick={() => handleSetShowModal(true)}
         className={clsx(
-          'group relative mb-4 w-full overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
+          'group relative mb-4 w-full cursor-pointer overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
           'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800',
           // Default state (no tier owned, no hover)
           !hoveredTier &&
@@ -728,7 +728,7 @@ function SupporterCard(props: {
               : 'See details & subscribe →'}
           </div>
         </div>
-      </button>
+      </div>
 
       <SupporterModal
         open={showModal}
