@@ -5,52 +5,110 @@ import { updateUser } from 'shared/supabase/users'
 import { log } from 'shared/utils'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 
-// iDenfy webhook callback payload structure
+// iDenfy webhook callback payload structure (comprehensive type based on their schema)
 type IdenfyCallbackPayload = {
   final: boolean
-  platform: string
+  platform: 'PC' | 'MOBILE' | 'TABLET' | 'MOBILE_APP' | 'MOBILE_SDK' | 'OTHER'
   status: {
-    overall: 'APPROVED' | 'DENIED' | 'SUSPECTED' | 'REVIEWING'
+    overall:
+      | 'APPROVED'
+      | 'DENIED'
+      | 'SUSPECTED'
+      | 'REVIEWING'
+      | 'EXPIRED'
+      | 'ACTIVE'
+      | 'DELETED'
+      | 'ARCHIVED'
     suspicionReasons: string[]
-    mismatchTags: string[]
+    denyReasons: string[]
     fraudTags: string[]
-    autoDocument: string
+    mismatchTags: string[]
     autoFace: string
-    manualDocument: string
     manualFace: string
+    autoDocument: string
+    manualDocument: string
+    additionalSteps: 'VALID' | 'INVALID' | 'NOT_FOUND' | null
+    amlResultClass:
+      | 'NOT_CHECKED'
+      | 'NO_FLAGS'
+      | 'FALSE_POSITIVE'
+      | 'TRUE_POSITIVE'
+      | 'FLAGS_FOUND'
+      | null
+    pepsStatus:
+      | 'NOT_CHECKED'
+      | 'NO_FLAGS'
+      | 'FALSE_POSITIVE'
+      | 'TRUE_POSITIVE'
+      | 'FLAGS_FOUND'
+      | null
+    sanctionsStatus:
+      | 'NOT_CHECKED'
+      | 'NO_FLAGS'
+      | 'FALSE_POSITIVE'
+      | 'TRUE_POSITIVE'
+      | 'FLAGS_FOUND'
+      | null
+    adverseMediaStatus:
+      | 'NOT_CHECKED'
+      | 'NO_FLAGS'
+      | 'FALSE_POSITIVE'
+      | 'TRUE_POSITIVE'
+      | 'FLAGS_FOUND'
+      | null
   }
   data: {
-    docFirstName: string
-    docLastName: string
-    docNumber: string
-    docPersonalCode: string
-    docExpiry: string
-    docDob: string
-    docDateOfIssue: string
-    docType: string
-    docSex: string
-    docNationality: string
-    docIssuingCountry: string
-    selectedCountry: string
-    orgFirstName: string
-    orgLastName: string
-    orgNationality: string
-    orgBirthPlace: string
-    orgAuthority: string
-    orgAddress: string
+    docFirstName: string | null
+    docLastName: string | null
+    docNumber: string | null
+    docPersonalCode: string | null
+    docExpiry: string | null
+    docDob: string | null
+    docDateOfIssue: string | null
+    docType: string | null
+    docSex: 'MALE' | 'FEMALE' | 'UNDEFINED' | null
+    docNationality: string | null
+    docIssuingCountry: string | null
+    selectedCountry: string | null
+    orgFirstName: string | null
+    orgLastName: string | null
+    orgNationality: string | null
+    orgBirthPlace: string | null
+    orgAuthority: string | null
+    orgAddress: string | null
+    fullName: string | null
+    ageEstimate: string | null
+    clientIpProxyRiskLevel: string | null
+    duplicateFaces: string[] | null
+    duplicateDocFaces: string[] | null
   }
-  fileUrls: {
-    FACE: string
-    FRONT: string
-    BACK: string
-  }
+  fileUrls: Record<string, string> | null
+  additionalStepPdfUrls: Record<string, string> | null
+  AML: unknown[] | null
+  amlCheck: {
+    id: string | null
+    overallStatus: string | null
+  } | null
+  LID: unknown[] | null
+  CRIMINAL_CHECK: unknown[] | null
   scanRef: string
+  externalRef: string | null
   clientId: string
+  companyId: string
+  beneficiaryId: string
   startTime: number
   finishTime: number
-  clientIp: string
-  clientIpCountry: string
-  clientLocation: string
+  clientIp: string | null
+  clientIpCountry: string | null
+  clientLocation: string | null
+  gdcMatch: boolean | null
+  manualAddress: string | null
+  manualAddressMatch: boolean
+  additionalData: Record<string, unknown> | null
+  riskAssessment: {
+    riskScore: number | null
+    riskLevel: string | null
+  } | null
 }
 
 // Convert iDenfy status to our internal status
@@ -61,10 +119,14 @@ function mapIdenfyStatus(
     case 'APPROVED':
       return 'approved'
     case 'DENIED':
+    case 'EXPIRED':
+    case 'DELETED':
       return 'denied'
     case 'SUSPECTED':
       return 'suspected'
     case 'REVIEWING':
+    case 'ACTIVE':
+    case 'ARCHIVED':
     default:
       return 'pending'
   }
@@ -145,6 +207,20 @@ export const idenfyCallback = async (req: Request, res: Response) => {
   const userId = verification.user_id
   const internalStatus = mapIdenfyStatus(status?.overall)
 
+  // Extract fraud-related information
+  const fraudInfo = [
+    ...(status?.fraudTags || []),
+    ...(status?.suspicionReasons || []),
+  ]
+    .filter(Boolean)
+    .join(',') || null
+
+  // Extract AML status
+  const amlStatus = status?.amlResultClass || payload.amlCheck?.overallStatus || null
+
+  // Extract deny reasons
+  const denyReasons = status?.denyReasons?.filter(Boolean).join(',') || null
+
   // Update the verification record
   await pg.none(
     `UPDATE idenfy_verifications 
@@ -152,14 +228,16 @@ export const idenfyCallback = async (req: Request, res: Response) => {
          overall_status = $2,
          fraud_status = $3,
          aml_status = $4,
-         callback_data = $5,
+         deny_reasons = $5,
+         callback_data = $6,
          updated_time = NOW()
-     WHERE scan_ref = $6`,
+     WHERE scan_ref = $7`,
     [
       internalStatus,
       status?.overall,
-      status?.fraudTags?.join(',') || null,
-      null, // AML status if available
+      fraudInfo,
+      amlStatus,
+      denyReasons,
       JSON.stringify(payload),
       scanRef,
     ]

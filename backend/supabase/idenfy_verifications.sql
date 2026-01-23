@@ -11,7 +11,8 @@ create table if not exists
     callback_data jsonb,
     overall_status text,
     fraud_status text,
-    aml_status text
+    aml_status text,
+    deny_reasons text
   );
 
 -- Foreign Keys
