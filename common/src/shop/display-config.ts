@@ -73,7 +73,7 @@ const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
     animations: ['hat-hover', 'golden-glow', 'badge-pulse'],
   },
   leagues: {
-    groups: [],// There's no hardcoded badges on leagues either
+    groups: ['avatar-border', 'avatar-overlay', 'badge'],
     animations: [],
   },
   leaderboard: {

@@ -489,6 +489,8 @@ function UserLeagueStatus(props: {
               username={userData.username}
               size="xs"
               noLink
+              entitlements={userData.entitlements}
+              displayContext="leagues"
             />
             <Link
               href={`/${userData.username}`}
