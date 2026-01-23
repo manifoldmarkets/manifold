@@ -286,8 +286,8 @@ export const BENEFIT_DEFINITIONS = [
   {
     id: 'shop',
     icon: '🛍️',
-    title: 'Shop Discount',
-    description: 'Save on all cosmetic purchases',
+    title: 'Cosmetics Discount',
+    description: 'Save on cosmetic items (not mana purchases)',
     getValueForTier: (tier: SupporterTier) => {
       const discount = SUPPORTER_BENEFITS[tier].shopDiscount
       return discount === 0 ? '-' : `${Math.round(discount * 100)}%`

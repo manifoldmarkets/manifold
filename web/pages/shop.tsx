@@ -881,7 +881,7 @@ function SupporterModal(props: {
                       {Math.round(
                         SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
                       )}
-                      % shop discount
+                      % cosmetics discount
                     </span>
                   </Row>
                 )}
@@ -1686,7 +1686,7 @@ function ShopItemCard(props: {
                   {formatMoney(discountedPrice)}
                 </span>
                 <span className="ml-1 text-xs text-green-600">
-                  ({Math.round(shopDiscount * 100)}% supporter discount)
+                  ({Math.round(shopDiscount * 100)}% cosmetics discount)
                 </span>
               </>
             ) : (

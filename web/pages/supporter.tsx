@@ -297,7 +297,7 @@ export default function SupporterPage() {
                     icon="🛍️"
                     label={`${Math.round(
                       SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
-                    )}% shop discount`}
+                    )}% cosmetics discount`}
                   />
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes > 1 && (
