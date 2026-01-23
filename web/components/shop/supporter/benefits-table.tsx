@@ -167,7 +167,7 @@ export function BenefitsTable({
                         {'mobileDescription' in benefit ? (
                           <>
                             <span className="text-ink-500 text-xs sm:hidden">
-                              {benefit.mobileDescription}
+                              {benefit.mobileDescription as React.ReactNode}
                             </span>
                             <span className="text-ink-500 hidden text-xs sm:block">
                               {benefit.description}
