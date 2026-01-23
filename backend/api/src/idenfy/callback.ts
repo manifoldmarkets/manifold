@@ -144,19 +144,30 @@ function verifySignature(
   const hmac = crypto.createHmac('sha256', secret)
   hmac.update(payload)
   const expectedSignature = hmac.digest('hex')
+  
+  // Ensure both buffers are same length for timingSafeEqual
+  const sigBuffer = Buffer.from(signature)
+  const expectedBuffer = Buffer.from(expectedSignature)
+  
+  if (sigBuffer.length !== expectedBuffer.length) {
+    return false
+  }
+  
   return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
+    new Uint8Array(sigBuffer),
+    new Uint8Array(expectedBuffer)
   )
 }
 
 export const idenfyCallback = async (req: Request, res: Response) => {
   const callbackSecret = process.env.IDENFY_CALLBACK_SECRET
 
+  // Get raw body - express.raw() gives us a Buffer
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body)
+
   // Verify signature if secret is configured
   if (callbackSecret) {
     const signature = req.headers['idenfy-signature'] as string | undefined
-    const rawBody = JSON.stringify(req.body)
 
     if (!verifySignature(rawBody, signature, callbackSecret)) {
       log.error('iDenfy callback signature verification failed')
@@ -167,7 +178,8 @@ export const idenfyCallback = async (req: Request, res: Response) => {
 
   let payload: IdenfyCallbackPayload
   try {
-    payload = req.body as IdenfyCallbackPayload
+    // Parse the raw body as JSON
+    payload = JSON.parse(rawBody) as IdenfyCallbackPayload
   } catch (e) {
     log.error('Failed to parse iDenfy callback body', { error: e })
     res.status(400).send('Invalid request body')

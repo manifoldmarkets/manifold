@@ -99,7 +99,7 @@ export const addOldRoutes = (app: express.Application) => {
   app.post(
     '/v0/idenfy-callback',
     allowCorsUnrestricted,
-    express.json(),
+    express.raw({ type: 'application/json' }),
     idenfyCallback
   )
   app.post('/follow-topic', ...apiRoute(followtopic))
