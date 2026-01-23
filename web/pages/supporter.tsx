@@ -294,10 +294,10 @@ export default function SupporterPage() {
                 />
                 {SUPPORTER_BENEFITS[purchasedTier].shopDiscount > 0 && (
                   <BenefitRow
-                    icon="🛍️"
+                    icon="💎"
                     label={`${Math.round(
                       SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
-                    )}% cosmetics discount`}
+                    )}% shop discount`}
                   />
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes > 1 && (

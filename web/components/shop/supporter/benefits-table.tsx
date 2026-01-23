@@ -164,9 +164,20 @@ export function BenefitsTable({
                         <span className="text-xs font-medium sm:text-sm">
                           {benefit.title}
                         </span>
-                        <span className="text-ink-500 hidden text-xs sm:block">
-                          {benefit.description}
-                        </span>
+                        {'mobileDescription' in benefit ? (
+                          <>
+                            <span className="text-ink-500 text-xs sm:hidden">
+                              {benefit.mobileDescription}
+                            </span>
+                            <span className="text-ink-500 hidden text-xs sm:block">
+                              {benefit.description}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-ink-500 hidden text-xs sm:block">
+                            {benefit.description}
+                          </span>
+                        )}
                       </Col>
                     </Row>
                   </td>
