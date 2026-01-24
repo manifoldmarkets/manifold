@@ -2,6 +2,9 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { FaStar } from 'react-icons/fa'
 import { DAY_MS } from 'common/util/time'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { shortFormatNumber } from 'common/util/format'
 import {
   SUPPORTER_TIERS,
   SUPPORTER_BENEFITS,
@@ -19,6 +22,7 @@ import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import {
@@ -50,7 +54,12 @@ export default function SupporterPage() {
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
   const [selectedTier, setSelectedTier] = useState<SupporterTier>('plus')
 
-  // Get current supporter status
+  // Get current supporter status and portfolio
+  const portfolio = useCurrentPortfolio(user?.id)
+  const userNetWorth = portfolio
+    ? portfolio.balance + portfolio.investmentValue
+    : user?.balance
+
   const currentTier = getUserSupporterTier(user?.entitlements)
   const currentEntitlement = getSupporterEntitlement(user?.entitlements)
   const isSupporter = currentTier !== null
@@ -244,6 +253,13 @@ export default function SupporterPage() {
 
         {/* Benefits Comparison Table with Column Highlight */}
         <BenefitsTable currentTier={currentTier} activeTier={activeTier} />
+
+        {/* Monthly Value Breakdown */}
+        <MonthlyValueBreakdown
+          selectedTier={selectedTier}
+          onSelectTier={setSelectedTier}
+          userNetWorth={userNetWorth}
+        />
       </Col>
 
       {/* Purchase Confirmation Modal */}
@@ -294,7 +310,7 @@ export default function SupporterPage() {
                 />
                 {SUPPORTER_BENEFITS[purchasedTier].shopDiscount > 0 && (
                   <BenefitRow
-                    icon="🛍️"
+                    icon="💎"
                     label={`${Math.round(
                       SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
                     )}% shop discount`}
@@ -378,5 +394,159 @@ function BenefitRow({ icon, label }: { icon: string; label: string }) {
       <span>{icon}</span>
       <span>{label}</span>
     </Row>
+  )
+}
+
+// Monthly value breakdown showing cost vs benefit for each tier
+function MonthlyValueBreakdown({
+  selectedTier,
+  onSelectTier,
+  userNetWorth,
+}: {
+  selectedTier: SupporterTier
+  onSelectTier: (tier: SupporterTier) => void
+  userNetWorth?: number
+}) {
+  const [referralsPerMonth, setReferralsPerMonth] = useState(0)
+
+  const tierConfig = SUPPORTER_TIERS[selectedTier]
+  const benefits = SUPPORTER_BENEFITS[selectedTier]
+  const mult = benefits.questMultiplier
+  const cost = tierConfig.price
+
+  // Base monthly rewards: streak 750 + sharing 150 + markets 400 = 1300
+  const streakWithMult = Math.round(750 * mult)
+  const sharesWithMult = Math.round(150 * mult)
+  const marketsWithMult = Math.round(400 * mult)
+  const bonusMana = streakWithMult + sharesWithMult + marketsWithMult - 1300
+
+  // Referral bonus (extra from multiplier only)
+  const refMult = benefits.referralMultiplier
+  const referralWithMult = Math.round(REFERRAL_AMOUNT * referralsPerMonth * refMult)
+  const referralBonus = Math.round(REFERRAL_AMOUNT * referralsPerMonth * (refMult - 1))
+
+  const netFromQuests = bonusMana + referralBonus - cost
+
+  // Leverage
+  const extraLeverageMultiple = benefits.maxLoanNetWorthPercent
+  const hasLeverage = benefits.marginLoanAccess
+  const netWorth = userNetWorth && userNetWorth > 0 ? userNetWorth : 10000
+  const extraCapital = Math.round(netWorth * extraLeverageMultiple)
+  const breakEvenPercent = extraCapital > 0 ? (Math.max(0, -netFromQuests) / extraCapital) * 100 : 0
+
+  return (
+    <div className="bg-canvas-0 border-ink-200 rounded-xl border px-3 py-3 sm:p-4">
+      <Row className="mb-2 flex-wrap items-center justify-between gap-1">
+        <h3 className="text-sm font-semibold sm:text-base">Monthly Value</h3>
+        <Row className="bg-ink-100 gap-0.5 rounded-full p-0.5">
+          {(['basic', 'plus', 'premium'] as const).map((tier) => (
+            <button
+              key={tier}
+              onClick={() => onSelectTier(tier)}
+              className={clsx(
+                'rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:text-sm',
+                selectedTier === tier
+                  ? `${SUPPORTER_TIERS[tier].bgColor} ${SUPPORTER_TIERS[tier].textColor} shadow-sm`
+                  : 'text-ink-500 hover:text-ink-700'
+              )}
+            >
+              {SUPPORTER_TIERS[tier].name}
+            </button>
+          ))}
+        </Row>
+      </Row>
+      <p className="text-ink-500 mb-2 text-xs">
+        {mult}x rewards if you predict daily, share, create questions
+      </p>
+
+      <Col className="gap-1 text-xs sm:text-sm">
+        <Row className="justify-between">
+          <span className="text-ink-600">🔥 Streak</span>
+          <span className="tabular-nums font-medium">{streakWithMult}</span>
+        </Row>
+        <Row className="justify-between">
+          <span className="text-ink-600">📤 Sharing</span>
+          <span className="tabular-nums font-medium">{sharesWithMult}</span>
+        </Row>
+        <Row className="justify-between">
+          <span className="text-ink-600">📝 Markets</span>
+          <span className="tabular-nums font-medium">{marketsWithMult}</span>
+        </Row>
+        <Row className="items-center justify-between">
+          <Row className="items-center gap-1">
+            <span className="text-ink-600">🤝 Referrals</span>
+            <Row className="items-center gap-0.5">
+              <button
+                onClick={() => setReferralsPerMonth(Math.max(0, referralsPerMonth - 1))}
+                className="bg-ink-100 hover:bg-ink-200 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
+              >
+                −
+              </button>
+              <span className="w-3 text-center text-xs font-medium sm:w-4">{referralsPerMonth}</span>
+              <button
+                onClick={() => setReferralsPerMonth(referralsPerMonth + 1)}
+                className="bg-ink-100 hover:bg-ink-200 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
+              >
+                +
+              </button>
+            </Row>
+          </Row>
+          <span className="tabular-nums font-medium">
+            {referralsPerMonth > 0 ? referralWithMult.toLocaleString() : '—'}
+          </span>
+        </Row>
+
+        <div className="border-ink-200 my-1.5 border-t" />
+
+        <Row className="justify-between">
+          <span className="text-ink-600">Extra from {mult}x</span>
+          <span className="font-medium text-teal-600">+{(bonusMana + referralBonus).toLocaleString()}</span>
+        </Row>
+        <Row className="justify-between">
+          <span className="text-ink-600">Cost</span>
+          <span className="font-medium text-scarlet-500">−{cost.toLocaleString()}</span>
+        </Row>
+        <Row className="justify-between font-semibold">
+          <span>Net</span>
+          <span className={netFromQuests >= 0 ? 'text-teal-600' : 'text-ink-600'}>
+            {netFromQuests >= 0 ? '+' : ''}{netFromQuests.toLocaleString()}/mo
+          </span>
+        </Row>
+
+        {hasLeverage && (
+          <>
+            <div className="border-ink-200 my-1.5 border-t" />
+            <Row className="justify-between text-xs">
+              <span className="text-ink-500 font-medium uppercase">Leverage</span>
+              <span className="text-ink-500">
+                {ENV_CONFIG.moneyMoniker}{shortFormatNumber(netWorth)} × {extraLeverageMultiple}x
+              </span>
+            </Row>
+            {netFromQuests < 0 && (
+              <Row className="justify-between text-xs">
+                <span className="text-ink-600">Break-even</span>
+                <span className="font-medium text-amber-600">
+                  {breakEvenPercent.toFixed(2)}%/mo
+                </span>
+              </Row>
+            )}
+          </>
+        )}
+      </Col>
+
+      {netFromQuests >= 0 ? (
+        <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 sm:text-sm">
+          ✓ Pays for itself{hasLeverage && ' — leverage is profit!'}
+        </div>
+      ) : hasLeverage ? (
+        <div className="mt-2 rounded bg-amber-100 px-2 py-1 text-center text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 sm:text-sm">
+          📈 {breakEvenPercent.toFixed(1)}%/mo return to break even
+        </div>
+      ) : null}
+
+      <p className="text-ink-400 mt-2 text-xs">
+        + free loans, {benefits.shopDiscount > 0 ? `${Math.round(benefits.shopDiscount * 100)}% shop discount, ` : ''}badge
+      </p>
+    </div>
   )
 }

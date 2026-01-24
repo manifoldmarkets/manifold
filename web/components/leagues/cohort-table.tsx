@@ -15,6 +15,8 @@ import { useUsers } from 'web/hooks/use-user-supabase'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Avatar } from '../widgets/avatar'
+import { UserBadge } from '../widgets/user-link'
+import { UserHovercard } from '../user/user-hovercard'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
 import { DisplayUser } from 'common/api/user-types'
@@ -257,23 +259,31 @@ const UserRow = (props: {
           </Row>
 
           {/* User info */}
-          <Row className="min-w-0 flex-1 items-center gap-2.5">
-            <Avatar
-              avatarUrl={user.avatarUrl}
-              username={user.username}
-              size="sm"
-              noLink
-              entitlements={user.entitlements}
-              displayContext="leagues"
-            />
-            <Link
-              href={`/${user.username}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-ink-900 truncate text-sm font-medium hover:underline"
-            >
-              {user.name}
-            </Link>
-          </Row>
+          <UserHovercard userId={user.id}>
+            <Row className="min-w-0 flex-1 items-center gap-2.5">
+              <Avatar
+                avatarUrl={user.avatarUrl}
+                username={user.username}
+                size="sm"
+                noLink
+                entitlements={user.entitlements}
+                displayContext="leagues"
+              />
+              <Link
+                href={`/${user.username}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-ink-900 inline-flex items-center gap-1 truncate text-sm font-medium hover:underline"
+              >
+                <span className="truncate">{user.name}</span>
+                <UserBadge
+                  userId={user.id}
+                  username={user.username}
+                  entitlements={user.entitlements}
+                  displayContext="leagues"
+                />
+              </Link>
+            </Row>
+          </UserHovercard>
 
           {/* Mana earned */}
           <span

@@ -285,9 +285,9 @@ export const BENEFIT_DEFINITIONS = [
   },
   {
     id: 'shop',
-    icon: '🛍️',
+    icon: '💎',
     title: 'Shop Discount',
-    description: 'Save on all cosmetic purchases',
+    description: 'Save on merch and cosmetics',
     getValueForTier: (tier: SupporterTier) => {
       const discount = SUPPORTER_BENEFITS[tier].shopDiscount
       return discount === 0 ? '-' : `${Math.round(discount * 100)}%`
@@ -297,13 +297,11 @@ export const BENEFIT_DEFINITIONS = [
   {
     id: 'streaks',
     icon: '❄️',
-    title: 'Streak Freeze Capacity',
-    description: 'Maximum streak freezes you can store',
-    getValueForTier: (tier: SupporterTier) => {
-      const max = SUPPORTER_BENEFITS[tier].maxStreakFreezes
-      return `${max} max`
-    },
-    baseValue: '1 max',
+    title: 'Streak Freeze Storage',
+    description: 'How many streak freezes you can hold',
+    getValueForTier: (tier: SupporterTier) =>
+      `${SUPPORTER_BENEFITS[tier].maxStreakFreezes}`,
+    baseValue: '1',
   },
   {
     id: 'freeLoan',
