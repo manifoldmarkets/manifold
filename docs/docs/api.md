@@ -1205,20 +1205,13 @@ Cancel a limit order.
 
 ### `POST /v0/market`
 
-Create a new market.
-
-This costs mana:
-
-| Market Type     | Creation Cost                             |
-| --------------- | ----------------------------------------- |
-| BINARY          | M$50                                      |
-| PSEUDO_NUMERIC  | M$250                                     |
-| MULTIPLE_CHOICE | M$25/answer or M$25 for no preset answers |
+Create a new market. This costs mana, all markets must have at least M$100 of subsidy.
 
 Parameters:
 
 - `outcomeType`: `BINARY`, `MULTIPLE_CHOICE`, `PSEUDO_NUMERIC`, `POLL`, or `BOUNTIED_QUESTION`.
 - `question`: The headline question for the market.
+- `liquidityTier` How much mana to subsidize the question with.
 - `description`: Optional. A description for the market. Note: for formatted text instead use:
 
   - `descriptionHtml`: string with html
@@ -1228,7 +1221,6 @@ Parameters:
 - `closeTime`: Optional. When the market will close. Defaults to 7 days from now.
 - `visibility`: Optional. `public` (default) or `unlisted`. Controls whether the market can be shown on homepage and in search results.
 - `groupIds`: Optional. An array of topics to tag this market with.
-- `extraLiquidity`: Optional.
 
 For binary markets, you must also provide:
 
