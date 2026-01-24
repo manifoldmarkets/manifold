@@ -422,8 +422,12 @@ function MonthlyValueBreakdown({
 
   // Referral bonus (extra from multiplier only)
   const refMult = benefits.referralMultiplier
-  const referralWithMult = Math.round(REFERRAL_AMOUNT * referralsPerMonth * refMult)
-  const referralBonus = Math.round(REFERRAL_AMOUNT * referralsPerMonth * (refMult - 1))
+  const referralWithMult = Math.round(
+    REFERRAL_AMOUNT * referralsPerMonth * refMult
+  )
+  const referralBonus = Math.round(
+    REFERRAL_AMOUNT * referralsPerMonth * (refMult - 1)
+  )
 
   const netFromQuests = bonusMana + referralBonus - cost
 
@@ -432,7 +436,8 @@ function MonthlyValueBreakdown({
   const hasLeverage = benefits.marginLoanAccess
   const netWorth = userNetWorth && userNetWorth > 0 ? userNetWorth : 10000
   const extraCapital = Math.round(netWorth * extraLeverageMultiple)
-  const breakEvenPercent = extraCapital > 0 ? (Math.max(0, -netFromQuests) / extraCapital) * 100 : 0
+  const breakEvenPercent =
+    extraCapital > 0 ? (Math.max(0, -netFromQuests) / extraCapital) * 100 : 0
 
   return (
     <div className="bg-canvas-0 border-ink-200 rounded-xl border px-3 py-3 sm:p-4">
@@ -462,27 +467,31 @@ function MonthlyValueBreakdown({
       <Col className="gap-1 text-xs sm:text-sm">
         <Row className="justify-between">
           <span className="text-ink-600">🔥 Streak</span>
-          <span className="tabular-nums font-medium">{streakWithMult}</span>
+          <span className="font-medium tabular-nums">{streakWithMult}</span>
         </Row>
         <Row className="justify-between">
           <span className="text-ink-600">📤 Sharing</span>
-          <span className="tabular-nums font-medium">{sharesWithMult}</span>
+          <span className="font-medium tabular-nums">{sharesWithMult}</span>
         </Row>
         <Row className="justify-between">
           <span className="text-ink-600">📝 Markets</span>
-          <span className="tabular-nums font-medium">{marketsWithMult}</span>
+          <span className="font-medium tabular-nums">{marketsWithMult}</span>
         </Row>
         <Row className="items-center justify-between">
           <Row className="items-center gap-1">
             <span className="text-ink-600">🤝 Referrals</span>
             <Row className="items-center gap-0.5">
               <button
-                onClick={() => setReferralsPerMonth(Math.max(0, referralsPerMonth - 1))}
+                onClick={() =>
+                  setReferralsPerMonth(Math.max(0, referralsPerMonth - 1))
+                }
                 className="bg-ink-100 hover:bg-ink-200 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
               >
                 −
               </button>
-              <span className="w-3 text-center text-xs font-medium sm:w-4">{referralsPerMonth}</span>
+              <span className="w-3 text-center text-xs font-medium sm:w-4">
+                {referralsPerMonth}
+              </span>
               <button
                 onClick={() => setReferralsPerMonth(referralsPerMonth + 1)}
                 className="bg-ink-100 hover:bg-ink-200 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
@@ -491,7 +500,7 @@ function MonthlyValueBreakdown({
               </button>
             </Row>
           </Row>
-          <span className="tabular-nums font-medium">
+          <span className="font-medium tabular-nums">
             {referralsPerMonth > 0 ? referralWithMult.toLocaleString() : '—'}
           </span>
         </Row>
@@ -500,16 +509,23 @@ function MonthlyValueBreakdown({
 
         <Row className="justify-between">
           <span className="text-ink-600">Extra from {mult}x</span>
-          <span className="font-medium text-teal-600">+{(bonusMana + referralBonus).toLocaleString()}</span>
+          <span className="font-medium text-teal-600">
+            +{(bonusMana + referralBonus).toLocaleString()}
+          </span>
         </Row>
         <Row className="justify-between">
           <span className="text-ink-600">Cost</span>
-          <span className="font-medium text-scarlet-500">−{cost.toLocaleString()}</span>
+          <span className="text-scarlet-500 font-medium">
+            −{cost.toLocaleString()}
+          </span>
         </Row>
         <Row className="justify-between font-semibold">
           <span>Net</span>
-          <span className={netFromQuests >= 0 ? 'text-teal-600' : 'text-ink-600'}>
-            {netFromQuests >= 0 ? '+' : ''}{netFromQuests.toLocaleString()}/mo
+          <span
+            className={netFromQuests >= 0 ? 'text-teal-600' : 'text-ink-600'}
+          >
+            {netFromQuests >= 0 ? '+' : ''}
+            {netFromQuests.toLocaleString()}/mo
           </span>
         </Row>
 
@@ -517,9 +533,12 @@ function MonthlyValueBreakdown({
           <>
             <div className="border-ink-200 my-1.5 border-t" />
             <Row className="justify-between text-xs">
-              <span className="text-ink-500 font-medium uppercase">Leverage</span>
+              <span className="text-ink-500 font-medium uppercase">
+                Leverage
+              </span>
               <span className="text-ink-500">
-                {ENV_CONFIG.moneyMoniker}{shortFormatNumber(netWorth)} × {extraLeverageMultiple}x
+                {ENV_CONFIG.moneyMoniker}
+                {shortFormatNumber(netWorth)} × {extraLeverageMultiple}x
               </span>
             </Row>
             {netFromQuests < 0 && (
@@ -545,7 +564,11 @@ function MonthlyValueBreakdown({
       ) : null}
 
       <p className="text-ink-400 mt-2 text-xs">
-        + free loans, {benefits.shopDiscount > 0 ? `${Math.round(benefits.shopDiscount * 100)}% shop discount, ` : ''}badge
+        + free loans,{' '}
+        {benefits.shopDiscount > 0
+          ? `${Math.round(benefits.shopDiscount * 100)}% shop discount, `
+          : ''}
+        badge
       </p>
     </div>
   )
