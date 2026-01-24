@@ -1,6 +1,5 @@
 import { ENV_CONFIG } from './envs/constants'
 import { notification_preferences } from './user-notification-preferences'
-import { UserEntitlement } from './shop/types'
 import { DAY_MS, HOUR_MS } from './util/time'
 
 // New normalized user_bans table schema
@@ -115,8 +114,16 @@ export type User = {
   purchasedMana?: boolean
   verifiedPhone?: boolean
 
-  // Entitlements - digital goods owned by this user (from user_entitlements table)
-  entitlements?: UserEntitlement[]
+  // Shop purchases - digital goods owned by this user
+  shopPurchases?: UserShopPurchase[]
+}
+
+export type UserShopPurchase = {
+  itemId: string
+  purchasedAt: number // timestamp
+  expiresAt?: number // for time-limited items
+  enabled?: boolean // for toggleable items (default true)
+  txnId: string // reference to transaction
 }
 
 export type PrivateUser = {

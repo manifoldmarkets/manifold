@@ -19,6 +19,7 @@ import { Modal } from 'web/components/layout/modal'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
 import { ReportUser } from 'web/components/profile/report-user'
+import { Title } from 'web/components/widgets/title'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
@@ -102,17 +103,13 @@ export function UserSettingButton(props: { user: User }) {
           />
         )}
       </Button>
-      <Modal open={isModalOpen} setOpen={setIsModalOpen} size="md">
-        <Col className="bg-canvas-0 max-h-[85vh] overflow-hidden rounded-xl shadow-xl">
-          {/* Header */}
-          <div className="from-primary-600 to-primary-500 bg-gradient-to-r px-6 py-5">
-            <Row className="items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-white">{name}</h2>
-                <p className="text-sm text-white/70">Joined {createdTime}</p>
-              </div>
+      <Modal open={isModalOpen} setOpen={setIsModalOpen}>
+        <div className="bg-canvas-0 text-ink-1000 max-h-[80vh]  overflow-y-auto rounded-md p-4">
+          <Col className="h-full">
+            <div className="mb-2 flex flex-wrap justify-between">
+              <Title className={'!mb-0'}>{name}</Title>
               {(isAdmin || isTrusted) && (
-                <Row className="flex-wrap gap-2">
+                <Row className="gap-2">
                   {isAdmin && (
                     <Button
                       color="green"
@@ -134,33 +131,36 @@ export function UserSettingButton(props: { user: User }) {
                   </Button>
                 </Row>
               )}
+            </div>
+            <Row
+              className={
+                'text-ink-600 flex-wrap items-center gap-x-3 gap-y-1 px-1'
+              }
+            >
+              <span className={'text-sm'}>Joined {createdTime}</span>
+              {isAdmin && (
+                <>
+                  <a
+                    className="text-primary-400 text-sm hover:underline"
+                    href={supabaseUserConsolePath(user.id)}
+                  >
+                    supabase user
+                  </a>
+                  <a
+                    className="text-primary-400 text-sm hover:underline"
+                    href={supabasePrivateUserConsolePath(user.id)}
+                  >
+                    private user
+                  </a>
+                  <SimpleCopyTextButton
+                    text={user.id}
+                    tooltip="Copy user id"
+                    className="!px-1 !py-px"
+                    eventTrackingName={'admin copy user id'}
+                  />
+                </>
+              )}
             </Row>
-            {isAdmin && (
-              <Row className="mt-3 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
-                <a
-                  className="hover:text-white hover:underline"
-                  href={supabaseUserConsolePath(user.id)}
-                >
-                  supabase user
-                </a>
-                <a
-                  className="hover:text-white hover:underline"
-                  href={supabasePrivateUserConsolePath(user.id)}
-                >
-                  private user
-                </a>
-                <SimpleCopyTextButton
-                  text={user.id}
-                  tooltip="Copy user id"
-                  className="!px-1 !py-px !text-white/70 hover:!text-white"
-                  eventTrackingName={'admin copy user id'}
-                />
-              </Row>
-            )}
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
             <QueryUncontrolledTabs
               className={'mb-4'}
               defaultIndex={tabIndex}
@@ -217,8 +217,8 @@ export function UserSettingButton(props: { user: User }) {
                 // TODO: if isYou include a tab for users you've blocked?
               ])}
             />
-          </div>
-        </Col>
+          </Col>
+        </div>
       </Modal>
 
       <BanModal

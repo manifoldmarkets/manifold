@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import { NativeMessageProvider } from 'web/components/native-message-provider'
 import { Sweepstakes } from 'web/components/sweepstakes-provider'
-import { OptimisticEntitlementsProvider } from 'web/hooks/use-optimistic-entitlements'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import { useIOSBodyFix } from 'web/hooks/use-ios-body-fix'
 import { useMobileScrollRestoration } from 'web/hooks/use-mobile-scroll-restoration'
@@ -204,13 +203,11 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       ) : (
         <ThemeProvider>
           <AuthProvider serverUser={pageProps.auth}>
-            <OptimisticEntitlementsProvider>
-              <Sweepstakes>
-                <NativeMessageProvider>
-                  <Component {...pageProps} />
-                </NativeMessageProvider>
-              </Sweepstakes>
-            </OptimisticEntitlementsProvider>
+            <Sweepstakes>
+              <NativeMessageProvider>
+                <Component {...pageProps} />
+              </NativeMessageProvider>
+            </Sweepstakes>
           </AuthProvider>
         </ThemeProvider>
       )}

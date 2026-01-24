@@ -40,7 +40,6 @@ export function NotificationUserLink(props: {
           className ?? 'hover:text-primary-500 relative flex-shrink-0'
         )}
         hideBadge={hideBadge}
-        displayContext="notifications"
       />
     </UserHovercard>
   )
@@ -158,7 +157,6 @@ export function AvatarNotificationIcon(props: {
           avatarUrl={sourceUserAvatarUrl}
           size={NOTIFICATION_ICON_SIZE}
           noLink={true}
-          displayContext="notifications"
         />
         <div className="absolute -bottom-2 -right-1 text-lg">{symbol}</div>
       </Link>

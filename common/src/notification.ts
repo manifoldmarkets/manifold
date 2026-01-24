@@ -90,7 +90,6 @@ export type notification_source_types =
   | 'manifest_airdrop'
   | 'extra_purchased_mana'
   | 'payment_status'
-  | 'membership_subscription'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -348,11 +347,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Payment updates',
     detailed: 'Updates on your payment statuses',
   },
-  membership_subscription: {
-    simple: 'Membership subscription updates',
-    detailed:
-      'Updates when your membership auto-renews or is cancelled due to insufficient balance',
-  },
   market_movements: {
     simple: 'Market movements',
     detailed:
@@ -471,13 +465,6 @@ export type PaymentCompletedData = {
 export type ReferralData = {
   manaAmount: number
   cashAmount: number
-}
-
-export type MembershipSubscriptionData = {
-  tierName: string
-  amount: number
-  type: 'renewed' | 'cancelled'
-  newExpiresTime?: number // Only for renewals
 }
 
 export function getSourceIdForLinkComponent(

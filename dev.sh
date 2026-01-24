@@ -40,7 +40,7 @@ else
     LOCAL_IP="localhost"
 fi
 
-firebase use $FIREBASE_PROJECT
+# firebase use $FIREBASE_PROJECT
 
 API_COMMAND="dev"
 if [ "$DEBUG" = "true" ]; then

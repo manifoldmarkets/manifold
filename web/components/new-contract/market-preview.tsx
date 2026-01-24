@@ -74,7 +74,7 @@ export type PreviewContractData = {
 
   // Multiple choice specific
   shouldAnswersSumToOne?: boolean
-  addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+  addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE' | 'APPROVAL_REQUIRED'
 
   // Poll specific
   includeSeeResults?: boolean

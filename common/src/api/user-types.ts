@@ -1,5 +1,4 @@
 import { BOT_USERNAMES, ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
-import { UserEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
 
 export type DisplayUser = {
@@ -8,7 +7,6 @@ export type DisplayUser = {
   username: string
   avatarUrl: string
   isBannedFromPosting?: boolean
-  entitlements?: UserEntitlement[]
 }
 
 export type FullUser = User & {

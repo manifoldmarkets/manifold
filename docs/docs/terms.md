@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated January 19th, 2026
+Last updated January 4th, 2026
 
 **1. AGREEMENT TO TERMS**
 
@@ -64,31 +64,7 @@ We reserve the right to refuse any order placed through the Site. We may, in our
 
 5. **Regulatory Exemption.** Because Mana is strictly play money with no monetary value, it is not subject to—and the Site is not operated under—any financial-services or gambling regulations.
 
-**6.6 Digital Goods and Cosmetics (Mana Store)**
-
-1. **No Ownership Rights.** The Site may offer digital goods, cosmetics, avatar items, profile enhancements, and other virtual items ("Digital Goods") that can be acquired using Mana through the Mana Store or other features on the Site. You acknowledge and agree that you do not acquire any ownership interest in Digital Goods. All Digital Goods remain the sole property of Manifold Markets, Inc. You receive only a limited, personal, non-transferable, non-exclusive, revocable license to use Digital Goods within the Site in accordance with these Terms.
-
-2. **No Monetary Value.** Digital Goods have no cash value and cannot be redeemed, refunded, sold, traded, transferred, gifted, or exchanged—whether on the Site or elsewhere—for money, Mana, property, products, services, or any other consideration.
-
-3. **Modification or Removal.** We reserve the right to modify, suspend, discontinue, or remove any Digital Goods (or access thereto) at any time, for any reason or no reason, with or without notice, and without liability to you. This includes, but is not limited to, changes to appearance, functionality, availability, or complete removal from your account or the Site.
-
-4. **No Recourse.** You acknowledge and agree that you have no legal recourse against us for any modification, suspension, or removal of Digital Goods, or for any changes to the Mana Store, pricing, or availability of items.
-
-5. **Account Termination.** Upon termination or suspension of your account for any reason, you will immediately lose access to all Digital Goods associated with your account, without refund, compensation, or liability to you.
-
-**6.7 Membership Subscriptions**
-
-1. **Subscription License.** The Site may offer membership subscription plans ("Membership") that provide access to premium features, benefits, perks, or enhanced functionality. A Membership grants you only a limited, personal, non-transferable, non-exclusive, revocable license to access and use the applicable Membership benefits during your active subscription period, subject to these Terms.
-
-2. **No Ownership or Vested Rights.** You do not acquire any ownership, vested, or proprietary interest in any Membership benefits, features, or perks. All Membership benefits remain the sole property of Manifold Markets, Inc.
-
-3. **Modification or Discontinuation.** We reserve the right to modify, suspend, or discontinue any Membership plan, tier, benefit, feature, or perk at any time, for any reason or no reason, with or without notice, and without liability to you. This includes changes to pricing, benefits, features, or the complete discontinuation of Membership offerings.
-
-4. **Cancellation and Termination.** You may cancel your Membership at any time through your account settings. Upon cancellation or expiration, you will lose access to all Membership benefits. If we terminate or suspend your account or Membership for any reason, including violation of these Terms, you will immediately lose access to all Membership benefits without refund, proration, compensation, or liability to you.
-
-5. **No Refunds.** All Membership purchases and renewals are final. No refunds or credits of Mana will be issued for partial subscription periods, unused benefits, or upon termination of your account or Membership for any reason.
-
-**6.8 Prediction Market Terms**
+**6.6 Prediction Market Terms**
 
 1. **Play-Money Platform.** Manifold is a play-money prediction market platform designed for entertainment, education, and informational purposes. All trading on the Site is conducted using Mana, our virtual currency, which has no cash value and cannot be redeemed, cashed out, or exchanged for real money or any other consideration. You acknowledge that participation on the Site does not constitute real-money gambling, investing, or financial trading.
 

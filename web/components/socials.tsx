@@ -1,6 +1,5 @@
 import { MailIcon, NewspaperIcon } from '@heroicons/react/outline'
 import Link from 'next/link'
-import clsx from 'clsx'
 import {
   TbBrandAndroid,
   TbBrandApple,
@@ -14,7 +13,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { isIOS } from 'web/lib/util/device'
 import { getNativePlatform } from 'web/lib/native/is-native'
 
-export function Socials(props: { className?: string; hideTitle?: boolean }) {
+export function Socials(props: { className?: string }) {
   const { isNative } = getNativePlatform()
   const isMobile = useIsMobile()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -31,16 +30,14 @@ export function Socials(props: { className?: string; hideTitle?: boolean }) {
 
   return (
     <div className={props.className}>
-      {!props.hideTitle && (
-        <h2 className="text-ink-600 mb-4 text-xl">Connect With Us</h2>
-      )}
+      <h2 className={'text-ink-600 text-xl'}>Socials</h2>
 
       <MobileAppsQRCodeDialog
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <SocialLink
           Icon={TbBrandDiscord}
           href="https://discord.com/invite/eHQBNBqXuh"
@@ -95,12 +92,9 @@ const SocialLink = (props: {
       href={href}
       onClick={onClick}
       target={target}
-      className={clsx(
-        'bg-canvas-0 border-ink-200 text-ink-700 flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium',
-        'hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition-all'
-      )}
+      className="bg-canvas-0 text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 font-semibold transition-colors"
     >
-      <Icon className="h-5 w-5" />
+      <Icon className="h-6 w-6" />
       {children}
     </Link>
   )

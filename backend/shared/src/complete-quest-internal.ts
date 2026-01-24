@@ -15,8 +15,6 @@ import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs } from 'common/supabase/utils'
 import { log } from 'shared/utils'
-import { getBenefit, SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -153,29 +151,11 @@ const awardQuestBonus = async (
       throw new APIError(400, 'Already awarded quest bonus today')
     }
 
-    // Fetch user's supporter entitlements for bonus multiplier
-    const supporterEntitlementRows = await tx.manyOrNone(
-      `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
-       WHERE user_id = $1
-       AND entitlement_id = ANY($2)
-       AND enabled = true
-       AND (expires_time IS NULL OR expires_time > NOW())`,
-      [user.id, SUPPORTER_ENTITLEMENT_IDS]
-    )
-
-    // Convert to UserEntitlement format for getBenefit
-    const entitlements = supporterEntitlementRows.map(convertEntitlement)
-
-    // Get tier-specific quest multiplier (1x for non-supporters)
-    const questMultiplier = getBenefit(entitlements, 'questMultiplier')
-    const baseReward = QUEST_DETAILS[questType].rewardAmount
-    const rewardAmount = Math.floor(baseReward * questMultiplier)
+    const rewardAmount = QUEST_DETAILS[questType].rewardAmount
 
     const bonusTxnData = {
       questType,
       questCount: newCount,
-      supporterBonus: questMultiplier > 1,
-      questMultiplier,
     }
 
     const bonusTxn: Omit<QuestRewardTxn, 'fromId' | 'id' | 'createdTime'> = {

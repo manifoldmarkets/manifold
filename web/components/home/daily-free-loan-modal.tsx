@@ -6,7 +6,7 @@ import { formatMoney } from 'common/util/format'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { GiTwoCoins, GiOpenChest } from 'react-icons/gi'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { getBenefit } from 'common/supporter-config'
+import { FREE_LOAN_POSITION_PERCENT } from 'common/loans'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import clsx from 'clsx'
 
@@ -192,10 +192,7 @@ export function DailyFreeLoanModal(props: {
             <div className="bg-canvas-50 flex-1 rounded-lg p-3 text-center">
               <div className="mb-1 text-2xl">📈</div>
               <p className="text-ink-700 text-xs font-medium">
-                {Math.round(
-                  getBenefit(user.entitlements, 'freeLoanRate') * 100
-                )}
-                % of positions
+                {FREE_LOAN_POSITION_PERCENT * 100}% of positions
               </p>
               <p className="text-ink-500 text-xs">daily</p>
             </div>

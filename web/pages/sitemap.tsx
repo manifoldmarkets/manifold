@@ -1,47 +1,21 @@
 import { capitalize } from 'lodash'
-import Link from 'next/link'
-import clsx from 'clsx'
-import {
-  CogIcon,
-  UserCircleIcon,
-  CurrencyDollarIcon,
-  UserGroupIcon,
-  StarIcon,
-  SparklesIcon,
-  GiftIcon,
-  DesktopComputerIcon,
-  DocumentTextIcon,
-  CollectionIcon,
-  LightningBoltIcon,
-  ChipIcon,
-  FlagIcon,
-  ClipboardCheckIcon,
-  InformationCircleIcon,
-  DocumentDuplicateIcon,
-  QuestionMarkCircleIcon,
-  PresentationChartLineIcon,
-  CodeIcon,
-  GlobeAltIcon,
-  HeartIcon,
-  ExternalLinkIcon,
-  MapIcon,
-} from '@heroicons/react/outline'
 import { TRADE_TERM } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { SEO } from 'web/components/SEO'
+import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
 import { getNativePlatform } from 'web/lib/native/is-native'
+import { LabCard } from './lab'
 import { Socials } from 'web/components/socials'
 
-export default function SitemapPage() {
+export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
   const user = useUser()
 
   return (
-    <Page trackPageView={'sitemap page'}>
+    <Page trackPageView={'about page'}>
       <SEO
         title="Sitemap"
         description={`Manifold is a social prediction game. ${capitalize(
@@ -49,292 +23,120 @@ export default function SitemapPage() {
         )} on news, politics, tech, & AI with play money. Or create your own prediction market.`}
       />
 
-      <Col className="mx-auto w-full max-w-4xl px-4 pb-12 pt-4">
-        {/* Header */}
-        <div className="mb-8">
-          <ManifoldLogo className="mb-4 flex sm:hidden" />
-          <Row className="items-center gap-3">
-            <div className="bg-primary-100 dark:bg-primary-900/50 rounded-xl p-2.5">
-              <MapIcon className="text-primary-600 dark:text-primary-400 h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-ink-900 text-2xl font-bold sm:text-3xl">
-                Sitemap
-              </h1>
-              <p className="text-ink-500 mt-0.5 text-sm">
-                Navigate to any part of Manifold
-              </p>
-            </div>
-          </Row>
+      <Col className="p-4">
+        <Title className="hidden sm:flex">Sitemap</Title>
+        <ManifoldLogo className="mb-4 flex sm:hidden" />
+        <div className="mb-5">
+          <Socials />
         </div>
 
-        {/* Socials Section */}
-        <Socials className="mb-8" />
-
-        {/* Site Pages Section */}
-        <SitemapSection
-          title="Site Pages"
-          subtitle="Core features and tools"
-          className="mb-8"
-        >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <SitemapLink
-              title="Notification settings"
-              description="Manage your alerts and emails"
+        <div className="mb-3">
+          <h2 className={'text-ink-600  text-xl'}>Site pages</h2>
+          <div className="mt-4 grid gap-x-2 md:grid-cols-3">
+            <LabCard
+              title="⚙️ Notification & email settings"
               href="/notifications?tab=settings"
-              icon={CogIcon}
             />
             {user && (
-              <SitemapLink
-                title="Edit profile"
-                description="Customize your public profile"
+              <LabCard
+                title="✏️ Edit profile"
                 href={`/${user?.username ?? ''}?tab=edit+profile`}
-                icon={UserCircleIcon}
               />
             )}
             {user && (!isNative || (isNative && platform !== 'ios')) && (
-              <SitemapLink
-                title="Get mana"
-                description="Purchase mana to trade with"
-                href="/add-funds"
-                icon={CurrencyDollarIcon}
-              />
+              <LabCard title="💰 Get mana" href="/add-funds" />
             )}
-            {user && (
-              <SitemapLink
-                title="Refer a friend"
-                description="Earn rewards for referrals"
-                href="/referrals"
-                icon={UserGroupIcon}
-              />
-            )}
-            <SitemapLink
-              title="Leagues"
-              description="Compete in seasonal leagues"
-              href="/leagues"
-              icon={StarIcon}
-            />
-            <SitemapLink
-              title="Predictle"
-              description="Daily prediction game"
-              href="/predictle"
-              icon={SparklesIcon}
-            />
-            <SitemapLink
-              title="Leaderboards"
-              description="Top traders and creators"
-              href="/leaderboards"
-              icon={StarIcon}
-            />
-            <SitemapLink
-              title="Charity Giveaway"
-              description="Donate winnings to charity"
-              href="/charity"
-              icon={GiftIcon}
-            />
-            <SitemapLink
-              title="TV"
-              description="Live prediction streams"
-              href="/tv"
-              icon={DesktopComputerIcon}
-            />
-            <SitemapLink
-              title="Changelog"
-              description="Latest updates and features"
-              href="/posts?filter=changelog"
-              icon={DocumentTextIcon}
-            />
-            <SitemapLink
-              title="Dashboards"
-              description="Curated market collections"
-              href="/dashboard"
-              icon={CollectionIcon}
-            />
-            <SitemapLink
-              title="Site activity"
-              description="Real-time market activity"
-              href="/live"
-              icon={LightningBoltIcon}
-            />
-            <SitemapLink
-              title="AI"
-              description="AI prediction markets"
-              href="/ai"
-              icon={ChipIcon}
-            />
-            <SitemapLink
-              title="US Elections"
-              description="Political prediction markets"
-              href="/election"
-              icon={FlagIcon}
-            />
-            <SitemapLink
-              title="Todo"
-              description="Track your tasks"
-              href="/todo"
-              icon={ClipboardCheckIcon}
-            />
-          </div>
-        </SitemapSection>
+            {user && <LabCard title="🤗‍ Refer a friend" href="/referrals" />}
 
-        {/* Information Resources Section */}
-        <SitemapSection
-          title="Information & Resources"
-          subtitle="Learn how Manifold works"
-          className="mb-8"
-        >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <SitemapLink
-              title="About Manifold"
-              description="Learn what we're all about"
-              href="/about"
-              icon={InformationCircleIcon}
-            />
-            <SitemapLink
-              title="Community guidelines"
-              description="Rules and expectations"
+            <LabCard title="🏁 Leagues" href="/leagues" />
+            <LabCard title="🔮 Predictle" href="/predictle" />
+            <LabCard title="🏆 Leaderboards" href="/leaderboards" />
+
+            <LabCard title="🎟️ Charity Giveaway" href="/charity" />
+
+            <LabCard title="📺 TV" href="/tv" />
+            <LabCard title="️✨ Changelog" href="/posts?filter=changelog" />
+            <LabCard title="️🔖 Dashboards" href="/dashboard" />
+            <LabCard title="⚡️ Site activity" href="/live" />
+            <LabCard title="🤖 AI" href="/ai" />
+            <LabCard title="🇺🇸 US elections" href="/election" />
+            <LabCard title="✅ Todo" href="/todo" />
+            {/* <LabCard title="️🧪 Lab" href="/lab" /> */}
+          </div>
+        </div>
+        <div className="mb-3">
+          <h2 className={'text-ink-600 text-xl'}>Informative resources</h2>
+          <div className="mt-4 grid gap-x-2 md:grid-cols-3">
+            <LabCard title="ℹ️ About page" href="/about" />
+            <LabCard
+              title="📜 Community guidelines"
               href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
-              external
-              icon={DocumentDuplicateIcon}
+              target="_blank"
             />
-            <SitemapLink
-              title="FAQ"
-              description="Frequently asked questions"
+            <LabCard
+              title="📚 FAQ"
               href="https://docs.manifold.markets/faq"
-              external
-              icon={QuestionMarkCircleIcon}
+              target="_blank"
             />
-            <SitemapLink
-              title="Calibration & track record"
-              description="How accurate are we?"
+            <LabCard
+              title="👨‍⚖️ Sweepstakes rules"
+              href="/sweepstakes-rules"
+              target="_blank"
+            />
+            <LabCard
+              title="🎯 Calibration & track record"
               href="/calibration"
-              icon={PresentationChartLineIcon}
             />
-            <SitemapLink
-              title="API documentation"
-              description="Build with our API"
+            <LabCard
+              title="🦋 Changelog"
+              href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
+              target="_blank"
+            />
+            <LabCard
+              title="📠 API docs"
               href="https://docs.manifold.markets/api"
-              external
-              icon={CodeIcon}
+              target="_blank"
             />
-            <SitemapLink
-              title="Press kit"
-              description="Media resources and assets"
-              href="/press"
-              icon={DocumentTextIcon}
-            />
+            <LabCard title="📰 Press kit" href="/press" />
           </div>
-        </SitemapSection>
-
-        {/* External Sites Section */}
-        <SitemapSection
-          title="External Sites"
-          subtitle="Related projects and communities"
-        >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <SitemapLink
-              title="GitHub"
-              description="View our open source code"
+        </div>
+        <div>
+          <h2 className={'text-ink-600 text-xl'}>External sites</h2>
+          <div className="mt-4 grid gap-x-2 md:grid-cols-3">
+            {' '}
+            <LabCard
+              title="🧑‍💻 Github"
               href="https://github.com/manifoldmarkets/manifold"
-              external
-              icon={CodeIcon}
+              target="_blank"
             />
-            <SitemapLink
-              title="Manifest"
-              description="Our annual conference"
+            <LabCard
+              title="️🎊 Manifest"
               href="https://www.manifest.is/"
-              external
-              icon={GlobeAltIcon}
-            />
-            <SitemapLink
-              title="Bet on Love"
-              description="Reality TV dating show"
+              target="_blank"
+            />{' '}
+            <LabCard
+              title="️💘 Bet on Love"
               href="https://www.youtube.com/watch?v=mEF0S1qOsFI"
-              external
-              icon={HeartIcon}
+              target="_blank"
             />
-            <SitemapLink
-              title="Manifold.love"
-              description="Dating prediction markets"
+            <LabCard
+              title="❤️ Manifold.love"
               href="https://manifold.love"
-              external
-              icon={HeartIcon}
+              target="_blank"
             />
-            <SitemapLink
-              title="Manifund"
-              description="Impact certificates platform"
+            <LabCard
+              title="🦊 Manifund"
               href="https://manifund.org/"
-              external
-              icon={GiftIcon}
+              target="_blank"
             />
-            <SitemapLink
-              title="Calibration City"
-              description="Test your calibration skills"
+            <LabCard
+              title="📈 Calibration City"
               href="https://calibration.city/"
-              external
-              icon={PresentationChartLineIcon}
+              target="_blank"
             />
           </div>
-        </SitemapSection>
+        </div>
       </Col>
     </Page>
-  )
-}
-
-function SitemapSection(props: {
-  title: string
-  subtitle: string
-  children: React.ReactNode
-  className?: string
-}) {
-  const { title, subtitle, children, className } = props
-  return (
-    <section className={className}>
-      <div className="mb-4">
-        <h2 className="text-ink-900 text-lg font-semibold">{title}</h2>
-        <p className="text-ink-500 text-sm">{subtitle}</p>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function SitemapLink(props: {
-  title: string
-  description: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  external?: boolean
-}) {
-  const { title, description, href, icon: Icon, external } = props
-
-  return (
-    <Link
-      href={href}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noopener noreferrer' : undefined}
-      className={clsx(
-        'bg-canvas-0 border-ink-200 group relative flex items-start gap-3 rounded-xl border p-4 shadow-sm transition-all',
-        'hover:border-primary-300 hover:bg-primary-50/50 dark:hover:bg-primary-950/20 hover:shadow-md',
-        'dark:border-ink-300'
-      )}
-    >
-      <div className="bg-ink-100 group-hover:bg-primary-100 dark:bg-ink-800 dark:group-hover:bg-primary-900/50 flex-shrink-0 rounded-lg p-2 transition-colors">
-        <Icon className="text-ink-500 group-hover:text-primary-600 dark:group-hover:text-primary-400 h-5 w-5 transition-colors" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <Row className="items-center gap-1.5">
-          <span className="text-ink-900 group-hover:text-primary-700 dark:group-hover:text-primary-400 font-medium transition-colors">
-            {title}
-          </span>
-          {external && (
-            <ExternalLinkIcon className="text-ink-400 h-3.5 w-3.5 flex-shrink-0" />
-          )}
-        </Row>
-        <p className="text-ink-500 mt-0.5 text-sm leading-snug">
-          {description}
-        </p>
-      </div>
-    </Link>
   )
 }

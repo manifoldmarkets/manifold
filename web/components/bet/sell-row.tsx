@@ -135,35 +135,22 @@ export function SellSharesModal(props: {
 
   return (
     <Modal open={true} setOpen={setOpen}>
-      <Col
-        className={clsx(
-          'bg-canvas-0 rounded-xl px-6 py-5 sm:px-8 sm:py-6',
-          className
-        )}
-      >
-        <h2 className="text-ink-900 mb-4 text-xl font-semibold">
+      <Col className={clsx('bg-canvas-0 rounded-md px-8 py-6', className)}>
+        <Title>
           {sellForUserId ? 'Admin: Sell user position' : 'Sell position'}
-        </h2>
+        </Title>
 
-        <p className="text-ink-600 mb-5 text-sm leading-relaxed">
+        <div className="mb-6">
           {isStonk ? (
             <>
               {sellForUserId ? 'User has' : 'You have'}{' '}
-              <span className="text-ink-900 font-medium">
-                {getStonkDisplayShares(contract, shares)} shares
-              </span>{' '}
-              of{' '}
+              {getStonkDisplayShares(contract, shares)} shares of{' '}
             </>
           ) : (
             <>
               {sellForUserId ? 'User has' : 'You have'}{' '}
-              <span className="text-ink-900 font-medium">
-                {formatShares(shares, isCashContract)} shares
-              </span>{' '}
-              worth{' '}
-              <span className="text-ink-900 font-medium">
-                <MoneyDisplay amount={shares} isCashContract={isCashContract} />
-              </span>{' '}
+              {formatShares(shares, isCashContract)} shares worth{' '}
+              <MoneyDisplay amount={shares} isCashContract={isCashContract} />{' '}
               if this {answerId ? 'answer' : 'question'} resolves{' '}
             </>
           )}
@@ -175,7 +162,7 @@ export function SellSharesModal(props: {
             pseudonym={binaryPseudonym}
           />
           .
-        </p>
+        </div>
 
         <SellPanel
           contract={contract}

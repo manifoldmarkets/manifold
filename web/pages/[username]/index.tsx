@@ -291,9 +291,6 @@ function UserProfile(props: {
                       size={'lg'}
                       className="bg-ink-1000"
                       noLink
-                      entitlements={user.entitlements}
-                      displayContext="profile_page"
-                      animateHat={expandProfileInfo}
                     />
                   }
                 />
@@ -310,12 +307,11 @@ function UserProfile(props: {
                 className={'font-bold sm:mr-0 sm:text-xl'}
                 user={user}
                 followsYou={followsYou}
-                displayContext="profile_page"
                 bans={userBans}
               />
             </button>
           ) : (
-            <Row className="group gap-2 py-1">
+            <Row className="gap-2 py-1">
               <ImageWithBlurredShadow
                 image={
                   <Avatar
@@ -324,8 +320,6 @@ function UserProfile(props: {
                     size={'lg'}
                     className="bg-ink-1000"
                     noLink
-                    entitlements={user.entitlements}
-                    displayContext="profile_page"
                   />
                 }
               />
@@ -334,7 +328,6 @@ function UserProfile(props: {
                 className={'font-bold sm:mr-0 sm:text-xl'}
                 user={user}
                 followsYou={followsYou}
-                displayContext="profile_page"
                 bans={userBans}
               />
             </Row>

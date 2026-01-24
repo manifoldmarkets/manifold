@@ -2367,6 +2367,47 @@ export type Database = {
           }
         ]
       }
+      pending_answers: {
+        Row: {
+          contract_id: string
+          created_time: string
+          id: string
+          reviewed_by: string | null
+          reviewed_time: string | null
+          status: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          created_time?: string
+          id?: string
+          reviewed_by?: string | null
+          reviewed_time?: string | null
+          status?: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          created_time?: string
+          id?: string
+          reviewed_by?: string | null
+          reviewed_time?: string | null
+          status?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pending_answers_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       platform_calibration: {
         Row: {
           created_time: string

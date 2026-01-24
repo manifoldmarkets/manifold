@@ -31,7 +31,6 @@ import {
 import { ReactButton } from '../contract/react-button'
 import { Col } from '../layout/col'
 import { UserHovercard } from '../user/user-hovercard'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export const RepostFeedCard = memo(function (props: {
   contract: Contract
@@ -45,7 +44,6 @@ export const RepostFeedCard = memo(function (props: {
   const { contract, user, repost, bet, hide, comment } = props
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl, userId } = comment
-  const commenter = useDisplayUserById(userId)
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const commenterIsBettor = bet?.userId === comment.userId
   const creatorRepostedTheirComment = repost.user_id === comment.userId
@@ -89,14 +87,12 @@ export const RepostFeedCard = memo(function (props: {
         <Col className={'w-full gap-2'}>
           <Col className={'w-full pl-1 pr-2  transition-colors'}>
             <Row className="w-full items-center justify-between">
-              <Row className="min-w-0 flex-shrink items-center gap-1">
+              <Row className="min-w-0 flex-shrink items-center gap-1 overflow-hidden">
                 <UserHovercard userId={userId}>
                   <Avatar
-                    username={commenter?.username ?? userUsername}
+                    username={userUsername}
                     size={'xs'}
-                    avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
-                    entitlements={commenter?.entitlements}
-                    displayContext="feed"
+                    avatarUrl={userAvatarUrl}
                   />
                 </UserHovercard>
                 <div className="min-w-0 flex-1 overflow-hidden">

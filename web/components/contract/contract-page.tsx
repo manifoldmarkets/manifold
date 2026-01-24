@@ -26,10 +26,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
-import {
-  SidebarSignUpButton,
-  SignUpButton,
-} from 'web/components/buttons/sign-up-button'
+import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
@@ -79,7 +76,6 @@ import { FollowMarketButton } from '../buttons/follow-market-button'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 import { MarketContext } from './market-context'
 import { YourTrades } from './your-trades'
-import { LogoIcon } from '../icons/logo-icon'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -197,19 +193,6 @@ export function ContractPageContent(props: ContractParams) {
   const creatorUser = useDisplayUserById(props.contract.creatorId)
   return (
     <>
-      {/* Mobile header for signed-out users */}
-      {!user && (
-        <Row className="bg-canvas-0 sticky top-0 z-50 flex items-center justify-between px-4 py-2 md:hidden">
-          <Link
-            href="/"
-            className="flex items-center gap-1 text-indigo-700 dark:text-white"
-          >
-            <LogoIcon className="h-8 w-8 stroke-indigo-700 dark:stroke-white" />
-            <span className="text-lg font-thin">MANIFOLD</span>
-          </Link>
-          <SignUpButton />
-        </Row>
-      )}
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
@@ -257,9 +240,7 @@ export function ContractPageContent(props: ContractParams) {
                 'sticky -top-px z-50 h-12 w-full transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
-                  : '',
-                // Hide on mobile for signed-out users (they have the logo header instead)
-                !user && 'hidden md:flex'
+                  : ''
               )}
             >
               <Row className="mr-4 grow items-center">
@@ -294,13 +275,7 @@ export function ContractPageContent(props: ContractParams) {
             </Row>
           </div>
           {coverImageUrl && (
-            <Row
-              className={clsx(
-                'h-10 w-full justify-between',
-                // Hide on mobile for signed-out users (they have the logo header instead)
-                !user && 'hidden md:flex'
-              )}
-            >
+            <Row className="h-10 w-full justify-between">
               {/* Wrap in div so that justify-between works when BackButton is null. */}
               <div>
                 <BackButton className="pr-8" />
@@ -546,6 +521,7 @@ export function ContractPageContent(props: ContractParams) {
             </div>
             {showExplainerPanel && (
               <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
+                <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
                 <ExplainerPanel />
               </div>
             )}
@@ -559,6 +535,7 @@ export function ContractPageContent(props: ContractParams) {
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && (
             <div>
+              <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
               <ExplainerPanel />
             </div>
           )}

@@ -8,7 +8,6 @@ import { useUser } from 'web/hooks/use-user'
 import { StreakProgressBar } from './streak-progress-bar'
 import { updateUser } from 'web/lib/api/api'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { getBenefit } from 'common/supporter-config'
 
 const START = 1744135118428 // 2025-04-08
 export function FirstStreakModalManager() {
@@ -28,14 +27,11 @@ export function FirstStreakModalManager() {
     }
   }, [user?.currentBettingStreak])
 
-  const questMultiplier = getBenefit(user?.entitlements, 'questMultiplier')
-
   return (
     <BettingStreakProgressModal
       open={open}
       setOpen={setOpen}
       currentStreak={user?.currentBettingStreak ?? 0}
-      questMultiplier={questMultiplier}
     />
   )
 }
@@ -43,9 +39,8 @@ export function BettingStreakProgressModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   currentStreak: number
-  questMultiplier?: number
 }) {
-  const { open, setOpen, currentStreak, questMultiplier = 1 } = props
+  const { open, setOpen, currentStreak } = props
   return (
     <Modal open={open} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 rounded-md px-8 py-6">
@@ -58,10 +53,7 @@ export function BettingStreakProgressModal(props: {
           Longer streaks earn bigger mana bonuses:
         </p>
         <div className="my-4">
-          <StreakProgressBar
-            currentStreak={currentStreak}
-            questMultiplier={questMultiplier}
-          />
+          <StreakProgressBar currentStreak={currentStreak} />
         </div>
 
         <Button onClick={() => setOpen(false)} className="self-end">

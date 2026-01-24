@@ -40,7 +40,6 @@ export function AuthorInfo(props: {
     resolverId,
   } = props
   const resolver = useDisplayUserById(resolverId)
-  const creator = useDisplayUserById(creatorId)
   return (
     <Row className="grow flex-wrap items-center gap-4">
       <UserHovercard userId={creatorId} className="flex items-center gap-2">
@@ -48,8 +47,6 @@ export function AuthorInfo(props: {
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
           size={'xs'}
-          entitlements={creator?.entitlements}
-          displayContext="market_creator"
         />
 
         <UserLink
@@ -58,10 +55,8 @@ export function AuthorInfo(props: {
             name: creatorName,
             username: creatorUsername,
             createdTime: creatorCreatedTime,
-            entitlements: creator?.entitlements,
           }}
           className={'mr-1'}
-          displayContext="market_creator"
         />
       </UserHovercard>
 
@@ -165,12 +160,12 @@ export function CloseDate(props: {
         {editable && (
           <PencilIcon className="sm:group-hover:fill-ink-600 hidden h-4 w-4 sm:flex sm:fill-transparent" />
         )}
+        <EditCloseTimeModal
+          contract={contract}
+          isOpen={isEditingCloseTime}
+          setOpen={setIsEditingCloseTime}
+        />
       </Row>
-      <EditCloseTimeModal
-        contract={contract}
-        isOpen={isEditingCloseTime}
-        setOpen={setIsEditingCloseTime}
-      />
     </>
   )
 }
@@ -198,10 +193,6 @@ export const EditCloseTimeModal = (props: {
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
 
-  const isPoll = contract.outcomeType === 'POLL'
-  const isCurrentlyOpen = (contract.closeTime ?? Date.now() + 1) > Date.now()
-  const hasChanges = newCloseTime !== closeTime
-
   async function onSave(customTime?: number) {
     if (customTime) {
       newCloseTime = customTime
@@ -219,97 +210,47 @@ export const EditCloseTimeModal = (props: {
       setNewCloseTime?.(newCloseTime)
     }
   }
-
   return (
-    <Modal size="md" open={isOpen} setOpen={setOpen}>
-      <Col className="bg-canvas-0 overflow-hidden rounded-xl">
-        {/* Header */}
-        <div className="border-ink-200 border-b px-6 pb-4 pt-6">
-          <Row className="items-center gap-3">
-            <div className="bg-primary-100 dark:bg-primary-900/30 flex h-10 w-10 items-center justify-center rounded-full">
-              <FaClock className="text-primary-600 dark:text-primary-400 h-5 w-5" />
-            </div>
-            <Col className="gap-0.5">
-              <h2 className="text-ink-900 text-lg font-semibold">
-                {isPoll ? 'Voting' : 'Trading'} close time
-              </h2>
-              <p className="text-ink-500 text-sm">
-                {isPoll ? 'Voting' : 'Trading'} will halt at this time
-              </p>
-            </Col>
-          </Row>
+    <Modal size="md" open={isOpen} setOpen={setOpen} position="top">
+      <Col className="bg-canvas-0 rounded-lg p-8">
+        <Title className="!text-2xl">Close time</Title>
+        <div className="mb-4">
+          {contract.outcomeType === 'POLL' ? 'Voting' : 'Trading'} will halt at
+          this time
         </div>
+        <Row className="flex-wrap items-stretch gap-2">
+          <Input
+            type="date"
+            className="dark:date-range-input-white shrink-0 sm:w-fit"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseDate(e.target.value)}
+            min={isClient ? dayJsNow.format('YYYY-MM-DD') : undefined}
+            max="9999-12-31"
+            value={closeDate}
+          />
+          <Input
+            type="time"
+            className="dark:date-range-input-white shrink-0 sm:w-max"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseHoursMinutes(e.target.value)}
+            value={closeHoursMinutes}
+          />
+          <Button size="xl" onClick={() => onSave()}>
+            Save
+          </Button>
+        </Row>
 
-        {/* Date/Time Inputs */}
-        <div className="px-6 py-5">
-          <Col className="gap-4">
-            <Col className="gap-2">
-              <label className="text-ink-600 text-xs font-medium uppercase tracking-wide">
-                Date
-              </label>
-              <Input
-                type="date"
-                className="dark:date-range-input-white w-full"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setCloseDate(e.target.value)}
-                min={isClient ? dayJsNow.format('YYYY-MM-DD') : undefined}
-                max="9999-12-31"
-                value={closeDate}
-              />
-            </Col>
-            <Col className="gap-2">
-              <label className="text-ink-600 text-xs font-medium uppercase tracking-wide">
-                Time
-              </label>
-              <Input
-                type="time"
-                className="dark:date-range-input-white w-full"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setCloseHoursMinutes(e.target.value)}
-                value={closeHoursMinutes}
-              />
-            </Col>
-
-            {/* Preview of selected time */}
-            {newCloseTime && (
-              <div className="bg-canvas-50 text-ink-600 rounded-lg px-3 py-2 text-center text-sm">
-                {isPoll ? 'Voting closes' : 'Closes'}{' '}
-                <span className="text-ink-900 font-medium">
-                  {dayjs(newCloseTime).format('MMM D, YYYY')}
-                </span>{' '}
-                at{' '}
-                <span className="text-ink-900 font-medium">
-                  {dayjs(newCloseTime).format('h:mm A')}
-                </span>
-              </div>
-            )}
-          </Col>
-        </div>
-
-        {/* Footer */}
-        <div className="border-ink-200 bg-canvas-50 border-t px-6 py-4">
-          <Row className="items-center justify-between">
-            {isCurrentlyOpen ? (
-              <Button
-                size="xs"
-                color="red-outline"
-                onClick={() => onSave(Date.now())}
-              >
-                <MdLockClock className="mr-1.5 h-4 w-4" />
-                Close now
-              </Button>
-            ) : (
-              <div />
-            )}
+        {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
+          <Row className="mt-8 justify-center">
             <Button
-              color="indigo"
-              onClick={() => onSave()}
-              disabled={!hasChanges}
+              size={'xs'}
+              color="yellow"
+              onClick={() => onSave(Date.now())}
             >
-              Save changes
+              Close question now
             </Button>
           </Row>
-        </div>
+        )}
       </Col>
     </Modal>
   )

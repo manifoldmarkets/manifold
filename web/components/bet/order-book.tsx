@@ -75,7 +75,12 @@ export function YourOrders(props: {
   const moreOrders = yourBets.length - maxShownNotExpanded
 
   return (
-    <Col className={clsx(className, 'bg-canvas-0 overflow-hidden')}>
+    <Col
+      className={clsx(
+        className,
+        'bg-canvas-0 border-ink-200 overflow-hidden border-y'
+      )}
+    >
       {/* Header */}
       <div className="px-4 pb-1 pt-3">
         {deemphasizedHeader ? (

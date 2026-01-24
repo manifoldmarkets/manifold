@@ -25,7 +25,7 @@ export function CreatorSharePanel(props: { contract: Contract }) {
   return (
     <GradientContainer className="mt-4 flex w-full">
       <Col className="w-full gap-4">
-        <Row className="flex-wrap items-center gap-2">
+        <Row className="flex-wrap gap-2">
           {contract.outcomeType == 'BOUNTIED_QUESTION' && (
             <AddBountyButton contract={contract} />
           )}
@@ -69,7 +69,7 @@ export function NonCreatorSharePanel(props: {
   const { contract, children } = props
 
   return (
-    <Row className="my-4 flex-wrap items-center gap-2">
+    <Row className="my-4 flex-wrap gap-3 sm:gap-4">
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />
       )}
@@ -104,10 +104,10 @@ const ShareLinkButton = (props: {
 
   return (
     <Button
-      color="gray-outline"
-      size="sm"
+      color="indigo-outline"
+      size="lg"
       onClick={onClick}
-      className={clsx('gap-1.5', className)}
+      className={clsx('gap-1', className)}
     >
       {isIOS ? (
         <LuShare className={'h-4 w-4'} aria-hidden />
@@ -117,7 +117,7 @@ const ShareLinkButton = (props: {
         <LinkIcon className={'h-4 w-4'} aria-hidden />
       )}
       {preferLink ? (
-        <span>Link</span>
+        <span className="">Link</span>
       ) : (
         <>
           <span className="sm:hidden">Share</span>

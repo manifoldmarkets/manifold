@@ -6,7 +6,6 @@ import {
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { humanish, User } from 'common/user'
-import { getBenefit } from 'common/supporter-config'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
@@ -24,14 +23,6 @@ export function BettingStreakModal(props: {
 }) {
   const { isOpen, setOpen, currentUser } = props
   const missingStreak = currentUser && !hasCompletedStreakToday(currentUser)
-
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(
-    currentUser?.entitlements,
-    'questMultiplier'
-  )
-  const bonusAmount = Math.floor(BETTING_STREAK_BONUS_AMOUNT * questMultiplier)
-  const bonusMax = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
@@ -66,30 +57,24 @@ export function BettingStreakModal(props: {
             ) : (
               'You'
             )}{' '}
-            get {formatMoney(bonusAmount)} for each consecutive day of
-            predicting, up to {formatMoney(bonusMax)}. The more days you predict
-            in a row, the more you earn!
-            {questMultiplier > 1 && (
-              <span className="text-primary-600">
-                {' '}
-                ({questMultiplier}x membership bonus!)
-              </span>
-            )}
+            get {formatMoney(BETTING_STREAK_BONUS_AMOUNT)} for each consecutive
+            day of predicting, up to {formatMoney(BETTING_STREAK_BONUS_MAX)}.
+            The more days you predict in a row, the more you earn!
           </span>
           <span className={'text-primary-700'}>
             • Can I save my streak if I forget?
           </span>
           <span className={'ml-2'}>
-            Streak freezes protect your streak from resetting. You can purchase
-            them in the shop.
-            {currentUser && (currentUser.streakForgiveness ?? 0) > 0 && (
+            You get 1 streak forgiveness per month that prevents your streak
+            from resetting.
+            {currentUser && (
               <span>
                 {' '}
                 Right now you have
                 <span className={'mx-1 font-bold'}>
                   {currentUser.streakForgiveness}
                 </span>
-                available.
+                left.
               </span>
             )}
           </span>

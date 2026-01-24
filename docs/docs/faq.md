@@ -48,42 +48,30 @@ If a market doesn't exist... [Create a market yourself!](https://manifold.market
 
 Mana (M) is the play-money currency used to bet on Manifold Markets. It **cannot be converted to cash**. All users start with M1000 for free.
 
-Mana can be used to create, subsidise, and bet on markets.
+Mana can be used to create, subsidise, and promote markets on your own questions.
 
 In addition, you can [purchase more mana](https://manifold.markets/add-funds).
 
 ### How can I earn mana?
 
-Mana can be earned by making correct predictions, successful trades, creating popular markets, completing quests, and referring friends.
+Mana can be earned by making correct predictions, successful trades, creating popular markets, completing quests, referring friends or completing bounties.
 
-- **Trading profits** -
-  Buy shares at low prices and sell them (or hold until resolution) at higher prices. The main way to earn mana is by being a skilled predictor.
+- **Trader activity** -
+  As the creator of a market, you are entitled to half of the fees Manifold charges on all bets.
 
 - **Quests** -
-  Quests provide specific incentives to engage with Manifold in different ways.
+  Quests provide specific incentives to engage with Manifold Markets in different ways.
 
-**Daily quests:**
+**Daily prediction streaks** -
+There is a daily quest to bet, which gives a reward of M5. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M25 per day. Your daily betting streak can be viewed at the top right of your profile page.
 
-- **Prediction streaks** - Make at least one prediction per day to maintain your streak. The reward starts at M5 and increases by M5 for each consecutive day, up to a maximum of M25 per day. Your streak can be viewed on your profile page.
-- **Share a market** - Share a market with others to earn M5.
-
-**Weekly quests:**
-
-- **Create a market** - Create a market to earn M100.
-
-- **Referrals** -
-  Refer new users to Manifold and earn M1000 when they sign up using your referral link.
-
-- **Phone verification** -
-  Verify your phone number to receive a one-time bonus of M1000.
-
-You can find all available quests by navigating to your profile page and clicking on the streak/quest button.
+You can find all other available quests by navigating to your profile page and clicking on the streak button.
 
 ### What types of questions can I use Manifold to answer?
 
 There are loads of different ways you can use our markets to answer your questions. Most of our users tend to interact with a whole mixture of markets.
 
-Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not comply with the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not comply with the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-39739056690b46f49b3573378eb484eb)
 
 Here are some of the top use cases for our markets, with corresponding examples.
 
@@ -91,23 +79,28 @@ Here are some of the top use cases for our markets, with corresponding examples.
 
 - Fun wagers with friends about your interests or personal life.
 - Recommendations - Similar to asking for suggestions from another site but with Manifold users are incentivized to give higher quality answers as they can profit from being helpful.
-- Accountability/goals - Betting YES on your own market and allowing people to bet NO to motivate you.
+  - [What book will I enjoy the most?](https://manifold.markets/dreev/which-book-will-i-like-best)
+  - [What skincare treatment will work best for me?](https://manifold.markets/DavidChee/what-treatmentactive-ingredient-wil)
+- Accountability/goals
+  - Betting YES on your [own market](https://manifold.markets/SneakySly/motivation-market-will-i-get-my-per) and allowing people to bet NO to motivate you.
 
 #### News & current events
 
-- [News/Current events](https://manifold.markets/news), [Natural Disasters](https://manifold.markets/browse?topic=natural-disasters)
-- [Politics](https://manifold.markets/browse?topic=politics)
-- [Sports](https://manifold.markets/browse?topic=sports)
-- [Economics](https://manifold.markets/browse?topic=economics), [stocks](https://manifold.markets/browse?topic=stocks), [crypto](https://manifold.markets/browse?topic=crypto)
-- [Public figures](https://manifold.markets/browse?topic=celebrities)
-- Social issues; e.g. [Legal Outcomes](https://manifold.markets/browse?topic=law), [AI Risk](https://manifold.markets/browse?topic=ai-risk) / [AI Safety](https://manifold.markets/browse?topic=ai-safety)
+- [News/Current events](https://manifold.markets/news), [Natural Disasters](https://manifold.markets/group/natural-disasters?r=R2Vu)
+- [Politics](https://manifold.markets/group/politics-default)
+- [Sports](https://manifold.markets/group/sports-default)
+- [Economics](https://manifold.markets/group/economics-default), [stocks](https://manifold.markets/group/stocks?r=R2Vu), [crypto](https://manifold.markets/group/crypto-prices)
+- [Public figures](https://manifold.markets/group/celebrities?r=R2Vu)
+- Social issues; e.g.[Legal Outcomes](https://manifold.markets/group/law-order?r=R2Vu), [AI Risk](https://manifold.markets/group/ai-risk?r=R2Vu) / [AI Safety](https://manifold.markets/group/ai-safety?r=R2Vu),
 
 #### Impactful causes / Research
 
-- Science markets predicting the usefulness of potential trials and research papers
-- Predicting if research is legitimate
-- Effectiveness of current policies
-- Effective Altruism topics including artificial intelligence and charities
+- [Science markets predicting the usefulness of potential trials and research papers](https://manifold.markets/ResearchBet/will-this-preprint-paper-neurologic)
+- [Predicting if research is legitimate](https://manifold.markets/QuantumObserver/will-the-lk99-room-temp-ambient-pre?r=R2Vu)
+- [Effectiveness of current policies](https://manifold.markets/FinnMacken81bd/are-san-franciscos-existing-initiat)
+- Effective Altruism
+  - [Artificial intelligence](https://manifold.markets/JamesDillard/will-ai-wipe-out-humanity-before-th)
+  - [Charities](https://manifold.markets/Tetraspace/what-will-the-charity-with-the-most)
 - Debate topics
 
 #### Project management
@@ -115,17 +108,10 @@ Here are some of the top use cases for our markets, with corresponding examples.
 Can be used for personal projects, startups, or even large intra-company processes.
 
 - Predicting the success of your projects and using that knowledge to influence decisions.
-- Community feedback on whether you should add a new feature.
-
-### What types of markets can I create?
-
-Manifold supports several market types:
-
-- **Yes/No (Binary)** - Simple questions with Yes or No outcomes.
-- **Multiple Choice** - Questions with multiple possible answers. Can be configured so answers sum to 100% or are independent.
-- **Numeric** - Predict a number within a range.
-- **Polls** - Gather opinions without betting (single choice, multi-select, or ranked choice).
-- **Bounty Questions** - Offer mana rewards for the best answers.
+  - [Manifold's biggest growth vector](https://manifold.markets/SG/what-will-manifolds-biggest-growth)
+  - [Beeminder](https://manifold.markets/dreev/which-beeminder-featureproject-will)
+- Community feedback on whether you should add a new feature
+  - [How will Manifold improve our commenting?](https://manifold.markets/ManifoldMarkets/how-will-manifold-markets-integrate)
 
 ### What are some best practices when creating markets?
 
@@ -136,19 +122,19 @@ There are several things you can do to create high-quality, impactful markets:
 - **Have a resolution date** -
   Markets have a set closing date, but sometimes the date you intend to resolve the market is less obvious. If necessary, make sure you include an estimated time of resolution in the description.
 - **Write an engaging description** -
-  Sometimes simple markets are the best. In other cases a structured description including any context or background information can be extremely valuable. You can even add images and other embeds.
+  Sometimes simple markets are the best. In other cases a structured description including any context or background information can be extremely valuable. You can even add images and other embeds. See [Rich text editor](https://www.notion.so/Rich-text-editor-33f1df0a105649468a3cd5afdc80ebbc) to see all the fancy formatting you can do!
 - **Add it to a topic** -
-  Topics are the primary way users filter for relevant markets. Please be careful to only add it to relevant topics. Try to add it to specific topics instead of really general ones. Also, consider making your own topics and inviting friends/interested communities to them from other sites!
+  Topics, sometimes referred to as Groups, are the primary way users filter for relevant markets. Please be careful to only add it to relevant groups. Try to add it to specific groups instead of really general ones. Also, consider making your own groups and inviting friends/interested communities to them from other sites!
 - **Write your opinion** -
   Add a comment with your own prediction and explain (with links and sources) supporting it. This can help get the ball rolling and encourage others to interact with your comment with their own views.
 - **Share your market!** -
   Post your market to other social networks that have communities that would be interested in your question.
 - **Subsidise your market!** -
-  Add mana to the [liquidity pool](#what-is-the-liquidity-pool) or set up some limit orders to increase the potential profit traders can make.
+  Add mana to the [liquidity pool](https://manifoldmarkets.notion.site/What-is-the-liquidity-pool-1286559113b44986b9ac01ad4830936f?pvs=4) or set up some limit orders to increase the potential profit traders can make.
 
 ### How do I become a good trader?
 
-A good first step is to have a firm understanding of what various numbers mean and how to track your portfolio.
+A good first step is to have a firm understanding of what various numbers mean and understanding how to [track your portfolio](https://manifoldmarkets.notion.site/How-can-I-track-my-profit-and-losses-3512c209f47e4a1a8fb678c1ff2a5420?pvs=4).
 
 Here are some other tips to get you started:
 
@@ -157,9 +143,9 @@ Here are some other tips to get you started:
 - **React to news** -
   Manifold Markets are dynamic, and ongoing events can drastically affect what the probability should look like. There is a lot of mana to be made by being first to act as new information is made public.
 - **Buy low, sell high** -
-  Similar to a stock market, probabilities can be overvalued and undervalued. If you bet (buy shares) at one end of the spectrum and subsequently other users buy even more shares of that same type, the value of your own shares will increase. Sometimes it will be most profitable to wait for the market to resolve but often it can be wise to sell your shares and take the immediate profits. This can also be a great way to free up mana if you are lacking funds and see a better opportunity.
+  Similar to a stock market, probabilities can be overvalued and undervalued. If you bet (buy shares) at one end of the spectrum and subsequently other users buy even more shares of that same type, the value of your own shares will increase. Sometimes it will be most profitable to wait for the market to resolve but often it can be wise to sell your shares and take the immediate profits. This can also be a great way to free up Mana if you are lacking funds and see a better opportunity.
 - **Create innovative answers** -
-  Certain multiple choice markets provide room for creativity! The answers themselves can often affect the outcome based on how compelling they are. Being the first to bet on an answer generally gives the best odds!
+  Certain free response markets provide room for creativity! The answers themselves can often affect the outcome based on how compelling they are. Being the first to bet on an answer generally gives the best odds!
 - [**Sort by close date**](https://manifold.markets/browse?s=close-date) -
   This will show you the markets that will close the soonest. Most of these markets will tend to have converged to one extreme leaving not much room for profit. However, you will find some that haven't. These are great to bet on as you won't have to wait a long time for a potential return on investment.
 - [**Sort by newest**](https://manifold.markets/browse?s=newest) -
@@ -188,7 +174,7 @@ If a market closes and there won't be a resolution in the foreseeable future, co
 
 - For Yes/No markets it is generally recommended to resolve fully to one outcome. Only resolve to a particular probability (PARTIAL) if you have a good justification for it.
 - Resolving to PARTIAL allows you to choose a specific % if you think the outcome lies between Yes and No.
-- When resolving multiple choice markets, you can resolve fully to one answer, or select multiple and the % of the winnings you want to go towards each type of share.
+- When resolving Free response and multiple choice markets, you can resolve fully to one answer, or select multiple and the % of the winnings you want to go towards each type of share.
 
 ### What does resolving to N/A do?
 
@@ -200,7 +186,7 @@ This means that:
 - Any user who made a profit by selling shares before resolution will have that mana subtracted from their balance. This could lead to a negative balance in some cases.
 - All liquidity providers will have their mana returned to them, including the initial amount it cost to make the market.
 
-Don't abuse resolving to N/A as it inflicts an opportunity cost on bettors.
+Don't abuse resolving to N/A as it inflicts an opportunity cost on bettors. Fees paid to manifold are deducted from any refunds granted during the N/A cancellation process. Fees paid to the market creator are refunded to traders.
 
 ### Closed versus resolved markets
 
@@ -217,7 +203,7 @@ Don't abuse resolving to N/A as it inflicts an opportunity cost on bettors.
 
 - Resolution criteria for an outcome have been met.
 - Creator chooses the correct answer.
-- Winners are paid out and loans are deducted.
+- Winners are paid out and loans are taken back.
 
 ## Market mechanics
 
@@ -243,7 +229,7 @@ The number of shares you own determines your pay-out when the market resolves. E
 
 **Example:** In a YES / NO market, if you own 300 YES shares, you will earn M300 if the market resolves YES and M0 if the market resolves NO.
 
-We do a calculation behind the scenes to determine what the price of each share is. The greater the probability of the outcome, the more expensive that type of share will be. So if the market probability is 3% then the NO shares will be super expensive (giving you a bad pay-out), but YES shares will be cheap.
+We do a calculation behind the scenes to determine what the price of each share is. The greater the probability of the outcome, the more expensive that type of share will be. So if the market probability is 3% then the NO shares will be super expensive (giving you a bad pay-out), but yes shares will be cheap.
 
 Due to the price of shares fluctuating with the probability you can potentially "buy low and sell high" similar to how you might on a stock market. Selling shares will always give you less value than waiting for a correct resolution, but may be less risky.
 
@@ -258,6 +244,7 @@ Limit orders allow you to place a bet at a specific probability, rather than jus
 
 #### Advantages of limit orders
 
+- When a limit order is filled by another user, the person filling or "taking" the order pays all of the trading fees.
 - Choose the exact probability at which you make a bet
 - Can make large bets in markets with low liquidity (if you do this with a quick bet you will move the probability a lot and cause the average price of your shares to be expensive)
 - Provide an opportunity for other users to bet against
@@ -265,9 +252,9 @@ Limit orders allow you to place a bet at a specific probability, rather than jus
 
 #### **EXAMPLE**
 
-Imagine you think there is a 30% chance or less that humans go to Mars before 2030. The market probability is currently below or at 30%. In this situation, you could set a limit order to bet NO at 30%. Whenever another user comes along to bet an amount on YES that would push it above 30% they will fulfil your order. In effect, you automatically immediately buy the market back down to 30% after they try to move the probability above it. If you place a very large bet, multiple users could bet YES against you until eventually the max amount of mana you set for the order is fulfilled.
+Imagine you think there is a 30% chance or less that humans go to Mars before 2030. The market probability is currently below or at 30%. In this situation, you could set a limit order to bet NO at 30%. Whenever another user comes along to bet an amount on yes that would push it above 30% they will fulfil your order. In effect, you automatically immediately buy the market back down to 30% after they try to move the probability above it. If you place a very large bet, multiple users could bet yes against you until eventually the max amount of Mana you set for the order is fulfilled.
 
-Maybe you are confident the chance lies in the range of 25%-30%. In this case, you could also set two limit orders. One to bet YES at 25% and one to bet NO at 30%. When doing so, the amount bet needs to reflect the payout at each different % chance. If buying YES shares at 25%, an order for M100 will buy 400 shares (your max payout), which would require a limit order of M280 NO at 30% to sell an equal 400 shares.
+Maybe you are confident the chance lies in the range of 25%-30%. In this case, you could also set two limit orders. One to bet Yes at 25% and one to bet No at 30%. When doing so, the amount bet needs to reflect the payout at each different %chance. If buying YES shares at 25%, an order for M100 will buy 400 shares (your max payout), which would require a limit order of M280 NO at 30% to sell an equal 400 shares.
 
 1. Place your limit order.
 2. View your open orders.
@@ -292,39 +279,27 @@ The liquidity in a market is the amount of capital available for traders to trad
 
 - You should always expect to lose mana from subsidising a market.
 - Liquidity providers cannot withdraw the mana they have spent to subsidise a market, however, they will receive back some of their mana when the market resolves, if there's any left over.
-- The amount of mana you will get back depends on how much the probability has moved from when you subsidised the market. The more it has moved, the less you will get back.
+- The amount of mana you will get back depends on how much the probability has moved from when you subsidized the market. The more it has moved, the less you will get back.
 
 ### What are loans?
 
-Loans allow you to borrow mana against your existing positions, freeing up capital to make additional trades without waiting for markets to resolve.
+Here's how they work:
 
-#### Types of loans
+Every day at midnight PT, you'd get 1.5% of your total bet amount back as a loan. If your bet has depreciated in value, you will get 1.5% of the lower value. You can see how much your last loan was by navigating to your Notifications and then Balance changes tab.
 
-**Free loans:**
+- **Do I have to pay back a loan?**
+  Yes, but don't worry! You will automatically pay back loans when the market resolves or you sell your bet. If this causes your balance to go negative then you will have to free up some mana before you can start trading again.
 
-- Claimed daily via the golden chest icon on the homepage.
-- Interest-free forever.
-- Available to all users.
-- Amount is based on a percentage of your position values.
+- **What is the purpose of loans?**
+  Loans make it worthwhile to bet on markets that won't resolve for months or years because your investment won't be locked up as long.
 
-**Margin loans:**
+- **Can my account be negative because of loans?**
 
-- Available to Manifold members (Plus, Pro, or Premium subscribers).
-- Accrue 0.03% interest per day.
-- Can request specific amounts through the loans modal.
-- Daily limit is 10% of your net worth.
-- Maximum total loan is 100% of your net worth.
+  It's possible, but very rare.
 
-#### How do loans work?
-
-- Loans are distributed proportionally across your unresolved positions.
-- When a market resolves or you sell a position, loan amounts are automatically deducted from your proceeds.
-- To manually repay loans, use the loans modal accessible from your profile.
-- Repayments go to margin loans first (to stop interest accruing), then to free loans.
-
-#### Can my account go negative because of loans?
-
-It's possible but rare. If your positions lose significant value and you have outstanding loans, your balance could become negative when markets resolve.
+- **What is an example?**
+  If you bet M1000 today, you will get M15 back tomorrow.
+  Previous loans count against your total bet amount. So on the next day, you would get back 1.5% of M(1000 - 15) = M14.775.
 
 ## Misc
 
@@ -385,4 +360,4 @@ Manifold Markets believes users should have autonomy over their own markets as m
 
 ### Can you play Manifold Markets for free?
 
-Yes, Manifold is a free to play social prediction game. All users start with M1000 and can earn more through trading, quests, and referrals. Users may choose to buy additional mana, although it is not necessary.
+Yes, Manifold is a free to play social prediction game. Users may choose to participate in mana markets for free. Users may choose to buy additional mana, although it is not necessary.

@@ -61,6 +61,10 @@ import { closeMarket } from './close-market'
 import { convertCashToMana } from './convert-cash-to-mana'
 import { convertSpiceToMana } from './convert-sp-to-mana'
 import { createAnswerCPMM } from './create-answer-cpmm'
+import { createPendingAnswer } from './create-pending-answer'
+import { getPendingAnswers } from './get-pending-answers'
+import { approvePendingAnswer } from './approve-pending-answer'
+import { denyPendingAnswer } from './deny-pending-answer'
 import { createComment } from './create-comment'
 import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
@@ -199,7 +203,6 @@ import { getPosts } from './get-posts'
 import { getReactions } from './get-reactions'
 import { getSeasonInfo } from './get-season-info'
 import { getShopItems } from './get-shop-items'
-import { getShopStats } from './get-shop-stats'
 import { getSiteActivity } from './get-site-activity'
 import { getSportsGames } from './get-sports-games'
 import { getSuspectedSpamComments } from './get-suspected-spam-comments'
@@ -226,9 +229,7 @@ import {
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { shopPurchase } from './shop-purchase'
-import { shopResetAll } from './shop-reset-all'
 import { shopToggle } from './shop-toggle'
-import { shopCancelSubscription } from './shop-cancel-subscription'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
 
@@ -294,6 +295,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/add-bounty': addBounty,
   'market/:contractId/award-bounty': awardBounty,
   'market/:contractId/answer': createAnswerCPMM,
+  'market/:contractId/pending-answer': createPendingAnswer,
+  'market/:contractId/pending-answers': getPendingAnswers,
+  'pending-answer/:id/approve': approvePendingAnswer,
+  'pending-answer/:id/deny': denyPendingAnswer,
   'market/:contractId/block': blockMarket,
   'market/:contractId/unblock': unblockMarket,
   'get-user-limit-orders-with-contracts': getUserLimitOrdersWithContracts,
@@ -458,11 +463,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
-  'get-shop-stats': getShopStats,
   'shop-purchase': shopPurchase,
-  'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
-  'shop-cancel-subscription': shopCancelSubscription,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,
 } as const

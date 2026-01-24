@@ -512,9 +512,6 @@ const TxnBalanceChangeRow = (props: {
     UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
     ADMIN_REWARD:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
-    MEMBERSHIP_PAYMENT:
-      'bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-200',
-    SHOP_PURCHASE: 'bg-gradient-to-br from-purple-400 to-pink-300',
   }
 
   return (
@@ -565,10 +562,6 @@ const TxnBalanceChangeRow = (props: {
               '🏦'
             ) : type === 'MANA_PURCHASE' ? (
               '🤑'
-            ) : type === 'MEMBERSHIP_PAYMENT' ? (
-              '⭐'
-            ) : type === 'SHOP_PURCHASE' ? (
-              '🛍️'
             ) : [
                 'UNIQUE_BETTOR_BONUS',
                 'CASH_BONUS',
@@ -724,10 +717,6 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Push notification bonus'
     case 'CHARITY_GIVEAWAY_TICKET':
       return 'Charity giveaway tickets'
-    case 'MEMBERSHIP_PAYMENT':
-      return change.description ?? 'Membership'
-    case 'SHOP_PURCHASE':
-      return change.description ?? 'Shop purchase'
     default:
       return type
   }
@@ -791,10 +780,6 @@ const txnTypeToDescription = (txnCategory: string) => {
       return ''
     case 'MARGIN_LOAN':
       return ''
-    case 'MEMBERSHIP_PAYMENT':
-      return 'Membership'
-    case 'SHOP_PURCHASE':
-      return 'Shop'
     default:
       return null
   }

@@ -39,8 +39,6 @@ export function FeedLiquidity(props: {
           avatarUrl={user.avatarUrl}
           username={user.username}
           size={avatarSize}
-          entitlements={user.entitlements}
-          displayContext="feed"
         />
       ) : showUser && bettor ? (
         <UserHovercard userId={userId}>
@@ -48,8 +46,6 @@ export function FeedLiquidity(props: {
             avatarUrl={bettor.avatarUrl}
             username={bettor.username}
             size={avatarSize}
-            entitlements={bettor.entitlements}
-            displayContext="feed"
           />
         </UserHovercard>
       ) : (

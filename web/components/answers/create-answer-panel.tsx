@@ -66,6 +66,9 @@ export function SearchCreateAnswerPanel(props: {
   } = props
 
   const canAddAnswer = props.canAddAnswer
+  const addAnswersMode =
+    'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
+  const requiresApproval = addAnswersMode === 'APPROVAL_REQUIRED'
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAddingAnswer, setIsAddingAnswer] = useState(false)
@@ -77,10 +80,18 @@ export function SearchCreateAnswerPanel(props: {
       setIsSubmitting(true)
 
       try {
-        await api('market/:contractId/answer', {
-          contractId: contract.id,
-          text,
-        })
+        if (requiresApproval) {
+          await api('market/:contractId/pending-answer', {
+            contractId: contract.id,
+            text,
+          })
+          toast.success('Answer submitted for approval')
+        } else {
+          await api('market/:contractId/answer', {
+            contractId: contract.id,
+            text,
+          })
+        }
         setText('')
       } catch (e: any) {
         toast.error(e?.message || 'Error adding answer')
@@ -163,17 +174,21 @@ export function SearchCreateAnswerPanel(props: {
                   loading={isSubmitting}
                   onClick={withTracking(handleAddAnswerClick, 'submit answer')}
                 >
-                  <span className="">Add</span>
+                  <span className="">{requiresApproval ? 'Submit' : 'Add'}</span>
                   {text ? (
-                    <span className="text-ink-200 dark:text-ink-800 ml-1">
-                      <MoneyDisplay
-                        amount={getAnswerCostFromLiquidity(
-                          contract.totalLiquidity,
-                          contract.answers.length
-                        )}
-                        isCashContract={isCashContract}
-                      />
-                    </span>
+                    requiresApproval ? (
+                      <span className="ml-1">for approval</span>
+                    ) : (
+                      <span className="text-ink-200 dark:text-ink-800 ml-1">
+                        <MoneyDisplay
+                          amount={getAnswerCostFromLiquidity(
+                            contract.totalLiquidity,
+                            contract.answers.length
+                          )}
+                          isCashContract={isCashContract}
+                        />
+                      </span>
+                    )
                   ) : (
                     <span className="ml-1">answer</span>
                   )}

@@ -6,6 +6,8 @@ import {
   MVP,
   ENV_CONFIG,
   MOD_IDS,
+  PARTNER_USER_IDS,
+  INSTITUTIONAL_PARTNER_USER_IDS,
   BEING_DEAD_HEADS,
 } from 'common/envs/constants'
 import { Tooltip } from './tooltip'
@@ -18,20 +20,13 @@ import { linkClass } from './site-link'
 import Foldy from 'web/public/logo.svg'
 import { Col } from 'web/components/layout/col'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
+import { LuCrown } from 'react-icons/lu'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
-import { FaStar } from 'react-icons/fa'
+import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User, UserBan } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
-import { UserEntitlement } from 'common/shop/types'
-import { userHasSupporterBadge } from 'common/shop/items'
-import { getUserSupporterTier, SUPPORTER_TIERS } from 'common/supporter-config'
-import {
-  DisplayContext,
-  shouldShowBadges,
-  shouldAnimateBadge,
-} from 'common/shop/display-config'
 import { getActiveBlockingBans, getBanTypeDescription } from 'common/ban-utils'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -54,9 +49,8 @@ export function UserAvatarAndBadge(props: {
   noLink?: boolean
   className?: string
   short?: boolean
-  displayContext?: DisplayContext
 }) {
-  const { noLink, className, short, displayContext } = props
+  const { noLink, className, short } = props
   const user = useDisplayUserById(props.user.id) ?? props.user
   const { username, avatarUrl } = user
   return (
@@ -67,19 +61,8 @@ export function UserAvatarAndBadge(props: {
           username={username}
           size={'sm'}
           noLink={noLink}
-          entitlements={
-            'entitlements' in user
-              ? (user.entitlements as UserEntitlement[] | undefined)
-              : undefined
-          }
-          displayContext={displayContext}
         />
-        <UserLink
-          short={short}
-          user={user}
-          noLink={noLink}
-          displayContext={displayContext}
-        />
+        <UserLink short={short} user={user} noLink={noLink} />
       </Row>
     </UserHovercard>
   )
@@ -89,9 +72,8 @@ export function UserAvatar(props: {
   noLink?: boolean
   className?: string
   size?: AvatarSizeType
-  displayContext?: DisplayContext
 }) {
-  const { noLink, className, size, displayContext } = props
+  const { noLink, className, size } = props
   const user = useDisplayUserById(props.user.id) ?? props.user
   const { username, avatarUrl } = user
   return (
@@ -102,12 +84,6 @@ export function UserAvatar(props: {
           username={username}
           size={size}
           noLink={noLink}
-          entitlements={
-            'entitlements' in user
-              ? (user.entitlements as UserEntitlement[] | undefined)
-              : undefined
-          }
-          displayContext={displayContext}
         />
       </Row>
     </UserHovercard>
@@ -116,13 +92,7 @@ export function UserAvatar(props: {
 
 export function UserLink(props: {
   user?:
-    | {
-        id: string
-        name?: string
-        username?: string
-        createdTime?: number
-        entitlements?: UserEntitlement[]
-      }
+    | { id: string; name?: string; username?: string; createdTime?: number }
     | undefined
     | null
   className?: string
@@ -131,7 +101,6 @@ export function UserLink(props: {
   noLink?: boolean
   hideBadge?: boolean
   marketCreator?: boolean
-  displayContext?: DisplayContext
 }) {
   const {
     user,
@@ -141,7 +110,6 @@ export function UserLink(props: {
     noLink,
     hideBadge,
     marketCreator,
-    displayContext,
   } = props
 
   if (!user || !user.name || !user.username) {
@@ -151,7 +119,7 @@ export function UserLink(props: {
     )
   }
 
-  const { id, name, username, createdTime, entitlements } = user
+  const { id, name, username, createdTime } = user
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name, maxLength) : name
   const children = (
@@ -163,8 +131,6 @@ export function UserLink(props: {
           username={username}
           fresh={fresh}
           marketCreator={marketCreator}
-          entitlements={entitlements}
-          displayContext={displayContext}
         />
       )}
     </span>
@@ -277,32 +243,8 @@ export function UserBadge(props: {
   username: string
   fresh?: boolean
   marketCreator?: boolean
-  entitlements?: UserEntitlement[]
-  // Filter supporter badge based on display context
-  // REQUIRED for badge to show - if not provided, no badge displayed
-  displayContext?: DisplayContext
 }) {
-  const {
-    userId,
-    username,
-    fresh,
-    marketCreator,
-    entitlements,
-    displayContext,
-  } = props
-
-  // Check if we should show supporter badge in this context
-  // FAIL-SAFE: If no displayContext provided, show NO supporter badge
-  // This ensures the config controls everything - add displayContext to enable
-  const showSupporterBadge = displayContext
-    ? shouldShowBadges(displayContext) && userHasSupporterBadge(entitlements)
-    : false
-
-  // Get animation setting from config
-  const animateSupporterBadge = displayContext
-    ? shouldAnimateBadge(displayContext)
-    : false
-
+  const { userId, username, fresh, marketCreator } = props
   const badges = []
   if (BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
@@ -319,17 +261,14 @@ export function UserBadge(props: {
   if (VERIFIED_USERNAMES.includes(username)) {
     badges.push(<VerifiedBadge key="check" />)
   }
+  if (PARTNER_USER_IDS.includes(userId)) {
+    badges.push(<PartnerBadge key="partner" />)
+  }
+  if (INSTITUTIONAL_PARTNER_USER_IDS.includes(userId)) {
+    badges.push(<InstitutionalPartnerBadge key="institutional-partner" />)
+  }
   if (BEING_DEAD_HEADS.includes(userId)) {
     badges.push(<BeingDeadHead key="being-dead" />)
-  }
-  if (showSupporterBadge) {
-    badges.push(
-      <SupporterBadge
-        key="supporter"
-        entitlements={entitlements}
-        animate={animateSupporterBadge}
-      />
-    )
   }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
@@ -383,6 +322,25 @@ function VerifiedBadge() {
   )
 }
 
+// Show a crown for our partners
+function PartnerBadge() {
+  return (
+    <Tooltip text="Partner" placement="right">
+      <LuCrown className="text-primary-700 h-3.5 w-3.5" aria-hidden />
+    </Tooltip>
+  )
+}
+function InstitutionalPartnerBadge() {
+  return (
+    <Tooltip text="Institutional Partner" placement="right">
+      <HiOutlineBuildingLibrary
+        className="text-primary-700 h-3.5 w-3.5"
+        aria-hidden
+      />
+    </Tooltip>
+  )
+}
+
 function BeingDeadHead() {
   return (
     <Tooltip text="Being Dead head (the band)" placement="right">
@@ -408,65 +366,14 @@ function MarketCreatorBadge() {
   )
 }
 
-// Show a star for Manifold Supporters with tier-appropriate color
-// Note: Premium animation only appears on hovercard, not inline
-function SupporterBadge({
-  entitlements,
-  animate,
-}: {
-  entitlements?: UserEntitlement[]
-  animate?: boolean
-}) {
-  const tier = getUserSupporterTier(entitlements)
-  if (!tier) return null
-
-  const tierConfig = SUPPORTER_TIERS[tier]
-  const showAnimation = animate && tier === 'premium'
-
-  return (
-    <Tooltip text={`Manifold ${tierConfig.name}`} placement="right">
-      <span className="relative inline-flex translate-y-[1px] items-center">
-        <FaStar
-          className={clsx(
-            'h-4 w-4',
-            tier === 'basic' && 'text-gray-400',
-            tier === 'plus' && 'text-indigo-500',
-            tier === 'premium' && 'text-amber-500'
-          )}
-          aria-hidden="true"
-          style={
-            tier === 'premium'
-              ? { filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.5))' }
-              : undefined
-          }
-        />
-        {showAnimation && (
-          <FaStar
-            className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-50 blur-[1px]"
-            aria-hidden="true"
-          />
-        )}
-      </span>
-    </Tooltip>
-  )
-}
-
 export const StackedUserNames = (props: {
   user: User
   followsYou?: boolean
   className?: string
   usernameClassName?: string
-  displayContext?: DisplayContext
   bans?: UserBan[]
 }) => {
-  const {
-    user,
-    followsYou,
-    usernameClassName,
-    className,
-    displayContext,
-    bans,
-  } = props
+  const { user, followsYou, usernameClassName, className, bans } = props
   // Check for any active bans - use granular bans if available, else fall back to legacy field
   const activeBanTypes = bans ? getActiveBlockingBans(bans) : []
   const hasAnyBan = activeBanTypes.length > 0 || !!user.isBannedFromPosting
@@ -479,9 +386,7 @@ export const StackedUserNames = (props: {
           <UserBadge
             userId={user.id}
             username={user.username}
-            fresh={user.createdTime ? isFresh(user.createdTime) : false}
-            entitlements={user.entitlements}
-            displayContext={displayContext}
+            fresh={isFresh(user.createdTime)}
           />
         }
         {user.userDeleted ? (

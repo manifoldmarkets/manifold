@@ -50,7 +50,6 @@ export type notification_preferences = {
   manifest_airdrop: notification_destination_types[]
   extra_purchased_mana: notification_destination_types[]
   payment_status: notification_destination_types[]
-  membership_subscription: notification_destination_types[]
 
   // Leagues
   league_changed: notification_destination_types[]
@@ -151,7 +150,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     manifest_airdrop: constructPref(true, false, false),
     extra_purchased_mana: constructPref(true, false, false),
     payment_status: constructPref(true, false, false),
-    membership_subscription: constructPref(true, true, true),
 
     // Leagues
     league_changed: constructPref(true, false, false),

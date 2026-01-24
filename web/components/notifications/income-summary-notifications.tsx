@@ -1,5 +1,4 @@
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { getBenefit } from 'common/supporter-config'
 import {
   BettingStreakData,
   getSourceUrl,
@@ -296,11 +295,6 @@ export function BettingStreakBonusIncomeNotification(props: {
     bonusAmount,
   } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
-
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(user?.entitlements, 'questMultiplier')
-  const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
-
   return (
     <NotificationFrame
       notification={notification}
@@ -311,7 +305,11 @@ export function BettingStreakBonusIncomeNotification(props: {
         noBonus && user && !humanish(user) ? (
           <span>
             Verify your phone number to get up to{' '}
-            <TokenNumber amount={maxBonus} className={'font-bold'} isInline />{' '}
+            <TokenNumber
+              amount={BETTING_STREAK_BONUS_MAX}
+              className={'font-bold'}
+              isInline
+            />{' '}
             per streak day!
           </span>
         ) : (
@@ -347,7 +345,9 @@ export function BettingStreakBonusIncomeNotification(props: {
               coinType={'mana'}
             />
           )}{' '}
-          {bonusAmount && bonusAmount >= maxBonus && <span>(max) </span>}
+          {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
+            <span>(max) </span>
+          )}
           Bonus for your {sourceText && <span>🔥 {streakInDays} day</span>}{' '}
           <PrimaryNotificationLink text="Prediction Streak" />
         </span>
@@ -356,7 +356,6 @@ export function BettingStreakBonusIncomeNotification(props: {
         open={open}
         setOpen={setOpen}
         currentStreak={user?.currentBettingStreak ?? 0}
-        questMultiplier={questMultiplier}
       />
     </NotificationFrame>
   )
@@ -677,7 +676,6 @@ function MultiUserNotificationModal(props: {
                   username={notif.sourceUserUsername}
                   avatarUrl={notif.sourceUserAvatarUrl}
                   size={'sm'}
-                  displayContext="notifications"
                 />
                 <UserLink
                   user={{
@@ -686,7 +684,6 @@ function MultiUserNotificationModal(props: {
                     name: notif.sourceUserName,
                   }}
                   short={short}
-                  displayContext="notifications"
                 />
                 {notif.data?.bet && notif.data?.outcomeType && (
                   <BettorStatusLabel

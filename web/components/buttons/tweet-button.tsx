@@ -16,14 +16,18 @@ export function TweetButton(props: { tweetText: string; className?: string }) {
 
   return (
     <a
-      className={clsx(buttonClass('sm', 'gray-outline'), 'gap-1.5', className)}
+      className={clsx(
+        buttonClass('lg', 'none'),
+        'border-ink-900 hover:bg-ink-900 hover:text-ink-50 gap-1 border-2',
+        className
+      )}
       href={getTweetHref(tweetText)}
       onClick={trackCallback('share tweet')}
       target="_blank"
       rel="noreferrer"
     >
-      <PiXLogo className="h-4 w-4" />
-      <span>Share</span>
+      <PiXLogo width={15} height={15} />
+      <div>Share</div>
     </a>
   )
 }

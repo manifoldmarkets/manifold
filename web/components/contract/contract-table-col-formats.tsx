@@ -134,11 +134,13 @@ export const liquidityColumn = {
         text={`Total liquidity: ${formatWithToken({
           amount: totalLiquidity,
           token: isCashContract ? 'CASH' : 'M$',
+          short: true,
         })} ${
           hasAnswers
             ? `(per answer: ${formatWithToken({
                 amount: shownLiquidity,
                 token: isCashContract ? 'CASH' : 'M$',
+                short: true,
               })})`
             : ''
         }`}
@@ -162,7 +164,7 @@ export const liquidityColumn = {
       </Tooltip>
     )
   },
-  width: 'sm:w-[40px] w-[90px]',
+  width: 'sm:w-[40px] w-[70px]',
 }
 
 export const actionColumn = {

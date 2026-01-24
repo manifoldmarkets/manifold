@@ -1,14 +1,8 @@
 import { TRADE_TERM } from 'common/envs/constants'
-import {
-  ChartBarIcon,
-  LightBulbIcon,
-  ShieldCheckIcon,
-} from '@heroicons/react/outline'
 import { capitalize } from 'lodash'
 import { AboutManifold } from 'web/components/about-manifold'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { SEO } from 'web/components/SEO'
@@ -49,24 +43,23 @@ export default function AboutPage() {
           </div>
 
           <div>
-            <h2 className={'text-ink-600 mb-4 text-xl'}>Our mission</h2>
-            <Col className="gap-3">
-              <MissionItem
-                icon={<ChartBarIcon className="h-5 w-5" />}
-                text="Provide the most accurate, real-time predictions on any event."
-              />
-              <MissionItem
-                icon={<ShieldCheckIcon className="h-5 w-5" />}
-                text="Combat misleading news by incentivising traders to be fast and correct."
-              />
-              <MissionItem
-                icon={<LightBulbIcon className="h-5 w-5" />}
-                text="Help people make more informed decisions by improving their model of the future."
-              />
-            </Col>
+            <h2 className={'text-ink-600 mb-2 text-xl'}>Our mission</h2>
+            <div className="mb-1 text-lg">
+              <li>
+                Provide the most accurate, real-time predictions on any event.
+              </li>
+              <li>
+                Combat misleading news by incentivising traders to be fast and
+                correct.
+              </li>
+              <li>
+                Help people make more informed decisions by improving their
+                model of the future.
+              </li>
+            </div>
           </div>
 
-          <Socials className="my-2" />
+          <Socials className="mb-2" />
 
           <div>
             <h2 className={'text-ink-600 mb-2 text-xl'}>
@@ -102,15 +95,5 @@ export default function AboutPage() {
         </Col>
       </Col>
     </Page>
-  )
-}
-
-function MissionItem(props: { icon: React.ReactNode; text: string }) {
-  const { icon, text } = props
-  return (
-    <Row className="items-start gap-3">
-      <div className="text-primary-600 mt-0.5 flex-shrink-0">{icon}</div>
-      <span className="text-ink-800 text-lg">{text}</span>
-    </Row>
   )
 }

@@ -103,7 +103,7 @@ export const createUserMain = async (
     const userData = {
       id: userId,
       avatarUrl,
-      streakForgiveness: 0,
+      streakForgiveness: 1,
       shouldShowWelcome: true,
       creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
       isBannedFromPosting: Boolean(

@@ -33,8 +33,6 @@ import {
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
-import { getBenefit, SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { Answer } from 'common/answer'
 import {
@@ -290,34 +288,15 @@ const payBettingStreak = async (
       }
     }
 
-    // Fetch user's supporter entitlements for bonus multiplier
-    const supporterEntitlementRows = await tx.manyOrNone(
-      `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
-       WHERE user_id = $1
-       AND entitlement_id = ANY($2)
-       AND enabled = true
-       AND (expires_time IS NULL OR expires_time > NOW())`,
-      [oldUser.id, SUPPORTER_ENTITLEMENT_IDS]
-    )
-
-    // Convert to UserEntitlement format for getBenefit
-    const entitlements = supporterEntitlementRows.map(convertEntitlement)
-
-    // Get tier-specific quest multiplier (1x for non-supporters)
-    const questMultiplier = getBenefit(entitlements, 'questMultiplier')
-
-    // Send them the bonus times their streak, with supporter multiplier
-    const baseBonus = Math.min(
+    // Send them the bonus times their streak
+    const bonusAmount = Math.min(
       BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
       BETTING_STREAK_BONUS_MAX
     )
-    const bonusAmount = Math.floor(baseBonus * questMultiplier)
 
     const bonusTxnDetails = {
       currentBettingStreak: newBettingStreak,
       contractId: contract.id,
-      supporterBonus: questMultiplier > 1,
-      questMultiplier,
     }
 
     const bonusTxn: Omit<

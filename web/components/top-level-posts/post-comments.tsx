@@ -297,16 +297,14 @@ export function PostCommentItem(props: {
         >
           <div className="text-ink-500 mt-0.5 flex items-center justify-between text-sm">
             <Row className="gap-1">
-              <UserHovercard userId={userId}>
-                <UserLink
-                  user={{
-                    id: userId,
-                    name: userName,
-                    username: userUsername,
-                  }}
-                  className={'text-ink-600 font-semibold '}
-                />
-              </UserHovercard>
+              <UserLink
+                user={{
+                  id: userId,
+                  name: userName,
+                  username: userUsername,
+                }}
+                className={'text-ink-600 font-semibold '}
+              />
             </Row>
             {comment.editedTime && (
               <span className="ml-1   text-sm"> (edited)</span>

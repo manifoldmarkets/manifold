@@ -67,28 +67,23 @@ export const canClaimDailyFreeLoan = (
 
 /**
  * Calculate free loan available for a single position.
- * Free loan = min(X% of payout value, cost basis/invested amount)
- * Rate is tier-based: Free/Plus=1%, Pro=2%, Premium=3%
+ * Free loan = min(1% of payout value, cost basis/invested amount)
  */
 export const calculatePositionFreeLoan = (
   positionPayout: number,
-  invested: number,
-  freeLoanRate: number = FREE_LOAN_POSITION_PERCENT
+  invested: number
 ): number => {
   if (positionPayout <= 0 || invested <= 0) return 0
-  return Math.min(positionPayout * freeLoanRate, invested)
+  return Math.min(positionPayout * FREE_LOAN_POSITION_PERCENT, invested)
 }
 
 /**
  * Calculate total free loan available across all eligible positions.
  */
 export const calculateTotalFreeLoanAvailable = (
-  metrics: Array<{ payout: number; invested: number }>,
-  freeLoanRate: number = FREE_LOAN_POSITION_PERCENT
+  metrics: Array<{ payout: number; invested: number }>
 ): number => {
-  return sumBy(metrics, (m) =>
-    calculatePositionFreeLoan(m.payout, m.invested, freeLoanRate)
-  )
+  return sumBy(metrics, (m) => calculatePositionFreeLoan(m.payout, m.invested))
 }
 
 export type MarketLoanEligibility = {
@@ -149,13 +144,12 @@ export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
 export const isUserEligibleForGeneralLoan = (
   portfolio: PortfolioMetrics,
   netWorth: number,
-  requestedAmount: number,
-  maxLoanPercent: number = MAX_LOAN_NET_WORTH_PERCENT
+  requestedAmount: number
 ): boolean => {
   const { loanTotal } = portfolio
   if (netWorth <= 0) return false
 
-  const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
+  const maxLoan = calculateMaxGeneralLoanAmount(netWorth)
   const currentLoan = loanTotal ?? 0
   return currentLoan + requestedAmount <= maxLoan
 }
@@ -244,11 +238,8 @@ export type RepaymentDistribution = {
   interestRepaid: number
 }
 
-export const calculateMaxGeneralLoanAmount = (
-  netWorth: number,
-  maxLoanPercent: number = MAX_LOAN_NET_WORTH_PERCENT
-): number => {
-  return netWorth * maxLoanPercent
+export const calculateMaxGeneralLoanAmount = (netWorth: number): number => {
+  return netWorth * MAX_LOAN_NET_WORTH_PERCENT
 }
 
 export const calculateDailyLoanLimit = (netWorth: number): number => {

@@ -43,7 +43,6 @@ export const getStaticProps = async () => {
       toBankSummary,
       activeUserManaStats,
       topMarketsYesterday,
-      shopStats,
     ] = await Promise.all([
       getStats(),
       api('get-mana-summary-stats', { limitDays: 100 }),
@@ -59,7 +58,6 @@ export const getStaticProps = async () => {
       }),
       api('get-active-user-mana-stats', { limitDays: 100 }),
       api('get-top-markets-yesterday', {}),
-      api('get-shop-stats', { limitDays: 100 }),
     ])
 
     return {
@@ -70,7 +68,6 @@ export const getStaticProps = async () => {
         manaSupplyOverTime,
         activeUserManaStats,
         topMarketsYesterday,
-        shopStats,
         totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
@@ -91,33 +88,6 @@ type TopMarketsYesterdayData = {
   topByViews: { contract: Contract; viewsYesterday: number }[]
 }
 
-type ShopStats = {
-  subscriptionSales: {
-    date: string
-    itemId: string
-    quantity: number
-    revenue: number
-  }[]
-  digitalGoodsSales: {
-    date: string
-    itemId: string
-    quantity: number
-    revenue: number
-  }[]
-  subscribersByTier: {
-    tier: 'basic' | 'plus' | 'premium'
-    count: number
-    autoRenewCount: number
-  }[]
-  subscriptionsOverTime: {
-    date: string
-    basicCount: number
-    plusCount: number
-    premiumCount: number
-    totalCount: number
-  }[]
-}
-
 export default function Analytics(props: {
   stats: rowfor<'daily_stats'>[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
@@ -125,7 +95,6 @@ export default function Analytics(props: {
   toBankSummary: rowfor<'txn_summary_stats'>[]
   activeUserManaStats: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
-  shopStats?: ShopStats
   totalRedeemable: number
 }) {
   const {
@@ -135,7 +104,6 @@ export default function Analytics(props: {
     toBankSummary,
     activeUserManaStats,
     topMarketsYesterday,
-    shopStats,
   } = props
 
   if (!stats) {
@@ -156,7 +124,6 @@ export default function Analytics(props: {
         toBankSummary={toBankSummary}
         activeUserManaStats={activeUserManaStats}
         topMarketsYesterday={topMarketsYesterday}
-        shopStats={shopStats}
       />
     </Page>
   )
@@ -715,331 +682,6 @@ function ManaSalesTab(props: { stats: rowfor<'daily_stats'>[] }) {
   )
 }
 
-function PurchasesTab(props: { shopStats?: ShopStats }) {
-  const { shopStats } = props
-
-  if (!shopStats) {
-    return (
-      <Col>
-        <Title>Shop Purchases</Title>
-        <p className="text-ink-500">No shop data available.</p>
-      </Col>
-    )
-  }
-
-  const {
-    subscriptionSales,
-    digitalGoodsSales,
-    subscribersByTier,
-    subscriptionsOverTime,
-  } = shopStats
-
-  // Calculate total subscribers
-  const totalSubscribers = sumBy(subscribersByTier, 'count')
-  const totalAutoRenew = sumBy(subscribersByTier, 'autoRenewCount')
-
-  // Aggregate subscription sales by date
-  const subSalesByDate = subscriptionSales.reduce((acc, sale) => {
-    if (!acc[sale.date]) {
-      acc[sale.date] = { quantity: 0, revenue: 0 }
-    }
-    acc[sale.date].quantity += sale.quantity
-    acc[sale.date].revenue += sale.revenue
-    return acc
-  }, {} as Record<string, { quantity: number; revenue: number }>)
-  const dailySubSales = Object.entries(subSalesByDate)
-    .map(([date, data]) => ({ x: date, y: data.quantity }))
-    .sort((a, b) => a.x.localeCompare(b.x))
-  const dailySubRevenue = Object.entries(subSalesByDate)
-    .map(([date, data]) => ({ x: date, y: data.revenue / 1000 }))
-    .sort((a, b) => a.x.localeCompare(b.x))
-
-  // Aggregate digital goods sales by date
-  const goodsSalesByDate = digitalGoodsSales.reduce((acc, sale) => {
-    if (!acc[sale.date]) {
-      acc[sale.date] = { quantity: 0, revenue: 0 }
-    }
-    acc[sale.date].quantity += sale.quantity
-    acc[sale.date].revenue += sale.revenue
-    return acc
-  }, {} as Record<string, { quantity: number; revenue: number }>)
-  const dailyGoodsSales = Object.entries(goodsSalesByDate)
-    .map(([date, data]) => ({ x: date, y: data.quantity }))
-    .sort((a, b) => a.x.localeCompare(b.x))
-  const dailyGoodsRevenue = Object.entries(goodsSalesByDate)
-    .map(([date, data]) => ({ x: date, y: data.revenue / 1000 }))
-    .sort((a, b) => a.x.localeCompare(b.x))
-
-  // Calculate total revenue in last 30 days for each category
-  const last30dSubRevenue = subscriptionSales
-    .filter((s) => {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      return new Date(s.date) >= thirtyDaysAgo
-    })
-    .reduce((sum, s) => sum + s.revenue, 0)
-
-  const last30dGoodsRevenue = digitalGoodsSales
-    .filter((s) => {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      return new Date(s.date) >= thirtyDaysAgo
-    })
-    .reduce((sum, s) => sum + s.revenue, 0)
-
-  // Get sales breakdown by item for subscriptions
-  const subItemSales = subscriptionSales.reduce((acc, sale) => {
-    if (!acc[sale.itemId]) {
-      acc[sale.itemId] = { quantity: 0, revenue: 0 }
-    }
-    acc[sale.itemId].quantity += sale.quantity
-    acc[sale.itemId].revenue += sale.revenue
-    return acc
-  }, {} as Record<string, { quantity: number; revenue: number }>)
-  const subItemSalesArray = orderBy(
-    Object.entries(subItemSales).map(([itemId, data]) => ({
-      itemId,
-      ...data,
-    })),
-    'revenue',
-    'desc'
-  )
-
-  // Get sales breakdown by item for digital goods
-  const goodsItemSales = digitalGoodsSales.reduce((acc, sale) => {
-    if (!acc[sale.itemId]) {
-      acc[sale.itemId] = { quantity: 0, revenue: 0 }
-    }
-    acc[sale.itemId].quantity += sale.quantity
-    acc[sale.itemId].revenue += sale.revenue
-    return acc
-  }, {} as Record<string, { quantity: number; revenue: number }>)
-  const goodsItemSalesArray = orderBy(
-    Object.entries(goodsItemSales).map(([itemId, data]) => ({
-      itemId,
-      ...data,
-    })),
-    'revenue',
-    'desc'
-  )
-
-  // Subscription chart data
-  const subscriptionChartData = subscriptionsOverTime.map((d) => ({
-    x: d.date,
-    y: d.totalCount,
-  }))
-
-  const tierNames: Record<string, string> = {
-    basic: 'Plus',
-    plus: 'Pro',
-    premium: 'Premium',
-  }
-
-  const tierColors: Record<string, string> = {
-    basic: 'text-gray-500',
-    plus: 'text-indigo-500',
-    premium: 'text-amber-500',
-  }
-
-  const itemDisplayNames: Record<string, string> = {
-    'supporter-basic': 'Plus Membership',
-    'supporter-plus': 'Pro Membership',
-    'supporter-premium': 'Premium Membership',
-    'streak-forgiveness': 'Streak Freeze',
-    'pampu-skin': 'PAMPU Skin',
-    'avatar-golden-border': 'Golden Glow',
-    'avatar-crown': 'Crown',
-    'avatar-graduation-cap': 'Graduation Cap',
-    'hovercard-glow': 'Profile Border',
-  }
-
-  return (
-    <Col>
-      {/* SUBSCRIPTIONS SECTION */}
-      <Title>Subscriptions</Title>
-
-      <Spacer h={4} />
-      <h3 className="text-lg font-semibold">Current Subscribers</h3>
-      <p className="text-ink-500 mb-4">
-        <b>{totalSubscribers}</b> active subscribers ({totalAutoRenew}{' '}
-        auto-renewing)
-      </p>
-      <div className="mb-8 grid grid-cols-3 gap-4">
-        {(['basic', 'plus', 'premium'] as const).map((tier) => {
-          const tierData = subscribersByTier.find((t) => t.tier === tier)
-          return (
-            <div key={tier} className="bg-canvas-50 rounded-lg p-4 text-center">
-              <div className={`text-2xl font-bold ${tierColors[tier]}`}>
-                {tierData?.count ?? 0}
-              </div>
-              <div className="text-ink-600 text-sm font-medium">
-                {tierNames[tier]}
-              </div>
-              <div className="text-ink-500 text-xs">
-                {tierData?.autoRenewCount ?? 0} auto-renew
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <h3 className="text-lg font-semibold">Subscribers Over Time</h3>
-      <p className="text-ink-500">Active subscribers at the end of each day.</p>
-      <Spacer h={4} />
-      {subscriptionChartData.length > 0 ? (
-        <DailyChart values={subscriptionChartData} />
-      ) : (
-        <p className="text-ink-500">No subscription history available.</p>
-      )}
-
-      <Spacer h={8} />
-      <h3 className="text-lg font-semibold">Subscription Sales</h3>
-      <p className="text-ink-500">
-        <b>{formatMoney(last30dSubRevenue)}</b> from subscriptions in the last
-        30d
-      </p>
-      <Spacer h={4} />
-      <Tabs
-        className="mb-4"
-        defaultIndex={0}
-        tabs={[
-          {
-            title: 'Daily Purchases',
-            content:
-              dailySubSales.length > 0 ? (
-                <DailyChart values={dailySubSales} />
-              ) : (
-                <p className="text-ink-500">
-                  No subscription sales data available.
-                </p>
-              ),
-          },
-          {
-            title: 'Daily Revenue (÷1000)',
-            content:
-              dailySubRevenue.length > 0 ? (
-                <DailyChart values={dailySubRevenue} />
-              ) : (
-                <p className="text-ink-500">No revenue data available.</p>
-              ),
-          },
-        ]}
-      />
-
-      <SalesTable
-        title="Subscription Sales by Tier"
-        items={subItemSalesArray}
-        itemDisplayNames={itemDisplayNames}
-      />
-
-      {/* DIGITAL GOODS SECTION */}
-      <Spacer h={12} />
-      <Title>Digital Goods</Title>
-
-      <Spacer h={4} />
-      <h3 className="text-lg font-semibold">Digital Goods Sales</h3>
-      <p className="text-ink-500">
-        <b>{formatMoney(last30dGoodsRevenue)}</b> from digital goods in the last
-        30d
-      </p>
-      <Spacer h={4} />
-      <Tabs
-        className="mb-4"
-        defaultIndex={0}
-        tabs={[
-          {
-            title: 'Daily Items Sold',
-            content:
-              dailyGoodsSales.length > 0 ? (
-                <DailyChart values={dailyGoodsSales} />
-              ) : (
-                <p className="text-ink-500">
-                  No digital goods sales data available.
-                </p>
-              ),
-          },
-          {
-            title: 'Daily Revenue (÷1000)',
-            content:
-              dailyGoodsRevenue.length > 0 ? (
-                <DailyChart values={dailyGoodsRevenue} />
-              ) : (
-                <p className="text-ink-500">No revenue data available.</p>
-              ),
-          },
-        ]}
-      />
-
-      <SalesTable
-        title="Digital Goods Sales by Item"
-        items={goodsItemSalesArray}
-        itemDisplayNames={itemDisplayNames}
-      />
-    </Col>
-  )
-}
-
-function SalesTable(props: {
-  title: string
-  items: { itemId: string; quantity: number; revenue: number }[]
-  itemDisplayNames: Record<string, string>
-}) {
-  const { title, items, itemDisplayNames } = props
-
-  return (
-    <>
-      <Spacer h={4} />
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <Spacer h={2} />
-      <div className="bg-canvas-50 rounded-lg">
-        <table className="w-full">
-          <thead>
-            <tr className="border-ink-200 border-b">
-              <th className="text-ink-600 px-4 py-2 text-left text-sm font-medium">
-                Item
-              </th>
-              <th className="text-ink-600 px-4 py-2 text-right text-sm font-medium">
-                Quantity
-              </th>
-              <th className="text-ink-600 px-4 py-2 text-right text-sm font-medium">
-                Revenue
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr
-                key={item.itemId}
-                className="border-ink-200 border-b last:border-0"
-              >
-                <td className="px-4 py-2 text-sm">
-                  {itemDisplayNames[item.itemId] ?? item.itemId}
-                </td>
-                <td className="px-4 py-2 text-right text-sm">
-                  {formatWithCommas(item.quantity)}
-                </td>
-                <td className="px-4 py-2 text-right text-sm font-medium text-teal-600">
-                  {formatMoney(item.revenue)}
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td
-                  colSpan={3}
-                  className="text-ink-500 px-4 py-4 text-center text-sm"
-                >
-                  No sales recorded yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
-  )
-}
-
 export function CustomAnalytics(props: {
   stats: rowfor<'daily_stats'>[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
@@ -1047,7 +689,6 @@ export function CustomAnalytics(props: {
   toBankSummary: rowfor<'txn_summary_stats'>[]
   activeUserManaStats?: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
-  shopStats?: ShopStats
 }) {
   const {
     stats,
@@ -1056,7 +697,6 @@ export function CustomAnalytics(props: {
     toBankSummary,
     activeUserManaStats,
     topMarketsYesterday,
-    shopStats,
   } = props
   const [localStats, setLocalStats] = useState(stats)
 
@@ -1090,10 +730,6 @@ export function CustomAnalytics(props: {
           {
             title: 'Mana Sales',
             content: <ManaSalesTab stats={localStats} />,
-          },
-          {
-            title: 'Purchases',
-            content: <PurchasesTab shopStats={shopStats} />,
           },
         ]}
       />

@@ -16,11 +16,6 @@ import {
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
 import { APIError } from './helpers/endpoint'
-import {
-  getMaxLoanNetWorthPercent,
-  SUPPORTER_ENTITLEMENT_IDS,
-} from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
 
 export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   props,
@@ -33,25 +28,6 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   if (!user) {
     throw new APIError(404, `User ${auth.uid} not found`)
   }
-
-  // Fetch supporter entitlements for tier-specific max loan
-  const supporterEntitlementRows = await pg.manyOrNone<{
-    user_id: string
-    entitlement_id: string
-    granted_time: string
-    expires_time: string | null
-    enabled: boolean
-  }>(
-    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
-     FROM user_entitlements
-     WHERE user_id = $1
-     AND entitlement_id = ANY($2)
-     AND enabled = true
-     AND (expires_time IS NULL OR expires_time > NOW())`,
-    [auth.uid, [...SUPPORTER_ENTITLEMENT_IDS]]
-  )
-  const entitlements = supporterEntitlementRows.map(convertEntitlement)
-  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
 
   const contract = await getContract(pg, contractId)
   if (!contract) {
@@ -105,8 +81,8 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const netWorthLimit = netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
   const maxLoan = calculateMarketLoanMax(netWorth)
 
-  // Calculate aggregate limit (tier-specific % of net worth total across ALL markets)
-  const maxAggregateLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
+  // Calculate aggregate limit (80% of net worth total across ALL markets)
+  const maxAggregateLoan = calculateMaxGeneralLoanAmount(netWorth)
   const availableAggregate = Math.max(0, maxAggregateLoan - totalLoanAllMarkets)
 
   // Calculate daily limit (10% of net worth per day)

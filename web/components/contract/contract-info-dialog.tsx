@@ -31,8 +31,6 @@ import { ContractHistoryButton } from './contract-edit-history-button'
 import { useSweepstakes } from '../sweepstakes-provider'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
-import { formatWithCommas } from 'common/util/format'
-
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
@@ -242,12 +240,12 @@ export const Stats = (props: {
 
             <tr>
               <td>{capitalize(BETTORS)}</td>
-              <td>{formatWithCommas(uniqueBettorCount ?? 0)}</td>
+              <td>{uniqueBettorCount ?? '0'}</td>
             </tr>
 
             <tr>
               <td>Views</td>
-              <td>{formatWithCommas(viewCount ?? 0)}</td>
+              <td>{viewCount ?? '0'}</td>
             </tr>
           </>
         )}
@@ -326,14 +324,12 @@ export const Stats = (props: {
             <td>Pool</td>
             <td>
               {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
-                ? `${formatWithCommas(
-                    Math.round(contract.pool.YES)
-                  )} YES, ${formatWithCommas(Math.round(contract.pool.NO))} NO`
+                ? `${Math.round(contract.pool.YES)} YES, ${Math.round(
+                    contract.pool.NO
+                  )} NO`
                 : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
-                ? `${formatWithCommas(
-                    Math.round(contract.pool.YES)
-                  )} HIGHER, ${formatWithCommas(
-                    Math.round(contract.pool.NO)
+                ? `${Math.round(contract.pool.YES)} HIGHER, ${Math.round(
+                    contract.pool.NO
                   )} LOWER`
                 : contractPool(contract)}
             </td>
@@ -362,29 +358,69 @@ export const Stats = (props: {
         {addAnswersPossible && (isCreator || isAdmin || isMod) && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Creator only{' '}
+              Add answers mode{' '}
               <InfoTooltip
                 text={
-                  creatorOnly
+                  addAnswersMode === 'DISABLED'
+                    ? 'No one can add answers'
+                    : addAnswersMode === 'ONLY_CREATOR'
                     ? 'Only creator can add answers'
-                    : 'Anyone can add answers'
+                    : addAnswersMode === 'APPROVAL_REQUIRED'
+                    ? 'Users can submit answers for creator approval'
+                    : 'Anyone can add answers immediately'
                 }
               />
             </td>
             <td>
-              <ShortToggle
-                className="mr-1 align-middle"
-                on={creatorOnly}
-                setOn={(on) =>
+              <select
+                className="select select-bordered select-sm"
+                value={addAnswersMode}
+                onChange={(e) =>
                   updateMarket({
                     contractId: contract.id,
-                    addAnswersMode: on ? 'ONLY_CREATOR' : 'ANYONE',
+                    addAnswersMode: e.target.value as any,
                   })
                 }
-              />
-              {addAnswersMode === 'DISABLED' && <span>(Disabled for all)</span>}
+              >
+                <option value="DISABLED">Disabled</option>
+                <option value="ONLY_CREATOR">Creator only</option>
+                <option value="APPROVAL_REQUIRED">Require approval</option>
+                <option value="ANYONE">Anyone</option>
+              </select>
             </td>
           </tr>
+        )}
+
+        {/* Show a path to Firebase if user is an admin, or we're on localhost */}
+        {(isAdmin || isDev) && (
+          <>
+            <tr className="bg-purple-500/30">
+              <td>Supabase link</td>
+              <td>
+                <a
+                  href={supabaseConsoleContractPath(id)}
+                  target="_blank"
+                  className="text-primary-600"
+                  rel="noreferrer"
+                >
+                  {id}
+                </a>
+              </td>
+            </tr>
+            <tr className="bg-purple-500/30">
+              <td>SQL query</td>
+              <td>
+                <span className="truncate">select * from contracts...</span>
+                <CopyLinkOrShareButton
+                  url={`select * from contracts where id = '${id}';`}
+                  tooltip="Copy sql query to contract id"
+                  eventTrackingName={'admin copy contract id'}
+                  className="!py-0 align-middle"
+                  trackingInfo={{ contractId: id }}
+                />
+              </td>
+            </tr>
+          </>
         )}
 
         {!hideAdvanced && (
@@ -475,38 +511,6 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
-
-        {/* Admin debug info - show at the very end */}
-        {(isAdmin || isDev) && (
-          <>
-            <tr className="bg-purple-500/30">
-              <td>Supabase link</td>
-              <td>
-                <a
-                  href={supabaseConsoleContractPath(id)}
-                  target="_blank"
-                  className="text-primary-600"
-                  rel="noreferrer"
-                >
-                  {id}
-                </a>
-              </td>
-            </tr>
-            <tr className="bg-purple-500/30">
-              <td>SQL query</td>
-              <td>
-                <span className="truncate">select * from contracts...</span>
-                <CopyLinkOrShareButton
-                  url={`select * from contracts where id = '${id}';`}
-                  tooltip="Copy sql query to contract id"
-                  eventTrackingName={'admin copy contract id'}
-                  className="!py-0 align-middle"
-                  trackingInfo={{ contractId: id }}
-                />
-              </td>
-            </tr>
-          </>
-        )}
       </tbody>
     </Table>
   )
@@ -552,16 +556,19 @@ export function ContractInfoDialog(props: {
       <Stats contract={contract} user={user} />
 
       {!!user && (
-        <Row className="flex-wrap gap-2">
-          <ContractHistoryButton contract={contract} />
-          <ShareQRButton contract={contract} />
-          <ShareIRLButton contract={contract} />
-          <ShareEmbedButton contract={contract} />
-        </Row>
-      )}
-
-      {(isAdmin || isTrusted) && (
-        <SuperBanControl userId={contract.creatorId} />
+        <>
+          <Row className="my-2 flex-wrap gap-2">
+            <ContractHistoryButton contract={contract} />
+            <ShareQRButton contract={contract} />
+            <ShareIRLButton contract={contract} />
+            <ShareEmbedButton contract={contract} />
+          </Row>
+          <Row className="flex-wrap gap-2">
+            {isAdmin || isTrusted ? (
+              <SuperBanControl userId={contract.creatorId} />
+            ) : null}
+          </Row>
+        </>
       )}
     </Modal>
   )

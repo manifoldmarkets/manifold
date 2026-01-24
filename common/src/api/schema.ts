@@ -75,7 +75,7 @@ import { ShopItem } from 'common/shop/items'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
-import { UserEntitlement } from 'common/shop/types'
+import { UserShopPurchase } from 'common/user'
 import { YEAR_MS } from 'common/util/time'
 import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
@@ -904,6 +904,45 @@ export const API = (_apiTypeCheck = {
         text: z.string().min(1).max(MAX_ANSWER_LENGTH),
       })
       .strict(),
+  },
+  'market/:contractId/pending-answer': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { pendingAnswerId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        text: z.string().min(1).max(MAX_ANSWER_LENGTH),
+      })
+      .strict(),
+  },
+  'market/:contractId/pending-answers': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: [] as {
+      id: string
+      contractId: string
+      userId: string
+      text: string
+      createdTime: number
+      status: string
+    }[],
+    props: z.object({ contractId: z.string() }).strict(),
+  },
+  'pending-answer/:id/approve': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { newAnswerId: string },
+    props: z.object({ id: z.string() }).strict(),
+  },
+  'pending-answer/:id/deny': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ id: z.string() }).strict(),
   },
   'market/:contractId/block': {
     method: 'POST',
@@ -2119,7 +2158,7 @@ export const API = (_apiTypeCheck = {
         outcomeType: z.string().optional(),
         shouldAnswersSumToOne: coerceBoolean.optional(),
         addAnswersMode: z
-          .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
+          .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE', 'APPROVAL_REQUIRED'])
           .optional(),
       })
       .strict(),
@@ -2188,7 +2227,6 @@ export const API = (_apiTypeCheck = {
       currentMarginLoan?: number
       freeLoanAvailable?: number
       canClaimFreeLoan?: boolean
-      hasMarginLoanAccess?: boolean
     },
     props: z.object({
       userId: z.string(),
@@ -3134,12 +3172,7 @@ export const API = (_apiTypeCheck = {
         itemId: z.string(),
       })
       .strict(),
-    returns: {} as {
-      success: boolean
-      entitlement?: UserEntitlement
-      entitlements: UserEntitlement[]
-      upgradeCredit?: number
-    },
+    returns: {} as { success: boolean; purchase: UserShopPurchase },
   },
   'shop-toggle': {
     method: 'POST',
@@ -3151,21 +3184,7 @@ export const API = (_apiTypeCheck = {
         enabled: z.boolean(),
       })
       .strict(),
-    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
-  },
-  'shop-cancel-subscription': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    props: z.object({}).strict(),
-    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
-  },
-  'shop-reset-all': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    props: z.object({}).strict(),
-    returns: {} as { success: boolean; refundedAmount: number },
+    returns: {} as { success: boolean },
   },
   // Admin spam detection endpoints
   'get-suspected-spam-comments': {
@@ -3238,43 +3257,6 @@ export const API = (_apiTypeCheck = {
       topByViews: {
         contract: Contract
         viewsYesterday: number
-      }[]
-    },
-  },
-  'get-shop-stats': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
-    props: z
-      .object({
-        limitDays: z.coerce.number(),
-      })
-      .strict(),
-    returns: {} as {
-      subscriptionSales: {
-        date: string
-        itemId: string
-        quantity: number
-        revenue: number
-      }[]
-      digitalGoodsSales: {
-        date: string
-        itemId: string
-        quantity: number
-        revenue: number
-      }[]
-      subscribersByTier: {
-        tier: 'basic' | 'plus' | 'premium'
-        count: number
-        autoRenewCount: number
-      }[]
-      subscriptionsOverTime: {
-        date: string
-        basicCount: number
-        plusCount: number
-        premiumCount: number
-        totalCount: number
       }[]
     },
   },

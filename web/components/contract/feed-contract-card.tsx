@@ -27,7 +27,6 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
@@ -92,8 +91,6 @@ export function FeedContractCard(props: {
     outcomeType,
     mechanism,
   } = contract
-
-  const creator = useDisplayUserById(creatorId)
 
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
@@ -188,19 +185,15 @@ export function FeedContractCard(props: {
               <Avatar
                 size={size === 'xs' ? '2xs' : 'xs'}
                 className={'mr-0.5'}
-                avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
-                username={creator?.username ?? creatorUsername}
-                entitlements={creator?.entitlements}
-                displayContext="feed"
+                avatarUrl={creatorAvatarUrl}
+                username={creatorUsername}
               />
               <UserLink
                 user={{
                   id: creatorId,
-                  name: creator?.name ?? creatorName,
-                  username: creator?.username ?? creatorUsername,
-                  entitlements: creator?.entitlements,
+                  name: creatorName,
+                  username: creatorUsername,
                 }}
-                displayContext="feed"
                 className={
                   'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
                 }

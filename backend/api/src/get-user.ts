@@ -3,44 +3,29 @@ import { convertUser, displayUserColumns } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { removeNullOrUndefinedProps } from 'common/util/object'
-import { convertEntitlement } from 'common/shop/types'
 import { APIHandler } from './helpers/endpoint'
 
 export const getUserById: APIHandler<'user/by-id/:id'> = async (props) => {
   return getUser(props)
 }
 
-export const getUserByUsername: APIHandler<'user/:username'> = async (
-  props
-) => {
+export const getUserByUsername: APIHandler<'user/:username'> = async (props) => {
   return getUser(props)
 }
 
-export const getUser = async (props: { id: string } | { username: string }) => {
+export const getUser = async (
+  props: { id: string } | { username: string }
+) => {
   const pg = createSupabaseDirectClient()
-  const whereColumn = 'id' in props ? 'id' : 'username'
-  const whereValue = 'id' in props ? props.id : props.username
-
-  // Fetch user with entitlements in a single query
-  const result = await pg.oneOrNone(
-    `select u.*,
-      (select coalesce(json_agg(e), '[]'::json)
-       from user_entitlements e
-       where e.user_id = u.id) as entitlements
-     from users u
-     where u.${whereColumn} = $1`,
-    [whereValue]
+  const user = await pg.oneOrNone(
+    `select * from users
+            where ${'id' in props ? 'id' : 'username'} = $1`,
+    ['id' in props ? props.id : props.username],
+    (r) => (r ? convertUser(r) : null)
   )
+  if (!user) throw new APIError(404, 'User not found')
 
-  if (!result) throw new APIError(404, 'User not found')
-
-  const { entitlements: rawEntitlements, ...userRow } = result
-  const user = convertUser(userRow)
-
-  // Convert entitlements from database format
-  const entitlements = (rawEntitlements || []).map(convertEntitlement)
-
-  return toUserAPIResponse({ ...user, entitlements })
+  return toUserAPIResponse(user)
 }
 
 export const getLiteUser = async (

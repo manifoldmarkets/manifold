@@ -85,7 +85,7 @@ export type FullMarket = LiteMarket & {
   // multi markets only
   answers?: ApiAnswer[]
   shouldAnswersSumToOne?: boolean
-  addAnswersMode?: 'ANYONE' | 'ONLY_CREATOR' | 'DISABLED'
+  addAnswersMode?: 'ANYONE' | 'ONLY_CREATOR' | 'DISABLED' | 'APPROVAL_REQUIRED'
 
   // poll only
   options?: { text: string; votes: number }[]
@@ -392,7 +392,7 @@ export const createMultiSchema = z.object({
     .max(MAX_ANSWERS)
     .optional(),
   addAnswersMode: z
-    .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
+    .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE', 'APPROVAL_REQUIRED'])
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
 })

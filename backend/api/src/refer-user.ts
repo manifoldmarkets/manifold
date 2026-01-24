@@ -12,8 +12,6 @@ import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 import { updateUser } from 'shared/supabase/users'
-import { getBenefit, SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
 
 export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
   const { referredByUsername, contractId } = props
@@ -95,37 +93,18 @@ async function handleReferral(
     }
     log('creating referral txns')
 
-    // Fetch referrer's supporter entitlements for bonus multiplier
-    const supporterEntitlementRows = await tx.manyOrNone(
-      `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
-       WHERE user_id = $1
-       AND entitlement_id = ANY($2)
-       AND enabled = true
-       AND (expires_time IS NULL OR expires_time > NOW())`,
-      [referredByUserId, SUPPORTER_ENTITLEMENT_IDS]
-    )
-
-    // Convert to UserEntitlement format for getBenefit
-    const entitlements = supporterEntitlementRows.map(convertEntitlement)
-
-    // Get tier-specific referral multiplier (1x for non-supporters)
-    const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
-    const referralAmount = Math.floor(REFERRAL_AMOUNT * referralMultiplier)
-
     // if they're updating their referredId, create a txn for both
     const txnData = {
       fromType: 'BANK',
       toId: referredByUserId,
       toType: 'USER',
-      amount: referralAmount,
+      amount: REFERRAL_AMOUNT,
       token: 'M$',
       category: 'REFERRAL',
-      description: `Referred new user id: ${newUser.id} for ${referralAmount}`,
+      description: `Referred new user id: ${newUser.id} for ${REFERRAL_AMOUNT}`,
       data: removeUndefinedProps({
         referredUserId: newUser.id,
         referredContractId: referredByContract?.id,
-        supporterBonus: referralMultiplier > 1,
-        referralMultiplier,
       }),
     } as const
 
