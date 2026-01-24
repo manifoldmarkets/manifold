@@ -26,7 +26,7 @@ export type FormState = {
   visibility: 'public' | 'unlisted'
   liquidityTier: number
   shouldAnswersSumToOne?: boolean
-  addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE' | 'APPROVAL_REQUIRED'
+  addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
   probability?: number
   min?: number
   max?: number

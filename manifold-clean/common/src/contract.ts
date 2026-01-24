@@ -219,11 +219,7 @@ export type CPMMNumber = {
   sort?: SortType
 }
 
-export type add_answers_mode =
-  | 'DISABLED'
-  | 'ONLY_CREATOR'
-  | 'ANYONE'
-  | 'APPROVAL_REQUIRED'
+export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
 
 export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'

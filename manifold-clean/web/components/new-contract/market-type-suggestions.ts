@@ -16,7 +16,7 @@ export function suggestMarketType(
   question: string,
   currentType: CreateableOutcomeType,
   answers?: string[],
-  addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE' | 'APPROVAL_REQUIRED',
+  addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE',
   shouldAnswersSumToOne?: boolean
 ): MarketTypeSuggestion | null {
   // "Other" option suggestion for MULTIPLE_CHOICE markets with shouldAnswersSumToOne

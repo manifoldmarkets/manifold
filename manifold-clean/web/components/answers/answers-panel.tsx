@@ -84,7 +84,6 @@ import {
   CreatorAndAnswerLabel,
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { PendingAnswersPanel } from './pending-answers-panel'
 
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
@@ -208,7 +207,6 @@ export function AnswersPanel(props: {
     user &&
       !userHasAnyBan &&
       (addAnswersMode === 'ANYONE' ||
-        addAnswersMode === 'APPROVAL_REQUIRED' ||
         (addAnswersMode === 'ONLY_CREATOR' &&
           user.id === contract.creatorId)) &&
       tradingAllowed(contract) &&
@@ -245,9 +243,6 @@ export function AnswersPanel(props: {
 
   return (
     <Col className={className}>
-      {addAnswersMode === 'APPROVAL_REQUIRED' && (
-        <PendingAnswersPanel contract={contract} user={user} />
-      )}
       {!hideSearch && (
         <SearchCreateAnswerPanel
           contract={contract}
