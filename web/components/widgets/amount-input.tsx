@@ -1,19 +1,14 @@
 import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import {
-  MANA_MIN_BET,
-  PHONE_VERIFICATION_BONUS,
-  SWEEPS_MIN_BET,
-} from 'common/economy'
+import { MANA_MIN_BET, SWEEPS_MIN_BET } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { humanish, User } from 'common/user'
+import { User } from 'common/user'
 import {
   formatMoney,
   formatWithToken,
   InputTokenType,
 } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
-import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
@@ -330,7 +325,6 @@ export function BuyAmountInput(props: {
 const BuyMoreFunds = (props: { user: User | null | undefined }) => {
   const { user } = props
   const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
-  const [showVerifyPhone, setShowVerifyPhone] = useState(false)
   return (
     <>
       Not enough funds.
@@ -340,15 +334,7 @@ const BuyMoreFunds = (props: { user: User | null | undefined }) => {
       >
         Buy more?
       </button>
-      {user && !humanish(user) && (
-        <button
-          className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
-          onClick={() => setShowVerifyPhone(true)}
-        >
-          Verify your phone number for {formatMoney(PHONE_VERIFICATION_BONUS)}
-        </button>
-      )}
-      <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
+      {/* Phone verification deprecated - identity verification now handled in welcome flow */}
       <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
     </>
   )

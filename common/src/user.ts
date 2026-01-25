@@ -200,7 +200,9 @@ export const isUserLikelySpammer = (
   )
 }
 
-// This grandfathers in older users who have not yet verified their phone
+/**
+ * @deprecated Use canReceiveBonuses() instead. Phone verification has been replaced by iDenfy identity verification.
+ */
 export const humanish = (user: User) => user.verifiedPhone !== false
 
 // Check if user can receive site bonuses (verified via iDenfy or grandfathered)

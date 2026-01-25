@@ -42,7 +42,7 @@ import {
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
-import { humanish } from 'common/user'
+import { canReceiveBonuses } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
@@ -308,16 +308,16 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        noBonus && user && !humanish(user) ? (
+        noBonus && user && !canReceiveBonuses(user) ? (
           <span>
-            Verify your phone number to get up to{' '}
+            Verify your identity to get up to{' '}
             <TokenNumber amount={maxBonus} className={'font-bold'} isInline />{' '}
             per streak day!
           </span>
         ) : (
           noBonus &&
           user &&
-          humanish(user) && (
+          canReceiveBonuses(user) && (
             <span>Come back and predict again tomorrow for a bonus!</span>
           )
         )

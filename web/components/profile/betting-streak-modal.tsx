@@ -5,7 +5,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { humanish, User } from 'common/user'
+import { canReceiveBonuses, User } from 'common/user'
 import { getBenefit } from 'common/supporter-config'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -61,7 +61,7 @@ export function BettingStreakModal(props: {
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are they?</span>
           <span className={'ml-2'}>
-            {currentUser && !humanish(currentUser) ? (
+            {currentUser && !canReceiveBonuses(currentUser) ? (
               <span className={'font-semibold'}>Verified users</span>
             ) : (
               'You'

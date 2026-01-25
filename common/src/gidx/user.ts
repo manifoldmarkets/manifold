@@ -11,7 +11,7 @@ import {
   locationBlockedCodes,
   underageErrorCodes,
 } from 'common/reason-codes'
-import { humanish, PrivateUser, User } from 'common/user'
+import { canReceiveBonuses, PrivateUser, User } from 'common/user'
 import { intersection } from 'lodash'
 
 export const blockFromSweepstakes = (user: User | undefined | null) =>
@@ -43,8 +43,8 @@ export const getVerificationStatus = (
 } => {
   if (!user || !privateUser) {
     return { status: 'error', message: USER_IS_UNDEFINED_MESSAGE }
-  } else if (!humanish(user)) {
-    return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
+  } else if (!canReceiveBonuses(user)) {
+    return { status: 'error', message: IDENTITY_NOT_VERIFIED_MESSAGE }
   } else if (user.kycDocumentStatus === 'fail') {
     return { status: 'error', message: USER_DOCUMENT_FAILED_MESSAGE }
   } else if (!user.idVerified && user.kycDocumentStatus === 'pending') {
@@ -80,7 +80,7 @@ export const getVerificationStatus = (
 }
 
 const USER_IS_UNDEFINED_MESSAGE = 'Please sign in or sign up'
-const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
+const IDENTITY_NOT_VERIFIED_MESSAGE = 'User must verify identity'
 const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'
 const LOCATION_BLOCKED_MESSAGE = 'User location is blocked'
 const LOCATION_BLOCKED_TIME_MESSAGE =
@@ -97,6 +97,6 @@ const USER_PENDING_VERIFICATION_MESSAGE = 'User is pending verification'
 const USER_DOCUMENT_FAILED_MESSAGE = 'User document verification failed'
 export const PROMPT_USER_VERIFICATION_MESSAGES = [
   USER_NOT_REGISTERED_MESSAGE,
-  PHONE_NOT_VERIFIED_MESSAGE,
+  IDENTITY_NOT_VERIFIED_MESSAGE,
   IDENTIFICATION_FAILED_MESSAGE,
 ]
