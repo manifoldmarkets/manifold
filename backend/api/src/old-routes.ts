@@ -4,6 +4,7 @@ import { claimmanalink } from './claim-manalink'
 import { creategroup } from './create-group'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
+import { daimowebhook } from './daimo-webhook'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
 import { updategroupprivacy } from './update-group-privacy'
@@ -97,6 +98,12 @@ export const addOldRoutes = (app: express.Application) => {
     express.raw({ type: 'application/json' }),
     idenfyCallback
   )
+  app.post(
+    '/daimo-webhook',
+    allowCorsUnrestricted,
+    express.json(),
+    daimowebhook
+  ) // FYI: on dev this is /v0/daimo-webhook
   app.post('/follow-topic', ...apiRoute(followtopic))
   app.post('/league-activity', ...apiRoute(leagueActivity))
   app.post('/cancel-bounty', ...apiRoute(cancelbounty))

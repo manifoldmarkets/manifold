@@ -156,6 +156,9 @@ export const MANI_IOS_PRICES = [
 export const SWEEPIES_CASHOUT_FEE = 5
 export const MIN_CASHOUT_AMOUNT = 25
 
+// Crypto purchase rate: 100 mana per $1 USDC
+export const CRYPTO_MANA_PER_DOLLAR = 100
+
 export const SWEEPS_MIN_BET = 1
 export const MANA_MIN_BET = 1
 export const PROFIT_FEE_FRACTION = 0.1
