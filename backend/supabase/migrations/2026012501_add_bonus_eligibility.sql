@@ -32,8 +32,16 @@ WHERE
   -- All users created before this migration are grandfathered
   -- TODO: Adjust this date if you want a different cutoff
   created_time < NOW()
-  -- Exclude banned users
+  -- Exclude users with legacy posting ban
   AND (data->>'isBannedFromPosting')::boolean IS NOT TRUE
+  -- Exclude users with any active ban in user_bans table (except modAlert which is just a warning)
+  AND NOT EXISTS (
+    SELECT 1 FROM user_bans ub
+    WHERE ub.user_id = users.id
+      AND ub.ban_type IN ('posting', 'marketControl', 'trading')
+      AND ub.ended_at IS NULL  -- not manually ended
+      AND (ub.end_time IS NULL OR ub.end_time > NOW())  -- no expiry or hasn't expired
+  )
   -- Exclude deleted users
   AND (data->>'userDeleted')::boolean IS NOT TRUE
   -- Require at least one bet (shows real engagement)
