@@ -24,12 +24,9 @@ import { getUser, getUserByUsername, isProd, log } from 'shared/utils'
 
 import { ValidatedAPIParams } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
-import { STARTING_BALANCE } from 'common/economy'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
-import { SignupBonusTxn } from 'common/txn'
 import { onCreateUser } from 'shared/helpers/on-create-user'
 import { insert } from 'shared/supabase/utils'
-import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export const createUserMain = async (
   props: ValidatedAPIParams<'createuser'>,
@@ -132,19 +129,8 @@ export const createUserMain = async (
       data: userData,
     })
 
-    const startingBonusTxn: Omit<
-      SignupBonusTxn,
-      'id' | 'createdTime' | 'fromId'
-    > = {
-      fromType: 'BANK',
-      toId: userId,
-      toType: 'USER',
-      amount: STARTING_BALANCE,
-      token: 'M$',
-      category: 'SIGNUP_BONUS',
-      description: 'Signup bonus',
-    }
-    await runTxnFromBank(tx, startingBonusTxn)
+    // Note: Signup bonus is now paid after identity verification (iDenfy)
+    // See backend/api/src/idenfy/callback.ts
 
     const privateUserRow = await insert(tx, 'private_users', {
       id: privateUser.id,

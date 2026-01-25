@@ -10,6 +10,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { updateUser } from 'shared/supabase/users'
 import { HOUR_MS } from 'common/util/time'
+import { canReceiveBonuses } from 'common/user'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const twilio = require('twilio')
 
@@ -107,37 +108,42 @@ async function handlePhoneVerification(
       verifiedPhone: true,
     })
 
-    const isPrivateUserWithMatchingDeviceToken = async (
-      deviceToken: string
-    ) => {
-      const data = await tx.oneOrNone(
-        `select 1 from private_users where (data->'initialDeviceToken')::text = $1 and id != $2`,
-        [deviceToken, auth.uid]
-      )
-      return !!data
+    // Only pay phone verification bonus if user can receive bonuses (verified or grandfathered)
+    if (canReceiveBonuses(user)) {
+      const isPrivateUserWithMatchingDeviceToken = async (
+        deviceToken: string
+      ) => {
+        const data = await tx.oneOrNone(
+          `select 1 from private_users where (data->'initialDeviceToken')::text = $1 and id != $2`,
+          [deviceToken, auth.uid]
+        )
+        return !!data
+      }
+
+      const { initialDeviceToken: deviceToken } = privateUser
+      const deviceUsedBefore =
+        !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
+
+      const amount = deviceUsedBefore
+        ? SUS_STARTING_BALANCE
+        : PHONE_VERIFICATION_BONUS
+
+      const signupBonusTxn: Omit<
+        SignupBonusTxn,
+        'fromId' | 'id' | 'createdTime'
+      > = {
+        fromType: 'BANK',
+        amount,
+        category: 'SIGNUP_BONUS',
+        toId: auth.uid,
+        token: 'M$',
+        toType: 'USER',
+        description: 'Phone number verification bonus',
+      }
+      await runTxnFromBank(tx, signupBonusTxn)
+      log(`Sent phone verification bonus to user ${auth.uid}`)
+    } else {
+      log(`Skipped phone verification bonus for user ${auth.uid} - not eligible for bonuses`)
     }
-
-    const { initialDeviceToken: deviceToken } = privateUser
-    const deviceUsedBefore =
-      !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
-
-    const amount = deviceUsedBefore
-      ? SUS_STARTING_BALANCE
-      : PHONE_VERIFICATION_BONUS
-
-    const signupBonusTxn: Omit<
-      SignupBonusTxn,
-      'fromId' | 'id' | 'createdTime'
-    > = {
-      fromType: 'BANK',
-      amount,
-      category: 'SIGNUP_BONUS',
-      toId: auth.uid,
-      token: 'M$',
-      toType: 'USER',
-      description: 'Phone number verification bonus',
-    }
-    await runTxnFromBank(tx, signupBonusTxn)
-    log(`Sent phone verification bonus to user ${auth.uid}`)
   }
 }

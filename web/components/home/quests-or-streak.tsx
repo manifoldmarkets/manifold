@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react'
-import { User } from 'common/user'
+import { canReceiveBonuses, User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
@@ -25,6 +25,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { StreakProgressBar } from '../profile/streak-progress-bar'
+import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -34,6 +35,10 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   const { user } = props
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+
+  // Check if user can receive bonuses (verified or grandfathered)
+  const userCanReceiveBonuses = user ? canReceiveBonuses(user) : false
 
   useEffect(() => {
     if (showQuestsModal) {
@@ -42,11 +47,20 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   }, [showQuestsModal])
   if (!user) return <></>
 
+  const handleQuestsClick = () => {
+    // Check if user needs verification first
+    if (!userCanReceiveBonuses) {
+      setShowVerificationModal(true)
+      return
+    }
+    setShowQuestsModal(true)
+  }
+
   return (
     <>
       <button
         className={clsx('cursor-pointer', dailyStatsClass)}
-        onClick={() => setShowQuestsModal(true)}
+        onClick={handleQuestsClick}
       >
         <Col
           className={clsx(
@@ -63,6 +77,14 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
           open={showQuestsModal}
           setOpen={setShowQuestsModal}
           user={user}
+        />
+      )}
+      {showVerificationModal && (
+        <VerificationRequiredModal
+          open={showVerificationModal}
+          setOpen={setShowVerificationModal}
+          user={user}
+          action="earn quest rewards"
         />
       )}
     </>

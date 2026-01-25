@@ -18,7 +18,7 @@ import { convertBet } from 'common/supabase/bets'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { convertUser } from 'common/supabase/users'
 import { UniqueBettorBonusTxn } from 'common/txn'
-import { User, UserBan } from 'common/user'
+import { canReceiveBonuses, User, UserBan } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { groupBy, mapValues, orderBy, sumBy, uniq, uniqBy } from 'lodash'
@@ -106,12 +106,16 @@ export const fetchContractBetDataAndValidate = async (
         or answer_id is null);
     select status from system_trading_status where token = (select token from contracts where id = $2);
     select * from user_bans where user_id = $1 and ended_at is null and (end_time is null or end_time > now());
+    -- Creator user for bonus eligibility check
+    select * from users where id = (select creator_id from contracts where id = $2);
   `,
     [uid, contractId, answerIds ?? null, outcome]
   )
   const results = await pgTrans.multi(queries)
   const user = convertUser(results[0][0])
   const contract = convertContract(results[1][0])
+  const creatorRow = results[9]?.[0]
+  const creator = creatorRow ? convertUser(creatorRow) : undefined
   const answers = results[2].map(convertAnswer)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
@@ -205,6 +209,7 @@ export const fetchContractBetDataAndValidate = async (
   return {
     user,
     contract,
+    creator,
     answers,
     unfilledBets,
     balanceByUserId,
@@ -443,7 +448,8 @@ export const getMakerIdsFromBetResult = (result: NewBetResult) => {
 export const getUniqueBettorBonusQuery = (
   contract: MarketContract,
   bettor: User,
-  bet: CandidateBet
+  bet: CandidateBet,
+  creator?: User // Optional: pass creator to check their bonus eligibility
 ) => {
   const { answerId, isRedemption, isApi } = bet
 
@@ -465,13 +471,20 @@ export const getUniqueBettorBonusQuery = (
     // Require the contract creator to also be the answer creator for real-money bonus.
     creatorId === contract.creatorId
 
+  // Check if both bettor and creator can receive bonuses (verified or grandfathered)
+  // If creator is not provided, we skip the creator eligibility check (backwards compat)
+  const bettorCanReceiveBonuses = canReceiveBonuses(bettor)
+  const creatorCanReceiveBonuses = creator ? canReceiveBonuses(creator) : true
+
   if (
     isCreator ||
     isBot ||
     isUnlisted ||
     isRedemption ||
     isUnfilledLimitOrder ||
-    isApi
+    isApi ||
+    !bettorCanReceiveBonuses ||
+    !creatorCanReceiveBonuses
   )
     return {
       balanceUpdate: undefined,

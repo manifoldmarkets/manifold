@@ -88,7 +88,7 @@ const queueDependenciesThenBet = async (
   const { dryRun, contractId } = props
   const minimalDeps = [auth.uid, contractId]
   return await ordersQueue.enqueueFn(async () => {
-    const { contract, answers, unfilledBets, balanceByUserId } =
+    const { contract, answers, unfilledBets, balanceByUserId, creator } =
       await fetchContractBetDataAndValidate(
         createSupabaseDirectClient(),
         props,
@@ -130,6 +130,7 @@ export const placeBetMain = async (
   const {
     user,
     contract,
+    creator,
     answers,
     unfilledBets,
     balanceByUserId,
@@ -436,7 +437,8 @@ export const executeNewBetResult = async (
     const { balanceUpdate, txnQuery } = getUniqueBettorBonusQuery(
       contract,
       user,
-      newBet
+      newBet,
+      creator
     )
     if (balanceUpdate) {
       userBalanceUpdates.push(balanceUpdate)

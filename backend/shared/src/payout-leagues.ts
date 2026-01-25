@@ -7,6 +7,8 @@ import { SupabaseTransaction } from './supabase/init'
 import { createLeagueChangedNotifications } from './create-notification'
 import { TxnData, insertTxns } from './txn/run-txn'
 import { bulkIncrementBalances } from './supabase/users'
+import { convertUser } from 'common/supabase/users'
+import { canReceiveBonuses } from 'common/user'
 
 import { log } from './utils'
 
@@ -50,6 +52,32 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     prize: number
   }> = []
 
+  // Fetch all users who are prize candidates to check their bonus eligibility
+  const prizeUserIds = newRows
+    .filter((row) => {
+      const prevRow = prevRowsByUserId[row.user_id]
+      if (!prevRow) return false
+      const prize = getLeaguePrize(prevRow.division, prevRow.rank)
+      return prize && prize > 0 && !alreadyGotPrizeUserIds.has(row.user_id)
+    })
+    .map((row) => row.user_id)
+
+  // Fetch user data to check bonus eligibility
+  const usersWithEligibility =
+    prizeUserIds.length > 0
+      ? await pg.manyOrNone<{ id: string; data: any }>(
+          `SELECT id, data FROM users WHERE id = ANY($1)`,
+          [prizeUserIds]
+        )
+      : []
+
+  const eligibleUserIds = new Set(
+    usersWithEligibility
+      .map((row) => convertUser(row))
+      .filter((user) => canReceiveBonuses(user))
+      .map((user) => user.id)
+  )
+
   // Check eligibility for users in this chunk
   for (const newRow of newRows) {
     const prevRow = prevRowsByUserId[newRow.user_id]
@@ -75,18 +103,33 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     }
 
     // Check if prize already awarded using our Set
-    if (!alreadyGotPrizeUserIds.has(newRow.user_id)) {
-      prizesToAward.push({
-        userId: newRow.user_id,
-        prevRow,
-        newRow,
-        prize,
-      })
-    } else {
+    if (alreadyGotPrizeUserIds.has(newRow.user_id)) {
       log(
         `User ${newRow.user_id} already received prize for season ${prevSeason}`
       )
+      continue
     }
+
+    // Only award prize if user can receive bonuses (verified or grandfathered)
+    if (!eligibleUserIds.has(newRow.user_id)) {
+      log(
+        `User ${newRow.user_id} not eligible for league prize - not verified`
+      )
+      notificationData.push({
+        userId: newRow.user_id,
+        previousLeague: prevRow,
+        newLeague: newRow,
+        bonusAmount: 0,
+      })
+      continue
+    }
+
+    prizesToAward.push({
+      userId: newRow.user_id,
+      prevRow,
+      newRow,
+      prize,
+    })
   }
 
   if (prizesToAward.length > 0) {

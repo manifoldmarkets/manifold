@@ -6,7 +6,7 @@ import {
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { humanish, User } from 'common/user'
+import { canReceiveBonuses, humanish, User } from 'common/user'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
@@ -280,7 +280,8 @@ const payBettingStreak = async (
   const pg = createSupabaseDirectClient()
   const result = await pg.tx(async (tx) => {
     const newBettingStreak = (oldUser.currentBettingStreak ?? 0) + 1
-    if (!humanish(oldUser)) {
+    // Only pay betting streak bonus if user can receive bonuses (verified or grandfathered)
+    if (!humanish(oldUser) || !canReceiveBonuses(oldUser)) {
       return {
         bonusAmount: 0,
         sweepsBonusAmount: 0,

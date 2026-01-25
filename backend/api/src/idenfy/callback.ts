@@ -2,8 +2,11 @@ import { Request, Response } from 'express'
 import * as crypto from 'crypto'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
+import { runTxnFromBank } from 'shared/txn/run-txn'
+import { STARTING_BALANCE } from 'common/economy'
+import { SignupBonusTxn } from 'common/txn'
 
 // iDenfy webhook callback payload structure (comprehensive type based on their schema)
 type IdenfyCallbackPayload = {
@@ -255,10 +258,38 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     ]
   )
 
-  // Update user's bonusEligibility if approved
+  // Update user's bonusEligibility if approved and pay signup bonus
   // Only set to 'verified' on approval - don't overwrite grandfathered status on failure
   if (internalStatus === 'approved') {
-    await updateUser(pg, userId, { bonusEligibility: 'verified' })
+    const user = await getUser(userId)
+    if (user) {
+      // Only pay signup bonus if they haven't already received it
+      const alreadyPaidBonus = (user.signupBonusPaid ?? 0) >= STARTING_BALANCE
+      
+      await pg.tx(async (tx) => {
+        // Update bonus eligibility
+        await updateUser(tx, userId, { bonusEligibility: 'verified' })
+        
+        // Pay signup bonus if not already paid
+        if (!alreadyPaidBonus) {
+          const signupBonusTxn: Omit<
+            SignupBonusTxn,
+            'id' | 'createdTime' | 'fromId'
+          > = {
+            fromType: 'BANK',
+            toId: userId,
+            toType: 'USER',
+            amount: STARTING_BALANCE,
+            token: 'M$',
+            category: 'SIGNUP_BONUS',
+            description: 'Signup bonus (identity verified)',
+          }
+          await runTxnFromBank(tx, signupBonusTxn)
+          await updateUser(tx, userId, { signupBonusPaid: STARTING_BALANCE })
+          log(`Paid signup bonus of ${STARTING_BALANCE} to user ${userId} after identity verification`)
+        }
+      })
+    }
   }
 
   // Broadcast update to connected clients

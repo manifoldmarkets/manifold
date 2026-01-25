@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { MINUTES_ALLOWED_TO_REFER } from 'common/user'
+import { canReceiveBonuses, MINUTES_ALLOWED_TO_REFER } from 'common/user'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient, SERIAL_MODE } from 'shared/supabase/init'
 import { REFERRAL_AMOUNT } from 'common/economy'
@@ -63,9 +63,12 @@ async function handleReferral(
 ) {
   const pg = createSupabaseDirectClient()
   log(`referredByUserId: ${referredByUserId}`)
-  const { txn, user } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
+  const { txn, user, referrer } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
     const newUser = await getUser(newUserId, tx)
     if (!newUser) throw new APIError(500, `User ${newUserId} not found`)
+
+    const referrer = await getUser(referredByUserId, tx)
+    if (!referrer) throw new APIError(500, `Referrer ${referredByUserId} not found`)
 
     if (newUser.referredByUserId || newUser.referredByContractId) {
       throw new APIError(400, `User ${newUser.id} already has referral details`)
@@ -75,6 +78,22 @@ async function handleReferral(
       Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS
     ) {
       throw new APIError(400, `User ${newUser.id} is too old to be referred`)
+    }
+
+    // Always record the referral relationship
+    await updateUser(
+      tx,
+      newUserId,
+      removeUndefinedProps({
+        referredByUserId,
+        referredByContractId: referredByContract?.id,
+      })
+    )
+
+    // Only pay referral bonus if referrer can receive bonuses (verified or grandfathered)
+    if (!canReceiveBonuses(referrer)) {
+      log(`Skipped referral bonus for referrer ${referredByUserId} - not eligible for bonuses`)
+      return { txn: null, user: newUser, referrer }
     }
 
     const txns = await tx.one(
@@ -131,22 +150,16 @@ async function handleReferral(
 
     const txn = await runTxnFromBank(tx, txnData)
 
-    await updateUser(
-      tx,
-      newUserId,
-      removeUndefinedProps({
-        referredByUserId,
-        referredByContractId: referredByContract?.id,
-      })
-    )
-
-    return { txn, user: newUser }
+    return { txn, user: newUser, referrer }
   })
 
-  await createReferralNotification(
-    referredByUserId,
-    user,
-    txn.amount.toString(),
-    referredByContract
-  )
+  // Only send notification if bonus was actually paid
+  if (txn) {
+    await createReferralNotification(
+      referredByUserId,
+      user,
+      txn.amount.toString(),
+      referredByContract
+    )
+  }
 }

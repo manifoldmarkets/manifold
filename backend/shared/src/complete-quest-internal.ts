@@ -1,4 +1,4 @@
-import { User } from 'common/user'
+import { canReceiveBonuses, User } from 'common/user'
 import { QUEST_DETAILS, QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -98,7 +98,12 @@ const completeQuestInternal = async (
     requiredCount: questDetails.requiredCount,
   })
   // If they have created the required amounts, send them a quest txn reward
+  // Only pay quest reward if user can receive bonuses (verified or grandfathered)
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
+    if (!canReceiveBonuses(user)) {
+      log(`Skipped quest bonus for user ${user.id} - not eligible for bonuses`)
+      return { count }
+    }
     const resp = await awardQuestBonus(user, questType, count)
 
     await createQuestPayoutNotification(
