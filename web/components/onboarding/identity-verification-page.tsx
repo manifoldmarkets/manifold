@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-import { User } from 'common/user'
+import { canReceiveBonuses, User } from 'common/user'
 import { api } from 'web/lib/api/api'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -15,10 +15,27 @@ export function IdentityVerificationPage(props: {
   const { user, onSkip, onComplete } = props
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [verificationStatus, setVerificationStatus] = useState<
+    'pending' | 'approved' | 'denied' | 'suspected' | null
+  >(null)
 
-  // Check if user already has verification status
-  const isAlreadyVerified = user?.idenfyStatus === 'approved'
-  const isPending = user?.idenfyStatus === 'pending'
+  // Check if user is already eligible for bonuses
+  const isAlreadyEligible = user ? canReceiveBonuses(user) : false
+
+  // Fetch verification status from the database
+  useEffect(() => {
+    if (!user || isAlreadyEligible) return
+    
+    api('get-idenfy-status', {})
+      .then((result) => {
+        setVerificationStatus(result.status)
+      })
+      .catch((e) => {
+        console.error('Failed to fetch verification status:', e)
+      })
+  }, [user?.id, isAlreadyEligible])
+
+  const isPending = verificationStatus === 'pending'
 
   const handleVerify = async () => {
     if (!user) return
@@ -53,14 +70,14 @@ export function IdentityVerificationPage(props: {
     onSkip()
   }
 
-  if (isAlreadyVerified) {
+  if (isAlreadyEligible) {
     return (
       <Col className="gap-4">
         <div className="text-primary-700 mb-2 text-center text-2xl font-normal">
-          Identity Verified
+          You're All Set!
         </div>
         <div className="text-ink-600 text-center text-lg">
-          Your identity has been verified. Thank you!
+          You're already eligible for bonuses and cash prize raffles.
         </div>
         <Row className="mt-4 justify-center">
           <Button onClick={onComplete}>Continue</Button>

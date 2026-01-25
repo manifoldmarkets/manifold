@@ -255,17 +255,11 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     ]
   )
 
-  // Update user's idenfyStatus field
-  const updateData: Record<string, any> = {
-    idenfyStatus: internalStatus,
-  }
-
-  // Only set verifiedTime if approved
+  // Update user's bonusEligibility if approved
+  // Only set to 'verified' on approval - don't overwrite grandfathered status on failure
   if (internalStatus === 'approved') {
-    updateData.idenfyVerifiedTime = Date.now()
+    await updateUser(pg, userId, { bonusEligibility: 'verified' })
   }
-
-  await updateUser(pg, userId, updateData)
 
   // Broadcast update to connected clients
   broadcastUpdatedPrivateUser(userId)
