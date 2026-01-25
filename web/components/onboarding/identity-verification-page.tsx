@@ -28,6 +28,11 @@ export function IdentityVerificationPage(props: {
 
     try {
       track('identity verification: started')
+      
+      // Mark onboarding as complete before redirecting to iDenfy
+      // so users don't see the welcome modal again when they return
+      await api('me/update', { shouldShowWelcome: false })
+      
       const response = await api('create-idenfy-session', {})
 
       // Redirect to iDenfy verification page
