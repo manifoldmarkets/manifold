@@ -170,6 +170,7 @@ import { adminDeleteUser } from './admin-delete-user'
 import { adminGetRelatedUsers } from './admin-get-related-users'
 import { adminGetUserInfo } from './admin-get-user-info'
 import { adminRecoverUser } from './admin-recover-user'
+import { adminSetBonusEligibility } from './admin-set-bonus-eligibility'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
@@ -244,6 +245,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'recover-user': adminRecoverUser,
   'get-user-info': adminGetUserInfo,
   'admin-delete-user': adminDeleteUser,
+  'admin-set-bonus-eligibility': adminSetBonusEligibility,
   'admin-get-related-users': adminGetRelatedUsers,
   'admin-search-users-by-email': adminSearchUsersByEmail,
   'anonymize-user': anonymizeUser,

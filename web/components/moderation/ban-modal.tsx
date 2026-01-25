@@ -244,6 +244,9 @@ export function BanModal({
       <Col className="bg-canvas-0 max-w-2xl gap-4 rounded-md p-6">
         <Title>Ban User: {user.name}</Title>
 
+        {/* Bonus Eligibility Section */}
+        <BonusEligibilityControl user={user} />
+
         {/* Current Bans/Alerts Section */}
         {hasCurrentBansOrAlerts && (
           <div className="border-ink-200 rounded border">
@@ -963,6 +966,112 @@ function BanHistoryRecord({
           </p>
         )}
       </div>
+    </div>
+  )
+}
+
+function BonusEligibilityControl({ user }: { user: User }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [selectedEligibility, setSelectedEligibility] = useState<
+    'verified' | 'grandfathered' | 'ineligible' | undefined
+  >(user.bonusEligibility)
+
+  const eligibilityOptions = [
+    { value: 'verified' as const, label: 'Verified', color: 'text-green-600' },
+    {
+      value: 'grandfathered' as const,
+      label: 'Grandfathered',
+      color: 'text-blue-600',
+    },
+    {
+      value: 'ineligible' as const,
+      label: 'Ineligible',
+      color: 'text-red-600',
+    },
+  ]
+
+  const currentEligibility = eligibilityOptions.find(
+    (o) => o.value === user.bonusEligibility
+  )
+
+  const handleUpdate = async (newValue: typeof selectedEligibility) => {
+    if (!newValue || newValue === user.bonusEligibility) return
+
+    setIsUpdating(true)
+    try {
+      await api('admin-set-bonus-eligibility', {
+        userId: user.id,
+        bonusEligibility: newValue,
+      })
+      toast.success(`Bonus eligibility updated to '${newValue}'`)
+      setSelectedEligibility(newValue)
+      // Reload to reflect changes
+      window.location.reload()
+    } catch (error) {
+      toast.error(
+        'Failed to update: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-200 rounded border">
+      <button
+        className="flex w-full items-center justify-between p-3 text-left"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <Row className="items-center gap-2">
+          <span className="font-semibold">Bonus Eligibility</span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+              user.bonusEligibility === 'verified'
+                ? 'bg-green-100 text-green-800'
+                : user.bonusEligibility === 'grandfathered'
+                ? 'bg-blue-100 text-blue-800'
+                : user.bonusEligibility === 'ineligible'
+                ? 'bg-red-100 text-red-800'
+                : 'bg-orange-100 text-orange-800'
+            }`}
+          >
+            {currentEligibility?.label ?? 'Not Set'}
+          </span>
+        </Row>
+        {isExpanded ? (
+          <ChevronUpIcon className="h-5 w-5" />
+        ) : (
+          <ChevronDownIcon className="h-5 w-5" />
+        )}
+      </button>
+      {isExpanded && (
+        <div className="border-ink-200 space-y-3 border-t p-3">
+          <p className="text-ink-600 text-sm">
+            Controls whether this user can receive site bonuses (signup bonus,
+            referral bonus, quest rewards, league prizes, etc.)
+          </p>
+          <Row className="flex-wrap gap-2">
+            {eligibilityOptions.map((option) => (
+              <Button
+                key={option.value}
+                onClick={() => handleUpdate(option.value)}
+                loading={isUpdating && selectedEligibility === option.value}
+                disabled={isUpdating || user.bonusEligibility === option.value}
+                color={
+                  user.bonusEligibility === option.value
+                    ? 'indigo'
+                    : 'gray-outline'
+                }
+                size="xs"
+              >
+                <span className={option.color}>{option.label}</span>
+              </Button>
+            ))}
+          </Row>
+        </div>
+      )}
     </div>
   )
 }

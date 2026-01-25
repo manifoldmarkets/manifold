@@ -163,6 +163,18 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'admin-set-bonus-eligibility': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        bonusEligibility: z.enum(['verified', 'grandfathered', 'ineligible']),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
   'admin-search-users-by-email': {
     method: 'GET',
     visibility: 'undocumented',

@@ -495,6 +495,12 @@ export default function AdminUserInfoPage() {
                 </Row>
               </div>
 
+              {/* Bonus Eligibility */}
+              <BonusEligibilitySection
+                user={selectedUser}
+                onUpdate={(newUser) => setSelectedUser(newUser)}
+              />
+
               {/* Email Status */}
               <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
                 <h3 className="font-semibold">Email Status</h3>
@@ -946,5 +952,154 @@ export default function AdminUserInfoPage() {
         </>
       )}
     </Page>
+  )
+}
+
+function BonusEligibilitySection({
+  user,
+  onUpdate,
+}: {
+  user: FullUser
+  onUpdate: (user: FullUser) => void
+}) {
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [selectedEligibility, setSelectedEligibility] = useState<
+    'verified' | 'grandfathered' | 'ineligible' | undefined
+  >(user.bonusEligibility)
+
+  const eligibilityOptions = [
+    {
+      value: 'verified' as const,
+      label: 'Verified',
+      description: 'Passed iDenfy identity verification',
+      color: 'text-green-600',
+    },
+    {
+      value: 'grandfathered' as const,
+      label: 'Grandfathered',
+      description: 'Active user before KYC requirement',
+      color: 'text-blue-600',
+    },
+    {
+      value: 'ineligible' as const,
+      label: 'Ineligible',
+      description: 'Not eligible for bonuses',
+      color: 'text-red-600',
+    },
+  ]
+
+  const currentEligibility = eligibilityOptions.find(
+    (o) => o.value === user.bonusEligibility
+  )
+
+  const handleUpdate = async () => {
+    if (!selectedEligibility || selectedEligibility === user.bonusEligibility)
+      return
+
+    setIsUpdating(true)
+    try {
+      await api('admin-set-bonus-eligibility', {
+        userId: user.id,
+        bonusEligibility: selectedEligibility,
+      })
+      toast.success(`Bonus eligibility updated to '${selectedEligibility}'`)
+      onUpdate({ ...user, bonusEligibility: selectedEligibility })
+    } catch (error) {
+      toast.error(
+        'Failed to update: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
+      <h3 className="font-semibold">Bonus Eligibility</h3>
+      <div className="space-y-2">
+        <div>
+          <span className="text-ink-600 text-sm">Current Status: </span>
+          <span
+            className={`font-medium ${
+              currentEligibility?.color ?? 'text-orange-600'
+            }`}
+          >
+            {currentEligibility?.label ?? 'Not Set (Pending)'}
+          </span>
+          {currentEligibility && (
+            <span className="text-ink-500 ml-2 text-sm">
+              - {currentEligibility.description}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <label className="text-ink-700 block text-sm font-medium">
+            Change Eligibility:
+          </label>
+          <Row className="flex-wrap gap-2">
+            {eligibilityOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setSelectedEligibility(option.value)}
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  selectedEligibility === option.value
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-ink-200 hover:border-ink-300 bg-canvas-0'
+                }`}
+              >
+                <span className={option.color}>{option.label}</span>
+              </button>
+            ))}
+          </Row>
+        </div>
+
+        {selectedEligibility && selectedEligibility !== user.bonusEligibility && (
+          <Row className="mt-3 gap-2">
+            <Button
+              onClick={handleUpdate}
+              loading={isUpdating}
+              disabled={isUpdating}
+              color="indigo"
+              size="sm"
+            >
+              Update Eligibility
+            </Button>
+            <Button
+              onClick={() => setSelectedEligibility(user.bonusEligibility)}
+              disabled={isUpdating}
+              color="gray-outline"
+              size="sm"
+            >
+              Cancel
+            </Button>
+          </Row>
+        )}
+      </div>
+
+      <div className="mt-3 rounded border border-blue-200 bg-blue-50 p-3">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> Bonus eligibility controls whether the user can
+          receive site bonuses (signup bonus, referral bonus, quest rewards,
+          league prizes, etc.).
+        </p>
+        <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
+          <li>
+            <strong>Verified:</strong> User passed iDenfy identity verification
+          </li>
+          <li>
+            <strong>Grandfathered:</strong> Active user before KYC was required
+          </li>
+          <li>
+            <strong>Ineligible:</strong> User failed verification or is
+            otherwise not eligible
+          </li>
+          <li>
+            <strong>Not Set:</strong> New user who hasn't completed verification
+          </li>
+        </ul>
+      </div>
+    </div>
   )
 }
