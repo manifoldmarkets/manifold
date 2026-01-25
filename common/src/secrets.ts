@@ -28,6 +28,7 @@ export const secrets = (
     'TWILIO_AUTH_TOKEN',
     'TWILIO_SID',
     'TWILIO_VERIFY_SID',
+    // DEPRECATED: GIDX replaced by idenfy for identity verification
     'GIDX_API_KEY',
     'GIDX_MERCHANT_ID',
     'GIDX_PRODUCT_TYPE_ID',
@@ -39,6 +40,9 @@ export const secrets = (
     'SPORTSDB_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
+    'IDENFY_API_KEY',
+    'IDENFY_API_SECRET',
+    'IDENFY_CALLBACK_SECRET',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

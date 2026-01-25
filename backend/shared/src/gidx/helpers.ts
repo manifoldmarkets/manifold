@@ -1,3 +1,12 @@
+/**
+ * @fileoverview DEPRECATED - GIDX API helpers
+ *
+ * This module is being replaced by idenfy for identity verification.
+ * Do not add new functionality here. See backend/api/src/idenfy/ for the new implementation.
+ *
+ * Kept for: processing historical transactions, existing user verification status checks
+ */
+
 import * as crypto from 'crypto'
 import { APIError } from 'common/api/utils'
 import {

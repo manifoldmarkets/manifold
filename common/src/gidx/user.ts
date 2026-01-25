@@ -1,3 +1,10 @@
+/**
+ * @fileoverview DEPRECATED - GIDX user verification status helpers
+ *
+ * This module is being replaced by idenfy for identity verification.
+ * Some helpers here may still be useful for checking user verification state.
+ */
+
 import { FRAUD_THRESHOLD } from 'common/gidx/gidx'
 import {
   identityBlockedCodes,

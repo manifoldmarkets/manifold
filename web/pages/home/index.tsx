@@ -7,6 +7,7 @@ import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { DowntimeBanner, ShopBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
+import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
@@ -20,6 +21,7 @@ export default function Home() {
   return (
     <Page trackPageView={'home'} className="lg:px-4">
       <Welcome />
+      <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
       <ShopBanner />

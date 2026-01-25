@@ -46,14 +46,26 @@ export const redirectIfLoggedIn = <P extends { [k: string]: any }>(
         return props
       }
     } else {
-      const { nativePlatform } = ctx.query ?? {}
+      const { nativePlatform, ...restQuery } = ctx.query ?? {}
       if (nativePlatform) {
         const nativeDest = '/sign-in-waiting'
         console.debug(`Redirecting native platform to ${nativeDest}.`)
         return { redirect: { destination: nativeDest, permanent: false } }
       }
-      console.debug(`Redirecting to ${dest}.`)
-      return { redirect: { destination: dest, permanent: false } }
+      // Preserve query params when redirecting (e.g., for iDenfy verification results)
+      const queryString = Object.keys(restQuery).length > 0
+        ? '?' + Object.entries(restQuery)
+            .map(([key, value]) => {
+              if (Array.isArray(value)) {
+                return value.map(v => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join('&')
+              }
+              return `${encodeURIComponent(key)}=${encodeURIComponent(value ?? '')}`
+            })
+            .join('&')
+        : ''
+      const finalDest = dest + queryString
+      console.debug(`Redirecting to ${finalDest}.`)
+      return { redirect: { destination: finalDest, permanent: false } }
     }
   }
 }

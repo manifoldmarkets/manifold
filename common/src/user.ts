@@ -115,6 +115,12 @@ export type User = {
   purchasedMana?: boolean
   verifiedPhone?: boolean
 
+  // Bonus eligibility for receiving site bonuses and participating in cash raffles
+  // 'verified' = passed identity verification (iDenfy)
+  // 'grandfathered' = existing user before cash raffles launched
+  // 'ineligible' = not eligible for bonuses
+  bonusEligibility?: 'verified' | 'grandfathered' | 'ineligible'
+
   // Entitlements - digital goods owned by this user (from user_entitlements table)
   entitlements?: UserEntitlement[]
 }
@@ -196,6 +202,11 @@ export const isUserLikelySpammer = (
 
 // This grandfathers in older users who have not yet verified their phone
 export const humanish = (user: User) => user.verifiedPhone !== false
+
+// Check if user can receive site bonuses (verified via iDenfy or grandfathered)
+export const canReceiveBonuses = (user: User) =>
+  user.bonusEligibility === 'verified' ||
+  user.bonusEligibility === 'grandfathered'
 
 // expires: sep 26th, ~530pm PT
 const LIMITED_TIME_DEAL_END = 1727311753233 + DAY_MS

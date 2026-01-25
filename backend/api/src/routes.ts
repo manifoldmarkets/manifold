@@ -29,6 +29,8 @@ import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
 import { register } from 'api/gidx/register'
 import { uploadDocument } from 'api/gidx/upload-document'
+import { createIdenfySession } from 'api/idenfy/create-session'
+import { getIdenfyStatus } from 'api/idenfy/get-status'
 import { getMarkets } from 'api/markets'
 import { multiSell } from 'api/multi-sell'
 import { placeMultiBet } from 'api/place-multi-bet'
@@ -385,6 +387,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'upload-document-gidx': uploadDocument,
   'get-verification-documents-gidx': getVerificationDocuments,
   'get-monitor-status-gidx': getMonitorStatus,
+  // iDenfy identity verification
+  'create-idenfy-session': createIdenfySession,
+  'get-idenfy-status': getIdenfyStatus,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,

@@ -1942,6 +1942,9 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // DEPRECATED: GIDX endpoints - replaced by idenfy for identity verification
+  // Use create-idenfy-session and get-idenfy-status instead
+  // Kept for: historical transaction processing, gradual migration
   'register-gidx': {
     method: 'POST',
     visibility: 'undocumented',
@@ -3276,6 +3279,24 @@ export const API = (_apiTypeCheck = {
         premiumCount: number
         totalCount: number
       }[]
+    },
+  },
+  // iDenfy identity verification endpoints
+  'create-idenfy-session': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { redirectUrl: string; scanRef: string },
+  },
+  'get-idenfy-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'pending' | 'approved' | 'denied' | 'suspected' | null
+      verifiedTime: number | null
     },
   },
 } as const)

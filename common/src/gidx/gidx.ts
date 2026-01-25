@@ -1,6 +1,17 @@
+/**
+ * @fileoverview DEPRECATED - GIDX identity verification integration
+ *
+ * This module is being replaced by idenfy for identity verification.
+ * Do not add new functionality here. See backend/api/src/idenfy/ for the new implementation.
+ *
+ * Kept for: processing historical transactions, gradual migration
+ * New verification: Use idenfy endpoints (create-idenfy-session, get-idenfy-status)
+ */
+
 import { z } from 'zod'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 
+/** @deprecated Use idenfy for new verifications */
 export const GIDX_REGISTATION_DOCUMENTS_REQUIRED = 1
 
 export const GPSProps = z.object({
