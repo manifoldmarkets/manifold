@@ -2,11 +2,16 @@ import { Request, Response } from 'express'
 import * as crypto from 'crypto'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { getUser, log } from 'shared/utils'
+import { getUser, log, getContractSupabase } from 'shared/utils'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { STARTING_BALANCE } from 'common/economy'
+import { STARTING_BALANCE, REFERRAL_AMOUNT } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
+import { canReceiveBonuses } from 'common/user'
+import { createReferralNotification } from 'shared/create-notification'
+import { removeUndefinedProps } from 'common/util/object'
+import { getBenefit, SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
 
 // iDenfy webhook callback payload structure (comprehensive type based on their schema)
 type IdenfyCallbackPayload = {
@@ -258,7 +263,7 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     ]
   )
 
-  // Update user's bonusEligibility if approved and pay signup bonus
+  // Update user's bonusEligibility if approved and pay signup bonus + referral bonus
   // Only set to 'verified' on approval - don't overwrite grandfathered status on failure
   if (internalStatus === 'approved') {
     const user = await getUser(userId)
@@ -266,7 +271,14 @@ export const idenfyCallback = async (req: Request, res: Response) => {
       // Only pay signup bonus if they haven't already received it
       const alreadyPaidBonus = (user.signupBonusPaid ?? 0) >= STARTING_BALANCE
       
-      await pg.tx(async (tx) => {
+      // Check for referral bonus eligibility
+      const referrerId = user.referredByUserId
+      const referrer = referrerId ? await getUser(referrerId) : null
+      const referredByContract = user.referredByContractId
+        ? await getContractSupabase(user.referredByContractId)
+        : undefined
+      
+      const { referralBonusAmount } = await pg.tx(async (tx) => {
         // Update bonus eligibility
         await updateUser(tx, userId, { bonusEligibility: 'verified' })
         
@@ -288,7 +300,74 @@ export const idenfyCallback = async (req: Request, res: Response) => {
           await updateUser(tx, userId, { signupBonusPaid: STARTING_BALANCE })
           log(`Paid signup bonus of ${STARTING_BALANCE} to user ${userId} after identity verification`)
         }
+        
+        // Pay referral bonus if:
+        // 1. User was referred by someone
+        // 2. Referrer can receive bonuses (verified or grandfathered)
+        // 3. Referral bonus hasn't already been paid for this user
+        if (referrerId && referrer && canReceiveBonuses(referrer)) {
+          // Check if referral bonus was already paid
+          const existingReferralTxn = await tx.oneOrNone(
+            `SELECT 1 FROM txns WHERE to_id = $1
+             AND category = 'REFERRAL'
+             AND data->>'referredUserId' = $2`,
+            [referrer.id, userId]
+          )
+          
+          if (!existingReferralTxn) {
+            // Fetch referrer's supporter entitlements for bonus multiplier
+            const supporterEntitlementRows = await tx.manyOrNone(
+              `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
+               WHERE user_id = $1
+               AND entitlement_id = ANY($2)
+               AND enabled = true
+               AND (expires_time IS NULL OR expires_time > NOW())`,
+              [referrer.id, SUPPORTER_ENTITLEMENT_IDS]
+            )
+            
+            // Convert to UserEntitlement format for getBenefit
+            const entitlements = supporterEntitlementRows.map(convertEntitlement)
+            
+            // Get tier-specific referral multiplier (1x for non-supporters)
+            const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
+            const referralAmount = Math.floor(REFERRAL_AMOUNT * referralMultiplier)
+            
+            const txnData = {
+              fromType: 'BANK',
+              toId: referrer.id,
+              toType: 'USER',
+              amount: referralAmount,
+              token: 'M$',
+              category: 'REFERRAL',
+              description: `Referred new user id: ${userId} for ${referralAmount}`,
+              data: removeUndefinedProps({
+                referredUserId: userId,
+                referredContractId: referredByContract?.id,
+                supporterBonus: referralMultiplier > 1,
+                referralMultiplier,
+              }),
+            } as const
+            
+            await runTxnFromBank(tx, txnData)
+            log(`Paid referral bonus of ${referralAmount} to referrer ${referrer.id} for verified user ${userId}`)
+            return { referralBonusAmount: referralAmount }
+          }
+        } else if (referrer && !canReceiveBonuses(referrer)) {
+          log(`Skipped referral bonus for referrer ${referrer.id} - not eligible for bonuses`)
+        }
+        
+        return { referralBonusAmount: null }
       })
+      
+      // Send referral notification outside transaction
+      if (referralBonusAmount && referrer) {
+        await createReferralNotification(
+          referrer.id,
+          user,
+          referralBonusAmount.toString(),
+          referredByContract ?? undefined
+        )
+      }
     }
   }
 
