@@ -1838,6 +1838,9 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // DEPRECATED: GIDX endpoints - replaced by idenfy for identity verification
+  // Use create-idenfy-session and get-idenfy-status instead
+  // Kept for: historical transaction processing, gradual migration
   'register-gidx': {
     method: 'POST',
     visibility: 'undocumented',

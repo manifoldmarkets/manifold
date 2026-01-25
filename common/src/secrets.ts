@@ -28,6 +28,7 @@ export const secrets = (
     'TWILIO_AUTH_TOKEN',
     'TWILIO_SID',
     'TWILIO_VERIFY_SID',
+    // DEPRECATED: GIDX replaced by idenfy for identity verification
     'GIDX_API_KEY',
     'GIDX_MERCHANT_ID',
     'GIDX_PRODUCT_TYPE_ID',

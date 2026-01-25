@@ -1,3 +1,9 @@
+/**
+ * @fileoverview DEPRECATED - GIDX location verification panel
+ *
+ * This component is being replaced by idenfy for identity verification.
+ */
+
 import { GPSData } from 'common/gidx/gidx'
 import { Button } from 'web/components/buttons/button'
 import { BottomRow } from './register-component-helpers'
