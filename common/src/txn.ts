@@ -64,6 +64,7 @@ type AnyTxnType =
   | UndoResolutionFee
   | ContractBoostPurchase
   | CharityGiveawayTicket
+  | SweepstakesTicket
   | ShopPurchase
   | ShopRefund
   | MembershipPayment
@@ -636,6 +637,18 @@ type CharityGiveawayTicket = {
   }
 }
 
+type SweepstakesTicket = {
+  category: 'SWEEPSTAKES_TICKET'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    sweepstakesNum: number
+    numTickets: number
+    ticketId: string
+  }
+}
+
 type ShopPurchase = {
   category: 'SHOP_PURCHASE'
   fromType: 'USER'
@@ -724,5 +737,6 @@ export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
 export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
+export type SweepstakesTicketTxn = Txn & SweepstakesTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type MembershipPaymentTxn = Txn & MembershipPayment
