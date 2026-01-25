@@ -65,8 +65,8 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
   // Fetch user data to check bonus eligibility
   const usersWithEligibility =
     prizeUserIds.length > 0
-      ? await pg.manyOrNone<{ id: string; data: any }>(
-          `SELECT id, data FROM users WHERE id = ANY($1)`,
+      ? await pg.manyOrNone(
+          `SELECT * FROM users WHERE id = ANY($1)`,
           [prizeUserIds]
         )
       : []
