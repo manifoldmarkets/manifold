@@ -3,6 +3,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import { canReceiveBonuses } from 'common/user'
 import {
   createBinarySchema,
   createBountySchema,
@@ -201,6 +202,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       )
       const user = first(userAndSlugResult[0].map(convertUser))
       if (!user) throw new APIError(401, 'Your account was not found')
+
+      // Prevent bonus-ineligible users from creating unlisted markets
+      if (visibility === 'unlisted' && !canReceiveBonuses(user)) {
+        throw new APIError(
+          403,
+          'Please verify your identity to create unlisted markets.'
+        )
+      }
 
       const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
       if (!isFree && totalMarketCost > user.balance)
