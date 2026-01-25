@@ -35,6 +35,7 @@ export const placeMultiBetMain = async (
     const {
       user,
       contract,
+      creator,
       answers,
       unfilledBets,
       balanceByUserId,
@@ -91,6 +92,7 @@ export const placeMultiBetMain = async (
         newBetResult,
         contract,
         user,
+        creator,
         isApi,
         contractMetrics,
         balanceByUserId,

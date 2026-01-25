@@ -227,6 +227,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       newBetResult,
       contract,
       user,
+      undefined, // creator - not needed for sells (no unique bettor bonus)
       isApi,
       contractMetrics,
       balanceByUserId,
