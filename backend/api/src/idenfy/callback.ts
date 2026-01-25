@@ -371,6 +371,15 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     }
   }
 
+  // Mark user as ineligible if denied or suspected (but don't overwrite grandfathered status)
+  if (internalStatus === 'denied' || internalStatus === 'suspected') {
+    const user = await getUser(userId)
+    if (user && user.bonusEligibility !== 'grandfathered') {
+      await updateUser(pg, userId, { bonusEligibility: 'ineligible' })
+      log(`Set bonusEligibility to 'ineligible' for user ${userId} (status: ${internalStatus})`)
+    }
+  }
+
   // Broadcast update to connected clients
   broadcastUpdatedPrivateUser(userId)
 
