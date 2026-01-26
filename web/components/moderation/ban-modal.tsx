@@ -242,7 +242,7 @@ export function BanModal({
 
   return (
     <Modal open={isOpen} setOpen={onClose}>
-      <Col className="bg-canvas-0 max-w-2xl gap-4 rounded-md p-6">
+      <Col className="bg-canvas-0 max-h-[90vh] max-w-2xl gap-4 overflow-y-auto rounded-md p-6">
         <Title>Ban User: {user.name}</Title>
 
         {/* Current Bans/Alerts Section */}
