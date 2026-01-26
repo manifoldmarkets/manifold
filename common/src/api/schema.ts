@@ -3160,6 +3160,10 @@ export const API = (_apiTypeCheck = {
       nonce?: string // Actual nonce, only revealed AFTER winners are selected for verification
       // Free ticket status for current user
       hasClaimedFreeTicket?: boolean
+      // Investment requirement fields (for current user)
+      userTotalManaInvested?: number
+      meetsInvestmentRequirement?: boolean
+      minManaInvested?: number
     },
   },
   'buy-sweepstakes-tickets': {

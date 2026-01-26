@@ -2,7 +2,10 @@ import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser } from 'shared/utils'
-import { calculateSweepstakesTicketCost } from 'common/sweepstakes'
+import {
+  calculateSweepstakesTicketCost,
+  SWEEPSTAKES_MIN_MANA_INVESTED,
+} from 'common/sweepstakes'
 import { getIp } from 'shared/analytics'
 import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
 import { canReceiveBonuses } from 'common/user'
@@ -61,6 +64,22 @@ export const buySweepstakesTickets: APIHandler<'buy-sweepstakes-tickets'> =
           'You must verify your identity to participate in the sweepstakes'
         )
       }
+
+      // Check minimum mana invested requirement
+      const investedResult = await tx.oneOrNone<{ total_invested: string }>(
+        `SELECT COALESCE(SUM((data->>'totalAmountInvested')::numeric), 0) as total_invested
+         FROM user_contract_metrics
+         WHERE user_id = $1`,
+        [auth.uid]
+      )
+      const totalManaInvested = parseFloat(investedResult?.total_invested ?? '0')
+      if (totalManaInvested < SWEEPSTAKES_MIN_MANA_INVESTED) {
+        throw new APIError(
+          403,
+          `You must have at least ${SWEEPSTAKES_MIN_MANA_INVESTED} mana invested to participate in the sweepstakes`
+        )
+      }
+
       if (user.balance < manaSpent) {
         throw new APIError(403, 'Insufficient mana balance')
       }

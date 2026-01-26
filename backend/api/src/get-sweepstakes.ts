@@ -6,6 +6,7 @@ import {
   SweepstakesPrize,
   getPrizeForRank,
   SweepstakesWinner,
+  SWEEPSTAKES_MIN_MANA_INVESTED,
 } from 'common/sweepstakes'
 
 export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
@@ -128,14 +129,28 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     }
   }
 
-  // Check if current user has claimed free ticket
+  // Check if current user has claimed free ticket and get their total mana invested
   let hasClaimedFreeTicket: boolean | undefined
+  let userTotalManaInvested: number | undefined
+  let meetsInvestmentRequirement: boolean | undefined
+
   if (auth) {
     const freeTicket = await pg.oneOrNone(
       `SELECT 1 FROM sweepstakes_free_tickets WHERE sweepstakes_num = $1 AND user_id = $2`,
       [sweepstakes.sweepstakes_num, auth.uid]
     )
     hasClaimedFreeTicket = !!freeTicket
+
+    // Get user's total mana invested across all markets
+    const investedResult = await pg.oneOrNone<{ total_invested: string }>(
+      `SELECT COALESCE(SUM((data->>'totalAmountInvested')::numeric), 0) as total_invested
+       FROM user_contract_metrics
+       WHERE user_id = $1`,
+      [auth.uid]
+    )
+    userTotalManaInvested = parseFloat(investedResult?.total_invested ?? '0')
+    meetsInvestmentRequirement =
+      userTotalManaInvested >= SWEEPSTAKES_MIN_MANA_INVESTED
   }
 
   return {
@@ -162,5 +177,8 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
         ? sweepstakes.nonce
         : undefined,
     hasClaimedFreeTicket,
+    userTotalManaInvested,
+    meetsInvestmentRequirement,
+    minManaInvested: SWEEPSTAKES_MIN_MANA_INVESTED,
   }
 }

@@ -126,6 +126,9 @@ export default function SweepstakesPage({
   const nonceHash = data ? data.nonceHash : undefined
   const nonce = data ? data.nonce : undefined
   const hasClaimedFreeTicket = data ? data.hasClaimedFreeTicket : false
+  const meetsInvestmentRequirement = data?.meetsInvestmentRequirement ?? true
+  const userTotalManaInvested = data?.userTotalManaInvested ?? 0
+  const minManaInvested = data?.minManaInvested ?? 1000
   const totalManaSpent = userStats.reduce(
     (sum, s) => sum + s.totalManaSpent,
     0
@@ -336,6 +339,26 @@ export default function SweepstakesPage({
           </div>
         )}
 
+        {/* Investment Requirement Banner */}
+        {!isLocationRestricted &&
+          !needsVerification &&
+          user &&
+          !meetsInvestmentRequirement && (
+            <div className="rounded-lg border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-950/30">
+              <p className="text-violet-800 dark:text-violet-300">
+                You must have at least{' '}
+                <span className="font-semibold">
+                  {formatMoney(minManaInvested)}
+                </span>{' '}
+                invested to participate in the sweepstakes. You currently have{' '}
+                <span className="font-semibold">
+                  {formatMoney(userTotalManaInvested)}
+                </span>{' '}
+                invested.
+              </p>
+            </div>
+          )}
+
         {/* Prize Structure */}
         <PrizeStructure prizes={sweepstakes.prizes} />
 
@@ -388,7 +411,11 @@ export default function SweepstakesPage({
             hasClaimedFreeTicket={hasClaimedFreeTicket ?? false}
             isClaimingFree={isClaimingFree}
             handleClaimFreeTicket={handleClaimFreeTicket}
-            disabled={isLocationRestricted || !!needsVerification}
+            disabled={
+              isLocationRestricted ||
+              !!needsVerification ||
+              !meetsInvestmentRequirement
+            }
           />
         )}
 

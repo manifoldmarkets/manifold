@@ -1,5 +1,8 @@
 // Sweepstakes types and utility functions
 
+// Minimum total mana invested to participate in sweepstakes
+export const SWEEPSTAKES_MIN_MANA_INVESTED = 1000
+
 export interface Sweepstakes {
   sweepstakesNum: number
   name: string
