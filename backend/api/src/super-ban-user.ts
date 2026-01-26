@@ -5,6 +5,7 @@ import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { updateContract } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateUser } from 'shared/supabase/users'
 import { updateData } from 'shared/supabase/utils'
 import { getUser, log, revalidateContractStaticProps } from 'shared/utils'
 import { revalidatePost } from './create-post-comment'
@@ -26,6 +27,10 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
   }
 
   const pg = createSupabaseDirectClient()
+
+  // Set bonusEligibility to ineligible
+  await updateUser(pg, userId, { bonusEligibility: 'ineligible' })
+  log(`Set bonusEligibility to 'ineligible' for user ${userId}`)
 
   const contracts = await pg.map(
     `SELECT * FROM contracts WHERE creator_id = $1`,
