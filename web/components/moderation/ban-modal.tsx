@@ -243,17 +243,10 @@ export function BanModal({
   return (
     <>
       <Modal open={isOpen} setOpen={onClose} size="lg">
-        <Col className="bg-canvas-0 max-h-[85vh] overflow-hidden rounded-md">
-          {/* Fixed Header */}
-          <div className="border-ink-200 shrink-0 border-b px-6 pb-4 pt-6">
-            <Title className="!mb-0">Ban User: {user.name}</Title>
-          </div>
+        <div className="bg-canvas-0 max-h-[70vh] overflow-y-auto rounded-md p-6">
+          <Title>Ban User: {user.name}</Title>
 
-          {/* Scrollable Content */}
-          <div
-            className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
+          <div className="space-y-4">
             {/* Current Bans/Alerts Section */}
             {hasCurrentBansOrAlerts && (
               <div className="border-ink-200 rounded border">
@@ -577,7 +570,7 @@ export function BanModal({
               </Button>
             </Row>
           </div>
-        </Col>
+        </div>
       </Modal>
 
       {/* Unban Confirmation Modal */}
