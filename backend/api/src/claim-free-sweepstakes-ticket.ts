@@ -1,12 +1,21 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getIp } from 'shared/analytics'
+import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
 
 const FREE_TICKET_AMOUNT = 1 // One free ticket per user per sweepstakes
 
 export const claimFreeSweepstakesTicket: APIHandler<
   'claim-free-sweepstakes-ticket'
-> = async (props, auth) => {
+> = async (props, auth, req) => {
   const { sweepstakesNum } = props
+
+  // Geofencing check
+  const ip = getIp(req)
+  const { allowed } = await isSweepstakesLocationAllowed(ip)
+  if (!allowed) {
+    throw new APIError(403, 'Sweepstakes is not available in your region')
+  }
 
   const pg = createSupabaseDirectClient()
 

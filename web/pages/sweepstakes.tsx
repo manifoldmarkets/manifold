@@ -1,5 +1,6 @@
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
 import { sortBy } from 'lodash'
+import { GetServerSideProps } from 'next'
 import { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -28,6 +29,48 @@ import {
   getTotalPrizePool,
   SweepstakesPrize,
 } from 'common/sweepstakes'
+import {
+  checkSweepstakesGeofence,
+  GeoLocationResult,
+} from 'common/sweepstakes-geofencing'
+
+interface SweepstakesPageProps {
+  isLocationRestricted: boolean
+}
+
+export const getServerSideProps: GetServerSideProps<
+  SweepstakesPageProps
+> = async (context) => {
+  // Extract IP from request headers
+  const forwarded = context.req.headers['x-forwarded-for']
+  const ip = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded?.split(',')[0]?.trim() ??
+      context.req.socket.remoteAddress ??
+      ''
+
+  try {
+    const fields = 'status,message,countryCode,region'
+    const response = await fetch(
+      `http://ip-api.com/json/${ip}?fields=${fields}`
+    )
+    const geo: GeoLocationResult = await response.json()
+    const { allowed } = checkSweepstakesGeofence(geo)
+
+    return {
+      props: {
+        isLocationRestricted: !allowed,
+      },
+    }
+  } catch (error) {
+    // On error, allow access (backend will validate on purchase)
+    return {
+      props: {
+        isLocationRestricted: false,
+      },
+    }
+  }
+}
 
 // Format tickets with appropriate precision
 function formatTickets(tickets: number): string {
@@ -56,7 +99,9 @@ const COLORS = [
   '#d946ef', // fuchsia
 ]
 
-export default function SweepstakesPage() {
+export default function SweepstakesPage({
+  isLocationRestricted,
+}: SweepstakesPageProps) {
   const user = useUser()
   const isAdmin = useAdmin()
   const { data, refresh } = useAPIGetter('get-sweepstakes', {})
@@ -258,6 +303,15 @@ export default function SweepstakesPage() {
           </p>
         </Col>
 
+        {/* Location Restriction Banner */}
+        {isLocationRestricted && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="text-amber-800 dark:text-amber-300">
+              Sweepstakes is not available in your region.
+            </p>
+          </div>
+        )}
+
         {/* Prize Structure */}
         <PrizeStructure prizes={sweepstakes.prizes} />
 
@@ -310,6 +364,7 @@ export default function SweepstakesPage() {
             hasClaimedFreeTicket={hasClaimedFreeTicket ?? false}
             isClaimingFree={isClaimingFree}
             handleClaimFreeTicket={handleClaimFreeTicket}
+            disabled={isLocationRestricted}
           />
         )}
 
@@ -454,6 +509,7 @@ function PurchaseForm(props: {
   hasClaimedFreeTicket: boolean
   isClaimingFree: boolean
   handleClaimFreeTicket: () => void
+  disabled?: boolean
 }) {
   const {
     manaAmount,
@@ -466,6 +522,7 @@ function PurchaseForm(props: {
     hasClaimedFreeTicket,
     isClaimingFree,
     handleClaimFreeTicket,
+    disabled,
   } = props
 
   return (
@@ -494,7 +551,7 @@ function PurchaseForm(props: {
                 color="green"
                 onClick={handleClaimFreeTicket}
                 loading={isClaimingFree}
-                disabled={isClaimingFree}
+                disabled={isClaimingFree || disabled}
               >
                 Claim Free Ticket
               </Button>
@@ -587,7 +644,7 @@ function PurchaseForm(props: {
           size="lg"
           onClick={handleBuyTickets}
           loading={isSubmitting}
-          disabled={numTickets <= 0 || isSubmitting}
+          disabled={numTickets <= 0 || isSubmitting || disabled}
           className="w-full justify-center rounded-lg py-3 font-semibold"
         >
           Buy {formatTickets(numTickets)} tickets for {formatMoney(manaAmount)}

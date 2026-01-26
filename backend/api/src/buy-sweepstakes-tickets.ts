@@ -3,10 +3,19 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser } from 'shared/utils'
 import { calculateSweepstakesTicketCost } from 'common/sweepstakes'
+import { getIp } from 'shared/analytics'
+import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
 
 export const buySweepstakesTickets: APIHandler<'buy-sweepstakes-tickets'> =
-  async (props, auth) => {
+  async (props, auth, req) => {
     const { sweepstakesNum, numTickets } = props
+
+    // Geofencing check
+    const ip = getIp(req)
+    const { allowed } = await isSweepstakesLocationAllowed(ip)
+    if (!allowed) {
+      throw new APIError(403, 'Sweepstakes is not available in your region')
+    }
 
     const pg = createSupabaseDirectClient()
 
