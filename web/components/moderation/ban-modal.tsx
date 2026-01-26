@@ -941,6 +941,20 @@ function BanHistoryRecord({
       ? modNames[record.ended_by] || record.ended_by
       : 'Unknown'
 
+  // Calculate ban duration
+  let durationText = 'Permanent'
+  if (record.end_time) {
+    // Temp ban: calculate intended duration
+    const durationMs = new Date(record.end_time).getTime() - new Date(record.created_at).getTime()
+    const days = Math.round(durationMs / DAY_MS)
+    durationText = `Temporary (${days}d)`
+  } else if (record.ended_at) {
+    // Permanent ban that was manually ended: show how long it was active
+    const durationMs = new Date(record.ended_at).getTime() - new Date(record.created_at).getTime()
+    const days = Math.round(durationMs / DAY_MS)
+    durationText = `Permanent (${days}d active)`
+  }
+
   return (
     <div className="bg-canvas-50 rounded border p-2">
       <Row className="items-center justify-between">
@@ -948,7 +962,7 @@ function BanHistoryRecord({
           {getBanTypeDisplayName(record.ban_type)}
         </span>
         <span className="text-ink-500 text-xs">
-          {record.end_time ? 'Temporary' : 'Permanent'}
+          {durationText}
         </span>
       </Row>
       <div className="text-ink-600 mt-1 space-y-1 text-xs">
