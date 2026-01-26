@@ -5,6 +5,7 @@ import { type Contract } from 'common/contract'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
+import { canReceiveBonuses } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { first } from 'lodash'
@@ -217,6 +218,14 @@ export const validateComment = async (
 
   if (!you) throw new APIError(401, 'Your account was not found')
   if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
+
+  // Require bonus eligibility (verified or grandfathered) to comment on markets
+  if (!canReceiveBonuses(you)) {
+    throw new APIError(
+      403,
+      'Please verify your identity to comment on markets.'
+    )
+  }
 
   if (!contract) throw new APIError(404, 'Contract not found')
   if (contract.token !== 'MANA') {

@@ -1,5 +1,6 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { PostComment } from 'common/comment'
+import { canReceiveBonuses } from 'common/user'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getPrivateUser, revalidateStaticProps } from 'shared/utils'
@@ -21,6 +22,14 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     const creator = await getUser(auth.uid)
     if (!creator) throw new APIError(401, 'Your account was not found')
     if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
+
+    // Require bonus eligibility (verified or grandfathered) to comment
+    if (!canReceiveBonuses(creator)) {
+      throw new APIError(
+        403,
+        'Please verify your identity to comment on posts.'
+      )
+    }
 
     const pg = createSupabaseDirectClient()
     const post = await getPost(pg, postId)
