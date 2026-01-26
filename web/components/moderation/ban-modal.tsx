@@ -557,11 +557,9 @@ export function BanModal({
               </div>
             )}
           </div>
-        </div>
 
-        {/* Fixed Footer */}
-        <div className="border-ink-200 shrink-0 border-t px-6 py-4">
-          <Row className="gap-2">
+          {/* Actions */}
+          <Row className="gap-2 pt-2">
             <Button
               color="red"
               disabled={!reason.trim() || (!anyBanSelected && !modAlertOnly)}
