@@ -2,22 +2,46 @@
 
 // Restricted countries (ISO 3166-1 alpha-2)
 export const RESTRICTED_COUNTRIES: string[] = [
-  'CU', // Cuba
-  'IR', // Iran
-  'KP', // North Korea
-  'SY', // Syria
-  'RU', // Russia
+  'AU', // Australia
   'BY', // Belarus
+  'BI', // Burundi
+  'CF', // Central African Republic
+  'CD', // Democratic Republic of the Congo
+  'CU', // Cuba
+  'DE', // Germany
+  'ET', // Ethiopia
+  'IR', // Iran
+  'IQ', // Iraq
+  'KP', // North Korea
+  'LB', // Lebanon
+  'LY', // Libya
+  'MM', // Myanmar
+  'NI', // Nicaragua
+  'NL', // Netherlands
+  'RU', // Russia
+  'SO', // Somalia
+  'SS', // South Sudan
+  'SD', // Sudan
+  'SY', // Syria
+  'VE', // Venezuela
+  'YE', // Yemen
+  'ZW', // Zimbabwe
 ]
 
-// Restricted US states (ip-api region codes)
+// Restricted US states/territories (ip-api region codes)
 export const RESTRICTED_US_STATES: string[] = [
-  'WA', // Washington
   'NY', // New York
   'NV', // Nevada
-  'MD', // Maryland
-  'MA', // Massachusetts
-  'LA', // Louisiana
+  'DE', // Delaware
+  'ID', // Idaho
+  'MI', // Michigan
+  'WA', // Washington
+  'DC', // Washington D.C.
+]
+
+// Restricted Canadian provinces (ip-api region codes)
+export const RESTRICTED_CA_PROVINCES: string[] = [
+  'ON', // Ontario
 ]
 
 // Result from ip-api.com geolocation lookup
@@ -62,6 +86,20 @@ export function checkSweepstakesGeofence(
     geo.countryCode === 'US' &&
     geo.region &&
     RESTRICTED_US_STATES.includes(geo.region)
+  ) {
+    return {
+      allowed: false,
+      reason: 'restricted_state',
+      countryCode: geo.countryCode,
+      region: geo.region,
+    }
+  }
+
+  // Check restricted Canadian provinces
+  if (
+    geo.countryCode === 'CA' &&
+    geo.region &&
+    RESTRICTED_CA_PROVINCES.includes(geo.region)
   ) {
     return {
       allowed: false,

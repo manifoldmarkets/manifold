@@ -6,12 +6,12 @@ Answers to questions about sweepstakes markets, eligibility, buying mana, withdr
 
 - 18 years and older.
 - US residents in select states are eligible to participate in sweepstakes markets:
-  - States eligible for sweepstakes (46 states): Alabama, Alaska, Arizona, Arkansas, California, Colorado, Connecticut, Florida, Georgia, Hawaii, Illinois, Indiana, Iowa, Kansas, Kentucky, Louisiana, Maine, Maryland, Massachusetts, Minnesota, Mississippi, Missouri, Montana, Nebraska, Nevada, New Hampshire, New Jersey, New Mexico, New York, North Carolina, North Dakota, Ohio, Oklahoma, Oregon, Pennsylvania, Rhode Island, South Carolina, South Dakota, Tennessee, Texas, Utah, Vermont, Virginia, West Virginia, Wisconsin, Wyoming.
-  - States NOT eligible (4 states): Delaware, Idaho, Michigan, and Washington.
+  - States NOT eligible (6 states): Delaware, Idaho, Michigan, Nevada, New York, and Washington.
   - Residents of Washington D.C. are NOT eligible.
   - Additional restrictions apply to some states:
-    - Residents of New York and Florida may not win and withdraw more than $5,000 per market.
-- International users are not eligible to participate in sweepstakes markets, although we are working on expanding as soon as possible.
+    - Residents of Florida may not win and withdraw more than $5,000 per market.
+- Canadian residents are eligible, except for residents of Ontario.
+- International users from most countries are eligible, except for residents of: Australia, Belarus, Burundi, Central African Republic, Cuba, Democratic Republic of the Congo, Ethiopia, Germany, Iran, Iraq, Lebanon, Libya, Myanmar, Netherlands, Nicaragua, North Korea, Russia, Somalia, South Sudan, Sudan, Syria, Venezuela, Yemen, and Zimbabwe.
 - Users must complete KYC to participate in sweepstakes markets. This requires your full legal name, date of birth, phone number, and address. Some users may be required to upload a document proving their residence.
 
 ### How do sweepstakes markets differ from the play-money markets on Manifold?
