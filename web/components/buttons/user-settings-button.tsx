@@ -128,7 +128,10 @@ export function UserSettingButton(props: { user: User }) {
                   <Button
                     color={'red'}
                     size="xs"
-                    onClick={() => setShowBanModal(true)}
+                    onClick={() => {
+                      setShowBanModal(true)
+                      setIsModalOpen(false)
+                    }}
                   >
                     Manage Bans
                   </Button>
