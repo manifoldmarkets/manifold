@@ -16,6 +16,7 @@ import {
   getActiveModAlerts,
   getBanTypeDisplayName,
   getBanTypeDescription,
+  isBanActive,
 } from 'common/ban-utils'
 import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
@@ -76,7 +77,7 @@ export function BanModal({
   )
   const activeBanTypes = getActiveBlockingBans(bans)
   const activeModAlerts = getActiveModAlerts(bans)
-  const historicalBans = bans.filter((b) => b.ended_at !== null)
+  const historicalBans = bans.filter((b) => !isBanActive(b))
   const isUsernameChangeRestricted = user.canChangeUsername === false
   const hasCurrentBansOrAlerts =
     activeBanTypes.length > 0 ||
@@ -515,35 +516,37 @@ export function BanModal({
         )}
 
         {/* Ban History Section */}
-        {historicalBans.length > 0 && (
-          <div className="border-ink-200 rounded border">
-            <button
-              className="flex w-full items-center justify-between p-3 text-left"
-              onClick={() => setShowBanHistory(!showBanHistory)}
-            >
-              <span className="font-semibold">
-                Ban History ({historicalBans.length} record
-                {historicalBans.length !== 1 ? 's' : ''})
-              </span>
-              {showBanHistory ? (
-                <ChevronUpIcon className="h-5 w-5" />
-              ) : (
-                <ChevronDownIcon className="h-5 w-5" />
-              )}
-            </button>
-            {showBanHistory && (
-              <div className="border-ink-200 space-y-3 border-t p-3">
-                {historicalBans.map((record) => (
+        <div className="border-ink-200 rounded border">
+          <button
+            className="flex w-full items-center justify-between p-3 text-left"
+            onClick={() => setShowBanHistory(!showBanHistory)}
+          >
+            <span className="font-semibold">
+              Ban History ({historicalBans.length} record
+              {historicalBans.length !== 1 ? 's' : ''})
+            </span>
+            {showBanHistory ? (
+              <ChevronUpIcon className="h-5 w-5" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5" />
+            )}
+          </button>
+          {showBanHistory && (
+            <div className="border-ink-200 space-y-3 border-t p-3">
+              {historicalBans.length > 0 ? (
+                historicalBans.map((record) => (
                   <BanHistoryRecord
                     key={record.id}
                     record={record}
                     modNames={modNames}
                   />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                ))
+              ) : (
+                <p className="text-ink-500 text-sm">No ban history</p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Actions */}
         <Row className="gap-2">
