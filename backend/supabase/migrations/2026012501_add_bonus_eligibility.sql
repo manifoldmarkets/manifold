@@ -49,6 +49,22 @@ WHERE
   -- Don't overwrite if already set (e.g., already verified in Step 1)
   AND data->>'bonusEligibility' IS NULL;
 
+-- Step 3: Set users with active trading bans to 'ineligible'
+-- This overrides any previous status (verified or grandfathered)
+UPDATE users
+SET data = jsonb_set(
+  COALESCE(data, '{}'::jsonb),
+  '{bonusEligibility}',
+  '"ineligible"'
+)
+WHERE EXISTS (
+  SELECT 1 FROM user_bans ub
+  WHERE ub.user_id = users.id
+    AND ub.ban_type = 'trading'
+    AND ub.ended_at IS NULL  -- not manually ended
+    AND (ub.end_time IS NULL OR ub.end_time > NOW())  -- no expiry or hasn't expired
+);
+
 -- Remove the old iDenfy fields from user data (optional cleanup)
 -- Uncomment these lines after verifying the migration works correctly
 -- UPDATE users SET data = data - 'idenfyStatus' WHERE data ? 'idenfyStatus';
