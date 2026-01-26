@@ -33,6 +33,8 @@ import {
   checkSweepstakesGeofence,
   GeoLocationResult,
 } from 'common/sweepstakes-geofencing'
+import { canReceiveBonuses } from 'common/user'
+import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
 interface SweepstakesPageProps {
   isLocationRestricted: boolean
@@ -112,6 +114,10 @@ export default function SweepstakesPage({
   const [salesRefreshKey, setSalesRefreshKey] = useState(0)
   const [isSelectingWinners, setIsSelectingWinners] = useState(false)
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+
+  // Check if user needs to verify before participating
+  const needsVerification = user && !canReceiveBonuses(user)
 
   const sweepstakes = data ? data.sweepstakes : undefined
   const userStats = data ? data.userStats : []
@@ -312,6 +318,24 @@ export default function SweepstakesPage({
           </div>
         )}
 
+        {/* Verification Required Banner */}
+        {!isLocationRestricted && needsVerification && (
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
+            <Row className="items-center justify-between gap-4">
+              <p className="text-indigo-800 dark:text-indigo-300">
+                You must verify your identity to participate in the sweepstakes.
+              </p>
+              <Button
+                color="indigo"
+                size="sm"
+                onClick={() => setShowVerificationModal(true)}
+              >
+                Verify Now
+              </Button>
+            </Row>
+          </div>
+        )}
+
         {/* Prize Structure */}
         <PrizeStructure prizes={sweepstakes.prizes} />
 
@@ -364,7 +388,17 @@ export default function SweepstakesPage({
             hasClaimedFreeTicket={hasClaimedFreeTicket ?? false}
             isClaimingFree={isClaimingFree}
             handleClaimFreeTicket={handleClaimFreeTicket}
-            disabled={isLocationRestricted}
+            disabled={isLocationRestricted || !!needsVerification}
+          />
+        )}
+
+        {/* Verification Modal */}
+        {user && (
+          <VerificationRequiredModal
+            open={showVerificationModal}
+            setOpen={setShowVerificationModal}
+            user={user}
+            action="receive bonuses"
           />
         )}
 

@@ -2,6 +2,8 @@ import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getIp } from 'shared/analytics'
 import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
+import { getUser } from 'shared/utils'
+import { canReceiveBonuses } from 'common/user'
 
 const FREE_TICKET_AMOUNT = 1 // One free ticket per user per sweepstakes
 
@@ -35,6 +37,18 @@ export const claimFreeSweepstakesTicket: APIHandler<
 
     if (new Date(sweepstakes.close_time) <= new Date()) {
       throw new APIError(400, 'Sweepstakes has closed')
+    }
+
+    // Check user eligibility
+    const user = await getUser(auth.uid, tx)
+    if (!user) {
+      throw new APIError(404, 'User not found')
+    }
+    if (!canReceiveBonuses(user)) {
+      throw new APIError(
+        403,
+        'You must verify your identity to participate in the sweepstakes'
+      )
     }
 
     // Check if user has already claimed free ticket

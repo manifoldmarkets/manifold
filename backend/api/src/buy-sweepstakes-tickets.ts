@@ -5,6 +5,7 @@ import { getUser } from 'shared/utils'
 import { calculateSweepstakesTicketCost } from 'common/sweepstakes'
 import { getIp } from 'shared/analytics'
 import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
+import { canReceiveBonuses } from 'common/user'
 
 export const buySweepstakesTickets: APIHandler<'buy-sweepstakes-tickets'> =
   async (props, auth, req) => {
@@ -49,10 +50,16 @@ export const buySweepstakesTickets: APIHandler<'buy-sweepstakes-tickets'> =
       // Calculate cost
       const manaSpent = calculateSweepstakesTicketCost(currentTickets, numTickets)
 
-      // Check user balance
+      // Check user balance and eligibility
       const user = await getUser(auth.uid, tx)
       if (!user) {
         throw new APIError(404, 'User not found')
+      }
+      if (!canReceiveBonuses(user)) {
+        throw new APIError(
+          403,
+          'You must verify your identity to participate in the sweepstakes'
+        )
       }
       if (user.balance < manaSpent) {
         throw new APIError(403, 'Insufficient mana balance')
