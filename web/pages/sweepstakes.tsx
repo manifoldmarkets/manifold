@@ -51,10 +51,20 @@ export const getServerSideProps: GetServerSideProps<
       context.req.socket.remoteAddress ??
       ''
 
+  const apiKey = process.env.IP_API_PRO_KEY
+  if (!apiKey) {
+    // Allow access if API key not configured (backend will validate on purchase)
+    return {
+      props: {
+        isLocationRestricted: false,
+      },
+    }
+  }
+
   try {
     const fields = 'status,message,countryCode,region'
     const response = await fetch(
-      `http://ip-api.com/json/${ip}?fields=${fields}`
+      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`
     )
     const geo: GeoLocationResult = await response.json()
     const { allowed } = checkSweepstakesGeofence(geo)
