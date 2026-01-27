@@ -25,6 +25,7 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
+import { FaHeart } from 'react-icons/fa6'
 
 import {
   calculateTicketsFromMana,
@@ -311,7 +312,7 @@ export default function CharityGiveawayPage() {
         {/* Header */}
         <Col className="gap-4">
           <Row className="items-center gap-3">
-            <span className="text-3xl">🎟️</span>
+            <FaHeart className="h-8 w-8 text-emerald-500" />
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
               Manifold Charity Giveaway
             </h1>

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FaGift } from 'react-icons/fa6'
+import { FaHeart } from 'react-icons/fa6'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -77,7 +77,7 @@ export function CharityGiveawayCard(props: {
           <div className="rounded-lg bg-white p-4 dark:bg-gray-900">
             {/* Header */}
             <Row className="mb-3 items-center gap-2">
-              <FaGift className="h-5 w-5 text-emerald-500" />
+              <FaHeart className="h-5 w-5 text-emerald-500" />
               <span className="text-lg font-semibold">Charity Giveaway</span>
               {!isClosed && (
                 <span className="ml-auto rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
@@ -142,7 +142,7 @@ export function CharityGiveawayCard(props: {
         <div className="rounded-lg bg-white p-4 dark:bg-gray-900">
           {/* Header */}
           <Row className="mb-3 items-center gap-2">
-            <FaGift className="h-5 w-5 text-amber-500" />
+            <FaHeart className="h-5 w-5 text-amber-500" />
             <span className="text-lg font-semibold">Charity Giveaway</span>
             <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
               WINNER
