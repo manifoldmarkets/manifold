@@ -124,6 +124,7 @@ export default function SweepstakesPage({
   const [isSelectingWinners, setIsSelectingWinners] = useState(false)
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [showPrizeModal, setShowPrizeModal] = useState(false)
 
   // Check if user needs to verify before participating
   const needsVerification = user && !canReceiveBonuses(user)
@@ -361,16 +362,12 @@ export default function SweepstakesPage({
             </div>
           )}
 
-        {/* Prize Structure */}
-        <PrizeStructure prizes={sweepstakes.prizes} />
-
         {/* Stats Row */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard
-            label="Total prizes"
-            value={`$${totalPrizePool.toLocaleString()}`}
-            sublabel="USDC"
-            color="teal"
+          <TotalPrizesCard
+            prizes={sweepstakes.prizes}
+            totalPrizePool={totalPrizePool}
+            onClick={() => setShowPrizeModal(true)}
           />
           <StatCard
             label="Time Left"
@@ -430,6 +427,14 @@ export default function SweepstakesPage({
             action="receive bonuses"
           />
         )}
+
+        {/* Prize Details Modal */}
+        <PrizeDetailsModal
+          open={showPrizeModal}
+          setOpen={setShowPrizeModal}
+          prizes={sweepstakes.prizes}
+          totalPrizePool={totalPrizePool}
+        />
 
         {!isClosed && !user && <SignInPrompt />}
 
@@ -553,33 +558,118 @@ function StatCard(props: {
   )
 }
 
-function PrizeStructure(props: { prizes: SweepstakesPrize[] }) {
-  const { prizes } = props
+function TotalPrizesCard(props: {
+  prizes: SweepstakesPrize[]
+  totalPrizePool: number
+  onClick: () => void
+}) {
+  const { prizes, totalPrizePool, onClick } = props
+
+  const firstPrize = prizes[0]
 
   return (
-    <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
-      <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
-        <h3 className="text-ink-900 font-semibold">Prize Structure</h3>
-        <p className="text-ink-500 mt-0.5 text-sm">USDC prizes for winners</p>
+    <button
+      onClick={onClick}
+      className="bg-canvas-0 border-canvas-50 flex flex-col rounded-xl border p-4 text-left shadow-sm transition-all hover:shadow-md hover:ring-1 hover:ring-teal-500"
+    >
+      <div className="text-ink-500 text-xs font-medium uppercase tracking-wider">
+        Total prizes
       </div>
-      <div className="p-5">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {prizes.map((prize, index) => (
-            <div
-              key={index}
-              className="bg-canvas-50 rounded-lg p-3 text-center"
-            >
-              <div className="text-ink-500 text-sm font-medium">
-                {prize.label}
+      <div className="mt-1 text-xl font-bold text-teal-600 dark:text-teal-400 sm:text-2xl">
+        ${totalPrizePool.toLocaleString()}
+      </div>
+      <div className="mt-0.5 flex items-center justify-between text-xs">
+        {firstPrize && (
+          <span className="text-ink-400">
+            1st: ${firstPrize.amountUsdc.toLocaleString()}
+          </span>
+        )}
+        <span className="text-primary-500">View all →</span>
+      </div>
+    </button>
+  )
+}
+
+function PrizeDetailsModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  prizes: SweepstakesPrize[]
+  totalPrizePool: number
+}) {
+  const { open, setOpen, prizes, totalPrizePool } = props
+
+  // Medal/trophy styling for top 3 places
+  const getPlaceStyle = (index: number) => {
+    if (index === 0)
+      return {
+        icon: '🥇',
+        bg: 'bg-gradient-to-br from-amber-100 to-yellow-200 dark:from-amber-900/40 dark:to-yellow-900/40',
+        border: 'ring-2 ring-amber-400',
+        text: 'text-amber-700 dark:text-amber-300',
+      }
+    if (index === 1)
+      return {
+        icon: '🥈',
+        bg: 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/40 dark:to-slate-600/40',
+        border: 'ring-2 ring-slate-400',
+        text: 'text-slate-600 dark:text-slate-300',
+      }
+    if (index === 2)
+      return {
+        icon: '🥉',
+        bg: 'bg-gradient-to-br from-orange-100 to-amber-200 dark:from-orange-900/40 dark:to-amber-900/40',
+        border: 'ring-2 ring-orange-400',
+        text: 'text-orange-700 dark:text-orange-300',
+      }
+    return {
+      icon: '🎁',
+      bg: 'bg-canvas-50',
+      border: '',
+      text: 'text-ink-600',
+    }
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={clsx(MODAL_CLASS, 'gap-5')}>
+        <Col className="items-center gap-1">
+          <h2 className="text-ink-900 text-xl font-bold">Prize Structure</h2>
+          <p className="text-ink-600 text-sm">
+            Total prize pool:{' '}
+            <span className="font-bold text-teal-600">
+              ${totalPrizePool.toLocaleString()} USDC
+            </span>
+          </p>
+        </Col>
+        <div className="flex flex-wrap justify-center gap-4">
+          {prizes.map((prize, index) => {
+            const style = getPlaceStyle(index)
+            return (
+              <div
+                key={index}
+                className={clsx(
+                  'min-w-[110px] rounded-xl px-5 py-4 text-center transition-transform hover:scale-105',
+                  style.bg,
+                  style.border
+                )}
+              >
+                <div className="text-2xl">{style.icon}</div>
+                <div className={clsx('mt-1 text-sm font-semibold', style.text)}>
+                  {prize.label}
+                </div>
+                <div className="text-ink-900 mt-1 text-xl font-bold">
+                  ${prize.amountUsdc.toLocaleString()}
+                </div>
               </div>
-              <div className="text-ink-900 mt-1 text-lg font-bold">
-                ${prize.amountUsdc.toLocaleString()}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-      </div>
-    </div>
+        <p className="text-ink-500 text-center text-xs">
+          All prizes are paid in USDC. Winners will need a crypto wallet to
+          receive their winnings. No purchase necessary.
+        </p>
+      </Col>
+    </Modal>
   )
 }
 
@@ -1050,7 +1140,7 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
                 Entries
               </th>
               <th className="text-ink-500 px-5 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                Cost
+                Mana
               </th>
               <th className="text-ink-500 px-5 py-3 text-right text-xs font-medium uppercase tracking-wider">
                 Time
