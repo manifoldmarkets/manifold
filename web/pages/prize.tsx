@@ -22,6 +22,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
+import { FaGift } from 'react-icons/fa6'
 
 import {
   calculateSweepstakesTicketsFromMana,
@@ -301,6 +302,7 @@ export default function SweepstakesPage({
         {/* Header */}
         <Col className="gap-4">
           <Row className="items-center gap-3">
+            <FaGift className="h-8 w-8 text-teal-500" />
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
               Manifold Prize Drawing
             </h1>

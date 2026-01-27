@@ -26,7 +26,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaStar } from 'react-icons/fa'
-import { FaGem } from 'react-icons/fa6'
+import { FaGem, FaGift } from 'react-icons/fa6'
 import { LuCrown, LuGraduationCap } from 'react-icons/lu'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -51,6 +51,8 @@ import {
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
 import { CharityGiveawayCard } from 'web/components/shop/charity-giveaway-card'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { getTotalPrizePool } from 'common/sweepstakes'
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -348,6 +350,9 @@ export default function ShopPage() {
           onPurchaseComplete={handlePurchaseComplete}
         />
 
+        {/* Prize Drawing card */}
+        <PrizeDrawingCard />
+
         {/* Sort dropdown */}
         <Row className="mb-4 mt-8 items-center justify-between">
           <span className="text-lg font-semibold">
@@ -464,7 +469,7 @@ function SupporterCard(props: {
       <div
         onClick={() => handleSetShowModal(true)}
         className={clsx(
-          'group relative mb-4 w-full cursor-pointer overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
+          'group relative mb-8 w-full cursor-pointer overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
           'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800',
           // Default state (no tier owned, no hover)
           !hoveredTier &&
@@ -1156,6 +1161,110 @@ function SupporterModal(props: {
         </Col>
       </Modal>
     </>
+  )
+}
+
+// Prize Drawing promotion card
+function PrizeDrawingCard() {
+  const { data } = useAPIGetter('get-sweepstakes', {})
+  const sweepstakes = data?.sweepstakes
+  const totalTickets = data?.totalTickets ?? 0
+  const totalPrizePool = sweepstakes ? getTotalPrizePool(sweepstakes.prizes) : 0
+
+  // Time remaining countdown
+  const [timeRemaining, setTimeRemaining] = useState<string>('')
+  useEffect(() => {
+    if (!sweepstakes) return
+    const updateTime = () => {
+      const now = Date.now()
+      const diff = sweepstakes.closeTime - now
+      if (diff <= 0) {
+        setTimeRemaining('Ended')
+        return
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      )
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      if (days > 0) {
+        setTimeRemaining(`${days}d ${hours}h`)
+      } else if (hours > 0) {
+        setTimeRemaining(`${hours}h ${minutes}m`)
+      } else {
+        setTimeRemaining(`${minutes}m`)
+      }
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 60000)
+    return () => clearInterval(interval)
+  }, [sweepstakes?.closeTime])
+
+  // Don't render if no sweepstakes data
+  if (!sweepstakes) return null
+
+  const isClosed = sweepstakes.closeTime <= Date.now()
+
+  return (
+    <Link href="/prize">
+      <div
+        className={clsx(
+          'group relative mb-8 overflow-hidden rounded-xl p-1 transition-all duration-200',
+          'bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-500',
+          'hover:shadow-lg hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30',
+          'hover:-translate-y-1'
+        )}
+      >
+        <div className="rounded-lg bg-white p-4 dark:bg-gray-900">
+          {/* Header */}
+          <Row className="mb-3 items-center gap-2">
+            <FaGift className="h-5 w-5 text-teal-500" />
+            <span className="text-lg font-semibold">Prize Drawing</span>
+            {!isClosed && (
+              <span className="ml-auto rounded bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-700 dark:bg-teal-500 dark:text-white">
+                LIVE
+              </span>
+            )}
+          </Row>
+
+          {/* Stats row */}
+          <Row className="mb-3 gap-4 text-center">
+            <Col className="flex-1">
+              <div className="text-2xl font-bold text-teal-600">
+                ${totalPrizePool.toLocaleString()}
+              </div>
+              <div className="text-ink-500 text-xs">Prize Pool</div>
+            </Col>
+            <Col className="flex-1">
+              <div className="text-2xl font-bold text-cyan-600">
+                {timeRemaining || '...'}
+              </div>
+              <div className="text-ink-500 text-xs">Time Left</div>
+            </Col>
+            <Col className="flex-1">
+              <div className="text-2xl font-bold text-blue-600">
+                {Math.floor(totalTickets).toLocaleString()}
+              </div>
+              <div className="text-ink-500 text-xs">Entries</div>
+            </Col>
+          </Row>
+
+          {/* Description */}
+          <p className="text-ink-600 mb-3 text-sm">
+            Win USDC prizes!
+          </p>
+
+          {/* CTA */}
+          <Button
+            color="indigo"
+            size="sm"
+            className="w-full group-hover:shadow-md"
+          >
+            Enter Drawing →
+          </Button>
+        </div>
+      </div>
+    </Link>
   )
 }
 
