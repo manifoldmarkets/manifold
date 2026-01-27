@@ -132,7 +132,8 @@ export function PositionModalContent({
 
   const sellQuantity = isSellingAllShares ? shares : amount ?? 0
 
-  const loanAmount = metric?.loan ?? 0
+  // Include both free loans and margin loans in total loan amount
+  const loanAmount = (metric?.loan ?? 0) + (metric?.marginLoan ?? 0)
   const soldShares = Math.min(sellQuantity, shares)
   const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
