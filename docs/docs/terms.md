@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated January 19th, 2026
+Last updated January 25th, 2026
 
 **1. AGREEMENT TO TERMS**
 
@@ -97,6 +97,16 @@ We reserve the right to refuse any order placed through the Site. We may, in our
 3. **No Financial, Investment, or Gambling Advice.** The Site and all forecasts, probabilities, market prices, and other information displayed therein are provided for informational and entertainment purposes only. Nothing on the Site constitutes financial advice, investment advice, trading advice, gambling advice, or any other professional advice. We make no representations or warranties regarding the accuracy, reliability, or completeness of any forecasts or predictions. You are solely responsible for any decisions or actions you take based on information obtained from the Site, and we shall not be liable for any losses, damages, or consequences arising from your reliance on such information.
 
 4. **API Usage.** Use of our public API is subject to additional terms, rate limits, and usage guidelines. For more information on API usage, authentication, and acceptable use, please refer to our API documentation at **[https://docs.manifold.markets/api](https://docs.manifold.markets/api)**. We reserve the right to modify, suspend, or terminate API access at any time, with or without notice, for any reason including but not limited to abuse, excessive usage, or violation of these Terms.
+
+**6.9 Prize Drawings**
+
+1. **Separate Rules Apply.** The Site may offer prize drawings ("Prize Drawings") in which eligible participants can enter for a chance to win prizes. All Prize Drawings are governed by the Manifold Prize Drawing Official Rules, available at **[https://docs.manifold.markets/prize-rules](https://docs.manifold.markets/prize-rules)**, which are incorporated herein by reference.
+
+2. **No Purchase Necessary.** No purchase is necessary to enter or win any Prize Drawing. A purchase will not improve your chances of winning. Prize Drawings are void where prohibited by law.
+
+3. **Eligibility Restrictions.** Prize Drawings are subject to geographic and other eligibility restrictions as set forth in the Prize Drawing Official Rules. You are solely responsible for determining whether you are eligible to participate based on the laws of your jurisdiction.
+
+4. **Acceptance of Rules.** By entering any Prize Drawing, you agree to be bound by the Prize Drawing Official Rules and the decisions of the Sponsor, which are final and binding in all respects. In the event of any conflict between these Terms of Use and the Prize Drawing Official Rules, the Prize Drawing Official Rules shall govern with respect to the applicable Prize Drawing.
 
 **7. REFUNDS POLICY**
 
