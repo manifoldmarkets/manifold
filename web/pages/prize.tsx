@@ -82,14 +82,14 @@ export const getServerSideProps: GetServerSideProps<
   }
 }
 
-// Format tickets with appropriate precision
-function formatTickets(tickets: number): string {
-  if (tickets >= 1000) {
-    return tickets.toLocaleString(undefined, { maximumFractionDigits: 1 })
-  } else if (tickets >= 1) {
-    return tickets.toLocaleString(undefined, { maximumFractionDigits: 2 })
+// Format entries with appropriate precision
+function formatEntries(entries: number): string {
+  if (entries >= 1000) {
+    return entries.toLocaleString(undefined, { maximumFractionDigits: 1 })
+  } else if (entries >= 1) {
+    return entries.toLocaleString(undefined, { maximumFractionDigits: 2 })
   } else {
-    return tickets.toLocaleString(undefined, { maximumFractionDigits: 4 })
+    return entries.toLocaleString(undefined, { maximumFractionDigits: 4 })
   }
 }
 
@@ -213,9 +213,9 @@ export default function SweepstakesPage({
         numTickets,
       })
       toast.success(
-        `Purchased ${formatTickets(
+        `Gained ${formatEntries(
           result.numTickets
-        )} tickets for ${formatMoney(result.manaSpent)}!`
+        )} entries for ${formatMoney(result.manaSpent)}!`
       )
       track('sweepstakes purchase', {
         sweepstakesNum: sweepstakes.sweepstakesNum,
@@ -227,7 +227,7 @@ export default function SweepstakesPage({
       setSalesRefreshKey((k) => k + 1)
     } catch (e) {
       const msg =
-        e instanceof APIError ? e.message : 'Failed to purchase tickets'
+        e instanceof APIError ? e.message : 'Failed to gain entries'
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
@@ -241,7 +241,7 @@ export default function SweepstakesPage({
       const result = await api('claim-free-sweepstakes-ticket', {
         sweepstakesNum: sweepstakes.sweepstakesNum,
       })
-      toast.success(`Claimed ${result.numTickets} free ticket!`)
+      toast.success(`Claimed ${result.numTickets} free entry!`)
       track('sweepstakes free ticket claimed', {
         sweepstakesNum: sweepstakes.sweepstakesNum,
         ticketId: result.ticketId,
@@ -250,7 +250,7 @@ export default function SweepstakesPage({
       setSalesRefreshKey((k) => k + 1)
     } catch (e) {
       const msg =
-        e instanceof APIError ? e.message : 'Failed to claim free ticket'
+        e instanceof APIError ? e.message : 'Failed to claim free entry'
       toast.error(msg)
     } finally {
       setIsClaimingFree(false)
@@ -259,7 +259,7 @@ export default function SweepstakesPage({
 
   if (data === undefined) {
     return (
-      <Page trackPageView={'raffle'}>
+      <Page trackPageView={'prize-drawing'}>
         <Col className="items-center justify-center py-20">
           <LoadingIndicator />
         </Col>
@@ -269,20 +269,20 @@ export default function SweepstakesPage({
 
   if (!sweepstakes) {
     return (
-      <Page trackPageView={'raffle'}>
+      <Page trackPageView={'prize-drawing'}>
         <SEO
-          title="Manifold Raffle"
+          title="Manifold Prize Drawing"
           description="Enter for a chance to win USDC prizes!"
-          url="/raffle"
+          url="/prize"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
           <h1 className="text-ink-900 text-2xl font-semibold">
-            No Active Raffle
+            No Active Prize Drawing
           </h1>
           <p className="text-ink-500 text-center">
-            There's no raffle running at the moment.
+            There's no prize drawing running at the moment.
             <br />
-            Check back soon for the next drawing!
+            Check back soon for the next one!
           </p>
         </Col>
       </Page>
@@ -290,11 +290,11 @@ export default function SweepstakesPage({
   }
 
   return (
-    <Page trackPageView={'raffle'}>
+    <Page trackPageView={'prize-drawing'}>
       <SEO
-        title="Manifold Raffle"
+        title="Manifold Prize Drawing"
         description={`Enter for a chance to win $${totalPrizePool.toLocaleString()} in USDC prizes!`}
-        url="/raffle"
+        url="/prize"
       />
 
       <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
@@ -302,12 +302,11 @@ export default function SweepstakesPage({
         <Col className="gap-4">
           <Row className="items-center gap-3">
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-              Manifold Raffle
+              Manifold Prize Drawing
             </h1>
           </Row>
           <p className="text-ink-600 text-lg leading-relaxed">
-            Enter the raffle for a chance to win USDC prizes! Winners receive
-            real crypto payouts.
+            Enter the drawing for a chance to win USDC prizes! Winners receive real crypto payouts. No purchase necessary.
           </p>
         </Col>
 
@@ -315,7 +314,7 @@ export default function SweepstakesPage({
         {isLocationRestricted && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
             <p className="text-amber-800 dark:text-amber-300">
-              This raffle is not available in your region.
+              This prize drawing is not available in your region.
             </p>
           </div>
         )}
@@ -325,7 +324,8 @@ export default function SweepstakesPage({
           <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
             <Row className="items-center justify-between gap-4">
               <p className="text-indigo-800 dark:text-indigo-300">
-                You must verify your identity to participate in the raffle.
+                You must verify your identity to participate in the prize
+                drawing.
               </p>
               <Button
                 color="indigo"
@@ -349,7 +349,8 @@ export default function SweepstakesPage({
                 <span className="font-semibold">
                   {formatMoney(minManaInvested)}
                 </span>{' '}
-                invested to participate in the raffle. You currently have{' '}
+                invested to participate in the prize drawing. You currently
+                have{' '}
                 <span className="font-semibold">
                   {formatMoney(userTotalManaInvested)}
                 </span>{' '}
@@ -364,7 +365,7 @@ export default function SweepstakesPage({
         {/* Stats Row */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
-            label="Prize Pool"
+            label="Total prizes"
             value={`$${totalPrizePool.toLocaleString()}`}
             sublabel="USDC"
             color="teal"
@@ -376,7 +377,7 @@ export default function SweepstakesPage({
             color={isClosed ? 'red' : 'amber'}
           />
           <StatCard
-            label="Tickets Sold"
+            label="Total Entries"
             value={Math.round(totalTickets).toLocaleString()}
             color="indigo"
           />
@@ -442,7 +443,7 @@ export default function SweepstakesPage({
             >
               Sweepstakes FAQ
             </a>
-            . By participating in this raffle, you agree to Manifold's{' '}
+            . By participating, you agree to Manifold's{' '}
             <a
               href="https://docs.manifold.markets/sweepstakes-rules"
               target="_blank"
@@ -468,7 +469,7 @@ export default function SweepstakesPage({
                 Ready to Draw Winners
               </h3>
               <p className="text-ink-600 text-center text-sm">
-                The raffle has closed. Click below to randomly select the
+                The drawing has closed. Click below to randomly select the
                 winners.
               </p>
               <Button
@@ -488,7 +489,7 @@ export default function SweepstakesPage({
         {isClosed && !hasWinners && !isAdmin && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-950/30">
             <div className="mb-2 text-2xl">⏳</div>
-            <h3 className="text-ink-900 font-semibold">Raffle Closed</h3>
+            <h3 className="text-ink-900 font-semibold">Drawing Closed</h3>
             <p className="text-ink-600 mt-1 text-sm">
               The winners will be drawn soon. Check back!
             </p>
@@ -610,14 +611,14 @@ function PurchaseForm(props: {
   return (
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
-        <h3 className="text-ink-900 font-semibold">Buy Tickets</h3>
+        <h3 className="text-ink-900 font-semibold">Enter Drawing</h3>
         <p className="text-ink-500 mt-0.5 text-sm">
-          Enter the raffle for a chance to win
+          Get entries for a chance to win
         </p>
       </div>
 
       <Col className="gap-5 p-5">
-        {/* Free Ticket Button */}
+        {/* Free Entry Button */}
         {!hasClaimedFreeTicket && (
           <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
             <Row className="items-center justify-between gap-4">
@@ -626,7 +627,7 @@ function PurchaseForm(props: {
                   🎁 Free Entry Available!
                 </span>
                 <span className="text-ink-600 text-sm">
-                  Claim your free ticket to enter the drawing
+                  Claim your free entry to join the drawing
                 </span>
               </Col>
               <Button
@@ -635,7 +636,7 @@ function PurchaseForm(props: {
                 loading={isClaimingFree}
                 disabled={isClaimingFree || disabled}
               >
-                Claim Free Ticket
+                Claim Free Entry
               </Button>
             </Row>
           </div>
@@ -644,7 +645,7 @@ function PurchaseForm(props: {
         {hasClaimedFreeTicket && (
           <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
             <span className="text-sm text-green-700 dark:text-green-300">
-              ✓ You've claimed your free ticket!
+              ✓ You've claimed your free entry!
             </span>
           </div>
         )}
@@ -652,7 +653,7 @@ function PurchaseForm(props: {
         {/* Amount Input */}
         <Col className="gap-2">
           <label className="text-ink-700 text-sm font-medium">
-            Purchase additional tickets
+            Gain additional entries
           </label>
           <Row className="items-center gap-2">
             <Row className="bg-canvas-50 border-canvas-100 flex-1 items-center gap-1.5 rounded-lg border px-3 py-2">
@@ -696,9 +697,9 @@ function PurchaseForm(props: {
         <div className="bg-canvas-50 rounded-lg p-4">
           <Row className="text-ink-600 items-center justify-between text-sm">
             <Row className="items-center gap-1">
-              <span>Price per ticket</span>
+              <span>Mana per entry</span>
               <InfoTooltip
-                text="Tickets are priced on a bonding curve, making it cheaper to buy earlier."
+                text="Entry rates follow a bonding curve—earlier entries require less mana."
                 size="sm"
               />
             </Row>
@@ -707,20 +708,20 @@ function PurchaseForm(props: {
             </span>
           </Row>
           <Row className="text-ink-600 mt-2 items-center justify-between text-sm">
-            <span>Total sold</span>
-            <span>{formatTickets(totalTickets)} tickets</span>
+            <span>Total entries</span>
+            <span>{formatEntries(totalTickets)} entries</span>
           </Row>
           <div className="border-canvas-200 mt-3 border-t pt-3">
             <Row className="items-center justify-between">
               <span className="text-ink-900 font-medium">You'll get</span>
               <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                {formatTickets(numTickets)} tickets
+                {formatEntries(numTickets)} entries
               </span>
             </Row>
           </div>
         </div>
 
-        {/* Buy Button */}
+        {/* Enter Button */}
         <Button
           color="indigo"
           size="lg"
@@ -729,7 +730,7 @@ function PurchaseForm(props: {
           disabled={numTickets <= 0 || isSubmitting || disabled}
           className="w-full justify-center rounded-lg py-3 font-semibold"
         >
-          Buy {formatTickets(numTickets)} tickets for {formatMoney(manaAmount)}
+          Get {formatEntries(numTickets)} entries for {formatMoney(manaAmount)}
         </Button>
       </Col>
     </div>
@@ -740,15 +741,15 @@ function SignInPrompt() {
   return (
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
-        <h3 className="text-ink-900 font-semibold">Buy Tickets</h3>
+        <h3 className="text-ink-900 font-semibold">Enter Drawing</h3>
         <p className="text-ink-500 mt-0.5 text-sm">
-          Enter the raffle for a chance to win
+          Get entries for a chance to win
         </p>
       </div>
 
       <Col className="items-center gap-4 p-6">
         <p className="text-ink-600 text-center text-sm">
-          Sign in to buy tickets and enter the raffle
+          Sign in to enter the prize drawing
         </p>
         <Button color="indigo" className="w-full justify-center">
           Sign in to participate
@@ -774,7 +775,7 @@ function UserDistributionChart(props: {
     return (
       <div className="bg-canvas-0 border-canvas-50 flex flex-col items-center justify-center rounded-xl border p-12 shadow-sm">
         <div className="text-ink-200 mb-3 text-5xl">📊</div>
-        <p className="text-ink-900 font-medium">No tickets yet</p>
+        <p className="text-ink-900 font-medium">No entries yet</p>
         <p className="text-ink-500 mt-1 text-sm">
           Be the first to participate!
         </p>
@@ -795,7 +796,7 @@ function UserDistributionChart(props: {
   return (
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 border-b px-5 py-4">
-        <h3 className="text-ink-900 font-semibold">Ticket Distribution</h3>
+        <h3 className="text-ink-900 font-semibold">Entry Distribution</h3>
         <p className="text-ink-500 mt-0.5 text-sm">Top participants</p>
       </div>
 
@@ -859,7 +860,7 @@ function UserDistributionChart(props: {
                 {Math.round(totalTickets).toLocaleString()}
               </div>
               <div className="text-ink-400 text-xs font-medium uppercase tracking-wide">
-                tickets
+                entries
               </div>
             </div>
           </div>
@@ -1033,7 +1034,7 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 border-b px-5 py-4">
         <h3 className="text-ink-900 font-semibold">Recent Activity</h3>
-        <p className="text-ink-500 mt-0.5 text-sm">Latest ticket purchases</p>
+        <p className="text-ink-500 mt-0.5 text-sm">Latest entries</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -1044,7 +1045,7 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
                 User
               </th>
               <th className="text-ink-500 px-5 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                Tickets
+                Entries
               </th>
               <th className="text-ink-500 px-5 py-3 text-right text-xs font-medium uppercase tracking-wider">
                 Cost
@@ -1095,7 +1096,7 @@ function SaleRow(props: {
         )}
       </td>
       <td className="text-ink-900 px-5 py-4 text-right text-sm font-medium tabular-nums">
-        {formatTickets(sale.numTickets)}
+        {formatEntries(sale.numTickets)}
         {sale.isFree && (
           <span className="ml-1 text-xs text-green-600 dark:text-green-400">
             (free)
@@ -1144,8 +1145,8 @@ function ProvablyFairBanner(props: {
           <p className="text-ink-700 text-sm leading-relaxed">
             Before the drawing, we publish a hash of a secret nonce. When it's
             time to pick winners, we combine the nonce with the timestamps of
-            the last 10 purchases to generate random numbers that determine the
-            winning tickets. After the drawing, we reveal the nonce so you can
+            the last 10 entries to generate random numbers that determine the
+            winning entries. After the drawing, we reveal the nonce so you can
             verify the results weren't manipulated.
           </p>
 

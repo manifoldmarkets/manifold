@@ -12,9 +12,7 @@ Answers to questions about sweepstakes markets, eligibility, buying mana, withdr
   - Residents of Washington D.C. are NOT eligible.
 - Canadian residents are eligible, except for residents of Ontario.
 - International users from most countries are eligible, except for residents of: Australia, Belarus, Burundi, Central African Republic, Cuba, Democratic Republic of the Congo, Ethiopia, Germany, Iran, Iraq, Lebanon, Libya, Myanmar, Netherlands, Nicaragua, North Korea, Russia, Somalia, South Sudan, Sudan, Syria, Venezuela, Yemen, and Zimbabwe.
-- Users must complete full KYC / identity verification. 
-
-## How often will
+- Users must complete KYC / identity verification. 
 
 ### How do I withdraw my winnings?
 
