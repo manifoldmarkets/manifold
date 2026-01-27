@@ -193,7 +193,7 @@ Prior to receiving a prize, winners may be required to:
 - (a) Verify their identity and eligibility;
 - (b) Provide a valid government-issued identification document;
 - (c) Complete and return an Affidavit of Eligibility and Liability/Publicity Release;
-- (d) Provide tax documentation (W-9 for U.S. persons; W-8BEN for non-U.S. persons); and
+- (d) Provide tax documentation; and
 - (e) Comply with any other verification procedures required by Sponsor.
 
 ### 7.4 Disqualification
@@ -206,7 +206,7 @@ If a potential winner is found to be ineligible, fails to comply with these Offi
 
 ### 8.1 General
 
-All federal, state, local, and foreign taxes on prizes are the sole responsibility of the winner. Prizes awarded to U.S. persons valued at $600 or more will be reported to the Internal Revenue Service on Form 1099-MISC. Winners may be required to provide a valid Social Security Number or Taxpayer Identification Number for tax reporting purposes.
+All federal, state, local, and foreign taxes on prizes are the sole responsibility of the winner. Prizes awarded to U.S. persons valued at $600 or more will be reported to the Internal Revenue Service. Winners may be required to provide a valid Social Security Number or Taxpayer Identification Number for tax reporting purposes.
 
 ### 8.2 International Winners
 
