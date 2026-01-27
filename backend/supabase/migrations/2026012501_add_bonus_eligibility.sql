@@ -17,10 +17,8 @@ WHERE
 
 -- Step 2: Grandfather existing users who:
 -- 1. Were created before the cash raffles launch date
--- 2. Are not banned from posting
--- 3. Are not deleted
--- 4. Have placed at least one bet (real engagement)
--- 5. Were not already set to 'verified' above
+-- 2. Are not banned 
+-- 3. Were not already set to 'verified' above
 
 UPDATE users
 SET data = jsonb_set(
@@ -32,8 +30,6 @@ WHERE
   -- All users created before this migration are grandfathered
   -- TODO: Adjust this date if you want a different cutoff
   created_time < NOW()
-  -- Exclude users with legacy posting ban
-  AND (data->>'isBannedFromPosting')::boolean IS NOT TRUE
   -- Exclude users with any active ban in user_bans table (except modAlert which is just a warning)
   AND NOT EXISTS (
     SELECT 1 FROM user_bans ub
@@ -42,10 +38,6 @@ WHERE
       AND ub.ended_at IS NULL  -- not manually ended
       AND (ub.end_time IS NULL OR ub.end_time > NOW())  -- no expiry or hasn't expired
   )
-  -- Exclude deleted users
-  AND (data->>'userDeleted')::boolean IS NOT TRUE
-  -- Require at least one bet (shows real engagement)
-  AND (data->>'lastBetTime') IS NOT NULL
   -- Don't overwrite if already set (e.g., already verified in Step 1)
   AND data->>'bonusEligibility' IS NULL;
 
