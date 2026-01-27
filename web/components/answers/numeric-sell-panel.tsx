@@ -167,7 +167,10 @@ export const NumericSellPanel = (props: {
       (bet) => bet.answerId
     )
     // Include both free loans and margin loans in total loan amount
-    const loanPaid = sumBy(metricsOnAnswersToSell, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
+    const loanPaid = sumBy(
+      metricsOnAnswersToSell,
+      (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
+    )
     const { newBetResults, updatedAnswers, totalFee } =
       calculateCpmmMultiArbitrageSellYesEqually(
         contract.answers,
