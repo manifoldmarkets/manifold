@@ -25,7 +25,7 @@ export function IdentityVerificationPage(props: {
   // Fetch verification status from the database
   useEffect(() => {
     if (!user || isAlreadyEligible) return
-    
+
     api('get-idenfy-status', {})
       .then((result) => {
         setVerificationStatus(result.status)
@@ -45,11 +45,11 @@ export function IdentityVerificationPage(props: {
 
     try {
       track('identity verification: started')
-      
+
       // Mark onboarding as complete before redirecting to iDenfy
       // so users don't see the welcome modal again when they return
       await api('me/update', { shouldShowWelcome: false })
-      
+
       const response = await api('create-idenfy-session', {})
 
       // Redirect to iDenfy verification page
@@ -100,9 +100,7 @@ export function IdentityVerificationPage(props: {
           <Button color="gray-white" onClick={handleSkip}>
             Continue for now
           </Button>
-          <Button onClick={() => window.location.reload()}>
-            Check status
-          </Button>
+          <Button onClick={() => window.location.reload()}>Check status</Button>
         </Row>
       </Col>
     )
@@ -115,15 +113,17 @@ export function IdentityVerificationPage(props: {
       </div>
 
       <div className="text-ink-700 text-lg">
-        Verify your identity to receive bonuses and participate in our cash
-        prize raffles. This quick process helps prevent fraud and ensures a
+        Verify your identity to receive bonuses and participate in our USDC
+        prize drawings. This quick process helps prevent fraud and ensures a
         secure experience for everyone.
       </div>
 
       <Col className="bg-canvas-50 mt-2 rounded-lg p-4">
         <div className="text-ink-800 font-semibold">What you'll need:</div>
         <ul className="text-ink-600 mt-2 list-inside list-disc space-y-1">
-          <li>A valid government-issued ID (passport, driver's license, etc.)</li>
+          <li>
+            A valid government-issued ID (passport, driver's license, etc.)
+          </li>
           <li>A device with a camera for a quick selfie</li>
           <li>About 2-3 minutes of your time</li>
         </ul>

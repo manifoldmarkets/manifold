@@ -232,7 +232,7 @@ function WhatIsManifoldPage() {
         Welcome to Manifold!
       </div>
       <div className="mb-4 text-lg">
-        Manifold is a play money prediction market platform.
+        Manifold is a play money prediction market platform where you can win real cash prizes.
       </div>
       <div className="mb-4 text-lg">
         Bet on politics, tech, sports, and more. Your {TRADE_TERM}s contribute
