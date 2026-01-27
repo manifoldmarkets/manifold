@@ -10,7 +10,7 @@ Manifold runs periodic prize drawings where you can win real money (paid in USDC
 
 **Option 1: Be an active predictor**
 
-If you're actively using Manifold to predict on markets, you'll automatically earn entries based on the Mana you accumulate. More activity = more entries.
+If you're actively using Manifold to predict on markets, you'll automatically earn entries based on the mana you accumulate. More activity = more entries.
 
 **Option 2: Free entry**
 
@@ -21,8 +21,8 @@ Don't want to predict? You can still enter for free at [manifold.markets/prize](
 ## What are the requirements to enter?
 
 - **Age:** You must be 18 or older
-- **Active predictor:** You need at least **1,000 Mana invested across markets** to enter. This ensures the prize drawing is for people actually using the platform, not just drive-by entries.
-- **One account per person:** Only your main account can enter. If you have bot accounts or alts, send that Mana to your main account — those other accounts can't enter separately.
+- **Active predictor:** You need at least **1,000 mana invested across markets** to enter. This ensures the prize drawing is for people actually using the platform, not just drive-by entries.
+- **One account per person:** Only your main account can enter. If you have bot accounts or alts, send that mana to your main account — those other accounts can't enter separately.
 - **Not in a restricted location:** See below.
 
 ---
@@ -79,7 +79,7 @@ Yes, prizes are taxable income, but we're not tax advisors and cannot offer advi
 
 **No.** One account per person, period.
 
-If you have alt accounts or bot accounts, that's fine — but send the Mana to your main account if you want it to count toward entries. Entering with multiple accounts will get you disqualified (and possibly banned).
+If you have alt accounts or bot accounts, that's fine — but send the mana to your main account if you want it to count toward entries. Entering with multiple accounts will get you disqualified (and possibly banned).
 
 ---
 
@@ -98,7 +98,20 @@ We reserve the right to disqualify anyone for any reason. Don't try to game the 
 
 ## Will there always be prize drawings?
 
-**No guarantees.** We can pause, cancel, or stop prize drawings at any time, for any reason — including drawings we've already announced. Don't count on this being a permanent thing.
+We intend to keep running prize drawings and will share as much information as we can about our plans for future drawings. That said, we can't make guarantees — we may need to pause, modify, or discontinue drawings at any time, including ones we've already announced.
+
+---
+
+
+## Will Manifold admins ever ask for the private key to my crypto wallet?
+
+**Never.** We will never ask for your private key, seed phrase, or recovery phrase. Anyone who does is a scammer — please report them to us immediately.
+
+---
+
+## Is there a Manifold token?
+
+**No.** Manifold has not issued any cryptocurrency token. If someone is promoting a "Manifold token" or asking you to buy/trade one, it's a scam.
 
 ---
 
