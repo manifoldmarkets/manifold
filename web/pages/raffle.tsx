@@ -430,6 +430,31 @@ export default function SweepstakesPage({
 
         {!isClosed && !user && <SignInPrompt />}
 
+        {/* Disclaimer */}
+        {!isClosed && (
+          <p className="text-ink-500 text-center text-sm">
+            Read our{' '}
+            <a
+              href="https://docs.manifold.markets/sweepstakes"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              Sweepstakes FAQ
+            </a>
+            . By participating in this raffle, you agree to Manifold's{' '}
+            <a
+              href="https://docs.manifold.markets/sweepstakes-rules"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              Sweepstakes Rules
+            </a>
+            .
+          </p>
+        )}
+
         {/* Winners Display */}
         {isClosed && hasWinners && winners && (
           <WinnersDisplay winners={winners} />
