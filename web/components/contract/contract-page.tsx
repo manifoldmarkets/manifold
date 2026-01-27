@@ -546,7 +546,7 @@ export function ContractPageContent(props: ContractParams) {
             </div>
             {showExplainerPanel && (
               <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
-                <ExplainerPanel />
+                <ExplainerPanel showAccuracy={false} />
               </div>
             )}
             <RelatedContractsGrid
@@ -559,7 +559,7 @@ export function ContractPageContent(props: ContractParams) {
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && (
             <div>
-              <ExplainerPanel />
+              <ExplainerPanel showAccuracy={false} />
             </div>
           )}
 

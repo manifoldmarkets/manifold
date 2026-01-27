@@ -1,7 +1,9 @@
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { ENV_CONFIG, TRADING_TERM } from 'common/envs/constants'
+import Link from 'next/link'
 import React from 'react'
+import { FaGift } from 'react-icons/fa6'
 import { GoGraph } from 'react-icons/go'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
@@ -27,6 +29,7 @@ export const ExplainerPanel = (props: {
       {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
       {showAccuracy && <Accuracy onClick={handleSectionClick} />}
       <PlayMoney onClick={handleSectionClick} />
+      <CashPrizes onClick={handleSectionClick} />
     </Col>
   )
 }
@@ -135,6 +138,35 @@ const PlayMoney = ({
       Play money means it's much easier for anyone anywhere in the world to get
       started and try out forecasting without any risk. It also means there's
       more freedom to create and bet on any type of question.
+    </div>
+  </ExpandSection>
+)
+
+const CashPrizes = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <>
+        <FaGift className="mr-2 h-4 w-4" />
+        How do I win cash prizes?
+      </>
+    }
+    onClick={() => onClick('How do I win cash prizes?')}
+  >
+    <div className="pb-2">
+      Manifold runs regular prize drawings where you can win real USDC. 
+    </div>
+    <div className="pb-2">
+      No purchase necessary—you can claim a free entry once per drawing. Winners
+      will need a crypto wallet to receive their winnings.
+    </div>
+    <div className="pb-2">
+      <Link href="/prize" className="text-primary-700 hover:underline">
+        Enter the current prize drawing →
+      </Link>
     </div>
   </ExpandSection>
 )
