@@ -47,9 +47,7 @@ export const getServerSideProps: GetServerSideProps<
   const forwarded = context.req.headers['x-forwarded-for']
   const ip = Array.isArray(forwarded)
     ? forwarded[0]
-    : forwarded?.split(',')[0]?.trim() ??
-      context.req.socket.remoteAddress ??
-      ''
+    : forwarded?.split(',')[0]?.trim() ?? context.req.socket.remoteAddress ?? ''
 
   const apiKey = process.env.IP_API_PRO_KEY
   if (!apiKey) {
@@ -139,10 +137,7 @@ export default function SweepstakesPage({
   const meetsInvestmentRequirement = data?.meetsInvestmentRequirement ?? true
   const userTotalManaInvested = data?.userTotalManaInvested ?? 0
   const minManaInvested = data?.minManaInvested ?? 1000
-  const totalManaSpent = userStats.reduce(
-    (sum, s) => sum + s.totalManaSpent,
-    0
-  )
+  const totalManaSpent = userStats.reduce((sum, s) => sum + s.totalManaSpent, 0)
 
   // Calculate time remaining
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -186,9 +181,7 @@ export default function SweepstakesPage({
   const currentPrice = getCurrentSweepstakesTicketPrice(totalTickets)
   const isClosed = sweepstakes && sweepstakes.closeTime <= Date.now()
   const hasWinners = !!(winners && winners.length > 0)
-  const totalPrizePool = sweepstakes
-    ? getTotalPrizePool(sweepstakes.prizes)
-    : 0
+  const totalPrizePool = sweepstakes ? getTotalPrizePool(sweepstakes.prizes) : 0
 
   const handleSelectWinners = async () => {
     if (!sweepstakes || isSelectingWinners) return
@@ -204,8 +197,7 @@ export default function SweepstakesPage({
       })
       refresh()
     } catch (e) {
-      const msg =
-        e instanceof APIError ? e.message : 'Failed to select winners'
+      const msg = e instanceof APIError ? e.message : 'Failed to select winners'
       toast.error(msg)
     } finally {
       setIsSelectingWinners(false)
@@ -267,7 +259,7 @@ export default function SweepstakesPage({
 
   if (data === undefined) {
     return (
-      <Page trackPageView={'sweepstakes'}>
+      <Page trackPageView={'raffle'}>
         <Col className="items-center justify-center py-20">
           <LoadingIndicator />
         </Col>
@@ -277,19 +269,18 @@ export default function SweepstakesPage({
 
   if (!sweepstakes) {
     return (
-      <Page trackPageView={'sweepstakes'}>
+      <Page trackPageView={'raffle'}>
         <SEO
-          title="Sweepstakes"
+          title="Manifold Raffle"
           description="Enter for a chance to win USDC prizes!"
-          url="/sweepstakes"
+          url="/raffle"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
-          <div className="text-ink-300 text-6xl">🎰</div>
           <h1 className="text-ink-900 text-2xl font-semibold">
-            No Active Sweepstakes
+            No Active Raffle
           </h1>
           <p className="text-ink-500 text-center">
-            There's no sweepstakes running at the moment.
+            There's no raffle running at the moment.
             <br />
             Check back soon for the next drawing!
           </p>
@@ -299,26 +290,24 @@ export default function SweepstakesPage({
   }
 
   return (
-    <Page trackPageView={'sweepstakes'}>
+    <Page trackPageView={'raffle'}>
       <SEO
-        title="Manifold Sweepstakes"
+        title="Manifold Raffle"
         description={`Enter for a chance to win $${totalPrizePool.toLocaleString()} in USDC prizes!`}
-        url="/sweepstakes"
+        url="/raffle"
       />
 
       <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
         {/* Header */}
         <Col className="gap-4">
           <Row className="items-center gap-3">
-            <span className="text-3xl">🎰</span>
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-              Manifold Sweepstakes
+              Manifold Raffle
             </h1>
           </Row>
           <p className="text-ink-600 text-lg leading-relaxed">
-            Buy tickets with mana for a chance to win USDC prizes! The more
-            tickets you have, the better your odds. Winners receive real crypto
-            payouts.
+            Enter the raffle for a chance to win USDC prizes! Winners receive
+            real crypto payouts.
           </p>
         </Col>
 
@@ -326,7 +315,7 @@ export default function SweepstakesPage({
         {isLocationRestricted && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
             <p className="text-amber-800 dark:text-amber-300">
-              Sweepstakes is not available in your region.
+              This raffle is not available in your region.
             </p>
           </div>
         )}
@@ -336,7 +325,7 @@ export default function SweepstakesPage({
           <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
             <Row className="items-center justify-between gap-4">
               <p className="text-indigo-800 dark:text-indigo-300">
-                You must verify your identity to participate in the sweepstakes.
+                You must verify your identity to participate in the raffle.
               </p>
               <Button
                 color="indigo"
@@ -360,7 +349,7 @@ export default function SweepstakesPage({
                 <span className="font-semibold">
                   {formatMoney(minManaInvested)}
                 </span>{' '}
-                invested to participate in the sweepstakes. You currently have{' '}
+                invested to participate in the raffle. You currently have{' '}
                 <span className="font-semibold">
                   {formatMoney(userTotalManaInvested)}
                 </span>{' '}
@@ -450,12 +439,11 @@ export default function SweepstakesPage({
         {isClosed && !hasWinners && isAdmin && (
           <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border p-6 shadow-sm">
             <Col className="items-center gap-4">
-              <div className="text-4xl">🎰</div>
               <h3 className="text-ink-900 text-lg font-semibold">
                 Ready to Draw Winners
               </h3>
               <p className="text-ink-600 text-center text-sm">
-                The sweepstakes has closed. Click below to randomly select the
+                The raffle has closed. Click below to randomly select the
                 winners.
               </p>
               <Button
@@ -475,7 +463,7 @@ export default function SweepstakesPage({
         {isClosed && !hasWinners && !isAdmin && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-950/30">
             <div className="mb-2 text-2xl">⏳</div>
-            <h3 className="text-ink-900 font-semibold">Sweepstakes Closed</h3>
+            <h3 className="text-ink-900 font-semibold">Raffle Closed</h3>
             <p className="text-ink-600 mt-1 text-sm">
               The winners will be drawn soon. Check back!
             </p>
@@ -544,9 +532,7 @@ function PrizeStructure(props: { prizes: SweepstakesPrize[] }) {
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
         <h3 className="text-ink-900 font-semibold">Prize Structure</h3>
-        <p className="text-ink-500 mt-0.5 text-sm">
-          USDC prizes for winners
-        </p>
+        <p className="text-ink-500 mt-0.5 text-sm">USDC prizes for winners</p>
       </div>
       <div className="p-5">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -601,7 +587,7 @@ function PurchaseForm(props: {
       <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
         <h3 className="text-ink-900 font-semibold">Buy Tickets</h3>
         <p className="text-ink-500 mt-0.5 text-sm">
-          Enter the sweepstakes for a chance to win
+          Enter the raffle for a chance to win
         </p>
       </div>
 
@@ -731,14 +717,13 @@ function SignInPrompt() {
       <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
         <h3 className="text-ink-900 font-semibold">Buy Tickets</h3>
         <p className="text-ink-500 mt-0.5 text-sm">
-          Enter the sweepstakes for a chance to win
+          Enter the raffle for a chance to win
         </p>
       </div>
 
       <Col className="items-center gap-4 p-6">
-        <div className="text-ink-300 text-4xl">🎰</div>
         <p className="text-ink-600 text-center text-sm">
-          Sign in to buy tickets and enter the sweepstakes
+          Sign in to buy tickets and enter the raffle
         </p>
         <Button color="indigo" className="w-full justify-center">
           Sign in to participate
@@ -765,7 +750,9 @@ function UserDistributionChart(props: {
       <div className="bg-canvas-0 border-canvas-50 flex flex-col items-center justify-center rounded-xl border p-12 shadow-sm">
         <div className="text-ink-200 mb-3 text-5xl">📊</div>
         <p className="text-ink-900 font-medium">No tickets yet</p>
-        <p className="text-ink-500 mt-1 text-sm">Be the first to participate!</p>
+        <p className="text-ink-500 mt-1 text-sm">
+          Be the first to participate!
+        </p>
       </div>
     )
   }
