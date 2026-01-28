@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated January 25th, 2026
+Last updated January 27th, 2026
 
 **1. AGREEMENT TO TERMS**
 
@@ -36,21 +36,25 @@ All services and virtual currency offerings on the Site are subject to availabil
 
 **6. PURCHASES AND PAYMENT**
 
-We accept the following forms of payment:
+We accept payments in USDC (USD Coin) and other supported cryptocurrencies via blockchain networks. 
 
-● Visa
+**6.1 Cryptocurrency Payments**
 
-● Mastercard
+1. **Accepted Payment Methods.** Purchases on the Site are made using USDC or other supported cryptocurrencies via compatible blockchain networks. The specific cryptocurrencies and networks accepted may change at our discretion.
 
-● Discover
+2. **Wallet Responsibility.** You are solely responsible for maintaining secure access to your cryptocurrency wallet and for ensuring that you send payments from a wallet you control. We are not responsible for any loss of funds due to compromised wallets, lost private keys, or unauthorized access to your wallet.
 
-● American Express
+3. **Network and Gas Fees.** You are solely responsible for all blockchain network fees, gas fees, and any other transaction fees associated with your cryptocurrency payments. These fees are determined by the blockchain network and are not controlled by or paid to us. We recommend reviewing current network conditions before initiating a transaction.
 
-You agree to provide current, complete, and accurate purchase and account information for all purchases made via the Site. You further agree to promptly update account and payment information, including email address, payment method, and payment card expiration date, so that we can complete your transactions and contact you as needed. Sales tax will be added to the price of purchases as deemed required by us. We may change prices at any time. All payments shall be in U.S. dollars.
+4. **Transaction Finality.** Cryptocurrency transactions are irreversible once confirmed on the blockchain. You acknowledge that once a transaction is broadcast to the network, it cannot be cancelled, reversed, or modified by us.
 
-You agree to pay all charges at the prices then in effect for your purchases, and you authorize us to charge your chosen payment provider for any such amounts upon placing your order. We reserve the right to correct any errors or mistakes in pricing, even if we have already requested or received payment.
+5. **Technical Issues and Payment Failures.** We are not responsible for any technical issues, delays, or failures in receiving your payment, including but not limited to: blockchain network congestion, smart contract failures, oracle malfunctions, bridge failures, wallet compatibility issues, incorrect wallet addresses, insufficient gas fees causing failed transactions, or any other technical problems with blockchain infrastructure or third-party payment processors. If your payment fails or is not received due to any technical issue, you are solely responsible for any resulting loss of funds.
 
-We reserve the right to refuse any order placed through the Site. We may, in our sole discretion, limit or cancel quantities purchased per person, per household, or per order. These restrictions may include orders placed by or under the same customer account, the same payment method, and/or orders that use the same billing or shipping address. We reserve the right to limit or prohibit orders that, in our sole judgment, appear to be placed by dealers, resellers, or distributors.
+6. **Exchange Rate Risk.** If you are converting other cryptocurrencies or fiat currency to USDC or other accepted payment methods, you bear all exchange rate risk associated with such conversions.
+
+You agree to provide current, complete, and accurate purchase and account information for all purchases made via the Site. We may change prices at any time. All prices are denominated in U.S. dollars, with cryptocurrency payments calculated at the applicable exchange rate at the time of transaction.
+
+We reserve the right to refuse any order placed through the Site. We may, in our sole discretion, limit or cancel quantities purchased per person, per household, or per order. These restrictions may include orders placed by or under the same customer account or the same wallet address. We reserve the right to limit or prohibit orders that, in our sole judgment, appear to be placed by dealers, resellers, or distributors.
 
 **6.5 Virtual Currency (Mana)**
 
@@ -110,7 +114,19 @@ We reserve the right to refuse any order placed through the Site. We may, in our
 
 **7. REFUNDS POLICY**
 
-All sales are final and no refund will be issued.
+**All sales are final. No refunds, returns, chargebacks, or credits will be issued under any circumstances.**
+
+1. **No Refunds.** Due to the nature of cryptocurrency transactions and digital goods, all purchases of Mana, Memberships, or any other products or services on the Site are final and non-refundable. Once a transaction is confirmed on the blockchain and Mana or other items have been credited to your account, no refund will be provided.
+
+2. **Technical Issues.** No refunds will be issued for any technical issues, including but not limited to: failed transactions, network delays, smart contract errors, payment processing failures, wallet issues, incorrect amounts received, or any other technical problems. You assume all risk associated with cryptocurrency payments.
+
+3. **Network and Gas Fees.** Network fees, gas fees, and other blockchain transaction costs are non-refundable under all circumstances, regardless of whether your purchase was successful.
+
+4. **User Error.** No refunds will be issued for user error, including but not limited to: sending funds to the wrong address, sending incorrect amounts, using unsupported cryptocurrencies or networks, or any other mistakes made during the payment process.
+
+5. **Account Termination.** If your account is terminated or suspended for any reason, including violation of these Terms, you will not receive any refund for any Mana, Membership time, or other purchases associated with your account.
+
+6. **Disputes.** You agree not to dispute or "chargeback" any cryptocurrency transaction made to us. In the event you initiate a dispute through any third party, we reserve the right to immediately suspend your account and pursue all available legal remedies.
 
 **8. PROHIBITED ACTIVITIES**
 
