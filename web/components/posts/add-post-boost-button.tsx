@@ -151,26 +151,14 @@ function PostBoostPurchaseModal(props: {
             />
           </Row>
 
-          <Row className="gap-2">
-            <Button
-              color="indigo"
-              onClick={() => purchaseBoost('mana')}
-              loading={loading === 'mana'}
-              disabled={!!loading || notEnoughFunds}
-              className="flex-1"
-            >
-              Pay {formatMoney(BOOST_COST_MANA)}
-            </Button>
-            <Button
-              color="indigo"
-              onClick={() => purchaseBoost('cash')}
-              loading={loading === 'cash'}
-              className="flex-1"
-              disabled={!!loading}
-            >
-              Pay $100
-            </Button>
-          </Row>
+          <Button
+            color="indigo"
+            onClick={() => purchaseBoost('mana')}
+            loading={loading === 'mana'}
+            disabled={!!loading || notEnoughFunds}
+          >
+            Pay {formatMoney(BOOST_COST_MANA)}
+          </Button>
 
           {isAdminOrMod && (
             <Row className="gap-2">
