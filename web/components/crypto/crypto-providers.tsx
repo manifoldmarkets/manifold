@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import { WagmiProvider, createConfig } from 'wagmi'
+import { useTheme } from 'web/hooks/use-theme'
 
 // Context to track if crypto providers are ready
 const CryptoReadyContext = createContext(false)
@@ -19,6 +20,7 @@ export function useCryptoReady() {
 
 export function CryptoProviders({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme()
 
   // Create wagmi config with Daimo Pay defaults - only on client
   const [wagmiConfig] = useState(() => {
@@ -47,7 +49,7 @@ export function CryptoProviders({ children }: { children: ReactNode }) {
     <CryptoReadyContext.Provider value={true}>
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <DaimoPayProvider>{children}</DaimoPayProvider>
+          <DaimoPayProvider mode={theme}>{children}</DaimoPayProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </CryptoReadyContext.Provider>
