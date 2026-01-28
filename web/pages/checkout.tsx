@@ -22,7 +22,9 @@ import {
   ShieldCheckIcon,
   LightningBoltIcon,
   CheckCircleIcon,
+  ArrowRightIcon,
 } from '@heroicons/react/solid'
+import Image from 'next/image'
 import Link from 'next/link'
 
 // Hot wallet address for receiving crypto payments
@@ -52,9 +54,16 @@ function CheckoutContent() {
       <div className="bg-canvas-0 overflow-hidden rounded-xl shadow-md">
         {/* Header */}
         <div className="border-ink-100 border-b bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 dark:from-indigo-950/30 dark:to-purple-950/30">
-          <h1 className="text-primary-700 text-xl font-semibold sm:text-2xl">
-            Buy Mana
-          </h1>
+          <Row className="items-center justify-between">
+            <h1 className="text-primary-700 text-xl font-semibold sm:text-2xl">
+              Buy Mana
+            </h1>
+            <Row className="items-center gap-1 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm dark:from-teal-200/80 dark:to-emerald-600/80">
+              <span>$1 USDC</span>
+              <ArrowRightIcon className="h-3 w-3" />
+              <span>100 mana</span>
+            </Row>
+          </Row>
         </div>
 
         {/* Payment Status States */}
@@ -94,31 +103,20 @@ function CheckoutContent() {
           </div>
         ) : (
           <Col className="gap-5 p-6 sm:p-8">
-            {/* Legal disclaimer */}
-            <div className="text-ink-600 rounded-lg bg-amber-50/50 p-4 text-sm dark:bg-amber-950/20">
-              <p className="mb-2">
-                Mana is Manifold's play money and{' '}
-                <strong className="text-ink-700">
-                  cannot be redeemed for cash
-                </strong>
-                . No purchase is necessary to use or win prizes on the platform.
-                You may wish to review your eligibility for our{' '}
-                <Link
-                  href="/prize"
-                  className="text-primary-600 hover:text-primary-700 underline"
-                >
-                  prize drawings
-                </Link>
-                . Send USDC to purchase mana using the button below.{' '}
-                <strong className="text-ink-700">No refunds.</strong>
-              </p>
-              <p className="text-ink-500">
-                Purchase rate:{' '}
-                <span className="font-semibold text-teal-600">
-                  100 mana per 1 USDC
-                </span>
-              </p>
+            {/* Mana Image */}
+            <div className="flex justify-center">
+              <Image
+                src="/buy-mana-graphics/100k.png"
+                alt="Mana coins"
+                width={140}
+                height={140}
+                className="object-contain"
+              />
             </div>
+
+            <p className="text-ink-600 text-center text-sm">
+              Pay with USDC from any wallet or chain
+            </p>
 
             {/* Payment Button */}
             <Col className="items-center gap-4">
@@ -147,7 +145,7 @@ function CheckoutContent() {
                   >
                     <Row className="items-center justify-center gap-3">
                       <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                      <span>Buy Mana with Crypto</span>
+                      <span>Buy Mana</span>
                     </Row>
                   </button>
                 )}
@@ -169,52 +167,26 @@ function CheckoutContent() {
                 </Row>
               </Row>
             </Col>
+            {/* Legal disclaimer */}
+            <div className="text-ink-600 rounded-lg bg-amber-50/50 p-4 text-sm dark:bg-amber-950/20">
+              <p>
+                Mana is play money and{' '}
+                <strong className="text-ink-700">
+                  cannot be redeemed for cash
+                </strong>
+                . No purchase is necessary to use the site or win prizes. You
+                may wish to review your eligibility for our{' '}
+                <Link
+                  href="/prize"
+                  className="text-primary-600 hover:text-primary-700 underline"
+                >
+                  prize drawings
+                </Link>
+                . <strong className="text-ink-700">No refunds.</strong>
+              </p>
+            </div>
           </Col>
         )}
-      </div>
-
-      {/* How It Works Section */}
-      <div className="bg-canvas-0 rounded-xl p-5 shadow-sm sm:p-6">
-        <h2 className="text-ink-700 mb-4 text-sm font-semibold uppercase tracking-wide">
-          How it works
-        </h2>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            {
-              step: '1',
-              title: 'Click the button',
-              description: 'Open the secure payment modal',
-            },
-            {
-              step: '2',
-              title: 'Choose your amount',
-              description: 'Enter how much USDC to deposit',
-            },
-            {
-              step: '3',
-              title: 'Pay from any chain',
-              description: 'Use your wallet, exchange, or card',
-            },
-            {
-              step: '4',
-              title: 'Get mana instantly',
-              description: 'Credited to your account automatically',
-            },
-          ].map((item) => (
-            <Row key={item.step} className="items-start gap-3">
-              <div className="bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-white flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
-                {item.step}
-              </div>
-              <Col className="gap-0">
-                <span className="text-ink-800 text-sm font-medium">
-                  {item.title}
-                </span>
-                <span className="text-ink-500 text-xs">{item.description}</span>
-              </Col>
-            </Row>
-          ))}
-        </div>
       </div>
     </Col>
   )
