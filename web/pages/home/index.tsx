@@ -1,4 +1,3 @@
-import { PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Router from 'next/router'
 
@@ -13,6 +12,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { BrowsePageContent } from '../browse'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 export default function Home() {
   const user = useUser()
   useSaveReferral(user)
@@ -30,18 +30,14 @@ export default function Home() {
       {user && (
         <button
           type="button"
-          className={clsx(
-            'focus:ring-primary-500 fixed right-3 z-20 inline-flex items-center gap-2 rounded-full border border-transparent px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-            'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-            'bottom-[64px]'
-          )}
+          className="focus:ring-primary-500 fixed bottom-[64px] right-3 z-20 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-fuchsia-500 px-4 py-3 text-white shadow-sm hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden"
           onClick={() => {
-            Router.push('/create')
-            track('mobile create button')
+            Router.push('/checkout')
+            track('mobile buy mana button')
           }}
         >
-          <PencilAltIcon className="h-5 w-5" aria-hidden="true" />
-          <span className="font-semibold">Create</span>
+          <span className="font-semibold">Get mana</span>
+          <ManaCoin className="h-5 w-5" />
         </button>
       )}
       {/* Preload feed */}
