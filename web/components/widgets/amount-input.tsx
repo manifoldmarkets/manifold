@@ -8,12 +8,12 @@ import {
   formatWithToken,
   InputTokenType,
 } from 'common/util/format'
+import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { AddFundsModal } from '../add-funds-modal'
 import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -323,19 +323,15 @@ export function BuyAmountInput(props: {
 }
 
 const BuyMoreFunds = (props: { user: User | null | undefined }) => {
-  const { user } = props
-  const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
   return (
     <>
       Not enough funds.
-      <button
+      <Link
+        href="/checkout"
         className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
-        onClick={() => setAddFundsModalOpen(true)}
       >
         Buy more?
-      </button>
-      {/* Phone verification deprecated - identity verification now handled in welcome flow */}
-      <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
+      </Link>
     </>
   )
 }

@@ -54,7 +54,6 @@ export default function Sidebar(props: {
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
   const { theme, setTheme } = useTheme()
 
@@ -67,7 +66,7 @@ export default function Sidebar(props: {
   const isLiveTV = useTVIsLive(10)
 
   const navOptions = isMobile
-    ? getMobileNav(!!user, () => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
+    ? getMobileNav(!!user, {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
@@ -202,7 +201,6 @@ const getDesktopNav = (
 
 const getMobileNav = (
   loggedIn: boolean,
-  toggleModal: () => void,
   options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
   const { isAdminOrMod, isLiveTV } = options

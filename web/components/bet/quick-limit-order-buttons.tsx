@@ -9,10 +9,10 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { formatPercent, formatWithToken } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS } from 'common/util/time'
+import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
-import { AddFundsModal } from '../add-funds-modal'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -39,13 +39,13 @@ export const QuickLimitOrderButtons = (props: {
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
-  const [buyModalOpen, setBuyModalOpen] = useState(false)
+  const [showBuyMore, setShowBuyMore] = useState(false)
 
   async function submitBet(outcome: 'YES' | 'NO') {
     if (!user) return
     if (user.balance < amount) {
       setError('Insufficient balance')
-      setBuyModalOpen(true)
+      setShowBuyMore(true)
       return
     }
 
@@ -139,8 +139,19 @@ export const QuickLimitOrderButtons = (props: {
           <MoneyDisplay amount={amount} isCashContract={isCashContract} /> NO
         </Button>
       </Row>
-      {error && <div className="text-red-500">{error}</div>}
-      {buyModalOpen && <AddFundsModal open={true} setOpen={setBuyModalOpen} />}
+      {error && (
+        <Row className="items-center gap-2 text-red-500">
+          {error}
+          {showBuyMore && (
+            <Link
+              href="/checkout"
+              className="text-primary-500 hover:underline"
+            >
+              Buy more?
+            </Link>
+          )}
+        </Row>
+      )}
     </Col>
   )
 }

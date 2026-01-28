@@ -6,7 +6,6 @@ import { Row } from '../layout/row'
 import { TopLevelPost } from 'common/top-level-post'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
-import { AddFundsModal } from '../add-funds-modal'
 import toast from 'react-hot-toast'
 import { BsRocketTakeoff } from 'react-icons/bs'
 import { BOOST_COST_MANA } from 'common/economy'
@@ -15,6 +14,7 @@ import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
 import { formatMoney } from 'common/util/format'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import Link from 'next/link'
 
 export function AddPostBoostButton(props: { post: TopLevelPost }) {
   const { post } = props
@@ -55,7 +55,6 @@ function PostBoostPurchaseModal(props: {
 }) {
   const { open, setOpen, post } = props
   const [loading, setLoading] = useState<string>()
-  const [fundsModalOpen, setFundsModalOpen] = useState(false)
   const now = Date.now()
   const [startTime, setStartTime] = useState(now)
   const user = useUser()
@@ -178,19 +177,16 @@ function PostBoostPurchaseModal(props: {
           {notEnoughFunds && (
             <div className="text-ink-600 flex items-center gap-2 text-sm">
               <span className="text-error">Insufficient balance</span>
-              <Button
-                size="xs"
-                color="gradient-pink"
-                onClick={() => setFundsModalOpen(true)}
+              <Link
+                href="/checkout"
+                className="bg-primary-500 hover:bg-primary-600 rounded px-2 py-1 text-sm text-white"
               >
                 Get mana
-              </Button>
+              </Link>
             </div>
           )}
         </Col>
       </Modal>
-
-      <AddFundsModal open={fundsModalOpen} setOpen={setFundsModalOpen} />
     </>
   )
 }

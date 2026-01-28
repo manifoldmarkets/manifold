@@ -2,13 +2,11 @@ import {
   CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
 } from 'common/contract'
-import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { AddFundsModal } from 'web/components/add-funds-modal'
-import { Button } from 'web/components/buttons/button'
+import Link from 'next/link'
 
 import { TokenNumber } from '../widgets/token-number'
 import { liquidityTiers } from 'common/tier'
@@ -26,7 +24,6 @@ export const CostSection = (props: {
     props
   const ante = getAnte(outcomeType, numAnswers, liquidityTier)
 
-  const [fundsModalOpen, setFundsModalOpen] = useState(false)
   return (
     <Col className="items-start px-1">
       {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
@@ -40,14 +37,12 @@ export const CostSection = (props: {
       {ante > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
           <span className="text-scarlet-500 mr-2">Insufficient balance</span>
-          <Button
-            size="xs"
-            color="green"
-            onClick={() => setFundsModalOpen(true)}
+          <Link
+            href="/checkout"
+            className="rounded bg-teal-500 px-2 py-1 text-white hover:bg-teal-600"
           >
             Get {ENV_CONFIG.moneyMoniker}
-          </Button>
-          <AddFundsModal open={fundsModalOpen} setOpen={setFundsModalOpen} />
+          </Link>
         </div>
       )}
     </Col>
