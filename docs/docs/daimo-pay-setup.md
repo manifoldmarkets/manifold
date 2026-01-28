@@ -6,7 +6,7 @@ This guide covers setting up Daimo Pay for crypto-to-mana purchases on Manifold.
 
 Daimo Pay allows users to purchase mana using cryptocurrency (USDC) from any supported chain. The flow is:
 
-1. User clicks "Buy mana with crypto" on `/crypto-to-mana`
+1. User clicks "Buy mana with crypto" on `/checkout`
 2. Daimo modal opens, user pays from any chain
 3. Daimo settles USDC to Manifold's hot wallet on Base
 4. Daimo calls our webhook → backend credits mana to user (100 mana per $1 USDC)
@@ -88,7 +88,7 @@ This table is used for idempotency to prevent double-crediting mana if Daimo sen
 
 ## 6. Update Frontend App ID
 
-In `web/pages/crypto-to-mana.tsx`, update the `appId` prop:
+In `web/pages/checkout.tsx`, update the `appId` prop:
 
 ```tsx
 <DaimoPayButton.Custom
@@ -162,7 +162,7 @@ Filter for webhook logs:
 
 | File                                          | Purpose                           |
 | --------------------------------------------- | --------------------------------- |
-| `web/pages/crypto-to-mana.tsx`                | Frontend page with DaimoPayButton |
+| `web/pages/checkout.tsx`                      | Frontend page with DaimoPayButton |
 | `web/components/crypto/crypto-providers.tsx`  | Wagmi/Daimo providers             |
 | `backend/api/src/daimo-webhook.ts`            | Webhook handler                   |
 | `backend/api/src/old-routes.ts`               | Route registration                |
