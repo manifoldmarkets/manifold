@@ -320,7 +320,7 @@ export function LoansModal(props: {
                 <p className="text-ink-900 mb-1 font-medium">Loan limits</p>
                 <p>
                   Daily limit is {formatPercent(DAILY_LOAN_NET_WORTH_PERCENT)}{' '}
-                  of net worth. Loans are distributed proportionally across your
+                  of equity. Loans are distributed proportionally across your
                   unresolved positions.
                 </p>
                 <p className="mt-2">
@@ -328,35 +328,30 @@ export function LoansModal(props: {
                   <span className="font-semibold">
                     {formatMoney(maxGeneralLoan)}
                   </span>
-                  {latestPortfolio &&
-                    latestPortfolio.balance + latestPortfolio.investmentValue >
-                      0 && (
-                      <>
-                        , which is{' '}
-                        {formatPercent(
-                          maxGeneralLoan /
-                            (latestPortfolio.balance +
-                              latestPortfolio.investmentValue)
-                        )}{' '}
-                        of your net worth (
-                        {Math.round(
-                          1 +
-                            maxGeneralLoan /
-                              (latestPortfolio.balance +
-                                latestPortfolio.investmentValue)
+                  {loanData?.equity && loanData.equity > 0 && (
+                    <>
+                      , which is{' '}
+                      {formatPercent(maxGeneralLoan / loanData.equity)} of your
+                      equity ({Math.round(1 + maxGeneralLoan / loanData.equity)}
+                      x leverage).
+                      <br />
+                      <span className="text-ink-500 text-xs">
+                        Equity = Net worth ({formatMoney(loanData.netWorth ?? 0)}
+                        ) - Outstanding loans (
+                        {formatMoney(
+                          (loanData?.currentFreeLoan ?? 0) +
+                            (loanData?.currentMarginLoan ?? 0)
                         )}
-                        x leverage)
-                      </>
-                    )}
+                        )
+                      </span>
+                    </>
+                  )}
                   .{' '}
                   {(() => {
-                    const netWorth = latestPortfolio
-                      ? latestPortfolio.balance +
-                        latestPortfolio.investmentValue
-                      : 0
+                    const equity = loanData?.equity ?? 0
                     const leverage =
-                      netWorth > 0
-                        ? Math.round(1 + maxGeneralLoan / netWorth)
+                      equity > 0
+                        ? Math.round(1 + maxGeneralLoan / equity)
                         : 0
                     const hasPremium = leverage >= 4
                     if (hasPremium) return null
@@ -413,6 +408,15 @@ export function LoansModal(props: {
                 <p className="text-ink-500 mt-2 text-xs">
                   Repayments go to margin loans first (to stop interest), then
                   free loans. All loans are deducted when the question resolves.
+                </p>
+              </div>
+              <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
+                <p className="text-ink-700 text-xs">
+                  <span className="font-medium">Why equity-based limits?</span>{' '}
+                  Loan limits are based on equity (net worth minus loans) rather
+                  than net worth alone. This means borrowing more doesn't
+                  increase your borrowing capacity — it stays constant based on
+                  your true ownership stake.
                 </p>
               </div>
             </Col>
