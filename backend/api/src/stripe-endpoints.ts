@@ -9,6 +9,7 @@ import { APIError } from 'common/api/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
+import { STRIPE_PAYMENTS_ENABLED } from 'common/envs/constants'
 import { WEB_PRICES } from 'common/economy'
 import { getContract } from 'shared/utils'
 import { boostContractImmediately } from 'shared/supabase/contracts'
@@ -42,6 +43,11 @@ const initStripe = () => {
 }
 
 export const createcheckoutsession = async (req: Request, res: Response) => {
+  if (!STRIPE_PAYMENTS_ENABLED) {
+    res.status(400).send('Stripe payments are currently disabled')
+    return
+  }
+
   const userId = req.query.userId?.toString()
 
   const priceInDollars = req.query.priceInDollars?.toString()
@@ -88,6 +94,11 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
 }
 
 export const stripewebhook = async (req: Request, res: Response) => {
+  if (!STRIPE_PAYMENTS_ENABLED) {
+    res.status(400).send('Stripe payments are currently disabled')
+    return
+  }
+
   const stripe = initStripe()
   let event
 

@@ -8,7 +8,7 @@ import {
   DEV_BOOST_STRIPE_PRICE_ID,
   PROD_BOOST_STRIPE_PRICE_ID,
 } from 'common/economy'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { isAdminId, isModId, STRIPE_PAYMENTS_ENABLED } from 'common/envs/constants'
 import { Row } from 'common/supabase/utils'
 import { TopLevelPost } from 'common/top-level-post'
 import { ContractBoostPurchaseTxn } from 'common/txn'
@@ -114,6 +114,10 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
   }
 
   if (fundViaCash) {
+    if (!STRIPE_PAYMENTS_ENABLED) {
+      throw new APIError(400, 'Cash payments via Stripe are currently disabled')
+    }
+
     // insert the boost as unfunded and then in the stripe endpoint, query for the boost and mark it as funded
     const boost = await pg.one(
       `insert into contract_boosts (contract_id, post_id, user_id, start_time, end_time, funded)
