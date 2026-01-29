@@ -119,7 +119,7 @@ export const selectSweepstakesWinners: APIHandler<
     // Determine how many winners we need
     const numWinners = getTotalWinnerCount(sweepstakes.prizes)
 
-    // Select winners iteratively
+    // Select winners iteratively (top prizes first)
     const winningTicketIds: string[] = []
     const winners: {
       rank: number
@@ -129,16 +129,17 @@ export const selectSweepstakesWinners: APIHandler<
       userId: string
     }[] = []
 
-    // Track which tickets have already won (by ticket ID)
-    const wonTicketIds = new Set<string>()
+    // Track which users have already won (each user can only win once)
+    const wonUserIds = new Set<string>()
 
     for (let rank = 1; rank <= numWinners; rank++) {
-      // Calculate remaining tickets (excluding already won tickets)
+      // Calculate remaining tickets (excluding tickets from users who already won)
       let remainingTotal = 0
       const remainingRanges: typeof ticketRanges = []
 
       for (const range of ticketRanges) {
-        if (!wonTicketIds.has(range.id)) {
+        // Exclude all tickets from users who have already won
+        if (!wonUserIds.has(range.userId)) {
           remainingRanges.push({
             ...range,
             start: remainingTotal,
@@ -148,8 +149,12 @@ export const selectSweepstakesWinners: APIHandler<
         }
       }
 
+      // If no more eligible users remain, stop selecting winners
       if (remainingRanges.length === 0 || remainingTotal === 0) {
-        break // No more tickets available
+        console.log(
+          `Sweepstakes ${sweepstakesNum}: Only ${winners.length} winners selected (not enough unique users for ${numWinners} prizes)`
+        )
+        break
       }
 
       // Create deterministic random value using SHA256 hash of seed + rank
@@ -182,8 +187,8 @@ export const selectSweepstakesWinners: APIHandler<
         winningTicket = remainingRanges[remainingRanges.length - 1]
       }
 
-      // Mark this ticket as won
-      wonTicketIds.add(winningTicket.id)
+      // Mark this user as having won (they can't win again)
+      wonUserIds.add(winningTicket.userId)
       winningTicketIds.push(winningTicket.id)
 
       // Get prize info for this rank
