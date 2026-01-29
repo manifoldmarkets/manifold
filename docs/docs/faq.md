@@ -323,12 +323,14 @@ This means borrowing more doesn't increase your borrowing capacity—your limits
 
 **Limit tiers:**
 
-| Tier                    | Max Total Loan | Effective Leverage |
-| ----------------------- | -------------- | ------------------ |
-| Free (no margin access) | N/A            | 1x                 |
-| Plus                    | 100% of equity | 2x                 |
-| Pro                     | 200% of equity | 3x                 |
-| Premium                 | 300% of equity | 4x                 |
+| Tier    | Max Total Loan | Effective Leverage | Margin Loans |
+| ------- | -------------- | ------------------ | ------------ |
+| Free    | 100% of equity | 2x                 | No           |
+| Plus    | 100% of equity | 2x                 | Yes          |
+| Pro     | 200% of equity | 3x                 | Yes          |
+| Premium | 300% of equity | 4x                 | Yes          |
+
+Free users can only claim daily free loans (via the golden chest), while members can also request margin loans on demand.
 
 **Other limits:**
 
@@ -362,7 +364,7 @@ Not all markets are eligible for loans. To qualify, a market must be:
 
 #### Can my account go negative because of loans?
 
-It's possible but rare. If your positions lose significant value and you have outstanding loans, your balance could become negative when markets resolve. The loan amount is always deducted from your winnings regardless of whether your balance can cover it.
+Yes. If you are highly leveraged and your positions lose value, your balance can go negative when markets resolve. The loan amount is always deducted from your proceeds regardless of whether your balance can cover it. The more leveraged you are, the more likely this becomes if your bets go against you.
 
 ## Misc
 
