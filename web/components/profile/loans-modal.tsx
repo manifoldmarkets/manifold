@@ -351,9 +351,7 @@ export function LoansModal(props: {
                   {(() => {
                     const equity = loanData?.equity ?? 0
                     const leverage =
-                      equity > 0
-                        ? Math.round(1 + maxGeneralLoan / equity)
-                        : 0
+                      equity > 0 ? Math.round(1 + maxGeneralLoan / equity) : 0
                     const hasPremium = leverage >= 4
                     if (hasPremium) return null
                     if (hasMarginLoanAccess) {
