@@ -1,12 +1,20 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
 import { createHash } from 'crypto'
 import {
   SweepstakesPrize,
   getTotalWinnerCount,
   getPrizeForRank,
 } from 'common/sweepstakes'
+import { Notification, PrizeWinnerData } from 'common/notification'
+import { bulkInsertNotifications } from 'shared/supabase/notifications'
+import { nanoid } from 'common/util/random'
 
 export const selectSweepstakesWinners: APIHandler<
   'select-sweepstakes-winners'
@@ -210,6 +218,37 @@ export const selectSweepstakesWinners: APIHandler<
        WHERE sweepstakes_num = $2`,
       [winningTicketIds, sweepstakesNum]
     )
+
+    // Send notifications to all winners
+    if (winners.length > 0) {
+      const notifications: Notification[] = winners.map((winner) => {
+        const data: PrizeWinnerData = {
+          rank: winner.rank,
+          prizeLabel: winner.label,
+          prizeAmountUsdc: winner.prizeUsdc,
+          sweepstakesNum,
+        }
+
+        return {
+          id: nanoid(6),
+          userId: winner.userId,
+          reason: 'prize_winner' as const,
+          createdTime: Date.now(),
+          isSeen: false,
+          sourceId: `sweepstakes-${sweepstakesNum}-winner-${winner.rank}`,
+          sourceType: 'prize_winner' as const,
+          sourceUserName: MANIFOLD_USER_NAME,
+          sourceUserUsername: MANIFOLD_USER_USERNAME,
+          sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+          sourceText: `$${winner.prizeUsdc}`,
+          sourceSlug: '/prize',
+          sourceTitle: `You won ${winner.label} place ($${winner.prizeUsdc} USDC) in the Prize Drawing!`,
+          data,
+        }
+      })
+
+      await bulkInsertNotifications(notifications, tx)
+    }
 
     return { winners }
   })

@@ -91,6 +91,7 @@ export type notification_source_types =
   | 'extra_purchased_mana'
   | 'payment_status'
   | 'membership_subscription'
+  | 'prize_winner'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -144,6 +145,7 @@ export type notification_reason_types =
   | 'bounty_added'
   | 'bounty_canceled'
   | 'mana_payment_received'
+  | 'prize_winner'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -478,6 +480,13 @@ export type MembershipSubscriptionData = {
   amount: number
   type: 'renewed' | 'cancelled'
   newExpiresTime?: number // Only for renewals
+}
+
+export type PrizeWinnerData = {
+  rank: number
+  prizeLabel: string
+  prizeAmountUsdc: number
+  sweepstakesNum: number
 }
 
 export function getSourceIdForLinkComponent(
