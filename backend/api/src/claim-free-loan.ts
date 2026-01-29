@@ -91,16 +91,20 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
 
-  // Calculate net worth and loan totals
-  const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
-  const netWorth = user.balance + value
+  // Calculate portfolio value and loan totals
+  const { value: portfolioValue } = getUnresolvedStatsForToken(
+    'MANA',
+    metrics,
+    contractsById
+  )
 
   // Calculate total outstanding loans from metrics
   const loanTotal = sumBy(metrics, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
 
-  // Calculate equity (net worth minus outstanding loans)
+  // Calculate equity (portfolio value minus outstanding loans)
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity
-  const equity = calculateEquity(netWorth, loanTotal)
+  // Note: Balance is not included since loans are taken against positions
+  const equity = calculateEquity(portfolioValue, loanTotal)
 
   // Calculate limits based on equity (tier-specific max loan)
   const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)

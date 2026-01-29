@@ -142,15 +142,16 @@ export const overLeveraged = (loanTotal: number, investmentValue: number) =>
   loanTotal / investmentValue >= 8
 
 /**
- * Calculate equity (net worth minus outstanding loans).
- * Equity represents the user's true ownership stake and is used for loan limit calculations.
+ * Calculate equity (portfolio value minus outstanding loans).
+ * Equity represents the user's true ownership stake in positions and is used for loan limit calculations.
  * This breaks the feedback loop where borrowing more would increase borrowing capacity.
+ * Note: Balance is not included since loans are taken against positions, not balance.
  */
 export const calculateEquity = (
-  netWorth: number,
+  portfolioValue: number,
   loanTotal: number
 ): number => {
-  return Math.max(0, netWorth - loanTotal)
+  return Math.max(0, portfolioValue - loanTotal)
 }
 
 export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {

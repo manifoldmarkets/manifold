@@ -2189,9 +2189,9 @@ export const API = (_apiTypeCheck = {
       freeLoanAvailable?: number
       canClaimFreeLoan?: boolean
       hasMarginLoanAccess?: boolean
-      // Equity-based calculation fields
+      // Equity-based calculation fields (equity = portfolioValue - loans)
       equity?: number
-      netWorth?: number
+      portfolioValue?: number
     },
     props: z.object({
       userId: z.string(),

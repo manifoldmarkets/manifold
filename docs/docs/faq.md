@@ -315,13 +315,11 @@ Loans allow you to borrow mana against your existing positions, freeing up capit
 
 #### Loan limits and leverage
 
-Loan limits are based on **equity**, not net worth. Equity is calculated as:
+Loan limits are based on **equity**, which is your portfolio value minus outstanding loans:
 
-> **Equity = Net Worth - Outstanding Loans**
->
-> Where Net Worth = Balance + Portfolio Value
+> **Equity = Portfolio Value - Outstanding Loans**
 
-This means borrowing more doesn't increase your borrowing capacity—your limits stay constant based on your true ownership stake.
+This means borrowing more doesn't increase your borrowing capacity—your limits stay constant based on your true ownership stake in positions. Balance is not included since loans are taken against positions.
 
 **Limit tiers:**
 

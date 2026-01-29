@@ -336,8 +336,9 @@ export function LoansModal(props: {
                       x leverage).
                       <br />
                       <span className="text-ink-500 text-xs">
-                        Equity = Net worth ({formatMoney(loanData.netWorth ?? 0)}
-                        ) - Outstanding loans (
+                        Equity = Portfolio value (
+                        {formatMoney(loanData.portfolioValue ?? 0)}) -
+                        Outstanding loans (
                         {formatMoney(
                           (loanData?.currentFreeLoan ?? 0) +
                             (loanData?.currentMarginLoan ?? 0)
@@ -413,10 +414,10 @@ export function LoansModal(props: {
               <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
                 <p className="text-ink-700 text-xs">
                   <span className="font-medium">Why equity-based limits?</span>{' '}
-                  Loan limits are based on equity (net worth minus loans) rather
-                  than net worth alone. This means borrowing more doesn't
-                  increase your borrowing capacity — it stays constant based on
-                  your true ownership stake.
+                  Loan limits are based on equity (portfolio value minus loans)
+                  rather than portfolio value alone. This means borrowing more
+                  doesn't increase your borrowing capacity — it stays constant
+                  based on your true ownership stake in positions.
                 </p>
               </div>
             </Col>
