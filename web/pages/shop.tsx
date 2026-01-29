@@ -137,12 +137,20 @@ export default function ShopPage() {
       )
       if (serverHasCaughtUp) {
         setLocalEntitlements([])
-        setLocalStreakBonus(0)
-        // Also clear global optimistic context
+        // Note: Don't clear localStreakBonus here - streak freezes aren't entitlements,
+        // so this sync logic doesn't apply. The bonus will clear when user.streakForgiveness
+        // updates via WebSocket, or on page refresh.
         optimisticContext?.clearOptimisticEntitlements()
       }
     }
   }, [user?.entitlements, localEntitlements, optimisticContext])
+
+  // Clear streak bonus when server's streakForgiveness updates (via WebSocket)
+  useEffect(() => {
+    if (localStreakBonus > 0) {
+      setLocalStreakBonus(0)
+    }
+  }, [user?.streakForgiveness])
 
   // Allow admins to access shop for testing even when feature flag is off
   if (!SPEND_MANA_ENABLED && !isAdminOrMod) {

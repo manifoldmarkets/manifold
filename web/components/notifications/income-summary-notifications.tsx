@@ -479,13 +479,16 @@ export function ReferralNotification(props: {
     sourceContractTitle,
     sourceContractCreatorUsername,
     sourceUserUsername,
+    sourceText,
     data,
   } = notification
   const user = useUser()
   const isYourMarket = sourceContractCreatorUsername === user?.username
-  const { manaAmount } = (data ?? {
-    manaAmount: REFERRAL_AMOUNT,
-  }) as ReferralData
+  // Use data.manaAmount if available, fall back to sourceText for old notifications
+  const referralData = data as ReferralData | undefined
+  const manaAmount =
+    referralData?.manaAmount ??
+    (sourceText ? parseFloat(sourceText) : REFERRAL_AMOUNT)
   return (
     <NotificationFrame
       notification={notification}
