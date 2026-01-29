@@ -138,7 +138,7 @@ export function DailyFreeLoanModal(props: {
                 {formatMoney(currentMarginLoan)} •{' '}
               </>
             )}
-            Max: {formatMoney(freeLoanData.maxLoan)} (based on equity)
+            Max: {formatMoney(freeLoanData.maxLoan)}
           </p>
         </div>
 
