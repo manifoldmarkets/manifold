@@ -70,9 +70,9 @@ export function detectAmbiguousDates(text: string): AmbiguousDateMatch[] {
   const patternYearFirst =
     /\b('?\d{4})[-/.,\s](\d{1,2})(?:st|nd|rd|th)?[-/.,\s](\d{1,2})(?:st|nd|rd|th)?\b/gi
 
-  // Also check compact formats (no separators): 01042026 or 20260401
+  // Also check compact formats (no separators): 01042026 (DDMMYYYY)
+  // Note: YYYYMMDD is ISO 8601 basic format and unambiguous, so we don't check it
   const patternCompact = /\b(\d{2})(\d{2})((?:19|20)\d{2})\b/g
-  const patternCompactYearFirst = /\b((?:19|20)\d{2})(\d{2})(\d{2})\b/g
 
   let match
 
@@ -114,6 +114,10 @@ export function detectAmbiguousDates(text: string): AmbiguousDateMatch[] {
     // Skip if already matched by the first pattern
     if (matches.some((m) => m.original === original)) continue
 
+    // Skip ISO 8601 format (YYYY-MM-DD with hyphens) - it's unambiguous by international standard
+    const isIsoFormat = /^\d{4}-\d{1,2}-\d{1,2}$/.test(original)
+    if (isIsoFormat) continue
+
     const year = normalizeYear(yearStr)
     const secondNum = parseInt(second, 10)
     const thirdNum = parseInt(third, 10)
@@ -143,25 +147,8 @@ export function detectAmbiguousDates(text: string): AmbiguousDateMatch[] {
     }
   }
 
-  // Compact format: YYYYMMDD
-  while ((match = patternCompactYearFirst.exec(text)) !== null) {
-    const [original, yearStr, second, third] = match
-
-    // Skip if already matched
-    if (matches.some((m) => m.original === original)) continue
-
-    const year = parseInt(yearStr, 10)
-    const secondNum = parseInt(second, 10)
-    const thirdNum = parseInt(third, 10)
-
-    if (isAmbiguous(secondNum, thirdNum)) {
-      matches.push({
-        original,
-        interpretation1: formatDate(thirdNum, secondNum, year),
-        interpretation2: formatDate(secondNum, thirdNum, year),
-      })
-    }
-  }
+  // Compact format: YYYYMMDD - this is ISO 8601 basic format, unambiguous (always year-month-day)
+  // So we skip flagging these as ambiguous
 
   // Deduplicate by original string
   const seen = new Set<string>()
