@@ -2189,6 +2189,9 @@ export const API = (_apiTypeCheck = {
       freeLoanAvailable?: number
       canClaimFreeLoan?: boolean
       hasMarginLoanAccess?: boolean
+      // Equity-based calculation fields (equity = portfolioValue - loans)
+      equity?: number
+      portfolioValue?: number
     },
     props: z.object({
       userId: z.string(),
@@ -2205,15 +2208,15 @@ export const API = (_apiTypeCheck = {
       currentFreeLoan: number
       currentMarginLoan: number
       available: number
-      netWorthLimit: number
+      equityLimit: number
       totalPositionValue: number
       eligible: boolean
       eligibilityReason?: string
-      // Aggregate limits (80% of net worth across all markets)
+      // Aggregate limits (tier-specific % of equity across all markets)
       aggregateLimit: number
       totalLoanAllMarkets: number
       availableAggregate: number
-      // Daily limits (10% of net worth per day)
+      // Daily limits (10% of equity per day)
       dailyLimit: number
       todayLoans: number
       availableToday: number

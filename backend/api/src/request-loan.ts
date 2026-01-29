@@ -9,6 +9,7 @@ import {
   isMarketEligibleForLoan,
   getMidnightPacific,
   MS_PER_DAY,
+  calculateEquity,
 } from 'common/loans'
 import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
@@ -116,15 +117,24 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { contracts, metrics } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
-  const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
-  const netWorth = user.balance + value
+  const { value: portfolioValue } = getUnresolvedStatsForToken(
+    'MANA',
+    metrics,
+    contractsById
+  )
 
-  // Check total loan limit (tier-specific)
+  // Calculate equity (portfolio value minus outstanding loans)
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity
+  // Note: Balance is not included since loans are taken against positions
+  const loanTotal = portfolioMetric.loanTotal ?? 0
+  const equity = calculateEquity(portfolioValue, loanTotal)
+
+  // Check total loan limit based on equity (tier-specific)
   if (
-    !isUserEligibleForGeneralLoan(portfolioMetric, netWorth, amount, maxLoanPercent)
+    !isUserEligibleForGeneralLoan(portfolioMetric, equity, amount, maxLoanPercent)
   ) {
-    const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
-    const currentLoan = portfolioMetric.loanTotal ?? 0
+    const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
+    const currentLoan = loanTotal
     throw new APIError(
       400,
       `Loan amount exceeds maximum. Max loan: ${maxLoan.toFixed(
@@ -135,8 +145,8 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
-  // Check daily loan limit (10% of net worth per day, resets at midnight PT)
-  const dailyLimit = calculateDailyLoanLimit(netWorth)
+  // Check daily loan limit based on equity (10% of equity per day, resets at midnight PT)
+  const dailyLimit = calculateDailyLoanLimit(equity)
   const midnightPT = getMidnightPacific()
   const todayLoansResult = await pg.oneOrNone<{ total: number }>(
     `select coalesce(sum(amount), 0) as total

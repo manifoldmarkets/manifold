@@ -141,31 +141,52 @@ export const isMarketEligibleForLoan = (market: {
 export const overLeveraged = (loanTotal: number, investmentValue: number) =>
   loanTotal / investmentValue >= 8
 
+/**
+ * Calculate equity (portfolio value minus outstanding loans).
+ * Equity represents the user's true ownership stake in positions and is used for loan limit calculations.
+ * This breaks the feedback loop where borrowing more would increase borrowing capacity.
+ * Note: Balance is not included since loans are taken against positions, not balance.
+ */
+export const calculateEquity = (
+  portfolioValue: number,
+  loanTotal: number
+): number => {
+  return Math.max(0, portfolioValue - loanTotal)
+}
+
 export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
   const { investmentValue, loanTotal } = portfolio
   return investmentValue > 0 && !overLeveraged(loanTotal ?? 0, investmentValue)
 }
 
+/**
+ * Check if user is eligible for a general loan based on equity.
+ * Using equity instead of net worth prevents the feedback loop.
+ */
 export const isUserEligibleForGeneralLoan = (
   portfolio: PortfolioMetrics,
-  netWorth: number,
+  equity: number,
   requestedAmount: number,
   maxLoanPercent: number = MAX_LOAN_NET_WORTH_PERCENT
 ): boolean => {
   const { loanTotal } = portfolio
-  if (netWorth <= 0) return false
+  if (equity <= 0) return false
 
-  const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
+  const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
   const currentLoan = loanTotal ?? 0
   return currentLoan + requestedAmount <= maxLoan
 }
 
+/**
+ * Check if user is eligible for a loan on a specific market based on equity.
+ * Using equity ensures per-market limits don't inflate with outstanding loans.
+ */
 export const isUserEligibleForMarketLoan = (
   currentMarketLoan: number,
   requestedAmount: number,
-  netWorth: number
+  equity: number
 ): boolean => {
-  const maxLoan = calculateMarketLoanMax(netWorth)
+  const maxLoan = calculateMarketLoanMax(equity)
   return currentMarketLoan + requestedAmount <= maxLoan
 }
 
@@ -244,19 +265,32 @@ export type RepaymentDistribution = {
   interestRepaid: number
 }
 
+/**
+ * Calculate the maximum general loan amount based on equity.
+ * Using equity (net worth minus loans) instead of net worth prevents
+ * the compounding loop where borrowing increases borrowing capacity.
+ */
 export const calculateMaxGeneralLoanAmount = (
-  netWorth: number,
+  equity: number,
   maxLoanPercent: number = MAX_LOAN_NET_WORTH_PERCENT
 ): number => {
-  return netWorth * maxLoanPercent
+  return equity * maxLoanPercent
 }
 
-export const calculateDailyLoanLimit = (netWorth: number): number => {
-  return netWorth * DAILY_LOAN_NET_WORTH_PERCENT
+/**
+ * Calculate the daily loan limit based on equity.
+ * Using equity ensures borrowing doesn't inflate the daily limit.
+ */
+export const calculateDailyLoanLimit = (equity: number): number => {
+  return equity * DAILY_LOAN_NET_WORTH_PERCENT
 }
 
-export const calculateMarketLoanMax = (netWorth: number): number => {
-  return netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
+/**
+ * Calculate the maximum loan per market based on equity.
+ * Using equity prevents per-market limits from growing with outstanding loans.
+ */
+export const calculateMarketLoanMax = (equity: number): number => {
+  return equity * MAX_MARKET_LOAN_NET_WORTH_PERCENT
 }
 
 export type LoanDistribution = {
