@@ -285,10 +285,10 @@ const UserRow = (props: {
             </Row>
           </UserHovercard>
 
-          {/* Mana earned */}
+          {/* Mana earned - column on right with fixed width for alignment */}
           <span
             className={clsx(
-              'shrink-0 text-sm font-medium tabular-nums',
+              'min-w-[90px] shrink-0 text-right text-sm font-medium tabular-nums',
               mana_earned > 0
                 ? 'text-teal-600'
                 : mana_earned < 0
