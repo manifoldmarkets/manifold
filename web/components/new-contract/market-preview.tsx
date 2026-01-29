@@ -44,6 +44,8 @@ import {
 } from './market-type-suggestions'
 import { SimilarContractsSection } from './similar-contracts-section'
 import { detectAmbiguousDates } from 'web/lib/util/date-ambiguity'
+import { detectAmbiguousTemporalPhrases } from 'web/lib/util/temporal-ambiguity'
+import { TemporalAmbiguityBanner } from './temporal-ambiguity-banner'
 
 export type PreviewContractData = {
   question: string
@@ -130,6 +132,7 @@ export function MarketPreview(props: {
   ) => void
   fieldErrors?: ValidationErrors
   onToggleIncludeSeeResults?: () => void
+  onReplaceQuestionText?: (original: string, replacement: string) => void
 }) {
   const {
     data,
@@ -165,10 +168,12 @@ export function MarketPreview(props: {
     setDismissedSimilarContractTitles,
     fieldErrors = {},
     onToggleIncludeSeeResults,
+    onReplaceQuestionText,
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
   const [dismissedDateWarning, setDismissedDateWarning] = useState(false)
+  const [dismissedTemporalWarning, setDismissedTemporalWarning] = useState(false)
   const [aiPollSuggestion, setAiPollSuggestion] = useState<{
     isSubjective: boolean
     confidence: number
@@ -616,6 +621,27 @@ export function MarketPreview(props: {
                 </button>
               </Row>
             </div>
+          )
+        })()}
+
+      {/* Temporal Preposition Ambiguity Warning */}
+      {isEditable &&
+        question &&
+        !dismissedTemporalWarning &&
+        onReplaceQuestionText &&
+        (() => {
+          const temporalMatches = detectAmbiguousTemporalPhrases(question)
+          if (temporalMatches.length === 0) return null
+          const firstMatch = temporalMatches[0]
+          return (
+            <TemporalAmbiguityBanner
+              match={firstMatch}
+              onApplyReplacement={(original, replacement) => {
+                onReplaceQuestionText(original, replacement)
+                setDismissedTemporalWarning(true)
+              }}
+              onDismiss={() => setDismissedTemporalWarning(true)}
+            />
           )
         })()}
 
