@@ -259,8 +259,8 @@ const UserRow = (props: {
           </Row>
 
           {/* User info */}
-          <UserHovercard userId={user.id}>
-            <Row className="min-w-0 flex-1 items-center gap-2.5">
+          <UserHovercard userId={user.id} className="min-w-0 flex-1">
+            <Row className="items-center gap-2.5">
               <Avatar
                 avatarUrl={user.avatarUrl}
                 username={user.username}
