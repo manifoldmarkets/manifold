@@ -1360,6 +1360,10 @@ export function NewContractPanel(props: {
             onToggleIncludeSeeResults={() =>
               updateField('includeSeeResults', !formState.includeSeeResults)
             }
+            onReplaceQuestionText={(original, replacement) => {
+              const newQuestion = formState.question.replace(original, replacement)
+              updateFieldWithErrorClear('question', newQuestion)
+            }}
           />
 
           {/* Overlay when no market type selected */}
