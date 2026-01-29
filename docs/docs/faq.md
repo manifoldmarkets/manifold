@@ -335,7 +335,8 @@ Free users can only claim daily free loans (via the golden chest), while members
 **Other limits:**
 
 - **Daily limit**: 10% of equity per day (resets at midnight PT)
-- **Per-market limit**: 5% of equity per market
+- **Per-market limit**: 5% of equity per market (total loans on any single market)
+- **Free loan per-position limit**: Free loans are also capped at your cost basis (invested amount) per position
 
 **Example:**
 
