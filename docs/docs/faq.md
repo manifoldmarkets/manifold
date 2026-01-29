@@ -305,15 +305,46 @@ Loans allow you to borrow mana against your existing positions, freeing up capit
 - Claimed daily via the golden chest icon on the homepage.
 - Interest-free forever.
 - Available to all users.
-- Amount is based on a percentage of your position values.
+- Amount is based on a percentage of your position values (1-3% depending on tier).
 
 **Margin loans:**
 
 - Available to Manifold members (Plus, Pro, or Premium subscribers).
 - Accrue 0.03% interest per day.
 - Can request specific amounts through the loans modal.
-- Daily limit is 10% of your net worth.
-- Maximum total loan is 100% of your net worth.
+
+#### Loan limits and leverage
+
+Loan limits are based on **equity**, not net worth. Equity is calculated as:
+
+> **Equity = Net Worth - Outstanding Loans**
+>
+> Where Net Worth = Balance + Portfolio Value
+
+This means borrowing more doesn't increase your borrowing capacity—your limits stay constant based on your true ownership stake.
+
+**Limit tiers:**
+
+| Tier                    | Max Total Loan | Effective Leverage |
+| ----------------------- | -------------- | ------------------ |
+| Free (no margin access) | N/A            | 1x                 |
+| Plus                    | 100% of equity | 2x                 |
+| Pro                     | 200% of equity | 3x                 |
+| Premium                 | 300% of equity | 4x                 |
+
+**Other limits:**
+
+- **Daily limit**: 10% of equity per day (resets at midnight PT)
+- **Per-market limit**: 5% of equity per market
+
+**Example:**
+
+If you have M100,000 equity and are a Pro subscriber (3x leverage):
+
+- Maximum total loan: M200,000 (200% of equity)
+- Daily borrowing limit: M10,000 (10% of equity)
+- After borrowing M200,000, your equity remains M100,000 (the loan is offset)
+- Total buying power: M100,000 + M200,000 = M300,000 (3x)
 
 #### How do loans work?
 
@@ -322,9 +353,18 @@ Loans allow you to borrow mana against your existing positions, freeing up capit
 - To manually repay loans, use the loans modal accessible from your profile.
 - Repayments go to margin loans first (to stop interest accruing), then to free loans.
 
+#### Market eligibility for loans
+
+Not all markets are eligible for loans. To qualify, a market must be:
+
+- Public (listed)
+- Ranked
+- Have more than 10 traders
+- Be at least 24 hours old
+
 #### Can my account go negative because of loans?
 
-It's possible but rare. If your positions lose significant value and you have outstanding loans, your balance could become negative when markets resolve.
+It's possible but rare. If your positions lose significant value and you have outstanding loans, your balance could become negative when markets resolve. The loan amount is always deducted from your winnings regardless of whether your balance can cover it.
 
 ## Misc
 

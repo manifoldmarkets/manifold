@@ -9,6 +9,7 @@ import {
   canClaimDailyFreeLoan,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  calculateEquity,
 } from 'common/loans'
 import { Txn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
@@ -90,13 +91,20 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
 
-  // Calculate net worth
+  // Calculate net worth and loan totals
   const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
   const netWorth = user.balance + value
 
-  // Calculate limits (tier-specific max loan)
-  const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
-  const dailyLimit = calculateDailyLoanLimit(netWorth)
+  // Calculate total outstanding loans from metrics
+  const loanTotal = sumBy(metrics, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
+
+  // Calculate equity (net worth minus outstanding loans)
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity
+  const equity = calculateEquity(netWorth, loanTotal)
+
+  // Calculate limits based on equity (tier-specific max loan)
+  const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
+  const dailyLimit = calculateDailyLoanLimit(equity)
 
   // Get today's loans (since midnight PT)
   const midnightPT = getMidnightPacific()
@@ -171,7 +179,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
         const key = `${m.contractId}-${m.answerId ?? ''}`
         const currentLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
         const positionValue = m.payout ?? 0
-        const maxLoan = calculateMarketLoanMax(netWorth)
+        const maxLoan = calculateMarketLoanMax(equity)
         answerLoanInfo[key] = {
           currentLoan,
           positionValue,
@@ -186,7 +194,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
         (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
       )
       const positionValue = sumBy(contractMetrics, (m) => m.payout ?? 0)
-      const maxLoan = calculateMarketLoanMax(netWorth)
+      const maxLoan = calculateMarketLoanMax(equity)
       marketLoanInfo[contractId] = {
         currentLoan,
         positionValue,

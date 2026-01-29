@@ -8,6 +8,7 @@ import {
   MAX_MARKET_LOAN_NET_WORTH_PERCENT,
   MS_PER_DAY,
   isMarketEligibleForLoan,
+  calculateEquity,
 } from 'common/loans'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import {
@@ -87,6 +88,10 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
   const netWorth = user.balance + value
 
+  // Calculate equity (net worth minus outstanding loans)
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity
+  const equity = calculateEquity(netWorth, totalLoanAllMarkets)
+
   // Get metrics for this contract
   const contractMetrics = metrics.filter((m) => m.contractId === contractId)
 
@@ -101,16 +106,16 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const currentLoan = currentFreeLoan + currentMarginLoan
   const totalPositionValue = sumBy(relevantMetrics, (m) => m.payout ?? 0)
 
-  // Calculate per-market limit (5% of net worth)
-  const netWorthLimit = netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
-  const maxLoan = calculateMarketLoanMax(netWorth)
+  // Calculate per-market limit based on equity (5% of equity)
+  const equityLimit = equity * MAX_MARKET_LOAN_NET_WORTH_PERCENT
+  const maxLoan = calculateMarketLoanMax(equity)
 
-  // Calculate aggregate limit (tier-specific % of net worth total across ALL markets)
-  const maxAggregateLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
+  // Calculate aggregate limit based on equity (tier-specific % of equity total across ALL markets)
+  const maxAggregateLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
   const availableAggregate = Math.max(0, maxAggregateLoan - totalLoanAllMarkets)
 
-  // Calculate daily limit (10% of net worth per day)
-  const dailyLimit = calculateDailyLoanLimit(netWorth)
+  // Calculate daily limit based on equity (10% of equity per day)
+  const dailyLimit = calculateDailyLoanLimit(equity)
   const oneDayAgo = Date.now() - MS_PER_DAY
   const todayLoansResult = await pg.oneOrNone<{ total: number }>(
     `select coalesce(sum(amount), 0) as total
@@ -153,7 +158,7 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     currentFreeLoan,
     currentMarginLoan,
     available,
-    netWorthLimit,
+    equityLimit,
     totalPositionValue,
     eligible: eligibility.eligible,
     eligibilityReason: eligibility.reason,
