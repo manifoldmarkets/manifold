@@ -77,7 +77,7 @@ function CheckoutContent() {
         <div className="border-ink-100 border-b bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 dark:from-indigo-950/30 dark:to-purple-950/30">
           <Row className="items-center justify-between">
             <h1 className="text-primary-700 text-xl font-semibold sm:text-2xl">
-              Buy Mana
+              Buy mana
             </h1>
             <Row className="items-center gap-1 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm dark:from-teal-600/80 dark:to-emerald-600/80">
               <span>$1 USDC</span>
@@ -181,7 +181,7 @@ function CheckoutContent() {
                     >
                       <Row className="items-center justify-center gap-3">
                         <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                        <span>Buy Mana</span>
+                        <span>Buy mana</span>
                       </Row>
                     </button>
                   )}
@@ -266,7 +266,7 @@ export default function CheckoutPage() {
   return (
     <Page trackPageView="checkout page">
       <SEO
-        title="Buy Mana"
+        title="Buy mana"
         description="Purchase mana using cryptocurrency on Manifold"
         url="/checkout"
       />
