@@ -3321,6 +3321,29 @@ export const API = (_apiTypeCheck = {
       }>
     },
   },
+  'admin-get-new-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      users: Array<{
+        id: string
+        createdTime: number
+        username: string
+        name: string
+        avatarUrl: string
+        balance: number
+        referredByUserId: string | null
+        referredByUsername: string | null
+        referredByName: string | null
+        bonusEligibility: 'verified' | 'grandfathered' | 'ineligible' | null
+        purchasedMana: boolean
+        email: string | null
+        ipAddress: string | null
+      }>
+    },
+  },
   'get-predictle-percentile': {
     method: 'GET',
     visibility: 'undocumented',
