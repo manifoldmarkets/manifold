@@ -198,6 +198,15 @@ type ManaPurchase = {
         sessionId: string
         paidInCents: number
       }
+    | {
+        daimoPaymentId: string
+        type: 'crypto'
+        paidInCents: number
+        bonusAmount: number
+        bonusPct: number
+        isFirstCryptoPurchase: boolean
+        isBulkPurchase: boolean
+      }
 }
 type CashBonus = {
   fromId: 'EXTERNAL'
