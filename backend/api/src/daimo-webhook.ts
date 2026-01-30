@@ -138,6 +138,7 @@ const handlePaymentCompleted = async (
   const paidInCents = Math.round(usdcAmount * 100)
 
   let success = false
+  let alreadyProcessed = false
   let finalManaAmount = 0
   let bonusAmount = 0
   let isFirstCryptoPurchase = false
@@ -177,24 +178,17 @@ const handlePaymentCompleted = async (
         paymentId,
       })
 
-      // Insert for idempotency - will fail if already processed
-      try {
-        await tx.none(
-          `INSERT INTO crypto_payment_intents (intent_id, user_id, mana_amount, usdc_amount)
-           VALUES ($1, $2, $3, $4)`,
-          [paymentId, userId, finalManaAmount, usdcAmount]
-        )
-      } catch (e: unknown) {
-        // Check if it's a unique constraint violation (already processed)
-        if (
-          e &&
-          typeof e === 'object' &&
-          'code' in e &&
-          (e as { code: string }).code === '23505'
-        ) {
-          throw new Error('Payment already processed')
-        }
-        throw e
+      // Insert for idempotency - skip if already processed
+      const insertResult = await tx.oneOrNone(
+        `INSERT INTO crypto_payment_intents (intent_id, user_id, mana_amount, usdc_amount)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (intent_id) DO NOTHING
+         RETURNING id`,
+        [paymentId, userId, finalManaAmount, usdcAmount]
+      )
+      if (!insertResult) {
+        alreadyProcessed = true
+        return
       }
 
       const manaPurchaseTxn = {
@@ -224,10 +218,6 @@ const handlePaymentCompleted = async (
     })
     success = true
   } catch (e) {
-    if (e instanceof Error && e.message === 'Payment already processed') {
-      log('Payment already processed (concurrent request):', paymentId)
-      return
-    }
     log.error(
       'Must reconcile crypto_payment_intents with purchase txns. User may not have received mana!',
       { error: e }
@@ -236,6 +226,11 @@ const handlePaymentCompleted = async (
       log.error('APIError in runTxn', { message: e.message })
     }
     throw e
+  }
+
+  if (alreadyProcessed) {
+    log('Payment already processed (concurrent request):', paymentId)
+    return
   }
 
   if (success) {
