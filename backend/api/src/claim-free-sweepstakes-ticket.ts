@@ -67,23 +67,18 @@ export const claimFreeSweepstakesTicket: APIHandler<
       )
     }
 
-    // Check if user has already claimed free ticket
-    const existingClaim = await tx.oneOrNone(
-      `SELECT 1 FROM sweepstakes_free_tickets 
-       WHERE sweepstakes_num = $1 AND user_id = $2`,
+    // Insert the free ticket claim record (idempotent)
+    const claimRow = await tx.oneOrNone(
+      `INSERT INTO sweepstakes_free_tickets (sweepstakes_num, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (sweepstakes_num, user_id) DO NOTHING
+       RETURNING sweepstakes_num`,
       [sweepstakesNum, auth.uid]
     )
 
-    if (existingClaim) {
+    if (!claimRow) {
       throw new APIError(400, 'You have already claimed your free ticket')
     }
-
-    // Insert the free ticket claim record
-    await tx.none(
-      `INSERT INTO sweepstakes_free_tickets (sweepstakes_num, user_id)
-       VALUES ($1, $2)`,
-      [sweepstakesNum, auth.uid]
-    )
 
     // Insert ticket purchase record (free, so mana_spent = 0)
     const ticketRow = await tx.one<{ id: string }>(

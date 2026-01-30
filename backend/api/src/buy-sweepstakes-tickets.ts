@@ -29,7 +29,10 @@ export const buySweepstakesTickets: APIHandler<'buy-sweepstakes-tickets'> =
         sweepstakes_num: number
         close_time: string
       }>(
-        `SELECT sweepstakes_num, close_time FROM sweepstakes WHERE sweepstakes_num = $1`,
+        `SELECT sweepstakes_num, close_time
+         FROM sweepstakes
+         WHERE sweepstakes_num = $1
+         FOR UPDATE`,
         [sweepstakesNum]
       )
 
