@@ -9,7 +9,6 @@ import {
   canClaimDailyFreeLoan,
   isMarketEligibleForLoan,
   getMidnightPacific,
-  calculateEquity,
 } from 'common/loans'
 import {
   getUnresolvedContractMetricsContractsAnswers,
@@ -82,22 +81,17 @@ export const getFreeLoanAvailable: APIHandler<
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
 
-  // Calculate portfolio value
+  // Calculate portfolio value (net of loans)
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
     metrics,
     contractsById
   )
 
-  // Calculate total outstanding loans from metrics
-  const loanTotal = sumBy(metrics, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
-  // getUnresolvedStatsForToken returns value net of loans; add them back for gross value.
-  const portfolioValue = portfolioValueNet + loanTotal
-
-  // Calculate equity (portfolio value minus outstanding loans)
-  // Using equity prevents the compounding loop where borrowing increases borrowing capacity
-  // Note: Balance is not included since loans are taken against positions
-  const equity = calculateEquity(portfolioValue, loanTotal)
+  // Calculate equity from net portfolio value (already excludes loans).
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
+  // Note: Balance is not included since loans are taken against positions.
+  const equity = Math.max(0, portfolioValueNet)
 
   // Calculate limits based on equity (tier-specific max loan)
   const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)

@@ -337,6 +337,7 @@ export const getUnresolvedStatsForToken = (
   contractMetrics: ContractMetric[],
   contractsById: { [k: string]: Contract }
 ) => {
+  // Note: returned value is net of loans (payout minus free + margin loans).
   const metrics = contractMetrics.map((cm) => {
     const contract = contractsById[cm.contractId] as MarketContract
     if (contract.token !== token) {

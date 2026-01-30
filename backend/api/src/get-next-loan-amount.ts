@@ -8,7 +8,6 @@ import {
   calculateTotalFreeLoanAvailable,
   isMarketEligibleForLoan,
   getMidnightPacific,
-  calculateEquity,
 } from 'common/loans'
 import {
   canAccessMarginLoans,
@@ -93,13 +92,13 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
   const currentMarginLoan = sumBy(metrics, (m) => m.marginLoan ?? 0)
   const currentLoan = currentFreeLoan + currentMarginLoan
-  // getUnresolvedStatsForToken returns value net of loans; add them back for gross value.
+  // getUnresolvedStatsForToken returns value net of loans; add them back for gross display.
   const portfolioValue = portfolioValueNet + currentLoan
 
-  // Calculate equity (portfolio value minus outstanding loans)
-  // Using equity prevents the compounding loop where borrowing increases borrowing capacity
-  // Note: Balance is not included since loans are taken against positions
-  const equity = calculateEquity(portfolioValue, currentLoan)
+  // Calculate equity from net portfolio value (already excludes loans).
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
+  // Note: Balance is not included since loans are taken against positions.
+  const equity = Math.max(0, portfolioValueNet)
 
   // Calculate limits based on equity
   const maxGeneralLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)

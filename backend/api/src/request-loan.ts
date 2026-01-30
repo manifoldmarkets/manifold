@@ -9,7 +9,6 @@ import {
   isMarketEligibleForLoan,
   getMidnightPacific,
   MS_PER_DAY,
-  calculateEquity,
 } from 'common/loans'
 import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
@@ -123,13 +122,11 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     contractsById
   )
 
-  // Calculate equity (portfolio value minus outstanding loans)
-  // Using equity prevents the compounding loop where borrowing increases borrowing capacity
-  // Note: Balance is not included since loans are taken against positions
+  // Calculate equity from net portfolio value (already excludes loans).
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
+  // Note: Balance is not included since loans are taken against positions.
   const loanTotal = portfolioMetric.loanTotal ?? 0
-  // getUnresolvedStatsForToken returns value net of loans; add them back for gross value.
-  const portfolioValue = portfolioValueNet + loanTotal
-  const equity = calculateEquity(portfolioValue, loanTotal)
+  const equity = Math.max(0, portfolioValueNet)
 
   // Check total loan limit based on equity (tier-specific)
   if (
