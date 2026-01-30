@@ -173,15 +173,18 @@ export const idenfyCallback = async (req: Request, res: Response) => {
   // Get raw body - express.raw() gives us a Buffer
   const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body)
 
-  // Verify signature if secret is configured
-  if (callbackSecret) {
-    const signature = req.headers['idenfy-signature'] as string | undefined
+  if (!callbackSecret) {
+    log.error('IDENFY_CALLBACK_SECRET not configured')
+    res.status(500).send('Webhook not configured')
+    return
+  }
 
-    if (!verifySignature(rawBody, signature, callbackSecret)) {
-      log.error('iDenfy callback signature verification failed')
-      res.status(401).send('Unauthorized')
-      return
-    }
+  // Verify signature
+  const signature = req.headers['idenfy-signature'] as string | undefined
+  if (!verifySignature(rawBody, signature, callbackSecret)) {
+    log.error('iDenfy callback signature verification failed')
+    res.status(401).send('Unauthorized')
+    return
   }
 
   let payload: IdenfyCallbackPayload
@@ -283,7 +286,12 @@ export const idenfyCallback = async (req: Request, res: Response) => {
         await updateUser(tx, userId, { bonusEligibility: 'verified' })
         
         // Pay signup bonus if not already paid
-        if (!alreadyPaidBonus) {
+        const existingSignupTxn = await tx.oneOrNone(
+          `SELECT 1 FROM txns WHERE to_id = $1
+           AND category = 'SIGNUP_BONUS'`,
+          [userId]
+        )
+        if (!alreadyPaidBonus && !existingSignupTxn) {
           const signupBonusTxn: Omit<
             SignupBonusTxn,
             'id' | 'createdTime' | 'fromId'
