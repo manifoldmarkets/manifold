@@ -3267,6 +3267,41 @@ export const API = (_apiTypeCheck = {
       } | null
     },
   },
+  'admin-get-prize-claims': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      claims: Array<{
+        id: string | null
+        sweepstakesNum: number
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        rank: number
+        prizeAmountUsdc: number
+        walletAddress: string | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | null
+        paymentTxnHash: string | null
+        createdTime: number | null
+      }>
+    },
+  },
+  'admin-update-prize-payment': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        claimId: z.string(),
+        paymentStatus: z.enum(['awaiting', 'sent', 'rejected']),
+        paymentTxnHash: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
   'get-predictle-percentile': {
     method: 'GET',
     visibility: 'undocumented',
