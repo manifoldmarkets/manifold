@@ -3067,6 +3067,35 @@ export const API = (_apiTypeCheck = {
       nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
     },
   },
+  'get-charity-giveaway-list': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      giveaways: Array<{
+        giveawayNum: number
+        name: string
+        closeTime: number
+        createdTime: number
+        hasWinner: boolean
+      }>
+    },
+  },
+  'admin-create-charity-giveaway': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        closeTime: z.number(),
+        prizeAmountUsd: z.number(),
+      })
+      .strict(),
+    returns: {} as {
+      giveawayNum: number
+    },
+  },
   'buy-charity-giveaway-tickets': {
     method: 'POST',
     visibility: 'undocumented',

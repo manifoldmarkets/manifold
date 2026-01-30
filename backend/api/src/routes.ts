@@ -188,6 +188,8 @@ import { adminGetManaSales } from './admin-get-mana-sales'
 import { adminGetNewUsers } from './admin-get-new-users'
 import { getSweepstakesList } from './get-sweepstakes-list'
 import { adminCreateSweepstakes } from './admin-create-sweepstakes'
+import { getCharityGiveawayList } from './get-charity-giveaway-list'
+import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -473,6 +475,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'save-predictle-result': savePredicleResult,
   'get-predictle-result': getPredictleResult,
   'get-charity-giveaway': getCharityGiveaway,
+  'get-charity-giveaway-list': getCharityGiveawayList,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
@@ -485,6 +488,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-sweepstakes-prize': claimSweepstakesPrize,
   'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
   'admin-create-sweepstakes': adminCreateSweepstakes,
+  'admin-create-charity-giveaway': adminCreateCharityGiveaway,
   'admin-get-prize-claims': adminGetPrizeClaims,
   'admin-update-prize-payment': adminUpdatePrizePayment,
   'admin-get-mana-sales': adminGetManaSales,

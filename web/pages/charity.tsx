@@ -2,6 +2,7 @@ import { charities } from 'common/charity'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -74,16 +75,33 @@ const COLORS = [
   '#d946ef', // fuchsia
 ]
 
-export default function CharityGiveawayPage() {
+export default function CharityGiveawayPage(props: {
+  giveawayNum?: number
+}) {
+  const { giveawayNum } = props
   const user = useUser()
   const isAdmin = useAdmin()
-  const { data, refresh } = useAPIGetter('get-charity-giveaway', {})
+  const router = useRouter()
+  const { data, refresh } = useAPIGetter(
+    'get-charity-giveaway',
+    giveawayNum ? { giveawayNum } : {}
+  )
+  const { data: giveawayListData } = useAPIGetter(
+    'get-charity-giveaway-list',
+    {}
+  )
 
   const [selectedCharityId, setSelectedCharityId] = useState<string>('')
   const [hoveredCharityId, setHoveredCharityId] = useState<string | null>(null)
   const [manaAmount, setManaAmount] = useState<number>(100)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [salesRefreshKey, setSalesRefreshKey] = useState(0)
+
+  const [showCreateGiveawayModal, setShowCreateGiveawayModal] =
+    useState(false)
+  const [newCloseTime, setNewCloseTime] = useState('')
+  const [newPrizeAmount, setNewPrizeAmount] = useState('1000')
+  const [isCreatingGiveaway, setIsCreatingGiveaway] = useState(false)
 
   // Winner reveal state
   const [isSelectingWinner, setIsSelectingWinner] = useState(false)
@@ -155,6 +173,9 @@ export default function CharityGiveawayPage() {
   const isClosed = giveaway && giveaway.closeTime <= Date.now()
   const hasWinner = !!giveaway?.winningTicketId
 
+  const giveawayList = giveawayListData?.giveaways ?? []
+  const activeGiveaway = giveawayList.find((g) => g.closeTime > Date.now())
+
   // Check if user has already seen the reveal animation
   const [hasSeenReveal, setHasSeenReveal] = useState(false)
 
@@ -220,6 +241,38 @@ export default function CharityGiveawayPage() {
       toast.error(msg)
     } finally {
       setIsSelectingWinner(false)
+    }
+  }
+
+  const handleCreateGiveaway = async () => {
+    if (isCreatingGiveaway) return
+    const closeTimestamp = Date.parse(newCloseTime)
+    if (!Number.isFinite(closeTimestamp)) {
+      toast.error('Please enter a valid close date/time')
+      return
+    }
+    const prizeAmount = Number(newPrizeAmount)
+    if (!Number.isFinite(prizeAmount) || prizeAmount <= 0) {
+      toast.error('Please enter a valid prize amount')
+      return
+    }
+    setIsCreatingGiveaway(true)
+    try {
+      await api('admin-create-charity-giveaway', {
+        closeTime: closeTimestamp,
+        prizeAmountUsd: prizeAmount,
+      })
+      toast.success('New giveaway created!')
+      setShowCreateGiveawayModal(false)
+      setNewPrizeAmount('1000')
+      setNewCloseTime('')
+      refresh()
+    } catch (e) {
+      const msg =
+        e instanceof APIError ? e.message : 'Failed to create giveaway'
+      toast.error(msg)
+    } finally {
+      setIsCreatingGiveaway(false)
     }
   }
 
@@ -295,7 +348,25 @@ export default function CharityGiveawayPage() {
             <br />
             Check back soon for the next drawing!
           </p>
+          {isAdmin && (
+            <Button
+              color="indigo"
+              onClick={() => setShowCreateGiveawayModal(true)}
+            >
+              Create New Giveaway
+            </Button>
+          )}
         </Col>
+        <CreateGiveawayModal
+          open={showCreateGiveawayModal}
+          setOpen={setShowCreateGiveawayModal}
+          newCloseTime={newCloseTime}
+          setNewCloseTime={setNewCloseTime}
+          newPrizeAmount={newPrizeAmount}
+          setNewPrizeAmount={setNewPrizeAmount}
+          isCreatingGiveaway={isCreatingGiveaway}
+          onCreate={handleCreateGiveaway}
+        />
       </Page>
     )
   }
@@ -316,6 +387,45 @@ export default function CharityGiveawayPage() {
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
               Manifold Charity Giveaway
             </h1>
+            <div className="ml-auto flex items-center gap-2">
+              {giveawayList.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={String(giveaway.giveawayNum)}
+                    onChange={(e) => {
+                      const nextNum = Number(e.target.value)
+                      if (
+                        activeGiveaway &&
+                        nextNum === activeGiveaway.giveawayNum
+                      ) {
+                        router.push('/charity')
+                      } else {
+                        router.push(`/charity/${nextNum}`)
+                      }
+                    }}
+                    className="bg-canvas-50 border-canvas-200 text-ink-700 appearance-none rounded-md border px-2 py-1 pr-7 text-sm"
+                  >
+                    {giveawayList.map((g) => (
+                      <option key={g.giveawayNum} value={g.giveawayNum}>
+                        {`Giveaway #${g.giveawayNum}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {isAdmin &&
+                isClosed &&
+                (!activeGiveaway ||
+                  activeGiveaway.giveawayNum === giveaway.giveawayNum) && (
+                  <Button
+                    color="indigo"
+                    size="sm"
+                    onClick={() => setShowCreateGiveawayModal(true)}
+                  >
+                    Create New Giveaway
+                  </Button>
+                )}
+            </div>
           </Row>
           <p className="text-ink-600 text-lg leading-relaxed">
             Manifold is giving ${giveaway.prizeAmountUsd.toLocaleString()} to
@@ -466,6 +576,17 @@ export default function CharityGiveawayPage() {
             hasWinner={hasWinner}
           />
         )}
+
+        <CreateGiveawayModal
+          open={showCreateGiveawayModal}
+          setOpen={setShowCreateGiveawayModal}
+          newCloseTime={newCloseTime}
+          setNewCloseTime={setNewCloseTime}
+          newPrizeAmount={newPrizeAmount}
+          setNewPrizeAmount={setNewPrizeAmount}
+          isCreatingGiveaway={isCreatingGiveaway}
+          onCreate={handleCreateGiveaway}
+        />
       </Col>
     </Page>
   )
@@ -1247,5 +1368,78 @@ function ProvablyFairBanner(props: {
         </Col>
       </Modal>
     </>
+  )
+}
+
+function CreateGiveawayModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  newCloseTime: string
+  setNewCloseTime: (value: string) => void
+  newPrizeAmount: string
+  setNewPrizeAmount: (value: string) => void
+  isCreatingGiveaway: boolean
+  onCreate: () => void
+}) {
+  const {
+    open,
+    setOpen,
+    newCloseTime,
+    setNewCloseTime,
+    newPrizeAmount,
+    setNewPrizeAmount,
+    isCreatingGiveaway,
+    onCreate,
+  } = props
+
+  return (
+    <Modal open={open} setOpen={setOpen} size="md">
+      <Col className={clsx(MODAL_CLASS, 'gap-5')}>
+        <Col className="gap-1">
+          <h3 className="text-ink-900 text-lg font-semibold">
+            Create New Charity Giveaway
+          </h3>
+          <p className="text-ink-500 text-sm">
+            Set a close date/time and prize pool amount.
+          </p>
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">Close time</label>
+          <Input
+            type="datetime-local"
+            value={newCloseTime}
+            onChange={(e) => setNewCloseTime(e.target.value)}
+          />
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">
+            Prize pool (USD)
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={newPrizeAmount}
+            onChange={(e) => setNewPrizeAmount(e.target.value)}
+          />
+        </Col>
+
+        <Row className="justify-end gap-2">
+          <Button color="gray-outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="indigo"
+            loading={isCreatingGiveaway}
+            disabled={isCreatingGiveaway}
+            onClick={onCreate}
+          >
+            Create giveaway
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
