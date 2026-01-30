@@ -1532,9 +1532,11 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({
-      alertId: z.number().optional(), // Specific alert to dismiss, or all if not provided
-    }).strict(),
+    props: z
+      .object({
+        alertId: z.number().optional(), // Specific alert to dismiss, or all if not provided
+      })
+      .strict(),
     returns: {} as { success: boolean },
   },
   'super-ban-user': {
@@ -3166,6 +3168,43 @@ export const API = (_apiTypeCheck = {
       minManaInvested?: number
     },
   },
+  'get-sweepstakes-list': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      sweepstakes: Array<{
+        sweepstakesNum: number
+        name: string
+        closeTime: number
+        createdTime: number
+        hasWinners: boolean
+      }>
+    },
+  },
+  'admin-create-sweepstakes': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        closeTime: z.number(),
+        prizes: z
+          .array(
+            z.object({
+              rank: z.number(),
+              amountUsdc: z.number(),
+              label: z.string(),
+            })
+          )
+          .min(1),
+      })
+      .strict(),
+    returns: {} as {
+      sweepstakesNum: number
+    },
+  },
   'buy-sweepstakes-tickets': {
     method: 'POST',
     visibility: 'undocumented',
@@ -3238,7 +3277,9 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         sweepstakesNum: z.number(),
-        walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
+        walletAddress: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
       })
       .strict(),
     returns: {} as {

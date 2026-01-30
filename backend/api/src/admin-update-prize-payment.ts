@@ -28,7 +28,9 @@ export const adminUpdatePrizePayment: APIHandler<
   }
 
   log(
-    `Admin ${auth.uid} updated prize claim ${claimId} to status '${paymentStatus}'${
+    `Admin ${
+      auth.uid
+    } updated prize claim ${claimId} to status '${paymentStatus}'${
       paymentTxnHash ? ` with txn hash ${paymentTxnHash}` : ''
     }`
   )

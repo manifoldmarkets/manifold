@@ -48,11 +48,15 @@ function SalesTable() {
   // Calculate totals by payment type
   const totals = sales.reduce(
     (acc, sale) => {
-      acc[sale.paymentType] = (acc[sale.paymentType] || 0) + (sale.paidInCents || 0)
+      acc[sale.paymentType] =
+        (acc[sale.paymentType] || 0) + (sale.paidInCents || 0)
       acc.total += sale.paidInCents || 0
       return acc
     },
-    { stripe: 0, apple: 0, gidx: 0, crypto: 0, unknown: 0, total: 0 } as Record<string, number>
+    { stripe: 0, apple: 0, gidx: 0, crypto: 0, unknown: 0, total: 0 } as Record<
+      string,
+      number
+    >
   )
 
   return (
@@ -198,7 +202,12 @@ function PaymentTypeBadge(props: { type: string }) {
   const { label, className } = config[type] || config.unknown
 
   return (
-    <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', className)}>
+    <span
+      className={clsx(
+        'rounded-full px-2 py-0.5 text-xs font-medium',
+        className
+      )}
+    >
       {label}
     </span>
   )

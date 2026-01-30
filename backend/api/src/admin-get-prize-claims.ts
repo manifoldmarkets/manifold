@@ -14,9 +14,10 @@ export const adminGetPrizeClaims: APIHandler<'admin-get-prize-claims'> = async (
   const pg = createSupabaseDirectClient()
 
   // Get all sweepstakes with winners
-  const sweepstakesQuery = sweepstakesNum !== undefined
-    ? `SELECT sweepstakes_num, winning_ticket_ids, prizes FROM sweepstakes WHERE sweepstakes_num = $1 AND winning_ticket_ids IS NOT NULL`
-    : `SELECT sweepstakes_num, winning_ticket_ids, prizes FROM sweepstakes WHERE winning_ticket_ids IS NOT NULL ORDER BY sweepstakes_num DESC`
+  const sweepstakesQuery =
+    sweepstakesNum !== undefined
+      ? `SELECT sweepstakes_num, winning_ticket_ids, prizes FROM sweepstakes WHERE sweepstakes_num = $1 AND winning_ticket_ids IS NOT NULL`
+      : `SELECT sweepstakes_num, winning_ticket_ids, prizes FROM sweepstakes WHERE winning_ticket_ids IS NOT NULL ORDER BY sweepstakes_num DESC`
 
   const sweepstakesList = await pg.manyOrNone<{
     sweepstakes_num: number
@@ -40,7 +41,10 @@ export const adminGetPrizeClaims: APIHandler<'admin-get-prize-claims'> = async (
   }> = []
 
   for (const sweepstakes of sweepstakesList) {
-    if (!sweepstakes.winning_ticket_ids || sweepstakes.winning_ticket_ids.length === 0) {
+    if (
+      !sweepstakes.winning_ticket_ids ||
+      sweepstakes.winning_ticket_ids.length === 0
+    ) {
       continue
     }
 
@@ -49,10 +53,9 @@ export const adminGetPrizeClaims: APIHandler<'admin-get-prize-claims'> = async (
     const tickets = await pg.manyOrNone<{
       id: string
       user_id: string
-    }>(
-      `SELECT id, user_id FROM sweepstakes_tickets WHERE id = ANY($1)`,
-      [ticketIds]
-    )
+    }>(`SELECT id, user_id FROM sweepstakes_tickets WHERE id = ANY($1)`, [
+      ticketIds,
+    ])
 
     // Create a map of ticket_id -> user_id
     const ticketUserMap = new Map(tickets.map((t) => [t.id, t.user_id]))

@@ -40,8 +40,7 @@ export const getSweepstakesPrizeClaim: APIHandler<
     )
 
     if (winningTicket) {
-      const rank =
-        sweepstakes.winning_ticket_ids.indexOf(winningTicket.id) + 1
+      const rank = sweepstakes.winning_ticket_ids.indexOf(winningTicket.id) + 1
       const prize = getPrizeForRank(sweepstakes.prizes, rank)
 
       winnerInfo = {

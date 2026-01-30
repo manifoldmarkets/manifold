@@ -186,6 +186,8 @@ import { adminGetPrizeClaims } from './admin-get-prize-claims'
 import { adminUpdatePrizePayment } from './admin-update-prize-payment'
 import { adminGetManaSales } from './admin-get-mana-sales'
 import { adminGetNewUsers } from './admin-get-new-users'
+import { getSweepstakesList } from './get-sweepstakes-list'
+import { adminCreateSweepstakes } from './admin-create-sweepstakes'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -478,9 +480,11 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'buy-sweepstakes-tickets': buySweepstakesTickets,
   'claim-free-sweepstakes-ticket': claimFreeSweepstakesTicket,
   'get-sweepstakes-sales': getSweepstakesSales,
+  'get-sweepstakes-list': getSweepstakesList,
   'select-sweepstakes-winners': selectSweepstakesWinners,
   'claim-sweepstakes-prize': claimSweepstakesPrize,
   'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
+  'admin-create-sweepstakes': adminCreateSweepstakes,
   'admin-get-prize-claims': adminGetPrizeClaims,
   'admin-update-prize-payment': adminUpdatePrizePayment,
   'admin-get-mana-sales': adminGetManaSales,

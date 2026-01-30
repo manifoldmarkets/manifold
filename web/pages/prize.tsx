@@ -1,6 +1,7 @@
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { GetServerSideProps } from 'next'
+import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -44,9 +45,10 @@ import { VerificationRequiredModal } from 'web/components/modals/verification-re
 
 interface SweepstakesPageProps {
   isLocationRestricted: boolean
+  sweepstakesNum?: number
 }
 
-export const getServerSideProps: GetServerSideProps<
+export const getSweepstakesServerSideProps: GetServerSideProps<
   SweepstakesPageProps
 > = async (context) => {
   // Extract IP from request headers
@@ -88,6 +90,12 @@ export const getServerSideProps: GetServerSideProps<
   }
 }
 
+export const getServerSideProps: GetServerSideProps<
+  SweepstakesPageProps
+> = async (context) => {
+  return getSweepstakesServerSideProps(context)
+}
+
 // Format entries with appropriate precision
 function formatEntries(entries: number): string {
   if (entries >= 1000) {
@@ -117,10 +125,16 @@ const COLORS = [
 
 export default function SweepstakesPage({
   isLocationRestricted,
+  sweepstakesNum,
 }: SweepstakesPageProps) {
   const user = useUser()
   const isAdmin = useAdmin()
-  const { data, refresh } = useAPIGetter('get-sweepstakes', {})
+  const router = useRouter()
+  const { data, refresh } = useAPIGetter(
+    'get-sweepstakes',
+    sweepstakesNum ? { sweepstakesNum } : {}
+  )
+  const { data: sweepstakesListData } = useAPIGetter('get-sweepstakes-list', {})
 
   const [manaAmount, setManaAmount] = useState<number>(100)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -190,6 +204,17 @@ export default function SweepstakesPage({
   const hasWinners = !!(winners && winners.length > 0)
   const totalPrizePool = sweepstakes ? getTotalPrizePool(sweepstakes.prizes) : 0
 
+  const sweepstakesList = sweepstakesListData?.sweepstakes ?? []
+  const activeSweepstakes = sweepstakesList.find(
+    (s) => s.closeTime > Date.now()
+  )
+
+  const [showCreateSweepstakesModal, setShowCreateSweepstakesModal] =
+    useState(false)
+  const [newCloseTime, setNewCloseTime] = useState('')
+  const [prizeAmounts, setPrizeAmounts] = useState<Array<string>>(['1000'])
+  const [isCreatingSweepstakes, setIsCreatingSweepstakes] = useState(false)
+
   const handleSelectWinners = async () => {
     if (!sweepstakes || isSelectingWinners) return
     setIsSelectingWinners(true)
@@ -211,6 +236,43 @@ export default function SweepstakesPage({
     }
   }
 
+  const handleCreateSweepstakes = async () => {
+    if (isCreatingSweepstakes) return
+    const closeTimestamp = Date.parse(newCloseTime)
+    if (!Number.isFinite(closeTimestamp)) {
+      toast.error('Please enter a valid close date/time')
+      return
+    }
+    const amounts = prizeAmounts
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v) && v > 0)
+    if (amounts.length === 0) {
+      toast.error('Please enter at least one prize amount')
+      return
+    }
+    setIsCreatingSweepstakes(true)
+    try {
+      await api('admin-create-sweepstakes', {
+        closeTime: closeTimestamp,
+        prizes: amounts.map((amountUsdc, idx) => ({
+          rank: idx + 1,
+          amountUsdc,
+          label: getOrdinal(idx + 1),
+        })),
+      })
+      toast.success('New drawing created!')
+      setShowCreateSweepstakesModal(false)
+      setPrizeAmounts(['1000'])
+      setNewCloseTime('')
+      refresh()
+    } catch (e) {
+      const msg = e instanceof APIError ? e.message : 'Failed to create drawing'
+      toast.error(msg)
+    } finally {
+      setIsCreatingSweepstakes(false)
+    }
+  }
+
   const handleBuyTickets = async () => {
     if (!sweepstakes || numTickets <= 0) return
     setIsSubmitting(true)
@@ -220,9 +282,9 @@ export default function SweepstakesPage({
         numTickets,
       })
       toast.success(
-        `Gained ${formatEntries(
-          result.numTickets
-        )} entries for ${formatMoney(result.manaSpent)}!`
+        `Gained ${formatEntries(result.numTickets)} entries for ${formatMoney(
+          result.manaSpent
+        )}!`
       )
       track('sweepstakes purchase', {
         sweepstakesNum: sweepstakes.sweepstakesNum,
@@ -233,8 +295,7 @@ export default function SweepstakesPage({
       refresh()
       setSalesRefreshKey((k) => k + 1)
     } catch (e) {
-      const msg =
-        e instanceof APIError ? e.message : 'Failed to gain entries'
+      const msg = e instanceof APIError ? e.message : 'Failed to gain entries'
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
@@ -291,7 +352,25 @@ export default function SweepstakesPage({
             <br />
             Check back soon for the next one!
           </p>
+          {isAdmin && (
+            <Button
+              color="indigo"
+              onClick={() => setShowCreateSweepstakesModal(true)}
+            >
+              Create New Drawing
+            </Button>
+          )}
         </Col>
+        <CreateSweepstakesModal
+          open={showCreateSweepstakesModal}
+          setOpen={setShowCreateSweepstakesModal}
+          newCloseTime={newCloseTime}
+          setNewCloseTime={setNewCloseTime}
+          prizeAmounts={prizeAmounts}
+          setPrizeAmounts={setPrizeAmounts}
+          isCreatingSweepstakes={isCreatingSweepstakes}
+          onCreate={handleCreateSweepstakes}
+        />
       </Page>
     )
   }
@@ -312,9 +391,50 @@ export default function SweepstakesPage({
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
               Manifold Prize Drawing
             </h1>
+            <div className="ml-auto flex items-center gap-2">
+              {sweepstakesList.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={String(sweepstakes.sweepstakesNum)}
+                    onChange={(e) => {
+                      const nextNum = Number(e.target.value)
+                      if (
+                        activeSweepstakes &&
+                        nextNum === activeSweepstakes.sweepstakesNum
+                      ) {
+                        router.push('/prize')
+                      } else {
+                        router.push(`/prize/${nextNum}`)
+                      }
+                    }}
+                    className="bg-canvas-50 border-canvas-200 text-ink-700 appearance-none rounded-md border px-2 py-1 pr-7 text-sm"
+                  >
+                    {sweepstakesList.map((s) => (
+                      <option key={s.sweepstakesNum} value={s.sweepstakesNum}>
+                        {`Drawing #${s.sweepstakesNum}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {isAdmin &&
+                isClosed &&
+                (!activeSweepstakes ||
+                  activeSweepstakes.sweepstakesNum ===
+                    sweepstakes.sweepstakesNum) && (
+                  <Button
+                    color="indigo"
+                    size="sm"
+                    onClick={() => setShowCreateSweepstakesModal(true)}
+                  >
+                    Create New Drawing
+                  </Button>
+                )}
+            </div>
           </Row>
           <p className="text-ink-600 text-lg leading-relaxed">
-            Enter the drawing for a chance to win USDC prizes! Winners receive real crypto payouts. No purchase necessary.
+            Enter the drawing for a chance to win USDC prizes! Winners receive
+            real crypto payouts. No purchase necessary.
           </p>
         </Col>
 
@@ -357,8 +477,7 @@ export default function SweepstakesPage({
                 <span className="font-semibold">
                   {formatMoney(minManaInvested)}
                 </span>{' '}
-                invested to participate in the prize drawing. You currently
-                have{' '}
+                invested to participate in the prize drawing. You currently have{' '}
                 <span className="font-semibold">
                   {formatMoney(userTotalManaInvested)}
                 </span>{' '}
@@ -530,8 +649,111 @@ export default function SweepstakesPage({
             hasWinners={hasWinners}
           />
         )}
+
+        <CreateSweepstakesModal
+          open={showCreateSweepstakesModal}
+          setOpen={setShowCreateSweepstakesModal}
+          newCloseTime={newCloseTime}
+          setNewCloseTime={setNewCloseTime}
+          prizeAmounts={prizeAmounts}
+          setPrizeAmounts={setPrizeAmounts}
+          isCreatingSweepstakes={isCreatingSweepstakes}
+          onCreate={handleCreateSweepstakes}
+        />
       </Col>
     </Page>
+  )
+}
+
+function CreateSweepstakesModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  newCloseTime: string
+  setNewCloseTime: (value: string) => void
+  prizeAmounts: string[]
+  setPrizeAmounts: (amounts: string[]) => void
+  isCreatingSweepstakes: boolean
+  onCreate: () => void
+}) {
+  const {
+    open,
+    setOpen,
+    newCloseTime,
+    setNewCloseTime,
+    prizeAmounts,
+    setPrizeAmounts,
+    isCreatingSweepstakes,
+    onCreate,
+  } = props
+
+  return (
+    <Modal open={open} setOpen={setOpen} size="md">
+      <Col className={clsx(MODAL_CLASS, 'gap-5')}>
+        <Col className="gap-1">
+          <h3 className="text-ink-900 text-lg font-semibold">
+            Create New Prize Drawing
+          </h3>
+          <p className="text-ink-500 text-sm">
+            Set a close date/time and prize amounts.
+          </p>
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">Close time</label>
+          <Input
+            type="datetime-local"
+            value={newCloseTime}
+            onChange={(e) => setNewCloseTime(e.target.value)}
+          />
+        </Col>
+
+        <Col className="gap-3">
+          <label className="text-ink-700 text-sm font-medium">Prizes</label>
+          <Col className="gap-2">
+            {prizeAmounts.map((value, idx) => (
+              <Row key={idx} className="items-center gap-2">
+                <span className="text-ink-500 w-20 text-sm">
+                  {getOrdinal(idx + 1)}
+                </span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Amount in USDC"
+                  value={value}
+                  onChange={(e) => {
+                    const next = [...prizeAmounts]
+                    next[idx] = e.target.value
+                    setPrizeAmounts(next)
+                  }}
+                />
+              </Row>
+            ))}
+          </Col>
+          <Button
+            color="gray-outline"
+            size="sm"
+            onClick={() => setPrizeAmounts([...prizeAmounts, ''])}
+          >
+            + Add prize
+          </Button>
+        </Col>
+
+        <Row className="justify-end gap-2">
+          <Button color="gray-outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="indigo"
+            loading={isCreatingSweepstakes}
+            disabled={isCreatingSweepstakes}
+            onClick={onCreate}
+          >
+            Create drawing
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
 
@@ -1301,10 +1523,7 @@ function ProvablyFairBanner(props: {
   )
 }
 
-function WinnerClaimSection(props: {
-  sweepstakesNum: number
-  userId: string
-}) {
+function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
   const { sweepstakesNum } = props
   const { data, refresh } = useAPIGetter('get-sweepstakes-prize-claim', {
     sweepstakesNum,
@@ -1329,7 +1548,7 @@ function WinnerClaimSection(props: {
   if (claim) {
     return (
       <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
-        <div className="border-canvas-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b px-5 py-4 dark:from-teal-950/30 dark:to-cyan-950/30">
+        <div className="border-canvas-50 border-b bg-gradient-to-r from-teal-50 to-cyan-50 px-5 py-4 dark:from-teal-950/30 dark:to-cyan-950/30">
           <h3 className="text-ink-900 font-semibold">
             🎉 Congratulations! You won {getOrdinal(winnerInfo.rank)} place!
           </h3>
@@ -1393,7 +1612,7 @@ function WinnerClaimSection(props: {
   // Show claim form with wallet connect
   return (
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
-      <div className="border-canvas-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b px-5 py-4 dark:from-teal-950/30 dark:to-cyan-950/30">
+      <div className="border-canvas-50 border-b bg-gradient-to-r from-teal-50 to-cyan-50 px-5 py-4 dark:from-teal-950/30 dark:to-cyan-950/30">
         <h3 className="text-ink-900 font-semibold">
           🎉 Congratulations! You won {getOrdinal(winnerInfo.rank)} place!
         </h3>
@@ -1611,8 +1830,10 @@ function sortConnectors<T extends { id: string; name: string }>(
   connectors: readonly T[]
 ): T[] {
   return [...connectors].sort((a, b) => {
-    const aIsMetaMask = a.id === 'metaMask' || a.name.toLowerCase().includes('metamask')
-    const bIsMetaMask = b.id === 'metaMask' || b.name.toLowerCase().includes('metamask')
+    const aIsMetaMask =
+      a.id === 'metaMask' || a.name.toLowerCase().includes('metamask')
+    const bIsMetaMask =
+      b.id === 'metaMask' || b.name.toLowerCase().includes('metamask')
     if (aIsMetaMask && !bIsMetaMask) return -1
     if (!aIsMetaMask && bIsMetaMask) return 1
     return 0
