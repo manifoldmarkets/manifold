@@ -3302,6 +3302,25 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'admin-get-mana-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      sales: Array<{
+        id: string
+        createdTime: number
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        amount: number
+        paidInCents: number | null
+        paymentType: 'stripe' | 'apple' | 'gidx' | 'crypto' | 'unknown'
+      }>
+    },
+  },
   'get-predictle-percentile': {
     method: 'GET',
     visibility: 'undocumented',
