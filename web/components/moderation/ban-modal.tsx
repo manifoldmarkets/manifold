@@ -43,12 +43,14 @@ export function BanModal({
     posting: false,
     marketControl: false,
     trading: false,
+    purchase: false,
   })
 
   const [tempBanDays, setTempBanDays] = useState<{
     posting?: number
     marketControl?: number
     trading?: number
+    purchase?: number
   }>({})
 
   const [reason, setReason] = useState('')
@@ -132,12 +134,16 @@ export function BanModal({
       if (tempBanDays.trading) {
         unbanTimes.trading = Date.now() + tempBanDays.trading * DAY_MS
       }
+      if (tempBanDays.purchase) {
+        unbanTimes.purchase = Date.now() + tempBanDays.purchase * DAY_MS
+      }
 
       // Only send ban types that are being added (true)
       const bansToSend: Record<string, boolean> = {}
       if (banTypes.posting) bansToSend.posting = true
       if (banTypes.marketControl) bansToSend.marketControl = true
       if (banTypes.trading) bansToSend.trading = true
+      if (banTypes.purchase) bansToSend.purchase = true
 
       await api('ban-user', {
         userId: user.id,
@@ -450,6 +456,19 @@ export function BanModal({
                   setTempBanDays({ ...tempBanDays, trading: days })
                 }
               />
+
+              <BanTypeToggle
+                label="Purchase Ban"
+                description="No buying mana"
+                checked={banTypes.purchase}
+                onChange={(checked) =>
+                  setBanTypes({ ...banTypes, purchase: checked })
+                }
+                tempDays={tempBanDays.purchase}
+                onTempDaysChange={(days) =>
+                  setTempBanDays({ ...tempBanDays, purchase: days })
+                }
+              />
             </div>
 
             {/* Username Change Restriction Notice */}
@@ -575,7 +594,9 @@ export function BanModal({
                 ? 'Posting'
                 : unbanBanType === 'marketControl'
                 ? 'Market Control'
-                : 'Trading'}
+                : unbanBanType === 'trading'
+                ? 'Trading'
+                : 'Purchase'}
             </strong>{' '}
             ban from {user.name}?
           </p>

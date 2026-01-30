@@ -5,7 +5,7 @@ import { DAY_MS, HOUR_MS } from './util/time'
 
 // New normalized user_bans table schema
 // modAlert is stored in user_bans for audit history but doesn't block any actions
-export type BanType = 'posting' | 'marketControl' | 'trading' | 'modAlert'
+export type BanType = 'posting' | 'marketControl' | 'trading' | 'purchase' | 'modAlert'
 
 export type UserBan = {
   id: number

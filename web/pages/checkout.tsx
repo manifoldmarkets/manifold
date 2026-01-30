@@ -4,6 +4,7 @@ import { baseUSDC } from '@daimo/pay-common'
 import { getAddress, type Address } from 'viem'
 import clsx from 'clsx'
 
+import { isUserBanned } from 'common/ban-utils'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import {
@@ -26,6 +27,7 @@ import {
   ArrowRightIcon,
   SparklesIcon,
   GiftIcon,
+  BanIcon,
 } from '@heroicons/react/solid'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -48,6 +50,15 @@ function CheckoutContent() {
   const isFirstCryptoPurchase = cryptoStatus
     ? !cryptoStatus.hasCryptoPurchase
     : true // Default to true while loading
+
+  // Check if user is banned from purchasing
+  const { data: userBansData } = useAPIGetter(
+    'get-user-bans',
+    user?.id ? { userId: user.id } : undefined
+  )
+  const isPurchaseBanned = userBansData?.bans
+    ? isUserBanned(userBansData.bans as any, 'purchase')
+    : false
 
   const handlePaymentStarted = () => {
     setPaymentStatus('started')
@@ -130,36 +141,52 @@ function CheckoutContent() {
 
             {/* Payment Button */}
             <Col className="items-center gap-4">
-              <DaimoPayButton.Custom
-                appId="pay-manifoldmarkets-C5iZ9eKA8sFTUanLHufQZj"
-                toAddress={HOT_WALLET_ADDRESS}
-                toChain={baseUSDC.chainId}
-                toToken={getAddress(baseUSDC.token)}
-                refundAddress={HOT_WALLET_ADDRESS}
-                onPaymentStarted={handlePaymentStarted}
-                onPaymentCompleted={handlePaymentCompleted}
-                metadata={{
-                  userId: user?.id ?? '',
-                }}
-              >
-                {({ show }) => (
-                  <button
-                    onClick={show}
-                    className={clsx(
-                      'group relative w-full max-w-sm overflow-hidden rounded-xl',
-                      'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
-                      'px-8 py-4 text-lg font-semibold text-white shadow-lg',
-                      'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
-                      'active:scale-[0.98]'
-                    )}
-                  >
-                    <Row className="items-center justify-center gap-3">
-                      <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                      <span>Buy Mana</span>
-                    </Row>
-                  </button>
-                )}
-              </DaimoPayButton.Custom>
+              {isPurchaseBanned ? (
+                <button
+                  disabled
+                  className={clsx(
+                    'relative w-full max-w-sm overflow-hidden rounded-xl',
+                    'cursor-not-allowed bg-gray-400',
+                    'px-8 py-4 text-lg font-semibold text-white shadow-lg'
+                  )}
+                >
+                  <Row className="items-center justify-center gap-3">
+                    <BanIcon className="h-6 w-6" />
+                    <span>Purchases Disabled</span>
+                  </Row>
+                </button>
+              ) : (
+                <DaimoPayButton.Custom
+                  appId="pay-manifoldmarkets-C5iZ9eKA8sFTUanLHufQZj"
+                  toAddress={HOT_WALLET_ADDRESS}
+                  toChain={baseUSDC.chainId}
+                  toToken={getAddress(baseUSDC.token)}
+                  refundAddress={HOT_WALLET_ADDRESS}
+                  onPaymentStarted={handlePaymentStarted}
+                  onPaymentCompleted={handlePaymentCompleted}
+                  metadata={{
+                    userId: user?.id ?? '',
+                  }}
+                >
+                  {({ show }) => (
+                    <button
+                      onClick={show}
+                      className={clsx(
+                        'group relative w-full max-w-sm overflow-hidden rounded-xl',
+                        'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
+                        'px-8 py-4 text-lg font-semibold text-white shadow-lg',
+                        'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
+                        'active:scale-[0.98]'
+                      )}
+                    >
+                      <Row className="items-center justify-center gap-3">
+                        <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                        <span>Buy Mana</span>
+                      </Row>
+                    </button>
+                  )}
+                </DaimoPayButton.Custom>
+              )}
 
               {/* Trust indicators */}
               <Row className="text-ink-400 flex-wrap justify-center gap-x-5 gap-y-1 text-xs">

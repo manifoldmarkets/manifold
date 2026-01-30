@@ -1499,6 +1499,7 @@ export const API = (_apiTypeCheck = {
             posting: z.boolean().optional(),
             marketControl: z.boolean().optional(),
             trading: z.boolean().optional(),
+            purchase: z.boolean().optional(),
             modAlert: z.boolean().optional(), // false to clear active mod alert
           })
           .optional(),
@@ -1507,6 +1508,7 @@ export const API = (_apiTypeCheck = {
             posting: z.number().optional(),
             marketControl: z.number().optional(),
             trading: z.number().optional(),
+            purchase: z.number().optional(),
             modAlert: z.number().optional(), // mod alerts don't auto-expire, but included for type consistency
           })
           .optional(),
