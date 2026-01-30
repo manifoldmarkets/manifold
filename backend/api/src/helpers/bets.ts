@@ -309,11 +309,14 @@ export const updateMakers = async (
   makersByTakerBetId: Record<string, maker[]>,
   contract: MarketContract,
   contractMetrics: ContractMetric[],
-  pgTrans: SupabaseTransaction
+  pgTrans: SupabaseTransaction,
+  balanceByUserId?: Record<string, number>
 ) => {
   const allFillsAsNewBets: MarginalBet[] = []
   const allMakerIds: string[] = []
   const allSpentByUser: Record<string, number> = {}
+  // Track which users have margin-financed orders
+  const usersWithMarginFinancedOrders = new Set<string>()
   const allUpdates: Array<
     {
       bet: LimitBet
@@ -348,6 +351,10 @@ export const updateMakers = async (
         amount: totalAmount,
         shares: totalShares,
       })
+      // Track if this bet is margin-financed
+      if (limitOrderBet.marginFinanced) {
+        usersWithMarginFinancedOrders.add(limitOrderBet.userId)
+      }
     }
 
     const spentByUser = mapValues(
@@ -369,6 +376,7 @@ export const updateMakers = async (
       balanceUpdates: [],
       bulkUpdateLimitOrdersQuery: 'select 1 where false',
       updatedMakers: [],
+      marginLoanQueries: [],
     }
   }
 
@@ -385,6 +393,52 @@ export const updateMakers = async (
       balance: -spent,
     })
   )
+
+  // Check for makers who need margin loans
+  const marginLoanQueries: string[] = []
+  const marginLoanBalanceUpdates: { id: string; balance: number }[] = []
+
+  if (balanceByUserId && usersWithMarginFinancedOrders.size > 0) {
+    const { attemptMarginLoanOnFill } = await import(
+      './margin-loan-on-fill'
+    )
+
+    for (const userId of usersWithMarginFinancedOrders) {
+      const currentBalance = balanceByUserId[userId] ?? 0
+      const amountSpent = allSpentByUser[userId] ?? 0
+
+      // Check if this user will have insufficient balance after fills
+      if (currentBalance < amountSpent) {
+        const shortfall = amountSpent - currentBalance
+        log(
+          `Maker ${userId} has shortfall of ${shortfall} for margin-financed order`
+        )
+
+        const loanResult = await attemptMarginLoanOnFill(
+          pgTrans,
+          userId,
+          shortfall
+        )
+
+        if (loanResult.success && loanResult.queries) {
+          log(
+            `Successfully obtained margin loan of ${loanResult.amount} for maker ${userId}`
+          )
+          marginLoanQueries.push(...loanResult.queries)
+          // Track the loan as a positive balance update
+          marginLoanBalanceUpdates.push({
+            id: userId,
+            balance: loanResult.amount,
+          })
+        } else {
+          log(
+            `Could not obtain margin loan for maker ${userId}: ${loanResult.reason}`
+          )
+          // The fill will still proceed, but balance check may fail later
+        }
+      }
+    }
+  }
 
   const makerIds = uniq(allMakerIds)
   log('Redeeming shares for makers', makerIds)
@@ -404,11 +458,12 @@ export const updateMakers = async (
   return {
     betsToInsert: redemptionBets,
     updatedMetrics: redemptionUpdatedMetrics,
-    balanceUpdates: redemptionBalanceUpdates.concat(
-      bulkLimitOrderBalanceUpdates
-    ),
+    balanceUpdates: redemptionBalanceUpdates
+      .concat(bulkLimitOrderBalanceUpdates)
+      .concat(marginLoanBalanceUpdates),
     bulkUpdateLimitOrdersQuery,
     updatedMakers,
+    marginLoanQueries,
   }
 }
 
