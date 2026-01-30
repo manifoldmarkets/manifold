@@ -80,14 +80,24 @@ export const createIdenfySession: APIHandler<'create-idenfy-session'> = async (
   }
 
   // Store the verification session in the database
-  await pg.none(
+  const verificationRow = await pg.oneOrNone<{ user_id: string }>(
     `INSERT INTO idenfy_verifications (user_id, scan_ref, auth_token, status)
      VALUES ($1, $2, $3, 'pending')
      ON CONFLICT (scan_ref) DO UPDATE SET
        auth_token = $3,
-       updated_time = NOW()`,
+       updated_time = NOW()
+     WHERE idenfy_verifications.user_id = $1
+     RETURNING user_id`,
     [auth.uid, data.scanRef, data.authToken]
   )
+
+  if (!verificationRow) {
+    log.error('iDenfy scanRef already linked to another user', {
+      userId: auth.uid,
+      scanRef: data.scanRef,
+    })
+    throw new APIError(409, 'Verification session conflict')
+  }
 
   track(auth.uid, 'idenfy session created', { scanRef: data.scanRef })
 
