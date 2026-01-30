@@ -23,6 +23,11 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { FaGift } from 'react-icons/fa6'
+import { useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi'
+import {
+  CryptoProviders,
+  useCryptoReady,
+} from 'web/components/crypto/crypto-providers'
 
 import {
   calculateSweepstakesTicketsFromMana,
@@ -466,6 +471,14 @@ export default function SweepstakesPage({
         {/* Winners Display */}
         {isClosed && hasWinners && winners && (
           <WinnersDisplay winners={winners} />
+        )}
+
+        {/* Winner Claim Section - show if user is logged in and winners have been selected */}
+        {isClosed && hasWinners && user && sweepstakes && (
+          <WinnerClaimSection
+            sweepstakesNum={sweepstakes.sweepstakesNum}
+            userId={user.id}
+          />
         )}
 
         {/* Admin Select Winners Button */}
@@ -1286,4 +1299,322 @@ function ProvablyFairBanner(props: {
       </Modal>
     </>
   )
+}
+
+function WinnerClaimSection(props: {
+  sweepstakesNum: number
+  userId: string
+}) {
+  const { sweepstakesNum } = props
+  const { data, refresh } = useAPIGetter('get-sweepstakes-prize-claim', {
+    sweepstakesNum,
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Still loading
+  if (data === undefined) {
+    return null
+  }
+
+  const claim = data?.claim
+  const winnerInfo = data?.winnerInfo
+
+  // Not a winner
+  if (!winnerInfo) {
+    return null
+  }
+
+  // Already claimed
+  if (claim) {
+    return (
+      <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
+        <div className="border-canvas-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b px-5 py-4 dark:from-teal-950/30 dark:to-cyan-950/30">
+          <h3 className="text-ink-900 font-semibold">
+            🎉 Congratulations! You won {getOrdinal(winnerInfo.rank)} place!
+          </h3>
+          <p className="text-ink-600 mt-0.5 text-sm">
+            Prize: ${winnerInfo.prizeAmountUsdc} USDC
+          </p>
+        </div>
+        <Col className="gap-4 p-5">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
+            <Row className="items-center gap-2">
+              <span className="text-lg">✓</span>
+              <Col className="gap-1">
+                <span className="font-medium text-green-800 dark:text-green-300">
+                  Claim Submitted
+                </span>
+                <span className="text-sm text-green-700 dark:text-green-400">
+                  Wallet: {claim.walletAddress.slice(0, 6)}...
+                  {claim.walletAddress.slice(-4)}
+                </span>
+              </Col>
+            </Row>
+          </div>
+
+          <Row className="items-center justify-between">
+            <span className="text-ink-600 text-sm">Payment Status:</span>
+            <span
+              className={clsx(
+                'rounded-full px-3 py-1 text-sm font-medium',
+                claim.paymentStatus === 'awaiting' &&
+                  'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+                claim.paymentStatus === 'sent' &&
+                  'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
+                claim.paymentStatus === 'rejected' &&
+                  'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+              )}
+            >
+              {claim.paymentStatus === 'awaiting' && '⏳ Awaiting Payment'}
+              {claim.paymentStatus === 'sent' && '✓ Payment Sent'}
+              {claim.paymentStatus === 'rejected' && '✗ Rejected'}
+            </span>
+          </Row>
+
+          {claim.paymentTxnHash && (
+            <Row className="items-center justify-between">
+              <span className="text-ink-600 text-sm">Transaction:</span>
+              <a
+                href={`https://etherscan.io/tx/${claim.paymentTxnHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 text-sm hover:underline"
+              >
+                View on Etherscan →
+              </a>
+            </Row>
+          )}
+        </Col>
+      </div>
+    )
+  }
+
+  // Show claim form with wallet connect
+  return (
+    <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
+      <div className="border-canvas-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b px-5 py-4 dark:from-teal-950/30 dark:to-cyan-950/30">
+        <h3 className="text-ink-900 font-semibold">
+          🎉 Congratulations! You won {getOrdinal(winnerInfo.rank)} place!
+        </h3>
+        <p className="text-ink-600 mt-0.5 text-sm">
+          Prize: ${winnerInfo.prizeAmountUsdc} USDC
+        </p>
+      </div>
+      <Col className="gap-4 p-5">
+        <p className="text-ink-700 text-sm">
+          Connect your Ethereum wallet to receive your prize. Make sure this is
+          a wallet you control—we cannot recover funds sent to the wrong
+          address.
+        </p>
+
+        <WalletClaimFormWrapper
+          sweepstakesNum={sweepstakesNum}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+          onSuccess={refresh}
+        />
+
+        <p className="text-ink-500 text-center text-xs">
+          Prizes are paid in USDC on Ethereum mainnet. Payments are processed
+          manually and may take a few days.
+        </p>
+      </Col>
+    </div>
+  )
+}
+
+function getOrdinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
+// Wrapper component that provides the CryptoProviders context
+function WalletClaimFormWrapper(props: {
+  sweepstakesNum: number
+  isSubmitting: boolean
+  setIsSubmitting: (isSubmitting: boolean) => void
+  onSuccess: () => void
+}) {
+  return (
+    <CryptoProviders>
+      <WalletClaimFormGate {...props} />
+    </CryptoProviders>
+  )
+}
+
+// Inner component that uses wagmi hooks (must be inside CryptoProviders)
+function WalletClaimFormGate(props: {
+  sweepstakesNum: number
+  isSubmitting: boolean
+  setIsSubmitting: (isSubmitting: boolean) => void
+  onSuccess: () => void
+}) {
+  const cryptoReady = useCryptoReady()
+
+  // Wait for crypto providers to be ready before rendering wagmi hooks
+  if (!cryptoReady) {
+    return (
+      <Col className="items-center py-4">
+        <LoadingIndicator />
+      </Col>
+    )
+  }
+
+  return <WalletClaimFormInner {...props} />
+}
+
+function WalletClaimFormInner(props: {
+  sweepstakesNum: number
+  isSubmitting: boolean
+  setIsSubmitting: (isSubmitting: boolean) => void
+  onSuccess: () => void
+}) {
+  const { sweepstakesNum, isSubmitting, setIsSubmitting, onSuccess } = props
+
+  const [showWalletModal, setShowWalletModal] = useState(false)
+  const { address, isConnected } = useAccount()
+  const { connect, isPending: isConnecting, error: connectError } = useConnect()
+  const { disconnect } = useDisconnect()
+  const connectors = useConnectors()
+
+  const handleSubmitClaim = async () => {
+    if (!address || isSubmitting) return
+
+    setIsSubmitting(true)
+    try {
+      await api('claim-sweepstakes-prize', {
+        sweepstakesNum,
+        walletAddress: address,
+      })
+      toast.success('Prize claim submitted successfully!')
+      onSuccess()
+    } catch (e) {
+      const msg = e instanceof APIError ? e.message : 'Failed to submit claim'
+      toast.error(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (!isConnected) {
+    return (
+      <>
+        <Col className="items-center gap-4">
+          <Button
+            color="gradient"
+            size="xl"
+            className="w-full"
+            onClick={() => setShowWalletModal(true)}
+          >
+            🔗 Connect Wallet
+          </Button>
+          {connectError && (
+            <p className="text-scarlet-500 text-sm">{connectError.message}</p>
+          )}
+        </Col>
+
+        {/* Wallet Selection Modal */}
+        <Modal open={showWalletModal} setOpen={setShowWalletModal} size="sm">
+          <Col className={clsx(MODAL_CLASS, 'gap-6')}>
+            <Col className="items-center gap-2">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-cyan-500">
+                <span className="text-2xl">🔗</span>
+              </div>
+              <h3 className="text-ink-900 text-xl font-semibold">
+                Connect Wallet
+              </h3>
+              <p className="text-ink-500 text-center text-sm">
+                Select a wallet to receive your USDC prize
+              </p>
+            </Col>
+
+            <div className="grid grid-cols-2 gap-2">
+              {sortConnectors(connectors).map((connector) => (
+                <button
+                  key={connector.uid}
+                  onClick={() => {
+                    connect({ connector })
+                    setShowWalletModal(false)
+                  }}
+                  disabled={isConnecting}
+                  className={clsx(
+                    'bg-canvas-50 hover:bg-canvas-100 border-canvas-100 rounded-lg border px-3 py-2 text-center transition-all',
+                    'hover:border-primary-300 hover:shadow-sm',
+                    'disabled:cursor-not-allowed disabled:opacity-50'
+                  )}
+                >
+                  <span className="text-ink-900 text-sm font-medium">
+                    {simplifyWalletName(connector.name)}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-ink-400 text-center text-xs">
+              By connecting, you agree to receive USDC on Ethereum mainnet
+            </p>
+          </Col>
+        </Modal>
+      </>
+    )
+  }
+
+  return (
+    <Col className="gap-4">
+      <div className="bg-canvas-50 border-canvas-100 rounded-xl border p-4">
+        <Row className="items-center justify-between">
+          <Row className="items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-emerald-500">
+              <span className="text-lg">✓</span>
+            </div>
+            <Col className="gap-0.5">
+              <span className="text-ink-500 text-xs font-medium">
+                Connected Wallet
+              </span>
+              <span className="text-ink-900 font-mono text-sm font-semibold">
+                {address?.slice(0, 6)}...{address?.slice(-4)}
+              </span>
+            </Col>
+          </Row>
+          <Button color="gray-outline" size="xs" onClick={() => disconnect()}>
+            Change
+          </Button>
+        </Row>
+      </div>
+
+      <Button
+        color="gradient"
+        size="xl"
+        className="w-full"
+        onClick={handleSubmitClaim}
+        loading={isSubmitting}
+        disabled={isSubmitting}
+      >
+        🎁 Claim Prize
+      </Button>
+    </Col>
+  )
+}
+
+// Helper to simplify wallet names
+function simplifyWalletName(name: string): string {
+  return name
+    .replace(/\s*Wallet\s*/gi, '')
+    .replace(/\s*Account\s*/gi, '')
+    .trim()
+}
+
+// Sort connectors with MetaMask first
+function sortConnectors<T extends { id: string; name: string }>(
+  connectors: readonly T[]
+): T[] {
+  return [...connectors].sort((a, b) => {
+    const aIsMetaMask = a.id === 'metaMask' || a.name.toLowerCase().includes('metamask')
+    const bIsMetaMask = b.id === 'metaMask' || b.name.toLowerCase().includes('metamask')
+    if (aIsMetaMask && !bIsMetaMask) return -1
+    if (!aIsMetaMask && bIsMetaMask) return 1
+    return 0
+  })
 }

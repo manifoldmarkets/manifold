@@ -3231,6 +3231,42 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  'claim-sweepstakes-prize': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      claimId: string
+    },
+  },
+  'get-sweepstakes-prize-claim': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.coerce.number() }).strict(),
+    returns: {} as {
+      claim: {
+        id: string
+        rank: number
+        prizeAmountUsdc: number
+        walletAddress: string
+        paymentStatus: 'awaiting' | 'sent' | 'rejected'
+        paymentTxnHash: string | null
+        createdTime: number
+      } | null
+      winnerInfo: {
+        rank: number
+        prizeAmountUsdc: number
+      } | null
+    },
+  },
   'get-predictle-percentile': {
     method: 'GET',
     visibility: 'undocumented',

@@ -180,6 +180,8 @@ import { buySweepstakesTickets } from './buy-sweepstakes-tickets'
 import { claimFreeSweepstakesTicket } from './claim-free-sweepstakes-ticket'
 import { getSweepstakesSales } from './get-sweepstakes-sales'
 import { selectSweepstakesWinners } from './select-sweepstakes-winners'
+import { claimSweepstakesPrize } from './claim-sweepstakes-prize'
+import { getSweepstakesPrizeClaim } from './get-sweepstakes-prize-claim'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -473,6 +475,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-free-sweepstakes-ticket': claimFreeSweepstakesTicket,
   'get-sweepstakes-sales': getSweepstakesSales,
   'select-sweepstakes-winners': selectSweepstakesWinners,
+  'claim-sweepstakes-prize': claimSweepstakesPrize,
+  'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'get-shop-stats': getShopStats,
