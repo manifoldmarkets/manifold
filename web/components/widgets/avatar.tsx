@@ -131,7 +131,9 @@ export const Avatar = memo(
     return (
       <div
         className={clsx(
-          needsRelativeWrapper && 'relative'
+          needsRelativeWrapper && 'relative',
+          // Constrain to content size to prevent glow from stretching in flex containers
+          needsRelativeWrapper && 'h-fit w-fit'
           // Note: parent element must have 'group' class for animateHatOnHover to work
         )}
       >

@@ -66,13 +66,9 @@ export function detectAmbiguousDates(text: string): AmbiguousDateMatch[] {
   const pattern =
     /\b(\d{1,4})(?:st|nd|rd|th)?[-/.,\s](\d{1,2})(?:st|nd|rd|th)?[-/.,\s]('?\d{2,4})\b/gi
 
-  // Also check for year-first patterns
-  const patternYearFirst =
-    /\b('?\d{4})[-/.,\s](\d{1,2})(?:st|nd|rd|th)?[-/.,\s](\d{1,2})(?:st|nd|rd|th)?\b/gi
-
-  // Also check compact formats (no separators): 01042026 or 20260401
+  // Also check compact formats (no separators): 01042026 (DDMMYYYY)
+  // Note: YYYYMMDD is ISO 8601 basic format and unambiguous, so we don't check it
   const patternCompact = /\b(\d{2})(\d{2})((?:19|20)\d{2})\b/g
-  const patternCompactYearFirst = /\b((?:19|20)\d{2})(\d{2})(\d{2})\b/g
 
   let match
 
@@ -82,8 +78,11 @@ export function detectAmbiguousDates(text: string): AmbiguousDateMatch[] {
     const firstNum = parseInt(first, 10)
     const secondNum = parseInt(second, 10)
 
-    // Determine which is the year
-    if (isYearLike(third)) {
+    // Only flag as ambiguous if the year is LAST (D-M-Y or M-D-Y formats)
+    // Year-first formats (Y-M-D) are unambiguous - no region uses year-day-month
+    // Check if first is a 4-digit year (YYYY) - if so, skip (it's year-first and unambiguous)
+    const firstIs4DigitYear = /^(19|20)\d{2}$/.test(first)
+    if (isYearLike(third) && !firstIs4DigitYear) {
       const year = normalizeYear(third)
       // first and second are day/month candidates
       if (isAmbiguous(firstNum, secondNum)) {
@@ -93,39 +92,14 @@ export function detectAmbiguousDates(text: string): AmbiguousDateMatch[] {
           interpretation2: formatDate(secondNum, firstNum, year), // first=month, second=day
         })
       }
-    } else if (isYearLike(first)) {
-      // Year-first: Y-?-?
-      const year = normalizeYear(first)
-      if (isAmbiguous(secondNum, parseInt(third, 10))) {
-        const thirdNum = parseInt(third, 10)
-        matches.push({
-          original,
-          interpretation1: formatDate(thirdNum, secondNum, year), // second=month, third=day
-          interpretation2: formatDate(secondNum, thirdNum, year), // second=day, third=month
-        })
-      }
     }
+    // Skip year-first patterns - they're always unambiguous (YYYY-MM-DD, YYYY/MM/DD, etc.)
   }
 
-  // Year-first patterns (Y-M-D or Y-D-M)
-  while ((match = patternYearFirst.exec(text)) !== null) {
-    const [original, yearStr, second, third] = match
-
-    // Skip if already matched by the first pattern
-    if (matches.some((m) => m.original === original)) continue
-
-    const year = normalizeYear(yearStr)
-    const secondNum = parseInt(second, 10)
-    const thirdNum = parseInt(third, 10)
-
-    if (isAmbiguous(secondNum, thirdNum)) {
-      matches.push({
-        original,
-        interpretation1: formatDate(thirdNum, secondNum, year), // second=month, third=day
-        interpretation2: formatDate(secondNum, thirdNum, year), // second=day, third=month
-      })
-    }
-  }
+  // Year-first patterns (Y-M-D) - these are ALWAYS unambiguous
+  // When a 4-digit year comes first, it's universally understood as year-month-day (ISO order)
+  // No region uses year-day-month format, so we skip all year-first dates
+  // This applies to: 2025-10-12, 2025/10/12, 2025.10.12, etc.
 
   // Compact format: DDMMYYYY
   while ((match = patternCompact.exec(text)) !== null) {
@@ -143,25 +117,8 @@ export function detectAmbiguousDates(text: string): AmbiguousDateMatch[] {
     }
   }
 
-  // Compact format: YYYYMMDD
-  while ((match = patternCompactYearFirst.exec(text)) !== null) {
-    const [original, yearStr, second, third] = match
-
-    // Skip if already matched
-    if (matches.some((m) => m.original === original)) continue
-
-    const year = parseInt(yearStr, 10)
-    const secondNum = parseInt(second, 10)
-    const thirdNum = parseInt(third, 10)
-
-    if (isAmbiguous(secondNum, thirdNum)) {
-      matches.push({
-        original,
-        interpretation1: formatDate(thirdNum, secondNum, year),
-        interpretation2: formatDate(secondNum, thirdNum, year),
-      })
-    }
-  }
+  // Compact format: YYYYMMDD - this is ISO 8601 basic format, unambiguous (always year-month-day)
+  // So we skip flagging these as ambiguous
 
   // Deduplicate by original string
   const seen = new Set<string>()

@@ -259,8 +259,8 @@ const UserRow = (props: {
           </Row>
 
           {/* User info */}
-          <UserHovercard userId={user.id}>
-            <Row className="min-w-0 flex-1 items-center gap-2.5">
+          <UserHovercard userId={user.id} className="min-w-0 flex-1">
+            <Row className="items-center gap-2.5">
               <Avatar
                 avatarUrl={user.avatarUrl}
                 username={user.username}
@@ -285,10 +285,10 @@ const UserRow = (props: {
             </Row>
           </UserHovercard>
 
-          {/* Mana earned */}
+          {/* Mana earned - column on right with fixed width for alignment */}
           <span
             className={clsx(
-              'shrink-0 text-sm font-medium tabular-nums',
+              'min-w-[90px] shrink-0 text-right text-sm font-medium tabular-nums',
               mana_earned > 0
                 ? 'text-teal-600'
                 : mana_earned < 0

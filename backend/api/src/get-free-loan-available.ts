@@ -81,13 +81,21 @@ export const getFreeLoanAvailable: APIHandler<
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
 
-  // Calculate net worth
-  const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
-  const netWorth = user.balance + value
+  // Calculate portfolio value (net of loans)
+  const { value: portfolioValueNet } = getUnresolvedStatsForToken(
+    'MANA',
+    metrics,
+    contractsById
+  )
 
-  // Calculate limits (tier-specific max loan)
-  const maxLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
-  const dailyLimit = calculateDailyLoanLimit(netWorth)
+  // Calculate equity from net portfolio value (already excludes loans).
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
+  // Note: Balance is not included since loans are taken against positions.
+  const equity = Math.max(0, portfolioValueNet)
+
+  // Calculate limits based on equity (tier-specific max loan)
+  const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
+  const dailyLimit = calculateDailyLoanLimit(equity)
 
   // Get today's loans (since midnight PT)
   const midnightPT = getMidnightPacific()
@@ -164,7 +172,7 @@ export const getFreeLoanAvailable: APIHandler<
         const key = `${m.contractId}-${m.answerId ?? ''}`
         const currentLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
         const positionValue = m.payout ?? 0
-        const maxLoan = calculateMarketLoanMax(netWorth)
+        const maxLoan = calculateMarketLoanMax(equity)
         answerLoanInfo[key] = {
           currentLoan,
           positionValue,
@@ -179,7 +187,7 @@ export const getFreeLoanAvailable: APIHandler<
         (m) => (m.loan ?? 0) + (m.marginLoan ?? 0)
       )
       const positionValue = sumBy(contractMetrics, (m) => m.payout ?? 0)
-      const maxLoan = calculateMarketLoanMax(netWorth)
+      const maxLoan = calculateMarketLoanMax(equity)
       marketLoanInfo[contractId] = {
         currentLoan,
         positionValue,

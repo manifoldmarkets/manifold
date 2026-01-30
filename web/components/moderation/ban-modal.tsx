@@ -16,6 +16,7 @@ import {
   getActiveModAlerts,
   getBanTypeDisplayName,
   getBanTypeDescription,
+  isBanActive,
 } from 'common/ban-utils'
 import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
@@ -78,7 +79,7 @@ export function BanModal({
   )
   const activeBanTypes = getActiveBlockingBans(bans)
   const activeModAlerts = getActiveModAlerts(bans)
-  const historicalBans = bans.filter((b) => b.ended_at !== null)
+  const historicalBans = bans.filter((b) => !isBanActive(b))
   const isUsernameChangeRestricted = user.canChangeUsername === false
   const hasCurrentBansOrAlerts =
     activeBanTypes.length > 0 ||
@@ -537,35 +538,37 @@ export function BanModal({
         )}
 
         {/* Ban History Section */}
-        {historicalBans.length > 0 && (
-          <div className="border-ink-200 rounded border">
-            <button
-              className="flex w-full items-center justify-between p-3 text-left"
-              onClick={() => setShowBanHistory(!showBanHistory)}
-            >
-              <span className="font-semibold">
-                Ban History ({historicalBans.length} record
-                {historicalBans.length !== 1 ? 's' : ''})
-              </span>
-              {showBanHistory ? (
-                <ChevronUpIcon className="h-5 w-5" />
-              ) : (
-                <ChevronDownIcon className="h-5 w-5" />
-              )}
-            </button>
-            {showBanHistory && (
-              <div className="border-ink-200 space-y-3 border-t p-3">
-                {historicalBans.map((record) => (
+        <div className="border-ink-200 rounded border">
+          <button
+            className="flex w-full items-center justify-between p-3 text-left"
+            onClick={() => setShowBanHistory(!showBanHistory)}
+          >
+            <span className="font-semibold">
+              Ban History ({historicalBans.length} record
+              {historicalBans.length !== 1 ? 's' : ''})
+            </span>
+            {showBanHistory ? (
+              <ChevronUpIcon className="h-5 w-5" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5" />
+            )}
+          </button>
+          {showBanHistory && (
+            <div className="border-ink-200 space-y-3 border-t p-3">
+              {historicalBans.length > 0 ? (
+                historicalBans.map((record) => (
                   <BanHistoryRecord
                     key={record.id}
                     record={record}
                     modNames={modNames}
                   />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                ))
+              ) : (
+                <p className="text-ink-500 text-sm">No ban history</p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Actions */}
         <Row className="gap-2">
@@ -962,15 +965,31 @@ function BanHistoryRecord({
       ? modNames[record.ended_by] || record.ended_by
       : 'Unknown'
 
+  // Calculate ban duration
+  let durationText = 'Permanent'
+  if (record.end_time) {
+    // Temp ban: calculate intended duration
+    const durationMs =
+      new Date(record.end_time).getTime() -
+      new Date(record.created_at).getTime()
+    const days = Math.round(durationMs / DAY_MS)
+    durationText = `Temporary (${days}d)`
+  } else if (record.ended_at) {
+    // Permanent ban that was manually ended: show how long it was active
+    const durationMs =
+      new Date(record.ended_at).getTime() -
+      new Date(record.created_at).getTime()
+    const days = Math.round(durationMs / DAY_MS)
+    durationText = `Permanent (${days}d active)`
+  }
+
   return (
     <div className="bg-canvas-50 rounded border p-2">
       <Row className="items-center justify-between">
         <span className="font-medium">
           {getBanTypeDisplayName(record.ban_type)}
         </span>
-        <span className="text-ink-500 text-xs">
-          {record.end_time ? 'Temporary' : 'Permanent'}
-        </span>
+        <span className="text-ink-500 text-xs">{durationText}</span>
       </Row>
       <div className="text-ink-600 mt-1 space-y-1 text-xs">
         <p>

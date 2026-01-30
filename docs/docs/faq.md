@@ -305,15 +305,47 @@ Loans allow you to borrow mana against your existing positions, freeing up capit
 - Claimed daily via the golden chest icon on the homepage.
 - Interest-free forever.
 - Available to all users.
-- Amount is based on a percentage of your position values.
+- Amount is based on a percentage of your position values (1-3% depending on tier).
 
 **Margin loans:**
 
 - Available to Manifold members (Plus, Pro, or Premium subscribers).
 - Accrue 0.03% interest per day.
 - Can request specific amounts through the loans modal.
-- Daily limit is 10% of your net worth.
-- Maximum total loan is 100% of your net worth.
+
+#### Loan limits and leverage
+
+Loan limits are based on **equity**, which is your portfolio value minus outstanding loans:
+
+> **Equity = Portfolio Value - Outstanding Loans**
+
+This means borrowing more doesn't increase your borrowing capacity—your limits stay constant based on your true ownership stake in positions. Balance is not included since loans are taken against positions.
+
+**Limit tiers:**
+
+| Tier    | Max Total Loan | Effective Leverage | Margin Loans |
+| ------- | -------------- | ------------------ | ------------ |
+| Free    | 100% of equity | 2x                 | No           |
+| Plus    | 100% of equity | 2x                 | Yes          |
+| Pro     | 200% of equity | 3x                 | Yes          |
+| Premium | 300% of equity | 4x                 | Yes          |
+
+Free users can only claim daily free loans (via the golden chest), while members can also request margin loans on demand.
+
+**Other limits:**
+
+- **Daily limit**: 10% of equity per day (resets at midnight PT)
+- **Per-market limit**: 5% of equity per market (total loans on any single market)
+- **Free loan per-position limit**: Free loans are also capped at your cost basis (invested amount) per position
+
+**Example:**
+
+If you have M100,000 equity and are a Pro subscriber (3x leverage):
+
+- Maximum total loan: M200,000 (200% of equity)
+- Daily borrowing limit: M10,000 (10% of equity)
+- After borrowing M200,000, your equity remains M100,000 (the loan is offset)
+- Total buying power: M100,000 + M200,000 = M300,000 (3x)
 
 #### How do loans work?
 
@@ -322,9 +354,18 @@ Loans allow you to borrow mana against your existing positions, freeing up capit
 - To manually repay loans, use the loans modal accessible from your profile.
 - Repayments go to margin loans first (to stop interest accruing), then to free loans.
 
+#### Market eligibility for loans
+
+Not all markets are eligible for loans. To qualify, a market must be:
+
+- Public (listed)
+- Ranked
+- Have more than 10 traders
+- Be at least 24 hours old
+
 #### Can my account go negative because of loans?
 
-It's possible but rare. If your positions lose significant value and you have outstanding loans, your balance could become negative when markets resolve.
+Yes. If you are highly leveraged and your positions lose value, your balance can go negative when markets resolve. The loan amount is always deducted from your proceeds regardless of whether your balance can cover it. The more leveraged you are, the more likely this becomes if your bets go against you.
 
 ## Misc
 

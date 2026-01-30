@@ -82,6 +82,8 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         User's prompt:
         ${userQuestionAndDescription}
 
+        CRITICAL: Do NOT output any thinking, reasoning, commentary, or meta-discussion. Do NOT explain what you're doing or ask clarifying questions. Do NOT say things like "I need to search" or "The search results show" or "I cannot create". Just output the markdown description directly. If the question is vague, make reasonable assumptions and create the best description you can.
+
         Only return the markdown description, nothing else.
         `
         const gptResponse = await promptAI(prompt, {
@@ -90,10 +92,19 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         })
 
         // Remove any <thinking> tags and their content from AI output
-        const cleanedResponse = gptResponse.replace(
+        let cleanedResponse = gptResponse.replace(
           /<thinking>[\s\S]*?<\/thinking>/gi,
           ''
         )
+
+        // Remove common AI reasoning patterns that might leak through
+        // Match lines starting with "I need to", "I cannot", "The search results", etc.
+        cleanedResponse = cleanedResponse
+          .replace(
+            /^(I need to|I cannot|I can't|The search results?|Let me|I'll|I will|I should|First,? I).*?(\n|$)/gim,
+            ''
+          )
+          .trim()
 
         track(auth.uid, 'generate-ai-description', {
           question: question.substring(0, 100),

@@ -320,7 +320,7 @@ export function LoansModal(props: {
                 <p className="text-ink-900 mb-1 font-medium">Loan limits</p>
                 <p>
                   Daily limit is {formatPercent(DAILY_LOAN_NET_WORTH_PERCENT)}{' '}
-                  of net worth. Loans are distributed proportionally across your
+                  of equity. Loans are distributed proportionally across your
                   unresolved positions.
                 </p>
                 <p className="mt-2">
@@ -328,36 +328,30 @@ export function LoansModal(props: {
                   <span className="font-semibold">
                     {formatMoney(maxGeneralLoan)}
                   </span>
-                  {latestPortfolio &&
-                    latestPortfolio.balance + latestPortfolio.investmentValue >
-                      0 && (
-                      <>
-                        , which is{' '}
-                        {formatPercent(
-                          maxGeneralLoan /
-                            (latestPortfolio.balance +
-                              latestPortfolio.investmentValue)
-                        )}{' '}
-                        of your net worth (
-                        {Math.round(
-                          1 +
-                            maxGeneralLoan /
-                              (latestPortfolio.balance +
-                                latestPortfolio.investmentValue)
+                  {loanData?.equity && loanData.equity > 0 && (
+                    <>
+                      , which is{' '}
+                      {formatPercent(maxGeneralLoan / loanData.equity)} of your
+                      equity ({Math.round(1 + maxGeneralLoan / loanData.equity)}
+                      x leverage).
+                      <br />
+                      <span className="text-ink-500 text-xs">
+                        Equity = Portfolio value (
+                        {formatMoney(loanData.portfolioValue ?? 0)}) -
+                        Outstanding loans (
+                        {formatMoney(
+                          (loanData?.currentFreeLoan ?? 0) +
+                            (loanData?.currentMarginLoan ?? 0)
                         )}
-                        x leverage)
-                      </>
-                    )}
+                        )
+                      </span>
+                    </>
+                  )}
                   .{' '}
                   {(() => {
-                    const netWorth = latestPortfolio
-                      ? latestPortfolio.balance +
-                        latestPortfolio.investmentValue
-                      : 0
+                    const equity = loanData?.equity ?? 0
                     const leverage =
-                      netWorth > 0
-                        ? Math.round(1 + maxGeneralLoan / netWorth)
-                        : 0
+                      equity > 0 ? Math.round(1 + maxGeneralLoan / equity) : 0
                     const hasPremium = leverage >= 4
                     if (hasPremium) return null
                     if (hasMarginLoanAccess) {

@@ -134,7 +134,7 @@ export function DailyFreeLoanModal(props: {
           <p className="text-ink-500 mt-2 text-center text-xs">
             {totalLoan > 0 && (
               <>
-                Daily: {formatMoney(currentFreeLoan)} • Margin:{' '}
+                Free: {formatMoney(currentFreeLoan)} • Margin:{' '}
                 {formatMoney(currentMarginLoan)} •{' '}
               </>
             )}

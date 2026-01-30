@@ -82,18 +82,30 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
-  const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
-  const netWorth = user.balance + value
+  const { value: portfolioValueNet } = getUnresolvedStatsForToken(
+    'MANA',
+    metrics,
+    contractsById
+  )
 
-  const maxGeneralLoan = calculateMaxGeneralLoanAmount(netWorth, maxLoanPercent)
   // Total loan includes both free loans and margin loans
   const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
   const currentMarginLoan = sumBy(metrics, (m) => m.marginLoan ?? 0)
   const currentLoan = currentFreeLoan + currentMarginLoan
+  // getUnresolvedStatsForToken returns value net of loans; add them back for gross display.
+  const portfolioValue = portfolioValueNet + currentLoan
+
+  // Calculate equity from net portfolio value (already excludes loans).
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
+  // Note: Balance is not included since loans are taken against positions.
+  const equity = Math.max(0, portfolioValueNet)
+
+  // Calculate limits based on equity
+  const maxGeneralLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
   const available = Math.max(0, maxGeneralLoan - currentLoan)
 
-  // Calculate daily limit and today's loans (resets at midnight PT)
-  const dailyLimit = calculateDailyLoanLimit(netWorth)
+  // Calculate daily limit based on equity (resets at midnight PT)
+  const dailyLimit = calculateDailyLoanLimit(equity)
   const midnightPT = getMidnightPacific()
   const todayLoansResult = await pg.oneOrNone<{ total: number }>(
     `select coalesce(sum(amount), 0) as total
@@ -156,5 +168,8 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     freeLoanAvailable,
     canClaimFreeLoan: canClaimFreeLoan && freeLoanAvailable >= 1,
     hasMarginLoanAccess,
+    // Equity-based calculation fields (equity = portfolioValue - loans)
+    equity,
+    portfolioValue,
   }
 }

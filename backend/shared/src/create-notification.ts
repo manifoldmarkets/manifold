@@ -339,6 +339,10 @@ export const createReferralNotification = async (
     sourceContractSlug: referredByContract?.slug,
     sourceSlug: referredByContract?.slug,
     sourceTitle: referredByContract?.question,
+    data: {
+      manaAmount: parseFloat(bonusAmount),
+      cashAmount: 0,
+    },
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
