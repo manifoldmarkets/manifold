@@ -6,6 +6,9 @@ export const getSweepstakesSales: APIHandler<'get-sweepstakes-sales'> = async (
   props
 ) => {
   const { sweepstakesNum, limit, before } = props
+  const safeLimit = Math.min(Math.max(limit ?? 100, 1), 500)
+  const beforeId = typeof before === 'string' && before.length > 0 ? before : undefined
+  const safeSweepstakesNum = Math.max(0, Math.floor(sweepstakesNum))
   const pg = createSupabaseDirectClient()
 
   const sales = await pg.manyOrNone<{
@@ -20,10 +23,12 @@ export const getSweepstakesSales: APIHandler<'get-sweepstakes-sales'> = async (
     `SELECT id, sweepstakes_num, user_id, num_tickets, mana_spent, is_free, created_time
      FROM sweepstakes_tickets
      WHERE sweepstakes_num = $1
-     ${before ? 'AND id < $3' : ''}
+     ${beforeId ? 'AND id < $3' : ''}
      ORDER BY created_time DESC
      LIMIT $2`,
-    before ? [sweepstakesNum, limit, before] : [sweepstakesNum, limit]
+    beforeId
+      ? [safeSweepstakesNum, safeLimit, beforeId]
+      : [safeSweepstakesNum, safeLimit]
   )
 
   return {
