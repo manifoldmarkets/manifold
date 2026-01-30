@@ -8,7 +8,6 @@ import {
   MAX_MARKET_LOAN_NET_WORTH_PERCENT,
   MS_PER_DAY,
   isMarketEligibleForLoan,
-  calculateEquity,
 } from 'common/loans'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import {
@@ -85,16 +84,16 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
-  const { value: portfolioValue } = getUnresolvedStatsForToken(
+  const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
     metrics,
     contractsById
   )
 
-  // Calculate equity (portfolio value minus outstanding loans)
-  // Using equity prevents the compounding loop where borrowing increases borrowing capacity
-  // Note: Balance is not included since loans are taken against positions
-  const equity = calculateEquity(portfolioValue, totalLoanAllMarkets)
+  // Calculate equity from net portfolio value (already excludes loans).
+  // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
+  // Note: Balance is not included since loans are taken against positions.
+  const equity = Math.max(0, portfolioValueNet)
 
   // Get metrics for this contract
   const contractMetrics = metrics.filter((m) => m.contractId === contractId)
