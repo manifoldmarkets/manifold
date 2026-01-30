@@ -179,6 +179,7 @@ export const BOT_USERNAMES = [
   'GoodheartLabsBot',
   'Evansbot',
   'PugBot',
+  'arbibot',
   'cot',
 ]
 
