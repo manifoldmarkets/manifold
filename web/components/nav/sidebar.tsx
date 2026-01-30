@@ -1,6 +1,7 @@
 import {
   ChatIcon,
   DeviceMobileIcon,
+  GiftIcon,
   HeartIcon,
   LoginIcon,
   LogoutIcon,
@@ -206,6 +207,19 @@ const getMobileNav = (
   const { isAdminOrMod, isLiveTV } = options
 
   return buildArray<NavItem>(
+    {
+      name: 'Prize Drawing',
+      href: '/prize',
+      icon: GiftIcon,
+      children: (
+        <>
+          Prize Drawing
+          <span className="ml-2 rounded-full bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            $1k
+          </span>
+        </>
+      ),
+    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
