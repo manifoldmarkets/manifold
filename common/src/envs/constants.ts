@@ -180,6 +180,7 @@ export const BOT_USERNAMES = [
   'Evansbot',
   'PugBot',
   'cot',
+  'steamhappy',
 ]
 
 export const MOD_IDS = [
