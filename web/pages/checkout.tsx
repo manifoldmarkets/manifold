@@ -248,8 +248,8 @@ function CheckoutContent() {
                   </span>
                 </Row>
                 <p className="text-ink-600 mt-1 text-sm">
-                  Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} USDC
-                  or more and receive a 10% bonus.
+                  Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}{' '}
+                  USDC or more and receive a 10% bonus.
                 </p>
               </div>
             )}
@@ -267,8 +267,9 @@ export default function CheckoutPage() {
     <Page trackPageView="checkout page">
       <SEO
         title="Buy mana"
-        description="Purchase mana using cryptocurrency on Manifold"
+        description="Buy mana to trade in your favorite questions on Manifold"
         url="/checkout"
+        image="/buy-mana-graphics/100k.png"
       />
 
       <CryptoProviders>
