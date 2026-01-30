@@ -159,6 +159,12 @@ export const MIN_CASHOUT_AMOUNT = 25
 // Crypto purchase rate: 100 mana per $1 USDC
 export const CRYPTO_MANA_PER_DOLLAR = 100
 
+// Crypto purchase bonuses
+export const CRYPTO_FIRST_PURCHASE_BONUS_PCT = 0.1 // 10% for first crypto purchase
+export const CRYPTO_BULK_PURCHASE_BONUS_PCT = 0.1 // 10% for $1000+ purchases
+export const CRYPTO_BULK_THRESHOLD_INTERNAL = 995 // Internal threshold (covers fees)
+export const CRYPTO_BULK_THRESHOLD_DISPLAY = 1000 // Displayed threshold
+
 export const SWEEPS_MIN_BET = 1
 export const MANA_MIN_BET = 1
 export const PROFIT_FEE_FRACTION = 0.1

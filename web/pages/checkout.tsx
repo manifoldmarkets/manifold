@@ -13,6 +13,7 @@ import {
 import { SEO } from 'web/components/SEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -23,9 +24,12 @@ import {
   LightningBoltIcon,
   CheckCircleIcon,
   ArrowRightIcon,
+  SparklesIcon,
+  GiftIcon,
 } from '@heroicons/react/solid'
 import Image from 'next/image'
 import Link from 'next/link'
+import { CRYPTO_BULK_THRESHOLD_DISPLAY } from 'common/economy'
 
 // Hot wallet address for receiving crypto payments
 const HOT_WALLET_ADDRESS: Address = (process.env
@@ -38,6 +42,12 @@ function CheckoutContent() {
   const [paymentStatus, setPaymentStatus] = useState<
     'idle' | 'started' | 'completed' | 'error'
   >('idle')
+
+  // Check if user has made a crypto purchase before
+  const { data: cryptoStatus } = useAPIGetter('get-crypto-purchase-status', {})
+  const isFirstCryptoPurchase = cryptoStatus
+    ? !cryptoStatus.hasCryptoPurchase
+    : true // Default to true while loading
 
   const handlePaymentStarted = () => {
     setPaymentStatus('started')
@@ -58,7 +68,7 @@ function CheckoutContent() {
             <h1 className="text-primary-700 text-xl font-semibold sm:text-2xl">
               Buy Mana
             </h1>
-            <Row className="items-center gap-1 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm dark:from-teal-200/80 dark:to-emerald-600/80">
+            <Row className="items-center gap-1 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm dark:from-teal-600/80 dark:to-emerald-600/80">
               <span>$1 USDC</span>
               <ArrowRightIcon className="h-3 w-3" />
               <span>100 mana</span>
@@ -102,7 +112,7 @@ function CheckoutContent() {
             <LoadingIndicator />
           </div>
         ) : (
-          <Col className="gap-5 p-6 sm:p-8">
+          <Col className="gap-4 p-6 sm:p-8">
             {/* Mana Image */}
             <div className="flex justify-center">
               <Image
@@ -185,6 +195,37 @@ function CheckoutContent() {
                 . <strong className="text-ink-700">No refunds.</strong>
               </p>
             </div>
+
+            {/* Promotional Banner */}
+            {isFirstCryptoPurchase ? (
+              <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 dark:border-amber-700/50 dark:from-amber-950/30 dark:to-yellow-950/30">
+                <Row className="items-center gap-2">
+                  <SparklesIcon className="h-5 w-5 text-amber-500" />
+                  <span className="font-semibold text-amber-700 dark:text-amber-400">
+                    First Purchase Bonus: Get up to 20% extra mana!
+                  </span>
+                </Row>
+                <p className="text-ink-600 mt-1 text-sm">
+                  As a first-time crypto buyer, you'll receive a 10% bonus on
+                  your purchase — plus an additional 10% on orders of $
+                  {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more!
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 dark:border-purple-700/50 dark:from-purple-950/30 dark:to-indigo-950/30">
+                <Row className="items-center gap-2">
+                  <GiftIcon className="h-5 w-5 text-purple-500" />
+                  <span className="font-semibold text-purple-700 dark:text-purple-400">
+                    Bulk Bonus: 10% extra on $
+                    {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ purchases
+                  </span>
+                </Row>
+                <p className="text-ink-600 mt-1 text-sm">
+                  Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} USDC
+                  or more and receive a 10% bonus.
+                </p>
+              </div>
+            )}
           </Col>
         )}
       </div>

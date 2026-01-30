@@ -3082,6 +3082,15 @@ export const API = (_apiTypeCheck = {
       }>
     },
   },
+  'get-crypto-purchase-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      hasCryptoPurchase: boolean
+    },
+  },
   'admin-create-charity-giveaway': {
     method: 'POST',
     visibility: 'undocumented',

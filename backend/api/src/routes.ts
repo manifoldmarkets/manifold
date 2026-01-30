@@ -189,6 +189,7 @@ import { adminGetNewUsers } from './admin-get-new-users'
 import { getSweepstakesList } from './get-sweepstakes-list'
 import { adminCreateSweepstakes } from './admin-create-sweepstakes'
 import { getCharityGiveawayList } from './get-charity-giveaway-list'
+import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
 import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
@@ -476,6 +477,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-predictle-result': getPredictleResult,
   'get-charity-giveaway': getCharityGiveaway,
   'get-charity-giveaway-list': getCharityGiveawayList,
+  'get-crypto-purchase-status': getCryptoPurchaseStatus,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,

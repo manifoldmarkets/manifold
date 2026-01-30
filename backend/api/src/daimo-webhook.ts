@@ -7,7 +7,12 @@ import { APIError } from 'common/api/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { CRYPTO_MANA_PER_DOLLAR } from 'common/economy'
+import {
+  CRYPTO_MANA_PER_DOLLAR,
+  CRYPTO_FIRST_PURCHASE_BONUS_PCT,
+  CRYPTO_BULK_PURCHASE_BONUS_PCT,
+  CRYPTO_BULK_THRESHOLD_INTERNAL,
+} from 'common/economy'
 
 // Daimo Pay webhook event types (based on actual payload structure)
 type DaimoWebhookEvent = {
@@ -130,42 +135,54 @@ const handlePaymentCompleted = async (
     return
   }
 
-  // Calculate mana amount (100 mana per $1 USDC)
-  const manaAmount = Math.floor(usdcAmount * CRYPTO_MANA_PER_DOLLAR)
   const paidInCents = Math.round(usdcAmount * 100)
 
-  log('Processing crypto payment:', {
-    userId,
-    usdcAmount,
-    manaAmount,
-    paymentId,
-  })
-
-  const manaPurchaseTxn = {
-    fromId: 'EXTERNAL',
-    fromType: 'BANK',
-    toId: userId,
-    toType: 'USER',
-    amount: manaAmount,
-    token: 'M$',
-    category: 'MANA_PURCHASE',
-    data: {
-      daimoPaymentId: paymentId,
-      type: 'crypto',
-      paidInCents,
-    },
-    description: 'Deposit for mana purchase via crypto',
-  } as const
-
   let success = false
+  let finalManaAmount = 0
+  let bonusAmount = 0
+  let isFirstCryptoPurchase = false
+  let isBulkPurchase = false
+
   try {
     await pg.tx(async (tx) => {
+      // Check if this is the user's first crypto purchase (before inserting new record)
+      const existingPurchase = await tx.oneOrNone<{ count: string }>(
+        `SELECT COUNT(*) as count FROM crypto_payment_intents WHERE user_id = $1`,
+        [userId]
+      )
+      isFirstCryptoPurchase = !existingPurchase || parseInt(existingPurchase.count) === 0
+
+      // Check if this qualifies for bulk purchase bonus (>= $995 to cover fees, advertised as $1000)
+      isBulkPurchase = usdcAmount >= CRYPTO_BULK_THRESHOLD_INTERNAL
+
+      // Calculate bonus percentage
+      let bonusPct = 0
+      if (isFirstCryptoPurchase) bonusPct += CRYPTO_FIRST_PURCHASE_BONUS_PCT
+      if (isBulkPurchase) bonusPct += CRYPTO_BULK_PURCHASE_BONUS_PCT
+
+      // Calculate mana amounts
+      const baseAmount = Math.floor(usdcAmount * CRYPTO_MANA_PER_DOLLAR)
+      bonusAmount = Math.floor(baseAmount * bonusPct)
+      finalManaAmount = baseAmount + bonusAmount
+
+      log('Processing crypto payment:', {
+        userId,
+        usdcAmount,
+        baseAmount,
+        bonusAmount,
+        finalManaAmount,
+        bonusPct,
+        isFirstCryptoPurchase,
+        isBulkPurchase,
+        paymentId,
+      })
+
       // Insert for idempotency - will fail if already processed
       try {
         await tx.none(
           `INSERT INTO crypto_payment_intents (intent_id, user_id, mana_amount, usdc_amount)
            VALUES ($1, $2, $3, $4)`,
-          [paymentId, userId, manaAmount, usdcAmount]
+          [paymentId, userId, finalManaAmount, usdcAmount]
         )
       } catch (e: unknown) {
         // Check if it's a unique constraint violation (already processed)
@@ -179,6 +196,26 @@ const handlePaymentCompleted = async (
         }
         throw e
       }
+
+      const manaPurchaseTxn = {
+        fromId: 'EXTERNAL',
+        fromType: 'BANK',
+        toId: userId,
+        toType: 'USER',
+        amount: finalManaAmount,
+        token: 'M$',
+        category: 'MANA_PURCHASE',
+        data: {
+          daimoPaymentId: paymentId,
+          type: 'crypto',
+          paidInCents,
+          bonusAmount,
+          bonusPct,
+          isFirstCryptoPurchase,
+          isBulkPurchase,
+        },
+        description: 'Deposit for mana purchase via crypto',
+      } as const
 
       await runTxnInBetQueue(tx, manaPurchaseTxn)
       await updateUser(tx, userId, {
@@ -202,7 +239,11 @@ const handlePaymentCompleted = async (
   }
 
   if (success) {
-    log('Crypto payment processed:', userId, 'M$', manaAmount)
+    log('Crypto payment processed:', userId, 'M$', finalManaAmount, {
+      bonusAmount,
+      isFirstCryptoPurchase,
+      isBulkPurchase,
+    })
 
     const user = await getUser(userId)
     if (!user) {
@@ -221,7 +262,14 @@ const handlePaymentCompleted = async (
     await trackPublicEvent(
       userId,
       'M$ purchase',
-      { amount: manaAmount, paymentId, usdcAmount },
+      {
+        amount: finalManaAmount,
+        bonusAmount,
+        isFirstCryptoPurchase,
+        isBulkPurchase,
+        paymentId,
+        usdcAmount,
+      },
       { revenue: usdcAmount }
     )
   }
