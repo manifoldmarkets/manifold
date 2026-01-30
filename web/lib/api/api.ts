@@ -226,11 +226,13 @@ export function banUser(params: {
     posting?: boolean
     marketControl?: boolean
     trading?: boolean
+    purchase?: boolean
   }
   unbanTimes?: {
     posting?: number
     marketControl?: number
     trading?: number
+    purchase?: number
   }
   reason?: string
   modAlert?: {

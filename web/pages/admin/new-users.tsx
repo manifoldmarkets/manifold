@@ -9,6 +9,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
+import type { User } from 'common/user'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { api } from 'web/lib/api/api'
@@ -51,7 +52,7 @@ function NewUsersTable() {
 
   const handleEligibilityChange = async (
     userId: string,
-    value: string
+    value: User['bonusEligibility'] | ''
   ) => {
     if (!value) return
     setUpdatingId(userId)
@@ -156,7 +157,12 @@ function NewUsersTable() {
               <td className="px-4 py-3">
                 <select
                   value={u.bonusEligibility ?? ''}
-                  onChange={(e) => handleEligibilityChange(u.id, e.target.value)}
+                  onChange={(e) =>
+                    handleEligibilityChange(
+                      u.id,
+                      e.target.value as User['bonusEligibility'] | ''
+                    )
+                  }
                   disabled={updatingId === u.id}
                   className={clsx(
                     'rounded-lg border px-2 py-1 text-xs font-medium',
