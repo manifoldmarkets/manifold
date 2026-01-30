@@ -59,6 +59,7 @@ function CheckoutContent() {
   const isPurchaseBanned = userBansData?.bans
     ? isUserBanned(userBansData.bans as any, 'purchase')
     : false
+  const canPay = !!user?.id && !isPurchaseBanned
 
   const handlePaymentStarted = () => {
     setPaymentStatus('started')
@@ -141,7 +142,21 @@ function CheckoutContent() {
 
             {/* Payment Button */}
             <Col className="items-center gap-4">
-              {isPurchaseBanned ? (
+              {!user?.id ? (
+                <button
+                  disabled
+                  className={clsx(
+                    'relative w-full max-w-sm overflow-hidden rounded-xl',
+                    'cursor-not-allowed bg-gray-400',
+                    'px-8 py-4 text-lg font-semibold text-white shadow-lg'
+                  )}
+                >
+                  <Row className="items-center justify-center gap-3">
+                    <BanIcon className="h-6 w-6" />
+                    <span>Loading account…</span>
+                  </Row>
+                </button>
+              ) : isPurchaseBanned ? (
                 <button
                   disabled
                   className={clsx(
@@ -165,7 +180,7 @@ function CheckoutContent() {
                   onPaymentStarted={handlePaymentStarted}
                   onPaymentCompleted={handlePaymentCompleted}
                   metadata={{
-                    userId: user?.id ?? '',
+                    userId: user?.id,
                   }}
                 >
                   {({ show }) => (
