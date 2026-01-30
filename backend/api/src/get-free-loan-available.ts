@@ -83,7 +83,7 @@ export const getFreeLoanAvailable: APIHandler<
   const contractsById = keyBy(contracts, 'id')
 
   // Calculate portfolio value
-  const { value: portfolioValue } = getUnresolvedStatsForToken(
+  const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
     metrics,
     contractsById
@@ -91,6 +91,8 @@ export const getFreeLoanAvailable: APIHandler<
 
   // Calculate total outstanding loans from metrics
   const loanTotal = sumBy(metrics, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
+  // getUnresolvedStatsForToken returns value net of loans; add them back for gross value.
+  const portfolioValue = portfolioValueNet + loanTotal
 
   // Calculate equity (portfolio value minus outstanding loans)
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity

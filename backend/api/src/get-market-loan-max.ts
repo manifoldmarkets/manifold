@@ -85,7 +85,7 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
-  const { value: portfolioValue } = getUnresolvedStatsForToken(
+  const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
     metrics,
     contractsById
@@ -94,6 +94,8 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   // Calculate equity (portfolio value minus outstanding loans)
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity
   // Note: Balance is not included since loans are taken against positions
+  // getUnresolvedStatsForToken returns value net of loans; add them back for gross value.
+  const portfolioValue = portfolioValueNet + totalLoanAllMarkets
   const equity = calculateEquity(portfolioValue, totalLoanAllMarkets)
 
   // Get metrics for this contract

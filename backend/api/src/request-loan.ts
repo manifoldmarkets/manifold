@@ -117,7 +117,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { contracts, metrics } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
-  const { value: portfolioValue } = getUnresolvedStatsForToken(
+  const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
     metrics,
     contractsById
@@ -127,6 +127,8 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity
   // Note: Balance is not included since loans are taken against positions
   const loanTotal = portfolioMetric.loanTotal ?? 0
+  // getUnresolvedStatsForToken returns value net of loans; add them back for gross value.
+  const portfolioValue = portfolioValueNet + loanTotal
   const equity = calculateEquity(portfolioValue, loanTotal)
 
   // Check total loan limit based on equity (tier-specific)
