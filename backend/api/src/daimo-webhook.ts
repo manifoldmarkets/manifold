@@ -127,7 +127,11 @@ const handlePaymentCompleted = async (
   const pg = createSupabaseDirectClient()
 
   // Parse the USDC amount - amountUnits is already in USDC (e.g., "1" = $1 USDC)
-  const amountUnits = payment.destination?.amountUnits
+  if (!payment.destination?.amountUnits) {
+    log.error('Missing payment destination amount', { paymentId })
+    return
+  }
+  const amountUnits = payment.destination.amountUnits
   const usdcAmount = amountUnits ? Number(amountUnits) : 0
 
   if (usdcAmount <= 0) {
