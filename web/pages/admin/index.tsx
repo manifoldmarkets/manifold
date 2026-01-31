@@ -106,6 +106,7 @@ export default function AdminPage() {
           href="/admin/user-info"
         />
         <LabCard title="🧾 sales" href="/admin/sales" />
+        <LabCard title="🐋 whales" href="/admin/whales" />
         <LabCard title="🎁 prize payouts" href="/admin/prize" />
         <LabCard title="🆕 new users" href="/admin/new-users" />
         <Row className="gap-2">

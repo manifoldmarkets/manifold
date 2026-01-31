@@ -3405,6 +3405,31 @@ export const API = (_apiTypeCheck = {
       }>
     },
   },
+  'admin-get-top-whale-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      users: Array<{
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalPaidCents: number
+        totalMana: number
+        purchaseCount: number
+        lastPurchaseTime: number
+        byType: {
+          stripe: { paidCents: number; mana: number; count: number }
+          apple: { paidCents: number; mana: number; count: number }
+          gidx: { paidCents: number; mana: number; count: number }
+          crypto: { paidCents: number; mana: number; count: number }
+          unknown: { paidCents: number; mana: number; count: number }
+        }
+      }>
+    },
+  },
   'admin-get-new-users': {
     method: 'GET',
     visibility: 'undocumented',
