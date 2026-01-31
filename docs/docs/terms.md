@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated January 27th, 2026
+Last updated January 31st, 2026
 
 **1. AGREEMENT TO TERMS**
 
@@ -22,7 +22,7 @@ Provided that you are eligible to use the Site, you are granted a limited licens
 
 **3. USER REPRESENTATIONS**
 
-By using the Site, you represent and warrant that: (1) all registration information you submit will be true, accurate, current, and complete; (2) you will maintain the accuracy of such information and promptly update such registration information as necessary; (3) you have the legal capacity and you agree to comply with these Terms of Use; (4) you are not under the age of 13; (5) you are not a minor in the jurisdiction in which you reside, or if a minor, you have received parental permission to use the Site; (6) if you access the Site through automated means, bots, or scripts, you will do so only through our public API in accordance with our API terms and rate limits; (7) you will not use the Site for any illegal or unauthorized purpose; and (8) your use of the Site will not violate any applicable law or regulation.
+By using the Site, you represent and warrant that: (1) all registration information you submit will be true, accurate, current, and complete; (2) you will maintain the accuracy of such information and promptly update such registration information as necessary; (3) you have the legal capacity and you agree to comply with these Terms of Use; (4) you are not under the age of 13; (5) you are not a minor in the jurisdiction in which you reside, or if a minor, you have received parental permission to use the Site; (6) if you access the Site through automated means, bots, or scripts, you will do so only through our public API in accordance with our API terms and rate limits; (7) you will not use the Site for any illegal or unauthorized purpose; (8) your use of the Site will not violate any applicable law or regulation; (9) if identity verification is required for any feature or activity on the Site, you will provide accurate, authentic, and current identity documents and information, and you will not submit forged, altered, or fraudulent documentation; and (10) you will complete identity verification promptly when requested as a condition of using certain features or claiming prizes.
 
 If you provide any information that is untrue, inaccurate, not current, or incomplete, we have the right to suspend or terminate your account and refuse any and all current or future use of the Site (or any portion thereof).
 
@@ -111,6 +111,22 @@ We reserve the right to refuse any order placed through the Site. We may, in our
 3. **Eligibility Restrictions.** Prize Drawings are subject to geographic and other eligibility restrictions as set forth in the Prize Drawing Official Rules. You are solely responsible for determining whether you are eligible to participate based on the laws of your jurisdiction.
 
 4. **Acceptance of Rules.** By entering any Prize Drawing, you agree to be bound by the Prize Drawing Official Rules and the decisions of the Sponsor, which are final and binding in all respects. In the event of any conflict between these Terms of Use and the Prize Drawing Official Rules, the Prize Drawing Official Rules shall govern with respect to the applicable Prize Drawing.
+
+5. **Identity Verification for Prize Winners.** Winners of Prize Drawings may be required to complete identity verification before receiving their prize. See Section 6.10 (Identity Verification) for details.
+
+**6.10 Identity Verification (KYC/AML)**
+
+1. **When Verification Is Required.** We may require you to verify your identity in connection with certain activities on the Site, including but not limited to: claiming prizes from Prize Drawings, participating in promotions with monetary prizes, high-value transactions, or as otherwise required to comply with applicable Know Your Customer (KYC), Anti-Money Laundering (AML), or other legal and regulatory requirements. We reserve the right to require identity verification at any time in our sole discretion.
+
+2. **Third-Party Verification Providers.** Identity verification is performed by third-party service providers, including **Idenfy**. By submitting identity verification, you consent to the collection, processing, and storage of your identity documents, photographs, biometric data (including facial images for liveness detection), and related information by us and our verification providers. Our verification providers process your data in accordance with their own privacy policies. For more information about how we handle your identity verification data, please see our Privacy Policy.
+
+3. **Your Obligations.** When identity verification is required, you agree to: (a) provide accurate, authentic, and current identity documents and information; (b) submit clear, legible images or scans of requested documents; (c) complete any liveness checks or additional verification steps as requested; and (d) respond promptly to any requests for additional information or documentation.
+
+4. **Prohibited Conduct.** You may not: (a) submit forged, altered, stolen, or fraudulent identity documents; (b) use another person's identity or documents; (c) attempt to circumvent or manipulate the verification process; or (d) provide false or misleading information during verification. Violation of this section may result in immediate account termination, forfeiture of any prizes or Mana balances, and referral to law enforcement authorities.
+
+5. **Consequences of Non-Verification.** If you fail to complete identity verification when required, or if your verification is unsuccessful, we may: (a) restrict or suspend your access to certain features of the Site; (b) withhold or forfeit prizes you have won; (c) limit your account functionality; or (d) terminate your account. We are not liable for any losses or damages resulting from your failure to complete verification.
+
+6. **Data Retention.** Identity verification data is retained in accordance with our Privacy Policy and applicable legal requirements. For more information, see Section 9 of our Privacy Policy.
 
 **7. REFUNDS POLICY**
 
