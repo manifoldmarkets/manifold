@@ -774,10 +774,9 @@ function BetsTable(props: {
                         {contract.isResolved ? (
                           <span className="text-ink-800 mr-1 inline-flex">
                             {contract.outcomeType === 'MULTIPLE_CHOICE' ? (
-                              Object.values(
-                                contract.resolutions ?? {}
-                              ).filter((r) => r > 1).length > 1 ||
-                              contract.resolution === 'MKT' ? (
+                              Object.values(contract.resolutions ?? {}).filter(
+                                (r) => r > 1
+                              ).length > 1 || contract.resolution === 'MKT' ? (
                                 <span>MULTI</span>
                               ) : contract.resolution === 'CANCEL' ? (
                                 <BinaryOutcomeLabel outcome="CANCEL" />
@@ -794,16 +793,12 @@ function BetsTable(props: {
                             ) : (
                               <ContractStatusLabel contract={contract} />
                             )}
-                            <span className="text-ink-500 ml-1 text-sm">
-                              •
-                            </span>
+                            <span className="text-ink-500 ml-1 text-sm">•</span>
                           </span>
                         ) : contract.outcomeType !== 'MULTIPLE_CHOICE' ? (
                           <span className="text-ink-800 mr-1 inline-flex">
                             <ContractStatusLabel contract={contract} />
-                            <span className="text-ink-500 ml-1 text-sm">
-                              •
-                            </span>
+                            <span className="text-ink-500 ml-1 text-sm">•</span>
                           </span>
                         ) : null}
                         <span className="text-ink-500 text-sm">
@@ -815,8 +810,7 @@ function BetsTable(props: {
                         </span>
                         {sortOption.field === 'closeTime' && closeDate ? (
                           <span className="text-ink-500 ml-1 whitespace-nowrap">
-                            •{' '}
-                            {closeDate < Date.now() ? 'closed' : 'closes in'}{' '}
+                            • {closeDate < Date.now() ? 'closed' : 'closes in'}{' '}
                             <RelativeTimestamp
                               time={closeDate}
                               className="text-ink-500"
