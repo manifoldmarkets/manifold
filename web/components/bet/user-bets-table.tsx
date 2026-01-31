@@ -749,85 +749,82 @@ function BetsTable(props: {
                         'bg-canvas-0 group-hover:bg-canvas-50 sticky left-0 z-10'
                       )}
                     >
+                      {contract.token == 'CASH' && (
+                        <Tooltip
+                          text={SWEEPIES_MARKET_TOOLTIP}
+                          className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+                        >
+                          <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                        </Tooltip>
+                      )}
                       <Link
                         href={contractPath(contract)}
                         onClick={(e) => e.stopPropagation()}
                         title={contract.question}
-                      >
-                        {contract.token == 'CASH' && (
-                          <Tooltip
-                            text={SWEEPIES_MARKET_TOOLTIP}
-                            className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
-                          >
-                            <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
-                          </Tooltip>
+                        className={clsx(
+                          'line-clamp-2 overflow-hidden text-sm hover:underline',
+                          visibleColumns.length > 2
+                            ? 'line-clamp-2'
+                            : 'sm:line-clamp-1 sm:text-base'
                         )}
-                        <span
-                          className={clsx(
-                            'line-clamp-2 overflow-hidden text-sm',
-                            visibleColumns.length > 2
-                              ? 'line-clamp-2'
-                              : 'sm:line-clamp-1 sm:text-base'
-                          )}
-                        >
-                          {contract.question}
-                        </span>
-                        <div className="text-ink-500 mt-1 truncate text-sm">
-                          {contract.isResolved ? (
-                            <span className="text-ink-800 mr-1 inline-flex">
-                              {contract.outcomeType === 'MULTIPLE_CHOICE' ? (
-                                Object.values(
-                                  contract.resolutions ?? {}
-                                ).filter((r) => r > 1).length > 1 ||
-                                contract.resolution === 'MKT' ? (
-                                  <span>MULTI</span>
-                                ) : contract.resolution === 'CANCEL' ? (
-                                  <BinaryOutcomeLabel outcome="CANCEL" />
-                                ) : resolvedAnswer ? (
-                                  <MultiOutcomeLabel
-                                    answerText={resolvedAnswer.text}
-                                    resolution={contract.resolution ?? ''}
-                                    truncate="long"
-                                    answerClassName={
-                                      'font-semibold text-base-400 !break-normal'
-                                    }
-                                  />
-                                ) : null
-                              ) : (
-                                <ContractStatusLabel contract={contract} />
-                              )}
-                              <span className="text-ink-500 ml-1 text-sm">
-                                •
-                              </span>
-                            </span>
-                          ) : contract.outcomeType !== 'MULTIPLE_CHOICE' ? (
-                            <span className="text-ink-800 mr-1 inline-flex">
+                      >
+                        {contract.question}
+                      </Link>
+                      <div className="text-ink-500 mt-1 truncate text-sm">
+                        {contract.isResolved ? (
+                          <span className="text-ink-800 mr-1 inline-flex">
+                            {contract.outcomeType === 'MULTIPLE_CHOICE' ? (
+                              Object.values(
+                                contract.resolutions ?? {}
+                              ).filter((r) => r > 1).length > 1 ||
+                              contract.resolution === 'MKT' ? (
+                                <span>MULTI</span>
+                              ) : contract.resolution === 'CANCEL' ? (
+                                <BinaryOutcomeLabel outcome="CANCEL" />
+                              ) : resolvedAnswer ? (
+                                <MultiOutcomeLabel
+                                  answerText={resolvedAnswer.text}
+                                  resolution={contract.resolution ?? ''}
+                                  truncate="long"
+                                  answerClassName={
+                                    'font-semibold text-base-400 !break-normal'
+                                  }
+                                />
+                              ) : null
+                            ) : (
                               <ContractStatusLabel contract={contract} />
-                              <span className="text-ink-500 ml-1 text-sm">
-                                •
-                              </span>
+                            )}
+                            <span className="text-ink-500 ml-1 text-sm">
+                              •
                             </span>
-                          ) : null}
-                          <span className="text-ink-500 text-sm">
+                          </span>
+                        ) : contract.outcomeType !== 'MULTIPLE_CHOICE' ? (
+                          <span className="text-ink-800 mr-1 inline-flex">
+                            <ContractStatusLabel contract={contract} />
+                            <span className="text-ink-500 ml-1 text-sm">
+                              •
+                            </span>
+                          </span>
+                        ) : null}
+                        <span className="text-ink-500 text-sm">
+                          <RelativeTimestamp
+                            time={metric.lastBetTime}
+                            className="text-ink-500 -ml-1 text-sm"
+                            shortened
+                          />
+                        </span>
+                        {sortOption.field === 'closeTime' && closeDate ? (
+                          <span className="text-ink-500 ml-1 whitespace-nowrap">
+                            •{' '}
+                            {closeDate < Date.now() ? 'closed' : 'closes in'}{' '}
                             <RelativeTimestamp
-                              time={metric.lastBetTime}
-                              className="text-ink-500 -ml-1 text-sm"
+                              time={closeDate}
+                              className="text-ink-500"
                               shortened
                             />
                           </span>
-                          {sortOption.field === 'closeTime' && closeDate ? (
-                            <span className="text-ink-500 ml-1 whitespace-nowrap">
-                              •{' '}
-                              {closeDate < Date.now() ? 'closed' : 'closes in'}{' '}
-                              <RelativeTimestamp
-                                time={closeDate}
-                                className="text-ink-500"
-                                shortened
-                              />
-                            </span>
-                          ) : null}
-                        </div>
-                      </Link>
+                        ) : null}
+                      </div>
                     </div>
 
                     {/* Data cells container */}
