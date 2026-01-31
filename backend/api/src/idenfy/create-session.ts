@@ -96,7 +96,7 @@ export const createIdenfySession: APIHandler<'create-idenfy-session'> = async (
       userId: auth.uid,
       scanRef: data.scanRef,
     })
-    throw new APIError(409, 'Verification session conflict')
+    throw new APIError(400, 'Verification session conflict')
   }
 
   track(auth.uid, 'idenfy session created', { scanRef: data.scanRef })
