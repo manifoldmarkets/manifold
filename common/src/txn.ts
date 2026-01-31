@@ -2,6 +2,10 @@
 // Shortened from "transaction" to distinguish from Firebase transactions (and save chars)
 
 import { QuestType } from 'common/quest'
+import {
+  MANA_PURCHASE_RATE_CHANGE_DATE,
+  MANA_PURCHASE_RATE_REVERT_DATE,
+} from './envs/constants'
 import { league_user_info } from './leagues'
 
 type AnyTxnType =
@@ -183,13 +187,15 @@ type ManaPurchase = {
     | {
         iapTransactionId: string
         type: 'apple'
-        // TODO: backfill this.
+        // paidInCents is in USD cents for Apple purchases.
+        // Some historical rows are missing this; use getPaidDollarsFromManaPurchase.
         paidInCents?: number
       }
     | {
         stripeTransactionId: string
         type: 'stripe'
-        // TODO: backfill this.
+        // Stripe historically stored priceInDollars in paidInCents (i.e. dollars, not cents).
+        // Some historical rows are missing this; use getPaidDollarsFromManaPurchase.
         paidInCents?: number
       }
     | {
@@ -207,6 +213,28 @@ type ManaPurchase = {
         isFirstCryptoPurchase: boolean
         isBulkPurchase: boolean
       }
+}
+
+// Convert a mana purchase txn to paid USD dollars with legacy safeguards.
+// - Stripe stored dollars in paidInCents, while others store cents.
+// - Some historical rows are missing paidInCents entirely.
+// - Mana purchase rate changed temporarily in 2024, so we infer dollars from mana by date.
+// NOTE: This logic is duplicated in SQL in backend/api/src/admin-get-top-whale-users.ts
+// for performance. If you update this function, update the SQL query too.
+export function getPaidDollarsFromManaPurchase(
+  txn: Txn & ManaPurchase
+): number {
+  const data = txn.data ?? {}
+  const paidInCents = data.paidInCents
+  if (paidInCents != null) {
+    return data.type === 'stripe' ? paidInCents : paidInCents / 100
+  }
+
+  const isThousandToOne =
+    txn.createdTime > MANA_PURCHASE_RATE_CHANGE_DATE.getTime() &&
+    txn.createdTime < MANA_PURCHASE_RATE_REVERT_DATE.getTime()
+  const dollarsPerMana = isThousandToOne ? 1 / 1000 : 1 / 100
+  return txn.amount * dollarsPerMana
 }
 type CashBonus = {
   fromId: 'EXTERNAL'
