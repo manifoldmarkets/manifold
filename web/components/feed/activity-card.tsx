@@ -7,7 +7,7 @@ import { groupBy, orderBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
-import { Contract, contractPath, MarketContract } from 'common/contract'
+import { BinaryContract, Contract, contractPath, MarketContract, StonkContract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
@@ -29,6 +29,7 @@ import { LikeAndDislikeComment } from 'web/components/comments/comment-actions'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { track } from 'web/lib/service/analytics'
+import { BetButton } from 'web/components/bet/feed-bet-button'
 
 export type ActivityItem = {
   type: 'bet' | 'comment' | 'market'
@@ -142,13 +143,24 @@ export const ActivityCard = memo(function ActivityCard(props: {
           {removeEmojis(contract.question)}
         </Link>
 
-        {/* Probability for binary markets */}
+        {/* Probability and bet buttons for binary markets */}
         {contract.outcomeType === 'BINARY' && (
-          <ContractStatusLabel
-            className="text-lg font-bold"
-            contract={contract}
-            chanceLabel
-          />
+          <Row className="items-center justify-between">
+            <ContractStatusLabel
+              className="text-lg font-bold"
+              contract={contract}
+              chanceLabel
+            />
+            {!contract.isResolved && contract.closeTime && contract.closeTime > Date.now() && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <BetButton
+                  contract={contract as BinaryContract}
+                  user={user}
+                  className="h-min"
+                />
+              </div>
+            )}
+          </Row>
         )}
       </Col>
 

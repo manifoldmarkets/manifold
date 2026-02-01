@@ -251,30 +251,32 @@ export function FeedContractCard(props: {
             {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-            <ContractStatusLabel
-              className="text-lg font-bold"
-              contract={contract}
-              chanceLabel
-            />
+            <Row className="items-center justify-between">
+              <ContractStatusLabel
+                className="text-lg font-bold"
+                contract={contract}
+                chanceLabel
+              />
+              {isBinaryCpmm && !isClosed && (
+                <BetButton
+                  feedReason={feedReason}
+                  contract={contract}
+                  user={user}
+                  className="h-min"
+                />
+              )}
+              {!isClosed && isStonk && (
+                <BetButton
+                  feedReason={feedReason}
+                  contract={contract}
+                  user={user}
+                  className="h-min"
+                  labels={{ yes: 'Buy', no: 'Short' }}
+                />
+              )}
+              {isNumber && <NumericBetButton contract={contract} user={user} />}
+            </Row>
           )}
-          {isBinaryCpmm && !isClosed && (
-            <BetButton
-              feedReason={feedReason}
-              contract={contract}
-              user={user}
-              className="h-min"
-            />
-          )}
-          {!isClosed && isStonk && (
-            <BetButton
-              feedReason={feedReason}
-              contract={contract}
-              user={user}
-              className="h-min"
-              labels={{ yes: 'Buy', no: 'Short' }}
-            />
-          )}
-          {isNumber && <NumericBetButton contract={contract} user={user} />}
         </Col>
       </Col>
 
