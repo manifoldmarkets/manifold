@@ -10,7 +10,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { RepostFeedCard } from 'web/components/feed/repost-feed-card'
-import { CardActivitySection } from './card-activity-section'
 
 export const UnifiedFeedCard = memo(function UnifiedFeedCard(props: {
   contract: Contract
@@ -19,19 +18,8 @@ export const UnifiedFeedCard = memo(function UnifiedFeedCard(props: {
   bet: Bet | undefined
   user: User | undefined | null
   reason: string
-  recentBets?: Bet[]
-  recentComments?: ContractComment[]
 }) {
-  const {
-    contract,
-    reason,
-    user,
-    repost,
-    comment,
-    bet,
-    recentBets,
-    recentComments,
-  } = props
+  const { contract, reason, user, repost, comment, bet } = props
   const [hidden, setHidden] = useState(false)
 
   if (hidden) {
@@ -63,11 +51,7 @@ export const UnifiedFeedCard = memo(function UnifiedFeedCard(props: {
     )
   }
 
-  // Regular contract card with activity
-  const hasActivity =
-    (recentBets && recentBets.length > 0) ||
-    (recentComments && recentComments.length > 0)
-
+  // Regular contract card
   return (
     <FeedContractCard
       trackingPostfix={'feed'}
@@ -75,14 +59,6 @@ export const UnifiedFeedCard = memo(function UnifiedFeedCard(props: {
       key={contract.id}
       hide={() => setHidden(true)}
       feedReason={reason}
-    >
-      {hasActivity && (
-        <CardActivitySection
-          contract={contract}
-          bets={recentBets}
-          comments={recentComments}
-        />
-      )}
-    </FeedContractCard>
+    />
   )
 })
