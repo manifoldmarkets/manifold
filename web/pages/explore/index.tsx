@@ -19,7 +19,7 @@ export function ExploreContent(props: { render: boolean }) {
   }
 
   return (
-    <Col className="w-full px-2">
+    <Col className="mx-auto w-full max-w-2xl px-2 sm:px-4">
       <UnifiedFeed />
     </Col>
   )
@@ -27,7 +27,7 @@ export function ExploreContent(props: { render: boolean }) {
 
 export default function ExplorePage() {
   return (
-    <Page trackPageView="/explore" className="!col-span-7">
+    <Page trackPageView="/explore">
       <SEO title="Explore" description="Explore" url="/explore" />
       <ExploreContent render={true} />
     </Page>
