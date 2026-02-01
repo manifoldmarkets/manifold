@@ -24,7 +24,6 @@ import { APIParams, APIResponse } from 'common/api/schema'
 import { getFollowedGroupsCount } from 'common/supabase/groups'
 import { BinaryDigit } from 'common/tier'
 import { TopLevelPost } from 'common/top-level-post'
-import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { removeEmojis } from 'common/util/string'
 import { DAY_MS } from 'common/util/time'
 import { isEqual } from 'lodash'
@@ -383,21 +382,13 @@ export function Search(props: SearchProps) {
         )}
       </Col>
     ))
-  const ALL_PARENT_TOPICS = Object.keys(SEARCH_TOPICS_TO_SUBTOPICS)
 
-  const selectedTopic = groupIds
-    ? ALL_PARENT_TOPICS.find((topic) =>
-        SEARCH_TOPICS_TO_SUBTOPICS[topic].some((subtopic) =>
-          groupIds.split(',').some((id) => subtopic.groupIds.includes(id))
-        )
-      )
-    : undefined
-  const selectedSubTopic = selectedTopic
-    ? SEARCH_TOPICS_TO_SUBTOPICS[selectedTopic].find(
-        (subtopic) => groupIds === subtopic.groupIds.join(',')
-      )
-    : undefined
-  const selectedAll = !selectedTopic && !selectedFollowed
+  // Use initialTopics (hot topics by importance score) for dynamic topic pills
+  const hotTopics = props.initialTopics ?? []
+
+  // Find if a specific topic is selected by checking if groupIds matches a single topic
+  const selectedTopicId = groupIds && hotTopics.find((t) => t.id === groupIds)
+  const selectedAll = !selectedTopicId && !selectedFollowed
   const user = useUser()
   const {
     data: followedGroupsData,
@@ -505,31 +496,27 @@ export function Search(props: SearchProps) {
                   Followed
                 </button>
               )}
-              {ALL_PARENT_TOPICS.map((topic) => (
+              {hotTopics.slice(0, 15).map((topic) => (
                 <button
-                  key={topic}
+                  key={topic.id}
                   className={clsx(
                     'whitespace-nowrap font-medium',
-                    selectedTopic === topic
+                    selectedTopicId?.id === topic.id
                       ? 'text-primary-600'
                       : 'text-ink-500'
                   )}
                   onClick={() => {
-                    if (selectedTopic != topic) {
-                      track('select search topic', { topic })
-                      // Join all group IDs for this topic's subtopics
-                      const allGroupIds = SEARCH_TOPICS_TO_SUBTOPICS[topic]
-                        .map((subtopic) => subtopic.groupIds)
-                        .flat()
+                    if (selectedTopicId?.id !== topic.id) {
+                      track('select search topic', { topic: topic.slug })
                       const changes: Partial<SearchParams> = {
-                        [GROUP_IDS_KEY]: allGroupIds.join(','),
-                        [TOPIC_FILTER_KEY]: '', // Clear direct topicSlug when a parent topic is selected
+                        [GROUP_IDS_KEY]: topic.id,
+                        [TOPIC_FILTER_KEY]: '', // Clear direct topicSlug when a topic is selected
                       }
                       onChange(changes)
                     }
                   }}
                 >
-                  {removeEmojis(topic)}
+                  {removeEmojis(topic.name)}
                 </button>
               ))}
             </Carousel>
@@ -553,60 +540,6 @@ export function Search(props: SearchProps) {
           />
         )}
 
-        {/* Subtopics row */}
-        {selectedTopic &&
-          Object.keys(SEARCH_TOPICS_TO_SUBTOPICS).some(
-            (topic) => topic === selectedTopic
-          ) && (
-            <Carousel fadeEdges labelsParentClassName="gap-1 mt-3 mb-1.5 ">
-              <button
-                onClick={() => {
-                  onChange({
-                    [GROUP_IDS_KEY]: SEARCH_TOPICS_TO_SUBTOPICS[selectedTopic]
-                      .map((subtopic) => subtopic.groupIds)
-                      .flat()
-                      .join(','),
-                  })
-                }}
-                className={clsx(
-                  'text-ink-500 whitespace-nowrap px-3 py-0.5 text-sm',
-                  !selectedSubTopic &&
-                    'text-primary-700 bg-primary-50 dark:bg-primary-100 rounded-full font-medium'
-                )}
-              >
-                All
-              </button>
-              {SEARCH_TOPICS_TO_SUBTOPICS[selectedTopic]
-                .filter(({ hideFromSearch }) => !hideFromSearch)
-                .map(({ name, groupIds }) => (
-                  <button
-                    key={name}
-                    className={clsx(
-                      'text-ink-500 whitespace-nowrap px-3 py-0.5 text-sm',
-                      searchParams[GROUP_IDS_KEY] === groupIds.join(',') &&
-                        'text-primary-700 bg-primary-50 dark:bg-primary-100 rounded-full font-medium '
-                    )}
-                    onClick={() => {
-                      if (searchParams[GROUP_IDS_KEY] === groupIds.join(',')) {
-                        onChange({
-                          [GROUP_IDS_KEY]: SEARCH_TOPICS_TO_SUBTOPICS[
-                            selectedTopic
-                          ]
-                            .map((subtopic) => subtopic.groupIds)
-                            .flat()
-                            .join(','),
-                        })
-                      } else {
-                        track('select search subtopic', { subtopic: name })
-                        onChange({ [GROUP_IDS_KEY]: groupIds.join(',') })
-                      }
-                    }}
-                  >
-                    {removeEmojis(name)}
-                  </button>
-                ))}
-            </Carousel>
-          )}
 
         {!hideContractFilters && (
           <ContractFilters
