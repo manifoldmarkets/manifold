@@ -19,7 +19,7 @@ export function ExploreContent(props: { render: boolean }) {
   }
 
   return (
-    <Col className="mx-auto w-full max-w-2xl px-2 sm:px-4">
+    <Col className="mx-auto w-full max-w-2xl px-2 pt-4 sm:px-4">
       <UnifiedFeed />
     </Col>
   )
