@@ -12,7 +12,7 @@ import router from 'next/router'
 import { memo, useState } from 'react'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { Button } from 'web/components/buttons/button'
-import { CommentsButton } from 'web/components/comments/comments-button'
+import { RepostButton } from 'web/components/comments/repost-modal'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { FeedDropdown } from 'web/components/feed/card-dropdown'
@@ -272,10 +272,12 @@ export const BottomActionRow = (props: {
       )}
 
       <BottomRowButtonWrapper>
-        <CommentsButton
-          highlightCommentId={comment.id}
-          contract={contract}
-          user={user}
+        <RepostButton
+          playContract={contract}
+          bet={bet}
+          size={'2xs'}
+          className={'h-full'}
+          iconClassName={'text-ink-500'}
         />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>

@@ -33,7 +33,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
-import { CommentsButton } from '../comments/comments-button'
+import { RepostButton } from '../comments/repost-modal'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
@@ -421,7 +421,12 @@ const BottomActionRow = (props: {
       )}
 
       <BottomRowButtonWrapper>
-        <CommentsButton contract={contract} user={user} className={'h-full'} />
+        <RepostButton
+          playContract={contract}
+          size={'2xs'}
+          className={'h-full'}
+          iconClassName={'text-ink-500'}
+        />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
         <ReactButton
