@@ -14,9 +14,7 @@ import {
   contractPath,
   CPMMMultiContract,
   CPMMNumericContract,
-  MarketContract,
   PollContract,
-  StonkContract,
 } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { PrivateUser, User } from 'common/user'
@@ -24,7 +22,6 @@ import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { FeedBet } from 'web/components/feed/feed-bets'
 import {
   ContractStatusLabel,
   VisibilityIcon,
@@ -303,13 +300,10 @@ export const ActivityCard = memo(function ActivityCard(props: {
           {displayItems.slice(0, 4).map((item) => {
             if (item.type === 'bet') {
               return (
-                <FeedBet
-                  className="p-1"
+                <BetLog
                   key={`${item.id}-bet`}
-                  contract={contract as MarketContract}
+                  contract={contract}
                   bet={item.data as Bet}
-                  avatarSize="xs"
-                  hideActions={true}
                 />
               )
             } else if (item.type === 'market') {
@@ -374,6 +368,66 @@ export const ActivityCard = memo(function ActivityCard(props: {
         />
       )}
     </ClickFrame>
+  )
+})
+
+const BetLog = memo(function BetLog(props: {
+  bet: Bet
+  contract: Contract
+}) {
+  const { bet, contract } = props
+  const { amount, outcome, createdTime, answerId, userId, probBefore, probAfter } = bet
+  const bettor = useDisplayUserById(userId)
+  const isCashContract = contract.token === 'CASH'
+
+  const bought = amount >= 0 ? 'bought' : 'sold'
+  const absAmount = Math.abs(amount)
+  const formattedAmount = isCashContract
+    ? `S${absAmount.toFixed(0)}`
+    : `M${absAmount.toFixed(0)}`
+
+  const answer =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers?.find((a) => a.id === answerId)
+      : undefined
+
+  const fromProb = `${(probBefore * 100).toFixed(0)}%`
+  const toProb = `${(probAfter * 100).toFixed(0)}%`
+
+  return (
+    <Row className="text-ink-600 flex-wrap items-center gap-x-1 gap-y-0.5 p-1 text-sm">
+      <UserHovercard userId={userId}>
+        <Row className="items-center gap-1">
+          <Avatar
+            avatarUrl={bettor?.avatarUrl}
+            username={bettor?.username}
+            size="xs"
+            entitlements={bettor?.entitlements}
+          />
+          <span className="whitespace-nowrap">
+            <span className="font-semibold">{bettor?.name ?? 'Someone'}</span>{' '}
+            {bought} {formattedAmount}
+          </span>
+        </Row>
+      </UserHovercard>
+      <span>
+        {answer ? (
+          <span className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}>
+            {answer.text} {outcome}
+          </span>
+        ) : (
+          <span className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}>
+            {outcome}
+          </span>
+        )}{' '}
+        from {fromProb} to {toProb}
+      </span>
+      <RelativeTimestamp
+        time={createdTime}
+        shortened
+        className="text-ink-400"
+      />
+    </Row>
   )
 })
 
