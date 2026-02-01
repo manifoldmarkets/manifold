@@ -4,7 +4,7 @@ import Router from 'next/router'
 import { useRouter } from 'next/router'
 import { memo } from 'react'
 import { groupBy, orderBy } from 'lodash'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { TbDroplet, TbMoneybag } from 'react-icons/tb'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
@@ -259,7 +259,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
                 <Row
                   className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
                 >
-                  <TbDropletHeart className="h-6 w-6 stroke-2" />
+                  <TbDroplet className="h-6 w-6 stroke-2" />
                   <div className="text-ink-600">
                     {formatWithToken({
                       amount: contract.totalLiquidity,

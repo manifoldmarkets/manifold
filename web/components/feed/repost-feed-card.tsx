@@ -10,7 +10,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import router from 'next/router'
 import { memo, useState } from 'react'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { TbDroplet, TbMoneybag } from 'react-icons/tb'
 import { Button } from 'web/components/buttons/button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
@@ -257,7 +257,7 @@ export const BottomActionRow = (props: {
               <Row
                 className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
               >
-                <TbDropletHeart className="h-6 w-6 stroke-2" />
+                <TbDroplet className="h-6 w-6 stroke-2" />
                 <div className="text-ink-600">
                   {formatWithToken({
                     amount: contract.totalLiquidity,
