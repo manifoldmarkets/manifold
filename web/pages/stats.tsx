@@ -44,6 +44,7 @@ export const getStaticProps = async () => {
       activeUserManaStats,
       topMarketsYesterday,
       shopStats,
+      idenfyStats,
     ] = await Promise.all([
       getStats(),
       api('get-mana-summary-stats', { limitDays: 100 }),
@@ -60,6 +61,7 @@ export const getStaticProps = async () => {
       api('get-active-user-mana-stats', { limitDays: 100 }),
       api('get-top-markets-yesterday', {}),
       api('get-shop-stats', { limitDays: 100 }),
+      api('get-idenfy-stats', { limitDays: 100 }),
     ])
 
     return {
@@ -71,6 +73,7 @@ export const getStaticProps = async () => {
         activeUserManaStats,
         topMarketsYesterday,
         shopStats,
+        idenfyStats,
         totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
@@ -118,6 +121,16 @@ type ShopStats = {
   }[]
 }
 
+type IdenfyStats = {
+  dailyStats: {
+    date: string
+    approvals: number
+    denials: number
+    pending: number
+    suspected: number
+  }[]
+}
+
 export default function Analytics(props: {
   stats: rowfor<'daily_stats'>[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
@@ -126,6 +139,7 @@ export default function Analytics(props: {
   activeUserManaStats: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats
+  idenfyStats?: IdenfyStats
   totalRedeemable: number
 }) {
   const {
@@ -136,6 +150,7 @@ export default function Analytics(props: {
     activeUserManaStats,
     topMarketsYesterday,
     shopStats,
+    idenfyStats,
   } = props
 
   if (!stats) {
@@ -157,6 +172,7 @@ export default function Analytics(props: {
         activeUserManaStats={activeUserManaStats}
         topMarketsYesterday={topMarketsYesterday}
         shopStats={shopStats}
+        idenfyStats={idenfyStats}
       />
     </Page>
   )
@@ -166,8 +182,9 @@ function ActivityTab(props: {
   stats: rowfor<'daily_stats'>[]
   setStats: (stats: rowfor<'daily_stats'>[]) => void
   topMarketsYesterday?: TopMarketsYesterdayData
+  idenfyStats?: IdenfyStats
 }) {
-  const { stats, setStats, topMarketsYesterday } = props
+  const { stats, setStats, topMarketsYesterday, idenfyStats } = props
   const dataFor = useCallback(dataForStats(stats), [stats])
   const current = stats[stats.length - 1]
   const avgDAUlastWeek = average(
@@ -352,6 +369,55 @@ function ActivityTab(props: {
         ]}
       />
       <Spacer h={8} />
+      {idenfyStats && idenfyStats.dailyStats.length > 0 && (
+        <>
+          <Title>Identity Verifications</Title>
+          <p className="text-ink-500">
+            Daily identity verification attempts and their outcomes.
+          </p>
+          <Spacer h={4} />
+          <Tabs
+            className="mb-4"
+            defaultIndex={0}
+            tabs={[
+              {
+                title: 'Approvals',
+                content: (
+                  <DailyChart
+                    values={idenfyStats.dailyStats.map((d) => ({
+                      x: d.date,
+                      y: d.approvals,
+                    }))}
+                  />
+                ),
+              },
+              {
+                title: 'Denials',
+                content: (
+                  <DailyChart
+                    values={idenfyStats.dailyStats.map((d) => ({
+                      x: d.date,
+                      y: d.denials,
+                    }))}
+                  />
+                ),
+              },
+              {
+                title: 'Approvals vs Denials',
+                content: (
+                  <DailyChart
+                    values={idenfyStats.dailyStats.map((d) => ({
+                      x: d.date,
+                      y: d.approvals + d.denials,
+                    }))}
+                  />
+                ),
+              },
+            ]}
+          />
+          <Spacer h={8} />
+        </>
+      )}
       <Title>Activation rate</Title>
       <p className="text-ink-500">
         Out of all new users, how many placed at least one {TRADE_TERM}?
@@ -1048,6 +1114,7 @@ export function CustomAnalytics(props: {
   activeUserManaStats?: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats
+  idenfyStats?: IdenfyStats
 }) {
   const {
     stats,
@@ -1057,6 +1124,7 @@ export function CustomAnalytics(props: {
     activeUserManaStats,
     topMarketsYesterday,
     shopStats,
+    idenfyStats,
   } = props
   const [localStats, setLocalStats] = useState(stats)
 
@@ -1073,6 +1141,7 @@ export function CustomAnalytics(props: {
                 stats={localStats}
                 setStats={setLocalStats}
                 topMarketsYesterday={topMarketsYesterday}
+                idenfyStats={idenfyStats}
               />
             ),
           },

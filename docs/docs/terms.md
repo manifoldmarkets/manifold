@@ -36,7 +36,7 @@ All services and virtual currency offerings on the Site are subject to availabil
 
 **6. PURCHASES AND PAYMENT**
 
-We accept payments in USDC (USD Coin) and other supported cryptocurrencies via blockchain networks. 
+We accept payments in USDC (USD Coin) and other supported cryptocurrencies via blockchain networks.
 
 **6.1 Cryptocurrency Payments**
 

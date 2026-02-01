@@ -3647,6 +3647,26 @@ export const API = (_apiTypeCheck = {
       verifiedTime: number | null
     },
   },
+  'get-idenfy-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z
+      .object({
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+    returns: {} as {
+      dailyStats: {
+        date: string
+        approvals: number
+        denials: number
+        pending: number
+        suspected: number
+      }[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
