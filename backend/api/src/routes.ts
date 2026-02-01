@@ -5,6 +5,7 @@ import { getBalanceChanges } from 'api/get-balance-changes'
 import { getBestComments } from 'api/get-best-comments'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getFeed } from 'api/get-feed'
+import { getUnifiedFeed } from 'api/get-unified-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
 import { getTopMarketsYesterday } from 'api/get-top-markets-yesterday'
@@ -368,6 +369,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-otp': requestOTP,
   'multi-sell': multiSell,
   'get-feed': getFeed,
+  'get-unified-feed': getUnifiedFeed,
   'get-mana-supply': getManaSupply,
   'update-mod-report': updateModReport,
   'get-mod-reports': getModReports,

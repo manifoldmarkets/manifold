@@ -2458,6 +2458,41 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-unified-feed': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      // Personalized feed data
+      contracts: Contract[]
+      comments: ContractComment[]
+      bets: Bet[]
+      reposts: Repost[]
+      idsToReason: { [id: string]: string }
+      // Boosted markets
+      boostedContracts: Contract[]
+      // Activity data
+      activityBets: Bet[]
+      activityComments: CommentWithTotalReplies[]
+      activityNewContracts: Contract[]
+      activityRelatedContracts: Contract[]
+    },
+    props: z
+      .object({
+        userId: z.string().optional(),
+        feedLimit: z.coerce.number().gt(0).lte(50).default(5),
+        feedOffset: z.coerce.number().gte(0).default(0),
+        activityLimit: z.coerce.number().gt(0).lte(50).default(10),
+        activityOffset: z.coerce.number().gte(0).default(0),
+        ignoreContractIds: z.array(z.string()).optional(),
+        blockedUserIds: z.array(z.string()).optional(),
+        blockedGroupSlugs: z.array(z.string()).optional(),
+        blockedContractIds: z.array(z.string()).optional(),
+        minBetAmount: z.coerce.number().optional(),
+      })
+      .strict(),
+  },
   'get-sports-games': {
     method: 'GET',
     visibility: 'public',
