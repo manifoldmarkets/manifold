@@ -7,7 +7,7 @@ import { groupBy, orderBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
-import { BinaryContract, Contract, contractPath, MarketContract, StonkContract } from 'common/contract'
+import { BinaryContract, Contract, contractPath, CPMMMultiContract, MarketContract, StonkContract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
@@ -30,6 +30,7 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { track } from 'web/lib/service/analytics'
 import { BetButton } from 'web/components/bet/feed-bet-button'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 
 export type ActivityItem = {
   type: 'bet' | 'comment' | 'market'
@@ -161,6 +162,16 @@ export const ActivityCard = memo(function ActivityCard(props: {
               </div>
             )}
           </Row>
+        )}
+
+        {/* Answer bars for multiple choice markets */}
+        {contract.outcomeType === 'MULTIPLE_CHOICE' && contract.mechanism === 'cpmm-multi-1' && (
+          <div onClick={(e) => e.stopPropagation()} className="mt-2">
+            <SimpleAnswerBars
+              contract={contract as CPMMMultiContract}
+              maxAnswers={5}
+            />
+          </div>
         )}
       </Col>
 
