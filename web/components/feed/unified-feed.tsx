@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { groupBy, keyBy, orderBy, uniqBy } from 'lodash'
 
-import { APIResponse } from 'common/api/schema'
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies } from 'common/comment'
 import { Contract } from 'common/contract'
@@ -18,20 +17,20 @@ import { api } from 'web/lib/api/api'
 import { UnifiedFeedCard } from './unified-feed-card'
 import { ActivityCard, ActivityGroup, ActivityItem } from './activity-card'
 
-type FeedData = {
+type UnifiedFeedData = {
+  // Personalized feed
   contracts: Contract[]
   comments: CommentWithTotalReplies[]
   bets: Bet[]
   reposts: Repost[]
   idsToReason: Record<string, string>
+  // Activity
+  activityBets: Bet[]
+  activityComments: CommentWithTotalReplies[]
+  activityNewContracts: Contract[]
+  activityRelatedContracts: Contract[]
+  // Offsets
   feedOffset: number
-}
-
-type ActivityData = {
-  bets: Bet[]
-  comments: CommentWithTotalReplies[]
-  newContracts: Contract[]
-  relatedContracts: Contract[]
   activityOffset: number
 }
 
@@ -40,20 +39,17 @@ type FeedItem =
   | { type: 'contract'; contract: Contract; repost?: Repost; comment?: CommentWithTotalReplies; bet?: Bet; reason?: string; time: number }
   | { type: 'activity'; group: ActivityGroup; time: number }
 
-const defaultFeedData: FeedData = {
+const defaultFeedData: UnifiedFeedData = {
   contracts: [],
   comments: [],
   bets: [],
   reposts: [],
   idsToReason: {},
+  activityBets: [],
+  activityComments: [],
+  activityNewContracts: [],
+  activityRelatedContracts: [],
   feedOffset: 0,
-}
-
-const defaultActivityData: ActivityData = {
-  bets: [],
-  comments: [],
-  newContracts: [],
-  relatedContracts: [],
   activityOffset: 0,
 }
 
@@ -61,121 +57,78 @@ export function UnifiedFeed(props: { className?: string }) {
   const { className } = props
   const user = useUser()
   const privateUser = usePrivateUser()
-  const isLoggedIn = !!user
 
   const feedLimit = 5
   const activityLimit = 10
 
-  // Feed data (personalized or trending contracts)
-  const [feedData, setFeedData] = usePersistentInMemoryState<FeedData>(
+  const [feedData, setFeedData] = usePersistentInMemoryState<UnifiedFeedData>(
     defaultFeedData,
-    `unified-feed-data-v2-${user?.id ?? 'logged-out'}`
-  )
-
-  // Activity data (global site activity)
-  const [activityData, setActivityData] = usePersistentInMemoryState<ActivityData>(
-    defaultActivityData,
-    `unified-activity-data-v2-${user?.id ?? 'logged-out'}`
+    `unified-feed-data-v3-${user?.id ?? 'logged-out'}`
   )
 
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(
-    feedData.contracts.length === 0 && activityData.bets.length === 0
+    feedData.contracts.length === 0 && feedData.activityBets.length === 0
   )
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
   const blockedContractIds = privateUser?.blockedContractIds ?? []
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  // Fetch personalized feed OR trending contracts
-  const fetchFeed = useEvent(async () => {
-    try {
-      if (isLoggedIn && user) {
-        const data = await api('get-feed', {
-          userId: user.id,
-          offset: feedData.feedOffset,
-          limit: feedLimit,
-          ignoreContractIds: feedData.contracts.map((c) => c.id),
-        })
-
-        setFeedData((prev) => ({
-          contracts: uniqBy([...prev.contracts, ...data.contracts], 'id'),
-          comments: uniqBy([...prev.comments, ...data.comments], 'id'),
-          bets: uniqBy([...prev.bets, ...data.bets], 'id'),
-          reposts: uniqBy([...prev.reposts, ...data.reposts], 'id'),
-          idsToReason: { ...prev.idsToReason, ...data.idsToReason },
-          feedOffset: prev.feedOffset + feedLimit,
-        }))
-      } else {
-        const contracts = await api('search-markets-full', {
-          term: '',
-          filter: 'open',
-          sort: 'score',
-          limit: feedLimit,
-          offset: feedData.feedOffset,
-        })
-
-        setFeedData((prev) => ({
-          ...prev,
-          contracts: uniqBy([...prev.contracts, ...contracts], 'id'),
-          feedOffset: prev.feedOffset + feedLimit,
-        }))
-      }
-    } catch (e) {
-      console.error('Error fetching feed:', e)
-    }
-  })
-
-  // Fetch global site activity
-  const fetchActivity = useEvent(async () => {
-    try {
-      const existingContractIds = [
-        ...feedData.contracts.map((c) => c.id),
-        ...activityData.relatedContracts.map((c) => c.id),
-      ]
-
-      const data = await api('get-site-activity', {
-        limit: activityLimit,
-        offset: activityData.activityOffset,
-        types: ['bets', 'comments', 'markets'],
-        blockedUserIds,
-        blockedGroupSlugs,
-        blockedContractIds: [...blockedContractIds, ...existingContractIds],
-        minBetAmount: 100, // Only show notable bets
-      })
-
-      setActivityData((prev) => ({
-        bets: uniqBy([...prev.bets, ...data.bets], 'id'),
-        comments: uniqBy([...prev.comments, ...data.comments], 'id'),
-        newContracts: uniqBy([...prev.newContracts, ...data.newContracts], 'id'),
-        relatedContracts: uniqBy([...prev.relatedContracts, ...data.relatedContracts], 'id'),
-        activityOffset: prev.activityOffset + activityLimit,
-      }))
-    } catch (e) {
-      console.error('Error fetching activity:', e)
-    }
-  })
-
-  // Fetch both in parallel
+  // Single unified API call for both feed and activity
   const fetchMore = useEvent(async () => {
     if (loading) return
     setLoading(true)
 
-    await Promise.all([fetchFeed(), fetchActivity()])
+    try {
+      const existingContractIds = [
+        ...feedData.contracts.map((c) => c.id),
+        ...feedData.activityRelatedContracts.map((c) => c.id),
+      ]
 
-    setLoading(false)
-    setInitialLoading(false)
+      const data = await api('get-unified-feed', {
+        userId: user?.id,
+        feedLimit,
+        feedOffset: feedData.feedOffset,
+        activityLimit,
+        activityOffset: feedData.activityOffset,
+        ignoreContractIds: existingContractIds,
+        blockedUserIds,
+        blockedGroupSlugs,
+        blockedContractIds,
+        minBetAmount: 100,
+      })
+
+      setFeedData((prev) => ({
+        contracts: uniqBy([...prev.contracts, ...data.contracts], 'id'),
+        comments: uniqBy([...prev.comments, ...data.comments], 'id'),
+        bets: uniqBy([...prev.bets, ...data.bets], 'id'),
+        reposts: uniqBy([...prev.reposts, ...data.reposts], 'id'),
+        idsToReason: { ...prev.idsToReason, ...data.idsToReason },
+        activityBets: uniqBy([...prev.activityBets, ...data.activityBets], 'id'),
+        activityComments: uniqBy([...prev.activityComments, ...data.activityComments], 'id'),
+        activityNewContracts: uniqBy([...prev.activityNewContracts, ...data.activityNewContracts], 'id'),
+        activityRelatedContracts: uniqBy([...prev.activityRelatedContracts, ...data.activityRelatedContracts], 'id'),
+        feedOffset: prev.feedOffset + feedLimit,
+        activityOffset: prev.activityOffset + activityLimit,
+      }))
+    } catch (e) {
+      console.error('Error fetching unified feed:', e)
+    } finally {
+      setLoading(false)
+      setInitialLoading(false)
+    }
   })
 
   // Initial fetch
   useEffect(() => {
-    if (feedData.contracts.length === 0 && activityData.bets.length === 0) {
+    if (feedData.contracts.length === 0 && feedData.activityBets.length === 0) {
       fetchMore()
     }
   }, [user?.id])
 
   // Build unified feed items
-  const feedItems = buildUnifiedFeed(feedData, activityData)
+  const feedItems = buildUnifiedFeed(feedData)
 
   if (initialLoading) {
     return <LoadingCards />
@@ -235,7 +188,7 @@ export function UnifiedFeed(props: { className?: string }) {
   )
 }
 
-function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedItem[] {
+function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
   const feedItems: FeedItem[] = []
   const activityFeedItems: FeedItem[] = []
   const seenContractIds = new Set<string>()
@@ -270,15 +223,15 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
 
   // Build activity groups from global activity
   const activityContracts = [
-    ...activityData.newContracts,
-    ...activityData.relatedContracts,
+    ...feedData.activityNewContracts,
+    ...feedData.activityRelatedContracts,
   ]
   const contractsById = keyBy(activityContracts, 'id')
 
   // Convert activity data to ActivityItems
   const activityItems: ActivityItem[] = []
 
-  for (const bet of activityData.bets) {
+  for (const bet of feedData.activityBets) {
     if (seenContractIds.has(bet.contractId)) continue
     activityItems.push({
       type: 'bet',
@@ -289,7 +242,7 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
     })
   }
 
-  for (const comment of activityData.comments) {
+  for (const comment of feedData.activityComments) {
     if (seenContractIds.has(comment.contractId)) continue
     activityItems.push({
       type: 'comment',
@@ -300,7 +253,7 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
     })
   }
 
-  for (const contract of activityData.newContracts) {
+  for (const contract of feedData.activityNewContracts) {
     if (seenContractIds.has(contract.id)) continue
     activityItems.push({
       type: 'market',
@@ -337,16 +290,13 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
   }
 
   // Alternate between feed items and activity items
-  // This ensures a good mix rather than all activity at top
   const result: FeedItem[] = []
   const maxLen = Math.max(feedItems.length, activityFeedItems.length)
 
   for (let i = 0; i < maxLen; i++) {
-    // Add a feed item first (personalized content)
     if (i < feedItems.length) {
       result.push(feedItems[i])
     }
-    // Then add an activity item
     if (i < activityFeedItems.length) {
       result.push(activityFeedItems[i])
     }
