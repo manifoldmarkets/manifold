@@ -325,40 +325,47 @@ const CommentLog = memo(function CommentLog(props: {
 
   const commenter = useDisplayUserById(userId)
 
+  const navigateToComment = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
+    track('unified feed comment click', {
+      commentId: comment.id,
+      userId: userId,
+      contractSlug: contractSlug,
+    })
+  }
+
   return (
-    <Col
-      className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md p-1')}
-      onClick={(e) => {
-        e.stopPropagation()
-        router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
-        track('unified feed comment click', {
-          commentId: comment.id,
-          userId: userId,
-          contractSlug: contractSlug,
-        })
-      }}
-    >
-      <Row className="items-center gap-2 text-sm">
-        <UserHovercard userId={userId}>
-          <Row className="items-center gap-2">
-            <Avatar
-              avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
-              username={commenter?.username ?? userUsername}
-              size="xs"
-              entitlements={commenter?.entitlements}
-            />
-            <span className="text-ink-700 font-medium">
-              {commenter?.name ?? userName}
-            </span>
-          </Row>
-        </UserHovercard>
-        <span className="text-ink-500">{isReply ? 'replied' : 'commented'}</span>
-        <RelativeTimestamp time={createdTime} shortened className="text-ink-400" />
-      </Row>
-      <div className="text-ink-600 ml-7 line-clamp-2 text-sm">
-        <Content size="sm" content={content} />
+    <Col className="rounded-md p-1">
+      <div
+        className="hover:bg-canvas-100 cursor-pointer rounded-md"
+        onClick={navigateToComment}
+      >
+        <Row className="items-center gap-2 text-sm">
+          <UserHovercard userId={userId}>
+            <Row className="items-center gap-2">
+              <Avatar
+                avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
+                username={commenter?.username ?? userUsername}
+                size="xs"
+                entitlements={commenter?.entitlements}
+              />
+              <span className="text-ink-700 font-medium">
+                {commenter?.name ?? userName}
+              </span>
+            </Row>
+          </UserHovercard>
+          <span className="text-ink-500">{isReply ? 'replied' : 'commented'}</span>
+          <RelativeTimestamp time={createdTime} shortened className="text-ink-400" />
+        </Row>
+        <div className="text-ink-600 ml-7 line-clamp-2 text-sm">
+          <Content size="sm" content={content} />
+        </div>
       </div>
-      <Row className="ml-7 items-center justify-end">
+      <Row
+        className="ml-7 items-center justify-end"
+        onClick={(e) => e.stopPropagation()}
+      >
         <LikeAndDislikeComment
           comment={comment}
           trackingLocation={'unified-feed'}
