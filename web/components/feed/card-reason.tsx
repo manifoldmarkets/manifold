@@ -13,7 +13,13 @@ import { FaGem } from 'react-icons/fa'
 import { Repost } from 'common/repost'
 
 export function CardReason(props: {
-  reason: 'importance' | 'freshness' | 'conversion' | 'followed' | 'reposted' | 'boosted'
+  reason:
+    | 'importance'
+    | 'freshness'
+    | 'conversion'
+    | 'followed'
+    | 'reposted'
+    | 'boosted'
   repost?: Repost
   probChange?: number
   since?: number

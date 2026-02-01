@@ -7,7 +7,16 @@ import { groupBy, orderBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
-import { BinaryContract, Contract, contractPath, CPMMMultiContract, CPMMNumericContract, MarketContract, PollContract, StonkContract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  contractPath,
+  CPMMMultiContract,
+  CPMMNumericContract,
+  MarketContract,
+  PollContract,
+  StonkContract,
+} from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
@@ -122,7 +131,9 @@ export const ActivityCard = memo(function ActivityCard(props: {
                   name: contract.creatorName,
                   username: contract.creatorUsername,
                 }}
-                className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
+                className={
+                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+                }
               />
             </Row>
           </UserHovercard>
@@ -154,27 +165,30 @@ export const ActivityCard = memo(function ActivityCard(props: {
               contract={contract}
               chanceLabel
             />
-            {!contract.isResolved && contract.closeTime && contract.closeTime > Date.now() && (
-              <div onClick={(e) => e.stopPropagation()}>
-                <BetButton
-                  contract={contract as BinaryContract}
-                  user={user}
-                  className="h-min"
-                />
-              </div>
-            )}
+            {!contract.isResolved &&
+              contract.closeTime &&
+              contract.closeTime > Date.now() && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <BetButton
+                    contract={contract as BinaryContract}
+                    user={user}
+                    className="h-min"
+                  />
+                </div>
+              )}
           </Row>
         )}
 
         {/* Answer bars for multiple choice markets */}
-        {contract.outcomeType === 'MULTIPLE_CHOICE' && contract.mechanism === 'cpmm-multi-1' && (
-          <div onClick={(e) => e.stopPropagation()} className="mt-2">
-            <SimpleAnswerBars
-              contract={contract as CPMMMultiContract}
-              maxAnswers={5}
-            />
-          </div>
-        )}
+        {contract.outcomeType === 'MULTIPLE_CHOICE' &&
+          contract.mechanism === 'cpmm-multi-1' && (
+            <div onClick={(e) => e.stopPropagation()} className="mt-2">
+              <SimpleAnswerBars
+                contract={contract as CPMMMultiContract}
+                maxAnswers={5}
+              />
+            </div>
+          )}
 
         {/* Poll options */}
         {contract.outcomeType === 'POLL' && (
@@ -190,14 +204,16 @@ export const ActivityCard = memo(function ActivityCard(props: {
               className="text-lg font-bold"
               contract={contract}
             />
-            {!contract.isResolved && contract.closeTime && contract.closeTime > Date.now() && (
-              <div onClick={(e) => e.stopPropagation()}>
-                <NumericBetButton
-                  contract={contract as CPMMNumericContract}
-                  user={user}
-                />
-              </div>
-            )}
+            {!contract.isResolved &&
+              contract.closeTime &&
+              contract.closeTime > Date.now() && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <NumericBetButton
+                    contract={contract as CPMMNumericContract}
+                    user={user}
+                  />
+                </div>
+              )}
           </Row>
         )}
       </Col>
@@ -285,8 +301,13 @@ export const ActivityCard = memo(function ActivityCard(props: {
 const MarketCreatedLog = memo(function MarketCreatedLog(props: {
   contract: Contract
 }) {
-  const { creatorId, creatorAvatarUrl, creatorUsername, creatorName, createdTime } =
-    props.contract
+  const {
+    creatorId,
+    creatorAvatarUrl,
+    creatorUsername,
+    creatorName,
+    createdTime,
+  } = props.contract
 
   const creator = useDisplayUserById(creatorId)
 
@@ -300,13 +321,15 @@ const MarketCreatedLog = memo(function MarketCreatedLog(props: {
             size="xs"
             entitlements={creator?.entitlements}
           />
-          <span className="font-medium">
-            {creator?.name ?? creatorName}
-          </span>
+          <span className="font-medium">{creator?.name ?? creatorName}</span>
         </Row>
       </UserHovercard>
       <span>created this market</span>
-      <RelativeTimestamp time={createdTime} shortened className="text-ink-400" />
+      <RelativeTimestamp
+        time={createdTime}
+        shortened
+        className="text-ink-400"
+      />
     </Row>
   )
 })
@@ -320,8 +343,15 @@ const CommentLog = memo(function CommentLog(props: {
   hiddenReplies?: number
 }) {
   const { comment, privateUser, user, router, isReply } = props
-  const { userName, content, userId, userUsername, userAvatarUrl, createdTime, contractSlug } =
-    comment
+  const {
+    userName,
+    content,
+    userId,
+    userUsername,
+    userAvatarUrl,
+    createdTime,
+    contractSlug,
+  } = comment
 
   const commenter = useDisplayUserById(userId)
 
@@ -355,8 +385,14 @@ const CommentLog = memo(function CommentLog(props: {
               </span>
             </Row>
           </UserHovercard>
-          <span className="text-ink-500">{isReply ? 'replied' : 'commented'}</span>
-          <RelativeTimestamp time={createdTime} shortened className="text-ink-400" />
+          <span className="text-ink-500">
+            {isReply ? 'replied' : 'commented'}
+          </span>
+          <RelativeTimestamp
+            time={createdTime}
+            shortened
+            className="text-ink-400"
+          />
         </Row>
         <div className="text-ink-600 ml-7 line-clamp-2 text-sm">
           <Content size="sm" content={content} />

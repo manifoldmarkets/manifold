@@ -38,7 +38,15 @@ type UnifiedFeedData = {
 
 // A feed item can be either a personalized contract card or an activity group
 type FeedItem =
-  | { type: 'contract'; contract: Contract; repost?: Repost; comment?: CommentWithTotalReplies; bet?: Bet; reason?: string; time: number }
+  | {
+      type: 'contract'
+      contract: Contract
+      repost?: Repost
+      comment?: CommentWithTotalReplies
+      bet?: Bet
+      reason?: string
+      time: number
+    }
   | { type: 'activity'; group: ActivityGroup; time: number }
 
 const defaultFeedData: UnifiedFeedData = {
@@ -112,12 +120,31 @@ export function UnifiedFeed(props: { className?: string }) {
         comments: uniqBy([...prev.comments, ...data.comments], 'id'),
         bets: uniqBy([...prev.bets, ...data.bets], 'id'),
         reposts: uniqBy([...prev.reposts, ...data.reposts], 'id'),
-        idsToReason: { ...prev.idsToReason, ...data.idsToReason, ...boostedReasons },
-        boostedContracts: uniqBy([...prev.boostedContracts, ...data.boostedContracts], 'id'),
-        activityBets: uniqBy([...prev.activityBets, ...data.activityBets], 'id'),
-        activityComments: uniqBy([...prev.activityComments, ...data.activityComments], 'id'),
-        activityNewContracts: uniqBy([...prev.activityNewContracts, ...data.activityNewContracts], 'id'),
-        activityRelatedContracts: uniqBy([...prev.activityRelatedContracts, ...data.activityRelatedContracts], 'id'),
+        idsToReason: {
+          ...prev.idsToReason,
+          ...data.idsToReason,
+          ...boostedReasons,
+        },
+        boostedContracts: uniqBy(
+          [...prev.boostedContracts, ...data.boostedContracts],
+          'id'
+        ),
+        activityBets: uniqBy(
+          [...prev.activityBets, ...data.activityBets],
+          'id'
+        ),
+        activityComments: uniqBy(
+          [...prev.activityComments, ...data.activityComments],
+          'id'
+        ),
+        activityNewContracts: uniqBy(
+          [...prev.activityNewContracts, ...data.activityNewContracts],
+          'id'
+        ),
+        activityRelatedContracts: uniqBy(
+          [...prev.activityRelatedContracts, ...data.activityRelatedContracts],
+          'id'
+        ),
         feedOffset: prev.feedOffset + feedLimit,
         activityOffset: prev.activityOffset + activityLimit,
       }))
@@ -352,7 +379,10 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
   }
 
   // Calculate interval for remaining boosted items
-  const interval = Math.max(4, Math.floor(remainingMixed.length / remainingBoosted.length))
+  const interval = Math.max(
+    4,
+    Math.floor(remainingMixed.length / remainingBoosted.length)
+  )
 
   for (let i = 0; i < remainingMixed.length; i++) {
     result.push(remainingMixed[i])
