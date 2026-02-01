@@ -24,6 +24,8 @@ type UnifiedFeedData = {
   bets: Bet[]
   reposts: Repost[]
   idsToReason: Record<string, string>
+  // Boosted markets
+  boostedContracts: Contract[]
   // Activity
   activityBets: Bet[]
   activityComments: CommentWithTotalReplies[]
@@ -45,6 +47,7 @@ const defaultFeedData: UnifiedFeedData = {
   bets: [],
   reposts: [],
   idsToReason: {},
+  boostedContracts: [],
   activityBets: [],
   activityComments: [],
   activityNewContracts: [],
@@ -63,7 +66,7 @@ export function UnifiedFeed(props: { className?: string }) {
 
   const [feedData, setFeedData] = usePersistentInMemoryState<UnifiedFeedData>(
     defaultFeedData,
-    `unified-feed-data-v3-${user?.id ?? 'logged-out'}`
+    `unified-feed-data-v4-${user?.id ?? 'logged-out'}`
   )
 
   const [loading, setLoading] = useState(false)
@@ -99,12 +102,18 @@ export function UnifiedFeed(props: { className?: string }) {
         minBetAmount: 100,
       })
 
+      // Add 'boosted' reason for boosted contracts
+      const boostedReasons = Object.fromEntries(
+        data.boostedContracts.map((c) => [c.id, 'boosted'])
+      )
+
       setFeedData((prev) => ({
         contracts: uniqBy([...prev.contracts, ...data.contracts], 'id'),
         comments: uniqBy([...prev.comments, ...data.comments], 'id'),
         bets: uniqBy([...prev.bets, ...data.bets], 'id'),
         reposts: uniqBy([...prev.reposts, ...data.reposts], 'id'),
-        idsToReason: { ...prev.idsToReason, ...data.idsToReason },
+        idsToReason: { ...prev.idsToReason, ...data.idsToReason, ...boostedReasons },
+        boostedContracts: uniqBy([...prev.boostedContracts, ...data.boostedContracts], 'id'),
         activityBets: uniqBy([...prev.activityBets, ...data.activityBets], 'id'),
         activityComments: uniqBy([...prev.activityComments, ...data.activityComments], 'id'),
         activityNewContracts: uniqBy([...prev.activityNewContracts, ...data.activityNewContracts], 'id'),
@@ -189,9 +198,23 @@ export function UnifiedFeed(props: { className?: string }) {
 }
 
 function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
+  const boostedItems: FeedItem[] = []
   const feedItems: FeedItem[] = []
   const activityFeedItems: FeedItem[] = []
   const seenContractIds = new Set<string>()
+
+  // Build boosted contract cards first (they appear at top)
+  for (const contract of feedData.boostedContracts) {
+    if (seenContractIds.has(contract.id)) continue
+    seenContractIds.add(contract.id)
+
+    boostedItems.push({
+      type: 'contract',
+      contract,
+      reason: 'boosted',
+      time: Date.now(), // Boosted items stay at top
+    })
+  }
 
   // Build personalized contract cards
   for (const contract of feedData.contracts) {
@@ -290,16 +313,60 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
   }
 
   // Alternate between feed items and activity items
-  const result: FeedItem[] = []
+  const mixedItems: FeedItem[] = []
   const maxLen = Math.max(feedItems.length, activityFeedItems.length)
 
   for (let i = 0; i < maxLen; i++) {
     if (i < feedItems.length) {
-      result.push(feedItems[i])
+      mixedItems.push(feedItems[i])
     }
     if (i < activityFeedItems.length) {
-      result.push(activityFeedItems[i])
+      mixedItems.push(activityFeedItems[i])
     }
+  }
+
+  // Interleave boosted items: first one near top, rest spread throughout
+  if (boostedItems.length === 0) {
+    return mixedItems
+  }
+
+  const result: FeedItem[] = []
+  let boostedIndex = 0
+
+  // Put first boosted item at position 1 (after first regular item)
+  if (mixedItems.length > 0) {
+    result.push(mixedItems[0])
+  }
+  if (boostedItems.length > 0) {
+    result.push(boostedItems[0])
+    boostedIndex = 1
+  }
+
+  // Spread remaining boosted items throughout the rest of the feed
+  const remainingMixed = mixedItems.slice(1)
+  const remainingBoosted = boostedItems.slice(1)
+
+  if (remainingBoosted.length === 0) {
+    result.push(...remainingMixed)
+    return result
+  }
+
+  // Calculate interval for remaining boosted items
+  const interval = Math.max(4, Math.floor(remainingMixed.length / remainingBoosted.length))
+
+  for (let i = 0; i < remainingMixed.length; i++) {
+    result.push(remainingMixed[i])
+    // Insert a boosted item every `interval` items
+    if (boostedIndex < boostedItems.length && (i + 1) % interval === 0) {
+      result.push(boostedItems[boostedIndex])
+      boostedIndex++
+    }
+  }
+
+  // Add any remaining boosted items at the end
+  while (boostedIndex < boostedItems.length) {
+    result.push(boostedItems[boostedIndex])
+    boostedIndex++
   }
 
   return result

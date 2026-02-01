@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { HiSparkles } from 'react-icons/hi'
+import { BsRocketTakeoff } from 'react-icons/bs'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
@@ -12,7 +13,7 @@ import { FaGem } from 'react-icons/fa'
 import { Repost } from 'common/repost'
 
 export function CardReason(props: {
-  reason: 'importance' | 'freshness' | 'conversion' | 'followed' | 'reposted'
+  reason: 'importance' | 'freshness' | 'conversion' | 'followed' | 'reposted' | 'boosted'
   repost?: Repost
   probChange?: number
   since?: number
@@ -79,6 +80,16 @@ export function CardReason(props: {
             shortened={true}
             className="text-ink-400 -ml-1"
           />
+        </Row>
+      </Tooltip>
+    )
+  } else if (reason === 'boosted') {
+    return (
+      <Tooltip text="Boosted market">
+        <Row
+          className={clsx('text-ink-400 items-center gap-1 text-sm', className)}
+        >
+          <BsRocketTakeoff className="h-4 w-4 text-fuchsia-500" />
         </Row>
       </Tooltip>
     )

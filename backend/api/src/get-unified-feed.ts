@@ -65,8 +65,8 @@ export const getUnifiedFeed: APIHandler<'get-unified-feed'> = async (props) => {
     ...(ignoreContractIds ?? []),
   ]
 
-  // Run feed and activity queries in parallel
-  const [feedResult, activityResult] = await Promise.all([
+  // Run feed, activity, and boosted queries in parallel
+  const [feedResult, activityResult, boostedContracts] = await Promise.all([
     userId
       ? fetchPersonalizedFeed(
           pg,
@@ -86,12 +86,14 @@ export const getUnifiedFeed: APIHandler<'get-unified-feed'> = async (props) => {
       blockedContractIds,
       minBetAmount
     ),
+    fetchBoostedContracts(pg, blockedContractIds, blockedUserIds),
   ])
 
   log('unified feed queries completed in (s):', (Date.now() - startTime) / 1000)
 
   return {
     ...feedResult,
+    boostedContracts,
     activityBets: activityResult.bets,
     activityComments: activityResult.comments,
     activityNewContracts: activityResult.newContracts,
@@ -474,5 +476,26 @@ function hasContentWithText(
   const contentStr = JSON.stringify(content ?? {})
   return texts.some((text) =>
     contentStr.toLowerCase().includes(text.toLowerCase())
+  )
+}
+
+// Fetch currently boosted markets
+async function fetchBoostedContracts(
+  pg: ReturnType<typeof createSupabaseDirectClient>,
+  blockedContractIds: string[],
+  blockedUserIds: string[]
+) {
+  return pg.map(
+    `select ${contractColumnsToSelect} from contracts c
+     where c.boosted = true
+       and c.close_time > now()
+       and c.visibility = 'public'
+       and is_valid_contract(c)
+       ${blockedContractIds.length > 0 ? 'and c.id != ALL($1)' : ''}
+       ${blockedUserIds.length > 0 ? 'and c.creator_id != ALL($2)' : ''}
+     order by c.importance_score desc
+     limit 5`,
+    [blockedContractIds, blockedUserIds],
+    convertContract
   )
 }

@@ -2470,6 +2470,8 @@ export const API = (_apiTypeCheck = {
       bets: Bet[]
       reposts: Repost[]
       idsToReason: { [id: string]: string }
+      // Boosted markets
+      boostedContracts: Contract[]
       // Activity data
       activityBets: Bet[]
       activityComments: CommentWithTotalReplies[]
