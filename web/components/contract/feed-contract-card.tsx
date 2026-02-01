@@ -332,8 +332,7 @@ export function FeedContractCard(props: {
             {!hideTags && (
               <CategoryTags
                 categories={topics.data}
-                // hide tags after first line. (tags are 24 px tall)
-                className="h-6 flex-wrap overflow-hidden"
+                className="flex-wrap gap-1"
               />
             )}
             <BottomActionRow
