@@ -7,7 +7,7 @@ import { groupBy, orderBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
-import { BinaryContract, Contract, contractPath, CPMMMultiContract, MarketContract, StonkContract } from 'common/contract'
+import { BinaryContract, Contract, contractPath, CPMMMultiContract, CPMMNumericContract, MarketContract, PollContract, StonkContract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
@@ -30,7 +30,9 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { track } from 'web/lib/service/analytics'
 import { BetButton } from 'web/components/bet/feed-bet-button'
+import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { PollPanel } from 'web/components/poll/poll-panel'
 
 export type ActivityItem = {
   type: 'bet' | 'comment' | 'market'
@@ -172,6 +174,31 @@ export const ActivityCard = memo(function ActivityCard(props: {
               maxAnswers={5}
             />
           </div>
+        )}
+
+        {/* Poll options */}
+        {contract.outcomeType === 'POLL' && (
+          <div onClick={(e) => e.stopPropagation()} className="mt-2">
+            <PollPanel contract={contract as PollContract} maxOptions={5} />
+          </div>
+        )}
+
+        {/* Numeric markets - show Lower/Higher buttons */}
+        {contract.outcomeType === 'NUMBER' && (
+          <Row className="mt-2 items-center justify-between">
+            <ContractStatusLabel
+              className="text-lg font-bold"
+              contract={contract}
+            />
+            {!contract.isResolved && contract.closeTime && contract.closeTime > Date.now() && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <NumericBetButton
+                  contract={contract as CPMMNumericContract}
+                  user={user}
+                />
+              </div>
+            )}
+          </Row>
         )}
       </Col>
 
