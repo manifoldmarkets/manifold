@@ -236,10 +236,11 @@ export function UnifiedFeed(props: { className?: string }) {
 }
 
 function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedItem[] {
-  const items: FeedItem[] = []
+  const feedItems: FeedItem[] = []
+  const activityFeedItems: FeedItem[] = []
   const seenContractIds = new Set<string>()
 
-  // Add personalized contract cards
+  // Build personalized contract cards
   for (const contract of feedData.contracts) {
     if (seenContractIds.has(contract.id)) continue
     seenContractIds.add(contract.id)
@@ -249,7 +250,6 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
     const bet = feedData.bets.find((b) => b.contractId === contract.id)
     const reason = feedData.idsToReason[contract.id]
 
-    // Use the most recent timestamp for ordering
     const time = Math.max(
       contract.createdTime,
       repost?.created_time ? new Date(repost.created_time).getTime() : 0,
@@ -257,7 +257,7 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
       bet?.createdTime ?? 0
     )
 
-    items.push({
+    feedItems.push({
       type: 'contract',
       contract,
       repost,
@@ -324,7 +324,7 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
 
     const latestTime = Math.max(...groupItems.map((item) => item.createdTime))
 
-    items.push({
+    activityFeedItems.push({
       type: 'activity',
       group: {
         contractId,
@@ -336,6 +336,21 @@ function buildUnifiedFeed(feedData: FeedData, activityData: ActivityData): FeedI
     })
   }
 
-  // Sort all items by time, interleaving contracts and activity
-  return orderBy(items, 'time', 'desc')
+  // Alternate between feed items and activity items
+  // This ensures a good mix rather than all activity at top
+  const result: FeedItem[] = []
+  const maxLen = Math.max(feedItems.length, activityFeedItems.length)
+
+  for (let i = 0; i < maxLen; i++) {
+    // Add a feed item first (personalized content)
+    if (i < feedItems.length) {
+      result.push(feedItems[i])
+    }
+    // Then add an activity item
+    if (i < activityFeedItems.length) {
+      result.push(activityFeedItems[i])
+    }
+  }
+
+  return result
 }

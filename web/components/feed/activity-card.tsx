@@ -1,17 +1,22 @@
 import clsx from 'clsx'
-import Image from 'next/image'
+import Link from 'next/link'
+import Router from 'next/router'
 import { useRouter } from 'next/router'
 import { memo } from 'react'
 import { groupBy, orderBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
-import { Contract, MarketContract } from 'common/contract'
+import { Contract, contractPath, MarketContract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
+import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { ContractMention } from 'web/components/contract/contract-mention'
 import { FeedBet } from 'web/components/feed/feed-bets'
+import {
+  ContractStatusLabel,
+  VisibilityIcon,
+} from 'web/components/contract/contracts-table'
 import { YourMetricsFooter } from 'web/components/contract/feed-contract-card'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { usePrivateUser } from 'web/hooks/use-user'
@@ -22,6 +27,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 import { LikeAndDislikeComment } from 'web/components/comments/comment-actions'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { ClickFrame } from 'web/components/widgets/click-frame'
 import { track } from 'web/lib/service/analytics'
 
 export type ActivityItem = {
@@ -48,10 +54,13 @@ export const ActivityCard = memo(function ActivityCard(props: {
   const privateUser = usePrivateUser()
   const router = useRouter()
   const position = useSavedContractMetrics(contract)
+  const path = contractPath(contract)
 
   // Separate comments and group replies
   const commentItems = items.filter((item) => item.type === 'comment')
-  const comments = commentItems.map((item) => item.data as CommentWithTotalReplies)
+  const comments = commentItems.map(
+    (item) => item.data as CommentWithTotalReplies
+  )
   const replies = comments.filter((c) => !!c.replyToCommentId)
   const repliesByParentId = groupBy(
     orderBy(replies, 'createdTime', 'asc'),
@@ -71,182 +80,184 @@ export const ActivityCard = memo(function ActivityCard(props: {
     'desc'
   )
 
+  const trackClick = () =>
+    track('click activity card', {
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      slug: contract.slug,
+    })
+
   return (
-    <Col
+    <ClickFrame
       className={clsx(
-        'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border p-3 shadow-md transition-colors sm:px-5'
+        'ring-primary-200 hover:ring-1',
+        'relative cursor-pointer rounded-xl transition-all',
+        'flex w-full flex-col gap-0.5 px-4 py-2',
+        'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border shadow-md transition-colors'
       )}
+      onClick={(e) => {
+        trackClick()
+        Router.push(path)
+        e.currentTarget.focus()
+      }}
     >
-      <Row className="gap-2">
-        <Col className="flex-1 gap-2">
-          <Row className="gap-2">
-            {contract.coverImageUrl && (
-              <Image
-                src={contract.coverImageUrl}
-                alt=""
-                width={100}
-                height={100}
-                className={clsx(
-                  'rounded-md object-cover',
-                  'h-12 w-12',
-                  items.length === 1 && items[0].type === 'bet' && 'sm:hidden'
-                )}
+      {/* Contract header - similar to FeedContractCard */}
+      <Col className="w-full gap-1.5 pt-2">
+        <Row className="w-full justify-between">
+          <UserHovercard userId={contract.creatorId}>
+            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+              <Avatar
+                size="xs"
+                className={'mr-0.5'}
+                avatarUrl={contract.creatorAvatarUrl}
+                username={contract.creatorUsername}
               />
-            )}
-            <ContractMention
-              className={
-                displayItems.length === 1 && displayItems[0].type === 'market'
-                  ? ''
-                  : '!opacity-70'
-              }
-              contract={contract}
-              trackingLocation={'unified-feed-activity'}
-            />
+              <UserLink
+                user={{
+                  id: contract.creatorId,
+                  name: contract.creatorName,
+                  username: contract.creatorUsername,
+                }}
+                className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
+              />
+            </Row>
+          </UserHovercard>
+          <Row className="text-ink-400 items-center gap-1 text-xs">
+            <span className="bg-primary-100 text-primary-700 rounded-full px-2 py-0.5 text-xs font-medium">
+              Activity
+            </span>
           </Row>
-          <div className="space-y-1">
-            {displayItems.map((item) => {
-              if (item.type === 'bet') {
-                return (
-                  <FeedBet
-                    className="p-1"
-                    key={`${item.id}-bet`}
-                    contract={contract as MarketContract}
-                    bet={item.data as Bet}
-                    avatarSize="xs"
-                    hideActions={true}
+        </Row>
+
+        {/* Market question */}
+        <Link
+          className="hover:text-primary-700 grow items-start font-medium transition-colors sm:text-lg"
+          href={path}
+          onClick={(e) => {
+            e.stopPropagation()
+            trackClick()
+          }}
+        >
+          <VisibilityIcon contract={contract} />{' '}
+          {removeEmojis(contract.question)}
+        </Link>
+
+        {/* Probability for binary markets */}
+        {contract.outcomeType === 'BINARY' && (
+          <ContractStatusLabel
+            className="text-lg font-bold"
+            contract={contract}
+            chanceLabel
+          />
+        )}
+      </Col>
+
+      {/* Activity section */}
+      <Col className="border-ink-200 mt-1 gap-1 border-t pt-2">
+        <div className="space-y-1">
+          {displayItems.slice(0, 4).map((item) => {
+            if (item.type === 'bet') {
+              return (
+                <FeedBet
+                  className="p-1"
+                  key={`${item.id}-bet`}
+                  contract={contract as MarketContract}
+                  bet={item.data as Bet}
+                  avatarSize="xs"
+                  hideActions={true}
+                />
+              )
+            } else if (item.type === 'market') {
+              return (
+                <MarketCreatedLog
+                  key={`${item.id}-market`}
+                  contract={item.data as Contract}
+                />
+              )
+            } else if (item.type === 'comment') {
+              const comment = item.data as CommentWithTotalReplies
+              const childReplies = repliesByParentId[comment.id] ?? []
+              const hiddenRepliesCount =
+                (comment.totalReplies ?? 0) - childReplies.length
+
+              return (
+                <div key={`${comment.id}-comment`}>
+                  <CommentLog
+                    comment={comment}
+                    privateUser={privateUser}
+                    user={user}
+                    router={router}
+                    hiddenReplies={hiddenRepliesCount}
                   />
-                )
-              } else if (item.type === 'market') {
-                return (
-                  <MarketCreatedLog
-                    key={`${item.id}-market`}
-                    contract={item.data as Contract}
-                    showDescription={items.length === 1}
-                  />
-                )
-              } else if (item.type === 'comment') {
-                const comment = item.data as CommentWithTotalReplies
-                const childReplies = repliesByParentId[comment.id] ?? []
-                const hiddenRepliesCount =
-                  (comment.totalReplies ?? 0) - childReplies.length
 
-                return (
-                  <div key={`${comment.id}-comment`}>
-                    <CommentLog
-                      comment={comment}
-                      privateUser={privateUser}
-                      user={user}
-                      router={router}
-                      hiddenReplies={hiddenRepliesCount}
-                    />
+                  {childReplies.length > 0 && (
+                    <Col className="ml-6 space-y-1 pl-2">
+                      {childReplies.slice(0, 2).map((reply) => (
+                        <CommentLog
+                          key={`${reply.id}-reply`}
+                          comment={reply}
+                          privateUser={privateUser}
+                          user={user}
+                          router={router}
+                          isReply={true}
+                        />
+                      ))}
+                    </Col>
+                  )}
+                </div>
+              )
+            }
+            return null
+          })}
+        </div>
+        {displayItems.length > 4 && (
+          <Link
+            href={path}
+            className="text-primary-600 hover:text-primary-700 mt-1 text-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
+            View {displayItems.length - 4} more...
+          </Link>
+        )}
+      </Col>
 
-                    {hiddenRepliesCount > 0 && childReplies.length > 0 && (
-                      <Row className="text-ink-400 ml-6 items-center gap-1 pb-2 pl-2 text-xs">
-                        <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(
-                              `/${comment.userUsername}/${comment.contractSlug}#${comment.id}`
-                            )
-                          }}
-                          className="hover:underline"
-                        >
-                          {hiddenRepliesCount} more{' '}
-                          {hiddenRepliesCount === 1 ? 'reply' : 'replies'}
-                        </button>
-                        <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
-                      </Row>
-                    )}
-
-                    {childReplies.length > 0 && (
-                      <Col className="ml-6 space-y-1 pl-2">
-                        {childReplies.map((reply) => (
-                          <CommentLog
-                            key={`${reply.id}-reply`}
-                            comment={reply}
-                            privateUser={privateUser}
-                            user={user}
-                            router={router}
-                            isReply={true}
-                          />
-                        ))}
-                      </Col>
-                    )}
-                  </div>
-                )
-              }
-              return null
-            })}
-          </div>
-        </Col>
-      </Row>
+      {/* Position footer */}
       {contract.outcomeType === 'BINARY' && position && position.hasShares && (
         <YourMetricsFooter
           metrics={position}
           isCashContract={contract.token === 'CASH'}
-          className="dark:!bg-canvas-50 !bg-canvas-0"
         />
       )}
-    </Col>
+    </ClickFrame>
   )
 })
 
 const MarketCreatedLog = memo(function MarketCreatedLog(props: {
   contract: Contract
-  showDescription?: boolean
 }) {
-  const {
-    creatorId,
-    creatorAvatarUrl,
-    creatorUsername,
-    creatorName,
-    createdTime,
-  } = props.contract
-  const { showDescription = false } = props
+  const { creatorId, creatorAvatarUrl, creatorUsername, creatorName, createdTime } =
+    props.contract
 
   const creator = useDisplayUserById(creatorId)
 
   return (
-    <Col className="gap-2">
-      <Row className="text-ink-1000 items-center gap-2 text-sm">
-        <UserHovercard userId={creatorId}>
-          <Row className="items-center gap-2 font-semibold">
-            <Avatar
-              avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
-              username={creator?.username ?? creatorUsername}
-              size="xs"
-              entitlements={creator?.entitlements}
-              displayContext="activity"
-            />
-            <UserLink
-              user={{
-                id: creatorId,
-                name: creator?.name ?? creatorName,
-                username: creator?.username ?? creatorUsername,
-                entitlements: creator?.entitlements,
-              }}
-              displayContext="activity"
-            />
-          </Row>
-        </UserHovercard>
-        <div className="-ml-1">created this market</div>
-        <Row className="text-ink-400">
-          <RelativeTimestamp time={createdTime} shortened />
-        </Row>
-      </Row>
-
-      {showDescription && props.contract.description && (
-        <div className="relative max-h-[120px] max-w-xs overflow-hidden sm:max-w-none">
-          <Content
-            size="sm"
-            content={props.contract.description}
-            className="mt-2 text-left"
+    <Row className="text-ink-600 items-center gap-2 p-1 text-sm">
+      <UserHovercard userId={creatorId}>
+        <Row className="items-center gap-2">
+          <Avatar
+            avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
+            username={creator?.username ?? creatorUsername}
+            size="xs"
+            entitlements={creator?.entitlements}
           />
-          <div className="dark:from-canvas-50 from-canvas-0 absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t to-transparent" />
-        </div>
-      )}
-    </Col>
+          <span className="font-medium">
+            {creator?.name ?? creatorName}
+          </span>
+        </Row>
+      </UserHovercard>
+      <span>created this market</span>
+      <RelativeTimestamp time={createdTime} shortened className="text-ink-400" />
+    </Row>
   )
 })
 
@@ -259,22 +270,16 @@ const CommentLog = memo(function CommentLog(props: {
   hiddenReplies?: number
 }) {
   const { comment, privateUser, user, router, isReply } = props
-  const {
-    userName,
-    content,
-    userId,
-    userUsername,
-    userAvatarUrl,
-    createdTime,
-    contractSlug,
-  } = comment
+  const { userName, content, userId, userUsername, userAvatarUrl, createdTime, contractSlug } =
+    comment
 
   const commenter = useDisplayUserById(userId)
 
   return (
     <Col
       className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md p-1')}
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation()
         router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
         track('unified feed comment click', {
           commentId: comment.id,
@@ -283,34 +288,27 @@ const CommentLog = memo(function CommentLog(props: {
         })
       }}
     >
-      <Row id={comment.id} className="items-center gap-2 text-sm">
+      <Row className="items-center gap-2 text-sm">
         <UserHovercard userId={userId}>
-          <Row className="items-center gap-2 font-semibold">
+          <Row className="items-center gap-2">
             <Avatar
               avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
               username={commenter?.username ?? userUsername}
               size="xs"
               entitlements={commenter?.entitlements}
-              displayContext="activity"
             />
-            <UserLink
-              user={{
-                id: userId,
-                name: commenter?.name ?? userName,
-                username: commenter?.username ?? userUsername,
-                entitlements: commenter?.entitlements,
-              }}
-              displayContext="activity"
-            />
+            <span className="text-ink-700 font-medium">
+              {commenter?.name ?? userName}
+            </span>
           </Row>
         </UserHovercard>
-        <div className="-ml-1">{isReply ? 'replied' : 'commented'}</div>
-        <Row className="text-ink-400">
-          <RelativeTimestamp time={createdTime} shortened />
-        </Row>
+        <span className="text-ink-500">{isReply ? 'replied' : 'commented'}</span>
+        <RelativeTimestamp time={createdTime} shortened className="text-ink-400" />
       </Row>
-      <Content size="sm" className="grow" content={content} />
-      <Row className="items-center justify-end">
+      <div className="text-ink-600 ml-7 line-clamp-2 text-sm">
+        <Content size="sm" content={content} />
+      </div>
+      <Row className="ml-7 items-center justify-end">
         <LikeAndDislikeComment
           comment={comment}
           trackingLocation={'unified-feed'}
