@@ -450,16 +450,24 @@ export function YourMetricsFooter(props: {
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
 
+  const profitPositive = profit && profit > 0
+  const profitNegative = profit && profit < 0
+
   return (
     <Row
       className={clsx(
-        'bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm',
+        'border-ink-200 mt-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t pt-2 text-sm',
         className
       )}
     >
-      <Row className="items-center gap-2">
-        <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
-        <span className="text-ink-700 font-semibold">
+      <Row className="items-center gap-1.5">
+        <span className="text-ink-500 text-xs">Position</span>
+        <span
+          className={clsx(
+            'font-semibold',
+            maxSharesOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
+          )}
+        >
           {maxSharesOutcome === 'YES'
             ? formatWithToken({
                 amount: yesShares,
@@ -469,18 +477,27 @@ export function YourMetricsFooter(props: {
                 amount: noShares,
                 token: isCashContract ? 'CASH' : 'M$',
               })}{' '}
+          {maxSharesOutcome}
         </span>
       </Row>
-      <Row className="items-center gap-2">
-        <div className="text-ink-500">Profit </div>
-        <div className={clsx('text-ink-700 font-semibold')}>
+      <Row className="items-center gap-1.5">
+        <span className="text-ink-500 text-xs">Profit</span>
+        <span
+          className={clsx(
+            'font-semibold',
+            profitPositive && 'text-teal-600',
+            profitNegative && 'text-scarlet-600',
+            !profitPositive && !profitNegative && 'text-ink-600'
+          )}
+        >
           {profit
-            ? formatWithToken({
+            ? (profitPositive ? '+' : '') +
+              formatWithToken({
                 amount: profit,
                 token: isCashContract ? 'CASH' : 'M$',
               })
             : '--'}
-        </div>
+        </span>
       </Row>
     </Row>
   )
