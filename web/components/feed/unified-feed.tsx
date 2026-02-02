@@ -172,11 +172,11 @@ export function UnifiedFeed(props: { className?: string }) {
 
   return (
     <Col className={clsx('relative w-full gap-4', className)}>
-      {feedItems.map((item, index) => {
+      {feedItems.map((item) => {
         if (item.type === 'contract') {
           return (
             <UnifiedFeedCard
-              key={`contract-${item.contract.id}-${index}`}
+              key={`contract-${item.contract.id}`}
               contract={item.contract}
               repost={item.repost}
               comment={item.comment}
@@ -188,7 +188,7 @@ export function UnifiedFeed(props: { className?: string }) {
         } else {
           return (
             <ActivityCard
-              key={`activity-${item.group.contractId}-${index}`}
+              key={`activity-${item.group.contractId}`}
               group={item.group}
               user={user}
             />
