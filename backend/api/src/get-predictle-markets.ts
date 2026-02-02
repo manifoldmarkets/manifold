@@ -168,7 +168,7 @@ async function fetchEligibleMarkets(
       AND (data->>'prob')::numeric < 0.95
       AND NOT (group_slugs && $1::text[])
     ORDER BY importance_score DESC
-    LIMIT 500
+    LIMIT 1000
     `,
     [HIDE_FROM_NEW_USER_SLUGS],
     (r) => r.data as Contract
