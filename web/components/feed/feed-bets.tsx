@@ -207,19 +207,18 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
   const money = (
-    <MoneyDisplay
-      amount={absAmount}
-      isCashContract={isCashContract}
-      className="font-semibold"
-    />
+    <span className="font-semibold">
+      <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
+    </span>
   )
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
-      <MoneyDisplay
-        amount={bet.orderAmount}
-        isCashContract={isCashContract}
-        className="font-semibold"
-      />
+      <span className="font-semibold">
+        <MoneyDisplay
+          amount={bet.orderAmount}
+          isCashContract={isCashContract}
+        />
+      </span>
     ) : null
 
   const answer =
