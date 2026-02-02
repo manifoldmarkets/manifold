@@ -143,6 +143,7 @@ export const RepostFeedCard = memo(function (props: {
           <BottomActionRow
             className={'ml-4'}
             contract={contract}
+            bet={bet}
             user={user}
             comment={comment}
             privateUser={privateUser}
@@ -219,12 +220,13 @@ function RepostLabel(props: {
 
 export const BottomActionRow = (props: {
   contract: Contract
+  bet?: Bet
   comment: ContractComment
   user: User | null | undefined
   privateUser: PrivateUser | null | undefined
   className?: string
 }) => {
-  const { contract, className, comment, privateUser, user } = props
+  const { contract, className, comment, privateUser, user, bet } = props
   const isCashContract = contract.token == 'CASH'
   return (
     <Row className={clsx('justify-between pt-2', 'pb-2', className)}>
