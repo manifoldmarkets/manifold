@@ -206,10 +206,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       <div ref={scrollRef} />
 
       {/* Filters row */}
-      <Row className="mb-2 flex-wrap gap-4">
+      <Row className="bg-canvas-50 mb-3 flex-wrap items-center gap-3 rounded-lg px-3 py-2 sm:gap-4 sm:px-4">
         {/* Minimum bet amount filter */}
-        <Row className="items-center gap-1">
-          <span className="text-ink-500 text-sm">Min amount:</span>
+        <Row className="items-center gap-1.5">
+          <span className="text-ink-500 text-xs font-medium uppercase tracking-wide">
+            Amount
+          </span>
           <DropdownMenu
             items={generateFilterDropdownItems(
               minAmountOptions.map((option, i) => ({
@@ -228,11 +230,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
               }
             )}
             buttonContent={
-              <Row className="text-ink-700 w-28 items-center text-sm">
+              <Row className="text-ink-900 items-center gap-1 text-sm font-medium">
                 <span className="whitespace-nowrap">
                   {minAmountOptions[minAmountFilterIndex].label}
                 </span>
-                <ChevronDownIcon className="h-4 w-4" />
+                <ChevronDownIcon className="text-ink-400 h-4 w-4" />
               </Row>
             }
             menuWidth={'w-36'}
@@ -241,18 +243,24 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
           />
         </Row>
 
+        <div className="bg-ink-300 hidden h-4 w-px sm:block" />
+
         {/* User filter */}
-        <Row className="h-8 items-center gap-1">
-          <span className="text-ink-500 text-sm">Traders:</span>
+        <Row className="items-center gap-1.5">
+          <span className="text-ink-500 text-xs font-medium uppercase tracking-wide">
+            Trader
+          </span>
           {selectedUser ? (
-            <Row className="bg-ink-100 items-center gap-1 rounded-full py-0.5 pl-1 pr-2">
+            <Row className="bg-primary-100 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700/50 items-center gap-1.5 rounded-full border py-0.5 pl-1 pr-2">
               <Avatar
                 username={selectedUser.username}
                 avatarUrl={selectedUser.avatarUrl}
                 size="2xs"
                 noLink
               />
-              <span className="text-ink-700 text-sm">{selectedUser.name}</span>
+              <span className="text-ink-900 max-w-24 truncate text-sm font-medium sm:max-w-none">
+                {selectedUser.name}
+              </span>
               <button
                 onClick={() => {
                   setSelectedUser(undefined)
@@ -262,9 +270,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                     contractName: contract.question,
                   })
                 }}
-                className="hover:bg-ink-200 ml-1 rounded-full p-0.5"
+                className="text-ink-500 hover:text-ink-700 hover:bg-primary-200 dark:hover:bg-primary-800/50 -mr-1 rounded-full p-0.5 transition-colors"
               >
-                <XIcon className="text-ink-500 h-3 w-3" />
+                <XIcon className="h-3.5 w-3.5" />
               </button>
             </Row>
           ) : isEditingUserFilter ? (
@@ -273,8 +281,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                 <Input
                   ref={userSearchInputRef}
                   type="text"
-                  placeholder="Search traders"
-                  className="h-8 w-36 text-sm"
+                  placeholder="Search traders..."
+                  className="h-7 w-32 text-sm sm:w-40"
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                   onBlur={() => {
@@ -319,9 +327,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                     setUserSearchTerm('')
                     setIsEditingUserFilter(false)
                   }}
-                  className="hover:bg-ink-200 rounded-full p-1"
+                  className="text-ink-400 hover:text-ink-600 hover:bg-ink-200 rounded-full p-1 transition-colors"
                 >
-                  <XIcon className="text-ink-500 h-4 w-4" />
+                  <XIcon className="h-4 w-4" />
                 </button>
               </Row>
               <Menu as="div" className="relative z-20">
@@ -344,17 +352,17 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                     >
                       <MenuItems
                         static
-                        className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute left-0 mt-1 w-48 origin-top-left cursor-pointer divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+                        className="divide-ink-100 bg-canvas-0 ring-ink-200 absolute left-0 mt-1 w-52 origin-top-left cursor-pointer divide-y rounded-lg shadow-lg ring-1 focus:outline-none"
                       >
                         <div className="py-1">
                           {searchedUsers.map((user, index) => (
                             <MenuItem key={user.id}>
                               <button
                                 className={clsx(
-                                  'group flex w-full items-center px-3 py-2 text-sm',
+                                  'group flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors',
                                   highlightedIndex === index
-                                    ? 'bg-primary-100 text-ink-900'
-                                    : 'hover:bg-ink-100 hover:text-ink-900'
+                                    ? 'bg-primary-100 dark:bg-primary-900/30'
+                                    : 'hover:bg-ink-50'
                                 )}
                                 onClick={() => selectUser(user)}
                                 onMouseEnter={() => setHighlightedIndex(index)}
@@ -363,10 +371,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                                   username={user.username}
                                   avatarUrl={user.avatarUrl}
                                   size="xs"
-                                  className="mr-2"
                                   noLink
                                 />
-                                <span className="truncate">{user.name}</span>
+                                <span className="text-ink-900 truncate font-medium">
+                                  {user.name}
+                                </span>
                               </button>
                             </MenuItem>
                           ))}
@@ -379,16 +388,16 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
           ) : (
             <button
               onClick={() => setIsEditingUserFilter(true)}
-              className="text-ink-700 hover:bg-ink-100 flex items-center gap-1 rounded px-1 py-0.5 text-sm"
+              className="text-ink-900 hover:bg-ink-100 flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-medium transition-colors"
             >
               <span>All</span>
-              <PencilIcon className="text-ink-400 mb-0.5 h-3.5 w-3.5" />
+              <PencilIcon className="text-ink-400 h-3 w-3" />
             </button>
           )}
         </Row>
       </Row>
 
-      <Col className="mb-4 items-start gap-7">
+      <Col className="mb-4 gap-2">
         {allItems.map((item) =>
           item.type === 'bet' ? (
             setGraphUser ? (
@@ -417,7 +426,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
           ) : (
             <div
               key={item.id}
-              className="-ml-2 rounded-full bg-gradient-to-r from-pink-300/50 via-purple-300/50 to-indigo-300/50 p-2"
+              className="rounded-lg border border-purple-200 bg-gradient-to-r from-pink-100 via-purple-100 to-indigo-100 px-3 py-2.5 dark:border-purple-800/50 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-indigo-900/30 sm:px-4 sm:py-3"
             >
               <FeedLiquidity
                 liquidity={item.lp}
@@ -442,11 +451,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
 
 function LoadingBetRow() {
   return (
-    <div className="flex w-full animate-pulse gap-3 rounded-md ">
+    <div className="bg-canvas-0 border-ink-200 flex w-full animate-pulse gap-3 rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3">
       {/* Avatar skeleton */}
-      <div className="h-10 w-10 rounded-full bg-gray-500" />
-      <Col className="flex-1 justify-center gap-1.5">
-        <div className="h-4 w-1/2 rounded bg-gray-500" />
+      <div className="bg-ink-200 h-8 w-8 shrink-0 rounded-full" />
+      <Col className="flex-1 justify-center gap-2">
+        <div className="bg-ink-200 h-4 w-3/4 rounded" />
+        <div className="bg-ink-100 h-3 w-1/2 rounded" />
       </Col>
     </div>
   )
