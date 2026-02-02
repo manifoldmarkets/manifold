@@ -38,3 +38,15 @@ create index reposts_contract_comment on public.posts using btree (contract_comm
 drop index if exists reposts_user;
 
 create index reposts_user on public.posts using btree (user_id);
+
+drop index if exists posts_created_time;
+
+create index posts_created_time on public.posts using btree (created_time desc);
+
+drop index if exists posts_user_created_time;
+
+create index posts_user_created_time on public.posts using btree (user_id, created_time desc);
+
+drop index if exists posts_contract_created_time;
+
+create index posts_contract_created_time on public.posts using btree (contract_id, created_time desc);

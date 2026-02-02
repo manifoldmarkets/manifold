@@ -110,28 +110,33 @@ async function fetchPersonalizedFeed(
   ignoreContractIds: string[] | undefined,
   privateUser: PrivateUser | undefined
 ) {
-  // Build user interests cache if needed
-  if (
-    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
-  ) {
-    await buildUserInterestsCache([userId])
+  const hasCache =
+    Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length > 0
+
+  // Build user interests cache if needed, but don't block the request.
+  if (!hasCache) {
+    buildUserInterestsCache([userId]).catch((e) =>
+      log('Error building user interests cache:', e)
+    )
   }
 
-  // If no topic interests, return trending
-  if (
-    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
-  ) {
+  // If no topic interests cached, return trending immediately.
+  if (!hasCache) {
     const defaultContracts = await pg.map(
       `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts
+       where close_time > now()
+         and visibility = 'public'
+         and outcome_type != 'STONK'
+         and outcome_type != 'BOUNTIED_QUESTION'
        order by importance_score desc
        limit $1 offset $2`,
-      [limit * 4, offset],
+      [limit, offset],
       (r) => convertContract(r)
     )
     return {
       contracts: defaultContracts,
       idsToReason: Object.fromEntries(
-        defaultContracts.map((c) => [c.id, 'importance'])
+        defaultContracts.map((c) => [c.id, 'trending'])
       ),
       comments: [],
       bets: [],

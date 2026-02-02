@@ -4,6 +4,7 @@ import Router from 'next/router'
 import { useRouter } from 'next/router'
 import { memo } from 'react'
 import { groupBy, orderBy } from 'lodash'
+import { TbDroplet, TbMoneybag } from 'react-icons/tb'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
@@ -13,15 +14,14 @@ import {
   contractPath,
   CPMMMultiContract,
   CPMMNumericContract,
-  MarketContract,
   PollContract,
-  StonkContract,
 } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { PrivateUser, User } from 'common/user'
+import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { FeedBet } from 'web/components/feed/feed-bets'
 import {
   ContractStatusLabel,
   VisibilityIcon,
@@ -31,7 +31,9 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Button } from 'web/components/buttons/button'
 import { Content } from 'web/components/widgets/editor'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 import { LikeAndDislikeComment } from 'web/components/comments/comment-actions'
@@ -42,6 +44,9 @@ import { BetButton } from 'web/components/bet/feed-bet-button'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { PollPanel } from 'web/components/poll/poll-panel'
+import { TradesButton } from 'web/components/contract/trades-button'
+import { ReactButton } from 'web/components/contract/react-button'
+import { RepostButton } from 'web/components/comments/repost-modal'
 
 export type ActivityItem = {
   type: 'bet' | 'comment' | 'market'
@@ -218,19 +223,87 @@ export const ActivityCard = memo(function ActivityCard(props: {
         )}
       </Col>
 
+      {/* Bottom action row */}
+      <Row
+        className="justify-between pt-2 pb-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <BottomRowButtonWrapper>
+          <TradesButton contract={contract} className={'h-full'} />
+        </BottomRowButtonWrapper>
+
+        {contract.outcomeType === 'BOUNTIED_QUESTION' && (
+          <BottomRowButtonWrapper>
+            <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+              <TbMoneybag className="h-6 w-6 stroke-2" />
+              <div>
+                {ENV_CONFIG.moneyMoniker}
+                {shortFormatNumber(contract.bountyLeft)}
+              </div>
+            </div>
+          </BottomRowButtonWrapper>
+        )}
+
+        {'totalLiquidity' in contract && (
+          <BottomRowButtonWrapper>
+            <Button
+              disabled={true}
+              size={'2xs'}
+              color={'gray-white'}
+              className={'disabled:cursor-pointer'}
+            >
+              <Tooltip text={`Total liquidity`} placement="top" noTap>
+                <Row
+                  className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
+                >
+                  <TbDroplet className="h-6 w-6 stroke-2" />
+                  <div className="text-ink-600">
+                    {formatWithToken({
+                      amount: contract.totalLiquidity,
+                      token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                      short: true,
+                    })}
+                  </div>
+                </Row>
+              </Tooltip>
+            </Button>
+          </BottomRowButtonWrapper>
+        )}
+
+        <BottomRowButtonWrapper>
+          <RepostButton
+            playContract={contract}
+            size={'2xs'}
+            className={'h-full'}
+            iconClassName={'text-ink-500'}
+          />
+        </BottomRowButtonWrapper>
+        <BottomRowButtonWrapper>
+          <ReactButton
+            contentId={contract.id}
+            contentCreatorId={contract.creatorId}
+            user={user}
+            contentType={'contract'}
+            contentText={contract.question}
+            size={'xs'}
+            trackingLocation={'activity card'}
+            placement="top"
+            contractId={contract.id}
+            heartClassName="stroke-ink-500"
+          />
+        </BottomRowButtonWrapper>
+      </Row>
+
       {/* Activity section */}
       <Col className="border-ink-200 mt-1 gap-1 border-t pt-2">
         <div className="space-y-1">
           {displayItems.slice(0, 4).map((item) => {
             if (item.type === 'bet') {
               return (
-                <FeedBet
-                  className="p-1"
+                <BetLog
                   key={`${item.id}-bet`}
-                  contract={contract as MarketContract}
+                  contract={contract}
                   bet={item.data as Bet}
-                  avatarSize="xs"
-                  hideActions={true}
                 />
               )
             } else if (item.type === 'market') {
@@ -295,6 +368,66 @@ export const ActivityCard = memo(function ActivityCard(props: {
         />
       )}
     </ClickFrame>
+  )
+})
+
+const BetLog = memo(function BetLog(props: {
+  bet: Bet
+  contract: Contract
+}) {
+  const { bet, contract } = props
+  const { amount, outcome, createdTime, answerId, userId, probBefore, probAfter } = bet
+  const bettor = useDisplayUserById(userId)
+  const isCashContract = contract.token === 'CASH'
+
+  const bought = amount >= 0 ? 'bought' : 'sold'
+  const absAmount = Math.abs(amount)
+  const formattedAmount = isCashContract
+    ? `S${absAmount.toFixed(0)}`
+    : `M${absAmount.toFixed(0)}`
+
+  const answer =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers?.find((a) => a.id === answerId)
+      : undefined
+
+  const fromProb = `${(probBefore * 100).toFixed(0)}%`
+  const toProb = `${(probAfter * 100).toFixed(0)}%`
+
+  return (
+    <Row className="text-ink-600 flex-wrap items-center gap-x-1 gap-y-0.5 p-1 text-sm">
+      <UserHovercard userId={userId}>
+        <Row className="items-center gap-1">
+          <Avatar
+            avatarUrl={bettor?.avatarUrl}
+            username={bettor?.username}
+            size="xs"
+            entitlements={bettor?.entitlements}
+          />
+          <span className="whitespace-nowrap">
+            <span className="font-semibold">{bettor?.name ?? 'Someone'}</span>{' '}
+            {bought} {formattedAmount}
+          </span>
+        </Row>
+      </UserHovercard>
+      <span>
+        {answer ? (
+          <span className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}>
+            {answer.text} {outcome}
+          </span>
+        ) : (
+          <span className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}>
+            {outcome}
+          </span>
+        )}{' '}
+        from {fromProb} to {toProb}
+      </span>
+      <RelativeTimestamp
+        time={createdTime}
+        shortened
+        className="text-ink-400"
+      />
+    </Row>
   )
 })
 
@@ -412,3 +545,12 @@ const CommentLog = memo(function CommentLog(props: {
     </Col>
   )
 })
+
+// Ensures correct spacing between buttons
+const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
+  return (
+    <Row className="basis-10 justify-start whitespace-nowrap">
+      {props.children}
+    </Row>
+  )
+}

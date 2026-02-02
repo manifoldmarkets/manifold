@@ -9,7 +9,7 @@ import { User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { TbDroplet, TbMoneybag } from 'react-icons/tb'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { Button } from 'web/components/buttons/button'
@@ -33,7 +33,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
-import { CommentsButton } from '../comments/comments-button'
+import { RepostButton } from '../comments/repost-modal'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
@@ -406,7 +406,7 @@ const BottomActionRow = (props: {
               <Row
                 className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
               >
-                <TbDropletHeart className="h-6 w-6 stroke-2" />
+                <TbDroplet className="h-6 w-6 stroke-2" />
                 <div className="text-ink-600">
                   {formatWithToken({
                     amount: contract.totalLiquidity,
@@ -421,7 +421,12 @@ const BottomActionRow = (props: {
       )}
 
       <BottomRowButtonWrapper>
-        <CommentsButton contract={contract} user={user} className={'h-full'} />
+        <RepostButton
+          playContract={contract}
+          size={'2xs'}
+          className={'h-full'}
+          iconClassName={'text-ink-500'}
+        />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
         <ReactButton
