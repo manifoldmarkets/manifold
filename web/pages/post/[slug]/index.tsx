@@ -18,7 +18,6 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { AddPostBoostButton } from 'web/components/posts/add-post-boost-button'
 import { SEO } from 'web/components/SEO'
 import {
   PostCommentsActivity,
@@ -281,9 +280,6 @@ export default function PostPage(props: {
             />
           </div>
         </div>
-        <Row className="my-2">
-          <AddPostBoostButton post={post} />
-        </Row>
         <Spacer h={4} />
         <PostCommentsActivity post={post} comments={comments} />
       </Col>
