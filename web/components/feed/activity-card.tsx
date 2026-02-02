@@ -31,6 +31,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
+import { MoneyDisplay } from 'web/components/bet/money-display'
 import { Button } from 'web/components/buttons/button'
 import { Content } from 'web/components/widgets/editor'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -387,9 +388,6 @@ const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
-  const formattedAmount = isCashContract
-    ? `S${absAmount.toFixed(0)}`
-    : `M${absAmount.toFixed(0)}`
 
   const answer =
     contract.mechanism === 'cpmm-multi-1'
@@ -400,42 +398,49 @@ const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
   const toProb = `${(probAfter * 100).toFixed(0)}%`
 
   return (
-    <Row className="text-ink-600 flex-wrap items-center gap-x-1 gap-y-0.5 p-1 text-sm">
+    <Row className="items-start gap-2 py-1">
       <UserHovercard userId={userId}>
-        <Row className="items-center gap-1">
-          <Avatar
-            avatarUrl={bettor?.avatarUrl}
-            username={bettor?.username}
-            size="xs"
-            entitlements={bettor?.entitlements}
-          />
-          <span className="whitespace-nowrap">
-            <span className="font-semibold">{bettor?.name ?? 'Someone'}</span>{' '}
-            {bought} {formattedAmount}
-          </span>
-        </Row>
+        <Avatar
+          avatarUrl={bettor?.avatarUrl}
+          username={bettor?.username}
+          size="xs"
+          entitlements={bettor?.entitlements}
+          className="mt-0.5 shrink-0"
+        />
       </UserHovercard>
-      <span>
-        {answer ? (
-          <span
-            className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}
-          >
-            {answer.text} {outcome}
+      <Col className="min-w-0 gap-0.5">
+        <Row className="flex-wrap items-baseline gap-x-1.5 text-sm">
+          <span className="text-ink-900 font-semibold">
+            {bettor?.name ?? 'Someone'}
           </span>
-        ) : (
+          <span className="text-ink-500">{bought}</span>
+          <span className="text-ink-700 font-semibold">
+            <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
+          </span>
+          {answer && <span className="text-ink-700">{answer.text}</span>}
           <span
             className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}
           >
             {outcome}
           </span>
-        )}{' '}
-        from {fromProb} to {toProb}
-      </span>
-      <RelativeTimestamp
-        time={createdTime}
-        shortened
-        className="text-ink-400"
-      />
+        </Row>
+        <Row className="flex-wrap items-center gap-x-2 text-xs">
+          {fromProb === toProb ? (
+            <span className="text-ink-700 font-medium">{fromProb}</span>
+          ) : (
+            <span>
+              <span className="text-ink-600">{fromProb}</span>
+              <span className="text-ink-400 mx-0.5">→</span>
+              <span className="text-ink-900 font-semibold">{toProb}</span>
+            </span>
+          )}
+          <RelativeTimestamp
+            time={createdTime}
+            shortened
+            className="text-ink-400"
+          />
+        </Row>
+      </Col>
     </Row>
   )
 })
@@ -454,24 +459,29 @@ const MarketCreatedLog = memo(function MarketCreatedLog(props: {
   const creator = useDisplayUserById(creatorId)
 
   return (
-    <Row className="text-ink-600 items-center gap-2 p-1 text-sm">
+    <Row className="items-start gap-2 py-1">
       <UserHovercard userId={creatorId}>
-        <Row className="items-center gap-2">
-          <Avatar
-            avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
-            username={creator?.username ?? creatorUsername}
-            size="xs"
-            entitlements={creator?.entitlements}
-          />
-          <span className="font-medium">{creator?.name ?? creatorName}</span>
-        </Row>
+        <Avatar
+          avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
+          username={creator?.username ?? creatorUsername}
+          size="xs"
+          entitlements={creator?.entitlements}
+          className="mt-0.5 shrink-0"
+        />
       </UserHovercard>
-      <span>created this market</span>
-      <RelativeTimestamp
-        time={createdTime}
-        shortened
-        className="text-ink-400"
-      />
+      <Col className="min-w-0 gap-0.5">
+        <Row className="flex-wrap items-baseline gap-x-1.5 text-sm">
+          <span className="text-ink-900 font-semibold">
+            {creator?.name ?? creatorName}
+          </span>
+          <span className="text-ink-500">created this market</span>
+        </Row>
+        <RelativeTimestamp
+          time={createdTime}
+          shortened
+          className="text-ink-400 text-xs"
+        />
+      </Col>
     </Row>
   )
 })
@@ -508,50 +518,51 @@ const CommentLog = memo(function CommentLog(props: {
   }
 
   return (
-    <Col className="rounded-md p-1">
-      <div
-        className="hover:bg-canvas-100 cursor-pointer rounded-md"
-        onClick={navigateToComment}
-      >
-        <Row className="items-center gap-2 text-sm">
-          <UserHovercard userId={userId}>
-            <Row className="items-center gap-2">
-              <Avatar
-                avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
-                username={commenter?.username ?? userUsername}
-                size="xs"
-                entitlements={commenter?.entitlements}
-              />
-              <span className="text-ink-700 font-medium">
-                {commenter?.name ?? userName}
-              </span>
-            </Row>
-          </UserHovercard>
-          <span className="text-ink-500">
-            {isReply ? 'replied' : 'commented'}
-          </span>
-          <RelativeTimestamp
-            time={createdTime}
-            shortened
-            className="text-ink-400"
+    <div
+      className="hover:bg-canvas-50 cursor-pointer rounded-md py-1 transition-colors"
+      onClick={navigateToComment}
+    >
+      <Row className="items-start gap-2">
+        <UserHovercard userId={userId}>
+          <Avatar
+            avatarUrl={commenter?.avatarUrl ?? userAvatarUrl}
+            username={commenter?.username ?? userUsername}
+            size="xs"
+            entitlements={commenter?.entitlements}
+            className="mt-0.5 shrink-0"
           />
-        </Row>
-        <div className="text-ink-600 ml-7 line-clamp-2 text-sm">
-          <Content size="sm" content={content} />
-        </div>
-      </div>
-      <Row
-        className="ml-7 items-center justify-end"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <LikeAndDislikeComment
-          comment={comment}
-          trackingLocation={'unified-feed'}
-          privateUser={privateUser}
-          user={user}
-        />
+        </UserHovercard>
+        <Col className="min-w-0 flex-1 gap-0.5">
+          <Row className="flex-wrap items-baseline gap-x-1.5 text-sm">
+            <span className="text-ink-900 font-semibold">
+              {commenter?.name ?? userName}
+            </span>
+            <span className="text-ink-500">
+              {isReply ? 'replied' : 'commented'}
+            </span>
+            <RelativeTimestamp
+              time={createdTime}
+              shortened
+              className="text-ink-400 text-xs"
+            />
+          </Row>
+          <div className="text-ink-600 line-clamp-2 text-sm">
+            <Content size="sm" content={content} />
+          </div>
+          <Row
+            className="items-center justify-end"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <LikeAndDislikeComment
+              comment={comment}
+              trackingLocation={'unified-feed'}
+              privateUser={privateUser}
+              user={user}
+            />
+          </Row>
+        </Col>
       </Row>
-    </Col>
+    </div>
   )
 })
 
