@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { groupBy, keyBy, orderBy, uniqBy } from 'lodash'
 
 import { Bet } from 'common/bet'
@@ -69,8 +69,8 @@ export function UnifiedFeed(props: { className?: string }) {
   const user = useUser()
   const privateUser = usePrivateUser()
 
-  const feedLimit = 5
-  const activityLimit = 10
+  const feedLimit = 3
+  const activityLimit = 5
 
   const [feedData, setFeedData] = usePersistentInMemoryState<UnifiedFeedData>(
     defaultFeedData,
@@ -164,7 +164,7 @@ export function UnifiedFeed(props: { className?: string }) {
   }, [user?.id])
 
   // Build unified feed items
-  const feedItems = buildUnifiedFeed(feedData)
+  const feedItems = useMemo(() => buildUnifiedFeed(feedData), [feedData])
 
   if (initialLoading) {
     return <LoadingCards />

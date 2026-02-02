@@ -1520,9 +1520,11 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({
-      alertId: z.number().optional(), // Specific alert to dismiss, or all if not provided
-    }).strict(),
+    props: z
+      .object({
+        alertId: z.number().optional(), // Specific alert to dismiss, or all if not provided
+      })
+      .strict(),
     returns: {} as { success: boolean },
   },
   'super-ban-user': {
@@ -2481,9 +2483,9 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         userId: z.string().optional(),
-        feedLimit: z.coerce.number().gt(0).lte(50).default(5),
+        feedLimit: z.coerce.number().gt(0).lte(50).default(3),
         feedOffset: z.coerce.number().gte(0).default(0),
-        activityLimit: z.coerce.number().gt(0).lte(50).default(10),
+        activityLimit: z.coerce.number().gt(0).lte(50).default(5),
         activityOffset: z.coerce.number().gte(0).default(0),
         ignoreContractIds: z.array(z.string()).optional(),
         blockedUserIds: z.array(z.string()).optional(),
