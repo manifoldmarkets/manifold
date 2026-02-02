@@ -448,40 +448,16 @@ const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
 const MarketCreatedLog = memo(function MarketCreatedLog(props: {
   contract: Contract
 }) {
-  const {
-    creatorId,
-    creatorAvatarUrl,
-    creatorUsername,
-    creatorName,
-    createdTime,
-  } = props.contract
-
-  const creator = useDisplayUserById(creatorId)
+  const { createdTime } = props.contract
 
   return (
-    <Row className="items-start gap-2 py-1">
-      <UserHovercard userId={creatorId}>
-        <Avatar
-          avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
-          username={creator?.username ?? creatorUsername}
-          size="xs"
-          entitlements={creator?.entitlements}
-          className="mt-0.5 shrink-0"
-        />
-      </UserHovercard>
-      <Col className="min-w-0 gap-0.5">
-        <Row className="flex-wrap items-baseline gap-x-1.5 text-sm">
-          <span className="text-ink-900 font-semibold">
-            {creator?.name ?? creatorName}
-          </span>
-          <span className="text-ink-500">created this market</span>
-        </Row>
-        <RelativeTimestamp
-          time={createdTime}
-          shortened
-          className="text-ink-400 text-xs"
-        />
-      </Col>
+    <Row className="text-ink-500 items-center gap-1.5 py-1 text-sm">
+      <span>Created</span>
+      <RelativeTimestamp
+        time={createdTime}
+        shortened
+        className="text-ink-400"
+      />
     </Row>
   )
 })
