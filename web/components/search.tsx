@@ -442,7 +442,8 @@ export function Search(props: SearchProps) {
         (subtopic) => groupIds === subtopic.groupIds.join(',')
       )
     : undefined
-  const selectedAll = !selectedTopic && !selectedFollowed
+  const selectedAll =
+    !selectedTopic && !selectedFollowed && !searchParams[TOPIC_FILTER_KEY]
   const user = useUser()
   const {
     data: followedGroupsData,
