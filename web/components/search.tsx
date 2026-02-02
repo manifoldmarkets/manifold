@@ -214,7 +214,38 @@ type SearchProps = {
   initialTopics?: LiteGroup[]
   showTopicsFilterPills?: boolean
   refreshOnVisible?: boolean
+  showHotTopics?: boolean
 }
+
+// Collect all group IDs from SEARCH_TOPICS_TO_SUBTOPICS to filter out duplicates
+const getDefaultTopicGroupIds = (): Set<string> => {
+  const groupIds = new Set<string>()
+  Object.values(SEARCH_TOPICS_TO_SUBTOPICS).forEach((subtopics) => {
+    subtopics.forEach((subtopic) => {
+      subtopic.groupIds.forEach((id) => groupIds.add(id))
+    })
+  })
+  return groupIds
+}
+
+// Collect all subtopic names (without emojis) to filter out duplicates
+const getDefaultTopicNames = (): Set<string> => {
+  const names = new Set<string>()
+  // Add parent topic names
+  Object.keys(SEARCH_TOPICS_TO_SUBTOPICS).forEach((topic) => {
+    names.add(removeEmojis(topic).toLowerCase().trim())
+  })
+  // Add subtopic names
+  Object.values(SEARCH_TOPICS_TO_SUBTOPICS).forEach((subtopics) => {
+    subtopics.forEach((subtopic) => {
+      names.add(removeEmojis(subtopic.name).toLowerCase().trim())
+    })
+  })
+  return names
+}
+
+const DEFAULT_TOPIC_GROUP_IDS = getDefaultTopicGroupIds()
+const DEFAULT_TOPIC_NAMES = getDefaultTopicNames()
 
 export function Search(props: SearchProps) {
   const {
@@ -241,7 +272,21 @@ export function Search(props: SearchProps) {
     hideAvatars,
     showTopicsFilterPills,
     refreshOnVisible,
+    showHotTopics,
+    initialTopics,
   } = props
+
+  // Filter hot topics to exclude duplicates of default topics and subtopics
+  const hotTopics = (initialTopics ?? [])
+    .filter((topic) => {
+      // Filter out if the topic's ID is in any default subtopic groupIds
+      if (DEFAULT_TOPIC_GROUP_IDS.has(topic.id)) return false
+      // Filter out if the topic's name matches a default topic or subtopic name
+      const normalizedName = removeEmojis(topic.name).toLowerCase().trim()
+      if (DEFAULT_TOPIC_NAMES.has(normalizedName)) return false
+      return true
+    })
+    .slice(0, 30)
 
   const isMobile = useIsMobile()
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
@@ -532,6 +577,32 @@ export function Search(props: SearchProps) {
                   {removeEmojis(topic)}
                 </button>
               ))}
+              {showHotTopics &&
+                hotTopics.map((topic) => {
+                  const isSelected =
+                    searchParams[TOPIC_FILTER_KEY] === topic.slug
+                  return (
+                    <button
+                      key={topic.id}
+                      className={clsx(
+                        'whitespace-nowrap font-medium',
+                        isSelected ? 'text-primary-600' : 'text-ink-500'
+                      )}
+                      onClick={() => {
+                        if (!isSelected) {
+                          track('select search topic', { topic: topic.slug })
+                          const changes: Partial<SearchParams> = {
+                            [TOPIC_FILTER_KEY]: topic.slug,
+                            [GROUP_IDS_KEY]: '',
+                          }
+                          onChange(changes)
+                        }
+                      }}
+                    >
+                      {removeEmojis(topic.name)}
+                    </button>
+                  )
+                })}
             </Carousel>
           )}
         </Col>
