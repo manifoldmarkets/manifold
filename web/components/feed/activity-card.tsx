@@ -225,7 +225,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
 
       {/* Bottom action row */}
       <Row
-        className="justify-between pt-2 pb-2"
+        className="justify-between pb-2 pt-2"
         onClick={(e) => e.stopPropagation()}
       >
         <BottomRowButtonWrapper>
@@ -371,12 +371,17 @@ export const ActivityCard = memo(function ActivityCard(props: {
   )
 })
 
-const BetLog = memo(function BetLog(props: {
-  bet: Bet
-  contract: Contract
-}) {
+const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
   const { bet, contract } = props
-  const { amount, outcome, createdTime, answerId, userId, probBefore, probAfter } = bet
+  const {
+    amount,
+    outcome,
+    createdTime,
+    answerId,
+    userId,
+    probBefore,
+    probAfter,
+  } = bet
   const bettor = useDisplayUserById(userId)
   const isCashContract = contract.token === 'CASH'
 
@@ -412,11 +417,15 @@ const BetLog = memo(function BetLog(props: {
       </UserHovercard>
       <span>
         {answer ? (
-          <span className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}>
+          <span
+            className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}
+          >
             {answer.text} {outcome}
           </span>
         ) : (
-          <span className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}>
+          <span
+            className={outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'}
+          >
             {outcome}
           </span>
         )}{' '}
