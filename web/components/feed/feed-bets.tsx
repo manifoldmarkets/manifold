@@ -36,6 +36,7 @@ import {
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
+import { useAnswer } from 'web/hooks/use-answers'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -51,6 +52,11 @@ const MAX_FILLS_TO_SHOW = 10
 const isNormalLimitOrder = (bet: Bet) =>
   bet.limitProb !== undefined && bet.orderAmount !== undefined && !bet.silent
 
+const getAnswerFromContract = (contract: Contract, answerId?: string) =>
+  contract.mechanism === 'cpmm-multi-1' && answerId && 'answers' in contract
+    ? contract.answers?.find((answer) => answer.id === answerId)
+    : undefined
+
 function BetTooltipContent(props: {
   bet: Bet
   isCashContract: boolean
@@ -58,10 +64,11 @@ function BetTooltipContent(props: {
 }) {
   const { bet, isCashContract, contract } = props
   const formatAmount = isCashContract ? formatSweepies : formatMoney
-  const answer =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers?.find((a) => a.id === bet.answerId)
-      : undefined
+  const answerId =
+    contract.mechanism === 'cpmm-multi-1' ? bet.answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, answerId)
+  const { answer: fetchedAnswer } = useAnswer(answerId)
+  const answer = answerFromContract ?? fetchedAnswer
   const isLimitOrder = isNormalLimitOrder(bet)
   const isOrderSale = (bet.orderAmount ?? 0) < 0
   const isAmountSale = bet.amount < 0
@@ -221,10 +228,11 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
       </span>
     ) : null
 
-  const answer =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers?.find((a) => a.id === answerId)
-      : undefined
+  const resolvedAnswerId =
+    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
+  const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
+  const answer = answerFromContract ?? fetchedAnswer
 
   return (
     <span className="text-ink-700 text-sm">
@@ -586,6 +594,11 @@ export function BetStatusesText(props: {
   const { amount, outcome, createdTime, answerId, userId } = bets[0]
   const user = useDisplayUserById(userId)
   const isCashContract = contract.token === 'CASH'
+  const resolvedAnswerId =
+    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
+  const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
+  const answer = answerFromContract ?? fetchedAnswer
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(sumBy(bets, (b) => b.amount))
@@ -612,11 +625,7 @@ export function BetStatusesText(props: {
         {bought} {money}{' '}
         <OutcomeLabel
           outcome={outcome}
-          answer={
-            contract.mechanism === 'cpmm-multi-1'
-              ? contract.answers?.find((a) => a.id === answerId)
-              : undefined
-          }
+          answer={answer}
           contract={contract}
           truncate="short"
         />{' '}
@@ -673,10 +682,11 @@ export function BetStatusText(props: {
     ? getFormattedMappedValue(contract, probAfter)
     : getFormattedMappedValue(contract, limitProb ?? probAfter)
 
-  const answer =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers?.find((a) => a.id === answerId)
-      : undefined
+  const resolvedAnswerId =
+    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
+  const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
+  const answer = answerFromContract ?? fetchedAnswer
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
