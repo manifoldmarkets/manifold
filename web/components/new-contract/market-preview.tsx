@@ -173,7 +173,8 @@ export function MarketPreview(props: {
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
   const [dismissedDateWarning, setDismissedDateWarning] = useState(false)
-  const [dismissedTemporalWarning, setDismissedTemporalWarning] = useState(false)
+  const [dismissedTemporalWarning, setDismissedTemporalWarning] =
+    useState(false)
   const [aiPollSuggestion, setAiPollSuggestion] = useState<{
     isSubjective: boolean
     confidence: number

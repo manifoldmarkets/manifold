@@ -33,7 +33,9 @@ const CLEAR_PHRASES =
 
 type PatternConfig = {
   pattern: RegExp
-  getAlternatives: (match: RegExpMatchArray) => AmbiguousTemporalMatch['alternatives']
+  getAlternatives: (
+    match: RegExpMatchArray
+  ) => AmbiguousTemporalMatch['alternatives']
 }
 
 const patterns: PatternConfig[] = [
@@ -84,7 +86,10 @@ const patterns: PatternConfig[] = [
 
   // "by [month]" without year - e.g., "by January"
   {
-    pattern: new RegExp(`\\bby\\s+(${MONTHS}|${MONTHS_SHORT})\\b(?!\\s+20)`, 'gi'),
+    pattern: new RegExp(
+      `\\bby\\s+(${MONTHS}|${MONTHS_SHORT})\\b(?!\\s+20)`,
+      'gi'
+    ),
     getAlternatives: (match) => {
       const month = match[1]
       return [
@@ -218,7 +223,10 @@ export function detectAmbiguousTemporalPhrases(
       // Check if this phrase is part of an already-clear phrase
       // Look at context around the match
       const contextStart = Math.max(0, matchIndex - 15)
-      const contextEnd = Math.min(text.length, matchIndex + original.length + 15)
+      const contextEnd = Math.min(
+        text.length,
+        matchIndex + original.length + 15
+      )
       const context = text.slice(contextStart, contextEnd)
       if (CLEAR_PHRASES.test(context)) continue
 

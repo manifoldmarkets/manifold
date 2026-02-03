@@ -20,7 +20,9 @@ export function TemporalAmbiguityBanner(props: {
               <span key={alt.label}>
                 {i > 0 && ' or '}
                 <button
-                  onClick={() => onApplyReplacement(match.original, alt.replacement)}
+                  onClick={() =>
+                    onApplyReplacement(match.original, alt.replacement)
+                  }
                   className="text-primary-600 hover:text-primary-700 font-medium underline hover:no-underline"
                 >
                   {alt.label}

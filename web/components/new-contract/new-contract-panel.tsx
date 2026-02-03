@@ -1366,7 +1366,10 @@ export function NewContractPanel(props: {
               updateField('includeSeeResults', !formState.includeSeeResults)
             }
             onReplaceQuestionText={(original, replacement) => {
-              const newQuestion = formState.question.replace(original, replacement)
+              const newQuestion = formState.question.replace(
+                original,
+                replacement
+              )
               updateFieldWithErrorClear('question', newQuestion)
             }}
           />
