@@ -35,7 +35,7 @@ import {
 import { CandidateBet } from 'common/new-bet'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
-import { userHasPampuSkin } from 'common/shop/items'
+import { getCustomYesButtonText, getCustomNoButtonText } from 'common/shop/items'
 import {
   getTierIndexFromLiquidity,
   getTierIndexFromLiquidityAndAnswers,
@@ -124,7 +124,8 @@ export function BuyPanel(
   } = props
 
   const user = useUser()
-  const hasPampu = userHasPampuSkin(user?.entitlements)
+  const customYesText = getCustomYesButtonText(user?.entitlements)
+  const customNoText = getCustomNoButtonText(user?.entitlements)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -177,12 +178,16 @@ export function BuyPanel(
                   ? 'HIGHER'
                   : isStonk
                   ? STONK_YES
-                  : hasPampu
-                  ? 'PAMPU'
-                  : 'YES'
+                  : customYesText ?? 'YES'
               }
-              noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
-              includeWordBet={!isStonk && !hasPampu}
+              noLabel={
+                isPseudoNumeric
+                  ? 'LOWER'
+                  : isStonk
+                  ? STONK_NO
+                  : customNoText ?? 'NO'
+              }
+              includeWordBet={!isStonk && !customYesText}
             />
           </Row>
         </Col>
@@ -238,7 +243,8 @@ export const BuyPanelBody = (
   } = props
 
   const user = useUser()
-  const hasPampu = userHasPampuSkin(user?.entitlements)
+  const customYesText = getCustomYesButtonText(user?.entitlements)
+  const customNoText = getCustomNoButtonText(user?.entitlements)
   const privateUser = usePrivateUser()
   const liquidityTier =
     'answers' in contract
@@ -633,16 +639,18 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
-  // Toggle always shows Yes/No - only the main bet button shows PAMPU
+  // Toggle always shows Yes/No - only the main bet button shows custom text
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
     : { Yes: 'YES', No: 'NO' }
 
   const { pseudonymName: propPseudonymName, pseudonymColor } =
     props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
-  // Use PAMPU as pseudonym for YES outcome when user has the skin
+  // Use custom text as pseudonym when user has it enabled
   const pseudonymName =
-    propPseudonymName ?? (hasPampu && outcome === 'YES' ? 'PAMPU' : undefined)
+    propPseudonymName ??
+    (outcome === 'YES' && customYesText ? customYesText : undefined) ??
+    (outcome === 'NO' && customNoText ? customNoText : undefined)
 
   const shouldPromptVerification =
     isCashContract &&
@@ -1001,7 +1009,7 @@ export const BuyPanelBody = (
                         </span>
                       ) : (
                         <span>
-                          {hasPampu ? '' : 'Buy '}
+                          {customYesText || customNoText ? '' : 'Buy '}
                           {binaryMCOutcomeLabel ??
                             formatOutcomeLabel(
                               contract,

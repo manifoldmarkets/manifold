@@ -170,7 +170,51 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'hovercard',
   },
+  {
+    id: 'custom-yes-button',
+    name: 'Custom YES Button',
+    description: 'Customize your YES button text: PAMPU, BULLISH, LFG, SEND IT, and more',
+    price: 5000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'skin',
+  },
+  {
+    id: 'custom-no-button',
+    name: 'Custom NO Button',
+    description: 'Customize your NO button text: BEARISH, GUH, NAH, DUMPU, and more',
+    price: 5000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'skin',
+  },
 ]
+
+// Available options for custom button text
+export const YES_BUTTON_OPTIONS = [
+  'YES',
+  'PAMPU',
+  'BULLISH',
+  'LFG',
+  'SEND IT',
+  'TO THE MOON',
+  'BUY',
+  'LONG',
+] as const
+
+export const NO_BUTTON_OPTIONS = [
+  'NO',
+  'DUMPU',
+  'BEARISH',
+  'GUH',
+  'NAH',
+  'SELL',
+  'SHORT',
+  'RIP',
+] as const
+
+export type YesButtonOption = (typeof YES_BUTTON_OPTIONS)[number]
+export type NoButtonOption = (typeof NO_BUTTON_OPTIONS)[number]
 
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
@@ -197,11 +241,50 @@ export const hasActiveEntitlement = (
   return isEntitlementActive(entitlement)
 }
 
-// Helper to check if user has PAMPU skin enabled
+// Helper to check if user has PAMPU skin enabled (legacy - use getCustomYesButtonText instead)
 export const userHasPampuSkin = (
   entitlements: UserEntitlement[] | undefined
 ): boolean => {
-  return hasActiveEntitlement(entitlements, 'pampu-skin')
+  // Check legacy PAMPU skin first
+  if (hasActiveEntitlement(entitlements, 'pampu-skin')) return true
+  // Also check if custom YES button is set to PAMPU
+  return getCustomYesButtonText(entitlements) === 'PAMPU'
+}
+
+// Get the user's custom YES button text (if they have the entitlement and it's enabled)
+export const getCustomYesButtonText = (
+  entitlements: UserEntitlement[] | undefined
+): YesButtonOption | null => {
+  if (!entitlements) return null
+
+  // Check custom-yes-button entitlement
+  const customYes = entitlements.find((e) => e.entitlementId === 'custom-yes-button')
+  if (customYes && isEntitlementActive(customYes)) {
+    const selected = customYes.metadata?.selectedText as YesButtonOption | undefined
+    return selected ?? 'PAMPU' // Default to PAMPU if no selection
+  }
+
+  // Fallback: check legacy pampu-skin
+  if (hasActiveEntitlement(entitlements, 'pampu-skin')) {
+    return 'PAMPU'
+  }
+
+  return null
+}
+
+// Get the user's custom NO button text (if they have the entitlement and it's enabled)
+export const getCustomNoButtonText = (
+  entitlements: UserEntitlement[] | undefined
+): NoButtonOption | null => {
+  if (!entitlements) return null
+
+  const customNo = entitlements.find((e) => e.entitlementId === 'custom-no-button')
+  if (customNo && isEntitlementActive(customNo)) {
+    const selected = customNo.metadata?.selectedText as NoButtonOption | undefined
+    return selected ?? 'DUMPU' // Default to DUMPU if no selection
+  }
+
+  return null
 }
 
 // Helper to check if user has hovercard glow

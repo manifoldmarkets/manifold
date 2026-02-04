@@ -3200,6 +3200,18 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
+  'shop-update-metadata': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        metadata: z.record(z.any()),
+      })
+      .strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
   'shop-reset-all': {
     method: 'POST',
     visibility: 'undocumented',

@@ -11,6 +11,10 @@ import {
   getSeasonalAvailabilityText,
   getEntitlementIdsForTeam,
   getOppositeTeam,
+  YES_BUTTON_OPTIONS,
+  NO_BUTTON_OPTIONS,
+  YesButtonOption,
+  NoButtonOption,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
@@ -1358,13 +1362,85 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
   )
 }
 
+function CustomYesButtonPreview(props: {
+  selectedText?: YesButtonOption
+  onSelect?: (text: YesButtonOption) => void
+  owned?: boolean
+}) {
+  const { selectedText = 'PAMPU', onSelect, owned } = props
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <span className="text-ink-500 text-xs">Your YES button becomes:</span>
+      <Row className="items-center gap-2">
+        <Button
+          color="green-outline"
+          size="sm"
+          className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-green-500/30"
+        >
+          {selectedText} <ArrowUpIcon className="ml-1 h-4 w-4" />
+        </Button>
+      </Row>
+      {owned && onSelect && (
+        <select
+          value={selectedText}
+          onChange={(e) => onSelect(e.target.value as YesButtonOption)}
+          className="bg-canvas-0 border-ink-300 mt-2 rounded-md border px-2 py-1 text-sm"
+        >
+          {YES_BUTTON_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  )
+}
+
+function CustomNoButtonPreview(props: {
+  selectedText?: NoButtonOption
+  onSelect?: (text: NoButtonOption) => void
+  owned?: boolean
+}) {
+  const { selectedText = 'DUMPU', onSelect, owned } = props
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <span className="text-ink-500 text-xs">Your NO button becomes:</span>
+      <Row className="items-center gap-2">
+        <Button
+          color="red-outline"
+          size="sm"
+          className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-red-500/30"
+        >
+          {selectedText}
+        </Button>
+      </Row>
+      {owned && onSelect && (
+        <select
+          value={selectedText}
+          onChange={(e) => onSelect(e.target.value as NoButtonOption)}
+          className="bg-canvas-0 border-ink-300 mt-2 rounded-md border px-2 py-1 text-sm"
+        >
+          {NO_BUTTON_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  )
+}
+
 function ItemPreview(props: {
   itemId: string
   user: User | null | undefined
   localStreakBonus?: number
   allEntitlements?: UserEntitlement[]
+  entitlement?: UserEntitlement
+  onMetadataUpdate?: (metadata: Record<string, any>) => void
 }) {
-  const { itemId, user, localStreakBonus, allEntitlements } = props
+  const { itemId, user, localStreakBonus, allEntitlements, entitlement, onMetadataUpdate } = props
 
   switch (itemId) {
     case 'avatar-golden-border':
@@ -1385,6 +1461,30 @@ function ItemPreview(props: {
       return <PampuSkinPreview />
     case 'hovercard-glow':
       return <HovercardGlowPreview user={user} />
+    case 'custom-yes-button':
+      return (
+        <CustomYesButtonPreview
+          selectedText={entitlement?.metadata?.selectedText as YesButtonOption}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (text) => onMetadataUpdate({ selectedText: text })
+              : undefined
+          }
+        />
+      )
+    case 'custom-no-button':
+      return (
+        <CustomNoButtonPreview
+          selectedText={entitlement?.metadata?.selectedText as NoButtonOption}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (text) => onMetadataUpdate({ selectedText: text })
+              : undefined
+          }
+        />
+      )
     default:
       return null
   }
@@ -1494,6 +1594,20 @@ function ShopItemCard(props: {
     }
   }
 
+  const handleMetadataUpdate = async (metadata: Record<string, any>) => {
+    try {
+      const result = await api('shop-update-metadata', {
+        itemId: item.id,
+        metadata,
+      })
+      // Update parent state with new entitlements
+      onPurchaseComplete(item.id, result.entitlements)
+      toast.success('Selection updated!')
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update selection')
+    }
+  }
+
   const cardRef = useRef<HTMLDivElement>(null)
 
   // Premium items (over 100k mana) get special styling
@@ -1600,6 +1714,8 @@ function ShopItemCard(props: {
           user={user}
           localStreakBonus={localStreakBonus}
           allEntitlements={allEntitlements}
+          entitlement={entitlement}
+          onMetadataUpdate={owned ? handleMetadataUpdate : undefined}
         />
 
         {/* Footer: different layouts for owned vs non-owned */}
@@ -1789,6 +1905,7 @@ function ShopItemCard(props: {
             user={user}
             localStreakBonus={localStreakBonus}
             allEntitlements={allEntitlements}
+            entitlement={entitlement}
           />
 
           {item.duration && (
