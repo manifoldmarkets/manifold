@@ -482,7 +482,8 @@ export type ReferralData = {
 export type MembershipSubscriptionData = {
   tierName: string
   amount: number
-  type: 'renewed' | 'cancelled'
+  type: 'renewed' | 'cancelled' | 'expiring_soon'
+  daysUntilExpiry?: number
   newExpiresTime?: number // Only for renewals
 }
 
