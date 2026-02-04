@@ -24,6 +24,7 @@ export function BettingStreakModal(props: {
 }) {
   const { isOpen, setOpen, currentUser } = props
   const missingStreak = currentUser && !hasCompletedStreakToday(currentUser)
+  const wasFrozen = currentUser && wasStreakFrozenRecently(currentUser)
 
   // Get quest multiplier from membership tier (1x for non-supporters)
   const questMultiplier = getBenefit(
@@ -33,18 +34,34 @@ export function BettingStreakModal(props: {
   const bonusAmount = Math.floor(BETTING_STREAK_BONUS_AMOUNT * questMultiplier)
   const bonusMax = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
 
+  // Determine emoji visual state:
+  // - Normal (colored): streak completed today
+  // - Frozen (icy blue): streak not completed but freeze was used
+  // - Grayscale: streak not completed, no freeze used
+  const getEmojiStyle = () => {
+    if (!missingStreak) return '' // Normal colored
+    if (wasFrozen) return 'hue-rotate-180 brightness-110' // Icy blue
+    return 'grayscale' // Gray
+  }
+
   return (
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
-        <span
-          className={clsx(
-            'text-8xl',
-            missingStreak ? 'grayscale' : 'grayscale-0'
-          )}
-        >
-          🔥
+        <span className={clsx('text-8xl', getEmojiStyle())}>
+          {wasFrozen && missingStreak ? '🧊' : '🔥'}
         </span>
-        {missingStreak && (
+        {wasFrozen && missingStreak && (
+          <Col className="gap-2 text-center">
+            <span className="font-bold text-blue-500">
+              Your streak was frozen! 🧊
+            </span>
+            <span className="ml-2">
+              A streak freeze was used to protect your {currentUser?.currentBettingStreak ?? 0}-day streak.
+              Make a prediction today to keep it going!
+            </span>
+          </Col>
+        )}
+        {missingStreak && !wasFrozen && (
           <Col className={' gap-2 text-center'}>
             <span className={'font-bold'}>
               You haven't predicted yet today!
@@ -117,4 +134,26 @@ export function hasCompletedStreakToday(user: User) {
     : todayResetTime
 
   return (user?.lastBetTime ?? 0) > resetTime.valueOf()
+}
+
+// Check if a streak freeze was used recently (within last day since last reset)
+export function wasStreakFrozenRecently(user: User) {
+  if (!user.lastStreakFreezeTime) return false
+
+  // Get current time in Pacific
+  const now = dayjs().tz('America/Los_Angeles')
+
+  // Get today's reset time (midnight Pacific)
+  const todayResetTime = now.startOf('day')
+
+  // Get yesterday's reset time
+  const yesterdayResetTime = todayResetTime.subtract(1, 'day')
+
+  // Use yesterday's reset time if we haven't hit today's yet
+  const resetTime = now.isBefore(todayResetTime)
+    ? yesterdayResetTime
+    : todayResetTime
+
+  // Freeze was used if it happened after the reset time
+  return user.lastStreakFreezeTime > resetTime.valueOf()
 }

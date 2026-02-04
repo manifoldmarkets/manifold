@@ -11,6 +11,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   BettingStreakModal,
   hasCompletedStreakToday,
+  wasStreakFrozenRecently,
 } from 'web/components/profile/betting-streak-modal'
 import { Title } from 'web/components/widgets/title'
 import { ProgressBar } from 'web/components/progress-bar'
@@ -42,20 +43,32 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   }, [showQuestsModal])
   if (!user) return <></>
 
+  const missingStreak = user && !hasCompletedStreakToday(user)
+  const wasFrozen = user && wasStreakFrozenRecently(user)
+
+  // Determine visual state:
+  // - Normal (colored): streak completed today
+  // - Frozen (icy blue): streak not completed but freeze was used
+  // - Grayscale: streak not completed, no freeze used
+  const getStyle = () => {
+    if (!missingStreak) return '' // Normal
+    if (wasFrozen) return 'hue-rotate-180 brightness-110' // Icy blue
+    return 'grayscale' // Gray
+  }
+
   return (
     <>
       <button
         className={clsx('cursor-pointer', dailyStatsClass)}
         onClick={() => setShowQuestsModal(true)}
       >
-        <Col
-          className={clsx(
-            user && !hasCompletedStreakToday(user) && 'grayscale',
-            'items-center'
-          )}
-        >
-          <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-          <span className="text-ink-600 text-xs">Streak</span>
+        <Col className={clsx(getStyle(), 'items-center')}>
+          <span>
+            {wasFrozen && missingStreak ? '🧊' : '🔥'} {user?.currentBettingStreak ?? 0}
+          </span>
+          <span className="text-ink-600 text-xs">
+            {wasFrozen && missingStreak ? 'Frozen' : 'Streak'}
+          </span>
         </Col>
       </button>
       {showQuestsModal && (
