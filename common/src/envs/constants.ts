@@ -158,6 +158,7 @@ export const BOT_USERNAMES = [
   'CharlesLienBot',
   'JaguarMcBot',
   'AImogus',
+  'HakariBot',
   'brake',
   'brontobot',
   'OracleBot',
