@@ -8,6 +8,10 @@ import {
   EXCLUSIVE_CATEGORIES,
   getEntitlementIdsForCategory,
   SHOP_ITEMS,
+  isSeasonalItemAvailable,
+  getSeasonalAvailabilityText,
+  getEntitlementIdsForTeam,
+  getOppositeTeam,
 } from 'common/shop/items'
 import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 import {
@@ -51,6 +55,82 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       )
       if (existingEntitlement) {
         throw new APIError(403, 'You already own this item')
+      }
+    }
+
+    // Check seasonal availability
+    if (item.seasonalAvailability && !isSeasonalItemAvailable(item)) {
+      const availabilityText = getSeasonalAvailabilityText(item) ?? 'during its season'
+      throw new APIError(
+        403,
+        `This item is only available ${availabilityText}`
+      )
+    }
+
+    // Check achievement requirement
+    if (item.requirement) {
+      const { type, threshold, description } = item.requirement
+      let userValue = 0
+      let valueName = ''
+
+      switch (type) {
+        case 'streak':
+          userValue = user.currentBettingStreak ?? 0
+          valueName = 'streak'
+          break
+        case 'profit':
+          // Query total profit from user metrics
+          const profitResult = await tx.oneOrNone<{ profit: number }>(
+            `SELECT COALESCE(SUM(profit), 0) as profit FROM user_contract_metrics WHERE user_id = $1 AND profit > 0`,
+            [auth.uid]
+          )
+          userValue = profitResult?.profit ?? 0
+          valueName = 'profit'
+          break
+        case 'loss':
+          // Query total loss (absolute value) from user metrics
+          const lossResult = await tx.oneOrNone<{ loss: number }>(
+            `SELECT COALESCE(SUM(ABS(profit)), 0) as loss FROM user_contract_metrics WHERE user_id = $1 AND profit < 0`,
+            [auth.uid]
+          )
+          userValue = lossResult?.loss ?? 0
+          valueName = 'loss'
+          break
+        case 'volume':
+          // Query total trading volume
+          const volumeResult = await tx.oneOrNone<{ volume: number }>(
+            `SELECT COALESCE(SUM(ABS(amount)), 0) as volume FROM contract_bets WHERE user_id = $1`,
+            [auth.uid]
+          )
+          userValue = volumeResult?.volume ?? 0
+          valueName = 'volume'
+          break
+        case 'donations':
+          // Query total charity donations (in USD, from ticket purchases)
+          const donationResult = await tx.oneOrNone<{ donations: number }>(
+            `SELECT COALESCE(SUM(num_tickets), 0) as donations FROM charity_giveaway_tickets WHERE user_id = $1`,
+            [auth.uid]
+          )
+          // Each ticket is $1
+          userValue = donationResult?.donations ?? 0
+          valueName = 'donations'
+          break
+        case 'referrals':
+          // Query number of referrals
+          const referralResult = await tx.oneOrNone<{ referrals: number }>(
+            `SELECT COUNT(*) as referrals FROM users WHERE (data->>'referredByUserId') = $1`,
+            [auth.uid]
+          )
+          userValue = referralResult?.referrals ?? 0
+          valueName = 'referrals'
+          break
+      }
+
+      if (userValue < threshold) {
+        throw new APIError(
+          403,
+          `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(userValue)}/${threshold}`
+        )
       }
     }
 
@@ -215,6 +295,20 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
            AND entitlement_id != $3`,
           [auth.uid, categoryEntitlementIds, entitlementId]
         )
+      }
+
+      // For team items, disable items from the opposite team
+      if (item.team) {
+        const oppositeTeamIds = getEntitlementIdsForTeam(getOppositeTeam(item.team))
+        if (oppositeTeamIds.length > 0) {
+          await tx.none(
+            `UPDATE user_entitlements
+             SET enabled = false
+             WHERE user_id = $1
+             AND entitlement_id = ANY($2)`,
+            [auth.uid, oppositeTeamIds]
+          )
+        }
       }
 
       // For supporter tiers: DELETE all existing supporter entitlements (upgrade replaces, doesn't stack)

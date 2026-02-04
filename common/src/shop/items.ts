@@ -31,6 +31,30 @@ export const getEntitlementIdsForCategory = (
   )
 }
 
+// Achievement requirement types
+export type AchievementRequirementType =
+  | 'streak' // currentBettingStreak
+  | 'profit' // total profit
+  | 'loss' // total loss (absolute value)
+  | 'volume' // total trading volume
+  | 'donations' // $ donated to charity
+  | 'referrals' // number of referrals
+
+export type AchievementRequirement = {
+  type: AchievementRequirementType
+  threshold: number
+  description: string // e.g., "Reach a 100-day betting streak"
+}
+
+// Team for mutual exclusivity (can only equip items from one team at a time)
+export type ShopTeam = 'red' | 'green'
+
+// Seasonal availability window
+export type SeasonalAvailability = {
+  eventDate: { month: number; day: number } // e.g., { month: 12, day: 25 } for Christmas
+  daysBuffer: number // 10 = 9 days before and 9 days after, 1 = only on the day
+}
+
 export type ShopItem = {
   id: string
   name: string
@@ -45,6 +69,12 @@ export type ShopItem = {
   entitlementId?: string
   // If true, item has no toggle switch (always active when owned)
   alwaysEnabled?: boolean
+  // Achievement requirement to unlock this item (optional)
+  requirement?: AchievementRequirement
+  // Team affiliation - items from different teams are mutually exclusive (optional)
+  team?: ShopTeam
+  // Seasonal availability window - can only purchase during this period (optional)
+  seasonalAvailability?: SeasonalAvailability
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -198,4 +228,73 @@ export const userHasAvatarDecoration = (
   decorationId: 'avatar-golden-border' | 'avatar-crown' | 'avatar-graduation-cap'
 ): boolean => {
   return hasActiveEntitlement(entitlements, decorationId)
+}
+
+// Check if a seasonal item is currently available for purchase
+export const isSeasonalItemAvailable = (item: ShopItem): boolean => {
+  if (!item.seasonalAvailability) return true // Non-seasonal items always available
+
+  const { eventDate, daysBuffer } = item.seasonalAvailability
+  const now = new Date()
+  const currentYear = now.getFullYear()
+
+  // Create event date for current year
+  const eventThisYear = new Date(currentYear, eventDate.month - 1, eventDate.day)
+
+  // Check if we're within the buffer range
+  const bufferDays = daysBuffer - 1 // 10 means 9 before, 9 after (plus the day itself)
+  const startDate = new Date(eventThisYear)
+  startDate.setDate(startDate.getDate() - bufferDays)
+  const endDate = new Date(eventThisYear)
+  endDate.setDate(endDate.getDate() + bufferDays)
+
+  // Also check for events that span year boundaries (e.g., Christmas into January)
+  const eventLastYear = new Date(currentYear - 1, eventDate.month - 1, eventDate.day)
+  const endDateLastYear = new Date(eventLastYear)
+  endDateLastYear.setDate(endDateLastYear.getDate() + bufferDays)
+
+  const eventNextYear = new Date(currentYear + 1, eventDate.month - 1, eventDate.day)
+  const startDateNextYear = new Date(eventNextYear)
+  startDateNextYear.setDate(startDateNextYear.getDate() - bufferDays)
+
+  return (
+    (now >= startDate && now <= endDate) ||
+    (now <= endDateLastYear) || // End of last year's event
+    (now >= startDateNextYear) // Start of next year's event
+  )
+}
+
+// Get readable availability text for seasonal items
+export const getSeasonalAvailabilityText = (item: ShopItem): string | null => {
+  if (!item.seasonalAvailability) return null
+
+  const { eventDate, daysBuffer } = item.seasonalAvailability
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+  if (daysBuffer === 1) {
+    return `Only available on ${months[eventDate.month - 1]} ${eventDate.day}`
+  }
+
+  const bufferDays = daysBuffer - 1
+  const startDate = new Date(2000, eventDate.month - 1, eventDate.day)
+  startDate.setDate(startDate.getDate() - bufferDays)
+  const endDate = new Date(2000, eventDate.month - 1, eventDate.day)
+  endDate.setDate(endDate.getDate() + bufferDays)
+
+  return `Available ${months[startDate.getMonth()]} ${startDate.getDate()} - ${months[endDate.getMonth()]} ${endDate.getDate()}`
+}
+
+// Get all items for a specific team
+export const getItemsForTeam = (team: ShopTeam): ShopItem[] => {
+  return SHOP_ITEMS.filter((item) => item.team === team)
+}
+
+// Get all entitlement IDs for items in a team
+export const getEntitlementIdsForTeam = (team: ShopTeam): string[] => {
+  return getItemsForTeam(team).map((item) => item.entitlementId ?? item.id)
+}
+
+// Get the opposite team
+export const getOppositeTeam = (team: ShopTeam): ShopTeam => {
+  return team === 'red' ? 'green' : 'red'
 }

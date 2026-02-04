@@ -7,6 +7,10 @@ import {
   getShopItem,
   EXCLUSIVE_CATEGORIES,
   getEntitlementIdsForCategory,
+  isSeasonalItemAvailable,
+  getSeasonalAvailabilityText,
+  getEntitlementIdsForTeam,
+  getOppositeTeam,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
@@ -259,7 +263,7 @@ export default function ShopPage() {
     const actualEnabled = revert ? !enabled : enabled
     const updated = { ...existing, enabled: actualEnabled }
 
-    // Build optimistic state - update the toggled item AND disable others in same category
+    // Build optimistic state - update the toggled item AND disable others in same category/team
     setLocalEntitlements((_prev) => {
       // Start with a copy of all effective entitlements to get full picture
       let newState = [...effectiveEntitlements]
@@ -274,6 +278,19 @@ export default function ShopPage() {
             categoryEntitlementIds.includes(e.entitlementId) &&
             e.entitlementId !== entitlementId
           ) {
+            return { ...e, enabled: false }
+          }
+          return e
+        })
+      }
+
+      // If enabling a team item, disable items from the opposite team
+      if (actualEnabled && item.team) {
+        const oppositeTeamIds = getEntitlementIdsForTeam(
+          getOppositeTeam(item.team)
+        )
+        newState = newState.map((e) => {
+          if (oppositeTeamIds.includes(e.entitlementId)) {
             return { ...e, enabled: false }
           }
           return e
@@ -301,6 +318,21 @@ export default function ShopPage() {
           ent.entitlementId !== entitlementId &&
           ent.enabled
         ) {
+          optimisticContext?.setOptimisticEntitlement({
+            ...ent,
+            enabled: false,
+          })
+        }
+      }
+    }
+
+    // Also update global context for opposite team items we disabled
+    if (actualEnabled && item.team) {
+      const oppositeTeamIds = getEntitlementIdsForTeam(
+        getOppositeTeam(item.team)
+      )
+      for (const ent of effectiveEntitlements) {
+        if (oppositeTeamIds.includes(ent.entitlementId) && ent.enabled) {
           optimisticContext?.setOptimisticEntitlement({
             ...ent,
             enabled: false,
@@ -1415,6 +1447,10 @@ function ShopItemCard(props: {
     (user.streakForgiveness ?? 0) + localStreakBonus >=
       getMaxStreakFreezes(allEntitlements)
 
+  // Check if seasonal item is currently unavailable
+  const isSeasonalUnavailable =
+    item.seasonalAvailability && !isSeasonalItemAvailable(item)
+
   const handlePurchase = async () => {
     if (!user) return
 
@@ -1524,6 +1560,40 @@ function ShopItemCard(props: {
 
         <p className="text-ink-600 text-sm">{item.description}</p>
 
+        {/* Achievement requirement badge */}
+        {item.requirement && (
+          <div className="rounded-md bg-amber-50 px-2 py-1 dark:bg-amber-900/30">
+            <span className="text-xs text-amber-700 dark:text-amber-300">
+              🏆 Requires: {item.requirement.description}
+            </span>
+          </div>
+        )}
+
+        {/* Seasonal availability badge */}
+        {item.seasonalAvailability && (
+          <div
+            className={clsx(
+              'rounded-md px-2 py-1',
+              isSeasonalItemAvailable(item)
+                ? 'bg-green-50 dark:bg-green-900/30'
+                : 'bg-gray-100 dark:bg-gray-800'
+            )}
+          >
+            <span
+              className={clsx(
+                'text-xs',
+                isSeasonalItemAvailable(item)
+                  ? 'text-green-700 dark:text-green-300'
+                  : 'text-ink-500'
+              )}
+            >
+              {isSeasonalItemAvailable(item)
+                ? '🎉 Available now!'
+                : `⏰ ${getSeasonalAvailabilityText(item) ?? 'Limited time'}`}
+            </span>
+          </div>
+        )}
+
         {/* Live Preview with actual user data */}
         <ItemPreview
           itemId={item.id}
@@ -1621,7 +1691,11 @@ function ShopItemCard(props: {
 
                 {/* Buy button inline on wider screens */}
                 <div className="hidden min-[480px]:block">
-                  {isStreakFreezeAtMax ? (
+                  {isSeasonalUnavailable ? (
+                    <Button size="sm" color="gray" disabled>
+                      Not available
+                    </Button>
+                  ) : isStreakFreezeAtMax ? (
                     <Button size="sm" color="gray" disabled>
                       Max owned
                     </Button>
@@ -1646,7 +1720,11 @@ function ShopItemCard(props: {
 
               {/* Full-width button on narrow screens */}
               <div className="min-[480px]:hidden">
-                {isStreakFreezeAtMax ? (
+                {isSeasonalUnavailable ? (
+                  <Button size="sm" color="gray" disabled className="w-full">
+                    Not available
+                  </Button>
+                ) : isStreakFreezeAtMax ? (
                   <Button size="sm" color="gray" disabled className="w-full">
                     Max owned
                   </Button>
