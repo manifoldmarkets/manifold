@@ -16,6 +16,7 @@ import {
   NotificationReason,
   PaymentCompletedData,
   ReviewNotificationData,
+  StreakFreezeUsedData,
   UniqueBettorData,
 } from 'common/notification'
 import { answerToMidpoint, getRangeContainingValues } from 'common/number'
@@ -511,6 +512,68 @@ export const createBettingStreakExpiringNotification = async (
       bulkNotifications.push(notification)
     }
   })
+  await createPushNotifications(bulkPushNotifications)
+  await bulkInsertNotifications(bulkNotifications, pg)
+}
+
+export const createStreakFreezeUsedNotification = async (
+  usersWithFreezeUsed: { id: string; streak: number; freezesRemaining: number }[],
+  pg: SupabaseDirectClient
+) => {
+  if (usersWithFreezeUsed.length === 0) return
+
+  const privateUsers = await pg.map(
+    `select * from private_users where id = any($1)`,
+    [usersWithFreezeUsed.map((u) => u.id)],
+    convertPrivateUser
+  )
+  const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
+    []
+  const bulkNotifications: Notification[] = []
+
+  for (const { id: userId, streak, freezesRemaining } of usersWithFreezeUsed) {
+    const privateUser = privateUsers.find((user) => user.id === userId)
+    if (!privateUser) continue
+    const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
+      privateUser,
+      'betting_streaks'
+    )
+    const notifId = nanoid(6)
+    const notification: Notification = {
+      id: notifId,
+      userId,
+      reason: 'betting_streaks',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: notifId,
+      sourceText: streak.toString(),
+      sourceType: 'betting_streak_freeze_used',
+      sourceUpdateType: 'created',
+      sourceUserName: '',
+      sourceUserUsername: '',
+      sourceUserAvatarUrl: '',
+      sourceTitle: 'Streak Freeze Used',
+      data: {
+        streak,
+        freezesRemaining,
+      } as StreakFreezeUsedData,
+    }
+    if (sendToMobile) {
+      const freezeText =
+        freezesRemaining === 0
+          ? "You're out of streak freezes!"
+          : `${freezesRemaining} freeze${freezesRemaining === 1 ? '' : 's'} remaining.`
+      bulkPushNotifications.push([
+        privateUser,
+        notification,
+        `🧊 Streak freeze used!`,
+        `Your ${streak} day streak was saved. ${freezeText}`,
+      ])
+    }
+    if (sendToBrowser) {
+      bulkNotifications.push(notification)
+    }
+  }
   await createPushNotifications(bulkPushNotifications)
   await bulkInsertNotifications(bulkNotifications, pg)
 }

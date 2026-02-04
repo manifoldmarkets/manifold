@@ -63,6 +63,7 @@ export type notification_source_types =
   | 'bonus' // strictly unique bettor bonuses atm
   | 'betting_streak_bonus'
   | 'betting_streak_expiring'
+  | 'betting_streak_freeze_used'
   | 'loan'
   | 'tip_and_like'
   | 'badge'
@@ -378,6 +379,11 @@ export type BettingStreakData = {
   streak: number
   bonusAmount: number
   cashAmount?: number
+}
+
+export type StreakFreezeUsedData = {
+  streak: number
+  freezesRemaining: number
 }
 export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
