@@ -364,7 +364,12 @@ function getSearchContractWhereSQL(args: {
   const loveFilter = hideLove
     ? `group_slugs is null or not group_slugs && $1`
     : ''
-  const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
+  const sortFilter =
+    sort === 'close-date'
+      ? 'close_time > NOW()'
+      : sort === '24-hour-vol'
+      ? "(contracts.data->>'volume24Hours')::numeric > 0"
+      : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
     uid,
