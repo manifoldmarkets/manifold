@@ -50,6 +50,17 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
       )
     }
 
+    // If enabling an item with explicit conflicts, disable conflicting items
+    if (enabled && item.conflicts?.length) {
+      await tx.none(
+        `UPDATE user_entitlements
+         SET enabled = false
+         WHERE user_id = $1
+         AND entitlement_id = ANY($2)`,
+        [auth.uid, item.conflicts]
+      )
+    }
+
     // If enabling a team item, disable items from the opposite team
     if (enabled && item.team) {
       const oppositeTeamIds = getEntitlementIdsForTeam(getOppositeTeam(item.team))

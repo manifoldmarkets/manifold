@@ -209,14 +209,27 @@ export default function ShopPage() {
               }
             }
           }
+
+          // For items with explicit conflicts, disable conflicting items
+          if (item.conflicts?.length) {
+            for (const ent of entitlements) {
+              if (item.conflicts.includes(ent.entitlementId) && !ent.enabled) {
+                optimisticContext?.setOptimisticEntitlement(ent)
+              }
+            }
+          }
         }
       }
     }
     if (itemId === 'streak-forgiveness') {
       setLocalStreakBonus((prev) => prev + 1)
     }
-    setJustPurchased(itemId)
-    setTimeout(() => setJustPurchased(null), 2500)
+    // Skip confetti for consumables and skins (button customizations)
+    const purchasedItem = getShopItem(itemId)
+    if (purchasedItem?.category !== 'consumable' && purchasedItem?.category !== 'skin') {
+      setJustPurchased(itemId)
+      setTimeout(() => setJustPurchased(null), 2500)
+    }
   }
 
   // Callback for toggle completion (itemId is the shop item id, not entitlement id)
@@ -289,6 +302,16 @@ export default function ShopPage() {
         })
       }
 
+      // If enabling an item with explicit conflicts, disable conflicting items
+      if (actualEnabled && item.conflicts?.length) {
+        newState = newState.map((e) => {
+          if (item.conflicts!.includes(e.entitlementId)) {
+            return { ...e, enabled: false }
+          }
+          return e
+        })
+      }
+
       // If enabling a team item, disable items from the opposite team
       if (actualEnabled && item.team) {
         const oppositeTeamIds = getEntitlementIdsForTeam(
@@ -323,6 +346,18 @@ export default function ShopPage() {
           ent.entitlementId !== entitlementId &&
           ent.enabled
         ) {
+          optimisticContext?.setOptimisticEntitlement({
+            ...ent,
+            enabled: false,
+          })
+        }
+      }
+    }
+
+    // Also update global context for conflicting items we disabled
+    if (actualEnabled && item.conflicts?.length) {
+      for (const ent of effectiveEntitlements) {
+        if (item.conflicts.includes(ent.entitlementId) && ent.enabled) {
           optimisticContext?.setOptimisticEntitlement({
             ...ent,
             enabled: false,
@@ -1612,33 +1647,45 @@ function CustomYesButtonPreview(props: {
 }) {
   const { selectedText = 'PAMPU', onSelect, owned } = props
   const [previewIndex, setPreviewIndex] = useState(
-    YES_BUTTON_OPTIONS.indexOf(selectedText ?? 'PAMPU')
+    Math.max(0, YES_BUTTON_OPTIONS.indexOf(selectedText ?? 'PAMPU'))
   )
-  const displayText = owned ? selectedText : YES_BUTTON_OPTIONS[previewIndex]
+  const pendingMetadataRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const displayText = YES_BUTTON_OPTIONS[previewIndex]
 
   const cyclePrev = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setPreviewIndex(
-      (i) => (i - 1 + YES_BUTTON_OPTIONS.length) % YES_BUTTON_OPTIONS.length
-    )
+    const newIndex = (previewIndex - 1 + YES_BUTTON_OPTIONS.length) % YES_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      // Debounce metadata update
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(YES_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
   }
   const cycleNext = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setPreviewIndex((i) => (i + 1) % YES_BUTTON_OPTIONS.length)
+    const newIndex = (previewIndex + 1) % YES_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(YES_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
   }
 
   return (
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <span className="text-ink-500 text-xs">Your YES button becomes:</span>
       <Row className="w-full items-center">
-        {!owned && (
-          <button
-            onClick={cyclePrev}
-            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-          </button>
-        )}
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
         <div className="flex items-center justify-center">
           <Button
             color="green-outline"
@@ -1648,28 +1695,13 @@ function CustomYesButtonPreview(props: {
             {displayText} <ArrowUpIcon className="ml-1 h-4 w-4" />
           </Button>
         </div>
-        {!owned && (
-          <button
-            onClick={cycleNext}
-            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
-          >
-            <ChevronRightIcon className="h-4 w-4" />
-          </button>
-        )}
-      </Row>
-      {owned && onSelect && (
-        <select
-          value={selectedText}
-          onChange={(e) => onSelect(e.target.value as YesButtonOption)}
-          className="bg-canvas-0 border-ink-300 mt-2 rounded-md border px-2 py-1 text-sm"
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
-          {YES_BUTTON_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      )}
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
     </div>
   )
 }
@@ -1681,33 +1713,44 @@ function CustomNoButtonPreview(props: {
 }) {
   const { selectedText = 'DUMPU', onSelect, owned } = props
   const [previewIndex, setPreviewIndex] = useState(
-    NO_BUTTON_OPTIONS.indexOf(selectedText ?? 'DUMPU')
+    Math.max(0, NO_BUTTON_OPTIONS.indexOf(selectedText ?? 'DUMPU'))
   )
-  const displayText = owned ? selectedText : NO_BUTTON_OPTIONS[previewIndex]
+  const pendingMetadataRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const displayText = NO_BUTTON_OPTIONS[previewIndex]
 
   const cyclePrev = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setPreviewIndex(
-      (i) => (i - 1 + NO_BUTTON_OPTIONS.length) % NO_BUTTON_OPTIONS.length
-    )
+    const newIndex = (previewIndex - 1 + NO_BUTTON_OPTIONS.length) % NO_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(NO_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
   }
   const cycleNext = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setPreviewIndex((i) => (i + 1) % NO_BUTTON_OPTIONS.length)
+    const newIndex = (previewIndex + 1) % NO_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(NO_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
   }
 
   return (
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <span className="text-ink-500 text-xs">Your NO button becomes:</span>
       <Row className="w-full items-center">
-        {!owned && (
-          <button
-            onClick={cyclePrev}
-            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-          </button>
-        )}
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
         <div className="flex items-center justify-center">
           <Button
             color="red-outline"
@@ -1717,28 +1760,13 @@ function CustomNoButtonPreview(props: {
             {displayText} <ArrowDownIcon className="ml-1 h-4 w-4" />
           </Button>
         </div>
-        {!owned && (
-          <button
-            onClick={cycleNext}
-            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
-          >
-            <ChevronRightIcon className="h-4 w-4" />
-          </button>
-        )}
-      </Row>
-      {owned && onSelect && (
-        <select
-          value={selectedText}
-          onChange={(e) => onSelect(e.target.value as NoButtonOption)}
-          className="bg-canvas-0 border-ink-300 mt-2 rounded-md border px-2 py-1 text-sm"
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
         >
-          {NO_BUTTON_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      )}
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
     </div>
   )
 }
@@ -1923,9 +1951,8 @@ function ShopItemCard(props: {
         itemId: item.id,
         metadata,
       })
-      // Update parent state with new entitlements
+      // Update parent state with new entitlements (no confetti since skin category is excluded)
       onPurchaseComplete(item.id, result.entitlements)
-      toast.success('Selection updated!')
     } catch (e: any) {
       toast.error(e.message || 'Failed to update selection')
     }

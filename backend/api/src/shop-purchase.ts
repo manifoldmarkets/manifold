@@ -297,6 +297,17 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
         )
       }
 
+      // For items with explicit conflicts, disable conflicting items
+      if (item.conflicts?.length) {
+        await tx.none(
+          `UPDATE user_entitlements
+           SET enabled = false
+           WHERE user_id = $1
+           AND entitlement_id = ANY($2)`,
+          [auth.uid, item.conflicts]
+        )
+      }
+
       // For team items, disable items from the opposite team
       if (item.team) {
         const oppositeTeamIds = getEntitlementIdsForTeam(getOppositeTeam(item.team))

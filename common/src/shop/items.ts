@@ -19,7 +19,6 @@ export const EXCLUSIVE_CATEGORIES: ShopItemCategory[] = [
   'avatar-border',
   'avatar-overlay',
   'hovercard',
-  'skin',
 ]
 
 // Get all entitlement IDs for items in a given category
@@ -75,6 +74,9 @@ export type ShopItem = {
   team?: ShopTeam
   // Seasonal availability window - can only purchase during this period (optional)
   seasonalAvailability?: SeasonalAvailability
+  // Explicit conflicts - entitlement IDs that must be disabled when this item is enabled
+  // (for items that affect the same slot but aren't in the same exclusive category)
+  conflicts?: string[]
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -160,6 +162,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'skin',
+    conflicts: ['custom-yes-button'],
   },
   {
     id: 'hovercard-glow',
@@ -178,6 +181,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'skin',
+    conflicts: ['pampu-skin'],
   },
   {
     id: 'custom-no-button',
