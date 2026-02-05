@@ -76,6 +76,7 @@ export const BOT_USERNAMES = [
   'TenShinoBot',
   'JDVance1',
   'Merchant',
+  'benedict',
   'subooferbot',
   'pos',
   'v',
