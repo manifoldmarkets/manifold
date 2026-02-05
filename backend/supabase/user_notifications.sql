@@ -27,9 +27,10 @@ drop index if exists user_notifications_pkey;
 
 create unique index user_notifications_pkey on public.user_notifications using btree (user_id, notification_id);
 
-drop index if exists user_notifications_user_id_created_time;
+drop index if exists user_notifications_user_id_read_created;
 
-create index user_notifications_user_id_created_time on public.user_notifications using btree (
+create index user_notifications_user_id_read_created on public.user_notifications using btree (
   user_id,
+  (((data ->> 'markedAsRead'::text))::boolean),
   (((data -> 'createdTime'::text))::bigint) desc
 );
