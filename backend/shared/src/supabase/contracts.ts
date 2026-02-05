@@ -157,7 +157,7 @@ export const isContractNonPredictive = async (contract: Contract) => {
   if (contract.creatorUsername === 'ManifoldLove') return true
 
   // Check for self-referential markets using Gemini
-  const systemPrompt = `You are a market analysis assistant. Your task is to determine if a market question is self-referential - meaning it refers to itself, its own traders, or its own resolution in a way that makes it non-predictive.
+  const systemPrompt = `You are a market analysis assistant. Your task is to determine if a market question is self-referential - meaning it refers to itself, its own traders, or its own resolution in a way that makes it non-predictive. Non-sensical markets are not predictive, either.
 
 Examples of self-referential markets:
 ${unrankedMarketExamples}
@@ -176,11 +176,12 @@ Respond with a JSON object containing:
     const result = await promptAI<{ isSelfReferential?: boolean }>(
       contract.question,
       {
-        model: aiModels.haiku,
+        model: aiModels.flash,
         system: systemPrompt,
         parseAsJson: true,
       }
     )
+    log('isContractNonPredictive AI result:', result)
     return !!result.isSelfReferential
   } catch (error) {
     log.error('Error checking for self-referential market:', {
