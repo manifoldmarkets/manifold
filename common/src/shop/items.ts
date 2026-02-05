@@ -188,6 +188,61 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'skin',
   },
+  // Hats
+  {
+    id: 'avatar-top-hat',
+    name: 'Top Hat',
+    description: 'A distinguished top hat for the refined predictor',
+    price: 50000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-halo',
+    name: 'Halo',
+    description: 'A golden halo for the most virtuous forecasters',
+    price: 100000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-propeller-hat',
+    name: 'Propeller Hat',
+    description: 'A propeller hat for the playful predictor (animated on shop & hovercard)',
+    price: 25000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-wizard-hat',
+    name: 'Wizard Hat',
+    description: 'A mystical wizard hat for the oracle of markets',
+    price: 150000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-tinfoil-hat',
+    name: 'Tinfoil Hat',
+    description: 'For the contrarian who knows the truth',
+    price: 15000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-microphone',
+    name: 'Microphone',
+    description: 'Drop the mic on your predictions',
+    price: 20000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
 ]
 
 // Available options for custom button text
@@ -305,12 +360,46 @@ export const userHasSupporterBadge = (
   )
 }
 
+// All avatar decoration IDs (overlays and borders)
+export type AvatarDecorationId =
+  | 'avatar-golden-border'
+  | 'avatar-crown'
+  | 'avatar-graduation-cap'
+  | 'avatar-top-hat'
+  | 'avatar-halo'
+  | 'avatar-propeller-hat'
+  | 'avatar-wizard-hat'
+  | 'avatar-tinfoil-hat'
+  | 'avatar-microphone'
+
 // Helper to check if user has a specific avatar decoration
 export const userHasAvatarDecoration = (
   entitlements: UserEntitlement[] | undefined,
-  decorationId: 'avatar-golden-border' | 'avatar-crown' | 'avatar-graduation-cap'
+  decorationId: AvatarDecorationId
 ): boolean => {
   return hasActiveEntitlement(entitlements, decorationId)
+}
+
+// Get the active avatar overlay (hat) if any
+export const getActiveAvatarOverlay = (
+  entitlements: UserEntitlement[] | undefined
+): AvatarDecorationId | null => {
+  const overlays: AvatarDecorationId[] = [
+    'avatar-crown',
+    'avatar-graduation-cap',
+    'avatar-top-hat',
+    'avatar-halo',
+    'avatar-propeller-hat',
+    'avatar-wizard-hat',
+    'avatar-tinfoil-hat',
+    'avatar-microphone',
+  ]
+  for (const overlay of overlays) {
+    if (hasActiveEntitlement(entitlements, overlay)) {
+      return overlay
+    }
+  }
+  return null
 }
 
 // Check if a seasonal item is currently available for purchase

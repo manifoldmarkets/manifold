@@ -26,7 +26,7 @@ export type DisplayContext =
   | 'managrams'
 
 // Animation types for entitlements
-export type AnimationType = 'hat-hover' | 'golden-glow' | 'badge-pulse'
+export type AnimationType = 'hat-hover' | 'golden-glow' | 'badge-pulse' | 'propeller-spin'
 
 // Combined context configuration
 type ContextConfig = {
@@ -54,7 +54,7 @@ const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
   },
   shop: {
     groups: ['avatar-border', 'avatar-overlay', 'badge'],
-    animations: ['hat-hover', 'golden-glow'],
+    animations: ['hat-hover', 'golden-glow', 'propeller-spin'],
   },
   market_creator: {
     groups: ['avatar-border', 'avatar-overlay', 'badge'],
@@ -70,7 +70,7 @@ const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
   },
   hovercard: {
     groups: ['avatar-border', 'avatar-overlay', 'badge', 'hovercard'],
-    animations: ['hat-hover', 'golden-glow', 'badge-pulse'],
+    animations: ['hat-hover', 'golden-glow', 'badge-pulse', 'propeller-spin'],
   },
   leagues: {
     groups: ['avatar-border', 'avatar-overlay', 'badge'],
@@ -171,4 +171,8 @@ export const shouldAnimateGoldenGlow = (context: DisplayContext): boolean => {
 
 export const shouldAnimateBadge = (context: DisplayContext): boolean => {
   return isAnimationEnabled(context, 'badge-pulse')
+}
+
+export const shouldAnimatePropeller = (context: DisplayContext): boolean => {
+  return isAnimationEnabled(context, 'propeller-spin')
 }

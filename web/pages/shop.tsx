@@ -1,4 +1,4 @@
-import { ArrowUpIcon } from '@heroicons/react/solid'
+import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import { DAY_MS } from 'common/util/time'
 import {
   SHOP_ITEMS,
@@ -36,6 +36,7 @@ import { toast } from 'react-hot-toast'
 import { FaStar } from 'react-icons/fa'
 import { FaGem } from 'react-icons/fa6'
 import { LuCrown, LuGraduationCap } from 'react-icons/lu'
+import { GiTopHat, GiDunceCap } from 'react-icons/gi'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -446,8 +447,55 @@ export default function ShopPage() {
 
         {/* Charity giveaway card at bottom */}
         <CharityGiveawayCard variant="full" className="mt-8" />
+
+        {isAdminOrMod && <AdminTestingTools user={user} />}
       </Col>
     </Page>
+  )
+}
+
+function AdminTestingTools(props: { user: User | null | undefined }) {
+  const { user } = props
+  const [resetting, setResetting] = useState(false)
+
+  const handleResetCosmetics = async () => {
+    if (!user) return
+    if (
+      !confirm(
+        'This will delete all your non-subscription cosmetics and refund the mana. Supporter tiers will NOT be affected. Continue?'
+      )
+    )
+      return
+
+    setResetting(true)
+    try {
+      await api('shop-reset-all', {})
+      toast.success('All cosmetics returned and mana refunded!')
+      window.location.reload()
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to reset cosmetics')
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-300 mt-8 border-t pt-4">
+      <div className="text-ink-500 mb-2 text-xs font-semibold uppercase">
+        Admin Testing Tools
+      </div>
+      <Button
+        color="red-outline"
+        size="sm"
+        loading={resetting}
+        onClick={handleResetCosmetics}
+      >
+        Return All Cosmetics (Refund Mana)
+      </Button>
+      <div className="text-ink-400 mt-1 text-xs">
+        Refunds all non-subscription purchases. Supporter tiers are preserved.
+      </div>
+    </div>
   )
 }
 
@@ -1264,6 +1312,201 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
   )
 }
 
+// Generic hat preview for new hats
+function HatPreview(props: {
+  user: User | null | undefined
+  hatType:
+    | 'top-hat'
+    | 'halo'
+    | 'propeller-hat'
+    | 'wizard-hat'
+    | 'tinfoil-hat'
+    | 'microphone'
+}) {
+  const { user, hatType } = props
+
+  const renderHat = () => {
+    switch (hatType) {
+      case 'top-hat':
+        return (
+          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            {/* Light mode */}
+            <GiTopHat
+              className="h-5 w-5 text-gray-800 dark:hidden"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+            {/* Dark mode - black with white outline */}
+            <GiTopHat
+              className="hidden h-5 w-5 text-gray-900 dark:block"
+              style={{ filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)' }}
+            />
+          </div>
+        )
+      case 'halo':
+        return (
+          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 transition-transform duration-300 group-hover:-translate-y-0.5">
+            {/* Light mode - amber gold visible against light backgrounds */}
+            <div
+              className="dark:hidden"
+              style={{
+                width: '2.5rem',
+                height: '0.6rem',
+                borderRadius: '50%',
+                transform: 'rotate(-8deg)',
+                border: '2px solid rgba(245, 158, 11, 0.9)',
+                boxShadow:
+                  '0 0 6px rgba(245, 158, 11, 0.5), 0 0 2px rgba(217, 119, 6, 0.8)',
+              }}
+            />
+            {/* Dark mode - white-gold glow visible against dark backgrounds */}
+            <div
+              className="hidden dark:block"
+              style={{
+                width: '2.5rem',
+                height: '0.6rem',
+                borderRadius: '50%',
+                transform: 'rotate(-8deg)',
+                border: '1.5px solid rgba(255, 250, 220, 0.95)',
+                boxShadow:
+                  '0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 200, 0.4)',
+              }}
+            />
+          </div>
+        )
+      case 'propeller-hat':
+        return (
+          <div className="absolute -right-1 top-0 rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <div className="relative flex flex-col items-center">
+              {/* Beanie dome */}
+              <div className="h-2.5 w-5 rounded-t-full bg-red-500" />
+              {/* Propeller blades - positioned to overlap beanie top */}
+              <div
+                className="absolute"
+                style={{
+                  top: -8,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  perspective: '80px',
+                }}
+              >
+                <div style={{ transform: 'rotateX(50deg)' }}>
+                  <svg
+                    width={16}
+                    height={16}
+                    viewBox="0 0 18 18"
+                    className="animate-spin"
+                    style={{ animationDuration: '0.5s' }}
+                  >
+                    <rect
+                      x="1"
+                      y="7.5"
+                      width="6.5"
+                      height="3"
+                      rx="1.5"
+                      fill="#3B82F6"
+                    />
+                    <rect
+                      x="10.5"
+                      y="7.5"
+                      width="6.5"
+                      height="3"
+                      rx="1.5"
+                      fill="#EF4444"
+                    />
+                    <circle cx="9" cy="9" r="2.5" fill="#FBBF24" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      case 'wizard-hat':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 0 3px rgba(139, 92, 246, 0.5))' }}
+            >
+              <ellipse cx="12" cy="19" rx="11" ry="3.5" fill="#6D28D9" />
+              <polygon points="12,1 5,19 19,19" fill="#8B5CF6" />
+              <circle cx="11" cy="12" r="1.2" fill="#FBBF24" opacity="0.9" />
+            </svg>
+          </div>
+        )
+      case 'tinfoil-hat':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
+            >
+              <path
+                d="M10 2L6 8 4 14 3 20h18l-2-7-2-6-3-4z"
+                fill="#94A3B8"
+              />
+              <path
+                d="M10 2l2 11-4 7"
+                stroke="#CBD5E1"
+                strokeWidth="1"
+                fill="none"
+                opacity="0.5"
+              />
+              <path
+                d="M14 3l-1 12 4 5"
+                stroke="#CBD5E1"
+                strokeWidth="0.8"
+                fill="none"
+                opacity="0.4"
+              />
+              <line
+                x1="3"
+                y1="20"
+                x2="21"
+                y2="20"
+                stroke="#64748B"
+                strokeWidth="0.8"
+              />
+            </svg>
+          </div>
+        )
+      case 'microphone':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            {/* Light mode */}
+            <GiDunceCap
+              className="h-5 w-5 text-gray-900 dark:hidden"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+            {/* Dark mode - black with white outline */}
+            <GiDunceCap
+              className="hidden h-5 w-5 text-gray-900 dark:block"
+              style={{
+                filter:
+                  'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+              }}
+            />
+          </div>
+        )
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {renderHat()}
+      </div>
+    </div>
+  )
+}
+
 function StreakFreezePreview(props: {
   user: User | null | undefined
   localBonus?: number
@@ -1368,17 +1611,51 @@ function CustomYesButtonPreview(props: {
   owned?: boolean
 }) {
   const { selectedText = 'PAMPU', onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    YES_BUTTON_OPTIONS.indexOf(selectedText ?? 'PAMPU')
+  )
+  const displayText = owned ? selectedText : YES_BUTTON_OPTIONS[previewIndex]
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPreviewIndex(
+      (i) => (i - 1 + YES_BUTTON_OPTIONS.length) % YES_BUTTON_OPTIONS.length
+    )
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPreviewIndex((i) => (i + 1) % YES_BUTTON_OPTIONS.length)
+  }
+
   return (
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <span className="text-ink-500 text-xs">Your YES button becomes:</span>
-      <Row className="items-center gap-2">
-        <Button
-          color="green-outline"
-          size="sm"
-          className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-green-500/30"
-        >
-          {selectedText} <ArrowUpIcon className="ml-1 h-4 w-4" />
-        </Button>
+      <Row className="w-full items-center">
+        {!owned && (
+          <button
+            onClick={cyclePrev}
+            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </button>
+        )}
+        <div className="flex items-center justify-center">
+          <Button
+            color="green-outline"
+            size="sm"
+            className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-green-500/30"
+          >
+            {displayText} <ArrowUpIcon className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+        {!owned && (
+          <button
+            onClick={cycleNext}
+            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
+        )}
       </Row>
       {owned && onSelect && (
         <select
@@ -1403,17 +1680,51 @@ function CustomNoButtonPreview(props: {
   owned?: boolean
 }) {
   const { selectedText = 'DUMPU', onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    NO_BUTTON_OPTIONS.indexOf(selectedText ?? 'DUMPU')
+  )
+  const displayText = owned ? selectedText : NO_BUTTON_OPTIONS[previewIndex]
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPreviewIndex(
+      (i) => (i - 1 + NO_BUTTON_OPTIONS.length) % NO_BUTTON_OPTIONS.length
+    )
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPreviewIndex((i) => (i + 1) % NO_BUTTON_OPTIONS.length)
+  }
+
   return (
     <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <span className="text-ink-500 text-xs">Your NO button becomes:</span>
-      <Row className="items-center gap-2">
-        <Button
-          color="red-outline"
-          size="sm"
-          className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-red-500/30"
-        >
-          {selectedText}
-        </Button>
+      <Row className="w-full items-center">
+        {!owned && (
+          <button
+            onClick={cyclePrev}
+            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </button>
+        )}
+        <div className="flex items-center justify-center">
+          <Button
+            color="red-outline"
+            size="sm"
+            className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-red-500/30"
+          >
+            {displayText} <ArrowDownIcon className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+        {!owned && (
+          <button
+            onClick={cycleNext}
+            className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
+        )}
       </Row>
       {owned && onSelect && (
         <select
@@ -1449,6 +1760,18 @@ function ItemPreview(props: {
       return <CrownPreview user={user} />
     case 'avatar-graduation-cap':
       return <GraduationCapPreview user={user} />
+    case 'avatar-top-hat':
+      return <HatPreview user={user} hatType="top-hat" />
+    case 'avatar-halo':
+      return <HatPreview user={user} hatType="halo" />
+    case 'avatar-propeller-hat':
+      return <HatPreview user={user} hatType="propeller-hat" />
+    case 'avatar-wizard-hat':
+      return <HatPreview user={user} hatType="wizard-hat" />
+    case 'avatar-tinfoil-hat':
+      return <HatPreview user={user} hatType="tinfoil-hat" />
+    case 'avatar-microphone':
+      return <HatPreview user={user} hatType="microphone" />
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview
