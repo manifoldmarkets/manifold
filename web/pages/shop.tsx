@@ -1346,29 +1346,33 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
-        {/* Outer dark swirl */}
-        <div
-          className="absolute -inset-1.5 rounded-full"
-          style={{
-            background:
-              'conic-gradient(from 0deg, rgba(0,0,0,0.9), rgba(30,0,50,0.7), rgba(0,0,0,0.9), rgba(20,0,40,0.7), rgba(0,0,0,0.9))',
-            animation: 'spin 8s linear infinite reverse',
-          }}
-        />
-        {/* Inner dark ring */}
-        <div
-          className="absolute -inset-1 rounded-full"
-          style={{
-            background:
-              'radial-gradient(circle, transparent 60%, rgba(0,0,0,0.8) 80%, rgba(20,0,30,0.9) 100%)',
-          }}
-        />
+        <svg
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ width: 60, height: 60 }}
+          viewBox="0 0 48 48"
+        >
+          <defs>
+            <radialGradient id="bh-accretion-glow-p" cx="24" cy="24" r="24" gradientUnits="userSpaceOnUse">
+              <stop offset="60%" stopColor="#000" stopOpacity="0" />
+              <stop offset="85%" stopColor="#4b0082" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#000" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <circle cx="24" cy="24" r="23" fill="url(#bh-accretion-glow-p)" />
+          <path d="M24 3C35.0457 3 45 11.9543 45 24" stroke="#2d004d" strokeWidth="5" fill="none" opacity="0.7" strokeLinecap="round" />
+          <path d="M45 24C45 36.0457 35.0457 45 24 45" stroke="#4b0082" strokeWidth="3" fill="none" opacity="0.5" strokeLinecap="round" />
+          <path d="M24 45C11.9543 45 3 36.0457 3 24" stroke="#1a0033" strokeWidth="6" fill="none" opacity="0.8" strokeLinecap="round" />
+          <path d="M3 24C3 11.9543 11.9543 3 24 3" stroke="#6a0dad" strokeWidth="2" fill="none" opacity="0.4" strokeLinecap="round" />
+          <path d="M24 7 A17 17 0 0 1 41 24" stroke="#9333ea" strokeWidth="1.5" fill="none" opacity="0.3" strokeDasharray="4 2" />
+          <circle cx="38" cy="12" r="0.6" fill="#fff" opacity="0.9" />
+          <circle cx="10" cy="36" r="0.4" fill="#ba55d3" opacity="0.7" />
+        </svg>
         <Avatar
           username={user?.username}
           avatarUrl={user?.avatarUrl}
           size="lg"
           noLink
-          className="relative"
+          className="relative ring-2 ring-purple-900"
         />
       </div>
     </div>
@@ -1381,59 +1385,41 @@ function FireRingPreview(props: { user: User | null | undefined }) {
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
-        {/* Base fire glow */}
-        <div
-          className="absolute -inset-1.5 animate-pulse rounded-full opacity-70 blur-sm"
-          style={{
-            background:
-              'radial-gradient(circle, rgba(251,146,60,0.5) 0%, rgba(239,68,68,0.3) 70%, transparent 100%)',
-          }}
-        />
-        {/* Flame ring */}
         <svg
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ width: 56, height: 56 }}
+          style={{ width: 60, height: 60 }}
           viewBox="0 0 48 48"
         >
-          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-            const rad = (angle * Math.PI) / 180
-            const cx = 24 + Math.cos(rad) * 20
-            const cy = 24 + Math.sin(rad) * 20
-            return (
-              <g
-                key={angle}
-                transform={`translate(${cx}, ${cy}) rotate(${angle + 90})`}
-              >
-                <path
-                  d="M0 0 C-2 -4 -1 -8 0 -10 C1 -8 2 -4 0 0"
-                  fill={i % 2 === 0 ? '#F97316' : '#EF4444'}
-                  opacity={0.9}
-                />
-              </g>
-            )
-          })}
-          <circle
-            cx="24"
-            cy="24"
-            r="16"
-            fill="none"
-            stroke="url(#fireGradientPreview)"
-            strokeWidth="2"
-            opacity="0.6"
-          />
           <defs>
-            <linearGradient
-              id="fireGradientPreview"
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="100%"
-            >
-              <stop offset="0%" stopColor="#F97316" />
-              <stop offset="50%" stopColor="#EF4444" />
-              <stop offset="100%" stopColor="#F97316" />
+            <linearGradient id="fire-grad-red-p" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#7f1d1d" />
+              <stop offset="50%" stopColor="#b91c1c" />
+              <stop offset="100%" stopColor="#ef4444" />
+            </linearGradient>
+            <linearGradient id="fire-grad-orange-p" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#c2410c" />
+              <stop offset="100%" stopColor="#fb923c" />
+            </linearGradient>
+            <linearGradient id="fire-grad-yellow-p" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#fef08a" />
             </linearGradient>
           </defs>
+          <path
+            d="M24 46 C11.8 46 2 36.2 2 24 C2 13 9.5 3.8 20 2.4 C18 5 17 8 18 11 C19 14 22 16 24 16 C26 16 28 14 29 11 C31 7 34 4 38 6 C43 9 46 16 46 24 C46 36.2 36.2 46 24 46 Z M24 44 C34 44 42 36 42 26 C42 20 38 16 34 14 C32 16 30 20 28 22 C26 24 22 24 20 22 C18 20 16 16 14 14 C10 16 6 20 6 26 C6 36 14 44 24 44 Z"
+            fill="url(#fire-grad-red-p)"
+            opacity="0.9"
+          />
+          <path
+            d="M24 42 C30 42 36 38 38 32 C39 29 37 26 35 24 C33 22 32 20 32 18 C32 15 34 12 36 10 C34 9 32 8 30 8 C27 8 25 10 24 12 C23 10 21 8 18 8 C16 8 14 9 12 10 C14 12 16 15 16 18 C16 20 15 22 13 24 C11 26 9 29 10 32 C12 38 18 42 24 42 Z"
+            fill="url(#fire-grad-orange-p)"
+          />
+          <path
+            d="M24 40 C28 40 32 37 33 33 C33.5 31 32 29 31 27 C30 25 29 23 29 21 C29 19 30 17 31 15 C28 15 26 16 24 18 C22 16 20 15 17 15 C18 17 19 19 19 21 C19 23 18 25 17 27 C16 29 14.5 31 15 33 C16 37 20 40 24 40 Z"
+            fill="url(#fire-grad-yellow-p)"
+            opacity="0.9"
+          />
+          <path d="M24 8 C24 8 22 6 21 4 C20.5 3 21 2 21 2 C21 2 22 3 22.5 4 C23 5 24 6 24 6 C24 6 25 5 25.5 4 C26 3 27 2 27 2 C27 2 27.5 3 27 4 C26 6 24 8 24 8" fill="url(#fire-grad-yellow-p)" />
         </svg>
         <Avatar
           username={user?.username}
@@ -1524,6 +1510,182 @@ function AngelWingsPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
+      </div>
+    </div>
+  )
+}
+
+function MonoclePreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Bigger, thicker monocle centered on the right side */}
+        <svg
+          className="absolute left-1/2 top-1/2"
+          style={{
+            marginLeft: 3,
+            marginTop: -7,
+            width: 22,
+            height: 22,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+          }}
+          viewBox="0 0 24 24"
+        >
+          <circle cx="12" cy="12" r="9" fill="rgba(255,255,255,0.1)" stroke="#D4AF37" strokeWidth="2.5" />
+          <circle cx="12" cy="12" r="7" fill="none" stroke="#B8860B" strokeWidth="0.5" />
+          <ellipse cx="9" cy="9" rx="3" ry="2" fill="rgba(255,255,255,0.4)" />
+          <path d="M21 12 Q24 16 22 22" stroke="#D4AF37" strokeWidth="1.5" fill="none" />
+          <circle cx="22" cy="22" r="1" fill="#D4AF37" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function CrystalBallPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Crystal ball in bottom-right corner, overlapping avatar */}
+        <svg
+          className="absolute"
+          style={{
+            right: -6,
+            bottom: -5,
+            width: 24,
+            height: 24,
+            filter: 'drop-shadow(0 0 4px rgba(139,92,246,0.6))',
+          }}
+          viewBox="0 0 24 24"
+        >
+          <ellipse cx="12" cy="22" rx="5" ry="1.5" fill="#4B5563" />
+          <path d="M8 20 L10 22 L14 22 L16 20 Z" fill="#6B7280" />
+          <circle cx="12" cy="12" r="10" fill="url(#crystalGradientPrev2)" />
+          <circle cx="12" cy="12" r="7" fill="rgba(139,92,246,0.25)" />
+          <ellipse cx="12" cy="12" rx="5" ry="3" fill="rgba(167,139,250,0.3)" transform="rotate(-20 12 12)" />
+          <circle cx="8" cy="8" r="2" fill="rgba(255,255,255,0.5)" />
+          <circle cx="6" cy="10" r="1" fill="rgba(255,255,255,0.3)" />
+          <defs>
+            <radialGradient id="crystalGradientPrev2" cx="30%" cy="30%">
+              <stop offset="0%" stopColor="#E9D5FF" />
+              <stop offset="40%" stopColor="#A78BFA" />
+              <stop offset="100%" stopColor="#6D28D9" />
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function ThoughtBubblePreview(props: {
+  user: User | null | undefined
+  type: 'yes' | 'no'
+}) {
+  const { user, type } = props
+  const isYes = type === 'yes'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 pt-6 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: -20 }}>
+          <div
+            className={clsx(
+              'relative rounded-full px-2 py-1 text-white',
+              isYes ? 'bg-green-500' : 'bg-red-500'
+            )}
+            style={{ fontSize: '10px', fontWeight: 'bold' }}
+          >
+            {isYes ? 'YES' : 'NO'}
+            <div
+              className={clsx(
+                'absolute left-1/2 -translate-x-1/2 rounded-full',
+                isYes ? 'bg-green-500' : 'bg-red-500'
+              )}
+              style={{ bottom: -4, width: 5, height: 5 }}
+            />
+            <div
+              className={clsx(
+                'absolute left-1/2 -translate-x-1/2 rounded-full',
+                isYes ? 'bg-green-500' : 'bg-red-500'
+              )}
+              style={{ bottom: -8, width: 3, height: 3 }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StonksPreview(props: {
+  user: User | null | undefined
+  direction: 'up' | 'down'
+}) {
+  const { user, direction } = props
+  const isUp = direction === 'up'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Stonks meme style chart */}
+        <svg
+          className="absolute"
+          style={{
+            right: -8,
+            bottom: -6,
+            width: 28,
+            height: 28,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+          }}
+          viewBox="0 0 24 24"
+        >
+          <rect x="1" y="1" width="22" height="22" rx="2" fill="#1F2937" opacity="0.9" />
+          <line x1="4" y1="18" x2="20" y2="18" stroke="#374151" strokeWidth="0.5" />
+          <line x1="4" y1="12" x2="20" y2="12" stroke="#374151" strokeWidth="0.5" />
+          <line x1="4" y1="6" x2="20" y2="6" stroke="#374151" strokeWidth="0.5" />
+          {isUp ? (
+            <>
+              <polyline points="4,16 8,14 12,12 16,7 20,4" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <polygon points="20,4 17,6 18,8" fill="#22C55E" />
+              <polyline points="4,16 8,14 12,12 16,7 20,4" fill="none" stroke="#4ADE80" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
+            </>
+          ) : (
+            <>
+              <polyline points="4,6 8,8 12,10 16,15 20,19" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <polygon points="20,19 17,17 18,15" fill="#EF4444" />
+              <polyline points="4,6 8,8 12,10 16,15 20,19" fill="none" stroke="#FCA5A5" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
+            </>
+          )}
+        </svg>
       </div>
     </div>
   )
@@ -2137,6 +2299,18 @@ function ItemPreview(props: {
       return <FireRingPreview user={user} />
     case 'avatar-bad-aura':
       return <BadAuraPreview user={user} />
+    case 'avatar-monocle':
+      return <MonoclePreview user={user} />
+    case 'avatar-crystal-ball':
+      return <CrystalBallPreview user={user} />
+    case 'avatar-thought-yes':
+      return <ThoughtBubblePreview user={user} type="yes" />
+    case 'avatar-thought-no':
+      return <ThoughtBubblePreview user={user} type="no" />
+    case 'avatar-stonks-up':
+      return <StonksPreview user={user} direction="up" />
+    case 'avatar-stonks-down':
+      return <StonksPreview user={user} direction="down" />
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview

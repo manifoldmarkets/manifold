@@ -10,6 +10,7 @@ export type ShopItemCategory =
   | 'badge'
   | 'avatar-border'
   | 'avatar-overlay'
+  | 'avatar-accessory'
   | 'skin'
   | 'consumable'
   | 'hovercard'
@@ -18,6 +19,7 @@ export type ShopItemCategory =
 export const EXCLUSIVE_CATEGORIES: ShopItemCategory[] = [
   'avatar-border',
   'avatar-overlay',
+  'avatar-accessory',
   'hovercard',
 ]
 
@@ -324,6 +326,71 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-border',
   },
+  // Avatar Accessories
+  {
+    id: 'avatar-monocle',
+    name: 'Monocle',
+    description: 'A distinguished monocle for the discerning forecaster',
+    price: 35000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-accessory',
+  },
+  {
+    id: 'avatar-crystal-ball',
+    name: 'Crystal Ball',
+    description: 'Gaze into the future with your mystical crystal ball',
+    price: 75000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-accessory',
+  },
+  {
+    id: 'avatar-thought-yes',
+    name: 'YES Thought Bubble',
+    description: 'Show the world what you are thinking',
+    price: 25000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-accessory',
+  },
+  {
+    id: 'avatar-thought-no',
+    name: 'NO Thought Bubble',
+    description: 'Let everyone know your stance',
+    price: 25000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-accessory',
+  },
+  {
+    id: 'avatar-stonks-up',
+    name: 'Stonks Up',
+    description: 'The classic stonks guy for the profitable trader',
+    price: 50000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-accessory',
+    requirement: {
+      type: 'profit',
+      threshold: 100000,
+      description: 'Earn M$100k in total profit',
+    },
+  },
+  {
+    id: 'avatar-stonks-down',
+    name: 'Stonks Down',
+    description: 'Embrace the loss with the inverse stonks guy',
+    price: 50000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-accessory',
+    requirement: {
+      type: 'loss',
+      threshold: 100000,
+      description: 'Lose M$100k in total (a badge of honor)',
+    },
+  },
 ]
 
 // Available options for custom button text
@@ -460,6 +527,12 @@ export type AvatarDecorationId =
   | 'avatar-black-hole'
   | 'avatar-fire-ring'
   | 'avatar-bad-aura'
+  | 'avatar-monocle'
+  | 'avatar-crystal-ball'
+  | 'avatar-thought-yes'
+  | 'avatar-thought-no'
+  | 'avatar-stonks-up'
+  | 'avatar-stonks-down'
 
 // Helper to check if user has a specific avatar decoration
 export const userHasAvatarDecoration = (
@@ -489,6 +562,26 @@ export const getActiveAvatarOverlay = (
   for (const overlay of overlays) {
     if (hasActiveEntitlement(entitlements, overlay)) {
       return overlay
+    }
+  }
+  return null
+}
+
+// Get the active avatar accessory if any
+export const getActiveAvatarAccessory = (
+  entitlements: UserEntitlement[] | undefined
+): AvatarDecorationId | null => {
+  const accessories: AvatarDecorationId[] = [
+    'avatar-monocle',
+    'avatar-crystal-ball',
+    'avatar-thought-yes',
+    'avatar-thought-no',
+    'avatar-stonks-up',
+    'avatar-stonks-down',
+  ]
+  for (const accessory of accessories) {
+    if (hasActiveEntitlement(entitlements, accessory)) {
+      return accessory
     }
   }
   return null
