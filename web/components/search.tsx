@@ -1002,7 +1002,24 @@ export const useSearchResults = (props: {
               filter,
               sort,
               contractType,
-              offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+              ...(() => {
+                const useCursor =
+                  !freshQuery &&
+                  sort === 'newest' &&
+                  !!state.contracts?.length
+                return useCursor
+                  ? {
+                      offset: 0,
+                      beforeTime:
+                        state.contracts![state.contracts!.length - 1]
+                          ?.createdTime,
+                    }
+                  : {
+                      offset: freshQuery
+                        ? 0
+                        : state.contracts?.length ?? 0,
+                    }
+              })(),
               limit: CONTRACTS_PER_SEARCH_PAGE,
               topicSlug: topicSlug !== '' ? topicSlug : undefined,
               creatorId: additionalFilter?.creatorId,

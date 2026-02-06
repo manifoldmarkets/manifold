@@ -44,6 +44,7 @@ type SharedSearchArgs = {
   hasBets?: string
   liquidity?: number
   isPrizeMarket?: boolean
+  beforeTime?: number
 }
 
 export async function getForYouSQL(
@@ -157,7 +158,7 @@ export const basicSearchSQL = (
     privateUser?: PrivateUser
   }
 ) => {
-  const { sort, privateUser, ...rest } = args
+  const { sort, privateUser, beforeTime, ...rest } = args
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   const userBetsJoin = args.hasBets === '1' && args.uid && userBetsJoinSql
   const sql = renderSql(
@@ -170,7 +171,8 @@ export const basicSearchSQL = (
       hideStonks: true,
     }),
     privateUserBlocksSql(privateUser),
-    lim(args.limit, args.offset)
+    beforeTime && where(`created_time < millis_to_ts($1)`, [beforeTime]),
+    lim(args.limit, beforeTime ? 0 : args.offset)
   )
   return sql
 }
@@ -204,6 +206,7 @@ export function getSearchContractSQL(
     filter,
     uid,
     hasBets,
+    beforeTime,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -302,7 +305,8 @@ export function getSearchContractSQL(
     ],
 
     orderBy(getSearchContractSortSQL(sort)),
-    sqlLimit(limit, offset)
+    beforeTime && where(`created_time < millis_to_ts($1)`, [beforeTime]),
+    sqlLimit(limit, beforeTime ? 0 : offset)
   )
   // log('Search SQL:', sql)
   return sql

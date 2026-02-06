@@ -507,7 +507,8 @@ Parameters:
 - `topicSlug`: Optional. Only include questions with the topic tag with this slug.
 - `creatorId`: Optional. Only include questions created by the user with this id.
 - `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
-- `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
+- `offset`: Optional. Number of contracts to skip. Max 1000 when using `sort=newest` — use `beforeTime` for deeper pagination.
+- `beforeTime`: Optional. Millisecond timestamp cursor for efficient pagination with `sort=newest`. Returns only markets created before this time. Pass the `createdTime` of the last result from the previous page.
 - `liquidity`: Optional. Minimum liquidity per contract (or per answer according to tier map)
 - `creatorId`: Optional. Only markets from creator id.
 
@@ -517,6 +518,15 @@ Example request:
 
 ```bash
 curl https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2 -X GET
+```
+
+To paginate through all markets sorted by newest, use the `beforeTime` cursor:
+
+```bash
+# Page 1
+curl "https://api.manifold.markets/v0/search-markets?sort=newest&limit=100"
+# Page 2: pass the createdTime of the last result from page 1
+curl "https://api.manifold.markets/v0/search-markets?sort=newest&limit=100&beforeTime=1706000000000"
 ```
 
 Response type: Array of `LiteMarket`.

@@ -58,6 +58,9 @@ export const searchProps = z
       .default('ALL'),
     offset: z.coerce.number().gte(0).default(0),
     limit: z.coerce.number().gt(0).lte(1000).default(100),
+    // Cursor for efficient pagination: pass the createdTime of the last
+    // result from the previous page. Only works with sort=newest.
+    beforeTime: z.coerce.number().optional(),
     topicSlug: z
       .string()
       .regex(FIRESTORE_DOC_REF_ID_REGEX)

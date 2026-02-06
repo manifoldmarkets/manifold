@@ -17,7 +17,7 @@ import {
 } from 'shared/supabase/search-contracts'
 import { log } from 'shared/utils'
 import { z } from 'zod'
-import { type APIHandler } from './helpers/endpoint'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const searchMarketsLite: APIHandler<'search-markets'> = async (
   props,
@@ -62,6 +62,13 @@ const search = async (
 
   if (limit === 0) {
     return []
+  }
+
+  if (offset > 1000 && sort === 'newest' && !props.beforeTime) {
+    throw new APIError(
+      400,
+      'offset must be <= 1000 when sorting by newest. Use the beforeTime parameter to cursor through results efficiently.'
+    )
   }
 
   const isForYou = forYou === '1'
