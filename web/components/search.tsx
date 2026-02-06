@@ -1004,9 +1004,7 @@ export const useSearchResults = (props: {
               contractType,
               ...(() => {
                 const useCursor =
-                  !freshQuery &&
-                  sort === 'newest' &&
-                  !!state.contracts?.length
+                  !freshQuery && sort === 'newest' && !!state.contracts?.length
                 return useCursor
                   ? {
                       offset: 0,
@@ -1015,9 +1013,7 @@ export const useSearchResults = (props: {
                           ?.createdTime,
                     }
                   : {
-                      offset: freshQuery
-                        ? 0
-                        : state.contracts?.length ?? 0,
+                      offset: freshQuery ? 0 : state.contracts?.length ?? 0,
                     }
               })(),
               limit: CONTRACTS_PER_SEARCH_PAGE,
