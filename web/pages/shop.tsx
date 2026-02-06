@@ -1315,6 +1315,157 @@ function GoldenBorderPreview(props: { user: User | null | undefined }) {
   )
 }
 
+function ManaAuraPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <div
+          className="absolute -inset-1.5 animate-pulse rounded-full opacity-80 blur-md"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(139,92,246,0.6) 0%, rgba(59,130,246,0.4) 50%, rgba(139,92,246,0.2) 100%)',
+          }}
+        />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative ring-2 ring-violet-400"
+        />
+      </div>
+    </div>
+  )
+}
+
+function BlackHolePreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        {/* Outer dark swirl */}
+        <div
+          className="absolute -inset-1.5 rounded-full"
+          style={{
+            background:
+              'conic-gradient(from 0deg, rgba(0,0,0,0.9), rgba(30,0,50,0.7), rgba(0,0,0,0.9), rgba(20,0,40,0.7), rgba(0,0,0,0.9))',
+            animation: 'spin 8s linear infinite reverse',
+          }}
+        />
+        {/* Inner dark ring */}
+        <div
+          className="absolute -inset-1 rounded-full"
+          style={{
+            background:
+              'radial-gradient(circle, transparent 60%, rgba(0,0,0,0.8) 80%, rgba(20,0,30,0.9) 100%)',
+          }}
+        />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative"
+        />
+      </div>
+    </div>
+  )
+}
+
+function FireRingPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        {/* Base fire glow */}
+        <div
+          className="absolute -inset-1.5 animate-pulse rounded-full opacity-70 blur-sm"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(251,146,60,0.5) 0%, rgba(239,68,68,0.3) 70%, transparent 100%)',
+          }}
+        />
+        {/* Flame ring */}
+        <svg
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ width: 56, height: 56 }}
+          viewBox="0 0 48 48"
+        >
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+            const rad = (angle * Math.PI) / 180
+            const cx = 24 + Math.cos(rad) * 20
+            const cy = 24 + Math.sin(rad) * 20
+            return (
+              <g
+                key={angle}
+                transform={`translate(${cx}, ${cy}) rotate(${angle + 90})`}
+              >
+                <path
+                  d="M0 0 C-2 -4 -1 -8 0 -10 C1 -8 2 -4 0 0"
+                  fill={i % 2 === 0 ? '#F97316' : '#EF4444'}
+                  opacity={0.9}
+                />
+              </g>
+            )
+          })}
+          <circle
+            cx="24"
+            cy="24"
+            r="16"
+            fill="none"
+            stroke="url(#fireGradientPreview)"
+            strokeWidth="2"
+            opacity="0.6"
+          />
+          <defs>
+            <linearGradient
+              id="fireGradientPreview"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stopColor="#F97316" />
+              <stop offset="50%" stopColor="#EF4444" />
+              <stop offset="100%" stopColor="#F97316" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative ring-2 ring-orange-400"
+        />
+      </div>
+    </div>
+  )
+}
+
+function BadAuraPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-red-600 via-red-500 to-red-600 opacity-75 blur-sm" />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative ring-2 ring-red-500"
+        />
+      </div>
+    </div>
+  )
+}
+
 function AngelWingsPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
@@ -1978,6 +2129,14 @@ function ItemPreview(props: {
       return <HatPreview user={user} hatType="devil-horns" />
     case 'avatar-angel-wings':
       return <AngelWingsPreview user={user} />
+    case 'avatar-mana-aura':
+      return <ManaAuraPreview user={user} />
+    case 'avatar-black-hole':
+      return <BlackHolePreview user={user} />
+    case 'avatar-fire-ring':
+      return <FireRingPreview user={user} />
+    case 'avatar-bad-aura':
+      return <BadAuraPreview user={user} />
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview

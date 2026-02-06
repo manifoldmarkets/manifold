@@ -79,6 +79,19 @@ export const Avatar = memo(
       entitlements,
       'avatar-angel-wings'
     )
+    const hasManaAura = userHasAvatarDecoration(
+      entitlements,
+      'avatar-mana-aura'
+    )
+    const hasBlackHole = userHasAvatarDecoration(
+      entitlements,
+      'avatar-black-hole'
+    )
+    const hasFireRing = userHasAvatarDecoration(
+      entitlements,
+      'avatar-fire-ring'
+    )
+    const hasBadAura = userHasAvatarDecoration(entitlements, 'avatar-bad-aura')
     // Get active avatar overlay (hat)
     const activeOverlay = getActiveAvatarOverlay(entitlements)
     const s =
@@ -115,7 +128,14 @@ export const Avatar = memo(
 
     // Determine if we need a relative wrapper for overlays
     const needsRelativeWrapper =
-      isUserFresh || activeOverlay || hasGoldenBorder || hasAngelWings
+      isUserFresh ||
+      activeOverlay ||
+      hasGoldenBorder ||
+      hasAngelWings ||
+      hasManaAura ||
+      hasBlackHole ||
+      hasFireRing ||
+      hasBadAura
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
@@ -156,6 +176,32 @@ export const Avatar = memo(
             )}
           />
         )}
+        {/* Bad aura - crimson red glow (dark version of golden glow) */}
+        {hasBadAura && (
+          <div
+            className={clsx(
+              'absolute -inset-1 rounded-full bg-gradient-to-r from-red-600 via-red-500 to-red-600 opacity-75 blur-sm',
+              animateGoldenGlow && 'animate-pulse'
+            )}
+          />
+        )}
+        {/* Mana aura - purple/blue mystical energy */}
+        {hasManaAura && (
+          <div
+            className={clsx(
+              'absolute -inset-1.5 rounded-full opacity-80 blur-md',
+              animateGoldenGlow && 'animate-pulse'
+            )}
+            style={{
+              background:
+                'radial-gradient(circle, rgba(139,92,246,0.6) 0%, rgba(59,130,246,0.4) 50%, rgba(139,92,246,0.2) 100%)',
+            }}
+          />
+        )}
+        {/* Black hole - dark swirling void */}
+        {hasBlackHole && <BlackHoleDecoration size={size} />}
+        {/* Fire ring - blazing ring of fire */}
+        {hasFireRing && <FireRingDecoration size={size} />}
         {/* Angel wings - feathered wings flanking avatar */}
         {hasAngelWings && <AngelWingsDecoration size={size} />}
         {shouldShowImage ? (
@@ -168,7 +214,11 @@ export const Avatar = memo(
               !noLink && 'cursor-pointer',
               className,
               isUserFresh && 'ring-1 ring-green-500',
-              hasGoldenBorder && 'relative ring-2 ring-amber-400'
+              hasGoldenBorder && 'relative ring-2 ring-amber-400',
+              hasBadAura && 'relative ring-2 ring-red-500',
+              hasManaAura && 'relative ring-2 ring-violet-400',
+              hasFireRing && 'relative ring-2 ring-orange-400',
+              hasBlackHole && 'relative ring-2 ring-purple-900'
             )}
             style={{ maxWidth: `${s * 0.25}rem` }}
             src={avatarUrl}
@@ -186,7 +236,11 @@ export const Avatar = memo(
               `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
               className,
               isUserFresh && 'ring-1 ring-green-500',
-              hasGoldenBorder && 'relative ring-2 ring-amber-400'
+              hasGoldenBorder && 'relative ring-2 ring-amber-400',
+              hasBadAura && 'relative ring-2 ring-red-500',
+              hasManaAura && 'relative ring-2 ring-violet-400',
+              hasFireRing && 'relative ring-2 ring-orange-400',
+              hasBlackHole && 'relative ring-2 ring-purple-900'
             )}
             onClick={onClick}
           />
@@ -273,6 +327,114 @@ function AngelWingsDecoration(props: { size?: AvatarSizeType }) {
         viewBox="0 0 16 44"
       >
         {wingSvg}
+      </svg>
+    </>
+  )
+}
+
+// Black hole decoration - dark swirling void effect
+function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
+  const { size } = props
+  const ringSize =
+    size === '2xs' || size === 'xs'
+      ? 'inset-[-3px]'
+      : size === 'sm'
+      ? 'inset-[-4px]'
+      : 'inset-[-6px]'
+
+  return (
+    <>
+      {/* Outer dark swirl */}
+      <div
+        className={`absolute ${ringSize} rounded-full`}
+        style={{
+          background:
+            'conic-gradient(from 0deg, rgba(0,0,0,0.9), rgba(30,0,50,0.7), rgba(0,0,0,0.9), rgba(20,0,40,0.7), rgba(0,0,0,0.9))',
+          animation: 'spin 8s linear infinite reverse',
+        }}
+      />
+      {/* Inner dark ring */}
+      <div
+        className="absolute -inset-1 rounded-full"
+        style={{
+          background:
+            'radial-gradient(circle, transparent 60%, rgba(0,0,0,0.8) 80%, rgba(20,0,30,0.9) 100%)',
+        }}
+      />
+      {/* Event horizon glow */}
+      <div
+        className="absolute -inset-0.5 rounded-full opacity-60"
+        style={{
+          boxShadow: 'inset 0 0 8px 2px rgba(139,92,246,0.4)',
+        }}
+      />
+    </>
+  )
+}
+
+// Fire ring decoration - blazing flames around avatar
+function FireRingDecoration(props: { size?: AvatarSizeType }) {
+  const { size } = props
+  const flameSize =
+    size === '2xs' || size === 'xs' ? 20 : size === 'sm' ? 28 : 36
+  const offset = size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8
+
+  return (
+    <>
+      {/* Base fire glow */}
+      <div
+        className="absolute -inset-1.5 animate-pulse rounded-full opacity-70 blur-sm"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(251,146,60,0.5) 0%, rgba(239,68,68,0.3) 70%, transparent 100%)',
+        }}
+      />
+      {/* Flame ring SVG */}
+      <svg
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: flameSize,
+          height: flameSize,
+          marginLeft: offset / 2,
+          marginTop: offset / 2,
+        }}
+        viewBox="0 0 48 48"
+      >
+        {/* Outer flames - positioned around the circle */}
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+          const rad = (angle * Math.PI) / 180
+          const cx = 24 + Math.cos(rad) * 20
+          const cy = 24 + Math.sin(rad) * 20
+          return (
+            <g
+              key={angle}
+              transform={`translate(${cx}, ${cy}) rotate(${angle + 90})`}
+            >
+              <path
+                d="M0 0 C-2 -4 -1 -8 0 -10 C1 -8 2 -4 0 0"
+                fill={i % 2 === 0 ? '#F97316' : '#EF4444'}
+                opacity={0.9}
+              />
+            </g>
+          )
+        })}
+        {/* Inner ring glow */}
+        <circle
+          cx="24"
+          cy="24"
+          r="16"
+          fill="none"
+          stroke="url(#fireGradient)"
+          strokeWidth="2"
+          opacity="0.6"
+        />
+        <defs>
+          <linearGradient id="fireGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#F97316" />
+            <stop offset="50%" stopColor="#EF4444" />
+            <stop offset="100%" stopColor="#F97316" />
+          </linearGradient>
+        </defs>
       </svg>
     </>
   )

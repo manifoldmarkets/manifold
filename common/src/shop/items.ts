@@ -283,6 +283,47 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-border',
   },
+  {
+    id: 'avatar-mana-aura',
+    name: 'Mana Aura',
+    description: 'A mystical purple-blue energy field around your avatar',
+    price: 75000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-border',
+  },
+  {
+    id: 'avatar-black-hole',
+    name: 'Black Hole',
+    description: 'A dark swirling void pulling in light around your avatar',
+    price: 200000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-border',
+  },
+  {
+    id: 'avatar-fire-ring',
+    name: 'Fire Ring',
+    description: 'A blazing ring of fire around your avatar',
+    price: 150000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-border',
+    requirement: {
+      type: 'streak',
+      threshold: 100,
+      description: 'Reach a 100-day betting streak',
+    },
+  },
+  {
+    id: 'avatar-bad-aura',
+    name: 'Bad Aura',
+    description: 'A menacing crimson glow around your avatar',
+    price: 25000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-border',
+  },
 ]
 
 // Available options for custom button text
@@ -415,6 +456,10 @@ export type AvatarDecorationId =
   | 'avatar-fedora'
   | 'avatar-devil-horns'
   | 'avatar-angel-wings'
+  | 'avatar-mana-aura'
+  | 'avatar-black-hole'
+  | 'avatar-fire-ring'
+  | 'avatar-bad-aura'
 
 // Helper to check if user has a specific avatar decoration
 export const userHasAvatarDecoration = (
