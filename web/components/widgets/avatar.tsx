@@ -340,111 +340,154 @@ function AngelWingsDecoration(props: { size?: AvatarSizeType }) {
   )
 }
 
-// Black hole decoration - dark swirling void with accretion disk
+// Black hole decoration - dramatic swirling void with bright accretion disk
 function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
   const { size } = props
+  // Larger size to show the accretion disk properly
   const bhSize =
-    size === '2xs' || size === 'xs' ? 24 : size === 'sm' ? 36 : 48
+    size === '2xs' || size === 'xs' ? 32 : size === 'sm' ? 48 : 64
   const offset =
-    size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8
+    size === '2xs' || size === 'xs' ? -8 : size === 'sm' ? -12 : -16
 
   return (
     <svg
       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-      style={{ width: bhSize, height: bhSize, marginLeft: offset / 2, marginTop: offset / 2 }}
-      viewBox="0 0 48 48"
+      style={{
+        width: bhSize,
+        height: bhSize,
+        marginLeft: offset / 2,
+        marginTop: offset / 2,
+        filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.5))',
+      }}
+      viewBox="0 0 64 64"
     >
       <defs>
-        <radialGradient id="bh-accretion-glow" cx="24" cy="24" r="24" gradientUnits="userSpaceOnUse">
-          <stop offset="60%" stopColor="#000" stopOpacity="0" />
-          <stop offset="85%" stopColor="#4b0082" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        {/* Bright accretion disk gradient - hot colors */}
+        <linearGradient id="bh-accretion-hot" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f97316" />
+          <stop offset="30%" stopColor="#ec4899" />
+          <stop offset="60%" stopColor="#a855f7" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+        {/* Dark void center */}
+        <radialGradient id="bh-void" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#000000" />
+          <stop offset="70%" stopColor="#0a0010" />
+          <stop offset="100%" stopColor="#1a0030" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id="bh-inner-shadow" cx="24" cy="24" r="20" gradientUnits="userSpaceOnUse">
-          <stop offset="70%" stopColor="#000" stopOpacity="0" />
-          <stop offset="85%" stopColor="#000" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#000" stopOpacity="1" />
+        {/* Outer glow */}
+        <radialGradient id="bh-outer-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="60%" stopColor="transparent" />
+          <stop offset="80%" stopColor="#7c3aed" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.2" />
         </radialGradient>
       </defs>
-      {/* Outer purple haze */}
-      <circle cx="24" cy="24" r="23" fill="url(#bh-accretion-glow)" />
-      {/* Swirling fragments */}
-      <path d="M24 3C35.0457 3 45 11.9543 45 24" stroke="#2d004d" strokeWidth="5" fill="none" opacity="0.7" strokeLinecap="round" />
-      <path d="M45 24C45 36.0457 35.0457 45 24 45" stroke="#4b0082" strokeWidth="3" fill="none" opacity="0.5" strokeLinecap="round" />
-      <path d="M24 45C11.9543 45 3 36.0457 3 24" stroke="#1a0033" strokeWidth="6" fill="none" opacity="0.8" strokeLinecap="round" />
-      <path d="M3 24C3 11.9543 11.9543 3 24 3" stroke="#6a0dad" strokeWidth="2" fill="none" opacity="0.4" strokeLinecap="round" />
-      {/* Spiral wisps */}
-      <path d="M24 7 A17 17 0 0 1 41 24" stroke="#9333ea" strokeWidth="1.5" fill="none" opacity="0.3" strokeDasharray="4 2" />
-      <path d="M7 24 A17 17 0 0 1 24 41" stroke="#9333ea" strokeWidth="1.5" fill="none" opacity="0.3" strokeDasharray="4 2" />
-      {/* Event Horizon shadow */}
-      <circle cx="24" cy="24" r="18" fill="none" stroke="url(#bh-inner-shadow)" strokeWidth="4" />
-      {/* Infalling particles */}
-      <circle cx="38" cy="12" r="0.6" fill="#fff" opacity="0.9" />
-      <circle cx="10" cy="36" r="0.4" fill="#ba55d3" opacity="0.7" />
-      <circle cx="26" cy="44" r="0.5" fill="#fff" opacity="0.8" />
-      <circle cx="8" cy="18" r="0.3" fill="#e0aaff" opacity="0.6" />
-      <circle cx="42" cy="32" r="0.4" fill="#fff" opacity="0.7" />
-      <circle cx="18" cy="6" r="0.5" fill="#ba55d3" opacity="0.5" />
+
+      {/* Outer purple glow */}
+      <circle cx="32" cy="32" r="30" fill="url(#bh-outer-glow)" />
+
+      {/* Bright accretion disk - tilted ellipse effect with multiple rings */}
+      <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="url(#bh-accretion-hot)" strokeWidth="4" opacity="0.8" transform="rotate(-20 32 32)" />
+      <ellipse cx="32" cy="32" rx="24" ry="8" fill="none" stroke="#f472b6" strokeWidth="2" opacity="0.6" transform="rotate(-20 32 32)" />
+      <ellipse cx="32" cy="32" rx="20" ry="6" fill="none" stroke="#c084fc" strokeWidth="1.5" opacity="0.5" transform="rotate(-20 32 32)" />
+
+      {/* Swirling matter streams */}
+      <path d="M8 32 Q16 20 32 18 Q48 16 56 28" stroke="#f97316" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
+      <path d="M56 32 Q48 44 32 46 Q16 48 8 36" stroke="#a855f7" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
+
+      {/* Spiral arms */}
+      <path d="M32 4 Q44 8 52 20 Q56 32 48 44" stroke="#ec4899" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
+      <path d="M32 60 Q20 56 12 44 Q8 32 16 20" stroke="#8b5cf6" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
+
+      {/* Bright hot spots in the disk */}
+      <circle cx="12" cy="28" r="2" fill="#fbbf24" opacity="0.9" />
+      <circle cx="52" cy="36" r="2" fill="#fb923c" opacity="0.9" />
+      <circle cx="20" cy="40" r="1.5" fill="#f472b6" opacity="0.8" />
+      <circle cx="44" cy="24" r="1.5" fill="#c084fc" opacity="0.8" />
+
+      {/* Infalling particles/stars */}
+      <circle cx="6" cy="20" r="1" fill="#fff" opacity="0.9" />
+      <circle cx="58" cy="44" r="1" fill="#fff" opacity="0.9" />
+      <circle cx="24" cy="6" r="0.8" fill="#e9d5ff" opacity="0.8" />
+      <circle cx="40" cy="58" r="0.8" fill="#fce7f3" opacity="0.8" />
+      <circle cx="10" cy="48" r="0.6" fill="#ddd6fe" opacity="0.7" />
+      <circle cx="54" cy="16" r="0.6" fill="#fbcfe8" opacity="0.7" />
     </svg>
   )
 }
 
-// Fire ring decoration - swirling flames around avatar
+// Fire ring decoration - dramatic flames around avatar
 function FireRingDecoration(props: { size?: AvatarSizeType }) {
   const { size } = props
+  // Much larger to show flames extending beyond the avatar
   const flameSize =
-    size === '2xs' || size === 'xs' ? 24 : size === 'sm' ? 36 : 48
+    size === '2xs' || size === 'xs' ? 32 : size === 'sm' ? 48 : 64
   const offset =
-    size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8
+    size === '2xs' || size === 'xs' ? -8 : size === 'sm' ? -12 : -16
 
   return (
     <svg
       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-      style={{ width: flameSize, height: flameSize, marginLeft: offset / 2, marginTop: offset / 2 }}
-      viewBox="0 0 48 48"
+      style={{
+        width: flameSize,
+        height: flameSize,
+        marginLeft: offset / 2,
+        marginTop: offset / 2,
+        filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))',
+      }}
+      viewBox="0 0 64 64"
     >
       <defs>
-        <linearGradient id="fire-grad-red" x1="0%" y1="100%" x2="100%" y2="0%">
+        <linearGradient id="fire-outer" x1="50%" y1="100%" x2="50%" y2="0%">
           <stop offset="0%" stopColor="#7f1d1d" />
-          <stop offset="50%" stopColor="#b91c1c" />
-          <stop offset="100%" stopColor="#ef4444" />
+          <stop offset="40%" stopColor="#dc2626" />
+          <stop offset="100%" stopColor="#f97316" />
         </linearGradient>
-        <linearGradient id="fire-grad-orange" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#c2410c" />
+        <linearGradient id="fire-mid" x1="50%" y1="100%" x2="50%" y2="0%">
+          <stop offset="0%" stopColor="#ea580c" />
+          <stop offset="50%" stopColor="#f97316" />
           <stop offset="100%" stopColor="#fb923c" />
         </linearGradient>
-        <linearGradient id="fire-grad-yellow" x1="0%" y1="100%" x2="100%" y2="0%">
+        <linearGradient id="fire-inner" x1="50%" y1="100%" x2="50%" y2="0%">
           <stop offset="0%" stopColor="#f59e0b" />
+          <stop offset="50%" stopColor="#fbbf24" />
           <stop offset="100%" stopColor="#fef08a" />
         </linearGradient>
-        <filter id="fire-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="0.5" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
       </defs>
-      {/* Base Dark/Red Swirl */}
+      {/* Outer flame tongues - 8 flames around the circle */}
+      <g>
+        {/* Top flame */}
+        <path d="M32 4 Q28 10 30 16 Q32 12 34 16 Q36 10 32 4" fill="url(#fire-outer)" />
+        {/* Top-right flame */}
+        <path d="M50 10 Q48 18 46 22 Q50 18 52 22 Q54 16 50 10" fill="url(#fire-outer)" />
+        {/* Right flame */}
+        <path d="M60 32 Q54 28 48 30 Q52 32 48 34 Q54 36 60 32" fill="url(#fire-outer)" />
+        {/* Bottom-right flame */}
+        <path d="M50 54 Q48 46 46 42 Q50 46 52 42 Q54 48 50 54" fill="url(#fire-outer)" />
+        {/* Bottom flame */}
+        <path d="M32 60 Q28 54 30 48 Q32 52 34 48 Q36 54 32 60" fill="url(#fire-outer)" />
+        {/* Bottom-left flame */}
+        <path d="M14 54 Q16 46 18 42 Q14 46 12 42 Q10 48 14 54" fill="url(#fire-outer)" />
+        {/* Left flame */}
+        <path d="M4 32 Q10 28 16 30 Q12 32 16 34 Q10 36 4 32" fill="url(#fire-outer)" />
+        {/* Top-left flame */}
+        <path d="M14 10 Q16 18 18 22 Q14 18 12 22 Q10 16 14 10" fill="url(#fire-outer)" />
+      </g>
+      {/* Middle orange ring with flame shapes */}
       <path
-        d="M24 46 C11.8 46 2 36.2 2 24 C2 13 9.5 3.8 20 2.4 C18 5 17 8 18 11 C19 14 22 16 24 16 C26 16 28 14 29 11 C31 7 34 4 38 6 C43 9 46 16 46 24 C46 36.2 36.2 46 24 46 Z M24 44 C34 44 42 36 42 26 C42 20 38 16 34 14 C32 16 30 20 28 22 C26 24 22 24 20 22 C18 20 16 16 14 14 C10 16 6 20 6 26 C6 36 14 44 24 44 Z"
-        fill="url(#fire-grad-red)"
+        d="M32 8 Q24 12 20 20 Q16 28 20 36 Q18 40 20 44 Q24 52 32 56 Q36 52 36 48 Q40 52 44 44 Q48 36 44 28 Q44 20 40 16 Q36 12 32 8 Z
+           M32 18 Q38 22 40 28 Q42 34 38 40 Q36 44 32 46 Q28 44 26 40 Q22 34 24 28 Q26 22 32 18 Z"
+        fill="url(#fire-mid)"
+        fillRule="evenodd"
         opacity="0.9"
       />
-      {/* Main Orange Swirling Flames */}
-      <path
-        d="M24 42 C30 42 36 38 38 32 C39 29 37 26 35 24 C33 22 32 20 32 18 C32 15 34 12 36 10 C34 9 32 8 30 8 C27 8 25 10 24 12 C23 10 21 8 18 8 C16 8 14 9 12 10 C14 12 16 15 16 18 C16 20 15 22 13 24 C11 26 9 29 10 32 C12 38 18 42 24 42 Z"
-        fill="url(#fire-grad-orange)"
-        filter="url(#fire-glow)"
-      />
-      {/* Inner Yellow Highlights */}
-      <path
-        d="M24 40 C28 40 32 37 33 33 C33.5 31 32 29 31 27 C30 25 29 23 29 21 C29 19 30 17 31 15 C28 15 26 16 24 18 C22 16 20 15 17 15 C18 17 19 19 19 21 C19 23 18 25 17 27 C16 29 14.5 31 15 33 C16 37 20 40 24 40 Z"
-        fill="url(#fire-grad-yellow)"
-        opacity="0.9"
-      />
-      {/* Swirl Accents */}
-      <path d="M10 24 C10 24 8 20 9 17 C9.5 15.5 11 14 11 14 C11 14 10 16 10.5 18 C11 20 13 22 13 22" stroke="url(#fire-grad-orange)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M38 24 C38 24 40 20 39 17 C38.5 15.5 37 14 37 14 C37 14 38 16 37.5 18 C37 20 35 22 35 22" stroke="url(#fire-grad-orange)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      {/* Top flame tongue */}
-      <path d="M24 8 C24 8 22 6 21 4 C20.5 3 21 2 21 2 C21 2 22 3 22.5 4 C23 5 24 6 24 6 C24 6 25 5 25.5 4 C26 3 27 2 27 2 C27 2 27.5 3 27 4 C26 6 24 8 24 8" fill="url(#fire-grad-yellow)" />
+      {/* Inner yellow glow ring */}
+      <circle cx="32" cy="32" r="14" fill="none" stroke="url(#fire-inner)" strokeWidth="3" opacity="0.8" />
+      {/* Animated-looking wisps */}
+      <path d="M26 12 Q24 16 26 20" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
+      <path d="M38 12 Q40 16 38 20" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
+      <path d="M12 26 Q16 24 20 26" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
+      <path d="M44 26 Q48 24 52 26" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
     </svg>
   )
 }
@@ -868,17 +911,15 @@ function AvatarAccessory(props: {
 
   switch (accessory) {
     case 'avatar-monocle': {
-      // Monocle centered on the avatar, overlapping the eye area
+      // Monocle in top-right area, overlapping the eye region
       const monocleSize =
-        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 22
+        size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
         <svg
-          className="absolute left-1/2 top-1/2"
+          className="absolute"
           style={{
-            marginLeft:
-              size === '2xs' || size === 'xs' ? 1 : size === 'sm' ? 2 : 3,
-            marginTop:
-              size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -7,
+            right: size === '2xs' || size === 'xs' ? 0 : size === 'sm' ? 0 : -1,
+            top: size === '2xs' || size === 'xs' ? 0 : size === 'sm' ? 1 : 2,
             width: monocleSize,
             height: monocleSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
@@ -889,8 +930,8 @@ function AvatarAccessory(props: {
           <circle
             cx="12"
             cy="12"
-            r="9"
-            fill="rgba(255,255,255,0.1)"
+            r="10"
+            fill="rgba(200,220,255,0.15)"
             stroke="#D4AF37"
             strokeWidth="2.5"
           />
@@ -898,7 +939,7 @@ function AvatarAccessory(props: {
           <circle
             cx="12"
             cy="12"
-            r="7"
+            r="7.5"
             fill="none"
             stroke="#B8860B"
             strokeWidth="0.5"
@@ -909,55 +950,34 @@ function AvatarAccessory(props: {
             cy="9"
             rx="3"
             ry="2"
-            fill="rgba(255,255,255,0.4)"
+            fill="rgba(255,255,255,0.5)"
           />
-          {/* Chain hanging down */}
-          <path
-            d="M21 12 Q24 16 22 22"
-            stroke="#D4AF37"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <circle cx="22" cy="22" r="1" fill="#D4AF37" />
         </svg>
       )
     }
     case 'avatar-crystal-ball': {
-      // Crystal ball in bottom-right corner, overlapping the avatar
+      // Crystal ball in bottom-right corner
       const ballSize =
-        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+        size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
         <svg
           className="absolute"
           style={{
-            right:
-              size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -6,
-            bottom:
-              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -4 : -5,
+            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            bottom: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
             width: ballSize,
             height: ballSize,
-            filter: 'drop-shadow(0 0 4px rgba(139,92,246,0.6))',
+            filter: 'drop-shadow(0 0 3px rgba(139,92,246,0.6))',
           }}
           viewBox="0 0 24 24"
         >
-          {/* Base/stand */}
-          <ellipse cx="12" cy="22" rx="5" ry="1.5" fill="#4B5563" />
-          <path d="M8 20 L10 22 L14 22 L16 20 Z" fill="#6B7280" />
           {/* Ball */}
-          <circle cx="12" cy="12" r="10" fill="url(#crystalGradientAcc)" />
+          <circle cx="12" cy="12" r="11" fill="url(#crystalGradientAcc)" />
           {/* Inner mystical swirl */}
-          <circle cx="12" cy="12" r="7" fill="rgba(139,92,246,0.25)" />
-          <ellipse
-            cx="12"
-            cy="12"
-            rx="5"
-            ry="3"
-            fill="rgba(167,139,250,0.3)"
-            transform="rotate(-20 12 12)"
-          />
+          <circle cx="12" cy="12" r="7" fill="rgba(139,92,246,0.3)" />
           {/* Sparkle highlights */}
-          <circle cx="8" cy="8" r="2" fill="rgba(255,255,255,0.5)" />
-          <circle cx="6" cy="10" r="1" fill="rgba(255,255,255,0.3)" />
+          <circle cx="8" cy="8" r="2.5" fill="rgba(255,255,255,0.6)" />
+          <circle cx="6" cy="11" r="1" fill="rgba(255,255,255,0.4)" />
           <defs>
             <radialGradient id="crystalGradientAcc" cx="30%" cy="30%">
               <stop offset="0%" stopColor="#E9D5FF" />
@@ -969,199 +989,123 @@ function AvatarAccessory(props: {
       )
     }
     case 'avatar-thought-yes': {
-      // YES thought bubble above avatar
+      // YES thought bubble in top-right corner
       return (
         <div
-          className="absolute left-1/2 -translate-x-1/2"
+          className="absolute"
           style={{
-            top:
-              size === '2xs' || size === 'xs' ? -12 : size === 'sm' ? -14 : -18,
+            top: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         >
           <div
-            className="relative rounded-full bg-green-500 px-1.5 py-0.5 text-white"
+            className="relative rounded-full bg-green-500 px-1 py-0.5 text-white"
             style={{
               fontSize:
                 size === '2xs' || size === 'xs'
-                  ? '6px'
+                  ? '5px'
                   : size === 'sm'
-                  ? '7px'
-                  : '9px',
+                  ? '6px'
+                  : '8px',
               fontWeight: 'bold',
             }}
           >
             YES
-            {/* Thought bubble tail */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 rounded-full bg-green-500"
-              style={{
-                bottom: -3,
-                width: 4,
-                height: 4,
-              }}
-            />
-            <div
-              className="absolute left-1/2 -translate-x-1/2 rounded-full bg-green-500"
-              style={{
-                bottom: -6,
-                width: 2,
-                height: 2,
-              }}
-            />
           </div>
         </div>
       )
     }
     case 'avatar-thought-no': {
-      // NO thought bubble above avatar
+      // NO thought bubble in top-right corner
       return (
         <div
-          className="absolute left-1/2 -translate-x-1/2"
+          className="absolute"
           style={{
-            top:
-              size === '2xs' || size === 'xs' ? -12 : size === 'sm' ? -14 : -18,
+            top: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         >
           <div
-            className="relative rounded-full bg-red-500 px-1.5 py-0.5 text-white"
+            className="rounded-full bg-red-500 px-1 py-0.5 text-white"
             style={{
               fontSize:
                 size === '2xs' || size === 'xs'
-                  ? '6px'
+                  ? '5px'
                   : size === 'sm'
-                  ? '7px'
-                  : '9px',
+                  ? '6px'
+                  : '8px',
               fontWeight: 'bold',
             }}
           >
             NO
-            {/* Thought bubble tail */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 rounded-full bg-red-500"
-              style={{
-                bottom: -3,
-                width: 4,
-                height: 4,
-              }}
-            />
-            <div
-              className="absolute left-1/2 -translate-x-1/2 rounded-full bg-red-500"
-              style={{
-                bottom: -6,
-                width: 2,
-                height: 2,
-              }}
-            />
           </div>
         </div>
       )
     }
     case 'avatar-stonks-up': {
-      // Stonks meme style - line chart going up with arrow
-      const chartSize =
-        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 18 : 24
+      // Stonks arrow in bottom-right corner
+      const arrowSize =
+        size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
         <svg
           className="absolute"
           style={{
-            right:
-              size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -6 : -8,
-            bottom:
-              size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -6,
-            width: chartSize,
-            height: chartSize,
+            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            bottom: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            width: arrowSize,
+            height: arrowSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
           viewBox="0 0 24 24"
         >
-          {/* Background panel */}
-          <rect
-            x="1"
-            y="1"
-            width="22"
-            height="22"
-            rx="2"
-            fill="#1F2937"
-            opacity="0.9"
-          />
-          {/* Grid lines */}
-          <line x1="4" y1="18" x2="20" y2="18" stroke="#374151" strokeWidth="0.5" />
-          <line x1="4" y1="12" x2="20" y2="12" stroke="#374151" strokeWidth="0.5" />
-          <line x1="4" y1="6" x2="20" y2="6" stroke="#374151" strokeWidth="0.5" />
-          {/* Stonks line going UP */}
-          <polyline
-            points="4,16 8,14 12,12 16,7 20,4"
-            fill="none"
-            stroke="#22C55E"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {/* Arrow head at the end */}
-          <polygon points="20,4 17,6 18,8" fill="#22C55E" />
-          {/* Glow effect */}
-          <polyline
-            points="4,16 8,14 12,12 16,7 20,4"
-            fill="none"
-            stroke="#4ADE80"
-            strokeWidth="1"
-            strokeLinecap="round"
-            opacity="0.5"
+          <defs>
+            <linearGradient id="stonks-up-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#15803d" />
+              <stop offset="50%" stopColor="#22c55e" />
+              <stop offset="100%" stopColor="#4ade80" />
+            </linearGradient>
+          </defs>
+          {/* Background circle */}
+          <circle cx="12" cy="12" r="11" fill="#1f2937" />
+          {/* Up arrow */}
+          <path
+            d="M12 4 L18 12 L14 12 L14 20 L10 20 L10 12 L6 12 Z"
+            fill="url(#stonks-up-grad)"
           />
         </svg>
       )
     }
     case 'avatar-stonks-down': {
-      // Stonks meme style - line chart going down (stinks/not stonks)
-      const chartSize =
-        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 18 : 24
+      // Stonks arrow in bottom-right corner (down)
+      const arrowSize =
+        size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
         <svg
           className="absolute"
           style={{
-            right:
-              size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -6 : -8,
-            bottom:
-              size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -6,
-            width: chartSize,
-            height: chartSize,
+            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            bottom: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            width: arrowSize,
+            height: arrowSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
           viewBox="0 0 24 24"
         >
-          {/* Background panel */}
-          <rect
-            x="1"
-            y="1"
-            width="22"
-            height="22"
-            rx="2"
-            fill="#1F2937"
-            opacity="0.9"
-          />
-          {/* Grid lines */}
-          <line x1="4" y1="18" x2="20" y2="18" stroke="#374151" strokeWidth="0.5" />
-          <line x1="4" y1="12" x2="20" y2="12" stroke="#374151" strokeWidth="0.5" />
-          <line x1="4" y1="6" x2="20" y2="6" stroke="#374151" strokeWidth="0.5" />
-          {/* Not stonks line going DOWN */}
-          <polyline
-            points="4,6 8,8 12,10 16,15 20,19"
-            fill="none"
-            stroke="#EF4444"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {/* Arrow head at the end */}
-          <polygon points="20,19 17,17 18,15" fill="#EF4444" />
-          {/* Glow effect */}
-          <polyline
-            points="4,6 8,8 12,10 16,15 20,19"
-            fill="none"
-            stroke="#FCA5A5"
-            strokeWidth="1"
-            strokeLinecap="round"
-            opacity="0.5"
+          <defs>
+            <linearGradient id="stonks-down-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fca5a5" />
+              <stop offset="50%" stopColor="#ef4444" />
+              <stop offset="100%" stopColor="#b91c1c" />
+            </linearGradient>
+          </defs>
+          {/* Background circle */}
+          <circle cx="12" cy="12" r="11" fill="#1f2937" />
+          {/* Down arrow */}
+          <path
+            d="M12 20 L18 12 L14 12 L14 4 L10 4 L10 12 L6 12 Z"
+            fill="url(#stonks-down-grad)"
           />
         </svg>
       )

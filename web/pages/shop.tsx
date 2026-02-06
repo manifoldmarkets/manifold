@@ -1527,23 +1527,21 @@ function MonoclePreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Bigger, thicker monocle centered on the right side */}
+        {/* Monocle in top-right corner */}
         <svg
-          className="absolute left-1/2 top-1/2"
+          className="absolute"
           style={{
-            marginLeft: 3,
-            marginTop: -7,
-            width: 22,
-            height: 22,
+            right: -1,
+            top: 2,
+            width: 18,
+            height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
           viewBox="0 0 24 24"
         >
-          <circle cx="12" cy="12" r="9" fill="rgba(255,255,255,0.1)" stroke="#D4AF37" strokeWidth="2.5" />
-          <circle cx="12" cy="12" r="7" fill="none" stroke="#B8860B" strokeWidth="0.5" />
-          <ellipse cx="9" cy="9" rx="3" ry="2" fill="rgba(255,255,255,0.4)" />
-          <path d="M21 12 Q24 16 22 22" stroke="#D4AF37" strokeWidth="1.5" fill="none" />
-          <circle cx="22" cy="22" r="1" fill="#D4AF37" />
+          <circle cx="12" cy="12" r="10" fill="rgba(200,220,255,0.15)" stroke="#D4AF37" strokeWidth="2.5" />
+          <circle cx="12" cy="12" r="7.5" fill="none" stroke="#B8860B" strokeWidth="0.5" />
+          <ellipse cx="9" cy="9" rx="3" ry="2" fill="rgba(255,255,255,0.5)" />
         </svg>
       </div>
     </div>
@@ -1562,25 +1560,22 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Crystal ball in bottom-right corner, overlapping avatar */}
+        {/* Crystal ball in bottom-right corner */}
         <svg
           className="absolute"
           style={{
-            right: -6,
-            bottom: -5,
-            width: 24,
-            height: 24,
-            filter: 'drop-shadow(0 0 4px rgba(139,92,246,0.6))',
+            right: -4,
+            bottom: -4,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 0 3px rgba(139,92,246,0.6))',
           }}
           viewBox="0 0 24 24"
         >
-          <ellipse cx="12" cy="22" rx="5" ry="1.5" fill="#4B5563" />
-          <path d="M8 20 L10 22 L14 22 L16 20 Z" fill="#6B7280" />
-          <circle cx="12" cy="12" r="10" fill="url(#crystalGradientPrev2)" />
-          <circle cx="12" cy="12" r="7" fill="rgba(139,92,246,0.25)" />
-          <ellipse cx="12" cy="12" rx="5" ry="3" fill="rgba(167,139,250,0.3)" transform="rotate(-20 12 12)" />
-          <circle cx="8" cy="8" r="2" fill="rgba(255,255,255,0.5)" />
-          <circle cx="6" cy="10" r="1" fill="rgba(255,255,255,0.3)" />
+          <circle cx="12" cy="12" r="11" fill="url(#crystalGradientPrev2)" />
+          <circle cx="12" cy="12" r="7" fill="rgba(139,92,246,0.3)" />
+          <circle cx="8" cy="8" r="2.5" fill="rgba(255,255,255,0.6)" />
+          <circle cx="6" cy="11" r="1" fill="rgba(255,255,255,0.4)" />
           <defs>
             <radialGradient id="crystalGradientPrev2" cx="30%" cy="30%">
               <stop offset="0%" stopColor="#E9D5FF" />
@@ -1602,7 +1597,7 @@ function ThoughtBubblePreview(props: {
   const isYes = type === 'yes'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 pt-6 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
         <Avatar
           username={user?.username}
@@ -1610,29 +1605,23 @@ function ThoughtBubblePreview(props: {
           size="lg"
           noLink
         />
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: -20 }}>
+        {/* Thought bubble in top-right corner */}
+        <div
+          className="absolute"
+          style={{
+            top: -4,
+            right: -4,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+        >
           <div
             className={clsx(
-              'relative rounded-full px-2 py-1 text-white',
+              'rounded-full px-1 py-0.5 text-white',
               isYes ? 'bg-green-500' : 'bg-red-500'
             )}
-            style={{ fontSize: '10px', fontWeight: 'bold' }}
+            style={{ fontSize: '8px', fontWeight: 'bold' }}
           >
             {isYes ? 'YES' : 'NO'}
-            <div
-              className={clsx(
-                'absolute left-1/2 -translate-x-1/2 rounded-full',
-                isYes ? 'bg-green-500' : 'bg-red-500'
-              )}
-              style={{ bottom: -4, width: 5, height: 5 }}
-            />
-            <div
-              className={clsx(
-                'absolute left-1/2 -translate-x-1/2 rounded-full',
-                isYes ? 'bg-green-500' : 'bg-red-500'
-              )}
-              style={{ bottom: -8, width: 3, height: 3 }}
-            />
           </div>
         </div>
       </div>
@@ -1656,34 +1645,30 @@ function StonksPreview(props: {
           size="lg"
           noLink
         />
-        {/* Stonks meme style chart */}
+        {/* Stonks arrow badge in bottom-right corner */}
         <svg
           className="absolute"
           style={{
-            right: -8,
-            bottom: -6,
-            width: 28,
-            height: 28,
+            right: -4,
+            bottom: -4,
+            width: 18,
+            height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
           viewBox="0 0 24 24"
         >
-          <rect x="1" y="1" width="22" height="22" rx="2" fill="#1F2937" opacity="0.9" />
-          <line x1="4" y1="18" x2="20" y2="18" stroke="#374151" strokeWidth="0.5" />
-          <line x1="4" y1="12" x2="20" y2="12" stroke="#374151" strokeWidth="0.5" />
-          <line x1="4" y1="6" x2="20" y2="6" stroke="#374151" strokeWidth="0.5" />
+          <defs>
+            <linearGradient id={isUp ? 'stonks-up-prev' : 'stonks-down-prev'} x1="0%" y1={isUp ? '100%' : '0%'} x2="100%" y2={isUp ? '0%' : '100%'}>
+              <stop offset="0%" stopColor={isUp ? '#15803d' : '#fca5a5'} />
+              <stop offset="50%" stopColor={isUp ? '#22c55e' : '#ef4444'} />
+              <stop offset="100%" stopColor={isUp ? '#4ade80' : '#b91c1c'} />
+            </linearGradient>
+          </defs>
+          <circle cx="12" cy="12" r="11" fill="#1f2937" />
           {isUp ? (
-            <>
-              <polyline points="4,16 8,14 12,12 16,7 20,4" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <polygon points="20,4 17,6 18,8" fill="#22C55E" />
-              <polyline points="4,16 8,14 12,12 16,7 20,4" fill="none" stroke="#4ADE80" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-            </>
+            <path d="M12 4 L18 12 L14 12 L14 20 L10 20 L10 12 L6 12 Z" fill="url(#stonks-up-prev)" />
           ) : (
-            <>
-              <polyline points="4,6 8,8 12,10 16,15 20,19" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <polygon points="20,19 17,17 18,15" fill="#EF4444" />
-              <polyline points="4,6 8,8 12,10 16,15 20,19" fill="none" stroke="#FCA5A5" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-            </>
+            <path d="M12 20 L18 12 L14 12 L14 4 L10 4 L10 12 L6 12 Z" fill="url(#stonks-down-prev)" />
           )}
         </svg>
       </div>

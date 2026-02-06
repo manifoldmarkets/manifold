@@ -5,6 +5,7 @@ import { getShopItem, ShopItemCategory } from './items'
 export type EntitlementGroup =
   | 'avatar-border' // Golden glow ring
   | 'avatar-overlay' // Crown, graduation cap (hats)
+  | 'avatar-accessory' // Monocle, crystal ball, thought bubbles, stonks
   | 'badge' // Supporter star badge
   | 'hovercard' // Hovercard glow effect
 
@@ -45,39 +46,39 @@ type ContextConfig = {
 const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
   // ✅ FUNCTIONAL
   profile_page: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: ['hat-hover'],
   },
   profile_sidebar: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: ['hat-hover'],
   },
   shop: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: ['hat-hover', 'golden-glow', 'propeller-spin'],
   },
   market_creator: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   market_comments: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   posts: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   hovercard: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge', 'hovercard'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge', 'hovercard'],
     animations: ['hat-hover', 'golden-glow', 'badge-pulse', 'propeller-spin'],
   },
   leagues: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   leaderboard: {
-    groups: ['avatar-border', 'avatar-overlay'], // No badges - rows too compact
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory'], // No badges - rows too compact
     animations: [],
   },
   managrams: {
@@ -91,7 +92,7 @@ const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
   },
   // Feed tab on /explore (FeedContractCard, RepostFeedCard)
   feed: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
 
@@ -109,6 +110,8 @@ const categoryToGroup = (category: ShopItemCategory): EntitlementGroup | null =>
       return 'avatar-border'
     case 'avatar-overlay':
       return 'avatar-overlay'
+    case 'avatar-accessory':
+      return 'avatar-accessory'
     case 'badge':
       return 'badge'
     case 'hovercard':
