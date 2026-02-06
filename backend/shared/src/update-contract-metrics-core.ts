@@ -244,41 +244,129 @@ const getCurrentProbs = async (
   )
 }
 
+// Uses LATERAL LIMIT 1 per (contract, answer) pair for efficient index seeks
+// instead of DISTINCT ON which scans all historical bets.
 const getBetProbsAt = async (
   pg: SupabaseDirectClient,
   when: number,
   contractIds: string[],
   sumToOneContractIds: string[]
 ) => {
-  return Object.fromEntries(
-    await pg.map(
-      `with probs_before as (
-        select distinct on (contract_id, answer_id)
-          contract_id, answer_id, prob_after as prob
-        from contract_bets
-        where created_time < millis_to_ts($1)
-        and contract_id = any($2) 
-        and (not is_redemption or contract_id = any($3))
-        order by contract_id, answer_id, created_time desc
-      ), probs_after as (
-        select distinct on (contract_id, answer_id)
-          contract_id, answer_id, prob_before as prob
-        from contract_bets
-        where created_time >= millis_to_ts($1)
-        and contract_id = any($2)
-        and (not is_redemption or contract_id = any($3))
-        order by contract_id, answer_id, created_time
-      )
-      select
-        coalesce(pa.contract_id, pb.contract_id) as contract_id,
-        coalesce(pa.answer_id, pb.answer_id) as answer_id,
-        coalesce(pa.prob, pb.prob) as prob
-      from probs_after as pa
-      full outer join probs_before as pb
-        on pa.contract_id = pb.contract_id and pa.answer_id = pb.answer_id
-      `,
-      [when, contractIds, sumToOneContractIds],
-      (r) => [r.contract_id + (r.answer_id ?? ''), parseFloat(r.prob as string)]
-    )
+  if (contractIds.length === 0) return {}
+
+  const sumToOneSet = new Set(sumToOneContractIds)
+
+  // Get answer pairs for multi-answer contracts
+  const answerRows = await pg.manyOrNone<{
+    contract_id: string
+    answer_id: string
+  }>(
+    'SELECT contract_id, id as answer_id FROM answers WHERE contract_id = ANY($1)',
+    [contractIds]
   )
+
+  const multiContractIds = new Set(answerRows.map((r) => r.contract_id))
+  const binaryIds = contractIds.filter((id) => !multiContractIds.has(id))
+  const nonS2OMultiIds = [
+    ...new Set(
+      answerRows
+        .filter((r) => !sumToOneSet.has(r.contract_id))
+        .map((r) => r.contract_id)
+    ),
+  ]
+  const s2OMultiIds = sumToOneContractIds.filter((id) =>
+    multiContractIds.has(id)
+  )
+
+  const promises: Promise<[string, number][]>[] = []
+
+  // Multi-answer non-sumToOne: NOT is_redemption → uses partial covering index
+  if (nonS2OMultiIds.length > 0) {
+    promises.push(
+      pg.map(
+        `SELECT ap.contract_id, ap.answer_id, coalesce(pa.prob, pb.prob) as prob
+        FROM (SELECT contract_id, id as answer_id FROM answers WHERE contract_id = ANY($2)) ap
+        LEFT JOIN LATERAL (
+          SELECT prob_before AS prob FROM contract_bets
+          WHERE contract_id = ap.contract_id AND answer_id = ap.answer_id
+            AND created_time >= millis_to_ts($1) AND NOT is_redemption
+          ORDER BY created_time LIMIT 1
+        ) pa ON true
+        LEFT JOIN LATERAL (
+          SELECT prob_after AS prob FROM contract_bets
+          WHERE contract_id = ap.contract_id AND answer_id = ap.answer_id
+            AND created_time < millis_to_ts($1) AND NOT is_redemption
+          ORDER BY created_time DESC LIMIT 1
+        ) pb ON true
+        WHERE pa.prob IS NOT NULL OR pb.prob IS NOT NULL`,
+        [when, nonS2OMultiIds],
+        (r) =>
+          [r.contract_id + r.answer_id, parseFloat(r.prob as string)] as [
+            string,
+            number
+          ]
+      )
+    )
+  }
+
+  // Multi-answer sumToOne: includes redemption bets
+  if (s2OMultiIds.length > 0) {
+    promises.push(
+      pg.map(
+        `SELECT ap.contract_id, ap.answer_id, coalesce(pa.prob, pb.prob) as prob
+        FROM (SELECT contract_id, id as answer_id FROM answers WHERE contract_id = ANY($2)) ap
+        LEFT JOIN LATERAL (
+          SELECT prob_before AS prob FROM contract_bets
+          WHERE contract_id = ap.contract_id AND answer_id = ap.answer_id
+            AND created_time >= millis_to_ts($1)
+          ORDER BY created_time LIMIT 1
+        ) pa ON true
+        LEFT JOIN LATERAL (
+          SELECT prob_after AS prob FROM contract_bets
+          WHERE contract_id = ap.contract_id AND answer_id = ap.answer_id
+            AND created_time < millis_to_ts($1)
+          ORDER BY created_time DESC LIMIT 1
+        ) pb ON true
+        WHERE pa.prob IS NOT NULL OR pb.prob IS NOT NULL`,
+        [when, s2OMultiIds],
+        (r) =>
+          [r.contract_id + r.answer_id, parseFloat(r.prob as string)] as [
+            string,
+            number
+          ]
+      )
+    )
+  }
+
+  // Binary contracts: answer_id IS NULL, NOT is_redemption
+  if (binaryIds.length > 0) {
+    promises.push(
+      pg.map(
+        `SELECT u.contract_id, coalesce(pa.prob, pb.prob) as prob
+        FROM unnest($2::text[]) AS u(contract_id)
+        LEFT JOIN LATERAL (
+          SELECT prob_before AS prob FROM contract_bets
+          WHERE contract_id = u.contract_id AND answer_id IS NULL
+            AND created_time >= millis_to_ts($1) AND NOT is_redemption
+          ORDER BY created_time LIMIT 1
+        ) pa ON true
+        LEFT JOIN LATERAL (
+          SELECT prob_after AS prob FROM contract_bets
+          WHERE contract_id = u.contract_id AND answer_id IS NULL
+            AND created_time < millis_to_ts($1) AND NOT is_redemption
+          ORDER BY created_time DESC LIMIT 1
+        ) pb ON true
+        WHERE pa.prob IS NOT NULL OR pb.prob IS NOT NULL`,
+        [when, binaryIds],
+        (r) =>
+          [r.contract_id as string, parseFloat(r.prob as string)] as [
+            string,
+            number
+          ]
+      )
+    )
+  }
+
+  const allResults = await Promise.all(promises)
+  return Object.fromEntries(allResults.flat())
 }
