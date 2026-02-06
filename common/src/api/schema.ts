@@ -375,6 +375,8 @@ export const API = (_apiTypeCheck = {
         dryRun: z.boolean().optional(),
         deps: z.array(z.string()).optional(),
         deterministic: z.boolean().optional(),
+        // If true, limit orders can be filled using margin loans when balance is insufficient
+        marginFinanced: z.boolean().optional(),
       })
       .strict(),
   },
