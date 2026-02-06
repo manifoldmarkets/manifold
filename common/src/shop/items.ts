@@ -247,6 +247,42 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
   },
+  {
+    id: 'avatar-jester-hat',
+    name: 'Jester Hat',
+    description: 'A colorful jester hat with jingling bells',
+    price: 20000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-fedora',
+    name: 'Fedora',
+    description: 'A classic felt fedora for the smooth operator',
+    price: 30000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-devil-horns',
+    name: 'Devil Horns',
+    description: 'Devilish horns for the market manipulator',
+    price: 100000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+  },
+  {
+    id: 'avatar-angel-wings',
+    name: 'Angel Wings',
+    description: 'Feathered wings flanking your avatar',
+    price: 150000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-border',
+  },
 ]
 
 // Available options for custom button text
@@ -375,6 +411,10 @@ export type AvatarDecorationId =
   | 'avatar-wizard-hat'
   | 'avatar-tinfoil-hat'
   | 'avatar-microphone'
+  | 'avatar-jester-hat'
+  | 'avatar-fedora'
+  | 'avatar-devil-horns'
+  | 'avatar-angel-wings'
 
 // Helper to check if user has a specific avatar decoration
 export const userHasAvatarDecoration = (
@@ -397,6 +437,9 @@ export const getActiveAvatarOverlay = (
     'avatar-wizard-hat',
     'avatar-tinfoil-hat',
     'avatar-microphone',
+    'avatar-jester-hat',
+    'avatar-fedora',
+    'avatar-devil-horns',
   ]
   for (const overlay of overlays) {
     if (hasActiveEntitlement(entitlements, overlay)) {

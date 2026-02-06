@@ -1,4 +1,9 @@
-import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from '@heroicons/react/solid'
 import { DAY_MS } from 'common/util/time'
 import {
   SHOP_ITEMS,
@@ -226,7 +231,10 @@ export default function ShopPage() {
     }
     // Skip confetti for consumables and skins (button customizations)
     const purchasedItem = getShopItem(itemId)
-    if (purchasedItem?.category !== 'consumable' && purchasedItem?.category !== 'skin') {
+    if (
+      purchasedItem?.category !== 'consumable' &&
+      purchasedItem?.category !== 'skin'
+    ) {
       setJustPurchased(itemId)
       setTimeout(() => setJustPurchased(null), 2500)
     }
@@ -1307,6 +1315,69 @@ function GoldenBorderPreview(props: { user: User | null | undefined }) {
   )
 }
 
+function AngelWingsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  const wingSvg = (
+    <>
+      <path
+        d="M16 12 C 10.5 2 3.5 4 2.5 12 C 2.1 18 2.1 24 2.5 28 L 4.5 29 L 3.5 36 L 7 38 L 6 44 C 11 40 15 32 16 22 Z"
+        fill="#FFFFFF"
+        stroke="#CBD5E1"
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 13 C 11.5 5 6 6 5 13 C 4.5 18 5 21 6 25 C 10 23 13.5 22 16 20 Z"
+        fill="#E2E8F0"
+      />
+      <path
+        d="M16 13 C 12.5 7 8.5 8 7.5 13 C 7.5 16 8 18.5 9 21 C 12 19.5 14.5 19 16 18 Z"
+        fill="#E5E7EB"
+      />
+      <path
+        d="M16 13 C 14.2 9.5 11.5 9.5 10.5 12 C 10.5 14 11 15.5 12 17 C 13.5 16.5 15 16.5 16 16 Z"
+        fill="#F1F5F9"
+      />
+    </>
+  )
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        {/* Left wing */}
+        <svg
+          className="absolute top-1/2 -translate-y-1/2"
+          style={{ left: -10, width: 15, height: 46, opacity: 0.9 }}
+          viewBox="0 0 16 44"
+        >
+          {wingSvg}
+        </svg>
+        {/* Right wing (mirrored) */}
+        <svg
+          className="absolute top-1/2"
+          style={{
+            right: -10,
+            width: 15,
+            height: 46,
+            opacity: 0.9,
+            transform: 'translateY(-50%) scaleX(-1)',
+          }}
+          viewBox="0 0 16 44"
+        >
+          {wingSvg}
+        </svg>
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+      </div>
+    </div>
+  )
+}
+
 function CrownPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
@@ -1357,6 +1428,9 @@ function HatPreview(props: {
     | 'wizard-hat'
     | 'tinfoil-hat'
     | 'microphone'
+    | 'jester-hat'
+    | 'fedora'
+    | 'devil-horns'
 }) {
   const { user, hatType } = props
 
@@ -1373,7 +1447,9 @@ function HatPreview(props: {
             {/* Dark mode - black with white outline */}
             <GiTopHat
               className="hidden h-5 w-5 text-gray-900 dark:block"
-              style={{ filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)' }}
+              style={{
+                filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+              }}
             />
           </div>
         )
@@ -1477,10 +1553,7 @@ function HatPreview(props: {
               className="h-5 w-5"
               style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
             >
-              <path
-                d="M10 2L6 8 4 14 3 20h18l-2-7-2-6-3-4z"
-                fill="#94A3B8"
-              />
+              <path d="M10 2L6 8 4 14 3 20h18l-2-7-2-6-3-4z" fill="#94A3B8" />
               <path
                 d="M10 2l2 11-4 7"
                 stroke="#CBD5E1"
@@ -1518,11 +1591,99 @@ function HatPreview(props: {
             <GiDunceCap
               className="hidden h-5 w-5 text-gray-900 dark:block"
               style={{
-                filter:
-                  'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+                filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
               }}
             />
           </div>
+        )
+      case 'jester-hat':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            >
+              {/* Right Flap (Green) */}
+              <path d="M12 21L15 13L22 6L12 21Z" fill="#16A34A" />
+              <path d="M12 21L22 6L19 16L12 21Z" fill="#14532D" />
+              {/* Left Flap (Indigo) - neck + beak */}
+              <path d="M12 21L9 13L5 7L12 21Z" fill="#3730A3" />
+              <path d="M12 21L5 7L5 16L12 21Z" fill="#312E81" />
+              <path d="M5 7L5 10L2 6L5 7Z" fill="#4338CA" />
+              {/* Center Flap (Red) - foreground */}
+              <path d="M12 21L9 13L12 2L12 21Z" fill="#991B1B" />
+              <path d="M12 21L15 13L12 2L12 21Z" fill="#DC2626" />
+              {/* Gold Bells */}
+              <circle cx="2" cy="6" r="1.5" fill="#FBBF24" />
+              <circle cx="22" cy="6" r="1.5" fill="#FBBF24" />
+              <circle cx="12" cy="2" r="1.5" fill="#FBBF24" />
+            </svg>
+          </div>
+        )
+      case 'fedora':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            >
+              <path d="M6 16 Q6 8 12 8 Q18 8 18 16Z" fill="#78716C" />
+              <path
+                d="M8 14 Q12 10 16 14"
+                stroke="#57534E"
+                strokeWidth="0.8"
+                fill="none"
+              />
+              <ellipse cx="12" cy="16" rx="11" ry="3" fill="#78716C" />
+              <rect
+                x="6"
+                y="14"
+                width="12"
+                height="1.5"
+                rx="0.5"
+                fill="#44403C"
+              />
+            </svg>
+          </div>
+        )
+      case 'devil-horns':
+        return (
+          <>
+            {/* Left horn (swapped + tilted outward) */}
+            <svg
+              className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+              style={{
+                left: -3,
+                top: -4,
+                width: 12,
+                height: 12,
+                filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+                transform: 'rotate(-45deg)',
+              }}
+              viewBox="0 0 16 16"
+            >
+              <path d="M0 16C0 8 8 2 14 1C11 4 6 12 5 16H0Z" fill="#DC2626" />
+              <path d="M5 16C6 12 11 4 14 1C10 6 6 12 5 16Z" fill="#991B1B" />
+            </svg>
+            {/* Right horn (swapped + tilted outward) */}
+            <svg
+              className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+              style={{
+                right: -3,
+                top: -4,
+                width: 12,
+                height: 12,
+                filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+                transform: 'rotate(45deg)',
+              }}
+              viewBox="0 0 16 16"
+            >
+              <path d="M16 16C16 8 8 2 2 1C5 4 10 12 11 16H16Z" fill="#DC2626" />
+              <path d="M11 16C10 12 5 4 2 1C6 6 10 12 11 16Z" fill="#991B1B" />
+            </svg>
+          </>
         )
     }
   }
@@ -1654,7 +1815,8 @@ function CustomYesButtonPreview(props: {
 
   const cyclePrev = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const newIndex = (previewIndex - 1 + YES_BUTTON_OPTIONS.length) % YES_BUTTON_OPTIONS.length
+    const newIndex =
+      (previewIndex - 1 + YES_BUTTON_OPTIONS.length) % YES_BUTTON_OPTIONS.length
     setPreviewIndex(newIndex)
     if (owned && onSelect) {
       // Debounce metadata update
@@ -1720,7 +1882,8 @@ function CustomNoButtonPreview(props: {
 
   const cyclePrev = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const newIndex = (previewIndex - 1 + NO_BUTTON_OPTIONS.length) % NO_BUTTON_OPTIONS.length
+    const newIndex =
+      (previewIndex - 1 + NO_BUTTON_OPTIONS.length) % NO_BUTTON_OPTIONS.length
     setPreviewIndex(newIndex)
     if (owned && onSelect) {
       if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
@@ -1779,7 +1942,14 @@ function ItemPreview(props: {
   entitlement?: UserEntitlement
   onMetadataUpdate?: (metadata: Record<string, any>) => void
 }) {
-  const { itemId, user, localStreakBonus, allEntitlements, entitlement, onMetadataUpdate } = props
+  const {
+    itemId,
+    user,
+    localStreakBonus,
+    allEntitlements,
+    entitlement,
+    onMetadataUpdate,
+  } = props
 
   switch (itemId) {
     case 'avatar-golden-border':
@@ -1800,6 +1970,14 @@ function ItemPreview(props: {
       return <HatPreview user={user} hatType="tinfoil-hat" />
     case 'avatar-microphone':
       return <HatPreview user={user} hatType="microphone" />
+    case 'avatar-jester-hat':
+      return <HatPreview user={user} hatType="jester-hat" />
+    case 'avatar-fedora':
+      return <HatPreview user={user} hatType="fedora" />
+    case 'avatar-devil-horns':
+      return <HatPreview user={user} hatType="devil-horns" />
+    case 'avatar-angel-wings':
+      return <AngelWingsPreview user={user} />
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview

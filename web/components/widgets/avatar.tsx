@@ -75,6 +75,10 @@ export const Avatar = memo(
       entitlements,
       'avatar-golden-border'
     )
+    const hasAngelWings = userHasAvatarDecoration(
+      entitlements,
+      'avatar-angel-wings'
+    )
     // Get active avatar overlay (hat)
     const activeOverlay = getActiveAvatarOverlay(entitlements)
     const s =
@@ -111,7 +115,7 @@ export const Avatar = memo(
 
     // Determine if we need a relative wrapper for overlays
     const needsRelativeWrapper =
-      isUserFresh || activeOverlay || hasGoldenBorder
+      isUserFresh || activeOverlay || hasGoldenBorder || hasAngelWings
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
@@ -152,6 +156,8 @@ export const Avatar = memo(
             )}
           />
         )}
+        {/* Angel wings - feathered wings flanking avatar */}
+        {hasAngelWings && <AngelWingsDecoration size={size} />}
         {shouldShowImage ? (
           <Image
             width={sizeInPx}
@@ -207,6 +213,70 @@ export const Avatar = memo(
     )
   }
 )
+
+// Angel wings decoration - flanks the avatar on both sides
+function AngelWingsDecoration(props: { size?: AvatarSizeType }) {
+  const { size } = props
+  const wingW = size === '2xs' || size === 'xs' ? 6 : size === 'sm' ? 9 : 12
+  const wingH = size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 26 : 36
+  const offset = size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7
+
+  // Layered feather wing - tall and narrow, 4 tiers
+  const wingSvg = (
+    <>
+      {/* Flight feathers (back layer) - Longest, reaching bottom */}
+      <path
+        d="M16 12 C 10.5 2 3.5 4 2.5 12 C 2.1 18 2.1 24 2.5 28 L 4.5 29 L 3.5 36 L 7 38 L 6 44 C 11 40 15 32 16 22 Z"
+        fill="#FFFFFF"
+        stroke="#CBD5E1"
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      {/* Secondary feathers - Mid length */}
+      <path
+        d="M16 13 C 11.5 5 6 6 5 13 C 4.5 18 5 21 6 25 C 10 23 13.5 22 16 20 Z"
+        fill="#E2E8F0"
+      />
+      {/* Tertiary feathers - Shorter inner layer */}
+      <path
+        d="M16 13 C 12.5 7 8.5 8 7.5 13 C 7.5 16 8 18.5 9 21 C 12 19.5 14.5 19 16 18 Z"
+        fill="#E5E7EB"
+      />
+      {/* Shoulder coverts (front layer) - Top rounded section */}
+      <path
+        d="M16 13 C 14.2 9.5 11.5 9.5 10.5 12 C 10.5 14 11 15.5 12 17 C 13.5 16.5 15 16.5 16 16 Z"
+        fill="#F1F5F9"
+      />
+    </>
+  )
+
+  return (
+    <>
+      {/* Left wing */}
+      <svg
+        className="absolute top-1/2 -translate-y-1/2"
+        style={{ left: offset, width: wingW, height: wingH, opacity: 0.9 }}
+        viewBox="0 0 16 44"
+      >
+        {wingSvg}
+      </svg>
+      {/* Right wing (mirrored) */}
+      <svg
+        className="absolute top-1/2"
+        style={{
+          right: offset,
+          width: wingW,
+          height: wingH,
+          opacity: 0.9,
+          transform: 'translateY(-50%) scaleX(-1)',
+        }}
+        viewBox="0 0 16 44"
+      >
+        {wingSvg}
+      </svg>
+    </>
+  )
+}
 
 // Component to render avatar overlays (hats)
 function AvatarOverlay(props: {
@@ -276,7 +346,9 @@ function AvatarOverlay(props: {
           {/* Dark mode - black with white outline */}
           <GiTopHat
             className={clsx(hatSizeClass, 'hidden text-gray-900 dark:block')}
-            style={{ filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)' }}
+            style={{
+              filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+            }}
           />
         </div>
       )
@@ -348,7 +420,8 @@ function AvatarOverlay(props: {
         'absolute transition-transform duration-300',
         propellerPositionClass,
         'rotate-45',
-        animateHatOnHover && 'group-hover:-translate-y-0.5 group-hover:scale-110',
+        animateHatOnHover &&
+          'group-hover:-translate-y-0.5 group-hover:scale-110',
         animateHat && '-translate-y-0.5 scale-110'
       )
       return (
@@ -369,13 +442,22 @@ function AvatarOverlay(props: {
             <div
               className="absolute"
               style={{
-                top: size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -6 : -8,
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -5
+                    : size === 'sm'
+                    ? -6
+                    : -8,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 ...(animatePropeller ? { perspective: '80px' } : {}),
               }}
             >
-              <div style={animatePropeller ? { transform: 'rotateX(50deg)' } : undefined}>
+              <div
+                style={
+                  animatePropeller ? { transform: 'rotateX(50deg)' } : undefined
+                }
+              >
                 <svg
                   width={
                     size === '2xs' || size === 'xs'
@@ -394,9 +476,7 @@ function AvatarOverlay(props: {
                   viewBox="0 0 18 18"
                   className={clsx(animatePropeller && 'animate-spin')}
                   style={
-                    animatePropeller
-                      ? { animationDuration: '0.5s' }
-                      : undefined
+                    animatePropeller ? { animationDuration: '0.5s' } : undefined
                   }
                 >
                   <rect
@@ -445,10 +525,7 @@ function AvatarOverlay(props: {
             className={clsx(hatSizeClass)}
             style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
           >
-            <path
-              d="M10 2L6 8 4 14 3 20h18l-2-7-2-6-3-4z"
-              fill="#94A3B8"
-            />
+            <path d="M10 2L6 8 4 14 3 20h18l-2-7-2-6-3-4z" fill="#94A3B8" />
             <path
               d="M10 2l2 11-4 7"
               stroke="#CBD5E1"
@@ -485,10 +562,123 @@ function AvatarOverlay(props: {
           {/* Dark mode - black with white outline */}
           <GiDunceCap
             className={clsx(hatSizeClass, 'hidden text-gray-900 dark:block')}
-            style={{ filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)' }}
+            style={{
+              filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+            }}
           />
         </div>
       )
+    case 'avatar-jester-hat':
+      return (
+        <div className={cornerClasses}>
+          <svg
+            viewBox="0 0 24 24"
+            className={clsx(hatSizeClass)}
+            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+          >
+            {/* Right Flap (Green) */}
+            <path d="M12 21L15 13L22 6L12 21Z" fill="#16A34A" />
+            <path d="M12 21L22 6L19 16L12 21Z" fill="#14532D" />
+            {/* Left Flap (Indigo) - neck + beak */}
+            <path d="M12 21L9 13L5 7L12 21Z" fill="#3730A3" />
+            <path d="M12 21L5 7L5 16L12 21Z" fill="#312E81" />
+            <path d="M5 7L5 10L2 6L5 7Z" fill="#4338CA" />
+            {/* Center Flap (Red) - foreground */}
+            <path d="M12 21L9 13L12 2L12 21Z" fill="#991B1B" />
+            <path d="M12 21L15 13L12 2L12 21Z" fill="#DC2626" />
+            {/* Gold Bells */}
+            <circle cx="2" cy="6" r="1.5" fill="#FBBF24" />
+            <circle cx="22" cy="6" r="1.5" fill="#FBBF24" />
+            <circle cx="12" cy="2" r="1.5" fill="#FBBF24" />
+          </svg>
+        </div>
+      )
+    case 'avatar-fedora': {
+      return (
+        <div className={cornerClasses}>
+          <svg
+            viewBox="0 0 24 24"
+            className={clsx(hatSizeClass)}
+            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+          >
+            {/* Crown */}
+            <path d="M6 16 Q6 8 12 8 Q18 8 18 16Z" fill="#78716C" />
+            {/* Indent/crease */}
+            <path
+              d="M8 14 Q12 10 16 14"
+              stroke="#57534E"
+              strokeWidth="0.8"
+              fill="none"
+            />
+            {/* Brim - wider than crown */}
+            <ellipse cx="12" cy="16" rx="11" ry="3" fill="#78716C" />
+            {/* Band */}
+            <rect
+              x="6"
+              y="14"
+              width="12"
+              height="1.5"
+              rx="0.5"
+              fill="#44403C"
+            />
+          </svg>
+        </div>
+      )
+    }
+    case 'avatar-devil-horns': {
+      const hornSize =
+        size === '2xs' || size === 'xs' ? 8 : size === 'sm' ? 10 : 12
+      return (
+        <>
+          {/* Left horn (swapped + tilted outward) */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+            style={{
+              left:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -3,
+              top:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+              width: hornSize,
+              height: hornSize,
+              filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+              transform: 'rotate(-45deg)',
+            }}
+            viewBox="0 0 16 16"
+          >
+            <path d="M0 16C0 8 8 2 14 1C11 4 6 12 5 16H0Z" fill="#DC2626" />
+            <path d="M5 16C6 12 11 4 14 1C10 6 6 12 5 16Z" fill="#991B1B" />
+          </svg>
+          {/* Right horn (swapped + tilted outward) */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+            style={{
+              right:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -3,
+              top:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+              width: hornSize,
+              height: hornSize,
+              filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+              transform: 'rotate(45deg)',
+            }}
+            viewBox="0 0 16 16"
+          >
+            <path d="M16 16C16 8 8 2 2 1C5 4 10 12 11 16H16Z" fill="#DC2626" />
+            <path d="M11 16C10 12 5 4 2 1C6 6 10 12 11 16Z" fill="#991B1B" />
+          </svg>
+        </>
+      )
+    }
     default:
       return null
   }
