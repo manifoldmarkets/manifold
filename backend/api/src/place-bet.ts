@@ -125,7 +125,14 @@ export const placeBetMain = async (
   isApi: boolean
 ) => {
   const startTime = Date.now()
-  const { contractId, replyToCommentId, deterministic, answerId, silent } = body
+  const {
+    contractId,
+    replyToCommentId,
+    deterministic,
+    answerId,
+    silent,
+    marginFinanced,
+  } = body
   // Fetch data outside transaction first to avoid locking all limit orderers
   const {
     user,
@@ -211,7 +218,9 @@ export const placeBetMain = async (
       betGroupId,
       deterministic,
       false,
-      isApi ? undefined : silent
+      isApi ? undefined : silent,
+      undefined,
+      marginFinanced
     )
   })
 
@@ -338,7 +347,8 @@ export const executeNewBetResult = async (
   deterministic?: boolean,
   firstBetInMultiBet?: boolean,
   silent?: boolean,
-  isMultiBet?: boolean
+  isMultiBet?: boolean,
+  marginFinanced?: boolean
 ) => {
   const {
     newBet,
@@ -378,6 +388,8 @@ export const executeNewBetResult = async (
     replyToCommentId,
     betGroupId,
     ...newBet,
+    // Only store marginFinanced on limit orders (not filled immediately)
+    marginFinanced: newBet.limitProb !== undefined ? marginFinanced : undefined,
   })
 
   // Just an unfilled limit order, no need to update metrics, maker shares, contract, etc.
@@ -565,7 +577,14 @@ export const executeNewBetResult = async (
     balanceUpdates: makerRedemptionAndFillBalanceUpdates,
     bulkUpdateLimitOrdersQuery,
     updatedMakers,
-  } = await updateMakers(makersByTakerBetId, contract, updatedMetrics, pgTrans)
+    marginLoanQueries,
+  } = await updateMakers(
+    makersByTakerBetId,
+    contract,
+    updatedMetrics,
+    pgTrans,
+    balanceByUserId
+  )
   // Create redemption bets for bettor w/o limit fills if needed:
   const {
     betsToInsert: bettorRedemptionBetsToInsert,
@@ -609,6 +628,12 @@ export const executeNewBetResult = async (
   )
   const { query: cancelLimitsQuery, bets: cancelledLimitOrders } =
     cancelLimitOrdersQuery(allOrdersToCancel)
+  // Build margin loan queries string (if any)
+  const marginLoanQueriesStr =
+    marginLoanQueries && marginLoanQueries.length > 0
+      ? marginLoanQueries.join(';\n') + ';'
+      : ''
+
   const startTime = Date.now()
   const results = await pgTrans.multi(
     `
@@ -621,6 +646,7 @@ export const executeNewBetResult = async (
     ${cancelLimitsQuery}; --6
     ${bulkUpdateLimitOrdersQuery}; --7
     ${bonusTxnQuery}; --8
+    ${marginLoanQueriesStr} --9 (margin loan queries)
      `
   )
   log(`placeBet bulk insert/update took ${Date.now() - startTime}ms`)
