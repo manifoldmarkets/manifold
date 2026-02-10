@@ -20,6 +20,7 @@ import {
   shouldAnimateHatOnHover,
   shouldAnimateGoldenGlow,
   shouldAnimatePropeller,
+  shouldAnimateFireItem,
 } from 'common/shop/display-config'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -61,6 +62,9 @@ export const Avatar = memo(
     const animatePropeller = displayContext
       ? shouldAnimatePropeller(displayContext)
       : false
+    const animateFireItem = displayContext
+      ? shouldAnimateFireItem(displayContext)
+      : false
 
     // Filter entitlements based on display context
     // FAIL-SAFE: If no displayContext provided, show NO entitlements
@@ -88,9 +92,9 @@ export const Avatar = memo(
       entitlements,
       'avatar-black-hole'
     )
-    const hasFireRing = userHasAvatarDecoration(
+    const hasFireItem = userHasAvatarDecoration(
       entitlements,
-      'avatar-fire-ring'
+      'avatar-fire-item'
     )
     const hasBadAura = userHasAvatarDecoration(entitlements, 'avatar-bad-aura')
     // Get active avatar overlay (hat)
@@ -138,7 +142,7 @@ export const Avatar = memo(
       hasAngelWings ||
       hasManaAura ||
       hasBlackHole ||
-      hasFireRing ||
+      hasFireItem ||
       hasBadAura
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
@@ -204,8 +208,8 @@ export const Avatar = memo(
         )}
         {/* Black hole - dark swirling void */}
         {hasBlackHole && <BlackHoleDecoration size={size} />}
-        {/* Fire ring - blazing ring of fire */}
-        {hasFireRing && <FireRingDecoration size={size} />}
+        {/* Fire item - blazing ring of fire */}
+        {hasFireItem && <FireItemDecoration size={size} animate={animateFireItem} />}
         {/* Angel wings - feathered wings flanking avatar */}
         {hasAngelWings && <AngelWingsDecoration size={size} />}
         {shouldShowImage ? (
@@ -221,8 +225,8 @@ export const Avatar = memo(
               hasGoldenBorder && 'relative ring-2 ring-amber-400',
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
-              hasFireRing && 'relative ring-2 ring-orange-400',
-              hasBlackHole && 'relative ring-2 ring-purple-900'
+              hasBlackHole && 'relative ring-2 ring-purple-900',
+              hasFireItem && 'relative'
             )}
             style={{ maxWidth: `${s * 0.25}rem` }}
             src={avatarUrl}
@@ -243,12 +247,14 @@ export const Avatar = memo(
               hasGoldenBorder && 'relative ring-2 ring-amber-400',
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
-              hasFireRing && 'relative ring-2 ring-orange-400',
-              hasBlackHole && 'relative ring-2 ring-purple-900'
+              hasBlackHole && 'relative ring-2 ring-purple-900',
+              hasFireItem && 'relative'
             )}
             onClick={onClick}
           />
         )}
+        {/* Fire item foreground flames - rendered ON TOP of avatar */}
+        {hasFireItem && <FireItemForeground size={size} animate={animateFireItem} />}
         {/* Fresh user sprout */}
         {isUserFresh && (
           <div className="absolute -right-2 -top-[0.41rem] rotate-45">
@@ -416,79 +422,246 @@ function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
   )
 }
 
-// Fire ring decoration - dramatic flames around avatar
-function FireRingDecoration(props: { size?: AvatarSizeType }) {
-  const { size } = props
-  // Much larger to show flames extending beyond the avatar
-  const flameSize =
-    size === '2xs' || size === 'xs' ? 32 : size === 'sm' ? 48 : 64
-  const offset =
-    size === '2xs' || size === 'xs' ? -8 : size === 'sm' ? -12 : -16
-
+// Fire item background glow — fiery halo BEHIND avatar, concentrated at bottom-right where flames are
+function FireItemDecoration(props: { size?: AvatarSizeType; animate?: boolean }) {
+  const { animate } = props
   return (
-    <svg
-      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+    <div
+      className={clsx(
+        'absolute -inset-1.5 rounded-full blur-[5px]',
+        animate && 'animate-pulse'
+      )}
       style={{
-        width: flameSize,
-        height: flameSize,
-        marginLeft: offset / 2,
-        marginTop: offset / 2,
-        filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))',
+        background:
+          'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.7) 0%, rgba(234,88,12,0.5) 25%, rgba(220,38,38,0.3) 45%, rgba(180,83,9,0.15) 65%, transparent 85%)',
       }}
-      viewBox="0 0 64 64"
-    >
-      <defs>
-        <linearGradient id="fire-outer" x1="50%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%" stopColor="#7f1d1d" />
-          <stop offset="40%" stopColor="#dc2626" />
-          <stop offset="100%" stopColor="#f97316" />
-        </linearGradient>
-        <linearGradient id="fire-mid" x1="50%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%" stopColor="#ea580c" />
-          <stop offset="50%" stopColor="#f97316" />
-          <stop offset="100%" stopColor="#fb923c" />
-        </linearGradient>
-        <linearGradient id="fire-inner" x1="50%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%" stopColor="#f59e0b" />
-          <stop offset="50%" stopColor="#fbbf24" />
-          <stop offset="100%" stopColor="#fef08a" />
-        </linearGradient>
-      </defs>
-      {/* Outer flame tongues - 8 flames around the circle */}
-      <g>
-        {/* Top flame */}
-        <path d="M32 4 Q28 10 30 16 Q32 12 34 16 Q36 10 32 4" fill="url(#fire-outer)" />
-        {/* Top-right flame */}
-        <path d="M50 10 Q48 18 46 22 Q50 18 52 22 Q54 16 50 10" fill="url(#fire-outer)" />
-        {/* Right flame */}
-        <path d="M60 32 Q54 28 48 30 Q52 32 48 34 Q54 36 60 32" fill="url(#fire-outer)" />
-        {/* Bottom-right flame */}
-        <path d="M50 54 Q48 46 46 42 Q50 46 52 42 Q54 48 50 54" fill="url(#fire-outer)" />
-        {/* Bottom flame */}
-        <path d="M32 60 Q28 54 30 48 Q32 52 34 48 Q36 54 32 60" fill="url(#fire-outer)" />
-        {/* Bottom-left flame */}
-        <path d="M14 54 Q16 46 18 42 Q14 46 12 42 Q10 48 14 54" fill="url(#fire-outer)" />
-        {/* Left flame */}
-        <path d="M4 32 Q10 28 16 30 Q12 32 16 34 Q10 36 4 32" fill="url(#fire-outer)" />
-        {/* Top-left flame */}
-        <path d="M14 10 Q16 18 18 22 Q14 18 12 22 Q10 16 14 10" fill="url(#fire-outer)" />
-      </g>
-      {/* Middle orange ring with flame shapes */}
-      <path
-        d="M32 8 Q24 12 20 20 Q16 28 20 36 Q18 40 20 44 Q24 52 32 56 Q36 52 36 48 Q40 52 44 44 Q48 36 44 28 Q44 20 40 16 Q36 12 32 8 Z
-           M32 18 Q38 22 40 28 Q42 34 38 40 Q36 44 32 46 Q28 44 26 40 Q22 34 24 28 Q26 22 32 18 Z"
-        fill="url(#fire-mid)"
-        fillRule="evenodd"
-        opacity="0.9"
-      />
-      {/* Inner yellow glow ring */}
-      <circle cx="32" cy="32" r="14" fill="none" stroke="url(#fire-inner)" strokeWidth="3" opacity="0.8" />
-      {/* Animated-looking wisps */}
-      <path d="M26 12 Q24 16 26 20" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
-      <path d="M38 12 Q40 16 38 20" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
-      <path d="M12 26 Q16 24 20 26" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
-      <path d="M44 26 Q48 24 52 26" stroke="#fbbf24" strokeWidth="2" fill="none" opacity="0.7" strokeLinecap="round" />
-    </svg>
+    />
+  )
+}
+
+// Foreground: flames (unclipped) + wispy smoke + flame smoke wisps + embers (clipped) ON TOP of avatar
+function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean }) {
+  const { size, animate } = props
+  // flameSize must maintain a constant ratio to avatar pixel size (1.375)
+  // so flames sit on the avatar border at all sizes
+  const s =
+    size === '2xs' ? 4 : size === 'xs' ? 6 : size === 'sm' ? 8
+    : size === 'md' ? 10 : size === 'lg' ? 12 : size === 'xl' ? 24 : 10
+  const flameSize = Math.round(s * 4 * 1.375)
+  const playState = animate ? 'running' : 'paused'
+  return (
+    <>
+      <style>{`
+        @keyframes ember-rise-1 {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(4px, -15px) scale(0); opacity: 0; }
+        }
+        @keyframes ember-rise-2 {
+          0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+          100% { transform: translate(-2px, -12px) scale(0); opacity: 0; }
+        }
+        @keyframes ember-rise-3 {
+          0% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+          100% { transform: translate(1px, -18px) scale(0); opacity: 0; }
+        }
+        @keyframes wisp-drift-1 {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          50% { transform: translateX(6px) translateY(-1.5px); }
+        }
+        @keyframes wisp-drift-2 {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          50% { transform: translateX(5px) translateY(1px); }
+        }
+        @keyframes wisp-drift-3 {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          50% { transform: translateX(4px) translateY(-1px); }
+        }
+        @keyframes flame-smoke-drift-1 {
+          0% { transform: translate(0, 0); opacity: 0.7; }
+          50% { transform: translate(-6px, -8px); opacity: 0.4; }
+          100% { transform: translate(-12px, -14px); opacity: 0; }
+        }
+        @keyframes flame-smoke-drift-2 {
+          0% { transform: translate(0, 0); opacity: 0.6; }
+          50% { transform: translate(-4px, -7px); opacity: 0.3; }
+          100% { transform: translate(-8px, -12px); opacity: 0; }
+        }
+      `}</style>
+
+      {/* Flame cluster — ON TOP of avatar, unclipped so flames at edge are visible */}
+      <svg
+        className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 overflow-visible"
+        style={{ width: flameSize, height: flameSize }}
+        viewBox="0 0 80 80"
+        fill="none"
+      >
+        {/* Top flame cluster — ~4.5 o'clock on border */}
+        <g>
+          <path
+            d="M60,59 C62,59 64,58 66,55 C68,51 66,47 65,44 C64,47 62,51 60,53 C58,55 59,57 60,59Z"
+            fill="#f97316"
+            className={clsx('opacity-90 transition-transform duration-300 origin-[60px_59px]', animate && 'scale-110')}
+          />
+          <path
+            d="M56,59 C58,59 60,58 61,56 C61,53 60,51 59,49 C58,51 57,53 55,55 C55,57 55,58 56,59Z"
+            fill="#dc2626"
+            className={clsx('opacity-80 transition-transform duration-500 origin-[56px_59px]', animate && 'scale-110')}
+          />
+          <path
+            d="M64,53 C65,53 66,52 67,50 C68,48 67,46 66.5,45 C66,46 65,48 64,49 C63,50 63.5,52 64,53Z"
+            fill="#fbbf24"
+            className={clsx('opacity-70 transition-transform duration-700 origin-[64px_53px]', animate && 'scale-125')}
+          />
+        </g>
+        {/* Mini flame cluster — ~5 o'clock on border */}
+        <g>
+          <path
+            d="M54,65 C56,65 57,64 58,62 C59,60 58,58 57,56 C57,58 56,60 55,61 C54,63 54,64 54,65Z"
+            fill="#f97316"
+            className={clsx('opacity-85 transition-transform duration-300 origin-[54px_65px]', animate && 'scale-110')}
+          />
+          <path
+            d="M51,66 C52,66 53,65 54,64 C54,62 53,61 53,60 C52,61 52,62 51,63 C50,64 51,65 51,66Z"
+            fill="#dc2626"
+            className={clsx('opacity-75 transition-transform duration-500 origin-[51px_66px]', animate && 'scale-110')}
+          />
+          <path
+            d="M57,61 C58,61 58,60 59,59 C59,58 58,57 58,56 C58,57 57,58 57,59 C57,60 57,60 57,61Z"
+            fill="#fbbf24"
+            className={clsx('opacity-65 transition-transform duration-700 origin-[57px_61px]', animate && 'scale-125')}
+          />
+        </g>
+        {/* Primary flame cluster — ~5.5 o'clock, spilling right below photo frame */}
+        <g>
+          {/* Counterbalancing teardrop flames — behind main flames */}
+          <path
+            d="M56,70 C54,70 52,69 51,67 C51,64 52,62 53,60 C54,63 55,65 56,67 C57,68 57,69 56,70Z"
+            fill="#f59e0b"
+            className={clsx('opacity-75 transition-transform duration-400 origin-[56px_70px]', animate && 'scale-110')}
+          />
+          <path
+            d="M52,72 C50,72 48,71 48,69 C47,66 48,64 49,62 C50,65 51,67 52,69 C52,70 52,71 52,72Z"
+            fill="#ea580c"
+            className={clsx('opacity-75 transition-transform duration-400 origin-[52px_72px]', animate && 'scale-110')}
+          />
+          {/* Main flames — rendered on top */}
+          <path
+            d="M52,72 C54,72 56,71 58,68 C60,64 58,60 57,57 C56,60 54,64 52,66 C50,68 51,70 52,72Z"
+            fill="#f97316"
+            className={clsx('opacity-90 transition-transform duration-300 origin-[52px_72px]', animate && 'scale-110')}
+          />
+          <path
+            d="M56,66 C57,66 58,65 59,63 C60,61 59,59 58.5,58 C58,59 57,61 56,62 C55,63 55.5,65 56,66Z"
+            fill="#fbbf24"
+            className={clsx('opacity-70 transition-transform duration-700 origin-[56px_66px]', animate && 'scale-125')}
+          />
+        </g>
+      </svg>
+
+      {/* Smoke wisps drifting over flames — only when animated, positioned near flame cluster */}
+      {animate && (
+        <>
+          <div
+            className="pointer-events-none absolute z-20"
+            style={{
+              right: '-2%', bottom: '20%',
+              width: '16px', height: '3px',
+              background: 'linear-gradient(135deg, rgba(200,200,210,0.7) 0%, rgba(160,165,175,0.4) 60%, transparent 100%)',
+              borderRadius: '2px',
+              filter: 'blur(1.5px)',
+              animation: 'flame-smoke-drift-1 2.5s ease-out infinite',
+            }}
+          />
+          <div
+            className="pointer-events-none absolute z-20"
+            style={{
+              right: '2%', bottom: '26%',
+              width: '12px', height: '2.5px',
+              background: 'linear-gradient(135deg, rgba(180,185,195,0.6) 0%, rgba(160,165,175,0.3) 60%, transparent 100%)',
+              borderRadius: '2px',
+              filter: 'blur(1px)',
+              animation: 'flame-smoke-drift-2 3s ease-out infinite',
+              animationDelay: '0.6s',
+            }}
+          />
+        </>
+      )}
+
+      {/* Clipped overlay — wisps, flame smoke, embers (clipped to avatar circle) */}
+      <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-full">
+        {/* Fiery light cast — same radial gradient as background glow, overlaying the avatar */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.35) 0%, rgba(234,88,12,0.2) 25%, rgba(220,38,38,0.1) 45%, transparent 70%)',
+          }}
+        />
+        {/* Wispy smoke streaks — left-to-right, over the avatar */}
+        <div
+          className="absolute"
+          style={{
+            left: '10%', top: '55%',
+            width: '80%', height: '4px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)',
+            borderRadius: '2px',
+            filter: 'blur(1.5px)',
+            ...(animate ? { animation: 'wisp-drift-1 4s ease-in-out infinite' } : {}),
+          }}
+        />
+        <div
+          className="absolute"
+          style={{
+            left: '5%', top: '40%',
+            width: '65%', height: '3.5px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)',
+            borderRadius: '2px',
+            filter: 'blur(2px)',
+            ...(animate ? { animation: 'wisp-drift-2 5s ease-in-out infinite', animationDelay: '0.8s' } : {}),
+          }}
+        />
+        <div
+          className="absolute"
+          style={{
+            left: '20%', top: '68%',
+            width: '70%', height: '3.5px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)',
+            borderRadius: '2px',
+            filter: 'blur(1.5px)',
+            ...(animate ? { animation: 'wisp-drift-3 4.5s ease-in-out infinite', animationDelay: '1.5s' } : {}),
+          }}
+        />
+
+        {/* Ember particles — above the flames, drift upward when animated */}
+        <div
+          className="absolute h-[2px] w-[2px] rounded-full bg-amber-400"
+          style={{
+            left: '70%', top: '60%',
+            boxShadow: '0 0 3px #fbbf24',
+            animation: 'ember-rise-1 1.5s infinite ease-out',
+            animationPlayState: playState,
+          }}
+        />
+        <div
+          className="absolute h-[1.5px] w-[1.5px] rounded-full bg-orange-500"
+          style={{
+            left: '66%', top: '66%',
+            animation: 'ember-rise-2 2s infinite ease-out',
+            animationDelay: '0.2s',
+            animationPlayState: playState,
+          }}
+        />
+        <div
+          className="absolute h-[1.5px] w-[1.5px] rounded-full bg-red-500 opacity-80"
+          style={{
+            left: '76%', top: '54%',
+            animation: 'ember-rise-3 1.8s infinite ease-out',
+            animationDelay: '0.5s',
+            animationPlayState: playState,
+          }}
+        />
+      </div>
+    </>
   )
 }
 
@@ -956,7 +1129,7 @@ function AvatarAccessory(props: {
       )
     }
     case 'avatar-crystal-ball': {
-      // Crystal ball in bottom-right corner
+      // Crystal ball with golden base in bottom-right corner
       const ballSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
@@ -971,13 +1144,6 @@ function AvatarAccessory(props: {
           }}
           viewBox="0 0 24 24"
         >
-          {/* Ball */}
-          <circle cx="12" cy="12" r="11" fill="url(#crystalGradientAcc)" />
-          {/* Inner mystical swirl */}
-          <circle cx="12" cy="12" r="7" fill="rgba(139,92,246,0.3)" />
-          {/* Sparkle highlights */}
-          <circle cx="8" cy="8" r="2.5" fill="rgba(255,255,255,0.6)" />
-          <circle cx="6" cy="11" r="1" fill="rgba(255,255,255,0.4)" />
           <defs>
             <radialGradient id="crystalGradientAcc" cx="30%" cy="30%">
               <stop offset="0%" stopColor="#E9D5FF" />
@@ -985,6 +1151,19 @@ function AvatarAccessory(props: {
               <stop offset="100%" stopColor="#6D28D9" />
             </radialGradient>
           </defs>
+          {/* Base - flat ellipse at bottom */}
+          <ellipse cx="12" cy="22.5" rx="6" ry="1.5" fill="#8B6914" />
+          {/* Stem */}
+          <rect x="9.5" y="19" width="5" height="3.5" rx="0.5" fill="#B8860B" />
+          {/* Cradle - golden arc cupping the ball */}
+          <path d="M5 16 Q5 20.5 12 20.5 Q19 20.5 19 16" fill="#D4AF37" />
+          {/* Ball */}
+          <circle cx="12" cy="9.5" r="8.5" fill="url(#crystalGradientAcc)" />
+          {/* Inner mystical swirl */}
+          <circle cx="12" cy="9.5" r="5.5" fill="rgba(139,92,246,0.3)" />
+          {/* Sparkle highlights */}
+          <circle cx="9" cy="6.5" r="2" fill="rgba(255,255,255,0.6)" />
+          <circle cx="7" cy="9" r="0.8" fill="rgba(255,255,255,0.4)" />
         </svg>
       )
     }
@@ -1045,7 +1224,7 @@ function AvatarAccessory(props: {
       )
     }
     case 'avatar-stonks-up': {
-      // Stonks arrow in bottom-right corner
+      // Arrow up in bottom-right corner
       const arrowSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
@@ -1078,7 +1257,7 @@ function AvatarAccessory(props: {
       )
     }
     case 'avatar-stonks-down': {
-      // Stonks arrow in bottom-right corner (down)
+      // Arrow down in bottom-right corner
       const arrowSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
@@ -1107,6 +1286,41 @@ function AvatarAccessory(props: {
             d="M12 20 L18 12 L14 12 L14 4 L10 4 L10 12 L6 12 Z"
             fill="url(#stonks-down-grad)"
           />
+        </svg>
+      )
+    }
+    case 'avatar-stonks-meme': {
+      // The iconic diagonal STONKS meme arrow - goes IN FRONT of the avatar
+      const memeSize =
+        size === '2xs' || size === 'xs' ? 20 : size === 'sm' ? 32 : 44
+      return (
+        <svg
+          className="absolute pointer-events-none"
+          style={{
+            left: '60%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: memeSize,
+            height: memeSize,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+            zIndex: 10,
+          }}
+          viewBox="0 0 64 64"
+        >
+          <defs>
+            <linearGradient id="stonks-top-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#fbbf24" />
+              <stop offset="100%" stopColor="#f97316" />
+            </linearGradient>
+            <linearGradient id="stonks-side-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#f97316" />
+              <stop offset="100%" stopColor="#dc2626" />
+            </linearGradient>
+          </defs>
+          {/* 3D Depth/Side */}
+          <path d="M27 50L47 21L43 17L62 6L57 28L53 24L33 54Z" fill="url(#stonks-side-grad)" />
+          {/* Main Face */}
+          <path d="M25 48L45 19L41 15L60 4L55 26L51 22L31 52Z" fill="url(#stonks-top-grad)" />
         </svg>
       )
     }

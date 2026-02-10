@@ -65,6 +65,7 @@ import {
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
 import { CharityGiveawayCard } from 'web/components/shop/charity-giveaway-card'
+import { getAnimationLocationText } from 'common/shop/display-config'
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -1348,24 +1349,66 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
       <div className="relative">
         <svg
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ width: 60, height: 60 }}
-          viewBox="0 0 48 48"
+          style={{
+            width: 64,
+            height: 64,
+            marginLeft: -8,
+            marginTop: -8,
+            filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.5))',
+          }}
+          viewBox="0 0 64 64"
         >
           <defs>
-            <radialGradient id="bh-accretion-glow-p" cx="24" cy="24" r="24" gradientUnits="userSpaceOnUse">
-              <stop offset="60%" stopColor="#000" stopOpacity="0" />
-              <stop offset="85%" stopColor="#4b0082" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#000" stopOpacity="0" />
+            {/* Bright accretion disk gradient - hot colors */}
+            <linearGradient id="bh-accretion-hot-p" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f97316" />
+              <stop offset="30%" stopColor="#ec4899" />
+              <stop offset="60%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#6366f1" />
+            </linearGradient>
+            {/* Dark void center */}
+            <radialGradient id="bh-void-p" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#000000" />
+              <stop offset="70%" stopColor="#0a0010" />
+              <stop offset="100%" stopColor="#1a0030" stopOpacity="0" />
+            </radialGradient>
+            {/* Outer glow */}
+            <radialGradient id="bh-outer-glow-p" cx="50%" cy="50%" r="50%">
+              <stop offset="60%" stopColor="transparent" />
+              <stop offset="80%" stopColor="#7c3aed" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.2" />
             </radialGradient>
           </defs>
-          <circle cx="24" cy="24" r="23" fill="url(#bh-accretion-glow-p)" />
-          <path d="M24 3C35.0457 3 45 11.9543 45 24" stroke="#2d004d" strokeWidth="5" fill="none" opacity="0.7" strokeLinecap="round" />
-          <path d="M45 24C45 36.0457 35.0457 45 24 45" stroke="#4b0082" strokeWidth="3" fill="none" opacity="0.5" strokeLinecap="round" />
-          <path d="M24 45C11.9543 45 3 36.0457 3 24" stroke="#1a0033" strokeWidth="6" fill="none" opacity="0.8" strokeLinecap="round" />
-          <path d="M3 24C3 11.9543 11.9543 3 24 3" stroke="#6a0dad" strokeWidth="2" fill="none" opacity="0.4" strokeLinecap="round" />
-          <path d="M24 7 A17 17 0 0 1 41 24" stroke="#9333ea" strokeWidth="1.5" fill="none" opacity="0.3" strokeDasharray="4 2" />
-          <circle cx="38" cy="12" r="0.6" fill="#fff" opacity="0.9" />
-          <circle cx="10" cy="36" r="0.4" fill="#ba55d3" opacity="0.7" />
+
+          {/* Outer purple glow */}
+          <circle cx="32" cy="32" r="30" fill="url(#bh-outer-glow-p)" />
+
+          {/* Bright accretion disk - tilted ellipse effect with multiple rings */}
+          <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="url(#bh-accretion-hot-p)" strokeWidth="4" opacity="0.8" transform="rotate(-20 32 32)" />
+          <ellipse cx="32" cy="32" rx="24" ry="8" fill="none" stroke="#f472b6" strokeWidth="2" opacity="0.6" transform="rotate(-20 32 32)" />
+          <ellipse cx="32" cy="32" rx="20" ry="6" fill="none" stroke="#c084fc" strokeWidth="1.5" opacity="0.5" transform="rotate(-20 32 32)" />
+
+          {/* Swirling matter streams */}
+          <path d="M8 32 Q16 20 32 18 Q48 16 56 28" stroke="#f97316" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
+          <path d="M56 32 Q48 44 32 46 Q16 48 8 36" stroke="#a855f7" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
+
+          {/* Spiral arms */}
+          <path d="M32 4 Q44 8 52 20 Q56 32 48 44" stroke="#ec4899" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
+          <path d="M32 60 Q20 56 12 44 Q8 32 16 20" stroke="#8b5cf6" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
+
+          {/* Bright hot spots in the disk */}
+          <circle cx="12" cy="28" r="2" fill="#fbbf24" opacity="0.9" />
+          <circle cx="52" cy="36" r="2" fill="#fb923c" opacity="0.9" />
+          <circle cx="20" cy="40" r="1.5" fill="#f472b6" opacity="0.8" />
+          <circle cx="44" cy="24" r="1.5" fill="#c084fc" opacity="0.8" />
+
+          {/* Infalling particles/stars */}
+          <circle cx="6" cy="20" r="1" fill="#fff" opacity="0.9" />
+          <circle cx="58" cy="44" r="1" fill="#fff" opacity="0.9" />
+          <circle cx="24" cy="6" r="0.8" fill="#e9d5ff" opacity="0.8" />
+          <circle cx="40" cy="58" r="0.8" fill="#fce7f3" opacity="0.8" />
+          <circle cx="10" cy="48" r="0.6" fill="#ddd6fe" opacity="0.7" />
+          <circle cx="54" cy="16" r="0.6" fill="#fbcfe8" opacity="0.7" />
         </svg>
         <Avatar
           username={user?.username}
@@ -1379,55 +1422,132 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
   )
 }
 
-function FireRingPreview(props: { user: User | null | undefined }) {
+function FireItemPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        <svg
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ width: 60, height: 60 }}
-          viewBox="0 0 48 48"
-        >
-          <defs>
-            <linearGradient id="fire-grad-red-p" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#7f1d1d" />
-              <stop offset="50%" stopColor="#b91c1c" />
-              <stop offset="100%" stopColor="#ef4444" />
-            </linearGradient>
-            <linearGradient id="fire-grad-orange-p" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#c2410c" />
-              <stop offset="100%" stopColor="#fb923c" />
-            </linearGradient>
-            <linearGradient id="fire-grad-yellow-p" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#fef08a" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M24 46 C11.8 46 2 36.2 2 24 C2 13 9.5 3.8 20 2.4 C18 5 17 8 18 11 C19 14 22 16 24 16 C26 16 28 14 29 11 C31 7 34 4 38 6 C43 9 46 16 46 24 C46 36.2 36.2 46 24 46 Z M24 44 C34 44 42 36 42 26 C42 20 38 16 34 14 C32 16 30 20 28 22 C26 24 22 24 20 22 C18 20 16 16 14 14 C10 16 6 20 6 26 C6 36 14 44 24 44 Z"
-            fill="url(#fire-grad-red-p)"
-            opacity="0.9"
-          />
-          <path
-            d="M24 42 C30 42 36 38 38 32 C39 29 37 26 35 24 C33 22 32 20 32 18 C32 15 34 12 36 10 C34 9 32 8 30 8 C27 8 25 10 24 12 C23 10 21 8 18 8 C16 8 14 9 12 10 C14 12 16 15 16 18 C16 20 15 22 13 24 C11 26 9 29 10 32 C12 38 18 42 24 42 Z"
-            fill="url(#fire-grad-orange-p)"
-          />
-          <path
-            d="M24 40 C28 40 32 37 33 33 C33.5 31 32 29 31 27 C30 25 29 23 29 21 C29 19 30 17 31 15 C28 15 26 16 24 18 C22 16 20 15 17 15 C18 17 19 19 19 21 C19 23 18 25 17 27 C16 29 14.5 31 15 33 C16 37 20 40 24 40 Z"
-            fill="url(#fire-grad-yellow-p)"
-            opacity="0.9"
-          />
-          <path d="M24 8 C24 8 22 6 21 4 C20.5 3 21 2 21 2 C21 2 22 3 22.5 4 C23 5 24 6 24 6 C24 6 25 5 25.5 4 C26 3 27 2 27 2 C27 2 27.5 3 27 4 C26 6 24 8 24 8" fill="url(#fire-grad-yellow-p)" />
-        </svg>
+      <div className="relative h-fit w-fit">
+        <style>{`
+          @keyframes preview-ember-1 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(4px, -15px) scale(0); opacity: 0; }
+          }
+          @keyframes preview-ember-2 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+            100% { transform: translate(-2px, -12px) scale(0); opacity: 0; }
+          }
+          @keyframes preview-ember-3 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+            100% { transform: translate(1px, -18px) scale(0); opacity: 0; }
+          }
+          @keyframes preview-wisp-1 {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(6px) translateY(-1.5px); }
+          }
+          @keyframes preview-wisp-2 {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(5px) translateY(1px); }
+          }
+          @keyframes preview-wisp-3 {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(4px) translateY(-1px); }
+          }
+          @keyframes preview-flame-smoke-1 {
+            0% { transform: translate(0, 0); opacity: 0.7; }
+            50% { transform: translate(-6px, -8px); opacity: 0.4; }
+            100% { transform: translate(-12px, -14px); opacity: 0; }
+          }
+          @keyframes preview-flame-smoke-2 {
+            0% { transform: translate(0, 0); opacity: 0.6; }
+            50% { transform: translate(-4px, -7px); opacity: 0.3; }
+            100% { transform: translate(-8px, -12px); opacity: 0; }
+          }
+        `}</style>
+
+        {/* Background: fiery glow concentrated at bottom-right where flames are */}
+        <div
+          className="absolute -inset-1.5 animate-pulse rounded-full blur-[5px]"
+          style={{
+            background:
+              'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.7) 0%, rgba(234,88,12,0.5) 25%, rgba(220,38,38,0.3) 45%, rgba(180,83,9,0.15) 65%, transparent 85%)',
+          }}
+        />
+
         <Avatar
           username={user?.username}
           avatarUrl={user?.avatarUrl}
           size="lg"
           noLink
-          className="relative ring-2 ring-orange-400"
+          className="relative"
         />
+
+        {/* Flame cluster — ON TOP of avatar, unclipped so flames at edge are visible */}
+        <svg
+          className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 overflow-visible"
+          style={{ width: 66, height: 66 }}
+          viewBox="0 0 80 80"
+          fill="none"
+        >
+          {/* Top flame cluster — ~4.5 o'clock */}
+          <path d="M60,59 C62,59 64,58 66,55 C68,51 66,47 65,44 C64,47 62,51 60,53 C58,55 59,57 60,59Z" fill="#f97316" className="origin-[60px_59px] scale-110 opacity-90" />
+          <path d="M56,59 C58,59 60,58 61,56 C61,53 60,51 59,49 C58,51 57,53 55,55 C55,57 55,58 56,59Z" fill="#dc2626" className="origin-[56px_59px] scale-110 opacity-80" />
+          <path d="M64,53 C65,53 66,52 67,50 C68,48 67,46 66.5,45 C66,46 65,48 64,49 C63,50 63.5,52 64,53Z" fill="#fbbf24" className="origin-[64px_53px] scale-125 opacity-70" />
+          {/* Mini flame cluster — ~5 o'clock */}
+          <path d="M54,65 C56,65 57,64 58,62 C59,60 58,58 57,56 C57,58 56,60 55,61 C54,63 54,64 54,65Z" fill="#f97316" className="origin-[54px_65px] scale-110 opacity-85" />
+          <path d="M51,66 C52,66 53,65 54,64 C54,62 53,61 53,60 C52,61 52,62 51,63 C50,64 51,65 51,66Z" fill="#dc2626" className="origin-[51px_66px] scale-110 opacity-75" />
+          <path d="M57,61 C58,61 58,60 59,59 C59,58 58,57 58,56 C58,57 57,58 57,59 C57,60 57,60 57,61Z" fill="#fbbf24" className="origin-[57px_61px] scale-125 opacity-65" />
+          {/* Primary flame cluster — ~5.5 o'clock, spilling right */}
+          <path d="M56,70 C54,70 52,69 51,67 C51,64 52,62 53,60 C54,63 55,65 56,67 C57,68 57,69 56,70Z" fill="#f59e0b" className="origin-[56px_70px] scale-110 opacity-75" />
+          <path d="M52,72 C50,72 48,71 48,69 C47,66 48,64 49,62 C50,65 51,67 52,69 C52,70 52,71 52,72Z" fill="#ea580c" className="origin-[52px_72px] scale-110 opacity-75" />
+          <path d="M52,72 C54,72 56,71 58,68 C60,64 58,60 57,57 C56,60 54,64 52,66 C50,68 51,70 52,72Z" fill="#f97316" className="origin-[52px_72px] scale-110 opacity-90" />
+          <path d="M56,66 C57,66 58,65 59,63 C60,61 59,59 58.5,58 C58,59 57,61 56,62 C55,63 55.5,65 56,66Z" fill="#fbbf24" className="origin-[56px_66px] scale-125 opacity-70" />
+        </svg>
+
+        {/* Smoke wisps drifting over flames — CSS divs for reliable animation */}
+        <div
+          className="pointer-events-none absolute z-20"
+          style={{
+            right: '-2%', bottom: '20%',
+            width: '16px', height: '3px',
+            background: 'linear-gradient(135deg, rgba(200,200,210,0.7) 0%, rgba(160,165,175,0.4) 60%, transparent 100%)',
+            borderRadius: '2px',
+            filter: 'blur(1.5px)',
+            animation: 'preview-flame-smoke-1 2.5s ease-out infinite',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute z-20"
+          style={{
+            right: '2%', bottom: '26%',
+            width: '12px', height: '2.5px',
+            background: 'linear-gradient(135deg, rgba(180,185,195,0.6) 0%, rgba(160,165,175,0.3) 60%, transparent 100%)',
+            borderRadius: '2px',
+            filter: 'blur(1px)',
+            animation: 'preview-flame-smoke-2 3s ease-out infinite',
+            animationDelay: '0.6s',
+          }}
+        />
+
+        {/* Clipped overlay — wisps, flame smoke, embers (clipped to avatar circle) */}
+        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-full">
+          {/* Fiery light cast — same radial gradient as background glow, overlaying the avatar */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.35) 0%, rgba(234,88,12,0.2) 25%, rgba(220,38,38,0.1) 45%, transparent 70%)',
+            }}
+          />
+          {/* Wispy smoke streaks */}
+          <div style={{ position: 'absolute', left: '10%', top: '55%', width: '80%', height: '4px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)', borderRadius: '2px', filter: 'blur(1.5px)', animation: 'preview-wisp-1 4s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', left: '5%', top: '40%', width: '65%', height: '3.5px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)', borderRadius: '2px', filter: 'blur(2px)', animation: 'preview-wisp-2 5s ease-in-out infinite', animationDelay: '0.8s' }} />
+          <div style={{ position: 'absolute', left: '20%', top: '68%', width: '70%', height: '3.5px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)', borderRadius: '2px', filter: 'blur(1.5px)', animation: 'preview-wisp-3 4.5s ease-in-out infinite', animationDelay: '1.5s' }} />
+          {/* Ember particles — above the flames */}
+          <div className="absolute h-[2px] w-[2px] rounded-full bg-amber-400" style={{ left: '70%', top: '60%', boxShadow: '0 0 3px #fbbf24', animation: 'preview-ember-1 1.5s infinite ease-out' }} />
+          <div className="absolute h-[1.5px] w-[1.5px] rounded-full bg-orange-500" style={{ left: '66%', top: '66%', animation: 'preview-ember-2 2s infinite ease-out', animationDelay: '0.2s' }} />
+          <div className="absolute h-[1.5px] w-[1.5px] rounded-full bg-red-500 opacity-80" style={{ left: '76%', top: '54%', animation: 'preview-ember-3 1.8s infinite ease-out', animationDelay: '0.5s' }} />
+        </div>
       </div>
     </div>
   )
@@ -1560,7 +1680,7 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Crystal ball in bottom-right corner */}
+        {/* Crystal ball with base in bottom-right corner */}
         <svg
           className="absolute"
           style={{
@@ -1572,10 +1692,6 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
           }}
           viewBox="0 0 24 24"
         >
-          <circle cx="12" cy="12" r="11" fill="url(#crystalGradientPrev2)" />
-          <circle cx="12" cy="12" r="7" fill="rgba(139,92,246,0.3)" />
-          <circle cx="8" cy="8" r="2.5" fill="rgba(255,255,255,0.6)" />
-          <circle cx="6" cy="11" r="1" fill="rgba(255,255,255,0.4)" />
           <defs>
             <radialGradient id="crystalGradientPrev2" cx="30%" cy="30%">
               <stop offset="0%" stopColor="#E9D5FF" />
@@ -1583,6 +1699,17 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
               <stop offset="100%" stopColor="#6D28D9" />
             </radialGradient>
           </defs>
+          {/* Base */}
+          <ellipse cx="12" cy="22.5" rx="6" ry="1.5" fill="#8B6914" />
+          {/* Stem */}
+          <rect x="9.5" y="19" width="5" height="3.5" rx="0.5" fill="#B8860B" />
+          {/* Cradle */}
+          <path d="M5 16 Q5 20.5 12 20.5 Q19 20.5 19 16" fill="#D4AF37" />
+          {/* Ball */}
+          <circle cx="12" cy="9.5" r="8.5" fill="url(#crystalGradientPrev2)" />
+          <circle cx="12" cy="9.5" r="5.5" fill="rgba(139,92,246,0.3)" />
+          <circle cx="9" cy="6.5" r="2" fill="rgba(255,255,255,0.6)" />
+          <circle cx="7" cy="9" r="0.8" fill="rgba(255,255,255,0.4)" />
         </svg>
       </div>
     </div>
@@ -1629,7 +1756,7 @@ function ThoughtBubblePreview(props: {
   )
 }
 
-function StonksPreview(props: {
+function ArrowPreview(props: {
   user: User | null | undefined
   direction: 'up' | 'down'
 }) {
@@ -1645,7 +1772,7 @@ function StonksPreview(props: {
           size="lg"
           noLink
         />
-        {/* Stonks arrow badge in bottom-right corner */}
+        {/* Arrow badge in bottom-right corner */}
         <svg
           className="absolute"
           style={{
@@ -1658,7 +1785,7 @@ function StonksPreview(props: {
           viewBox="0 0 24 24"
         >
           <defs>
-            <linearGradient id={isUp ? 'stonks-up-prev' : 'stonks-down-prev'} x1="0%" y1={isUp ? '100%' : '0%'} x2="100%" y2={isUp ? '0%' : '100%'}>
+            <linearGradient id={isUp ? 'arrow-up-prev' : 'arrow-down-prev'} x1="0%" y1={isUp ? '100%' : '0%'} x2="100%" y2={isUp ? '0%' : '100%'}>
               <stop offset="0%" stopColor={isUp ? '#15803d' : '#fca5a5'} />
               <stop offset="50%" stopColor={isUp ? '#22c55e' : '#ef4444'} />
               <stop offset="100%" stopColor={isUp ? '#4ade80' : '#b91c1c'} />
@@ -1666,10 +1793,56 @@ function StonksPreview(props: {
           </defs>
           <circle cx="12" cy="12" r="11" fill="#1f2937" />
           {isUp ? (
-            <path d="M12 4 L18 12 L14 12 L14 20 L10 20 L10 12 L6 12 Z" fill="url(#stonks-up-prev)" />
+            <path d="M12 4 L18 12 L14 12 L14 20 L10 20 L10 12 L6 12 Z" fill="url(#arrow-up-prev)" />
           ) : (
-            <path d="M12 20 L18 12 L14 12 L14 4 L10 4 L10 12 L6 12 Z" fill="url(#stonks-down-prev)" />
+            <path d="M12 20 L18 12 L14 12 L14 4 L10 4 L10 12 L6 12 Z" fill="url(#arrow-down-prev)" />
           )}
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function StonksMemePreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Iconic diagonal STONKS meme arrow - overlays the avatar */}
+        <svg
+          className="absolute pointer-events-none"
+          style={{
+            left: '60%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 44,
+            height: 44,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+            zIndex: 10,
+          }}
+          viewBox="0 0 64 64"
+        >
+          <defs>
+            <linearGradient id="stonks-meme-top" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#fbbf24" />
+              <stop offset="100%" stopColor="#f97316" />
+            </linearGradient>
+            <linearGradient id="stonks-meme-side" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#f97316" />
+              <stop offset="100%" stopColor="#dc2626" />
+            </linearGradient>
+          </defs>
+          {/* 3D Depth/Side */}
+          <path d="M27 50L47 21L43 17L62 6L57 28L53 24L33 54Z" fill="url(#stonks-meme-side)" />
+          {/* Main Face */}
+          <path d="M25 48L45 19L41 15L60 4L55 26L51 22L31 52Z" fill="url(#stonks-meme-top)" />
         </svg>
       </div>
     </div>
@@ -2280,8 +2453,8 @@ function ItemPreview(props: {
       return <ManaAuraPreview user={user} />
     case 'avatar-black-hole':
       return <BlackHolePreview user={user} />
-    case 'avatar-fire-ring':
-      return <FireRingPreview user={user} />
+    case 'avatar-fire-item':
+      return <FireItemPreview user={user} />
     case 'avatar-bad-aura':
       return <BadAuraPreview user={user} />
     case 'avatar-monocle':
@@ -2293,9 +2466,11 @@ function ItemPreview(props: {
     case 'avatar-thought-no':
       return <ThoughtBubblePreview user={user} type="no" />
     case 'avatar-stonks-up':
-      return <StonksPreview user={user} direction="up" />
+      return <ArrowPreview user={user} direction="up" />
     case 'avatar-stonks-down':
-      return <StonksPreview user={user} direction="down" />
+      return <ArrowPreview user={user} direction="down" />
+    case 'avatar-stonks-meme':
+      return <StonksMemePreview user={user} />
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview
@@ -2519,6 +2694,19 @@ function ShopItemCard(props: {
         </Row>
 
         <p className="text-ink-600 text-sm">{item.description}</p>
+
+        {/* Animation location indicator — driven by display-config */}
+        {item.animationTypes && item.animationTypes.length > 0 && (() => {
+          const locationText = getAnimationLocationText(item.animationTypes)
+          return locationText ? (
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+              <span className="text-ink-500 text-xs">
+                Animated on {locationText}
+              </span>
+            </div>
+          ) : null
+        })()}
 
         {/* Achievement requirement badge */}
         {item.requirement && (

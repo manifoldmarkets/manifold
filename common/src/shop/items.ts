@@ -50,6 +50,14 @@ export type AchievementRequirement = {
 // Team for mutual exclusivity (can only equip items from one team at a time)
 export type ShopTeam = 'red' | 'green'
 
+// Animation types — shared with display-config.ts to avoid circular imports
+export type AnimationType =
+  | 'hat-hover'
+  | 'golden-glow'
+  | 'badge-pulse'
+  | 'propeller-spin'
+  | 'fire-item'
+
 // Seasonal availability window
 export type SeasonalAvailability = {
   eventDate: { month: number; day: number } // e.g., { month: 12, day: 25 } for Christmas
@@ -79,6 +87,9 @@ export type ShopItem = {
   // Explicit conflicts - entitlement IDs that must be disabled when this item is enabled
   // (for items that affect the same slot but aren't in the same exclusive category)
   conflicts?: string[]
+  // Animation types this item uses — drives the "Animated on X" display in the shop
+  // (contexts are resolved from display-config.ts CONTEXT_CONFIG)
+  animationTypes?: AnimationType[]
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -128,6 +139,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
+    animationTypes: ['golden-glow'],
   },
   {
     id: 'avatar-crown',
@@ -216,11 +228,12 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'avatar-propeller-hat',
     name: 'Propeller Hat',
-    description: 'A propeller hat for the playful predictor (animated on shop & hovercard)',
+    description: 'A propeller hat for the playful predictor',
     price: 25000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
+    animationTypes: ['propeller-spin'],
   },
   {
     id: 'avatar-wizard-hat',
@@ -304,17 +317,18 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'avatar-border',
   },
   {
-    id: 'avatar-fire-ring',
-    name: 'Fire Ring',
-    description: 'A blazing ring of fire around your avatar',
+    id: 'avatar-fire-item',
+    name: 'Flames',
+    description: 'Blazing flames on your avatar',
     price: 150000,
     type: 'permanent-toggleable',
     limit: 'one-time',
-    category: 'avatar-border',
+    category: 'avatar-accessory',
+    animationTypes: ['fire-item'],
     requirement: {
       type: 'streak',
-      threshold: 100,
-      description: 'Reach a 100-day betting streak',
+      threshold: 1,
+      description: 'Reach a 1-day betting streak',
     },
   },
   {
@@ -365,8 +379,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-stonks-up',
-    name: 'Stonks Up',
-    description: 'The classic stonks guy for the profitable trader',
+    name: 'Arrow Up',
+    description: 'A green up arrow showing your bullish stance',
     price: 50000,
     type: 'permanent-toggleable',
     limit: 'one-time',
@@ -379,8 +393,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-stonks-down',
-    name: 'Stonks Down',
-    description: 'Embrace the loss with the inverse stonks guy',
+    name: 'Arrow Down',
+    description: 'A red down arrow for the bearish predictor',
     price: 50000,
     type: 'permanent-toggleable',
     limit: 'one-time',
@@ -389,6 +403,20 @@ export const SHOP_ITEMS: ShopItem[] = [
       type: 'loss',
       threshold: 100000,
       description: 'Lose M$100k in total (a badge of honor)',
+    },
+  },
+  {
+    id: 'avatar-stonks-meme',
+    name: 'Stonks',
+    description: 'The iconic diagonal stonks arrow - for when your portfolio is going to the moon',
+    price: 75000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-accessory',
+    requirement: {
+      type: 'profit',
+      threshold: 250000,
+      description: 'Earn M$250k in total profit',
     },
   },
 ]
@@ -525,7 +553,7 @@ export type AvatarDecorationId =
   | 'avatar-angel-wings'
   | 'avatar-mana-aura'
   | 'avatar-black-hole'
-  | 'avatar-fire-ring'
+  | 'avatar-fire-item'
   | 'avatar-bad-aura'
   | 'avatar-monocle'
   | 'avatar-crystal-ball'
@@ -533,6 +561,7 @@ export type AvatarDecorationId =
   | 'avatar-thought-no'
   | 'avatar-stonks-up'
   | 'avatar-stonks-down'
+  | 'avatar-stonks-meme'
 
 // Helper to check if user has a specific avatar decoration
 export const userHasAvatarDecoration = (
@@ -578,6 +607,7 @@ export const getActiveAvatarAccessory = (
     'avatar-thought-no',
     'avatar-stonks-up',
     'avatar-stonks-down',
+    'avatar-stonks-meme',
   ]
   for (const accessory of accessories) {
     if (hasActiveEntitlement(entitlements, accessory)) {

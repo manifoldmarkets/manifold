@@ -300,7 +300,7 @@ function UserProfile(props: {
 
                 <ChevronDownIcon
                   className={clsx(
-                    'group-hover:bg-primary-700 bg-primary-600 shadow-primary-300 text-ink-0 absolute bottom-0 right-0 h-5 w-5 rounded-full p-0.5 shadow-sm transition-all',
+                    'group-hover:bg-primary-700 bg-primary-600 shadow-primary-300 text-ink-0 absolute bottom-0 right-0 z-20 h-5 w-5 rounded-full p-0.5 shadow-sm transition-all',
                     expandProfileInfo ? 'rotate-180' : 'rotate-0'
                   )}
                 />
