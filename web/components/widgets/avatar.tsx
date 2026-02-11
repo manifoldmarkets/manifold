@@ -12,6 +12,7 @@ import {
   userHasAvatarDecoration,
   getActiveAvatarOverlay,
   getActiveAvatarAccessory,
+  userHasHalo,
   AvatarDecorationId,
 } from 'common/shop/items'
 import {
@@ -97,8 +98,18 @@ export const Avatar = memo(
       'avatar-fire-item'
     )
     const hasBadAura = userHasAvatarDecoration(entitlements, 'avatar-bad-aura')
-    // Get active avatar overlay (hat)
+    const hasTeamRedBorder = userHasAvatarDecoration(
+      entitlements,
+      'avatar-team-red-border'
+    )
+    const hasTeamGreenBorder = userHasAvatarDecoration(
+      entitlements,
+      'avatar-team-green-border'
+    )
+    // Get active avatar overlay (hat) - excludes halo since it's unique slot
     const activeOverlay = getActiveAvatarOverlay(entitlements)
+    // Check for halo separately (unique slot - combines with other hats)
+    const hasHalo = userHasHalo(entitlements)
     // Get active avatar accessory
     const activeAccessory = getActiveAvatarAccessory(entitlements)
     const s =
@@ -143,7 +154,9 @@ export const Avatar = memo(
       hasManaAura ||
       hasBlackHole ||
       hasFireItem ||
-      hasBadAura
+      hasBadAura ||
+      hasTeamRedBorder ||
+      hasTeamGreenBorder
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
@@ -212,6 +225,14 @@ export const Avatar = memo(
         {hasFireItem && <FireItemDecoration size={size} animate={animateFireItem} />}
         {/* Angel wings - feathered wings flanking avatar */}
         {hasAngelWings && <AngelWingsDecoration size={size} />}
+        {/* Team Red border glow */}
+        {hasTeamRedBorder && (
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-red-600 via-red-400 to-red-600 opacity-70 blur-sm" />
+        )}
+        {/* Team Green border glow */}
+        {hasTeamGreenBorder && (
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-green-600 via-green-400 to-green-600 opacity-70 blur-sm" />
+        )}
         {shouldShowImage ? (
           <Image
             width={sizeInPx}
@@ -226,7 +247,9 @@ export const Avatar = memo(
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
               hasBlackHole && 'relative ring-2 ring-purple-900',
-              hasFireItem && 'relative'
+              hasFireItem && 'relative',
+              hasTeamRedBorder && 'relative ring-2 ring-red-500',
+              hasTeamGreenBorder && 'relative ring-2 ring-green-500'
             )}
             style={{ maxWidth: `${s * 0.25}rem` }}
             src={avatarUrl}
@@ -248,7 +271,9 @@ export const Avatar = memo(
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
               hasBlackHole && 'relative ring-2 ring-purple-900',
-              hasFireItem && 'relative'
+              hasFireItem && 'relative',
+              hasTeamRedBorder && 'relative ring-2 ring-red-500',
+              hasTeamGreenBorder && 'relative ring-2 ring-green-500'
             )}
             onClick={onClick}
           />
@@ -261,7 +286,19 @@ export const Avatar = memo(
             <LuSprout className="h-4 w-4 text-green-500" />
           </div>
         )}
-        {/* Avatar overlay (hat) */}
+        {/* Halo (unique slot - renders independently of other hats) */}
+        {hasHalo && (
+          <AvatarOverlay
+            overlay="avatar-halo"
+            hatSizeClass={hatSizeClass}
+            hatPositionClass={hatPositionClass}
+            animateHatOnHover={animateHatOnHover}
+            animateHat={animateHat}
+            animatePropeller={false}
+            size={size}
+          />
+        )}
+        {/* Avatar overlay (hat) - can combine with halo */}
         {activeOverlay && (
           <AvatarOverlay
             overlay={activeOverlay}
@@ -955,12 +992,30 @@ function AvatarOverlay(props: {
           />
         </div>
       )
-    case 'avatar-jester-hat':
+    case 'avatar-jester-hat': {
+      // Jester hat - custom sizing and positioning with rotation
+      const jesterSizeClass =
+        size === '2xs' || size === 'xs'
+          ? 'h-3 w-3'
+          : size === 'sm'
+          ? 'h-[1rem] w-[1rem]'
+          : 'h-5 w-5'
       return (
-        <div className={cornerClasses}>
+        <div
+          className={clsx(
+            'absolute rotate-45 transition-transform duration-300',
+            size === '2xs' || size === 'xs'
+              ? '-right-1.5 -top-1.5'
+              : size === 'sm'
+              ? '-right-1.5 -top-2'
+              : '-right-2 -top-2.5',
+            animateHatOnHover && 'group-hover:-translate-y-0.5 group-hover:scale-110',
+            animateHat && '-translate-y-0.5 scale-110'
+          )}
+        >
           <svg
             viewBox="0 0 24 24"
-            className={clsx(hatSizeClass)}
+            className={clsx(jesterSizeClass)}
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
           >
             {/* Right Flap (Green) */}
@@ -980,6 +1035,7 @@ function AvatarOverlay(props: {
           </svg>
         </div>
       )
+    }
     case 'avatar-fedora': {
       return (
         <div className={cornerClasses}>
@@ -1066,6 +1122,502 @@ function AvatarOverlay(props: {
         </>
       )
     }
+    case 'avatar-team-red-hat': {
+      // Team Red cap - baseball cap style
+      const capSize =
+        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+      return (
+        <div
+          className={clsx(
+            'absolute transition-transform duration-300',
+            animateHatOnHover &&
+              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+            animateHat && '-translate-y-0.5 rotate-[-3deg]'
+          )}
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%) rotate(-5deg)',
+            top:
+              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+            width: capSize,
+            height: capSize,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+          }}
+        >
+          <svg viewBox="0 0 30 20">
+            {/* Cap crown - rounded dome */}
+            <ellipse cx="15" cy="8" rx="12" ry="7" fill="#EF4444" />
+            {/* Front panel */}
+            <path d="M5 9 Q5 4 15 3 Q25 4 25 9 Q25 11 15 11 Q5 11 5 9 Z" fill="#DC2626" />
+            {/* Seam lines on crown */}
+            <path d="M15 2 L15 10" stroke="#B91C1C" strokeWidth="0.5" opacity="0.5" />
+            <path d="M9 3 Q15 1 21 3" stroke="#B91C1C" strokeWidth="0.3" fill="none" opacity="0.4" />
+            {/* Button on top */}
+            <circle cx="15" cy="2" r="1.3" fill="#B91C1C" />
+            {/* Brim - curved baseball style */}
+            <path d="M3 10 Q3 11 5 12 L25 12 Q27 11 27 10 Q27 14 15 15 Q3 14 3 10 Z" fill="#B91C1C" />
+            {/* Brim curve/underside */}
+            <path d="M5 12 Q15 13 25 12 Q15 14 5 12 Z" fill="#991B1B" />
+            {/* Highlight on dome */}
+            <ellipse cx="12" cy="5" rx="4" ry="2" fill="#FCA5A5" opacity="0.3" />
+          </svg>
+        </div>
+      )
+    }
+    case 'avatar-team-green-hat': {
+      // Team Green cap - baseball cap style
+      const capSize =
+        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+      return (
+        <div
+          className={clsx(
+            'absolute transition-transform duration-300',
+            animateHatOnHover &&
+              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+            animateHat && '-translate-y-0.5 rotate-[-3deg]'
+          )}
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%) rotate(-5deg)',
+            top:
+              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+            width: capSize,
+            height: capSize,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+          }}
+        >
+          <svg viewBox="0 0 30 20">
+            {/* Cap crown - rounded dome */}
+            <ellipse cx="15" cy="8" rx="12" ry="7" fill="#22C55E" />
+            {/* Front panel */}
+            <path d="M5 9 Q5 4 15 3 Q25 4 25 9 Q25 11 15 11 Q5 11 5 9 Z" fill="#16A34A" />
+            {/* Seam lines on crown */}
+            <path d="M15 2 L15 10" stroke="#15803D" strokeWidth="0.5" opacity="0.5" />
+            <path d="M9 3 Q15 1 21 3" stroke="#15803D" strokeWidth="0.3" fill="none" opacity="0.4" />
+            {/* Button on top */}
+            <circle cx="15" cy="2" r="1.3" fill="#15803D" />
+            {/* Brim - curved baseball style */}
+            <path d="M3 10 Q3 11 5 12 L25 12 Q27 11 27 10 Q27 14 15 15 Q3 14 3 10 Z" fill="#15803D" />
+            {/* Brim curve/underside */}
+            <path d="M5 12 Q15 13 25 12 Q15 14 5 12 Z" fill="#166534" />
+            {/* Highlight on dome */}
+            <ellipse cx="12" cy="5" rx="4" ry="2" fill="#86EFAC" opacity="0.3" />
+          </svg>
+        </div>
+      )
+    }
+    case 'avatar-bull-horns': {
+      // Mighty bull horns - curved upward with 3D shading and ridges
+      const hornSize =
+        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+      return (
+        <>
+          {/* Left horn */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+            style={{
+              left:
+                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
+              top:
+                size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -7,
+              width: hornSize,
+              height: hornSize,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+              transform: 'rotate(-15deg)',
+            }}
+            viewBox="0 0 24 24"
+          >
+            <defs>
+              <linearGradient id="bull-horn-l-base" x1="100%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#451A03" />
+                <stop offset="30%" stopColor="#78350F" />
+                <stop offset="60%" stopColor="#B45309" />
+                <stop offset="85%" stopColor="#D4A574" />
+                <stop offset="100%" stopColor="#FEF3C7" />
+              </linearGradient>
+              <linearGradient id="bull-horn-l-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFFBEB" stopOpacity="0.6" />
+                <stop offset="40%" stopColor="#FDE68A" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#78350F" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {/* Main horn shape */}
+            <path
+              d="M19 21 C17 19, 14 17, 11 14 C8 11, 6 8, 5 5 Q4 3, 5.5 2 Q7 1, 8.5 2.5 Q10 4, 11 7 C12 10, 14 14, 17 17 C18 18.5, 19 20, 19 21 Z"
+              fill="url(#bull-horn-l-base)"
+            />
+            {/* Highlight for 3D effect */}
+            <path
+              d="M18 20 C16 18, 13 15, 10.5 12.5 C8 10, 6.5 7, 5.5 4.5 Q5 3, 6 2.5 Q7 2, 8 3 Q9 4.5, 9.5 6.5 C10 8, 11 10, 12.5 12.5 C14 15, 16 17.5, 18 20 Z"
+              fill="url(#bull-horn-l-highlight)"
+            />
+            {/* Ridge lines for texture */}
+            <path
+              d="M7 4 Q8.5 7, 11 11 M8.5 5.5 Q10 8.5, 13 13 M10 7.5 Q11.5 10, 15 15"
+              stroke="#5C2D0A"
+              strokeWidth="0.3"
+              strokeOpacity="0.4"
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* Subtle shine line */}
+            <path
+              d="M6.5 3.5 Q8 6, 10 9 Q12 12, 14.5 15"
+              stroke="#FFFBEB"
+              strokeWidth="0.5"
+              strokeOpacity="0.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+          {/* Right horn (mirrored) */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+            style={{
+              right:
+                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
+              top:
+                size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -7,
+              width: hornSize,
+              height: hornSize,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+              transform: 'rotate(15deg) scaleX(-1)',
+            }}
+            viewBox="0 0 24 24"
+          >
+            <defs>
+              <linearGradient id="bull-horn-r-base" x1="100%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#451A03" />
+                <stop offset="30%" stopColor="#78350F" />
+                <stop offset="60%" stopColor="#B45309" />
+                <stop offset="85%" stopColor="#D4A574" />
+                <stop offset="100%" stopColor="#FEF3C7" />
+              </linearGradient>
+              <linearGradient id="bull-horn-r-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFFBEB" stopOpacity="0.6" />
+                <stop offset="40%" stopColor="#FDE68A" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#78350F" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {/* Main horn shape */}
+            <path
+              d="M19 21 C17 19, 14 17, 11 14 C8 11, 6 8, 5 5 Q4 3, 5.5 2 Q7 1, 8.5 2.5 Q10 4, 11 7 C12 10, 14 14, 17 17 C18 18.5, 19 20, 19 21 Z"
+              fill="url(#bull-horn-r-base)"
+            />
+            {/* Highlight for 3D effect */}
+            <path
+              d="M18 20 C16 18, 13 15, 10.5 12.5 C8 10, 6.5 7, 5.5 4.5 Q5 3, 6 2.5 Q7 2, 8 3 Q9 4.5, 9.5 6.5 C10 8, 11 10, 12.5 12.5 C14 15, 16 17.5, 18 20 Z"
+              fill="url(#bull-horn-r-highlight)"
+            />
+            {/* Ridge lines for texture */}
+            <path
+              d="M7 4 Q8.5 7, 11 11 M8.5 5.5 Q10 8.5, 13 13 M10 7.5 Q11.5 10, 15 15"
+              stroke="#5C2D0A"
+              strokeWidth="0.3"
+              strokeOpacity="0.4"
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* Subtle shine line */}
+            <path
+              d="M6.5 3.5 Q8 6, 10 9 Q12 12, 14.5 15"
+              stroke="#FFFBEB"
+              strokeWidth="0.5"
+              strokeOpacity="0.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+        </>
+      )
+    }
+    case 'avatar-bear-ears': {
+      // Fluffy bear ears with fur texture
+      const earSize =
+        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+      return (
+        <>
+          {/* Left ear */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+            style={{
+              left:
+                size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -4 : -6,
+              top:
+                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -6 : -8,
+              width: earSize,
+              height: earSize,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            }}
+            viewBox="0 0 24 24"
+          >
+            <defs>
+              <radialGradient id="bear-fur-l" cx="40%" cy="30%" r="60%">
+                <stop offset="0%" stopColor="#92400E" />
+                <stop offset="70%" stopColor="#78350F" />
+                <stop offset="100%" stopColor="#451A03" />
+              </radialGradient>
+              <radialGradient id="bear-inner-l" cx="50%" cy="40%" r="50%">
+                <stop offset="0%" stopColor="#FECACA" />
+                <stop offset="60%" stopColor="#F5B7B1" />
+                <stop offset="100%" stopColor="#E5A39A" />
+              </radialGradient>
+            </defs>
+            {/* Outer fur - slightly oval */}
+            <ellipse cx="12" cy="13" rx="10" ry="9" fill="url(#bear-fur-l)" />
+            {/* Fur texture hints */}
+            <ellipse cx="5" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
+            <ellipse cx="19" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
+            <ellipse cx="12" cy="6" rx="3" ry="2" fill="#92400E" opacity="0.6" />
+            {/* Inner ear - peachy pink */}
+            <ellipse cx="12" cy="13" rx="5.5" ry="5" fill="url(#bear-inner-l)" />
+            {/* Subtle highlight */}
+            <ellipse cx="10" cy="11" rx="2" ry="1.5" fill="rgba(255,255,255,0.3)" />
+          </svg>
+          {/* Right ear */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+            style={{
+              right:
+                size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -4 : -6,
+              top:
+                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -6 : -8,
+              width: earSize,
+              height: earSize,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            }}
+            viewBox="0 0 24 24"
+          >
+            <defs>
+              <radialGradient id="bear-fur-r" cx="60%" cy="30%" r="60%">
+                <stop offset="0%" stopColor="#92400E" />
+                <stop offset="70%" stopColor="#78350F" />
+                <stop offset="100%" stopColor="#451A03" />
+              </radialGradient>
+              <radialGradient id="bear-inner-r" cx="50%" cy="40%" r="50%">
+                <stop offset="0%" stopColor="#FECACA" />
+                <stop offset="60%" stopColor="#F5B7B1" />
+                <stop offset="100%" stopColor="#E5A39A" />
+              </radialGradient>
+            </defs>
+            {/* Outer fur - slightly oval */}
+            <ellipse cx="12" cy="13" rx="10" ry="9" fill="url(#bear-fur-r)" />
+            {/* Fur texture hints */}
+            <ellipse cx="5" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
+            <ellipse cx="19" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
+            <ellipse cx="12" cy="6" rx="3" ry="2" fill="#92400E" opacity="0.6" />
+            {/* Inner ear - peachy pink */}
+            <ellipse cx="12" cy="13" rx="5.5" ry="5" fill="url(#bear-inner-r)" />
+            {/* Subtle highlight */}
+            <ellipse cx="14" cy="11" rx="2" ry="1.5" fill="rgba(255,255,255,0.3)" />
+          </svg>
+        </>
+      )
+    }
+    case 'avatar-cat-ears': {
+      // Pointed cat ears
+      const earSize =
+        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+      return (
+        <>
+          {/* Left ear */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:rotate-[-5deg]',
+              animateHat && '-translate-y-0.5 rotate-[-5deg]'
+            )}
+            style={{
+              left:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+              top:
+                size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+              width: earSize,
+              height: earSize,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+              transform: 'rotate(-10deg)',
+            }}
+            viewBox="0 0 24 24"
+          >
+            {/* Outer ear (gray fur) */}
+            <path
+              d="M4 22 C3 20, 2 16, 3 12 C4 8, 8 3, 12 1 C14 0.5, 16 1, 18 3 C20 5, 22 10, 22 14 C22 16, 21 18, 20 20 C19 21, 17 22, 15 22 Z"
+              fill="#6B7280"
+            />
+            {/* Inner ear (pink) */}
+            <path
+              d="M7 20 C6.5 18, 6 15, 7 12 C8 9, 10 5, 12 3.5 C13 3, 14 3.5, 15.5 5 C17 7, 18 11, 18 14 C18 16, 17.5 18, 16.5 19.5 C15.5 20.5, 13 21, 11 21 C9 21, 7.5 20.5, 7 20 Z"
+              fill="#FBCFE8"
+            />
+            {/* Fur texture lines */}
+            <path
+              d="M4 21 C3.5 20, 3 19, 3.2 18 M3.5 16 C3 15, 2.8 14, 3 13 M4 10 C3.5 9, 4 8, 5 7"
+              stroke="#4B5563"
+              strokeWidth="0.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+          {/* Right ear */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:rotate-[5deg]',
+              animateHat && '-translate-y-0.5 rotate-[5deg]'
+            )}
+            style={{
+              right:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+              top:
+                size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+              width: earSize,
+              height: earSize,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+              transform: 'rotate(10deg) scaleX(-1)',
+            }}
+            viewBox="0 0 24 24"
+          >
+            {/* Outer ear (gray fur) */}
+            <path
+              d="M4 22 C3 20, 2 16, 3 12 C4 8, 8 3, 12 1 C14 0.5, 16 1, 18 3 C20 5, 22 10, 22 14 C22 16, 21 18, 20 20 C19 21, 17 22, 15 22 Z"
+              fill="#6B7280"
+            />
+            {/* Inner ear (pink) */}
+            <path
+              d="M7 20 C6.5 18, 6 15, 7 12 C8 9, 10 5, 12 3.5 C13 3, 14 3.5, 15.5 5 C17 7, 18 11, 18 14 C18 16, 17.5 18, 16.5 19.5 C15.5 20.5, 13 21, 11 21 C9 21, 7.5 20.5, 7 20 Z"
+              fill="#FBCFE8"
+            />
+            {/* Fur texture lines */}
+            <path
+              d="M4 21 C3.5 20, 3 19, 3.2 18 M3.5 16 C3 15, 2.8 14, 3 13 M4 10 C3.5 9, 4 8, 5 7"
+              stroke="#4B5563"
+              strokeWidth="0.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+        </>
+      )
+    }
+    case 'avatar-santa-hat': {
+      // Festive Santa hat - positioned at corner like other hats
+      return (
+        <div
+          className={clsx(
+            'absolute transition-transform duration-300',
+            hatPositionClass,
+            'rotate-[30deg]',
+            animateHatOnHover &&
+              'group-hover:-translate-y-0.5 group-hover:scale-110',
+            animateHat && '-translate-y-0.5 scale-110'
+          )}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className={hatSizeClass}
+            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+          >
+            {/* Hat body - red felt */}
+            <path
+              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20 Q12 18 4 20Z"
+              fill="#DC2626"
+            />
+            {/* Hat fold/curve */}
+            <path
+              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20"
+              fill="none"
+              stroke="#B91C1C"
+              strokeWidth="0.5"
+            />
+            {/* White fur trim */}
+            <ellipse cx="12" cy="20" rx="10" ry="2.5" fill="#FAFAFA" />
+            {/* Pom pom */}
+            <circle cx="20" cy="6" r="3" fill="#FAFAFA" />
+          </svg>
+        </div>
+      )
+    }
+    case 'avatar-bunny-ears': {
+      // Adorable bunny ears - spread out wider
+      const earSize =
+        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 22
+      return (
+        <>
+          {/* Left ear */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-1 group-hover:rotate-[-5deg]',
+              animateHat && '-translate-y-1 rotate-[-5deg]'
+            )}
+            style={{
+              left:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+              top:
+                size === '2xs' || size === 'xs' ? -10 : size === 'sm' ? -14 : -18,
+              width: earSize,
+              height: earSize * 1.5,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+              transform: 'rotate(-15deg)',
+            }}
+            viewBox="0 0 20 30"
+          >
+            {/* Outer ear */}
+            <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
+            {/* Inner ear */}
+            <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
+          </svg>
+          {/* Right ear */}
+          <svg
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-1 group-hover:rotate-[5deg]',
+              animateHat && '-translate-y-1 rotate-[5deg]'
+            )}
+            style={{
+              right:
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+              top:
+                size === '2xs' || size === 'xs' ? -10 : size === 'sm' ? -14 : -18,
+              width: earSize,
+              height: earSize * 1.5,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+              transform: 'rotate(15deg)',
+            }}
+            viewBox="0 0 20 30"
+          >
+            {/* Outer ear */}
+            <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
+            {/* Inner ear */}
+            <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
+          </svg>
+        </>
+      )
+    }
     default:
       return null
   }
@@ -1084,15 +1636,15 @@ function AvatarAccessory(props: {
 
   switch (accessory) {
     case 'avatar-monocle': {
-      // Monocle in top-right area, overlapping the eye region
+      // Monocle positioned over left eye area (viewer's right)
       const monocleSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
         <svg
           className="absolute"
           style={{
-            right: size === '2xs' || size === 'xs' ? 0 : size === 'sm' ? 0 : -1,
-            top: size === '2xs' || size === 'xs' ? 0 : size === 'sm' ? 1 : 2,
+            left: size === '2xs' || size === 'xs' ? 2 : size === 'sm' ? 4 : 6,
+            top: size === '2xs' || size === 'xs' ? 4 : size === 'sm' ? 6 : 8,
             width: monocleSize,
             height: monocleSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
@@ -1167,59 +1719,130 @@ function AvatarAccessory(props: {
         </svg>
       )
     }
+    case 'avatar-disguise': {
+      // Silly glasses with big nose - Groucho Marx style
+      const disguiseSize =
+        size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 22 : 28
+      return (
+        <svg
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: size === '2xs' || size === 'xs' ? 4 : size === 'sm' ? 6 : 8,
+            width: disguiseSize,
+            height: disguiseSize * 0.7,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+          viewBox="0 0 32 22"
+        >
+          {/* Left lens */}
+          <circle cx="8" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
+          {/* Right lens */}
+          <circle cx="24" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
+          {/* Bridge */}
+          <path d="M14 8 Q16 6 18 8" stroke="#1F2937" strokeWidth="2" fill="none" />
+          {/* Left temple hint */}
+          <line x1="2" y1="8" x2="0" y2="7" stroke="#1F2937" strokeWidth="1.5" />
+          {/* Right temple hint */}
+          <line x1="30" y1="8" x2="32" y2="7" stroke="#1F2937" strokeWidth="1.5" />
+          {/* Big silly nose */}
+          <ellipse cx="16" cy="15" rx="4" ry="5" fill="#FBBF8E" />
+          <ellipse cx="16" cy="16" rx="3.5" ry="4" fill="#F5A67A" />
+          {/* Nose highlight */}
+          <ellipse cx="14.5" cy="13" rx="1.5" ry="2" fill="rgba(255,255,255,0.3)" />
+          {/* Nostril hints */}
+          <ellipse cx="14.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
+          <ellipse cx="17.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
+          {/* Bushy eyebrows */}
+          <path d="M3 3 Q8 1 13 4" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
+          <path d="M19 4 Q24 1 29 3" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
+        </svg>
+      )
+    }
     case 'avatar-thought-yes': {
-      // YES thought bubble in top-right corner
+      // YES thought bubble at top-left with trailing bubbles
+      const bubbleSize = size === '2xs' || size === 'xs' ? 5 : size === 'sm' ? 6 : 8
       return (
         <div
           className="absolute"
           style={{
-            top: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            left: size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8,
+            top: size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         >
+          {/* Main bubble */}
           <div
-            className="relative rounded-full bg-green-500 px-1 py-0.5 text-white"
+            className="rounded-full bg-green-500 px-1 py-0.5 text-white"
             style={{
-              fontSize:
-                size === '2xs' || size === 'xs'
-                  ? '5px'
-                  : size === 'sm'
-                  ? '6px'
-                  : '8px',
+              fontSize: bubbleSize,
               fontWeight: 'bold',
             }}
           >
             YES
           </div>
+          {/* Trailing bubbles */}
+          <div
+            className="absolute rounded-full bg-green-500"
+            style={{
+              width: bubbleSize * 0.5,
+              height: bubbleSize * 0.5,
+              right: -2,
+              bottom: -bubbleSize * 0.4,
+            }}
+          />
+          <div
+            className="absolute rounded-full bg-green-500"
+            style={{
+              width: bubbleSize * 0.3,
+              height: bubbleSize * 0.3,
+              right: -4,
+              bottom: -bubbleSize * 0.7,
+            }}
+          />
         </div>
       )
     }
     case 'avatar-thought-no': {
-      // NO thought bubble in top-right corner
+      // NO thought bubble at top-left with trailing bubbles
+      const bubbleSize = size === '2xs' || size === 'xs' ? 5 : size === 'sm' ? 6 : 8
       return (
         <div
           className="absolute"
           style={{
-            top: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            left: size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8,
+            top: size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         >
+          {/* Main bubble */}
           <div
             className="rounded-full bg-red-500 px-1 py-0.5 text-white"
             style={{
-              fontSize:
-                size === '2xs' || size === 'xs'
-                  ? '5px'
-                  : size === 'sm'
-                  ? '6px'
-                  : '8px',
+              fontSize: bubbleSize,
               fontWeight: 'bold',
             }}
           >
             NO
           </div>
+          {/* Trailing bubbles */}
+          <div
+            className="absolute rounded-full bg-red-500"
+            style={{
+              width: bubbleSize * 0.5,
+              height: bubbleSize * 0.5,
+              right: -2,
+              bottom: -bubbleSize * 0.4,
+            }}
+          />
+          <div
+            className="absolute rounded-full bg-red-500"
+            style={{
+              width: bubbleSize * 0.3,
+              height: bubbleSize * 0.3,
+              right: -4,
+              bottom: -bubbleSize * 0.7,
+            }}
+          />
         </div>
       )
     }
@@ -1347,5 +1970,286 @@ export function EmptyAvatar(props: {
     >
       <Icon className={`h-${insize} w-${insize} text-ink-500`} aria-hidden />
     </div>
+  )
+}
+
+/**
+ * Trump/MAGA-style cap with curved brim that goes DOWN on the sides.
+ * From front view: center brim faces viewer, sides curve down and away.
+ * The brim connects flush to the crown base.
+ */
+export const TrumpStyleCap2 = ({ team }: { team: 'red' | 'green' }) => {
+  const colors =
+    team === 'red'
+      ? {
+          main: '#DC2626',
+          light: '#EF4444',
+          dark: '#991B1B',
+          accent: '#FEE2E2',
+          darker: '#7F1D1D',
+        }
+      : {
+          main: '#16A34A',
+          light: '#22C55E',
+          dark: '#14532D',
+          accent: '#DCFCE7',
+          darker: '#166534',
+        }
+
+  return (
+    <svg viewBox="0 0 32 24" className="h-full w-full">
+      <defs>
+        {/* Gradient for crown 3D effect */}
+        <linearGradient id={`crown-grad-${team}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={colors.light} />
+          <stop offset="50%" stopColor={colors.main} />
+          <stop offset="100%" stopColor={colors.dark} />
+        </linearGradient>
+        {/* Gradient for brim top surface */}
+        <linearGradient id={`brim-top-${team}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={colors.dark} />
+          <stop offset="100%" stopColor={colors.darker} />
+        </linearGradient>
+      </defs>
+
+      {/* Crown - simple dome shape */}
+      <ellipse cx="16" cy="10" rx="11" ry="8" fill={`url(#crown-grad-${team})`} />
+
+      {/* Front panel - gives structured cap look */}
+      <path
+        d="M6 11 Q6 5 16 4 Q26 5 26 11 Q26 13 16 13 Q6 13 6 11 Z"
+        fill={colors.main}
+      />
+
+      {/* Button on top */}
+      <circle cx="16" cy="3" r="1.2" fill={colors.dark} />
+
+      {/* Seam line */}
+      <path
+        d="M16 3 L16 12"
+        stroke={colors.darker}
+        strokeWidth="0.4"
+        opacity="0.5"
+      />
+
+      {/* Highlight on dome */}
+      <ellipse cx="13" cy="7" rx="4" ry="2" fill={colors.accent} opacity="0.25" />
+
+      {/*
+        BRIM - The key geometry:
+        - Top edge (where it meets crown at y=14): gentle curve
+        - Bottom edge: MORE dramatic curve, dipping down on sides
+        - This creates the "cupped" MAGA look where sides go DOWN
+      */}
+
+      {/* Brim top surface - visible from front */}
+      <path
+        d="M2 14
+           Q4 13.5 8 13
+           Q12 12.5 16 12.5
+           Q20 12.5 24 13
+           Q28 13.5 30 14
+           Q28 16 24 17.5
+           Q20 18.5 16 18.5
+           Q12 18.5 8 17.5
+           Q4 16 2 14
+           Z"
+        fill={`url(#brim-top-${team})`}
+      />
+
+      {/* Brim edge/underside - visible on the curved down sides */}
+      {/* Left side edge - more visible because brim curves down */}
+      <path
+        d="M2 14
+           Q3 15.5 5 17
+           Q6 18 8 17.5
+           Q4 16 2 14
+           Z"
+        fill={colors.darker}
+      />
+
+      {/* Right side edge - more visible because brim curves down */}
+      <path
+        d="M30 14
+           Q29 15.5 27 17
+           Q26 18 24 17.5
+           Q28 16 30 14
+           Z"
+        fill={colors.darker}
+      />
+
+      {/* Brim front edge - thin line showing thickness at center */}
+      <path
+        d="M8 17.5 Q12 18.5 16 18.5 Q20 18.5 24 17.5 Q20 19 16 19 Q12 19 8 17.5 Z"
+        fill={colors.darker}
+        opacity="0.7"
+      />
+
+      {/* Subtle highlight on brim center (facing viewer) */}
+      <ellipse cx="16" cy="15" rx="5" ry="1.5" fill={colors.accent} opacity="0.15" />
+    </svg>
+  )
+}
+
+/**
+ * Trump/MAGA-style cap with proper perspective-based curved brim.
+ *
+ * KEY INSIGHT: The curved brim effect comes from PERSPECTIVE:
+ * - When you look at a cap from the front, the brim appears to "wrap around"
+ * - Center of brim is closer to viewer, sides curve away
+ * - This creates the illusion that the sides dip down
+ *
+ * SVG approach uses TWO curves:
+ * 1. TOP curve (where brim meets crown): relatively flat, follows crown base
+ * 2. BOTTOM curve (outer edge of brim): MORE curved, dipping down significantly at sides
+ *
+ * The space between these curves IS the visible brim surface:
+ * - THICK in the middle (brim facing you)
+ * - THIN at the edges (brim curving away)
+ */
+export const TrumpStyleCap4 = ({ team }: { team: 'red' | 'green' }) => {
+  const colors =
+    team === 'red'
+      ? {
+          main: '#DC2626',
+          light: '#EF4444',
+          dark: '#991B1B',
+          accent: '#FEE2E2',
+          darker: '#7F1D1D',
+        }
+      : {
+          main: '#16A34A',
+          light: '#22C55E',
+          dark: '#14532D',
+          accent: '#DCFCE7',
+          darker: '#166534',
+        }
+
+  return (
+    <svg viewBox="0 0 32 24" className="h-full w-full">
+      <defs>
+        {/* Gradient for crown 3D effect */}
+        <linearGradient
+          id={`cap4-crown-${team}`}
+          x1="0%"
+          y1="0%"
+          x2="0%"
+          y2="100%"
+        >
+          <stop offset="0%" stopColor={colors.light} />
+          <stop offset="50%" stopColor={colors.main} />
+          <stop offset="100%" stopColor={colors.dark} />
+        </linearGradient>
+        {/* Gradient for brim - darker at edges to enhance 3D */}
+        <linearGradient
+          id={`cap4-brim-${team}`}
+          x1="50%"
+          y1="0%"
+          x2="50%"
+          y2="100%"
+        >
+          <stop offset="0%" stopColor={colors.dark} />
+          <stop offset="60%" stopColor={colors.darker} />
+          <stop offset="100%" stopColor={colors.darker} />
+        </linearGradient>
+      </defs>
+
+      {/* === CROWN === */}
+      {/* Main dome */}
+      <ellipse
+        cx="16"
+        cy="9"
+        rx="10"
+        ry="7"
+        fill={`url(#cap4-crown-${team})`}
+      />
+
+      {/* Front panel - structured cap look */}
+      <path
+        d="M7 10 Q7 5 16 4 Q25 5 25 10 Q25 12 16 12 Q7 12 7 10 Z"
+        fill={colors.main}
+      />
+
+      {/* Button on top */}
+      <circle cx="16" cy="3" r="1" fill={colors.dark} />
+
+      {/* Center seam */}
+      <line
+        x1="16"
+        y1="3"
+        x2="16"
+        y2="11"
+        stroke={colors.darker}
+        strokeWidth="0.3"
+        opacity="0.4"
+      />
+
+      {/* Highlight on dome */}
+      <ellipse cx="13" cy="6" rx="3" ry="1.5" fill={colors.accent} opacity="0.2" />
+
+      {/* === BRIM - The key geometry === */}
+      {/*
+        Two curves create the perspective effect:
+        - Top edge: y=12 at center, y=13 at edges (slight curve following crown)
+        - Bottom edge: y=16 at center, y=19 at edges (dramatic downward curve)
+
+        The DIFFERENCE between these curves is what you SEE as the brim surface:
+        - Center: 16-12 = 4 units thick (facing viewer)
+        - Edges: 19-13 = 6 units thick BUT angled away, appears thinner
+      */}
+
+      {/* Brim surface - main visible area */}
+      <path
+        d={`
+          M 1 13
+          Q 5 12.5, 10 12
+          Q 13 11.8, 16 11.8
+          Q 19 11.8, 22 12
+          Q 27 12.5, 31 13
+          Q 28 16, 24 18
+          Q 20 19.5, 16 19.5
+          Q 12 19.5, 8 18
+          Q 4 16, 1 13
+          Z
+        `}
+        fill={`url(#cap4-brim-${team})`}
+      />
+
+      {/* Left brim edge - visible because of perspective curve down */}
+      <path
+        d={`
+          M 1 13
+          Q 2 15, 4 17
+          Q 5 18.5, 8 18
+          Q 4 16, 1 13
+          Z
+        `}
+        fill={colors.darker}
+        opacity="0.8"
+      />
+
+      {/* Right brim edge - visible because of perspective curve down */}
+      <path
+        d={`
+          M 31 13
+          Q 30 15, 28 17
+          Q 27 18.5, 24 18
+          Q 28 16, 31 13
+          Z
+        `}
+        fill={colors.darker}
+        opacity="0.8"
+      />
+
+      {/* Brim front lip - thin edge at center showing thickness */}
+      <path
+        d="M 8 18 Q 12 19.5, 16 19.5 Q 20 19.5, 24 18 Q 20 20, 16 20 Q 12 20, 8 18 Z"
+        fill={colors.darker}
+        opacity="0.6"
+      />
+
+      {/* Highlight on brim center (facing viewer) */}
+      <ellipse cx="16" cy="14" rx="4" ry="1.2" fill={colors.accent} opacity="0.15" />
+    </svg>
   )
 }

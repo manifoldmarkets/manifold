@@ -3085,6 +3085,21 @@ export const API = (_apiTypeCheck = {
         name: string
         avatarUrl: string
       }
+      champion?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+      }
+      trophyHolder?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        claimedTime: number
+      }
       // Provably fair fields
       nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists
       nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
@@ -3218,6 +3233,13 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
+  },
+  'claim-charity-champion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ enabled: z.boolean().optional() }).strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
   // Admin spam detection endpoints
   'get-suspected-spam-comments': {

@@ -3,8 +3,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getShopItem,
   getEntitlementId,
-  EXCLUSIVE_CATEGORIES,
-  getEntitlementIdsForCategory,
+  EXCLUSIVE_SLOTS,
+  getEntitlementIdsForSlot,
   getEntitlementIdsForTeam,
   getOppositeTeam,
 } from 'common/shop/items'
@@ -37,16 +37,16 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
   const pg = createSupabaseDirectClient()
 
   const result = await pg.tx(async (tx) => {
-    // If enabling an item in an exclusive category, disable others first
-    if (enabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
-      const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+    // If enabling an item in an exclusive slot, disable others first
+    if (enabled && EXCLUSIVE_SLOTS.includes(item.slot)) {
+      const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
       await tx.none(
         `UPDATE user_entitlements
          SET enabled = false
          WHERE user_id = $1
          AND entitlement_id = ANY($2)
          AND entitlement_id != $3`,
-        [auth.uid, categoryEntitlementIds, entitlementId]
+        [auth.uid, slotEntitlementIds, entitlementId]
       )
     }
 

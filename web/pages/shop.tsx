@@ -20,6 +20,10 @@ import {
   NO_BUTTON_OPTIONS,
   YesButtonOption,
   NoButtonOption,
+  SLOT_LABELS,
+  getCompatibleSlots,
+  EXCLUSIVE_SLOTS,
+  getEntitlementIdsForSlot,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
@@ -64,7 +68,12 @@ import {
   PurchaseConfirmation,
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
-import { CharityGiveawayCard } from 'web/components/shop/charity-giveaway-card'
+import {
+  CharityGiveawayCard,
+  CharityGiveawayData,
+} from 'web/components/shop/charity-giveaway-card'
+import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { getAnimationLocationText } from 'common/shop/display-config'
 
 // Check if user owns the item (not expired), regardless of enabled status
@@ -90,6 +99,23 @@ type SortOption =
   | 'name-asc'
   | 'name-desc'
 
+type FilterOption = 'all' | 'hats' | 'avatar' | 'hovercard' | 'buttons' | 'other'
+
+const FILTER_CONFIG: Record<FilterOption, { label: string; slots: string[] }> = {
+  all: { label: 'All', slots: [] },
+  hats: { label: 'Hats', slots: ['hat'] },
+  avatar: { label: 'Avatar', slots: ['profile-border', 'profile-accessory'] },
+  hovercard: { label: 'Hovercard', slots: ['hovercard-background', 'hovercard-border', 'unique'] },
+  buttons: { label: 'Buttons', slots: ['button-yes', 'button-no'] },
+  other: { label: 'Other', slots: ['consumable', 'badge'] },
+}
+
+const filterItems = (items: ShopItem[], filter: FilterOption): ShopItem[] => {
+  if (filter === 'all') return items
+  const allowedSlots = FILTER_CONFIG[filter].slots
+  return items.filter((item) => allowedSlots.includes(item.slot))
+}
+
 const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
   const sorted = [...items]
   switch (sort) {
@@ -114,6 +140,14 @@ export default function ShopPage() {
   const isAdminOrMod = useAdminOrMod()
   const optimisticContext = useOptimisticEntitlements()
 
+  // Fetch charity giveaway data once for both cards
+  const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
+    'get-charity-giveaway',
+    {}
+  )
+  const charityGiveawayData = charityData as CharityGiveawayData | undefined
+  const isCharityLoading = charityData === undefined
+
   // Local state for optimistic updates
   const [localEntitlements, setLocalEntitlements] = useState<UserEntitlement[]>(
     []
@@ -121,6 +155,7 @@ export default function ShopPage() {
   const [justPurchased, setJustPurchased] = useState<string | null>(null)
   const [localStreakBonus, setLocalStreakBonus] = useState(0) // Track streak purchases
   const [sortOption, setSortOption] = useState<SortOption>('default')
+  const [filterOption, setFilterOption] = useState<FilterOption>('all')
 
   // Track toggle version to ignore stale server responses during rapid toggling
   const toggleVersionRef = useRef(0)
@@ -199,15 +234,13 @@ export default function ShopPage() {
         if (purchased) {
           optimisticContext?.setOptimisticEntitlement(purchased)
 
-          // For exclusive categories, also disable other items in the same category
+          // For exclusive slots, also disable other items in the same slot
           // (matching the toggle behavior)
-          if (EXCLUSIVE_CATEGORIES.includes(item.category)) {
-            const categoryEntitlementIds = getEntitlementIdsForCategory(
-              item.category
-            )
+          if (EXCLUSIVE_SLOTS.includes(item.slot)) {
+            const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
             for (const ent of entitlements) {
               if (
-                categoryEntitlementIds.includes(ent.entitlementId) &&
+                slotEntitlementIds.includes(ent.entitlementId) &&
                 ent.entitlementId !== entitlementId &&
                 !ent.enabled
               ) {
@@ -295,14 +328,12 @@ export default function ShopPage() {
       // Start with a copy of all effective entitlements to get full picture
       let newState = [...effectiveEntitlements]
 
-      // If enabling an item in an exclusive category, disable others first
-      if (actualEnabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
-        const categoryEntitlementIds = getEntitlementIdsForCategory(
-          item.category
-        )
+      // If enabling an item in an exclusive slot, disable others first
+      if (actualEnabled && EXCLUSIVE_SLOTS.includes(item.slot)) {
+        const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
         newState = newState.map((e) => {
           if (
-            categoryEntitlementIds.includes(e.entitlementId) &&
+            slotEntitlementIds.includes(e.entitlementId) &&
             e.entitlementId !== entitlementId
           ) {
             return { ...e, enabled: false }
@@ -347,11 +378,11 @@ export default function ShopPage() {
     optimisticContext?.setOptimisticEntitlement(updated)
 
     // Also update global context for any items we disabled
-    if (actualEnabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
-      const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+    if (actualEnabled && EXCLUSIVE_SLOTS.includes(item.slot)) {
+      const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
       for (const ent of effectiveEntitlements) {
         if (
-          categoryEntitlementIds.includes(ent.entitlementId) &&
+          slotEntitlementIds.includes(ent.entitlementId) &&
           ent.entitlementId !== entitlementId &&
           ent.enabled
         ) {
@@ -437,8 +468,8 @@ export default function ShopPage() {
           onPurchaseComplete={handlePurchaseComplete}
         />
 
-        {/* Sort dropdown */}
-        <Row className="mb-4 mt-8 items-center justify-between">
+        {/* Header and sort dropdown */}
+        <Row className="mb-2 mt-8 items-center justify-between">
           <span className="text-lg font-semibold">
             Digital goods & cosmetics
           </span>
@@ -455,15 +486,39 @@ export default function ShopPage() {
           </select>
         </Row>
 
+        {/* Category filter pills */}
+        <Row className="mb-4 flex-wrap gap-2">
+          {(Object.keys(FILTER_CONFIG) as FilterOption[]).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setFilterOption(filter)}
+              className={clsx(
+                'rounded-full px-3 py-1 text-sm font-medium transition-colors',
+                filterOption === filter
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-canvas-50 text-ink-600 hover:bg-canvas-100'
+              )}
+            >
+              {FILTER_CONFIG[filter].label}
+            </button>
+          ))}
+        </Row>
+
         {/* Shop items grid - exclude supporter tiers (handled on /supporter page) */}
         {/* Single column on mobile (<480px), 2 columns on wider screens */}
         <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
           {sortItems(
-            SHOP_ITEMS.filter(
-              (item) =>
-                !SUPPORTER_ENTITLEMENT_IDS.includes(
-                  item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-                )
+            filterItems(
+              SHOP_ITEMS.filter(
+                (item) =>
+                  // Exclude supporter tiers (handled on /supporter page)
+                  !SUPPORTER_ENTITLEMENT_IDS.includes(
+                    item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+                  ) &&
+                  // Exclude 'earned' items (displayed via special cards, not shop grid)
+                  item.type !== 'earned'
+              ),
+              filterOption
             ),
             sortOption
           ).map((item) => {
@@ -489,8 +544,23 @@ export default function ShopPage() {
           })}
         </div>
 
-        {/* Charity giveaway card at bottom */}
-        <CharityGiveawayCard variant="full" className="mt-8" />
+        {/* Charity giveaway and champion cards */}
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <CharityGiveawayCard
+            data={charityGiveawayData}
+            isLoading={isCharityLoading}
+          />
+          <CharityChampionCard
+            data={charityGiveawayData}
+            isLoading={isCharityLoading}
+            user={user}
+            entitlements={effectiveEntitlements}
+            onEntitlementsChange={(newEntitlements) => {
+              setLocalEntitlements(newEntitlements)
+              refreshCharityData()
+            }}
+          />
+        </div>
 
         {isAdminOrMod && <AdminTestingTools user={user} />}
       </Col>
@@ -1716,12 +1786,8 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
   )
 }
 
-function ThoughtBubblePreview(props: {
-  user: User | null | undefined
-  type: 'yes' | 'no'
-}) {
-  const { user, type } = props
-  const isYes = type === 'yes'
+function DisguisePreview(props: { user: User | null | undefined }) {
+  const { user } = props
 
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
@@ -1732,24 +1798,86 @@ function ThoughtBubblePreview(props: {
           size="lg"
           noLink
         />
-        {/* Thought bubble in top-right corner */}
+        {/* Silly glasses with nose - Groucho Marx style */}
+        <svg
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 8,
+            width: 28,
+            height: 20,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+          viewBox="0 0 32 22"
+        >
+          {/* Left lens */}
+          <circle cx="8" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
+          {/* Right lens */}
+          <circle cx="24" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
+          {/* Bridge */}
+          <path d="M14 8 Q16 6 18 8" stroke="#1F2937" strokeWidth="2" fill="none" />
+          {/* Left temple hint */}
+          <line x1="2" y1="8" x2="0" y2="7" stroke="#1F2937" strokeWidth="1.5" />
+          {/* Right temple hint */}
+          <line x1="30" y1="8" x2="32" y2="7" stroke="#1F2937" strokeWidth="1.5" />
+          {/* Big silly nose */}
+          <ellipse cx="16" cy="15" rx="4" ry="5" fill="#FBBF8E" />
+          <ellipse cx="16" cy="16" rx="3.5" ry="4" fill="#F5A67A" />
+          {/* Nose highlight */}
+          <ellipse cx="14.5" cy="13" rx="1.5" ry="2" fill="rgba(255,255,255,0.3)" />
+          {/* Nostril hints */}
+          <ellipse cx="14.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
+          <ellipse cx="17.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
+          {/* Bushy eyebrows */}
+          <path d="M3 3 Q8 1 13 4" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
+          <path d="M19 4 Q24 1 29 3" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function ThoughtBubblePreview(props: {
+  user: User | null | undefined
+  type: 'yes' | 'no'
+}) {
+  const { user, type } = props
+  const isYes = type === 'yes'
+  const bgColor = isYes ? 'bg-green-500' : 'bg-red-500'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Thought bubble in top-left corner with trailing bubbles */}
         <div
           className="absolute"
           style={{
-            top: -4,
-            right: -4,
+            top: -10,
+            left: -8,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         >
+          {/* Main bubble */}
           <div
-            className={clsx(
-              'rounded-full px-1 py-0.5 text-white',
-              isYes ? 'bg-green-500' : 'bg-red-500'
-            )}
+            className={clsx('rounded-full px-1 py-0.5 text-white', bgColor)}
             style={{ fontSize: '8px', fontWeight: 'bold' }}
           >
             {isYes ? 'YES' : 'NO'}
           </div>
+          {/* Trailing bubbles */}
+          <div
+            className={clsx('absolute rounded-full', bgColor)}
+            style={{ width: 4, height: 4, right: -2, bottom: -3 }}
+          />
+          <div
+            className={clsx('absolute rounded-full', bgColor)}
+            style={{ width: 2.5, height: 2.5, right: -4, bottom: -5.5 }}
+          />
         </div>
       </div>
     </div>
@@ -1843,6 +1971,351 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
           <path d="M27 50L47 21L43 17L62 6L57 28L53 24L33 54Z" fill="url(#stonks-meme-side)" />
           {/* Main Face */}
           <path d="M25 48L45 19L41 15L60 4L55 26L51 22L31 52Z" fill="url(#stonks-meme-top)" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function TeamHatPreview(props: {
+  user: User | null | undefined
+  team: 'red' | 'green'
+}) {
+  const { user, team } = props
+  const colors =
+    team === 'red'
+      ? { main: '#DC2626', light: '#EF4444', dark: '#B91C1C', darker: '#991B1B', highlight: '#FCA5A5' }
+      : { main: '#16A34A', light: '#22C55E', dark: '#15803D', darker: '#166534', highlight: '#86EFAC' }
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Team cap - baseball cap style */}
+        <div
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%) rotate(-5deg)',
+            top: -10,
+            width: 30,
+            height: 30,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+          }}
+        >
+          <svg viewBox="0 0 30 20">
+            {/* Cap crown - rounded dome */}
+            <ellipse cx="15" cy="8" rx="12" ry="7" fill={colors.light} />
+            {/* Front panel */}
+            <path d="M5 9 Q5 4 15 3 Q25 4 25 9 Q25 11 15 11 Q5 11 5 9 Z" fill={colors.main} />
+            {/* Seam lines on crown */}
+            <path d="M15 2 L15 10" stroke={colors.dark} strokeWidth="0.5" opacity="0.5" />
+            <path d="M9 3 Q15 1 21 3" stroke={colors.dark} strokeWidth="0.3" fill="none" opacity="0.4" />
+            {/* Button on top */}
+            <circle cx="15" cy="2" r="1.3" fill={colors.dark} />
+            {/* Brim - curved baseball style */}
+            <path d="M3 10 Q3 11 5 12 L25 12 Q27 11 27 10 Q27 14 15 15 Q3 14 3 10 Z" fill={colors.dark} />
+            {/* Brim curve/underside */}
+            <path d="M5 12 Q15 13 25 12 Q15 14 5 12 Z" fill={colors.darker} />
+            {/* Highlight on dome */}
+            <ellipse cx="12" cy="5" rx="4" ry="2" fill={colors.highlight} opacity="0.3" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TeamBorderPreview(props: {
+  user: User | null | undefined
+  team: 'red' | 'green'
+}) {
+  const { user, team } = props
+  const ringColor = team === 'red' ? 'ring-red-500' : 'ring-green-500'
+  const glowColor =
+    team === 'red'
+      ? 'from-red-600 via-red-400 to-red-600'
+      : 'from-green-600 via-green-400 to-green-600'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        {/* Glow effect */}
+        <div
+          className={clsx(
+            'absolute -inset-1 rounded-full opacity-70 blur-sm bg-gradient-to-r',
+            glowColor
+          )}
+        />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className={clsx('relative ring-2', ringColor)}
+        />
+      </div>
+    </div>
+  )
+}
+
+function BullHornsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left horn */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          style={{
+            left: -7,
+            top: -6,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            transform: 'rotate(-20deg)',
+          }}
+          viewBox="0 0 24 24"
+        >
+          <defs>
+            <linearGradient id="bull-preview-left" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#78350F" />
+              <stop offset="50%" stopColor="#D97706" />
+              <stop offset="100%" stopColor="#FBBF24" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M20 20 Q8 20 4 8 Q2 4 6 2 Q10 2 12 8 Q14 14 20 20Z"
+            fill="url(#bull-preview-left)"
+          />
+        </svg>
+        {/* Right horn */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          style={{
+            right: -7,
+            top: -6,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            transform: 'rotate(20deg) scaleX(-1)',
+          }}
+          viewBox="0 0 24 24"
+        >
+          <defs>
+            <linearGradient id="bull-preview-right" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#78350F" />
+              <stop offset="50%" stopColor="#D97706" />
+              <stop offset="100%" stopColor="#FBBF24" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M20 20 Q8 20 4 8 Q2 4 6 2 Q10 2 12 8 Q14 14 20 20Z"
+            fill="url(#bull-preview-right)"
+          />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function BearEarsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left ear */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          style={{
+            left: -4,
+            top: -7,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+          viewBox="0 0 24 24"
+        >
+          <circle cx="12" cy="12" r="10" fill="#78350F" />
+          <circle cx="12" cy="12" r="6" fill="#FBBF24" opacity="0.6" />
+        </svg>
+        {/* Right ear */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          style={{
+            right: -4,
+            top: -7,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+          viewBox="0 0 24 24"
+        >
+          <circle cx="12" cy="12" r="10" fill="#78350F" />
+          <circle cx="12" cy="12" r="6" fill="#FBBF24" opacity="0.6" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function SantaHatPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Santa hat */}
+        <div
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[5deg]"
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%)',
+            top: -18,
+            width: 36,
+            height: 36,
+            filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
+          }}
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20 Q12 18 4 20Z"
+              fill="#DC2626"
+            />
+            <path
+              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20"
+              fill="none"
+              stroke="#B91C1C"
+              strokeWidth="0.5"
+            />
+            <ellipse cx="12" cy="20" rx="10" ry="2.5" fill="#FAFAFA" />
+            <circle cx="20" cy="6" r="3" fill="#FAFAFA" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BunnyEarsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left ear */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[-5deg]"
+          style={{
+            left: 4,
+            top: -18,
+            width: 22,
+            height: 33,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(-15deg)',
+          }}
+          viewBox="0 0 20 30"
+        >
+          <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
+          <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
+        </svg>
+        {/* Right ear */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[5deg]"
+          style={{
+            right: 4,
+            top: -18,
+            width: 22,
+            height: 33,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(15deg)',
+          }}
+          viewBox="0 0 20 30"
+        >
+          <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
+          <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function CatEarsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left ear */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
+          style={{
+            left: -2,
+            top: -10,
+            width: 18,
+            height: 20,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+          }}
+          viewBox="0 0 20 24"
+        >
+          {/* Outer ear */}
+          <path d="M2 24 L10 2 L18 24 Q10 20 2 24Z" fill="#4B5563" />
+          {/* Inner ear */}
+          <path d="M6 20 L10 6 L14 20 Q10 18 6 20Z" fill="#F9A8D4" />
+        </svg>
+        {/* Right ear */}
+        <svg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[3deg]"
+          style={{
+            right: -2,
+            top: -10,
+            width: 18,
+            height: 20,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+          }}
+          viewBox="0 0 20 24"
+        >
+          {/* Outer ear */}
+          <path d="M2 24 L10 2 L18 24 Q10 20 2 24Z" fill="#4B5563" />
+          {/* Inner ear */}
+          <path d="M6 20 L10 6 L14 20 Q10 18 6 20Z" fill="#F9A8D4" />
         </svg>
       </div>
     </div>
@@ -2069,7 +2542,7 @@ function HatPreview(props: {
         )
       case 'jester-hat':
         return (
-          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+          <div className="absolute -right-1.5 -top-2 rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
             <svg
               viewBox="0 0 24 24"
               className="h-5 w-5"
@@ -2256,6 +2729,324 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
           <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
           <div className="text-ink-500 text-xs">@{username}</div>
           <Row className="mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="text-ink-600 px-3 py-1.5 text-[10px]">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function HovercardSpinningBorderPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="hovercard-spinning-border bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md">
+        <div className="px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div className="bg-primary-500 rounded px-2 py-0.5 text-[10px] text-white">
+              Follow
+            </div>
+          </Row>
+          <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
+          <div className="text-ink-500 text-xs">@{username}</div>
+          <Row className="mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="text-ink-600 px-3 py-1.5 text-[10px]">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function HovercardRoyalBorderPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-red-50 dark:group-hover:bg-red-950/50">
+      <div className="hovercard-royal-border bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md">
+        <div className="px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div className="bg-primary-500 rounded px-2 py-0.5 text-[10px] text-white">
+              Follow
+            </div>
+          </Row>
+          <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
+          <div className="text-ink-500 text-xs">@{username}</div>
+          <Row className="mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="text-ink-600 px-3 py-1.5 text-[10px]">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type HovercardBgType = 'royalty' | 'mana-printer' | 'oracle' | 'trading-floor'
+
+function HovercardBackgroundPreview(props: {
+  user: User | null | undefined
+  background: HovercardBgType
+}) {
+  const { user, background } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  // Background styles and text colors for dark backgrounds
+  const bgConfig: Record<HovercardBgType, { bg: string; textColor: string }> = {
+    royalty: {
+      bg: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%)',
+      textColor: 'text-amber-50',
+    },
+    'mana-printer': {
+      bg: 'linear-gradient(135deg, #0a2e1a 0%, #1b4e2d 50%, #0a2e1a 100%)',
+      textColor: 'text-emerald-50',
+    },
+    oracle: {
+      bg: 'radial-gradient(ellipse at top, #1a1a3e 0%, #0a0a1e 50%, #000010 100%)',
+      textColor: 'text-indigo-50',
+    },
+    'trading-floor': {
+      bg: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
+      textColor: 'text-green-50',
+    },
+  }
+
+  const { bg: bgStyle, textColor } = bgConfig[background]
+
+  // Simplified overlay for preview
+  const renderOverlay = () => {
+    switch (background) {
+      case 'trading-floor':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <polyline
+              points="0,100 30,90 60,95 90,75 120,80 150,55 176,40"
+              fill="none"
+              stroke="#22C55E"
+              strokeWidth="2"
+              opacity="0.3"
+            />
+            <polygon
+              points="0,100 30,90 60,95 90,75 120,80 150,55 176,40 176,120 0,120"
+              fill="#22C55E"
+              opacity="0.1"
+            />
+            {/* Upward arrow - points at Follow button */}
+            <g transform="translate(125, 32)" opacity="0.25">
+              <polygon points="8,0 16,10 12,10 12,18 4,18 4,10 0,10" fill="#22C55E" />
+            </g>
+          </svg>
+        )
+      case 'mana-printer':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <defs>
+              <linearGradient id="coin-gradient-preview" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#C4B5FD" />
+                <stop offset="100%" stopColor="#8B5CF6" />
+              </linearGradient>
+            </defs>
+            <g opacity="0.35">
+              {/* Stick figure turning crank */}
+              <circle cx="55" cy="62" r="6" stroke="#C4B5FD" strokeWidth="1.5" fill="none" />
+              <line x1="55" y1="68" x2="55" y2="88" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="88" x2="48" y2="102" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="88" x2="62" y2="102" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="75" x2="78" y2="70" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="75" x2="45" y2="85" stroke="#C4B5FD" strokeWidth="1.5" />
+
+              {/* Machine */}
+              <rect
+                x="82"
+                y="58"
+                width="38"
+                height="32"
+                rx="2"
+                stroke="#A78BFA"
+                strokeWidth="1.5"
+                fill="#8B5CF6"
+                fillOpacity="0.1"
+              />
+              {/* Crank wheel */}
+              <circle cx="90" cy="70" r="6" stroke="#A78BFA" strokeWidth="1.5" fill="none" />
+              <line x1="90" y1="70" x2="78" y2="70" stroke="#A78BFA" strokeWidth="1.5" />
+              {/* Output slot */}
+              <rect x="116" y="66" width="4" height="14" fill="#A78BFA" fillOpacity="0.4" rx="1" />
+
+              {/* Mana coins with gradient and white M */}
+              <g transform="translate(126, 72)">
+                <circle r="7" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1.5" />
+                <text x="0" y="3" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+              </g>
+              <g transform="translate(138, 90)" opacity="0.9">
+                <circle r="6" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1" />
+                <text x="0" y="2.5" fontSize="8" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+              </g>
+              <g transform="translate(148, 106)" opacity="0.75">
+                <circle r="5" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1" />
+                <text x="0" y="2" fontSize="7" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+              </g>
+
+              {/* Motion lines */}
+              <path d="M98 54 L104 50" stroke="#C4B5FD" strokeWidth="0.75" />
+              <path d="M100 58 L106 54" stroke="#C4B5FD" strokeWidth="0.5" />
+            </g>
+          </svg>
+        )
+      case 'oracle':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <g fill="white">
+              <circle cx="20" cy="20" r="0.8" opacity="0.6" />
+              <circle cx="50" cy="15" r="0.6" opacity="0.5" />
+              <circle cx="90" cy="25" r="1" opacity="0.7" />
+              <circle cx="130" cy="18" r="0.7" opacity="0.55" />
+              <circle cx="160" cy="30" r="0.8" opacity="0.6" />
+              <circle cx="35" cy="50" r="0.6" opacity="0.45" />
+              <circle cx="75" cy="45" r="0.8" opacity="0.5" />
+              <circle cx="120" cy="55" r="0.7" opacity="0.5" />
+              <circle cx="155" cy="45" r="0.6" opacity="0.45" />
+              <circle cx="25" cy="80" r="0.7" opacity="0.4" />
+              <circle cx="65" cy="75" r="0.6" opacity="0.35" />
+              <circle cx="110" cy="85" r="0.8" opacity="0.4" />
+              <circle cx="145" cy="78" r="0.6" opacity="0.35" />
+            </g>
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div
+        className={clsx(
+          'relative w-44 origin-center scale-[0.85] divide-y divide-white/20 rounded-md shadow-lg ring-1 ring-white/10',
+          textColor
+        )}
+        style={{ background: bgStyle, overflow: 'hidden' }}
+      >
+        {/* Background overlay */}
+        {renderOverlay()}
+        <div className="relative z-10 px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div className="bg-primary-500 rounded px-2 py-0.5 text-[10px] text-white">
+              Follow
+            </div>
+          </Row>
+          <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
+          <div className="text-xs opacity-70">@{username}</div>
+          <Row className="mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="relative z-10 px-3 py-1.5 text-[10px] opacity-80">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GoldenFollowButtonPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md shadow-lg ring-1 ring-black/5">
+        <div className="px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div
+              className="rounded px-2 py-0.5 text-[10px] font-semibold text-amber-900"
+              style={{
+                background:
+                  'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
+                boxShadow:
+                  '0 0 8px rgba(251, 191, 36, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+              }}
+            >
+              Follow
+            </div>
+          </Row>
+          <div className="text-ink-900 mt-1 truncate text-sm font-bold">
+            {displayName}
+          </div>
+          <div className="text-ink-500 text-xs">@{username}</div>
+          <Row className="text-ink-600 mt-1 gap-3 text-[10px]">
             <span>
               <b>0</b> Following
             </span>
@@ -2461,6 +3252,8 @@ function ItemPreview(props: {
       return <MonoclePreview user={user} />
     case 'avatar-crystal-ball':
       return <CrystalBallPreview user={user} />
+    case 'avatar-disguise':
+      return <DisguisePreview user={user} />
     case 'avatar-thought-yes':
       return <ThoughtBubblePreview user={user} type="yes" />
     case 'avatar-thought-no':
@@ -2471,6 +3264,24 @@ function ItemPreview(props: {
       return <ArrowPreview user={user} direction="down" />
     case 'avatar-stonks-meme':
       return <StonksMemePreview user={user} />
+    case 'avatar-team-red-hat':
+      return <TeamHatPreview user={user} team="red" />
+    case 'avatar-team-green-hat':
+      return <TeamHatPreview user={user} team="green" />
+    case 'avatar-team-red-border':
+      return <TeamBorderPreview user={user} team="red" />
+    case 'avatar-team-green-border':
+      return <TeamBorderPreview user={user} team="green" />
+    case 'avatar-bull-horns':
+      return <BullHornsPreview user={user} />
+    case 'avatar-bear-ears':
+      return <BearEarsPreview user={user} />
+    case 'avatar-santa-hat':
+      return <SantaHatPreview user={user} />
+    case 'avatar-bunny-ears':
+      return <BunnyEarsPreview user={user} />
+    case 'avatar-cat-ears':
+      return <CatEarsPreview user={user} />
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview
@@ -2483,7 +3294,21 @@ function ItemPreview(props: {
       return <PampuSkinPreview />
     case 'hovercard-glow':
       return <HovercardGlowPreview user={user} />
-    case 'custom-yes-button':
+    case 'hovercard-spinning-border':
+      return <HovercardSpinningBorderPreview user={user} />
+    case 'hovercard-royal-border':
+      return <HovercardRoyalBorderPreview user={user} />
+    case 'hovercard-royalty':
+      return <HovercardBackgroundPreview user={user} background="royalty" />
+    case 'hovercard-mana-printer':
+      return <HovercardBackgroundPreview user={user} background="mana-printer" />
+    case 'hovercard-oracle':
+      return <HovercardBackgroundPreview user={user} background="oracle" />
+    case 'hovercard-trading-floor':
+      return <HovercardBackgroundPreview user={user} background="trading-floor" />
+    case 'hovercard-golden-follow':
+      return <GoldenFollowButtonPreview user={user} />
+    case 'pampu-skin':
       return (
         <CustomYesButtonPreview
           selectedText={entitlement?.metadata?.selectedText as YesButtonOption}
@@ -2692,6 +3517,42 @@ function ShopItemCard(props: {
             </div>
           )}
         </Row>
+
+        {/* Slot tag with compatibility info */}
+        {EXCLUSIVE_SLOTS.includes(item.slot) && (
+          <Row className="flex-wrap items-center gap-1.5">
+            <span
+              className={clsx(
+                'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                item.slot === 'hat' &&
+                  'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                item.slot === 'profile-border' &&
+                  'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                item.slot === 'profile-accessory' &&
+                  'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+                item.slot === 'hovercard-background' &&
+                  'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+                item.slot === 'hovercard-border' &&
+                  'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+                item.slot === 'button-yes' &&
+                  'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                item.slot === 'button-no' &&
+                  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+              )}
+            >
+              {SLOT_LABELS[item.slot]}
+            </span>
+            <span className="text-ink-400 text-[10px]">
+              + {getCompatibleSlots(item.slot).join(', ')}
+            </span>
+          </Row>
+        )}
+        {/* Unique items get a special badge */}
+        {item.slot === 'unique' && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+            ✨ Combines with everything
+          </span>
+        )}
 
         <p className="text-ink-600 text-sm">{item.description}</p>
 

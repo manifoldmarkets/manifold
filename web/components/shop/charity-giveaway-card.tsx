@@ -1,24 +1,71 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FaGift } from 'react-icons/fa6'
+import { FaGift, FaTrophy } from 'react-icons/fa6'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Button } from '../buttons/button'
 import { charities } from 'common/charity'
 
+// Export the data type for use by other components
+export type CharityGiveawayData = {
+  giveaway?: {
+    giveawayNum: number
+    name: string
+    prizeAmountUsd: number
+    closeTime: number
+    winningTicketId: string | null
+    createdTime: number
+  }
+  charityStats: {
+    charityId: string
+    totalTickets: number
+    totalManaSpent: number
+  }[]
+  totalTickets: number
+  winningCharity?: string
+  winner?: {
+    id: string
+    username: string
+    name: string
+    avatarUrl: string
+  }
+  champion?: {
+    id: string
+    username: string
+    name: string
+    avatarUrl: string
+    totalTickets: number
+  }
+  trophyHolder?: {
+    id: string
+    username: string
+    name: string
+    avatarUrl: string
+    totalTickets: number
+    claimedTime: number
+  }
+  nonceHash?: string
+  nonce?: string
+}
+
 export function CharityGiveawayCard(props: {
+  data?: CharityGiveawayData
+  isLoading?: boolean
   variant?: 'full' | 'compact'
   className?: string
 }) {
-  const { variant = 'full', className } = props
-  const { data } = useAPIGetter('get-charity-giveaway', {})
+  const { data: propData, isLoading = false, variant = 'full', className } = props
+  // Use provided data or fetch our own
+  const { data: fetchedData } = useAPIGetter('get-charity-giveaway', {})
+  const data = propData ?? fetchedData
 
   const giveaway = data?.giveaway
   const totalTickets = data?.totalTickets ?? 0
   const winningCharity = data?.winningCharity
   const winner = data?.winner
+  const champion = data?.champion
 
   // Time remaining countdown
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -48,6 +95,33 @@ export function CharityGiveawayCard(props: {
     const interval = setInterval(updateTime, 60000)
     return () => clearInterval(interval)
   }, [giveaway?.closeTime])
+
+  // Show loading skeleton
+  if (isLoading) {
+    return (
+      <div
+        className={clsx(
+          'overflow-hidden rounded-xl p-1',
+          'bg-gradient-to-br from-gray-300 via-gray-200 to-gray-300 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700',
+          className
+        )}
+      >
+        <div className="animate-pulse rounded-lg bg-white p-4 dark:bg-gray-900">
+          <Row className="mb-3 items-center gap-2">
+            <div className="h-5 w-5 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+          </Row>
+          <Row className="mb-3 gap-4">
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+          </Row>
+          <div className="mb-3 h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+      </div>
+    )
+  }
 
   // Don't render if no giveaway data
   if (!giveaway) return null
@@ -107,6 +181,25 @@ export function CharityGiveawayCard(props: {
                 <div className="text-ink-500 text-xs">Tickets</div>
               </Col>
             </Row>
+
+            {/* Leader info */}
+            {champion && (
+              <Row className="mb-3 items-center gap-2 rounded-lg bg-amber-50/80 px-3 py-2 dark:bg-amber-900/20">
+                <span className="text-ink-600 text-sm">
+                  Leader:{' '}
+                  <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400">
+                    <FaTrophy
+                      className="h-3.5 w-3.5 text-amber-500"
+                      style={{ filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))' }}
+                    />
+                    {champion.name}
+                  </span>
+                  <span className="text-ink-400 ml-1">
+                    ({champion.totalTickets.toLocaleString()} tickets)
+                  </span>
+                </span>
+              </Row>
+            )}
 
             {/* Description */}
             <p className="text-ink-600 mb-3 text-sm">

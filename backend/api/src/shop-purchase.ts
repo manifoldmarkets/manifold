@@ -5,8 +5,8 @@ import { getUser } from 'shared/utils'
 import {
   getShopItem,
   getEntitlementId,
-  EXCLUSIVE_CATEGORIES,
-  getEntitlementIdsForCategory,
+  EXCLUSIVE_SLOTS,
+  getEntitlementIdsForSlot,
   SHOP_ITEMS,
   isSeasonalItemAvailable,
   getSeasonalAvailabilityText,
@@ -123,6 +123,11 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
           )
           userValue = referralResult?.referrals ?? 0
           valueName = 'referrals'
+          break
+        case 'loan':
+          // Check loan balance (how negative they are)
+          userValue = user.balance < 0 ? Math.abs(user.balance) : 0
+          valueName = 'loan balance'
           break
       }
 
@@ -283,17 +288,17 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     // Create/update entitlement (for non-instant items)
     let entitlement: UserEntitlement | undefined
     if (item.type !== 'instant') {
-      // For exclusive categories, disable other items in the same category first
-      if (EXCLUSIVE_CATEGORIES.includes(item.category)) {
-        const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
-        // Disable all other entitlements in this category (except the one we're about to enable)
+      // For exclusive slots, disable other items in the same slot first
+      if (EXCLUSIVE_SLOTS.includes(item.slot)) {
+        const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
+        // Disable all other entitlements in this slot (except the one we're about to enable)
         await tx.none(
           `UPDATE user_entitlements
            SET enabled = false
            WHERE user_id = $1
            AND entitlement_id = ANY($2)
            AND entitlement_id != $3`,
-          [auth.uid, categoryEntitlementIds, entitlementId]
+          [auth.uid, slotEntitlementIds, entitlementId]
         )
       }
 
