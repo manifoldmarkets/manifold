@@ -24,7 +24,7 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
   }
 
   // Only toggleable items can be toggled
-  if (item.type !== 'permanent-toggleable' && item.type !== 'time-limited') {
+  if (item.type !== 'permanent-toggleable' && item.type !== 'time-limited' && item.type !== 'earned') {
     throw new APIError(400, 'This item cannot be toggled')
   }
 

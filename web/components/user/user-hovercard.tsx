@@ -21,6 +21,7 @@ import {
   getActiveHovercardBackground,
   HovercardBackground,
   userHasGoldenFollowButton,
+  userHasCharityChampionTrophy,
 } from 'common/shop/items'
 import dayjs from 'dayjs'
 import { Ref, forwardRef, useEffect, useState } from 'react'
@@ -158,6 +159,7 @@ const FetchUserHovercardContent = forwardRef(
     const hasSpinningBorder = userHasHovercardSpinningBorder(user?.entitlements)
     const hasRoyalBorder = userHasHovercardRoyalBorder(user?.entitlements)
     const background = getActiveHovercardBackground(user?.entitlements)
+    const hasChampionTrophy = userHasCharityChampionTrophy(user?.entitlements)
 
     // Get background styles based on active background
     const getBackgroundStyle = (
@@ -184,12 +186,17 @@ const FetchUserHovercardContent = forwardRef(
             background:
               'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
           }
+        case 'champions-legacy':
+          return {
+            background:
+              'linear-gradient(135deg, #2a1a00 0%, #1a1000 50%, #2a1a00 100%)',
+          }
         default:
           return {}
       }
     }
 
-    const hasDarkBackground = background && ['royalty', 'mana-printer', 'oracle', 'trading-floor'].includes(background)
+    const hasDarkBackground = background && ['royalty', 'mana-printer', 'oracle', 'trading-floor', 'champions-legacy'].includes(background)
 
     return user ? (
       <div
@@ -201,6 +208,7 @@ const FetchUserHovercardContent = forwardRef(
           background === 'mana-printer' && 'text-emerald-50',
           background === 'oracle' && 'text-indigo-50',
           background === 'trading-floor' && 'text-green-50',
+          background === 'champions-legacy' && 'text-amber-50',
           hasDarkBackground && 'divide-white/20',
           hasSpinningBorder
             ? 'hovercard-spinning-border'
@@ -215,13 +223,17 @@ const FetchUserHovercardContent = forwardRef(
         {/* Background visual overlays - contained in clipped wrapper */}
         {(background === 'trading-floor' ||
           background === 'mana-printer' ||
-          background === 'oracle') && (
+          background === 'oracle' ||
+          background === 'champions-legacy') && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
             {background === 'trading-floor' && <TradingFloorOverlay />}
             {background === 'mana-printer' && <ManaPrinterOverlay />}
             {background === 'oracle' && <StarfieldOverlay />}
+            {background === 'champions-legacy' && <ChampionsLegacyOverlay />}
           </div>
         )}
+        {/* Floating 3D trophy for current Charity Champion */}
+        {hasChampionTrophy && <FloatingTrophy />}
         <div className="relative z-10 px-4 py-3">
           <Row className="items-start justify-between">
             <div className="group">
@@ -415,6 +427,249 @@ function ManaPrinterOverlay() {
         <path d="M142 100 L150 95" stroke="#C4B5FD" strokeWidth="0.75" />
       </g>
     </svg>
+  )
+}
+
+// Champion's Legacy background overlay - golden trophies and laurels
+function ChampionsLegacyOverlay() {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      viewBox="0 0 224 200"
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <defs>
+        <radialGradient id="cl-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#B45309" stopOpacity="0" />
+        </radialGradient>
+        {/* Trophy silhouette path - cup with handles, stem, base */}
+        <path
+          id="cl-trophy"
+          d="M6 2h12v7c0 3.31-2.69 6-6 6s-6-2.69-6-6V2zm14 2h-2v3h2V4zM4 4h2v3H4V4zm8 11v3h-3v2h6v-2h-3v-3z"
+        />
+      </defs>
+
+      {/* Subtle radial glow */}
+      <rect width="100%" height="100%" fill="url(#cl-glow)" />
+
+      {/* Scattered trophy silhouettes */}
+      <g fill="#D97706">
+        <g transform="translate(160,25) scale(1.0)" opacity="0.18">
+          <use href="#cl-trophy" />
+        </g>
+        <g transform="translate(20,130) scale(1.4)" opacity="0.12">
+          <use href="#cl-trophy" />
+        </g>
+        <g transform="translate(185,140) scale(0.7)" opacity="0.14">
+          <use href="#cl-trophy" />
+        </g>
+        <g transform="translate(35,20) scale(0.8)" opacity="0.1">
+          <use href="#cl-trophy" />
+        </g>
+        <g transform="translate(100,70) scale(1.2)" opacity="0.06">
+          <use href="#cl-trophy" />
+        </g>
+        <g transform="translate(60,170) scale(0.6)" opacity="0.1">
+          <use href="#cl-trophy" />
+        </g>
+        <g transform="translate(140,90) scale(0.9)" opacity="0.08">
+          <use href="#cl-trophy" />
+        </g>
+      </g>
+
+      {/* Confetti particles */}
+      <g fill="#F59E0B" opacity="0.2">
+        <circle cx="80" cy="40" r="1" />
+        <circle cx="30" cy="80" r="0.8" />
+        <circle cx="100" cy="170" r="1.2" />
+        <circle cx="190" cy="55" r="0.9" />
+        <circle cx="150" cy="165" r="0.7" />
+        <rect
+          x="140"
+          y="120"
+          width="2"
+          height="2"
+          transform="rotate(45, 141, 121)"
+        />
+        <rect
+          x="200"
+          y="60"
+          width="1.5"
+          height="1.5"
+          transform="rotate(15, 201, 61)"
+        />
+        <rect
+          x="50"
+          y="100"
+          width="1.8"
+          height="1.8"
+          transform="rotate(30, 51, 101)"
+        />
+      </g>
+
+      {/* Subtle amber nebula hints */}
+      <g opacity="0.06">
+        <ellipse
+          cx="70"
+          cy="50"
+          rx="40"
+          ry="25"
+          fill="#F59E0B"
+          filter="blur(10px)"
+        />
+        <ellipse
+          cx="170"
+          cy="130"
+          rx="35"
+          ry="20"
+          fill="#D97706"
+          filter="blur(8px)"
+        />
+      </g>
+    </svg>
+  )
+}
+
+// Floating 3D trophy for current Charity Champion holders
+function FloatingTrophy() {
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center overflow-hidden" style={{ justifyContent: 'right', paddingRight: '5%' }}>
+      <style>
+        {`
+          @keyframes trophy-float {
+            0%, 100% { transform: translateY(0px) rotate(-4deg); }
+            50% { transform: translateY(-18px) rotate(4deg); }
+          }
+        `}
+      </style>
+      <div className="absolute h-24 w-24 rounded-full bg-amber-400/20 blur-2xl" />
+      <div
+        className="relative flex items-center justify-center"
+        style={{ animation: 'trophy-float 6s ease-in-out infinite' }}
+      >
+        <svg width="92" height="92" viewBox="0 0 80 80" fill="none">
+          <defs>
+            <linearGradient
+              id="ft-gold-gradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#B45309" />
+              <stop offset="25%" stopColor="#D97706" />
+              <stop offset="50%" stopColor="#FBBF24" />
+              <stop offset="75%" stopColor="#F59E0B" />
+              <stop offset="100%" stopColor="#B45309" />
+            </linearGradient>
+            <radialGradient
+              id="ft-specular-shine"
+              cx="30%"
+              cy="30%"
+              r="40%"
+            >
+              <stop offset="0%" stopColor="white" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="white" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient
+              id="ft-stem-gradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#D97706" />
+              <stop offset="50%" stopColor="#FBBF24" />
+              <stop offset="100%" stopColor="#D97706" />
+            </linearGradient>
+          </defs>
+          {/* Handles — flat top then curve down to meet bowl */}
+          <path
+            d="M24 25L18 25C13 25 16 44 29 44"
+            stroke="url(#ft-gold-gradient)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path
+            d="M56 25L62 25C67 25 64 44 51 44"
+            stroke="url(#ft-gold-gradient)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Gap filler — semi-transparent in dark mode */}
+          <path
+            className="dark:opacity-50"
+            d="M24 20C24 20 24 50 40 50C56 50 56 20 56 20Z"
+            fill="url(#ft-gold-gradient)"
+          />
+          {/* Bowl body — gapped path for shadow effect on dark backgrounds */}
+          <path
+            d="M24 20C24 20 24 50 40 50C56 50 56 20 24 20Z"
+            fill="url(#ft-gold-gradient)"
+          />
+          {/* Bowl Opening */}
+          <ellipse
+            cx="40"
+            cy="20"
+            rx="16"
+            ry="4"
+            fill="#FBBF24"
+            stroke="#D97706"
+            strokeWidth="0.5"
+          />
+          <ellipse
+            cx="40"
+            cy="21"
+            rx="14"
+            ry="2.5"
+            fill="#B45309"
+            fillOpacity="0.2"
+          />
+          {/* Specular Highlights */}
+          <ellipse
+            cx="32"
+            cy="30"
+            rx="4"
+            ry="8"
+            fill="url(#ft-specular-shine)"
+            transform="rotate(-15, 32, 30)"
+          />
+          {/* Stem */}
+          <rect
+            x="37"
+            y="50"
+            width="6"
+            height="15"
+            fill="url(#ft-stem-gradient)"
+          />
+          <path
+            d="M37 50L35 55H45L43 50H37Z"
+            fill="#D97706"
+            fillOpacity="0.5"
+          />
+          {/* Base */}
+          <rect
+            x="26"
+            y="65"
+            width="28"
+            height="6"
+            rx="1.5"
+            fill="url(#ft-gold-gradient)"
+          />
+          <rect x="22" y="71" width="36" height="5" rx="1" fill="#B45309" />
+          {/* Rim Polish */}
+          <path
+            d="M24 20C28 23 52 23 56 20"
+            stroke="white"
+            strokeOpacity="0.4"
+            strokeWidth="0.5"
+          />
+        </svg>
+      </div>
+    </div>
   )
 }
 

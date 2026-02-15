@@ -3062,7 +3062,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
+    props: z.object({ giveawayNum: z.coerce.number().optional(), userId: z.string().optional() }).strict(),
     returns: {} as {
       giveaway?: {
         giveawayNum: number
@@ -3092,6 +3092,18 @@ export const API = (_apiTypeCheck = {
         avatarUrl: string
         totalTickets: number
       }
+      topUsers?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        rank: number
+      }[]
+      yourEntry?: {
+        rank: number
+        totalTickets: number
+      }
       trophyHolder?: {
         id: string
         username: string
@@ -3099,6 +3111,12 @@ export const API = (_apiTypeCheck = {
         avatarUrl: string
         totalTickets: number
         claimedTime: number
+      }
+      previousTrophyHolder?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
       }
       // Provably fair fields
       nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists

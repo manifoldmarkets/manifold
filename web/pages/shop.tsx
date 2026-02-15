@@ -53,7 +53,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
 import { SEO } from 'web/components/SEO'
-import { Avatar } from 'web/components/widgets/avatar'
+import { Avatar, RedCapSvg } from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
@@ -143,7 +143,7 @@ export default function ShopPage() {
   // Fetch charity giveaway data once for both cards
   const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
     'get-charity-giveaway',
-    {}
+    { userId: user?.id }
   )
   const charityGiveawayData = charityData as CharityGiveawayData | undefined
   const isCharityLoading = charityData === undefined
@@ -182,7 +182,9 @@ export default function ShopPage() {
         user.entitlements?.some(
           (server) =>
             server.entitlementId === local.entitlementId &&
-            server.enabled === local.enabled
+            server.enabled === local.enabled &&
+            JSON.stringify(server.metadata ?? null) ===
+              JSON.stringify(local.metadata ?? null)
         )
       )
       if (serverHasCaughtUp) {
@@ -422,6 +424,27 @@ export default function ShopPage() {
     }
   }
 
+  // Callback for metadata-only updates (no confetti, used by style pickers)
+  const handleMetadataChange = (
+    _itemId: string,
+    updatedEntitlement: UserEntitlement
+  ) => {
+    // Upsert just the changed entitlement into local state
+    setLocalEntitlements((prev) => {
+      const idx = prev.findIndex(
+        (e) => e.entitlementId === updatedEntitlement.entitlementId
+      )
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = updatedEntitlement
+        return next
+      }
+      return [...prev, updatedEntitlement]
+    })
+    // Update global context so sidebar/profile avatar updates instantly
+    optimisticContext?.setOptimisticEntitlement(updatedEntitlement)
+  }
+
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
 
@@ -537,6 +560,7 @@ export default function ShopPage() {
                 justPurchased={justPurchased === item.id}
                 onPurchaseComplete={handlePurchaseComplete}
                 onToggleComplete={handleToggleComplete}
+                onMetadataChange={handleMetadataChange}
                 getToggleVersion={getToggleVersion}
                 localStreakBonus={localStreakBonus}
               />
@@ -549,6 +573,7 @@ export default function ShopPage() {
           <CharityGiveawayCard
             data={charityGiveawayData}
             isLoading={isCharityLoading}
+            user={user}
           />
           <CharityChampionCard
             data={charityGiveawayData}
@@ -1444,9 +1469,9 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
             </radialGradient>
             {/* Outer glow */}
             <radialGradient id="bh-outer-glow-p" cx="50%" cy="50%" r="50%">
-              <stop offset="60%" stopColor="transparent" />
-              <stop offset="80%" stopColor="#7c3aed" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.2" />
+              <stop offset="65%" stopColor="transparent" />
+              <stop offset="85%" stopColor="#7c3aed" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.05" />
             </radialGradient>
           </defs>
 
@@ -1485,7 +1510,7 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
           avatarUrl={user?.avatarUrl}
           size="lg"
           noLink
-          className="relative ring-2 ring-purple-900"
+          className="relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]"
         />
       </div>
     </div>
@@ -1671,16 +1696,16 @@ function AngelWingsPreview(props: { user: User | null | undefined }) {
 
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        {/* Left wing */}
+      <div className="relative isolate">
+        {/* Left wing — behind avatar via negative z */}
         <svg
           className="absolute top-1/2 -translate-y-1/2"
-          style={{ left: -10, width: 15, height: 46, opacity: 0.9 }}
+          style={{ left: -10, width: 15, height: 46, opacity: 0.9, zIndex: -1 }}
           viewBox="0 0 16 44"
         >
           {wingSvg}
         </svg>
-        {/* Right wing (mirrored) */}
+        {/* Right wing (mirrored) — behind avatar via negative z */}
         <svg
           className="absolute top-1/2"
           style={{
@@ -1689,6 +1714,7 @@ function AngelWingsPreview(props: { user: User | null | undefined }) {
             height: 46,
             opacity: 0.9,
             transform: 'translateY(-50%) scaleX(-1)',
+            zIndex: -1,
           }}
           viewBox="0 0 16 44"
         >
@@ -1717,20 +1743,23 @@ function MonoclePreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Monocle in top-right corner */}
+        {/* Monocle over left eye area (viewer's right) — matches real avatar placement */}
         <svg
           className="absolute"
           style={{
-            right: -1,
-            top: 2,
+            left: 6,
+            top: 8,
             width: 18,
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
           viewBox="0 0 24 24"
         >
+          {/* Gold frame */}
           <circle cx="12" cy="12" r="10" fill="rgba(200,220,255,0.15)" stroke="#D4AF37" strokeWidth="2.5" />
+          {/* Inner ring detail */}
           <circle cx="12" cy="12" r="7.5" fill="none" stroke="#B8860B" strokeWidth="0.5" />
+          {/* Glass reflection */}
           <ellipse cx="9" cy="9" rx="3" ry="2" fill="rgba(255,255,255,0.5)" />
         </svg>
       </div>
@@ -1977,16 +2006,91 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
   )
 }
 
+const RED_CAP_STYLE_LABELS = ['Classic', 'Mini', 'Rounded', 'Dark Stitch', 'Mini Clean']
+const RED_CAP_STYLE_COUNT = RED_CAP_STYLE_LABELS.length
+
+function RedCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, RED_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 4
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + RED_CAP_STYLE_COUNT) % RED_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % RED_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: 'translateX(-50%) rotate(-5deg)',
+              top: -10,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <RedCapSvg style={previewIndex} />
+          </div>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{RED_CAP_STYLE_LABELS[previewIndex]}</span>
+    </div>
+  )
+}
+
 function TeamHatPreview(props: {
   user: User | null | undefined
   team: 'red' | 'green'
 }) {
   const { user, team } = props
-  const colors =
-    team === 'red'
-      ? { main: '#DC2626', light: '#EF4444', dark: '#B91C1C', darker: '#991B1B', highlight: '#FCA5A5' }
-      : { main: '#16A34A', light: '#22C55E', dark: '#15803D', darker: '#166534', highlight: '#86EFAC' }
 
+  // Green cap — single Tuck B preview
+  const colors = { crown: '#16A34A', crownStroke: '#15803D', brim: '#15803D', brimStroke: '#166534', button: '#15803D', seam: '#15803D' }
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
@@ -1996,7 +2100,6 @@ function TeamHatPreview(props: {
           size="lg"
           noLink
         />
-        {/* Team cap - baseball cap style */}
         <div
           className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
           style={{
@@ -2008,22 +2111,15 @@ function TeamHatPreview(props: {
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
           }}
         >
-          <svg viewBox="0 0 30 20">
-            {/* Cap crown - rounded dome */}
-            <ellipse cx="15" cy="8" rx="12" ry="7" fill={colors.light} />
-            {/* Front panel */}
-            <path d="M5 9 Q5 4 15 3 Q25 4 25 9 Q25 11 15 11 Q5 11 5 9 Z" fill={colors.main} />
-            {/* Seam lines on crown */}
-            <path d="M15 2 L15 10" stroke={colors.dark} strokeWidth="0.5" opacity="0.5" />
-            <path d="M9 3 Q15 1 21 3" stroke={colors.dark} strokeWidth="0.3" fill="none" opacity="0.4" />
-            {/* Button on top */}
-            <circle cx="15" cy="2" r="1.3" fill={colors.dark} />
-            {/* Brim - curved baseball style */}
-            <path d="M3 10 Q3 11 5 12 L25 12 Q27 11 27 10 Q27 14 15 15 Q3 14 3 10 Z" fill={colors.dark} />
-            {/* Brim curve/underside */}
-            <path d="M5 12 Q15 13 25 12 Q15 14 5 12 Z" fill={colors.darker} />
-            {/* Highlight on dome */}
-            <ellipse cx="12" cy="5" rx="4" ry="2" fill={colors.highlight} opacity="0.3" />
+          <svg viewBox="0 0 50 40" overflow="visible">
+            <path d="M3,20 C3,23 -7,26 -11,37 C-3,48 31,48 47,20 Q25,24 3,20Z" fill={colors.brim} stroke={colors.brimStroke} strokeWidth="1" />
+            <path d="M3,21 Q25,25 47,21 L47,22.5 Q25,26.5 3,22.5Z" fill={colors.brimStroke} opacity="0.6" />
+            <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={colors.crown} stroke={colors.crownStroke} strokeWidth="1" />
+            <path d="M25,1 L25,25" stroke={colors.seam} strokeWidth="0.4" opacity="0.3" />
+            <path d="M25,1 C14,3 8,8 6,20" stroke={colors.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
+            <path d="M25,1 C36,3 42,8 44,20" stroke={colors.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
+            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
+            <circle cx="25" cy="1" r="2.2" fill={colors.button} />
           </svg>
         </div>
       </div>
@@ -2059,6 +2155,50 @@ function TeamBorderPreview(props: {
           noLink
           className={clsx('relative ring-2', ringColor)}
         />
+      </div>
+    </div>
+  )
+}
+
+function BlackCapPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        <div
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%) rotate(-5deg)',
+            top: -10,
+            width: 30,
+            height: 30,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+          }}
+        >
+          <svg viewBox="0 0 50 40" overflow="visible">
+            {/* Taper C brim */}
+            <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill="#333" stroke="#111" strokeWidth="1" />
+            <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
+            <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
+            {/* Crown */}
+            <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill="#333" stroke="#111" strokeWidth="1" />
+            {/* Panel seams */}
+            <path d="M25,1 L25,25" stroke="#111" strokeWidth="0.4" opacity="0.3" />
+            <path d="M25,1 C14,3 8,8 6,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
+            <path d="M25,1 C36,3 42,8 44,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
+            {/* MANA text */}
+            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
+            {/* Button */}
+            <circle cx="25" cy="1" r="2.2" fill="#111" />
+          </svg>
+        </div>
       </div>
     </div>
   )
@@ -2400,32 +2540,38 @@ function HatPreview(props: {
       case 'halo':
         return (
           <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 transition-transform duration-300 group-hover:-translate-y-0.5">
-            {/* Light mode - amber gold visible against light backgrounds */}
-            <div
+            {/* Light mode — dual-stroke SVG matching live avatar halo */}
+            <svg
               className="dark:hidden"
+              width="3.3rem"
+              height="0.85rem"
+              viewBox="0 0 40 12"
+              overflow="visible"
               style={{
-                width: '2.5rem',
-                height: '0.6rem',
-                borderRadius: '50%',
                 transform: 'rotate(-8deg)',
-                border: '2px solid rgba(245, 158, 11, 0.9)',
-                boxShadow:
-                  '0 0 6px rgba(245, 158, 11, 0.5), 0 0 2px rgba(217, 119, 6, 0.8)',
+                filter:
+                  'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))',
               }}
-            />
-            {/* Dark mode - white-gold glow visible against dark backgrounds */}
-            <div
+            >
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(217, 170, 50, 0.7)" strokeWidth="3.5" fill="none" />
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(255, 252, 240, 0.95)" strokeWidth="1.5" fill="none" />
+            </svg>
+            {/* Dark mode — dual-stroke SVG matching live avatar halo */}
+            <svg
               className="hidden dark:block"
+              width="3.3rem"
+              height="0.85rem"
+              viewBox="0 0 40 12"
+              overflow="visible"
               style={{
-                width: '2.5rem',
-                height: '0.6rem',
-                borderRadius: '50%',
                 transform: 'rotate(-8deg)',
-                border: '1.5px solid rgba(255, 250, 220, 0.95)',
-                boxShadow:
-                  '0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 200, 0.4)',
+                filter:
+                  'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))',
               }}
-            />
+            >
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(200, 160, 60, 0.5)" strokeWidth="3.5" fill="none" />
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(255, 252, 240, 0.95)" strokeWidth="1.5" fill="none" />
+            </svg>
           </div>
         )
       case 'propeller-hat':
@@ -3265,9 +3411,22 @@ function ItemPreview(props: {
     case 'avatar-stonks-meme':
       return <StonksMemePreview user={user} />
     case 'avatar-team-red-hat':
-      return <TeamHatPreview user={user} team="red" />
+      return (
+        <RedCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
     case 'avatar-team-green-hat':
       return <TeamHatPreview user={user} team="green" />
+    case 'avatar-black-cap':
+      return <BlackCapPreview user={user} />
     case 'avatar-team-red-border':
       return <TeamBorderPreview user={user} team="red" />
     case 'avatar-team-green-border':
@@ -3290,8 +3449,6 @@ function ItemPreview(props: {
           allEntitlements={allEntitlements}
         />
       )
-    case 'pampu-skin':
-      return <PampuSkinPreview />
     case 'hovercard-glow':
       return <HovercardGlowPreview user={user} />
     case 'hovercard-spinning-border':
@@ -3354,6 +3511,7 @@ function ShopItemCard(props: {
       version?: number
     }
   ) => void
+  onMetadataChange: (itemId: string, updatedEntitlement: UserEntitlement) => void
   getToggleVersion: () => number
   localStreakBonus: number
 }) {
@@ -3366,6 +3524,7 @@ function ShopItemCard(props: {
     justPurchased,
     onPurchaseComplete,
     onToggleComplete,
+    onMetadataChange,
     getToggleVersion,
     localStreakBonus,
   } = props
@@ -3441,17 +3600,41 @@ function ShopItemCard(props: {
     }
   }
 
-  const handleMetadataUpdate = async (metadata: Record<string, any>) => {
-    try {
-      const result = await api('shop-update-metadata', {
-        itemId: item.id,
-        metadata,
-      })
-      // Update parent state with new entitlements (no confetti since skin category is excluded)
-      onPurchaseComplete(item.id, result.entitlements)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to update selection')
+  const pendingMetadataApiRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+
+  const handleMetadataUpdate = (metadata: Record<string, any>) => {
+    // Optimistic update: immediately reflect the new metadata locally
+    if (entitlement) {
+      const updatedEntitlement = {
+        ...entitlement,
+        metadata: { ...entitlement.metadata, ...metadata },
+      }
+      onMetadataChange(item.id, updatedEntitlement)
     }
+
+    // Debounce the API call (800ms) so rapid cycling doesn't spam the server
+    if (pendingMetadataApiRef.current)
+      clearTimeout(pendingMetadataApiRef.current)
+    pendingMetadataApiRef.current = setTimeout(async () => {
+      try {
+        const result = await api('shop-update-metadata', {
+          itemId: item.id,
+          metadata,
+        })
+        // Update with server response
+        const entitlementId = getEntitlementId(item)
+        const serverUpdated = (result.entitlements as UserEntitlement[]).find(
+          (e) => e.entitlementId === entitlementId
+        )
+        if (serverUpdated) {
+          onMetadataChange(item.id, serverUpdated)
+        }
+      } catch (e: any) {
+        toast.error(e.message || 'Failed to update selection')
+      }
+    }, 800)
   }
 
   const cardRef = useRef<HTMLDivElement>(null)
@@ -3529,7 +3712,7 @@ function ShopItemCard(props: {
                 item.slot === 'profile-border' &&
                   'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
                 item.slot === 'profile-accessory' &&
-                  'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+                  'bg-teal-100 text-teal-700 dark:bg-teal-800/60 dark:text-teal-200',
                 item.slot === 'hovercard-background' &&
                   'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
                 item.slot === 'hovercard-border' &&

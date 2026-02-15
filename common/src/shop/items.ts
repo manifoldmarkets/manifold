@@ -602,7 +602,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   // Team items - mutually exclusive (can only equip one team's items)
   {
     id: 'avatar-team-red-hat',
-    name: 'Team Red Cap',
+    name: 'Red Cap',
     description: 'Show your allegiance to Team Red',
     price: 25000,
     type: 'permanent-toggleable',
@@ -613,7 +613,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-team-green-hat',
-    name: 'Team Green Cap',
+    name: 'Green Cap',
     description: 'Show your allegiance to Team Green',
     price: 25000,
     type: 'permanent-toggleable',
@@ -623,8 +623,18 @@ export const SHOP_ITEMS: ShopItem[] = [
     team: 'green',
   },
   {
+    id: 'avatar-black-cap',
+    name: 'Black Cap',
+    description: 'A sleek black MANA cap with panel seams',
+    price: 25000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+    slot: 'hat',
+  },
+  {
     id: 'avatar-team-red-border',
-    name: 'Team Red Border',
+    name: 'Red Border',
     description: 'A fiery red border for Team Red supporters',
     price: 50000,
     type: 'permanent-toggleable',
@@ -635,7 +645,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-team-green-border',
-    name: 'Team Green Border',
+    name: 'Green Border',
     description: 'A verdant green border for Team Green supporters',
     price: 50000,
     type: 'permanent-toggleable',
@@ -724,6 +734,17 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'badge',
     slot: 'badge',
+  },
+  {
+    id: 'former-charity-champion',
+    name: "Champion's Legacy",
+    description:
+      'A trophy-themed hovercard background for former and current Charity Champions',
+    price: 0, // Cannot be purchased - earned by claiming the trophy
+    type: 'earned',
+    limit: 'one-time',
+    category: 'hovercard',
+    slot: 'hovercard-background',
   },
 ]
 
@@ -842,6 +863,7 @@ export type HovercardBackground =
   | 'mana-printer'
   | 'oracle'
   | 'trading-floor'
+  | 'champions-legacy'
 
 // Get the active hovercard background if any
 export const getActiveHovercardBackground = (
@@ -854,6 +876,8 @@ export const getActiveHovercardBackground = (
   if (hasActiveEntitlement(entitlements, 'hovercard-oracle')) return 'oracle'
   if (hasActiveEntitlement(entitlements, 'hovercard-trading-floor'))
     return 'trading-floor'
+  if (hasActiveEntitlement(entitlements, 'former-charity-champion'))
+    return 'champions-legacy'
   return null
 }
 
@@ -904,6 +928,7 @@ export type AvatarDecorationId =
   | 'avatar-stonks-meme'
   | 'avatar-team-red-hat'
   | 'avatar-team-green-hat'
+  | 'avatar-black-cap'
   | 'avatar-team-red-border'
   | 'avatar-team-green-border'
   | 'avatar-bull-horns'
@@ -927,6 +952,18 @@ export const userHasHalo = (
   return hasActiveEntitlement(entitlements, 'avatar-halo')
 }
 
+// Get the style variant number for the active overlay (stored in entitlement metadata)
+export const getOverlayStyle = (
+  entitlements: UserEntitlement[] | undefined,
+  overlayId: AvatarDecorationId | null
+): number => {
+  if (!overlayId || !entitlements) return 0
+  const ent = entitlements.find(
+    (e) => e.entitlementId === overlayId && e.enabled
+  )
+  return (ent?.metadata?.style as number) ?? 0
+}
+
 // Get the active avatar overlay (hat) if any
 // Note: This excludes the halo since it's a unique slot item that combines with other hats
 // Use userHasHalo() separately to check for halo
@@ -947,6 +984,7 @@ export const getActiveAvatarOverlay = (
     'avatar-devil-horns',
     'avatar-team-red-hat',
     'avatar-team-green-hat',
+    'avatar-black-cap',
     'avatar-bull-horns',
     'avatar-bear-ears',
     'avatar-cat-ears',
@@ -1054,6 +1092,9 @@ export const getOppositeTeam = (team: ShopTeam): ShopTeam => {
 
 // Entitlement ID for charity champion trophy
 export const CHARITY_CHAMPION_ENTITLEMENT_ID = 'charity-champion-trophy'
+
+// Entitlement ID for former charity champion (permanent, earned on claim)
+export const FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID = 'former-charity-champion'
 
 // Helper to check if user has the charity champion trophy
 export const userHasCharityChampionTrophy = (

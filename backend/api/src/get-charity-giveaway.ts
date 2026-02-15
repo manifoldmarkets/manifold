@@ -7,7 +7,7 @@ import { CHARITY_CHAMPION_ENTITLEMENT_ID } from 'common/shop/items'
 export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
   props
 ) => {
-  const { giveawayNum } = props
+  const { giveawayNum, userId } = props
   const pg = createSupabaseDirectClient()
 
   // If no giveawayNum specified, get the most recent active giveaway (not yet closed)
@@ -41,7 +41,7 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
   const nonceHash = createHash('md5').update(giveaway.nonce).digest('hex')
 
   // Run all queries in parallel for better performance (single round trip)
-  const [charityStats, championData, trophyHolderData, winnerData] =
+  const [charityStats, topUsersData, yourEntryData, trophyHolderData, winnerData] =
     await Promise.all([
       // Get ticket stats per charity
       pg.manyOrNone<{
@@ -60,28 +60,45 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
         [giveaway.giveaway_num]
       ),
 
-      // Get champion (top ticket holder) with user info in one query
-      pg.oneOrNone<{
+      // Get top 3 ticket holders with user info
+      pg.manyOrNone<{
         user_id: string
         total_tickets: string
         username: string
         name: string
         avatar_url: string
+        rank: string
       }>(
-        `SELECT t.user_id, t.total_tickets, u.username, u.name, u.data->>'avatarUrl' as avatar_url
+        `SELECT t.user_id, t.total_tickets, u.username, u.name, u.data->>'avatarUrl' as avatar_url, t.rank
          FROM (
-           SELECT user_id, SUM(num_tickets) as total_tickets
+           SELECT user_id, SUM(num_tickets) as total_tickets,
+                  ROW_NUMBER() OVER (ORDER BY SUM(num_tickets) DESC) as rank
            FROM charity_giveaway_tickets
            WHERE giveaway_num = $1
            GROUP BY user_id
            ORDER BY total_tickets DESC
-           LIMIT 1
+           LIMIT 3
          ) t
          JOIN users u ON u.id = t.user_id`,
         [giveaway.giveaway_num]
       ),
 
-      // Get trophy holder with user info AND ticket count in one query
+      // Get the requesting user's rank and tickets (if userId provided)
+      userId
+        ? pg.oneOrNone<{ rank: string; total_tickets: string }>(
+            `SELECT rank, total_tickets FROM (
+               SELECT user_id, SUM(num_tickets) as total_tickets,
+                      ROW_NUMBER() OVER (ORDER BY SUM(num_tickets) DESC) as rank
+               FROM charity_giveaway_tickets
+               WHERE giveaway_num = $1
+               GROUP BY user_id
+             ) ranked
+             WHERE user_id = $2`,
+            [giveaway.giveaway_num, userId]
+          )
+        : Promise.resolve(null),
+
+      // Get trophy holder (only one row can exist since old holders are deleted)
       pg.oneOrNone<{
         user_id: string
         granted_time: string
@@ -89,6 +106,7 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
         name: string
         avatar_url: string
         total_tickets: string | null
+        metadata: { previousHolderId?: string; previousHolderClaimedAt?: string } | null
       }>(
         `SELECT
            ue.user_id,
@@ -96,11 +114,12 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
            u.username,
            u.name,
            u.data->>'avatarUrl' as avatar_url,
+           ue.metadata,
            (SELECT SUM(num_tickets) FROM charity_giveaway_tickets
             WHERE giveaway_num = $1 AND user_id = ue.user_id) as total_tickets
          FROM user_entitlements ue
          JOIN users u ON u.id = ue.user_id
-         WHERE ue.entitlement_id = $2 AND ue.enabled = true
+         WHERE ue.entitlement_id = $2
          LIMIT 1`,
         [giveaway.giveaway_num, CHARITY_CHAMPION_ENTITLEMENT_ID]
       ),
@@ -128,14 +147,35 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
     0
   )
 
-  // Build champion object
-  const champion = championData
+  // Build champion object (top user)
+  const firstPlace = topUsersData?.[0]
+  const champion = firstPlace
     ? {
-        id: championData.user_id,
-        username: championData.username,
-        name: championData.name,
-        avatarUrl: championData.avatar_url,
-        totalTickets: parseFloat(championData.total_tickets),
+        id: firstPlace.user_id,
+        username: firstPlace.username,
+        name: firstPlace.name,
+        avatarUrl: firstPlace.avatar_url,
+        totalTickets: parseFloat(firstPlace.total_tickets),
+      }
+    : undefined
+
+  // Build top users leaderboard
+  const topUsers = topUsersData?.length
+    ? topUsersData.map((u) => ({
+        id: u.user_id,
+        username: u.username,
+        name: u.name,
+        avatarUrl: u.avatar_url,
+        totalTickets: parseFloat(u.total_tickets),
+        rank: parseInt(u.rank),
+      }))
+    : undefined
+
+  // Build viewer's entry
+  const yourEntry = yourEntryData
+    ? {
+        rank: parseInt(yourEntryData.rank),
+        totalTickets: parseFloat(yourEntryData.total_tickets),
       }
     : undefined
 
@@ -152,6 +192,30 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
         claimedTime: tsToMillis(trophyHolderData.granted_time),
       }
     : undefined
+
+  // Build previous holder from current holder's metadata
+  const previousHolderId = trophyHolderData?.metadata?.previousHolderId
+  const previousHolderUser = previousHolderId
+    ? await pg.oneOrNone<{
+        username: string
+        name: string
+        avatar_url: string
+      }>(
+        `SELECT username, name, data->>'avatarUrl' as avatar_url
+         FROM users WHERE id = $1`,
+        [previousHolderId]
+      )
+    : null
+
+  const previousTrophyHolder =
+    previousHolderId && previousHolderUser
+      ? {
+          id: previousHolderId,
+          username: previousHolderUser.username,
+          name: previousHolderUser.name,
+          avatarUrl: previousHolderUser.avatar_url,
+        }
+      : undefined
 
   // Build winner object
   const winningCharity = winnerData?.charity_id
@@ -182,7 +246,10 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
     winningCharity,
     winner,
     champion,
+    topUsers,
+    yourEntry,
     trophyHolder,
+    previousTrophyHolder,
     // Provably fair: always share hash, only reveal nonce AFTER winner is selected
     nonceHash,
     nonce: giveaway.winning_ticket_id ? giveaway.nonce : undefined,

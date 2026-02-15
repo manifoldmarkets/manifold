@@ -1,6 +1,9 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { CHARITY_CHAMPION_ENTITLEMENT_ID } from 'common/shop/items'
+import {
+  CHARITY_CHAMPION_ENTITLEMENT_ID,
+  FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID,
+} from 'common/shop/items'
 import { convertEntitlement } from 'common/shop/types'
 
 export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async (
@@ -53,37 +56,47 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
       )
     }
 
-    // Revoke the trophy from anyone else who has it
-    await tx.none(
-      `UPDATE user_entitlements
-       SET enabled = false
+    // Find the current trophy holder (if any) before removing them
+    const previousHolder = await tx.oneOrNone<{
+      user_id: string
+      granted_time: string
+    }>(
+      `SELECT user_id, granted_time FROM user_entitlements
        WHERE entitlement_id = $1 AND user_id != $2`,
       [CHARITY_CHAMPION_ENTITLEMENT_ID, auth.uid]
     )
 
-    // Check if user already has the entitlement
-    const existingEntitlement = await tx.oneOrNone<{ user_id: string }>(
-      `SELECT user_id FROM user_entitlements
-       WHERE user_id = $1 AND entitlement_id = $2`,
-      [auth.uid, CHARITY_CHAMPION_ENTITLEMENT_ID]
+    // Delete the old holder's entitlement entirely
+    await tx.none(
+      `DELETE FROM user_entitlements
+       WHERE entitlement_id = $1 AND user_id != $2`,
+      [CHARITY_CHAMPION_ENTITLEMENT_ID, auth.uid]
     )
 
-    if (existingEntitlement) {
-      // Update the existing entitlement
-      await tx.none(
-        `UPDATE user_entitlements
-         SET enabled = $1, granted_time = NOW()
-         WHERE user_id = $2 AND entitlement_id = $3`,
-        [enabled, auth.uid, CHARITY_CHAMPION_ENTITLEMENT_ID]
-      )
-    } else {
-      // Create new entitlement
-      await tx.none(
-        `INSERT INTO user_entitlements (user_id, entitlement_id, granted_time, enabled)
-         VALUES ($1, $2, NOW(), $3)`,
-        [auth.uid, CHARITY_CHAMPION_ENTITLEMENT_ID, enabled]
-      )
-    }
+    // Build metadata with previous holder info for the log
+    const metadata = previousHolder
+      ? {
+          previousHolderId: previousHolder.user_id,
+          previousHolderClaimedAt: previousHolder.granted_time,
+        }
+      : null
+
+    // Upsert the claiming user's trophy entitlement
+    await tx.none(
+      `INSERT INTO user_entitlements (user_id, entitlement_id, granted_time, enabled, metadata)
+       VALUES ($1, $2, NOW(), $3, $4::jsonb)
+       ON CONFLICT (user_id, entitlement_id)
+       DO UPDATE SET enabled = $3, granted_time = NOW(), metadata = $4::jsonb`,
+      [auth.uid, CHARITY_CHAMPION_ENTITLEMENT_ID, enabled, metadata ? JSON.stringify(metadata) : null]
+    )
+
+    // Grant permanent "former charity champion" entitlement (never revoked)
+    await tx.none(
+      `INSERT INTO user_entitlements (user_id, entitlement_id, granted_time, enabled)
+       VALUES ($1, $2, NOW(), true)
+       ON CONFLICT (user_id, entitlement_id) DO NOTHING`,
+      [auth.uid, FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID]
+    )
 
     // Fetch updated entitlements for the user
     const entitlementRows = await tx.manyOrNone<{

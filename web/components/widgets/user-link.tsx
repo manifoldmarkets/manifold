@@ -459,7 +459,7 @@ function SupporterBadge({
 // Show a trophy for the current Charity Champion
 function CharityChampionBadge() {
   return (
-    <Tooltip text="Charity Champion - Top raffle ticket buyer" placement="right">
+    <Tooltip text="Charity Champion" placement="right">
       <FaTrophy
         className="h-4 w-4 text-amber-500"
         aria-hidden="true"

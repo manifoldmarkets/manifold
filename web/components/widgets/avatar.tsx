@@ -12,6 +12,7 @@ import {
   userHasAvatarDecoration,
   getActiveAvatarOverlay,
   getActiveAvatarAccessory,
+  getOverlayStyle,
   userHasHalo,
   AvatarDecorationId,
 } from 'common/shop/items'
@@ -108,6 +109,7 @@ export const Avatar = memo(
     )
     // Get active avatar overlay (hat) - excludes halo since it's unique slot
     const activeOverlay = getActiveAvatarOverlay(entitlements)
+    const overlayStyle = getOverlayStyle(entitlements, activeOverlay)
     // Check for halo separately (unique slot - combines with other hats)
     const hasHalo = userHasHalo(entitlements)
     // Get active avatar accessory
@@ -182,7 +184,7 @@ export const Avatar = memo(
     return (
       <div
         className={clsx(
-          needsRelativeWrapper && 'relative',
+          needsRelativeWrapper && 'relative isolate',
           // Constrain to content size to prevent glow from stretching in flex containers
           needsRelativeWrapper && 'h-fit w-fit'
           // Note: parent element must have 'group' class for animateHatOnHover to work
@@ -223,8 +225,9 @@ export const Avatar = memo(
         {hasBlackHole && <BlackHoleDecoration size={size} />}
         {/* Fire item - blazing ring of fire */}
         {hasFireItem && <FireItemDecoration size={size} animate={animateFireItem} />}
-        {/* Angel wings - feathered wings flanking avatar */}
+        {/* Angel wings - feathered wings flanking avatar (behind profile pic) */}
         {hasAngelWings && <AngelWingsDecoration size={size} />}
+
         {/* Team Red border glow */}
         {hasTeamRedBorder && (
           <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-red-600 via-red-400 to-red-600 opacity-70 blur-sm" />
@@ -246,7 +249,7 @@ export const Avatar = memo(
               hasGoldenBorder && 'relative ring-2 ring-amber-400',
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole && 'relative ring-2 ring-purple-900',
+              hasBlackHole && 'relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]',
               hasFireItem && 'relative',
               hasTeamRedBorder && 'relative ring-2 ring-red-500',
               hasTeamGreenBorder && 'relative ring-2 ring-green-500'
@@ -270,7 +273,7 @@ export const Avatar = memo(
               hasGoldenBorder && 'relative ring-2 ring-amber-400',
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole && 'relative ring-2 ring-purple-900',
+              hasBlackHole && 'relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]',
               hasFireItem && 'relative',
               hasTeamRedBorder && 'relative ring-2 ring-red-500',
               hasTeamGreenBorder && 'relative ring-2 ring-green-500'
@@ -286,8 +289,21 @@ export const Avatar = memo(
             <LuSprout className="h-4 w-4 text-green-500" />
           </div>
         )}
-        {/* Halo (unique slot - renders independently of other hats) */}
-        {hasHalo && (
+        {/* Halo back half — behind the hat */}
+        {hasHalo && activeOverlay && (
+          <AvatarOverlay
+            overlay="avatar-halo"
+            hatSizeClass={hatSizeClass}
+            hatPositionClass={hatPositionClass}
+            animateHatOnHover={animateHatOnHover}
+            animateHat={animateHat}
+            animatePropeller={false}
+            size={size}
+            haloHalf="back"
+          />
+        )}
+        {/* Halo full — when no hat is equipped, render complete halo */}
+        {hasHalo && !activeOverlay && (
           <AvatarOverlay
             overlay="avatar-halo"
             hatSizeClass={hatSizeClass}
@@ -298,7 +314,7 @@ export const Avatar = memo(
             size={size}
           />
         )}
-        {/* Avatar overlay (hat) - can combine with halo */}
+        {/* Avatar overlay (hat) - sandwiched between halo halves */}
         {activeOverlay && (
           <AvatarOverlay
             overlay={activeOverlay}
@@ -308,6 +324,20 @@ export const Avatar = memo(
             animateHat={animateHat}
             animatePropeller={animatePropeller}
             size={size}
+            capStyle={overlayStyle}
+          />
+        )}
+        {/* Halo front half — in front of the hat */}
+        {hasHalo && activeOverlay && (
+          <AvatarOverlay
+            overlay="avatar-halo"
+            hatSizeClass={hatSizeClass}
+            hatPositionClass={hatPositionClass}
+            animateHatOnHover={animateHatOnHover}
+            animateHat={animateHat}
+            animatePropeller={false}
+            size={size}
+            haloHalf="front"
           />
         )}
         {/* Avatar accessory */}
@@ -357,15 +387,15 @@ function AngelWingsDecoration(props: { size?: AvatarSizeType }) {
 
   return (
     <>
-      {/* Left wing */}
+      {/* Left wing — negative z so it renders behind the avatar image */}
       <svg
         className="absolute top-1/2 -translate-y-1/2"
-        style={{ left: offset, width: wingW, height: wingH, opacity: 0.9 }}
+        style={{ left: offset, width: wingW, height: wingH, opacity: 0.9, zIndex: -1 }}
         viewBox="0 0 16 44"
       >
         {wingSvg}
       </svg>
-      {/* Right wing (mirrored) */}
+      {/* Right wing (mirrored) — negative z so it renders behind the avatar image */}
       <svg
         className="absolute top-1/2"
         style={{
@@ -374,6 +404,7 @@ function AngelWingsDecoration(props: { size?: AvatarSizeType }) {
           height: wingH,
           opacity: 0.9,
           transform: 'translateY(-50%) scaleX(-1)',
+          zIndex: -1,
         }}
         viewBox="0 0 16 44"
       >
@@ -418,15 +449,15 @@ function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
           <stop offset="70%" stopColor="#0a0010" />
           <stop offset="100%" stopColor="#1a0030" stopOpacity="0" />
         </radialGradient>
-        {/* Outer glow */}
+        {/* Outer glow - very subtle, only visible on dark backgrounds */}
         <radialGradient id="bh-outer-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="60%" stopColor="transparent" />
-          <stop offset="80%" stopColor="#7c3aed" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.2" />
+          <stop offset="65%" stopColor="transparent" />
+          <stop offset="85%" stopColor="#7c3aed" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.05" />
         </radialGradient>
       </defs>
 
-      {/* Outer purple glow */}
+      {/* Outer glow - faint enough to disappear on light, visible on dark */}
       <circle cx="32" cy="32" r="30" fill="url(#bh-outer-glow)" />
 
       {/* Bright accretion disk - tilted ellipse effect with multiple rings */}
@@ -702,6 +733,61 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
   )
 }
 
+// Red cap SVG — 5 style variants
+// 0: Taper C, MANA text  1: Taper C, smaller, MANA text
+// 2: Tuck B (red), no text  3: Taper C, darker accents  4: Taper C, smaller, no text
+export function RedCapSvg({ style = 0 }: { style?: number }) {
+  const c = { crown: '#DC2626', brim: '#B91C1C', brimStroke: '#991B1B', seam: '#B91C1C' }
+
+  if (style === 2) {
+    // Tuck B brim in red — no text
+    return (
+      <svg viewBox="0 0 50 40" overflow="visible">
+        <path d="M3,20 C3,23 -7,26 -11,37 C-3,48 31,48 47,20 Q25,24 3,20Z" fill={c.brim} stroke={c.brimStroke} strokeWidth="1" />
+        <path d="M3,21 Q25,25 47,21 L47,22.5 Q25,26.5 3,22.5Z" fill={c.brimStroke} opacity="0.6" />
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.brim} strokeWidth="1" />
+        <path d="M25,1 L25,25" stroke={c.seam} strokeWidth="0.4" opacity="0.3" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
+        <circle cx="25" cy="1" r="2.2" fill={c.brim} />
+      </svg>
+    )
+  }
+
+  if (style === 3) {
+    // Taper C with darker accents (black stitching on red)
+    return (
+      <svg viewBox="0 0 50 40" overflow="visible">
+        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke="#7F1D1D" strokeWidth="1" />
+        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke="#7F1D1D" strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke="#7F1D1D" strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke="#7F1D1D" strokeWidth="1" />
+        <path d="M25,1 L25,25" stroke="#7F1D1D" strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke="#7F1D1D" strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke="#7F1D1D" strokeWidth="0.5" fill="none" opacity="0.35" />
+        <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
+        <circle cx="25" cy="1" r="2.2" fill="#7F1D1D" />
+      </svg>
+    )
+  }
+
+  // Styles 0, 1, 4 — all Taper C brim, differ by size (handled by parent) and text
+  const showText = style !== 4
+  return (
+    <svg viewBox="0 0 50 40" overflow="visible">
+      <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.brimStroke} strokeWidth="1" />
+      <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.brimStroke} strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
+      <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.brimStroke} strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
+      <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.brim} strokeWidth="1" />
+      <path d="M25,1 L25,25" stroke={c.seam} strokeWidth="0.4" opacity="0.3" />
+      <path d="M25,1 C14,3 8,8 6,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
+      <path d="M25,1 C36,3 42,8 44,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
+      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+      <circle cx="25" cy="1" r="2.2" fill={c.brim} />
+    </svg>
+  )
+}
+
 // Component to render avatar overlays (hats)
 function AvatarOverlay(props: {
   overlay: AvatarDecorationId
@@ -711,6 +797,8 @@ function AvatarOverlay(props: {
   animateHat?: boolean
   animatePropeller?: boolean
   size?: AvatarSizeType
+  haloHalf?: 'back' | 'front'
+  capStyle?: number
 }) {
   const {
     overlay,
@@ -720,6 +808,8 @@ function AvatarOverlay(props: {
     animateHat,
     animatePropeller,
     size,
+    haloHalf,
+    capStyle = 0,
   } = props
 
   // Corner position (for crown, graduation cap, microphone - sits at top-right)
@@ -777,58 +867,92 @@ function AvatarOverlay(props: {
         </div>
       )
     case 'avatar-halo': {
-      // Oblong elliptical halo - amber in light mode, white-gold in dark mode
+      // Unified halo dimensions — same whether hat is equipped or not
       const haloW =
         size === '2xs' || size === 'xs'
-          ? '1.25rem'
-          : size === 'sm'
           ? '1.75rem'
-          : '2.5rem'
+          : size === 'sm'
+          ? '2.35rem'
+          : '3.3rem'
       const haloH =
         size === '2xs' || size === 'xs'
-          ? '0.4rem'
+          ? '0.55rem'
           : size === 'sm'
-          ? '0.5rem'
-          : '0.6rem'
+          ? '0.65rem'
+          : '0.85rem'
+      const haloPositionClass = clsx(
+        'absolute left-1/2 -translate-x-1/2 transition-transform duration-300',
+        size === '2xs' || size === 'xs'
+          ? '-top-0.5'
+          : size === 'sm'
+          ? '-top-1'
+          : '-top-1.5',
+        animateHatOnHover && 'group-hover:-translate-y-0.5',
+        animateHat && '-translate-y-0.5'
+      )
+
+      // Halo stroke colors: white with amber lining
+      const whiteStroke = 'rgba(255, 252, 240, 0.95)'
+      const amberStroke = 'rgba(217, 170, 50, 0.7)'
+      const amberStrokeDark = 'rgba(200, 160, 60, 0.5)'
+
+      // When split for hat overlap, render only one arc half
+      // Otherwise render the full ellipse — same viewBox/sizes either way
+      const arcPath = haloHalf
+        ? haloHalf === 'back'
+          ? 'M 2,6 A 18,5 0 0,0 38,6'  // counter-clockwise = lower arc (behind hat)
+          : 'M 2,6 A 18,5 0 0,1 38,6'  // clockwise = upper arc (in front of hat)
+        : null
+
+      const lightFilter =
+        'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))'
+      const darkFilter =
+        'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))'
+
       return (
-        <div
-          className={clsx(
-            'absolute left-1/2 -translate-x-1/2 transition-transform duration-300',
-            size === '2xs' || size === 'xs'
-              ? '-top-0.5'
-              : size === 'sm'
-              ? '-top-1'
-              : '-top-1.5',
-            animateHatOnHover && 'group-hover:-translate-y-0.5',
-            animateHat && '-translate-y-0.5'
-          )}
-        >
-          {/* Light mode - amber gold visible against light backgrounds */}
-          <div
+        <div className={haloPositionClass}>
+          {/* Light mode */}
+          <svg
             className="dark:hidden"
-            style={{
-              width: haloW,
-              height: haloH,
-              borderRadius: '50%',
-              transform: 'rotate(-8deg)',
-              border: '2px solid rgba(245, 158, 11, 0.9)',
-              boxShadow:
-                '0 0 6px rgba(245, 158, 11, 0.5), 0 0 2px rgba(217, 119, 6, 0.8)',
-            }}
-          />
-          {/* Dark mode - white-gold glow visible against dark backgrounds */}
-          <div
+            width={haloW}
+            height={haloH}
+            viewBox="0 0 40 12"
+            overflow="visible"
+            style={{ transform: 'rotate(-8deg)', filter: lightFilter }}
+          >
+            {arcPath ? (
+              <>
+                <path d={arcPath} stroke={amberStroke} strokeWidth="3.5" fill="none" />
+                <path d={arcPath} stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+              </>
+            ) : (
+              <>
+                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={amberStroke} strokeWidth="3.5" fill="none" />
+                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+              </>
+            )}
+          </svg>
+          {/* Dark mode */}
+          <svg
             className="hidden dark:block"
-            style={{
-              width: haloW,
-              height: haloH,
-              borderRadius: '50%',
-              transform: 'rotate(-8deg)',
-              border: '1.5px solid rgba(255, 250, 220, 0.95)',
-              boxShadow:
-                '0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 200, 0.4)',
-            }}
-          />
+            width={haloW}
+            height={haloH}
+            viewBox="0 0 40 12"
+            overflow="visible"
+            style={{ transform: 'rotate(-8deg)', filter: darkFilter }}
+          >
+            {arcPath ? (
+              <>
+                <path d={arcPath} stroke={amberStrokeDark} strokeWidth="3.5" fill="none" />
+                <path d={arcPath} stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+              </>
+            ) : (
+              <>
+                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={amberStrokeDark} strokeWidth="3.5" fill="none" />
+                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+              </>
+            )}
+          </svg>
         </div>
       )
     }
@@ -1123,9 +1247,13 @@ function AvatarOverlay(props: {
       )
     }
     case 'avatar-team-red-hat': {
-      // Team Red cap - baseball cap style
-      const capSize =
+      // Red cap — 5 style variants
+      const capSizeFull =
         size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+      const capSizeSmall =
+        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+      const isSmall = capStyle === 1 || capStyle === 4
+      const capSize = isSmall ? capSizeSmall : capSizeFull
       return (
         <div
           className={clsx(
@@ -1144,28 +1272,12 @@ function AvatarOverlay(props: {
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
           }}
         >
-          <svg viewBox="0 0 30 20">
-            {/* Cap crown - rounded dome */}
-            <ellipse cx="15" cy="8" rx="12" ry="7" fill="#EF4444" />
-            {/* Front panel */}
-            <path d="M5 9 Q5 4 15 3 Q25 4 25 9 Q25 11 15 11 Q5 11 5 9 Z" fill="#DC2626" />
-            {/* Seam lines on crown */}
-            <path d="M15 2 L15 10" stroke="#B91C1C" strokeWidth="0.5" opacity="0.5" />
-            <path d="M9 3 Q15 1 21 3" stroke="#B91C1C" strokeWidth="0.3" fill="none" opacity="0.4" />
-            {/* Button on top */}
-            <circle cx="15" cy="2" r="1.3" fill="#B91C1C" />
-            {/* Brim - curved baseball style */}
-            <path d="M3 10 Q3 11 5 12 L25 12 Q27 11 27 10 Q27 14 15 15 Q3 14 3 10 Z" fill="#B91C1C" />
-            {/* Brim curve/underside */}
-            <path d="M5 12 Q15 13 25 12 Q15 14 5 12 Z" fill="#991B1B" />
-            {/* Highlight on dome */}
-            <ellipse cx="12" cy="5" rx="4" ry="2" fill="#FCA5A5" opacity="0.3" />
-          </svg>
+          <RedCapSvg style={capStyle} />
         </div>
       )
     }
     case 'avatar-team-green-hat': {
-      // Team Green cap - baseball cap style
+      // Green cap — Tuck B brim style with shadow strip
       const capSize =
         size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
       return (
@@ -1186,22 +1298,83 @@ function AvatarOverlay(props: {
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
           }}
         >
-          <svg viewBox="0 0 30 20">
-            {/* Cap crown - rounded dome */}
-            <ellipse cx="15" cy="8" rx="12" ry="7" fill="#22C55E" />
-            {/* Front panel */}
-            <path d="M5 9 Q5 4 15 3 Q25 4 25 9 Q25 11 15 11 Q5 11 5 9 Z" fill="#16A34A" />
-            {/* Seam lines on crown */}
-            <path d="M15 2 L15 10" stroke="#15803D" strokeWidth="0.5" opacity="0.5" />
-            <path d="M9 3 Q15 1 21 3" stroke="#15803D" strokeWidth="0.3" fill="none" opacity="0.4" />
-            {/* Button on top */}
-            <circle cx="15" cy="2" r="1.3" fill="#15803D" />
-            {/* Brim - curved baseball style */}
-            <path d="M3 10 Q3 11 5 12 L25 12 Q27 11 27 10 Q27 14 15 15 Q3 14 3 10 Z" fill="#15803D" />
-            {/* Brim curve/underside */}
-            <path d="M5 12 Q15 13 25 12 Q15 14 5 12 Z" fill="#166534" />
-            {/* Highlight on dome */}
-            <ellipse cx="12" cy="5" rx="4" ry="2" fill="#86EFAC" opacity="0.3" />
+          <svg viewBox="0 0 50 40" overflow="visible">
+            {/* Brim — Tuck B: extended left, tucks under on right */}
+            <path
+              d="M3,20 C3,23 -7,26 -11,37 C-3,48 31,48 47,20 Q25,24 3,20Z"
+              fill="#15803D"
+              stroke="#166534"
+              strokeWidth="1"
+            />
+            {/* Shadow strip under crown */}
+            <path d="M3,21 Q25,25 47,21 L47,22.5 Q25,26.5 3,22.5Z" fill="#166534" opacity="0.6" />
+            {/* Crown */}
+            <path
+              d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
+              fill="#16A34A"
+              stroke="#15803D"
+              strokeWidth="1"
+            />
+            {/* Panel seams */}
+            <path d="M25,1 L25,25" stroke="#15803D" strokeWidth="0.4" opacity="0.3" />
+            <path d="M25,1 C14,3 8,8 6,20" stroke="#15803D" strokeWidth="0.4" fill="none" opacity="0.3" />
+            <path d="M25,1 C36,3 42,8 44,20" stroke="#15803D" strokeWidth="0.4" fill="none" opacity="0.3" />
+            {/* MANA text */}
+            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
+            {/* Button */}
+            <circle cx="25" cy="1" r="2.2" fill="#15803D" />
+          </svg>
+        </div>
+      )
+    }
+    case 'avatar-black-cap': {
+      // Black cap — Taper C brim style with panel seams and stitching
+      const capSize =
+        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+      return (
+        <div
+          className={clsx(
+            'absolute transition-transform duration-300',
+            animateHatOnHover &&
+              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+            animateHat && '-translate-y-0.5 rotate-[-3deg]'
+          )}
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%) rotate(-5deg)',
+            top:
+              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+            width: capSize,
+            height: capSize,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+          }}
+        >
+          <svg viewBox="0 0 50 40" overflow="visible">
+            {/* Brim — Taper C: smooth left extension, tapered right */}
+            <path
+              d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z"
+              fill="#333"
+              stroke="#111"
+              strokeWidth="1"
+            />
+            {/* Dashed stitching */}
+            <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
+            <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
+            {/* Crown */}
+            <path
+              d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
+              fill="#333"
+              stroke="#111"
+              strokeWidth="1"
+            />
+            {/* Panel seams */}
+            <path d="M25,1 L25,25" stroke="#111" strokeWidth="0.4" opacity="0.3" />
+            <path d="M25,1 C14,3 8,8 6,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
+            <path d="M25,1 C36,3 42,8 44,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
+            {/* MANA text */}
+            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
+            {/* Button */}
+            <circle cx="25" cy="1" r="2.2" fill="#111" />
           </svg>
         </div>
       )
