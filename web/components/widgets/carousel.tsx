@@ -11,11 +11,19 @@ export function Carousel(props: {
   className?: string
   labelsParentClassName?: string
   fadeEdges?: boolean
+  showArrowsOnHover?: boolean
 }) {
-  const { children, labelsParentClassName, loadMore, className, fadeEdges } =
-    props
+  const {
+    children,
+    labelsParentClassName,
+    loadMore,
+    className,
+    fadeEdges,
+    showArrowsOnHover,
+  } = props
 
   const ref = useRef<HTMLDivElement>(null)
+  const [isHovered, setIsHovered] = useState(false)
 
   const { scrollLeft, scrollRight, atFront, atBack, onScroll } = useCarousel(
     ref.current
@@ -23,8 +31,14 @@ export function Carousel(props: {
 
   useEffect(onScroll, [children])
 
+  const showArrows = showArrowsOnHover ? isHovered : !fadeEdges
+
   return (
-    <div className={clsx('relative', className)}>
+    <div
+      className={clsx('relative', className)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div
         className={clsx(
           fadeEdges && {
@@ -53,20 +67,20 @@ export function Carousel(props: {
           )}
         </Row>
       </div>
-      {!fadeEdges && !atFront && (
+      {showArrows && !atFront && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center rounded-full transition-colors"
           onMouseDown={scrollLeft}
         >
-          <ChevronLeftIcon className=" text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
+          <ChevronLeftIcon className="text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
         </div>
       )}
-      {!fadeEdges && !atBack && (
+      {showArrows && !atBack && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center rounded-full transition-colors"
           onMouseDown={scrollRight}
         >
-          <ChevronRightIcon className=" text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
+          <ChevronRightIcon className="text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
         </div>
       )}
     </div>
