@@ -21,10 +21,13 @@ export function BettingStreakModal(props: {
   isOpen: boolean
   setOpen: (open: boolean) => void
   currentUser: User | null | undefined
+  previewFrozen?: boolean
 }) {
-  const { isOpen, setOpen, currentUser } = props
+  const { isOpen, setOpen, currentUser, previewFrozen } = props
   const missingStreak = currentUser && !hasCompletedStreakToday(currentUser)
-  const wasFrozen = currentUser && wasStreakFrozenRecently(currentUser)
+  const wasFrozen =
+    previewFrozen || (currentUser && wasStreakFrozenRecently(currentUser))
+  const showFrozen = previewFrozen || (missingStreak && wasFrozen)
 
   // Get quest multiplier from membership tier (1x for non-supporters)
   const questMultiplier = getBenefit(
@@ -36,11 +39,11 @@ export function BettingStreakModal(props: {
 
   // Determine emoji visual state:
   // - Normal (colored): streak completed today
-  // - Frozen (icy blue): streak not completed but freeze was used
+  // - Frozen: streak not completed but freeze was used (or previewFrozen) - show ice cube, no filter
   // - Grayscale: streak not completed, no freeze used
   const getEmojiStyle = () => {
+    if (showFrozen) return '' // Ice cube emoji is already blue, no filter needed
     if (!missingStreak) return '' // Normal colored
-    if (wasFrozen) return 'hue-rotate-180 brightness-110' // Icy blue
     return 'grayscale' // Gray
   }
 
@@ -48,9 +51,9 @@ export function BettingStreakModal(props: {
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
         <span className={clsx('text-8xl', getEmojiStyle())}>
-          {wasFrozen && missingStreak ? '🧊' : '🔥'}
+          {showFrozen ? '🧊' : '🔥'}
         </span>
-        {wasFrozen && missingStreak && (
+        {showFrozen && (
           <Col className="gap-2 text-center">
             <span className="font-bold text-blue-500">
               Your streak was frozen! 🧊
@@ -61,7 +64,7 @@ export function BettingStreakModal(props: {
             </span>
           </Col>
         )}
-        {missingStreak && !wasFrozen && (
+        {missingStreak && !showFrozen && (
           <Col className={' gap-2 text-center'}>
             <span className={'font-bold'}>
               You haven't predicted yet today!

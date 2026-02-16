@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
@@ -33,6 +34,7 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   user: User | null | undefined
 }) {
   const { user } = props
+  const router = useRouter()
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
 
@@ -43,16 +45,20 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   }, [showQuestsModal])
   if (!user) return <></>
 
+  // Preview mode: ?previewFrozen=true forces frozen state
+  const previewFrozen = router.query.previewFrozen === 'true'
+
   const missingStreak = user && !hasCompletedStreakToday(user)
-  const wasFrozen = user && wasStreakFrozenRecently(user)
+  const wasFrozen = previewFrozen || (user && wasStreakFrozenRecently(user))
 
   // Determine visual state:
   // - Normal (colored): streak completed today
-  // - Frozen (icy blue): streak not completed but freeze was used
+  // - Frozen: streak not completed but freeze was used (or previewFrozen) - show ice cube, no filter
   // - Grayscale: streak not completed, no freeze used
+  const showFrozen = previewFrozen || (missingStreak && wasFrozen)
   const getStyle = () => {
+    if (showFrozen) return '' // Ice cube emoji is already blue, no filter needed
     if (!missingStreak) return '' // Normal
-    if (wasFrozen) return 'hue-rotate-180 brightness-110' // Icy blue
     return 'grayscale' // Gray
   }
 
@@ -64,10 +70,10 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
       >
         <Col className={clsx(getStyle(), 'items-center')}>
           <span>
-            {wasFrozen && missingStreak ? '🧊' : '🔥'} {user?.currentBettingStreak ?? 0}
+            {showFrozen ? '🧊' : '🔥'} {user?.currentBettingStreak ?? 0}
           </span>
           <span className="text-ink-600 text-xs">
-            {wasFrozen && missingStreak ? 'Frozen' : 'Streak'}
+            {showFrozen ? 'Frozen' : 'Streak'}
           </span>
         </Col>
       </button>
@@ -76,6 +82,7 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
           open={showQuestsModal}
           setOpen={setShowQuestsModal}
           user={user}
+          previewFrozen={previewFrozen}
         />
       )}
     </>
@@ -86,8 +93,9 @@ export function QuestsModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
+  previewFrozen?: boolean
 }) {
-  const { open, setOpen, user } = props
+  const { open, setOpen, user, previewFrozen } = props
   const questStatus = useQuestStatus(user)
   const [showStreakModal, setShowStreakModal] = useState(false)
 
@@ -187,6 +195,7 @@ export function QuestsModal(props: {
         isOpen={showStreakModal}
         setOpen={setShowStreakModal}
         currentUser={user}
+        previewFrozen={previewFrozen}
       />
     </Modal>
   )
