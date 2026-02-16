@@ -439,94 +439,44 @@ function ChampionsLegacyOverlay() {
       preserveAspectRatio="xMidYMid slice"
     >
       <defs>
-        <radialGradient id="cl-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.12" />
+        <radialGradient id="cl-glow" cx="50%" cy="100%" r="100%" fx="50%" fy="100%">
+          <stop offset="0%" stopColor="#FBBF24" stopOpacity="0.15" />
+          <stop offset="60%" stopColor="#B45309" stopOpacity="0.05" />
           <stop offset="100%" stopColor="#B45309" stopOpacity="0" />
         </radialGradient>
-        {/* Trophy silhouette path - cup with handles, stem, base */}
-        <path
-          id="cl-trophy"
-          d="M6 2h12v7c0 3.31-2.69 6-6 6s-6-2.69-6-6V2zm14 2h-2v3h2V4zM4 4h2v3H4V4zm8 11v3h-3v2h6v-2h-3v-3z"
-        />
+        <symbol id="cl-trophy" viewBox="0 0 100 100">
+          <path d="M20 10h60l-5 30c0 20-15 25-25 25s-25-5-25-25l-5-30z M45 65v15h-10l-5 10h40l-5-10h-10v-15h-10z M80 15c15 0 15 25 0 25v-5c8 0 8-15 0-15v-5z M20 15c-15 0-15 25 0 25v-5c-8 0-8-15 0-15v-5z" fill="currentColor" />
+        </symbol>
+        <symbol id="cl-star" viewBox="0 0 20 20">
+          <path d="M10 0l2.5 7.5h7.5l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z" fill="currentColor" />
+        </symbol>
       </defs>
 
-      {/* Subtle radial glow */}
-      <rect width="100%" height="100%" fill="url(#cl-glow)" />
+      {/* Center radial glow */}
+      <rect width="224" height="200" fill="url(#cl-glow)" />
 
-      {/* Scattered trophy silhouettes */}
-      <g fill="#D97706">
-        <g transform="translate(160,25) scale(1.0)" opacity="0.18">
-          <use href="#cl-trophy" />
-        </g>
-        <g transform="translate(20,130) scale(1.4)" opacity="0.12">
-          <use href="#cl-trophy" />
-        </g>
-        <g transform="translate(185,140) scale(0.7)" opacity="0.14">
-          <use href="#cl-trophy" />
-        </g>
-        <g transform="translate(35,20) scale(0.8)" opacity="0.1">
-          <use href="#cl-trophy" />
-        </g>
-        <g transform="translate(100,70) scale(1.2)" opacity="0.06">
-          <use href="#cl-trophy" />
-        </g>
-        <g transform="translate(60,170) scale(0.6)" opacity="0.1">
-          <use href="#cl-trophy" />
-        </g>
-        <g transform="translate(140,90) scale(0.9)" opacity="0.08">
-          <use href="#cl-trophy" />
-        </g>
+      {/* Main trophy — centered */}
+      <use href="#cl-trophy" x="62" y="40" width="100" height="100" transform="rotate(8 112 90)" fill="#B45309" fillOpacity="0.07" />
+      {/* Small accent trophies — corners, away from laurels */}
+      <use href="#cl-trophy" x="155" y="5" width="55" height="55" transform="rotate(-10 182 32)" fill="#D97706" fillOpacity="0.05" />
+      <use href="#cl-trophy" x="5" y="5" width="50" height="50" transform="rotate(12 30 30)" fill="#D97706" fillOpacity="0.04" />
+
+      {/* Laurel wreath accents — bottom corners */}
+      <path d="M15 190 C30 170 38 145 42 120" stroke="#D97706" strokeWidth="2" strokeOpacity="0.1" fill="none" />
+      <path d="M209 190 C194 170 186 145 182 120" stroke="#D97706" strokeWidth="2" strokeOpacity="0.1" fill="none" />
+      {/* Leaves */}
+      <g fill="#F59E0B" fillOpacity="0.1">
+        <path d="M36 148 Q22 152 18 140 Q28 136 36 148" />
+        <path d="M39 130 Q26 134 22 122 Q32 118 39 130" />
+        <path d="M188 148 Q202 152 206 140 Q196 136 188 148" />
+        <path d="M185 130 Q198 134 202 122 Q192 118 185 130" />
       </g>
 
-      {/* Confetti particles */}
-      <g fill="#F59E0B" opacity="0.2">
-        <circle cx="80" cy="40" r="1" />
-        <circle cx="30" cy="80" r="0.8" />
-        <circle cx="100" cy="170" r="1.2" />
-        <circle cx="190" cy="55" r="0.9" />
-        <circle cx="150" cy="165" r="0.7" />
-        <rect
-          x="140"
-          y="120"
-          width="2"
-          height="2"
-          transform="rotate(45, 141, 121)"
-        />
-        <rect
-          x="200"
-          y="60"
-          width="1.5"
-          height="1.5"
-          transform="rotate(15, 201, 61)"
-        />
-        <rect
-          x="50"
-          y="100"
-          width="1.8"
-          height="1.8"
-          transform="rotate(30, 51, 101)"
-        />
-      </g>
-
-      {/* Subtle amber nebula hints */}
-      <g opacity="0.06">
-        <ellipse
-          cx="70"
-          cy="50"
-          rx="40"
-          ry="25"
-          fill="#F59E0B"
-          filter="blur(10px)"
-        />
-        <ellipse
-          cx="170"
-          cy="130"
-          rx="35"
-          ry="20"
-          fill="#D97706"
-          filter="blur(8px)"
-        />
-      </g>
+      {/* Stars/sparkles */}
+      <use href="#cl-star" x="100" y="20" width="12" height="12" fill="#FBBF24" fillOpacity="0.2" />
+      <use href="#cl-star" x="30" y="70" width="8" height="8" fill="#F59E0B" fillOpacity="0.12" />
+      <use href="#cl-star" x="185" y="80" width="6" height="6" fill="#F59E0B" fillOpacity="0.12" />
+      <use href="#cl-star" x="80" y="170" width="5" height="5" fill="#B45309" fillOpacity="0.1" />
     </svg>
   )
 }

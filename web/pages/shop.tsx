@@ -44,7 +44,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaStar } from 'react-icons/fa'
-import { FaGem } from 'react-icons/fa6'
+import { FaGem, FaLock } from 'react-icons/fa6'
 import { LuCrown, LuGraduationCap } from 'react-icons/lu'
 import { GiTopHat, GiDunceCap } from 'react-icons/gi'
 import { Button } from 'web/components/buttons/button'
@@ -539,8 +539,8 @@ export default function ShopPage() {
                   !SUPPORTER_ENTITLEMENT_IDS.includes(
                     item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
                   ) &&
-                  // Exclude 'earned' items (displayed via special cards, not shop grid)
-                  item.type !== 'earned'
+                  // Exclude charity-champion-trophy (has its own special card)
+                  item.id !== 'charity-champion-trophy'
               ),
               filterOption
             ),
@@ -3178,7 +3178,7 @@ function HovercardRoyalBorderPreview(props: { user: User | null | undefined }) {
   )
 }
 
-type HovercardBgType = 'royalty' | 'mana-printer' | 'oracle' | 'trading-floor'
+type HovercardBgType = 'royalty' | 'mana-printer' | 'oracle' | 'trading-floor' | 'champions-legacy'
 
 function HovercardBackgroundPreview(props: {
   user: User | null | undefined
@@ -3205,6 +3205,10 @@ function HovercardBackgroundPreview(props: {
     'trading-floor': {
       bg: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
       textColor: 'text-green-50',
+    },
+    'champions-legacy': {
+      bg: 'linear-gradient(135deg, #2a1a00 0%, #1a1000 50%, #2a1a00 100%)',
+      textColor: 'text-amber-50',
     },
   }
 
@@ -3320,6 +3324,48 @@ function HovercardBackgroundPreview(props: {
               <circle cx="110" cy="85" r="0.8" opacity="0.4" />
               <circle cx="145" cy="78" r="0.6" opacity="0.35" />
             </g>
+          </svg>
+        )
+      case 'champions-legacy':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <defs>
+              <radialGradient id="cl-glow-p" cx="50%" cy="100%" r="100%" fx="50%" fy="100%">
+                <stop offset="0%" stopColor="#FBBF24" stopOpacity="0.15" />
+                <stop offset="60%" stopColor="#B45309" stopOpacity="0.05" />
+                <stop offset="100%" stopColor="#B45309" stopOpacity="0" />
+              </radialGradient>
+              <symbol id="cl-trophy-p" viewBox="0 0 100 100">
+                <path d="M20 10h60l-5 30c0 20-15 25-25 25s-25-5-25-25l-5-30z M45 65v15h-10l-5 10h40l-5-10h-10v-15h-10z M80 15c15 0 15 25 0 25v-5c8 0 8-15 0-15v-5z M20 15c-15 0-15 25 0 25v-5c-8 0-8-15 0-15v-5z" fill="currentColor" />
+              </symbol>
+              <symbol id="cl-star-p" viewBox="0 0 20 20">
+                <path d="M10 0l2.5 7.5h7.5l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z" fill="currentColor" />
+              </symbol>
+            </defs>
+            <rect width="176" height="120" fill="url(#cl-glow-p)" />
+            {/* Main trophy — centered */}
+            <use href="#cl-trophy-p" x="48" y="20" width="80" height="80" transform="rotate(8 88 60)" fill="#B45309" fillOpacity="0.07" />
+            {/* Small accent trophies — top corners */}
+            <use href="#cl-trophy-p" x="125" y="2" width="40" height="40" transform="rotate(-10 145 22)" fill="#D97706" fillOpacity="0.05" />
+            <use href="#cl-trophy-p" x="5" y="2" width="35" height="35" transform="rotate(12 22 20)" fill="#D97706" fillOpacity="0.04" />
+            {/* Laurel stems — bottom corners */}
+            <path d="M12 115 C22 100 28 85 32 70" stroke="#D97706" strokeWidth="1.5" strokeOpacity="0.1" fill="none" />
+            <path d="M164 115 C154 100 148 85 144 70" stroke="#D97706" strokeWidth="1.5" strokeOpacity="0.1" fill="none" />
+            {/* Leaves */}
+            <g fill="#F59E0B" fillOpacity="0.1">
+              <path d="M28 88 Q18 91 15 82 Q23 79 28 88" />
+              <path d="M30 75 Q20 78 17 69 Q25 66 30 75" />
+              <path d="M148 88 Q158 91 161 82 Q153 79 148 88" />
+              <path d="M146 75 Q156 78 159 69 Q151 66 146 75" />
+            </g>
+            {/* Stars */}
+            <use href="#cl-star-p" x="80" y="8" width="9" height="9" fill="#FBBF24" fillOpacity="0.2" />
+            <use href="#cl-star-p" x="25" y="45" width="6" height="6" fill="#F59E0B" fillOpacity="0.12" />
+            <use href="#cl-star-p" x="148" y="50" width="5" height="5" fill="#F59E0B" fillOpacity="0.12" />
           </svg>
         )
       default:
@@ -3718,6 +3764,8 @@ function ItemPreview(props: {
       return <HovercardBackgroundPreview user={user} background="oracle" />
     case 'hovercard-trading-floor':
       return <HovercardBackgroundPreview user={user} background="trading-floor" />
+    case 'former-charity-champion':
+      return <HovercardBackgroundPreview user={user} background="champions-legacy" />
     case 'hovercard-golden-follow':
       return <GoldenFollowButtonPreview user={user} />
     case 'pampu-skin':
@@ -3795,7 +3843,7 @@ function ShopItemCard(props: {
   const canPurchase = user && user.balance >= discountedPrice
   // Items are toggleable unless they're always enabled (like supporter badges)
   const isToggleable =
-    (item.type === 'permanent-toggleable' || item.type === 'time-limited') &&
+    (item.type === 'permanent-toggleable' || item.type === 'time-limited' || item.type === 'earned') &&
     !item.alwaysEnabled
 
   // Use entitlement state directly - optimistic updates handled by parent
@@ -4108,6 +4156,12 @@ function ShopItemCard(props: {
               </Row>
             )}
           </Col>
+        ) : item.type === 'earned' ? (
+          // Earned items that aren't owned - show locked state
+          <div className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-gray-100 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+            <FaLock className="h-3 w-3" />
+            <span>Reserved for Champion Trophy holders</span>
+          </div>
         ) : (
           // Non-owned item layout - stacks vertically on very narrow screens
           <>

@@ -429,8 +429,8 @@ text {
   content: '';
   position: absolute;
   z-index: -1;
-  inset: -5px;
-  border-radius: 10px;
+  inset: -3px;
+  border-radius: 8px;
   /* Layered: outer gold trim + inner red velvet curtain */
   background:
     /* Gold trim on all edges */
