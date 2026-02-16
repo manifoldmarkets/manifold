@@ -1,6 +1,6 @@
 import Router from 'next/router'
 import clsx from 'clsx'
-import { memo, MouseEvent, useEffect, useState } from 'react'
+import { memo, MouseEvent, useEffect, useId, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
@@ -14,7 +14,10 @@ import {
   getActiveAvatarAccessory,
   getOverlayStyle,
   userHasHalo,
+  userHasCrown,
+  getCrownPosition,
   AvatarDecorationId,
+  CrownPosition,
 } from 'common/shop/items'
 import {
   DisplayContext,
@@ -107,11 +110,14 @@ export const Avatar = memo(
       entitlements,
       'avatar-team-green-border'
     )
-    // Get active avatar overlay (hat) - excludes halo since it's unique slot
+    // Get active avatar overlay (hat) - excludes halo and crown since they're unique slots
     const activeOverlay = getActiveAvatarOverlay(entitlements)
     const overlayStyle = getOverlayStyle(entitlements, activeOverlay)
     // Check for halo separately (unique slot - combines with other hats)
     const hasHalo = userHasHalo(entitlements)
+    // Check for crown separately (unique slot - combines with other hats)
+    const hasCrown = userHasCrown(entitlements)
+    const crownPosition = hasCrown ? getCrownPosition(entitlements) : 0
     // Get active avatar accessory
     const activeAccessory = getActiveAvatarAccessory(entitlements)
     const s =
@@ -197,6 +203,7 @@ export const Avatar = memo(
               'absolute -inset-1 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-75 blur-sm',
               animateGoldenGlow && 'animate-pulse'
             )}
+            style={{ zIndex: -3 }}
           />
         )}
         {/* Bad aura - crimson red glow (dark version of golden glow) */}
@@ -206,6 +213,7 @@ export const Avatar = memo(
               'absolute -inset-1 rounded-full bg-gradient-to-r from-red-600 via-red-500 to-red-600 opacity-75 blur-sm',
               animateGoldenGlow && 'animate-pulse'
             )}
+            style={{ zIndex: -3 }}
           />
         )}
         {/* Mana aura - purple/blue mystical energy */}
@@ -216,6 +224,7 @@ export const Avatar = memo(
               animateGoldenGlow && 'animate-pulse'
             )}
             style={{
+              zIndex: -3,
               background:
                 'radial-gradient(circle, rgba(139,92,246,0.6) 0%, rgba(59,130,246,0.4) 50%, rgba(139,92,246,0.2) 100%)',
             }}
@@ -226,15 +235,21 @@ export const Avatar = memo(
         {/* Fire item - blazing ring of fire */}
         {hasFireItem && <FireItemDecoration size={size} animate={animateFireItem} />}
         {/* Angel wings - feathered wings flanking avatar (behind profile pic) */}
-        {hasAngelWings && <AngelWingsDecoration size={size} />}
+        {hasAngelWings && (
+          <AngelWingsDecoration
+            size={size}
+            animateOnHover={animateHatOnHover}
+            animate={animateHat}
+          />
+        )}
 
         {/* Team Red border glow */}
         {hasTeamRedBorder && (
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-red-600 via-red-400 to-red-600 opacity-70 blur-sm" />
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-red-600 via-red-400 to-red-600 opacity-70 blur-sm" style={{ zIndex: -3 }} />
         )}
         {/* Team Green border glow */}
         {hasTeamGreenBorder && (
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-green-600 via-green-400 to-green-600 opacity-70 blur-sm" />
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-green-600 via-green-400 to-green-600 opacity-70 blur-sm" style={{ zIndex: -3 }} />
         )}
         {shouldShowImage ? (
           <Image
@@ -254,7 +269,7 @@ export const Avatar = memo(
               hasTeamRedBorder && 'relative ring-2 ring-red-500',
               hasTeamGreenBorder && 'relative ring-2 ring-green-500'
             )}
-            style={{ maxWidth: `${s * 0.25}rem` }}
+            style={{ maxWidth: `${s * 0.25}rem`, position: 'relative', zIndex: 0 }}
             src={avatarUrl}
             onClick={onClick}
             alt={`${username ?? 'Unknown user'} avatar`}
@@ -278,6 +293,7 @@ export const Avatar = memo(
               hasTeamRedBorder && 'relative ring-2 ring-red-500',
               hasTeamGreenBorder && 'relative ring-2 ring-green-500'
             )}
+            style={{ position: 'relative', zIndex: 0 }}
             onClick={onClick}
           />
         )}
@@ -289,21 +305,23 @@ export const Avatar = memo(
             <LuSprout className="h-4 w-4 text-green-500" />
           </div>
         )}
-        {/* Halo back half — behind the hat */}
-        {hasHalo && activeOverlay && (
-          <AvatarOverlay
-            overlay="avatar-halo"
-            hatSizeClass={hatSizeClass}
-            hatPositionClass={hatPositionClass}
-            animateHatOnHover={animateHatOnHover}
-            animateHat={animateHat}
-            animatePropeller={false}
-            size={size}
-            haloHalf="back"
-          />
+        {/* Halo back half — behind the avatar and hat/crown */}
+        {hasHalo && (activeOverlay || hasCrown) && (
+          <div style={{ zIndex: -1 }}>
+            <AvatarOverlay
+              overlay="avatar-halo"
+              hatSizeClass={hatSizeClass}
+              hatPositionClass={hatPositionClass}
+              animateHatOnHover={animateHatOnHover}
+              animateHat={animateHat}
+              animatePropeller={false}
+              size={size}
+              haloHalf="back"
+            />
+          </div>
         )}
-        {/* Halo full — when no hat is equipped, render complete halo */}
-        {hasHalo && !activeOverlay && (
+        {/* Halo full — when no hat/crown is equipped, render complete halo */}
+        {hasHalo && !activeOverlay && !hasCrown && (
           <AvatarOverlay
             overlay="avatar-halo"
             hatSizeClass={hatSizeClass}
@@ -327,8 +345,21 @@ export const Avatar = memo(
             capStyle={overlayStyle}
           />
         )}
-        {/* Halo front half — in front of the hat */}
-        {hasHalo && activeOverlay && (
+        {/* Crown — unique slot, sandwiched between halo halves */}
+        {hasCrown && (
+          <AvatarOverlay
+            overlay="avatar-crown"
+            hatSizeClass={hatSizeClass}
+            hatPositionClass={hatPositionClass}
+            animateHatOnHover={animateHatOnHover}
+            animateHat={animateHat}
+            animatePropeller={false}
+            size={size}
+            crownPosition={crownPosition}
+          />
+        )}
+        {/* Halo front half — in front of the hat/crown */}
+        {hasHalo && (activeOverlay || hasCrown) && (
           <AvatarOverlay
             overlay="avatar-halo"
             hatSizeClass={hatSizeClass}
@@ -350,8 +381,12 @@ export const Avatar = memo(
 )
 
 // Angel wings decoration - flanks the avatar on both sides
-function AngelWingsDecoration(props: { size?: AvatarSizeType }) {
-  const { size } = props
+function AngelWingsDecoration(props: {
+  size?: AvatarSizeType
+  animateOnHover?: boolean
+  animate?: boolean
+}) {
+  const { size, animateOnHover, animate } = props
   const wingW = size === '2xs' || size === 'xs' ? 6 : size === 'sm' ? 9 : 12
   const wingH = size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 26 : 36
   const offset = size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7
@@ -385,31 +420,50 @@ function AngelWingsDecoration(props: { size?: AvatarSizeType }) {
     </>
   )
 
+  // Wing wrapper classes for hover animation (rotation)
+  const leftWingWrapperClasses = clsx(
+    'absolute top-1/2 -translate-y-1/2 transition-transform duration-300',
+    animateOnHover && 'group-hover:rotate-6',
+    animate && 'rotate-6'
+  )
+
+  const rightWingWrapperClasses = clsx(
+    'absolute top-1/2 -translate-y-1/2 transition-transform duration-300',
+    animateOnHover && 'group-hover:-rotate-6',
+    animate && '-rotate-6'
+  )
+
   return (
     <>
-      {/* Left wing — negative z so it renders behind the avatar image */}
-      <svg
-        className="absolute top-1/2 -translate-y-1/2"
-        style={{ left: offset, width: wingW, height: wingH, opacity: 0.9, zIndex: -1 }}
-        viewBox="0 0 16 44"
+      {/* Left wing — wrapper handles rotation animation */}
+      <div
+        className={leftWingWrapperClasses}
+        style={{ left: offset, width: wingW, height: wingH, zIndex: -2 }}
       >
-        {wingSvg}
-      </svg>
-      {/* Right wing (mirrored) — negative z so it renders behind the avatar image */}
-      <svg
-        className="absolute top-1/2"
-        style={{
-          right: offset,
-          width: wingW,
-          height: wingH,
-          opacity: 0.9,
-          transform: 'translateY(-50%) scaleX(-1)',
-          zIndex: -1,
-        }}
-        viewBox="0 0 16 44"
+        <svg
+          style={{ width: wingW, height: wingH, opacity: 0.9 }}
+          viewBox="0 0 16 44"
+        >
+          {wingSvg}
+        </svg>
+      </div>
+      {/* Right wing (mirrored) — wrapper handles rotation animation, SVG handles mirror */}
+      <div
+        className={rightWingWrapperClasses}
+        style={{ right: offset, width: wingW, height: wingH, zIndex: -2 }}
       >
-        {wingSvg}
-      </svg>
+        <svg
+          style={{
+            width: wingW,
+            height: wingH,
+            opacity: 0.9,
+            transform: 'scaleX(-1)',
+          }}
+          viewBox="0 0 16 44"
+        >
+          {wingSvg}
+        </svg>
+      </div>
     </>
   )
 }
@@ -432,6 +486,7 @@ function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
         marginLeft: offset / 2,
         marginTop: offset / 2,
         filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.5))',
+        zIndex: -3,
       }}
       viewBox="0 0 64 64"
     >
@@ -500,6 +555,7 @@ function FireItemDecoration(props: { size?: AvatarSizeType; animate?: boolean })
         animate && 'animate-pulse'
       )}
       style={{
+        zIndex: -3,
         background:
           'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.7) 0%, rgba(234,88,12,0.5) 25%, rgba(220,38,38,0.3) 45%, rgba(180,83,9,0.15) 65%, transparent 85%)',
       }}
@@ -733,57 +789,273 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
   )
 }
 
-// Red cap SVG — 5 style variants
-// 0: Taper C, MANA text  1: Taper C, smaller, MANA text
-// 2: Tuck B (red), no text  3: Taper C, darker accents  4: Taper C, smaller, no text
-export function RedCapSvg({ style = 0 }: { style?: number }) {
-  const c = { crown: '#DC2626', brim: '#B91C1C', brimStroke: '#991B1B', seam: '#B91C1C' }
+// Blue cap SVG — 10 style variants (Dark Stitch design in blue)
+// 0: Classic (front-facing, flat)
+// Left-facing (brim extends left): 1: MANA Left  2: Clean Left  3: Mini Left
+// Right-facing (mirrored):         4: MANA Right 5: Clean Right 6: Mini Right
+// Shaded variants: 7: Shaded A  8: Shaded B  9: Shaded C
+export function BlueCapSvg({ style = 0 }: { style?: number }) {
+  // Style mapping:
+  // Front-facing: 0: Classic (no text), 1: Mini (no text), 2: MANA (with text)
+  // Left-facing:  3: MANA Left, 4: Left (no text), 5: Left Mini (no text)
+  // Right-facing: 6: MANA Right, 7: Right (no text), 8: Right Mini (no text)
+  const c = { crown: '#2563EB', brim: '#1D4ED8', brimStroke: '#1E40AF', dark: '#1E3A8A' }
+  const isFrontFacing = style <= 2
+  const showText = style === 2 || style === 3 || style === 6 // MANA text versions
+  const isMirrored = style >= 6 // Styles 6, 7, 8 are mirrored (right-facing)
+  // Unique ID prefix to avoid gradient collisions when multiple instances render
+  const uid = useId().replace(/:/g, '')
 
-  if (style === 2) {
-    // Tuck B brim in red — no text
+  // Front-facing design - brim extends forward toward viewer
+  if (isFrontFacing) {
+    const brimGradientId = `bc-brim-${uid}`
     return (
       <svg viewBox="0 0 50 40" overflow="visible">
-        <path d="M3,20 C3,23 -7,26 -11,37 C-3,48 31,48 47,20 Q25,24 3,20Z" fill={c.brim} stroke={c.brimStroke} strokeWidth="1" />
-        <path d="M3,21 Q25,25 47,21 L47,22.5 Q25,26.5 3,22.5Z" fill={c.brimStroke} opacity="0.6" />
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.brim} strokeWidth="1" />
-        <path d="M25,1 L25,25" stroke={c.seam} strokeWidth="0.4" opacity="0.3" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
-        <circle cx="25" cy="1" r="2.2" fill={c.brim} />
+        <defs>
+          <linearGradient id={brimGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#1E3A8A" />
+            <stop offset="50%" stopColor="#2563EB" />
+            <stop offset="100%" stopColor="#1E3A8A" />
+          </linearGradient>
+        </defs>
+        {/* Brim underside shadow — rendered behind brim, peeks out below */}
+        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
+        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown — head-on view */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* MANA text - only on style 2 */}
+        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {/* Button on top */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </svg>
     )
   }
 
-  if (style === 3) {
-    // Taper C with darker accents (black stitching on red)
-    return (
-      <svg viewBox="0 0 50 40" overflow="visible">
-        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke="#7F1D1D" strokeWidth="1" />
-        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke="#7F1D1D" strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
-        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke="#7F1D1D" strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke="#7F1D1D" strokeWidth="1" />
-        <path d="M25,1 L25,25" stroke="#7F1D1D" strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke="#7F1D1D" strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke="#7F1D1D" strokeWidth="0.5" fill="none" opacity="0.35" />
-        <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
-        <circle cx="25" cy="1" r="2.2" fill="#7F1D1D" />
-      </svg>
-    )
-  }
-
-  // Styles 0, 1, 4 — all Taper C brim, differ by size (handled by parent) and text
-  const showText = style !== 4
+  // Side-angled design (styles 3-8)
   return (
     <svg viewBox="0 0 50 40" overflow="visible">
-      <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.brimStroke} strokeWidth="1" />
-      <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.brimStroke} strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
-      <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.brimStroke} strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
-      <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.brim} strokeWidth="1" />
-      <path d="M25,1 L25,25" stroke={c.seam} strokeWidth="0.4" opacity="0.3" />
-      <path d="M25,1 C14,3 8,8 6,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
-      <path d="M25,1 C36,3 42,8 44,20" stroke={c.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
+      <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
+        {/* Brim — Taper C: smooth left extension, tapered right */}
+        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* Button */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
+      </g>
+      {/* MANA text — rendered outside the mirror group so it stays readable */}
       {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
-      <circle cx="25" cy="1" r="2.2" fill={c.brim} />
+    </svg>
+  )
+}
+
+// Red cap SVG — 9 style variants (matches BlueCapSvg structure)
+// Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+export function RedCapSvg({ style = 0 }: { style?: number }) {
+  const c = { crown: '#DC2626', brim: '#B91C1C', dark: '#7F1D1D' }
+  const isFrontFacing = style <= 2
+  const showText = style === 2 || style === 3 || style === 6 // MANA text versions
+  const isMirrored = style >= 6 // Styles 6, 7, 8 are mirrored (right-facing)
+  // Unique ID prefix to avoid gradient collisions when multiple instances render
+  const uid = useId().replace(/:/g, '')
+
+  // Front-facing design - brim extends forward toward viewer
+  if (isFrontFacing) {
+    const brimGradientId = `rc-brim-${uid}`
+    return (
+      <svg viewBox="0 0 50 40" overflow="visible">
+        <defs>
+          <linearGradient id={brimGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#7F1D1D" />
+            <stop offset="50%" stopColor="#DC2626" />
+            <stop offset="100%" stopColor="#7F1D1D" />
+          </linearGradient>
+        </defs>
+        {/* Brim underside shadow — rendered behind brim, peeks out below */}
+        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
+        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown — head-on view */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* MANA text - only on style 2 */}
+        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {/* Button on top */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
+      </svg>
+    )
+  }
+
+  // Side-angled design (styles 3-8)
+  return (
+    <svg viewBox="0 0 50 40" overflow="visible">
+      <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
+        {/* Brim — Taper C: smooth left extension, tapered right */}
+        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* Button */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
+      </g>
+      {/* MANA text — rendered outside the mirror group so it stays readable */}
+      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+    </svg>
+  )
+}
+
+// Green cap SVG — 9 style variants (matches BlueCapSvg structure)
+// Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+export function GreenCapSvg({ style = 0 }: { style?: number }) {
+  const c = { crown: '#16A34A', brim: '#15803D', dark: '#166534' }
+  const isFrontFacing = style <= 2
+  const showText = style === 2 || style === 3 || style === 6 // MANA text versions
+  const isMirrored = style >= 6 // Styles 6, 7, 8 are mirrored (right-facing)
+  // Unique ID prefix to avoid gradient collisions when multiple instances render
+  const uid = useId().replace(/:/g, '')
+
+  // Front-facing design - brim extends forward toward viewer
+  if (isFrontFacing) {
+    const brimGradientId = `gc-brim-${uid}`
+    return (
+      <svg viewBox="0 0 50 40" overflow="visible">
+        <defs>
+          <linearGradient id={brimGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#166534" />
+            <stop offset="50%" stopColor="#22C55E" />
+            <stop offset="100%" stopColor="#166534" />
+          </linearGradient>
+        </defs>
+        {/* Brim underside shadow — rendered behind brim, peeks out below */}
+        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
+        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown — head-on view */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* MANA text - only on style 2 */}
+        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {/* Button on top */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
+      </svg>
+    )
+  }
+
+  // Side-angled design (styles 3-8)
+  return (
+    <svg viewBox="0 0 50 40" overflow="visible">
+      <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
+        {/* Brim — Taper C: smooth left extension, tapered right */}
+        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* Button */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
+      </g>
+      {/* MANA text — rendered outside the mirror group so it stays readable */}
+      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+    </svg>
+  )
+}
+
+// Black cap SVG — 9 style variants (matches BlueCapSvg structure)
+// Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+export function BlackCapSvg({ style = 0 }: { style?: number }) {
+  const c = { crown: '#333333', brim: '#222222', dark: '#111111' }
+  const isFrontFacing = style <= 2
+  const showText = style === 2 || style === 3 || style === 6 // MANA text versions
+  const isMirrored = style >= 6 // Styles 6, 7, 8 are mirrored (right-facing)
+  // Unique ID prefix to avoid gradient collisions when multiple instances render
+  const uid = useId().replace(/:/g, '')
+
+  // Front-facing design - brim extends forward toward viewer
+  if (isFrontFacing) {
+    const brimGradientId = `bkc-brim-${uid}`
+    return (
+      <svg viewBox="0 0 50 40" overflow="visible">
+        <defs>
+          <linearGradient id={brimGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#111111" />
+            <stop offset="50%" stopColor="#444444" />
+            <stop offset="100%" stopColor="#111111" />
+          </linearGradient>
+        </defs>
+        {/* Brim underside shadow — rendered behind brim, peeks out below */}
+        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
+        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown — head-on view */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* MANA text - only on style 2 */}
+        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {/* Button on top */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
+      </svg>
+    )
+  }
+
+  // Side-angled design (styles 3-8)
+  return (
+    <svg viewBox="0 0 50 40" overflow="visible">
+      <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
+        {/* Brim — Taper C: smooth left extension, tapered right */}
+        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        {/* Dashed stitching on brim */}
+        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        {/* Crown */}
+        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        {/* Panel seams */}
+        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
+        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        {/* Button */}
+        <circle cx="25" cy="1" r="2.2" fill={c.dark} />
+      </g>
+      {/* MANA text — rendered outside the mirror group so it stays readable */}
+      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
     </svg>
   )
 }
@@ -799,6 +1071,7 @@ function AvatarOverlay(props: {
   size?: AvatarSizeType
   haloHalf?: 'back' | 'front'
   capStyle?: number
+  crownPosition?: CrownPosition
 }) {
   const {
     overlay,
@@ -810,9 +1083,10 @@ function AvatarOverlay(props: {
     size,
     haloHalf,
     capStyle = 0,
+    crownPosition = 0,
   } = props
 
-  // Corner position (for crown, graduation cap, microphone - sits at top-right)
+  // Corner position (for graduation cap, microphone - sits at top-right)
   const cornerClasses = clsx(
     'absolute transition-transform duration-300',
     hatPositionClass,
@@ -833,16 +1107,54 @@ function AvatarOverlay(props: {
     animateHat && '-translate-y-0.5 scale-110'
   )
 
+  // Crown position classes (0: Right, 1: Center, 2: Left)
+  const crownRightClasses = clsx(
+    'absolute transition-transform duration-300',
+    hatPositionClass,
+    'rotate-45',
+    animateHatOnHover && 'group-hover:-translate-y-0.5 group-hover:scale-110',
+    animateHat && '-translate-y-0.5 scale-110'
+  )
+  const crownCenterClasses = clsx(
+    'absolute left-1/2 -translate-x-1/2 transition-transform duration-300',
+    size === '2xs' || size === 'xs'
+      ? '-top-1'
+      : size === 'sm'
+      ? '-top-1.5'
+      : '-top-2',
+    animateHatOnHover && 'group-hover:-translate-y-0.5 group-hover:scale-110',
+    animateHat && '-translate-y-0.5 scale-110'
+  )
+  const crownLeftClasses = clsx(
+    'absolute transition-transform duration-300',
+    size === '2xs' || size === 'xs'
+      ? '-top-0.5 -left-0.5'
+      : size === 'sm'
+      ? '-top-1 -left-1'
+      : '-top-1.5 -left-1.5',
+    '-rotate-45',
+    animateHatOnHover && 'group-hover:-translate-y-0.5 group-hover:scale-110',
+    animateHat && '-translate-y-0.5 scale-110'
+  )
+
   switch (overlay) {
-    case 'avatar-crown':
+    case 'avatar-crown': {
+      // Position order: 0=Right, 1=Left, 2=Center (smooth directional cycling)
+      const positionClasses =
+        crownPosition === 2
+          ? crownCenterClasses
+          : crownPosition === 1
+          ? crownLeftClasses
+          : crownRightClasses
       return (
-        <div className={cornerClasses}>
+        <div className={positionClasses}>
           <LuCrown
             className={clsx(hatSizeClass, 'text-amber-500')}
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
           />
         </div>
       )
+    }
     case 'avatar-graduation-cap':
       return (
         <div className={cornerClasses}>
@@ -1145,13 +1457,16 @@ function AvatarOverlay(props: {
             {/* Right Flap (Green) */}
             <path d="M12 21L15 13L22 6L12 21Z" fill="#16A34A" />
             <path d="M12 21L22 6L19 16L12 21Z" fill="#14532D" />
-            {/* Left Flap (Indigo) - neck + beak */}
-            <path d="M12 21L9 13L5 7L12 21Z" fill="#3730A3" />
-            <path d="M12 21L5 7L5 16L12 21Z" fill="#312E81" />
-            <path d="M5 7L5 10L2 6L5 7Z" fill="#4338CA" />
+            {/* Left Flap (Purple) - neck + beak */}
+            <path d="M12 21L9 13L5 7L12 21Z" fill="#6366F1" />
+            <path d="M12 21L5 7L5 16L12 21Z" fill="#4F46E5" />
+            <path d="M5 7L5 10L2 6L5 7Z" fill="#818CF8" />
             {/* Center Flap (Red) - foreground */}
             <path d="M12 21L9 13L12 2L12 21Z" fill="#991B1B" />
             <path d="M12 21L15 13L12 2L12 21Z" fill="#DC2626" />
+            {/* Headband - rounded base */}
+            <rect x="5" y="19" width="14" height="4" rx="2" fill="#FBBF24" />
+            <rect x="5" y="19" width="14" height="4" rx="2" fill="none" stroke="#D97706" strokeWidth="0.5" />
             {/* Gold Bells */}
             <circle cx="2" cy="6" r="1.5" fill="#FBBF24" />
             <circle cx="22" cy="6" r="1.5" fill="#FBBF24" />
@@ -1247,12 +1562,14 @@ function AvatarOverlay(props: {
       )
     }
     case 'avatar-team-red-hat': {
-      // Red cap — 5 style variants
+      // Red cap — 9 style variants
+      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
       const capSizeFull =
         size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
       const capSizeSmall =
         size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
-      const isSmall = capStyle === 1 || capStyle === 4
+      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+      const isFrontFacing = capStyle <= 2
       const capSize = isSmall ? capSizeSmall : capSizeFull
       return (
         <div
@@ -1264,9 +1581,9 @@ function AvatarOverlay(props: {
           )}
           style={{
             left: '50%',
-            transform: 'translateX(-50%) rotate(-5deg)',
+            transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
             top:
-              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1277,9 +1594,15 @@ function AvatarOverlay(props: {
       )
     }
     case 'avatar-team-green-hat': {
-      // Green cap — Tuck B brim style with shadow strip
-      const capSize =
+      // Green cap — 9 style variants
+      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+      const capSizeFull =
         size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+      const capSizeSmall =
+        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+      const isFrontFacing = capStyle <= 2
+      const capSize = isSmall ? capSizeSmall : capSizeFull
       return (
         <div
           className={clsx(
@@ -1290,47 +1613,28 @@ function AvatarOverlay(props: {
           )}
           style={{
             left: '50%',
-            transform: 'translateX(-50%) rotate(-5deg)',
+            transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
             top:
-              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
           }}
         >
-          <svg viewBox="0 0 50 40" overflow="visible">
-            {/* Brim — Tuck B: extended left, tucks under on right */}
-            <path
-              d="M3,20 C3,23 -7,26 -11,37 C-3,48 31,48 47,20 Q25,24 3,20Z"
-              fill="#15803D"
-              stroke="#166534"
-              strokeWidth="1"
-            />
-            {/* Shadow strip under crown */}
-            <path d="M3,21 Q25,25 47,21 L47,22.5 Q25,26.5 3,22.5Z" fill="#166534" opacity="0.6" />
-            {/* Crown */}
-            <path
-              d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
-              fill="#16A34A"
-              stroke="#15803D"
-              strokeWidth="1"
-            />
-            {/* Panel seams */}
-            <path d="M25,1 L25,25" stroke="#15803D" strokeWidth="0.4" opacity="0.3" />
-            <path d="M25,1 C14,3 8,8 6,20" stroke="#15803D" strokeWidth="0.4" fill="none" opacity="0.3" />
-            <path d="M25,1 C36,3 42,8 44,20" stroke="#15803D" strokeWidth="0.4" fill="none" opacity="0.3" />
-            {/* MANA text */}
-            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
-            {/* Button */}
-            <circle cx="25" cy="1" r="2.2" fill="#15803D" />
-          </svg>
+          <GreenCapSvg style={capStyle} />
         </div>
       )
     }
     case 'avatar-black-cap': {
-      // Black cap — Taper C brim style with panel seams and stitching
-      const capSize =
+      // Black cap — 9 style variants
+      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+      const capSizeFull =
         size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+      const capSizeSmall =
+        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+      const isFrontFacing = capStyle <= 2
+      const capSize = isSmall ? capSizeSmall : capSizeFull
       return (
         <div
           className={clsx(
@@ -1341,41 +1645,49 @@ function AvatarOverlay(props: {
           )}
           style={{
             left: '50%',
-            transform: 'translateX(-50%) rotate(-5deg)',
+            transform: isFrontFacing
+              ? 'translateX(-50%)'
+              : 'translateX(-50%) rotate(-5deg)',
             top:
-              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
           }}
         >
-          <svg viewBox="0 0 50 40" overflow="visible">
-            {/* Brim — Taper C: smooth left extension, tapered right */}
-            <path
-              d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z"
-              fill="#333"
-              stroke="#111"
-              strokeWidth="1"
-            />
-            {/* Dashed stitching */}
-            <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
-            <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
-            {/* Crown */}
-            <path
-              d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
-              fill="#333"
-              stroke="#111"
-              strokeWidth="1"
-            />
-            {/* Panel seams */}
-            <path d="M25,1 L25,25" stroke="#111" strokeWidth="0.4" opacity="0.3" />
-            <path d="M25,1 C14,3 8,8 6,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
-            <path d="M25,1 C36,3 42,8 44,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
-            {/* MANA text */}
-            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
-            {/* Button */}
-            <circle cx="25" cy="1" r="2.2" fill="#111" />
-          </svg>
+          <BlackCapSvg style={capStyle} />
+        </div>
+      )
+    }
+    case 'avatar-blue-cap': {
+      // Blue cap — 9 style variants
+      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+      const capSizeFull =
+        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+      const capSizeSmall =
+        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+      const isFrontFacing = capStyle <= 2
+      const capSize = isSmall ? capSizeSmall : capSizeFull
+      return (
+        <div
+          className={clsx(
+            'absolute transition-transform duration-300',
+            animateHatOnHover &&
+              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+            animateHat && '-translate-y-0.5 rotate-[-3deg]'
+          )}
+          style={{
+            left: '50%',
+            transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+            top:
+              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            width: capSize,
+            height: capSize,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+          }}
+        >
+          <BlueCapSvg style={capStyle} />
         </div>
       )
     }
@@ -2087,14 +2399,15 @@ function AvatarAccessory(props: {
     }
     case 'avatar-stonks-meme': {
       // The iconic diagonal STONKS meme arrow - goes IN FRONT of the avatar
+      // Sized ~15% smaller and positioned lower to avoid hat overlap
       const memeSize =
-        size === '2xs' || size === 'xs' ? 20 : size === 'sm' ? 32 : 44
+        size === '2xs' || size === 'xs' ? 17 : size === 'sm' ? 27 : 37
       return (
         <svg
           className="absolute pointer-events-none"
           style={{
-            left: '60%',
-            top: '50%',
+            left: '65%',
+            top: '70%',
             transform: 'translate(-50%, -50%)',
             width: memeSize,
             height: memeSize,

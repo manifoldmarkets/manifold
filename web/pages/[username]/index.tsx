@@ -296,6 +296,7 @@ function UserProfile(props: {
                       animateHat={expandProfileInfo}
                     />
                   }
+                  size={48}
                 />
 
                 <ChevronDownIcon
@@ -328,6 +329,7 @@ function UserProfile(props: {
                     displayContext="profile_page"
                   />
                 }
+                size={48}
               />
               <StackedUserNames
                 usernameClassName={'sm:text-base'}

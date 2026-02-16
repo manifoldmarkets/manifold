@@ -223,12 +223,12 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'avatar-crown',
     name: 'Crown',
-    description: 'A royal crown overlay on your avatar',
+    description: 'A royal crown overlay — position it left, center, or right',
     price: 1000000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
-    slot: 'hat',
+    slot: 'unique', // Combines with everything
   },
   {
     id: 'avatar-graduation-cap',
@@ -450,7 +450,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
-    slot: 'profile-border',
+    slot: 'unique', // Combines with everything
   },
   {
     id: 'avatar-mana-aura',
@@ -598,6 +598,17 @@ export const SHOP_ITEMS: ShopItem[] = [
       threshold: 250000,
       description: 'Earn M$250k in total profit',
     },
+  },
+  // Blue cap — MANA branded cap in blue with style variants
+  {
+    id: 'avatar-blue-cap',
+    name: 'Blue Cap',
+    description: 'A sleek blue MANA cap with dark stitch accents',
+    price: 25000,
+    type: 'permanent-toggleable',
+    limit: 'one-time',
+    category: 'avatar-overlay',
+    slot: 'hat',
   },
   // Team items - mutually exclusive (can only equip one team's items)
   {
@@ -774,6 +785,12 @@ export const NO_BUTTON_OPTIONS = [
 export type YesButtonOption = (typeof YES_BUTTON_OPTIONS)[number]
 export type NoButtonOption = (typeof NO_BUTTON_OPTIONS)[number]
 
+// Crown position options (matches cap style pattern)
+// 0: Right (default), 1: Left, 2: Center
+// Order allows smooth directional cycling: Right → Left → Center
+export const CROWN_POSITION_OPTIONS = ['Right', 'Left', 'Center'] as const
+export type CrownPosition = 0 | 1 | 2
+
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
 
@@ -834,6 +851,21 @@ export const getCustomNoButtonText = (
   }
 
   return null
+}
+
+// Get the user's crown position/style (0: Right, 1: Center, 2: Left)
+export const getCrownPosition = (
+  entitlements: UserEntitlement[] | undefined
+): CrownPosition => {
+  if (!entitlements) return 0 // Default to right
+
+  const crown = entitlements.find((e) => e.entitlementId === 'avatar-crown')
+  if (crown && isEntitlementActive(crown)) {
+    const style = crown.metadata?.style as number | undefined
+    if (style === 1 || style === 2) return style as CrownPosition
+  }
+
+  return 0 // Default to right (original position)
 }
 
 // Helper to check if user has hovercard glow
@@ -926,6 +958,7 @@ export type AvatarDecorationId =
   | 'avatar-stonks-up'
   | 'avatar-stonks-down'
   | 'avatar-stonks-meme'
+  | 'avatar-blue-cap'
   | 'avatar-team-red-hat'
   | 'avatar-team-green-hat'
   | 'avatar-black-cap'
@@ -964,14 +997,21 @@ export const getOverlayStyle = (
   return (ent?.metadata?.style as number) ?? 0
 }
 
+// Check if user has the crown (unique slot - combines with other hats)
+export const userHasCrown = (
+  entitlements: UserEntitlement[] | undefined
+): boolean => {
+  return hasActiveEntitlement(entitlements, 'avatar-crown')
+}
+
 // Get the active avatar overlay (hat) if any
-// Note: This excludes the halo since it's a unique slot item that combines with other hats
-// Use userHasHalo() separately to check for halo
+// Note: This excludes halo and crown since they're unique slot items that combine with other hats
+// Use userHasHalo() and userHasCrown() separately to check for those
 export const getActiveAvatarOverlay = (
   entitlements: UserEntitlement[] | undefined
 ): AvatarDecorationId | null => {
   const overlays: AvatarDecorationId[] = [
-    'avatar-crown',
+    // Note: crown excluded here - check separately with userHasCrown()
     'avatar-graduation-cap',
     'avatar-top-hat',
     // Note: halo excluded here - check separately with userHasHalo()
@@ -982,6 +1022,7 @@ export const getActiveAvatarOverlay = (
     'avatar-jester-hat',
     'avatar-fedora',
     'avatar-devil-horns',
+    'avatar-blue-cap',
     'avatar-team-red-hat',
     'avatar-team-green-hat',
     'avatar-black-cap',

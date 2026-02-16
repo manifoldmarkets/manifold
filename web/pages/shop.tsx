@@ -24,6 +24,7 @@ import {
   getCompatibleSlots,
   EXCLUSIVE_SLOTS,
   getEntitlementIdsForSlot,
+  CROWN_POSITION_OPTIONS,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
@@ -53,7 +54,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
 import { SEO } from 'web/components/SEO'
-import { Avatar, RedCapSvg } from 'web/components/widgets/avatar'
+import { Avatar, BlueCapSvg, RedCapSvg, GreenCapSvg, BlackCapSvg } from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
@@ -2006,7 +2007,8 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
   )
 }
 
-const RED_CAP_STYLE_LABELS = ['Classic', 'Mini', 'Rounded', 'Dark Stitch', 'Mini Clean']
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const RED_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
 const RED_CAP_STYLE_COUNT = RED_CAP_STYLE_LABELS.length
 
 function RedCapStylePreview(props: {
@@ -2020,7 +2022,8 @@ function RedCapStylePreview(props: {
     Math.max(0, Math.min(selectedStyle, RED_CAP_STYLE_COUNT - 1))
   )
 
-  const isSmall = previewIndex === 1 || previewIndex === 4
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
   const capW = isSmall ? 24 : 30
 
   const cyclePrev = (e: React.MouseEvent) => {
@@ -2061,8 +2064,8 @@ function RedCapStylePreview(props: {
             className="absolute transition-all duration-200"
             style={{
               left: '50%',
-              transform: 'translateX(-50%) rotate(-5deg)',
-              top: -10,
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
               width: capW,
               height: capW,
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -2083,46 +2086,160 @@ function RedCapStylePreview(props: {
   )
 }
 
-function TeamHatPreview(props: {
-  user: User | null | undefined
-  team: 'red' | 'green'
-}) {
-  const { user, team } = props
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const BLUE_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const BLUE_CAP_STYLE_COUNT = BLUE_CAP_STYLE_LABELS.length
 
-  // Green cap — single Tuck B preview
-  const colors = { crown: '#16A34A', crownStroke: '#15803D', brim: '#15803D', brimStroke: '#166534', button: '#15803D', seam: '#15803D' }
+function BlueCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, BLUE_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + BLUE_CAP_STYLE_COUNT) % BLUE_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % BLUE_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        <Avatar
-          username={user?.username}
-          avatarUrl={user?.avatarUrl}
-          size="lg"
-          noLink
-        />
-        <div
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
-          style={{
-            left: '50%',
-            transform: 'translateX(-50%) rotate(-5deg)',
-            top: -10,
-            width: 30,
-            height: 30,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-          }}
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
-          <svg viewBox="0 0 50 40" overflow="visible">
-            <path d="M3,20 C3,23 -7,26 -11,37 C-3,48 31,48 47,20 Q25,24 3,20Z" fill={colors.brim} stroke={colors.brimStroke} strokeWidth="1" />
-            <path d="M3,21 Q25,25 47,21 L47,22.5 Q25,26.5 3,22.5Z" fill={colors.brimStroke} opacity="0.6" />
-            <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={colors.crown} stroke={colors.crownStroke} strokeWidth="1" />
-            <path d="M25,1 L25,25" stroke={colors.seam} strokeWidth="0.4" opacity="0.3" />
-            <path d="M25,1 C14,3 8,8 6,20" stroke={colors.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
-            <path d="M25,1 C36,3 42,8 44,20" stroke={colors.seam} strokeWidth="0.4" fill="none" opacity="0.3" />
-            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
-            <circle cx="25" cy="1" r="2.2" fill={colors.button} />
-          </svg>
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <BlueCapSvg style={previewIndex} />
+          </div>
         </div>
-      </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{BLUE_CAP_STYLE_LABELS[previewIndex]}</span>
+    </div>
+  )
+}
+
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const GREEN_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const GREEN_CAP_STYLE_COUNT = GREEN_CAP_STYLE_LABELS.length
+
+function GreenCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, GREEN_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + GREEN_CAP_STYLE_COUNT) % GREEN_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % GREEN_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <GreenCapSvg style={previewIndex} />
+          </div>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{GREEN_CAP_STYLE_LABELS[previewIndex]}</span>
     </div>
   )
 }
@@ -2160,46 +2277,81 @@ function TeamBorderPreview(props: {
   )
 }
 
-function BlackCapPreview(props: { user: User | null | undefined }) {
-  const { user } = props
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const BLACK_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const BLACK_CAP_STYLE_COUNT = BLACK_CAP_STYLE_LABELS.length
+
+function BlackCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, BLACK_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + BLACK_CAP_STYLE_COUNT) % BLACK_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % BLACK_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        <Avatar
-          username={user?.username}
-          avatarUrl={user?.avatarUrl}
-          size="lg"
-          noLink
-        />
-        <div
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
-          style={{
-            left: '50%',
-            transform: 'translateX(-50%) rotate(-5deg)',
-            top: -10,
-            width: 30,
-            height: 30,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-          }}
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
         >
-          <svg viewBox="0 0 50 40" overflow="visible">
-            {/* Taper C brim */}
-            <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill="#333" stroke="#111" strokeWidth="1" />
-            <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
-            <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke="#111" strokeWidth="0.6" opacity="0.4" strokeDasharray="1.5,1.5" />
-            {/* Crown */}
-            <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill="#333" stroke="#111" strokeWidth="1" />
-            {/* Panel seams */}
-            <path d="M25,1 L25,25" stroke="#111" strokeWidth="0.4" opacity="0.3" />
-            <path d="M25,1 C14,3 8,8 6,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
-            <path d="M25,1 C36,3 42,8 44,20" stroke="#111" strokeWidth="0.4" fill="none" opacity="0.3" />
-            {/* MANA text */}
-            <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>
-            {/* Button */}
-            <circle cx="25" cy="1" r="2.2" fill="#111" />
-          </svg>
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <BlackCapSvg style={previewIndex} />
+          </div>
         </div>
-      </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{BLACK_CAP_STYLE_LABELS[previewIndex]}</span>
     </div>
   )
 }
@@ -2462,22 +2614,76 @@ function CatEarsPreview(props: { user: User | null | undefined }) {
   )
 }
 
-function CrownPreview(props: { user: User | null | undefined }) {
-  const { user } = props
+// Crown position: 0 = Right, 1 = Center, 2 = Left
+function CrownPreview(props: {
+  user: User | null | undefined
+  selectedPosition?: number
+  onSelect?: (position: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedPosition = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedPosition, CROWN_POSITION_OPTIONS.length - 1))
+  )
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + CROWN_POSITION_OPTIONS.length) % CROWN_POSITION_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % CROWN_POSITION_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  // Position-specific classes (0=Right, 1=Left, 2=Center)
+  const getPositionClasses = () => {
+    switch (previewIndex) {
+      case 2: // Center
+        return 'absolute left-1/2 -translate-x-1/2 -top-2'
+      case 1: // Left
+        return 'absolute -left-2 -top-[0.41rem] -rotate-45'
+      default: // Right (0)
+        return 'absolute -right-2 -top-[0.41rem] rotate-45'
+    }
+  }
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        <Avatar
-          username={user?.username}
-          avatarUrl={user?.avatarUrl}
-          size="lg"
-          noLink
-        />
-        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
-          <LuCrown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" />
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div className={clsx(getPositionClasses(), 'transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110')}>
+            <LuCrown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" />
+          </div>
         </div>
-      </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{CROWN_POSITION_OPTIONS[previewIndex]}</span>
     </div>
   )
 }
@@ -2697,13 +2903,16 @@ function HatPreview(props: {
               {/* Right Flap (Green) */}
               <path d="M12 21L15 13L22 6L12 21Z" fill="#16A34A" />
               <path d="M12 21L22 6L19 16L12 21Z" fill="#14532D" />
-              {/* Left Flap (Indigo) - neck + beak */}
-              <path d="M12 21L9 13L5 7L12 21Z" fill="#3730A3" />
-              <path d="M12 21L5 7L5 16L12 21Z" fill="#312E81" />
-              <path d="M5 7L5 10L2 6L5 7Z" fill="#4338CA" />
+              {/* Left Flap (Purple) - neck + beak */}
+              <path d="M12 21L9 13L5 7L12 21Z" fill="#6366F1" />
+              <path d="M12 21L5 7L5 16L12 21Z" fill="#4F46E5" />
+              <path d="M5 7L5 10L2 6L5 7Z" fill="#818CF8" />
               {/* Center Flap (Red) - foreground */}
               <path d="M12 21L9 13L12 2L12 21Z" fill="#991B1B" />
               <path d="M12 21L15 13L12 2L12 21Z" fill="#DC2626" />
+              {/* Headband - rounded base */}
+              <rect x="5" y="19" width="14" height="4" rx="2" fill="#FBBF24" />
+              <rect x="5" y="19" width="14" height="4" rx="2" fill="none" stroke="#D97706" strokeWidth="0.5" />
               {/* Gold Bells */}
               <circle cx="2" cy="6" r="1.5" fill="#FBBF24" />
               <circle cx="22" cy="6" r="1.5" fill="#FBBF24" />
@@ -3363,7 +3572,18 @@ function ItemPreview(props: {
     case 'avatar-golden-border':
       return <GoldenBorderPreview user={user} />
     case 'avatar-crown':
-      return <CrownPreview user={user} />
+      return (
+        <CrownPreview
+          user={user}
+          selectedPosition={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (position: number) => onMetadataUpdate({ style: position })
+              : undefined
+          }
+        />
+      )
     case 'avatar-graduation-cap':
       return <GraduationCapPreview user={user} />
     case 'avatar-top-hat':
@@ -3410,6 +3630,19 @@ function ItemPreview(props: {
       return <ArrowPreview user={user} direction="down" />
     case 'avatar-stonks-meme':
       return <StonksMemePreview user={user} />
+    case 'avatar-blue-cap':
+      return (
+        <BlueCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
     case 'avatar-team-red-hat':
       return (
         <RedCapStylePreview
@@ -3424,9 +3657,31 @@ function ItemPreview(props: {
         />
       )
     case 'avatar-team-green-hat':
-      return <TeamHatPreview user={user} team="green" />
+      return (
+        <GreenCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
     case 'avatar-black-cap':
-      return <BlackCapPreview user={user} />
+      return (
+        <BlackCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
     case 'avatar-team-red-border':
       return <TeamBorderPreview user={user} team="red" />
     case 'avatar-team-green-border':
@@ -3701,38 +3956,33 @@ function ShopItemCard(props: {
           )}
         </Row>
 
-        {/* Slot tag with compatibility info */}
+        {/* Slot tag */}
         {EXCLUSIVE_SLOTS.includes(item.slot) && (
-          <Row className="flex-wrap items-center gap-1.5">
-            <span
-              className={clsx(
-                'rounded-full px-2 py-0.5 text-[10px] font-medium',
-                item.slot === 'hat' &&
-                  'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-                item.slot === 'profile-border' &&
-                  'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-                item.slot === 'profile-accessory' &&
-                  'bg-teal-100 text-teal-700 dark:bg-teal-800/60 dark:text-teal-200',
-                item.slot === 'hovercard-background' &&
-                  'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
-                item.slot === 'hovercard-border' &&
-                  'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-                item.slot === 'button-yes' &&
-                  'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-                item.slot === 'button-no' &&
-                  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-              )}
-            >
-              {SLOT_LABELS[item.slot]}
-            </span>
-            <span className="text-ink-400 text-[10px]">
-              + {getCompatibleSlots(item.slot).join(', ')}
-            </span>
-          </Row>
+          <span
+            className={clsx(
+              'w-fit rounded-full px-2 py-0.5 text-[10px] font-medium',
+              item.slot === 'hat' &&
+                'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+              item.slot === 'profile-border' &&
+                'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+              item.slot === 'profile-accessory' &&
+                'bg-teal-100 text-teal-700 dark:bg-teal-800/60 dark:text-teal-200',
+              item.slot === 'hovercard-background' &&
+                'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+              item.slot === 'hovercard-border' &&
+                'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+              item.slot === 'button-yes' &&
+                'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+              item.slot === 'button-no' &&
+                'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+            )}
+          >
+            {SLOT_LABELS[item.slot]}
+          </span>
         )}
         {/* Unique items get a special badge */}
         {item.slot === 'unique' && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+          <span className="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
             ✨ Combines with everything
           </span>
         )}
