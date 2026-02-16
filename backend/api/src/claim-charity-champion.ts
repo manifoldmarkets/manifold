@@ -1,5 +1,6 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createCharityChampionDethronedNotification } from 'shared/create-notification'
 import {
   CHARITY_CHAMPION_ENTITLEMENT_ID,
   FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID,
@@ -13,7 +14,7 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
   const { enabled = true } = props
   const pg = createSupabaseDirectClient()
 
-  return await pg.tx(async (tx) => {
+  const result = await pg.tx(async (tx) => {
     // Get the current or most recent giveaway
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
@@ -113,9 +114,41 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
       [auth.uid]
     )
 
+    // Fetch claiming user info for notification (while still in tx)
+    const claimingUser = previousHolder
+      ? await tx.oneOrNone<{
+          id: string
+          name: string
+          username: string
+          avatar_url: string
+        }>(
+          `SELECT id, name, username, data->>'avatarUrl' as avatar_url FROM users WHERE id = $1`,
+          [auth.uid]
+        )
+      : null
+
     return {
-      success: true,
+      previousHolderId: previousHolder?.user_id,
+      claimingUser,
       entitlements: entitlementRows.map(convertEntitlement),
     }
   })
+
+  // Send dethrone notification after transaction commits (fire and forget)
+  if (result.previousHolderId && result.claimingUser) {
+    createCharityChampionDethronedNotification(
+      result.previousHolderId,
+      {
+        id: result.claimingUser.id,
+        name: result.claimingUser.name,
+        username: result.claimingUser.username,
+        avatarUrl: result.claimingUser.avatar_url ?? '',
+      } as any
+    ).catch(() => {})
+  }
+
+  return {
+    success: true,
+    entitlements: result.entitlements,
+  }
 }

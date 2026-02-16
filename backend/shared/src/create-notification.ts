@@ -417,6 +417,62 @@ export const createManaPaymentNotification = async (
   await insertNotificationToSupabase(notification, pg)
 }
 
+export const createCharityChampionDethronedNotification = async (
+  previousHolderId: string,
+  newChampion: User
+) => {
+  const privateUser = await getPrivateUser(previousHolderId)
+  if (!privateUser) return
+  const optedOut = userOptedOutOfBrowserNotifications(privateUser)
+  if (optedOut) return
+
+  const notification: Notification = {
+    id: nanoid(6),
+    userId: previousHolderId,
+    reason: 'charity_champion_dethroned',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: newChampion.id,
+    sourceType: 'charity_champion',
+    sourceUpdateType: 'updated',
+    sourceUserName: newChampion.name,
+    sourceUserUsername: newChampion.username,
+    sourceUserAvatarUrl: newChampion.avatarUrl,
+    sourceText: `@${newChampion.username} claimed the Charity Champion Trophy from you!`,
+    sourceTitle: 'Charity Champion Trophy',
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createCharityChampionEligibleNotification = async (
+  championUserId: string,
+  totalTickets: number
+) => {
+  const privateUser = await getPrivateUser(championUserId)
+  if (!privateUser) return
+  const optedOut = userOptedOutOfBrowserNotifications(privateUser)
+  if (optedOut) return
+
+  const notification: Notification = {
+    id: nanoid(6),
+    userId: championUserId,
+    reason: 'charity_champion_eligible',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: championUserId,
+    sourceType: 'charity_champion',
+    sourceUpdateType: 'created',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: `You're the #1 ticket buyer with ${totalTickets} tickets! Claim the Charity Champion Trophy in the shop.`,
+    sourceTitle: 'Charity Champion Trophy',
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
 export const createBettingStreakBonusNotification = async (
   user: User,
   txnId: string,

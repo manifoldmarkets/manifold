@@ -129,6 +129,15 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
           userValue = user.balance < 0 ? Math.abs(user.balance) : 0
           valueName = 'loan balance'
           break
+        case 'seasonsPlatinum':
+          // Count seasons finished at Platinum (division >= 4) or higher
+          const platinumResult = await tx.oneOrNone<{ count: number }>(
+            `SELECT COUNT(*) as count FROM leagues WHERE user_id = $1 AND division >= 4`,
+            [auth.uid]
+          )
+          userValue = platinumResult?.count ?? 0
+          valueName = 'seasons at Platinum+'
+          break
       }
 
       if (userValue < threshold) {

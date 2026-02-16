@@ -112,6 +112,7 @@ export type AchievementRequirementType =
   | 'donations' // $ donated to charity
   | 'referrals' // number of referrals
   | 'loan' // negative balance (loan amount)
+  | 'seasonsPlatinum' // seasons finished platinum (div >= 4) or higher
 
 export type AchievementRequirement = {
   type: AchievementRequirementType
@@ -518,6 +519,11 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-accessory',
     slot: 'profile-accessory',
+    requirement: {
+      type: 'seasonsPlatinum',
+      threshold: 3,
+      description: 'Finish 3 seasons at Platinum or higher',
+    },
   },
   {
     id: 'avatar-disguise',

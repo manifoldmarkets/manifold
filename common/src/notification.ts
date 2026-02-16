@@ -92,6 +92,7 @@ export type notification_source_types =
   | 'extra_purchased_mana'
   | 'payment_status'
   | 'membership_subscription'
+  | 'charity_champion'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -145,6 +146,8 @@ export type notification_reason_types =
   | 'bounty_added'
   | 'bounty_canceled'
   | 'mana_payment_received'
+  | 'charity_champion_dethroned'
+  | 'charity_champion_eligible'
 
 type notification_descriptions = {
   [key in notification_preference]: {

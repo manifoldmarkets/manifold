@@ -13,6 +13,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { UserHovercard } from '../user/user-hovercard'
 import { CharityGiveawayData } from './charity-giveaway-card'
 
 export function CharityChampionCard(props: {
@@ -147,9 +148,11 @@ export function CharityChampionCard(props: {
               />
               <Col className="min-w-0 flex-1">
                 <Row className="items-center gap-1">
-                  <span className="truncate text-sm font-semibold text-amber-700 dark:text-amber-400">
-                    {trophyHolder.name}
-                  </span>
+                  <UserHovercard userId={trophyHolder.id}>
+                    <span className="truncate text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
+                      {trophyHolder.name}
+                    </span>
+                  </UserHovercard>
                   <FaTrophy
                     className="h-3 w-3 shrink-0 text-amber-500"
                     style={{ filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))' }}
@@ -166,9 +169,15 @@ export function CharityChampionCard(props: {
             {previousTrophyHolder && (
               <div className="text-ink-400 text-xs">
                 Previously{' '}
-                <span className="font-semibold text-amber-600 dark:text-amber-400">
-                  @{previousTrophyHolder.username}
-                </span>
+                <UserHovercard userId={previousTrophyHolder.id}>
+                  <Link
+                    href={`/${previousTrophyHolder.username}`}
+                    className="font-semibold text-amber-600 hover:underline dark:text-amber-400"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    @{previousTrophyHolder.username}
+                  </Link>
+                </UserHovercard>
               </div>
             )}
           </Link>
