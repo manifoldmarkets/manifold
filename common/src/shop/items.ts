@@ -120,9 +120,6 @@ export type AchievementRequirement = {
   description: string // e.g., "Reach a 100-day betting streak"
 }
 
-// Team for mutual exclusivity (can only equip items from one team at a time)
-export type ShopTeam = 'red' | 'green'
-
 // Animation types — shared with display-config.ts to avoid circular imports
 export type AnimationType =
   | 'hat-hover'
@@ -156,8 +153,6 @@ export type ShopItem = {
   alwaysEnabled?: boolean
   // Achievement requirement to unlock this item (optional)
   requirement?: AchievementRequirement
-  // Team affiliation - items from different teams are mutually exclusive (optional)
-  team?: ShopTeam
   // Seasonal availability window - can only purchase during this period (optional)
   seasonalAvailability?: SeasonalAvailability
   // Explicit conflicts - entitlement IDs that must be disabled when this item is enabled
@@ -166,6 +161,8 @@ export type ShopItem = {
   // Animation types this item uses — drives the "Animated on X" display in the shop
   // (contexts are resolved from display-config.ts CONTEXT_CONFIG)
   animationTypes?: AnimationType[]
+  // If true, item is hidden from shop unless user owns it
+  hidden?: boolean
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -273,6 +270,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'hovercard-spinning-border',
+    hidden: true,
     name: 'Spinning Glow Border',
     description: 'An animated spinning border effect on your profile popup',
     price: 50000,
@@ -285,7 +283,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'hovercard-royal-border',
     name: 'Royal Velvet Border',
     description: 'A luxurious red velvet curtain border with gold trim, fit for royalty',
-    price: 75000,
+    price: 25000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
@@ -295,7 +293,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'hovercard-royalty',
     name: 'Royalty Background',
     description: 'A regal purple and gold background for your profile popup',
-    price: 75000,
+    price: 2500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
@@ -303,6 +301,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'hovercard-mana-printer',
+    hidden: true,
     name: 'Mana Printer Background',
     description: 'Money go brrr - a green money-themed background',
     price: 50000,
@@ -313,6 +312,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'hovercard-oracle',
+    hidden: true,
     name: 'Starfield Background',
     description: 'A mystical starfield background with twinkling stars',
     price: 100000,
@@ -325,7 +325,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'hovercard-trading-floor',
     name: 'Trading Floor Background',
     description: 'A stock ticker aesthetic for the serious trader',
-    price: 75000,
+    price: 6500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
@@ -335,7 +335,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'hovercard-golden-follow',
     name: 'Golden Follow Button',
     description: 'Make the Follow button on your hovercard shine gold',
-    price: 40000,
+    price: 1500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
@@ -356,7 +356,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-top-hat',
     name: 'Top Hat',
     description: 'A distinguished top hat for the refined predictor',
-    price: 50000,
+    price: 15000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -364,9 +364,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-halo',
+    hidden: true,
     name: 'Halo',
     description: 'A golden halo for the most virtuous forecasters',
-    price: 100000,
+    price: 150000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -374,6 +375,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-propeller-hat',
+    hidden: true,
     name: 'Propeller Hat',
     description: 'A propeller hat for the playful predictor',
     price: 25000,
@@ -387,7 +389,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-wizard-hat',
     name: 'Wizard Hat',
     description: 'A mystical wizard hat for the oracle of markets',
-    price: 150000,
+    price: 20000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -397,7 +399,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-tinfoil-hat',
     name: 'Tinfoil Hat',
     description: 'For the contrarian who knows the truth',
-    price: 15000,
+    price: 750,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -405,9 +407,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-microphone',
+    hidden: true,
     name: 'Microphone',
     description: 'Drop the mic on your predictions',
-    price: 20000,
+    price: 2000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -415,9 +418,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-jester-hat',
-    name: 'Jester Hat',
+    name: 'Coolfold Jester Hat',
     description: 'A colorful jester hat with jingling bells',
-    price: 20000,
+    price: 25000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -425,9 +428,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-fedora',
-    name: 'Fedora',
-    description: 'A classic felt fedora for the smooth operator',
-    price: 30000,
+    hidden: true,
+    name: 'Bowler Hat',
+    description: 'A dapper rounded hat for the distinguished gentleman',
+    price: 3500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -435,6 +439,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-devil-horns',
+    hidden: true,
     name: 'Devil Horns',
     description: 'Devilish horns for the market manipulator',
     price: 100000,
@@ -445,9 +450,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-angel-wings',
+    hidden: true,
     name: 'Angel Wings',
     description: 'Feathered wings flanking your avatar',
-    price: 150000,
+    price: 100000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
@@ -455,9 +461,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-mana-aura',
+    hidden: true,
     name: 'Mana Aura',
     description: 'A mystical purple-blue energy field around your avatar',
-    price: 75000,
+    price: 11000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
@@ -465,6 +472,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-black-hole',
+    hidden: true,
     name: 'Black Hole',
     description: 'A dark swirling void pulling in light around your avatar',
     price: 200000,
@@ -477,7 +485,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-fire-item',
     name: 'Flames',
     description: 'Blazing flames on your avatar',
-    price: 150000,
+    price: 30000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -485,12 +493,13 @@ export const SHOP_ITEMS: ShopItem[] = [
     animationTypes: ['fire-item'],
     requirement: {
       type: 'streak',
-      threshold: 1,
-      description: 'Reach a 1-day betting streak',
+      threshold: 100,
+      description: 'Reach a 100-day betting streak',
     },
   },
   {
     id: 'avatar-bad-aura',
+    hidden: true,
     name: 'Bad Aura',
     description: 'A menacing crimson glow around your avatar',
     price: 25000,
@@ -502,9 +511,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   // Avatar Accessories
   {
     id: 'avatar-monocle',
+    hidden: true,
     name: 'Monocle',
     description: 'A distinguished monocle for the discerning forecaster',
-    price: 35000,
+    price: 3500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -514,7 +524,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-crystal-ball',
     name: 'Crystal Ball',
     description: 'Gaze into the future with your mystical crystal ball',
-    price: 75000,
+    price: 5000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -542,9 +552,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-thought-yes',
+    hidden: true,
     name: 'YES Thought Bubble',
     description: 'Show the world what you are thinking',
-    price: 25000,
+    price: 4000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -552,9 +563,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-thought-no',
+    hidden: true,
     name: 'NO Thought Bubble',
     description: 'Let everyone know your stance',
-    price: 25000,
+    price: 4000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -562,9 +574,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-stonks-up',
+    hidden: true,
     name: 'Arrow Up',
     description: 'A green up arrow showing your bullish stance',
-    price: 50000,
+    price: 4000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -577,9 +590,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-stonks-down',
+    hidden: true,
     name: 'Arrow Down',
     description: 'A red down arrow for the bearish predictor',
-    price: 50000,
+    price: 4000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -592,9 +606,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-stonks-meme',
+    hidden: true,
     name: 'Stonks',
     description: 'The iconic diagonal stonks arrow - for when your portfolio is going to the moon',
-    price: 75000,
+    price: 7500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -610,7 +625,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-blue-cap',
     name: 'Blue Cap',
     description: 'A sleek blue MANA cap with dark stitch accents',
-    price: 25000,
+    price: 2500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -621,59 +636,36 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-team-red-hat',
     name: 'Red Cap',
     description: 'Show your allegiance to Team Red',
-    price: 25000,
+    price: 2500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
-    team: 'red',
   },
   {
     id: 'avatar-team-green-hat',
     name: 'Green Cap',
     description: 'Show your allegiance to Team Green',
-    price: 25000,
+    price: 2500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
-    team: 'green',
   },
   {
     id: 'avatar-black-cap',
     name: 'Black Cap',
     description: 'A sleek black MANA cap with panel seams',
-    price: 25000,
+    price: 2500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
   },
-  {
-    id: 'avatar-team-red-border',
-    name: 'Red Border',
-    description: 'A fiery red border for Team Red supporters',
-    price: 50000,
-    type: 'permanent-toggleable',
-    limit: 'one-time',
-    category: 'avatar-border',
-    slot: 'profile-border',
-    team: 'red',
-  },
-  {
-    id: 'avatar-team-green-border',
-    name: 'Green Border',
-    description: 'A verdant green border for Team Green supporters',
-    price: 50000,
-    type: 'permanent-toggleable',
-    limit: 'one-time',
-    category: 'avatar-border',
-    slot: 'profile-border',
-    team: 'green',
-  },
   // Achievement-gated hats
   {
     id: 'avatar-bull-horns',
+    hidden: true,
     name: 'Bull Horns',
     description: 'Mighty bull horns for the profitable trader',
     price: 100000,
@@ -689,6 +681,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-bear-ears',
+    hidden: true,
     name: 'Bear Ears',
     description: 'Fluffy bear ears for the seasoned trader who has weathered losses',
     price: 100000,
@@ -704,6 +697,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-cat-ears',
+    hidden: true,
     name: 'Cat Ears',
     description: 'Cute pointed cat ears for the curious trader',
     price: 30000,
@@ -715,6 +709,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   // Seasonal items - only available during their season
   {
     id: 'avatar-santa-hat',
+    hidden: true,
     name: 'Santa Hat',
     description: 'A festive Santa hat for the holiday season',
     price: 10000,
@@ -729,6 +724,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-bunny-ears',
+    hidden: true,
     name: 'Bunny Ears',
     description: 'Adorable bunny ears for spring celebrations',
     price: 10000,
@@ -968,8 +964,6 @@ export type AvatarDecorationId =
   | 'avatar-team-red-hat'
   | 'avatar-team-green-hat'
   | 'avatar-black-cap'
-  | 'avatar-team-red-border'
-  | 'avatar-team-green-border'
   | 'avatar-bull-horns'
   | 'avatar-bear-ears'
   | 'avatar-cat-ears'
@@ -1120,21 +1114,6 @@ export const getSeasonalAvailabilityText = (item: ShopItem): string | null => {
   endDate.setDate(endDate.getDate() + bufferDays)
 
   return `Available ${months[startDate.getMonth()]} ${startDate.getDate()} - ${months[endDate.getMonth()]} ${endDate.getDate()}`
-}
-
-// Get all items for a specific team
-export const getItemsForTeam = (team: ShopTeam): ShopItem[] => {
-  return SHOP_ITEMS.filter((item) => item.team === team)
-}
-
-// Get all entitlement IDs for items in a team
-export const getEntitlementIdsForTeam = (team: ShopTeam): string[] => {
-  return getItemsForTeam(team).map((item) => item.entitlementId ?? item.id)
-}
-
-// Get the opposite team
-export const getOppositeTeam = (team: ShopTeam): ShopTeam => {
-  return team === 'red' ? 'green' : 'red'
 }
 
 // Entitlement ID for charity champion trophy

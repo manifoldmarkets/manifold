@@ -102,14 +102,6 @@ export const Avatar = memo(
       'avatar-fire-item'
     )
     const hasBadAura = userHasAvatarDecoration(entitlements, 'avatar-bad-aura')
-    const hasTeamRedBorder = userHasAvatarDecoration(
-      entitlements,
-      'avatar-team-red-border'
-    )
-    const hasTeamGreenBorder = userHasAvatarDecoration(
-      entitlements,
-      'avatar-team-green-border'
-    )
     // Get active avatar overlay (hat) - excludes halo and crown since they're unique slots
     const activeOverlay = getActiveAvatarOverlay(entitlements)
     const overlayStyle = getOverlayStyle(entitlements, activeOverlay)
@@ -162,9 +154,7 @@ export const Avatar = memo(
       hasManaAura ||
       hasBlackHole ||
       hasFireItem ||
-      hasBadAura ||
-      hasTeamRedBorder ||
-      hasTeamGreenBorder
+      hasBadAura
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
@@ -243,14 +233,6 @@ export const Avatar = memo(
           />
         )}
 
-        {/* Team Red border glow */}
-        {hasTeamRedBorder && (
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-red-600 via-red-400 to-red-600 opacity-70 blur-sm" style={{ zIndex: -3 }} />
-        )}
-        {/* Team Green border glow */}
-        {hasTeamGreenBorder && (
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-green-600 via-green-400 to-green-600 opacity-70 blur-sm" style={{ zIndex: -3 }} />
-        )}
         {shouldShowImage ? (
           <Image
             width={sizeInPx}
@@ -265,9 +247,7 @@ export const Avatar = memo(
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
               hasBlackHole && 'relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]',
-              hasFireItem && 'relative',
-              hasTeamRedBorder && 'relative ring-2 ring-red-500',
-              hasTeamGreenBorder && 'relative ring-2 ring-green-500'
+              hasFireItem && 'relative'
             )}
             style={{ maxWidth: `${s * 0.25}rem`, position: 'relative', zIndex: 0 }}
             src={avatarUrl}
@@ -289,9 +269,7 @@ export const Avatar = memo(
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
               hasBlackHole && 'relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]',
-              hasFireItem && 'relative',
-              hasTeamRedBorder && 'relative ring-2 ring-red-500',
-              hasTeamGreenBorder && 'relative ring-2 ring-green-500'
+              hasFireItem && 'relative'
             )}
             style={{ position: 'relative', zIndex: 0 }}
             onClick={onClick}

@@ -14,8 +14,6 @@ import {
   getEntitlementIdsForCategory,
   isSeasonalItemAvailable,
   getSeasonalAvailabilityText,
-  getEntitlementIdsForTeam,
-  getOppositeTeam,
   YES_BUTTON_OPTIONS,
   NO_BUTTON_OPTIONS,
   YesButtonOption,
@@ -86,11 +84,32 @@ const isEntitlementOwned = (e: UserEntitlement) => {
 // Default item order (manual curation)
 const ITEM_ORDER: Record<string, number> = {
   'streak-forgiveness': 1,
-  'pampu-skin': 2,
+  'avatar-tinfoil-hat': 2,
   'avatar-golden-border': 3,
   'avatar-crown': 4,
   'hovercard-glow': 5,
   'avatar-graduation-cap': 6,
+  // Buttons
+  'pampu-skin': 10,
+  'custom-no-button': 11,
+  // Caps
+  'avatar-blue-cap': 15,
+  'avatar-team-red-hat': 16,
+  'avatar-team-green-hat': 17,
+  'avatar-black-cap': 18,
+  // Hats
+  'avatar-top-hat': 20,
+  'avatar-wizard-hat': 21,
+  'avatar-jester-hat': 22,
+  // Avatar effects
+  'avatar-crystal-ball': 30,
+  'avatar-disguise': 31,
+  'avatar-fire-item': 32,
+  // Hovercard
+  'hovercard-golden-follow': 40,
+  'hovercard-royalty': 41,
+  'hovercard-trading-floor': 42,
+  'hovercard-royal-border': 43,
 }
 
 type SortOption =
@@ -157,6 +176,7 @@ export default function ShopPage() {
   const [localStreakBonus, setLocalStreakBonus] = useState(0) // Track streak purchases
   const [sortOption, setSortOption] = useState<SortOption>('default')
   const [filterOption, setFilterOption] = useState<FilterOption>('all')
+  const [showHidden, setShowHidden] = useState(false)
 
   // Track toggle version to ignore stale server responses during rapid toggling
   const toggleVersionRef = useRef(0)
@@ -355,19 +375,6 @@ export default function ShopPage() {
         })
       }
 
-      // If enabling a team item, disable items from the opposite team
-      if (actualEnabled && item.team) {
-        const oppositeTeamIds = getEntitlementIdsForTeam(
-          getOppositeTeam(item.team)
-        )
-        newState = newState.map((e) => {
-          if (oppositeTeamIds.includes(e.entitlementId)) {
-            return { ...e, enabled: false }
-          }
-          return e
-        })
-      }
-
       // Update the toggled item
       const idx = newState.findIndex((e) => e.entitlementId === entitlementId)
       if (idx >= 0) {
@@ -409,20 +416,6 @@ export default function ShopPage() {
       }
     }
 
-    // Also update global context for opposite team items we disabled
-    if (actualEnabled && item.team) {
-      const oppositeTeamIds = getEntitlementIdsForTeam(
-        getOppositeTeam(item.team)
-      )
-      for (const ent of effectiveEntitlements) {
-        if (oppositeTeamIds.includes(ent.entitlementId) && ent.enabled) {
-          optimisticContext?.setOptimisticEntitlement({
-            ...ent,
-            enabled: false,
-          })
-        }
-      }
-    }
   }
 
   // Callback for metadata-only updates (no confetti, used by style pickers)
@@ -540,7 +533,10 @@ export default function ShopPage() {
                     item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
                   ) &&
                   // Exclude charity-champion-trophy (has its own special card)
-                  item.id !== 'charity-champion-trophy'
+                  item.id !== 'charity-champion-trophy' &&
+                  // Hide items marked as hidden unless owned, seasonally available, or admin toggled
+                  (!item.hidden || showHidden || ownedItemIds.has(getEntitlementId(item)) ||
+                    (item.seasonalAvailability && isSeasonalItemAvailable(item)))
               ),
               filterOption
             ),
@@ -588,14 +584,14 @@ export default function ShopPage() {
           />
         </div>
 
-        {isAdminOrMod && <AdminTestingTools user={user} />}
+        {isAdminOrMod && <AdminTestingTools user={user} showHidden={showHidden} setShowHidden={setShowHidden} />}
       </Col>
     </Page>
   )
 }
 
-function AdminTestingTools(props: { user: User | null | undefined }) {
-  const { user } = props
+function AdminTestingTools(props: { user: User | null | undefined; showHidden: boolean; setShowHidden: (v: boolean) => void }) {
+  const { user, showHidden, setShowHidden } = props
   const [resetting, setResetting] = useState(false)
 
   const handleResetCosmetics = async () => {
@@ -635,6 +631,15 @@ function AdminTestingTools(props: { user: User | null | undefined }) {
       <div className="text-ink-400 mt-1 text-xs">
         Refunds all non-subscription purchases. Supporter tiers are preserved.
       </div>
+      <label className="mt-3 flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showHidden}
+          onChange={(e) => setShowHidden(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+        />
+        <span className="text-ink-600 text-sm">Show hidden items</span>
+      </label>
     </div>
   )
 }
@@ -2244,39 +2249,6 @@ function GreenCapStylePreview(props: {
   )
 }
 
-function TeamBorderPreview(props: {
-  user: User | null | undefined
-  team: 'red' | 'green'
-}) {
-  const { user, team } = props
-  const ringColor = team === 'red' ? 'ring-red-500' : 'ring-green-500'
-  const glowColor =
-    team === 'red'
-      ? 'from-red-600 via-red-400 to-red-600'
-      : 'from-green-600 via-green-400 to-green-600'
-
-  return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        {/* Glow effect */}
-        <div
-          className={clsx(
-            'absolute -inset-1 rounded-full opacity-70 blur-sm bg-gradient-to-r',
-            glowColor
-          )}
-        />
-        <Avatar
-          username={user?.username}
-          avatarUrl={user?.avatarUrl}
-          size="lg"
-          noLink
-          className={clsx('relative ring-2', ringColor)}
-        />
-      </div>
-    </div>
-  )
-}
-
 // Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
 const BLACK_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
 const BLACK_CAP_STYLE_COUNT = BLACK_CAP_STYLE_LABELS.length
@@ -3728,10 +3700,6 @@ function ItemPreview(props: {
           }
         />
       )
-    case 'avatar-team-red-border':
-      return <TeamBorderPreview user={user} team="red" />
-    case 'avatar-team-green-border':
-      return <TeamBorderPreview user={user} team="green" />
     case 'avatar-bull-horns':
       return <BullHornsPreview user={user} />
     case 'avatar-bear-ears':
@@ -3947,6 +3915,7 @@ function ShopItemCard(props: {
 
   return (
     <>
+      <div className="group pb-1">
       <Card
         ref={cardRef}
         className={clsx(
@@ -3970,6 +3939,12 @@ function ShopItemCard(props: {
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
               <span className="text-ink-600 text-xs">Purchasing...</span>
             </div>
+          </div>
+        )}
+
+        {item.hidden && (
+          <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+            Hidden
           </div>
         )}
 
@@ -4000,6 +3975,12 @@ function ShopItemCard(props: {
           {isPremiumItem && !owned && (
             <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
               LEGENDARY
+            </div>
+          )}
+          {/* SEASONAL badge */}
+          {item.seasonalAvailability && (
+            <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+              SEASONAL
             </div>
           )}
         </Row>
@@ -4160,7 +4141,7 @@ function ShopItemCard(props: {
           // Earned items that aren't owned - show locked state
           <div className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-gray-100 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
             <FaLock className="h-3 w-3" />
-            <span>Reserved for Champion Trophy holders</span>
+            <span>Reserved for Past Champions</span>
           </div>
         ) : (
           // Non-owned item layout - stacks vertically on very narrow screens
@@ -4255,6 +4236,7 @@ function ShopItemCard(props: {
           </>
         )}
       </Card>
+      </div>
 
       <Modal open={showConfirmModal} setOpen={setShowConfirmModal}>
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">

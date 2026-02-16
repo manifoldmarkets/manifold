@@ -5,8 +5,6 @@ import {
   getEntitlementId,
   EXCLUSIVE_SLOTS,
   getEntitlementIdsForSlot,
-  getEntitlementIdsForTeam,
-  getOppositeTeam,
 } from 'common/shop/items'
 import { convertEntitlement } from 'common/shop/types'
 
@@ -59,20 +57,6 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
          AND entitlement_id = ANY($2)`,
         [auth.uid, item.conflicts]
       )
-    }
-
-    // If enabling a team item, disable items from the opposite team
-    if (enabled && item.team) {
-      const oppositeTeamIds = getEntitlementIdsForTeam(getOppositeTeam(item.team))
-      if (oppositeTeamIds.length > 0) {
-        await tx.none(
-          `UPDATE user_entitlements
-           SET enabled = false
-           WHERE user_id = $1
-           AND entitlement_id = ANY($2)`,
-          [auth.uid, oppositeTeamIds]
-        )
-      }
     }
 
     // Update the enabled status in user_entitlements table

@@ -10,8 +10,6 @@ import {
   SHOP_ITEMS,
   isSeasonalItemAvailable,
   getSeasonalAvailabilityText,
-  getEntitlementIdsForTeam,
-  getOppositeTeam,
 } from 'common/shop/items'
 import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 import {
@@ -320,20 +318,6 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
            AND entitlement_id = ANY($2)`,
           [auth.uid, item.conflicts]
         )
-      }
-
-      // For team items, disable items from the opposite team
-      if (item.team) {
-        const oppositeTeamIds = getEntitlementIdsForTeam(getOppositeTeam(item.team))
-        if (oppositeTeamIds.length > 0) {
-          await tx.none(
-            `UPDATE user_entitlements
-             SET enabled = false
-             WHERE user_id = $1
-             AND entitlement_id = ANY($2)`,
-            [auth.uid, oppositeTeamIds]
-          )
-        }
       }
 
       // For supporter tiers: DELETE all existing supporter entitlements (upgrade replaces, doesn't stack)
