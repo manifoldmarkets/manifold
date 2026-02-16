@@ -3062,7 +3062,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
+    props: z.object({ giveawayNum: z.coerce.number().optional(), userId: z.string().optional() }).strict(),
     returns: {} as {
       giveaway?: {
         giveawayNum: number
@@ -3080,6 +3080,39 @@ export const API = (_apiTypeCheck = {
       totalTickets: number
       winningCharity?: string
       winner?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+      }
+      champion?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+      }
+      topUsers?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        rank: number
+      }[]
+      yourEntry?: {
+        rank: number
+        totalTickets: number
+      }
+      trophyHolder?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        claimedTime: number
+      }
+      previousTrophyHolder?: {
         id: string
         username: string
         name: string
@@ -3200,12 +3233,31 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
+  'shop-update-metadata': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        metadata: z.record(z.any()),
+      })
+      .strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
   'shop-reset-all': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
+  },
+  'claim-charity-champion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ enabled: z.boolean().optional() }).strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
   // Admin spam detection endpoints
   'get-suspected-spam-comments': {

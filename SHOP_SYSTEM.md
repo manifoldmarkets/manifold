@@ -296,7 +296,13 @@ export const SHOP_ITEMS: ShopItem[] = [
 ### shop-reset-all (Admin Only)
 **File**: `backend/api/src/shop-reset-all.ts`
 
-Deletes all user entitlements and refunds mana. For testing only.
+Deletes all non-supporter entitlements and refunds mana. For testing only. Supporter/subscription entitlements are excluded from the refund.
+
+> **BEFORE PUSHING TO PROD**: The admin "Return All Cosmetics" button in `web/pages/shop.tsx` must be disabled. It is gated behind `isAdminOrMod` (frontend) and `isAdminId`/`isModId` (backend), but should still be removed from the UI before going live. To disable, comment out or delete this line in `shop.tsx`:
+> ```tsx
+> {isAdminOrMod && <AdminTestingTools user={user} />}
+> ```
+> The `AdminTestingTools` component and the backend endpoint can remain — the backend rejects non-admin callers with 403.
 
 ---
 

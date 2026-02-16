@@ -230,6 +230,8 @@ import { shopPurchase } from './shop-purchase'
 import { shopResetAll } from './shop-reset-all'
 import { shopToggle } from './shop-toggle'
 import { shopCancelSubscription } from './shop-cancel-subscription'
+import { shopUpdateMetadata } from './shop-update-metadata'
+import { claimCharityChampion } from './claim-charity-champion'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
 
@@ -465,6 +467,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
   'shop-cancel-subscription': shopCancelSubscription,
+  'shop-update-metadata': shopUpdateMetadata,
+  'claim-charity-champion': claimCharityChampion,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,
 } as const
