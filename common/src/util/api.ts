@@ -4,8 +4,12 @@ import { forEach } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { User } from 'firebase/auth'
 
-// LOCAL_ONLY mode: set a user ID that will be sent as X-Local-User header
-let localOnlyUserId: string | null = null
+// LOCAL_ONLY mode: set a user ID that will be sent as X-Local-User header.
+// Initialize from env var to avoid race conditions with async auth setup.
+let localOnlyUserId: string | null =
+  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LOCAL_TEST_USER_ID
+    ? process.env.NEXT_PUBLIC_LOCAL_TEST_USER_ID
+    : null
 export function setLocalOnlyUserId(userId: string | null) {
   localOnlyUserId = userId
 }
