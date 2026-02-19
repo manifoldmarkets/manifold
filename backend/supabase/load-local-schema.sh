@@ -105,6 +105,7 @@ echo "Phase 4: Remaining tables"
 
 declare -A loaded=(
   [seed.sql]=1
+  [seed-local-data.sql]=1
   [functions.sql]=1
   [users.sql]=1
   [private_users.sql]=1
