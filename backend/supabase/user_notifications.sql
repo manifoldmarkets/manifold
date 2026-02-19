@@ -4,7 +4,7 @@ create table if not exists
     data jsonb not null,
     notification_id text not null,
     user_id text not null,
-    constraint primary key (user_id, notification_id)
+    primary key (user_id, notification_id)
   );
 
 -- Row Level Security

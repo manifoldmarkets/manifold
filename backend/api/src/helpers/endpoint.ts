@@ -45,7 +45,7 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
     if (localUserId) {
       return {
         kind: 'jwt',
-        data: { user_id: localUserId } as admin.auth.DecodedIdToken,
+        data: { user_id: localUserId } as unknown as admin.auth.DecodedIdToken,
       }
     }
   }

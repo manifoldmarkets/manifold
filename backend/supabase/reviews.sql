@@ -7,7 +7,7 @@ create table if not exists
     rating numeric not null,
     reviewer_id text not null,
     vendor_id text not null,
-    constraint primary key (reviewer_id, market_id)
+    primary key (reviewer_id, market_id)
   );
 
 -- Indexes

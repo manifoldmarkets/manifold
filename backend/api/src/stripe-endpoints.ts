@@ -135,9 +135,10 @@ const issueMoneys = async (session: StripeSession) => {
   log('priceInDollars', priceInDollars, 'deposit', deposit)
 
   // TODO kill firestore collection when we get off stripe. too lazy to do it now
-  const id = await firestore.runTransaction(async (trans) => {
+  const fs = getFirestore()
+  const id = await fs.runTransaction(async (trans) => {
     const query = await trans.get(
-      firestore
+      fs
         .collection('stripe-transactions')
         .where('sessionId', '==', sessionId)
     )
@@ -145,7 +146,7 @@ const issueMoneys = async (session: StripeSession) => {
       log('session', sessionId, 'already processed')
       return false
     }
-    const stripeDoc = firestore.collection('stripe-transactions').doc()
+    const stripeDoc = fs.collection('stripe-transactions').doc()
     trans.set(stripeDoc, {
       userId,
       manticDollarQuantity: deposit,
@@ -262,4 +263,4 @@ const handleBoostPayment = async (session: StripeSession) => {
   )
 }
 
-const firestore = admin.firestore()
+const getFirestore = () => admin.firestore()
