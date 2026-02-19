@@ -104,9 +104,9 @@ export const getBetsWithFilter = async (
     : select('contract_bets.*')
 
   const ordering = points
-    ? // Ordering by created_time is substantially faster than bet_id
-      // on large contracts and callers normalize to time order downstream anyway.
-      orderBy('contract_bets.created_time desc')
+    ? // Intentionally order by random bet_id so limited points queries
+      // sample across the full history; callers sort by createdTime later.
+      orderBy('contract_bets.bet_id')
     : !count &&
       orderBy(
         `contract_bets.created_time ${order ? order.toLowerCase() : 'desc'}`
