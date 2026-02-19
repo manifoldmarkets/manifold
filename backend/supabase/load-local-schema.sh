@@ -3,6 +3,22 @@
 # Run after `npx supabase start`.
 #
 # Usage: ./load-local-schema.sh
+#
+# Handles two circular dependencies:
+# 1. Within functions.sql: add_creator_name_to_description (line 3) depends
+#    on extract_text_from_rich_text_json (line 137) — function ordering.
+# 2. Between functions.sql and tables: contracts.sql needs
+#    add_creator_name_to_description, but some functions need contracts table.
+#
+# Solution: THREE passes of functions.sql:
+#   Pass 1: Creates base functions (extract_text_from_rich_text_json, etc.)
+#   Pass 2: Creates functions depending on pass-1 functions
+#            (add_creator_name_to_description) — needed before tables
+#   [Tables loaded here]
+#   Pass 3: Creates table-dependent functions
+#
+# Also strips `leakproof` from function definitions since the local
+# Supabase postgres user is not a superuser.
 
 set -euo pipefail
 
@@ -17,9 +33,25 @@ run_sql_file() {
   if psql "$DB_URL" -f "$file" > /dev/null 2>&1; then
     echo "OK"
   else
-    echo "WARN (errors, may be OK if constraints already exist)"
-    # Re-run showing errors for debugging
+    echo "WARN (some errors, may be expected)"
     psql "$DB_URL" -f "$file" 2>&1 | grep -i "error" | head -5 || true
+  fi
+}
+
+# Load functions.sql with leakproof stripped (local postgres isn't superuser).
+# Errors are expected — table-dependent functions will fail on first pass.
+run_functions() {
+  local label="$1"
+  echo -n "  functions.sql ($label)... "
+  local err_count
+  err_count=$(sed 's/ leakproof / /gi' "$SCRIPT_DIR/functions.sql" \
+    | psql "$DB_URL" -f - 2>&1 \
+    | grep -ci "error" || true)
+  err_count="${err_count:-0}"
+  if [ "$err_count" -eq 0 ]; then
+    echo "OK (all succeeded)"
+  else
+    echo "OK ($err_count skipped)"
   fi
 }
 
@@ -30,10 +62,27 @@ echo ""
 echo "Phase 1: Extensions and base configuration"
 run_sql_file "$SCRIPT_DIR/seed.sql"
 
-# Phase 2: Functions (must come before tables that use them in triggers/generated columns)
+# Phase 2: Functions — two pre-table passes
+# Pass 1: Creates base functions (extract_text_from_rich_text_json, etc.)
+# Pass 2: Creates functions that depend on pass-1 functions
+#          (add_creator_name_to_description → extract_text_from_rich_text_json)
 echo ""
-echo "Phase 2: Functions"
-run_sql_file "$SCRIPT_DIR/functions.sql"
+echo "Phase 2: Functions (pre-table passes)"
+run_functions "pass 1 — base functions"
+run_functions "pass 2 — derived functions"
+
+# Phase 2b: Create missing custom types referenced by table definitions
+# These types are not defined in any schema file but are used by tables.
+echo ""
+echo "Phase 2b: Missing custom types"
+echo -n "  Creating types... "
+psql "$DB_URL" -c "
+  DO \$\$ BEGIN
+    CREATE TYPE status_type AS ENUM ('new', 'under review', 'resolved', 'needs admin');
+  EXCEPTION WHEN duplicate_object THEN null;
+  END \$\$;
+" > /dev/null 2>&1
+echo "OK"
 
 # Phase 3: Core tables (referenced by foreign keys in other tables)
 echo ""
@@ -54,7 +103,6 @@ done
 echo ""
 echo "Phase 4: Remaining tables"
 
-# Collect files we've already loaded or want to skip
 declare -A loaded=(
   [seed.sql]=1
   [functions.sql]=1
@@ -76,9 +124,14 @@ for f in "$SCRIPT_DIR"/*.sql; do
   fi
 done
 
-# Phase 5: Views and materialized views (depend on tables)
+# Phase 5: Functions — final pass (now tables exist, table-dependent functions succeed)
 echo ""
-echo "Phase 5: Views and materialized views"
+echo "Phase 5: Functions (pass 3 — table-dependent)"
+run_functions "pass 3 — table-dependent"
+
+# Phase 6: Views and materialized views (depend on tables + functions)
+echo ""
+echo "Phase 6: Views and materialized views"
 run_sql_file "$SCRIPT_DIR/views.sql"
 run_sql_file "$SCRIPT_DIR/achievement_materialized_views.sql"
 
