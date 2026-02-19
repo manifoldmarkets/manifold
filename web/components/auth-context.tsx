@@ -30,6 +30,15 @@ import toast from 'react-hot-toast'
 import { Row } from './layout/row'
 import { TokenNumber } from './widgets/token-number'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
+import { setLocalOnlyUserId } from 'common/util/api'
+
+const IS_LOCAL_ONLY =
+  typeof process !== 'undefined' &&
+  process.env.NEXT_PUBLIC_LOCAL_ONLY === 'true'
+const LOCAL_TEST_USER =
+  typeof process !== 'undefined'
+    ? process.env.NEXT_PUBLIC_LOCAL_TEST_USER
+    : undefined
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -158,7 +167,41 @@ export function AuthProvider(props: {
     fbUser.getIdToken()
   }
 
+  // LOCAL_ONLY mode: fetch user from local API instead of Firebase
   useEffect(() => {
+    if (!IS_LOCAL_ONLY || !LOCAL_TEST_USER) return
+
+    // Set the local user ID immediately so API calls include X-Local-User header
+    const fetchLocalUser = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'localhost:8088'
+        const resp = await fetch(
+          `http://${apiUrl}/v0/user/${LOCAL_TEST_USER}`
+        )
+        if (!resp.ok) {
+          console.error('Failed to fetch local test user:', resp.statusText)
+          setUser(null)
+          return
+        }
+        const userData = (await resp.json()) as User
+        setLocalOnlyUserId(userData.id)
+        setUser(userData)
+        setPrivateUser({
+          id: userData.id,
+          notificationPreferences: {},
+        } as PrivateUser)
+        setAuthLoaded(true)
+      } catch (e) {
+        console.error('Error fetching local test user:', e)
+        setUser(null)
+      }
+    }
+    fetchLocalUser()
+  }, [])
+
+  useEffect(() => {
+    if (IS_LOCAL_ONLY) return // Skip Firebase auth in LOCAL_ONLY mode
+
     return onIdTokenChanged(
       auth,
       async (fbUser) => {

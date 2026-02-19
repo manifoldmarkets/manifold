@@ -8,6 +8,15 @@ export function getSupabaseInstanceId() {
 }
 
 export function initSupabaseClient() {
+  // LOCAL_ONLY mode: use local Supabase URL and key from env
+  const localUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const localKey =
+    process.env.NEXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY
+  if (localUrl && localKey) {
+    return createClient(localUrl, localKey)
+  }
+
   const instanceId = getSupabaseInstanceId()
   return createClient(instanceId, ENV_CONFIG.supabaseAnonKey)
 }
