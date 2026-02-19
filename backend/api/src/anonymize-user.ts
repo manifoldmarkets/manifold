@@ -1,10 +1,11 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updatePrivateUser, updateUser } from 'shared/supabase/users'
+import { updatePrivateUser } from 'shared/supabase/users'
 import { getPrivateUser, getUser } from 'shared/utils'
 import { FieldVal } from 'shared/supabase/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { trackPublicEvent } from 'shared/analytics'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 import { isAdminId } from 'common/envs/constants'
 import { randomString } from 'common/util/random'
 
@@ -43,15 +44,34 @@ export const anonymizeUser: APIHandler<'anonymize-user'> = async (
   const randomUsername = `deleted_${randomString(8)}`
   const randomName = `Deleted User ${randomString(4)}`
 
-  // Update public user data - remove all identifying information
-  await updateUser(pg, userId, {
+  // Update public user data - remove all identifying information.
+  // name and username are top-level columns, so we must update them directly
+  // (updateUser only writes to the data JSONB column and would not persist these).
+  await pg.none(
+    `update users set
+      name = $2,
+      username = $3,
+      data = data
+        || jsonb_build_object(
+             'avatarUrl', '',
+             'userDeleted', true)
+        - 'bio'
+        - 'website'
+        - 'twitterHandle'
+        - 'discordHandle'
+    where id = $1`,
+    [userId, randomName, randomUsername]
+  )
+  broadcastUpdatedUser({
+    id: userId,
     name: randomName,
     username: randomUsername,
-    avatarUrl: '', // Remove avatar
+    avatarUrl: '',
     bio: undefined,
     website: undefined,
     twitterHandle: undefined,
     discordHandle: undefined,
+    userDeleted: true,
   })
 
   // Update private user data - remove identifying information
