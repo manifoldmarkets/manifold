@@ -8,7 +8,7 @@ create table if not exists
     reaction_id text default random_alphanumeric (12) not null,
     reaction_type text default 'like'::text not null,
     user_id text not null,
-    constraint primary key (user_id, reaction_id)
+    primary key (user_id, reaction_id)
   );
 
 -- Row Level Security

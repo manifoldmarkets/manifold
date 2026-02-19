@@ -3,7 +3,7 @@ create table if not exists
   group_contracts (
     contract_id text not null,
     group_id text not null,
-    constraint primary key (group_id, contract_id)
+    primary key (group_id, contract_id)
   );
 
 -- Foreign Keys

@@ -3,7 +3,7 @@ create table if not exists
   dashboard_groups (
     dashboard_id text not null,
     group_id text not null,
-    constraint primary key (dashboard_id, group_id)
+    primary key (dashboard_id, group_id)
   );
 
 -- Foreign Keys

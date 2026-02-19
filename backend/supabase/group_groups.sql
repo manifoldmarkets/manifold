@@ -3,7 +3,7 @@ create table if not exists
   group_groups (
     bottom_id text not null,
     top_id text not null,
-    constraint primary key (top_id, bottom_id)
+    primary key (top_id, bottom_id)
   );
 
 -- Foreign Keys
