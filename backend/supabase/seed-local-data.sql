@@ -29,7 +29,8 @@ VALUES (
     "blockedUserIds": [],
     "blockedByUserIds": [],
     "blockedContractIds": [],
-    "blockedGroupSlugs": []
+    "blockedGroupSlugs": [],
+    "isAdvancedTrader": true
   }'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -91,9 +92,9 @@ VALUES (
   }'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
--- Enable trading
+-- Enable trading (both MANA and CASH tokens)
 INSERT INTO system_trading_status (token, status)
-VALUES ('MANA', true)
+VALUES ('MANA', true), ('CASH', true)
 ON CONFLICT (token) DO UPDATE SET status = true;
 
 -- Sample binary market
@@ -131,6 +132,7 @@ VALUES (
     'isResolved', false,
     'visibility', 'public',
     'elasticity', 0.5,
+    'collectedFees', '{"creatorFee": 0, "platformFee": 0, "liquidityFee": 0}'::jsonb,
     'uniqueBettorCount', 0,
     'profitCached', '{"daily": 0, "weekly": 0, "monthly": 0, "allTime": 0}'::jsonb,
     'creatorTraders', '{"daily": 0, "weekly": 0, "monthly": 0, "allTime": 0}'::jsonb,

@@ -4,18 +4,21 @@
 #
 # Usage: ./load-local-schema.sh
 #
-# Handles two circular dependencies:
+# Handles three circular dependencies:
 # 1. Within functions.sql: add_creator_name_to_description (line 3) depends
 #    on extract_text_from_rich_text_json (line 137) — function ordering.
 # 2. Between functions.sql and tables: contracts.sql needs
 #    add_creator_name_to_description, but some functions need contracts table.
+# 3. Within table .sql files: CREATE TRIGGER appears before CREATE FUNCTION,
+#    so triggers fail on first load. A second pass picks them up.
 #
-# Solution: THREE passes of functions.sql:
+# Solution: THREE passes of functions.sql + trigger re-run:
 #   Pass 1: Creates base functions (extract_text_from_rich_text_json, etc.)
 #   Pass 2: Creates functions depending on pass-1 functions
 #            (add_creator_name_to_description) — needed before tables
 #   [Tables loaded here]
 #   Pass 3: Creates table-dependent functions
+#   [Re-run table files to pick up triggers]
 #
 # Also strips `leakproof` from function definitions since the local
 # Supabase postgres user is not a superuser.
@@ -129,6 +132,34 @@ done
 echo ""
 echo "Phase 5: Functions (pass 3 — table-dependent)"
 run_functions "pass 3 — table-dependent"
+
+# Phase 5b: Re-run table files to pick up triggers.
+# Each table .sql file contains CREATE TABLE, then CREATE TRIGGER, then
+# CREATE FUNCTION. On first load (Phase 3/4), triggers fail because the
+# function they reference hasn't been defined yet. By this point the
+# functions exist, so a second pass picks up the triggers.
+echo ""
+echo "Phase 5b: Triggers (re-run table files)"
+trigger_count=0
+for f in "$SCRIPT_DIR"/*.sql; do
+  name="$(basename "$f")"
+  if [[ -n "${loaded[$name]:-}" ]]; then
+    continue  # skip non-table files (seed, functions, views)
+  fi
+  # Only bother re-running files that define triggers
+  if grep -qi 'create trigger' "$f"; then
+    psql "$DB_URL" -f "$f" > /dev/null 2>&1
+    trigger_count=$((trigger_count + 1))
+  fi
+done
+# Also re-run core table files that have triggers
+for f in users.sql contracts.sql groups.sql old_posts.sql; do
+  if grep -qi 'create trigger' "$SCRIPT_DIR/$f"; then
+    psql "$DB_URL" -f "$SCRIPT_DIR/$f" > /dev/null 2>&1
+    trigger_count=$((trigger_count + 1))
+  fi
+done
+echo "  Re-ran $trigger_count table files for trigger creation"
 
 # Phase 6: Views and materialized views (depend on tables + functions)
 echo ""
