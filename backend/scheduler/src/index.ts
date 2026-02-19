@@ -1,5 +1,9 @@
-import { initFirebase, initSecrets } from './utils'
-initFirebase()
+const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+
+if (!LOCAL_ONLY) {
+  const { initFirebase } = require('./utils')
+  initFirebase()
+}
 
 import * as fs from 'fs'
 import * as path from 'path'
@@ -11,7 +15,6 @@ import { isProd } from 'shared/utils'
 import { log } from 'shared/utils'
 import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
-import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -22,12 +25,17 @@ function loadTemplate(filename: string) {
 const indexTemplate = loadTemplate('index.hbs')
 
 async function start() {
-  await initSecrets()
+  if (LOCAL_ONLY) {
+    log.info('Scheduler starting in LOCAL_ONLY mode, skipping secrets and metrics.')
+  } else {
+    const { initSecrets } = require('./utils')
+    await initSecrets()
+    const { METRIC_WRITER } = require('shared/monitoring/metric-writer')
+    METRIC_WRITER.start()
+  }
 
   const app = express()
   app.use(express.json())
-
-  METRIC_WRITER.start()
 
   const prod = isProd()
   app.use(
