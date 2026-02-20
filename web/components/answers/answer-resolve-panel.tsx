@@ -439,12 +439,8 @@ export const IndependentAnswersResolvePanel = (props: {
   const isAdmin = useAdmin()
   const user = useUser()
 
-  const { answers, addAnswersMode } = contract
-  const sortedAnswers = sortBy(
-    answers,
-    (a) => (a.resolution ? -a.subsidyPool : -Infinity),
-    (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
-  )
+  const { answers } = contract
+  const sortedAnswers = getSortedIndependentAnswers(contract)
 
   // Track resolutions for batch submission
   const [selectedResolutions, setSelectedResolutions] =
@@ -793,6 +789,224 @@ export const IndependentAnswersResolvePanel = (props: {
   )
 }
 
+const getSortedIndependentAnswers = (contract: MultiContract) => {
+  const { answers, addAnswersMode } = contract
+  return sortBy(
+    answers,
+    (a) => (a.resolution ? -a.subsidyPool : -Infinity),
+    (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
+  )
+}
+
+export const IndependentAnswersUnresolvePanel = (props: {
+  contract: MultiContract
+  onClose: () => void
+  show: boolean
+}) => {
+  const { contract, onClose, show } = props
+  const user = useUser()
+  const sortedAnswers = getSortedIndependentAnswers(contract)
+  const [selectedAnswerIds, setSelectedAnswerIds] = useState<string[]>([])
+  const [isShowingConfirmation, setIsShowingConfirmation] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | undefined>(undefined)
+  const [completedAnswerIds, setCompletedAnswerIds] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!show) return
+    setSelectedAnswerIds([])
+    setIsShowingConfirmation(false)
+    setError(undefined)
+    setCompletedAnswerIds([])
+  }, [show])
+
+  if (!show) return null
+
+  const toggleAnswer = (answerId: string) => {
+    setSelectedAnswerIds((ids) =>
+      ids.includes(answerId)
+        ? ids.filter((id) => id !== answerId)
+        : [...ids, answerId]
+    )
+  }
+
+  const unresolveAnswers = async () => {
+    if (isSubmitting || selectedAnswerIds.length === 0) return
+    setIsSubmitting(true)
+    setError(undefined)
+    try {
+      const nextCompleted: string[] = [...completedAnswerIds]
+      for (const answerId of selectedAnswerIds) {
+        if (nextCompleted.includes(answerId)) continue
+        await api('unresolve', { contractId: contract.id, answerId })
+        nextCompleted.push(answerId)
+        setCompletedAnswerIds([...nextCompleted])
+      }
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.message.toString())
+      } else {
+        setError('Failed to unresolve answers')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const hasCompletedAll =
+    !isSubmitting &&
+    selectedAnswerIds.length > 0 &&
+    completedAnswerIds.length === selectedAnswerIds.length
+  const remainingAnswerIds = selectedAnswerIds.filter(
+    (id) => !completedAnswerIds.includes(id)
+  )
+  const hasPartiallyCompleted =
+    completedAnswerIds.length > 0 && remainingAnswerIds.length > 0
+
+  if (isShowingConfirmation) {
+    return (
+      <GradientContainer>
+        <Col className="gap-3">
+          <div className="text-lg font-semibold">
+            {!isSubmitting && !hasCompletedAll && !hasPartiallyCompleted
+              ? 'Confirm Unresolution'
+              : !isSubmitting && hasPartiallyCompleted
+              ? 'Continue Unresolution'
+              : isSubmitting
+              ? 'Processing Unresolutions...'
+              : 'Unresolutions Complete'}
+          </div>
+
+          <div>
+            {!isSubmitting && !hasCompletedAll && !hasPartiallyCompleted
+              ? 'You are about to unresolve the following answers:'
+              : !isSubmitting && hasPartiallyCompleted
+              ? `${completedAnswerIds.length} answer(s) unresolved. Continue with remaining ${remainingAnswerIds.length}`
+              : isSubmitting
+              ? 'Processing your selected unresolutions:'
+              : 'All unresolutions have been processed successfully:'}
+          </div>
+
+          <div className="border-ink-200 max-h-60 overflow-y-auto rounded border p-2">
+            {selectedAnswerIds.map((answerId) => {
+              const answer = contract.answers.find((a) => a.id === answerId)
+              if (!answer) return null
+              const isCompleted = completedAnswerIds.includes(answerId)
+              const isCurrentlyProcessing =
+                isSubmitting &&
+                !isCompleted &&
+                completedAnswerIds.length === selectedAnswerIds.indexOf(answerId)
+
+              return (
+                <div
+                  key={answerId}
+                  className="border-ink-100 flex items-center justify-between border-b py-2 last:border-0"
+                >
+                  <div className="font-medium">{answer.text}</div>
+                  <Row className="items-center gap-2">
+                    <div className="text-ink-500 text-sm font-semibold">
+                      UNRESOLVE
+                    </div>
+                    {isCompleted && (
+                      <div className="ml-2 text-sm font-medium text-green-500">
+                        ✓ Completed
+                      </div>
+                    )}
+                    {isCurrentlyProcessing && (
+                      <div className="text-ink-500 ml-2 animate-pulse text-sm font-medium">
+                        Processing...
+                      </div>
+                    )}
+                  </Row>
+                </div>
+              )
+            })}
+          </div>
+
+          {error && <div className="text-scarlet-500 p-3">{error}</div>}
+
+          <Row className="justify-end gap-3">
+            {!isSubmitting && !hasCompletedAll && (
+              <Button color="gray" onClick={() => setIsShowingConfirmation(false)}>
+                Back
+              </Button>
+            )}
+            {!isSubmitting && !hasCompletedAll && (
+              <Button
+                color={hasPartiallyCompleted ? 'indigo' : 'red-outline'}
+                onClick={unresolveAnswers}
+              >
+                {hasPartiallyCompleted
+                  ? 'Continue Unresolving'
+                  : 'Submit All Unresolutions'}
+              </Button>
+            )}
+            {hasCompletedAll && (
+              <Button color="green" onClick={onClose}>
+                Done
+              </Button>
+            )}
+            {isSubmitting && (
+              <Button color="indigo" disabled loading>
+                Processing...
+              </Button>
+            )}
+          </Row>
+        </Col>
+      </GradientContainer>
+    )
+  }
+
+  return (
+    <GradientContainer>
+      <Col className="gap-3">
+        <Row className="justify-end">
+          <Button onClick={onClose} color="gray-white">
+            Close
+          </Button>
+        </Row>
+        <div className="text-lg">
+          Unresolve answers for "{contract.question}"
+        </div>
+        <div className="text-ink-600 text-sm">
+          Select resolved answers to unresolve. This is serious business and
+          undoes payouts for selected answers.
+        </div>
+
+        <Row className="bg-primary-50 items-center justify-between rounded p-3">
+          <div>
+            <span className="font-medium">{selectedAnswerIds.length}</span>{' '}
+            answer{selectedAnswerIds.length === 1 ? '' : 's'} selected to
+            unresolve
+          </div>
+          <Button
+            color="indigo"
+            disabled={selectedAnswerIds.length === 0}
+            onClick={() => setIsShowingConfirmation(true)}
+          >
+            Review & Submit
+          </Button>
+        </Row>
+
+        {!!error && <div className="text-scarlet-500 p-2">{error}</div>}
+
+        <Col className="gap-2">
+          {sortedAnswers.map((answer) => (
+            <IndependentUnresolveAnswerItem
+              key={answer.id}
+              contract={contract}
+              answer={answer}
+              color={getAnswerColor(answer)}
+              isSelected={selectedAnswerIds.includes(answer.id)}
+              onToggle={toggleAnswer}
+            />
+          ))}
+        </Col>
+      </Col>
+    </GradientContainer>
+  )
+}
+
 function IndependentResolutionAnswerItem(props: {
   contract: MultiContract
   answer: Answer
@@ -970,6 +1184,63 @@ function IndependentResolutionAnswerItem(props: {
         </Row>
       </div>
       <hr className="border-ink-300 mb-2 mt-4" />
+    </Col>
+  )
+}
+
+function IndependentUnresolveAnswerItem(props: {
+  contract: MultiContract
+  answer: Answer
+  color: string
+  isSelected: boolean
+  onToggle: (answerId: string) => void
+}) {
+  const { contract, answer, color, isSelected, onToggle } = props
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
+  const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
+  const prob = getAnswerProbability(contract, answer.id)
+  const isResolved = !!answer.resolution
+
+  return (
+    <Col>
+      <AnswerBar
+        color={color}
+        prob={prob}
+        label={
+          <Row className={'items-center gap-1'}>
+            <AnswerStatus contract={contract} answer={answer} />
+            {answer.isOther ? (
+              <span>
+                Other{' '}
+                <InfoTooltip className="!text-ink-600" text={OTHER_TOOLTIP_TEXT} />
+              </span>
+            ) : (
+              <CreatorAndAnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                creator={
+                  addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+                }
+                className={clsx('items-center text-sm !leading-none sm:text-base')}
+              />
+            )}
+          </Row>
+        }
+        end={
+          isResolved ? (
+            <input
+              className={clsx('checked:!bg-purple-500')}
+              type="checkbox"
+              name="unresolve-opt"
+              checked={isSelected}
+              onChange={() => onToggle(answer.id)}
+              value={answer.id}
+            />
+          ) : (
+            <span className="text-ink-500 text-xs">Not resolved</span>
+          )
+        }
+      />
     </Col>
   )
 }

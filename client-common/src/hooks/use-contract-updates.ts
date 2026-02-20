@@ -42,7 +42,25 @@ export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
                 (newAnswer) => newAnswer.id === answer.id
               )
               if (!update) return answer
-              return { ...answer, ...update }
+              return {
+                ...answer,
+                ...update,
+                ...('resolution' in update
+                  ? { resolution: update.resolution ?? undefined }
+                  : {}),
+                ...('resolutionTime' in update
+                  ? { resolutionTime: update.resolutionTime ?? undefined }
+                  : {}),
+                ...('resolutionProbability' in update
+                  ? {
+                      resolutionProbability:
+                        update.resolutionProbability ?? undefined,
+                    }
+                  : {}),
+                ...('resolverId' in update
+                  ? { resolverId: update.resolverId ?? undefined }
+                  : {}),
+              }
             }
           ),
         }
