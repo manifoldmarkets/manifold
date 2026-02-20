@@ -895,7 +895,8 @@ export const IndependentAnswersUnresolvePanel = (props: {
               const isCurrentlyProcessing =
                 isSubmitting &&
                 !isCompleted &&
-                completedAnswerIds.length === selectedAnswerIds.indexOf(answerId)
+                completedAnswerIds.length ===
+                  selectedAnswerIds.indexOf(answerId)
 
               return (
                 <div
@@ -927,7 +928,10 @@ export const IndependentAnswersUnresolvePanel = (props: {
 
           <Row className="justify-end gap-3">
             {!isSubmitting && !hasCompletedAll && (
-              <Button color="gray" onClick={() => setIsShowingConfirmation(false)}>
+              <Button
+                color="gray"
+                onClick={() => setIsShowingConfirmation(false)}
+              >
                 Back
               </Button>
             )}
@@ -1212,16 +1216,23 @@ function IndependentUnresolveAnswerItem(props: {
             {answer.isOther ? (
               <span>
                 Other{' '}
-                <InfoTooltip className="!text-ink-600" text={OTHER_TOOLTIP_TEXT} />
+                <InfoTooltip
+                  className="!text-ink-600"
+                  text={OTHER_TOOLTIP_TEXT}
+                />
               </span>
             ) : (
               <CreatorAndAnswerLabel
                 text={answer.text}
                 createdTime={answer.createdTime}
                 creator={
-                  addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+                  addAnswersMode === 'ANYONE'
+                    ? answerCreator ?? false
+                    : undefined
                 }
-                className={clsx('items-center text-sm !leading-none sm:text-base')}
+                className={clsx(
+                  'items-center text-sm !leading-none sm:text-base'
+                )}
               />
             )}
           </Row>
