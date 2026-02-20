@@ -1,8 +1,15 @@
 import { UserEntitlement } from './shop/types'
+import { HOUR_MS } from './util/time'
 
 // ============================================
 // SUPPORTER TIER SYSTEM
 // ============================================
+
+// Grace period for auto-renewing memberships.
+// The renewal scheduler runs daily, so memberships that expire between runs
+// would briefly appear as lapsed. This grace period keeps auto-renewing
+// memberships active until the scheduler processes them.
+const RENEWAL_GRACE_PERIOD_MS = 25 * HOUR_MS
 
 export type SupporterTier = 'basic' | 'plus' | 'premium'
 
@@ -129,8 +136,15 @@ export function getUserSupporterTier(
       (e) => e.entitlementId === SUPPORTER_TIERS[tier].id
     )
     if (entitlement && entitlement.enabled) {
-      // Check if not expired
       if (!entitlement.expiresTime || entitlement.expiresTime > now) {
+        return tier
+      }
+      // Auto-renewing memberships get a grace period so they don't lapse
+      // between expiration and the next scheduler run
+      if (
+        entitlement.autoRenew &&
+        entitlement.expiresTime > now - RENEWAL_GRACE_PERIOD_MS
+      ) {
         return tier
       }
     }
@@ -206,6 +220,12 @@ export function getSupporterEntitlement(
     )
     if (entitlement && entitlement.enabled) {
       if (!entitlement.expiresTime || entitlement.expiresTime > now) {
+        return entitlement
+      }
+      if (
+        entitlement.autoRenew &&
+        entitlement.expiresTime > now - RENEWAL_GRACE_PERIOD_MS
+      ) {
         return entitlement
       }
     }
