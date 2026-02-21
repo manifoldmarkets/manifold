@@ -126,7 +126,7 @@ export default function UserPage(props: {
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
-    privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
+    privateUser?.blockedUserIds?.includes(user?.id ?? '_') ?? false
   if (!user) return <Custom404 />
   else if (user.userDeleted && !isAdminOrMod) return <DeletedUser />
 

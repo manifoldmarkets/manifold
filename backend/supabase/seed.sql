@@ -1,7 +1,7 @@
 -- noinspection SqlNoDataSourceInspectionForFile
-/ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /
+/* *************************************************************** */
 /* 0. database-wide configuration */
-/ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /
+/* *************************************************************** */
 /* allow our backend and CLI users to have a long statement timeout */
 alter role postgres
 set

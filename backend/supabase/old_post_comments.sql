@@ -7,7 +7,7 @@ create table if not exists
     fs_updated_time timestamp without time zone,
     post_id text not null,
     user_id text,
-    constraint primary key (post_id, comment_id)
+    primary key (post_id, comment_id)
   );
 
 -- Row Level Security
