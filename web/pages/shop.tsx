@@ -2949,54 +2949,61 @@ function BullHornsPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Left horn */}
+        {/* Left horn - thick throughout curve, 4-stop gradient */}
         <svg
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          className="absolute"
           style={{
-            left: -7,
-            top: -6,
-            width: 18,
-            height: 18,
+            right: '50%',
+            top: -11,
+            width: 32,
+            height: 24,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-            transform: 'rotate(-20deg)',
           }}
-          viewBox="0 0 24 24"
+          viewBox="0 0 32 24"
         >
           <defs>
-            <linearGradient id="bull-preview-left" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#78350F" />
-              <stop offset="50%" stopColor="#D97706" />
-              <stop offset="100%" stopColor="#FBBF24" />
+            <linearGradient id="bull-preview-left" gradientUnits="userSpaceOnUse" x1="30" y1="20" x2="4" y2="4">
+              <stop offset="0%" stopColor="#D4A574" />
+              <stop offset="35%" stopColor="#8B6914" />
+              <stop offset="70%" stopColor="#5C3D1A" />
+              <stop offset="100%" stopColor="#2C1A0A" />
             </linearGradient>
           </defs>
           <path
-            d="M20 20 Q8 20 4 8 Q2 4 6 2 Q10 2 12 8 Q14 14 20 20Z"
+            d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
             fill="url(#bull-preview-left)"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth="0.5"
+            strokeLinejoin="round"
           />
         </svg>
-        {/* Right horn */}
+        {/* Right horn (mirrored) */}
         <svg
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          className="absolute"
           style={{
-            right: -7,
-            top: -6,
-            width: 18,
-            height: 18,
+            left: '50%',
+            top: -11,
+            width: 32,
+            height: 24,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-            transform: 'rotate(20deg) scaleX(-1)',
+            transform: 'scaleX(-1)',
           }}
-          viewBox="0 0 24 24"
+          viewBox="0 0 32 24"
         >
           <defs>
-            <linearGradient id="bull-preview-right" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#78350F" />
-              <stop offset="50%" stopColor="#D97706" />
-              <stop offset="100%" stopColor="#FBBF24" />
+            <linearGradient id="bull-preview-right" gradientUnits="userSpaceOnUse" x1="30" y1="20" x2="4" y2="4">
+              <stop offset="0%" stopColor="#D4A574" />
+              <stop offset="35%" stopColor="#8B6914" />
+              <stop offset="70%" stopColor="#5C3D1A" />
+              <stop offset="100%" stopColor="#2C1A0A" />
             </linearGradient>
           </defs>
           <path
-            d="M20 20 Q8 20 4 8 Q2 4 6 2 Q10 2 12 8 Q14 14 20 20Z"
+            d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
             fill="url(#bull-preview-right)"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth="0.5"
+            strokeLinejoin="round"
           />
         </svg>
       </div>
@@ -3063,31 +3070,45 @@ function SantaHatPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Santa hat */}
+        {/* Santa hat - tapered cone with connected pom pom */}
         <div
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[5deg]"
+          className="absolute rotate-[20deg] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
           style={{
-            left: '50%',
-            transform: 'translateX(-50%)',
-            top: -18,
-            width: 36,
-            height: 36,
+            right: -8,
+            top: -10,
+            width: 28,
+            height: 24,
             filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
           }}
         >
-          <svg viewBox="0 0 24 24">
+          <svg viewBox="0 0 28 24">
+            <defs>
+              <linearGradient id="santa-preview-red" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#EF4444" />
+                <stop offset="100%" stopColor="#DC2626" />
+              </linearGradient>
+            </defs>
+            {/* Hat body - voluminous cone with fold */}
             <path
-              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20 Q12 18 4 20Z"
-              fill="#DC2626"
+              d="M5 16C5 6 8 2 14 2C20 2 25 3 27 7C27 10 25 11 23 10.5C23 8 20 5 17 5C13 5 20 10 20 16H5Z"
+              fill="url(#santa-preview-red)"
             />
+            {/* Crease line for depth */}
             <path
-              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20"
+              d="M17 5C19 7 21 9 22 10.5"
               fill="none"
               stroke="#B91C1C"
-              strokeWidth="0.5"
+              strokeWidth="1"
+              strokeLinecap="round"
+              opacity="0.4"
             />
-            <ellipse cx="12" cy="20" rx="10" ry="2.5" fill="#FAFAFA" />
-            <circle cx="20" cy="6" r="3" fill="#FAFAFA" />
+            {/* Thick white fur brim */}
+            <path
+              d="M2 18C2 15.5 5 14 13 14C21 14 24 15.5 24 18C24 20.5 21 22 13 22C5 22 2 20.5 2 18Z"
+              fill="white"
+            />
+            {/* Pom pom connected to tip */}
+            <circle cx="25" cy="10" r="3.5" fill="white" />
           </svg>
         </div>
       </div>
@@ -3156,39 +3177,72 @@ function CatEarsPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Left ear */}
+        {/* Left ear - squat wide anime-style */}
         <svg
           className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
           style={{
             left: -2,
-            top: -10,
-            width: 18,
-            height: 20,
+            top: -9,
+            width: 22,
+            height: 16,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(-12deg)',
           }}
-          viewBox="0 0 20 24"
+          viewBox="0 0 24 18"
         >
-          {/* Outer ear */}
-          <path d="M2 24 L10 2 L18 24 Q10 20 2 24Z" fill="#4B5563" />
-          {/* Inner ear */}
-          <path d="M6 20 L10 6 L14 20 Q10 18 6 20Z" fill="#F9A8D4" />
+          {/* Outer ear - squat wide triangle */}
+          <path
+            d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
+            fill="#4B5563"
+            stroke="#374151"
+            strokeWidth="0.8"
+          />
+          {/* Inner ear - vibrant pink */}
+          <path
+            d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
+            fill="#F472B6"
+          />
+          {/* Highlight */}
+          <path
+            d="M10 14 Q11 9 12 5"
+            stroke="#FBCFE8"
+            strokeWidth="1.2"
+            fill="none"
+            strokeLinecap="round"
+            opacity="0.5"
+          />
         </svg>
-        {/* Right ear */}
+        {/* Right ear (mirrored) */}
         <svg
           className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[3deg]"
           style={{
             right: -2,
-            top: -10,
-            width: 18,
-            height: 20,
+            top: -9,
+            width: 22,
+            height: 16,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(12deg) scaleX(-1)',
           }}
-          viewBox="0 0 20 24"
+          viewBox="0 0 24 18"
         >
-          {/* Outer ear */}
-          <path d="M2 24 L10 2 L18 24 Q10 20 2 24Z" fill="#4B5563" />
-          {/* Inner ear */}
-          <path d="M6 20 L10 6 L14 20 Q10 18 6 20Z" fill="#F9A8D4" />
+          <path
+            d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
+            fill="#4B5563"
+            stroke="#374151"
+            strokeWidth="0.8"
+          />
+          <path
+            d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
+            fill="#F472B6"
+          />
+          <path
+            d="M10 14 Q11 9 12 5"
+            stroke="#FBCFE8"
+            strokeWidth="1.2"
+            fill="none"
+            strokeLinecap="round"
+            opacity="0.5"
+          />
         </svg>
       </div>
     </div>
@@ -3430,29 +3484,43 @@ function HatPreview(props: {
               className="h-5 w-5"
               style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
             >
-              <path d="M10 2L6 8 4 14 3 20h18l-2-7-2-6-3-4z" fill="#94A3B8" />
               <path
-                d="M10 2l2 11-4 7"
-                stroke="#CBD5E1"
-                strokeWidth="1"
-                fill="none"
-                opacity="0.5"
+                d="M12 1.5L22 20l-2-2-2 3-2-3-2 3-2-3-2 3-2-3-2 3-4-2z"
+                fill="#94A3B8"
               />
               <path
-                d="M14 3l-1 12 4 5"
-                stroke="#CBD5E1"
-                strokeWidth="0.8"
+                d="M12 1.5L22 20l-2-2-2 3-2-3-2 3V11z"
+                fill="#64748B"
+                opacity="0.3"
+              />
+              <path
+                d="M12 1.5L2 20l2-2 2 3 2-3V9z"
+                fill="#E2E8F0"
+                opacity="0.25"
+              />
+              <path
+                d="M12 1.5l3 8-5 4 3 6.5"
+                stroke="#E2E8F0"
+                strokeWidth="0.7"
                 fill="none"
-                opacity="0.4"
+                strokeLinejoin="round"
               />
-              <line
-                x1="3"
-                y1="20"
-                x2="21"
-                y2="20"
-                stroke="#64748B"
-                strokeWidth="0.8"
+              <path
+                d="M12 1.5l-4 7 6 5-4 4.5"
+                stroke="#475569"
+                strokeWidth="0.7"
+                fill="none"
+                strokeLinejoin="round"
+                opacity="0.8"
               />
+              <path
+                d="M4 17.5l5-2 8 2.5 4-1.5"
+                stroke="#CBD5E1"
+                strokeWidth="0.5"
+                fill="none"
+                strokeLinejoin="round"
+              />
+              <path d="M12 1.5l1.5 4-3 0z" fill="#CBD5E1" opacity="0.8" />
             </svg>
           </div>
         )

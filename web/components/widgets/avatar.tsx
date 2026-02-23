@@ -1064,6 +1064,8 @@ function AvatarOverlay(props: {
     crownPosition = 0,
   } = props
 
+  const uid = useId().replace(/:/g, '')
+
   // Corner position (for graduation cap, microphone - sits at top-right)
   const cornerClasses = clsx(
     'absolute transition-transform duration-300',
@@ -1363,29 +1365,49 @@ function AvatarOverlay(props: {
             className={clsx(hatSizeClass)}
             style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
           >
-            <path d="M10 2L6 8 4 14 3 20h18l-2-7-2-6-3-4z" fill="#94A3B8" />
+            {/* Conical foil hat with jagged crinkly brim */}
             <path
-              d="M10 2l2 11-4 7"
-              stroke="#CBD5E1"
-              strokeWidth="1"
+              d="M12 1.5L22 20l-2-2-2 3-2-3-2 3-2-3-2 3-2-3-2 3-4-2z"
+              fill="#94A3B8"
+            />
+            {/* Right shadow panel */}
+            <path
+              d="M12 1.5L22 20l-2-2-2 3-2-3-2 3V11z"
+              fill="#64748B"
+              opacity="0.3"
+            />
+            {/* Left highlight panel */}
+            <path
+              d="M12 1.5L2 20l2-2 2 3 2-3V9z"
+              fill="#E2E8F0"
+              opacity="0.25"
+            />
+            {/* Crinkle fold lines */}
+            <path
+              d="M12 1.5l3 8-5 4 3 6.5"
+              stroke="#E2E8F0"
+              strokeWidth="0.7"
               fill="none"
-              opacity="0.5"
+              strokeLinejoin="round"
             />
             <path
-              d="M14 3l-1 12 4 5"
-              stroke="#CBD5E1"
-              strokeWidth="0.8"
+              d="M12 1.5l-4 7 6 5-4 4.5"
+              stroke="#475569"
+              strokeWidth="0.7"
               fill="none"
-              opacity="0.4"
+              strokeLinejoin="round"
+              opacity="0.8"
             />
-            <line
-              x1="3"
-              y1="20"
-              x2="21"
-              y2="20"
-              stroke="#64748B"
-              strokeWidth="0.8"
+            {/* Horizontal crease */}
+            <path
+              d="M4 17.5l5-2 8 2.5 4-1.5"
+              stroke="#CBD5E1"
+              strokeWidth="0.5"
+              fill="none"
+              strokeLinejoin="round"
             />
+            {/* Metallic tip glint */}
+            <path d="M12 1.5l1.5 4-3 0z" fill="#CBD5E1" opacity="0.8" />
           </svg>
         </div>
       )
@@ -1670,135 +1692,85 @@ function AvatarOverlay(props: {
       )
     }
     case 'avatar-bull-horns': {
-      // Mighty bull horns - curved upward with 3D shading and ridges
-      const hornSize =
-        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+      // Mighty bull horns - flat horizontal then thick upward curve, no hover
+      const hornW =
+        size === '2xs' || size === 'xs' ? 20 : size === 'sm' ? 26 : 32
+      const hornH =
+        size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 20 : 24
       return (
         <>
           {/* Left horn */}
           <svg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:scale-110',
-              animateHat && '-translate-y-0.5 scale-110'
-            )}
+            className="absolute"
             style={{
-              left:
-                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
+              right: '50%',
               top:
-                size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -7,
-              width: hornSize,
-              height: hornSize,
+                size === '2xs' || size === 'xs' ? -7 : size === 'sm' ? -9 : -11,
+              width: hornW,
+              height: hornH,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-              transform: 'rotate(-15deg)',
             }}
-            viewBox="0 0 24 24"
+            viewBox="0 0 32 24"
           >
             <defs>
-              <linearGradient id="bull-horn-l-base" x1="100%" y1="100%" x2="0%" y2="0%">
-                <stop offset="0%" stopColor="#451A03" />
-                <stop offset="30%" stopColor="#78350F" />
-                <stop offset="60%" stopColor="#B45309" />
-                <stop offset="85%" stopColor="#D4A574" />
-                <stop offset="100%" stopColor="#FEF3C7" />
-              </linearGradient>
-              <linearGradient id="bull-horn-l-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFFBEB" stopOpacity="0.6" />
-                <stop offset="40%" stopColor="#FDE68A" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#78350F" stopOpacity="0" />
+              <linearGradient
+                id={`bull-horn-l-${uid}`}
+                gradientUnits="userSpaceOnUse"
+                x1="30"
+                y1="20"
+                x2="4"
+                y2="4"
+              >
+                <stop offset="0%" stopColor="#D4A574" />
+                <stop offset="35%" stopColor="#8B6914" />
+                <stop offset="70%" stopColor="#5C3D1A" />
+                <stop offset="100%" stopColor="#2C1A0A" />
               </linearGradient>
             </defs>
-            {/* Main horn shape */}
+            {/* Horn shape - thick throughout curve, dual-bezier return */}
             <path
-              d="M19 21 C17 19, 14 17, 11 14 C8 11, 6 8, 5 5 Q4 3, 5.5 2 Q7 1, 8.5 2.5 Q10 4, 11 7 C12 10, 14 14, 17 17 C18 18.5, 19 20, 19 21 Z"
-              fill="url(#bull-horn-l-base)"
-            />
-            {/* Highlight for 3D effect */}
-            <path
-              d="M18 20 C16 18, 13 15, 10.5 12.5 C8 10, 6.5 7, 5.5 4.5 Q5 3, 6 2.5 Q7 2, 8 3 Q9 4.5, 9.5 6.5 C10 8, 11 10, 12.5 12.5 C14 15, 16 17.5, 18 20 Z"
-              fill="url(#bull-horn-l-highlight)"
-            />
-            {/* Ridge lines for texture */}
-            <path
-              d="M7 4 Q8.5 7, 11 11 M8.5 5.5 Q10 8.5, 13 13 M10 7.5 Q11.5 10, 15 15"
-              stroke="#5C2D0A"
-              strokeWidth="0.3"
-              strokeOpacity="0.4"
-              fill="none"
-              strokeLinecap="round"
-            />
-            {/* Subtle shine line */}
-            <path
-              d="M6.5 3.5 Q8 6, 10 9 Q12 12, 14.5 15"
-              stroke="#FFFBEB"
+              d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
+              fill={`url(#bull-horn-l-${uid})`}
+              stroke="rgba(255,255,255,0.15)"
               strokeWidth="0.5"
-              strokeOpacity="0.5"
-              fill="none"
-              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </svg>
           {/* Right horn (mirrored) */}
           <svg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:scale-110',
-              animateHat && '-translate-y-0.5 scale-110'
-            )}
+            className="absolute"
             style={{
-              right:
-                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
+              left: '50%',
               top:
-                size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -5 : -7,
-              width: hornSize,
-              height: hornSize,
+                size === '2xs' || size === 'xs' ? -7 : size === 'sm' ? -9 : -11,
+              width: hornW,
+              height: hornH,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-              transform: 'rotate(15deg) scaleX(-1)',
+              transform: 'scaleX(-1)',
             }}
-            viewBox="0 0 24 24"
+            viewBox="0 0 32 24"
           >
             <defs>
-              <linearGradient id="bull-horn-r-base" x1="100%" y1="100%" x2="0%" y2="0%">
-                <stop offset="0%" stopColor="#451A03" />
-                <stop offset="30%" stopColor="#78350F" />
-                <stop offset="60%" stopColor="#B45309" />
-                <stop offset="85%" stopColor="#D4A574" />
-                <stop offset="100%" stopColor="#FEF3C7" />
-              </linearGradient>
-              <linearGradient id="bull-horn-r-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFFBEB" stopOpacity="0.6" />
-                <stop offset="40%" stopColor="#FDE68A" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#78350F" stopOpacity="0" />
+              <linearGradient
+                id={`bull-horn-r-${uid}`}
+                gradientUnits="userSpaceOnUse"
+                x1="30"
+                y1="20"
+                x2="4"
+                y2="4"
+              >
+                <stop offset="0%" stopColor="#D4A574" />
+                <stop offset="35%" stopColor="#8B6914" />
+                <stop offset="70%" stopColor="#5C3D1A" />
+                <stop offset="100%" stopColor="#2C1A0A" />
               </linearGradient>
             </defs>
-            {/* Main horn shape */}
             <path
-              d="M19 21 C17 19, 14 17, 11 14 C8 11, 6 8, 5 5 Q4 3, 5.5 2 Q7 1, 8.5 2.5 Q10 4, 11 7 C12 10, 14 14, 17 17 C18 18.5, 19 20, 19 21 Z"
-              fill="url(#bull-horn-r-base)"
-            />
-            {/* Highlight for 3D effect */}
-            <path
-              d="M18 20 C16 18, 13 15, 10.5 12.5 C8 10, 6.5 7, 5.5 4.5 Q5 3, 6 2.5 Q7 2, 8 3 Q9 4.5, 9.5 6.5 C10 8, 11 10, 12.5 12.5 C14 15, 16 17.5, 18 20 Z"
-              fill="url(#bull-horn-r-highlight)"
-            />
-            {/* Ridge lines for texture */}
-            <path
-              d="M7 4 Q8.5 7, 11 11 M8.5 5.5 Q10 8.5, 13 13 M10 7.5 Q11.5 10, 15 15"
-              stroke="#5C2D0A"
-              strokeWidth="0.3"
-              strokeOpacity="0.4"
-              fill="none"
-              strokeLinecap="round"
-            />
-            {/* Subtle shine line */}
-            <path
-              d="M6.5 3.5 Q8 6, 10 9 Q12 12, 14.5 15"
-              stroke="#FFFBEB"
+              d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
+              fill={`url(#bull-horn-r-${uid})`}
+              stroke="rgba(255,255,255,0.15)"
               strokeWidth="0.5"
-              strokeOpacity="0.5"
-              fill="none"
-              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </svg>
         </>
@@ -1898,9 +1870,11 @@ function AvatarOverlay(props: {
       )
     }
     case 'avatar-cat-ears': {
-      // Pointed cat ears
-      const earSize =
-        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+      // Anime-style cat ears - squat & wide, headband style, well spaced
+      const earW =
+        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 18 : 22
+      const earH =
+        size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 13 : 16
       return (
         <>
           {/* Left ear */}
@@ -1913,36 +1887,39 @@ function AvatarOverlay(props: {
             )}
             style={{
               left:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -2,
               top:
-                size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
-              width: earSize,
-              height: earSize,
+                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
+              width: earW,
+              height: earH,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-              transform: 'rotate(-10deg)',
+              transform: 'rotate(-12deg)',
             }}
-            viewBox="0 0 24 24"
+            viewBox="0 0 24 18"
           >
-            {/* Outer ear (gray fur) */}
+            {/* Outer ear - squat wide triangle with curved base */}
             <path
-              d="M4 22 C3 20, 2 16, 3 12 C4 8, 8 3, 12 1 C14 0.5, 16 1, 18 3 C20 5, 22 10, 22 14 C22 16, 21 18, 20 20 C19 21, 17 22, 15 22 Z"
-              fill="#6B7280"
+              d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
+              fill="#4B5563"
+              stroke="#374151"
+              strokeWidth="0.8"
             />
-            {/* Inner ear (pink) */}
+            {/* Inner ear - vibrant anime pink */}
             <path
-              d="M7 20 C6.5 18, 6 15, 7 12 C8 9, 10 5, 12 3.5 C13 3, 14 3.5, 15.5 5 C17 7, 18 11, 18 14 C18 16, 17.5 18, 16.5 19.5 C15.5 20.5, 13 21, 11 21 C9 21, 7.5 20.5, 7 20 Z"
-              fill="#FBCFE8"
+              d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
+              fill="#F472B6"
             />
-            {/* Fur texture lines */}
+            {/* Subtle highlight streak */}
             <path
-              d="M4 21 C3.5 20, 3 19, 3.2 18 M3.5 16 C3 15, 2.8 14, 3 13 M4 10 C3.5 9, 4 8, 5 7"
-              stroke="#4B5563"
-              strokeWidth="0.5"
+              d="M10 14 Q11 9 12 5"
+              stroke="#FBCFE8"
+              strokeWidth="1.2"
               fill="none"
               strokeLinecap="round"
+              opacity="0.5"
             />
           </svg>
-          {/* Right ear */}
+          {/* Right ear (mirrored) */}
           <svg
             className={clsx(
               'absolute transition-transform duration-300',
@@ -1952,72 +1929,83 @@ function AvatarOverlay(props: {
             )}
             style={{
               right:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -2,
               top:
-                size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
-              width: earSize,
-              height: earSize,
+                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
+              width: earW,
+              height: earH,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-              transform: 'rotate(10deg) scaleX(-1)',
+              transform: 'rotate(12deg) scaleX(-1)',
             }}
-            viewBox="0 0 24 24"
+            viewBox="0 0 24 18"
           >
-            {/* Outer ear (gray fur) */}
             <path
-              d="M4 22 C3 20, 2 16, 3 12 C4 8, 8 3, 12 1 C14 0.5, 16 1, 18 3 C20 5, 22 10, 22 14 C22 16, 21 18, 20 20 C19 21, 17 22, 15 22 Z"
-              fill="#6B7280"
+              d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
+              fill="#4B5563"
+              stroke="#374151"
+              strokeWidth="0.8"
             />
-            {/* Inner ear (pink) */}
             <path
-              d="M7 20 C6.5 18, 6 15, 7 12 C8 9, 10 5, 12 3.5 C13 3, 14 3.5, 15.5 5 C17 7, 18 11, 18 14 C18 16, 17.5 18, 16.5 19.5 C15.5 20.5, 13 21, 11 21 C9 21, 7.5 20.5, 7 20 Z"
-              fill="#FBCFE8"
+              d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
+              fill="#F472B6"
             />
-            {/* Fur texture lines */}
             <path
-              d="M4 21 C3.5 20, 3 19, 3.2 18 M3.5 16 C3 15, 2.8 14, 3 13 M4 10 C3.5 9, 4 8, 5 7"
-              stroke="#4B5563"
-              strokeWidth="0.5"
+              d="M10 14 Q11 9 12 5"
+              stroke="#FBCFE8"
+              strokeWidth="1.2"
               fill="none"
               strokeLinecap="round"
+              opacity="0.5"
             />
           </svg>
         </>
       )
     }
     case 'avatar-santa-hat': {
-      // Festive Santa hat - positioned at corner like other hats
+      // Festive Santa hat - tapered cone with pom pom at tip, tilted to one side
       return (
         <div
           className={clsx(
             'absolute transition-transform duration-300',
             hatPositionClass,
-            'rotate-[30deg]',
+            'rotate-[20deg]',
             animateHatOnHover &&
               'group-hover:-translate-y-0.5 group-hover:scale-110',
             animateHat && '-translate-y-0.5 scale-110'
           )}
         >
           <svg
-            viewBox="0 0 24 24"
+            viewBox="0 0 28 24"
             className={hatSizeClass}
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
           >
-            {/* Hat body - red felt */}
+            <defs>
+              <linearGradient id={`santa-hat-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#EF4444" />
+                <stop offset="100%" stopColor="#DC2626" />
+              </linearGradient>
+            </defs>
+            {/* Hat body - voluminous cone with 3/4 fold droop */}
             <path
-              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20 Q12 18 4 20Z"
-              fill="#DC2626"
+              d="M5 16C5 6 8 2 14 2C20 2 25 3 27 7C27 10 25 11 23 10.5C23 8 20 5 17 5C13 5 20 10 20 16H5Z"
+              fill={`url(#santa-hat-${uid})`}
             />
-            {/* Hat fold/curve */}
+            {/* Crease line for 3D depth */}
             <path
-              d="M4 20 Q2 12 8 8 Q12 4 16 8 Q22 12 20 20"
+              d="M17 5C19 7 21 9 22 10.5"
               fill="none"
               stroke="#B91C1C"
-              strokeWidth="0.5"
+              strokeWidth="1"
+              strokeLinecap="round"
+              opacity="0.4"
             />
-            {/* White fur trim */}
-            <ellipse cx="12" cy="20" rx="10" ry="2.5" fill="#FAFAFA" />
-            {/* Pom pom */}
-            <circle cx="20" cy="6" r="3" fill="#FAFAFA" />
+            {/* Thick white fur brim */}
+            <path
+              d="M2 18C2 15.5 5 14 13 14C21 14 24 15.5 24 18C24 20.5 21 22 13 22C5 22 2 20.5 2 18Z"
+              fill="white"
+            />
+            {/* Pom pom connected to tip */}
+            <circle cx="25" cy="10" r="3.5" fill="white" />
           </svg>
         </div>
       )
