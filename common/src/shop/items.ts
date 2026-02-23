@@ -15,6 +15,13 @@ export type ShopItemCategory =
   | 'skin'
   | 'consumable'
   | 'hovercard'
+  | 'merch'
+
+// Merch size variant for clothing items
+export type MerchVariant = {
+  size: string
+  printfulSyncVariantId: string
+}
 
 // Slot system for mutual exclusivity
 // Items with the same slot cannot be enabled simultaneously
@@ -92,6 +99,7 @@ export const CATEGORY_LABELS: Record<ShopItemCategory, string> = {
   skin: 'Button Skin',
   consumable: 'Consumable',
   hovercard: 'Hovercard',
+  merch: 'Merch',
 }
 
 // Get all entitlement IDs for items in a given category
@@ -163,6 +171,8 @@ export type ShopItem = {
   animationTypes?: AnimationType[]
   // If true, item is hidden from shop unless user owns it
   hidden?: boolean
+  // Merch-specific fields
+  variants?: MerchVariant[]
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -759,6 +769,27 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'hovercard',
     slot: 'hovercard-background',
   },
+  // Merch items
+  {
+    id: 'merch-aggc-tshirt',
+    hidden: true,
+    name: 'AGGC T-Shirt',
+    description: 'Embroidered Manifold logo on front, "Anti Gambling Gambling Club" print on back',
+    price: 5000,
+    type: 'instant',
+    limit: 'unlimited',
+    category: 'merch',
+    slot: 'consumable',
+    imageUrl: '/merch/AGGC-front-ghost.png',
+    variants: [
+      { size: 'S', printfulSyncVariantId: '69026b955ba991' },
+      { size: 'M', printfulSyncVariantId: '69026b955baa12' },
+      { size: 'L', printfulSyncVariantId: '69026b955baa92' },
+      { size: 'XL', printfulSyncVariantId: '69026b955bab14' },
+      { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
+      { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
+    ],
+  },
 ]
 
 // Available options for custom button text
@@ -795,6 +826,12 @@ export type CrownPosition = 0 | 1 | 2
 
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
+
+export const getMerchItems = (): ShopItem[] =>
+  SHOP_ITEMS.filter((item) => item.category === 'merch')
+
+export const isMerchItem = (item: ShopItem): boolean =>
+  item.category === 'merch'
 
 // Helper to check if an entitlement is currently active (not expired, enabled)
 export const isEntitlementActive = (entitlement: UserEntitlement): boolean => {

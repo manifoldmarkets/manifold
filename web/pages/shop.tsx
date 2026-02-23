@@ -23,6 +23,7 @@ import {
   EXCLUSIVE_SLOTS,
   getEntitlementIdsForSlot,
   CROWN_POSITION_OPTIONS,
+  getMerchItems,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
@@ -442,6 +443,7 @@ export default function ShopPage() {
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
 
+
   return (
     <Page trackPageView="shop page" className="p-3">
       <SEO
@@ -534,6 +536,8 @@ export default function ShopPage() {
                   ) &&
                   // Exclude charity-champion-trophy (has its own special card)
                   item.id !== 'charity-champion-trophy' &&
+                  // Exclude merch (has its own section)
+                  item.category !== 'merch' &&
                   // Hide items marked as hidden unless owned, seasonally available, or admin toggled
                   (!item.hidden || showHidden || ownedItemIds.has(getEntitlementId(item)) ||
                     (item.seasonalAvailability && isSeasonalItemAvailable(item)))
@@ -565,6 +569,23 @@ export default function ShopPage() {
           })}
         </div>
 
+        {/* Merch section */}
+        {getMerchItems().filter((item) => !item.hidden || showHidden).length > 0 && (
+          <>
+            <Row className="mb-4 mt-8 items-center gap-2">
+              <span className="text-lg font-semibold">Merch</span>
+              <span className="text-ink-500 text-sm">(Ships worldwide)</span>
+            </Row>
+            <div className="grid grid-cols-1 gap-4 min-[360px]:grid-cols-2">
+              {getMerchItems()
+                .filter((item) => !item.hidden || showHidden)
+                .map((item) => (
+                  <MerchItemCard key={item.id} item={item} user={user} />
+                ))}
+            </div>
+          </>
+        )}
+
         {/* Charity giveaway and champion cards */}
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <CharityGiveawayCard
@@ -590,7 +611,518 @@ export default function ShopPage() {
   )
 }
 
-function AdminTestingTools(props: { user: User | null | undefined; showHidden: boolean; setShowHidden: (v: boolean) => void }) {
+const COUNTRIES = [
+  { code: 'US', name: 'United States' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'IN', name: 'India' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'CH', name: 'Switzerland' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'HK', name: 'Hong Kong' },
+  { code: 'TW', name: 'Taiwan' },
+  { code: 'IL', name: 'Israel' },
+  { code: 'CZ', name: 'Czech Republic' },
+  { code: 'RO', name: 'Romania' },
+  { code: 'HU', name: 'Hungary' },
+  { code: 'GR', name: 'Greece' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'CO', name: 'Colombia' },
+  { code: 'PH', name: 'Philippines' },
+  { code: 'TH', name: 'Thailand' },
+  { code: 'MY', name: 'Malaysia' },
+  { code: 'ID', name: 'Indonesia' },
+  { code: 'VN', name: 'Vietnam' },
+  { code: 'AE', name: 'United Arab Emirates' },
+  { code: 'SA', name: 'Saudi Arabia' },
+].sort((a, b) => a.name.localeCompare(b.name))
+
+type ShippingRate = {
+  id: string
+  name: string
+  rate: string
+  currency: string
+  minDeliveryDays: number
+  maxDeliveryDays: number
+}
+
+function MerchItemCard(props: {
+  item: ShopItem
+  user: User | null | undefined
+}) {
+  const { item, user } = props
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
+  const [showShippingModal, setShowShippingModal] = useState(false)
+  const [purchasing, setPurchasing] = useState(false)
+  const [fetchingRates, setFetchingRates] = useState(false)
+  const [shippingRates, setShippingRates] = useState<ShippingRate[] | null>(null)
+  const [selectedShipping, setSelectedShipping] = useState<ShippingRate | null>(null)
+  const [shippingInfo, setShippingInfo] = useState({
+    name: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'US',
+  })
+  const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
+  const [countdown, setCountdown] = useState(5)
+
+  useEffect(() => {
+    if (!showConfirmOrderModal) {
+      setCountdown(5)
+      return
+    }
+    if (countdown <= 0) return
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [showConfirmOrderModal, countdown])
+
+  const canPurchase = user && user.balance >= item.price
+  const variants = item.variants ?? []
+
+  const images = [
+    { label: 'Front', url: item.imageUrl || '/merch/AGGC-front-ghost.png' },
+    { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
+  ]
+
+  const handleBuyClick = () => {
+    if (!selectedSize) {
+      toast.error('Please select a size')
+      return
+    }
+    setShowPurchaseModal(true)
+  }
+
+  const handleProceedToShipping = () => {
+    setShowPurchaseModal(false)
+    setShowShippingModal(true)
+    setShippingRates(null)
+    setSelectedShipping(null)
+  }
+
+  const handleGetShippingRates = async () => {
+    const variant = variants.find((v) => v.size === selectedSize)
+    if (!variant) return
+
+    setFetchingRates(true)
+    setShippingRates(null)
+    setSelectedShipping(null)
+
+    try {
+      const result = await api('shop-shipping-rates', {
+        variantId: variant.printfulSyncVariantId,
+        address: {
+          address1: shippingInfo.address1,
+          city: shippingInfo.city,
+          state: shippingInfo.state || undefined,
+          zip: shippingInfo.zip,
+          country: shippingInfo.country,
+        },
+      })
+      setShippingRates(result.rates)
+      if (result.rates.length > 0) {
+        setSelectedShipping(result.rates[0])
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to get shipping rates')
+    } finally {
+      setFetchingRates(false)
+    }
+  }
+
+  const handleSubmitOrder = async () => {
+    if (!user || !selectedSize || !selectedShipping) return
+    const variant = variants.find((v) => v.size === selectedSize)
+    if (!variant) return
+
+    setPurchasing(true)
+    try {
+      const result = await api('shop-purchase-merch', {
+        itemId: item.id,
+        variantId: variant.printfulSyncVariantId,
+        shipping: shippingInfo,
+      })
+      toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
+      setShowConfirmOrderModal(false)
+      setShowShippingModal(false)
+      setSelectedSize(null)
+      setShippingRates(null)
+      setSelectedShipping(null)
+      setShippingInfo({ name: '', address1: '', address2: '', city: '', state: '', zip: '', country: 'US' })
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to place order')
+      setShowConfirmOrderModal(false)
+    } finally {
+      setPurchasing(false)
+    }
+  }
+
+  const canGetRates = shippingInfo.address1 && shippingInfo.city && shippingInfo.zip
+
+  return (
+    <>
+      <Card className="group relative flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:ring-2 hover:ring-indigo-500 hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30">
+        {item.hidden && (
+          <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+            Hidden
+          </div>
+        )}
+
+        {/* Image carousel */}
+        <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+          <img
+            src={images[currentImageIndex].url}
+            alt={`${item.name} - ${images[currentImageIndex].label}`}
+            className="h-full w-full object-contain p-2"
+          />
+          <Row className="absolute bottom-2 left-1/2 -translate-x-1/2 gap-1.5">
+            {images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentImageIndex(idx)}
+                className={clsx(
+                  'h-2 w-2 rounded-full transition-all',
+                  currentImageIndex === idx
+                    ? 'bg-indigo-500 w-4'
+                    : 'bg-white/70 hover:bg-white'
+                )}
+              />
+            ))}
+          </Row>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={() => setCurrentImageIndex((i) => i === 0 ? images.length - 1 : i - 1)}
+                className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity group-hover:opacity-100 hover:bg-white"
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setCurrentImageIndex((i) => i === images.length - 1 ? 0 : i + 1)}
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity group-hover:opacity-100 hover:bg-white"
+              >
+                <ChevronRightIcon className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Title and description */}
+        <div className="text-base font-semibold sm:text-lg">{item.name}</div>
+        <p className="text-ink-600 text-sm">{item.description}</p>
+
+        {/* Size selector */}
+        <Col className="gap-2">
+          <span className="text-ink-600 text-sm font-medium">Select size:</span>
+          <Row className="flex-wrap gap-2">
+            {variants.map((variant) => (
+              <button
+                key={variant.size}
+                onClick={() => setSelectedSize(variant.size)}
+                className={clsx(
+                  'rounded-md border-2 px-3 py-1.5 text-sm font-medium transition-all',
+                  selectedSize === variant.size
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                    : 'border-ink-200 hover:border-ink-400 text-ink-700'
+                )}
+              >
+                {variant.size}
+              </button>
+            ))}
+          </Row>
+        </Col>
+
+        {/* Price and buy button */}
+        <Row className="mt-auto items-center justify-between border-t border-ink-200 pt-3">
+          <Col>
+            <div className="text-lg font-bold text-teal-600">
+              {formatMoney(item.price)}
+            </div>
+            <span className="text-ink-500 text-xs">+ shipping (paid in mana)</span>
+          </Col>
+          {!canPurchase && user ? (
+            <Link href="/checkout">
+              <Button size="sm" color="gradient-pink">
+                Buy mana
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              size="sm"
+              color="indigo"
+              disabled={!user || !selectedSize}
+              onClick={handleBuyClick}
+            >
+              {selectedSize ? 'Buy' : 'Select size'}
+            </Button>
+          )}
+        </Row>
+      </Card>
+
+      {/* Purchase confirmation modal */}
+      <Modal open={showPurchaseModal} setOpen={setShowPurchaseModal} size="md">
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <div className="text-lg font-semibold">Confirm Purchase</div>
+          <p className="text-ink-600">
+            You're ordering: <strong>{item.name}</strong> (Size: {selectedSize})
+          </p>
+          <p className="text-ink-600">
+            Price:{' '}
+            <span className="font-semibold text-teal-600">{formatMoney(item.price)}</span>
+            <span className="text-ink-500 text-sm"> + shipping</span>
+          </p>
+          <p className="text-ink-500 text-sm">All costs (item + shipping) are paid in mana.</p>
+
+          {/* Size Guide */}
+          <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
+            <div className="text-sm font-semibold">Size Guide (Gildan 64000)</div>
+            <div className="overflow-x-auto">
+              <table className="text-ink-600 w-full text-xs">
+                <thead>
+                  <tr className="border-b border-ink-200">
+                    <th className="py-1 pr-3 text-left font-medium">Size</th>
+                    <th className="px-2 py-1 text-center font-medium">Chest (in)</th>
+                    <th className="px-2 py-1 text-center font-medium">Length (in)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { size: 'S', chest: '34-36', length: '28' },
+                    { size: 'M', chest: '38-40', length: '29' },
+                    { size: 'L', chest: '42-44', length: '30' },
+                    { size: 'XL', chest: '46-48', length: '31' },
+                    { size: '2XL', chest: '50-52', length: '32' },
+                    { size: '3XL', chest: '54-56', length: '33' },
+                  ].map((row) => (
+                    <tr key={row.size} className={selectedSize === row.size ? 'bg-indigo-50 dark:bg-indigo-950/30' : ''}>
+                      <td className="py-1 pr-3 font-medium">{row.size}</td>
+                      <td className="px-2 py-1 text-center">{row.chest}</td>
+                      <td className="px-2 py-1 text-center">{row.length}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-ink-500 text-xs">Measurements are approximate. When in doubt, size up!</p>
+          </Col>
+
+          <div className="rounded-lg bg-blue-50 p-3 text-sm dark:bg-blue-950/30">
+            <p className="text-blue-700 dark:text-blue-300">
+              After confirming, you'll enter your shipping address. Your address is sent directly to our fulfillment partner and <strong>not stored</strong> by Manifold.
+            </p>
+          </div>
+
+          <Row className="justify-end gap-2">
+            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>Cancel</Button>
+            <Button color="indigo" onClick={handleProceedToShipping}>Continue to Shipping</Button>
+          </Row>
+        </Col>
+      </Modal>
+
+      {/* Shipping address modal */}
+      <Modal open={showShippingModal} setOpen={setShowShippingModal} size="md">
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <div className="text-lg font-semibold">Shipping Address</div>
+          <p className="text-ink-500 text-sm">
+            Enter your shipping details. This info is sent directly to our fulfillment partner and not stored by Manifold.
+          </p>
+
+          <Col className="gap-3">
+            <input type="text" placeholder="Full name" value={shippingInfo.name}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, name: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <input type="text" placeholder="Street address" value={shippingInfo.address1}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, address1: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <input type="text" placeholder="Apt, suite, etc. (optional)" value={shippingInfo.address2}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, address2: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <input type="text" placeholder="City" value={shippingInfo.city}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, city: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden" />
+            <Row className="w-full gap-3">
+              <input type="text" placeholder="City" value={shippingInfo.city}
+                onChange={(e) => setShippingInfo((s) => ({ ...s, city: e.target.value }))}
+                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block" />
+              <input type="text" placeholder="State" value={shippingInfo.state}
+                onChange={(e) => setShippingInfo((s) => ({ ...s, state: e.target.value }))}
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none" />
+              <input type="text" placeholder="ZIP" value={shippingInfo.zip}
+                onChange={(e) => setShippingInfo((s) => ({ ...s, zip: e.target.value }))}
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none" />
+            </Row>
+            <select value={shippingInfo.country}
+              onChange={(e) => { setShippingInfo((s) => ({ ...s, country: e.target.value })); setShippingRates(null); setSelectedShipping(null) }}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+          </Col>
+
+          {!shippingRates && (
+            <Button color="indigo-outline" onClick={handleGetShippingRates} loading={fetchingRates} disabled={!canGetRates} className="w-full">
+              {fetchingRates ? 'Getting rates...' : 'Get Shipping Rates'}
+            </Button>
+          )}
+
+          {shippingRates && shippingRates.length > 0 && (
+            <Col className="gap-2">
+              <Row className="items-center justify-between">
+                <div className="text-sm font-medium">Select shipping option:</div>
+                <span className="text-ink-500 text-xs">Prices in mana</span>
+              </Row>
+              {shippingRates.map((rate) => {
+                const shippingMana = Math.round(parseFloat(rate.rate) * 100)
+                return (
+                  <button key={rate.id} onClick={() => setSelectedShipping(rate)}
+                    className={clsx(
+                      'flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all',
+                      selectedShipping?.id === rate.id
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                        : 'border-ink-200 hover:border-ink-400'
+                    )}>
+                    <div>
+                      <div className="font-medium">{rate.name}</div>
+                      <div className="text-ink-500 text-xs">
+                        {rate.minDeliveryDays === rate.maxDeliveryDays
+                          ? `${rate.minDeliveryDays} business days`
+                          : `${rate.minDeliveryDays}-${rate.maxDeliveryDays} business days`}
+                      </div>
+                    </div>
+                    <div className="font-semibold text-teal-600">{formatMoney(shippingMana)}</div>
+                  </button>
+                )
+              })}
+            </Col>
+          )}
+
+          {shippingRates && shippingRates.length === 0 && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
+              No shipping options available for this address. Please check your address details.
+            </div>
+          )}
+
+          <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+            <Row className="items-start gap-2">
+              <span className="text-amber-700 dark:text-amber-300">
+                Please double-check your address. Orders ship directly from our partner and cannot be easily modified after submission.
+              </span>
+            </Row>
+          </div>
+
+          <Row className="justify-end gap-2">
+            <Button color="gray" onClick={() => setShowShippingModal(false)}>Back</Button>
+            <Button color="indigo" disabled={!shippingInfo.name || !selectedShipping}
+              onClick={() => setShowConfirmOrderModal(true)}>
+              Place Order ({formatMoney(item.price)}
+              {selectedShipping && ` + ${formatMoney(Math.round(parseFloat(selectedShipping.rate) * 100))} shipping`})
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
+
+      {/* Final confirmation modal */}
+      <Modal open={showConfirmOrderModal} setOpen={setShowConfirmOrderModal} size="md">
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <div className="text-lg font-semibold">Confirm Your Order</div>
+          <Col className="bg-canvas-50 gap-3 rounded-lg p-4 text-sm">
+            <Row className="justify-between">
+              <span className="text-ink-500">Item:</span>
+              <span className="font-medium">{item.name}</span>
+            </Row>
+            <Row className="justify-between">
+              <span className="text-ink-500">Size:</span>
+              <span className="font-medium">{selectedSize}</span>
+            </Row>
+            <Row className="justify-between">
+              <span className="text-ink-500">Shipping to:</span>
+              <span className="font-medium text-right">
+                {shippingInfo.name}<br />
+                {shippingInfo.address1}{shippingInfo.address2 && `, ${shippingInfo.address2}`}<br />
+                {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zip}<br />
+                {COUNTRIES.find((c) => c.code === shippingInfo.country)?.name}
+              </span>
+            </Row>
+            {selectedShipping && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Shipping method:</span>
+                <span className="font-medium">
+                  {selectedShipping.name} ({selectedShipping.minDeliveryDays === selectedShipping.maxDeliveryDays
+                    ? `${selectedShipping.minDeliveryDays} days`
+                    : `${selectedShipping.minDeliveryDays}-${selectedShipping.maxDeliveryDays} days`})
+                </span>
+              </Row>
+            )}
+            <div className="border-ink-200 my-1 border-t" />
+            <Row className="justify-between">
+              <span className="text-ink-500">Item price:</span>
+              <span className="font-medium">{formatMoney(item.price)}</span>
+            </Row>
+            {selectedShipping && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Shipping:</span>
+                <span className="font-medium">{formatMoney(Math.round(parseFloat(selectedShipping.rate) * 100))}</span>
+              </Row>
+            )}
+            <Row className="justify-between text-base font-semibold">
+              <span>Total (mana):</span>
+              <span className="text-teal-600">
+                {formatMoney(item.price + (selectedShipping ? Math.round(parseFloat(selectedShipping.rate) * 100) : 0))}
+              </span>
+            </Row>
+          </Col>
+
+          <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+            <Row className="items-start gap-2">
+              <span className="text-amber-700 dark:text-amber-300">
+                Please verify all details above. Orders cannot be modified after submission.
+              </span>
+            </Row>
+          </div>
+
+          <Row className="justify-end gap-2">
+            <Button color="gray" onClick={() => setShowConfirmOrderModal(false)}>Go Back</Button>
+            <Button color="indigo" loading={purchasing} disabled={countdown > 0 || purchasing} onClick={handleSubmitOrder}>
+              {purchasing ? 'Processing...' : countdown > 0 ? `Confirm Order (${countdown})` : 'Confirm Order'}
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
+    </>
+  )
+}
+
+function AdminTestingTools(props: {
+  user: User | null | undefined
+  showHidden: boolean
+  setShowHidden: (v: boolean) => void
+}) {
   const { user, showHidden, setShowHidden } = props
   const [resetting, setResetting] = useState(false)
 
@@ -640,6 +1172,7 @@ function AdminTestingTools(props: { user: User | null | undefined; showHidden: b
         />
         <span className="text-ink-600 text-sm">Show hidden items</span>
       </label>
+
     </div>
   )
 }

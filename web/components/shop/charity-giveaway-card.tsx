@@ -157,8 +157,8 @@ export function CharityGiveawayCard(props: {
     ? charities.find((c) => c.id === winningCharity)
     : null
 
-  // Active giveaway card
-  if (!hasWinner) {
+  // Active giveaway card (still open for tickets)
+  if (!hasWinner && !isClosed) {
     return (
       <Link href="/charity" className={clsx('block', className)}>
         <div
@@ -175,11 +175,9 @@ export function CharityGiveawayCard(props: {
             <Row className="mb-3 items-center gap-2">
               <FaGift className="h-5 w-5 text-emerald-500" />
               <span className="text-lg font-semibold">Charity Giveaway</span>
-              {!isClosed && (
-                <span className="ml-auto rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                  LIVE
-                </span>
-              )}
+              <span className="ml-auto rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                LIVE
+              </span>
             </Row>
 
             {/* Stats row */}
@@ -223,7 +221,68 @@ export function CharityGiveawayCard(props: {
     )
   }
 
-  // Winner selected - show last winner (no leaderboard needed)
+  // Closed but winner not yet drawn — awaiting draw
+  if (!hasWinner && isClosed) {
+    return (
+      <Link href="/charity" className={clsx('block', className)}>
+        <div
+          className={clsx(
+            'group relative overflow-hidden rounded-xl p-1 transition-all duration-200',
+            'bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-400',
+            'hover:shadow-lg hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
+            'hover:-translate-y-1'
+          )}
+        >
+          <div className="flex flex-col rounded-lg bg-white p-4 dark:bg-gray-900">
+            {/* Header */}
+            <Row className="mb-3 items-center gap-2">
+              <FaGift className="h-5 w-5 text-amber-500" />
+              <span className="text-lg font-semibold">Charity Giveaway</span>
+              <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                ENDED
+              </span>
+            </Row>
+
+            {/* Stats */}
+            <Row className="mb-3 gap-2 text-center">
+              <Col className="flex-1">
+                <div className="text-lg font-bold text-amber-600 sm:text-xl">
+                  {prizeDisplay}
+                </div>
+                <div className="text-ink-500 text-[10px]">Prize Pool</div>
+              </Col>
+              <Col className="flex-1">
+                <div className="text-lg font-bold text-amber-600 sm:text-xl">
+                  {Math.floor(totalTickets).toLocaleString()}
+                </div>
+                <div className="text-ink-500 text-[10px]">Tickets</div>
+              </Col>
+            </Row>
+
+            {/* Mini leaderboard */}
+            {topUsers && topUsers.length > 0 && (
+              <MiniLeaderboard topUsers={topUsers} yourEntry={yourEntry} user={user} />
+            )}
+
+            <p className="text-ink-500 mb-3 text-xs">
+              Giveaway has ended. Winner will be drawn soon!
+            </p>
+
+            {/* CTA */}
+            <Button
+              color="amber"
+              size="sm"
+              className="mt-auto w-full group-hover:shadow-md"
+            >
+              View Results →
+            </Button>
+          </div>
+        </div>
+      </Link>
+    )
+  }
+
+  // Winner selected - show results with leaderboard
   return (
     <Link href="/charity" className={clsx('block', className)}>
       <div
@@ -235,25 +294,27 @@ export function CharityGiveawayCard(props: {
         )}
       >
         {/* Inner card content */}
-        <div className="rounded-lg bg-white p-4 dark:bg-gray-900">
+        <div className="flex flex-col rounded-lg bg-white p-4 dark:bg-gray-900">
           {/* Header */}
           <Row className="mb-3 items-center gap-2">
             <FaGift className="h-5 w-5 text-amber-500" />
             <span className="text-lg font-semibold">Charity Giveaway</span>
             <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-              WINNER
+              ENDED
             </span>
           </Row>
 
           {/* Winner info */}
           <Col className="mb-3">
-            <div className="text-ink-500 mb-1 text-xs">Last winner:</div>
             <div className="font-semibold text-amber-600">
               {winningCharityInfo?.name ?? winningCharity}
             </div>
-            <div className="text-2xl font-bold text-amber-600">
-              {prizeDisplay}
-            </div>
+            <Row className="items-baseline gap-2">
+              <div className="text-2xl font-bold text-amber-600">
+                {prizeDisplay}
+              </div>
+              <div className="text-ink-500 text-xs">donated</div>
+            </Row>
             {winner && (
               <div className="text-ink-500 mt-1 text-sm">
                 Winning ticket by @{winner.username}
@@ -261,11 +322,16 @@ export function CharityGiveawayCard(props: {
             )}
           </Col>
 
+          {/* Mini leaderboard */}
+          {topUsers && topUsers.length > 0 && (
+            <MiniLeaderboard topUsers={topUsers} yourEntry={yourEntry} user={user} />
+          )}
+
           {/* CTA */}
           <Button
             color="amber"
             size="sm"
-            className="w-full group-hover:shadow-md"
+            className="mt-auto w-full group-hover:shadow-md"
           >
             See Results & Next Giveaway →
           </Button>
