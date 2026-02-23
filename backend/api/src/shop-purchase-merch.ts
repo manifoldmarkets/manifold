@@ -46,6 +46,17 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       throw new APIError(403, 'Your account is banned')
     }
 
+    // Check one-time purchase limit (max 1 of each merch item per user)
+    if (item.limit === 'one-time') {
+      const existing = await tx.oneOrNone(
+        `SELECT 1 FROM shop_orders WHERE user_id = $1 AND item_id = $2 LIMIT 1`,
+        [auth.uid, itemId]
+      )
+      if (existing) {
+        throw new APIError(403, 'You have already purchased this item (limit 1 per customer)')
+      }
+    }
+
     // Get supporter discount
     const entRows = await tx.manyOrNone(
       `SELECT * FROM user_entitlements WHERE user_id = $1`,

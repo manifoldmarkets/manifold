@@ -55,6 +55,7 @@ import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
 import { SEO } from 'web/components/SEO'
 import { Avatar, BlueCapSvg, RedCapSvg, GreenCapSvg, BlackCapSvg } from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
@@ -930,6 +931,15 @@ function MerchItemCard(props: {
               <span className="text-ink-400 text-xs line-through">{formatMoney(item.price)}</span>
             )}
             <span className="text-ink-500 text-xs">+ shipping (paid in mana)</span>
+            {item.limit === 'one-time' && (
+              <Row className="text-ink-500 mt-0.5 items-center gap-1 text-xs">
+                <span>Limit 1 per customer</span>
+                <InfoTooltip
+                  text="We hope to lift this restriction once the mana shop is up and running smoothly!"
+                  size="sm"
+                />
+              </Row>
+            )}
           </Col>
           {!canPurchase && user ? (
             <Link href="/checkout">
@@ -4648,8 +4658,8 @@ function ShopItemCard(props: {
               OWNED
             </div>
           )}
-          {/* LEGENDARY badge for premium items (not owned) */}
-          {isPremiumItem && !owned && (
+          {/* LEGENDARY badge for halo, wings, crown only */}
+          {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(item.id) && !owned && (
             <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
               LEGENDARY
             </div>
