@@ -4835,15 +4835,22 @@ function ShopItemCard(props: {
           <>
             <Col className="mt-auto gap-2 pt-2">
               <Row className="items-center justify-between">
-                {hasDiscount ? (
+                {hasDiscount || item.originalPrice ? (
                   <Col className="gap-0.5">
                     <Row className="items-center gap-1.5">
                       <span className="text-ink-400 text-xs line-through">
-                        {formatMoney(item.price)}
+                        {formatMoney(item.originalPrice ?? item.price)}
                       </span>
-                      <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                        -{Math.round(shopDiscount * 100)}%
-                      </span>
+                      {item.originalPrice && (
+                        <span className="rounded bg-rose-100 px-1 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">
+                          SALE
+                        </span>
+                      )}
+                      {hasDiscount && (
+                        <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                          -{Math.round(shopDiscount * 100)}%
+                        </span>
+                      )}
                     </Row>
                     <div className="font-semibold text-teal-600">
                       {formatMoney(discountedPrice)}
@@ -4930,17 +4937,19 @@ function ShopItemCard(props: {
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
             Are you sure you want to purchase <strong>{item.name}</strong> for{' '}
-            {hasDiscount ? (
+            {hasDiscount || item.originalPrice ? (
               <>
                 <span className="text-ink-400 line-through">
-                  {formatMoney(item.price)}
+                  {formatMoney(item.originalPrice ?? item.price)}
                 </span>{' '}
                 <span className="font-semibold text-teal-600">
                   {formatMoney(discountedPrice)}
                 </span>
-                <span className="ml-1 text-xs text-green-600">
-                  ({Math.round(shopDiscount * 100)}% off)
-                </span>
+                {hasDiscount && (
+                  <span className="ml-1 text-xs text-green-600">
+                    ({Math.round(shopDiscount * 100)}% off)
+                  </span>
+                )}
               </>
             ) : (
               <span className="font-semibold text-teal-600">

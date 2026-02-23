@@ -146,7 +146,8 @@ export type ShopItem = {
   id: string
   name: string
   description: string
-  price: number // in mana
+  price: number // in mana (current selling price)
+  originalPrice?: number // if set, shows strikethrough "was X" pricing
   type: ShopItemType
   duration?: number // ms, for time-limited items
   limit: 'one-time' | 'unlimited' // per-user purchase limit
@@ -295,7 +296,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'hovercard-royal-border',
     name: 'Royal Velvet Border',
     description: 'A luxurious red velvet curtain border with gold trim, fit for royalty',
-    price: 25000,
+    price: 12000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
@@ -368,7 +369,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-top-hat',
     name: 'Top Hat',
     description: 'A distinguished top hat for the refined predictor',
-    price: 15000,
+    price: 12500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -431,8 +432,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'avatar-jester-hat',
     name: 'Coolfold Jester Hat',
-    description: 'A colorful jester hat with jingling bells',
-    price: 25000,
+    description: 'A colorful jester hat with jingling bells. By Strutheo, temporarily discounted',
+    price: 7500,
+    originalPrice: 15000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
