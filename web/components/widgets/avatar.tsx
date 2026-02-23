@@ -149,6 +149,7 @@ export const Avatar = memo(
       isUserFresh ||
       activeOverlay ||
       activeAccessory ||
+      hasCrown ||
       hasGoldenBorder ||
       hasAngelWings ||
       hasManaAura ||
