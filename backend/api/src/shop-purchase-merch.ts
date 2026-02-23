@@ -3,6 +3,8 @@ import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { getShopItem, isMerchItem } from 'common/shop/items'
+import { getBenefit } from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
 
 const PRINTFUL_API_URL = 'https://api.printful.com'
 
@@ -44,22 +46,38 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       throw new APIError(403, 'Your account is banned')
     }
 
+    // Get supporter discount
+    const entRows = await tx.manyOrNone(
+      `SELECT * FROM user_entitlements WHERE user_id = $1`,
+      [auth.uid]
+    )
+    const currentEntitlements = entRows.map(convertEntitlement)
+    const shopDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
+    const price = shopDiscount > 0
+      ? Math.floor(item.price * (1 - shopDiscount))
+      : item.price
+
     // Check balance
-    if (user.balance < item.price) {
+    if (user.balance < price) {
       throw new APIError(403, 'Insufficient balance')
     }
 
     // Create transaction to deduct mana
+    const discountPercent = Math.round(shopDiscount * 100)
+    const descriptionParts = [`Purchased ${item.name} (${variant.size})`]
+    if (discountPercent > 0) {
+      descriptionParts.push(`(${discountPercent}% supporter discount)`)
+    }
     const txnData: TxnData = {
       category: 'SHOP_PURCHASE',
       fromType: 'USER',
       fromId: auth.uid,
       toType: 'BANK',
       toId: 'BANK',
-      amount: item.price,
+      amount: price,
       token: 'M$',
-      description: `Purchased ${item.name} (${variant.size})`,
-      data: { itemId, variantId, merchOrder: true },
+      description: descriptionParts.join(' '),
+      data: { itemId, variantId, merchOrder: true, supporterDiscount: shopDiscount },
     }
 
     const txn = await runTxnInBetQueue(tx, txnData)
@@ -79,7 +97,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       [
         auth.uid,
         itemId,
-        item.price,
+        price,
         txn.id,
         printfulOrder.id.toString(),
         printfulOrder.status,

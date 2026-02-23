@@ -303,7 +303,7 @@ export const ShopBanner = () => {
         <span>✨</span>
         <div className="text-ink-700">
           <span className="font-semibold">Mana Shop is live!</span> Get
-          membership perks & digital goods
+          membership perks, cosmetics & merch
         </div>
         <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
       </Row>

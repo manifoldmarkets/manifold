@@ -173,6 +173,8 @@ export type ShopItem = {
   hidden?: boolean
   // Merch-specific fields
   variants?: MerchVariant[]
+  // Image carousel for merch cards: [{label, url}, ...]
+  merchImages?: { label: string; url: string }[]
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -781,6 +783,10 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'merch',
     slot: 'consumable',
     imageUrl: '/merch/AGGC-front-ghost.png',
+    merchImages: [
+      { label: 'Front', url: '/merch/AGGC-front-ghost.png' },
+      { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
+    ],
     variants: [
       { size: 'S', printfulSyncVariantId: '69026b955ba991' },
       { size: 'M', printfulSyncVariantId: '69026b955baa12' },
@@ -788,6 +794,44 @@ export const SHOP_ITEMS: ShopItem[] = [
       { size: 'XL', printfulSyncVariantId: '69026b955bab14' },
       { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
       { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
+    ],
+  },
+  {
+    id: 'merch-cap-white-logo',
+    hidden: true,
+    name: 'White Logo Cap',
+    description: 'Black dad cap with white embroidered Manifold logo',
+    price: 3000,
+    type: 'instant',
+    limit: 'unlimited',
+    category: 'merch',
+    slot: 'consumable',
+    imageUrl: '/merch/White-Logo-Cap-Black.png',
+    merchImages: [
+      { label: 'Front', url: '/merch/White-Logo-Cap-Black.png' },
+      { label: 'Angle', url: '/merch/White-Logo-Cap-Black-Tilt.png' },
+    ],
+    variants: [
+      { size: 'One Size', printfulSyncVariantId: '699c7bf5859673' },
+    ],
+  },
+  {
+    id: 'merch-cap-purple-logo',
+    hidden: true,
+    name: 'Purple Logo Cap',
+    description: 'White dad cap with purple embroidered Manifold logo',
+    price: 3000,
+    type: 'instant',
+    limit: 'unlimited',
+    category: 'merch',
+    slot: 'consumable',
+    imageUrl: '/merch/Purple-Logo-Cap-White.png',
+    merchImages: [
+      { label: 'Front', url: '/merch/Purple-Logo-Cap-White.png' },
+      { label: 'Angle', url: '/merch/Purple-Logo-Cap-White-Tilt.png' },
+    ],
+    variants: [
+      { size: 'One Size', printfulSyncVariantId: '699c786e6c50b2' },
     ],
   },
 ]

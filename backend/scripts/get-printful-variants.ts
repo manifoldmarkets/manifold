@@ -1,16 +1,17 @@
 // Quick script to fetch Printful sync variant IDs
-// Run with: npx ts-node backend/scripts/get-printful-variants.ts
-
-import { getSecrets, getServiceAccountCredentials } from 'common/secrets'
+// Run with: PRINTFUL_API_TOKEN=<token> npx ts-node backend/scripts/get-printful-variants.ts
+// Or:       npx ts-node backend/scripts/get-printful-variants.ts <token>
 
 async function main() {
-  // Load secrets
-  const credentials = getServiceAccountCredentials('DEV')
-  const secrets = await getSecrets(credentials, 'PRINTFUL_API_TOKEN')
-  const token = secrets.PRINTFUL_API_TOKEN
+  const token = process.argv[2] || process.env.PRINTFUL_API_TOKEN
 
   if (!token) {
-    console.error('PRINTFUL_API_TOKEN not found in secrets')
+    console.error(
+      'Usage: npx ts-node backend/scripts/get-printful-variants.ts <PRINTFUL_API_TOKEN>'
+    )
+    console.error(
+      '  Or set PRINTFUL_API_TOKEN env var'
+    )
     process.exit(1)
   }
 
@@ -56,7 +57,9 @@ async function main() {
     console.log(`variants: [`)
     for (const variant of variants) {
       const size = variant.name.split(' - ').pop() || variant.name
-      console.log(`  { size: '${size}', printfulSyncVariantId: '${variant.id}' },`)
+      console.log(
+        `  { size: '${size}', printfulSyncVariantId: '${variant.id}' },`
+      )
     }
     console.log(`]`)
   }

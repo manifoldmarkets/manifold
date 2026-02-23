@@ -120,21 +120,47 @@ type SortOption =
   | 'name-asc'
   | 'name-desc'
 
-type FilterOption = 'all' | 'hats' | 'avatar' | 'hovercard' | 'buttons' | 'other'
+type FilterOption = 'all' | 'hats' | 'avatar' | 'hovercard' | 'buttons' | 'other' | 'merch' | 'seasonal'
 
-const FILTER_CONFIG: Record<FilterOption, { label: string; slots: string[] }> = {
+const FILTER_CONFIG: Record<FilterOption, { label: string; slots: string[]; special?: boolean }> = {
   all: { label: 'All', slots: [] },
   hats: { label: 'Hats', slots: ['hat'] },
   avatar: { label: 'Avatar', slots: ['profile-border', 'profile-accessory'] },
   hovercard: { label: 'Hovercard', slots: ['hovercard-background', 'hovercard-border', 'unique'] },
   buttons: { label: 'Buttons', slots: ['button-yes', 'button-no'] },
   other: { label: 'Other', slots: ['consumable', 'badge'] },
+  merch: { label: 'Merch', slots: [], special: true },
+  seasonal: { label: 'Seasonal', slots: [], special: true },
 }
 
 const filterItems = (items: ShopItem[], filter: FilterOption): ShopItem[] => {
   if (filter === 'all') return items
+  if (filter === 'seasonal') return items.filter((item) => item.seasonalAvailability)
+  if (filter === 'merch') return [] // merch handled by separate section
   const allowedSlots = FILTER_CONFIG[filter].slots
   return items.filter((item) => allowedSlots.includes(item.slot))
+}
+
+// Check if a filter tab has any visible items (for dynamic tab visibility)
+const hasVisibleItems = (
+  filter: FilterOption,
+  allItems: ShopItem[],
+  visibleItemIds: Set<string>,
+  showHidden: boolean
+): boolean => {
+  if (filter === 'all') return true
+  if (filter === 'merch') {
+    return getMerchItems().some((item) => !item.hidden || showHidden)
+  }
+  if (filter === 'seasonal') {
+    return allItems.some(
+      (item) => item.seasonalAvailability && (visibleItemIds.has(item.id) || showHidden)
+    )
+  }
+  const allowedSlots = FILTER_CONFIG[filter].slots
+  return allItems.some(
+    (item) => allowedSlots.includes(item.slot) && (visibleItemIds.has(item.id) || showHidden)
+  )
 }
 
 const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
@@ -236,6 +262,18 @@ export default function ShopPage() {
     effectiveEntitlements
       .filter((e) => isEntitlementOwned(e))
       .map((e) => e.entitlementId)
+  )
+
+  // Set of item IDs that are visible in the shop (for dynamic filter tab visibility)
+  const visibleShopItemIds = new Set(
+    SHOP_ITEMS.filter(
+      (item) =>
+        !SUPPORTER_ENTITLEMENT_IDS.includes(item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]) &&
+        item.id !== 'charity-champion-trophy' &&
+        item.category !== 'merch' &&
+        (!item.hidden || ownedItemIds.has(getEntitlementId(item)) ||
+          (item.seasonalAvailability && isSeasonalItemAvailable(item)))
+    ).map((item) => item.id)
   )
 
   // Callback for purchase completion - receives all updated entitlements
@@ -448,7 +486,7 @@ export default function ShopPage() {
     <Page trackPageView="shop page" className="p-3">
       <SEO
         title="Shop"
-        description="Spend your mana on digital goods"
+        description="Spend your mana in the Manifold shop"
         url="/shop"
       />
       {/* Confetti on purchase */}
@@ -490,7 +528,7 @@ export default function ShopPage() {
         {/* Header and sort dropdown */}
         <Row className="mb-2 mt-8 items-center justify-between">
           <span className="text-lg font-semibold">
-            Digital goods & cosmetics
+            Cosmetics & goods
           </span>
           <select
             value={sortOption}
@@ -505,82 +543,94 @@ export default function ShopPage() {
           </select>
         </Row>
 
-        {/* Category filter pills */}
+        {/* Category filter pills — only show tabs that have visible items */}
         <Row className="mb-4 flex-wrap gap-2">
-          {(Object.keys(FILTER_CONFIG) as FilterOption[]).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setFilterOption(filter)}
-              className={clsx(
-                'rounded-full px-3 py-1 text-sm font-medium transition-colors',
-                filterOption === filter
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-canvas-50 text-ink-600 hover:bg-canvas-100'
-              )}
-            >
-              {FILTER_CONFIG[filter].label}
-            </button>
-          ))}
-        </Row>
-
-        {/* Shop items grid - exclude supporter tiers (handled on /supporter page) */}
-        {/* Single column on mobile (<480px), 2 columns on wider screens */}
-        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
-          {sortItems(
-            filterItems(
-              SHOP_ITEMS.filter(
-                (item) =>
-                  // Exclude supporter tiers (handled on /supporter page)
-                  !SUPPORTER_ENTITLEMENT_IDS.includes(
-                    item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-                  ) &&
-                  // Exclude charity-champion-trophy (has its own special card)
-                  item.id !== 'charity-champion-trophy' &&
-                  // Exclude merch (has its own section)
-                  item.category !== 'merch' &&
-                  // Hide items marked as hidden unless owned, seasonally available, or admin toggled
-                  (!item.hidden || showHidden || ownedItemIds.has(getEntitlementId(item)) ||
-                    (item.seasonalAvailability && isSeasonalItemAvailable(item)))
-              ),
-              filterOption
-            ),
-            sortOption
-          ).map((item) => {
-            const entitlementId = getEntitlementId(item)
-            const entitlement = effectiveEntitlements.find(
-              (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
-            )
+          {(Object.keys(FILTER_CONFIG) as FilterOption[]).map((filter) => {
+            if (!hasVisibleItems(filter, SHOP_ITEMS, visibleShopItemIds, showHidden)) return null
+            const isSeasonal = filter === 'seasonal'
+            const isActive = filterOption === filter
             return (
-              <ShopItemCard
-                key={item.id}
-                item={item}
-                user={user}
-                owned={ownedItemIds.has(entitlementId)}
-                entitlement={entitlement}
-                allEntitlements={effectiveEntitlements}
-                justPurchased={justPurchased === item.id}
-                onPurchaseComplete={handlePurchaseComplete}
-                onToggleComplete={handleToggleComplete}
-                onMetadataChange={handleMetadataChange}
-                getToggleVersion={getToggleVersion}
-                localStreakBonus={localStreakBonus}
-              />
+              <button
+                key={filter}
+                onClick={() => setFilterOption(filter)}
+                className={clsx(
+                  'rounded-full px-3 py-1 text-sm font-medium transition-colors',
+                  isActive && isSeasonal
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-sm'
+                    : isActive
+                    ? 'bg-primary-500 text-white'
+                    : isSeasonal
+                    ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 hover:from-pink-200 hover:to-rose-200 dark:from-pink-900/30 dark:to-rose-900/30 dark:text-pink-300'
+                    : 'bg-canvas-50 text-ink-600 hover:bg-canvas-100'
+                )}
+              >
+                {FILTER_CONFIG[filter].label}
+              </button>
             )
           })}
-        </div>
+        </Row>
 
-        {/* Merch section */}
-        {getMerchItems().filter((item) => !item.hidden || showHidden).length > 0 && (
+        {/* Shop items grid — hidden when merch filter is active */}
+        {filterOption !== 'merch' && (
+          <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
+            {sortItems(
+              filterItems(
+                SHOP_ITEMS.filter(
+                  (item) =>
+                    !SUPPORTER_ENTITLEMENT_IDS.includes(
+                      item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+                    ) &&
+                    item.id !== 'charity-champion-trophy' &&
+                    item.category !== 'merch' &&
+                    (!item.hidden || showHidden || ownedItemIds.has(getEntitlementId(item)) ||
+                      (item.seasonalAvailability && isSeasonalItemAvailable(item)))
+                ),
+                filterOption
+              ),
+              sortOption
+            ).map((item) => {
+              const entitlementId = getEntitlementId(item)
+              const entitlement = effectiveEntitlements.find(
+                (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
+              )
+              return (
+                <ShopItemCard
+                  key={item.id}
+                  item={item}
+                  user={user}
+                  owned={ownedItemIds.has(entitlementId)}
+                  entitlement={entitlement}
+                  allEntitlements={effectiveEntitlements}
+                  justPurchased={justPurchased === item.id}
+                  onPurchaseComplete={handlePurchaseComplete}
+                  onToggleComplete={handleToggleComplete}
+                  onMetadataChange={handleMetadataChange}
+                  getToggleVersion={getToggleVersion}
+                  localStreakBonus={localStreakBonus}
+                />
+              )
+            })}
+          </div>
+        )}
+
+        {/* Merch section — shown on 'all' and 'merch' filters */}
+        {(filterOption === 'all' || filterOption === 'merch') &&
+          getMerchItems().filter((item) => !item.hidden || showHidden).length > 0 && (
           <>
-            <Row className="mb-4 mt-8 items-center gap-2">
-              <span className="text-lg font-semibold">Merch</span>
-              <span className="text-ink-500 text-sm">(Ships worldwide)</span>
-            </Row>
-            <div className="grid grid-cols-1 gap-4 min-[360px]:grid-cols-2">
+            {filterOption !== 'merch' && (
+              <Row className="mb-4 mt-8 items-center gap-2">
+                <span className="text-lg font-semibold">Merch</span>
+                <span className="text-ink-500 text-sm">(Ships worldwide)</span>
+              </Row>
+            )}
+            <div className={clsx(
+              'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2',
+              filterOption === 'merch' && 'mt-0'
+            )}>
               {getMerchItems()
                 .filter((item) => !item.hidden || showHidden)
                 .map((item) => (
-                  <MerchItemCard key={item.id} item={item} user={user} />
+                  <MerchItemCard key={item.id} item={item} user={user} allEntitlements={effectiveEntitlements} />
                 ))}
             </div>
           </>
@@ -670,9 +720,16 @@ type ShippingRate = {
 function MerchItemCard(props: {
   item: ShopItem
   user: User | null | undefined
+  allEntitlements?: UserEntitlement[]
 }) {
-  const { item, user } = props
-  const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const { item, user, allEntitlements } = props
+  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
+  const discountedPrice = shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
+  const hasDiscount = shopDiscount > 0
+  const singleVariant = (item.variants ?? []).length === 1
+  const [selectedSize, setSelectedSize] = useState<string | null>(
+    singleVariant ? (item.variants![0].size) : null
+  )
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
@@ -702,12 +759,11 @@ function MerchItemCard(props: {
     return () => clearTimeout(timer)
   }, [showConfirmOrderModal, countdown])
 
-  const canPurchase = user && user.balance >= item.price
+  const canPurchase = user && user.balance >= discountedPrice
   const variants = item.variants ?? []
 
-  const images = [
-    { label: 'Front', url: item.imageUrl || '/merch/AGGC-front-ghost.png' },
-    { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
+  const images = item.merchImages ?? [
+    { label: 'Front', url: item.imageUrl || '' },
   ]
 
   const handleBuyClick = () => {
@@ -836,33 +892,43 @@ function MerchItemCard(props: {
         <div className="text-base font-semibold sm:text-lg">{item.name}</div>
         <p className="text-ink-600 text-sm">{item.description}</p>
 
-        {/* Size selector */}
-        <Col className="gap-2">
-          <span className="text-ink-600 text-sm font-medium">Select size:</span>
-          <Row className="flex-wrap gap-2">
-            {variants.map((variant) => (
-              <button
-                key={variant.size}
-                onClick={() => setSelectedSize(variant.size)}
-                className={clsx(
-                  'rounded-md border-2 px-3 py-1.5 text-sm font-medium transition-all',
-                  selectedSize === variant.size
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
-                    : 'border-ink-200 hover:border-ink-400 text-ink-700'
-                )}
-              >
-                {variant.size}
-              </button>
-            ))}
-          </Row>
-        </Col>
+        {/* Size selector (hidden for single-variant items like one-size caps) */}
+        {!singleVariant && (
+          <Col className="gap-2">
+            <span className="text-ink-600 text-sm font-medium">Select size:</span>
+            <Row className="flex-wrap gap-2">
+              {variants.map((variant) => (
+                <button
+                  key={variant.size}
+                  onClick={() => setSelectedSize(variant.size)}
+                  className={clsx(
+                    'rounded-md border-2 px-3 py-1.5 text-sm font-medium transition-all',
+                    selectedSize === variant.size
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                      : 'border-ink-200 hover:border-ink-400 text-ink-700'
+                  )}
+                >
+                  {variant.size}
+                </button>
+              ))}
+            </Row>
+          </Col>
+        )}
 
         {/* Price and buy button */}
         <Row className="mt-auto items-center justify-between border-t border-ink-200 pt-3">
           <Col>
             <div className="text-lg font-bold text-teal-600">
-              {formatMoney(item.price)}
+              {hasDiscount ? formatMoney(discountedPrice) : formatMoney(item.price)}
+              {hasDiscount && (
+                <span className="ml-1 text-xs text-green-600">
+                  ({Math.round(shopDiscount * 100)}% off)
+                </span>
+              )}
             </div>
+            {hasDiscount && (
+              <span className="text-ink-400 text-xs line-through">{formatMoney(item.price)}</span>
+            )}
             <span className="text-ink-500 text-xs">+ shipping (paid in mana)</span>
           </Col>
           {!canPurchase && user ? (
@@ -878,7 +944,7 @@ function MerchItemCard(props: {
               disabled={!user || !selectedSize}
               onClick={handleBuyClick}
             >
-              {selectedSize ? 'Buy' : 'Select size'}
+              {selectedSize ? 'Buy' : 'Select a size'}
             </Button>
           )}
         </Row>
@@ -889,47 +955,50 @@ function MerchItemCard(props: {
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
-            You're ordering: <strong>{item.name}</strong> (Size: {selectedSize})
+            You're ordering: <strong>{item.name}</strong>{!singleVariant && <> (Size: {selectedSize})</>}
           </p>
           <p className="text-ink-600">
             Price:{' '}
-            <span className="font-semibold text-teal-600">{formatMoney(item.price)}</span>
+            <span className="font-semibold text-teal-600">{formatMoney(discountedPrice)}</span>
+            {hasDiscount && <span className="text-ink-400 ml-1 text-sm line-through">{formatMoney(item.price)}</span>}
             <span className="text-ink-500 text-sm"> + shipping</span>
           </p>
           <p className="text-ink-500 text-sm">All costs (item + shipping) are paid in mana.</p>
 
-          {/* Size Guide */}
-          <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
-            <div className="text-sm font-semibold">Size Guide (Gildan 64000)</div>
-            <div className="overflow-x-auto">
-              <table className="text-ink-600 w-full text-xs">
-                <thead>
-                  <tr className="border-b border-ink-200">
-                    <th className="py-1 pr-3 text-left font-medium">Size</th>
-                    <th className="px-2 py-1 text-center font-medium">Chest (in)</th>
-                    <th className="px-2 py-1 text-center font-medium">Length (in)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { size: 'S', chest: '34-36', length: '28' },
-                    { size: 'M', chest: '38-40', length: '29' },
-                    { size: 'L', chest: '42-44', length: '30' },
-                    { size: 'XL', chest: '46-48', length: '31' },
-                    { size: '2XL', chest: '50-52', length: '32' },
-                    { size: '3XL', chest: '54-56', length: '33' },
-                  ].map((row) => (
-                    <tr key={row.size} className={selectedSize === row.size ? 'bg-indigo-50 dark:bg-indigo-950/30' : ''}>
-                      <td className="py-1 pr-3 font-medium">{row.size}</td>
-                      <td className="px-2 py-1 text-center">{row.chest}</td>
-                      <td className="px-2 py-1 text-center">{row.length}</td>
+          {/* Size Guide (only for multi-size items like t-shirts) */}
+          {!singleVariant && (
+            <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
+              <div className="text-sm font-semibold">Size Guide (Gildan 64000)</div>
+              <div className="overflow-x-auto">
+                <table className="text-ink-600 w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-ink-200">
+                      <th className="py-1 pr-3 text-left font-medium">Size</th>
+                      <th className="px-2 py-1 text-center font-medium">Chest (in)</th>
+                      <th className="px-2 py-1 text-center font-medium">Length (in)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-ink-500 text-xs">Measurements are approximate. When in doubt, size up!</p>
-          </Col>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: 'S', chest: '34-36', length: '28' },
+                      { size: 'M', chest: '38-40', length: '29' },
+                      { size: 'L', chest: '42-44', length: '30' },
+                      { size: 'XL', chest: '46-48', length: '31' },
+                      { size: '2XL', chest: '50-52', length: '32' },
+                      { size: '3XL', chest: '54-56', length: '33' },
+                    ].map((row) => (
+                      <tr key={row.size} className={selectedSize === row.size ? 'bg-indigo-50 dark:bg-indigo-950/30' : ''}>
+                        <td className="py-1 pr-3 font-medium">{row.size}</td>
+                        <td className="px-2 py-1 text-center">{row.chest}</td>
+                        <td className="px-2 py-1 text-center">{row.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-ink-500 text-xs">Measurements are approximate. When in doubt, size up!</p>
+            </Col>
+          )}
 
           <div className="rounded-lg bg-blue-50 p-3 text-sm dark:bg-blue-950/30">
             <p className="text-blue-700 dark:text-blue-300">
@@ -1040,7 +1109,7 @@ function MerchItemCard(props: {
             <Button color="gray" onClick={() => setShowShippingModal(false)}>Back</Button>
             <Button color="indigo" disabled={!shippingInfo.name || !selectedShipping}
               onClick={() => setShowConfirmOrderModal(true)}>
-              Place Order ({formatMoney(item.price)}
+              Place Order ({formatMoney(discountedPrice)}
               {selectedShipping && ` + ${formatMoney(Math.round(parseFloat(selectedShipping.rate) * 100))} shipping`})
             </Button>
           </Row>
@@ -1056,10 +1125,12 @@ function MerchItemCard(props: {
               <span className="text-ink-500">Item:</span>
               <span className="font-medium">{item.name}</span>
             </Row>
-            <Row className="justify-between">
-              <span className="text-ink-500">Size:</span>
-              <span className="font-medium">{selectedSize}</span>
-            </Row>
+            {!singleVariant && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Size:</span>
+                <span className="font-medium">{selectedSize}</span>
+              </Row>
+            )}
             <Row className="justify-between">
               <span className="text-ink-500">Shipping to:</span>
               <span className="font-medium text-right">
@@ -1082,7 +1153,12 @@ function MerchItemCard(props: {
             <div className="border-ink-200 my-1 border-t" />
             <Row className="justify-between">
               <span className="text-ink-500">Item price:</span>
-              <span className="font-medium">{formatMoney(item.price)}</span>
+              <span className="font-medium">
+                {formatMoney(discountedPrice)}
+                {hasDiscount && (
+                  <span className="text-ink-400 ml-1 text-xs line-through">{formatMoney(item.price)}</span>
+                )}
+              </span>
             </Row>
             {selectedShipping && (
               <Row className="justify-between">
@@ -1093,7 +1169,7 @@ function MerchItemCard(props: {
             <Row className="justify-between text-base font-semibold">
               <span>Total (mana):</span>
               <span className="text-teal-600">
-                {formatMoney(item.price + (selectedShipping ? Math.round(parseFloat(selectedShipping.rate) * 100) : 0))}
+                {formatMoney(discountedPrice + (selectedShipping ? Math.round(parseFloat(selectedShipping.rate) * 100) : 0))}
               </span>
             </Row>
           </Col>
@@ -1651,7 +1727,7 @@ function SupporterModal(props: {
                       {Math.round(
                         SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
                       )}
-                      % shop discount
+                      % off shop items
                     </span>
                   </Row>
                 )}
@@ -4448,11 +4524,11 @@ function ShopItemCard(props: {
 
   return (
     <>
-      <div className="group pb-1">
+      <div className="group flex pb-1">
       <Card
         ref={cardRef}
         className={clsx(
-          'group relative flex cursor-default flex-col gap-3 p-4 transition-all duration-200',
+          'group relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
           justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
           !justPurchased && 'hover:-translate-y-1 hover:shadow-xl hover:ring-2',
           !justPurchased &&
@@ -4785,7 +4861,7 @@ function ShopItemCard(props: {
                   {formatMoney(discountedPrice)}
                 </span>
                 <span className="ml-1 text-xs text-green-600">
-                  ({Math.round(shopDiscount * 100)}% shop discount)
+                  ({Math.round(shopDiscount * 100)}% off)
                 </span>
               </>
             ) : (
