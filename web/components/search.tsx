@@ -509,7 +509,7 @@ export function Search(props: SearchProps) {
       <Col className={clsx('bg-canvas-0 sticky top-0 z-20', headerClassName)}>
         <Col className="mb-2">
           {showTopicsFilterPills && (
-            <Row className="items-baseline gap-4 border-b border-ink-100 pb-2 dark:border-ink-200">
+            <Row className="border-ink-100 dark:border-ink-200 items-baseline gap-4 border-b pb-2">
               <button
                 className={clsx(
                   'shrink-0 font-medium',
