@@ -400,45 +400,87 @@ Most stats already exist:
 
 ## Audit Remediation
 
-**Status:** 🔧 In Progress (February 2026)
+**Status:** 🔧 Round 2 In Progress (February 2026)
 
-Findings from a comprehensive dual-agent audit (Gemini 3 Pro + Claude Opus 4.6) of the `shop-items2` branch. Issues are severity-ranked.
+Two comprehensive dual-agent audits (Gemini 3 Pro + Claude Opus 4.6) have been run.
 
-### CRITICAL — Must fix before merge
+### Round 1 Fixes ✅ Complete — commit `ba8c1f626`
+
+| # | Issue | Status |
+|---|-------|--------|
+| C1 | Printful HTTP call inside `pg.tx()` → 3-phase saga | ✅ |
+| C2 | Charity champion race → `FOR UPDATE` on giveaway row | ✅ |
+| C3 | Metadata injection → per-item validation + schema size cap | ✅ |
+| C4 | Error handler swallows `APIError` | ✅ |
+| H1 | `shop-toggle.ts` race → `FOR UPDATE` on entitlement row | ✅ |
+| H2 | `PENDING_FULFILLMENT` missing from `ShopOrder` status union | ✅ |
+| H3 | Admin reset misses `PENDING_FULFILLMENT` merch orders | ✅ |
+| H4 | Silent `.catch(() => {})` in notification fire-and-forget | ✅ |
+| H5 | `as any` cast for partial User → `as unknown as User` | ✅ |
+| M1 | Missing `shop_orders(user_id, item_id)` index | ✅ Migration |
+| M2 | Fractional `numTickets` not validated as integer | ✅ |
+| M3 | Subscription expiry notifications not idempotent | ✅ Deterministic IDs |
+| M4 | Heavy aggregate queries inside write transaction | ✅ `checkItemRequirement` pre-tx |
+| M5 | Unused imports in `shop-shipping-rates.ts` | ✅ |
+
+---
+
+### Round 2 Holistic Audit Findings — 🔧 In Progress
+
+#### Business Decisions Made
+
+| Decision | Outcome |
+|----------|---------|
+| **Shipping cost** | **CHARGE IT** — add `shippingCost` mana param to endpoint; frontend already shows it |
+| **Printful failure refund** | **AUTO-REFUND** — if Printful call fails (verified failure), immediately refund mana; orders are draft so no production risk |
+| **Order traceability** | **Printful `packing_slip.message`** — attach `@username (uid: xxx)` so admin dashboard shows Manifold user for each order |
+
+#### CRITICAL — Must fix before merge
 
 | # | Issue | File(s) | Fix |
 |---|-------|---------|-----|
-| C1 | **Printful HTTP call inside `pg.tx()`** — holds DB connection during external API call (pool exhaustion risk) + orphaned Printful orders if post-HTTP DB insert fails | `shop-purchase-merch.ts` | Move `createPrintfulOrder()` outside the transaction. Draft orders (`confirm: false`) are safe to create first. |
-| C2 | **Charity champion race condition** — two concurrent claims both succeed under `READ COMMITTED` | `claim-charity-champion.ts` | Add `SELECT ... FOR UPDATE` on the giveaway row to serialize claims |
-| C3 | **Metadata injection** — `z.record(z.any())` allows arbitrary JSON storage, bypassing button text option lists | `shop-update-metadata.ts`, `schema.ts` | Validate metadata per `itemId` server-side; add size cap |
-| C4 | **Error handler swallows own `APIError`** — catch block re-catches the structured error thrown in the try | `shop-purchase-merch.ts`, `shop-shipping-rates.ts` | `catch (e) { if (e instanceof APIError) throw e; ... }` |
+| C1 | **`get-shop-stats` unauthenticated** — exposes daily revenue, subscriber counts, auto-renewal rates | `schema.ts` | `authed: true` + `isAdminId`/`isModId` check in handler |
+| C2 | **`limitDays` no upper bound → DoS** — `limitDays=100000` CROSS JOINs 274 years × all entitlements | `schema.ts` | `.max(365).int().min(1)` on zod schema |
 
-### HIGH — Should fix before merge
+#### HIGH — Must fix before merge
 
 | # | Issue | File(s) | Fix |
 |---|-------|---------|-----|
-| H1 | **`shop-toggle.ts` race condition** — concurrent toggles bypass `EXCLUSIVE_SLOTS` | `shop-toggle.ts` | `SELECT 1 FROM users WHERE id = $1 FOR UPDATE` at start of tx |
-| H2 | **`PENDING_FULFILLMENT` not in `ShopOrder` type** — merch orders use unlisted status | `types.ts` | Add to status union type |
-| H3 | **Admin reset misses merch orders** — only refunds `COMPLETED`, not `PENDING_FULFILLMENT` | `shop-reset-all.ts` | Include `PENDING_FULFILLMENT` in status filter |
-| H4 | **Silent `.catch(() => {})`** — notification errors invisible | `claim-charity-champion.ts`, `buy-charity-giveaway-tickets.ts` | `.catch((e) => console.error(...))` |
-| H5 | **`as any` cast for partial User** — fragile type bypass | `claim-charity-champion.ts` | Use `Pick<User, ...>` instead |
+| H1 | **Shipping address fields unbounded** — megabyte payloads pass validation | `schema.ts` | `.max(200)` on each field; `.regex(/^[A-Z]{2}$/)` for `country` |
+| H2 | **Merch one-time check blocks re-purchase after FAILED/REFUNDED** | `shop-purchase-merch.ts` | `AND status NOT IN ('FAILED', 'REFUNDED', 'CANCELLED')` |
+| H3 | **Race on one-time purchase in `shop-purchase.ts`** — no `FOR UPDATE`, double-charge possible | `shop-purchase.ts` | `FOR UPDATE` on entitlement check |
+| H4 | **Race on `buy-charity-giveaway-tickets.ts`** — no giveaway lock, bonding curve pricing wrong under concurrency | `buy-charity-giveaway-tickets.ts` | `FOR UPDATE` on giveaway SELECT |
+| H5 | **Shipping cost never charged** — Manifold pays Printful out of pocket | `shop-purchase-merch.ts`, `schema.ts`, `shop.tsx` | Add `shippingCost` param; include in mana deduction; add username to packing slip |
+| H6 | **Failed merch orders don't auto-refund** — user loses mana until manual admin intervention | `shop-purchase-merch.ts` | Create refund txn in Printful failure catch block |
 
-### MEDIUM — Fix when convenient
+#### MEDIUM — Fix before merge
 
 | # | Issue | File(s) | Fix |
 |---|-------|---------|-----|
-| M1 | **Missing `shop_orders` index** — full table scans | DB migration | `CREATE INDEX shop_orders_user_id_item_id ON shop_orders (user_id, item_id)` |
-| M2 | **Fractional tickets** — `numTickets` not validated as integer | `schema.ts` | `z.number().int().positive()` |
-| M3 | **Subscription expiry not idempotent** — duplicate notifications on re-run | `check-subscription-expiry.ts` | Deterministic notification ID: `mem_exp_${userId}_${expiresTime}` |
-| M4 | **Heavy aggregate queries inside tx** — achievement checks hold locks | `shop-purchase.ts` | Move read-only requirement checks before the transaction |
-| M5 | **Unused imports in shipping rates** — no variant validation | `shop-shipping-rates.ts` | Remove unused imports, optionally validate variant |
+| M1 | **Tier downgrade exploit** — full prorated credit on downgrade makes it free (e.g., 25 days Premium → Plus costs M$0 + 30 fresh days) | `shop-purchase.ts` | `upgradeCredit = Math.min(upgradeCredit, basePrice)` |
+| M2 | **`variantId` not validated** in shipping rates — proxies Manifold API key to arbitrary Printful products | `shop-shipping-rates.ts` | Validate `variantId` exists in `SHOP_ITEMS` |
+| M3 | **`shop_orders` has no RLS** — purchase history readable via anon key | DB migration | `ALTER TABLE shop_orders ENABLE ROW LEVEL SECURITY` + user policy |
+| M4 | **Missing index on `user_entitlements(entitlement_id)`** — stats queries full scan | DB migration | `CREATE INDEX CONCURRENTLY` |
 
-### Implementation Order
+#### LOW — Nice to have
 
-1. Fix C1-C4 (critical backend safety)
-2. Fix H1-H5 (race conditions, type safety, observability)
-3. Fix M1-M5 (performance, validation, cleanup)
-4. Re-run audit to verify all issues resolved
+| # | Issue | Fix |
+|---|-------|-----|
+| L1 | Duplicate `SUBSCRIPTION_ITEM_IDS` in `get-shop-stats.ts` | Import from `supporter-config` |
+| L2 | Crown position comment: indexes 1 and 2 swapped in comment | Fix comment in `items.ts` |
+| L3 | Deprecated `EXCLUSIVE_CATEGORIES` still imported in `shop.tsx` | Remove dead import |
+
+### Round 2 Implementation Order
+
+1. **C1+C2** — auth + DoS on `get-shop-stats` (trivial, critical)
+2. **H3+H4** — `FOR UPDATE` race conditions (easy)
+3. **H2** — merch re-purchase after failure (easy)
+4. **H1** — shipping address length limits (trivial)
+5. **H5+H6** — charge shipping + auto-refund + Printful traceability (medium)
+6. **M1** — tier downgrade exploit (easy)
+7. **M2** — validate variantId in shipping rates (easy)
+8. **M3+M4** — DB migrations (RLS + index)
+9. **L1-L3** — code quality (trivial)
 
 ---
 

@@ -347,25 +347,37 @@ export const SHOP_ITEMS: ShopItem[] = [
 ### shop-purchase-merch
 **File**: `backend/api/src/shop-purchase-merch.ts`
 
-**Request**: `{ itemId: string, variantId: string, shipping: { name, address1, address2?, city, state, zip, country } }`
+**Request**: `{ itemId: string, variantId: string, shippingCost: number, shipping: { name, address1, address2?, city, state, zip, country } }`
 
-**Flow**:
-1. Validate item is merch category
-2. Validate variant exists for this item
-3. Check one-time purchase limit (max 1 per merch item per user via `shop_orders`)
-4. Apply supporter discount
-5. Deduct mana via transaction
-6. Create Printful draft order (`confirm: false`)
-7. Create `shop_orders` record with `PENDING_FULFILLMENT` status
+> `shippingCost` is the mana amount from `shop-shipping-rates`. Total charge = `item.price (discounted) + shippingCost`. Supporter discount applies to item price only.
 
-> **Known issue (audit C1)**: Printful API call is currently inside `pg.tx()`. See `shop-implementation-plan.md` → Audit Remediation for fix plan.
+**Flow** (3-phase saga — Printful call is OUTSIDE the DB transaction):
+
+1. Pre-validate: item is merch, variant exists, auth present, Printful token configured
+2. **Phase 1 (DB tx)**: Check one-time limit (excluding FAILED/REFUNDED/CANCELLED), get supporter discount, check balance, deduct `price + shippingCost` via `SHOP_PURCHASE` txn, INSERT `shop_orders` as `PENDING_FULFILLMENT`
+3. **Phase 2 (external HTTP)**: Call Printful `POST /orders` with `confirm: false` (draft). Includes `packing_slip` with username for admin traceability. If fails → create refund txn + mark order `FAILED`, throw
+4. **Phase 3 (DB update)**: UPDATE `shop_orders` with `printful_order_id` and `printful_status`
+
+**Merch order statuses**:
+
+| Status | Meaning |
+|--------|---------|
+| `PENDING_FULFILLMENT` | Charged, Printful draft created, awaiting admin confirmation |
+| `FAILED` | Printful call failed; mana auto-refunded |
+| `COMPLETED` | Admin confirmed the Printful order (production triggered) |
+| `SHIPPED` / `DELIVERED` | Fulfillment milestones |
+| `REFUNDED` | Mana returned via admin reset |
+
+**Admin traceability**: Each Printful order includes a `packing_slip.message` with the buyer's Manifold username and user ID. Orders are **draft by default** (`confirm: false`) — admin must manually confirm each order in the Printful dashboard before production begins.
+
+**One-time purchase limit**: Excludes FAILED/REFUNDED/CANCELLED so users can re-purchase after failed orders.
 
 ### shop-shipping-rates
 **File**: `backend/api/src/shop-shipping-rates.ts`
 
 **Request**: `{ variantId: string, address: { address1, city, state?, zip, country } }`
 
-Proxies shipping rate lookups to Printful API. Returns available shipping methods and costs (in mana equivalent).
+Proxies shipping rate lookups to Printful API. Validates `variantId` belongs to a Manifold shop item before calling Printful (prevents API key proxy abuse). Returns shipping methods and USD costs — frontend converts to mana for display.
 
 ### claim-charity-champion
 **File**: `backend/api/src/claim-charity-champion.ts`
@@ -1141,6 +1153,22 @@ Features that were considered but intentionally not implemented. Documented here
 
 | Date | Change | Modified By |
 |------|--------|-------------|
+| 2026-02-24 | Round 2 audit fixes — in progress | Claude |
+| | - **Merch flow**: `shippingCost` now charged in mana (total = item + shipping) | |
+| | - **Merch flow**: Printful failure triggers auto-refund (mana returned immediately) | |
+| | - **Merch traceability**: `packing_slip.message` includes Manifold username | |
+| | - **Security**: `get-shop-stats` to require admin auth + `limitDays` bounded | |
+| | - **Race conditions**: `FOR UPDATE` on one-time check + giveaway ticket purchase | |
+| | - **DB**: RLS on `shop_orders` + index on `user_entitlements(entitlement_id)` | |
+| | - **Business logic**: Tier downgrade credit capped at new tier price | |
+| 2026-02-24 | Round 1 audit fixes (commit ba8c1f626) | Claude |
+| | - Printful call moved outside `pg.tx()` (3-phase saga) | |
+| | - Giveaway champion `FOR UPDATE` locking | |
+| | - Metadata validation per item ID | |
+| | - APIError preservation in Printful error handlers | |
+| | - `PENDING_FULFILLMENT` + `REFUNDED` added to ShopOrder status union | |
+| | - Deterministic subscription expiry notification IDs | |
+| | - Achievement aggregate queries moved pre-transaction | |
 | 2026-01-19 | Added auto-renewing subscriptions for memberships | Claude |
 | | - Added `auto_renew` column to `user_entitlements` table | |
 | | - New `shop-cancel-subscription` API endpoint | |
