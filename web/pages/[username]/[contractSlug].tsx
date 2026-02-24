@@ -23,7 +23,8 @@ export async function getStaticProps(ctx: {
     contract = await getContractFromSlug(adminDb, contractSlug)
   } catch (error) {
     console.error('DB error fetching contract:', contractSlug, error)
-    return { notFound: true, revalidate: 60 }
+    // Throw so ISR serves the previous static page and retries later.
+    throw error
   }
 
   if (!contract) {
@@ -45,7 +46,8 @@ export async function getStaticProps(ctx: {
     props = await getContractParams(contract, adminDb)
   } catch (error) {
     console.error('DB error fetching contract params:', contractSlug, error)
-    return { notFound: true, revalidate: 60 }
+    // Throw so ISR serves the previous static page and retries later.
+    throw error
   }
 
   return {

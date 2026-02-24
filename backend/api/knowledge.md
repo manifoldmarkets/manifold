@@ -10,7 +10,20 @@ This directory contains the implementation of various API endpoints for the Mani
 - Authentication is handled using the `APIHandler` type, which automatically manages user authentication based on the schema definition.
 - The API VM is run on GCP as a single instance with 4 cores. One core is a write instance that handles all routes that write to the DB. The other cores are read-only instances and handle routes specified in `backend/api/url-map-config.yaml`.
 
-## Mana/Sweepstakes Market Relationships
+## Connecting to the Database to run test queries (do NOT write rows or make indexes on the prod database!)
+
+If you want to run queries against our supabase instance, for the remote prod db you can run them like so:
+
+```sh
+ PGPASSWORD="$MANIFOLD_PROD_DB_PW" psql \
+  -h "$MANIFOLD_PROD_DB_HOST" \
+  -p 5432 \
+  -U "$MANIFOLD_PROD_DB_USER" \
+  -d postgres \
+  -c "SELECT * FROM contract_bets LIMIT 1;"
+```
+
+## Mana/Sweepstakes Market Relationships (now deprecated)
 
 - Mana markets can have sweepstakes counterpart markets (siblingContractId)
 - The mana market is the source of truth - changes to mana markets should propagate to their sweepstakes counterparts
@@ -185,12 +198,12 @@ The ban system controls what actions users can perform. Bans and mod alerts are 
 
 There are four ban types defined in `common/src/user.ts`:
 
-| Ban Type | What It Blocks |
-|----------|---------------|
-| `posting` | Commenting, messaging, creating posts, adding answers, poll voting, sending managrams |
+| Ban Type        | What It Blocks                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| `posting`       | Commenting, messaging, creating posts, adding answers, poll voting, sending managrams                   |
 | `marketControl` | Creating/editing/resolving markets, hiding comments, adding/editing answers, poll voting, adding topics |
-| `trading` | Betting, managrams, liquidity changes, adding answers, poll voting |
-| `modAlert` | **Does NOT block any actions** - used for warning messages to users with full audit history |
+| `trading`       | Betting, managrams, liquidity changes, adding answers, poll voting                                      |
+| `modAlert`      | **Does NOT block any actions** - used for warning messages to users with full audit history             |
 
 Some actions are blocked by multiple ban types (e.g., `pollVote` is blocked by all three blocking types).
 
@@ -201,12 +214,13 @@ For new endpoints that perform user actions, use the `onlyUsersWhoCanPerformActi
 ```typescript
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-export const myEndpoint: APIHandler<'my-endpoint'> = onlyUsersWhoCanPerformAction(
-  'actionName',  // Must be a key in getBanTypesForAction()
-  async (props, auth, req) => {
-    // Your endpoint logic here
-  }
-)
+export const myEndpoint: APIHandler<'my-endpoint'> =
+  onlyUsersWhoCanPerformAction(
+    'actionName', // Must be a key in getBanTypesForAction()
+    async (props, auth, req) => {
+      // Your endpoint logic here
+    }
+  )
 ```
 
 The action name must be registered in `getBanTypesForAction()` in `common/src/ban-utils.ts`:
@@ -214,10 +228,10 @@ The action name must be registered in `getBanTypesForAction()` in `common/src/ba
 ```typescript
 export function getBanTypesForAction(action: string): BanType[] {
   const actionMap: Record<string, BanType[]> = {
-    'comment': ['posting'],
-    'createMarket': ['marketControl'],
-    'trade': ['trading'],
-    'myNewAction': ['posting'],  // Add your action here
+    comment: ['posting'],
+    createMarket: ['marketControl'],
+    trade: ['trading'],
+    myNewAction: ['posting'], // Add your action here
     // ...
   }
   return actionMap[action] || []
@@ -241,6 +255,7 @@ if (isUserBanned(userBans, 'trading')) {
 ### Endpoints Currently Using Ban Checks
 
 **Using `onlyUsersWhoCanPerformAction` wrapper:**
+
 - `create-market.ts` → `'createMarket'`
 - `create-comment.ts` → `'comment'`
 - `create-post.ts` → `'post'`
@@ -252,6 +267,7 @@ if (isUserBanned(userBans, 'trading')) {
 - `post.ts` (comments) → `'comment'`
 
 **Using manual ban checks:**
+
 - `resolve-market.ts` → checks `marketControl`
 - `unresolve.ts` → checks `marketControl`
 - `hide-comment.ts` → checks `marketControl`
@@ -270,7 +286,7 @@ if (isUserBanned(userBans, 'trading')) {
 Some endpoints don't require ban checks because they don't represent user "actions" that could be abused:
 
 - **`reaction.ts`** - Likes/dislikes are low-impact and can be removed; abuse is handled via other means
-- **Read-only endpoints** (get-*, search-*, etc.) - No state changes
+- **Read-only endpoints** (get-_, search-_, etc.) - No state changes
 
 ### Endpoints with Hidden Ban Checks (Deprecated Features)
 
@@ -282,6 +298,7 @@ These endpoints have ban checks but the restrictions are not shown in the UI ban
 ### Legacy Ban System
 
 There is a legacy ban field `isBannedFromPosting` on the User object. During the migration period:
+
 - Server-side checks use BOTH the new `user_bans` table AND the legacy field
 - Example: `isUserBanned(userBans, 'posting') || user.isBannedFromPosting`
 
@@ -290,17 +307,18 @@ There is a legacy ban field `isBannedFromPosting` on the User object. During the
 Bans are stored in the `user_bans` table:
 
 ```sql
-create table user_bans (
-  id serial primary key,
-  user_id text not null references users(id),
-  ban_type text not null,  -- 'posting', 'marketControl', or 'trading'
-  reason text,
-  created_at timestamptz not null default now(),
-  created_by text references users(id),
-  end_time timestamptz,     -- null = permanent ban
-  ended_by text references users(id),
-  ended_at timestamptz      -- set when ban is manually lifted
-);
+create table
+  user_bans (
+    id serial primary key,
+    user_id text not null references users (id),
+    ban_type text not null, -- 'posting', 'marketControl', or 'trading'
+    reason text,
+    created_at timestamptz not null default now (),
+    created_by text references users (id),
+    end_time timestamptz, -- null = permanent ban
+    ended_by text references users (id),
+    ended_at timestamptz -- set when ban is manually lifted
+  );
 ```
 
 Active bans are those where `ended_at IS NULL AND (end_time IS NULL OR end_time > now())`.
@@ -308,6 +326,7 @@ Active bans are those where `ended_at IS NULL AND (end_time IS NULL OR end_time 
 ### Mod Alerts
 
 Mod alerts are stored in the `user_bans` table with `ban_type = 'modAlert'`. This provides:
+
 - Full audit history (who sent which alerts, when they were dismissed, by whom)
 - Consistent querying with other bans
 - Multiple historical alerts can be tracked

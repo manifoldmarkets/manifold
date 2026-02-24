@@ -2,6 +2,7 @@
 
 # Parse arguments
 DEBUG=false
+PORT_ARG=""
 POSITIONAL_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -9,6 +10,14 @@ while [[ $# -gt 0 ]]; do
         --debug)
             DEBUG=true
             shift
+            ;;
+        --port|-p)
+            if [[ -z "${2:-}" || "$2" == --* ]]; then
+                echo "Error: --port requires a numeric value."
+                exit 1
+            fi
+            PORT_ARG="$2"
+            shift 2
             ;;
         *)
             POSITIONAL_ARGS+=("$1")
@@ -18,7 +27,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 ENV=${POSITIONAL_ARGS[0]:-dev}
-API_PORT=${POSITIONAL_ARGS[1]:-8088}
+API_PORT=${PORT_ARG:-${POSITIONAL_ARGS[1]:-8088}}
+
+if ! [[ "$API_PORT" =~ ^[0-9]+$ ]]; then
+    echo "Error: Invalid port '$API_PORT'. Use a numeric port (e.g. 8088)."
+    exit 1
+fi
 
 # Set environment based on whether "prod" is in the ENV string
 if [[ "$ENV" == *"prod"* ]]; then

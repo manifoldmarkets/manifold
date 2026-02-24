@@ -10,6 +10,7 @@ import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { updateContract } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { FieldVal } from 'shared/supabase/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { getContract, log, revalidateContractStaticProps } from 'shared/utils'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
@@ -71,7 +72,10 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
     })
     await updateContract(pg, contractId, {
       ...update,
-      coverImageUrl: update.coverImageUrl || undefined,
+      coverImageUrl:
+        coverImageUrl === null
+          ? FieldVal.delete()
+          : update.coverImageUrl || undefined,
     })
 
     log(`updated fields: ${Object.keys(fields).join(', ')}`)

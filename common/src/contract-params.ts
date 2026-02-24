@@ -32,18 +32,53 @@ import { MarketContract } from './contract'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 import { unauthedApi } from './util/api'
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const retryUnAuthedApi = async <T>(
+  contractSlug: string,
+  endpoint: string,
+  fetchValue: () => Promise<T>,
+  maxRetries = 2
+) => {
+  let lastError: unknown
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fetchValue()
+    } catch (error) {
+      lastError = error
+      console.error(
+        `Error fetching ${endpoint} for contract params (attempt ${
+          attempt + 1
+        }/${maxRetries + 1}):`,
+        contractSlug,
+        error
+      )
+      if (attempt < maxRetries) {
+        // Brief backoff to absorb transient upstream hiccups.
+        await sleep(200 * (attempt + 1))
+      }
+    }
+  }
+
+  throw lastError
+}
+
 export async function getContractParams(
   contract: Contract,
   db: SupabaseClient
 ): Promise<Omit<ContractParams, 'cash'>> {
+  const contractSlug = contract.slug
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
   const isNumber = contract.outcomeType === 'NUMBER'
   const numberContractBetCount = async () =>
-    unauthedApi('unique-bet-group-count', {
-      contractId: contract.id,
-    }).then((res) => res.count)
+    retryUnAuthedApi(contractSlug, 'unique-bet-group-count', async () =>
+      unauthedApi('unique-bet-group-count', {
+        contractId: contract.id,
+      }).then((res) => res.count)
+    )
   const includeRedemptions =
     contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   const [
@@ -66,12 +101,14 @@ export async function getContractParams(
         : getTotalBetCount(contract.id)
       : 0,
     hasMechanism
-      ? unauthedApi('bets', {
-          contractId: contract.id,
-          limit: 1,
-          order: 'desc',
-          filterRedemptions: true,
-        })
+      ? retryUnAuthedApi(contractSlug, 'bets', () =>
+          unauthedApi('bets', {
+            contractId: contract.id,
+            limit: 1,
+            order: 'desc',
+            filterRedemptions: true,
+          })
+        )
       : ([] as Bet[]),
     hasMechanism && !shouldHideGraph(contract)
       ? getBetPointsBetween(contract as MarketContract, {
@@ -86,12 +123,17 @@ export async function getContractParams(
     getNumContractComments(contract.id),
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    unauthedApi('get-related-markets', {
-      contractId: contract.id,
-      limit: 10,
-      question: contract.question,
-      uniqueBettorCount: contract.uniqueBettorCount,
-    }),
+    retryUnAuthedApi(
+      contractSlug,
+      'get-related-markets',
+      () =>
+        unauthedApi('get-related-markets', {
+          contractId: contract.id,
+          limit: 10,
+          question: contract.question,
+          uniqueBettorCount: contract.uniqueBettorCount,
+        })
+    ),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),

@@ -123,10 +123,17 @@ export function PostCard(props: {
               <Row className="text-ink-500 items-center gap-1.5 text-xs">
                 <ClockIcon className="h-3.5 w-3.5" />
                 <span>
-                  {post.lastCommentTime
-                    ? `Active ${fromNow(post.lastCommentTime)}`
-                    : fromNow(post.createdTime)}
+                  {new Date(post.createdTime).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
                 </span>
+                {post.lastCommentTime && (
+                  <>
+                    <span>·</span>
+                    <span>Active {fromNow(post.lastCommentTime)}</span>
+                  </>
+                )}
               </Row>
             </Col>
           </Row>

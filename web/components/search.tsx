@@ -509,13 +509,10 @@ export function Search(props: SearchProps) {
       <Col className={clsx('bg-canvas-0 sticky top-0 z-20', headerClassName)}>
         <Col className="mb-2">
           {showTopicsFilterPills && (
-            <Carousel
-              fadeEdges
-              labelsParentClassName="gap-4 items-baseline border-b border-ink-100 dark:border-ink-200 pb-2"
-            >
+            <Row className="border-ink-100 dark:border-ink-200 items-baseline gap-4 border-b pb-2">
               <button
                 className={clsx(
-                  'font-medium',
+                  'shrink-0 font-medium',
                   selectedAll ? 'text-primary-600' : 'text-ink-500'
                 )}
                 onClick={() => {
@@ -531,80 +528,87 @@ export function Search(props: SearchProps) {
               >
                 All
               </button>
-              {!!user?.id && (
-                <button
-                  className={clsx(
-                    'font-medium',
-                    selectedFollowed ? 'text-primary-600' : 'text-ink-500'
-                  )}
-                  onClick={() => {
-                    if (!selectedFollowed) {
-                      track('select search topic', { topic: 'followed' })
-                      const changes: Partial<SearchParams> = {
-                        [TOPIC_FILTER_KEY]: 'followed',
-                        [GROUP_IDS_KEY]: '',
-                      }
-                      onChange(changes)
-                    }
-                  }}
-                >
-                  Followed
-                </button>
-              )}
-              {ALL_PARENT_TOPICS.map((topic) => (
-                <button
-                  key={topic}
-                  className={clsx(
-                    'whitespace-nowrap font-medium',
-                    selectedTopic === topic
-                      ? 'text-primary-600'
-                      : 'text-ink-500'
-                  )}
-                  onClick={() => {
-                    if (selectedTopic != topic) {
-                      track('select search topic', { topic })
-                      // Join all group IDs for this topic's subtopics
-                      const allGroupIds = SEARCH_TOPICS_TO_SUBTOPICS[topic]
-                        .map((subtopic) => subtopic.groupIds)
-                        .flat()
-                      const changes: Partial<SearchParams> = {
-                        [GROUP_IDS_KEY]: allGroupIds.join(','),
-                        [TOPIC_FILTER_KEY]: '', // Clear direct topicSlug when a parent topic is selected
-                      }
-                      onChange(changes)
-                    }
-                  }}
-                >
-                  {removeEmojis(topic)}
-                </button>
-              ))}
-              {showHotTopics &&
-                hotTopics.map((topic) => {
-                  const isSelected =
-                    searchParams[TOPIC_FILTER_KEY] === topic.slug
-                  return (
-                    <button
-                      key={topic.id}
-                      className={clsx(
-                        'whitespace-nowrap font-medium',
-                        isSelected ? 'text-primary-600' : 'text-ink-500'
-                      )}
-                      onClick={() => {
-                        if (!isSelected) {
-                          track('select search topic', { topic: topic.slug })
-                          const changes: Partial<SearchParams> = {
-                            [TOPIC_FILTER_KEY]: topic.slug,
-                            [GROUP_IDS_KEY]: '',
-                          }
-                          onChange(changes)
+              <Carousel
+                fadeEdges
+                showArrowsOnHover
+                labelsParentClassName="gap-4 items-baseline"
+                className="min-w-0 flex-1"
+              >
+                {!!user?.id && (
+                  <button
+                    className={clsx(
+                      'font-medium',
+                      selectedFollowed ? 'text-primary-600' : 'text-ink-500'
+                    )}
+                    onClick={() => {
+                      if (!selectedFollowed) {
+                        track('select search topic', { topic: 'followed' })
+                        const changes: Partial<SearchParams> = {
+                          [TOPIC_FILTER_KEY]: 'followed',
+                          [GROUP_IDS_KEY]: '',
                         }
-                      }}
-                    >
-                      {removeEmojis(topic.name)}
-                    </button>
-                  )
-                })}
-            </Carousel>
+                        onChange(changes)
+                      }
+                    }}
+                  >
+                    Followed
+                  </button>
+                )}
+                {ALL_PARENT_TOPICS.map((topic) => (
+                  <button
+                    key={topic}
+                    className={clsx(
+                      'whitespace-nowrap font-medium',
+                      selectedTopic === topic
+                        ? 'text-primary-600'
+                        : 'text-ink-500'
+                    )}
+                    onClick={() => {
+                      if (selectedTopic != topic) {
+                        track('select search topic', { topic })
+                        // Join all group IDs for this topic's subtopics
+                        const allGroupIds = SEARCH_TOPICS_TO_SUBTOPICS[topic]
+                          .map((subtopic) => subtopic.groupIds)
+                          .flat()
+                        const changes: Partial<SearchParams> = {
+                          [GROUP_IDS_KEY]: allGroupIds.join(','),
+                          [TOPIC_FILTER_KEY]: '', // Clear direct topicSlug when a parent topic is selected
+                        }
+                        onChange(changes)
+                      }
+                    }}
+                  >
+                    {removeEmojis(topic)}
+                  </button>
+                ))}
+                {showHotTopics &&
+                  hotTopics.map((topic) => {
+                    const isSelected =
+                      searchParams[TOPIC_FILTER_KEY] === topic.slug
+                    return (
+                      <button
+                        key={topic.id}
+                        className={clsx(
+                          'whitespace-nowrap font-medium',
+                          isSelected ? 'text-primary-600' : 'text-ink-500'
+                        )}
+                        onClick={() => {
+                          if (!isSelected) {
+                            track('select search topic', { topic: topic.slug })
+                            const changes: Partial<SearchParams> = {
+                              [TOPIC_FILTER_KEY]: topic.slug,
+                              [GROUP_IDS_KEY]: '',
+                            }
+                            onChange(changes)
+                          }
+                        }}
+                      >
+                        {removeEmojis(topic.name)}
+                      </button>
+                    )
+                  })}
+              </Carousel>
+            </Row>
           )}
         </Col>
         {!hideSearch && (

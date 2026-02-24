@@ -231,15 +231,17 @@ export async function getPostAndContractComments(
     limit?: number
     page?: number
     afterTime?: number
+    term?: string
   }
 ): Promise<(ContractComment | PostComment)[]> {
-  const { userId, limit = 5000, page = 0, afterTime } = filters
+  const { userId, limit = 5000, page = 0, afterTime, term } = filters
 
   const params: any[] = [
     limit,
     page * limit,
     userId,
     afterTime ? millisToTs(afterTime) : null,
+    term ? `%${term}%` : null,
   ]
 
   const query = `
@@ -258,7 +260,10 @@ export async function getPostAndContractComments(
             AND cc.user_id = $3                   -- userId (must be present here)
             AND ($4 IS NULL OR cc.created_time > $4) -- afterTime
             AND (cc.data->>'deleted' IS NULL OR cc.data->>'deleted' = 'false')
-            
+            AND ($5 IS NULL OR cc.data->>'text' ILIKE $5
+                            OR (cc.data->'content')::text ILIKE $5
+                            OR c.question ILIKE $5)
+
         UNION ALL
 
         -- Old Post Comments
@@ -274,6 +279,9 @@ export async function getPostAndContractComments(
             opc.user_id = $3
             AND ($4 IS NULL OR opc.created_time > $4)
             and op.visibility = 'public'
+            AND ($5 IS NULL OR opc.data->>'text' ILIKE $5
+                            OR (opc.data->'content')::text ILIKE $5
+                            OR op.data->>'title' ILIKE $5)
       ) AS combined_comments
       ORDER BY created_time DESC
       LIMIT $1 -- limit

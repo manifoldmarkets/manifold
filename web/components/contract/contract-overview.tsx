@@ -57,6 +57,7 @@ import { useUser } from 'web/hooks/use-user'
 import {
   AnswersResolvePanel,
   IndependentAnswersResolvePanel,
+  IndependentAnswersUnresolvePanel,
 } from '../answers/answer-resolve-panel'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BuyPanel } from '../bet/bet-panel'
@@ -92,8 +93,10 @@ export const ContractOverview = memo(
     contract: Contract
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
+    showUnresolver: boolean
     resolutionRating?: ReactNode
     setShowResolver: (show: boolean) => void
+    setShowUnresolver: (show: boolean) => void
     onAnswerCommentClick: (answer: Answer) => void
     chartAnnotations: ChartAnnotation[]
     hideGraph: boolean
@@ -105,8 +108,10 @@ export const ContractOverview = memo(
       betPoints,
       contract,
       showResolver,
+      showUnresolver,
       resolutionRating,
       setShowResolver,
+      setShowUnresolver,
       onAnswerCommentClick,
       chartAnnotations,
       hideGraph,
@@ -158,7 +163,9 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as MultiPoints}
             showResolver={showResolver}
+            showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
+            setShowUnresolver={setShowUnresolver}
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
             chartAnnotations={chartAnnotations}
@@ -335,8 +342,10 @@ const ChoiceOverview = (props: {
   points: MultiPoints
   contract: CPMMMultiContract
   showResolver: boolean
+  showUnresolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
+  setShowUnresolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer) => void
   chartAnnotations: ChartAnnotation[]
   zoomY?: boolean
@@ -348,8 +357,10 @@ const ChoiceOverview = (props: {
   const {
     contract,
     showResolver,
+    showUnresolver,
     resolutionRating,
     setShowResolver,
+    setShowUnresolver,
     onAnswerCommentClick,
     zoomY,
     hideGraph,
@@ -525,7 +536,15 @@ const ChoiceOverview = (props: {
           answers={contract.answers}
         />
       ) : null}
-      {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+      {!shouldAnswersSumToOne &&
+      contract.mechanism === 'cpmm-multi-1' &&
+      showUnresolver ? (
+        <IndependentAnswersUnresolvePanel
+          contract={contract}
+          onClose={() => setShowUnresolver(false)}
+          show={showUnresolver}
+        />
+      ) : !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
         <IndependentAnswersResolvePanel
           contract={contract}
           onClose={() => setShowResolver(false)}
@@ -539,7 +558,7 @@ const ChoiceOverview = (props: {
           />
         </GradientContainer>
       ) : null}
-      {!showResolver && (
+      {!showResolver && !showUnresolver && (
         <>
           {resolutionRating}
           <AnswersPanel

@@ -1,8 +1,12 @@
+import { APIParams } from 'common/api/schema'
 import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
+import { ContractMetric } from 'common/contract-metric'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
+import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
+import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert, bulkInsertQuery, insert } from 'shared/supabase/utils'
 import { broadcastOrders } from 'shared/websockets/helpers'
@@ -15,10 +19,6 @@ import {
   select,
   where,
 } from './sql-builder'
-import { buildArray } from 'common/util/array'
-import { APIParams } from 'common/api/schema'
-import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
-import { ContractMetric } from 'common/contract-metric'
 
 export const getBetsDirect = async (
   pg: SupabaseDirectClient,
@@ -104,7 +104,9 @@ export const getBetsWithFilter = async (
     : select('contract_bets.*')
 
   const ordering = points
-    ? orderBy('contract_bets.bet_id')
+    ? // Intentionally order by random bet_id so limited points queries
+      // sample across the full history; callers sort by createdTime later.
+      orderBy('contract_bets.bet_id')
     : !count &&
       orderBy(
         `contract_bets.created_time ${order ? order.toLowerCase() : 'desc'}`
