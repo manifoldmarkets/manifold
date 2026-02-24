@@ -5,7 +5,7 @@ import Router from 'next/router'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
-import { DowntimeBanner, ShopBanner } from 'web/components/nav/banner'
+import { DowntimeBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -22,7 +22,6 @@ export default function Home() {
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
-      <ShopBanner />
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (
