@@ -654,7 +654,7 @@ export default function ShopPage() {
           />
         </div>
 
-        {isAdminOrMod && <AdminTestingTools user={user} showHidden={showHidden} setShowHidden={setShowHidden} />}
+        {/* {isAdminOrMod && <AdminTestingTools user={user} showHidden={showHidden} setShowHidden={setShowHidden} />} */}
       </Col>
     </Page>
   )
