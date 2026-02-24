@@ -6,6 +6,7 @@ import {
   FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID,
 } from 'common/shop/items'
 import { convertEntitlement } from 'common/shop/types'
+import type { User } from 'common/user'
 
 export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async (
   props,
@@ -15,16 +16,20 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
   const pg = createSupabaseDirectClient()
 
   const result = await pg.tx(async (tx) => {
-    // Get the current or most recent giveaway
+    // Get the current or most recent giveaway, locking the row to prevent concurrent champion claims
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
       close_time: string
     }>(
       `SELECT giveaway_num, close_time FROM charity_giveaways
-       ORDER BY
-         CASE WHEN close_time > NOW() THEN 0 ELSE 1 END,
-         close_time DESC
-       LIMIT 1`
+       WHERE giveaway_num = (
+         SELECT giveaway_num FROM charity_giveaways
+         ORDER BY
+           CASE WHEN close_time > NOW() THEN 0 ELSE 1 END,
+           close_time DESC
+         LIMIT 1
+       )
+       FOR UPDATE`
     )
 
     if (!giveaway) {
@@ -143,8 +148,8 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
         name: result.claimingUser.name,
         username: result.claimingUser.username,
         avatarUrl: result.claimingUser.avatar_url ?? '',
-      } as any
-    ).catch(() => {})
+      } as unknown as User
+    ).catch((e) => console.error('Failed to send dethrone notification:', e))
   }
 
   return {

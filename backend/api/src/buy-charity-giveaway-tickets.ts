@@ -116,7 +116,7 @@ export const buyCharityGiveawayTickets: APIHandler<
         createCharityChampionEligibleNotification(
           auth.uid,
           parseFloat(topBuyer.total_tickets)
-        ).catch(() => {})
+        ).catch((e) => console.error('Failed to send champion eligible notification:', e))
       }
     }
 

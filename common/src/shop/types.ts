@@ -22,10 +22,12 @@ export type ShopOrder = {
   status:
     | 'CREATED'
     | 'COMPLETED'
+    | 'PENDING_FULFILLMENT'
     | 'SHIPPED'
     | 'DELIVERED'
     | 'CANCELLED'
     | 'FAILED'
+    | 'REFUNDED'
   metadata?: Record<string, any> // size, color, variant, etc.
   createdTime: number
   shippedTime?: number

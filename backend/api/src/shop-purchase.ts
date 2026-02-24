@@ -1,6 +1,9 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import {
   getShopItem,
@@ -10,6 +13,7 @@ import {
   SHOP_ITEMS,
   isSeasonalItemAvailable,
   getSeasonalAvailabilityText,
+  AchievementRequirement,
 } from 'common/shop/items'
 import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 import {
@@ -18,6 +22,100 @@ import {
   getMaxStreakFreezes,
 } from 'common/supporter-config'
 import { DAY_MS } from 'common/util/time'
+
+// Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
+// holding locks open during expensive scans.
+async function checkItemRequirement(
+  pg: SupabaseDirectClient,
+  userId: string,
+  requirement: AchievementRequirement
+): Promise<void> {
+  const { type, threshold, description } = requirement
+  let userValue = 0
+  let valueName = ''
+
+  switch (type) {
+    case 'streak': {
+      const row = await pg.oneOrNone<{ currentBettingStreak: number }>(
+        `SELECT COALESCE((data->>'currentBettingStreak')::int, 0) as "currentBettingStreak" FROM users WHERE id = $1`,
+        [userId]
+      )
+      userValue = row?.currentBettingStreak ?? 0
+      valueName = 'streak'
+      break
+    }
+    case 'profit': {
+      const row = await pg.oneOrNone<{ profit: number }>(
+        `SELECT COALESCE(SUM(profit), 0) as profit FROM user_contract_metrics WHERE user_id = $1 AND profit > 0`,
+        [userId]
+      )
+      userValue = row?.profit ?? 0
+      valueName = 'profit'
+      break
+    }
+    case 'loss': {
+      const row = await pg.oneOrNone<{ loss: number }>(
+        `SELECT COALESCE(SUM(ABS(profit)), 0) as loss FROM user_contract_metrics WHERE user_id = $1 AND profit < 0`,
+        [userId]
+      )
+      userValue = row?.loss ?? 0
+      valueName = 'loss'
+      break
+    }
+    case 'volume': {
+      const row = await pg.oneOrNone<{ volume: number }>(
+        `SELECT COALESCE(SUM(ABS(amount)), 0) as volume FROM contract_bets WHERE user_id = $1`,
+        [userId]
+      )
+      userValue = row?.volume ?? 0
+      valueName = 'volume'
+      break
+    }
+    case 'donations': {
+      const row = await pg.oneOrNone<{ donations: number }>(
+        `SELECT COALESCE(SUM(num_tickets), 0) as donations FROM charity_giveaway_tickets WHERE user_id = $1`,
+        [userId]
+      )
+      userValue = row?.donations ?? 0
+      valueName = 'donations'
+      break
+    }
+    case 'referrals': {
+      const row = await pg.oneOrNone<{ referrals: number }>(
+        `SELECT COUNT(*) as referrals FROM users WHERE (data->>'referredByUserId') = $1`,
+        [userId]
+      )
+      userValue = row?.referrals ?? 0
+      valueName = 'referrals'
+      break
+    }
+    case 'loan': {
+      const row = await pg.oneOrNone<{ balance: number }>(
+        `SELECT balance FROM users WHERE id = $1`,
+        [userId]
+      )
+      userValue = (row?.balance ?? 0) < 0 ? Math.abs(row!.balance) : 0
+      valueName = 'loan balance'
+      break
+    }
+    case 'seasonsPlatinum': {
+      const row = await pg.oneOrNone<{ count: number }>(
+        `SELECT COUNT(*) as count FROM leagues WHERE user_id = $1 AND division >= 4`,
+        [userId]
+      )
+      userValue = row?.count ?? 0
+      valueName = 'seasons at Platinum+'
+      break
+    }
+  }
+
+  if (userValue < threshold) {
+    throw new APIError(
+      403,
+      `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(userValue)}/${threshold}`
+    )
+  }
+}
 
 export const shopPurchase: APIHandler<'shop-purchase'> = async (
   { itemId },
@@ -36,6 +134,13 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
   const entitlementId = getEntitlementId(item)
 
   const pg = createSupabaseDirectClient()
+
+  // Check achievement requirement BEFORE entering the transaction.
+  // These are large read-only aggregate queries that don't need transactional consistency
+  // and should not hold a write lock open while they scan big tables.
+  if (item.requirement) {
+    await checkItemRequirement(pg, auth.uid, item.requirement)
+  }
 
   const result = await pg.tx(async (tx) => {
     const user = await getUser(auth.uid, tx)
@@ -63,87 +168,6 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
         403,
         `This item is only available ${availabilityText}`
       )
-    }
-
-    // Check achievement requirement
-    if (item.requirement) {
-      const { type, threshold, description } = item.requirement
-      let userValue = 0
-      let valueName = ''
-
-      switch (type) {
-        case 'streak':
-          userValue = user.currentBettingStreak ?? 0
-          valueName = 'streak'
-          break
-        case 'profit':
-          // Query total profit from user metrics
-          const profitResult = await tx.oneOrNone<{ profit: number }>(
-            `SELECT COALESCE(SUM(profit), 0) as profit FROM user_contract_metrics WHERE user_id = $1 AND profit > 0`,
-            [auth.uid]
-          )
-          userValue = profitResult?.profit ?? 0
-          valueName = 'profit'
-          break
-        case 'loss':
-          // Query total loss (absolute value) from user metrics
-          const lossResult = await tx.oneOrNone<{ loss: number }>(
-            `SELECT COALESCE(SUM(ABS(profit)), 0) as loss FROM user_contract_metrics WHERE user_id = $1 AND profit < 0`,
-            [auth.uid]
-          )
-          userValue = lossResult?.loss ?? 0
-          valueName = 'loss'
-          break
-        case 'volume':
-          // Query total trading volume
-          const volumeResult = await tx.oneOrNone<{ volume: number }>(
-            `SELECT COALESCE(SUM(ABS(amount)), 0) as volume FROM contract_bets WHERE user_id = $1`,
-            [auth.uid]
-          )
-          userValue = volumeResult?.volume ?? 0
-          valueName = 'volume'
-          break
-        case 'donations':
-          // Query total charity donations (in USD, from ticket purchases)
-          const donationResult = await tx.oneOrNone<{ donations: number }>(
-            `SELECT COALESCE(SUM(num_tickets), 0) as donations FROM charity_giveaway_tickets WHERE user_id = $1`,
-            [auth.uid]
-          )
-          // Each ticket is $1
-          userValue = donationResult?.donations ?? 0
-          valueName = 'donations'
-          break
-        case 'referrals':
-          // Query number of referrals
-          const referralResult = await tx.oneOrNone<{ referrals: number }>(
-            `SELECT COUNT(*) as referrals FROM users WHERE (data->>'referredByUserId') = $1`,
-            [auth.uid]
-          )
-          userValue = referralResult?.referrals ?? 0
-          valueName = 'referrals'
-          break
-        case 'loan':
-          // Check loan balance (how negative they are)
-          userValue = user.balance < 0 ? Math.abs(user.balance) : 0
-          valueName = 'loan balance'
-          break
-        case 'seasonsPlatinum':
-          // Count seasons finished at Platinum (division >= 4) or higher
-          const platinumResult = await tx.oneOrNone<{ count: number }>(
-            `SELECT COUNT(*) as count FROM leagues WHERE user_id = $1 AND division >= 4`,
-            [auth.uid]
-          )
-          userValue = platinumResult?.count ?? 0
-          valueName = 'seasons at Platinum+'
-          break
-      }
-
-      if (userValue < threshold) {
-        throw new APIError(
-          403,
-          `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(userValue)}/${threshold}`
-        )
-      }
     }
 
     // Check streak freeze purchase cap based on supporter tier

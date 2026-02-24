@@ -1,5 +1,4 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { getShopItem, isMerchItem } from 'common/shop/items'
 
 const PRINTFUL_API_URL = 'https://api.printful.com'
 
@@ -47,7 +46,8 @@ export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
       const errorJson = JSON.parse(errorText)
       const message = errorJson.result || errorJson.error?.message || errorText
       throw new APIError(400, `Printful: ${message}`)
-    } catch {
+    } catch (e) {
+      if (e instanceof APIError) throw e
       throw new APIError(
         400,
         `Failed to get shipping rates: ${errorText.slice(0, 200)}`

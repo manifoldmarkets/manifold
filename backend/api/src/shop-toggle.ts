@@ -35,6 +35,12 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
   const pg = createSupabaseDirectClient()
 
   const result = await pg.tx(async (tx) => {
+    // Lock the user's entitlement row to prevent concurrent toggle races
+    await tx.oneOrNone(
+      `SELECT id FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2 FOR UPDATE`,
+      [auth.uid, entitlementId]
+    )
+
     // If enabling an item in an exclusive slot, disable others first
     if (enabled && EXCLUSIVE_SLOTS.includes(item.slot)) {
       const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)

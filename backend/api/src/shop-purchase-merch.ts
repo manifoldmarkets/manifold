@@ -38,7 +38,10 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
 
   const pg = createSupabaseDirectClient()
 
-  const result = await pg.tx(async (tx) => {
+  // Phase 1: Charge the user atomically. Insert order as PENDING_FULFILLMENT.
+  // Printful call happens AFTER this transaction commits to avoid holding a DB
+  // transaction open across an external HTTP request.
+  const { txnId, price } = await pg.tx(async (tx) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -64,12 +67,12 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
     )
     const currentEntitlements = entRows.map(convertEntitlement)
     const shopDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
-    const price = shopDiscount > 0
+    const resolvedPrice = shopDiscount > 0
       ? Math.floor(item.price * (1 - shopDiscount))
       : item.price
 
     // Check balance
-    if (user.balance < price) {
+    if (user.balance < resolvedPrice) {
       throw new APIError(403, 'Insufficient balance')
     }
 
@@ -85,7 +88,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       fromId: auth.uid,
       toType: 'BANK',
       toId: 'BANK',
-      amount: price,
+      amount: resolvedPrice,
       token: 'M$',
       description: descriptionParts.join(' '),
       data: { itemId, variantId, merchOrder: true, supporterDiscount: shopDiscount },
@@ -93,36 +96,48 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
 
     const txn = await runTxnInBetQueue(tx, txnData)
 
-    // Create Printful order (draft mode - confirm: false)
-    const printfulOrder = await createPrintfulOrder(printfulToken, {
-      variantId,
-      shipping,
-      externalId: `manifold-${txn.id}`,
-      confirm: false, // Draft order - won't be charged or produced
-    })
-
-    // Create shop_order record with Printful reference
+    // Insert order record as PENDING_FULFILLMENT — Printful details added after tx
     await tx.none(
-      `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status, printful_order_id, printful_status)
-       VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT', $5, $6)`,
-      [
-        auth.uid,
-        itemId,
-        price,
-        txn.id,
-        printfulOrder.id.toString(),
-        printfulOrder.status,
-      ]
+      `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status)
+       VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT')`,
+      [auth.uid, itemId, resolvedPrice, txn.id]
     )
 
-    return {
-      success: true as const,
-      printfulOrderId: printfulOrder.id.toString(),
-      printfulStatus: printfulOrder.status,
-    }
+    return { txnId: txn.id, price: resolvedPrice }
   })
 
-  return result
+  // Phase 2: Create Printful order outside the DB transaction.
+  // If this fails, the order remains PENDING_FULFILLMENT for admin review.
+  let printfulOrder: { id: number; status: string }
+  try {
+    printfulOrder = await createPrintfulOrder(printfulToken, {
+      variantId,
+      shipping,
+      externalId: `manifold-${txnId}`,
+      confirm: false, // Draft order - won't be charged or produced until confirmed
+    })
+  } catch (err) {
+    // Mark the order as FAILED so admins can identify and manually handle it
+    await pg.none(
+      `UPDATE shop_orders SET status = 'FAILED' WHERE txn_id = $1`,
+      [txnId]
+    )
+    throw err
+  }
+
+  // Phase 3: Update the order record with Printful details
+  await pg.none(
+    `UPDATE shop_orders
+     SET printful_order_id = $1, printful_status = $2
+     WHERE txn_id = $3`,
+    [printfulOrder.id.toString(), printfulOrder.status, txnId]
+  )
+
+  return {
+    success: true as const,
+    printfulOrderId: printfulOrder.id.toString(),
+    printfulStatus: printfulOrder.status,
+  }
 }
 
 // Helper to create Printful order
@@ -180,7 +195,8 @@ async function createPrintfulOrder(
       const errorJson = JSON.parse(errorText)
       const message = errorJson.result || errorJson.error?.message || errorText
       throw new APIError(500, `Printful: ${message}`)
-    } catch {
+    } catch (e) {
+      if (e instanceof APIError) throw e
       throw new APIError(500, `Printful order failed (${response.status}): ${errorText.slice(0, 200)}`)
     }
   }

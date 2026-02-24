@@ -3131,7 +3131,7 @@ export const API = (_apiTypeCheck = {
       .object({
         giveawayNum: z.number(),
         charityId: z.string(),
-        numTickets: z.number().positive(),
+        numTickets: z.number().int().positive(),
       })
       .strict(),
     returns: {} as {
@@ -3240,7 +3240,11 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         itemId: z.string(),
-        metadata: z.record(z.any()),
+        metadata: z
+          .record(z.union([z.string().max(500), z.number()]))
+          .refine((obj) => Object.keys(obj).length <= 10, {
+            message: 'metadata cannot have more than 10 keys',
+          }),
       })
       .strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },

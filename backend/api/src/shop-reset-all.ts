@@ -19,9 +19,10 @@ export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
 
   const result = await pg.tx(async (tx) => {
     // Get all non-supporter shop orders for this user to calculate refund amount
+    // Include PENDING_FULFILLMENT (charged merch orders awaiting Printful) in addition to COMPLETED
     const orders = await tx.manyOrNone<{ item_id: string; price_mana: number }>(
       `SELECT item_id, price_mana FROM shop_orders
-       WHERE user_id = $1 AND status = 'COMPLETED'
+       WHERE user_id = $1 AND status IN ('COMPLETED', 'PENDING_FULFILLMENT')
        AND item_id != ALL($2)`,
       [auth.uid, supporterIds]
     )

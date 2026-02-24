@@ -7,7 +7,6 @@ import {
 import { DAY_MS } from 'common/util/time'
 import { getPrivateUser, log } from 'shared/utils'
 import { MembershipSubscriptionData, Notification } from 'common/notification'
-import { nanoid } from 'common/util/random'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { createPushNotifications } from 'shared/create-push-notifications'
@@ -57,7 +56,9 @@ async function createSubscriptionExpiringNotification(
 
   if (!sendToBrowser && !sendToMobile) return
 
-  const id = nanoid(6)
+  // Deterministic ID prevents duplicate notifications if the job reruns on the same day
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  const id = `sub-expiry-${userId}-${tierName.toLowerCase().replace(/\s+/g, '-')}-${today}-${reason}`
   const notificationData: MembershipSubscriptionData = {
     tierName,
     amount,
