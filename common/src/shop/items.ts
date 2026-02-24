@@ -851,6 +851,7 @@ export const YES_BUTTON_OPTIONS = [
   'TO THE MOON',
   'BUY',
   'LONG',
+  "WE'RE SO BACK",
 ] as const
 
 export const NO_BUTTON_OPTIONS = [
@@ -862,6 +863,7 @@ export const NO_BUTTON_OPTIONS = [
   'SELL',
   'SHORT',
   'RIP',
+  "IT'S SO OVER",
 ] as const
 
 export type YesButtonOption = (typeof YES_BUTTON_OPTIONS)[number]
