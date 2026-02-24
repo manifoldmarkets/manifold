@@ -180,8 +180,8 @@ export function StateOfTheUnion2026Banner() {
       <Row className="items-center gap-2">
         <span className="text-lg">🇺🇸</span>
         <div>
-          <span className="font-semibold">State of the Union watch party</span>
-          {' '}on Manifold TV tonight at{' '}
+          <span className="font-semibold">State of the Union watch party</span>{' '}
+          on Manifold TV tonight at{' '}
           {new Date('2026-02-24T21:00:00-05:00').toLocaleString(undefined, {
             hour: 'numeric',
           })}
