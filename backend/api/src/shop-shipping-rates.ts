@@ -1,4 +1,5 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { SHOP_ITEMS } from 'common/shop/items'
 
 const PRINTFUL_API_URL = 'https://api.printful.com'
 
@@ -8,6 +9,15 @@ export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
 ) => {
   if (!auth) {
     throw new APIError(401, 'Must be logged in')
+  }
+
+  // Validate that the variantId belongs to a Manifold shop item
+  // Prevents using our Printful API key as a proxy for arbitrary products
+  const isValidVariant = SHOP_ITEMS.some((item) =>
+    item.variants?.some((v) => v.printfulSyncVariantId === variantId)
+  )
+  if (!isValidVariant) {
+    throw new APIError(400, 'Invalid variant ID')
   }
 
   const printfulToken = process.env.PRINTFUL_API_TOKEN

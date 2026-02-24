@@ -22,11 +22,12 @@ export const buyCharityGiveawayTickets: APIHandler<
 
   return await pg.tx(async (tx) => {
     // Get giveaway and verify it's still open
+    // FOR UPDATE serializes concurrent ticket purchases to ensure correct bonding curve pricing
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
       close_time: string
     }>(
-      `SELECT giveaway_num, close_time FROM charity_giveaways WHERE giveaway_num = $1`,
+      `SELECT giveaway_num, close_time FROM charity_giveaways WHERE giveaway_num = $1 FOR UPDATE`,
       [giveawayNum]
     )
 

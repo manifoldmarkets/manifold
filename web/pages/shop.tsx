@@ -10,8 +10,6 @@ import {
   ShopItem,
   getEntitlementId,
   getShopItem,
-  EXCLUSIVE_CATEGORIES,
-  getEntitlementIdsForCategory,
   isSeasonalItemAvailable,
   getSeasonalAvailabilityText,
   YES_BUTTON_OPTIONS,
@@ -819,9 +817,11 @@ function MerchItemCard(props: {
 
     setPurchasing(true)
     try {
+      const shippingMana = Math.round(parseFloat(selectedShipping.rate) * 100)
       const result = await api('shop-purchase-merch', {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
+        shippingCost: shippingMana,
         shipping: shippingInfo,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)

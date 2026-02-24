@@ -3264,14 +3264,15 @@ export const API = (_apiTypeCheck = {
       .object({
         itemId: z.string(),
         variantId: z.string(),
+        shippingCost: z.number().int().min(0),
         shipping: z.object({
-          name: z.string(),
-          address1: z.string(),
-          address2: z.string().optional(),
-          city: z.string(),
-          state: z.string(),
-          zip: z.string(),
-          country: z.string(),
+          name: z.string().max(200),
+          address1: z.string().max(200),
+          address2: z.string().max(200).optional(),
+          city: z.string().max(100),
+          state: z.string().max(100),
+          zip: z.string().max(20),
+          country: z.string().regex(/^[A-Z]{2}$/),
         }),
       })
       .strict(),
@@ -3289,11 +3290,11 @@ export const API = (_apiTypeCheck = {
       .object({
         variantId: z.string(),
         address: z.object({
-          address1: z.string(),
-          city: z.string(),
-          state: z.string().optional(),
-          zip: z.string(),
-          country: z.string(),
+          address1: z.string().max(200),
+          city: z.string().max(100),
+          state: z.string().max(100).optional(),
+          zip: z.string().max(20),
+          country: z.string().regex(/^[A-Z]{2}$/),
         }),
       })
       .strict(),
@@ -3393,10 +3394,9 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z
       .object({
-        limitDays: z.coerce.number(),
+        limitDays: z.coerce.number().int().min(1).max(365),
       })
       .strict(),
     returns: {} as {

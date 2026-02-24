@@ -35,7 +35,7 @@ function validateItemMetadata(itemId: string, metadata: Record<string, string | 
       }
       const style = Number(metadata.style)
       if (!Number.isInteger(style) || style < 0 || style > 2) {
-        throw new APIError(400, 'avatar-crown style must be 0 (Right), 1 (Left), or 2 (Center)')
+        throw new APIError(400, 'avatar-crown style must be 0 (Right), 1 (Center), or 2 (Left)')
       }
       break
     }

@@ -126,6 +126,15 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     throw new APIError(404, 'Item not found')
   }
 
+  // Earned items (e.g., charity champion trophy) can only be granted by backend logic,
+  // not purchased directly. Hidden free items are also not purchasable.
+  if (item.type === 'earned') {
+    throw new APIError(403, 'This item cannot be purchased')
+  }
+  if (item.hidden && item.price === 0) {
+    throw new APIError(403, 'This item is not available for purchase')
+  }
+
   if (!auth) {
     throw new APIError(401, 'Must be logged in')
   }
@@ -151,9 +160,10 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     // Check one-time purchase limit via user_entitlements table
+    // FOR UPDATE prevents concurrent purchases from both succeeding
     if (item.limit === 'one-time') {
       const existingEntitlement = await tx.oneOrNone(
-        `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2`,
+        `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2 FOR UPDATE`,
         [auth.uid, entitlementId]
       )
       if (existingEntitlement) {
@@ -233,7 +243,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
             ?.price ?? 0
 
         // Credit = remaining days * (oldPrice / 30 days)
-        // Only apply credit when upgrading to a different (higher) tier
+        // Only apply credit when switching to a different tier
         if (existingSupporter.entitlement_id !== entitlementId) {
           upgradeCredit = Math.floor(daysRemaining * (oldTierPrice / 30))
         }
