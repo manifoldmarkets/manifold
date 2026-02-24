@@ -90,11 +90,14 @@ async function checkItemRequirement(
       break
     }
     case 'loan': {
-      const row = await pg.oneOrNone<{ balance: number }>(
-        `SELECT balance FROM users WHERE id = $1`,
+      const row = await pg.oneOrNone<{ totalLoans: number }>(
+        `SELECT COALESCE(SUM(ucm.loan + ucm.margin_loan), 0) as "totalLoans"
+         FROM user_contract_metrics ucm
+         JOIN contracts c ON c.id = ucm.contract_id
+         WHERE ucm.user_id = $1 AND c.resolution_time IS NULL`,
         [userId]
       )
-      userValue = (row?.balance ?? 0) < 0 ? Math.abs(row!.balance) : 0
+      userValue = row?.totalLoans ?? 0
       valueName = 'loan balance'
       break
     }

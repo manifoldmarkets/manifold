@@ -563,6 +563,7 @@ export const SHOP_ITEMS: ShopItem[] = [
       threshold: 100000,
       description: 'Owe at least M$100,000',
     },
+    hidden: true,
   },
   {
     id: 'avatar-thought-yes',
