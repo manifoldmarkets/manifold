@@ -167,6 +167,31 @@ export function StateOfTheUnionBanner() {
   )
 }
 
+export function StateOfTheUnion2026Banner() {
+  const [showBanner, hideBanner] = useBanner('sotu-2026')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="my-2 items-center border border-blue-300 bg-gradient-to-r from-red-50 via-white to-blue-50 py-3 transition-colors hover:from-red-100 hover:via-white hover:to-blue-100 dark:from-red-950/30 dark:via-slate-900/30 dark:to-blue-950/30"
+      link="https://manifold.markets/tv/109"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span className="text-lg">🇺🇸</span>
+        <div>
+          <span className="font-semibold">State of the Union watch party</span>
+          {' '}on Manifold TV tonight at{' '}
+          {new Date('2026-02-24T21:00:00-05:00').toLocaleString(undefined, {
+            hour: 'numeric',
+          })}
+        </div>
+        <ArrowRightIcon className="ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
+
 export const useBanner = (name: string) => {
   const [bannerSeen, setBannerSeen] = usePersistentLocalState<number>(
     0,
