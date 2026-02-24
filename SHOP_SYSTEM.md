@@ -354,7 +354,8 @@ export const SHOP_ITEMS: ShopItem[] = [
 **Flow** (3-phase saga — Printful call is OUTSIDE the DB transaction):
 
 1. Pre-validate: item is merch, variant exists, auth present, Printful token configured
-2. **Phase 1 (DB tx)**: Check one-time limit (excluding FAILED/REFUNDED/CANCELLED), get supporter discount, check balance, deduct `price + shippingCost` via `SHOP_PURCHASE` txn, INSERT `shop_orders` as `PENDING_FULFILLMENT`
+2. **Shipping verification**: Server always calls Printful shipping rates API to verify `shippingCost` matches an actual rate. Fails closed (rejects order) if Printful API is unavailable.
+3. **Phase 1 (DB tx)**: Check one-time limit (excluding FAILED/REFUNDED/CANCELLED, `FOR UPDATE`), get supporter discount, check balance, deduct `price + shippingCost` via `SHOP_PURCHASE` txn, INSERT `shop_orders` as `PENDING_FULFILLMENT`
 3. **Phase 2 (external HTTP)**: Call Printful `POST /orders` with `confirm: false` (draft). Includes `packing_slip` with username for admin traceability. If fails → create refund txn + mark order `FAILED`, throw
 4. **Phase 3 (DB update)**: UPDATE `shop_orders` with `printful_order_id` and `printful_status`
 
@@ -399,7 +400,7 @@ Proxies shipping rate lookups to Printful API. Validates `variantId` belongs to 
 
 Updates the `metadata` JSONB column on a user's entitlement. Used for PAMPU button text selection, crown position, etc.
 
-> **Known issue (audit C3)**: No server-side validation of metadata values. See `shop-implementation-plan.md` → Audit Remediation.
+> Server-side metadata validation enforces per-item whitelisted keys and values (audit C3, fixed in Round 1).
 
 ### shop-reset-all (Admin Only)
 **File**: `backend/api/src/shop-reset-all.ts`
@@ -1153,14 +1154,22 @@ Features that were considered but intentionally not implemented. Documented here
 
 | Date | Change | Modified By |
 |------|--------|-------------|
-| 2026-02-24 | Round 2 audit fixes — in progress | Claude |
-| | - **Merch flow**: `shippingCost` now charged in mana (total = item + shipping) | |
+| 2026-02-24 | Round 3 holistic re-audit fixes | Claude |
+| | - **Security**: Earned/hidden-free items blocked from `shop-purchase` API (charity champion bypass) | |
+| | - **Merch flow**: Shipping cost verification now always runs + fails closed on Printful API error | |
+| | - **DB**: Unique partial index on `shop_orders(user_id, item_id)` for active statuses (prevents concurrent one-time merch race) | |
+| 2026-02-24 | Round 2 audit fixes — complete | Claude |
+| | - **Merch flow**: `shippingCost` charged in mana (total = item + shipping), server-side rate verification | |
 | | - **Merch flow**: Printful failure triggers auto-refund (mana returned immediately) | |
-| | - **Merch traceability**: `packing_slip.message` includes Manifold username | |
-| | - **Security**: `get-shop-stats` to require admin auth + `limitDays` bounded | |
-| | - **Race conditions**: `FOR UPDATE` on one-time check + giveaway ticket purchase | |
+| | - **Merch flow**: One-time merch check now uses `FOR UPDATE` + excludes FAILED/REFUNDED/CANCELLED | |
+| | - **Merch traceability**: `packing_slip.message` includes `@username (uid: xxx)` | |
+| | - **Security**: `limitDays` bounded 1-365 on `get-shop-stats` | |
+| | - **Security**: Shipping address fields bounded (.max()), country regex validated | |
+| | - **Security**: `variantId` validated against `SHOP_ITEMS` in shipping rates endpoint | |
+| | - **Race conditions**: `FOR UPDATE` on one-time check (entitlements + merch) + giveaway tickets | |
 | | - **DB**: RLS on `shop_orders` + index on `user_entitlements(entitlement_id)` | |
-| | - **Business logic**: Tier downgrade credit capped at new tier price | |
+| | - **Business logic**: Tier switching gives full prorated credit from remaining time | |
+| | - **Code quality**: Crown position array/comments fixed, dead imports removed, deduped constants | |
 | 2026-02-24 | Round 1 audit fixes (commit ba8c1f626) | Claude |
 | | - Printful call moved outside `pg.tx()` (3-phase saga) | |
 | | - Giveaway champion `FOR UPDATE` locking | |

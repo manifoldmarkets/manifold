@@ -13,7 +13,7 @@ This document tracks implemented features, planned work, and audit remediation. 
 2. [Charity Champion Trophy System](#charity-champion-trophy-system) - ✅ Implemented
 3. [Printful Merch Integration](#printful-merch-integration) - ✅ Implemented
 4. [Achievement-Gated Items](#achievement-gated-items) - ✅ Implemented
-5. [Audit Remediation](#audit-remediation) - 🔧 In Progress
+5. [Audit Remediation](#audit-remediation) - ✅ Complete
 6. [Future: Merch Background](#future-merch-background) - 📋 Planned
 
 ---
@@ -400,9 +400,9 @@ Most stats already exist:
 
 ## Audit Remediation
 
-**Status:** 🔧 Round 2 In Progress (February 2026)
+**Status:** ✅ All rounds complete (February 2026)
 
-Two comprehensive dual-agent audits (Gemini 3 Pro + Claude Opus 4.6) have been run.
+Three audit rounds have been completed (dual-agent Gemini 3 Pro + Claude Opus 4.6).
 
 ### Round 1 Fixes ✅ Complete — commit `ba8c1f626`
 
@@ -425,7 +425,7 @@ Two comprehensive dual-agent audits (Gemini 3 Pro + Claude Opus 4.6) have been r
 
 ---
 
-### Round 2 Holistic Audit Findings — 🔧 In Progress
+### Round 2 Holistic Audit Findings ✅ Complete
 
 #### Business Decisions Made
 
@@ -435,52 +435,47 @@ Two comprehensive dual-agent audits (Gemini 3 Pro + Claude Opus 4.6) have been r
 | **Printful failure refund** | **AUTO-REFUND** — if Printful call fails (verified failure), immediately refund mana; orders are draft so no production risk |
 | **Order traceability** | **Printful `packing_slip.message`** — attach `@username (uid: xxx)` so admin dashboard shows Manifold user for each order |
 
-#### CRITICAL — Must fix before merge
+| # | Severity | Issue | Status |
+|---|----------|-------|--------|
+| C1 | CRITICAL | `get-shop-stats` unauthenticated — exposes revenue data | ⏭️ Reverted — public stats page already shows this data |
+| C2 | CRITICAL | `limitDays` no upper bound → DoS | ✅ `.max(365).int().min(1)` |
+| H1 | HIGH | Shipping address fields unbounded | ✅ `.max()` limits + country regex |
+| H2 | HIGH | Merch one-time check blocks re-purchase after FAILED/REFUNDED | ✅ `NOT IN ('FAILED', 'REFUNDED', 'CANCELLED')` |
+| H3 | HIGH | Race on one-time purchase in `shop-purchase.ts` | ✅ `FOR UPDATE` on entitlement check |
+| H4 | HIGH | Race on giveaway ticket purchases | ✅ `FOR UPDATE` on giveaway SELECT |
+| H5 | HIGH | Shipping cost never charged | ✅ `shippingCost` param + server-side rate verification |
+| H6 | HIGH | Failed merch orders don't auto-refund | ✅ Reverse txn in Printful failure catch |
+| M1 | MEDIUM | Tier downgrade gives full prorated credit | ⏭️ Reverted — intentional product decision: users who paid should get full credit |
+| M2 | MEDIUM | `variantId` not validated in shipping rates | ✅ Check against `SHOP_ITEMS` |
+| M3 | MEDIUM | `shop_orders` has no RLS | ✅ Migration: RLS + user/service policies |
+| M4 | MEDIUM | Missing index on `user_entitlements(entitlement_id)` | ✅ Migration: `CREATE INDEX CONCURRENTLY` |
+| L1 | LOW | Duplicate `SUBSCRIPTION_ITEM_IDS` | ✅ Import from `supporter-config` |
+| L2 | LOW | Crown position comment indexes swapped | ✅ Fixed comment + array order |
+| L3 | LOW | Dead `EXCLUSIVE_CATEGORIES` import | ✅ Removed |
 
-| # | Issue | File(s) | Fix |
-|---|-------|---------|-----|
-| C1 | **`get-shop-stats` unauthenticated** — exposes daily revenue, subscriber counts, auto-renewal rates | `schema.ts` | `authed: true` + `isAdminId`/`isModId` check in handler |
-| C2 | **`limitDays` no upper bound → DoS** — `limitDays=100000` CROSS JOINs 274 years × all entitlements | `schema.ts` | `.max(365).int().min(1)` on zod schema |
+---
 
-#### HIGH — Must fix before merge
+### Round 2 Re-audit (Gemini 3 Pro) — 2 additional findings fixed
 
-| # | Issue | File(s) | Fix |
-|---|-------|---------|-----|
-| H1 | **Shipping address fields unbounded** — megabyte payloads pass validation | `schema.ts` | `.max(200)` on each field; `.regex(/^[A-Z]{2}$/)` for `country` |
-| H2 | **Merch one-time check blocks re-purchase after FAILED/REFUNDED** | `shop-purchase-merch.ts` | `AND status NOT IN ('FAILED', 'REFUNDED', 'CANCELLED')` |
-| H3 | **Race on one-time purchase in `shop-purchase.ts`** — no `FOR UPDATE`, double-charge possible | `shop-purchase.ts` | `FOR UPDATE` on entitlement check |
-| H4 | **Race on `buy-charity-giveaway-tickets.ts`** — no giveaway lock, bonding curve pricing wrong under concurrency | `buy-charity-giveaway-tickets.ts` | `FOR UPDATE` on giveaway SELECT |
-| H5 | **Shipping cost never charged** — Manifold pays Printful out of pocket | `shop-purchase-merch.ts`, `schema.ts`, `shop.tsx` | Add `shippingCost` param; include in mana deduction; add username to packing slip |
-| H6 | **Failed merch orders don't auto-refund** — user loses mana until manual admin intervention | `shop-purchase-merch.ts` | Create refund txn in Printful failure catch block |
+| # | Finding | Status |
+|---|---------|--------|
+| A1 | Merch one-time check missing `FOR UPDATE` (race condition) | ✅ Added `FOR UPDATE` to `shop_orders` check |
+| A2 | Server trusts client-provided `shippingCost` | ✅ Server-side Printful rate verification before charging |
 
-#### MEDIUM — Fix before merge
+---
 
-| # | Issue | File(s) | Fix |
-|---|-------|---------|-----|
-| M1 | **Tier downgrade exploit** — full prorated credit on downgrade makes it free (e.g., 25 days Premium → Plus costs M$0 + 30 fresh days) | `shop-purchase.ts` | `upgradeCredit = Math.min(upgradeCredit, basePrice)` |
-| M2 | **`variantId` not validated** in shipping rates — proxies Manifold API key to arbitrary Printful products | `shop-shipping-rates.ts` | Validate `variantId` exists in `SHOP_ITEMS` |
-| M3 | **`shop_orders` has no RLS** — purchase history readable via anon key | DB migration | `ALTER TABLE shop_orders ENABLE ROW LEVEL SECURITY` + user policy |
-| M4 | **Missing index on `user_entitlements(entitlement_id)`** — stats queries full scan | DB migration | `CREATE INDEX CONCURRENTLY` |
+### Round 3 Holistic Re-audit (Gemini 3 Pro + Opus 4.6) — 3 findings fixed
 
-#### LOW — Nice to have
+| # | Severity | Finding | Status |
+|---|----------|---------|--------|
+| C1 | CRITICAL | Hidden/earned items purchasable via direct API call (charity champion bypass) | ✅ Reject `earned` type + hidden free items in `shop-purchase.ts` |
+| C2 | CRITICAL | Free shipping bypass: `shippingCost: 0` skips rate verification entirely | ✅ Always verify against Printful rates, fail closed on API error |
+| H1 | HIGH | `FOR UPDATE` on non-existent rows is a no-op (merch one-time race) | ✅ Unique partial index `shop_orders(user_id, item_id) WHERE status active` |
 
-| # | Issue | Fix |
-|---|-------|-----|
-| L1 | Duplicate `SUBSCRIPTION_ITEM_IDS` in `get-shop-stats.ts` | Import from `supporter-config` |
-| L2 | Crown position comment: indexes 1 and 2 swapped in comment | Fix comment in `items.ts` |
-| L3 | Deprecated `EXCLUSIVE_CATEGORIES` still imported in `shop.tsx` | Remove dead import |
-
-### Round 2 Implementation Order
-
-1. **C1+C2** — auth + DoS on `get-shop-stats` (trivial, critical)
-2. **H3+H4** — `FOR UPDATE` race conditions (easy)
-3. **H2** — merch re-purchase after failure (easy)
-4. **H1** — shipping address length limits (trivial)
-5. **H5+H6** — charge shipping + auto-refund + Printful traceability (medium)
-6. **M1** — tier downgrade exploit (easy)
-7. **M2** — validate variantId in shipping rates (easy)
-8. **M3+M4** — DB migrations (RLS + index)
-9. **L1-L3** — code quality (trivial)
+**Deferred (not code-level fixes):**
+- Rate limiting on shop endpoints — systemic infrastructure concern, not in scope for this PR
+- Floating-point mana in bonding curve — pre-existing, not introduced by these changes
+- TOCTOU on achievement requirements — known/documented trade-off
 
 ---
 
