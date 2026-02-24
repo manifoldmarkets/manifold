@@ -69,6 +69,8 @@ export function SearchCreateAnswerPanel(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAddingAnswer, setIsAddingAnswer] = useState(false)
+  const [isInputFocused, setIsInputFocused] = useState(false)
+  const shouldExpandSearch = isInputFocused || text.length > 0
 
   const canSubmit = text && !isSubmitting
 
@@ -115,10 +117,14 @@ export function SearchCreateAnswerPanel(props: {
   return (
     <Col className={clsx(className)}>
       <Row className={'w-full items-center gap-1 py-1 sm:gap-2'}>
-        <div className="relative w-full">
+        <div className="relative min-w-0 flex-1">
           <Input
             value={text}
             ref={inputRef}
+            onFocus={() => {
+              setIsInputFocused(true)
+              setIsSearchOpen?.(true)
+            }}
             onChange={(e) => {
               setText(e.target.value)
               if (isAddingAnswer) {
@@ -134,6 +140,7 @@ export function SearchCreateAnswerPanel(props: {
                 : 'Search answers'
             }
             onBlur={() => {
+              setIsInputFocused(false)
               if (!text) {
                 setIsSearchOpen?.(false)
                 setIsAddingAnswer(false)
@@ -144,20 +151,22 @@ export function SearchCreateAnswerPanel(props: {
           {(text || canAddAnswer) && (
             <Row
               ref={buttonsRef}
-              className="absolute right-1 top-0.5 h-7 items-center gap-0.5 "
+              className="absolute right-1 top-0.5 h-7 items-center gap-1.5"
             >
               {text && (
                 <button
                   className={clsx('group h-full')}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onTouchStart={(e) => e.preventDefault()}
                   onClick={() => setText('')}
                 >
-                  <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
+                  <XCircleIcon className="fill-ink-500 dark:fill-ink-500 group-hover:fill-ink-600 dark:group-hover:fill-ink-600 h-7 w-7 items-center transition-colors" />
                 </button>
               )}
 
               {canAddAnswer && (
                 <Button
-                  className=" !rounded-full"
+                  className="!rounded-full !px-3"
                   size="2xs"
                   color={text ? 'indigo' : 'indigo-outline'}
                   loading={isSubmitting}
@@ -182,7 +191,14 @@ export function SearchCreateAnswerPanel(props: {
             </Row>
           )}
         </div>
-        <MultiSortDropdown sort={sort} setSort={setSort} />
+        <div
+          className={clsx(
+            'shrink-0',
+            shouldExpandSearch ? 'hidden sm:block' : 'block'
+          )}
+        >
+          <MultiSortDropdown sort={sort} setSort={setSort} />
+        </div>
       </Row>
       {showDefaultSort && (
         <Row className="text-primary-700 flex-grow items-center justify-end gap-0.5 text-xs font-semibold">
