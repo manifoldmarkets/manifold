@@ -1,18 +1,20 @@
-# Manifold Shop - Future Features
+# Manifold Shop - Implementation Plan & Roadmap
 
-**Last Updated:** January 16, 2026
-**Branch:** `shop`
+**Last Updated:** February 24, 2026
+**Branch:** `shop-items2`
 
-This document tracks future features to implement. For current system documentation, see `SHOP_SYSTEM.md`.
+This document tracks implemented features, planned work, and audit remediation. For current system documentation, see `SHOP_SYSTEM.md`.
 
 ---
 
 ## Table of Contents
 
-1. [Entitlement Display Configuration](#entitlement-display-configuration) - Centralized visibility control
-2. [Charity Champion Trophy System](#charity-champion-trophy-system) - Fully implemented, reverted for later
-3. [Printful Merch Integration](#printful-merch-integration) - Physical merchandise
-4. [Achievement-Gated Items](#achievement-gated-items) - Items requiring achievements
+1. [Entitlement Display Configuration](#entitlement-display-configuration) - ✅ Implemented
+2. [Charity Champion Trophy System](#charity-champion-trophy-system) - ✅ Implemented
+3. [Printful Merch Integration](#printful-merch-integration) - ✅ Implemented
+4. [Achievement-Gated Items](#achievement-gated-items) - ✅ Implemented
+5. [Audit Remediation](#audit-remediation) - 🔧 In Progress
+6. [Future: Merch Background](#future-merch-background) - 📋 Planned
 
 ---
 
@@ -42,7 +44,7 @@ Centralized configuration system controlling which entitlements (avatar decorati
 
 ## Charity Champion Trophy System
 
-**Status:** Fully implemented, then reverted (commit `732f79780`) - saved for future launch
+**Status:** ✅ Implemented and live on `shop-items2`
 
 A special "earned" item that cannot be purchased - only the #1 ticket buyer in the charity raffle can claim it.
 
@@ -297,7 +299,7 @@ export function CharityChampionBadge() {
 
 ## Printful Merch Integration
 
-**Status:** Planned - database ready
+**Status:** ✅ Implemented and live on `shop-items2`
 
 Physical merchandise orders via Printful API.
 
@@ -350,7 +352,7 @@ CREATE TABLE shop_orders (
 
 ## Achievement-Gated Items
 
-**Status:** Planned
+**Status:** ✅ Partially implemented — requirement checks live, some items gated
 
 Items that require specific achievements to unlock before purchasing.
 
@@ -396,5 +398,66 @@ Most stats already exist:
 
 ---
 
+## Audit Remediation
+
+**Status:** 🔧 In Progress (February 2026)
+
+Findings from a comprehensive dual-agent audit (Gemini 3 Pro + Claude Opus 4.6) of the `shop-items2` branch. Issues are severity-ranked.
+
+### CRITICAL — Must fix before merge
+
+| # | Issue | File(s) | Fix |
+|---|-------|---------|-----|
+| C1 | **Printful HTTP call inside `pg.tx()`** — holds DB connection during external API call (pool exhaustion risk) + orphaned Printful orders if post-HTTP DB insert fails | `shop-purchase-merch.ts` | Move `createPrintfulOrder()` outside the transaction. Draft orders (`confirm: false`) are safe to create first. |
+| C2 | **Charity champion race condition** — two concurrent claims both succeed under `READ COMMITTED` | `claim-charity-champion.ts` | Add `SELECT ... FOR UPDATE` on the giveaway row to serialize claims |
+| C3 | **Metadata injection** — `z.record(z.any())` allows arbitrary JSON storage, bypassing button text option lists | `shop-update-metadata.ts`, `schema.ts` | Validate metadata per `itemId` server-side; add size cap |
+| C4 | **Error handler swallows own `APIError`** — catch block re-catches the structured error thrown in the try | `shop-purchase-merch.ts`, `shop-shipping-rates.ts` | `catch (e) { if (e instanceof APIError) throw e; ... }` |
+
+### HIGH — Should fix before merge
+
+| # | Issue | File(s) | Fix |
+|---|-------|---------|-----|
+| H1 | **`shop-toggle.ts` race condition** — concurrent toggles bypass `EXCLUSIVE_SLOTS` | `shop-toggle.ts` | `SELECT 1 FROM users WHERE id = $1 FOR UPDATE` at start of tx |
+| H2 | **`PENDING_FULFILLMENT` not in `ShopOrder` type** — merch orders use unlisted status | `types.ts` | Add to status union type |
+| H3 | **Admin reset misses merch orders** — only refunds `COMPLETED`, not `PENDING_FULFILLMENT` | `shop-reset-all.ts` | Include `PENDING_FULFILLMENT` in status filter |
+| H4 | **Silent `.catch(() => {})`** — notification errors invisible | `claim-charity-champion.ts`, `buy-charity-giveaway-tickets.ts` | `.catch((e) => console.error(...))` |
+| H5 | **`as any` cast for partial User** — fragile type bypass | `claim-charity-champion.ts` | Use `Pick<User, ...>` instead |
+
+### MEDIUM — Fix when convenient
+
+| # | Issue | File(s) | Fix |
+|---|-------|---------|-----|
+| M1 | **Missing `shop_orders` index** — full table scans | DB migration | `CREATE INDEX shop_orders_user_id_item_id ON shop_orders (user_id, item_id)` |
+| M2 | **Fractional tickets** — `numTickets` not validated as integer | `schema.ts` | `z.number().int().positive()` |
+| M3 | **Subscription expiry not idempotent** — duplicate notifications on re-run | `check-subscription-expiry.ts` | Deterministic notification ID: `mem_exp_${userId}_${expiresTime}` |
+| M4 | **Heavy aggregate queries inside tx** — achievement checks hold locks | `shop-purchase.ts` | Move read-only requirement checks before the transaction |
+| M5 | **Unused imports in shipping rates** — no variant validation | `shop-shipping-rates.ts` | Remove unused imports, optionally validate variant |
+
+### Implementation Order
+
+1. Fix C1-C4 (critical backend safety)
+2. Fix H1-H5 (race conditions, type safety, observability)
+3. Fix M1-M5 (performance, validation, cleanup)
+4. Re-run audit to verify all issues resolved
+
+---
+
+## Future: Merch Background
+
+**Status:** 📋 Planned — design complete, not yet implemented
+
+A hidden hovercard background that auto-appears when a user buys any merch item. Shows "bad drawings" of merch items as a fun Easter egg.
+
+### Key files to create/modify
+
+| File | Change |
+|------|--------|
+| `common/src/shop/items.ts` | Add `hovercard-merch-bg` item definition (hidden, earned) |
+| `backend/api/src/shop-purchase-merch.ts` | Auto-grant entitlement on successful merch purchase |
+| `web/components/user/user-hovercard.tsx` | Render merch background when active |
+| `web/pages/shop.tsx` | Optional preview card |
+
+---
+
 *Document maintained by: Engineering Team*
-*Last updated: January 2026*
+*Last updated: February 24, 2026*
