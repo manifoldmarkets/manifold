@@ -870,8 +870,8 @@ export type YesButtonOption = (typeof YES_BUTTON_OPTIONS)[number]
 export type NoButtonOption = (typeof NO_BUTTON_OPTIONS)[number]
 
 // Crown position options (matches cap style pattern)
-// 0: Right (default), 1: Center, 2: Left
-export const CROWN_POSITION_OPTIONS = ['Right', 'Center', 'Left'] as const
+// 0: Right (default), 1: Left, 2: Center
+export const CROWN_POSITION_OPTIONS = ['Right', 'Left', 'Center'] as const
 export type CrownPosition = 0 | 1 | 2
 
 export const getShopItem = (id: string): ShopItem | undefined =>
