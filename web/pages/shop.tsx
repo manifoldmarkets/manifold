@@ -44,6 +44,26 @@ import { FaStar } from 'react-icons/fa'
 import { FaGem, FaLock } from 'react-icons/fa6'
 import { LuCrown, LuGraduationCap } from 'react-icons/lu'
 import { GiTopHat, GiDunceCap } from 'react-icons/gi'
+import {
+  BlackHoleSvg,
+  FireFlamesSvg,
+  AngelWingSvg,
+  MonocleSvg,
+  CrystalBallSvg,
+  DisguiseSvg,
+  ArrowBadgeSvg,
+  StonksMemeArrowSvg,
+  BullHornSvg,
+  BearEarSvg,
+  CatEarSvg,
+  SantaHatSvg,
+  BunnyEarSvg,
+  WizardHatSvg,
+  TinfoilHatSvg,
+  JesterHatSvg,
+  FedoraSvg,
+  DevilHornSvg,
+} from 'web/components/shop/item-svgs'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -2067,7 +2087,7 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative">
-        <svg
+        <BlackHoleSvg
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{
             width: 64,
@@ -2076,60 +2096,7 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
             marginTop: -8,
             filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.5))',
           }}
-          viewBox="0 0 64 64"
-        >
-          <defs>
-            {/* Bright accretion disk gradient - hot colors */}
-            <linearGradient id="bh-accretion-hot-p" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f97316" />
-              <stop offset="30%" stopColor="#ec4899" />
-              <stop offset="60%" stopColor="#a855f7" />
-              <stop offset="100%" stopColor="#6366f1" />
-            </linearGradient>
-            {/* Dark void center */}
-            <radialGradient id="bh-void-p" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#000000" />
-              <stop offset="70%" stopColor="#0a0010" />
-              <stop offset="100%" stopColor="#1a0030" stopOpacity="0" />
-            </radialGradient>
-            {/* Outer glow */}
-            <radialGradient id="bh-outer-glow-p" cx="50%" cy="50%" r="50%">
-              <stop offset="65%" stopColor="transparent" />
-              <stop offset="85%" stopColor="#7c3aed" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.05" />
-            </radialGradient>
-          </defs>
-
-          {/* Outer purple glow */}
-          <circle cx="32" cy="32" r="30" fill="url(#bh-outer-glow-p)" />
-
-          {/* Bright accretion disk - tilted ellipse effect with multiple rings */}
-          <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="url(#bh-accretion-hot-p)" strokeWidth="4" opacity="0.8" transform="rotate(-20 32 32)" />
-          <ellipse cx="32" cy="32" rx="24" ry="8" fill="none" stroke="#f472b6" strokeWidth="2" opacity="0.6" transform="rotate(-20 32 32)" />
-          <ellipse cx="32" cy="32" rx="20" ry="6" fill="none" stroke="#c084fc" strokeWidth="1.5" opacity="0.5" transform="rotate(-20 32 32)" />
-
-          {/* Swirling matter streams */}
-          <path d="M8 32 Q16 20 32 18 Q48 16 56 28" stroke="#f97316" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
-          <path d="M56 32 Q48 44 32 46 Q16 48 8 36" stroke="#a855f7" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
-
-          {/* Spiral arms */}
-          <path d="M32 4 Q44 8 52 20 Q56 32 48 44" stroke="#ec4899" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
-          <path d="M32 60 Q20 56 12 44 Q8 32 16 20" stroke="#8b5cf6" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
-
-          {/* Bright hot spots in the disk */}
-          <circle cx="12" cy="28" r="2" fill="#fbbf24" opacity="0.9" />
-          <circle cx="52" cy="36" r="2" fill="#fb923c" opacity="0.9" />
-          <circle cx="20" cy="40" r="1.5" fill="#f472b6" opacity="0.8" />
-          <circle cx="44" cy="24" r="1.5" fill="#c084fc" opacity="0.8" />
-
-          {/* Infalling particles/stars */}
-          <circle cx="6" cy="20" r="1" fill="#fff" opacity="0.9" />
-          <circle cx="58" cy="44" r="1" fill="#fff" opacity="0.9" />
-          <circle cx="24" cy="6" r="0.8" fill="#e9d5ff" opacity="0.8" />
-          <circle cx="40" cy="58" r="0.8" fill="#fce7f3" opacity="0.8" />
-          <circle cx="10" cy="48" r="0.6" fill="#ddd6fe" opacity="0.7" />
-          <circle cx="54" cy="16" r="0.6" fill="#fbcfe8" opacity="0.7" />
-        </svg>
+        />
         <Avatar
           username={user?.username}
           avatarUrl={user?.avatarUrl}
@@ -2202,27 +2169,12 @@ function FireItemPreview(props: { user: User | null | undefined }) {
           className="relative"
         />
 
-        {/* Flame cluster — ON TOP of avatar, unclipped so flames at edge are visible */}
-        <svg
+        {/* Flame cluster — ON TOP of avatar */}
+        <FireFlamesSvg
           className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 overflow-visible"
           style={{ width: 66, height: 66 }}
-          viewBox="0 0 80 80"
-          fill="none"
-        >
-          {/* Top flame cluster — ~4.5 o'clock */}
-          <path d="M60,59 C62,59 64,58 66,55 C68,51 66,47 65,44 C64,47 62,51 60,53 C58,55 59,57 60,59Z" fill="#f97316" className="origin-[60px_59px] scale-110 opacity-90" />
-          <path d="M56,59 C58,59 60,58 61,56 C61,53 60,51 59,49 C58,51 57,53 55,55 C55,57 55,58 56,59Z" fill="#dc2626" className="origin-[56px_59px] scale-110 opacity-80" />
-          <path d="M64,53 C65,53 66,52 67,50 C68,48 67,46 66.5,45 C66,46 65,48 64,49 C63,50 63.5,52 64,53Z" fill="#fbbf24" className="origin-[64px_53px] scale-125 opacity-70" />
-          {/* Mini flame cluster — ~5 o'clock */}
-          <path d="M54,65 C56,65 57,64 58,62 C59,60 58,58 57,56 C57,58 56,60 55,61 C54,63 54,64 54,65Z" fill="#f97316" className="origin-[54px_65px] scale-110 opacity-85" />
-          <path d="M51,66 C52,66 53,65 54,64 C54,62 53,61 53,60 C52,61 52,62 51,63 C50,64 51,65 51,66Z" fill="#dc2626" className="origin-[51px_66px] scale-110 opacity-75" />
-          <path d="M57,61 C58,61 58,60 59,59 C59,58 58,57 58,56 C58,57 57,58 57,59 C57,60 57,60 57,61Z" fill="#fbbf24" className="origin-[57px_61px] scale-125 opacity-65" />
-          {/* Primary flame cluster — ~5.5 o'clock, spilling right */}
-          <path d="M56,70 C54,70 52,69 51,67 C51,64 52,62 53,60 C54,63 55,65 56,67 C57,68 57,69 56,70Z" fill="#f59e0b" className="origin-[56px_70px] scale-110 opacity-75" />
-          <path d="M52,72 C50,72 48,71 48,69 C47,66 48,64 49,62 C50,65 51,67 52,69 C52,70 52,71 52,72Z" fill="#ea580c" className="origin-[52px_72px] scale-110 opacity-75" />
-          <path d="M52,72 C54,72 56,71 58,68 C60,64 58,60 57,57 C56,60 54,64 52,66 C50,68 51,70 52,72Z" fill="#f97316" className="origin-[52px_72px] scale-110 opacity-90" />
-          <path d="M56,66 C57,66 58,65 59,63 C60,61 59,59 58.5,58 C58,59 57,61 56,62 C55,63 55.5,65 56,66Z" fill="#fbbf24" className="origin-[56px_66px] scale-125 opacity-70" />
-        </svg>
+          animate
+        />
 
         {/* Smoke wisps drifting over flames — CSS divs for reliable animation */}
         <div
@@ -2295,43 +2247,14 @@ function BadAuraPreview(props: { user: User | null | undefined }) {
 function AngelWingsPreview(props: { user: User | null | undefined }) {
   const { user } = props
 
-  const wingSvg = (
-    <>
-      <path
-        d="M16 12 C 10.5 2 3.5 4 2.5 12 C 2.1 18 2.1 24 2.5 28 L 4.5 29 L 3.5 36 L 7 38 L 6 44 C 11 40 15 32 16 22 Z"
-        fill="#FFFFFF"
-        stroke="#CBD5E1"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M16 13 C 11.5 5 6 6 5 13 C 4.5 18 5 21 6 25 C 10 23 13.5 22 16 20 Z"
-        fill="#E2E8F0"
-      />
-      <path
-        d="M16 13 C 12.5 7 8.5 8 7.5 13 C 7.5 16 8 18.5 9 21 C 12 19.5 14.5 19 16 18 Z"
-        fill="#E5E7EB"
-      />
-      <path
-        d="M16 13 C 14.2 9.5 11.5 9.5 10.5 12 C 10.5 14 11 15.5 12 17 C 13.5 16.5 15 16.5 16 16 Z"
-        fill="#F1F5F9"
-      />
-    </>
-  )
-
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <div className="relative isolate">
-        {/* Left wing — behind avatar via negative z */}
-        <svg
+        <AngelWingSvg
           className="absolute top-1/2 -translate-y-1/2"
           style={{ left: -10, width: 15, height: 46, opacity: 0.9, zIndex: -1 }}
-          viewBox="0 0 16 44"
-        >
-          {wingSvg}
-        </svg>
-        {/* Right wing (mirrored) — behind avatar via negative z */}
-        <svg
+        />
+        <AngelWingSvg
           className="absolute top-1/2"
           style={{
             right: -10,
@@ -2341,10 +2264,7 @@ function AngelWingsPreview(props: { user: User | null | undefined }) {
             transform: 'translateY(-50%) scaleX(-1)',
             zIndex: -1,
           }}
-          viewBox="0 0 16 44"
-        >
-          {wingSvg}
-        </svg>
+        />
         <Avatar
           username={user?.username}
           avatarUrl={user?.avatarUrl}
@@ -2368,8 +2288,7 @@ function MonoclePreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Monocle over left eye area (viewer's right) — matches real avatar placement */}
-        <svg
+        <MonocleSvg
           className="absolute"
           style={{
             left: 6,
@@ -2378,15 +2297,7 @@ function MonoclePreview(props: { user: User | null | undefined }) {
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
-          viewBox="0 0 24 24"
-        >
-          {/* Gold frame */}
-          <circle cx="12" cy="12" r="10" fill="rgba(200,220,255,0.15)" stroke="#D4AF37" strokeWidth="2.5" />
-          {/* Inner ring detail */}
-          <circle cx="12" cy="12" r="7.5" fill="none" stroke="#B8860B" strokeWidth="0.5" />
-          {/* Glass reflection */}
-          <ellipse cx="9" cy="9" rx="3" ry="2" fill="rgba(255,255,255,0.5)" />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -2404,8 +2315,7 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Crystal ball with base in bottom-right corner */}
-        <svg
+        <CrystalBallSvg
           className="absolute"
           style={{
             right: -4,
@@ -2414,27 +2324,7 @@ function CrystalBallPreview(props: { user: User | null | undefined }) {
             height: 18,
             filter: 'drop-shadow(0 0 3px rgba(139,92,246,0.6))',
           }}
-          viewBox="0 0 24 24"
-        >
-          <defs>
-            <radialGradient id="crystalGradientPrev2" cx="30%" cy="30%">
-              <stop offset="0%" stopColor="#E9D5FF" />
-              <stop offset="40%" stopColor="#A78BFA" />
-              <stop offset="100%" stopColor="#6D28D9" />
-            </radialGradient>
-          </defs>
-          {/* Base */}
-          <ellipse cx="12" cy="22.5" rx="6" ry="1.5" fill="#8B6914" />
-          {/* Stem */}
-          <rect x="9.5" y="19" width="5" height="3.5" rx="0.5" fill="#B8860B" />
-          {/* Cradle */}
-          <path d="M5 16 Q5 20.5 12 20.5 Q19 20.5 19 16" fill="#D4AF37" />
-          {/* Ball */}
-          <circle cx="12" cy="9.5" r="8.5" fill="url(#crystalGradientPrev2)" />
-          <circle cx="12" cy="9.5" r="5.5" fill="rgba(139,92,246,0.3)" />
-          <circle cx="9" cy="6.5" r="2" fill="rgba(255,255,255,0.6)" />
-          <circle cx="7" cy="9" r="0.8" fill="rgba(255,255,255,0.4)" />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -2452,8 +2342,7 @@ function DisguisePreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Silly glasses with nose - Groucho Marx style */}
-        <svg
+        <DisguiseSvg
           className="absolute left-1/2 -translate-x-1/2"
           style={{
             top: 8,
@@ -2461,30 +2350,7 @@ function DisguisePreview(props: { user: User | null | undefined }) {
             height: 20,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
-          viewBox="0 0 32 22"
-        >
-          {/* Left lens */}
-          <circle cx="8" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
-          {/* Right lens */}
-          <circle cx="24" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
-          {/* Bridge */}
-          <path d="M14 8 Q16 6 18 8" stroke="#1F2937" strokeWidth="2" fill="none" />
-          {/* Left temple hint */}
-          <line x1="2" y1="8" x2="0" y2="7" stroke="#1F2937" strokeWidth="1.5" />
-          {/* Right temple hint */}
-          <line x1="30" y1="8" x2="32" y2="7" stroke="#1F2937" strokeWidth="1.5" />
-          {/* Big silly nose */}
-          <ellipse cx="16" cy="15" rx="4" ry="5" fill="#FBBF8E" />
-          <ellipse cx="16" cy="16" rx="3.5" ry="4" fill="#F5A67A" />
-          {/* Nose highlight */}
-          <ellipse cx="14.5" cy="13" rx="1.5" ry="2" fill="rgba(255,255,255,0.3)" />
-          {/* Nostril hints */}
-          <ellipse cx="14.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
-          <ellipse cx="17.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
-          {/* Bushy eyebrows */}
-          <path d="M3 3 Q8 1 13 4" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
-          <path d="M19 4 Q24 1 29 3" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -2554,8 +2420,8 @@ function ArrowPreview(props: {
           size="lg"
           noLink
         />
-        {/* Arrow badge in bottom-right corner */}
-        <svg
+        <ArrowBadgeSvg
+          direction={direction}
           className="absolute"
           style={{
             right: -4,
@@ -2564,22 +2430,7 @@ function ArrowPreview(props: {
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
-          viewBox="0 0 24 24"
-        >
-          <defs>
-            <linearGradient id={isUp ? 'arrow-up-prev' : 'arrow-down-prev'} x1="0%" y1={isUp ? '100%' : '0%'} x2="100%" y2={isUp ? '0%' : '100%'}>
-              <stop offset="0%" stopColor={isUp ? '#15803d' : '#fca5a5'} />
-              <stop offset="50%" stopColor={isUp ? '#22c55e' : '#ef4444'} />
-              <stop offset="100%" stopColor={isUp ? '#4ade80' : '#b91c1c'} />
-            </linearGradient>
-          </defs>
-          <circle cx="12" cy="12" r="11" fill="#1f2937" />
-          {isUp ? (
-            <path d="M12 4 L18 12 L14 12 L14 20 L10 20 L10 12 L6 12 Z" fill="url(#arrow-up-prev)" />
-          ) : (
-            <path d="M12 20 L18 12 L14 12 L14 4 L10 4 L10 12 L6 12 Z" fill="url(#arrow-down-prev)" />
-          )}
-        </svg>
+        />
       </div>
     </div>
   )
@@ -2597,8 +2448,7 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Iconic diagonal STONKS meme arrow - overlays the avatar */}
-        <svg
+        <StonksMemeArrowSvg
           className="absolute pointer-events-none"
           style={{
             left: '60%',
@@ -2609,23 +2459,7 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
             zIndex: 10,
           }}
-          viewBox="0 0 64 64"
-        >
-          <defs>
-            <linearGradient id="stonks-meme-top" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#f97316" />
-            </linearGradient>
-            <linearGradient id="stonks-meme-side" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f97316" />
-              <stop offset="100%" stopColor="#dc2626" />
-            </linearGradient>
-          </defs>
-          {/* 3D Depth/Side */}
-          <path d="M27 50L47 21L43 17L62 6L57 28L53 24L33 54Z" fill="url(#stonks-meme-side)" />
-          {/* Main Face */}
-          <path d="M25 48L45 19L41 15L60 4L55 26L51 22L31 52Z" fill="url(#stonks-meme-top)" />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -2959,8 +2793,8 @@ function BullHornsPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Left horn - thick throughout curve, 4-stop gradient */}
-        <svg
+        {/* Left horn */}
+        <BullHornSvg
           className="absolute"
           style={{
             right: '50%',
@@ -2969,26 +2803,9 @@ function BullHornsPreview(props: { user: User | null | undefined }) {
             height: 24,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
-          viewBox="0 0 32 24"
-        >
-          <defs>
-            <linearGradient id="bull-preview-left" gradientUnits="userSpaceOnUse" x1="30" y1="20" x2="4" y2="4">
-              <stop offset="0%" stopColor="#D4A574" />
-              <stop offset="35%" stopColor="#8B6914" />
-              <stop offset="70%" stopColor="#5C3D1A" />
-              <stop offset="100%" stopColor="#2C1A0A" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
-            fill="url(#bull-preview-left)"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="0.5"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
         {/* Right horn (mirrored) */}
-        <svg
+        <BullHornSvg
           className="absolute"
           style={{
             left: '50%',
@@ -2998,24 +2815,7 @@ function BullHornsPreview(props: { user: User | null | undefined }) {
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
             transform: 'scaleX(-1)',
           }}
-          viewBox="0 0 32 24"
-        >
-          <defs>
-            <linearGradient id="bull-preview-right" gradientUnits="userSpaceOnUse" x1="30" y1="20" x2="4" y2="4">
-              <stop offset="0%" stopColor="#D4A574" />
-              <stop offset="35%" stopColor="#8B6914" />
-              <stop offset="70%" stopColor="#5C3D1A" />
-              <stop offset="100%" stopColor="#2C1A0A" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
-            fill="url(#bull-preview-right)"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="0.5"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -3034,7 +2834,8 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
           noLink
         />
         {/* Left ear */}
-        <svg
+        <BearEarSvg
+          side="left"
           className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
           style={{
             left: -4,
@@ -3043,13 +2844,10 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
-          viewBox="0 0 24 24"
-        >
-          <circle cx="12" cy="12" r="10" fill="#78350F" />
-          <circle cx="12" cy="12" r="6" fill="#FBBF24" opacity="0.6" />
-        </svg>
+        />
         {/* Right ear */}
-        <svg
+        <BearEarSvg
+          side="right"
           className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
           style={{
             right: -4,
@@ -3058,11 +2856,7 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
-          viewBox="0 0 24 24"
-        >
-          <circle cx="12" cy="12" r="10" fill="#78350F" />
-          <circle cx="12" cy="12" r="6" fill="#FBBF24" opacity="0.6" />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -3091,35 +2885,7 @@ function SantaHatPreview(props: { user: User | null | undefined }) {
             filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
           }}
         >
-          <svg viewBox="0 0 28 24">
-            <defs>
-              <linearGradient id="santa-preview-red" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#EF4444" />
-                <stop offset="100%" stopColor="#DC2626" />
-              </linearGradient>
-            </defs>
-            {/* Hat body - voluminous cone with fold */}
-            <path
-              d="M5 16C5 6 8 2 14 2C20 2 25 3 27 7C27 10 25 11 23 10.5C23 8 20 5 17 5C13 5 20 10 20 16H5Z"
-              fill="url(#santa-preview-red)"
-            />
-            {/* Crease line for depth */}
-            <path
-              d="M17 5C19 7 21 9 22 10.5"
-              fill="none"
-              stroke="#B91C1C"
-              strokeWidth="1"
-              strokeLinecap="round"
-              opacity="0.4"
-            />
-            {/* Thick white fur brim */}
-            <path
-              d="M2 18C2 15.5 5 14 13 14C21 14 24 15.5 24 18C24 20.5 21 22 13 22C5 22 2 20.5 2 18Z"
-              fill="white"
-            />
-            {/* Pom pom connected to tip */}
-            <circle cx="25" cy="10" r="3.5" fill="white" />
-          </svg>
+          <SantaHatSvg />
         </div>
       </div>
     </div>
@@ -3139,7 +2905,7 @@ function BunnyEarsPreview(props: { user: User | null | undefined }) {
           noLink
         />
         {/* Left ear */}
-        <svg
+        <BunnyEarSvg
           className="absolute transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[-5deg]"
           style={{
             left: 4,
@@ -3149,13 +2915,9 @@ function BunnyEarsPreview(props: { user: User | null | undefined }) {
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
             transform: 'rotate(-15deg)',
           }}
-          viewBox="0 0 20 30"
-        >
-          <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
-          <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
-        </svg>
+        />
         {/* Right ear */}
-        <svg
+        <BunnyEarSvg
           className="absolute transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[5deg]"
           style={{
             right: 4,
@@ -3165,11 +2927,7 @@ function BunnyEarsPreview(props: { user: User | null | undefined }) {
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
             transform: 'rotate(15deg)',
           }}
-          viewBox="0 0 20 30"
-        >
-          <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
-          <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -3187,8 +2945,8 @@ function CatEarsPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        {/* Left ear - squat wide anime-style */}
-        <svg
+        {/* Left ear */}
+        <CatEarSvg
           className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
           style={{
             left: -2,
@@ -3198,32 +2956,9 @@ function CatEarsPreview(props: { user: User | null | undefined }) {
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
             transform: 'rotate(-12deg)',
           }}
-          viewBox="0 0 24 18"
-        >
-          {/* Outer ear - squat wide triangle */}
-          <path
-            d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
-            fill="#4B5563"
-            stroke="#374151"
-            strokeWidth="0.8"
-          />
-          {/* Inner ear - vibrant pink */}
-          <path
-            d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
-            fill="#F472B6"
-          />
-          {/* Highlight */}
-          <path
-            d="M10 14 Q11 9 12 5"
-            stroke="#FBCFE8"
-            strokeWidth="1.2"
-            fill="none"
-            strokeLinecap="round"
-            opacity="0.5"
-          />
-        </svg>
+        />
         {/* Right ear (mirrored) */}
-        <svg
+        <CatEarSvg
           className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[3deg]"
           style={{
             right: -2,
@@ -3233,27 +2968,7 @@ function CatEarsPreview(props: { user: User | null | undefined }) {
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
             transform: 'rotate(12deg) scaleX(-1)',
           }}
-          viewBox="0 0 24 18"
-        >
-          <path
-            d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
-            fill="#4B5563"
-            stroke="#374151"
-            strokeWidth="0.8"
-          />
-          <path
-            d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
-            fill="#F472B6"
-          />
-          <path
-            d="M10 14 Q11 9 12 5"
-            stroke="#FBCFE8"
-            strokeWidth="1.2"
-            fill="none"
-            strokeLinecap="round"
-            opacity="0.5"
-          />
-        </svg>
+        />
       </div>
     </div>
   )
@@ -3475,63 +3190,19 @@ function HatPreview(props: {
       case 'wizard-hat':
         return (
           <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
-            <svg
-              viewBox="0 0 24 24"
+            <WizardHatSvg
               className="h-5 w-5"
               style={{ filter: 'drop-shadow(0 0 3px rgba(139, 92, 246, 0.5))' }}
-            >
-              <ellipse cx="12" cy="19" rx="11" ry="3.5" fill="#6D28D9" />
-              <polygon points="12,1 5,19 19,19" fill="#8B5CF6" />
-              <circle cx="11" cy="12" r="1.2" fill="#FBBF24" opacity="0.9" />
-            </svg>
+            />
           </div>
         )
       case 'tinfoil-hat':
         return (
           <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
-            <svg
-              viewBox="0 0 24 24"
+            <TinfoilHatSvg
               className="h-5 w-5"
               style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
-            >
-              <path
-                d="M12 1.5L22 20l-2-2-2 3-2-3-2 3-2-3-2 3-2-3-2 3-4-2z"
-                fill="#94A3B8"
-              />
-              <path
-                d="M12 1.5L22 20l-2-2-2 3-2-3-2 3V11z"
-                fill="#64748B"
-                opacity="0.3"
-              />
-              <path
-                d="M12 1.5L2 20l2-2 2 3 2-3V9z"
-                fill="#E2E8F0"
-                opacity="0.25"
-              />
-              <path
-                d="M12 1.5l3 8-5 4 3 6.5"
-                stroke="#E2E8F0"
-                strokeWidth="0.7"
-                fill="none"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 1.5l-4 7 6 5-4 4.5"
-                stroke="#475569"
-                strokeWidth="0.7"
-                fill="none"
-                strokeLinejoin="round"
-                opacity="0.8"
-              />
-              <path
-                d="M4 17.5l5-2 8 2.5 4-1.5"
-                stroke="#CBD5E1"
-                strokeWidth="0.5"
-                fill="none"
-                strokeLinejoin="round"
-              />
-              <path d="M12 1.5l1.5 4-3 0z" fill="#CBD5E1" opacity="0.8" />
-            </svg>
+            />
           </div>
         )
       case 'microphone':
@@ -3554,63 +3225,27 @@ function HatPreview(props: {
       case 'jester-hat':
         return (
           <div className="absolute -right-1.5 -top-2 rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
-            <svg
-              viewBox="0 0 24 24"
+            <JesterHatSvg
               className="h-5 w-5"
               style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-            >
-              {/* Right Flap (Green) */}
-              <path d="M12 21L15 13L22 6L12 21Z" fill="#16A34A" />
-              <path d="M12 21L22 6L19 16L12 21Z" fill="#14532D" />
-              {/* Left Flap (Purple) - neck + beak */}
-              <path d="M12 21L9 13L5 7L12 21Z" fill="#6366F1" />
-              <path d="M12 21L5 7L5 16L12 21Z" fill="#4F46E5" />
-              <path d="M5 7L5 10L2 6L5 7Z" fill="#818CF8" />
-              {/* Center Flap (Red) - foreground */}
-              <path d="M12 21L9 13L12 2L12 21Z" fill="#991B1B" />
-              <path d="M12 21L15 13L12 2L12 21Z" fill="#DC2626" />
-              {/* Headband - rounded base */}
-              <rect x="5" y="19" width="14" height="4" rx="2" fill="#FBBF24" />
-              <rect x="5" y="19" width="14" height="4" rx="2" fill="none" stroke="#D97706" strokeWidth="0.5" />
-              {/* Gold Bells */}
-              <circle cx="2" cy="6" r="1.5" fill="#FBBF24" />
-              <circle cx="22" cy="6" r="1.5" fill="#FBBF24" />
-              <circle cx="12" cy="2" r="1.5" fill="#FBBF24" />
-            </svg>
+            />
           </div>
         )
       case 'fedora':
         return (
           <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
-            <svg
-              viewBox="0 0 24 24"
+            <FedoraSvg
               className="h-5 w-5"
               style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-            >
-              <path d="M6 16 Q6 8 12 8 Q18 8 18 16Z" fill="#78716C" />
-              <path
-                d="M8 14 Q12 10 16 14"
-                stroke="#57534E"
-                strokeWidth="0.8"
-                fill="none"
-              />
-              <ellipse cx="12" cy="16" rx="11" ry="3" fill="#78716C" />
-              <rect
-                x="6"
-                y="14"
-                width="12"
-                height="1.5"
-                rx="0.5"
-                fill="#44403C"
-              />
-            </svg>
+            />
           </div>
         )
       case 'devil-horns':
         return (
           <>
-            {/* Left horn (swapped + tilted outward) */}
-            <svg
+            {/* Left horn */}
+            <DevilHornSvg
+              side="left"
               className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
               style={{
                 left: -3,
@@ -3620,13 +3255,10 @@ function HatPreview(props: {
                 filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
                 transform: 'rotate(-45deg)',
               }}
-              viewBox="0 0 16 16"
-            >
-              <path d="M0 16C0 8 8 2 14 1C11 4 6 12 5 16H0Z" fill="#DC2626" />
-              <path d="M5 16C6 12 11 4 14 1C10 6 6 12 5 16Z" fill="#991B1B" />
-            </svg>
-            {/* Right horn (swapped + tilted outward) */}
-            <svg
+            />
+            {/* Right horn */}
+            <DevilHornSvg
+              side="right"
               className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
               style={{
                 right: -3,
@@ -3636,11 +3268,7 @@ function HatPreview(props: {
                 filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
                 transform: 'rotate(45deg)',
               }}
-              viewBox="0 0 16 16"
-            >
-              <path d="M16 16C16 8 8 2 2 1C5 4 10 12 11 16H16Z" fill="#DC2626" />
-              <path d="M11 16C10 12 5 4 2 1C6 6 10 12 11 16Z" fill="#991B1B" />
-            </svg>
+            />
           </>
         )
     }

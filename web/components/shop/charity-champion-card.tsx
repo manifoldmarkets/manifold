@@ -13,6 +13,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { TrophySvg } from './trophy-svg'
 import { UserHovercard } from '../user/user-hovercard'
 import { CharityGiveawayData } from './charity-giveaway-card'
 
@@ -259,38 +260,7 @@ function ShopCardFloatingTrophy() {
         className="relative flex items-center justify-center opacity-40"
         style={{ animation: 'sc-trophy-float 6s ease-in-out infinite' }}
       >
-        <svg width="96" height="96" viewBox="0 0 80 80" fill="none">
-          <defs>
-            <linearGradient id="sc-g" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#B45309" />
-              <stop offset="25%" stopColor="#D97706" />
-              <stop offset="50%" stopColor="#FBBF24" />
-              <stop offset="75%" stopColor="#F59E0B" />
-              <stop offset="100%" stopColor="#B45309" />
-            </linearGradient>
-            <linearGradient id="sc-st" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#D97706" />
-              <stop offset="50%" stopColor="#FBBF24" />
-              <stop offset="100%" stopColor="#D97706" />
-            </linearGradient>
-          </defs>
-          {/* Handles — flat top then curve down to meet bowl */}
-          <path d="M24 25L18 25C13 25 16 44 29 44" stroke="url(#sc-g)" strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M56 25L62 25C67 25 64 44 51 44" stroke="url(#sc-g)" strokeWidth="3" strokeLinecap="round" fill="none" />
-          {/* Light-mode gap filler — hidden in dark mode where the gap creates a natural shadow */}
-          <path className="dark:opacity-50" d="M24 20C24 20 24 50 40 50C56 50 56 20 56 20Z" fill="url(#sc-g)" />
-          {/* Bowl body — original path with shadow gaps on dark backgrounds */}
-          <path d="M24 20C24 20 24 50 40 50C56 50 56 20 24 20Z" fill="url(#sc-g)" />
-          {/* Bowl opening */}
-          <ellipse cx="40" cy="20" rx="16" ry="4" fill="#FBBF24" stroke="#D97706" strokeWidth="0.5" />
-          <ellipse cx="40" cy="21" rx="14" ry="2.5" fill="#B45309" fillOpacity="0.2" />
-          {/* Stem */}
-          <rect x="37" y="50" width="6" height="15" fill="url(#sc-st)" />
-          <path d="M37 50L35 55H45L43 50H37Z" fill="#D97706" fillOpacity="0.5" />
-          {/* Base */}
-          <rect x="26" y="65" width="28" height="6" rx="1.5" fill="url(#sc-g)" />
-          <rect x="22" y="71" width="36" height="5" rx="1" fill="#B45309" />
-        </svg>
+        <TrophySvg />
       </div>
     </div>
   )

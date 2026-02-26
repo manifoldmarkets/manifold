@@ -37,7 +37,7 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
   const result = await pg.tx(async (tx) => {
     // Lock the user's entitlement row to prevent concurrent toggle races
     await tx.oneOrNone(
-      `SELECT id FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2 FOR UPDATE`,
+      `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2 FOR UPDATE`,
       [auth.uid, entitlementId]
     )
 

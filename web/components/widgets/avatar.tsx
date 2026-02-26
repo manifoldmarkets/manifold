@@ -9,6 +9,26 @@ import { LuSprout, LuCrown, LuGraduationCap } from 'react-icons/lu'
 import { GiTopHat, GiDunceCap } from 'react-icons/gi'
 import { UserEntitlement } from 'common/shop/types'
 import {
+  AngelWingSvg,
+  BlackHoleSvg,
+  FireFlamesSvg,
+  MonocleSvg,
+  CrystalBallSvg,
+  DisguiseSvg,
+  ArrowBadgeSvg,
+  StonksMemeArrowSvg,
+  BullHornSvg,
+  BearEarSvg,
+  CatEarSvg,
+  SantaHatSvg,
+  BunnyEarSvg,
+  WizardHatSvg,
+  TinfoilHatSvg,
+  JesterHatSvg,
+  FedoraSvg,
+  DevilHornSvg,
+} from '../shop/item-svgs'
+import {
   userHasAvatarDecoration,
   getActiveAvatarOverlay,
   getActiveAvatarAccessory,
@@ -150,6 +170,7 @@ export const Avatar = memo(
       activeOverlay ||
       activeAccessory ||
       hasCrown ||
+      hasHalo ||
       hasGoldenBorder ||
       hasAngelWings ||
       hasManaAura ||
@@ -370,78 +391,36 @@ function AngelWingsDecoration(props: {
   const wingH = size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 26 : 36
   const offset = size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7
 
-  // Layered feather wing - tall and narrow, 4 tiers
-  const wingSvg = (
-    <>
-      {/* Flight feathers (back layer) - Longest, reaching bottom */}
-      <path
-        d="M16 12 C 10.5 2 3.5 4 2.5 12 C 2.1 18 2.1 24 2.5 28 L 4.5 29 L 3.5 36 L 7 38 L 6 44 C 11 40 15 32 16 22 Z"
-        fill="#FFFFFF"
-        stroke="#CBD5E1"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
-      {/* Secondary feathers - Mid length */}
-      <path
-        d="M16 13 C 11.5 5 6 6 5 13 C 4.5 18 5 21 6 25 C 10 23 13.5 22 16 20 Z"
-        fill="#E2E8F0"
-      />
-      {/* Tertiary feathers - Shorter inner layer */}
-      <path
-        d="M16 13 C 12.5 7 8.5 8 7.5 13 C 7.5 16 8 18.5 9 21 C 12 19.5 14.5 19 16 18 Z"
-        fill="#E5E7EB"
-      />
-      {/* Shoulder coverts (front layer) - Top rounded section */}
-      <path
-        d="M16 13 C 14.2 9.5 11.5 9.5 10.5 12 C 10.5 14 11 15.5 12 17 C 13.5 16.5 15 16.5 16 16 Z"
-        fill="#F1F5F9"
-      />
-    </>
-  )
-
-  // Wing wrapper classes for hover animation (rotation)
-  const leftWingWrapperClasses = clsx(
-    'absolute top-1/2 -translate-y-1/2 transition-transform duration-300',
-    animateOnHover && 'group-hover:rotate-6',
-    animate && 'rotate-6'
-  )
-
-  const rightWingWrapperClasses = clsx(
-    'absolute top-1/2 -translate-y-1/2 transition-transform duration-300',
-    animateOnHover && 'group-hover:-rotate-6',
-    animate && '-rotate-6'
-  )
-
   return (
     <>
       {/* Left wing — wrapper handles rotation animation */}
       <div
-        className={leftWingWrapperClasses}
+        className={clsx(
+          'absolute top-1/2 -translate-y-1/2 transition-transform duration-300',
+          animateOnHover && 'group-hover:rotate-6',
+          animate && 'rotate-6'
+        )}
         style={{ left: offset, width: wingW, height: wingH, zIndex: -2 }}
       >
-        <svg
-          style={{ width: wingW, height: wingH, opacity: 0.9 }}
-          viewBox="0 0 16 44"
-        >
-          {wingSvg}
-        </svg>
+        <AngelWingSvg style={{ width: wingW, height: wingH, opacity: 0.9 }} />
       </div>
-      {/* Right wing (mirrored) — wrapper handles rotation animation, SVG handles mirror */}
+      {/* Right wing (mirrored) */}
       <div
-        className={rightWingWrapperClasses}
+        className={clsx(
+          'absolute top-1/2 -translate-y-1/2 transition-transform duration-300',
+          animateOnHover && 'group-hover:-rotate-6',
+          animate && '-rotate-6'
+        )}
         style={{ right: offset, width: wingW, height: wingH, zIndex: -2 }}
       >
-        <svg
+        <AngelWingSvg
           style={{
             width: wingW,
             height: wingH,
             opacity: 0.9,
             transform: 'scaleX(-1)',
           }}
-          viewBox="0 0 16 44"
-        >
-          {wingSvg}
-        </svg>
+        />
       </div>
     </>
   )
@@ -457,7 +436,7 @@ function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
     size === '2xs' || size === 'xs' ? -8 : size === 'sm' ? -12 : -16
 
   return (
-    <svg
+    <BlackHoleSvg
       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
       style={{
         width: bhSize,
@@ -467,60 +446,7 @@ function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
         filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.5))',
         zIndex: -3,
       }}
-      viewBox="0 0 64 64"
-    >
-      <defs>
-        {/* Bright accretion disk gradient - hot colors */}
-        <linearGradient id="bh-accretion-hot" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f97316" />
-          <stop offset="30%" stopColor="#ec4899" />
-          <stop offset="60%" stopColor="#a855f7" />
-          <stop offset="100%" stopColor="#6366f1" />
-        </linearGradient>
-        {/* Dark void center */}
-        <radialGradient id="bh-void" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#000000" />
-          <stop offset="70%" stopColor="#0a0010" />
-          <stop offset="100%" stopColor="#1a0030" stopOpacity="0" />
-        </radialGradient>
-        {/* Outer glow - very subtle, only visible on dark backgrounds */}
-        <radialGradient id="bh-outer-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="65%" stopColor="transparent" />
-          <stop offset="85%" stopColor="#7c3aed" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.05" />
-        </radialGradient>
-      </defs>
-
-      {/* Outer glow - faint enough to disappear on light, visible on dark */}
-      <circle cx="32" cy="32" r="30" fill="url(#bh-outer-glow)" />
-
-      {/* Bright accretion disk - tilted ellipse effect with multiple rings */}
-      <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="url(#bh-accretion-hot)" strokeWidth="4" opacity="0.8" transform="rotate(-20 32 32)" />
-      <ellipse cx="32" cy="32" rx="24" ry="8" fill="none" stroke="#f472b6" strokeWidth="2" opacity="0.6" transform="rotate(-20 32 32)" />
-      <ellipse cx="32" cy="32" rx="20" ry="6" fill="none" stroke="#c084fc" strokeWidth="1.5" opacity="0.5" transform="rotate(-20 32 32)" />
-
-      {/* Swirling matter streams */}
-      <path d="M8 32 Q16 20 32 18 Q48 16 56 28" stroke="#f97316" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
-      <path d="M56 32 Q48 44 32 46 Q16 48 8 36" stroke="#a855f7" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
-
-      {/* Spiral arms */}
-      <path d="M32 4 Q44 8 52 20 Q56 32 48 44" stroke="#ec4899" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
-      <path d="M32 60 Q20 56 12 44 Q8 32 16 20" stroke="#8b5cf6" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
-
-      {/* Bright hot spots in the disk */}
-      <circle cx="12" cy="28" r="2" fill="#fbbf24" opacity="0.9" />
-      <circle cx="52" cy="36" r="2" fill="#fb923c" opacity="0.9" />
-      <circle cx="20" cy="40" r="1.5" fill="#f472b6" opacity="0.8" />
-      <circle cx="44" cy="24" r="1.5" fill="#c084fc" opacity="0.8" />
-
-      {/* Infalling particles/stars */}
-      <circle cx="6" cy="20" r="1" fill="#fff" opacity="0.9" />
-      <circle cx="58" cy="44" r="1" fill="#fff" opacity="0.9" />
-      <circle cx="24" cy="6" r="0.8" fill="#e9d5ff" opacity="0.8" />
-      <circle cx="40" cy="58" r="0.8" fill="#fce7f3" opacity="0.8" />
-      <circle cx="10" cy="48" r="0.6" fill="#ddd6fe" opacity="0.7" />
-      <circle cx="54" cy="16" r="0.6" fill="#fbcfe8" opacity="0.7" />
-    </svg>
+    />
   )
 }
 
@@ -592,74 +518,11 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
       `}</style>
 
       {/* Flame cluster — ON TOP of avatar, unclipped so flames at edge are visible */}
-      <svg
+      <FireFlamesSvg
         className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 overflow-visible"
         style={{ width: flameSize, height: flameSize }}
-        viewBox="0 0 80 80"
-        fill="none"
-      >
-        {/* Top flame cluster — ~4.5 o'clock on border */}
-        <g>
-          <path
-            d="M60,59 C62,59 64,58 66,55 C68,51 66,47 65,44 C64,47 62,51 60,53 C58,55 59,57 60,59Z"
-            fill="#f97316"
-            className={clsx('opacity-90 transition-transform duration-300 origin-[60px_59px]', animate && 'scale-110')}
-          />
-          <path
-            d="M56,59 C58,59 60,58 61,56 C61,53 60,51 59,49 C58,51 57,53 55,55 C55,57 55,58 56,59Z"
-            fill="#dc2626"
-            className={clsx('opacity-80 transition-transform duration-500 origin-[56px_59px]', animate && 'scale-110')}
-          />
-          <path
-            d="M64,53 C65,53 66,52 67,50 C68,48 67,46 66.5,45 C66,46 65,48 64,49 C63,50 63.5,52 64,53Z"
-            fill="#fbbf24"
-            className={clsx('opacity-70 transition-transform duration-700 origin-[64px_53px]', animate && 'scale-125')}
-          />
-        </g>
-        {/* Mini flame cluster — ~5 o'clock on border */}
-        <g>
-          <path
-            d="M54,65 C56,65 57,64 58,62 C59,60 58,58 57,56 C57,58 56,60 55,61 C54,63 54,64 54,65Z"
-            fill="#f97316"
-            className={clsx('opacity-85 transition-transform duration-300 origin-[54px_65px]', animate && 'scale-110')}
-          />
-          <path
-            d="M51,66 C52,66 53,65 54,64 C54,62 53,61 53,60 C52,61 52,62 51,63 C50,64 51,65 51,66Z"
-            fill="#dc2626"
-            className={clsx('opacity-75 transition-transform duration-500 origin-[51px_66px]', animate && 'scale-110')}
-          />
-          <path
-            d="M57,61 C58,61 58,60 59,59 C59,58 58,57 58,56 C58,57 57,58 57,59 C57,60 57,60 57,61Z"
-            fill="#fbbf24"
-            className={clsx('opacity-65 transition-transform duration-700 origin-[57px_61px]', animate && 'scale-125')}
-          />
-        </g>
-        {/* Primary flame cluster — ~5.5 o'clock, spilling right below photo frame */}
-        <g>
-          {/* Counterbalancing teardrop flames — behind main flames */}
-          <path
-            d="M56,70 C54,70 52,69 51,67 C51,64 52,62 53,60 C54,63 55,65 56,67 C57,68 57,69 56,70Z"
-            fill="#f59e0b"
-            className={clsx('opacity-75 transition-transform duration-400 origin-[56px_70px]', animate && 'scale-110')}
-          />
-          <path
-            d="M52,72 C50,72 48,71 48,69 C47,66 48,64 49,62 C50,65 51,67 52,69 C52,70 52,71 52,72Z"
-            fill="#ea580c"
-            className={clsx('opacity-75 transition-transform duration-400 origin-[52px_72px]', animate && 'scale-110')}
-          />
-          {/* Main flames — rendered on top */}
-          <path
-            d="M52,72 C54,72 56,71 58,68 C60,64 58,60 57,57 C56,60 54,64 52,66 C50,68 51,70 52,72Z"
-            fill="#f97316"
-            className={clsx('opacity-90 transition-transform duration-300 origin-[52px_72px]', animate && 'scale-110')}
-          />
-          <path
-            d="M56,66 C57,66 58,65 59,63 C60,61 59,59 58.5,58 C58,59 57,61 56,62 C55,63 55.5,65 56,66Z"
-            fill="#fbbf24"
-            className={clsx('opacity-70 transition-transform duration-700 origin-[56px_66px]', animate && 'scale-125')}
-          />
-        </g>
-      </svg>
+        animate={animate}
+      />
 
       {/* Smoke wisps drifting over flames — only when animated, positioned near flame cluster */}
       {animate && (
@@ -1065,8 +928,6 @@ function AvatarOverlay(props: {
     crownPosition = 0,
   } = props
 
-  const uid = useId().replace(/:/g, '')
-
   // Corner position (for graduation cap, microphone - sits at top-right)
   const cornerClasses = clsx(
     'absolute transition-transform duration-300',
@@ -1347,69 +1208,19 @@ function AvatarOverlay(props: {
     case 'avatar-wizard-hat':
       return (
         <div className={cornerClasses}>
-          <svg
-            viewBox="0 0 24 24"
+          <WizardHatSvg
             className={clsx(hatSizeClass)}
             style={{ filter: 'drop-shadow(0 0 3px rgba(139, 92, 246, 0.5))' }}
-          >
-            <ellipse cx="12" cy="19" rx="11" ry="3.5" fill="#6D28D9" />
-            <polygon points="12,1 5,19 19,19" fill="#8B5CF6" />
-            <circle cx="11" cy="12" r="1.2" fill="#FBBF24" opacity="0.9" />
-          </svg>
+          />
         </div>
       )
     case 'avatar-tinfoil-hat':
       return (
         <div className={cornerClasses}>
-          <svg
-            viewBox="0 0 24 24"
+          <TinfoilHatSvg
             className={clsx(hatSizeClass)}
             style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
-          >
-            {/* Conical foil hat with jagged crinkly brim */}
-            <path
-              d="M12 1.5L22 20l-2-2-2 3-2-3-2 3-2-3-2 3-2-3-2 3-4-2z"
-              fill="#94A3B8"
-            />
-            {/* Right shadow panel */}
-            <path
-              d="M12 1.5L22 20l-2-2-2 3-2-3-2 3V11z"
-              fill="#64748B"
-              opacity="0.3"
-            />
-            {/* Left highlight panel */}
-            <path
-              d="M12 1.5L2 20l2-2 2 3 2-3V9z"
-              fill="#E2E8F0"
-              opacity="0.25"
-            />
-            {/* Crinkle fold lines */}
-            <path
-              d="M12 1.5l3 8-5 4 3 6.5"
-              stroke="#E2E8F0"
-              strokeWidth="0.7"
-              fill="none"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M12 1.5l-4 7 6 5-4 4.5"
-              stroke="#475569"
-              strokeWidth="0.7"
-              fill="none"
-              strokeLinejoin="round"
-              opacity="0.8"
-            />
-            {/* Horizontal crease */}
-            <path
-              d="M4 17.5l5-2 8 2.5 4-1.5"
-              stroke="#CBD5E1"
-              strokeWidth="0.5"
-              fill="none"
-              strokeLinejoin="round"
-            />
-            {/* Metallic tip glint */}
-            <path d="M12 1.5l1.5 4-3 0z" fill="#CBD5E1" opacity="0.8" />
-          </svg>
+          />
         </div>
       )
     case 'avatar-microphone':
@@ -1430,7 +1241,6 @@ function AvatarOverlay(props: {
         </div>
       )
     case 'avatar-jester-hat': {
-      // Jester hat - custom sizing and positioning with rotation
       const jesterSizeClass =
         size === '2xs' || size === 'xs'
           ? 'h-3 w-3'
@@ -1450,77 +1260,37 @@ function AvatarOverlay(props: {
             animateHat && '-translate-y-0.5 scale-110'
           )}
         >
-          <svg
-            viewBox="0 0 24 24"
+          <JesterHatSvg
             className={clsx(jesterSizeClass)}
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          >
-            {/* Right Flap (Green) */}
-            <path d="M12 21L15 13L22 6L12 21Z" fill="#16A34A" />
-            <path d="M12 21L22 6L19 16L12 21Z" fill="#14532D" />
-            {/* Left Flap (Purple) - neck + beak */}
-            <path d="M12 21L9 13L5 7L12 21Z" fill="#6366F1" />
-            <path d="M12 21L5 7L5 16L12 21Z" fill="#4F46E5" />
-            <path d="M5 7L5 10L2 6L5 7Z" fill="#818CF8" />
-            {/* Center Flap (Red) - foreground */}
-            <path d="M12 21L9 13L12 2L12 21Z" fill="#991B1B" />
-            <path d="M12 21L15 13L12 2L12 21Z" fill="#DC2626" />
-            {/* Headband - rounded base */}
-            <rect x="5" y="19" width="14" height="4" rx="2" fill="#FBBF24" />
-            <rect x="5" y="19" width="14" height="4" rx="2" fill="none" stroke="#D97706" strokeWidth="0.5" />
-            {/* Gold Bells */}
-            <circle cx="2" cy="6" r="1.5" fill="#FBBF24" />
-            <circle cx="22" cy="6" r="1.5" fill="#FBBF24" />
-            <circle cx="12" cy="2" r="1.5" fill="#FBBF24" />
-          </svg>
+          />
         </div>
       )
     }
     case 'avatar-fedora': {
       return (
         <div className={cornerClasses}>
-          <svg
-            viewBox="0 0 24 24"
+          <FedoraSvg
             className={clsx(hatSizeClass)}
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          >
-            {/* Crown */}
-            <path d="M6 16 Q6 8 12 8 Q18 8 18 16Z" fill="#78716C" />
-            {/* Indent/crease */}
-            <path
-              d="M8 14 Q12 10 16 14"
-              stroke="#57534E"
-              strokeWidth="0.8"
-              fill="none"
-            />
-            {/* Brim - wider than crown */}
-            <ellipse cx="12" cy="16" rx="11" ry="3" fill="#78716C" />
-            {/* Band */}
-            <rect
-              x="6"
-              y="14"
-              width="12"
-              height="1.5"
-              rx="0.5"
-              fill="#44403C"
-            />
-          </svg>
+          />
         </div>
       )
     }
     case 'avatar-devil-horns': {
       const hornSize =
         size === '2xs' || size === 'xs' ? 8 : size === 'sm' ? 10 : 12
+      const devilHornClasses = clsx(
+        'absolute transition-transform duration-300',
+        animateHatOnHover &&
+          'group-hover:-translate-y-0.5 group-hover:scale-110',
+        animateHat && '-translate-y-0.5 scale-110'
+      )
       return (
         <>
-          {/* Left horn (swapped + tilted outward) */}
-          <svg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:scale-110',
-              animateHat && '-translate-y-0.5 scale-110'
-            )}
+          <DevilHornSvg
+            side="left"
+            className={devilHornClasses}
             style={{
               left:
                 size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -3,
@@ -1531,19 +1301,10 @@ function AvatarOverlay(props: {
               filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
               transform: 'rotate(-45deg)',
             }}
-            viewBox="0 0 16 16"
-          >
-            <path d="M0 16C0 8 8 2 14 1C11 4 6 12 5 16H0Z" fill="#DC2626" />
-            <path d="M5 16C6 12 11 4 14 1C10 6 6 12 5 16Z" fill="#991B1B" />
-          </svg>
-          {/* Right horn (swapped + tilted outward) */}
-          <svg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:scale-110',
-              animateHat && '-translate-y-0.5 scale-110'
-            )}
+          />
+          <DevilHornSvg
+            side="right"
+            className={devilHornClasses}
             style={{
               right:
                 size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -3,
@@ -1554,11 +1315,7 @@ function AvatarOverlay(props: {
               filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
               transform: 'rotate(45deg)',
             }}
-            viewBox="0 0 16 16"
-          >
-            <path d="M16 16C16 8 8 2 2 1C5 4 10 12 11 16H16Z" fill="#DC2626" />
-            <path d="M11 16C10 12 5 4 2 1C6 6 10 12 11 16Z" fill="#991B1B" />
-          </svg>
+          />
         </>
       )
     }
@@ -1693,15 +1450,13 @@ function AvatarOverlay(props: {
       )
     }
     case 'avatar-bull-horns': {
-      // Mighty bull horns - flat horizontal then thick upward curve, no hover
       const hornW =
         size === '2xs' || size === 'xs' ? 20 : size === 'sm' ? 26 : 32
       const hornH =
         size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 20 : 24
       return (
         <>
-          {/* Left horn */}
-          <svg
+          <BullHornSvg
             className="absolute"
             style={{
               right: '50%',
@@ -1711,34 +1466,8 @@ function AvatarOverlay(props: {
               height: hornH,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
             }}
-            viewBox="0 0 32 24"
-          >
-            <defs>
-              <linearGradient
-                id={`bull-horn-l-${uid}`}
-                gradientUnits="userSpaceOnUse"
-                x1="30"
-                y1="20"
-                x2="4"
-                y2="4"
-              >
-                <stop offset="0%" stopColor="#D4A574" />
-                <stop offset="35%" stopColor="#8B6914" />
-                <stop offset="70%" stopColor="#5C3D1A" />
-                <stop offset="100%" stopColor="#2C1A0A" />
-              </linearGradient>
-            </defs>
-            {/* Horn shape - thick throughout curve, dual-bezier return */}
-            <path
-              d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
-              fill={`url(#bull-horn-l-${uid})`}
-              stroke="rgba(255,255,255,0.15)"
-              strokeWidth="0.5"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {/* Right horn (mirrored) */}
-          <svg
+          />
+          <BullHornSvg
             className="absolute"
             style={{
               left: '50%',
@@ -1749,48 +1478,24 @@ function AvatarOverlay(props: {
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
               transform: 'scaleX(-1)',
             }}
-            viewBox="0 0 32 24"
-          >
-            <defs>
-              <linearGradient
-                id={`bull-horn-r-${uid}`}
-                gradientUnits="userSpaceOnUse"
-                x1="30"
-                y1="20"
-                x2="4"
-                y2="4"
-              >
-                <stop offset="0%" stopColor="#D4A574" />
-                <stop offset="35%" stopColor="#8B6914" />
-                <stop offset="70%" stopColor="#5C3D1A" />
-                <stop offset="100%" stopColor="#2C1A0A" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M30 23 L16 23 C8 23 3 20 3 4 C3 8 6 13 10 16 C14 18 20 18 30 15 Z"
-              fill={`url(#bull-horn-r-${uid})`}
-              stroke="rgba(255,255,255,0.15)"
-              strokeWidth="0.5"
-              strokeLinejoin="round"
-            />
-          </svg>
+          />
         </>
       )
     }
     case 'avatar-bear-ears': {
-      // Fluffy bear ears with fur texture
       const earSize =
         size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+      const bearEarClasses = clsx(
+        'absolute transition-transform duration-300',
+        animateHatOnHover &&
+          'group-hover:-translate-y-0.5 group-hover:scale-110',
+        animateHat && '-translate-y-0.5 scale-110'
+      )
       return (
         <>
-          {/* Left ear */}
-          <svg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:scale-110',
-              animateHat && '-translate-y-0.5 scale-110'
-            )}
+          <BearEarSvg
+            side="left"
+            className={bearEarClasses}
             style={{
               left:
                 size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -4 : -6,
@@ -1800,39 +1505,10 @@ function AvatarOverlay(props: {
               height: earSize,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
             }}
-            viewBox="0 0 24 24"
-          >
-            <defs>
-              <radialGradient id="bear-fur-l" cx="40%" cy="30%" r="60%">
-                <stop offset="0%" stopColor="#92400E" />
-                <stop offset="70%" stopColor="#78350F" />
-                <stop offset="100%" stopColor="#451A03" />
-              </radialGradient>
-              <radialGradient id="bear-inner-l" cx="50%" cy="40%" r="50%">
-                <stop offset="0%" stopColor="#FECACA" />
-                <stop offset="60%" stopColor="#F5B7B1" />
-                <stop offset="100%" stopColor="#E5A39A" />
-              </radialGradient>
-            </defs>
-            {/* Outer fur - slightly oval */}
-            <ellipse cx="12" cy="13" rx="10" ry="9" fill="url(#bear-fur-l)" />
-            {/* Fur texture hints */}
-            <ellipse cx="5" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
-            <ellipse cx="19" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
-            <ellipse cx="12" cy="6" rx="3" ry="2" fill="#92400E" opacity="0.6" />
-            {/* Inner ear - peachy pink */}
-            <ellipse cx="12" cy="13" rx="5.5" ry="5" fill="url(#bear-inner-l)" />
-            {/* Subtle highlight */}
-            <ellipse cx="10" cy="11" rx="2" ry="1.5" fill="rgba(255,255,255,0.3)" />
-          </svg>
-          {/* Right ear */}
-          <svg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:scale-110',
-              animateHat && '-translate-y-0.5 scale-110'
-            )}
+          />
+          <BearEarSvg
+            side="right"
+            className={bearEarClasses}
             style={{
               right:
                 size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -4 : -6,
@@ -1842,44 +1518,18 @@ function AvatarOverlay(props: {
               height: earSize,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
             }}
-            viewBox="0 0 24 24"
-          >
-            <defs>
-              <radialGradient id="bear-fur-r" cx="60%" cy="30%" r="60%">
-                <stop offset="0%" stopColor="#92400E" />
-                <stop offset="70%" stopColor="#78350F" />
-                <stop offset="100%" stopColor="#451A03" />
-              </radialGradient>
-              <radialGradient id="bear-inner-r" cx="50%" cy="40%" r="50%">
-                <stop offset="0%" stopColor="#FECACA" />
-                <stop offset="60%" stopColor="#F5B7B1" />
-                <stop offset="100%" stopColor="#E5A39A" />
-              </radialGradient>
-            </defs>
-            {/* Outer fur - slightly oval */}
-            <ellipse cx="12" cy="13" rx="10" ry="9" fill="url(#bear-fur-r)" />
-            {/* Fur texture hints */}
-            <ellipse cx="5" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
-            <ellipse cx="19" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
-            <ellipse cx="12" cy="6" rx="3" ry="2" fill="#92400E" opacity="0.6" />
-            {/* Inner ear - peachy pink */}
-            <ellipse cx="12" cy="13" rx="5.5" ry="5" fill="url(#bear-inner-r)" />
-            {/* Subtle highlight */}
-            <ellipse cx="14" cy="11" rx="2" ry="1.5" fill="rgba(255,255,255,0.3)" />
-          </svg>
+          />
         </>
       )
     }
     case 'avatar-cat-ears': {
-      // Anime-style cat ears - squat & wide, headband style, well spaced
       const earW =
         size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 18 : 22
       const earH =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 13 : 16
       return (
         <>
-          {/* Left ear */}
-          <svg
+          <CatEarSvg
             className={clsx(
               'absolute transition-transform duration-300',
               animateHatOnHover &&
@@ -1896,32 +1546,8 @@ function AvatarOverlay(props: {
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
               transform: 'rotate(-12deg)',
             }}
-            viewBox="0 0 24 18"
-          >
-            {/* Outer ear - squat wide triangle with curved base */}
-            <path
-              d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
-              fill="#4B5563"
-              stroke="#374151"
-              strokeWidth="0.8"
-            />
-            {/* Inner ear - vibrant anime pink */}
-            <path
-              d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
-              fill="#F472B6"
-            />
-            {/* Subtle highlight streak */}
-            <path
-              d="M10 14 Q11 9 12 5"
-              stroke="#FBCFE8"
-              strokeWidth="1.2"
-              fill="none"
-              strokeLinecap="round"
-              opacity="0.5"
-            />
-          </svg>
-          {/* Right ear (mirrored) */}
-          <svg
+          />
+          <CatEarSvg
             className={clsx(
               'absolute transition-transform duration-300',
               animateHatOnHover &&
@@ -1938,32 +1564,11 @@ function AvatarOverlay(props: {
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
               transform: 'rotate(12deg) scaleX(-1)',
             }}
-            viewBox="0 0 24 18"
-          >
-            <path
-              d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
-              fill="#4B5563"
-              stroke="#374151"
-              strokeWidth="0.8"
-            />
-            <path
-              d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
-              fill="#F472B6"
-            />
-            <path
-              d="M10 14 Q11 9 12 5"
-              stroke="#FBCFE8"
-              strokeWidth="1.2"
-              fill="none"
-              strokeLinecap="round"
-              opacity="0.5"
-            />
-          </svg>
+          />
         </>
       )
     }
     case 'avatar-santa-hat': {
-      // Festive Santa hat - tapered cone with pom pom at tip, tilted to one side
       return (
         <div
           className={clsx(
@@ -1975,50 +1580,19 @@ function AvatarOverlay(props: {
             animateHat && '-translate-y-0.5 scale-110'
           )}
         >
-          <svg
-            viewBox="0 0 28 24"
+          <SantaHatSvg
             className={hatSizeClass}
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          >
-            <defs>
-              <linearGradient id={`santa-hat-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#EF4444" />
-                <stop offset="100%" stopColor="#DC2626" />
-              </linearGradient>
-            </defs>
-            {/* Hat body - voluminous cone with 3/4 fold droop */}
-            <path
-              d="M5 16C5 6 8 2 14 2C20 2 25 3 27 7C27 10 25 11 23 10.5C23 8 20 5 17 5C13 5 20 10 20 16H5Z"
-              fill={`url(#santa-hat-${uid})`}
-            />
-            {/* Crease line for 3D depth */}
-            <path
-              d="M17 5C19 7 21 9 22 10.5"
-              fill="none"
-              stroke="#B91C1C"
-              strokeWidth="1"
-              strokeLinecap="round"
-              opacity="0.4"
-            />
-            {/* Thick white fur brim */}
-            <path
-              d="M2 18C2 15.5 5 14 13 14C21 14 24 15.5 24 18C24 20.5 21 22 13 22C5 22 2 20.5 2 18Z"
-              fill="white"
-            />
-            {/* Pom pom connected to tip */}
-            <circle cx="25" cy="10" r="3.5" fill="white" />
-          </svg>
+          />
         </div>
       )
     }
     case 'avatar-bunny-ears': {
-      // Adorable bunny ears - spread out wider
       const earSize =
         size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 22
       return (
         <>
-          {/* Left ear */}
-          <svg
+          <BunnyEarSvg
             className={clsx(
               'absolute transition-transform duration-300',
               animateHatOnHover &&
@@ -2035,15 +1609,8 @@ function AvatarOverlay(props: {
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
               transform: 'rotate(-15deg)',
             }}
-            viewBox="0 0 20 30"
-          >
-            {/* Outer ear */}
-            <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
-            {/* Inner ear */}
-            <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
-          </svg>
-          {/* Right ear */}
-          <svg
+          />
+          <BunnyEarSvg
             className={clsx(
               'absolute transition-transform duration-300',
               animateHatOnHover &&
@@ -2060,13 +1627,7 @@ function AvatarOverlay(props: {
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
               transform: 'rotate(15deg)',
             }}
-            viewBox="0 0 20 30"
-          >
-            {/* Outer ear */}
-            <ellipse cx="10" cy="15" rx="8" ry="14" fill="#F5F5F5" />
-            {/* Inner ear */}
-            <ellipse cx="10" cy="16" rx="4" ry="10" fill="#FBCFE8" />
-          </svg>
+          />
         </>
       )
     }
@@ -2088,11 +1649,10 @@ function AvatarAccessory(props: {
 
   switch (accessory) {
     case 'avatar-monocle': {
-      // Monocle positioned over left eye area (viewer's right)
       const monocleSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
-        <svg
+        <MonocleSvg
           className="absolute"
           style={{
             left: size === '2xs' || size === 'xs' ? 2 : size === 'sm' ? 4 : 6,
@@ -2101,43 +1661,14 @@ function AvatarAccessory(props: {
             height: monocleSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
-          viewBox="0 0 24 24"
-        >
-          {/* Monocle frame - thick gold ring */}
-          <circle
-            cx="12"
-            cy="12"
-            r="10"
-            fill="rgba(200,220,255,0.15)"
-            stroke="#D4AF37"
-            strokeWidth="2.5"
-          />
-          {/* Inner ring detail */}
-          <circle
-            cx="12"
-            cy="12"
-            r="7.5"
-            fill="none"
-            stroke="#B8860B"
-            strokeWidth="0.5"
-          />
-          {/* Glass reflection */}
-          <ellipse
-            cx="9"
-            cy="9"
-            rx="3"
-            ry="2"
-            fill="rgba(255,255,255,0.5)"
-          />
-        </svg>
+        />
       )
     }
     case 'avatar-crystal-ball': {
-      // Crystal ball with golden base in bottom-right corner
       const ballSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
-        <svg
+        <CrystalBallSvg
           className="absolute"
           style={{
             right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
@@ -2146,37 +1677,14 @@ function AvatarAccessory(props: {
             height: ballSize,
             filter: 'drop-shadow(0 0 3px rgba(139,92,246,0.6))',
           }}
-          viewBox="0 0 24 24"
-        >
-          <defs>
-            <radialGradient id="crystalGradientAcc" cx="30%" cy="30%">
-              <stop offset="0%" stopColor="#E9D5FF" />
-              <stop offset="40%" stopColor="#A78BFA" />
-              <stop offset="100%" stopColor="#6D28D9" />
-            </radialGradient>
-          </defs>
-          {/* Base - flat ellipse at bottom */}
-          <ellipse cx="12" cy="22.5" rx="6" ry="1.5" fill="#8B6914" />
-          {/* Stem */}
-          <rect x="9.5" y="19" width="5" height="3.5" rx="0.5" fill="#B8860B" />
-          {/* Cradle - golden arc cupping the ball */}
-          <path d="M5 16 Q5 20.5 12 20.5 Q19 20.5 19 16" fill="#D4AF37" />
-          {/* Ball */}
-          <circle cx="12" cy="9.5" r="8.5" fill="url(#crystalGradientAcc)" />
-          {/* Inner mystical swirl */}
-          <circle cx="12" cy="9.5" r="5.5" fill="rgba(139,92,246,0.3)" />
-          {/* Sparkle highlights */}
-          <circle cx="9" cy="6.5" r="2" fill="rgba(255,255,255,0.6)" />
-          <circle cx="7" cy="9" r="0.8" fill="rgba(255,255,255,0.4)" />
-        </svg>
+        />
       )
     }
     case 'avatar-disguise': {
-      // Silly glasses with big nose - Groucho Marx style
       const disguiseSize =
         size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 22 : 28
       return (
-        <svg
+        <DisguiseSvg
           className="absolute left-1/2 -translate-x-1/2"
           style={{
             top: size === '2xs' || size === 'xs' ? 4 : size === 'sm' ? 6 : 8,
@@ -2184,30 +1692,7 @@ function AvatarAccessory(props: {
             height: disguiseSize * 0.7,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
-          viewBox="0 0 32 22"
-        >
-          {/* Left lens */}
-          <circle cx="8" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
-          {/* Right lens */}
-          <circle cx="24" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
-          {/* Bridge */}
-          <path d="M14 8 Q16 6 18 8" stroke="#1F2937" strokeWidth="2" fill="none" />
-          {/* Left temple hint */}
-          <line x1="2" y1="8" x2="0" y2="7" stroke="#1F2937" strokeWidth="1.5" />
-          {/* Right temple hint */}
-          <line x1="30" y1="8" x2="32" y2="7" stroke="#1F2937" strokeWidth="1.5" />
-          {/* Big silly nose */}
-          <ellipse cx="16" cy="15" rx="4" ry="5" fill="#FBBF8E" />
-          <ellipse cx="16" cy="16" rx="3.5" ry="4" fill="#F5A67A" />
-          {/* Nose highlight */}
-          <ellipse cx="14.5" cy="13" rx="1.5" ry="2" fill="rgba(255,255,255,0.3)" />
-          {/* Nostril hints */}
-          <ellipse cx="14.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
-          <ellipse cx="17.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
-          {/* Bushy eyebrows */}
-          <path d="M3 3 Q8 1 13 4" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
-          <path d="M19 4 Q24 1 29 3" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
-        </svg>
+        />
       )
     }
     case 'avatar-thought-yes': {
@@ -2299,11 +1784,11 @@ function AvatarAccessory(props: {
       )
     }
     case 'avatar-stonks-up': {
-      // Arrow up in bottom-right corner
       const arrowSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
-        <svg
+        <ArrowBadgeSvg
+          direction="up"
           className="absolute"
           style={{
             right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
@@ -2312,31 +1797,15 @@ function AvatarAccessory(props: {
             height: arrowSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
-          viewBox="0 0 24 24"
-        >
-          <defs>
-            <linearGradient id="stonks-up-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#15803d" />
-              <stop offset="50%" stopColor="#22c55e" />
-              <stop offset="100%" stopColor="#4ade80" />
-            </linearGradient>
-          </defs>
-          {/* Background circle */}
-          <circle cx="12" cy="12" r="11" fill="#1f2937" />
-          {/* Up arrow */}
-          <path
-            d="M12 4 L18 12 L14 12 L14 20 L10 20 L10 12 L6 12 Z"
-            fill="url(#stonks-up-grad)"
-          />
-        </svg>
+        />
       )
     }
     case 'avatar-stonks-down': {
-      // Arrow down in bottom-right corner
       const arrowSize =
         size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 14 : 18
       return (
-        <svg
+        <ArrowBadgeSvg
+          direction="down"
           className="absolute"
           style={{
             right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
@@ -2345,32 +1814,14 @@ function AvatarAccessory(props: {
             height: arrowSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
           }}
-          viewBox="0 0 24 24"
-        >
-          <defs>
-            <linearGradient id="stonks-down-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fca5a5" />
-              <stop offset="50%" stopColor="#ef4444" />
-              <stop offset="100%" stopColor="#b91c1c" />
-            </linearGradient>
-          </defs>
-          {/* Background circle */}
-          <circle cx="12" cy="12" r="11" fill="#1f2937" />
-          {/* Down arrow */}
-          <path
-            d="M12 20 L18 12 L14 12 L14 4 L10 4 L10 12 L6 12 Z"
-            fill="url(#stonks-down-grad)"
-          />
-        </svg>
+        />
       )
     }
     case 'avatar-stonks-meme': {
-      // The iconic diagonal STONKS meme arrow - goes IN FRONT of the avatar
-      // Sized ~15% smaller and positioned lower to avoid hat overlap
       const memeSize =
         size === '2xs' || size === 'xs' ? 17 : size === 'sm' ? 27 : 37
       return (
-        <svg
+        <StonksMemeArrowSvg
           className="absolute pointer-events-none"
           style={{
             left: '65%',
@@ -2381,23 +1832,7 @@ function AvatarAccessory(props: {
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
             zIndex: 10,
           }}
-          viewBox="0 0 64 64"
-        >
-          <defs>
-            <linearGradient id="stonks-top-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#f97316" />
-            </linearGradient>
-            <linearGradient id="stonks-side-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f97316" />
-              <stop offset="100%" stopColor="#dc2626" />
-            </linearGradient>
-          </defs>
-          {/* 3D Depth/Side */}
-          <path d="M27 50L47 21L43 17L62 6L57 28L53 24L33 54Z" fill="url(#stonks-side-grad)" />
-          {/* Main Face */}
-          <path d="M25 48L45 19L41 15L60 4L55 26L51 22L31 52Z" fill="url(#stonks-top-grad)" />
-        </svg>
+        />
       )
     }
     default:

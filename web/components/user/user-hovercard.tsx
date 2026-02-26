@@ -38,6 +38,7 @@ import SuperBanControl from '../SuperBanControl'
 import { Avatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { StackedUserNames } from '../widgets/user-link'
+import { TrophySvg } from '../shop/trophy-svg'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -233,7 +234,7 @@ const FetchUserHovercardContent = forwardRef(
           </div>
         )}
         {/* Floating 3D trophy for current Charity Champion */}
-        {hasChampionTrophy && <FloatingTrophy />}
+        {hasChampionTrophy && <HovercardFloatingTrophy />}
         <div className="relative z-10 px-4 py-3">
           <Row className="items-start justify-between">
             <div className="group">
@@ -482,7 +483,7 @@ function ChampionsLegacyOverlay() {
 }
 
 // Floating 3D trophy for current Charity Champion holders
-function FloatingTrophy() {
+function HovercardFloatingTrophy() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center overflow-hidden" style={{ justifyContent: 'right', paddingRight: '5%' }}>
       <style>
@@ -498,126 +499,7 @@ function FloatingTrophy() {
         className="relative flex items-center justify-center"
         style={{ animation: 'trophy-float 6s ease-in-out infinite' }}
       >
-        <svg width="92" height="92" viewBox="0 0 80 80" fill="none">
-          <defs>
-            <linearGradient
-              id="ft-gold-gradient"
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
-              <stop offset="0%" stopColor="#B45309" />
-              <stop offset="25%" stopColor="#D97706" />
-              <stop offset="50%" stopColor="#FBBF24" />
-              <stop offset="75%" stopColor="#F59E0B" />
-              <stop offset="100%" stopColor="#B45309" />
-            </linearGradient>
-            <radialGradient
-              id="ft-specular-shine"
-              cx="30%"
-              cy="30%"
-              r="40%"
-            >
-              <stop offset="0%" stopColor="white" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="white" stopOpacity="0" />
-            </radialGradient>
-            <linearGradient
-              id="ft-stem-gradient"
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
-              <stop offset="0%" stopColor="#D97706" />
-              <stop offset="50%" stopColor="#FBBF24" />
-              <stop offset="100%" stopColor="#D97706" />
-            </linearGradient>
-          </defs>
-          {/* Handles — flat top then curve down to meet bowl */}
-          <path
-            d="M24 25L18 25C13 25 16 44 29 44"
-            stroke="url(#ft-gold-gradient)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M56 25L62 25C67 25 64 44 51 44"
-            stroke="url(#ft-gold-gradient)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            fill="none"
-          />
-          {/* Gap filler — semi-transparent in dark mode */}
-          <path
-            className="dark:opacity-50"
-            d="M24 20C24 20 24 50 40 50C56 50 56 20 56 20Z"
-            fill="url(#ft-gold-gradient)"
-          />
-          {/* Bowl body — gapped path for shadow effect on dark backgrounds */}
-          <path
-            d="M24 20C24 20 24 50 40 50C56 50 56 20 24 20Z"
-            fill="url(#ft-gold-gradient)"
-          />
-          {/* Bowl Opening */}
-          <ellipse
-            cx="40"
-            cy="20"
-            rx="16"
-            ry="4"
-            fill="#FBBF24"
-            stroke="#D97706"
-            strokeWidth="0.5"
-          />
-          <ellipse
-            cx="40"
-            cy="21"
-            rx="14"
-            ry="2.5"
-            fill="#B45309"
-            fillOpacity="0.2"
-          />
-          {/* Specular Highlights */}
-          <ellipse
-            cx="32"
-            cy="30"
-            rx="4"
-            ry="8"
-            fill="url(#ft-specular-shine)"
-            transform="rotate(-15, 32, 30)"
-          />
-          {/* Stem */}
-          <rect
-            x="37"
-            y="50"
-            width="6"
-            height="15"
-            fill="url(#ft-stem-gradient)"
-          />
-          <path
-            d="M37 50L35 55H45L43 50H37Z"
-            fill="#D97706"
-            fillOpacity="0.5"
-          />
-          {/* Base */}
-          <rect
-            x="26"
-            y="65"
-            width="28"
-            height="6"
-            rx="1.5"
-            fill="url(#ft-gold-gradient)"
-          />
-          <rect x="22" y="71" width="36" height="5" rx="1" fill="#B45309" />
-          {/* Rim Polish */}
-          <path
-            d="M24 20C28 23 52 23 56 20"
-            stroke="white"
-            strokeOpacity="0.4"
-            strokeWidth="0.5"
-          />
-        </svg>
+        <TrophySvg />
       </div>
     </div>
   )
