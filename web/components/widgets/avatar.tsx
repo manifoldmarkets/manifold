@@ -254,6 +254,19 @@ export const Avatar = memo(
             animate={animateHat}
           />
         )}
+        {/* Halo back half — behind the avatar (and hat/crown if any) */}
+        {hasHalo && (
+          <AvatarOverlay
+            overlay="avatar-halo"
+            hatSizeClass={hatSizeClass}
+            hatPositionClass={hatPositionClass}
+            animateHatOnHover={animateHatOnHover}
+            animateHat={animateHat}
+            animatePropeller={false}
+            size={size}
+            haloHalf="back"
+          />
+        )}
 
         {shouldShowImage ? (
           <Image
@@ -305,33 +318,6 @@ export const Avatar = memo(
             <LuSprout className="h-4 w-4 text-green-500" />
           </div>
         )}
-        {/* Halo back half — behind the avatar and hat/crown */}
-        {hasHalo && (activeOverlay || hasCrown) && (
-          <div style={{ zIndex: -1 }}>
-            <AvatarOverlay
-              overlay="avatar-halo"
-              hatSizeClass={hatSizeClass}
-              hatPositionClass={hatPositionClass}
-              animateHatOnHover={animateHatOnHover}
-              animateHat={animateHat}
-              animatePropeller={false}
-              size={size}
-              haloHalf="back"
-            />
-          </div>
-        )}
-        {/* Halo full — when no hat/crown is equipped, render complete halo */}
-        {hasHalo && !activeOverlay && !hasCrown && (
-          <AvatarOverlay
-            overlay="avatar-halo"
-            hatSizeClass={hatSizeClass}
-            hatPositionClass={hatPositionClass}
-            animateHatOnHover={animateHatOnHover}
-            animateHat={animateHat}
-            animatePropeller={false}
-            size={size}
-          />
-        )}
         {/* Avatar overlay (hat) - sandwiched between halo halves */}
         {activeOverlay && (
           <AvatarOverlay
@@ -358,8 +344,8 @@ export const Avatar = memo(
             crownPosition={crownPosition}
           />
         )}
-        {/* Halo front half — in front of the hat/crown */}
-        {hasHalo && (activeOverlay || hasCrown) && (
+        {/* Halo front half — in front of the avatar (and hat/crown if any) */}
+        {hasHalo && (
           <AvatarOverlay
             overlay="avatar-halo"
             hatSizeClass={hatSizeClass}
