@@ -1,10 +1,11 @@
 import { UserEntitlement } from './types'
-import { getShopItem, ShopItemCategory } from './items'
+import { getShopItem, ShopItemCategory, AnimationType } from './items'
 
 // Entitlement display groups - what categories of visual effects to show
 export type EntitlementGroup =
   | 'avatar-border' // Golden glow ring
   | 'avatar-overlay' // Crown, graduation cap (hats)
+  | 'avatar-accessory' // Monocle, crystal ball, thought bubbles, stonks
   | 'badge' // Supporter star badge
   | 'hovercard' // Hovercard glow effect
 
@@ -25,8 +26,8 @@ export type DisplayContext =
   | 'notifications'
   | 'managrams'
 
-// Animation types for entitlements
-export type AnimationType = 'hat-hover' | 'golden-glow' | 'badge-pulse'
+// Re-export AnimationType (defined in items.ts to avoid circular imports)
+export type { AnimationType } from './items'
 
 // Combined context configuration
 type ContextConfig = {
@@ -45,39 +46,39 @@ type ContextConfig = {
 const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
   // ✅ FUNCTIONAL
   profile_page: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
-    animations: ['hat-hover'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
+    animations: ['hat-hover', 'fire-item'],
   },
   profile_sidebar: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: ['hat-hover'],
   },
   shop: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
-    animations: ['hat-hover', 'golden-glow'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
+    animations: ['hat-hover', 'golden-glow', 'propeller-spin', 'fire-item'],
   },
   market_creator: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   market_comments: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   posts: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   hovercard: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge', 'hovercard'],
-    animations: ['hat-hover', 'golden-glow', 'badge-pulse'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge', 'hovercard'],
+    animations: ['hat-hover', 'golden-glow', 'badge-pulse', 'propeller-spin', 'fire-item'],
   },
   leagues: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
   leaderboard: {
-    groups: ['avatar-border', 'avatar-overlay'], // No badges - rows too compact
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory'], // No badges - rows too compact
     animations: [],
   },
   managrams: {
@@ -91,7 +92,7 @@ const CONTEXT_CONFIG: Record<DisplayContext, ContextConfig> = {
   },
   // Feed tab on /explore (FeedContractCard, RepostFeedCard)
   feed: {
-    groups: ['avatar-border', 'avatar-overlay', 'badge'],
+    groups: ['avatar-border', 'avatar-overlay', 'avatar-accessory', 'badge'],
     animations: [],
   },
 
@@ -109,6 +110,8 @@ const categoryToGroup = (category: ShopItemCategory): EntitlementGroup | null =>
       return 'avatar-border'
     case 'avatar-overlay':
       return 'avatar-overlay'
+    case 'avatar-accessory':
+      return 'avatar-accessory'
     case 'badge':
       return 'badge'
     case 'hovercard':
@@ -171,4 +174,67 @@ export const shouldAnimateGoldenGlow = (context: DisplayContext): boolean => {
 
 export const shouldAnimateBadge = (context: DisplayContext): boolean => {
   return isAnimationEnabled(context, 'badge-pulse')
+}
+
+export const shouldAnimatePropeller = (context: DisplayContext): boolean => {
+  return isAnimationEnabled(context, 'propeller-spin')
+}
+
+export const shouldAnimateFireItem = (context: DisplayContext): boolean => {
+  return isAnimationEnabled(context, 'fire-item')
+}
+
+// Friendly display names for contexts (used in shop animation labels)
+const CONTEXT_DISPLAY_NAMES: Record<DisplayContext, string> = {
+  profile_page: 'profile pages',
+  profile_sidebar: 'sidebar',
+  shop: 'shop',
+  market_creator: 'markets',
+  market_comments: 'comments',
+  posts: 'posts',
+  hovercard: 'hovercards',
+  leagues: 'leagues',
+  leaderboard: 'leaderboard',
+  feed: 'feed',
+  activity: 'activity',
+  browse: 'browse',
+  notifications: 'notifications',
+  managrams: 'managrams',
+}
+
+// Get all contexts where a given animation type is enabled
+export const getAnimatedContexts = (
+  animationType: AnimationType
+): DisplayContext[] => {
+  return (
+    Object.entries(CONTEXT_CONFIG) as [DisplayContext, ContextConfig][]
+  )
+    .filter(([_, config]) => config.animations.includes(animationType))
+    .map(([context]) => context)
+}
+
+// Get human-readable text describing where an item's animations play
+// Returns null if the item has no animation types
+export const getAnimationLocationText = (
+  animationTypes: AnimationType[]
+): string | null => {
+  if (!animationTypes.length) return null
+
+  // Collect all contexts where ANY of the item's animation types are enabled
+  const contexts = new Set<DisplayContext>()
+  for (const type of animationTypes) {
+    for (const context of getAnimatedContexts(type)) {
+      contexts.add(context)
+    }
+  }
+
+  if (contexts.size === 0) return null
+
+  const names = [...contexts]
+    .map((c) => CONTEXT_DISPLAY_NAMES[c])
+    .filter(Boolean)
+  if (names.length === 0) return null
+  if (names.length === 1) return names[0]
+  if (names.length === 2) return `${names[0]} & ${names[1]}`
+  return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`
 }

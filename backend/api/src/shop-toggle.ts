@@ -3,8 +3,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getShopItem,
   getEntitlementId,
-  EXCLUSIVE_CATEGORIES,
-  getEntitlementIdsForCategory,
+  EXCLUSIVE_SLOTS,
+  getEntitlementIdsForSlot,
 } from 'common/shop/items'
 import { convertEntitlement } from 'common/shop/types'
 
@@ -22,7 +22,7 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
   }
 
   // Only toggleable items can be toggled
-  if (item.type !== 'permanent-toggleable' && item.type !== 'time-limited') {
+  if (item.type !== 'permanent-toggleable' && item.type !== 'time-limited' && item.type !== 'earned') {
     throw new APIError(400, 'This item cannot be toggled')
   }
 
@@ -35,16 +35,33 @@ export const shopToggle: APIHandler<'shop-toggle'> = async (
   const pg = createSupabaseDirectClient()
 
   const result = await pg.tx(async (tx) => {
-    // If enabling an item in an exclusive category, disable others first
-    if (enabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
-      const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+    // Lock the user's entitlement row to prevent concurrent toggle races
+    await tx.oneOrNone(
+      `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2 FOR UPDATE`,
+      [auth.uid, entitlementId]
+    )
+
+    // If enabling an item in an exclusive slot, disable others first
+    if (enabled && EXCLUSIVE_SLOTS.includes(item.slot)) {
+      const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
       await tx.none(
         `UPDATE user_entitlements
          SET enabled = false
          WHERE user_id = $1
          AND entitlement_id = ANY($2)
          AND entitlement_id != $3`,
-        [auth.uid, categoryEntitlementIds, entitlementId]
+        [auth.uid, slotEntitlementIds, entitlementId]
+      )
+    }
+
+    // If enabling an item with explicit conflicts, disable conflicting items
+    if (enabled && item.conflicts?.length) {
+      await tx.none(
+        `UPDATE user_entitlements
+         SET enabled = false
+         WHERE user_id = $1
+         AND entitlement_id = ANY($2)`,
+        [auth.uid, item.conflicts]
       )
     }
 

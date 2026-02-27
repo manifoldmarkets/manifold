@@ -313,7 +313,7 @@ export default function SupporterPage() {
                     icon="💎"
                     label={`${Math.round(
                       SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
-                    )}% shop discount`}
+                    )}% off shop items`}
                   />
                 )}
                 {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes > 1 && (
@@ -566,7 +566,7 @@ function MonthlyValueBreakdown({
       <p className="text-ink-400 mt-2 text-xs">
         + free loans,{' '}
         {benefits.shopDiscount > 0
-          ? `${Math.round(benefits.shopDiscount * 100)}% shop discount, `
+          ? `${Math.round(benefits.shopDiscount * 100)}% off shop items, `
           : ''}
         badge
       </p>

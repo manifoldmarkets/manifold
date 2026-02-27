@@ -27,6 +27,7 @@ import { drizzleLiquidity } from './drizzle-liquidity'
 import { createJob } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
+import { checkSubscriptionExpiry } from './check-subscription-expiry'
 import {
   refreshAchAccountAge,
   refreshAchComments,
@@ -156,6 +157,11 @@ export function createJobs() {
       'process-membership-renewals',
       '0 0 8 * * *', // 8 AM UTC daily (midnight PT)
       processMembershipRenewals
+    ),
+    createJob(
+      'check-subscription-expiry',
+      '0 0 10 * * *', // 10 AM UTC daily (2 AM PT) - warns users 2-3 days before expiry
+      checkSubscriptionExpiry
     ),
     createJob(
       'send-unseen-notifications',

@@ -3063,7 +3063,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
+    props: z.object({ giveawayNum: z.coerce.number().optional(), userId: z.string().optional() }).strict(),
     returns: {} as {
       giveaway?: {
         giveawayNum: number
@@ -3086,6 +3086,39 @@ export const API = (_apiTypeCheck = {
         name: string
         avatarUrl: string
       }
+      champion?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+      }
+      topUsers?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        rank: number
+      }[]
+      yourEntry?: {
+        rank: number
+        totalTickets: number
+      }
+      trophyHolder?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        claimedTime: number
+      }
+      previousTrophyHolder?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+      }
       // Provably fair fields
       nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists
       nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
@@ -3099,7 +3132,7 @@ export const API = (_apiTypeCheck = {
       .object({
         giveawayNum: z.number(),
         charityId: z.string(),
-        numTickets: z.number().positive(),
+        numTickets: z.number().int().positive(),
       })
       .strict(),
     returns: {} as {
@@ -3201,12 +3234,88 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
+  'shop-update-metadata': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        metadata: z
+          .record(z.union([z.string().max(500), z.number()]))
+          .refine((obj) => Object.keys(obj).length <= 10, {
+            message: 'metadata cannot have more than 10 keys',
+          }),
+      })
+      .strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
   'shop-reset-all': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
+  },
+  'shop-purchase-merch': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        variantId: z.string(),
+        shippingCost: z.number().int().min(0),
+        shipping: z.object({
+          name: z.string().max(200),
+          address1: z.string().max(200),
+          address2: z.string().max(200).optional(),
+          city: z.string().max(100),
+          state: z.string().max(100),
+          zip: z.string().max(20),
+          country: z.string().regex(/^[A-Z]{2}$/),
+        }),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      printfulOrderId: string
+      printfulStatus: string
+    },
+  },
+  'shop-shipping-rates': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        variantId: z.string(),
+        address: z.object({
+          address1: z.string().max(200),
+          city: z.string().max(100),
+          state: z.string().max(100).optional(),
+          zip: z.string().max(20),
+          country: z.string().regex(/^[A-Z]{2}$/),
+        }),
+      })
+      .strict(),
+    returns: {} as {
+      rates: Array<{
+        id: string
+        name: string
+        rate: string
+        currency: string
+        minDeliveryDays: number
+        maxDeliveryDays: number
+      }>
+    },
+  },
+  'claim-charity-champion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ enabled: z.boolean().optional() }).strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
   // Admin spam detection endpoints
   'get-suspected-spam-comments': {
@@ -3286,10 +3395,9 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z
       .object({
-        limitDays: z.coerce.number(),
+        limitDays: z.coerce.number().int().min(1).max(365),
       })
       .strict(),
     returns: {} as {

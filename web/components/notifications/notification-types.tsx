@@ -37,6 +37,8 @@ import {
   BettingStreakExpiringNotification,
   LeagueChangedNotification,
   LoanIncomeNotification,
+  CharityChampionDethronedNotification,
+  CharityChampionEligibleNotification,
   ManaPaymentReceivedNotification,
   PushNotificationBonusNotification,
   QuestIncomeNotification,
@@ -150,6 +152,22 @@ export function NotificationItem(props: {
   } else if (reason === 'mana_payment_received') {
     return (
       <ManaPaymentReceivedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'charity_champion_dethroned') {
+    return (
+      <CharityChampionDethronedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'charity_champion_eligible') {
+    return (
+      <CharityChampionEligibleNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

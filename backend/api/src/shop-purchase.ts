@@ -1,13 +1,19 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import {
   getShopItem,
   getEntitlementId,
-  EXCLUSIVE_CATEGORIES,
-  getEntitlementIdsForCategory,
+  EXCLUSIVE_SLOTS,
+  getEntitlementIdsForSlot,
   SHOP_ITEMS,
+  isSeasonalItemAvailable,
+  getSeasonalAvailabilityText,
+  AchievementRequirement,
 } from 'common/shop/items'
 import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 import {
@@ -17,6 +23,103 @@ import {
 } from 'common/supporter-config'
 import { DAY_MS } from 'common/util/time'
 
+// Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
+// holding locks open during expensive scans.
+async function checkItemRequirement(
+  pg: SupabaseDirectClient,
+  userId: string,
+  requirement: AchievementRequirement
+): Promise<void> {
+  const { type, threshold, description } = requirement
+  let userValue = 0
+  let valueName = ''
+
+  switch (type) {
+    case 'streak': {
+      const row = await pg.oneOrNone<{ currentBettingStreak: number }>(
+        `SELECT COALESCE((data->>'currentBettingStreak')::int, 0) as "currentBettingStreak" FROM users WHERE id = $1`,
+        [userId]
+      )
+      userValue = row?.currentBettingStreak ?? 0
+      valueName = 'streak'
+      break
+    }
+    case 'profit': {
+      const row = await pg.oneOrNone<{ profit: number }>(
+        `SELECT COALESCE(SUM(profit), 0) as profit FROM user_contract_metrics WHERE user_id = $1 AND profit > 0`,
+        [userId]
+      )
+      userValue = row?.profit ?? 0
+      valueName = 'profit'
+      break
+    }
+    case 'loss': {
+      const row = await pg.oneOrNone<{ loss: number }>(
+        `SELECT COALESCE(SUM(ABS(profit)), 0) as loss FROM user_contract_metrics WHERE user_id = $1 AND profit < 0`,
+        [userId]
+      )
+      userValue = row?.loss ?? 0
+      valueName = 'loss'
+      break
+    }
+    case 'volume': {
+      const row = await pg.oneOrNone<{ volume: number }>(
+        `SELECT COALESCE(SUM(ABS(amount)), 0) as volume FROM contract_bets WHERE user_id = $1`,
+        [userId]
+      )
+      userValue = row?.volume ?? 0
+      valueName = 'volume'
+      break
+    }
+    case 'donations': {
+      const row = await pg.oneOrNone<{ donations: number }>(
+        `SELECT COALESCE(SUM(num_tickets), 0) as donations FROM charity_giveaway_tickets WHERE user_id = $1`,
+        [userId]
+      )
+      userValue = row?.donations ?? 0
+      valueName = 'donations'
+      break
+    }
+    case 'referrals': {
+      const row = await pg.oneOrNone<{ referrals: number }>(
+        `SELECT COUNT(*) as referrals FROM users WHERE (data->>'referredByUserId') = $1`,
+        [userId]
+      )
+      userValue = row?.referrals ?? 0
+      valueName = 'referrals'
+      break
+    }
+    case 'loan': {
+      const row = await pg.oneOrNone<{ totalLoans: number }>(
+        `SELECT COALESCE(SUM(ucm.loan + ucm.margin_loan), 0) as "totalLoans"
+         FROM user_contract_metrics ucm
+         JOIN contracts c ON c.id = ucm.contract_id
+         WHERE ucm.user_id = $1 AND c.resolution_time IS NULL`,
+        [userId]
+      )
+      userValue = row?.totalLoans ?? 0
+      valueName = 'loan balance'
+      break
+    }
+    case 'seasonsPlatinum': {
+      const row = await pg.oneOrNone<{ count: number }>(
+        `SELECT COUNT(*) as count FROM leagues WHERE user_id = $1 AND division >= 4`,
+        [userId]
+      )
+      userValue = row?.count ?? 0
+      valueName = 'seasons at Platinum+'
+      break
+    }
+  }
+
+  if (userValue < threshold) {
+    throw new APIError(
+      403,
+      `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(userValue)}/${threshold}`
+    )
+  }
+}
+
 export const shopPurchase: APIHandler<'shop-purchase'> = async (
   { itemId },
   auth
@@ -24,6 +127,15 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
   const item = getShopItem(itemId)
   if (!item) {
     throw new APIError(404, 'Item not found')
+  }
+
+  // Earned items (e.g., charity champion trophy) can only be granted by backend logic,
+  // not purchased directly. Hidden free items are also not purchasable.
+  if (item.type === 'earned') {
+    throw new APIError(403, 'This item cannot be purchased')
+  }
+  if (item.hidden && item.price === 0) {
+    throw new APIError(403, 'This item is not available for purchase')
   }
 
   if (!auth) {
@@ -35,6 +147,13 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
   const pg = createSupabaseDirectClient()
 
+  // Check achievement requirement BEFORE entering the transaction.
+  // These are large read-only aggregate queries that don't need transactional consistency
+  // and should not hold a write lock open while they scan big tables.
+  if (item.requirement) {
+    await checkItemRequirement(pg, auth.uid, item.requirement)
+  }
+
   const result = await pg.tx(async (tx) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
@@ -44,14 +163,24 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     // Check one-time purchase limit via user_entitlements table
+    // FOR UPDATE prevents concurrent purchases from both succeeding
     if (item.limit === 'one-time') {
       const existingEntitlement = await tx.oneOrNone(
-        `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2`,
+        `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2 FOR UPDATE`,
         [auth.uid, entitlementId]
       )
       if (existingEntitlement) {
         throw new APIError(403, 'You already own this item')
       }
+    }
+
+    // Check seasonal availability
+    if (item.seasonalAvailability && !isSeasonalItemAvailable(item)) {
+      const availabilityText = getSeasonalAvailabilityText(item) ?? 'during its season'
+      throw new APIError(
+        403,
+        `This item is only available ${availabilityText}`
+      )
     }
 
     // Check streak freeze purchase cap based on supporter tier
@@ -117,7 +246,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
             ?.price ?? 0
 
         // Credit = remaining days * (oldPrice / 30 days)
-        // Only apply credit when upgrading to a different (higher) tier
+        // Only apply credit when switching to a different tier
         if (existingSupporter.entitlement_id !== entitlementId) {
           upgradeCredit = Math.floor(daysRemaining * (oldTierPrice / 30))
         }
@@ -203,17 +332,28 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     // Create/update entitlement (for non-instant items)
     let entitlement: UserEntitlement | undefined
     if (item.type !== 'instant') {
-      // For exclusive categories, disable other items in the same category first
-      if (EXCLUSIVE_CATEGORIES.includes(item.category)) {
-        const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
-        // Disable all other entitlements in this category (except the one we're about to enable)
+      // For exclusive slots, disable other items in the same slot first
+      if (EXCLUSIVE_SLOTS.includes(item.slot)) {
+        const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
+        // Disable all other entitlements in this slot (except the one we're about to enable)
         await tx.none(
           `UPDATE user_entitlements
            SET enabled = false
            WHERE user_id = $1
            AND entitlement_id = ANY($2)
            AND entitlement_id != $3`,
-          [auth.uid, categoryEntitlementIds, entitlementId]
+          [auth.uid, slotEntitlementIds, entitlementId]
+        )
+      }
+
+      // For items with explicit conflicts, disable conflicting items
+      if (item.conflicts?.length) {
+        await tx.none(
+          `UPDATE user_entitlements
+           SET enabled = false
+           WHERE user_id = $1
+           AND entitlement_id = ANY($2)`,
+          [auth.uid, item.conflicts]
         )
       }
 

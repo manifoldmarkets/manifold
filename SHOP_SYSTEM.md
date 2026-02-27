@@ -4,17 +4,57 @@
 
 ## Quick Reference - Current Shop Items
 
-| Item | Price | Type | File |
-|------|-------|------|------|
-| Manifold Plus | M$500/mo | subscription (auto-renew) | `common/src/shop/items.ts` |
-| Manifold Pro | M$2,500/mo | subscription (auto-renew) | `common/src/shop/items.ts` |
-| Manifold Premium | M$10,000/mo | subscription (auto-renew) | `common/src/shop/items.ts` |
-| Golden Glow | M$25,000 | permanent-toggleable | `common/src/shop/items.ts` |
-| Crown | M$1,000,000 | permanent-toggleable | `common/src/shop/items.ts` |
-| Graduation Cap | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
-| Streak Freeze | M$150 | instant | `common/src/shop/items.ts` |
-| PAMPU Skin | M$1,000 | permanent-toggleable | `common/src/shop/items.ts` |
-| Profile Border | M$10,000 | permanent-toggleable | `common/src/shop/items.ts` |
+### Memberships
+| Item | Price | Type |
+|------|-------|------|
+| Manifold Plus | M$500/mo | subscription (auto-renew) |
+| Manifold Pro | M$2,500/mo | subscription (auto-renew) |
+| Manifold Premium | M$10,000/mo | subscription (auto-renew) |
+
+### Cosmetics (Avatar Overlays)
+| Item | Price | Type | Notes |
+|------|-------|------|-------|
+| Crown | M$1,000,000 | permanent-toggleable | Unique slot (combines with hats) |
+| Halo | M$150,000 | permanent-toggleable | Hidden, legendary |
+| Angel Wings | M$150,000 | permanent-toggleable | Hidden, legendary |
+| Top Hat | M$12,500 | permanent-toggleable | |
+| Coolfold Jester Hat | M$7,500 (was M$15,000) | permanent-toggleable | SALE — by Strutheo |
+| Propeller Hat | M$5,000 | permanent-toggleable | |
+| Tinfoil Hat | M$2,500 | permanent-toggleable | |
+| Cat Ears | M$30,000 | permanent-toggleable | Hidden, achievement-gated |
+| Bull Horns | M$100,000 | permanent-toggleable | Hidden, requires M$100k profit |
+| Bear Ears | M$100,000 | permanent-toggleable | Hidden, requires M$100k loss |
+| Santa Hat | M$10,000 | permanent-toggleable | Seasonal (Dec 4 - Jan 15) |
+| Graduation Cap | M$10,000 | permanent-toggleable | |
+| Red/Blue/Green/Black Cap | M$2,500 | permanent-toggleable | Green & Black hidden |
+
+### Cosmetics (Borders, Backgrounds, Skins)
+| Item | Price | Type | Notes |
+|------|-------|------|-------|
+| Golden Glow | M$25,000 | permanent-toggleable | Avatar border |
+| Bad Aura | M$100,000 | permanent-toggleable | Hidden, requires M$100k loss |
+| Mana Aura | M$100,000 | permanent-toggleable | Hidden, requires M$100k volume |
+| Royal Velvet Border | M$12,000 | permanent-toggleable | Hovercard border |
+| Profile Border | M$10,000 | permanent-toggleable | Hovercard border |
+| Royalty Background | M$2,500 | permanent-toggleable | Hovercard background |
+| PAMPU Skin | M$1,000 | permanent-toggleable | Button text skin |
+
+### Other
+| Item | Price | Type | Notes |
+|------|-------|------|-------|
+| Streak Freeze | M$150 | instant | Consumable |
+| Fire Item | M$100,000 | permanent-toggleable | Hidden, requires 100-day streak |
+| Black Hole | M$100,000 | permanent-toggleable | Hidden, requires M$1M volume |
+| Charity Champion Trophy | M$0 | earned | Cannot be purchased, claim-only |
+
+### Physical Merch (via Printful)
+| Item | Price | Limit | Notes |
+|------|-------|-------|-------|
+| AGGC T-Shirt | M$5,000 + shipping | 1 per customer | Hidden |
+| White Logo Cap | M$3,000 + shipping | 1 per customer | Hidden |
+| Purple Logo Cap | M$3,000 + shipping | 1 per customer | Hidden |
+
+All items defined in `common/src/shop/items.ts`.
 
 ---
 
@@ -53,13 +93,14 @@ CREATE TABLE user_entitlements (
   expires_time TIMESTAMPTZ,       -- null = permanent
   enabled BOOLEAN NOT NULL DEFAULT TRUE,  -- for toggleable items
   auto_renew BOOLEAN NOT NULL DEFAULT FALSE,  -- for subscription items
+  metadata JSONB,                 -- item-specific data (e.g., button text selection, crown position)
   PRIMARY KEY (user_id, entitlement_id)
 );
 ```
 
 > **Note on `auto_renew`**: Currently only used for membership subscriptions. Could be extended to other time-limited items in the future (e.g., seasonal cosmetics, limited-time boosts).
 
-### shop_orders (for Printful merch, future)
+### shop_orders (digital purchases + physical merch via Printful)
 ```sql
 CREATE TABLE shop_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -90,18 +131,19 @@ export type ShopItemType =
   | 'instant'              // Execute immediately (e.g., streak forgiveness)
   | 'time-limited'         // Has expiration (e.g., supporter badge)
   | 'permanent-toggleable' // Owned forever, can enable/disable (e.g., PAMPU skin)
-  | 'earned'               // Cannot be purchased, must be earned (for future use)
+  | 'earned'               // Cannot be purchased, must be earned (e.g., charity champion trophy)
 ```
 
 ### Item Categories
 ```typescript
 export type ShopItemCategory =
   | 'badge'           // Supporter badge
-  | 'avatar-border'   // Golden border
-  | 'avatar-overlay'  // Crown, graduation cap
-  | 'skin'            // PAMPU skin
+  | 'avatar-border'   // Golden border, auras
+  | 'avatar-overlay'  // Crown, hats, ears, horns
+  | 'skin'            // PAMPU button skin
   | 'consumable'      // Streak freeze
-  | 'hovercard'       // Profile glow
+  | 'hovercard'       // Borders, backgrounds
+  | 'merch'           // Physical merchandise (Printful)
 ```
 
 ### Exclusive Categories (IMPORTANT)
@@ -134,14 +176,23 @@ export type ShopItem = {
   id: string              // Unique identifier
   name: string            // Display name
   description: string     // Display description
-  price: number           // Price in mana (M$)
+  price: number           // Current selling price in mana (M$)
+  originalPrice?: number  // If set, shows strikethrough "was X" SALE pricing
   type: ShopItemType
   duration?: number       // ms, for time-limited items
   limit: 'one-time' | 'unlimited'  // Can user re-purchase?
   category: ShopItemCategory
+  slot: ShopItemSlot      // Mutual exclusivity group (e.g., 'hat', 'hovercard-border')
   imageUrl?: string       // Optional preview image
   entitlementId?: string  // Optional: share entitlement across items
   alwaysEnabled?: boolean // If true, no toggle switch (e.g., supporter badge)
+  hidden?: boolean        // If true, hidden from shop unless user owns it
+  requirement?: AchievementRequirement  // Achievement gate (profit, loss, streak, etc.)
+  seasonalAvailability?: SeasonalAvailability  // Only available during date window
+  conflicts?: string[]    // Entitlement IDs to disable when this is enabled
+  animationTypes?: AnimationType[]  // Animation contexts for display
+  variants?: MerchVariant[]  // Size variants for merch items
+  merchImages?: { label: string; url: string }[]  // Image carousel for merch
 }
 ```
 
@@ -293,10 +344,74 @@ export const SHOP_ITEMS: ShopItem[] = [
 - No refund is given
 - User can re-subscribe at any time (resets to new 30-day period with `auto_renew = true`)
 
+### shop-purchase-merch
+**File**: `backend/api/src/shop-purchase-merch.ts`
+
+**Request**: `{ itemId: string, variantId: string, shippingCost: number, shipping: { name, address1, address2?, city, state, zip, country } }`
+
+> `shippingCost` is the mana amount from `shop-shipping-rates`. Total charge = `item.price (discounted) + shippingCost`. Supporter discount applies to item price only.
+
+**Flow** (3-phase saga — Printful call is OUTSIDE the DB transaction):
+
+1. Pre-validate: item is merch, variant exists, auth present, Printful token configured
+2. **Shipping verification**: Server always calls Printful shipping rates API to verify `shippingCost` matches an actual rate. Fails closed (rejects order) if Printful API is unavailable.
+3. **Phase 1 (DB tx)**: Check one-time limit (excluding FAILED/REFUNDED/CANCELLED, `FOR UPDATE`), get supporter discount, check balance, deduct `price + shippingCost` via `SHOP_PURCHASE` txn, INSERT `shop_orders` as `PENDING_FULFILLMENT`
+3. **Phase 2 (external HTTP)**: Call Printful `POST /orders` with `confirm: false` (draft). Includes `packing_slip` with username for admin traceability. If fails → create refund txn + mark order `FAILED`, throw
+4. **Phase 3 (DB update)**: UPDATE `shop_orders` with `printful_order_id` and `printful_status`
+
+**Merch order statuses**:
+
+| Status | Meaning |
+|--------|---------|
+| `PENDING_FULFILLMENT` | Charged, Printful draft created, awaiting admin confirmation |
+| `FAILED` | Printful call failed; mana auto-refunded |
+| `COMPLETED` | Admin confirmed the Printful order (production triggered) |
+| `SHIPPED` / `DELIVERED` | Fulfillment milestones |
+| `REFUNDED` | Mana returned via admin reset |
+
+**Admin traceability**: Each Printful order includes a `packing_slip.message` with the buyer's Manifold username and user ID. Orders are **draft by default** (`confirm: false`) — admin must manually confirm each order in the Printful dashboard before production begins.
+
+**One-time purchase limit**: Excludes FAILED/REFUNDED/CANCELLED so users can re-purchase after failed orders.
+
+### shop-shipping-rates
+**File**: `backend/api/src/shop-shipping-rates.ts`
+
+**Request**: `{ variantId: string, address: { address1, city, state?, zip, country } }`
+
+Proxies shipping rate lookups to Printful API. Validates `variantId` belongs to a Manifold shop item before calling Printful (prevents API key proxy abuse). Returns shipping methods and USD costs — frontend converts to mana for display.
+
+### claim-charity-champion
+**File**: `backend/api/src/claim-charity-champion.ts`
+
+**Request**: `{ enabled?: boolean }`
+
+**Flow**:
+1. Find current/recent giveaway
+2. Verify caller is #1 ticket buyer
+3. Delete previous holder's trophy entitlement
+4. Upsert caller's trophy entitlement
+5. Grant permanent "former charity champion" badge
+6. Notify previous holder of dethrone (fire-and-forget)
+
+### shop-update-metadata
+**File**: `backend/api/src/shop-update-metadata.ts`
+
+**Request**: `{ itemId: string, metadata: Record<string, any> }`
+
+Updates the `metadata` JSONB column on a user's entitlement. Used for PAMPU button text selection, crown position, etc.
+
+> Server-side metadata validation enforces per-item whitelisted keys and values (audit C3, fixed in Round 1).
+
 ### shop-reset-all (Admin Only)
 **File**: `backend/api/src/shop-reset-all.ts`
 
-Deletes all user entitlements and refunds mana. For testing only.
+Deletes all non-supporter entitlements and refunds mana. For testing only. Supporter/subscription entitlements are excluded from the refund.
+
+> **BEFORE PUSHING TO PROD**: The admin "Return All Cosmetics" button in `web/pages/shop.tsx` must be disabled. It is gated behind `isAdminOrMod` (frontend) and `isAdminId`/`isModId` (backend), but should still be removed from the UI before going live. To disable, comment out or delete this line in `shop.tsx`:
+> ```tsx
+> {isAdminOrMod && <AdminTestingTools user={user} />}
+> ```
+> The `AdminTestingTools` component and the backend endpoint can remain — the backend rejects non-admin callers with 403.
 
 ---
 
@@ -1039,6 +1154,30 @@ Features that were considered but intentionally not implemented. Documented here
 
 | Date | Change | Modified By |
 |------|--------|-------------|
+| 2026-02-24 | Round 3 holistic re-audit fixes | Claude |
+| | - **Security**: Earned/hidden-free items blocked from `shop-purchase` API (charity champion bypass) | |
+| | - **Merch flow**: Shipping cost verification now always runs + fails closed on Printful API error | |
+| | - **DB**: Unique partial index on `shop_orders(user_id, item_id)` for active statuses (prevents concurrent one-time merch race) | |
+| 2026-02-24 | Round 2 audit fixes — complete | Claude |
+| | - **Merch flow**: `shippingCost` charged in mana (total = item + shipping), server-side rate verification | |
+| | - **Merch flow**: Printful failure triggers auto-refund (mana returned immediately) | |
+| | - **Merch flow**: One-time merch check now uses `FOR UPDATE` + excludes FAILED/REFUNDED/CANCELLED | |
+| | - **Merch traceability**: `packing_slip.message` includes `@username (uid: xxx)` | |
+| | - **Security**: `limitDays` bounded 1-365 on `get-shop-stats` | |
+| | - **Security**: Shipping address fields bounded (.max()), country regex validated | |
+| | - **Security**: `variantId` validated against `SHOP_ITEMS` in shipping rates endpoint | |
+| | - **Race conditions**: `FOR UPDATE` on one-time check (entitlements + merch) + giveaway tickets | |
+| | - **DB**: RLS on `shop_orders` + index on `user_entitlements(entitlement_id)` | |
+| | - **Business logic**: Tier switching gives full prorated credit from remaining time | |
+| | - **Code quality**: Crown position array/comments fixed, dead imports removed, deduped constants | |
+| 2026-02-24 | Round 1 audit fixes (commit ba8c1f626) | Claude |
+| | - Printful call moved outside `pg.tx()` (3-phase saga) | |
+| | - Giveaway champion `FOR UPDATE` locking | |
+| | - Metadata validation per item ID | |
+| | - APIError preservation in Printful error handlers | |
+| | - `PENDING_FULFILLMENT` + `REFUNDED` added to ShopOrder status union | |
+| | - Deterministic subscription expiry notification IDs | |
+| | - Achievement aggregate queries moved pre-transaction | |
 | 2026-01-19 | Added auto-renewing subscriptions for memberships | Claude |
 | | - Added `auto_renew` column to `user_entitlements` table | |
 | | - New `shop-cancel-subscription` API endpoint | |

@@ -2,6 +2,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
 
 export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
   if (!auth) {
@@ -14,13 +15,16 @@ export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
   }
 
   const pg = createSupabaseDirectClient()
+  const supporterIds = [...SUPPORTER_ENTITLEMENT_IDS]
 
   const result = await pg.tx(async (tx) => {
-    // Get all shop orders for this user to calculate refund amount
+    // Get all non-supporter shop orders for this user to calculate refund amount
+    // Include PENDING_FULFILLMENT (charged merch orders awaiting Printful) in addition to COMPLETED
     const orders = await tx.manyOrNone<{ item_id: string; price_mana: number }>(
       `SELECT item_id, price_mana FROM shop_orders
-       WHERE user_id = $1 AND status = 'COMPLETED'`,
-      [auth.uid]
+       WHERE user_id = $1 AND status IN ('COMPLETED', 'PENDING_FULFILLMENT')
+       AND item_id != ALL($2)`,
+      [auth.uid, supporterIds]
     )
 
     const totalRefund = orders.reduce((sum, o) => sum + o.price_mana, 0)
@@ -35,21 +39,24 @@ export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
         toId: auth.uid,
         amount: totalRefund,
         token: 'M$',
-        description: 'Admin: Refund all shop purchases',
+        description: 'Admin: Refund all shop purchases (excluding subscriptions)',
       }
 
       await runTxnInBetQueue(tx, txnData)
     }
 
-    // Delete all entitlements
-    await tx.none(`DELETE FROM user_entitlements WHERE user_id = $1`, [
-      auth.uid,
-    ])
-
-    // Mark all orders as refunded
+    // Delete all non-supporter entitlements
     await tx.none(
-      `UPDATE shop_orders SET status = 'REFUNDED' WHERE user_id = $1`,
-      [auth.uid]
+      `DELETE FROM user_entitlements
+       WHERE user_id = $1 AND entitlement_id != ALL($2)`,
+      [auth.uid, supporterIds]
+    )
+
+    // Mark non-supporter orders as refunded
+    await tx.none(
+      `UPDATE shop_orders SET status = 'REFUNDED'
+       WHERE user_id = $1 AND item_id != ALL($2)`,
+      [auth.uid, supporterIds]
     )
 
     // Reset streak forgiveness to 0
