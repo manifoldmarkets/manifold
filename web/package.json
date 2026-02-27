@@ -74,7 +74,8 @@
     "react-snowfall": "2.2.0",
     "react-twitter-embed": "4.0.4",
     "string-similarity": "4.0.4",
-    "tippy.js": "6.3.7"
+    "tippy.js": "6.3.7",
+    "tone": "15.0.4"
   },
   "devDependencies": {
     "@svgr/webpack": "8.1.0",
