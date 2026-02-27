@@ -15,6 +15,8 @@ import {
 import { TRADE_TERM } from 'common/envs/constants'
 import { CandidateBet } from 'common/new-bet'
 import { getPseudoProbability } from 'common/pseudo-numeric'
+import { UserEntitlement } from 'common/shop/types'
+import { canAccessMarginLoans } from 'common/supporter-config'
 import { formatOutcomeLabel, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
@@ -38,6 +40,7 @@ import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { sliderColors } from '../widgets/slider'
+import { Toggle } from '../widgets/toggle'
 import { MoneyDisplay } from './money-display'
 import { ShareBetModal } from './share-bet'
 
@@ -57,6 +60,7 @@ export default function LimitOrderPanel(props: {
   contract: MarketContract
   multiProps?: MultiBetProps
   user: User | null | undefined
+  userEntitlements?: UserEntitlement[]
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
   onBuySuccess?: () => void
@@ -83,11 +87,22 @@ export default function LimitOrderPanel(props: {
     unfilledBets,
     balanceByUserId,
     user,
+    userEntitlements,
     outcome,
     onBuySuccess,
     pseudonym,
     expiration,
   } = props
+
+  // Check if user can access margin loans
+  const hasMarginLoanAccess = canAccessMarginLoans(userEntitlements)
+
+  // Margin financing toggle state - only for mana contracts, not cash
+  const isCashContract = contract.token === 'CASH'
+  const [marginFinanced, setMarginFinanced] = usePersistentLocalState(
+    false,
+    'limit-order-margin-financed'
+  )
   const { pseudonymName, pseudonymColor } =
     pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
@@ -294,6 +309,10 @@ export default function LimitOrderPanel(props: {
     const answerId = multiProps?.answerToBuy.id
 
     try {
+      // Only include marginFinanced if enabled and user has access (and not cash contract)
+      const shouldIncludeMarginFinanced =
+        marginFinanced && hasMarginLoanAccess && !isCashContract
+
       const bet = await api(
         'bet',
         removeUndefinedProps({
@@ -306,6 +325,7 @@ export default function LimitOrderPanel(props: {
           expiresMillisAfter,
           deps: betDeps.current?.map((b) => b.userId),
           silent: expiresMillisAfter && expiresMillisAfter <= 1000,
+          marginFinanced: shouldIncludeMarginFinanced || undefined,
         } as APIParams<'bet'>)
       )
       console.log(`placed ${TRADE_TERM}. Result:`, bet)
@@ -328,6 +348,7 @@ export default function LimitOrderPanel(props: {
         isLimitOrder: true,
         answerId: multiProps?.answerToBuy.id,
         token: contract.token,
+        marginFinanced: shouldIncludeMarginFinanced,
       })
       setLastBetDetails(fullBet)
       setIsSharing(false)
@@ -527,6 +548,29 @@ export default function LimitOrderPanel(props: {
           </Col>
         )}
       </Col>
+
+      {/* Margin financing toggle - only show for mana contracts */}
+      {!isCashContract && (
+        <Row className="mt-4 items-center justify-between">
+          <Row className="items-center gap-2">
+            <span className="text-ink-600 text-sm">Finance with margin loan</span>
+            <InfoTooltip
+              text={
+                hasMarginLoanAccess
+                  ? 'If enabled, when this order is filled and you have insufficient balance, a margin loan will be automatically taken to cover it.'
+                  : 'Requires Manifold membership. Subscribe to unlock margin loans.'
+              }
+              className="text-ink-400"
+              size="sm"
+            />
+          </Row>
+          <Toggle
+            on={marginFinanced && hasMarginLoanAccess}
+            setOn={setMarginFinanced}
+            disabled={!hasMarginLoanAccess || isSubmitting}
+          />
+        </Row>
+      )}
 
       <Col className="mt-2 w-full gap-2">
         {outcome && hasLimitBet && filledAmount > 0 && (

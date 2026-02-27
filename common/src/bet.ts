@@ -67,6 +67,7 @@ type LimitProps = {
   fills: fill[]
   expiresAt?: number // ms since epoch.
   silent?: boolean // New default quick limit order type. API bets cannot be silent.
+  marginFinanced?: boolean // If true, order can be filled using margin loans when balance is insufficient
 }
 
 export type fill = {
