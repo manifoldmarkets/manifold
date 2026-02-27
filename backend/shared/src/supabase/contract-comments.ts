@@ -208,8 +208,7 @@ export async function getCommentsDirect(
     `
         select cc.data, cc.likes from contract_comments cc
           join contracts c on cc.contract_id = c.id
-        where c.visibility = 'public'
-          and ($3 is null or contract_id = $3)
+        where ($3 is null or contract_id = $3)
           and ($4 is null or user_id = $4)
           and ($5 is null or cc.data->>'replyToCommentId' = $5) 
           and ($6 is null or cc.comment_id = $6)          
