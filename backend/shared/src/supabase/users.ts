@@ -79,15 +79,42 @@ export const getMostlyActiveUserIds = async (
   )
 }
 
-/** only updates data column. do not use for name, username, or balances */
+/** Updates user data. Handles name/username as top-level columns automatically.
+ *  Do not use for balances — use incrementBalance instead. */
 export const updateUser = async (
   db: SupabaseDirectClient,
   id: string,
   update: Partial<User>
 ) => {
-  const fullUpdate = { id, ...update }
-  await updateData(db, 'users', 'id', fullUpdate)
-  broadcastUpdatedUser(fullUpdate)
+  const { name, username, ...rest } = update
+
+  // name and username are top-level columns, not in the data JSONB.
+  // Set them directly so they don't silently land in the wrong place.
+  if (name !== undefined || username !== undefined) {
+    const setClauses: string[] = []
+    const values: any[] = []
+    let idx = 1
+    if (name !== undefined) {
+      setClauses.push(`name = $${idx++}`)
+      values.push(name)
+    }
+    if (username !== undefined) {
+      setClauses.push(`username = $${idx++}`)
+      values.push(username)
+    }
+    values.push(id)
+    await db.none(
+      `update users set ${setClauses.join(', ')} where id = $${idx}`,
+      values
+    )
+  }
+
+  // Update the data JSONB column with everything else
+  if (Object.keys(rest).length > 0) {
+    await updateData(db, 'users', 'id', { id, ...rest })
+  }
+
+  broadcastUpdatedUser({ id, ...update })
 }
 
 // private_users has 2 columns that aren't in the data column
