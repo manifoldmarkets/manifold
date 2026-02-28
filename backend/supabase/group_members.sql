@@ -5,7 +5,7 @@ create table if not exists
     group_id text not null,
     member_id text not null,
     role text default 'member'::text not null,
-    constraint primary key (group_id, member_id)
+    primary key (group_id, member_id)
   );
 
 -- Foreign Keys

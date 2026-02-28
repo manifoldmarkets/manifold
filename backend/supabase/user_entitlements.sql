@@ -7,7 +7,7 @@ create table if not exists
     expires_time timestamp with time zone,
     granted_time timestamp with time zone default now() not null,
     user_id text not null,
-    constraint primary key (user_id, entitlement_id)
+    primary key (user_id, entitlement_id)
   );
 
 -- Indexes

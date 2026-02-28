@@ -9,3 +9,4 @@ dev-mantic-markets-firebase-adminsdk*.json
 mantic-markets-firebase-adminsdk*.json
 
 .env
+.env.local
