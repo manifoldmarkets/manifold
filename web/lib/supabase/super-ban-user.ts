@@ -33,13 +33,11 @@ async function superBanUser(userId: string) {
   }
 
   if (comments.length > 30) {
-    commentsStatus = 'not hidden (>30)'
+    commentsStatus = 'not hidden unless new user (>30)'
+  } else if (comments.length > 0) {
+    commentsStatus = 'successfully deleted'
   } else {
-    if (comments.length > 0) {
-      commentsStatus = 'successfully deleted'
-    } else {
-      commentsStatus = 'were not found'
-    }
+    commentsStatus = 'were not found'
   }
 
   return `Super ban completed. Bans: ${banStatus}. Markets ${marketsStatus}. Comments ${commentsStatus}. Posts hidden: ${posts.length}.`

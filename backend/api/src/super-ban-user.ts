@@ -1,3 +1,4 @@
+import { WEEK_MS } from 'common/util/time'
 import { MarketContract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { convertPost, TopLevelPost } from 'common/top-level-post'
@@ -68,6 +69,8 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     throw new APIError(500, 'Failed to update one or more contracts.')
   }
 
+  const isNewUser = creator.createdTime > Date.now() - WEEK_MS
+
   // Bulk-delete user's contract comments (including hidden) if there are not too many, and revalidate affected contracts
   try {
     const { count } = await pg.one<{ count: number }>(
@@ -77,8 +80,9 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
       [userId]
     )
 
-    if (count > 30) {
-      log('Not deleting comments (>30).')
+    const commentLimit = isNewUser ? 200 : 30
+    if (count > commentLimit) {
+      log(`Not deleting comments (>${commentLimit}).`)
     } else if (count > 0) {
       // Collect distinct contracts for revalidation
       const affectedContracts = await pg.manyOrNone<{
@@ -124,8 +128,9 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
       [userId]
     )
 
-    if (count > 30) {
-      log('Not hiding post comments (>30).')
+    const postCommentLimit = isNewUser ? 200 : 30
+    if (count > postCommentLimit) {
+      log(`Not hiding post comments (>${postCommentLimit}).`)
     } else if (count > 0) {
       // Collect distinct post slugs for revalidation
       const postSlugs: { slug: string }[] = await pg.manyOrNone(
