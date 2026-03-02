@@ -6,6 +6,7 @@ import { DailyLeagueStat } from './daily-league-stat'
 import { DailyPredictleStat } from './daily-predictle-stat'
 import { DailyProfit } from './daily-profit'
 import { DailyLoan } from './daily-loan'
+import { DailyTrophyStat } from './daily-trophy-stat'
 
 export const dailyStatsClass =
   'bg-canvas-0 dark:bg-canvas-50 rounded-lg px-2 sm:px-3 py-1 shadow min-w-[60px]'
@@ -22,6 +23,9 @@ export function DailyStats(props: {
       <DailyPredictleStat />
       <DailyProfit user={user} />
       {user && <DailyLoan user={user} />}
+      {user && (
+        <DailyTrophyStat userId={user.id} username={user.username} />
+      )}
     </Row>
   )
 }

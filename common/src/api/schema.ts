@@ -76,6 +76,7 @@ import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
 import { UserEntitlement } from 'common/shop/types'
+import { UserTrophyProgress } from 'common/trophies'
 import { YEAR_MS } from 'common/util/time'
 import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
@@ -3280,6 +3281,37 @@ export const API = (_apiTypeCheck = {
         contract: Contract
         viewsYesterday: number
       }[]
+    },
+  },
+  'get-trophy-progress': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as { trophies: UserTrophyProgress[] },
+  },
+  'claim-trophy-tier': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        trophyId: z.string(),
+        tier: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      success: true
+      nextTier: {
+        tier: string
+        threshold: number
+        currentValue: number
+      } | null
     },
   },
   'get-shop-stats': {

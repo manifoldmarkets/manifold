@@ -52,6 +52,7 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { updateTrophyProgress } from './update-trophy-progress'
 
 export function createJobs() {
   return [
@@ -234,6 +235,11 @@ export function createJobs() {
       'calculate-user-topic-interests',
       '0 0 3 * * *', // 3 AM daily
       () => calculateUserTopicInterests()
+    ),
+    createJob(
+      'update-trophy-progress',
+      '0 0 4 * * *', // 4:00 AM daily (after MV refreshes at 2:30-3:50 AM)
+      updateTrophyProgress
     ),
     createJob(
       'update-stats',

@@ -66,6 +66,8 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { useUserBans } from 'web/hooks/use-user-bans'
 import { User } from 'web/lib/firebase/users'
+import { TrophyCase } from 'web/components/trophies/trophy-case'
+import { ProfileShowcase } from 'web/components/trophies/profile-showcase'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { api } from 'web/lib/api/api'
@@ -350,6 +352,9 @@ function UserProfile(props: {
             {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>
+        <div className="mx-4 mt-1">
+          <ProfileShowcase userId={user.id} user={user} isOwnProfile={!!isCurrentUser} />
+        </div>
         {expandProfileInfo && (
           <Col className={'mx-4 mt-1 gap-2'}>
             <ProfilePublicStats user={user} currentUser={currentUser} />
@@ -447,6 +452,8 @@ function UserProfile(props: {
                 content: (
                   <>
                     <Spacer h={4} />
+                    <TrophyCase userId={user.id} />
+                    <Spacer h={8} />
                     <AchievementsSection userId={user.id} />
                   </>
                 ),
