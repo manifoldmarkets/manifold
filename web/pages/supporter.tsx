@@ -2,6 +2,7 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { FaStar } from 'react-icons/fa'
 import { DAY_MS } from 'common/util/time'
+import { MAX_LOAN_NET_WORTH_PERCENT } from 'common/loans'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { shortFormatNumber } from 'common/util/format'
@@ -432,7 +433,8 @@ function MonthlyValueBreakdown({
   const netFromQuests = bonusMana + referralBonus - cost
 
   // Leverage
-  const extraLeverageMultiple = benefits.maxLoanNetWorthPercent
+  const extraLeverageMultiple =
+    benefits.maxLoanNetWorthPercent - MAX_LOAN_NET_WORTH_PERCENT
   const hasLeverage = benefits.marginLoanAccess
   const netWorth = userNetWorth && userNetWorth > 0 ? userNetWorth : 10000
   const extraCapital = Math.round(netWorth * extraLeverageMultiple)
@@ -529,12 +531,12 @@ function MonthlyValueBreakdown({
           </span>
         </Row>
 
-        {hasLeverage && (
+        {extraLeverageMultiple > 0 && (
           <>
             <div className="border-ink-200 my-1.5 border-t" />
             <Row className="justify-between text-xs">
               <span className="text-ink-500 font-medium uppercase">
-                Leverage
+                Extra leverage
               </span>
               <span className="text-ink-500">
                 {ENV_CONFIG.moneyMoniker}
@@ -555,9 +557,10 @@ function MonthlyValueBreakdown({
 
       {netFromQuests >= 0 ? (
         <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 sm:text-sm">
-          ✓ Pays for itself{hasLeverage && ' — leverage is profit!'}
+          ✓ Pays for itself
+          {extraLeverageMultiple > 0 && ' — extra leverage is profit!'}
         </div>
-      ) : hasLeverage ? (
+      ) : extraLeverageMultiple > 0 ? (
         <div className="mt-2 rounded bg-amber-100 px-2 py-1 text-center text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 sm:text-sm">
           📈 {breakEvenPercent.toFixed(1)}%/mo return to break even
         </div>

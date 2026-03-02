@@ -18,11 +18,8 @@ export function DailyFreeLoanModal(props: {
   const { isOpen, setOpen, user } = props
 
   const { data: freeLoanData } = useAPIGetter('get-free-loan-available', {})
-  const { data: loanData } = useAPIGetter('get-next-loan-amount', {
-    userId: user.id,
-  })
 
-  if (!freeLoanData || !loanData) {
+  if (!freeLoanData) {
     return (
       <Modal open={isOpen} setOpen={setOpen}>
         <Col className="bg-canvas-0 items-center justify-center rounded-md p-8">
@@ -34,9 +31,9 @@ export function DailyFreeLoanModal(props: {
 
   const canClaim = freeLoanData.canClaim
   const freeLoanAvailable = freeLoanData.available
-  const currentFreeLoan = loanData.currentFreeLoan ?? 0
-  const currentMarginLoan = loanData.currentMarginLoan ?? 0
-  const totalLoan = currentFreeLoan + currentMarginLoan
+  const currentFreeLoan = freeLoanData.currentFreeLoan ?? 0
+  const currentMarginLoan = freeLoanData.currentMarginLoan ?? 0
+  const totalLoan = freeLoanData.totalLoan ?? 0
   const todaysClaim = freeLoanData.todaysFreeLoan ?? 0
 
   // Determine the reason for ineligibility
