@@ -6,6 +6,7 @@ import {
   ScaleIcon,
   ViewListIcon,
 } from '@heroicons/react/outline'
+import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { RanksType } from 'common/achievements'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
@@ -19,6 +20,8 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
+import { ProfileShowcase } from 'web/components/trophies/profile-showcase'
+import { TrophiesTab } from 'web/components/trophies/trophies-tab'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -355,6 +358,7 @@ function UserProfile(props: {
         </Row>
         {expandProfileInfo && (
           <Col className={'mx-4 mt-1 gap-2'}>
+            <ProfileShowcase userId={user.id} user={user} isOwnProfile={!!isCurrentUser} />
             <ProfilePublicStats user={user} currentUser={currentUser} />
             {user.bio && (
               <div className="sm:text-md mt-1 text-sm">
@@ -442,6 +446,12 @@ function UserProfile(props: {
                     />
                   </>
                 ),
+              },
+              {
+                title: 'Trophies',
+                prerender: true,
+                stackedTabIcon: <SparklesIcon className="h-5" />,
+                content: <TrophiesTab userId={user.id} />,
               },
               {
                 title: 'Achievements',
