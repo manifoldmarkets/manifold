@@ -133,7 +133,9 @@ export function TrophyCard(props: {
             >
               {viewing.name}
             </span>
-            <span className="text-ink-500 text-xs">{definition.label}</span>
+            <span className="text-ink-500 text-xs">
+              {formatTrophyValue(definition, viewing.threshold)} {definition.unit}
+            </span>
           </Col>
 
           <button

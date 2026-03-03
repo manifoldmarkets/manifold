@@ -358,7 +358,7 @@ function UserProfile(props: {
         </Row>
         {expandProfileInfo && (
           <Col className={'mx-4 mt-1 gap-2'}>
-            <ProfileShowcase userId={user.id} user={user} isOwnProfile={!!isCurrentUser} />
+            <ProfileShowcase userId={user.id} isOwnProfile={!!isCurrentUser} />
             <ProfilePublicStats user={user} currentUser={currentUser} />
             {user.bio && (
               <div className="sm:text-md mt-1 text-sm">
@@ -450,13 +450,13 @@ function UserProfile(props: {
               {
                 title: 'Trophies',
                 prerender: true,
-                stackedTabIcon: <SparklesIcon className="h-5" />,
+                stackedTabIcon: <TrophyIcon className="h-5" />,
                 content: <TrophiesTab userId={user.id} />,
               },
               {
                 title: 'Achievements',
                 prerender: true,
-                stackedTabIcon: <TrophyIcon className="h-5" />,
+                stackedTabIcon: <SparklesIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />

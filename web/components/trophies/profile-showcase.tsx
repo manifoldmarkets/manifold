@@ -1,9 +1,13 @@
 import clsx from 'clsx'
 import { useState, useCallback } from 'react'
 
-import { RanksType } from 'common/achievements'
 import { DIVISION_NAMES } from 'common/leagues'
-import { type User } from 'common/user'
+import {
+  TROPHY_DEFINITIONS,
+  TROPHY_TIER_STYLES,
+  computeAllTrophyProgress,
+  formatTrophyValue,
+} from 'common/trophies'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -18,7 +22,8 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 type ShowcaseBadgeData = {
   id: string
   label: string
-  detail: string
+  stat?: string // e.g. "2.3M" — shown inline after label
+  detail: string // tooltip text
   emoji: string
   tier: 'gray' | 'green' | 'blue' | 'purple' | 'crimson' | 'gold' | 'prismatic'
 }
@@ -40,28 +45,6 @@ const TIER_STYLES: Record<
 // Tier assignment helpers
 // ---------------------------------------------------------------------------
 
-function tierFromPercentile(pct: number | null): ShowcaseBadgeData['tier'] {
-  if (pct == null) return 'gray'
-  if (pct <= 1) return 'prismatic'
-  if (pct <= 3) return 'gold'
-  if (pct <= 5) return 'crimson'
-  if (pct <= 10) return 'purple'
-  if (pct <= 25) return 'blue'
-  if (pct <= 50) return 'green'
-  return 'gray'
-}
-
-function tierFromRank(rank: number | null): ShowcaseBadgeData['tier'] {
-  if (rank == null) return 'gray'
-  if (rank <= 10) return 'prismatic'
-  if (rank <= 25) return 'gold'
-  if (rank <= 50) return 'crimson'
-  if (rank <= 100) return 'purple'
-  if (rank <= 250) return 'blue'
-  if (rank <= 500) return 'green'
-  return 'gray'
-}
-
 function leagueTier(division: number): ShowcaseBadgeData['tier'] {
   if (division >= 6) return 'prismatic'
   if (division >= 5) return 'gold'
@@ -82,214 +65,28 @@ const LEAGUE_EMOJI: Record<number, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// Badge generation: from achievements API (when available)
+// Badge generation: from trophy milestones (the cool ones)
 // ---------------------------------------------------------------------------
 
-function generateBadgesFromAchievements(
-  achievements: {
-    longestBettingStreak: number
-    charityDonatedMana: number
-    seasonsMasters: number
-    accountAgeYears: number
-    ranks: RanksType
-  },
+function generateBadgesFromTrophies(
+  stats: Record<string, unknown>
 ): ShowcaseBadgeData[] {
-  const badges: ShowcaseBadgeData[] = []
-  const r = achievements.ranks
-
-  if (r.volume.rank != null && r.volume.rank <= 500) {
-    badges.push({
-      id: 'rank-volume',
-      label: `#${r.volume.rank} Volume`,
-      detail: `#${r.volume.rank} in all-time trading volume`,
-      emoji: '\u{1F4B0}',
-      tier: tierFromRank(r.volume.rank),
-    })
-  }
-
-  if (r.trades.rank != null && r.trades.rank <= 500) {
-    badges.push({
-      id: 'rank-trades',
-      label: `#${r.trades.rank} Trader`,
-      detail: `#${r.trades.rank} in total trades placed`,
-      emoji: '\u{1F4C8}',
-      tier: tierFromRank(r.trades.rank),
-    })
-  }
-
-  if (r.profitableMarkets.percentile != null && r.profitableMarkets.percentile <= 25) {
-    badges.push({
-      id: 'rank-profit',
-      label: `Top ${Math.ceil(r.profitableMarkets.percentile)}% Wins`,
-      detail: `Top ${Math.ceil(r.profitableMarkets.percentile)}% in number of profitable markets`,
-      emoji: '\u{1F3AF}',
-      tier: tierFromPercentile(r.profitableMarkets.percentile),
-    })
-  }
-
-  if (r.marketsCreated.rank != null && r.marketsCreated.rank <= 500) {
-    badges.push({
-      id: 'rank-creator',
-      label: `#${r.marketsCreated.rank} Creator`,
-      detail: `#${r.marketsCreated.rank} in markets created`,
-      emoji: '\u{1F3D7}',
-      tier: tierFromRank(r.marketsCreated.rank),
-    })
-  }
-
-  if (r.creatorTraders.rank != null && r.creatorTraders.rank <= 500) {
-    badges.push({
-      id: 'rank-popular-creator',
-      label: `#${r.creatorTraders.rank} Popular Creator`,
-      detail: `#${r.creatorTraders.rank} in unique traders attracted`,
-      emoji: '\u{2B50}',
-      tier: tierFromRank(r.creatorTraders.rank),
-    })
-  }
-
-  if (achievements.longestBettingStreak >= 14) {
-    badges.push({
-      id: 'streak',
-      label: `${achievements.longestBettingStreak}-Day Streak`,
-      detail: `Longest prediction streak: ${achievements.longestBettingStreak} days`,
-      emoji: '\u{1F525}',
-      tier:
-        achievements.longestBettingStreak >= 365 ? 'prismatic' :
-        achievements.longestBettingStreak >= 200 ? 'gold' :
-        achievements.longestBettingStreak >= 100 ? 'crimson' :
-        achievements.longestBettingStreak >= 60 ? 'purple' :
-        achievements.longestBettingStreak >= 30 ? 'blue' :
-        'green',
-    })
-  }
-
-  if (r.totalReferrals.rank != null && r.totalReferrals.rank <= 250) {
-    badges.push({
-      id: 'rank-referrals',
-      label: `#${r.totalReferrals.rank} Recruiter`,
-      detail: `#${r.totalReferrals.rank} in referrals`,
-      emoji: '\u{1F91D}',
-      tier: tierFromRank(r.totalReferrals.rank),
-    })
-  }
-
-  if (r.comments.rank != null && r.comments.rank <= 500) {
-    badges.push({
-      id: 'rank-comments',
-      label: `#${r.comments.rank} Commenter`,
-      detail: `#${r.comments.rank} in total comments`,
-      emoji: '\u{1F4AC}',
-      tier: tierFromRank(r.comments.rank),
-    })
-  }
-
-  if (achievements.charityDonatedMana >= 1000) {
-    badges.push({
-      id: 'charity',
-      label: `$${Math.floor(achievements.charityDonatedMana).toLocaleString()} Donated`,
-      detail: `Donated $${achievements.charityDonatedMana.toLocaleString()} to charity`,
-      emoji: '\u{2764}',
-      tier: tierFromPercentile(r.charityDonated.percentile),
-    })
-  }
-
-  if (achievements.seasonsMasters >= 1) {
-    badges.push({
-      id: 'masters-seasons',
-      label: `${achievements.seasonsMasters}x Masters`,
-      detail: `Reached Masters division ${achievements.seasonsMasters} time${achievements.seasonsMasters > 1 ? 's' : ''}`,
-      emoji: '\u{1F451}',
-      tier:
-        achievements.seasonsMasters >= 7 ? 'prismatic' :
-        achievements.seasonsMasters >= 5 ? 'gold' :
-        achievements.seasonsMasters >= 3 ? 'purple' :
-        'blue',
-    })
-  }
-
-  if (achievements.accountAgeYears >= 2) {
-    badges.push({
-      id: 'veteran',
-      label: `${Math.floor(achievements.accountAgeYears)}yr Veteran`,
-      detail: `${Math.floor(achievements.accountAgeYears)}-year Manifold veteran`,
-      emoji: '\u{1F396}',
-      tier:
-        achievements.accountAgeYears >= 5 ? 'gold' :
-        achievements.accountAgeYears >= 3 ? 'purple' :
-        'blue',
-    })
-  }
-
-  return badges
-}
-
-// ---------------------------------------------------------------------------
-// Badge generation: from User object (always available, no API needed)
-// ---------------------------------------------------------------------------
-
-function generateBadgesFromUser(user: User): ShowcaseBadgeData[] {
+  const progressList = computeAllTrophyProgress(stats)
   const badges: ShowcaseBadgeData[] = []
 
-  // Account age — always show for accounts over 30 days
-  const ageYears = (Date.now() - user.createdTime) / (365.25 * 24 * 60 * 60 * 1000)
-  const ageDays = Math.floor(ageYears * 365.25)
-  if (ageYears >= 1) {
-    badges.push({
-      id: 'veteran',
-      label: `${Math.floor(ageYears)}yr Veteran`,
-      detail: `${Math.floor(ageYears)}-year Manifold veteran`,
-      emoji: '\u{1F396}',
-      tier:
-        ageYears >= 5 ? 'gold' :
-        ageYears >= 3 ? 'purple' :
-        ageYears >= 2 ? 'blue' :
-        'green',
-    })
-  } else if (ageDays >= 30) {
-    badges.push({
-      id: 'veteran',
-      label: `${ageDays}d Member`,
-      detail: `Manifold member for ${ageDays} days`,
-      emoji: '\u{1F396}',
-      tier: 'gray',
-    })
-  }
+  for (const progress of progressList) {
+    if (!progress.highestMilestone) continue
+    const def = TROPHY_DEFINITIONS.find((d) => d.id === progress.trophyId)
+    if (!def) continue
 
-  // Current streak
-  const streak = user.currentBettingStreak ?? 0
-  if (streak >= 3) {
+    const m = progress.highestMilestone
     badges.push({
-      id: 'streak',
-      label: `${streak}-Day Streak`,
-      detail: `Current prediction streak: ${streak} days`,
-      emoji: '\u{1F525}',
-      tier:
-        streak >= 365 ? 'prismatic' :
-        streak >= 200 ? 'gold' :
-        streak >= 100 ? 'crimson' :
-        streak >= 60 ? 'purple' :
-        streak >= 30 ? 'blue' :
-        streak >= 14 ? 'green' :
-        'gray',
-    })
-  }
-
-  // Creator popularity (allTime unique traders)
-  const allTimeTraders = user.creatorTraders?.allTime ?? 0
-  if (allTimeTraders >= 10) {
-    badges.push({
-      id: 'creator-traders',
-      label: `${allTimeTraders >= 1000 ? `${(allTimeTraders / 1000).toFixed(1)}K` : allTimeTraders} Traders`,
-      detail: `${allTimeTraders.toLocaleString()} unique traders on your markets`,
-      emoji: '\u{2B50}',
-      tier:
-        allTimeTraders >= 10000 ? 'prismatic' :
-        allTimeTraders >= 5000 ? 'gold' :
-        allTimeTraders >= 1000 ? 'crimson' :
-        allTimeTraders >= 500 ? 'purple' :
-        allTimeTraders >= 100 ? 'blue' :
-        allTimeTraders >= 50 ? 'green' :
-        'gray',
+      id: `trophy-${def.id}`,
+      label: m.name,
+      stat: formatTrophyValue(def, progress.currentValue),
+      detail: `${def.label}: ${formatTrophyValue(def, progress.currentValue)} ${def.unit}`,
+      emoji: m.emoji,
+      tier: m.tier,
     })
   }
 
@@ -368,6 +165,16 @@ function ShowcaseBadge(props: {
             >
               {badge.label}
             </span>
+            {badge.stat && (
+              <span
+                className={clsx(
+                  'text-ink-500 font-normal',
+                  isLarge ? 'text-xs' : 'text-[10px]'
+                )}
+              >
+                {badge.stat}
+              </span>
+            )}
           </Row>
         </div>
       </button>
@@ -383,10 +190,9 @@ const MAX_PINNED = 3
 
 export function ProfileShowcase(props: {
   userId: string
-  user: User
   isOwnProfile: boolean
 }) {
-  const { userId, user, isOwnProfile } = props
+  const { userId, isOwnProfile } = props
 
   // Try to fetch achievements (may fail if MVs don't exist locally)
   const { data: achievements } = useAPIGetter('get-user-achievements', {
@@ -402,9 +208,10 @@ export function ProfileShowcase(props: {
   const [showPicker, setShowPicker] = useState(false)
 
   const togglePin = useCallback(
-    (id: string) => {
+    (id: string, validIds: Set<string>) => {
       setPinnedIds((prev: string[] | null) => {
-        const current = prev ?? []
+        // Filter out stale IDs from old badge system
+        const current = (prev ?? []).filter((x: string) => validIds.has(x))
         if (current.includes(id)) return current.filter((x: string) => x !== id)
         if (current.length >= MAX_PINNED) return current
         return [...current, id]
@@ -417,9 +224,9 @@ export function ProfileShowcase(props: {
   const allBadges: ShowcaseBadgeData[] = []
   const seenIds = new Set<string>()
 
-  // 1. From achievements API (best data — has global rankings)
+  // 1. From trophy milestones (the exciting ones)
   if (achievements) {
-    for (const b of generateBadgesFromAchievements(achievements)) {
+    for (const b of generateBadgesFromTrophies(achievements)) {
       if (!seenIds.has(b.id)) {
         seenIds.add(b.id)
         allBadges.push(b)
@@ -440,14 +247,6 @@ export function ProfileShowcase(props: {
     }
   }
 
-  // 3. From User object (always available — fallback when APIs fail)
-  for (const b of generateBadgesFromUser(user)) {
-    if (!seenIds.has(b.id)) {
-      seenIds.add(b.id)
-      allBadges.push(b)
-    }
-  }
-
   // Sort by tier quality (best first)
   const tierOrder = ['prismatic', 'gold', 'crimson', 'purple', 'blue', 'green', 'gray']
   allBadges.sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier))
@@ -455,6 +254,7 @@ export function ProfileShowcase(props: {
   if (allBadges.length === 0) return null
 
   const badgeMap = new Map(allBadges.map((b) => [b.id, b]))
+  const validIdSet = new Set(badgeMap.keys())
 
   // null = never configured → auto-show top 2; [] = user cleared all → show nothing
   const effectivePins =
@@ -505,7 +305,7 @@ export function ProfileShowcase(props: {
                 key={b.id}
                 badge={b}
                 size="lg"
-                onClick={() => togglePin(b.id)}
+                onClick={() => togglePin(b.id, validIdSet)}
                 selected={effectivePins.includes(b.id)}
               />
             ))}
