@@ -60,7 +60,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   } = props
   const user = useUser()
 
-  const { threads, loadMore, loading } = useCommentThreads(
+  const { threads, loadMore, loading, page } = useCommentThreads(
     staticContract.id,
     10,
     !!highlightCommentId
@@ -87,16 +87,41 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       t.parent,
       ...t.replies,
     ])
+    const dynamicIds = new Set(dynamicComments.map((c) => c.id))
+    const dynamicParentIds = new Set(threads.map((t) => t.parent.id))
+
+    // The API returns parents ordered by created_time DESC with pagination.
+    // Any non-deleted parent newer than the oldest loaded parent would have
+    // been returned. If it wasn't, it was deleted (stale SSR data).
+    // Similarly, the API loads ALL non-deleted replies for each loaded parent.
+    // Exclude pinned comments so they don't skew the time window.
+    const unpinnedThreads = threads.filter((t) => !t.parent.pinned)
+    const oldestDynamicParentTime =
+      unpinnedThreads.length > 0
+        ? Math.min(...unpinnedThreads.map((t) => t.parent.createdTime))
+        : page > 0
+        ? -Infinity // API loaded but returned nothing — all comments deleted
+        : Infinity // API hasn't loaded yet — preserve static comments
+
+    const freshStaticComments = staticComments.filter((c) => {
+      if (dynamicIds.has(c.id)) return false
+      if (!c.replyToCommentId && c.createdTime >= oldestDynamicParentTime)
+        return false
+      if (c.replyToCommentId && dynamicParentIds.has(c.replyToCommentId))
+        return false
+      return true
+    })
+
     return uniqBy(
       [
         ...(newComments ?? []),
-        ...staticComments,
         ...dynamicComments,
         ...highlightedComments,
+        ...freshStaticComments,
       ],
       'id'
     )
-  }, [newComments, staticComments, threads, highlightedThreads])
+  }, [newComments, staticComments, threads, highlightedThreads, page])
 
   const commentExistsLocally = useMemo(
     () => allComments.some((c) => c.id === highlightCommentId),
