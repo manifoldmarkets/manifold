@@ -1,5 +1,5 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser } from 'shared/utils'
 import { createCharityChampionEligibleNotification } from 'shared/create-notification'
@@ -18,9 +18,7 @@ export const buyCharityGiveawayTickets: APIHandler<
     throw new APIError(404, 'Charity not found')
   }
 
-  const pg = createSupabaseDirectClient()
-
-  return await pg.tx(async (tx) => {
+  const result = await runTransactionWithRetries(async (tx) => {
     // Get giveaway and verify it's still open
     // FOR UPDATE serializes concurrent ticket purchases to ensure correct bonding curve pricing
     const giveaway = await tx.oneOrNone<{
@@ -41,8 +39,8 @@ export const buyCharityGiveawayTickets: APIHandler<
 
     // Get total ticket count across ALL charities in this giveaway (for bonding curve)
     const ticketStats = await tx.oneOrNone<{ total_tickets: string }>(
-      `SELECT COALESCE(SUM(num_tickets), 0) as total_tickets 
-       FROM charity_giveaway_tickets 
+      `SELECT COALESCE(SUM(num_tickets), 0) as total_tickets
+       FROM charity_giveaway_tickets
        WHERE giveaway_num = $1`,
       [giveawayNum]
     )
@@ -106,7 +104,9 @@ export const buyCharityGiveawayTickets: APIHandler<
       [giveawayNum]
     )
 
-    // If they're now #1 and don't already hold the trophy, notify them
+    // Check trophy eligibility inside the tx (consistent read), but fire notification outside
+    let shouldNotifyChampion = false
+    let totalTicketsForNotification = 0
     if (topBuyer && topBuyer.user_id === auth.uid) {
       const existingTrophy = await tx.oneOrNone(
         `SELECT 1 FROM user_entitlements
@@ -114,10 +114,8 @@ export const buyCharityGiveawayTickets: APIHandler<
         [auth.uid, CHARITY_CHAMPION_ENTITLEMENT_ID]
       )
       if (!existingTrophy) {
-        createCharityChampionEligibleNotification(
-          auth.uid,
-          parseFloat(topBuyer.total_tickets)
-        ).catch((e) => console.error('Failed to send champion eligible notification:', e))
+        shouldNotifyChampion = true
+        totalTicketsForNotification = parseFloat(topBuyer.total_tickets)
       }
     }
 
@@ -125,6 +123,22 @@ export const buyCharityGiveawayTickets: APIHandler<
       ticketId: ticketRow.id,
       numTickets,
       manaSpent,
+      shouldNotifyChampion,
+      totalTicketsForNotification,
     }
   })
+
+  // Fire notification AFTER transaction commits to avoid duplicate sends on retry
+  if (result.shouldNotifyChampion) {
+    createCharityChampionEligibleNotification(
+      auth.uid,
+      result.totalTicketsForNotification
+    ).catch((e) => console.error('Failed to send champion eligible notification:', e))
+  }
+
+  return {
+    ticketId: result.ticketId,
+    numTickets: result.numTickets,
+    manaSpent: result.manaSpent,
+  }
 }

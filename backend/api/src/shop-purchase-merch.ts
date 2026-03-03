@@ -1,6 +1,7 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
 import { getShopItem, isMerchItem } from 'common/shop/items'
 import { getBenefit } from 'common/supporter-config'
@@ -72,7 +73,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   // Phase 1: Charge the user atomically. Insert order as PENDING_FULFILLMENT.
   // Printful call happens AFTER this transaction commits to avoid holding a DB
   // transaction open across an external HTTP request.
-  const { txnId, price, username } = await pg.tx(async (tx) => {
+  const { txnId, price, username } = await runTransactionWithRetries(async (tx) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -171,7 +172,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       description: `Refund: Printful order failed for ${item.name}`,
       data: { itemId, variantId, merchOrder: true, refund: true, originalTxnId: txnId },
     }
-    await pg.tx(async (tx) => {
+    await runTransactionWithRetries(async (tx) => {
       await runTxnInBetQueue(tx, refundTxn)
       await tx.none(
         `UPDATE shop_orders SET status = 'FAILED' WHERE txn_id = $1`,

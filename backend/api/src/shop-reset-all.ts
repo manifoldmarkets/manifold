@@ -1,6 +1,6 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
 
@@ -14,10 +14,9 @@ export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
     throw new APIError(403, 'Admin access required')
   }
 
-  const pg = createSupabaseDirectClient()
   const supporterIds = [...SUPPORTER_ENTITLEMENT_IDS]
 
-  const result = await pg.tx(async (tx) => {
+  const result = await runTransactionWithRetries(async (tx) => {
     // Get all non-supporter shop orders for this user to calculate refund amount
     // Include PENDING_FULFILLMENT (charged merch orders awaiting Printful) in addition to COMPLETED
     const orders = await tx.manyOrNone<{ item_id: string; price_mana: number }>(

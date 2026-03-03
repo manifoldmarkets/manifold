@@ -4,6 +4,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
 import {
   getShopItem,
@@ -154,7 +155,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     await checkItemRequirement(pg, auth.uid, item.requirement)
   }
 
-  const result = await pg.tx(async (tx) => {
+  const result = await runTransactionWithRetries(async (tx) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
