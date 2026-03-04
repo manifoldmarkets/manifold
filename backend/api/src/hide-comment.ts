@@ -66,11 +66,13 @@ export const hideComment: APIHandler<'hide-comment'> =
 
       // Update the comment based on action
       if (action === 'delete') {
-        const shouldDelete = !comment.deleted
+        if (comment.deleted) {
+          return { result: { success: true }, continue: async () => {} }
+        }
         await updateData(pg, 'contract_comments', 'comment_id', {
           comment_id: commentId,
-          deleted: shouldDelete,
-          deletedTime: shouldDelete ? Date.now() : undefined,
+          deleted: true,
+          deletedTime: Date.now(),
           deleterId: auth.uid,
         })
       } else {
