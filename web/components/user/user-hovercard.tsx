@@ -106,7 +106,7 @@ export function UserHovercard({
         <FloatingPortal>
           <div
             ref={refs.setFloating}
-            className="fixed z-[60]"
+            className="fixed z-40"
             style={floatingStyles}
             {...getFloatingProps()}
           >
