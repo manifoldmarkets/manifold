@@ -1,11 +1,12 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
+import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   getShopItem,
   getEntitlementId,
@@ -155,7 +156,8 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     await checkItemRequirement(pg, auth.uid, item.requirement)
   }
 
-  const result = await runTransactionWithRetries(async (tx) => {
+  const result = await betsQueue.enqueueFn(
+    () => runTransactionWithRetries(async (tx) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -164,10 +166,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     // Check one-time purchase limit via user_entitlements table
-    // FOR UPDATE prevents concurrent purchases from both succeeding
     if (item.limit === 'one-time') {
       const existingEntitlement = await tx.oneOrNone(
-        `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2 FOR UPDATE`,
+        `SELECT 1 FROM user_entitlements WHERE user_id = $1 AND entitlement_id = $2`,
         [auth.uid, entitlementId]
       )
       if (existingEntitlement) {
@@ -277,7 +278,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     // Apply upgrade credit (for supporter tier upgrades)
     const price = Math.max(0, basePrice - upgradeCredit)
 
-    // Check balance (runTxnInBetQueue will also check, but let's give a better error)
+    // Check balance (runTxnOutsideBetQueue will also check, but let's give a better error)
     if (user.balance < price) {
       throw new APIError(403, 'Insufficient balance')
     }
@@ -319,7 +320,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
             data: { itemId, supporterDiscount: shopDiscount },
           }
 
-      const txn = await runTxnInBetQueue(tx, txnData)
+      const txn = await runTxnOutsideBetQueue(tx, txnData)
       txnId = txn.id
     }
 
@@ -454,7 +455,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     return { success: true as const, entitlement, entitlements, upgradeCredit }
-  })
+  }),
+    [auth.uid]
+  )
 
   return result
 }

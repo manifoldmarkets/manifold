@@ -67,7 +67,8 @@ export const shopUpdateMetadata: APIHandler<'shop-update-metadata'> = async (
     // Verify user owns this entitlement
     const existing = await tx.oneOrNone(
       `SELECT * FROM user_entitlements
-       WHERE user_id = $1 AND entitlement_id = $2`,
+       WHERE user_id = $1 AND entitlement_id = $2
+       FOR UPDATE`,
       [auth.uid, entitlementId]
     )
 

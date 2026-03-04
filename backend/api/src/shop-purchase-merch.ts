@@ -1,13 +1,12 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
-import { getShopItem, isMerchItem } from 'common/shop/items'
+import { getShopItem, isMerchItem, PRINTFUL_API_URL } from 'common/shop/items'
 import { getBenefit } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
-
-const PRINTFUL_API_URL = 'https://api.printful.com'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   { itemId, variantId, shippingCost, shipping },
@@ -73,80 +72,85 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   // Phase 1: Charge the user atomically. Insert order as PENDING_FULFILLMENT.
   // Printful call happens AFTER this transaction commits to avoid holding a DB
   // transaction open across an external HTTP request.
-  const { txnId, price, username } = await runTransactionWithRetries(async (tx) => {
-    const user = await getUser(auth.uid, tx)
-    if (!user) throw new APIError(401, 'Your account was not found')
+  // Enqueue the whole function in the bet queue so we don't hold the user lock
+  // while waiting in the queue.
+  const { txnId, price, username } = await betsQueue.enqueueFn(
+    () =>
+      runTransactionWithRetries(async (tx) => {
+        const user = await getUser(auth.uid, tx)
+        if (!user) throw new APIError(401, 'Your account was not found')
 
-    if (user.isBannedFromPosting) {
-      throw new APIError(403, 'Your account is banned')
-    }
+        if (user.isBannedFromPosting) {
+          throw new APIError(403, 'Your account is banned')
+        }
 
-    // Check one-time purchase limit (max 1 of each merch item per user)
-    // Exclude FAILED/REFUNDED/CANCELLED so users can re-purchase after failed orders
-    // FOR UPDATE prevents concurrent purchases from both succeeding
-    if (item.limit === 'one-time') {
-      const existing = await tx.oneOrNone(
-        `SELECT 1 FROM shop_orders
-         WHERE user_id = $1 AND item_id = $2
-         AND status NOT IN ('FAILED', 'REFUNDED', 'CANCELLED')
-         LIMIT 1
-         FOR UPDATE`,
-        [auth.uid, itemId]
-      )
-      if (existing) {
-        throw new APIError(403, 'You have already purchased this item (limit 1 per customer)')
-      }
-    }
+        // Check one-time purchase limit (max 1 of each merch item per user)
+        // Exclude FAILED/REFUNDED/CANCELLED so users can re-purchase after failed orders
+        if (item.limit === 'one-time') {
+          const existing = await tx.oneOrNone(
+            `SELECT 1 FROM shop_orders
+             WHERE user_id = $1 AND item_id = $2
+             AND status NOT IN ('FAILED', 'REFUNDED', 'CANCELLED')
+             LIMIT 1
+             FOR UPDATE`,
+            [auth.uid, itemId]
+          )
+          if (existing) {
+            throw new APIError(403, 'You have already purchased this item (limit 1 per customer)')
+          }
+        }
 
-    // Get supporter discount (applies to item price only, not shipping)
-    const entRows = await tx.manyOrNone(
-      `SELECT * FROM user_entitlements WHERE user_id = $1`,
-      [auth.uid]
-    )
-    const currentEntitlements = entRows.map(convertEntitlement)
-    const shopDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
-    const discountedItemPrice = shopDiscount > 0
-      ? Math.floor(item.price * (1 - shopDiscount))
-      : item.price
-    const totalCharge = discountedItemPrice + shippingCost
+        // Get supporter discount (applies to item price only, not shipping)
+        const entRows = await tx.manyOrNone(
+          `SELECT * FROM user_entitlements WHERE user_id = $1`,
+          [auth.uid]
+        )
+        const currentEntitlements = entRows.map(convertEntitlement)
+        const shopDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
+        const discountedItemPrice = shopDiscount > 0
+          ? Math.floor(item.price * (1 - shopDiscount))
+          : item.price
+        const totalCharge = discountedItemPrice + shippingCost
 
-    // Check balance
-    if (user.balance < totalCharge) {
-      throw new APIError(403, 'Insufficient balance')
-    }
+        // Check balance
+        if (user.balance < totalCharge) {
+          throw new APIError(403, 'Insufficient balance')
+        }
 
-    // Create transaction to deduct mana (item price + shipping)
-    const discountPercent = Math.round(shopDiscount * 100)
-    const descriptionParts = [`Purchased ${item.name} (${variant.size})`]
-    if (discountPercent > 0) {
-      descriptionParts.push(`(${discountPercent}% supporter discount)`)
-    }
-    if (shippingCost > 0) {
-      descriptionParts.push(`+ M$${shippingCost} shipping`)
-    }
-    const txnData: TxnData = {
-      category: 'SHOP_PURCHASE',
-      fromType: 'USER',
-      fromId: auth.uid,
-      toType: 'BANK',
-      toId: 'BANK',
-      amount: totalCharge,
-      token: 'M$',
-      description: descriptionParts.join(' '),
-      data: { itemId, variantId, merchOrder: true, supporterDiscount: shopDiscount, shippingCost },
-    }
+        // Create transaction to deduct mana (item price + shipping)
+        const discountPercent = Math.round(shopDiscount * 100)
+        const descriptionParts = [`Purchased ${item.name} (${variant.size})`]
+        if (discountPercent > 0) {
+          descriptionParts.push(`(${discountPercent}% supporter discount)`)
+        }
+        if (shippingCost > 0) {
+          descriptionParts.push(`+ M$${shippingCost} shipping`)
+        }
+        const txnData: TxnData = {
+          category: 'SHOP_PURCHASE',
+          fromType: 'USER',
+          fromId: auth.uid,
+          toType: 'BANK',
+          toId: 'BANK',
+          amount: totalCharge,
+          token: 'M$',
+          description: descriptionParts.join(' '),
+          data: { itemId, variantId, merchOrder: true, supporterDiscount: shopDiscount, shippingCost },
+        }
 
-    const txn = await runTxnInBetQueue(tx, txnData)
+        const txn = await runTxnOutsideBetQueue(tx, txnData)
 
-    // Insert order record as PENDING_FULFILLMENT — Printful details added after tx
-    await tx.none(
-      `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status)
-       VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT')`,
-      [auth.uid, itemId, totalCharge, txn.id]
-    )
+        // Insert order record as PENDING_FULFILLMENT — Printful details added after tx
+        await tx.none(
+          `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status)
+           VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT')`,
+          [auth.uid, itemId, totalCharge, txn.id]
+        )
 
-    return { txnId: txn.id, price: totalCharge, username: user.username }
-  })
+        return { txnId: txn.id, price: totalCharge, username: user.username }
+      }),
+    [auth.uid]
+  )
 
   // Phase 2: Create Printful order outside the DB transaction.
   // If this fails, auto-refund the user and mark the order as FAILED.
@@ -172,13 +176,17 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       description: `Refund: Printful order failed for ${item.name}`,
       data: { itemId, variantId, merchOrder: true, refund: true, originalTxnId: txnId },
     }
-    await runTransactionWithRetries(async (tx) => {
-      await runTxnInBetQueue(tx, refundTxn)
-      await tx.none(
-        `UPDATE shop_orders SET status = 'FAILED' WHERE txn_id = $1`,
-        [txnId]
-      )
-    })
+    await betsQueue.enqueueFn(
+      () =>
+        runTransactionWithRetries(async (tx) => {
+          await runTxnOutsideBetQueue(tx, refundTxn)
+          await tx.none(
+            `UPDATE shop_orders SET status = 'FAILED' WHERE txn_id = $1`,
+            [txnId]
+          )
+        }),
+      [auth.uid]
+    )
     throw err
   }
 
@@ -251,7 +259,6 @@ async function createPrintfulOrder(
   if (!response.ok) {
     const errorText = await response.text()
     console.error('Printful API error:', response.status, errorText)
-    // Try to parse as JSON to get a cleaner error message
     try {
       const errorJson = JSON.parse(errorText)
       const message = errorJson.result || errorJson.error?.message || errorText

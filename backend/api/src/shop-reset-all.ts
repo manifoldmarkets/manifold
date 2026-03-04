@@ -1,8 +1,9 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
   if (!auth) {
@@ -16,7 +17,8 @@ export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
 
   const supporterIds = [...SUPPORTER_ENTITLEMENT_IDS]
 
-  const result = await runTransactionWithRetries(async (tx) => {
+  const result = await betsQueue.enqueueFn(
+    () => runTransactionWithRetries(async (tx) => {
     // Get all non-supporter shop orders for this user to calculate refund amount
     // Include PENDING_FULFILLMENT (charged merch orders awaiting Printful) in addition to COMPLETED
     const orders = await tx.manyOrNone<{ item_id: string; price_mana: number }>(
@@ -41,7 +43,7 @@ export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
         description: 'Admin: Refund all shop purchases (excluding subscriptions)',
       }
 
-      await runTxnInBetQueue(tx, txnData)
+      await runTxnOutsideBetQueue(tx, txnData)
     }
 
     // Delete all non-supporter entitlements
@@ -71,7 +73,9 @@ export const shopResetAll: APIHandler<'shop-reset-all'> = async (_, auth) => {
     )
 
     return { success: true as const, refundedAmount: totalRefund }
-  })
+  }),
+    [auth.uid]
+  )
 
   return result
 }

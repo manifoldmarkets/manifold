@@ -40,107 +40,95 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
   // Before that, only the hash should be shared so users can record it for verification.
   const nonceHash = createHash('md5').update(giveaway.nonce).digest('hex')
 
-  // Run all queries in parallel for better performance (single round trip)
-  const [charityStats, topUsersData, yourEntryData, trophyHolderData, winnerData] =
-    await Promise.all([
-      // Get ticket stats per charity
-      pg.manyOrNone<{
-        charity_id: string
-        total_tickets: string
-        total_mana_spent: string
-      }>(
-        `SELECT
-           charity_id,
-           SUM(num_tickets) as total_tickets,
-           SUM(mana_spent) as total_mana_spent
-         FROM charity_giveaway_tickets
-         WHERE giveaway_num = $1
-         GROUP BY charity_id
-         ORDER BY total_tickets DESC`,
-        [giveaway.giveaway_num]
-      ),
+  // Run all queries in a single round trip using db.multi
+  const results = await pg.multi(
+    `
+    -- 0: ticket stats per charity
+    SELECT charity_id, SUM(num_tickets) as total_tickets, SUM(mana_spent) as total_mana_spent
+    FROM charity_giveaway_tickets
+    WHERE giveaway_num = $1
+    GROUP BY charity_id
+    ORDER BY total_tickets DESC;
 
-      // Get top 3 ticket holders with user info
-      pg.manyOrNone<{
-        user_id: string
-        total_tickets: string
-        username: string
-        name: string
-        avatar_url: string
-        rank: string
-      }>(
-        `SELECT t.user_id, t.total_tickets, u.username, u.name, u.data->>'avatarUrl' as avatar_url, t.rank
-         FROM (
-           SELECT user_id, SUM(num_tickets) as total_tickets,
-                  ROW_NUMBER() OVER (ORDER BY SUM(num_tickets) DESC) as rank
-           FROM charity_giveaway_tickets
-           WHERE giveaway_num = $1
-           GROUP BY user_id
-           ORDER BY total_tickets DESC
-           LIMIT 3
-         ) t
-         JOIN users u ON u.id = t.user_id`,
-        [giveaway.giveaway_num]
-      ),
+    -- 1: top 3 ticket holders with user info
+    SELECT t.user_id, t.total_tickets, u.username, u.name, u.data->>'avatarUrl' as avatar_url, t.rank
+    FROM (
+      SELECT user_id, SUM(num_tickets) as total_tickets,
+             ROW_NUMBER() OVER (ORDER BY SUM(num_tickets) DESC) as rank
+      FROM charity_giveaway_tickets
+      WHERE giveaway_num = $1
+      GROUP BY user_id
+      ORDER BY total_tickets DESC
+      LIMIT 3
+    ) t
+    JOIN users u ON u.id = t.user_id;
 
-      // Get the requesting user's rank and tickets (if userId provided)
-      userId
-        ? pg.oneOrNone<{ rank: string; total_tickets: string }>(
-            `SELECT rank, total_tickets FROM (
-               SELECT user_id, SUM(num_tickets) as total_tickets,
-                      ROW_NUMBER() OVER (ORDER BY SUM(num_tickets) DESC) as rank
-               FROM charity_giveaway_tickets
-               WHERE giveaway_num = $1
-               GROUP BY user_id
-             ) ranked
-             WHERE user_id = $2`,
-            [giveaway.giveaway_num, userId]
-          )
-        : Promise.resolve(null),
+    -- 2: requesting user's rank and tickets
+    SELECT rank, total_tickets FROM (
+      SELECT user_id, SUM(num_tickets) as total_tickets,
+             ROW_NUMBER() OVER (ORDER BY SUM(num_tickets) DESC) as rank
+      FROM charity_giveaway_tickets
+      WHERE giveaway_num = $1
+      GROUP BY user_id
+    ) ranked
+    WHERE user_id = $2;
 
-      // Get trophy holder (only one row can exist since old holders are deleted)
-      pg.oneOrNone<{
-        user_id: string
-        granted_time: string
-        username: string
-        name: string
-        avatar_url: string
-        total_tickets: string | null
-        metadata: { previousHolderId?: string; previousHolderClaimedAt?: string } | null
-      }>(
-        `SELECT
-           ue.user_id,
-           ue.granted_time,
-           u.username,
-           u.name,
-           u.data->>'avatarUrl' as avatar_url,
-           ue.metadata,
+    -- 3: trophy holder
+    SELECT ue.user_id, ue.granted_time, u.username, u.name,
+           u.data->>'avatarUrl' as avatar_url, ue.metadata,
            (SELECT SUM(num_tickets) FROM charity_giveaway_tickets
             WHERE giveaway_num = $1 AND user_id = ue.user_id) as total_tickets
-         FROM user_entitlements ue
-         JOIN users u ON u.id = ue.user_id
-         WHERE ue.entitlement_id = $2
-         LIMIT 1`,
-        [giveaway.giveaway_num, CHARITY_CHAMPION_ENTITLEMENT_ID]
-      ),
+    FROM user_entitlements ue
+    JOIN users u ON u.id = ue.user_id
+    WHERE ue.entitlement_id = $3
+    LIMIT 1;
 
-      // Get winner info if there's a winning ticket
-      giveaway.winning_ticket_id
-        ? pg.oneOrNone<{
-            charity_id: string
-            user_id: string
-            username: string
-            name: string
-            avatar_url: string
-          }>(
-            `SELECT t.charity_id, t.user_id, u.username, u.name, u.data->>'avatarUrl' as avatar_url
-             FROM charity_giveaway_tickets t
-             JOIN users u ON u.id = t.user_id
-             WHERE t.id = $1`,
-            [giveaway.winning_ticket_id]
-          )
-        : Promise.resolve(null),
-    ])
+    -- 4: winner info
+    SELECT t.charity_id, t.user_id, u.username, u.name, u.data->>'avatarUrl' as avatar_url
+    FROM charity_giveaway_tickets t
+    JOIN users u ON u.id = t.user_id
+    WHERE t.id = $4;
+    `,
+    [
+      giveaway.giveaway_num,
+      userId ?? '',
+      CHARITY_CHAMPION_ENTITLEMENT_ID,
+      giveaway.winning_ticket_id ?? '',
+    ]
+  )
+
+  const charityStats = results[0] as {
+    charity_id: string
+    total_tickets: string
+    total_mana_spent: string
+  }[]
+  const topUsersData = results[1] as {
+    user_id: string
+    total_tickets: string
+    username: string
+    name: string
+    avatar_url: string
+    rank: string
+  }[]
+  const yourEntryData = userId ? (results[2][0] as { rank: string; total_tickets: string } | undefined) ?? null : null
+  const trophyHolderData = (results[3][0] as {
+    user_id: string
+    granted_time: string
+    username: string
+    name: string
+    avatar_url: string
+    total_tickets: string | null
+    metadata: { previousHolderId?: string; previousHolderClaimedAt?: string } | null
+  } | undefined) ?? null
+  const winnerData = giveaway.winning_ticket_id
+    ? (results[4][0] as {
+        charity_id: string
+        user_id: string
+        username: string
+        name: string
+        avatar_url: string
+      } | undefined) ?? null
+    : null
 
   const totalTickets = charityStats.reduce(
     (sum, s) => sum + parseFloat(s.total_tickets),

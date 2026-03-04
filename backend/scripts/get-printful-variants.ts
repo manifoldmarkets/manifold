@@ -1,30 +1,27 @@
 // Quick script to fetch Printful sync variant IDs
-// Run with: PRINTFUL_API_TOKEN=<token> npx ts-node backend/scripts/get-printful-variants.ts
-// Or:       npx ts-node backend/scripts/get-printful-variants.ts <token>
+// Run with: npx ts-node backend/scripts/get-printful-variants.ts
 
-async function main() {
-  const token = process.argv[2] || process.env.PRINTFUL_API_TOKEN
+import { runScript } from './run-script'
+import { PRINTFUL_API_URL } from 'common/shop/items'
+
+runScript(async () => {
+  const token = process.env.PRINTFUL_API_TOKEN
 
   if (!token) {
-    console.error(
-      'Usage: npx ts-node backend/scripts/get-printful-variants.ts <PRINTFUL_API_TOKEN>'
-    )
-    console.error(
-      '  Or set PRINTFUL_API_TOKEN env var'
-    )
-    process.exit(1)
+    console.error('PRINTFUL_API_TOKEN not found in secrets')
+    return
   }
 
   console.log('Fetching Printful store products...\n')
 
   // Get all products
-  const productsRes = await fetch('https://api.printful.com/store/products', {
+  const productsRes = await fetch(`${PRINTFUL_API_URL}/store/products`, {
     headers: { Authorization: `Bearer ${token}` },
   })
 
   if (!productsRes.ok) {
     console.error('Failed to fetch products:', await productsRes.text())
-    process.exit(1)
+    return
   }
 
   const productsData = await productsRes.json()
@@ -41,7 +38,7 @@ async function main() {
 
     // Get product details with variants
     const detailRes = await fetch(
-      `https://api.printful.com/store/products/${product.id}`,
+      `${PRINTFUL_API_URL}/store/products/${product.id}`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
 
@@ -63,6 +60,4 @@ async function main() {
     }
     console.log(`]`)
   }
-}
-
-main().catch(console.error)
+})

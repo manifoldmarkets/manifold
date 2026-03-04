@@ -1119,6 +1119,154 @@ function ContractCard({ contract }: { contract: Contract }) {
 
 ---
 
+## Charity Champion Trophy System
+
+A special "earned" item that cannot be purchased — only the #1 ticket buyer in the charity raffle can claim it.
+
+### Key Concepts
+
+| Term | Definition | Storage |
+|------|------------|---------|
+| **Champion** | User with most total tickets in current raffle | Computed dynamically from `charity_giveaway_tickets` |
+| **Trophy Holder** | User who claimed the trophy entitlement | Stored in `user_entitlements` with `enabled=true` |
+
+**Important:** Champion and Trophy Holder can be different people (champion hasn't claimed yet, or previous holder hasn't been displaced).
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `web/pages/shop.tsx` | Fetches data once, passes to both cards |
+| `web/components/shop/charity-giveaway-card.tsx` | Shows raffle info + "Ticket Champion" |
+| `web/components/shop/charity-champion-card.tsx` | Trophy card with claim/toggle UI |
+| `web/components/widgets/user-link.tsx` | `CharityChampionBadge` component |
+| `backend/api/src/get-charity-giveaway.ts` | Main API — returns champion + trophyHolder |
+| `backend/api/src/claim-charity-champion.ts` | Claim/toggle trophy API |
+| `common/src/shop/items.ts` | `CHARITY_CHAMPION_ENTITLEMENT_ID`, helpers |
+
+### Trophy Transfer Logic
+
+When someone new becomes champion and claims:
+1. Previous holder's entitlement is set to `enabled = false`, metadata records `previousHolderId`
+2. New champion gets the entitlement (or existing one updated to `enabled = true`)
+3. Trophy badge moves to new holder's profile immediately
+
+Items with `type: 'earned'` are filtered out of the shop grid, displayed in special cards, and managed by custom claim APIs (not `shop-purchase`).
+
+---
+
+## Printful Merch Integration
+
+Physical merchandise orders via Printful API, using a 3-phase saga pattern.
+
+### Purchase Flow (3-Phase Saga)
+
+```
+Phase 1: DB Transaction (atomic)
+  - Verify shipping cost against Printful rates (fail closed)
+  - Charge user (item price + shipping in mana)
+  - Insert shop_order as PENDING_FULFILLMENT
+  - Commit transaction
+
+Phase 2: External HTTP (outside DB tx)
+  - Create Printful draft order
+  - On failure → auto-refund (reverse txn + mark order FAILED)
+
+Phase 3: DB Update
+  - Store printful_order_id and printful_status on shop_order
+```
+
+**Why 3 phases:** Never hold a DB transaction open across an external HTTP request. If Printful is slow/down, the DB connection isn't blocked.
+
+### Key Design Decisions
+
+| Decision | Outcome |
+|----------|---------|
+| Shipping cost | Charged in mana, server-side verified against Printful rates |
+| Printful failure | Auto-refund immediately (orders are draft, no production risk) |
+| Order traceability | Printful `packing_slip.message` contains `@username (uid: xxx)` |
+| One-time limit | Enforced by unique partial index `shop_orders(user_id, item_id) WHERE status active` |
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `backend/api/src/shop-purchase-merch.ts` | 3-phase purchase saga |
+| `backend/api/src/shop-shipping-rates.ts` | Shipping rate proxy (validates variant) |
+| `common/src/shop/items.ts` | `PRINTFUL_API_URL`, merch item definitions with variants |
+
+---
+
+## Achievement-Gated Items
+
+Items with a `requirement` field that must be met before purchasing.
+
+### Requirement Types
+
+| Type | DB Source | Example Items |
+|------|-----------|---------------|
+| `streak` | `users.data->>'currentBettingStreak'` | Fire Item (100-day streak) |
+| `profit` | `SUM(profit) FROM user_contract_metrics WHERE profit > 0` | Bull Horns (M$100k profit) |
+| `loss` | `SUM(ABS(profit)) FROM user_contract_metrics WHERE profit < 0` | Bear Ears, Bad Aura (M$100k loss) |
+| `volume` | `SUM(ABS(amount)) FROM contract_bets` | Black Hole (M$1M volume) |
+| `donations` | `SUM(num_tickets) FROM charity_giveaway_tickets` | — |
+| `referrals` | `COUNT(*) FROM users WHERE referredByUserId = X` | — |
+| `loan` | `SUM(loan + margin_loan) FROM user_contract_metrics` (open contracts) | — |
+| `seasonsPlatinum` | `COUNT(*) FROM leagues WHERE division >= 4` | — |
+
+### Implementation
+
+- Requirement checks run OUTSIDE the write transaction (`checkItemRequirement()` in `shop-purchase.ts`) to avoid holding locks during expensive aggregate scans
+- Frontend greys out locked items and shows progress
+- Backend validates before purchase (defense in depth)
+
+---
+
+## Security Audit History
+
+Three audit rounds completed (Feb 2026, dual-agent Gemini 3 Pro + Claude Opus 4.6).
+
+### Critical Fixes
+
+| Issue | Fix |
+|-------|-----|
+| Printful HTTP inside `pg.tx()` | 3-phase saga pattern (separate DB tx from HTTP) |
+| Hidden/earned items purchasable via direct API | Reject `type: 'earned'` + hidden free items in `shop-purchase.ts` |
+| Free shipping bypass (`shippingCost: 0`) | Always verify against Printful rates, fail closed on API error |
+| `FOR UPDATE` on non-existent rows is a no-op (merch race) | Unique partial index `shop_orders(user_id, item_id) WHERE status active` |
+| `limitDays` no upper bound (DoS) | `.max(365).int().min(1)` |
+| Shipping address fields unbounded | `.max()` limits + country regex |
+| `shop_orders` had no RLS | Migration: RLS + user/service policies |
+
+### Deferred Items (Known Trade-offs)
+
+- Rate limiting on shop endpoints — systemic infrastructure concern
+- Floating-point mana in bonding curve — pre-existing
+- TOCTOU on achievement requirements — documented: requirement checked pre-tx, could change between check and purchase. Accepted because the gap is small and the consequence (slightly wrong achievement state) is low-impact.
+
+---
+
+## Known Limitations
+
+| Area | Issue | Possible Solution |
+|------|-------|-------------------|
+| Browse/explore/feed | Contract cards only have `creatorId`, not entitlements | Use `useDisplayUserById(creatorId)` |
+| Notifications | Notification data doesn't include entitlements | Accept limitation or modify API |
+| System badges | Staff/mod/MVP badges not controlled by display config | Future: unify with display config |
+
+---
+
+## Future: Merch Background (Planned)
+
+A hidden hovercard background that auto-appears when a user buys any merch item. Shows "bad drawings" of merch items as a fun Easter egg.
+
+**Files to create/modify:**
+- `common/src/shop/items.ts` — add `hovercard-merch-bg` item definition (hidden, earned)
+- `backend/api/src/shop-purchase-merch.ts` — auto-grant entitlement on successful merch purchase
+- `web/components/user/user-hovercard.tsx` — render merch background when active
+
+---
+
 ## Removed/Skipped Features
 
 Features that were considered but intentionally not implemented. Documented here for future reference.

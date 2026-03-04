@@ -1203,6 +1203,8 @@ export const getSeasonalAvailabilityText = (item: ShopItem): string | null => {
   return `Available ${months[startDate.getMonth()]} ${startDate.getDate()} - ${months[endDate.getMonth()]} ${endDate.getDate()}`
 }
 
+export const PRINTFUL_API_URL = 'https://api.printful.com'
+
 // Entitlement ID for charity champion trophy
 export const CHARITY_CHAMPION_ENTITLEMENT_ID = 'charity-champion-trophy'
 

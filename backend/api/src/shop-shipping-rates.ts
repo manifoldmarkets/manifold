@@ -1,7 +1,5 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { SHOP_ITEMS } from 'common/shop/items'
-
-const PRINTFUL_API_URL = 'https://api.printful.com'
+import { SHOP_ITEMS, PRINTFUL_API_URL } from 'common/shop/items'
 
 export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
   { variantId, address },
