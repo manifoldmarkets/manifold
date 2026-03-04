@@ -40,6 +40,19 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     (r) => convertPost(r)
   )
 
+  // Skip if already superbanned (has all three blocking ban types active)
+  const activeBanCount = await pg.one<{ count: number }>(
+    `select count(distinct ban_type)::int as count from user_bans
+     where user_id = $1
+       and ban_type in ('posting', 'trading', 'marketControl')
+       and (expires_at is null or expires_at > now())`,
+    [userId]
+  )
+  if (activeBanCount.count >= 3) {
+    log(`User ${userId} already has all bans active, skipping superban.`)
+    return
+  }
+
   if (contracts.length > 5) {
     throw new APIError(
       400,
@@ -159,6 +172,37 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
   } catch (error) {
     log.error('Error bulk hiding post comments:', { error })
   }
+
+  // Fire-and-forget: clean up spam notifications in the background.
+  // Original CTE scoped to affected users (followers + contract creators).
+  // Not awaited so the superban returns immediately while this runs.
+  const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
+  pg.result(
+    `with affected_users as (
+      select distinct follow_id as uid
+      from contract_follows
+      where contract_id in (
+        select distinct contract_id from contract_comments where user_id = $1
+      )
+      union
+      select distinct creator_id as uid
+      from contracts
+      where id in (
+        select distinct contract_id from contract_comments where user_id = $1
+      )
+    )
+    delete from user_notifications
+    where user_id in (select uid from affected_users)
+      and (data->>'createdTime')::bigint > $3
+      and data->>'sourceUserUsername' = $2`,
+    [userId, creator.username, threeDaysAgo]
+  )
+    .then(({ rowCount }) => {
+      log(`Deleted ${rowCount} spam notifications for user ${userId}.`)
+    })
+    .catch((error) => {
+      log.error('Error cleaning up spam notifications:', { error })
+    })
 
   if (posts.length > 0) {
     log(`Found ${posts.length} posts to unlist.`)
