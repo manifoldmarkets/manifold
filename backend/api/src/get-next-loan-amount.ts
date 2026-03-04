@@ -22,19 +22,22 @@ import {
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { type Row } from 'common/supabase/utils'
 
 export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   userId,
 }) => {
   const pg = createSupabaseDirectClient()
 
-  const portfolioMetric = await pg.oneOrNone(
+  const portfolioMetricRow = await pg.oneOrNone<Row<'user_portfolio_history_latest'>>(
     `select *
      from user_portfolio_history_latest
      where user_id = $1`,
-    [userId],
-    convertPortfolioHistory
+    [userId]
   )
+  const portfolioMetric = portfolioMetricRow
+    ? convertPortfolioHistory(portfolioMetricRow)
+    : null
   if (!portfolioMetric) {
     return {
       maxGeneralLoan: 0,

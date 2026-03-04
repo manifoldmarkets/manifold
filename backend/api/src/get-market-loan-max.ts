@@ -21,6 +21,7 @@ import {
   SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
+import { type Row } from 'common/supabase/utils'
 
 export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   props,
@@ -71,13 +72,15 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   })
 
   // Get user's portfolio for total loan across all markets
-  const portfolioMetric = await pg.oneOrNone(
+  const portfolioMetricRow = await pg.oneOrNone<Row<'user_portfolio_history_latest'>>(
     `select *
      from user_portfolio_history_latest
      where user_id = $1`,
-    [auth.uid],
-    convertPortfolioHistory
+    [auth.uid]
   )
+  const portfolioMetric = portfolioMetricRow
+    ? convertPortfolioHistory(portfolioMetricRow)
+    : null
   const totalLoanAllMarkets = portfolioMetric?.loanTotal ?? 0
 
   // Get user's metrics for this contract and calculate portfolio value

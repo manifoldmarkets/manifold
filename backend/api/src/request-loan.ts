@@ -38,6 +38,7 @@ import {
   SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
+import { type Row } from 'common/supabase/utils'
 
 export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { amount, contractId, answerId: _answerId } = props
@@ -91,13 +92,15 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   // Get tier-specific max loan percent
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
 
-  const portfolioMetric = await pg.oneOrNone(
+  const portfolioMetricRow = await pg.oneOrNone<Row<'user_portfolio_history_latest'>>(
     `select *
      from user_portfolio_history_latest
      where user_id = $1`,
-    [auth.uid],
-    convertPortfolioHistory
+    [auth.uid]
   )
+  const portfolioMetric = portfolioMetricRow
+    ? convertPortfolioHistory(portfolioMetricRow)
+    : null
   if (!portfolioMetric) {
     throw new APIError(404, `No portfolio found for user ${auth.uid}`)
   }
