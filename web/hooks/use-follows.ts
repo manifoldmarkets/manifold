@@ -83,7 +83,7 @@ export const useFollowedIdsSupabase = (userId: string) => {
       .select('follow_id')
       .eq('user_id', userId)
       .then((res) => {
-        setFollowedIds(res.data?.map((r) => r.follow_id))
+        setFollowedIds(res.data?.map((r) => r.follow_id) ?? [])
       })
   }, [userId])
   return followedIds

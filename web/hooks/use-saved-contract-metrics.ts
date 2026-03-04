@@ -61,7 +61,7 @@ export const useAllSavedContractMetrics = (
       marginLoan: m.margin_loan ?? (m.data as any).marginLoan ?? 0,
     })) as ContractMetric[]
 
-    if (!metrics.length) {
+    if (!metrics?.length) {
       setSavedMetrics([])
       return
     }

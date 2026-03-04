@@ -36,10 +36,6 @@ export const DEV_CONFIG: EnvConfig = {
       '134303100058-p29jv704pu0p8helj0pqruidi4lqss9j.apps.googleusercontent.com',
   },
   adminIds: [
-    'pfKxvtgSEua5DxoIfiPXxR4fAWd2',
-    '6hHpzvRG0pMq8PNJs7RZj2qlZGn2', // Ian
-    'MxyCh2xvsFMFywwjg3Az0w4xP5B3', // Dev Manifold
-    '2cO953kN1sTBpfbhPVnTjRNqLJh2', // Sinclair
-    'TabB6gJMYEUfaNWNS8i84PvMi2r2', // Genzy (Tod)
+    '00000000-0000-0000-0000-000000000000', // Default admin (seeded by migration)
   ],
 }

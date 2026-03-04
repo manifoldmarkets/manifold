@@ -152,6 +152,18 @@ export const API = (_apiTypeCheck = {
       initialIpAddress?: string
     },
   },
+  'admin-create-bot-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        username: z.string().min(1).max(25),
+        displayName: z.string().min(1).max(30),
+      })
+      .strict(),
+    returns: {} as { userId: string; username: string; apiKey: string },
+  },
   'admin-delete-user': {
     method: 'POST',
     visibility: 'undocumented',

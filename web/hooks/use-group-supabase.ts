@@ -47,7 +47,7 @@ export function useMemberGroupIdsOnLoad(
       .select('group_id')
       .eq('member_id', userId)
       .then((result) => {
-        if (result) {
+        if (result?.data) {
           const groupIds = (result as any).data.map((row: any) => row.group_id)
           setGroupIds(groupIds)
         }

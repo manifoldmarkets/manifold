@@ -111,6 +111,40 @@ echo ""
 echo "==> Phase 10: Seed required data"
 $PSQL -c "INSERT INTO system_trading_status (status, token) VALUES (true, 'MANA'), (true, 'CASH') ON CONFLICT (token) DO NOTHING;" 2>&1 | grep -iE "^(psql|ERROR)" || true
 
+if [ -n "${ADMIN_API_KEY:-}" ]; then
+  echo "  Seeding admin user..."
+  $PSQL -c "
+    INSERT INTO users (id, name, username, data) VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      'Admin',
+      'Admin',
+      jsonb_build_object(
+        'id', '00000000-0000-0000-0000-000000000000',
+        'shouldShowWelcome', false,
+        'streakForgiveness', 0,
+        'creatorTraders', jsonb_build_object('daily', 0, 'weekly', 0, 'monthly', 0, 'allTime', 0),
+        'signupBonusPaid', 0
+      )
+    ) ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO private_users (id, data) VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      jsonb_build_object(
+        'id', '00000000-0000-0000-0000-000000000000',
+        'email', 'admin@bot.internal',
+        'apiKey', '$ADMIN_API_KEY',
+        'notificationPreferences', '{}'::jsonb,
+        'blockedUserIds', '[]'::jsonb,
+        'blockedByUserIds', '[]'::jsonb,
+        'blockedContractIds', '[]'::jsonb,
+        'blockedGroupSlugs', '[]'::jsonb
+      )
+    ) ON CONFLICT (id) DO NOTHING;
+  " 2>&1 | grep -iE "^(psql|ERROR)" || true
+else
+  echo "  ADMIN_API_KEY not set, skipping admin user seed."
+fi
+
 echo ""
 echo "==> Phase 11: Create stub functions for optional extensions (pgvector)"
 $PSQL -c "

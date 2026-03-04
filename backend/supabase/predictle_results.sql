@@ -6,7 +6,8 @@ create table if not exists
     id serial not null,
     puzzle_number integer not null,
     user_id text not null,
-    won boolean not null
+    won boolean not null,
+    game_state jsonb
   );
 
 -- Indexes

@@ -50,7 +50,7 @@ export const getUsers: APIHandler<'users'> = async ({
       (r: { user_id: string; n: number }) => r
     ),
     pg.map(
-      `select creator_id, count(*)::int as n from contracts where creator_id = any($1) group by creator_id`,
+      `select creator_id, count(*)::int as n from contracts where creator_id = any($1) and visibility = 'public' group by creator_id`,
       [userIds],
       (r: { creator_id: string; n: number }) => r
     ),
