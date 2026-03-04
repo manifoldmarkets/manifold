@@ -3,11 +3,11 @@ name: manifold
 services:
   db:
     ports:
-      - "54322:${POSTGRES_PORT:-5432}"
+      - "${SUPABASE_DB_PORT}:${POSTGRES_PORT}"
 
   kong:
     ports:
-      - "8100:8000"
+      - "${KONG_PORT}:8000"
       - "8443:8443"
 
   studio:

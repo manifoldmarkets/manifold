@@ -82,6 +82,7 @@ jobs:
           extract FIREBASE_MESSAGING_SENDER_ID
           extract FIREBASE_APP_ID
           extract API_ENDPOINT
+          extract NEXT_PUBLIC_SUPABASE_URL
 
       - name: Build and push manifold-api image
         uses: docker/build-push-action@v6
@@ -113,7 +114,7 @@ jobs:
             FIREBASE_MESSAGING_SENDER_ID=${{ steps.build_secrets.outputs.FIREBASE_MESSAGING_SENDER_ID }}
             FIREBASE_APP_ID=${{ steps.build_secrets.outputs.FIREBASE_APP_ID }}
             API_ENDPOINT=${{ steps.build_secrets.outputs.API_ENDPOINT }}
-            NEXT_PUBLIC_SUPABASE_URL=https://${{ steps.domains.outputs.main_domain }}/db
+            NEXT_PUBLIC_SUPABASE_URL=${{ steps.build_secrets.outputs.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ steps.build_secrets.outputs.SUPABASE_ANON_KEY }}
           cache-from: type=gha,scope=manifold-web
           cache-to: type=gha,mode=max,scope=manifold-web

@@ -23,8 +23,8 @@ services:
       - log_min_messages=fatal
     environment:
       POSTGRES_HOST: /var/run/postgresql
-      PGPORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      PGPORT: ${POSTGRES_PORT}
+      POSTGRES_PORT: ${POSTGRES_PORT}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: postgres
@@ -58,7 +58,7 @@ services:
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:-supabase}
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME}
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
     volumes:
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro,z
@@ -77,16 +77,16 @@ services:
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
-      API_EXTERNAL_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
-      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT:-5432}/postgres
+      API_EXTERNAL_URL: http://localhost:8000
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/postgres
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:3000}
-      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:-}
+      GOTRUE_SITE_URL: http://localhost:3000
+      GOTRUE_URI_ALLOW_LIST: ""
       GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP:-false}
       GOTRUE_JWT_ADMIN_ROLES: service_role
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
-      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
+      GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_SECRET: ${JWT_SECRET}
       GOTRUE_EXTERNAL_EMAIL_ENABLED: true
       GOTRUE_EXTERNAL_PHONE_ENABLED: false
@@ -101,13 +101,13 @@ services:
         condition: service_healthy
     command: ["postgrest"]
     environment:
-      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT:-5432}/postgres
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/postgres
       PGRST_DB_SCHEMAS: ${PGRST_DB_SCHEMAS:-public,storage,graphql_public}
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_DB_USE_LEGACY_GUCS: "false"
       PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
-      PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY:-3600}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
 
   studio:
     image: supabase/studio:2026.01.27-sha-6aa59ff
@@ -126,8 +126,8 @@ services:
       DEFAULT_ORGANIZATION_NAME: Manifold Self-Hosted
       DEFAULT_PROJECT_NAME: Manifold
       SUPABASE_URL: http://kong:8000
-      SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_PUBLIC_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       AUTH_JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_ENABLE_LOGS: false
@@ -142,7 +142,7 @@ services:
     environment:
       PG_META_PORT: 8080
       PG_META_DB_HOST: db
-      PG_META_DB_PORT: ${POSTGRES_PORT:-5432}
+      PG_META_DB_PORT: ${POSTGRES_PORT}
       PG_META_DB_NAME: postgres
       PG_META_DB_USER: supabase_admin
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}

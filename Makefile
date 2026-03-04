@@ -27,14 +27,13 @@ dev: ## Start Supabase (Docker) + Manifold API & web (local yarn)
 	@-lsof -ti :3000 | xargs kill 2>/dev/null; rm -f web/.next/dev/lock; true
 	@echo ""
 	@echo "Starting Manifold API + Web locally..."
-	@echo "  API:    http://localhost:8088"
-	@echo "  Web:    http://localhost:3000"
-	@echo "  Studio: http://localhost:3002"
-	@echo "  Kong:   http://localhost:8000"
-	@echo "  DB:     localhost:54322"
-	@echo ""
-	$(DOP) bash -c 'SUPABASE_DB_PORT=54322 \
-		npx concurrently \
+	@$(DOP) bash -c 'echo "  API:    http://localhost:8088" && \
+		echo "  Web:    http://localhost:3000" && \
+		echo "  Studio: http://localhost:3002" && \
+		echo "  Kong:   $$NEXT_PUBLIC_SUPABASE_URL" && \
+		echo "  DB:     localhost:$$SUPABASE_DB_PORT" && \
+		echo ""'
+	$(DOP) bash -c 'npx concurrently \
 			-n API,NEXT,TS \
 			-c white,magenta,cyan \
 			"PORT=8088 yarn --cwd=backend/api dev" \
@@ -46,16 +45,15 @@ dev-db: ## Start only Supabase (Docker)
 	$(COMPOSE_DEV) up -d
 	@echo ""
 	@echo "Supabase services starting..."
-	@echo "  Studio: http://localhost:3002"
-	@echo "  Kong:   http://localhost:8000"
-	@echo "  DB:     localhost:54322"
+	@$(DOP) bash -c 'echo "  Studio: http://localhost:3002" && \
+		echo "  Kong:   $$NEXT_PUBLIC_SUPABASE_URL" && \
+		echo "  DB:     localhost:$$SUPABASE_DB_PORT"'
 
 .PHONY: dev-api
 dev-api: ## Start only Manifold API (requires Supabase running)
 	@-lsof -ti :8088 | xargs kill 2>/dev/null; true
 	$(DOP) env \
 		PORT=8088 \
-		SUPABASE_DB_PORT=54322 \
 		yarn --cwd=backend/api dev
 
 .PHONY: dev-web

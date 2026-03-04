@@ -17,7 +17,7 @@ export const adminCreateBotUser: APIHandler<'admin-create-bot-user'> = async (
 ) => {
   throwErrorIfNotAdmin(auth.uid)
 
-  const { username, displayName: rawDisplayName } = body
+  const { username, displayName: rawDisplayName, startingBalance } = body
   const displayName = cleanDisplayName(rawDisplayName)
 
   if (!/^[A-Za-z0-9_]+$/.test(username)) {
@@ -80,7 +80,7 @@ export const adminCreateBotUser: APIHandler<'admin-create-bot-user'> = async (
       fromType: 'BANK',
       toId: userId,
       toType: 'USER',
-      amount: STARTING_BALANCE,
+      amount: startingBalance ?? STARTING_BALANCE,
       token: 'M$',
       category: 'SIGNUP_BONUS',
       description: 'Signup bonus',

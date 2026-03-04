@@ -160,6 +160,7 @@ export const API = (_apiTypeCheck = {
       .object({
         username: z.string().min(1).max(25),
         displayName: z.string().min(1).max(30),
+        startingBalance: z.number().positive().optional(),
       })
       .strict(),
     returns: {} as { userId: string; username: string; apiKey: string },
