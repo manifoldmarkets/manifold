@@ -455,7 +455,7 @@ export const checkCommentNeedsResponse = async (
   try {
     const result = await promptAI<{ needsResponse: boolean; reason: string }>(
       prompt,
-      { model: aiModels.gpt5mini, parseAsJson: true }
+      { model: aiModels.flash, parseAsJson: true }
     )
     return result
   } catch (error) {

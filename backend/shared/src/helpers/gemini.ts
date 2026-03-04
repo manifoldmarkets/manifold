@@ -3,8 +3,8 @@ import { APIError } from 'common/api/utils'
 import { log } from 'shared/utils'
 
 export const models = {
-  flash: 'gemini-3-flash-preview' as const,
-  pro: 'gemini-3-pro-preview' as const,
+  flash: 'gemini-3.1-flash-lite-preview' as const,
+  pro: 'gemini-3.1-pro-preview' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
