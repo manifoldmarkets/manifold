@@ -235,6 +235,13 @@ export default function ReportsPage() {
       title: 'User Reports',
       content: renderUserReportsList(),
       queryString: 'user-reports',
+      inlineTabIcon:
+        userReportsPagination.items &&
+        userReportsPagination.items.length > 0 ? (
+          <div className="text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3">
+            {userReportsPagination.items.length}
+          </div>
+        ) : null,
     },
   ]
 
