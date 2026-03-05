@@ -50,10 +50,7 @@ function ResolutionSearchInput(props: {
       />
       <FaSearch className="text-ink-400 absolute left-2 top-2 h-4 w-4" />
       {query && (
-        <button
-          className="absolute right-2 top-1"
-          onClick={() => setQuery('')}
-        >
+        <button className="absolute right-2 top-1" onClick={() => setQuery('')}>
           <XCircleIcon className="fill-ink-500 h-6 w-6" />
         </button>
       )}
