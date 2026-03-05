@@ -1,6 +1,7 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
-import { runTxnInBetQueue } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import { betsQueue } from 'shared/helpers/fn-queue'
 import { getUser } from 'shared/utils'
 import { createCharityChampionEligibleNotification } from 'shared/create-notification'
 import { charities } from 'common/charity'
@@ -18,7 +19,8 @@ export const buyCharityGiveawayTickets: APIHandler<
     throw new APIError(404, 'Charity not found')
   }
 
-  const result = await runTransactionWithRetries(async (tx) => {
+  const result = await betsQueue.enqueueFn(
+    () => runTransactionWithRetries(async (tx) => {
     // Get giveaway and verify it's still open
     // FOR UPDATE serializes concurrent ticket purchases to ensure correct bonding curve pricing
     const giveaway = await tx.oneOrNone<{
@@ -88,7 +90,7 @@ export const buyCharityGiveawayTickets: APIHandler<
       },
     } as const
 
-    await runTxnInBetQueue(tx, txn)
+    await runTxnOutsideBetQueue(tx, txn)
 
     // Check if this purchase made the user the new #1 ticket buyer
     const topBuyer = await tx.oneOrNone<{
@@ -126,7 +128,9 @@ export const buyCharityGiveawayTickets: APIHandler<
       shouldNotifyChampion,
       totalTicketsForNotification,
     }
-  })
+  }),
+    [auth.uid]
+  )
 
   // Fire notification AFTER transaction commits to avoid duplicate sends on retry
   if (result.shouldNotifyChampion) {
