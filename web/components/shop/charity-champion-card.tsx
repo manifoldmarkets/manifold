@@ -25,7 +25,14 @@ export function CharityChampionCard(props: {
   entitlements?: UserEntitlement[]
   onEntitlementsChange?: (entitlements: UserEntitlement[]) => void
 }) {
-  const { data, isLoading = false, user, className, entitlements, onEntitlementsChange } = props
+  const {
+    data,
+    isLoading = false,
+    user,
+    className,
+    entitlements,
+    onEntitlementsChange,
+  } = props
   const [claiming, setClaiming] = useState(false)
   const [toggling, setToggling] = useState(false)
 
@@ -40,7 +47,7 @@ export function CharityChampionCard(props: {
       <Card
         className={clsx(
           'relative flex flex-col gap-3 p-4',
-          'bg-gradient-to-br from-gray-50/50 via-gray-50/30 to-gray-50/50 dark:from-gray-900/20 dark:via-gray-900/15 dark:to-gray-900/20',
+          'dark:via-gray-900/15 bg-gradient-to-br from-gray-50/50 via-gray-50/30 to-gray-50/50 dark:from-gray-900/20 dark:to-gray-900/20',
           className
         )}
       >
@@ -103,7 +110,10 @@ export function CharityChampionCard(props: {
     const newEnabled = !isTrophyEnabled
     setToggling(true)
     try {
-      const result = await api('shop-toggle', { itemId: 'charity-champion-trophy', enabled: newEnabled })
+      const result = await api('shop-toggle', {
+        itemId: 'charity-champion-trophy',
+        enabled: newEnabled,
+      })
       if (result.success) {
         toast.success(newEnabled ? 'Trophy enabled' : 'Trophy disabled')
         onEntitlementsChange?.(result.entitlements as UserEntitlement[])
@@ -119,8 +129,8 @@ export function CharityChampionCard(props: {
     <Card
       className={clsx(
         'relative flex flex-col gap-2 overflow-hidden p-4 transition-all duration-200',
-        'bg-gradient-to-br from-amber-50/50 via-yellow-50/30 to-orange-50/50 dark:from-amber-900/20 dark:via-yellow-900/15 dark:to-orange-900/20',
-        'hover:ring-2 hover:ring-amber-500 hover:shadow-xl hover:shadow-amber-200/50 hover:-translate-y-1 dark:hover:shadow-amber-900/30',
+        'dark:via-yellow-900/15 bg-gradient-to-br from-amber-50/50 via-yellow-50/30 to-orange-50/50 dark:from-amber-900/20 dark:to-orange-900/20',
+        'hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:ring-2 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
         className
       )}
     >
@@ -156,7 +166,9 @@ export function CharityChampionCard(props: {
                   </UserHovercard>
                   <FaTrophy
                     className="h-3 w-3 shrink-0 text-amber-500"
-                    style={{ filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))' }}
+                    style={{
+                      filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))',
+                    }}
                   />
                 </Row>
               </Col>
@@ -255,7 +267,7 @@ function ShopCardFloatingTrophy() {
           }
         `}
       </style>
-      <div className="absolute h-20 w-20 rounded-full bg-amber-400/15 blur-2xl" />
+      <div className="bg-amber-400/15 absolute h-20 w-20 rounded-full blur-2xl" />
       <div
         className="relative flex items-center justify-center opacity-40"
         style={{ animation: 'sc-trophy-float 6s ease-in-out infinite' }}

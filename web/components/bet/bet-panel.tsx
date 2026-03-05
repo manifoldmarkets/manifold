@@ -35,7 +35,10 @@ import {
 import { CandidateBet } from 'common/new-bet'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
-import { getCustomYesButtonText, getCustomNoButtonText } from 'common/shop/items'
+import {
+  getCustomYesButtonText,
+  getCustomNoButtonText,
+} from 'common/shop/items'
 import {
   getTierIndexFromLiquidity,
   getTierIndexFromLiquidityAndAnswers,

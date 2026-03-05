@@ -184,8 +184,7 @@ const FetchUserHovercardContent = forwardRef(
           }
         case 'trading-floor':
           return {
-            background:
-              'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
+            background: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
           }
         case 'champions-legacy':
           return {
@@ -197,7 +196,15 @@ const FetchUserHovercardContent = forwardRef(
       }
     }
 
-    const hasDarkBackground = background && ['royalty', 'mana-printer', 'oracle', 'trading-floor', 'champions-legacy'].includes(background)
+    const hasDarkBackground =
+      background &&
+      [
+        'royalty',
+        'mana-printer',
+        'oracle',
+        'trading-floor',
+        'champions-legacy',
+      ].includes(background)
 
     return user ? (
       <div
@@ -247,10 +254,10 @@ const FetchUserHovercardContent = forwardRef(
               />
             </div>
             <FollowButton
-                  userId={userId}
-                  size="xs"
-                  golden={userHasGoldenFollowButton(user?.entitlements)}
-                />
+              userId={userId}
+              size="xs"
+              golden={userHasGoldenFollowButton(user?.entitlements)}
+            />
           </Row>
 
           <StackedUserNames
@@ -285,7 +292,9 @@ const FetchUserHovercardContent = forwardRef(
             </Row>
 
             <Row className="gap-4 text-sm">
-              <div className={hasDarkBackground ? 'opacity-70' : 'text-ink-400'}>
+              <div
+                className={hasDarkBackground ? 'opacity-70' : 'text-ink-400'}
+              >
                 Joined {dayjs(user.createdTime).format('MMM DD, YYYY')}
               </div>
               {isMod && (
@@ -302,7 +311,12 @@ const FetchUserHovercardContent = forwardRef(
 
         <div className="relative z-10 py-1">
           <Row className="items-center justify-between px-4 py-2">
-            <div className={clsx('text-sm', hasDarkBackground ? 'opacity-80' : 'text-ink-700')}>
+            <div
+              className={clsx(
+                'text-sm',
+                hasDarkBackground ? 'opacity-80' : 'text-ink-700'
+              )}
+            >
               <span className="font-semibold">Last active:</span>{' '}
               {formatLastActive(lastActiveTime)}
             </div>
@@ -352,7 +366,10 @@ function TradingFloorOverlay() {
 
       {/* Upward arrow indicator - points at Follow button */}
       <g transform="translate(150, 55)" opacity="0.25">
-        <polygon points="12,0 24,16 18,16 18,28 6,28 6,16 0,16" fill="#22C55E" />
+        <polygon
+          points="12,0 24,16 18,16 18,28 6,28 6,16 0,16"
+          fill="#22C55E"
+        />
       </g>
     </svg>
   )
@@ -367,19 +384,67 @@ function ManaPrinterOverlay() {
       preserveAspectRatio="xMidYMid slice"
     >
       <defs>
-        <linearGradient id="coin-gradient-brrr" x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient
+          id="coin-gradient-brrr"
+          x1="0%"
+          y1="0%"
+          x2="0%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#C4B5FD" />
           <stop offset="100%" stopColor="#8B5CF6" />
         </linearGradient>
       </defs>
       <g opacity="0.35">
         {/* Stick figure - turning crank */}
-        <circle cx="85" cy="105" r="10" stroke="#C4B5FD" strokeWidth="2" fill="none" />
-        <line x1="85" y1="115" x2="85" y2="145" stroke="#C4B5FD" strokeWidth="2" />
-        <line x1="85" y1="145" x2="75" y2="168" stroke="#C4B5FD" strokeWidth="2" />
-        <line x1="85" y1="145" x2="95" y2="168" stroke="#C4B5FD" strokeWidth="2" />
-        <line x1="85" y1="125" x2="118" y2="118" stroke="#C4B5FD" strokeWidth="2" />
-        <line x1="85" y1="125" x2="70" y2="138" stroke="#C4B5FD" strokeWidth="2" />
+        <circle
+          cx="85"
+          cy="105"
+          r="10"
+          stroke="#C4B5FD"
+          strokeWidth="2"
+          fill="none"
+        />
+        <line
+          x1="85"
+          y1="115"
+          x2="85"
+          y2="145"
+          stroke="#C4B5FD"
+          strokeWidth="2"
+        />
+        <line
+          x1="85"
+          y1="145"
+          x2="75"
+          y2="168"
+          stroke="#C4B5FD"
+          strokeWidth="2"
+        />
+        <line
+          x1="85"
+          y1="145"
+          x2="95"
+          y2="168"
+          stroke="#C4B5FD"
+          strokeWidth="2"
+        />
+        <line
+          x1="85"
+          y1="125"
+          x2="118"
+          y2="118"
+          stroke="#C4B5FD"
+          strokeWidth="2"
+        />
+        <line
+          x1="85"
+          y1="125"
+          x2="70"
+          y2="138"
+          stroke="#C4B5FD"
+          strokeWidth="2"
+        />
 
         {/* Machine */}
         <rect
@@ -394,32 +459,110 @@ function ManaPrinterOverlay() {
           fillOpacity="0.1"
         />
         {/* Crank wheel */}
-        <circle cx="130" cy="118" r="8" stroke="#A78BFA" strokeWidth="2" fill="none" />
-        <line x1="130" y1="118" x2="118" y2="118" stroke="#A78BFA" strokeWidth="2" />
+        <circle
+          cx="130"
+          cy="118"
+          r="8"
+          stroke="#A78BFA"
+          strokeWidth="2"
+          fill="none"
+        />
+        <line
+          x1="130"
+          y1="118"
+          x2="118"
+          y2="118"
+          stroke="#A78BFA"
+          strokeWidth="2"
+        />
         {/* Output slot */}
-        <rect x="165" y="115" width="6" height="18" fill="#A78BFA" fillOpacity="0.4" rx="1" />
+        <rect
+          x="165"
+          y="115"
+          width="6"
+          height="18"
+          fill="#A78BFA"
+          fillOpacity="0.4"
+          rx="1"
+        />
 
         {/* Mana coins with gradient and white M */}
         <g>
           {/* Coin 1 - exiting slot */}
           <g transform="translate(178, 120)">
-            <circle r="10" fill="url(#coin-gradient-brrr)" stroke="#7C3AED" strokeWidth="2" />
-            <text x="0" y="4" fontSize="12" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+            <circle
+              r="10"
+              fill="url(#coin-gradient-brrr)"
+              stroke="#7C3AED"
+              strokeWidth="2"
+            />
+            <text
+              x="0"
+              y="4"
+              fontSize="12"
+              fontWeight="bold"
+              fill="white"
+              textAnchor="middle"
+            >
+              M
+            </text>
           </g>
           {/* Coin 2 */}
           <g transform="translate(190, 145)" opacity="0.9">
-            <circle r="9" fill="url(#coin-gradient-brrr)" stroke="#7C3AED" strokeWidth="1.5" />
-            <text x="0" y="3.5" fontSize="11" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+            <circle
+              r="9"
+              fill="url(#coin-gradient-brrr)"
+              stroke="#7C3AED"
+              strokeWidth="1.5"
+            />
+            <text
+              x="0"
+              y="3.5"
+              fontSize="11"
+              fontWeight="bold"
+              fill="white"
+              textAnchor="middle"
+            >
+              M
+            </text>
           </g>
           {/* Coin 3 */}
           <g transform="translate(200, 168)" opacity="0.8">
-            <circle r="8" fill="url(#coin-gradient-brrr)" stroke="#7C3AED" strokeWidth="1.5" />
-            <text x="0" y="3" fontSize="10" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+            <circle
+              r="8"
+              fill="url(#coin-gradient-brrr)"
+              stroke="#7C3AED"
+              strokeWidth="1.5"
+            />
+            <text
+              x="0"
+              y="3"
+              fontSize="10"
+              fontWeight="bold"
+              fill="white"
+              textAnchor="middle"
+            >
+              M
+            </text>
           </g>
           {/* Coin 4 */}
           <g transform="translate(185, 188)" opacity="0.7">
-            <circle r="7" fill="url(#coin-gradient-brrr)" stroke="#7C3AED" strokeWidth="1" />
-            <text x="0" y="2.5" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+            <circle
+              r="7"
+              fill="url(#coin-gradient-brrr)"
+              stroke="#7C3AED"
+              strokeWidth="1"
+            />
+            <text
+              x="0"
+              y="2.5"
+              fontSize="9"
+              fontWeight="bold"
+              fill="white"
+              textAnchor="middle"
+            >
+              M
+            </text>
           </g>
         </g>
 
@@ -440,16 +583,29 @@ function ChampionsLegacyOverlay() {
       preserveAspectRatio="xMidYMid slice"
     >
       <defs>
-        <radialGradient id="cl-glow" cx="50%" cy="100%" r="100%" fx="50%" fy="100%">
+        <radialGradient
+          id="cl-glow"
+          cx="50%"
+          cy="100%"
+          r="100%"
+          fx="50%"
+          fy="100%"
+        >
           <stop offset="0%" stopColor="#FBBF24" stopOpacity="0.15" />
           <stop offset="60%" stopColor="#B45309" stopOpacity="0.05" />
           <stop offset="100%" stopColor="#B45309" stopOpacity="0" />
         </radialGradient>
         <symbol id="cl-trophy" viewBox="0 0 100 100">
-          <path d="M20 10h60l-5 30c0 20-15 25-25 25s-25-5-25-25l-5-30z M45 65v15h-10l-5 10h40l-5-10h-10v-15h-10z M80 15c15 0 15 25 0 25v-5c8 0 8-15 0-15v-5z M20 15c-15 0-15 25 0 25v-5c-8 0-8-15 0-15v-5z" fill="currentColor" />
+          <path
+            d="M20 10h60l-5 30c0 20-15 25-25 25s-25-5-25-25l-5-30z M45 65v15h-10l-5 10h40l-5-10h-10v-15h-10z M80 15c15 0 15 25 0 25v-5c8 0 8-15 0-15v-5z M20 15c-15 0-15 25 0 25v-5c-8 0-8-15 0-15v-5z"
+            fill="currentColor"
+          />
         </symbol>
         <symbol id="cl-star" viewBox="0 0 20 20">
-          <path d="M10 0l2.5 7.5h7.5l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z" fill="currentColor" />
+          <path
+            d="M10 0l2.5 7.5h7.5l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z"
+            fill="currentColor"
+          />
         </symbol>
       </defs>
 
@@ -457,14 +613,53 @@ function ChampionsLegacyOverlay() {
       <rect width="224" height="200" fill="url(#cl-glow)" />
 
       {/* Main trophy — centered */}
-      <use href="#cl-trophy" x="62" y="40" width="100" height="100" transform="rotate(8 112 90)" fill="#B45309" fillOpacity="0.07" />
+      <use
+        href="#cl-trophy"
+        x="62"
+        y="40"
+        width="100"
+        height="100"
+        transform="rotate(8 112 90)"
+        fill="#B45309"
+        fillOpacity="0.07"
+      />
       {/* Small accent trophies — corners, away from laurels */}
-      <use href="#cl-trophy" x="155" y="5" width="55" height="55" transform="rotate(-10 182 32)" fill="#D97706" fillOpacity="0.05" />
-      <use href="#cl-trophy" x="5" y="5" width="50" height="50" transform="rotate(12 30 30)" fill="#D97706" fillOpacity="0.04" />
+      <use
+        href="#cl-trophy"
+        x="155"
+        y="5"
+        width="55"
+        height="55"
+        transform="rotate(-10 182 32)"
+        fill="#D97706"
+        fillOpacity="0.05"
+      />
+      <use
+        href="#cl-trophy"
+        x="5"
+        y="5"
+        width="50"
+        height="50"
+        transform="rotate(12 30 30)"
+        fill="#D97706"
+        fillOpacity="0.04"
+      />
 
       {/* Laurel wreath accents — bottom corners */}
-      <path d="M15 190 C30 170 38 145 42 120" stroke="#D97706" strokeWidth="2" strokeOpacity="0.1" fill="none" />
-      <path d="M209 190 C194 170 186 145 182 120" stroke="#D97706" strokeWidth="2" strokeOpacity="0.1" fill="none" />
+      <path
+        d="M15 190 C30 170 38 145 42 120"
+        stroke="#D97706"
+        strokeWidth="2"
+        strokeOpacity="0.1"
+        fill="none"
+      />
+      <path
+        d="M209 190 C194 170 186 145 182 120"
+        stroke="#D97706"
+        strokeWidth="2"
+        strokeOpacity="0.1"
+        fill="none"
+      />
       {/* Leaves */}
       <g fill="#F59E0B" fillOpacity="0.1">
         <path d="M36 148 Q22 152 18 140 Q28 136 36 148" />
@@ -474,10 +669,42 @@ function ChampionsLegacyOverlay() {
       </g>
 
       {/* Stars/sparkles */}
-      <use href="#cl-star" x="100" y="20" width="12" height="12" fill="#FBBF24" fillOpacity="0.2" />
-      <use href="#cl-star" x="30" y="70" width="8" height="8" fill="#F59E0B" fillOpacity="0.12" />
-      <use href="#cl-star" x="185" y="80" width="6" height="6" fill="#F59E0B" fillOpacity="0.12" />
-      <use href="#cl-star" x="80" y="170" width="5" height="5" fill="#B45309" fillOpacity="0.1" />
+      <use
+        href="#cl-star"
+        x="100"
+        y="20"
+        width="12"
+        height="12"
+        fill="#FBBF24"
+        fillOpacity="0.2"
+      />
+      <use
+        href="#cl-star"
+        x="30"
+        y="70"
+        width="8"
+        height="8"
+        fill="#F59E0B"
+        fillOpacity="0.12"
+      />
+      <use
+        href="#cl-star"
+        x="185"
+        y="80"
+        width="6"
+        height="6"
+        fill="#F59E0B"
+        fillOpacity="0.12"
+      />
+      <use
+        href="#cl-star"
+        x="80"
+        y="170"
+        width="5"
+        height="5"
+        fill="#B45309"
+        fillOpacity="0.1"
+      />
     </svg>
   )
 }
@@ -485,7 +712,10 @@ function ChampionsLegacyOverlay() {
 // Floating 3D trophy for current Charity Champion holders
 function HovercardFloatingTrophy() {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center overflow-hidden" style={{ justifyContent: 'right', paddingRight: '5%' }}>
+    <div
+      className="pointer-events-none absolute inset-0 flex items-center overflow-hidden"
+      style={{ justifyContent: 'right', paddingRight: '5%' }}
+    >
       <style>
         {`
           @keyframes trophy-float {
@@ -560,8 +790,22 @@ function StarfieldOverlay() {
 
       {/* Subtle purple nebula hints */}
       <g opacity="0.08">
-        <ellipse cx="60" cy="50" rx="40" ry="25" fill="#8B5CF6" filter="blur(10px)" />
-        <ellipse cx="180" cy="120" rx="35" ry="20" fill="#6366F1" filter="blur(8px)" />
+        <ellipse
+          cx="60"
+          cy="50"
+          rx="40"
+          ry="25"
+          fill="#8B5CF6"
+          filter="blur(10px)"
+        />
+        <ellipse
+          cx="180"
+          cy="120"
+          rx="35"
+          ry="20"
+          fill="#6366F1"
+          filter="blur(8px)"
+        />
       </g>
     </svg>
   )

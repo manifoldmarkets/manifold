@@ -71,7 +71,13 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
 import { SEO } from 'web/components/SEO'
-import { Avatar, BlueCapSvg, RedCapSvg, GreenCapSvg, BlackCapSvg } from 'web/components/widgets/avatar'
+import {
+  Avatar,
+  BlueCapSvg,
+  RedCapSvg,
+  GreenCapSvg,
+  BlackCapSvg,
+} from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
@@ -139,13 +145,27 @@ type SortOption =
   | 'name-asc'
   | 'name-desc'
 
-type FilterOption = 'all' | 'hats' | 'avatar' | 'hovercard' | 'buttons' | 'other' | 'merch' | 'seasonal'
+type FilterOption =
+  | 'all'
+  | 'hats'
+  | 'avatar'
+  | 'hovercard'
+  | 'buttons'
+  | 'other'
+  | 'merch'
+  | 'seasonal'
 
-const FILTER_CONFIG: Record<FilterOption, { label: string; slots: string[]; special?: boolean }> = {
+const FILTER_CONFIG: Record<
+  FilterOption,
+  { label: string; slots: string[]; special?: boolean }
+> = {
   all: { label: 'All', slots: [] },
   hats: { label: 'Hats', slots: ['hat'] },
   avatar: { label: 'Avatar', slots: ['profile-border', 'profile-accessory'] },
-  hovercard: { label: 'Hovercard', slots: ['hovercard-background', 'hovercard-border', 'unique'] },
+  hovercard: {
+    label: 'Hovercard',
+    slots: ['hovercard-background', 'hovercard-border', 'unique'],
+  },
   buttons: { label: 'Buttons', slots: ['button-yes', 'button-no'] },
   other: { label: 'Other', slots: ['consumable', 'badge'] },
   merch: { label: 'Merch', slots: [], special: true },
@@ -154,7 +174,8 @@ const FILTER_CONFIG: Record<FilterOption, { label: string; slots: string[]; spec
 
 const filterItems = (items: ShopItem[], filter: FilterOption): ShopItem[] => {
   if (filter === 'all') return items
-  if (filter === 'seasonal') return items.filter((item) => item.seasonalAvailability)
+  if (filter === 'seasonal')
+    return items.filter((item) => item.seasonalAvailability)
   if (filter === 'merch') return [] // merch handled by separate section
   const allowedSlots = FILTER_CONFIG[filter].slots
   return items.filter((item) => allowedSlots.includes(item.slot))
@@ -173,12 +194,15 @@ const hasVisibleItems = (
   }
   if (filter === 'seasonal') {
     return allItems.some(
-      (item) => item.seasonalAvailability && (visibleItemIds.has(item.id) || showHidden)
+      (item) =>
+        item.seasonalAvailability && (visibleItemIds.has(item.id) || showHidden)
     )
   }
   const allowedSlots = FILTER_CONFIG[filter].slots
   return allItems.some(
-    (item) => allowedSlots.includes(item.slot) && (visibleItemIds.has(item.id) || showHidden)
+    (item) =>
+      allowedSlots.includes(item.slot) &&
+      (visibleItemIds.has(item.id) || showHidden)
   )
 }
 
@@ -287,10 +311,13 @@ export default function ShopPage() {
   const visibleShopItemIds = new Set(
     SHOP_ITEMS.filter(
       (item) =>
-        !SUPPORTER_ENTITLEMENT_IDS.includes(item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]) &&
+        !SUPPORTER_ENTITLEMENT_IDS.includes(
+          item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+        ) &&
         item.id !== 'charity-champion-trophy' &&
         item.category !== 'merch' &&
-        (!item.hidden || ownedItemIds.has(getEntitlementId(item)) ||
+        (!item.hidden ||
+          ownedItemIds.has(getEntitlementId(item)) ||
           (item.seasonalAvailability && isSeasonalItemAvailable(item)))
     ).map((item) => item.id)
   )
@@ -473,7 +500,6 @@ export default function ShopPage() {
         }
       }
     }
-
   }
 
   // Callback for metadata-only updates (no confetti, used by style pickers)
@@ -499,7 +525,6 @@ export default function ShopPage() {
 
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
-
 
   return (
     <Page trackPageView="shop page" className="p-3">
@@ -546,9 +571,7 @@ export default function ShopPage() {
 
         {/* Header and sort dropdown */}
         <Row className="mb-2 mt-8 items-center justify-between">
-          <span className="text-lg font-semibold">
-            Cosmetics & goods
-          </span>
+          <span className="text-lg font-semibold">Cosmetics & goods</span>
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value as SortOption)}
@@ -565,7 +588,15 @@ export default function ShopPage() {
         {/* Category filter pills — only show tabs that have visible items */}
         <Row className="mb-4 flex-wrap gap-2">
           {(Object.keys(FILTER_CONFIG) as FilterOption[]).map((filter) => {
-            if (!hasVisibleItems(filter, SHOP_ITEMS, visibleShopItemIds, showHidden)) return null
+            if (
+              !hasVisibleItems(
+                filter,
+                SHOP_ITEMS,
+                visibleShopItemIds,
+                showHidden
+              )
+            )
+              return null
             const isSeasonal = filter === 'seasonal'
             const isActive = filterOption === filter
             return (
@@ -601,8 +632,11 @@ export default function ShopPage() {
                     ) &&
                     item.id !== 'charity-champion-trophy' &&
                     item.category !== 'merch' &&
-                    (!item.hidden || showHidden || ownedItemIds.has(getEntitlementId(item)) ||
-                      (item.seasonalAvailability && isSeasonalItemAvailable(item)))
+                    (!item.hidden ||
+                      showHidden ||
+                      ownedItemIds.has(getEntitlementId(item)) ||
+                      (item.seasonalAvailability &&
+                        isSeasonalItemAvailable(item)))
                 ),
                 filterOption
               ),
@@ -610,7 +644,8 @@ export default function ShopPage() {
             ).map((item) => {
               const entitlementId = getEntitlementId(item)
               const entitlement = effectiveEntitlements.find(
-                (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
+                (e) =>
+                  e.entitlementId === entitlementId && isEntitlementOwned(e)
               )
               return (
                 <ShopItemCard
@@ -634,26 +669,36 @@ export default function ShopPage() {
 
         {/* Merch section — shown on 'all' and 'merch' filters */}
         {(filterOption === 'all' || filterOption === 'merch') &&
-          getMerchItems().filter((item) => !item.hidden || showHidden).length > 0 && (
-          <>
-            {filterOption !== 'merch' && (
-              <Row className="mb-4 mt-8 items-center gap-2">
-                <span className="text-lg font-semibold">Merch</span>
-                <span className="text-ink-500 text-sm">(Ships worldwide)</span>
-              </Row>
-            )}
-            <div className={clsx(
-              'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2',
-              filterOption === 'merch' && 'mt-0'
-            )}>
-              {getMerchItems()
-                .filter((item) => !item.hidden || showHidden)
-                .map((item) => (
-                  <MerchItemCard key={item.id} item={item} user={user} allEntitlements={effectiveEntitlements} />
-                ))}
-            </div>
-          </>
-        )}
+          getMerchItems().filter((item) => !item.hidden || showHidden).length >
+            0 && (
+            <>
+              {filterOption !== 'merch' && (
+                <Row className="mb-4 mt-8 items-center gap-2">
+                  <span className="text-lg font-semibold">Merch</span>
+                  <span className="text-ink-500 text-sm">
+                    (Ships worldwide)
+                  </span>
+                </Row>
+              )}
+              <div
+                className={clsx(
+                  'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2',
+                  filterOption === 'merch' && 'mt-0'
+                )}
+              >
+                {getMerchItems()
+                  .filter((item) => !item.hidden || showHidden)
+                  .map((item) => (
+                    <MerchItemCard
+                      key={item.id}
+                      item={item}
+                      user={user}
+                      allEntitlements={effectiveEntitlements}
+                    />
+                  ))}
+              </div>
+            </>
+          )}
 
         {/* Charity giveaway and champion cards */}
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -743,19 +788,24 @@ function MerchItemCard(props: {
 }) {
   const { item, user, allEntitlements } = props
   const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
-  const discountedPrice = shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
+  const discountedPrice =
+    shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
   const hasDiscount = shopDiscount > 0
   const singleVariant = (item.variants ?? []).length === 1
   const [selectedSize, setSelectedSize] = useState<string | null>(
-    singleVariant ? (item.variants![0].size) : null
+    singleVariant ? item.variants![0].size : null
   )
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
   const [fetchingRates, setFetchingRates] = useState(false)
-  const [shippingRates, setShippingRates] = useState<ShippingRate[] | null>(null)
-  const [selectedShipping, setSelectedShipping] = useState<ShippingRate | null>(null)
+  const [shippingRates, setShippingRates] = useState<ShippingRate[] | null>(
+    null
+  )
+  const [selectedShipping, setSelectedShipping] = useState<ShippingRate | null>(
+    null
+  )
   const [shippingInfo, setShippingInfo] = useState({
     name: '',
     address1: '',
@@ -850,7 +900,15 @@ function MerchItemCard(props: {
       setSelectedSize(null)
       setShippingRates(null)
       setSelectedShipping(null)
-      setShippingInfo({ name: '', address1: '', address2: '', city: '', state: '', zip: '', country: 'US' })
+      setShippingInfo({
+        name: '',
+        address1: '',
+        address2: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: 'US',
+      })
     } catch (e: any) {
       toast.error(e.message || 'Failed to place order')
       setShowConfirmOrderModal(false)
@@ -859,11 +917,12 @@ function MerchItemCard(props: {
     }
   }
 
-  const canGetRates = shippingInfo.address1 && shippingInfo.city && shippingInfo.zip
+  const canGetRates =
+    shippingInfo.address1 && shippingInfo.city && shippingInfo.zip
 
   return (
     <>
-      <Card className="group relative flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:ring-2 hover:ring-indigo-500 hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30">
+      <Card className="group relative flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30">
         {item.hidden && (
           <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
             Hidden
@@ -885,7 +944,7 @@ function MerchItemCard(props: {
                 className={clsx(
                   'h-2 w-2 rounded-full transition-all',
                   currentImageIndex === idx
-                    ? 'bg-indigo-500 w-4'
+                    ? 'w-4 bg-indigo-500'
                     : 'bg-white/70 hover:bg-white'
                 )}
               />
@@ -894,14 +953,22 @@ function MerchItemCard(props: {
           {images.length > 1 && (
             <>
               <button
-                onClick={() => setCurrentImageIndex((i) => i === 0 ? images.length - 1 : i - 1)}
-                className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity group-hover:opacity-100 hover:bg-white"
+                onClick={() =>
+                  setCurrentImageIndex((i) =>
+                    i === 0 ? images.length - 1 : i - 1
+                  )
+                }
+                className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
               >
                 <ChevronLeftIcon className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setCurrentImageIndex((i) => i === images.length - 1 ? 0 : i + 1)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity group-hover:opacity-100 hover:bg-white"
+                onClick={() =>
+                  setCurrentImageIndex((i) =>
+                    i === images.length - 1 ? 0 : i + 1
+                  )
+                }
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </button>
@@ -916,7 +983,9 @@ function MerchItemCard(props: {
         {/* Size selector (hidden for single-variant items like one-size caps) */}
         {!singleVariant && (
           <Col className="gap-2">
-            <span className="text-ink-600 text-sm font-medium">Select size:</span>
+            <span className="text-ink-600 text-sm font-medium">
+              Select size:
+            </span>
             <Row className="flex-wrap gap-2">
               {variants.map((variant) => (
                 <button
@@ -937,10 +1006,12 @@ function MerchItemCard(props: {
         )}
 
         {/* Price and buy button */}
-        <Row className="mt-auto items-center justify-between border-t border-ink-200 pt-3">
+        <Row className="border-ink-200 mt-auto items-center justify-between border-t pt-3">
           <Col>
             <div className="text-lg font-bold text-teal-600">
-              {hasDiscount ? formatMoney(discountedPrice) : formatMoney(item.price)}
+              {hasDiscount
+                ? formatMoney(discountedPrice)
+                : formatMoney(item.price)}
               {hasDiscount && (
                 <span className="ml-1 text-xs text-green-600">
                   ({Math.round(shopDiscount * 100)}% off)
@@ -948,9 +1019,13 @@ function MerchItemCard(props: {
               )}
             </div>
             {hasDiscount && (
-              <span className="text-ink-400 text-xs line-through">{formatMoney(item.price)}</span>
+              <span className="text-ink-400 text-xs line-through">
+                {formatMoney(item.price)}
+              </span>
             )}
-            <span className="text-ink-500 text-xs">+ shipping (paid in mana)</span>
+            <span className="text-ink-500 text-xs">
+              + shipping (paid in mana)
+            </span>
             {item.limit === 'one-time' && (
               <Row className="text-ink-500 mt-0.5 items-center gap-1 text-xs">
                 <span>Limit 1 per customer</span>
@@ -985,27 +1060,42 @@ function MerchItemCard(props: {
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
-            You're ordering: <strong>{item.name}</strong>{!singleVariant && <> (Size: {selectedSize})</>}
+            You're ordering: <strong>{item.name}</strong>
+            {!singleVariant && <> (Size: {selectedSize})</>}
           </p>
           <p className="text-ink-600">
             Price:{' '}
-            <span className="font-semibold text-teal-600">{formatMoney(discountedPrice)}</span>
-            {hasDiscount && <span className="text-ink-400 ml-1 text-sm line-through">{formatMoney(item.price)}</span>}
+            <span className="font-semibold text-teal-600">
+              {formatMoney(discountedPrice)}
+            </span>
+            {hasDiscount && (
+              <span className="text-ink-400 ml-1 text-sm line-through">
+                {formatMoney(item.price)}
+              </span>
+            )}
             <span className="text-ink-500 text-sm"> + shipping</span>
           </p>
-          <p className="text-ink-500 text-sm">All costs (item + shipping) are paid in mana.</p>
+          <p className="text-ink-500 text-sm">
+            All costs (item + shipping) are paid in mana.
+          </p>
 
           {/* Size Guide (only for multi-size items like t-shirts) */}
           {!singleVariant && (
             <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
-              <div className="text-sm font-semibold">Size Guide (Gildan 64000)</div>
+              <div className="text-sm font-semibold">
+                Size Guide (Gildan 64000)
+              </div>
               <div className="overflow-x-auto">
                 <table className="text-ink-600 w-full text-xs">
                   <thead>
-                    <tr className="border-b border-ink-200">
+                    <tr className="border-ink-200 border-b">
                       <th className="py-1 pr-3 text-left font-medium">Size</th>
-                      <th className="px-2 py-1 text-center font-medium">Chest (in)</th>
-                      <th className="px-2 py-1 text-center font-medium">Length (in)</th>
+                      <th className="px-2 py-1 text-center font-medium">
+                        Chest (in)
+                      </th>
+                      <th className="px-2 py-1 text-center font-medium">
+                        Length (in)
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1017,7 +1107,14 @@ function MerchItemCard(props: {
                       { size: '2XL', chest: '50-52', length: '32' },
                       { size: '3XL', chest: '54-56', length: '33' },
                     ].map((row) => (
-                      <tr key={row.size} className={selectedSize === row.size ? 'bg-indigo-50 dark:bg-indigo-950/30' : ''}>
+                      <tr
+                        key={row.size}
+                        className={
+                          selectedSize === row.size
+                            ? 'bg-indigo-50 dark:bg-indigo-950/30'
+                            : ''
+                        }
+                      >
                         <td className="py-1 pr-3 font-medium">{row.size}</td>
                         <td className="px-2 py-1 text-center">{row.chest}</td>
                         <td className="px-2 py-1 text-center">{row.length}</td>
@@ -1026,19 +1123,27 @@ function MerchItemCard(props: {
                   </tbody>
                 </table>
               </div>
-              <p className="text-ink-500 text-xs">Measurements are approximate. When in doubt, size up!</p>
+              <p className="text-ink-500 text-xs">
+                Measurements are approximate. When in doubt, size up!
+              </p>
             </Col>
           )}
 
           <div className="rounded-lg bg-blue-50 p-3 text-sm dark:bg-blue-950/30">
             <p className="text-blue-700 dark:text-blue-300">
-              After confirming, you'll enter your shipping address. Your address is sent directly to our fulfillment partner and <strong>not stored</strong> by Manifold.
+              After confirming, you'll enter your shipping address. Your address
+              is sent directly to our fulfillment partner and{' '}
+              <strong>not stored</strong> by Manifold.
             </p>
           </div>
 
           <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>Cancel</Button>
-            <Button color="indigo" onClick={handleProceedToShipping}>Continue to Shipping</Button>
+            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>
+              Cancel
+            </Button>
+            <Button color="indigo" onClick={handleProceedToShipping}>
+              Continue to Shipping
+            </Button>
           </Row>
         </Col>
       </Modal>
@@ -1048,44 +1153,101 @@ function MerchItemCard(props: {
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Shipping Address</div>
           <p className="text-ink-500 text-sm">
-            Enter your shipping details. This info is sent directly to our fulfillment partner and not stored by Manifold.
+            Enter your shipping details. This info is sent directly to our
+            fulfillment partner and not stored by Manifold.
           </p>
 
           <Col className="gap-3">
-            <input type="text" placeholder="Full name" value={shippingInfo.name}
-              onChange={(e) => setShippingInfo((s) => ({ ...s, name: e.target.value }))}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-            <input type="text" placeholder="Street address" value={shippingInfo.address1}
-              onChange={(e) => setShippingInfo((s) => ({ ...s, address1: e.target.value }))}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-            <input type="text" placeholder="Apt, suite, etc. (optional)" value={shippingInfo.address2}
-              onChange={(e) => setShippingInfo((s) => ({ ...s, address2: e.target.value }))}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-            <input type="text" placeholder="City" value={shippingInfo.city}
-              onChange={(e) => setShippingInfo((s) => ({ ...s, city: e.target.value }))}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden" />
+            <input
+              type="text"
+              placeholder="Full name"
+              value={shippingInfo.name}
+              onChange={(e) =>
+                setShippingInfo((s) => ({ ...s, name: e.target.value }))
+              }
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            <input
+              type="text"
+              placeholder="Street address"
+              value={shippingInfo.address1}
+              onChange={(e) =>
+                setShippingInfo((s) => ({ ...s, address1: e.target.value }))
+              }
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            <input
+              type="text"
+              placeholder="Apt, suite, etc. (optional)"
+              value={shippingInfo.address2}
+              onChange={(e) =>
+                setShippingInfo((s) => ({ ...s, address2: e.target.value }))
+              }
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            <input
+              type="text"
+              placeholder="City"
+              value={shippingInfo.city}
+              onChange={(e) =>
+                setShippingInfo((s) => ({ ...s, city: e.target.value }))
+              }
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
+            />
             <Row className="w-full gap-3">
-              <input type="text" placeholder="City" value={shippingInfo.city}
-                onChange={(e) => setShippingInfo((s) => ({ ...s, city: e.target.value }))}
-                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block" />
-              <input type="text" placeholder="State" value={shippingInfo.state}
-                onChange={(e) => setShippingInfo((s) => ({ ...s, state: e.target.value }))}
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none" />
-              <input type="text" placeholder="ZIP" value={shippingInfo.zip}
-                onChange={(e) => setShippingInfo((s) => ({ ...s, zip: e.target.value }))}
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none" />
+              <input
+                type="text"
+                placeholder="City"
+                value={shippingInfo.city}
+                onChange={(e) =>
+                  setShippingInfo((s) => ({ ...s, city: e.target.value }))
+                }
+                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
+              />
+              <input
+                type="text"
+                placeholder="State"
+                value={shippingInfo.state}
+                onChange={(e) =>
+                  setShippingInfo((s) => ({ ...s, state: e.target.value }))
+                }
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+              />
+              <input
+                type="text"
+                placeholder="ZIP"
+                value={shippingInfo.zip}
+                onChange={(e) =>
+                  setShippingInfo((s) => ({ ...s, zip: e.target.value }))
+                }
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+              />
             </Row>
-            <select value={shippingInfo.country}
-              onChange={(e) => { setShippingInfo((s) => ({ ...s, country: e.target.value })); setShippingRates(null); setSelectedShipping(null) }}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <select
+              value={shippingInfo.country}
+              onChange={(e) => {
+                setShippingInfo((s) => ({ ...s, country: e.target.value }))
+                setShippingRates(null)
+                setSelectedShipping(null)
+              }}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
               {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.name}</option>
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
               ))}
             </select>
           </Col>
 
           {!shippingRates && (
-            <Button color="indigo-outline" onClick={handleGetShippingRates} loading={fetchingRates} disabled={!canGetRates} className="w-full">
+            <Button
+              color="indigo-outline"
+              onClick={handleGetShippingRates}
+              loading={fetchingRates}
+              disabled={!canGetRates}
+              className="w-full"
+            >
               {fetchingRates ? 'Getting rates...' : 'Get Shipping Rates'}
             </Button>
           )}
@@ -1093,19 +1255,24 @@ function MerchItemCard(props: {
           {shippingRates && shippingRates.length > 0 && (
             <Col className="gap-2">
               <Row className="items-center justify-between">
-                <div className="text-sm font-medium">Select shipping option:</div>
+                <div className="text-sm font-medium">
+                  Select shipping option:
+                </div>
                 <span className="text-ink-500 text-xs">Prices in mana</span>
               </Row>
               {shippingRates.map((rate) => {
                 const shippingMana = Math.round(parseFloat(rate.rate) * 100)
                 return (
-                  <button key={rate.id} onClick={() => setSelectedShipping(rate)}
+                  <button
+                    key={rate.id}
+                    onClick={() => setSelectedShipping(rate)}
                     className={clsx(
                       'flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all',
                       selectedShipping?.id === rate.id
                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
                         : 'border-ink-200 hover:border-ink-400'
-                    )}>
+                    )}
+                  >
                     <div>
                       <div className="font-medium">{rate.name}</div>
                       <div className="text-ink-500 text-xs">
@@ -1114,7 +1281,9 @@ function MerchItemCard(props: {
                           : `${rate.minDeliveryDays}-${rate.maxDeliveryDays} business days`}
                       </div>
                     </div>
-                    <div className="font-semibold text-teal-600">{formatMoney(shippingMana)}</div>
+                    <div className="font-semibold text-teal-600">
+                      {formatMoney(shippingMana)}
+                    </div>
                   </button>
                 )
               })}
@@ -1123,31 +1292,46 @@ function MerchItemCard(props: {
 
           {shippingRates && shippingRates.length === 0 && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
-              No shipping options available for this address. Please check your address details.
+              No shipping options available for this address. Please check your
+              address details.
             </div>
           )}
 
           <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
             <Row className="items-start gap-2">
               <span className="text-amber-700 dark:text-amber-300">
-                Please double-check your address. Orders ship directly from our partner and cannot be easily modified after submission.
+                Please double-check your address. Orders ship directly from our
+                partner and cannot be easily modified after submission.
               </span>
             </Row>
           </div>
 
           <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowShippingModal(false)}>Back</Button>
-            <Button color="indigo" disabled={!shippingInfo.name || !selectedShipping}
-              onClick={() => setShowConfirmOrderModal(true)}>
+            <Button color="gray" onClick={() => setShowShippingModal(false)}>
+              Back
+            </Button>
+            <Button
+              color="indigo"
+              disabled={!shippingInfo.name || !selectedShipping}
+              onClick={() => setShowConfirmOrderModal(true)}
+            >
               Place Order ({formatMoney(discountedPrice)}
-              {selectedShipping && ` + ${formatMoney(Math.round(parseFloat(selectedShipping.rate) * 100))} shipping`})
+              {selectedShipping &&
+                ` + ${formatMoney(
+                  Math.round(parseFloat(selectedShipping.rate) * 100)
+                )} shipping`}
+              )
             </Button>
           </Row>
         </Col>
       </Modal>
 
       {/* Final confirmation modal */}
-      <Modal open={showConfirmOrderModal} setOpen={setShowConfirmOrderModal} size="md">
+      <Modal
+        open={showConfirmOrderModal}
+        setOpen={setShowConfirmOrderModal}
+        size="md"
+      >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Your Order</div>
           <Col className="bg-canvas-50 gap-3 rounded-lg p-4 text-sm">
@@ -1163,10 +1347,14 @@ function MerchItemCard(props: {
             )}
             <Row className="justify-between">
               <span className="text-ink-500">Shipping to:</span>
-              <span className="font-medium text-right">
-                {shippingInfo.name}<br />
-                {shippingInfo.address1}{shippingInfo.address2 && `, ${shippingInfo.address2}`}<br />
-                {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zip}<br />
+              <span className="text-right font-medium">
+                {shippingInfo.name}
+                <br />
+                {shippingInfo.address1}
+                {shippingInfo.address2 && `, ${shippingInfo.address2}`}
+                <br />
+                {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zip}
+                <br />
                 {COUNTRIES.find((c) => c.code === shippingInfo.country)?.name}
               </span>
             </Row>
@@ -1174,9 +1362,12 @@ function MerchItemCard(props: {
               <Row className="justify-between">
                 <span className="text-ink-500">Shipping method:</span>
                 <span className="font-medium">
-                  {selectedShipping.name} ({selectedShipping.minDeliveryDays === selectedShipping.maxDeliveryDays
+                  {selectedShipping.name} (
+                  {selectedShipping.minDeliveryDays ===
+                  selectedShipping.maxDeliveryDays
                     ? `${selectedShipping.minDeliveryDays} days`
-                    : `${selectedShipping.minDeliveryDays}-${selectedShipping.maxDeliveryDays} days`})
+                    : `${selectedShipping.minDeliveryDays}-${selectedShipping.maxDeliveryDays} days`}
+                  )
                 </span>
               </Row>
             )}
@@ -1186,20 +1377,31 @@ function MerchItemCard(props: {
               <span className="font-medium">
                 {formatMoney(discountedPrice)}
                 {hasDiscount && (
-                  <span className="text-ink-400 ml-1 text-xs line-through">{formatMoney(item.price)}</span>
+                  <span className="text-ink-400 ml-1 text-xs line-through">
+                    {formatMoney(item.price)}
+                  </span>
                 )}
               </span>
             </Row>
             {selectedShipping && (
               <Row className="justify-between">
                 <span className="text-ink-500">Shipping:</span>
-                <span className="font-medium">{formatMoney(Math.round(parseFloat(selectedShipping.rate) * 100))}</span>
+                <span className="font-medium">
+                  {formatMoney(
+                    Math.round(parseFloat(selectedShipping.rate) * 100)
+                  )}
+                </span>
               </Row>
             )}
             <Row className="justify-between text-base font-semibold">
               <span>Total (mana):</span>
               <span className="text-teal-600">
-                {formatMoney(discountedPrice + (selectedShipping ? Math.round(parseFloat(selectedShipping.rate) * 100) : 0))}
+                {formatMoney(
+                  discountedPrice +
+                    (selectedShipping
+                      ? Math.round(parseFloat(selectedShipping.rate) * 100)
+                      : 0)
+                )}
               </span>
             </Row>
           </Col>
@@ -1207,15 +1409,30 @@ function MerchItemCard(props: {
           <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
             <Row className="items-start gap-2">
               <span className="text-amber-700 dark:text-amber-300">
-                Please verify all details above. Orders cannot be modified after submission.
+                Please verify all details above. Orders cannot be modified after
+                submission.
               </span>
             </Row>
           </div>
 
           <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowConfirmOrderModal(false)}>Go Back</Button>
-            <Button color="indigo" loading={purchasing} disabled={countdown > 0 || purchasing} onClick={handleSubmitOrder}>
-              {purchasing ? 'Processing...' : countdown > 0 ? `Confirm Order (${countdown})` : 'Confirm Order'}
+            <Button
+              color="gray"
+              onClick={() => setShowConfirmOrderModal(false)}
+            >
+              Go Back
+            </Button>
+            <Button
+              color="indigo"
+              loading={purchasing}
+              disabled={countdown > 0 || purchasing}
+              onClick={handleSubmitOrder}
+            >
+              {purchasing
+                ? 'Processing...'
+                : countdown > 0
+                ? `Confirm Order (${countdown})`
+                : 'Confirm Order'}
             </Button>
           </Row>
         </Col>
@@ -1269,7 +1486,7 @@ function AdminTestingTools(props: {
       <div className="text-ink-400 mt-1 text-xs">
         Refunds all non-subscription purchases. Supporter tiers are preserved.
       </div>
-      <label className="mt-3 flex items-center gap-2 cursor-pointer">
+      <label className="mt-3 flex cursor-pointer items-center gap-2">
         <input
           type="checkbox"
           checked={showHidden}
@@ -1278,7 +1495,6 @@ function AdminTestingTools(props: {
         />
         <span className="text-ink-600 text-sm">Show hidden items</span>
       </label>
-
     </div>
   )
 }
@@ -2102,7 +2318,7 @@ function BlackHolePreview(props: { user: User | null | undefined }) {
           avatarUrl={user?.avatarUrl}
           size="lg"
           noLink
-          className="relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]"
+          className="relative shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40"
         />
       </div>
     </div>
@@ -2180,9 +2396,12 @@ function FireItemPreview(props: { user: User | null | undefined }) {
         <div
           className="pointer-events-none absolute z-20"
           style={{
-            right: '-2%', bottom: '20%',
-            width: '16px', height: '3px',
-            background: 'linear-gradient(135deg, rgba(200,200,210,0.7) 0%, rgba(160,165,175,0.4) 60%, transparent 100%)',
+            right: '-2%',
+            bottom: '20%',
+            width: '16px',
+            height: '3px',
+            background:
+              'linear-gradient(135deg, rgba(200,200,210,0.7) 0%, rgba(160,165,175,0.4) 60%, transparent 100%)',
             borderRadius: '2px',
             filter: 'blur(1.5px)',
             animation: 'preview-flame-smoke-1 2.5s ease-out infinite',
@@ -2191,9 +2410,12 @@ function FireItemPreview(props: { user: User | null | undefined }) {
         <div
           className="pointer-events-none absolute z-20"
           style={{
-            right: '2%', bottom: '26%',
-            width: '12px', height: '2.5px',
-            background: 'linear-gradient(135deg, rgba(180,185,195,0.6) 0%, rgba(160,165,175,0.3) 60%, transparent 100%)',
+            right: '2%',
+            bottom: '26%',
+            width: '12px',
+            height: '2.5px',
+            background:
+              'linear-gradient(135deg, rgba(180,185,195,0.6) 0%, rgba(160,165,175,0.3) 60%, transparent 100%)',
             borderRadius: '2px',
             filter: 'blur(1px)',
             animation: 'preview-flame-smoke-2 3s ease-out infinite',
@@ -2212,13 +2434,78 @@ function FireItemPreview(props: { user: User | null | undefined }) {
             }}
           />
           {/* Wispy smoke streaks */}
-          <div style={{ position: 'absolute', left: '10%', top: '55%', width: '80%', height: '4px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)', borderRadius: '2px', filter: 'blur(1.5px)', animation: 'preview-wisp-1 4s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', left: '5%', top: '40%', width: '65%', height: '3.5px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)', borderRadius: '2px', filter: 'blur(2px)', animation: 'preview-wisp-2 5s ease-in-out infinite', animationDelay: '0.8s' }} />
-          <div style={{ position: 'absolute', left: '20%', top: '68%', width: '70%', height: '3.5px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)', borderRadius: '2px', filter: 'blur(1.5px)', animation: 'preview-wisp-3 4.5s ease-in-out infinite', animationDelay: '1.5s' }} />
+          <div
+            style={{
+              position: 'absolute',
+              left: '10%',
+              top: '55%',
+              width: '80%',
+              height: '4px',
+              background:
+                'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)',
+              borderRadius: '2px',
+              filter: 'blur(1.5px)',
+              animation: 'preview-wisp-1 4s ease-in-out infinite',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              left: '5%',
+              top: '40%',
+              width: '65%',
+              height: '3.5px',
+              background:
+                'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)',
+              borderRadius: '2px',
+              filter: 'blur(2px)',
+              animation: 'preview-wisp-2 5s ease-in-out infinite',
+              animationDelay: '0.8s',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              left: '20%',
+              top: '68%',
+              width: '70%',
+              height: '3.5px',
+              background:
+                'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)',
+              borderRadius: '2px',
+              filter: 'blur(1.5px)',
+              animation: 'preview-wisp-3 4.5s ease-in-out infinite',
+              animationDelay: '1.5s',
+            }}
+          />
           {/* Ember particles — above the flames */}
-          <div className="absolute h-[2px] w-[2px] rounded-full bg-amber-400" style={{ left: '70%', top: '60%', boxShadow: '0 0 3px #fbbf24', animation: 'preview-ember-1 1.5s infinite ease-out' }} />
-          <div className="absolute h-[1.5px] w-[1.5px] rounded-full bg-orange-500" style={{ left: '66%', top: '66%', animation: 'preview-ember-2 2s infinite ease-out', animationDelay: '0.2s' }} />
-          <div className="absolute h-[1.5px] w-[1.5px] rounded-full bg-red-500 opacity-80" style={{ left: '76%', top: '54%', animation: 'preview-ember-3 1.8s infinite ease-out', animationDelay: '0.5s' }} />
+          <div
+            className="absolute h-[2px] w-[2px] rounded-full bg-amber-400"
+            style={{
+              left: '70%',
+              top: '60%',
+              boxShadow: '0 0 3px #fbbf24',
+              animation: 'preview-ember-1 1.5s infinite ease-out',
+            }}
+          />
+          <div
+            className="absolute h-[1.5px] w-[1.5px] rounded-full bg-orange-500"
+            style={{
+              left: '66%',
+              top: '66%',
+              animation: 'preview-ember-2 2s infinite ease-out',
+              animationDelay: '0.2s',
+            }}
+          />
+          <div
+            className="absolute h-[1.5px] w-[1.5px] rounded-full bg-red-500 opacity-80"
+            style={{
+              left: '76%',
+              top: '54%',
+              animation: 'preview-ember-3 1.8s infinite ease-out',
+              animationDelay: '0.5s',
+            }}
+          />
         </div>
       </div>
     </div>
@@ -2449,7 +2736,7 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
           noLink
         />
         <StonksMemeArrowSvg
-          className="absolute pointer-events-none"
+          className="pointer-events-none absolute"
           style={{
             left: '60%',
             top: '50%',
@@ -2466,7 +2753,17 @@ function StonksMemePreview(props: { user: User | null | undefined }) {
 }
 
 // Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
-const RED_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const RED_CAP_STYLE_LABELS = [
+  'Classic',
+  'Mini',
+  'MANA',
+  'MANA Left',
+  'Left',
+  'Mini Left',
+  'MANA Right',
+  'Right',
+  'Mini Right',
+]
 const RED_CAP_STYLE_COUNT = RED_CAP_STYLE_LABELS.length
 
 function RedCapStylePreview(props: {
@@ -2522,7 +2819,9 @@ function RedCapStylePreview(props: {
             className="absolute transition-all duration-200"
             style={{
               left: '50%',
-              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
               top: -7,
               width: capW,
               height: capW,
@@ -2539,13 +2838,25 @@ function RedCapStylePreview(props: {
           <ChevronRightIcon className="h-4 w-4" />
         </button>
       </Row>
-      <span className="text-ink-500 text-xs">{RED_CAP_STYLE_LABELS[previewIndex]}</span>
+      <span className="text-ink-500 text-xs">
+        {RED_CAP_STYLE_LABELS[previewIndex]}
+      </span>
     </div>
   )
 }
 
 // Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
-const BLUE_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const BLUE_CAP_STYLE_LABELS = [
+  'Classic',
+  'Mini',
+  'MANA',
+  'MANA Left',
+  'Left',
+  'Mini Left',
+  'MANA Right',
+  'Right',
+  'Mini Right',
+]
 const BLUE_CAP_STYLE_COUNT = BLUE_CAP_STYLE_LABELS.length
 
 function BlueCapStylePreview(props: {
@@ -2601,7 +2912,9 @@ function BlueCapStylePreview(props: {
             className="absolute transition-all duration-200"
             style={{
               left: '50%',
-              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
               top: -7,
               width: capW,
               height: capW,
@@ -2618,13 +2931,25 @@ function BlueCapStylePreview(props: {
           <ChevronRightIcon className="h-4 w-4" />
         </button>
       </Row>
-      <span className="text-ink-500 text-xs">{BLUE_CAP_STYLE_LABELS[previewIndex]}</span>
+      <span className="text-ink-500 text-xs">
+        {BLUE_CAP_STYLE_LABELS[previewIndex]}
+      </span>
     </div>
   )
 }
 
 // Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
-const GREEN_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const GREEN_CAP_STYLE_LABELS = [
+  'Classic',
+  'Mini',
+  'MANA',
+  'MANA Left',
+  'Left',
+  'Mini Left',
+  'MANA Right',
+  'Right',
+  'Mini Right',
+]
 const GREEN_CAP_STYLE_COUNT = GREEN_CAP_STYLE_LABELS.length
 
 function GreenCapStylePreview(props: {
@@ -2680,7 +3005,9 @@ function GreenCapStylePreview(props: {
             className="absolute transition-all duration-200"
             style={{
               left: '50%',
-              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
               top: -7,
               width: capW,
               height: capW,
@@ -2697,13 +3024,25 @@ function GreenCapStylePreview(props: {
           <ChevronRightIcon className="h-4 w-4" />
         </button>
       </Row>
-      <span className="text-ink-500 text-xs">{GREEN_CAP_STYLE_LABELS[previewIndex]}</span>
+      <span className="text-ink-500 text-xs">
+        {GREEN_CAP_STYLE_LABELS[previewIndex]}
+      </span>
     </div>
   )
 }
 
 // Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
-const BLACK_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const BLACK_CAP_STYLE_LABELS = [
+  'Classic',
+  'Mini',
+  'MANA',
+  'MANA Left',
+  'Left',
+  'Mini Left',
+  'MANA Right',
+  'Right',
+  'Mini Right',
+]
 const BLACK_CAP_STYLE_COUNT = BLACK_CAP_STYLE_LABELS.length
 
 function BlackCapStylePreview(props: {
@@ -2759,7 +3098,9 @@ function BlackCapStylePreview(props: {
             className="absolute transition-all duration-200"
             style={{
               left: '50%',
-              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
               top: -7,
               width: capW,
               height: capW,
@@ -2776,7 +3117,9 @@ function BlackCapStylePreview(props: {
           <ChevronRightIcon className="h-4 w-4" />
         </button>
       </Row>
-      <span className="text-ink-500 text-xs">{BLACK_CAP_STYLE_LABELS[previewIndex]}</span>
+      <span className="text-ink-500 text-xs">
+        {BLACK_CAP_STYLE_LABELS[previewIndex]}
+      </span>
     </div>
   )
 }
@@ -2989,7 +3332,8 @@ function CrownPreview(props: {
   const cyclePrev = (e: React.MouseEvent) => {
     e.stopPropagation()
     const newIndex =
-      (previewIndex - 1 + CROWN_POSITION_OPTIONS.length) % CROWN_POSITION_OPTIONS.length
+      (previewIndex - 1 + CROWN_POSITION_OPTIONS.length) %
+      CROWN_POSITION_OPTIONS.length
     setPreviewIndex(newIndex)
     if (owned && onSelect) {
       onSelect(newIndex)
@@ -3032,7 +3376,12 @@ function CrownPreview(props: {
             size="lg"
             noLink
           />
-          <div className={clsx(getPositionClasses(), 'transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110')}>
+          <div
+            className={clsx(
+              getPositionClasses(),
+              'transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110'
+            )}
+          >
             <LuCrown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" />
           </div>
         </div>
@@ -3043,7 +3392,9 @@ function CrownPreview(props: {
           <ChevronRightIcon className="h-4 w-4" />
         </button>
       </Row>
-      <span className="text-ink-500 text-xs">{CROWN_POSITION_OPTIONS[previewIndex]}</span>
+      <span className="text-ink-500 text-xs">
+        {CROWN_POSITION_OPTIONS[previewIndex]}
+      </span>
     </div>
   )
 }
@@ -3119,8 +3470,24 @@ function HatPreview(props: {
                   'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))',
               }}
             >
-              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(217, 170, 50, 0.7)" strokeWidth="3.5" fill="none" />
-              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(255, 252, 240, 0.95)" strokeWidth="1.5" fill="none" />
+              <ellipse
+                cx="20"
+                cy="6"
+                rx="18"
+                ry="5"
+                stroke="rgba(217, 170, 50, 0.7)"
+                strokeWidth="3.5"
+                fill="none"
+              />
+              <ellipse
+                cx="20"
+                cy="6"
+                rx="18"
+                ry="5"
+                stroke="rgba(255, 252, 240, 0.95)"
+                strokeWidth="1.5"
+                fill="none"
+              />
             </svg>
             {/* Dark mode — dual-stroke SVG matching live avatar halo */}
             <svg
@@ -3135,8 +3502,24 @@ function HatPreview(props: {
                   'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))',
               }}
             >
-              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(200, 160, 60, 0.5)" strokeWidth="3.5" fill="none" />
-              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(255, 252, 240, 0.95)" strokeWidth="1.5" fill="none" />
+              <ellipse
+                cx="20"
+                cy="6"
+                rx="18"
+                ry="5"
+                stroke="rgba(200, 160, 60, 0.5)"
+                strokeWidth="3.5"
+                fill="none"
+              />
+              <ellipse
+                cx="20"
+                cy="6"
+                rx="18"
+                ry="5"
+                stroke="rgba(255, 252, 240, 0.95)"
+                strokeWidth="1.5"
+                fill="none"
+              />
             </svg>
           </div>
         )
@@ -3387,7 +3770,9 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
   )
 }
 
-function HovercardSpinningBorderPreview(props: { user: User | null | undefined }) {
+function HovercardSpinningBorderPreview(props: {
+  user: User | null | undefined
+}) {
   const { user } = props
   const displayName = user?.name ?? 'YourName'
   const username = user?.username ?? 'username'
@@ -3465,7 +3850,12 @@ function HovercardRoyalBorderPreview(props: { user: User | null | undefined }) {
   )
 }
 
-type HovercardBgType = 'royalty' | 'mana-printer' | 'oracle' | 'trading-floor' | 'champions-legacy'
+type HovercardBgType =
+  | 'royalty'
+  | 'mana-printer'
+  | 'oracle'
+  | 'trading-floor'
+  | 'champions-legacy'
 
 function HovercardBackgroundPreview(props: {
   user: User | null | undefined
@@ -3525,7 +3915,10 @@ function HovercardBackgroundPreview(props: {
             />
             {/* Upward arrow - points at Follow button */}
             <g transform="translate(125, 32)" opacity="0.25">
-              <polygon points="8,0 16,10 12,10 12,18 4,18 4,10 0,10" fill="#22C55E" />
+              <polygon
+                points="8,0 16,10 12,10 12,18 4,18 4,10 0,10"
+                fill="#22C55E"
+              />
             </g>
           </svg>
         )
@@ -3537,19 +3930,67 @@ function HovercardBackgroundPreview(props: {
             preserveAspectRatio="xMidYMid slice"
           >
             <defs>
-              <linearGradient id="coin-gradient-preview" x1="0%" y1="0%" x2="0%" y2="100%">
+              <linearGradient
+                id="coin-gradient-preview"
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
                 <stop offset="0%" stopColor="#C4B5FD" />
                 <stop offset="100%" stopColor="#8B5CF6" />
               </linearGradient>
             </defs>
             <g opacity="0.35">
               {/* Stick figure turning crank */}
-              <circle cx="55" cy="62" r="6" stroke="#C4B5FD" strokeWidth="1.5" fill="none" />
-              <line x1="55" y1="68" x2="55" y2="88" stroke="#C4B5FD" strokeWidth="1.5" />
-              <line x1="55" y1="88" x2="48" y2="102" stroke="#C4B5FD" strokeWidth="1.5" />
-              <line x1="55" y1="88" x2="62" y2="102" stroke="#C4B5FD" strokeWidth="1.5" />
-              <line x1="55" y1="75" x2="78" y2="70" stroke="#C4B5FD" strokeWidth="1.5" />
-              <line x1="55" y1="75" x2="45" y2="85" stroke="#C4B5FD" strokeWidth="1.5" />
+              <circle
+                cx="55"
+                cy="62"
+                r="6"
+                stroke="#C4B5FD"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              <line
+                x1="55"
+                y1="68"
+                x2="55"
+                y2="88"
+                stroke="#C4B5FD"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="55"
+                y1="88"
+                x2="48"
+                y2="102"
+                stroke="#C4B5FD"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="55"
+                y1="88"
+                x2="62"
+                y2="102"
+                stroke="#C4B5FD"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="55"
+                y1="75"
+                x2="78"
+                y2="70"
+                stroke="#C4B5FD"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="55"
+                y1="75"
+                x2="45"
+                y2="85"
+                stroke="#C4B5FD"
+                strokeWidth="1.5"
+              />
 
               {/* Machine */}
               <rect
@@ -3564,23 +4005,87 @@ function HovercardBackgroundPreview(props: {
                 fillOpacity="0.1"
               />
               {/* Crank wheel */}
-              <circle cx="90" cy="70" r="6" stroke="#A78BFA" strokeWidth="1.5" fill="none" />
-              <line x1="90" y1="70" x2="78" y2="70" stroke="#A78BFA" strokeWidth="1.5" />
+              <circle
+                cx="90"
+                cy="70"
+                r="6"
+                stroke="#A78BFA"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              <line
+                x1="90"
+                y1="70"
+                x2="78"
+                y2="70"
+                stroke="#A78BFA"
+                strokeWidth="1.5"
+              />
               {/* Output slot */}
-              <rect x="116" y="66" width="4" height="14" fill="#A78BFA" fillOpacity="0.4" rx="1" />
+              <rect
+                x="116"
+                y="66"
+                width="4"
+                height="14"
+                fill="#A78BFA"
+                fillOpacity="0.4"
+                rx="1"
+              />
 
               {/* Mana coins with gradient and white M */}
               <g transform="translate(126, 72)">
-                <circle r="7" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1.5" />
-                <text x="0" y="3" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+                <circle
+                  r="7"
+                  fill="url(#coin-gradient-preview)"
+                  stroke="#7C3AED"
+                  strokeWidth="1.5"
+                />
+                <text
+                  x="0"
+                  y="3"
+                  fontSize="9"
+                  fontWeight="bold"
+                  fill="white"
+                  textAnchor="middle"
+                >
+                  M
+                </text>
               </g>
               <g transform="translate(138, 90)" opacity="0.9">
-                <circle r="6" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1" />
-                <text x="0" y="2.5" fontSize="8" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+                <circle
+                  r="6"
+                  fill="url(#coin-gradient-preview)"
+                  stroke="#7C3AED"
+                  strokeWidth="1"
+                />
+                <text
+                  x="0"
+                  y="2.5"
+                  fontSize="8"
+                  fontWeight="bold"
+                  fill="white"
+                  textAnchor="middle"
+                >
+                  M
+                </text>
               </g>
               <g transform="translate(148, 106)" opacity="0.75">
-                <circle r="5" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1" />
-                <text x="0" y="2" fontSize="7" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+                <circle
+                  r="5"
+                  fill="url(#coin-gradient-preview)"
+                  stroke="#7C3AED"
+                  strokeWidth="1"
+                />
+                <text
+                  x="0"
+                  y="2"
+                  fontSize="7"
+                  fontWeight="bold"
+                  fill="white"
+                  textAnchor="middle"
+                >
+                  M
+                </text>
               </g>
 
               {/* Motion lines */}
@@ -3621,27 +4126,79 @@ function HovercardBackgroundPreview(props: {
             preserveAspectRatio="xMidYMid slice"
           >
             <defs>
-              <radialGradient id="cl-glow-p" cx="50%" cy="100%" r="100%" fx="50%" fy="100%">
+              <radialGradient
+                id="cl-glow-p"
+                cx="50%"
+                cy="100%"
+                r="100%"
+                fx="50%"
+                fy="100%"
+              >
                 <stop offset="0%" stopColor="#FBBF24" stopOpacity="0.15" />
                 <stop offset="60%" stopColor="#B45309" stopOpacity="0.05" />
                 <stop offset="100%" stopColor="#B45309" stopOpacity="0" />
               </radialGradient>
               <symbol id="cl-trophy-p" viewBox="0 0 100 100">
-                <path d="M20 10h60l-5 30c0 20-15 25-25 25s-25-5-25-25l-5-30z M45 65v15h-10l-5 10h40l-5-10h-10v-15h-10z M80 15c15 0 15 25 0 25v-5c8 0 8-15 0-15v-5z M20 15c-15 0-15 25 0 25v-5c-8 0-8-15 0-15v-5z" fill="currentColor" />
+                <path
+                  d="M20 10h60l-5 30c0 20-15 25-25 25s-25-5-25-25l-5-30z M45 65v15h-10l-5 10h40l-5-10h-10v-15h-10z M80 15c15 0 15 25 0 25v-5c8 0 8-15 0-15v-5z M20 15c-15 0-15 25 0 25v-5c-8 0-8-15 0-15v-5z"
+                  fill="currentColor"
+                />
               </symbol>
               <symbol id="cl-star-p" viewBox="0 0 20 20">
-                <path d="M10 0l2.5 7.5h7.5l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z" fill="currentColor" />
+                <path
+                  d="M10 0l2.5 7.5h7.5l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z"
+                  fill="currentColor"
+                />
               </symbol>
             </defs>
             <rect width="176" height="120" fill="url(#cl-glow-p)" />
             {/* Main trophy — centered */}
-            <use href="#cl-trophy-p" x="48" y="20" width="80" height="80" transform="rotate(8 88 60)" fill="#B45309" fillOpacity="0.07" />
+            <use
+              href="#cl-trophy-p"
+              x="48"
+              y="20"
+              width="80"
+              height="80"
+              transform="rotate(8 88 60)"
+              fill="#B45309"
+              fillOpacity="0.07"
+            />
             {/* Small accent trophies — top corners */}
-            <use href="#cl-trophy-p" x="125" y="2" width="40" height="40" transform="rotate(-10 145 22)" fill="#D97706" fillOpacity="0.05" />
-            <use href="#cl-trophy-p" x="5" y="2" width="35" height="35" transform="rotate(12 22 20)" fill="#D97706" fillOpacity="0.04" />
+            <use
+              href="#cl-trophy-p"
+              x="125"
+              y="2"
+              width="40"
+              height="40"
+              transform="rotate(-10 145 22)"
+              fill="#D97706"
+              fillOpacity="0.05"
+            />
+            <use
+              href="#cl-trophy-p"
+              x="5"
+              y="2"
+              width="35"
+              height="35"
+              transform="rotate(12 22 20)"
+              fill="#D97706"
+              fillOpacity="0.04"
+            />
             {/* Laurel stems — bottom corners */}
-            <path d="M12 115 C22 100 28 85 32 70" stroke="#D97706" strokeWidth="1.5" strokeOpacity="0.1" fill="none" />
-            <path d="M164 115 C154 100 148 85 144 70" stroke="#D97706" strokeWidth="1.5" strokeOpacity="0.1" fill="none" />
+            <path
+              d="M12 115 C22 100 28 85 32 70"
+              stroke="#D97706"
+              strokeWidth="1.5"
+              strokeOpacity="0.1"
+              fill="none"
+            />
+            <path
+              d="M164 115 C154 100 148 85 144 70"
+              stroke="#D97706"
+              strokeWidth="1.5"
+              strokeOpacity="0.1"
+              fill="none"
+            />
             {/* Leaves */}
             <g fill="#F59E0B" fillOpacity="0.1">
               <path d="M28 88 Q18 91 15 82 Q23 79 28 88" />
@@ -3650,9 +4207,33 @@ function HovercardBackgroundPreview(props: {
               <path d="M146 75 Q156 78 159 69 Q151 66 146 75" />
             </g>
             {/* Stars */}
-            <use href="#cl-star-p" x="80" y="8" width="9" height="9" fill="#FBBF24" fillOpacity="0.2" />
-            <use href="#cl-star-p" x="25" y="45" width="6" height="6" fill="#F59E0B" fillOpacity="0.12" />
-            <use href="#cl-star-p" x="148" y="50" width="5" height="5" fill="#F59E0B" fillOpacity="0.12" />
+            <use
+              href="#cl-star-p"
+              x="80"
+              y="8"
+              width="9"
+              height="9"
+              fill="#FBBF24"
+              fillOpacity="0.2"
+            />
+            <use
+              href="#cl-star-p"
+              x="25"
+              y="45"
+              width="6"
+              height="6"
+              fill="#F59E0B"
+              fillOpacity="0.12"
+            />
+            <use
+              href="#cl-star-p"
+              x="148"
+              y="50"
+              width="5"
+              height="5"
+              fill="#F59E0B"
+              fillOpacity="0.12"
+            />
           </svg>
         )
       default:
@@ -4042,13 +4623,19 @@ function ItemPreview(props: {
     case 'hovercard-royalty':
       return <HovercardBackgroundPreview user={user} background="royalty" />
     case 'hovercard-mana-printer':
-      return <HovercardBackgroundPreview user={user} background="mana-printer" />
+      return (
+        <HovercardBackgroundPreview user={user} background="mana-printer" />
+      )
     case 'hovercard-oracle':
       return <HovercardBackgroundPreview user={user} background="oracle" />
     case 'hovercard-trading-floor':
-      return <HovercardBackgroundPreview user={user} background="trading-floor" />
+      return (
+        <HovercardBackgroundPreview user={user} background="trading-floor" />
+      )
     case 'former-charity-champion':
-      return <HovercardBackgroundPreview user={user} background="champions-legacy" />
+      return (
+        <HovercardBackgroundPreview user={user} background="champions-legacy" />
+      )
     case 'hovercard-golden-follow':
       return <GoldenFollowButtonPreview user={user} />
     case 'pampu-skin':
@@ -4097,7 +4684,10 @@ function ShopItemCard(props: {
       version?: number
     }
   ) => void
-  onMetadataChange: (itemId: string, updatedEntitlement: UserEntitlement) => void
+  onMetadataChange: (
+    itemId: string,
+    updatedEntitlement: UserEntitlement
+  ) => void
   getToggleVersion: () => number
   localStreakBonus: number
 }) {
@@ -4126,7 +4716,9 @@ function ShopItemCard(props: {
   const canPurchase = user && user.balance >= discountedPrice
   // Items are toggleable unless they're always enabled (like supporter badges)
   const isToggleable =
-    (item.type === 'permanent-toggleable' || item.type === 'time-limited' || item.type === 'earned') &&
+    (item.type === 'permanent-toggleable' ||
+      item.type === 'time-limited' ||
+      item.type === 'earned') &&
     !item.alwaysEnabled
 
   // Use entitlement state directly - optimistic updates handled by parent
@@ -4231,278 +4823,318 @@ function ShopItemCard(props: {
   return (
     <>
       <div className="group flex pb-1">
-      <Card
-        ref={cardRef}
-        className={clsx(
-          'group relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
-          justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
-          !justPurchased && 'hover:-translate-y-1 hover:shadow-xl hover:ring-2',
-          !justPurchased &&
+        <Card
+          ref={cardRef}
+          className={clsx(
+            'group relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
+            justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
+            !justPurchased &&
+              'hover:-translate-y-1 hover:shadow-xl hover:ring-2',
+            !justPurchased &&
+              isPremiumItem &&
+              'hover:shadow-amber-200/50 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
+            !justPurchased &&
+              !isPremiumItem &&
+              'hover:shadow-indigo-200/50 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30',
             isPremiumItem &&
-            'hover:shadow-amber-200/50 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
-          !justPurchased &&
-            !isPremiumItem &&
-            'hover:shadow-indigo-200/50 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30',
-          isPremiumItem &&
-            'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
-        )}
-      >
-        {/* Loading overlay during purchase */}
-        {purchasing && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/80">
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-              <span className="text-ink-600 text-xs">Purchasing...</span>
+              'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
+          )}
+        >
+          {/* Loading overlay during purchase */}
+          {purchasing && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/80">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+                <span className="text-ink-600 text-xs">Purchasing...</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {item.hidden && (
-          <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
-            Hidden
-          </div>
-        )}
+          {item.hidden && (
+            <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+              Hidden
+            </div>
+          )}
 
-        {/* Card header with badge inline */}
-        <Row className="items-start justify-between gap-2">
-          <div
-            className={clsx(
-              'text-base font-semibold sm:text-lg',
-              isPremiumItem && 'text-amber-700 dark:text-amber-400'
-            )}
-          >
-            {item.name}
-          </div>
-          {/* OWNED badge for purchased items */}
-          {owned && (
+          {/* Card header with badge inline */}
+          <Row className="items-start justify-between gap-2">
             <div
               className={clsx(
-                'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
-                isPremiumItem
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-                  : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                'text-base font-semibold sm:text-lg',
+                isPremiumItem && 'text-amber-700 dark:text-amber-400'
               )}
             >
-              OWNED
+              {item.name}
             </div>
-          )}
-          {/* LEGENDARY badge for halo, wings, crown only */}
-          {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(item.id) && !owned && (
-            <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
-              LEGENDARY
-            </div>
-          )}
-          {/* SEASONAL badge */}
-          {item.seasonalAvailability && (
-            <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
-              SEASONAL
-            </div>
-          )}
-        </Row>
-
-        {/* Slot tag */}
-        {EXCLUSIVE_SLOTS.includes(item.slot) && (
-          <span
-            className={clsx(
-              'w-fit rounded-full px-2 py-0.5 text-[10px] font-medium',
-              item.slot === 'hat' &&
-                'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-              item.slot === 'profile-border' &&
-                'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-              item.slot === 'profile-accessory' &&
-                'bg-teal-100 text-teal-700 dark:bg-teal-800/60 dark:text-teal-200',
-              item.slot === 'hovercard-background' &&
-                'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
-              item.slot === 'hovercard-border' &&
-                'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-              item.slot === 'button-yes' &&
-                'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-              item.slot === 'button-no' &&
-                'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+            {/* OWNED badge for purchased items */}
+            {owned && (
+              <div
+                className={clsx(
+                  'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
+                  isPremiumItem
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                )}
+              >
+                OWNED
+              </div>
             )}
-          >
-            {SLOT_LABELS[item.slot]}
-          </span>
-        )}
-        {/* Unique items get a special badge */}
-        {item.slot === 'unique' && (
-          <span className="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-            ✨ Combines with everything
-          </span>
-        )}
-
-        <p className="text-ink-600 text-sm">{item.description}</p>
-
-        {/* Animation location indicator — driven by display-config */}
-        {item.animationTypes && item.animationTypes.length > 0 && (() => {
-          const locationText = getAnimationLocationText(item.animationTypes)
-          return locationText ? (
-            <div className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
-              <span className="text-ink-500 text-xs">
-                Animated on {locationText}
-              </span>
-            </div>
-          ) : null
-        })()}
-
-        {/* Achievement requirement badge */}
-        {item.requirement && (
-          <div className="rounded-md bg-amber-50 px-2 py-1 dark:bg-amber-900/30">
-            <span className="text-xs text-amber-700 dark:text-amber-300">
-              🏆 Requires: {item.requirement.description}
-            </span>
-          </div>
-        )}
-
-        {/* Seasonal availability badge */}
-        {item.seasonalAvailability && (
-          <div
-            className={clsx(
-              'rounded-md px-2 py-1',
-              isSeasonalItemAvailable(item)
-                ? 'bg-green-50 dark:bg-green-900/30'
-                : 'bg-gray-100 dark:bg-gray-800'
+            {/* LEGENDARY badge for halo, wings, crown only */}
+            {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(
+              item.id
+            ) &&
+              !owned && (
+                <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+                  LEGENDARY
+                </div>
+              )}
+            {/* SEASONAL badge */}
+            {item.seasonalAvailability && (
+              <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+                SEASONAL
+              </div>
             )}
-          >
+          </Row>
+
+          {/* Slot tag */}
+          {EXCLUSIVE_SLOTS.includes(item.slot) && (
             <span
               className={clsx(
-                'text-xs',
-                isSeasonalItemAvailable(item)
-                  ? 'text-green-700 dark:text-green-300'
-                  : 'text-ink-500'
+                'w-fit rounded-full px-2 py-0.5 text-[10px] font-medium',
+                item.slot === 'hat' &&
+                  'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                item.slot === 'profile-border' &&
+                  'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                item.slot === 'profile-accessory' &&
+                  'bg-teal-100 text-teal-700 dark:bg-teal-800/60 dark:text-teal-200',
+                item.slot === 'hovercard-background' &&
+                  'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+                item.slot === 'hovercard-border' &&
+                  'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+                item.slot === 'button-yes' &&
+                  'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                item.slot === 'button-no' &&
+                  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
               )}
             >
-              {isSeasonalItemAvailable(item)
-                ? '🎉 Available now!'
-                : `⏰ ${getSeasonalAvailabilityText(item) ?? 'Limited time'}`}
+              {SLOT_LABELS[item.slot]}
             </span>
-          </div>
-        )}
+          )}
+          {/* Unique items get a special badge */}
+          {item.slot === 'unique' && (
+            <span className="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              ✨ Combines with everything
+            </span>
+          )}
 
-        {/* Live Preview with actual user data */}
-        <ItemPreview
-          itemId={item.id}
-          user={user}
-          localStreakBonus={localStreakBonus}
-          allEntitlements={allEntitlements}
-          entitlement={entitlement}
-          onMetadataUpdate={owned ? handleMetadataUpdate : undefined}
-        />
+          <p className="text-ink-600 text-sm">{item.description}</p>
 
-        {/* Footer: different layouts for owned vs non-owned */}
-        {owned ? (
-          // Owned item layout
-          <Col className="mt-auto gap-2 pt-2">
-            {isToggleable ? (
-              // Toggle switch for toggleable items
-              <Row className="items-center justify-center">
-                <label className="relative inline-flex cursor-pointer items-center">
-                  <input
-                    type="checkbox"
-                    checked={isEnabled}
-                    onChange={handleToggle}
-                    className="peer sr-only"
-                  />
-                  <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-gray-600" />
-                  <span className="text-ink-700 ml-2 text-sm">
-                    {isEnabled ? 'Enabled' : 'Disabled'}
+          {/* Animation location indicator — driven by display-config */}
+          {item.animationTypes &&
+            item.animationTypes.length > 0 &&
+            (() => {
+              const locationText = getAnimationLocationText(item.animationTypes)
+              return locationText ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                  <span className="text-ink-500 text-xs">
+                    Animated on {locationText}
                   </span>
-                </label>
-              </Row>
-            ) : item.alwaysEnabled ? (
-              // Always-enabled items (like supporter badges) - show "Active"
-              <div className="text-center text-sm font-medium text-green-600">
-                Active
-              </div>
-            ) : (
-              // Non-toggleable owned items (instant like streak freeze)
-              <div className="text-ink-500 text-center text-sm">
-                Already applied
-              </div>
-            )}
-            {/* Expiration date for time-limited items */}
-            {entitlement?.expiresTime && (
-              <div className="text-ink-500 text-center text-xs">
-                Expires {new Date(entitlement.expiresTime).toLocaleDateString()}
-              </div>
-            )}
-            {/* Buy more button for unlimited items (like supporter badges that stack) */}
-            {item.limit === 'unlimited' && (
-              <Row className="border-ink-200 mt-1 items-center justify-between border-t pt-2">
-                <div className="font-semibold text-teal-600">
-                  {formatMoney(item.price)}
                 </div>
-                {!canPurchase && user ? (
-                  <Link href="/checkout">
-                    <Button size="xs" color="gradient-pink">
-                      Buy mana
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    size="xs"
-                    color="indigo-outline"
-                    disabled={!user}
-                    onClick={() => setShowConfirmModal(true)}
-                  >
-                    Add more time
-                  </Button>
+              ) : null
+            })()}
+
+          {/* Achievement requirement badge */}
+          {item.requirement && (
+            <div className="rounded-md bg-amber-50 px-2 py-1 dark:bg-amber-900/30">
+              <span className="text-xs text-amber-700 dark:text-amber-300">
+                🏆 Requires: {item.requirement.description}
+              </span>
+            </div>
+          )}
+
+          {/* Seasonal availability badge */}
+          {item.seasonalAvailability && (
+            <div
+              className={clsx(
+                'rounded-md px-2 py-1',
+                isSeasonalItemAvailable(item)
+                  ? 'bg-green-50 dark:bg-green-900/30'
+                  : 'bg-gray-100 dark:bg-gray-800'
+              )}
+            >
+              <span
+                className={clsx(
+                  'text-xs',
+                  isSeasonalItemAvailable(item)
+                    ? 'text-green-700 dark:text-green-300'
+                    : 'text-ink-500'
                 )}
-              </Row>
-            )}
-          </Col>
-        ) : item.type === 'earned' ? (
-          // Earned items that aren't owned - show locked state
-          <div className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-gray-100 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-            <FaLock className="h-3 w-3" />
-            <span>Reserved for Past Champions</span>
-          </div>
-        ) : (
-          // Non-owned item layout - stacks vertically on very narrow screens
-          <>
+              >
+                {isSeasonalItemAvailable(item)
+                  ? '🎉 Available now!'
+                  : `⏰ ${getSeasonalAvailabilityText(item) ?? 'Limited time'}`}
+              </span>
+            </div>
+          )}
+
+          {/* Live Preview with actual user data */}
+          <ItemPreview
+            itemId={item.id}
+            user={user}
+            localStreakBonus={localStreakBonus}
+            allEntitlements={allEntitlements}
+            entitlement={entitlement}
+            onMetadataUpdate={owned ? handleMetadataUpdate : undefined}
+          />
+
+          {/* Footer: different layouts for owned vs non-owned */}
+          {owned ? (
+            // Owned item layout
             <Col className="mt-auto gap-2 pt-2">
-              <Row className="items-center justify-between">
-                {hasDiscount || item.originalPrice ? (
-                  <Col className="gap-0.5">
-                    <Row className="items-center gap-1.5">
-                      <span className="text-ink-400 text-xs line-through">
-                        {formatMoney(item.originalPrice ?? item.price)}
-                      </span>
-                      {item.originalPrice && (
-                        <span className="rounded bg-rose-100 px-1 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">
-                          SALE
-                        </span>
-                      )}
-                      {hasDiscount && (
-                        <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                          -{Math.round(shopDiscount * 100)}%
-                        </span>
-                      )}
-                    </Row>
-                    <div className="font-semibold text-teal-600">
-                      {formatMoney(discountedPrice)}
-                    </div>
-                  </Col>
-                ) : (
+              {isToggleable ? (
+                // Toggle switch for toggleable items
+                <Row className="items-center justify-center">
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={isEnabled}
+                      onChange={handleToggle}
+                      className="peer sr-only"
+                    />
+                    <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-gray-600" />
+                    <span className="text-ink-700 ml-2 text-sm">
+                      {isEnabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </label>
+                </Row>
+              ) : item.alwaysEnabled ? (
+                // Always-enabled items (like supporter badges) - show "Active"
+                <div className="text-center text-sm font-medium text-green-600">
+                  Active
+                </div>
+              ) : (
+                // Non-toggleable owned items (instant like streak freeze)
+                <div className="text-ink-500 text-center text-sm">
+                  Already applied
+                </div>
+              )}
+              {/* Expiration date for time-limited items */}
+              {entitlement?.expiresTime && (
+                <div className="text-ink-500 text-center text-xs">
+                  Expires{' '}
+                  {new Date(entitlement.expiresTime).toLocaleDateString()}
+                </div>
+              )}
+              {/* Buy more button for unlimited items (like supporter badges that stack) */}
+              {item.limit === 'unlimited' && (
+                <Row className="border-ink-200 mt-1 items-center justify-between border-t pt-2">
                   <div className="font-semibold text-teal-600">
                     {formatMoney(item.price)}
                   </div>
-                )}
+                  {!canPurchase && user ? (
+                    <Link href="/checkout">
+                      <Button size="xs" color="gradient-pink">
+                        Buy mana
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      size="xs"
+                      color="indigo-outline"
+                      disabled={!user}
+                      onClick={() => setShowConfirmModal(true)}
+                    >
+                      Add more time
+                    </Button>
+                  )}
+                </Row>
+              )}
+            </Col>
+          ) : item.type === 'earned' ? (
+            // Earned items that aren't owned - show locked state
+            <div className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-gray-100 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+              <FaLock className="h-3 w-3" />
+              <span>Reserved for Past Champions</span>
+            </div>
+          ) : (
+            // Non-owned item layout - stacks vertically on very narrow screens
+            <>
+              <Col className="mt-auto gap-2 pt-2">
+                <Row className="items-center justify-between">
+                  {hasDiscount || item.originalPrice ? (
+                    <Col className="gap-0.5">
+                      <Row className="items-center gap-1.5">
+                        <span className="text-ink-400 text-xs line-through">
+                          {formatMoney(item.originalPrice ?? item.price)}
+                        </span>
+                        {item.originalPrice && (
+                          <span className="rounded bg-rose-100 px-1 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">
+                            SALE
+                          </span>
+                        )}
+                        {hasDiscount && (
+                          <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                            -{Math.round(shopDiscount * 100)}%
+                          </span>
+                        )}
+                      </Row>
+                      <div className="font-semibold text-teal-600">
+                        {formatMoney(discountedPrice)}
+                      </div>
+                    </Col>
+                  ) : (
+                    <div className="font-semibold text-teal-600">
+                      {formatMoney(item.price)}
+                    </div>
+                  )}
 
-                {/* Buy button inline on wider screens */}
-                <div className="hidden min-[480px]:block">
+                  {/* Buy button inline on wider screens */}
+                  <div className="hidden min-[480px]:block">
+                    {isSeasonalUnavailable ? (
+                      <Button size="sm" color="gray" disabled>
+                        Not available
+                      </Button>
+                    ) : isStreakFreezeAtMax ? (
+                      <Button size="sm" color="gray" disabled>
+                        Max owned
+                      </Button>
+                    ) : !canPurchase && user ? (
+                      <Link href="/checkout">
+                        <Button size="sm" color="gradient-pink">
+                          Buy mana
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        size="sm"
+                        color="indigo"
+                        disabled={!user}
+                        onClick={() => setShowConfirmModal(true)}
+                      >
+                        Buy
+                      </Button>
+                    )}
+                  </div>
+                </Row>
+
+                {/* Full-width button on narrow screens */}
+                <div className="min-[480px]:hidden">
                   {isSeasonalUnavailable ? (
-                    <Button size="sm" color="gray" disabled>
+                    <Button size="sm" color="gray" disabled className="w-full">
                       Not available
                     </Button>
                   ) : isStreakFreezeAtMax ? (
-                    <Button size="sm" color="gray" disabled>
+                    <Button size="sm" color="gray" disabled className="w-full">
                       Max owned
                     </Button>
                   ) : !canPurchase && user ? (
-                    <Link href="/checkout">
-                      <Button size="sm" color="gradient-pink">
+                    <Link href="/checkout" className="block">
+                      <Button
+                        size="sm"
+                        color="gradient-pink"
+                        className="w-full"
+                      >
                         Buy mana
                       </Button>
                     </Link>
@@ -4512,52 +5144,23 @@ function ShopItemCard(props: {
                       color="indigo"
                       disabled={!user}
                       onClick={() => setShowConfirmModal(true)}
+                      className="w-full"
                     >
                       Buy
                     </Button>
                   )}
                 </div>
-              </Row>
+              </Col>
 
-              {/* Full-width button on narrow screens */}
-              <div className="min-[480px]:hidden">
-                {isSeasonalUnavailable ? (
-                  <Button size="sm" color="gray" disabled className="w-full">
-                    Not available
-                  </Button>
-                ) : isStreakFreezeAtMax ? (
-                  <Button size="sm" color="gray" disabled className="w-full">
-                    Max owned
-                  </Button>
-                ) : !canPurchase && user ? (
-                  <Link href="/checkout" className="block">
-                    <Button size="sm" color="gradient-pink" className="w-full">
-                      Buy mana
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    size="sm"
-                    color="indigo"
-                    disabled={!user}
-                    onClick={() => setShowConfirmModal(true)}
-                    className="w-full"
-                  >
-                    Buy
-                  </Button>
-                )}
-              </div>
-            </Col>
-
-            {item.duration && (
-              <div className="text-ink-500 text-xs">
-                Duration: {Math.round(item.duration / (24 * 60 * 60 * 1000))}{' '}
-                days
-              </div>
-            )}
-          </>
-        )}
-      </Card>
+              {item.duration && (
+                <div className="text-ink-500 text-xs">
+                  Duration: {Math.round(item.duration / (24 * 60 * 60 * 1000))}{' '}
+                  days
+                </div>
+              )}
+            </>
+          )}
+        </Card>
       </div>
 
       <Modal open={showConfirmModal} setOpen={setShowConfirmModal}>

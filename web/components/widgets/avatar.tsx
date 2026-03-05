@@ -245,7 +245,9 @@ export const Avatar = memo(
         {/* Black hole - dark swirling void */}
         {hasBlackHole && <BlackHoleDecoration size={size} />}
         {/* Fire item - blazing ring of fire */}
-        {hasFireItem && <FireItemDecoration size={size} animate={animateFireItem} />}
+        {hasFireItem && (
+          <FireItemDecoration size={size} animate={animateFireItem} />
+        )}
         {/* Angel wings - feathered wings flanking avatar (behind profile pic) */}
         {hasAngelWings && (
           <AngelWingsDecoration
@@ -281,10 +283,15 @@ export const Avatar = memo(
               hasGoldenBorder && 'relative ring-2 ring-amber-400',
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole && 'relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]',
+              hasBlackHole &&
+                'relative shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40',
               hasFireItem && 'relative'
             )}
-            style={{ maxWidth: `${s * 0.25}rem`, position: 'relative', zIndex: 0 }}
+            style={{
+              maxWidth: `${s * 0.25}rem`,
+              position: 'relative',
+              zIndex: 0,
+            }}
             src={avatarUrl}
             onClick={onClick}
             alt={`${username ?? 'Unknown user'} avatar`}
@@ -303,7 +310,8 @@ export const Avatar = memo(
               hasGoldenBorder && 'relative ring-2 ring-amber-400',
               hasBadAura && 'relative ring-2 ring-red-500',
               hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole && 'relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]',
+              hasBlackHole &&
+                'relative shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40',
               hasFireItem && 'relative'
             )}
             style={{ position: 'relative', zIndex: 0 }}
@@ -311,7 +319,9 @@ export const Avatar = memo(
           />
         )}
         {/* Fire item foreground flames - rendered ON TOP of avatar */}
-        {hasFireItem && <FireItemForeground size={size} animate={animateFireItem} />}
+        {hasFireItem && (
+          <FireItemForeground size={size} animate={animateFireItem} />
+        )}
         {/* Fresh user sprout */}
         {isUserFresh && (
           <div className="absolute -right-2 -top-[0.41rem] rotate-45">
@@ -416,8 +426,7 @@ function AngelWingsDecoration(props: {
 function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
   const { size } = props
   // Larger size to show the accretion disk properly
-  const bhSize =
-    size === '2xs' || size === 'xs' ? 32 : size === 'sm' ? 48 : 64
+  const bhSize = size === '2xs' || size === 'xs' ? 32 : size === 'sm' ? 48 : 64
   const offset =
     size === '2xs' || size === 'xs' ? -8 : size === 'sm' ? -12 : -16
 
@@ -437,7 +446,10 @@ function BlackHoleDecoration(props: { size?: AvatarSizeType }) {
 }
 
 // Fire item background glow — fiery halo BEHIND avatar, concentrated at bottom-right where flames are
-function FireItemDecoration(props: { size?: AvatarSizeType; animate?: boolean }) {
+function FireItemDecoration(props: {
+  size?: AvatarSizeType
+  animate?: boolean
+}) {
   const { animate } = props
   return (
     <div
@@ -455,13 +467,27 @@ function FireItemDecoration(props: { size?: AvatarSizeType; animate?: boolean })
 }
 
 // Foreground: flames (unclipped) + wispy smoke + flame smoke wisps + embers (clipped) ON TOP of avatar
-function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean }) {
+function FireItemForeground(props: {
+  size?: AvatarSizeType
+  animate?: boolean
+}) {
   const { size, animate } = props
   // flameSize must maintain a constant ratio to avatar pixel size (1.375)
   // so flames sit on the avatar border at all sizes
   const s =
-    size === '2xs' ? 4 : size === 'xs' ? 6 : size === 'sm' ? 8
-    : size === 'md' ? 10 : size === 'lg' ? 12 : size === 'xl' ? 24 : 10
+    size === '2xs'
+      ? 4
+      : size === 'xs'
+      ? 6
+      : size === 'sm'
+      ? 8
+      : size === 'md'
+      ? 10
+      : size === 'lg'
+      ? 12
+      : size === 'xl'
+      ? 24
+      : 10
   const flameSize = Math.round(s * 4 * 1.375)
   const playState = animate ? 'running' : 'paused'
   return (
@@ -516,9 +542,12 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
           <div
             className="pointer-events-none absolute z-20"
             style={{
-              right: '-2%', bottom: '20%',
-              width: '16px', height: '3px',
-              background: 'linear-gradient(135deg, rgba(200,200,210,0.7) 0%, rgba(160,165,175,0.4) 60%, transparent 100%)',
+              right: '-2%',
+              bottom: '20%',
+              width: '16px',
+              height: '3px',
+              background:
+                'linear-gradient(135deg, rgba(200,200,210,0.7) 0%, rgba(160,165,175,0.4) 60%, transparent 100%)',
               borderRadius: '2px',
               filter: 'blur(1.5px)',
               animation: 'flame-smoke-drift-1 2.5s ease-out infinite',
@@ -527,9 +556,12 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
           <div
             className="pointer-events-none absolute z-20"
             style={{
-              right: '2%', bottom: '26%',
-              width: '12px', height: '2.5px',
-              background: 'linear-gradient(135deg, rgba(180,185,195,0.6) 0%, rgba(160,165,175,0.3) 60%, transparent 100%)',
+              right: '2%',
+              bottom: '26%',
+              width: '12px',
+              height: '2.5px',
+              background:
+                'linear-gradient(135deg, rgba(180,185,195,0.6) 0%, rgba(160,165,175,0.3) 60%, transparent 100%)',
               borderRadius: '2px',
               filter: 'blur(1px)',
               animation: 'flame-smoke-drift-2 3s ease-out infinite',
@@ -553,34 +585,55 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
         <div
           className="absolute"
           style={{
-            left: '10%', top: '55%',
-            width: '80%', height: '4px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)',
+            left: '10%',
+            top: '55%',
+            width: '80%',
+            height: '4px',
+            background:
+              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)',
             borderRadius: '2px',
             filter: 'blur(1.5px)',
-            ...(animate ? { animation: 'wisp-drift-1 4s ease-in-out infinite' } : {}),
+            ...(animate
+              ? { animation: 'wisp-drift-1 4s ease-in-out infinite' }
+              : {}),
           }}
         />
         <div
           className="absolute"
           style={{
-            left: '5%', top: '40%',
-            width: '65%', height: '3.5px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)',
+            left: '5%',
+            top: '40%',
+            width: '65%',
+            height: '3.5px',
+            background:
+              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)',
             borderRadius: '2px',
             filter: 'blur(2px)',
-            ...(animate ? { animation: 'wisp-drift-2 5s ease-in-out infinite', animationDelay: '0.8s' } : {}),
+            ...(animate
+              ? {
+                  animation: 'wisp-drift-2 5s ease-in-out infinite',
+                  animationDelay: '0.8s',
+                }
+              : {}),
           }}
         />
         <div
           className="absolute"
           style={{
-            left: '20%', top: '68%',
-            width: '70%', height: '3.5px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)',
+            left: '20%',
+            top: '68%',
+            width: '70%',
+            height: '3.5px',
+            background:
+              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)',
             borderRadius: '2px',
             filter: 'blur(1.5px)',
-            ...(animate ? { animation: 'wisp-drift-3 4.5s ease-in-out infinite', animationDelay: '1.5s' } : {}),
+            ...(animate
+              ? {
+                  animation: 'wisp-drift-3 4.5s ease-in-out infinite',
+                  animationDelay: '1.5s',
+                }
+              : {}),
           }}
         />
 
@@ -588,7 +641,8 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
         <div
           className="absolute h-[2px] w-[2px] rounded-full bg-amber-400"
           style={{
-            left: '70%', top: '60%',
+            left: '70%',
+            top: '60%',
             boxShadow: '0 0 3px #fbbf24',
             animation: 'ember-rise-1 1.5s infinite ease-out',
             animationPlayState: playState,
@@ -597,7 +651,8 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
         <div
           className="absolute h-[1.5px] w-[1.5px] rounded-full bg-orange-500"
           style={{
-            left: '66%', top: '66%',
+            left: '66%',
+            top: '66%',
             animation: 'ember-rise-2 2s infinite ease-out',
             animationDelay: '0.2s',
             animationPlayState: playState,
@@ -606,7 +661,8 @@ function FireItemForeground(props: { size?: AvatarSizeType; animate?: boolean })
         <div
           className="absolute h-[1.5px] w-[1.5px] rounded-full bg-red-500 opacity-80"
           style={{
-            left: '76%', top: '54%',
+            left: '76%',
+            top: '54%',
             animation: 'ember-rise-3 1.8s infinite ease-out',
             animationDelay: '0.5s',
             animationPlayState: playState,
@@ -627,7 +683,12 @@ export function BlueCapSvg({ style = 0 }: { style?: number }) {
   // Front-facing: 0: Classic (no text), 1: Mini (no text), 2: MANA (with text)
   // Left-facing:  3: MANA Left, 4: Left (no text), 5: Left Mini (no text)
   // Right-facing: 6: MANA Right, 7: Right (no text), 8: Right Mini (no text)
-  const c = { crown: '#2563EB', brim: '#1D4ED8', brimStroke: '#1E40AF', dark: '#1E3A8A' }
+  const c = {
+    crown: '#2563EB',
+    brim: '#1D4ED8',
+    brimStroke: '#1E40AF',
+    dark: '#1E3A8A',
+  }
   const isFrontFacing = style <= 2
   const showText = style === 2 || style === 3 || style === 6 // MANA text versions
   const isMirrored = style >= 6 // Styles 6, 7, 8 are mirrored (right-facing)
@@ -647,19 +708,71 @@ export function BlueCapSvg({ style = 0 }: { style?: number }) {
           </linearGradient>
         </defs>
         {/* Brim underside shadow — rendered behind brim, peeks out below */}
-        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        <path
+          d="M10,37 Q25,33 40,37"
+          fill="none"
+          stroke="#000000"
+          strokeWidth="2"
+          opacity="0.8"
+        />
         {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
-        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z"
+          fill={`url(#${brimGradientId})`}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown — head-on view */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* MANA text - only on style 2 */}
-        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {showText && (
+          <text
+            x="25"
+            y="17"
+            fontFamily="Arial, sans-serif"
+            fontWeight="bold"
+            fontSize="7"
+            fill="#ffffff"
+            textAnchor="middle"
+          >
+            MANA
+          </text>
+        )}
         {/* Button on top */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </svg>
@@ -671,21 +784,74 @@ export function BlueCapSvg({ style = 0 }: { style?: number }) {
     <svg viewBox="0 0 50 40" overflow="visible">
       <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
         {/* Brim — Taper C: smooth left extension, tapered right */}
-        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z"
+          fill={c.brim}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
-        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
+        <path
+          d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* Button */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </g>
       {/* MANA text — rendered outside the mirror group so it stays readable */}
-      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+      {showText && (
+        <text
+          x="25"
+          y="17"
+          fontFamily="Arial, sans-serif"
+          fontWeight="bold"
+          fontSize="7"
+          fill="#ffffff"
+          textAnchor="middle"
+        >
+          MANA
+        </text>
+      )}
     </svg>
   )
 }
@@ -713,19 +879,71 @@ export function RedCapSvg({ style = 0 }: { style?: number }) {
           </linearGradient>
         </defs>
         {/* Brim underside shadow — rendered behind brim, peeks out below */}
-        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        <path
+          d="M10,37 Q25,33 40,37"
+          fill="none"
+          stroke="#000000"
+          strokeWidth="2"
+          opacity="0.8"
+        />
         {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
-        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z"
+          fill={`url(#${brimGradientId})`}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown — head-on view */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* MANA text - only on style 2 */}
-        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {showText && (
+          <text
+            x="25"
+            y="17"
+            fontFamily="Arial, sans-serif"
+            fontWeight="bold"
+            fontSize="7"
+            fill="#ffffff"
+            textAnchor="middle"
+          >
+            MANA
+          </text>
+        )}
         {/* Button on top */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </svg>
@@ -737,21 +955,74 @@ export function RedCapSvg({ style = 0 }: { style?: number }) {
     <svg viewBox="0 0 50 40" overflow="visible">
       <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
         {/* Brim — Taper C: smooth left extension, tapered right */}
-        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z"
+          fill={c.brim}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
-        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
+        <path
+          d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* Button */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </g>
       {/* MANA text — rendered outside the mirror group so it stays readable */}
-      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+      {showText && (
+        <text
+          x="25"
+          y="17"
+          fontFamily="Arial, sans-serif"
+          fontWeight="bold"
+          fontSize="7"
+          fill="#ffffff"
+          textAnchor="middle"
+        >
+          MANA
+        </text>
+      )}
     </svg>
   )
 }
@@ -779,19 +1050,71 @@ export function GreenCapSvg({ style = 0 }: { style?: number }) {
           </linearGradient>
         </defs>
         {/* Brim underside shadow — rendered behind brim, peeks out below */}
-        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        <path
+          d="M10,37 Q25,33 40,37"
+          fill="none"
+          stroke="#000000"
+          strokeWidth="2"
+          opacity="0.8"
+        />
         {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
-        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z"
+          fill={`url(#${brimGradientId})`}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown — head-on view */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* MANA text - only on style 2 */}
-        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {showText && (
+          <text
+            x="25"
+            y="17"
+            fontFamily="Arial, sans-serif"
+            fontWeight="bold"
+            fontSize="7"
+            fill="#ffffff"
+            textAnchor="middle"
+          >
+            MANA
+          </text>
+        )}
         {/* Button on top */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </svg>
@@ -803,21 +1126,74 @@ export function GreenCapSvg({ style = 0 }: { style?: number }) {
     <svg viewBox="0 0 50 40" overflow="visible">
       <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
         {/* Brim — Taper C: smooth left extension, tapered right */}
-        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z"
+          fill={c.brim}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
-        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
+        <path
+          d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* Button */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </g>
       {/* MANA text — rendered outside the mirror group so it stays readable */}
-      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+      {showText && (
+        <text
+          x="25"
+          y="17"
+          fontFamily="Arial, sans-serif"
+          fontWeight="bold"
+          fontSize="7"
+          fill="#ffffff"
+          textAnchor="middle"
+        >
+          MANA
+        </text>
+      )}
     </svg>
   )
 }
@@ -845,19 +1221,71 @@ export function BlackCapSvg({ style = 0 }: { style?: number }) {
           </linearGradient>
         </defs>
         {/* Brim underside shadow — rendered behind brim, peeks out below */}
-        <path d="M10,37 Q25,33 40,37" fill="none" stroke="#000000" strokeWidth="2" opacity="0.8" />
+        <path
+          d="M10,37 Q25,33 40,37"
+          fill="none"
+          stroke="#000000"
+          strokeWidth="2"
+          opacity="0.8"
+        />
         {/* Brim — curved brim effect: corners dip lower than center, straighter sides */}
-        <path d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z" fill={`url(#${brimGradientId})`} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,22 C1,27 3,38 7,38 Q25,32 43,38 C47,38 49,27 47,22 C40,26 10,26 3,22 Z"
+          fill={`url(#${brimGradientId})`}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M6,25 C5,29 6,35 10,35 Q25,30 40,35 C44,35 45,29 44,25"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown — head-on view */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,22 C42,25 8,25 3,22Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* MANA text - only on style 2 */}
-        {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+        {showText && (
+          <text
+            x="25"
+            y="17"
+            fontFamily="Arial, sans-serif"
+            fontWeight="bold"
+            fontSize="7"
+            fill="#ffffff"
+            textAnchor="middle"
+          >
+            MANA
+          </text>
+        )}
         {/* Button on top */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </svg>
@@ -869,21 +1297,74 @@ export function BlackCapSvg({ style = 0 }: { style?: number }) {
     <svg viewBox="0 0 50 40" overflow="visible">
       <g transform={isMirrored ? 'translate(50,0) scale(-1,1)' : undefined}>
         {/* Brim — Taper C: smooth left extension, tapered right */}
-        <path d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z" fill={c.brim} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,20 C3,20 -5,26 -8,31 C-11,37 6,37 25,39 C39,39 47,34 47,20 Q25,23 3,20Z"
+          fill={c.brim}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Dashed stitching on brim */}
-        <path d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
-        <path d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24" fill="none" stroke={c.dark} strokeWidth="0.6" opacity="0.5" strokeDasharray="1.5,1.5" />
+        <path
+          d="M3,22 C3,22 -4,26 -6,30 C-9,35 6,35 25,37 C38,37 45,32 45,22"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
+        <path
+          d="M3,24 C3,24 -3,26 -5,29 C-7,33 6,33 25,35 C36,35 43,30 43,24"
+          fill="none"
+          stroke={c.dark}
+          strokeWidth="0.6"
+          opacity="0.5"
+          strokeDasharray="1.5,1.5"
+        />
         {/* Crown */}
-        <path d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z" fill={c.crown} stroke={c.dark} strokeWidth="1" />
+        <path
+          d="M3,14 C3,6 11,0 25,0 C39,0 47,6 47,14 L47,20 C47,23 42,25 25,25 C8,25 3,23 3,20Z"
+          fill={c.crown}
+          stroke={c.dark}
+          strokeWidth="1"
+        />
         {/* Panel seams */}
-        <path d="M25,1 L25,25" stroke={c.dark} strokeWidth="0.5" opacity="0.35" />
-        <path d="M25,1 C14,3 8,8 6,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
-        <path d="M25,1 C36,3 42,8 44,20" stroke={c.dark} strokeWidth="0.5" fill="none" opacity="0.35" />
+        <path
+          d="M25,1 L25,25"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C14,3 8,8 6,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
+        <path
+          d="M25,1 C36,3 42,8 44,20"
+          stroke={c.dark}
+          strokeWidth="0.5"
+          fill="none"
+          opacity="0.35"
+        />
         {/* Button */}
         <circle cx="25" cy="1" r="2.2" fill={c.dark} />
       </g>
       {/* MANA text — rendered outside the mirror group so it stays readable */}
-      {showText && <text x="25" y="17" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="7" fill="#ffffff" textAnchor="middle">MANA</text>}
+      {showText && (
+        <text
+          x="25"
+          y="17"
+          fontFamily="Arial, sans-serif"
+          fontWeight="bold"
+          fontSize="7"
+          fill="#ffffff"
+          textAnchor="middle"
+        >
+          MANA
+        </text>
+      )}
     </svg>
   )
 }
@@ -1040,8 +1521,8 @@ function AvatarOverlay(props: {
       // Otherwise render the full ellipse — same viewBox/sizes either way
       const arcPath = haloHalf
         ? haloHalf === 'back'
-          ? 'M 2,6 A 18,5 0 0,0 38,6'  // counter-clockwise = lower arc (behind hat)
-          : 'M 2,6 A 18,5 0 0,1 38,6'  // clockwise = upper arc (in front of hat)
+          ? 'M 2,6 A 18,5 0 0,0 38,6' // counter-clockwise = lower arc (behind hat)
+          : 'M 2,6 A 18,5 0 0,1 38,6' // clockwise = upper arc (in front of hat)
         : null
 
       const lightFilter =
@@ -1062,13 +1543,39 @@ function AvatarOverlay(props: {
           >
             {arcPath ? (
               <>
-                <path d={arcPath} stroke={amberStroke} strokeWidth="3.5" fill="none" />
-                <path d={arcPath} stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+                <path
+                  d={arcPath}
+                  stroke={amberStroke}
+                  strokeWidth="3.5"
+                  fill="none"
+                />
+                <path
+                  d={arcPath}
+                  stroke={whiteStroke}
+                  strokeWidth="1.5"
+                  fill="none"
+                />
               </>
             ) : (
               <>
-                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={amberStroke} strokeWidth="3.5" fill="none" />
-                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+                <ellipse
+                  cx="20"
+                  cy="6"
+                  rx="18"
+                  ry="5"
+                  stroke={amberStroke}
+                  strokeWidth="3.5"
+                  fill="none"
+                />
+                <ellipse
+                  cx="20"
+                  cy="6"
+                  rx="18"
+                  ry="5"
+                  stroke={whiteStroke}
+                  strokeWidth="1.5"
+                  fill="none"
+                />
               </>
             )}
           </svg>
@@ -1083,13 +1590,39 @@ function AvatarOverlay(props: {
           >
             {arcPath ? (
               <>
-                <path d={arcPath} stroke={amberStrokeDark} strokeWidth="3.5" fill="none" />
-                <path d={arcPath} stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+                <path
+                  d={arcPath}
+                  stroke={amberStrokeDark}
+                  strokeWidth="3.5"
+                  fill="none"
+                />
+                <path
+                  d={arcPath}
+                  stroke={whiteStroke}
+                  strokeWidth="1.5"
+                  fill="none"
+                />
               </>
             ) : (
               <>
-                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={amberStrokeDark} strokeWidth="3.5" fill="none" />
-                <ellipse cx="20" cy="6" rx="18" ry="5" stroke={whiteStroke} strokeWidth="1.5" fill="none" />
+                <ellipse
+                  cx="20"
+                  cy="6"
+                  rx="18"
+                  ry="5"
+                  stroke={amberStrokeDark}
+                  strokeWidth="3.5"
+                  fill="none"
+                />
+                <ellipse
+                  cx="20"
+                  cy="6"
+                  rx="18"
+                  ry="5"
+                  stroke={whiteStroke}
+                  strokeWidth="1.5"
+                  fill="none"
+                />
               </>
             )}
           </svg>
@@ -1242,7 +1775,8 @@ function AvatarOverlay(props: {
               : size === 'sm'
               ? '-right-1.5 -top-2'
               : '-right-2 -top-2.5',
-            animateHatOnHover && 'group-hover:-translate-y-0.5 group-hover:scale-110',
+            animateHatOnHover &&
+              'group-hover:-translate-y-0.5 group-hover:scale-110',
             animateHat && '-translate-y-0.5 scale-110'
           )}
         >
@@ -1325,9 +1859,10 @@ function AvatarOverlay(props: {
           )}
           style={{
             left: '50%',
-            transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            transform: isFrontFacing
+              ? 'translateX(-50%)'
+              : 'translateX(-50%) rotate(-5deg)',
+            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1357,9 +1892,10 @@ function AvatarOverlay(props: {
           )}
           style={{
             left: '50%',
-            transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            transform: isFrontFacing
+              ? 'translateX(-50%)'
+              : 'translateX(-50%) rotate(-5deg)',
+            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1392,8 +1928,7 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1423,9 +1958,10 @@ function AvatarOverlay(props: {
           )}
           style={{
             left: '50%',
-            transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            transform: isFrontFacing
+              ? 'translateX(-50%)'
+              : 'translateX(-50%) rotate(-5deg)',
+            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1589,7 +2125,11 @@ function AvatarOverlay(props: {
               left:
                 size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
               top:
-                size === '2xs' || size === 'xs' ? -10 : size === 'sm' ? -14 : -18,
+                size === '2xs' || size === 'xs'
+                  ? -10
+                  : size === 'sm'
+                  ? -14
+                  : -18,
               width: earSize,
               height: earSize * 1.5,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
@@ -1607,7 +2147,11 @@ function AvatarOverlay(props: {
               right:
                 size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
               top:
-                size === '2xs' || size === 'xs' ? -10 : size === 'sm' ? -14 : -18,
+                size === '2xs' || size === 'xs'
+                  ? -10
+                  : size === 'sm'
+                  ? -14
+                  : -18,
               width: earSize,
               height: earSize * 1.5,
               filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
@@ -1630,8 +2174,7 @@ function AvatarAccessory(props: {
   const { accessory, size } = props
 
   // Scale sizes based on avatar size
-  const iconSize =
-    size === '2xs' || size === 'xs' ? 8 : size === 'sm' ? 10 : 14
+  const iconSize = size === '2xs' || size === 'xs' ? 8 : size === 'sm' ? 10 : 14
 
   switch (accessory) {
     case 'avatar-monocle': {
@@ -1657,8 +2200,10 @@ function AvatarAccessory(props: {
         <CrystalBallSvg
           className="absolute"
           style={{
-            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-            bottom: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            right:
+              size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            bottom:
+              size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
             width: ballSize,
             height: ballSize,
             filter: 'drop-shadow(0 0 3px rgba(139,92,246,0.6))',
@@ -1683,13 +2228,16 @@ function AvatarAccessory(props: {
     }
     case 'avatar-thought-yes': {
       // YES thought bubble at top-left with trailing bubbles
-      const bubbleSize = size === '2xs' || size === 'xs' ? 5 : size === 'sm' ? 6 : 8
+      const bubbleSize =
+        size === '2xs' || size === 'xs' ? 5 : size === 'sm' ? 6 : 8
       return (
         <div
           className="absolute"
           style={{
-            left: size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8,
-            top: size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+            left:
+              size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8,
+            top:
+              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         >
@@ -1727,13 +2275,16 @@ function AvatarAccessory(props: {
     }
     case 'avatar-thought-no': {
       // NO thought bubble at top-left with trailing bubbles
-      const bubbleSize = size === '2xs' || size === 'xs' ? 5 : size === 'sm' ? 6 : 8
+      const bubbleSize =
+        size === '2xs' || size === 'xs' ? 5 : size === 'sm' ? 6 : 8
       return (
         <div
           className="absolute"
           style={{
-            left: size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8,
-            top: size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
+            left:
+              size === '2xs' || size === 'xs' ? -4 : size === 'sm' ? -6 : -8,
+            top:
+              size === '2xs' || size === 'xs' ? -6 : size === 'sm' ? -8 : -10,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         >
@@ -1777,8 +2328,10 @@ function AvatarAccessory(props: {
           direction="up"
           className="absolute"
           style={{
-            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-            bottom: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            right:
+              size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            bottom:
+              size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
             width: arrowSize,
             height: arrowSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
@@ -1794,8 +2347,10 @@ function AvatarAccessory(props: {
           direction="down"
           className="absolute"
           style={{
-            right: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-            bottom: size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            right:
+              size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+            bottom:
+              size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
             width: arrowSize,
             height: arrowSize,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
@@ -1808,7 +2363,7 @@ function AvatarAccessory(props: {
         size === '2xs' || size === 'xs' ? 17 : size === 'sm' ? 27 : 37
       return (
         <StonksMemeArrowSvg
-          className="absolute pointer-events-none"
+          className="pointer-events-none absolute"
           style={{
             left: '65%',
             top: '70%',
@@ -1874,20 +2429,38 @@ export const TrumpStyleCap2 = ({ team }: { team: 'red' | 'green' }) => {
     <svg viewBox="0 0 32 24" className="h-full w-full">
       <defs>
         {/* Gradient for crown 3D effect */}
-        <linearGradient id={`crown-grad-${team}`} x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient
+          id={`crown-grad-${team}`}
+          x1="0%"
+          y1="0%"
+          x2="0%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor={colors.light} />
           <stop offset="50%" stopColor={colors.main} />
           <stop offset="100%" stopColor={colors.dark} />
         </linearGradient>
         {/* Gradient for brim top surface */}
-        <linearGradient id={`brim-top-${team}`} x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient
+          id={`brim-top-${team}`}
+          x1="0%"
+          y1="0%"
+          x2="0%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor={colors.dark} />
           <stop offset="100%" stopColor={colors.darker} />
         </linearGradient>
       </defs>
 
       {/* Crown - simple dome shape */}
-      <ellipse cx="16" cy="10" rx="11" ry="8" fill={`url(#crown-grad-${team})`} />
+      <ellipse
+        cx="16"
+        cy="10"
+        rx="11"
+        ry="8"
+        fill={`url(#crown-grad-${team})`}
+      />
 
       {/* Front panel - gives structured cap look */}
       <path
@@ -1907,7 +2480,14 @@ export const TrumpStyleCap2 = ({ team }: { team: 'red' | 'green' }) => {
       />
 
       {/* Highlight on dome */}
-      <ellipse cx="13" cy="7" rx="4" ry="2" fill={colors.accent} opacity="0.25" />
+      <ellipse
+        cx="13"
+        cy="7"
+        rx="4"
+        ry="2"
+        fill={colors.accent}
+        opacity="0.25"
+      />
 
       {/*
         BRIM - The key geometry:
@@ -1960,7 +2540,14 @@ export const TrumpStyleCap2 = ({ team }: { team: 'red' | 'green' }) => {
       />
 
       {/* Subtle highlight on brim center (facing viewer) */}
-      <ellipse cx="16" cy="15" rx="5" ry="1.5" fill={colors.accent} opacity="0.15" />
+      <ellipse
+        cx="16"
+        cy="15"
+        rx="5"
+        ry="1.5"
+        fill={colors.accent}
+        opacity="0.15"
+      />
     </svg>
   )
 }
@@ -2059,7 +2646,14 @@ export const TrumpStyleCap4 = ({ team }: { team: 'red' | 'green' }) => {
       />
 
       {/* Highlight on dome */}
-      <ellipse cx="13" cy="6" rx="3" ry="1.5" fill={colors.accent} opacity="0.2" />
+      <ellipse
+        cx="13"
+        cy="6"
+        rx="3"
+        ry="1.5"
+        fill={colors.accent}
+        opacity="0.2"
+      />
 
       {/* === BRIM - The key geometry === */}
       {/*
@@ -2123,7 +2717,14 @@ export const TrumpStyleCap4 = ({ team }: { team: 'red' | 'green' }) => {
       />
 
       {/* Highlight on brim center (facing viewer) */}
-      <ellipse cx="16" cy="14" rx="4" ry="1.2" fill={colors.accent} opacity="0.15" />
+      <ellipse
+        cx="16"
+        cy="14"
+        rx="4"
+        ry="1.2"
+        fill={colors.accent}
+        opacity="0.15"
+      />
     </svg>
   )
 }

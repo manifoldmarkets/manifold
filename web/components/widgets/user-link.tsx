@@ -25,7 +25,10 @@ import { FaStar } from 'react-icons/fa'
 import { User, UserBan } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
 import { UserEntitlement } from 'common/shop/types'
-import { userHasSupporterBadge, userHasCharityChampionTrophy } from 'common/shop/items'
+import {
+  userHasSupporterBadge,
+  userHasCharityChampionTrophy,
+} from 'common/shop/items'
 import { FaTrophy } from 'react-icons/fa6'
 import { getUserSupporterTier, SUPPORTER_TIERS } from 'common/supporter-config'
 import {

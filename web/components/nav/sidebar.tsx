@@ -161,7 +161,13 @@ export default function Sidebar(props: {
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean; showShopBadge: boolean; onShopClick: () => void }
+  options: {
+    isNewUser: boolean
+    isLiveTV?: boolean
+    isAdminOrMod: boolean
+    showShopBadge: boolean
+    onShopClick: () => void
+  }
 ) => {
   const { isLiveTV } = options
   if (loggedIn)
@@ -222,7 +228,13 @@ const getDesktopNav = (
 const getMobileNav = (
   loggedIn: boolean,
   toggleModal: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean; showShopBadge: boolean; onShopClick: () => void }
+  options: {
+    isNewUser: boolean
+    isLiveTV?: boolean
+    isAdminOrMod: boolean
+    showShopBadge: boolean
+    onShopClick: () => void
+  }
 ) => {
   const { isAdminOrMod, isLiveTV } = options
 

@@ -14,7 +14,13 @@ export function BlackHoleSvg(props: SvgProps) {
   return (
     <svg className={props.className} style={props.style} viewBox="0 0 64 64">
       <defs>
-        <linearGradient id={`bh-acc-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id={`bh-acc-${uid}`}
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#f97316" />
           <stop offset="30%" stopColor="#ec4899" />
           <stop offset="60%" stopColor="#a855f7" />
@@ -32,13 +38,71 @@ export function BlackHoleSvg(props: SvgProps) {
         </radialGradient>
       </defs>
       <circle cx="32" cy="32" r="30" fill={`url(#bh-glow-${uid})`} />
-      <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke={`url(#bh-acc-${uid})`} strokeWidth="4" opacity="0.8" transform="rotate(-20 32 32)" />
-      <ellipse cx="32" cy="32" rx="24" ry="8" fill="none" stroke="#f472b6" strokeWidth="2" opacity="0.6" transform="rotate(-20 32 32)" />
-      <ellipse cx="32" cy="32" rx="20" ry="6" fill="none" stroke="#c084fc" strokeWidth="1.5" opacity="0.5" transform="rotate(-20 32 32)" />
-      <path d="M8 32 Q16 20 32 18 Q48 16 56 28" stroke="#f97316" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
-      <path d="M56 32 Q48 44 32 46 Q16 48 8 36" stroke="#a855f7" strokeWidth="3" fill="none" opacity="0.7" strokeLinecap="round" />
-      <path d="M32 4 Q44 8 52 20 Q56 32 48 44" stroke="#ec4899" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
-      <path d="M32 60 Q20 56 12 44 Q8 32 16 20" stroke="#8b5cf6" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
+      <ellipse
+        cx="32"
+        cy="32"
+        rx="28"
+        ry="10"
+        fill="none"
+        stroke={`url(#bh-acc-${uid})`}
+        strokeWidth="4"
+        opacity="0.8"
+        transform="rotate(-20 32 32)"
+      />
+      <ellipse
+        cx="32"
+        cy="32"
+        rx="24"
+        ry="8"
+        fill="none"
+        stroke="#f472b6"
+        strokeWidth="2"
+        opacity="0.6"
+        transform="rotate(-20 32 32)"
+      />
+      <ellipse
+        cx="32"
+        cy="32"
+        rx="20"
+        ry="6"
+        fill="none"
+        stroke="#c084fc"
+        strokeWidth="1.5"
+        opacity="0.5"
+        transform="rotate(-20 32 32)"
+      />
+      <path
+        d="M8 32 Q16 20 32 18 Q48 16 56 28"
+        stroke="#f97316"
+        strokeWidth="3"
+        fill="none"
+        opacity="0.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M56 32 Q48 44 32 46 Q16 48 8 36"
+        stroke="#a855f7"
+        strokeWidth="3"
+        fill="none"
+        opacity="0.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M32 4 Q44 8 52 20 Q56 32 48 44"
+        stroke="#ec4899"
+        strokeWidth="2"
+        fill="none"
+        opacity="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M32 60 Q20 56 12 44 Q8 32 16 20"
+        stroke="#8b5cf6"
+        strokeWidth="2"
+        fill="none"
+        opacity="0.5"
+        strokeLinecap="round"
+      />
       <circle cx="12" cy="28" r="2" fill="#fbbf24" opacity="0.9" />
       <circle cx="52" cy="36" r="2" fill="#fb923c" opacity="0.9" />
       <circle cx="20" cy="40" r="1.5" fill="#f472b6" opacity="0.8" />
@@ -65,7 +129,7 @@ export function FireFlamesSvg({
         d="M60,59 C62,59 64,58 66,55 C68,51 66,47 65,44 C64,47 62,51 60,53 C58,55 59,57 60,59Z"
         fill="#f97316"
         className={clsx(
-          'opacity-90 transition-transform duration-300 origin-[60px_59px]',
+          'origin-[60px_59px] opacity-90 transition-transform duration-300',
           animate && 'scale-110'
         )}
       />
@@ -73,7 +137,7 @@ export function FireFlamesSvg({
         d="M56,59 C58,59 60,58 61,56 C61,53 60,51 59,49 C58,51 57,53 55,55 C55,57 55,58 56,59Z"
         fill="#dc2626"
         className={clsx(
-          'opacity-80 transition-transform duration-500 origin-[56px_59px]',
+          'origin-[56px_59px] opacity-80 transition-transform duration-500',
           animate && 'scale-110'
         )}
       />
@@ -81,7 +145,7 @@ export function FireFlamesSvg({
         d="M64,53 C65,53 66,52 67,50 C68,48 67,46 66.5,45 C66,46 65,48 64,49 C63,50 63.5,52 64,53Z"
         fill="#fbbf24"
         className={clsx(
-          'opacity-70 transition-transform duration-700 origin-[64px_53px]',
+          'origin-[64px_53px] opacity-70 transition-transform duration-700',
           animate && 'scale-125'
         )}
       />
@@ -90,7 +154,7 @@ export function FireFlamesSvg({
         d="M54,65 C56,65 57,64 58,62 C59,60 58,58 57,56 C57,58 56,60 55,61 C54,63 54,64 54,65Z"
         fill="#f97316"
         className={clsx(
-          'opacity-85 transition-transform duration-300 origin-[54px_65px]',
+          'opacity-85 origin-[54px_65px] transition-transform duration-300',
           animate && 'scale-110'
         )}
       />
@@ -98,7 +162,7 @@ export function FireFlamesSvg({
         d="M51,66 C52,66 53,65 54,64 C54,62 53,61 53,60 C52,61 52,62 51,63 C50,64 51,65 51,66Z"
         fill="#dc2626"
         className={clsx(
-          'opacity-75 transition-transform duration-500 origin-[51px_66px]',
+          'origin-[51px_66px] opacity-75 transition-transform duration-500',
           animate && 'scale-110'
         )}
       />
@@ -106,7 +170,7 @@ export function FireFlamesSvg({
         d="M57,61 C58,61 58,60 59,59 C59,58 58,57 58,56 C58,57 57,58 57,59 C57,60 57,60 57,61Z"
         fill="#fbbf24"
         className={clsx(
-          'opacity-65 transition-transform duration-700 origin-[57px_61px]',
+          'opacity-65 origin-[57px_61px] transition-transform duration-700',
           animate && 'scale-125'
         )}
       />
@@ -115,7 +179,7 @@ export function FireFlamesSvg({
         d="M56,70 C54,70 52,69 51,67 C51,64 52,62 53,60 C54,63 55,65 56,67 C57,68 57,69 56,70Z"
         fill="#f59e0b"
         className={clsx(
-          'opacity-75 transition-transform duration-[400ms] origin-[56px_70px]',
+          'origin-[56px_70px] opacity-75 transition-transform duration-[400ms]',
           animate && 'scale-110'
         )}
       />
@@ -123,7 +187,7 @@ export function FireFlamesSvg({
         d="M52,72 C50,72 48,71 48,69 C47,66 48,64 49,62 C50,65 51,67 52,69 C52,70 52,71 52,72Z"
         fill="#ea580c"
         className={clsx(
-          'opacity-75 transition-transform duration-[400ms] origin-[52px_72px]',
+          'origin-[52px_72px] opacity-75 transition-transform duration-[400ms]',
           animate && 'scale-110'
         )}
       />
@@ -131,7 +195,7 @@ export function FireFlamesSvg({
         d="M52,72 C54,72 56,71 58,68 C60,64 58,60 57,57 C56,60 54,64 52,66 C50,68 51,70 52,72Z"
         fill="#f97316"
         className={clsx(
-          'opacity-90 transition-transform duration-300 origin-[52px_72px]',
+          'origin-[52px_72px] opacity-90 transition-transform duration-300',
           animate && 'scale-110'
         )}
       />
@@ -139,7 +203,7 @@ export function FireFlamesSvg({
         d="M56,66 C57,66 58,65 59,63 C60,61 59,59 58.5,58 C58,59 57,61 56,62 C55,63 55.5,65 56,66Z"
         fill="#fbbf24"
         className={clsx(
-          'opacity-70 transition-transform duration-700 origin-[56px_66px]',
+          'origin-[56px_66px] opacity-70 transition-transform duration-700',
           animate && 'scale-125'
         )}
       />
@@ -186,8 +250,22 @@ export function AngelWingSvg(props: SvgProps) {
 export function MonocleSvg(props: SvgProps) {
   return (
     <svg className={props.className} style={props.style} viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" fill="rgba(200,220,255,0.15)" stroke="#D4AF37" strokeWidth="2.5" />
-      <circle cx="12" cy="12" r="7.5" fill="none" stroke="#B8860B" strokeWidth="0.5" />
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        fill="rgba(200,220,255,0.15)"
+        stroke="#D4AF37"
+        strokeWidth="2.5"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="7.5"
+        fill="none"
+        stroke="#B8860B"
+        strokeWidth="0.5"
+      />
       <ellipse cx="9" cy="9" rx="3" ry="2" fill="rgba(255,255,255,0.5)" />
     </svg>
   )
@@ -220,8 +298,22 @@ export function CrystalBallSvg(props: SvgProps) {
 export function DisguiseSvg(props: SvgProps) {
   return (
     <svg className={props.className} style={props.style} viewBox="0 0 32 22">
-      <circle cx="8" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
-      <circle cx="24" cy="8" r="6" fill="rgba(200,220,255,0.2)" stroke="#1F2937" strokeWidth="2" />
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        fill="rgba(200,220,255,0.2)"
+        stroke="#1F2937"
+        strokeWidth="2"
+      />
+      <circle
+        cx="24"
+        cy="8"
+        r="6"
+        fill="rgba(200,220,255,0.2)"
+        stroke="#1F2937"
+        strokeWidth="2"
+      />
       <path d="M14 8 Q16 6 18 8" stroke="#1F2937" strokeWidth="2" fill="none" />
       <line x1="2" y1="8" x2="0" y2="7" stroke="#1F2937" strokeWidth="1.5" />
       <line x1="30" y1="8" x2="32" y2="7" stroke="#1F2937" strokeWidth="1.5" />
@@ -230,8 +322,20 @@ export function DisguiseSvg(props: SvgProps) {
       <ellipse cx="14.5" cy="13" rx="1.5" ry="2" fill="rgba(255,255,255,0.3)" />
       <ellipse cx="14.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
       <ellipse cx="17.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
-      <path d="M3 3 Q8 1 13 4" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
-      <path d="M19 4 Q24 1 29 3" stroke="#4B3621" strokeWidth="2" strokeLinecap="round" fill="none" />
+      <path
+        d="M3 3 Q8 1 13 4"
+        stroke="#4B3621"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M19 4 Q24 1 29 3"
+        stroke="#4B3621"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
     </svg>
   )
 }
@@ -430,13 +534,7 @@ export function SantaHatSvg(props: SvgProps) {
   return (
     <svg className={props.className} style={props.style} viewBox="0 0 28 24">
       <defs>
-        <linearGradient
-          id={`santa-${uid}`}
-          x1="0%"
-          y1="0%"
-          x2="0%"
-          y2="100%"
-        >
+        <linearGradient id={`santa-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#EF4444" />
           <stop offset="100%" stopColor="#DC2626" />
         </linearGradient>
@@ -496,11 +594,7 @@ export function TinfoilHatSvg(props: SvgProps) {
         fill="#64748B"
         opacity="0.3"
       />
-      <path
-        d="M12 1.5L2 20l2-2 2 3 2-3V9z"
-        fill="#E2E8F0"
-        opacity="0.25"
-      />
+      <path d="M12 1.5L2 20l2-2 2 3 2-3V9z" fill="#E2E8F0" opacity="0.25" />
       <path
         d="M12 1.5l3 8-5 4 3 6.5"
         stroke="#E2E8F0"
@@ -589,21 +683,12 @@ export function DevilHornSvg({
       {side === 'left' ? (
         <>
           <path d="M0 16C0 8 8 2 14 1C11 4 6 12 5 16H0Z" fill="#DC2626" />
-          <path
-            d="M5 16C6 12 11 4 14 1C10 6 6 12 5 16Z"
-            fill="#991B1B"
-          />
+          <path d="M5 16C6 12 11 4 14 1C10 6 6 12 5 16Z" fill="#991B1B" />
         </>
       ) : (
         <>
-          <path
-            d="M16 16C16 8 8 2 2 1C5 4 10 12 11 16H16Z"
-            fill="#DC2626"
-          />
-          <path
-            d="M11 16C10 12 5 4 2 1C6 6 10 12 11 16Z"
-            fill="#991B1B"
-          />
+          <path d="M16 16C16 8 8 2 2 1C5 4 10 12 11 16H16Z" fill="#DC2626" />
+          <path d="M11 16C10 12 5 4 2 1C6 6 10 12 11 16Z" fill="#991B1B" />
         </>
       )}
     </svg>

@@ -59,8 +59,9 @@ export function BettingStreakModal(props: {
               Your streak was frozen! 🧊
             </span>
             <span className="ml-2">
-              A streak freeze was used to protect your {currentUser?.currentBettingStreak ?? 0}-day streak.
-              Make a prediction today to keep it going!
+              A streak freeze was used to protect your{' '}
+              {currentUser?.currentBettingStreak ?? 0}-day streak. Make a
+              prediction today to keep it going!
             </span>
           </Col>
         )}

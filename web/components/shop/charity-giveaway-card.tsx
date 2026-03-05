@@ -76,9 +76,17 @@ export function CharityGiveawayCard(props: {
   className?: string
   user?: User | null
 }) {
-  const { data: propData, isLoading = false, variant = 'full', className, user } = props
+  const {
+    data: propData,
+    isLoading = false,
+    variant = 'full',
+    className,
+    user,
+  } = props
   // Use provided data or fetch our own
-  const { data: fetchedData } = useAPIGetter('get-charity-giveaway', { userId: user?.id })
+  const { data: fetchedData } = useAPIGetter('get-charity-giveaway', {
+    userId: user?.id,
+  })
   const data = propData ?? fetchedData
 
   const giveaway = data?.giveaway
@@ -204,7 +212,11 @@ export function CharityGiveawayCard(props: {
 
             {/* Mini leaderboard */}
             {topUsers && topUsers.length > 0 && (
-              <MiniLeaderboard topUsers={topUsers} yourEntry={yourEntry} user={user} />
+              <MiniLeaderboard
+                topUsers={topUsers}
+                yourEntry={yourEntry}
+                user={user}
+              />
             )}
 
             {/* CTA */}
@@ -261,7 +273,11 @@ export function CharityGiveawayCard(props: {
 
             {/* Mini leaderboard */}
             {topUsers && topUsers.length > 0 && (
-              <MiniLeaderboard topUsers={topUsers} yourEntry={yourEntry} user={user} />
+              <MiniLeaderboard
+                topUsers={topUsers}
+                yourEntry={yourEntry}
+                user={user}
+              />
             )}
 
             <p className="text-ink-500 mb-3 text-xs">
@@ -324,7 +340,11 @@ export function CharityGiveawayCard(props: {
 
           {/* Mini leaderboard */}
           {topUsers && topUsers.length > 0 && (
-            <MiniLeaderboard topUsers={topUsers} yourEntry={yourEntry} user={user} />
+            <MiniLeaderboard
+              topUsers={topUsers}
+              yourEntry={yourEntry}
+              user={user}
+            />
           )}
 
           {/* CTA */}
