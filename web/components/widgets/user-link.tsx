@@ -25,7 +25,8 @@ import { FaStar } from 'react-icons/fa'
 import { User, UserBan } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
 import { UserEntitlement } from 'common/shop/types'
-import { userHasSupporterBadge } from 'common/shop/items'
+import { userHasSupporterBadge, userHasCharityChampionTrophy } from 'common/shop/items'
+import { FaTrophy } from 'react-icons/fa6'
 import { getUserSupporterTier, SUPPORTER_TIERS } from 'common/supporter-config'
 import {
   DisplayContext,
@@ -331,6 +332,10 @@ export function UserBadge(props: {
       />
     )
   }
+  // Show charity champion trophy if user has it enabled
+  if (userHasCharityChampionTrophy(entitlements)) {
+    badges.push(<CharityChampionBadge key="charity-champion" />)
+  }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
   }
@@ -447,6 +452,19 @@ function SupporterBadge({
           />
         )}
       </span>
+    </Tooltip>
+  )
+}
+
+// Show a trophy for the current Charity Champion
+function CharityChampionBadge() {
+  return (
+    <Tooltip text="Charity Champion" placement="right">
+      <FaTrophy
+        className="h-4 w-4 text-amber-500"
+        aria-hidden="true"
+        style={{ filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))' }}
+      />
     </Tooltip>
   )
 }

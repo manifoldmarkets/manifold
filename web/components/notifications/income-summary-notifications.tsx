@@ -466,6 +466,65 @@ export function ManaPaymentReceivedNotification(props: {
   )
 }
 
+export function CharityChampionDethronedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const { sourceId, sourceUserName, sourceUserUsername } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🏆'} />
+      }
+      link="/shop"
+    >
+      <span>
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+          className=""
+        />
+        <span> claimed the </span>
+        <PrimaryNotificationLink text="Charity Champion Trophy" />
+        <span> from you!</span>
+      </span>
+    </NotificationFrame>
+  )
+}
+
+export function CharityChampionEligibleNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <NotificationIcon
+          symbol={'🏆'}
+          symbolBackgroundClass="bg-gradient-to-br from-amber-500 to-yellow-300"
+        />
+      }
+      link="/shop"
+    >
+      <span>
+        You're the <span className="font-semibold">#1 ticket buyer</span>!{' '}
+        <PrimaryNotificationLink text="Claim the Charity Champion Trophy" />
+      </span>
+    </NotificationFrame>
+  )
+}
+
 export function ReferralNotification(props: {
   notification: Notification
   highlighted: boolean

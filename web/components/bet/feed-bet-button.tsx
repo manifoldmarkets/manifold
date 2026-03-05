@@ -9,7 +9,7 @@ import { BinaryContract, StonkContract } from 'common/contract'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
-import { userHasPampuSkin } from 'common/shop/items'
+import { getCustomYesButtonText, getCustomNoButtonText } from 'common/shop/items'
 
 export function BetButton(props: {
   contract: BinaryContract | StonkContract
@@ -21,7 +21,8 @@ export function BetButton(props: {
   const { contract, labels, user, className, feedReason } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
-  const hasPampu = userHasPampuSkin(user?.entitlements)
+  const customYesText = getCustomYesButtonText(user?.entitlements)
+  const customNoText = getCustomNoButtonText(user?.entitlements)
   const [dialogueThatIsOpen, setDialogueThatIsOpen] = useState<
     string | undefined
   >(undefined)
@@ -49,7 +50,7 @@ export function BetButton(props: {
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
-        {labels?.yes ?? (hasPampu ? 'PAMPU' : `${capitalize(TRADE_TERM)} Yes`)}
+        {labels?.yes ?? (customYesText ?? `${capitalize(TRADE_TERM)} Yes`)}
       </Button>
 
       <Button
@@ -57,7 +58,7 @@ export function BetButton(props: {
         size="xs"
         onClick={() => handleBetButtonClick('NO')}
       >
-        {labels?.no ?? `${capitalize(TRADE_TERM)} No`}
+        {labels?.no ?? (customNoText ?? `${capitalize(TRADE_TERM)} No`)}
       </Button>
 
       {open && (

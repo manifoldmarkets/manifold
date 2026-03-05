@@ -1,12 +1,27 @@
-import { ArrowUpIcon } from '@heroicons/react/solid'
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from '@heroicons/react/solid'
 import { DAY_MS } from 'common/util/time'
 import {
   SHOP_ITEMS,
   ShopItem,
   getEntitlementId,
   getShopItem,
-  EXCLUSIVE_CATEGORIES,
-  getEntitlementIdsForCategory,
+  isSeasonalItemAvailable,
+  getSeasonalAvailabilityText,
+  YES_BUTTON_OPTIONS,
+  NO_BUTTON_OPTIONS,
+  YesButtonOption,
+  NoButtonOption,
+  SLOT_LABELS,
+  getCompatibleSlots,
+  EXCLUSIVE_SLOTS,
+  getEntitlementIdsForSlot,
+  CROWN_POSITION_OPTIONS,
+  getMerchItems,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
 import { User } from 'common/user'
@@ -26,8 +41,29 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaStar } from 'react-icons/fa'
-import { FaGem } from 'react-icons/fa6'
+import { FaGem, FaLock } from 'react-icons/fa6'
 import { LuCrown, LuGraduationCap } from 'react-icons/lu'
+import { GiTopHat, GiDunceCap } from 'react-icons/gi'
+import {
+  BlackHoleSvg,
+  FireFlamesSvg,
+  AngelWingSvg,
+  MonocleSvg,
+  CrystalBallSvg,
+  DisguiseSvg,
+  ArrowBadgeSvg,
+  StonksMemeArrowSvg,
+  BullHornSvg,
+  BearEarSvg,
+  CatEarSvg,
+  SantaHatSvg,
+  BunnyEarSvg,
+  WizardHatSvg,
+  TinfoilHatSvg,
+  JesterHatSvg,
+  FedoraSvg,
+  DevilHornSvg,
+} from 'web/components/shop/item-svgs'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -35,8 +71,9 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
 import { SEO } from 'web/components/SEO'
-import { Avatar } from 'web/components/widgets/avatar'
+import { Avatar, BlueCapSvg, RedCapSvg, GreenCapSvg, BlackCapSvg } from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
@@ -50,7 +87,13 @@ import {
   PurchaseConfirmation,
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
-import { CharityGiveawayCard } from 'web/components/shop/charity-giveaway-card'
+import {
+  CharityGiveawayCard,
+  CharityGiveawayData,
+} from 'web/components/shop/charity-giveaway-card'
+import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { getAnimationLocationText } from 'common/shop/display-config'
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -61,11 +104,32 @@ const isEntitlementOwned = (e: UserEntitlement) => {
 // Default item order (manual curation)
 const ITEM_ORDER: Record<string, number> = {
   'streak-forgiveness': 1,
-  'pampu-skin': 2,
+  'avatar-tinfoil-hat': 2,
   'avatar-golden-border': 3,
   'avatar-crown': 4,
   'hovercard-glow': 5,
   'avatar-graduation-cap': 6,
+  // Buttons
+  'pampu-skin': 10,
+  'custom-no-button': 11,
+  // Caps
+  'avatar-blue-cap': 15,
+  'avatar-team-red-hat': 16,
+  'avatar-team-green-hat': 17,
+  'avatar-black-cap': 18,
+  // Hats
+  'avatar-top-hat': 20,
+  'avatar-wizard-hat': 21,
+  'avatar-jester-hat': 22,
+  // Avatar effects
+  'avatar-crystal-ball': 30,
+  'avatar-disguise': 31,
+  'avatar-fire-item': 32,
+  // Hovercard
+  'hovercard-golden-follow': 40,
+  'hovercard-royalty': 41,
+  'hovercard-trading-floor': 42,
+  'hovercard-royal-border': 43,
 }
 
 type SortOption =
@@ -74,6 +138,49 @@ type SortOption =
   | 'price-desc'
   | 'name-asc'
   | 'name-desc'
+
+type FilterOption = 'all' | 'hats' | 'avatar' | 'hovercard' | 'buttons' | 'other' | 'merch' | 'seasonal'
+
+const FILTER_CONFIG: Record<FilterOption, { label: string; slots: string[]; special?: boolean }> = {
+  all: { label: 'All', slots: [] },
+  hats: { label: 'Hats', slots: ['hat'] },
+  avatar: { label: 'Avatar', slots: ['profile-border', 'profile-accessory'] },
+  hovercard: { label: 'Hovercard', slots: ['hovercard-background', 'hovercard-border', 'unique'] },
+  buttons: { label: 'Buttons', slots: ['button-yes', 'button-no'] },
+  other: { label: 'Other', slots: ['consumable', 'badge'] },
+  merch: { label: 'Merch', slots: [], special: true },
+  seasonal: { label: 'Seasonal', slots: [], special: true },
+}
+
+const filterItems = (items: ShopItem[], filter: FilterOption): ShopItem[] => {
+  if (filter === 'all') return items
+  if (filter === 'seasonal') return items.filter((item) => item.seasonalAvailability)
+  if (filter === 'merch') return [] // merch handled by separate section
+  const allowedSlots = FILTER_CONFIG[filter].slots
+  return items.filter((item) => allowedSlots.includes(item.slot))
+}
+
+// Check if a filter tab has any visible items (for dynamic tab visibility)
+const hasVisibleItems = (
+  filter: FilterOption,
+  allItems: ShopItem[],
+  visibleItemIds: Set<string>,
+  showHidden: boolean
+): boolean => {
+  if (filter === 'all') return true
+  if (filter === 'merch') {
+    return getMerchItems().some((item) => !item.hidden || showHidden)
+  }
+  if (filter === 'seasonal') {
+    return allItems.some(
+      (item) => item.seasonalAvailability && (visibleItemIds.has(item.id) || showHidden)
+    )
+  }
+  const allowedSlots = FILTER_CONFIG[filter].slots
+  return allItems.some(
+    (item) => allowedSlots.includes(item.slot) && (visibleItemIds.has(item.id) || showHidden)
+  )
+}
 
 const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
   const sorted = [...items]
@@ -99,6 +206,14 @@ export default function ShopPage() {
   const isAdminOrMod = useAdminOrMod()
   const optimisticContext = useOptimisticEntitlements()
 
+  // Fetch charity giveaway data once for both cards
+  const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
+    'get-charity-giveaway',
+    { userId: user?.id }
+  )
+  const charityGiveawayData = charityData as CharityGiveawayData | undefined
+  const isCharityLoading = charityData === undefined
+
   // Local state for optimistic updates
   const [localEntitlements, setLocalEntitlements] = useState<UserEntitlement[]>(
     []
@@ -106,6 +221,8 @@ export default function ShopPage() {
   const [justPurchased, setJustPurchased] = useState<string | null>(null)
   const [localStreakBonus, setLocalStreakBonus] = useState(0) // Track streak purchases
   const [sortOption, setSortOption] = useState<SortOption>('default')
+  const [filterOption, setFilterOption] = useState<FilterOption>('all')
+  const [showHidden, setShowHidden] = useState(false)
 
   // Track toggle version to ignore stale server responses during rapid toggling
   const toggleVersionRef = useRef(0)
@@ -132,7 +249,9 @@ export default function ShopPage() {
         user.entitlements?.some(
           (server) =>
             server.entitlementId === local.entitlementId &&
-            server.enabled === local.enabled
+            server.enabled === local.enabled &&
+            JSON.stringify(server.metadata ?? null) ===
+              JSON.stringify(local.metadata ?? null)
         )
       )
       if (serverHasCaughtUp) {
@@ -164,6 +283,18 @@ export default function ShopPage() {
       .map((e) => e.entitlementId)
   )
 
+  // Set of item IDs that are visible in the shop (for dynamic filter tab visibility)
+  const visibleShopItemIds = new Set(
+    SHOP_ITEMS.filter(
+      (item) =>
+        !SUPPORTER_ENTITLEMENT_IDS.includes(item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]) &&
+        item.id !== 'charity-champion-trophy' &&
+        item.category !== 'merch' &&
+        (!item.hidden || ownedItemIds.has(getEntitlementId(item)) ||
+          (item.seasonalAvailability && isSeasonalItemAvailable(item)))
+    ).map((item) => item.id)
+  )
+
   // Callback for purchase completion - receives all updated entitlements
   const handlePurchaseComplete = (
     itemId: string,
@@ -184,18 +315,25 @@ export default function ShopPage() {
         if (purchased) {
           optimisticContext?.setOptimisticEntitlement(purchased)
 
-          // For exclusive categories, also disable other items in the same category
+          // For exclusive slots, also disable other items in the same slot
           // (matching the toggle behavior)
-          if (EXCLUSIVE_CATEGORIES.includes(item.category)) {
-            const categoryEntitlementIds = getEntitlementIdsForCategory(
-              item.category
-            )
+          if (EXCLUSIVE_SLOTS.includes(item.slot)) {
+            const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
             for (const ent of entitlements) {
               if (
-                categoryEntitlementIds.includes(ent.entitlementId) &&
+                slotEntitlementIds.includes(ent.entitlementId) &&
                 ent.entitlementId !== entitlementId &&
                 !ent.enabled
               ) {
+                optimisticContext?.setOptimisticEntitlement(ent)
+              }
+            }
+          }
+
+          // For items with explicit conflicts, disable conflicting items
+          if (item.conflicts?.length) {
+            for (const ent of entitlements) {
+              if (item.conflicts.includes(ent.entitlementId) && !ent.enabled) {
                 optimisticContext?.setOptimisticEntitlement(ent)
               }
             }
@@ -206,8 +344,15 @@ export default function ShopPage() {
     if (itemId === 'streak-forgiveness') {
       setLocalStreakBonus((prev) => prev + 1)
     }
-    setJustPurchased(itemId)
-    setTimeout(() => setJustPurchased(null), 2500)
+    // Skip confetti for consumables and skins (button customizations)
+    const purchasedItem = getShopItem(itemId)
+    if (
+      purchasedItem?.category !== 'consumable' &&
+      purchasedItem?.category !== 'skin'
+    ) {
+      setJustPurchased(itemId)
+      setTimeout(() => setJustPurchased(null), 2500)
+    }
   }
 
   // Callback for toggle completion (itemId is the shop item id, not entitlement id)
@@ -259,21 +404,29 @@ export default function ShopPage() {
     const actualEnabled = revert ? !enabled : enabled
     const updated = { ...existing, enabled: actualEnabled }
 
-    // Build optimistic state - update the toggled item AND disable others in same category
+    // Build optimistic state - update the toggled item AND disable others in same category/team
     setLocalEntitlements((_prev) => {
       // Start with a copy of all effective entitlements to get full picture
       let newState = [...effectiveEntitlements]
 
-      // If enabling an item in an exclusive category, disable others first
-      if (actualEnabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
-        const categoryEntitlementIds = getEntitlementIdsForCategory(
-          item.category
-        )
+      // If enabling an item in an exclusive slot, disable others first
+      if (actualEnabled && EXCLUSIVE_SLOTS.includes(item.slot)) {
+        const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
         newState = newState.map((e) => {
           if (
-            categoryEntitlementIds.includes(e.entitlementId) &&
+            slotEntitlementIds.includes(e.entitlementId) &&
             e.entitlementId !== entitlementId
           ) {
+            return { ...e, enabled: false }
+          }
+          return e
+        })
+      }
+
+      // If enabling an item with explicit conflicts, disable conflicting items
+      if (actualEnabled && item.conflicts?.length) {
+        newState = newState.map((e) => {
+          if (item.conflicts!.includes(e.entitlementId)) {
             return { ...e, enabled: false }
           }
           return e
@@ -293,11 +446,11 @@ export default function ShopPage() {
     optimisticContext?.setOptimisticEntitlement(updated)
 
     // Also update global context for any items we disabled
-    if (actualEnabled && EXCLUSIVE_CATEGORIES.includes(item.category)) {
-      const categoryEntitlementIds = getEntitlementIdsForCategory(item.category)
+    if (actualEnabled && EXCLUSIVE_SLOTS.includes(item.slot)) {
+      const slotEntitlementIds = getEntitlementIdsForSlot(item.slot)
       for (const ent of effectiveEntitlements) {
         if (
-          categoryEntitlementIds.includes(ent.entitlementId) &&
+          slotEntitlementIds.includes(ent.entitlementId) &&
           ent.entitlementId !== entitlementId &&
           ent.enabled
         ) {
@@ -308,16 +461,51 @@ export default function ShopPage() {
         }
       }
     }
+
+    // Also update global context for conflicting items we disabled
+    if (actualEnabled && item.conflicts?.length) {
+      for (const ent of effectiveEntitlements) {
+        if (item.conflicts.includes(ent.entitlementId) && ent.enabled) {
+          optimisticContext?.setOptimisticEntitlement({
+            ...ent,
+            enabled: false,
+          })
+        }
+      }
+    }
+
+  }
+
+  // Callback for metadata-only updates (no confetti, used by style pickers)
+  const handleMetadataChange = (
+    _itemId: string,
+    updatedEntitlement: UserEntitlement
+  ) => {
+    // Upsert just the changed entitlement into local state
+    setLocalEntitlements((prev) => {
+      const idx = prev.findIndex(
+        (e) => e.entitlementId === updatedEntitlement.entitlementId
+      )
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = updatedEntitlement
+        return next
+      }
+      return [...prev, updatedEntitlement]
+    })
+    // Update global context so sidebar/profile avatar updates instantly
+    optimisticContext?.setOptimisticEntitlement(updatedEntitlement)
   }
 
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
 
+
   return (
     <Page trackPageView="shop page" className="p-3">
       <SEO
         title="Shop"
-        description="Spend your mana on digital goods"
+        description="Spend your mana in the Manifold shop"
         url="/shop"
       />
       {/* Confetti on purchase */}
@@ -356,10 +544,10 @@ export default function ShopPage() {
           onPurchaseComplete={handlePurchaseComplete}
         />
 
-        {/* Sort dropdown */}
-        <Row className="mb-4 mt-8 items-center justify-between">
+        {/* Header and sort dropdown */}
+        <Row className="mb-2 mt-8 items-center justify-between">
           <span className="text-lg font-semibold">
-            Digital goods & cosmetics
+            Cosmetics & goods
           </span>
           <select
             value={sortOption}
@@ -374,44 +562,724 @@ export default function ShopPage() {
           </select>
         </Row>
 
-        {/* Shop items grid - exclude supporter tiers (handled on /supporter page) */}
-        {/* Single column on mobile (<480px), 2 columns on wider screens */}
-        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
-          {sortItems(
-            SHOP_ITEMS.filter(
-              (item) =>
-                !SUPPORTER_ENTITLEMENT_IDS.includes(
-                  item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-                )
-            ),
-            sortOption
-          ).map((item) => {
-            const entitlementId = getEntitlementId(item)
-            const entitlement = effectiveEntitlements.find(
-              (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
-            )
+        {/* Category filter pills — only show tabs that have visible items */}
+        <Row className="mb-4 flex-wrap gap-2">
+          {(Object.keys(FILTER_CONFIG) as FilterOption[]).map((filter) => {
+            if (!hasVisibleItems(filter, SHOP_ITEMS, visibleShopItemIds, showHidden)) return null
+            const isSeasonal = filter === 'seasonal'
+            const isActive = filterOption === filter
             return (
-              <ShopItemCard
-                key={item.id}
-                item={item}
-                user={user}
-                owned={ownedItemIds.has(entitlementId)}
-                entitlement={entitlement}
-                allEntitlements={effectiveEntitlements}
-                justPurchased={justPurchased === item.id}
-                onPurchaseComplete={handlePurchaseComplete}
-                onToggleComplete={handleToggleComplete}
-                getToggleVersion={getToggleVersion}
-                localStreakBonus={localStreakBonus}
-              />
+              <button
+                key={filter}
+                onClick={() => setFilterOption(filter)}
+                className={clsx(
+                  'rounded-full px-3 py-1 text-sm font-medium transition-colors',
+                  isActive && isSeasonal
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-sm'
+                    : isActive
+                    ? 'bg-primary-500 text-white'
+                    : isSeasonal
+                    ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 hover:from-pink-200 hover:to-rose-200 dark:from-pink-900/30 dark:to-rose-900/30 dark:text-pink-300'
+                    : 'bg-canvas-50 text-ink-600 hover:bg-canvas-100'
+                )}
+              >
+                {FILTER_CONFIG[filter].label}
+              </button>
             )
           })}
+        </Row>
+
+        {/* Shop items grid — hidden when merch filter is active */}
+        {filterOption !== 'merch' && (
+          <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
+            {sortItems(
+              filterItems(
+                SHOP_ITEMS.filter(
+                  (item) =>
+                    !SUPPORTER_ENTITLEMENT_IDS.includes(
+                      item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+                    ) &&
+                    item.id !== 'charity-champion-trophy' &&
+                    item.category !== 'merch' &&
+                    (!item.hidden || showHidden || ownedItemIds.has(getEntitlementId(item)) ||
+                      (item.seasonalAvailability && isSeasonalItemAvailable(item)))
+                ),
+                filterOption
+              ),
+              sortOption
+            ).map((item) => {
+              const entitlementId = getEntitlementId(item)
+              const entitlement = effectiveEntitlements.find(
+                (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
+              )
+              return (
+                <ShopItemCard
+                  key={item.id}
+                  item={item}
+                  user={user}
+                  owned={ownedItemIds.has(entitlementId)}
+                  entitlement={entitlement}
+                  allEntitlements={effectiveEntitlements}
+                  justPurchased={justPurchased === item.id}
+                  onPurchaseComplete={handlePurchaseComplete}
+                  onToggleComplete={handleToggleComplete}
+                  onMetadataChange={handleMetadataChange}
+                  getToggleVersion={getToggleVersion}
+                  localStreakBonus={localStreakBonus}
+                />
+              )
+            })}
+          </div>
+        )}
+
+        {/* Merch section — shown on 'all' and 'merch' filters */}
+        {(filterOption === 'all' || filterOption === 'merch') &&
+          getMerchItems().filter((item) => !item.hidden || showHidden).length > 0 && (
+          <>
+            {filterOption !== 'merch' && (
+              <Row className="mb-4 mt-8 items-center gap-2">
+                <span className="text-lg font-semibold">Merch</span>
+                <span className="text-ink-500 text-sm">(Ships worldwide)</span>
+              </Row>
+            )}
+            <div className={clsx(
+              'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2',
+              filterOption === 'merch' && 'mt-0'
+            )}>
+              {getMerchItems()
+                .filter((item) => !item.hidden || showHidden)
+                .map((item) => (
+                  <MerchItemCard key={item.id} item={item} user={user} allEntitlements={effectiveEntitlements} />
+                ))}
+            </div>
+          </>
+        )}
+
+        {/* Charity giveaway and champion cards */}
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <CharityGiveawayCard
+            data={charityGiveawayData}
+            isLoading={isCharityLoading}
+            user={user}
+          />
+          <CharityChampionCard
+            data={charityGiveawayData}
+            isLoading={isCharityLoading}
+            user={user}
+            entitlements={effectiveEntitlements}
+            onEntitlementsChange={(newEntitlements) => {
+              setLocalEntitlements(newEntitlements)
+              refreshCharityData()
+            }}
+          />
         </div>
 
-        {/* Charity giveaway card at bottom */}
-        <CharityGiveawayCard variant="full" className="mt-8" />
+        {/* {isAdminOrMod && <AdminTestingTools user={user} showHidden={showHidden} setShowHidden={setShowHidden} />} */}
       </Col>
     </Page>
+  )
+}
+
+const COUNTRIES = [
+  { code: 'US', name: 'United States' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'IN', name: 'India' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'CH', name: 'Switzerland' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'HK', name: 'Hong Kong' },
+  { code: 'TW', name: 'Taiwan' },
+  { code: 'IL', name: 'Israel' },
+  { code: 'CZ', name: 'Czech Republic' },
+  { code: 'RO', name: 'Romania' },
+  { code: 'HU', name: 'Hungary' },
+  { code: 'GR', name: 'Greece' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'CO', name: 'Colombia' },
+  { code: 'PH', name: 'Philippines' },
+  { code: 'TH', name: 'Thailand' },
+  { code: 'MY', name: 'Malaysia' },
+  { code: 'ID', name: 'Indonesia' },
+  { code: 'VN', name: 'Vietnam' },
+  { code: 'AE', name: 'United Arab Emirates' },
+  { code: 'SA', name: 'Saudi Arabia' },
+].sort((a, b) => a.name.localeCompare(b.name))
+
+type ShippingRate = {
+  id: string
+  name: string
+  rate: string
+  currency: string
+  minDeliveryDays: number
+  maxDeliveryDays: number
+}
+
+function MerchItemCard(props: {
+  item: ShopItem
+  user: User | null | undefined
+  allEntitlements?: UserEntitlement[]
+}) {
+  const { item, user, allEntitlements } = props
+  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
+  const discountedPrice = shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
+  const hasDiscount = shopDiscount > 0
+  const singleVariant = (item.variants ?? []).length === 1
+  const [selectedSize, setSelectedSize] = useState<string | null>(
+    singleVariant ? (item.variants![0].size) : null
+  )
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
+  const [showShippingModal, setShowShippingModal] = useState(false)
+  const [purchasing, setPurchasing] = useState(false)
+  const [fetchingRates, setFetchingRates] = useState(false)
+  const [shippingRates, setShippingRates] = useState<ShippingRate[] | null>(null)
+  const [selectedShipping, setSelectedShipping] = useState<ShippingRate | null>(null)
+  const [shippingInfo, setShippingInfo] = useState({
+    name: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'US',
+  })
+  const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
+  const [countdown, setCountdown] = useState(5)
+
+  useEffect(() => {
+    if (!showConfirmOrderModal) {
+      setCountdown(5)
+      return
+    }
+    if (countdown <= 0) return
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [showConfirmOrderModal, countdown])
+
+  const canPurchase = user && user.balance >= discountedPrice
+  const variants = item.variants ?? []
+
+  const images = item.merchImages ?? [
+    { label: 'Front', url: item.imageUrl || '' },
+  ]
+
+  const handleBuyClick = () => {
+    if (!selectedSize) {
+      toast.error('Please select a size')
+      return
+    }
+    setShowPurchaseModal(true)
+  }
+
+  const handleProceedToShipping = () => {
+    setShowPurchaseModal(false)
+    setShowShippingModal(true)
+    setShippingRates(null)
+    setSelectedShipping(null)
+  }
+
+  const handleGetShippingRates = async () => {
+    const variant = variants.find((v) => v.size === selectedSize)
+    if (!variant) return
+
+    setFetchingRates(true)
+    setShippingRates(null)
+    setSelectedShipping(null)
+
+    try {
+      const result = await api('shop-shipping-rates', {
+        variantId: variant.printfulSyncVariantId,
+        address: {
+          address1: shippingInfo.address1,
+          city: shippingInfo.city,
+          state: shippingInfo.state || undefined,
+          zip: shippingInfo.zip,
+          country: shippingInfo.country,
+        },
+      })
+      setShippingRates(result.rates)
+      if (result.rates.length > 0) {
+        setSelectedShipping(result.rates[0])
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to get shipping rates')
+    } finally {
+      setFetchingRates(false)
+    }
+  }
+
+  const handleSubmitOrder = async () => {
+    if (!user || !selectedSize || !selectedShipping) return
+    const variant = variants.find((v) => v.size === selectedSize)
+    if (!variant) return
+
+    setPurchasing(true)
+    try {
+      const shippingMana = Math.round(parseFloat(selectedShipping.rate) * 100)
+      const result = await api('shop-purchase-merch', {
+        itemId: item.id,
+        variantId: variant.printfulSyncVariantId,
+        shippingCost: shippingMana,
+        shipping: shippingInfo,
+      })
+      toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
+      setShowConfirmOrderModal(false)
+      setShowShippingModal(false)
+      setSelectedSize(null)
+      setShippingRates(null)
+      setSelectedShipping(null)
+      setShippingInfo({ name: '', address1: '', address2: '', city: '', state: '', zip: '', country: 'US' })
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to place order')
+      setShowConfirmOrderModal(false)
+    } finally {
+      setPurchasing(false)
+    }
+  }
+
+  const canGetRates = shippingInfo.address1 && shippingInfo.city && shippingInfo.zip
+
+  return (
+    <>
+      <Card className="group relative flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:ring-2 hover:ring-indigo-500 hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30">
+        {item.hidden && (
+          <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+            Hidden
+          </div>
+        )}
+
+        {/* Image carousel */}
+        <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+          <img
+            src={images[currentImageIndex].url}
+            alt={`${item.name} - ${images[currentImageIndex].label}`}
+            className="h-full w-full object-contain p-2"
+          />
+          <Row className="absolute bottom-2 left-1/2 -translate-x-1/2 gap-1.5">
+            {images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentImageIndex(idx)}
+                className={clsx(
+                  'h-2 w-2 rounded-full transition-all',
+                  currentImageIndex === idx
+                    ? 'bg-indigo-500 w-4'
+                    : 'bg-white/70 hover:bg-white'
+                )}
+              />
+            ))}
+          </Row>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={() => setCurrentImageIndex((i) => i === 0 ? images.length - 1 : i - 1)}
+                className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity group-hover:opacity-100 hover:bg-white"
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setCurrentImageIndex((i) => i === images.length - 1 ? 0 : i + 1)}
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity group-hover:opacity-100 hover:bg-white"
+              >
+                <ChevronRightIcon className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Title and description */}
+        <div className="text-base font-semibold sm:text-lg">{item.name}</div>
+        <p className="text-ink-600 text-sm">{item.description}</p>
+
+        {/* Size selector (hidden for single-variant items like one-size caps) */}
+        {!singleVariant && (
+          <Col className="gap-2">
+            <span className="text-ink-600 text-sm font-medium">Select size:</span>
+            <Row className="flex-wrap gap-2">
+              {variants.map((variant) => (
+                <button
+                  key={variant.size}
+                  onClick={() => setSelectedSize(variant.size)}
+                  className={clsx(
+                    'rounded-md border-2 px-3 py-1.5 text-sm font-medium transition-all',
+                    selectedSize === variant.size
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                      : 'border-ink-200 hover:border-ink-400 text-ink-700'
+                  )}
+                >
+                  {variant.size}
+                </button>
+              ))}
+            </Row>
+          </Col>
+        )}
+
+        {/* Price and buy button */}
+        <Row className="mt-auto items-center justify-between border-t border-ink-200 pt-3">
+          <Col>
+            <div className="text-lg font-bold text-teal-600">
+              {hasDiscount ? formatMoney(discountedPrice) : formatMoney(item.price)}
+              {hasDiscount && (
+                <span className="ml-1 text-xs text-green-600">
+                  ({Math.round(shopDiscount * 100)}% off)
+                </span>
+              )}
+            </div>
+            {hasDiscount && (
+              <span className="text-ink-400 text-xs line-through">{formatMoney(item.price)}</span>
+            )}
+            <span className="text-ink-500 text-xs">+ shipping (paid in mana)</span>
+            {item.limit === 'one-time' && (
+              <Row className="text-ink-500 mt-0.5 items-center gap-1 text-xs">
+                <span>Limit 1 per customer</span>
+                <InfoTooltip
+                  text="We hope to lift this restriction once the mana shop is up and running smoothly!"
+                  size="sm"
+                />
+              </Row>
+            )}
+          </Col>
+          {!canPurchase && user ? (
+            <Link href="/checkout">
+              <Button size="sm" color="gradient-pink">
+                Buy mana
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              size="sm"
+              color="indigo"
+              disabled={!user || !selectedSize}
+              onClick={handleBuyClick}
+            >
+              {selectedSize ? 'Buy' : 'Select a size'}
+            </Button>
+          )}
+        </Row>
+      </Card>
+
+      {/* Purchase confirmation modal */}
+      <Modal open={showPurchaseModal} setOpen={setShowPurchaseModal} size="md">
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <div className="text-lg font-semibold">Confirm Purchase</div>
+          <p className="text-ink-600">
+            You're ordering: <strong>{item.name}</strong>{!singleVariant && <> (Size: {selectedSize})</>}
+          </p>
+          <p className="text-ink-600">
+            Price:{' '}
+            <span className="font-semibold text-teal-600">{formatMoney(discountedPrice)}</span>
+            {hasDiscount && <span className="text-ink-400 ml-1 text-sm line-through">{formatMoney(item.price)}</span>}
+            <span className="text-ink-500 text-sm"> + shipping</span>
+          </p>
+          <p className="text-ink-500 text-sm">All costs (item + shipping) are paid in mana.</p>
+
+          {/* Size Guide (only for multi-size items like t-shirts) */}
+          {!singleVariant && (
+            <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
+              <div className="text-sm font-semibold">Size Guide (Gildan 64000)</div>
+              <div className="overflow-x-auto">
+                <table className="text-ink-600 w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-ink-200">
+                      <th className="py-1 pr-3 text-left font-medium">Size</th>
+                      <th className="px-2 py-1 text-center font-medium">Chest (in)</th>
+                      <th className="px-2 py-1 text-center font-medium">Length (in)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: 'S', chest: '34-36', length: '28' },
+                      { size: 'M', chest: '38-40', length: '29' },
+                      { size: 'L', chest: '42-44', length: '30' },
+                      { size: 'XL', chest: '46-48', length: '31' },
+                      { size: '2XL', chest: '50-52', length: '32' },
+                      { size: '3XL', chest: '54-56', length: '33' },
+                    ].map((row) => (
+                      <tr key={row.size} className={selectedSize === row.size ? 'bg-indigo-50 dark:bg-indigo-950/30' : ''}>
+                        <td className="py-1 pr-3 font-medium">{row.size}</td>
+                        <td className="px-2 py-1 text-center">{row.chest}</td>
+                        <td className="px-2 py-1 text-center">{row.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-ink-500 text-xs">Measurements are approximate. When in doubt, size up!</p>
+            </Col>
+          )}
+
+          <div className="rounded-lg bg-blue-50 p-3 text-sm dark:bg-blue-950/30">
+            <p className="text-blue-700 dark:text-blue-300">
+              After confirming, you'll enter your shipping address. Your address is sent directly to our fulfillment partner and <strong>not stored</strong> by Manifold.
+            </p>
+          </div>
+
+          <Row className="justify-end gap-2">
+            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>Cancel</Button>
+            <Button color="indigo" onClick={handleProceedToShipping}>Continue to Shipping</Button>
+          </Row>
+        </Col>
+      </Modal>
+
+      {/* Shipping address modal */}
+      <Modal open={showShippingModal} setOpen={setShowShippingModal} size="md">
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <div className="text-lg font-semibold">Shipping Address</div>
+          <p className="text-ink-500 text-sm">
+            Enter your shipping details. This info is sent directly to our fulfillment partner and not stored by Manifold.
+          </p>
+
+          <Col className="gap-3">
+            <input type="text" placeholder="Full name" value={shippingInfo.name}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, name: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <input type="text" placeholder="Street address" value={shippingInfo.address1}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, address1: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <input type="text" placeholder="Apt, suite, etc. (optional)" value={shippingInfo.address2}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, address2: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <input type="text" placeholder="City" value={shippingInfo.city}
+              onChange={(e) => setShippingInfo((s) => ({ ...s, city: e.target.value }))}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden" />
+            <Row className="w-full gap-3">
+              <input type="text" placeholder="City" value={shippingInfo.city}
+                onChange={(e) => setShippingInfo((s) => ({ ...s, city: e.target.value }))}
+                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block" />
+              <input type="text" placeholder="State" value={shippingInfo.state}
+                onChange={(e) => setShippingInfo((s) => ({ ...s, state: e.target.value }))}
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none" />
+              <input type="text" placeholder="ZIP" value={shippingInfo.zip}
+                onChange={(e) => setShippingInfo((s) => ({ ...s, zip: e.target.value }))}
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none" />
+            </Row>
+            <select value={shippingInfo.country}
+              onChange={(e) => { setShippingInfo((s) => ({ ...s, country: e.target.value })); setShippingRates(null); setSelectedShipping(null) }}
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+          </Col>
+
+          {!shippingRates && (
+            <Button color="indigo-outline" onClick={handleGetShippingRates} loading={fetchingRates} disabled={!canGetRates} className="w-full">
+              {fetchingRates ? 'Getting rates...' : 'Get Shipping Rates'}
+            </Button>
+          )}
+
+          {shippingRates && shippingRates.length > 0 && (
+            <Col className="gap-2">
+              <Row className="items-center justify-between">
+                <div className="text-sm font-medium">Select shipping option:</div>
+                <span className="text-ink-500 text-xs">Prices in mana</span>
+              </Row>
+              {shippingRates.map((rate) => {
+                const shippingMana = Math.round(parseFloat(rate.rate) * 100)
+                return (
+                  <button key={rate.id} onClick={() => setSelectedShipping(rate)}
+                    className={clsx(
+                      'flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all',
+                      selectedShipping?.id === rate.id
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                        : 'border-ink-200 hover:border-ink-400'
+                    )}>
+                    <div>
+                      <div className="font-medium">{rate.name}</div>
+                      <div className="text-ink-500 text-xs">
+                        {rate.minDeliveryDays === rate.maxDeliveryDays
+                          ? `${rate.minDeliveryDays} business days`
+                          : `${rate.minDeliveryDays}-${rate.maxDeliveryDays} business days`}
+                      </div>
+                    </div>
+                    <div className="font-semibold text-teal-600">{formatMoney(shippingMana)}</div>
+                  </button>
+                )
+              })}
+            </Col>
+          )}
+
+          {shippingRates && shippingRates.length === 0 && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
+              No shipping options available for this address. Please check your address details.
+            </div>
+          )}
+
+          <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+            <Row className="items-start gap-2">
+              <span className="text-amber-700 dark:text-amber-300">
+                Please double-check your address. Orders ship directly from our partner and cannot be easily modified after submission.
+              </span>
+            </Row>
+          </div>
+
+          <Row className="justify-end gap-2">
+            <Button color="gray" onClick={() => setShowShippingModal(false)}>Back</Button>
+            <Button color="indigo" disabled={!shippingInfo.name || !selectedShipping}
+              onClick={() => setShowConfirmOrderModal(true)}>
+              Place Order ({formatMoney(discountedPrice)}
+              {selectedShipping && ` + ${formatMoney(Math.round(parseFloat(selectedShipping.rate) * 100))} shipping`})
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
+
+      {/* Final confirmation modal */}
+      <Modal open={showConfirmOrderModal} setOpen={setShowConfirmOrderModal} size="md">
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <div className="text-lg font-semibold">Confirm Your Order</div>
+          <Col className="bg-canvas-50 gap-3 rounded-lg p-4 text-sm">
+            <Row className="justify-between">
+              <span className="text-ink-500">Item:</span>
+              <span className="font-medium">{item.name}</span>
+            </Row>
+            {!singleVariant && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Size:</span>
+                <span className="font-medium">{selectedSize}</span>
+              </Row>
+            )}
+            <Row className="justify-between">
+              <span className="text-ink-500">Shipping to:</span>
+              <span className="font-medium text-right">
+                {shippingInfo.name}<br />
+                {shippingInfo.address1}{shippingInfo.address2 && `, ${shippingInfo.address2}`}<br />
+                {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zip}<br />
+                {COUNTRIES.find((c) => c.code === shippingInfo.country)?.name}
+              </span>
+            </Row>
+            {selectedShipping && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Shipping method:</span>
+                <span className="font-medium">
+                  {selectedShipping.name} ({selectedShipping.minDeliveryDays === selectedShipping.maxDeliveryDays
+                    ? `${selectedShipping.minDeliveryDays} days`
+                    : `${selectedShipping.minDeliveryDays}-${selectedShipping.maxDeliveryDays} days`})
+                </span>
+              </Row>
+            )}
+            <div className="border-ink-200 my-1 border-t" />
+            <Row className="justify-between">
+              <span className="text-ink-500">Item price:</span>
+              <span className="font-medium">
+                {formatMoney(discountedPrice)}
+                {hasDiscount && (
+                  <span className="text-ink-400 ml-1 text-xs line-through">{formatMoney(item.price)}</span>
+                )}
+              </span>
+            </Row>
+            {selectedShipping && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Shipping:</span>
+                <span className="font-medium">{formatMoney(Math.round(parseFloat(selectedShipping.rate) * 100))}</span>
+              </Row>
+            )}
+            <Row className="justify-between text-base font-semibold">
+              <span>Total (mana):</span>
+              <span className="text-teal-600">
+                {formatMoney(discountedPrice + (selectedShipping ? Math.round(parseFloat(selectedShipping.rate) * 100) : 0))}
+              </span>
+            </Row>
+          </Col>
+
+          <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+            <Row className="items-start gap-2">
+              <span className="text-amber-700 dark:text-amber-300">
+                Please verify all details above. Orders cannot be modified after submission.
+              </span>
+            </Row>
+          </div>
+
+          <Row className="justify-end gap-2">
+            <Button color="gray" onClick={() => setShowConfirmOrderModal(false)}>Go Back</Button>
+            <Button color="indigo" loading={purchasing} disabled={countdown > 0 || purchasing} onClick={handleSubmitOrder}>
+              {purchasing ? 'Processing...' : countdown > 0 ? `Confirm Order (${countdown})` : 'Confirm Order'}
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
+    </>
+  )
+}
+
+function AdminTestingTools(props: {
+  user: User | null | undefined
+  showHidden: boolean
+  setShowHidden: (v: boolean) => void
+}) {
+  const { user, showHidden, setShowHidden } = props
+  const [resetting, setResetting] = useState(false)
+
+  const handleResetCosmetics = async () => {
+    if (!user) return
+    if (
+      !confirm(
+        'This will delete all your non-subscription cosmetics and refund the mana. Supporter tiers will NOT be affected. Continue?'
+      )
+    )
+      return
+
+    setResetting(true)
+    try {
+      await api('shop-reset-all', {})
+      toast.success('All cosmetics returned and mana refunded!')
+      window.location.reload()
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to reset cosmetics')
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-300 mt-8 border-t pt-4">
+      <div className="text-ink-500 mb-2 text-xs font-semibold uppercase">
+        Admin Testing Tools
+      </div>
+      <Button
+        color="red-outline"
+        size="sm"
+        loading={resetting}
+        onClick={handleResetCosmetics}
+      >
+        Return All Cosmetics (Refund Mana)
+      </Button>
+      <div className="text-ink-400 mt-1 text-xs">
+        Refunds all non-subscription purchases. Supporter tiers are preserved.
+      </div>
+      <label className="mt-3 flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showHidden}
+          onChange={(e) => setShowHidden(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+        />
+        <span className="text-ink-600 text-sm">Show hidden items</span>
+      </label>
+
+    </div>
   )
 }
 
@@ -889,7 +1757,7 @@ function SupporterModal(props: {
                       {Math.round(
                         SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
                       )}
-                      % shop discount
+                      % off shop items
                     </span>
                   </Row>
                 )}
@@ -1188,7 +2056,227 @@ function GoldenBorderPreview(props: { user: User | null | undefined }) {
   )
 }
 
-function CrownPreview(props: { user: User | null | undefined }) {
+function ManaAuraPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <div
+          className="absolute -inset-1.5 animate-pulse rounded-full opacity-80 blur-md"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(139,92,246,0.6) 0%, rgba(59,130,246,0.4) 50%, rgba(139,92,246,0.2) 100%)',
+          }}
+        />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative ring-2 ring-violet-400"
+        />
+      </div>
+    </div>
+  )
+}
+
+function BlackHolePreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <BlackHoleSvg
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{
+            width: 64,
+            height: 64,
+            marginLeft: -8,
+            marginTop: -8,
+            filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.5))',
+          }}
+        />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative ring-1 ring-purple-500/40 shadow-[0_0_6px_rgba(147,51,234,0.5)]"
+        />
+      </div>
+    </div>
+  )
+}
+
+function FireItemPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative h-fit w-fit">
+        <style>{`
+          @keyframes preview-ember-1 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(4px, -15px) scale(0); opacity: 0; }
+          }
+          @keyframes preview-ember-2 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+            100% { transform: translate(-2px, -12px) scale(0); opacity: 0; }
+          }
+          @keyframes preview-ember-3 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+            100% { transform: translate(1px, -18px) scale(0); opacity: 0; }
+          }
+          @keyframes preview-wisp-1 {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(6px) translateY(-1.5px); }
+          }
+          @keyframes preview-wisp-2 {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(5px) translateY(1px); }
+          }
+          @keyframes preview-wisp-3 {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(4px) translateY(-1px); }
+          }
+          @keyframes preview-flame-smoke-1 {
+            0% { transform: translate(0, 0); opacity: 0.7; }
+            50% { transform: translate(-6px, -8px); opacity: 0.4; }
+            100% { transform: translate(-12px, -14px); opacity: 0; }
+          }
+          @keyframes preview-flame-smoke-2 {
+            0% { transform: translate(0, 0); opacity: 0.6; }
+            50% { transform: translate(-4px, -7px); opacity: 0.3; }
+            100% { transform: translate(-8px, -12px); opacity: 0; }
+          }
+        `}</style>
+
+        {/* Background: fiery glow concentrated at bottom-right where flames are */}
+        <div
+          className="absolute -inset-1.5 animate-pulse rounded-full blur-[5px]"
+          style={{
+            background:
+              'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.7) 0%, rgba(234,88,12,0.5) 25%, rgba(220,38,38,0.3) 45%, rgba(180,83,9,0.15) 65%, transparent 85%)',
+          }}
+        />
+
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative"
+        />
+
+        {/* Flame cluster — ON TOP of avatar */}
+        <FireFlamesSvg
+          className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 overflow-visible"
+          style={{ width: 66, height: 66 }}
+          animate
+        />
+
+        {/* Smoke wisps drifting over flames — CSS divs for reliable animation */}
+        <div
+          className="pointer-events-none absolute z-20"
+          style={{
+            right: '-2%', bottom: '20%',
+            width: '16px', height: '3px',
+            background: 'linear-gradient(135deg, rgba(200,200,210,0.7) 0%, rgba(160,165,175,0.4) 60%, transparent 100%)',
+            borderRadius: '2px',
+            filter: 'blur(1.5px)',
+            animation: 'preview-flame-smoke-1 2.5s ease-out infinite',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute z-20"
+          style={{
+            right: '2%', bottom: '26%',
+            width: '12px', height: '2.5px',
+            background: 'linear-gradient(135deg, rgba(180,185,195,0.6) 0%, rgba(160,165,175,0.3) 60%, transparent 100%)',
+            borderRadius: '2px',
+            filter: 'blur(1px)',
+            animation: 'preview-flame-smoke-2 3s ease-out infinite',
+            animationDelay: '0.6s',
+          }}
+        />
+
+        {/* Clipped overlay — wisps, flame smoke, embers (clipped to avatar circle) */}
+        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-full">
+          {/* Fiery light cast — same radial gradient as background glow, overlaying the avatar */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.35) 0%, rgba(234,88,12,0.2) 25%, rgba(220,38,38,0.1) 45%, transparent 70%)',
+            }}
+          />
+          {/* Wispy smoke streaks */}
+          <div style={{ position: 'absolute', left: '10%', top: '55%', width: '80%', height: '4px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)', borderRadius: '2px', filter: 'blur(1.5px)', animation: 'preview-wisp-1 4s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', left: '5%', top: '40%', width: '65%', height: '3.5px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)', borderRadius: '2px', filter: 'blur(2px)', animation: 'preview-wisp-2 5s ease-in-out infinite', animationDelay: '0.8s' }} />
+          <div style={{ position: 'absolute', left: '20%', top: '68%', width: '70%', height: '3.5px', background: 'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)', borderRadius: '2px', filter: 'blur(1.5px)', animation: 'preview-wisp-3 4.5s ease-in-out infinite', animationDelay: '1.5s' }} />
+          {/* Ember particles — above the flames */}
+          <div className="absolute h-[2px] w-[2px] rounded-full bg-amber-400" style={{ left: '70%', top: '60%', boxShadow: '0 0 3px #fbbf24', animation: 'preview-ember-1 1.5s infinite ease-out' }} />
+          <div className="absolute h-[1.5px] w-[1.5px] rounded-full bg-orange-500" style={{ left: '66%', top: '66%', animation: 'preview-ember-2 2s infinite ease-out', animationDelay: '0.2s' }} />
+          <div className="absolute h-[1.5px] w-[1.5px] rounded-full bg-red-500 opacity-80" style={{ left: '76%', top: '54%', animation: 'preview-ember-3 1.8s infinite ease-out', animationDelay: '0.5s' }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BadAuraPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <div className="absolute -inset-1 animate-pulse rounded-full bg-gradient-to-r from-red-600 via-red-500 to-red-600 opacity-75 blur-sm" />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+          className="relative ring-2 ring-red-500"
+        />
+      </div>
+    </div>
+  )
+}
+
+function AngelWingsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative isolate">
+        <AngelWingSvg
+          className="absolute top-1/2 -translate-y-1/2"
+          style={{ left: -10, width: 15, height: 46, opacity: 0.9, zIndex: -1 }}
+        />
+        <AngelWingSvg
+          className="absolute top-1/2"
+          style={{
+            right: -10,
+            width: 15,
+            height: 46,
+            opacity: 0.9,
+            transform: 'translateY(-50%) scaleX(-1)',
+            zIndex: -1,
+          }}
+        />
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+      </div>
+    </div>
+  )
+}
+
+function MonoclePreview(props: { user: User | null | undefined }) {
   const { user } = props
 
   return (
@@ -1200,10 +2288,762 @@ function CrownPreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
-          <LuCrown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" />
+        <MonocleSvg
+          className="absolute"
+          style={{
+            left: 6,
+            top: 8,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function CrystalBallPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        <CrystalBallSvg
+          className="absolute"
+          style={{
+            right: -4,
+            bottom: -4,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 0 3px rgba(139,92,246,0.6))',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function DisguisePreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        <DisguiseSvg
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 8,
+            width: 28,
+            height: 20,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ThoughtBubblePreview(props: {
+  user: User | null | undefined
+  type: 'yes' | 'no'
+}) {
+  const { user, type } = props
+  const isYes = type === 'yes'
+  const bgColor = isYes ? 'bg-green-500' : 'bg-red-500'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Thought bubble in top-left corner with trailing bubbles */}
+        <div
+          className="absolute"
+          style={{
+            top: -10,
+            left: -8,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+        >
+          {/* Main bubble */}
+          <div
+            className={clsx('rounded-full px-1 py-0.5 text-white', bgColor)}
+            style={{ fontSize: '8px', fontWeight: 'bold' }}
+          >
+            {isYes ? 'YES' : 'NO'}
+          </div>
+          {/* Trailing bubbles */}
+          <div
+            className={clsx('absolute rounded-full', bgColor)}
+            style={{ width: 4, height: 4, right: -2, bottom: -3 }}
+          />
+          <div
+            className={clsx('absolute rounded-full', bgColor)}
+            style={{ width: 2.5, height: 2.5, right: -4, bottom: -5.5 }}
+          />
         </div>
       </div>
+    </div>
+  )
+}
+
+function ArrowPreview(props: {
+  user: User | null | undefined
+  direction: 'up' | 'down'
+}) {
+  const { user, direction } = props
+  const isUp = direction === 'up'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        <ArrowBadgeSvg
+          direction={direction}
+          className="absolute"
+          style={{
+            right: -4,
+            bottom: -4,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function StonksMemePreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        <StonksMemeArrowSvg
+          className="absolute pointer-events-none"
+          style={{
+            left: '60%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 44,
+            height: 44,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+            zIndex: 10,
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const RED_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const RED_CAP_STYLE_COUNT = RED_CAP_STYLE_LABELS.length
+
+function RedCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, RED_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + RED_CAP_STYLE_COUNT) % RED_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % RED_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <RedCapSvg style={previewIndex} />
+          </div>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{RED_CAP_STYLE_LABELS[previewIndex]}</span>
+    </div>
+  )
+}
+
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const BLUE_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const BLUE_CAP_STYLE_COUNT = BLUE_CAP_STYLE_LABELS.length
+
+function BlueCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, BLUE_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + BLUE_CAP_STYLE_COUNT) % BLUE_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % BLUE_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <BlueCapSvg style={previewIndex} />
+          </div>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{BLUE_CAP_STYLE_LABELS[previewIndex]}</span>
+    </div>
+  )
+}
+
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const GREEN_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const GREEN_CAP_STYLE_COUNT = GREEN_CAP_STYLE_LABELS.length
+
+function GreenCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, GREEN_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + GREEN_CAP_STYLE_COUNT) % GREEN_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % GREEN_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <GreenCapSvg style={previewIndex} />
+          </div>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{GREEN_CAP_STYLE_LABELS[previewIndex]}</span>
+    </div>
+  )
+}
+
+// Style mapping: Front: 0 Classic, 1 Mini, 2 MANA | Left: 3 MANA, 4 Clean, 5 Mini | Right: 6 MANA, 7 Clean, 8 Mini
+const BLACK_CAP_STYLE_LABELS = ['Classic', 'Mini', 'MANA', 'MANA Left', 'Left', 'Mini Left', 'MANA Right', 'Right', 'Mini Right']
+const BLACK_CAP_STYLE_COUNT = BLACK_CAP_STYLE_LABELS.length
+
+function BlackCapStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, BLACK_CAP_STYLE_COUNT - 1))
+  )
+
+  const isSmall = previewIndex === 1 || previewIndex === 5 || previewIndex === 8
+  const isFrontFacing = previewIndex <= 2
+  const capW = isSmall ? 24 : 30
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + BLACK_CAP_STYLE_COUNT) % BLACK_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % BLACK_CAP_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div
+            className="absolute transition-all duration-200"
+            style={{
+              left: '50%',
+              transform: isFrontFacing ? 'translateX(-50%)' : 'translateX(-50%) rotate(-5deg)',
+              top: -7,
+              width: capW,
+              height: capW,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <BlackCapSvg style={previewIndex} />
+          </div>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{BLACK_CAP_STYLE_LABELS[previewIndex]}</span>
+    </div>
+  )
+}
+
+function BullHornsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left horn */}
+        <BullHornSvg
+          className="absolute"
+          style={{
+            right: '50%',
+            top: -11,
+            width: 32,
+            height: 24,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+        />
+        {/* Right horn (mirrored) */}
+        <BullHornSvg
+          className="absolute"
+          style={{
+            left: '50%',
+            top: -11,
+            width: 32,
+            height: 24,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            transform: 'scaleX(-1)',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function BearEarsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left ear */}
+        <BearEarSvg
+          side="left"
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          style={{
+            left: -4,
+            top: -7,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+        />
+        {/* Right ear */}
+        <BearEarSvg
+          side="right"
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          style={{
+            right: -4,
+            top: -7,
+            width: 18,
+            height: 18,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function SantaHatPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Santa hat - tapered cone with connected pom pom */}
+        <div
+          className="absolute rotate-[20deg] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          style={{
+            right: -8,
+            top: -10,
+            width: 28,
+            height: 24,
+            filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
+          }}
+        >
+          <SantaHatSvg />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BunnyEarsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left ear */}
+        <BunnyEarSvg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[-5deg]"
+          style={{
+            left: 4,
+            top: -18,
+            width: 22,
+            height: 33,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(-15deg)',
+          }}
+        />
+        {/* Right ear */}
+        <BunnyEarSvg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[5deg]"
+          style={{
+            right: 4,
+            top: -18,
+            width: 22,
+            height: 33,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(15deg)',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function CatEarsPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {/* Left ear */}
+        <CatEarSvg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
+          style={{
+            left: -2,
+            top: -9,
+            width: 22,
+            height: 16,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(-12deg)',
+          }}
+        />
+        {/* Right ear (mirrored) */}
+        <CatEarSvg
+          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[3deg]"
+          style={{
+            right: -2,
+            top: -9,
+            width: 22,
+            height: 16,
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+            transform: 'rotate(12deg) scaleX(-1)',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// Crown position: 0 = Right, 1 = Center, 2 = Left
+function CrownPreview(props: {
+  user: User | null | undefined
+  selectedPosition?: number
+  onSelect?: (position: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedPosition = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedPosition, CROWN_POSITION_OPTIONS.length - 1))
+  )
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + CROWN_POSITION_OPTIONS.length) % CROWN_POSITION_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % CROWN_POSITION_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      onSelect(newIndex)
+    }
+  }
+
+  // Position-specific classes (0=Right, 1=Left, 2=Center)
+  const getPositionClasses = () => {
+    switch (previewIndex) {
+      case 2: // Center
+        return 'absolute left-1/2 -translate-x-1/2 -top-2'
+      case 1: // Left
+        return 'absolute -left-2 -top-[0.41rem] -rotate-45'
+      default: // Right (0)
+        return 'absolute -right-2 -top-[0.41rem] rotate-45'
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          <div className={clsx(getPositionClasses(), 'transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110')}>
+            <LuCrown className="h-5 w-5 text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" />
+          </div>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">{CROWN_POSITION_OPTIONS[previewIndex]}</span>
     </div>
   )
 }
@@ -1223,6 +3063,227 @@ function GraduationCapPreview(props: { user: User | null | undefined }) {
         <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
           <LuGraduationCap className="h-5 w-5 text-indigo-500 drop-shadow-[0_0_4px_rgba(99,102,241,0.5)]" />
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Generic hat preview for new hats
+function HatPreview(props: {
+  user: User | null | undefined
+  hatType:
+    | 'top-hat'
+    | 'halo'
+    | 'propeller-hat'
+    | 'wizard-hat'
+    | 'tinfoil-hat'
+    | 'microphone'
+    | 'jester-hat'
+    | 'fedora'
+    | 'devil-horns'
+}) {
+  const { user, hatType } = props
+
+  const renderHat = () => {
+    switch (hatType) {
+      case 'top-hat':
+        return (
+          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            {/* Light mode */}
+            <GiTopHat
+              className="h-5 w-5 text-gray-800 dark:hidden"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+            {/* Dark mode - black with white outline */}
+            <GiTopHat
+              className="hidden h-5 w-5 text-gray-900 dark:block"
+              style={{
+                filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+              }}
+            />
+          </div>
+        )
+      case 'halo':
+        return (
+          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 transition-transform duration-300 group-hover:-translate-y-0.5">
+            {/* Light mode — dual-stroke SVG matching live avatar halo */}
+            <svg
+              className="dark:hidden"
+              width="3.3rem"
+              height="0.85rem"
+              viewBox="0 0 40 12"
+              overflow="visible"
+              style={{
+                transform: 'rotate(-8deg)',
+                filter:
+                  'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))',
+              }}
+            >
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(217, 170, 50, 0.7)" strokeWidth="3.5" fill="none" />
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(255, 252, 240, 0.95)" strokeWidth="1.5" fill="none" />
+            </svg>
+            {/* Dark mode — dual-stroke SVG matching live avatar halo */}
+            <svg
+              className="hidden dark:block"
+              width="3.3rem"
+              height="0.85rem"
+              viewBox="0 0 40 12"
+              overflow="visible"
+              style={{
+                transform: 'rotate(-8deg)',
+                filter:
+                  'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))',
+              }}
+            >
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(200, 160, 60, 0.5)" strokeWidth="3.5" fill="none" />
+              <ellipse cx="20" cy="6" rx="18" ry="5" stroke="rgba(255, 252, 240, 0.95)" strokeWidth="1.5" fill="none" />
+            </svg>
+          </div>
+        )
+      case 'propeller-hat':
+        return (
+          <div className="absolute -right-1 top-0 rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <div className="relative flex flex-col items-center">
+              {/* Beanie dome */}
+              <div className="h-2.5 w-5 rounded-t-full bg-red-500" />
+              {/* Propeller blades - positioned to overlap beanie top */}
+              <div
+                className="absolute"
+                style={{
+                  top: -8,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  perspective: '80px',
+                }}
+              >
+                <div style={{ transform: 'rotateX(50deg)' }}>
+                  <svg
+                    width={16}
+                    height={16}
+                    viewBox="0 0 18 18"
+                    className="animate-spin"
+                    style={{ animationDuration: '0.5s' }}
+                  >
+                    <rect
+                      x="1"
+                      y="7.5"
+                      width="6.5"
+                      height="3"
+                      rx="1.5"
+                      fill="#3B82F6"
+                    />
+                    <rect
+                      x="10.5"
+                      y="7.5"
+                      width="6.5"
+                      height="3"
+                      rx="1.5"
+                      fill="#EF4444"
+                    />
+                    <circle cx="9" cy="9" r="2.5" fill="#FBBF24" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      case 'wizard-hat':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <WizardHatSvg
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 0 3px rgba(139, 92, 246, 0.5))' }}
+            />
+          </div>
+        )
+      case 'tinfoil-hat':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <TinfoilHatSvg
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
+            />
+          </div>
+        )
+      case 'microphone':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            {/* Light mode */}
+            <GiDunceCap
+              className="h-5 w-5 text-gray-900 dark:hidden"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+            {/* Dark mode - black with white outline */}
+            <GiDunceCap
+              className="hidden h-5 w-5 text-gray-900 dark:block"
+              style={{
+                filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+              }}
+            />
+          </div>
+        )
+      case 'jester-hat':
+        return (
+          <div className="absolute -right-1.5 -top-2 rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <JesterHatSvg
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+          </div>
+        )
+      case 'fedora':
+        return (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">
+            <FedoraSvg
+              className="h-5 w-5"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+          </div>
+        )
+      case 'devil-horns':
+        return (
+          <>
+            {/* Left horn */}
+            <DevilHornSvg
+              side="left"
+              className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+              style={{
+                left: -3,
+                top: -4,
+                width: 12,
+                height: 12,
+                filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+                transform: 'rotate(-45deg)',
+              }}
+            />
+            {/* Right horn */}
+            <DevilHornSvg
+              side="right"
+              className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+              style={{
+                right: -3,
+                top: -4,
+                width: 12,
+                height: 12,
+                filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+                transform: 'rotate(45deg)',
+              }}
+            />
+          </>
+        )
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="relative">
+        <Avatar
+          username={user?.username}
+          avatarUrl={user?.avatarUrl}
+          size="lg"
+          noLink
+        />
+        {renderHat()}
       </div>
     </div>
   )
@@ -1326,21 +3387,644 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
   )
 }
 
+function HovercardSpinningBorderPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="hovercard-spinning-border bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md">
+        <div className="px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div className="bg-primary-500 rounded px-2 py-0.5 text-[10px] text-white">
+              Follow
+            </div>
+          </Row>
+          <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
+          <div className="text-ink-500 text-xs">@{username}</div>
+          <Row className="mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="text-ink-600 px-3 py-1.5 text-[10px]">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function HovercardRoyalBorderPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-red-50 dark:group-hover:bg-red-950/50">
+      <div className="hovercard-royal-border bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md">
+        <div className="px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div className="bg-primary-500 rounded px-2 py-0.5 text-[10px] text-white">
+              Follow
+            </div>
+          </Row>
+          <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
+          <div className="text-ink-500 text-xs">@{username}</div>
+          <Row className="mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="text-ink-600 px-3 py-1.5 text-[10px]">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type HovercardBgType = 'royalty' | 'mana-printer' | 'oracle' | 'trading-floor' | 'champions-legacy'
+
+function HovercardBackgroundPreview(props: {
+  user: User | null | undefined
+  background: HovercardBgType
+}) {
+  const { user, background } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  // Background styles and text colors for dark backgrounds
+  const bgConfig: Record<HovercardBgType, { bg: string; textColor: string }> = {
+    royalty: {
+      bg: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%)',
+      textColor: 'text-amber-50',
+    },
+    'mana-printer': {
+      bg: 'linear-gradient(135deg, #0a2e1a 0%, #1b4e2d 50%, #0a2e1a 100%)',
+      textColor: 'text-emerald-50',
+    },
+    oracle: {
+      bg: 'radial-gradient(ellipse at top, #1a1a3e 0%, #0a0a1e 50%, #000010 100%)',
+      textColor: 'text-indigo-50',
+    },
+    'trading-floor': {
+      bg: 'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)',
+      textColor: 'text-green-50',
+    },
+    'champions-legacy': {
+      bg: 'linear-gradient(135deg, #2a1a00 0%, #1a1000 50%, #2a1a00 100%)',
+      textColor: 'text-amber-50',
+    },
+  }
+
+  const { bg: bgStyle, textColor } = bgConfig[background]
+
+  // Simplified overlay for preview
+  const renderOverlay = () => {
+    switch (background) {
+      case 'trading-floor':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <polyline
+              points="0,100 30,90 60,95 90,75 120,80 150,55 176,40"
+              fill="none"
+              stroke="#22C55E"
+              strokeWidth="2"
+              opacity="0.3"
+            />
+            <polygon
+              points="0,100 30,90 60,95 90,75 120,80 150,55 176,40 176,120 0,120"
+              fill="#22C55E"
+              opacity="0.1"
+            />
+            {/* Upward arrow - points at Follow button */}
+            <g transform="translate(125, 32)" opacity="0.25">
+              <polygon points="8,0 16,10 12,10 12,18 4,18 4,10 0,10" fill="#22C55E" />
+            </g>
+          </svg>
+        )
+      case 'mana-printer':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <defs>
+              <linearGradient id="coin-gradient-preview" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#C4B5FD" />
+                <stop offset="100%" stopColor="#8B5CF6" />
+              </linearGradient>
+            </defs>
+            <g opacity="0.35">
+              {/* Stick figure turning crank */}
+              <circle cx="55" cy="62" r="6" stroke="#C4B5FD" strokeWidth="1.5" fill="none" />
+              <line x1="55" y1="68" x2="55" y2="88" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="88" x2="48" y2="102" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="88" x2="62" y2="102" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="75" x2="78" y2="70" stroke="#C4B5FD" strokeWidth="1.5" />
+              <line x1="55" y1="75" x2="45" y2="85" stroke="#C4B5FD" strokeWidth="1.5" />
+
+              {/* Machine */}
+              <rect
+                x="82"
+                y="58"
+                width="38"
+                height="32"
+                rx="2"
+                stroke="#A78BFA"
+                strokeWidth="1.5"
+                fill="#8B5CF6"
+                fillOpacity="0.1"
+              />
+              {/* Crank wheel */}
+              <circle cx="90" cy="70" r="6" stroke="#A78BFA" strokeWidth="1.5" fill="none" />
+              <line x1="90" y1="70" x2="78" y2="70" stroke="#A78BFA" strokeWidth="1.5" />
+              {/* Output slot */}
+              <rect x="116" y="66" width="4" height="14" fill="#A78BFA" fillOpacity="0.4" rx="1" />
+
+              {/* Mana coins with gradient and white M */}
+              <g transform="translate(126, 72)">
+                <circle r="7" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1.5" />
+                <text x="0" y="3" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+              </g>
+              <g transform="translate(138, 90)" opacity="0.9">
+                <circle r="6" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1" />
+                <text x="0" y="2.5" fontSize="8" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+              </g>
+              <g transform="translate(148, 106)" opacity="0.75">
+                <circle r="5" fill="url(#coin-gradient-preview)" stroke="#7C3AED" strokeWidth="1" />
+                <text x="0" y="2" fontSize="7" fontWeight="bold" fill="white" textAnchor="middle">M</text>
+              </g>
+
+              {/* Motion lines */}
+              <path d="M98 54 L104 50" stroke="#C4B5FD" strokeWidth="0.75" />
+              <path d="M100 58 L106 54" stroke="#C4B5FD" strokeWidth="0.5" />
+            </g>
+          </svg>
+        )
+      case 'oracle':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <g fill="white">
+              <circle cx="20" cy="20" r="0.8" opacity="0.6" />
+              <circle cx="50" cy="15" r="0.6" opacity="0.5" />
+              <circle cx="90" cy="25" r="1" opacity="0.7" />
+              <circle cx="130" cy="18" r="0.7" opacity="0.55" />
+              <circle cx="160" cy="30" r="0.8" opacity="0.6" />
+              <circle cx="35" cy="50" r="0.6" opacity="0.45" />
+              <circle cx="75" cy="45" r="0.8" opacity="0.5" />
+              <circle cx="120" cy="55" r="0.7" opacity="0.5" />
+              <circle cx="155" cy="45" r="0.6" opacity="0.45" />
+              <circle cx="25" cy="80" r="0.7" opacity="0.4" />
+              <circle cx="65" cy="75" r="0.6" opacity="0.35" />
+              <circle cx="110" cy="85" r="0.8" opacity="0.4" />
+              <circle cx="145" cy="78" r="0.6" opacity="0.35" />
+            </g>
+          </svg>
+        )
+      case 'champions-legacy':
+        return (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 176 120"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <defs>
+              <radialGradient id="cl-glow-p" cx="50%" cy="100%" r="100%" fx="50%" fy="100%">
+                <stop offset="0%" stopColor="#FBBF24" stopOpacity="0.15" />
+                <stop offset="60%" stopColor="#B45309" stopOpacity="0.05" />
+                <stop offset="100%" stopColor="#B45309" stopOpacity="0" />
+              </radialGradient>
+              <symbol id="cl-trophy-p" viewBox="0 0 100 100">
+                <path d="M20 10h60l-5 30c0 20-15 25-25 25s-25-5-25-25l-5-30z M45 65v15h-10l-5 10h40l-5-10h-10v-15h-10z M80 15c15 0 15 25 0 25v-5c8 0 8-15 0-15v-5z M20 15c-15 0-15 25 0 25v-5c-8 0-8-15 0-15v-5z" fill="currentColor" />
+              </symbol>
+              <symbol id="cl-star-p" viewBox="0 0 20 20">
+                <path d="M10 0l2.5 7.5h7.5l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z" fill="currentColor" />
+              </symbol>
+            </defs>
+            <rect width="176" height="120" fill="url(#cl-glow-p)" />
+            {/* Main trophy — centered */}
+            <use href="#cl-trophy-p" x="48" y="20" width="80" height="80" transform="rotate(8 88 60)" fill="#B45309" fillOpacity="0.07" />
+            {/* Small accent trophies — top corners */}
+            <use href="#cl-trophy-p" x="125" y="2" width="40" height="40" transform="rotate(-10 145 22)" fill="#D97706" fillOpacity="0.05" />
+            <use href="#cl-trophy-p" x="5" y="2" width="35" height="35" transform="rotate(12 22 20)" fill="#D97706" fillOpacity="0.04" />
+            {/* Laurel stems — bottom corners */}
+            <path d="M12 115 C22 100 28 85 32 70" stroke="#D97706" strokeWidth="1.5" strokeOpacity="0.1" fill="none" />
+            <path d="M164 115 C154 100 148 85 144 70" stroke="#D97706" strokeWidth="1.5" strokeOpacity="0.1" fill="none" />
+            {/* Leaves */}
+            <g fill="#F59E0B" fillOpacity="0.1">
+              <path d="M28 88 Q18 91 15 82 Q23 79 28 88" />
+              <path d="M30 75 Q20 78 17 69 Q25 66 30 75" />
+              <path d="M148 88 Q158 91 161 82 Q153 79 148 88" />
+              <path d="M146 75 Q156 78 159 69 Q151 66 146 75" />
+            </g>
+            {/* Stars */}
+            <use href="#cl-star-p" x="80" y="8" width="9" height="9" fill="#FBBF24" fillOpacity="0.2" />
+            <use href="#cl-star-p" x="25" y="45" width="6" height="6" fill="#F59E0B" fillOpacity="0.12" />
+            <use href="#cl-star-p" x="148" y="50" width="5" height="5" fill="#F59E0B" fillOpacity="0.12" />
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div
+        className={clsx(
+          'relative w-44 origin-center scale-[0.85] divide-y divide-white/20 rounded-md shadow-lg ring-1 ring-white/10',
+          textColor
+        )}
+        style={{ background: bgStyle, overflow: 'hidden' }}
+      >
+        {/* Background overlay */}
+        {renderOverlay()}
+        <div className="relative z-10 px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div className="bg-primary-500 rounded px-2 py-0.5 text-[10px] text-white">
+              Follow
+            </div>
+          </Row>
+          <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
+          <div className="text-xs opacity-70">@{username}</div>
+          <Row className="mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="relative z-10 px-3 py-1.5 text-[10px] opacity-80">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GoldenFollowButtonPreview(props: { user: User | null | undefined }) {
+  const { user } = props
+  const displayName = user?.name ?? 'YourName'
+  const username = user?.username ?? 'username'
+
+  return (
+    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <div className="bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md shadow-lg ring-1 ring-black/5">
+        <div className="px-3 py-2">
+          <Row className="items-start justify-between">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size="md"
+              noLink
+            />
+            <div
+              className="rounded px-2 py-0.5 text-[10px] font-semibold text-amber-900"
+              style={{
+                background:
+                  'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
+                boxShadow:
+                  '0 0 8px rgba(251, 191, 36, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+              }}
+            >
+              Follow
+            </div>
+          </Row>
+          <div className="text-ink-900 mt-1 truncate text-sm font-bold">
+            {displayName}
+          </div>
+          <div className="text-ink-500 text-xs">@{username}</div>
+          <Row className="text-ink-600 mt-1 gap-3 text-[10px]">
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
+          </Row>
+        </div>
+        <div className="text-ink-600 px-3 py-1.5 text-[10px]">
+          <b>Last active:</b> today
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CustomYesButtonPreview(props: {
+  selectedText?: YesButtonOption
+  onSelect?: (text: YesButtonOption) => void
+  owned?: boolean
+}) {
+  const { selectedText = 'PAMPU', onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, YES_BUTTON_OPTIONS.indexOf(selectedText ?? 'PAMPU'))
+  )
+  const pendingMetadataRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const displayText = YES_BUTTON_OPTIONS[previewIndex]
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + YES_BUTTON_OPTIONS.length) % YES_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      // Debounce metadata update
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(YES_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % YES_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(YES_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <span className="text-ink-500 text-xs">Your YES button becomes:</span>
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="flex items-center justify-center">
+          <Button
+            color="green-outline"
+            size="sm"
+            className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-green-500/30"
+          >
+            {displayText} <ArrowUpIcon className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+    </div>
+  )
+}
+
+function CustomNoButtonPreview(props: {
+  selectedText?: NoButtonOption
+  onSelect?: (text: NoButtonOption) => void
+  owned?: boolean
+}) {
+  const { selectedText = 'DUMPU', onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, NO_BUTTON_OPTIONS.indexOf(selectedText ?? 'DUMPU'))
+  )
+  const pendingMetadataRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const displayText = NO_BUTTON_OPTIONS[previewIndex]
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + NO_BUTTON_OPTIONS.length) % NO_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(NO_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % NO_BUTTON_OPTIONS.length
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) {
+      if (pendingMetadataRef.current) clearTimeout(pendingMetadataRef.current)
+      pendingMetadataRef.current = setTimeout(() => {
+        onSelect(NO_BUTTON_OPTIONS[newIndex])
+      }, 800)
+    }
+  }
+
+  return (
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <span className="text-ink-500 text-xs">Your NO button becomes:</span>
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="flex items-center justify-center">
+          <Button
+            color="red-outline"
+            size="sm"
+            className="transition-all duration-200 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-red-500/30"
+          >
+            {displayText} <ArrowDownIcon className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+    </div>
+  )
+}
+
 function ItemPreview(props: {
   itemId: string
   user: User | null | undefined
   localStreakBonus?: number
   allEntitlements?: UserEntitlement[]
+  entitlement?: UserEntitlement
+  onMetadataUpdate?: (metadata: Record<string, any>) => void
 }) {
-  const { itemId, user, localStreakBonus, allEntitlements } = props
+  const {
+    itemId,
+    user,
+    localStreakBonus,
+    allEntitlements,
+    entitlement,
+    onMetadataUpdate,
+  } = props
 
   switch (itemId) {
     case 'avatar-golden-border':
       return <GoldenBorderPreview user={user} />
     case 'avatar-crown':
-      return <CrownPreview user={user} />
+      return (
+        <CrownPreview
+          user={user}
+          selectedPosition={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (position: number) => onMetadataUpdate({ style: position })
+              : undefined
+          }
+        />
+      )
     case 'avatar-graduation-cap':
       return <GraduationCapPreview user={user} />
+    case 'avatar-top-hat':
+      return <HatPreview user={user} hatType="top-hat" />
+    case 'avatar-halo':
+      return <HatPreview user={user} hatType="halo" />
+    case 'avatar-propeller-hat':
+      return <HatPreview user={user} hatType="propeller-hat" />
+    case 'avatar-wizard-hat':
+      return <HatPreview user={user} hatType="wizard-hat" />
+    case 'avatar-tinfoil-hat':
+      return <HatPreview user={user} hatType="tinfoil-hat" />
+    case 'avatar-microphone':
+      return <HatPreview user={user} hatType="microphone" />
+    case 'avatar-jester-hat':
+      return <HatPreview user={user} hatType="jester-hat" />
+    case 'avatar-fedora':
+      return <HatPreview user={user} hatType="fedora" />
+    case 'avatar-devil-horns':
+      return <HatPreview user={user} hatType="devil-horns" />
+    case 'avatar-angel-wings':
+      return <AngelWingsPreview user={user} />
+    case 'avatar-mana-aura':
+      return <ManaAuraPreview user={user} />
+    case 'avatar-black-hole':
+      return <BlackHolePreview user={user} />
+    case 'avatar-fire-item':
+      return <FireItemPreview user={user} />
+    case 'avatar-bad-aura':
+      return <BadAuraPreview user={user} />
+    case 'avatar-monocle':
+      return <MonoclePreview user={user} />
+    case 'avatar-crystal-ball':
+      return <CrystalBallPreview user={user} />
+    case 'avatar-disguise':
+      return <DisguisePreview user={user} />
+    case 'avatar-thought-yes':
+      return <ThoughtBubblePreview user={user} type="yes" />
+    case 'avatar-thought-no':
+      return <ThoughtBubblePreview user={user} type="no" />
+    case 'avatar-stonks-up':
+      return <ArrowPreview user={user} direction="up" />
+    case 'avatar-stonks-down':
+      return <ArrowPreview user={user} direction="down" />
+    case 'avatar-stonks-meme':
+      return <StonksMemePreview user={user} />
+    case 'avatar-blue-cap':
+      return (
+        <BlueCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
+    case 'avatar-team-red-hat':
+      return (
+        <RedCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
+    case 'avatar-team-green-hat':
+      return (
+        <GreenCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
+    case 'avatar-black-cap':
+      return (
+        <BlackCapStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
+    case 'avatar-bull-horns':
+      return <BullHornsPreview user={user} />
+    case 'avatar-bear-ears':
+      return <BearEarsPreview user={user} />
+    case 'avatar-santa-hat':
+      return <SantaHatPreview user={user} />
+    case 'avatar-bunny-ears':
+      return <BunnyEarsPreview user={user} />
+    case 'avatar-cat-ears':
+      return <CatEarsPreview user={user} />
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview
@@ -1349,10 +4033,48 @@ function ItemPreview(props: {
           allEntitlements={allEntitlements}
         />
       )
-    case 'pampu-skin':
-      return <PampuSkinPreview />
     case 'hovercard-glow':
       return <HovercardGlowPreview user={user} />
+    case 'hovercard-spinning-border':
+      return <HovercardSpinningBorderPreview user={user} />
+    case 'hovercard-royal-border':
+      return <HovercardRoyalBorderPreview user={user} />
+    case 'hovercard-royalty':
+      return <HovercardBackgroundPreview user={user} background="royalty" />
+    case 'hovercard-mana-printer':
+      return <HovercardBackgroundPreview user={user} background="mana-printer" />
+    case 'hovercard-oracle':
+      return <HovercardBackgroundPreview user={user} background="oracle" />
+    case 'hovercard-trading-floor':
+      return <HovercardBackgroundPreview user={user} background="trading-floor" />
+    case 'former-charity-champion':
+      return <HovercardBackgroundPreview user={user} background="champions-legacy" />
+    case 'hovercard-golden-follow':
+      return <GoldenFollowButtonPreview user={user} />
+    case 'pampu-skin':
+      return (
+        <CustomYesButtonPreview
+          selectedText={entitlement?.metadata?.selectedText as YesButtonOption}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (text) => onMetadataUpdate({ selectedText: text })
+              : undefined
+          }
+        />
+      )
+    case 'custom-no-button':
+      return (
+        <CustomNoButtonPreview
+          selectedText={entitlement?.metadata?.selectedText as NoButtonOption}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (text) => onMetadataUpdate({ selectedText: text })
+              : undefined
+          }
+        />
+      )
     default:
       return null
   }
@@ -1375,6 +4097,7 @@ function ShopItemCard(props: {
       version?: number
     }
   ) => void
+  onMetadataChange: (itemId: string, updatedEntitlement: UserEntitlement) => void
   getToggleVersion: () => number
   localStreakBonus: number
 }) {
@@ -1387,6 +4110,7 @@ function ShopItemCard(props: {
     justPurchased,
     onPurchaseComplete,
     onToggleComplete,
+    onMetadataChange,
     getToggleVersion,
     localStreakBonus,
   } = props
@@ -1402,7 +4126,7 @@ function ShopItemCard(props: {
   const canPurchase = user && user.balance >= discountedPrice
   // Items are toggleable unless they're always enabled (like supporter badges)
   const isToggleable =
-    (item.type === 'permanent-toggleable' || item.type === 'time-limited') &&
+    (item.type === 'permanent-toggleable' || item.type === 'time-limited' || item.type === 'earned') &&
     !item.alwaysEnabled
 
   // Use entitlement state directly - optimistic updates handled by parent
@@ -1414,6 +4138,10 @@ function ShopItemCard(props: {
     user &&
     (user.streakForgiveness ?? 0) + localStreakBonus >=
       getMaxStreakFreezes(allEntitlements)
+
+  // Check if seasonal item is currently unavailable
+  const isSeasonalUnavailable =
+    item.seasonalAvailability && !isSeasonalItemAvailable(item)
 
   const handlePurchase = async () => {
     if (!user) return
@@ -1458,6 +4186,43 @@ function ShopItemCard(props: {
     }
   }
 
+  const pendingMetadataApiRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+
+  const handleMetadataUpdate = (metadata: Record<string, any>) => {
+    // Optimistic update: immediately reflect the new metadata locally
+    if (entitlement) {
+      const updatedEntitlement = {
+        ...entitlement,
+        metadata: { ...entitlement.metadata, ...metadata },
+      }
+      onMetadataChange(item.id, updatedEntitlement)
+    }
+
+    // Debounce the API call (800ms) so rapid cycling doesn't spam the server
+    if (pendingMetadataApiRef.current)
+      clearTimeout(pendingMetadataApiRef.current)
+    pendingMetadataApiRef.current = setTimeout(async () => {
+      try {
+        const result = await api('shop-update-metadata', {
+          itemId: item.id,
+          metadata,
+        })
+        // Update with server response
+        const entitlementId = getEntitlementId(item)
+        const serverUpdated = (result.entitlements as UserEntitlement[]).find(
+          (e) => e.entitlementId === entitlementId
+        )
+        if (serverUpdated) {
+          onMetadataChange(item.id, serverUpdated)
+        }
+      } catch (e: any) {
+        toast.error(e.message || 'Failed to update selection')
+      }
+    }, 800)
+  }
+
   const cardRef = useRef<HTMLDivElement>(null)
 
   // Premium items (over 100k mana) get special styling
@@ -1465,10 +4230,11 @@ function ShopItemCard(props: {
 
   return (
     <>
+      <div className="group flex pb-1">
       <Card
         ref={cardRef}
         className={clsx(
-          'group relative flex cursor-default flex-col gap-3 p-4 transition-all duration-200',
+          'group relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
           justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
           !justPurchased && 'hover:-translate-y-1 hover:shadow-xl hover:ring-2',
           !justPurchased &&
@@ -1488,6 +4254,12 @@ function ShopItemCard(props: {
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
               <span className="text-ink-600 text-xs">Purchasing...</span>
             </div>
+          </div>
+        )}
+
+        {item.hidden && (
+          <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+            Hidden
           </div>
         )}
 
@@ -1514,15 +4286,99 @@ function ShopItemCard(props: {
               OWNED
             </div>
           )}
-          {/* LEGENDARY badge for premium items (not owned) */}
-          {isPremiumItem && !owned && (
+          {/* LEGENDARY badge for halo, wings, crown only */}
+          {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(item.id) && !owned && (
             <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
               LEGENDARY
             </div>
           )}
+          {/* SEASONAL badge */}
+          {item.seasonalAvailability && (
+            <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+              SEASONAL
+            </div>
+          )}
         </Row>
 
+        {/* Slot tag */}
+        {EXCLUSIVE_SLOTS.includes(item.slot) && (
+          <span
+            className={clsx(
+              'w-fit rounded-full px-2 py-0.5 text-[10px] font-medium',
+              item.slot === 'hat' &&
+                'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+              item.slot === 'profile-border' &&
+                'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+              item.slot === 'profile-accessory' &&
+                'bg-teal-100 text-teal-700 dark:bg-teal-800/60 dark:text-teal-200',
+              item.slot === 'hovercard-background' &&
+                'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+              item.slot === 'hovercard-border' &&
+                'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+              item.slot === 'button-yes' &&
+                'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+              item.slot === 'button-no' &&
+                'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+            )}
+          >
+            {SLOT_LABELS[item.slot]}
+          </span>
+        )}
+        {/* Unique items get a special badge */}
+        {item.slot === 'unique' && (
+          <span className="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+            ✨ Combines with everything
+          </span>
+        )}
+
         <p className="text-ink-600 text-sm">{item.description}</p>
+
+        {/* Animation location indicator — driven by display-config */}
+        {item.animationTypes && item.animationTypes.length > 0 && (() => {
+          const locationText = getAnimationLocationText(item.animationTypes)
+          return locationText ? (
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+              <span className="text-ink-500 text-xs">
+                Animated on {locationText}
+              </span>
+            </div>
+          ) : null
+        })()}
+
+        {/* Achievement requirement badge */}
+        {item.requirement && (
+          <div className="rounded-md bg-amber-50 px-2 py-1 dark:bg-amber-900/30">
+            <span className="text-xs text-amber-700 dark:text-amber-300">
+              🏆 Requires: {item.requirement.description}
+            </span>
+          </div>
+        )}
+
+        {/* Seasonal availability badge */}
+        {item.seasonalAvailability && (
+          <div
+            className={clsx(
+              'rounded-md px-2 py-1',
+              isSeasonalItemAvailable(item)
+                ? 'bg-green-50 dark:bg-green-900/30'
+                : 'bg-gray-100 dark:bg-gray-800'
+            )}
+          >
+            <span
+              className={clsx(
+                'text-xs',
+                isSeasonalItemAvailable(item)
+                  ? 'text-green-700 dark:text-green-300'
+                  : 'text-ink-500'
+              )}
+            >
+              {isSeasonalItemAvailable(item)
+                ? '🎉 Available now!'
+                : `⏰ ${getSeasonalAvailabilityText(item) ?? 'Limited time'}`}
+            </span>
+          </div>
+        )}
 
         {/* Live Preview with actual user data */}
         <ItemPreview
@@ -1530,6 +4386,8 @@ function ShopItemCard(props: {
           user={user}
           localStreakBonus={localStreakBonus}
           allEntitlements={allEntitlements}
+          entitlement={entitlement}
+          onMetadataUpdate={owned ? handleMetadataUpdate : undefined}
         />
 
         {/* Footer: different layouts for owned vs non-owned */}
@@ -1594,20 +4452,33 @@ function ShopItemCard(props: {
               </Row>
             )}
           </Col>
+        ) : item.type === 'earned' ? (
+          // Earned items that aren't owned - show locked state
+          <div className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-gray-100 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+            <FaLock className="h-3 w-3" />
+            <span>Reserved for Past Champions</span>
+          </div>
         ) : (
           // Non-owned item layout - stacks vertically on very narrow screens
           <>
             <Col className="mt-auto gap-2 pt-2">
               <Row className="items-center justify-between">
-                {hasDiscount ? (
+                {hasDiscount || item.originalPrice ? (
                   <Col className="gap-0.5">
                     <Row className="items-center gap-1.5">
                       <span className="text-ink-400 text-xs line-through">
-                        {formatMoney(item.price)}
+                        {formatMoney(item.originalPrice ?? item.price)}
                       </span>
-                      <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                        -{Math.round(shopDiscount * 100)}%
-                      </span>
+                      {item.originalPrice && (
+                        <span className="rounded bg-rose-100 px-1 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">
+                          SALE
+                        </span>
+                      )}
+                      {hasDiscount && (
+                        <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                          -{Math.round(shopDiscount * 100)}%
+                        </span>
+                      )}
                     </Row>
                     <div className="font-semibold text-teal-600">
                       {formatMoney(discountedPrice)}
@@ -1621,7 +4492,11 @@ function ShopItemCard(props: {
 
                 {/* Buy button inline on wider screens */}
                 <div className="hidden min-[480px]:block">
-                  {isStreakFreezeAtMax ? (
+                  {isSeasonalUnavailable ? (
+                    <Button size="sm" color="gray" disabled>
+                      Not available
+                    </Button>
+                  ) : isStreakFreezeAtMax ? (
                     <Button size="sm" color="gray" disabled>
                       Max owned
                     </Button>
@@ -1646,7 +4521,11 @@ function ShopItemCard(props: {
 
               {/* Full-width button on narrow screens */}
               <div className="min-[480px]:hidden">
-                {isStreakFreezeAtMax ? (
+                {isSeasonalUnavailable ? (
+                  <Button size="sm" color="gray" disabled className="w-full">
+                    Not available
+                  </Button>
+                ) : isStreakFreezeAtMax ? (
                   <Button size="sm" color="gray" disabled className="w-full">
                     Max owned
                   </Button>
@@ -1679,23 +4558,26 @@ function ShopItemCard(props: {
           </>
         )}
       </Card>
+      </div>
 
       <Modal open={showConfirmModal} setOpen={setShowConfirmModal}>
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
             Are you sure you want to purchase <strong>{item.name}</strong> for{' '}
-            {hasDiscount ? (
+            {hasDiscount || item.originalPrice ? (
               <>
                 <span className="text-ink-400 line-through">
-                  {formatMoney(item.price)}
+                  {formatMoney(item.originalPrice ?? item.price)}
                 </span>{' '}
                 <span className="font-semibold text-teal-600">
                   {formatMoney(discountedPrice)}
                 </span>
-                <span className="ml-1 text-xs text-green-600">
-                  ({Math.round(shopDiscount * 100)}% shop discount)
-                </span>
+                {hasDiscount && (
+                  <span className="ml-1 text-xs text-green-600">
+                    ({Math.round(shopDiscount * 100)}% off)
+                  </span>
+                )}
               </>
             ) : (
               <span className="font-semibold text-teal-600">
@@ -1711,6 +4593,7 @@ function ShopItemCard(props: {
             user={user}
             localStreakBonus={localStreakBonus}
             allEntitlements={allEntitlements}
+            entitlement={entitlement}
           />
 
           {item.duration && (

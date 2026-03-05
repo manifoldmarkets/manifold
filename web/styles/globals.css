@@ -371,3 +371,95 @@ text {
 .animate-glow-amber-subtle {
   animation: glow-amber-subtle 3s ease-in-out infinite;
 }
+
+/* Spinning border effect for hovercard */
+@keyframes spin-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.hovercard-spinning-border {
+  position: relative;
+  z-index: 0;
+}
+
+.hovercard-spinning-border::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -3px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    #ff6b6b,
+    #feca57,
+    #48dbfb,
+    #ff9ff3,
+    #54a0ff,
+    #5f27cd,
+    #ff6b6b
+  );
+  background-size: 300% 300%;
+  animation: spin-border 3s linear infinite;
+}
+
+.hovercard-spinning-border::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: 6px;
+  background: inherit;
+}
+
+/* Royal velvet curtain border - red velvet with gold trim */
+.hovercard-royal-border {
+  position: relative;
+  z-index: 0;
+}
+
+.hovercard-royal-border::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -3px;
+  border-radius: 8px;
+  /* Layered: outer gold trim + inner red velvet curtain */
+  background:
+    /* Gold trim on all edges */
+    linear-gradient(to right, #fbbf24 0px, #d97706 1px, transparent 2px) left/2px 100% no-repeat,
+    linear-gradient(to right, transparent calc(100% - 2px), #d97706 calc(100% - 1px), #fbbf24 100%) right/2px 100% no-repeat,
+    linear-gradient(to bottom, #fbbf24 0px, #d97706 1px, transparent 2px) top/100% 2px no-repeat,
+    linear-gradient(to bottom, transparent calc(100% - 2px), #d97706 calc(100% - 1px), #fbbf24 100%) bottom/100% 2px no-repeat,
+    /* Red velvet curtain folds */
+    repeating-linear-gradient(
+      90deg,
+      #7f1d1d 0px,
+      #991b1b 4px,
+      #b91c1c 8px,
+      #dc2626 12px,
+      #b91c1c 16px,
+      #991b1b 20px,
+      #7f1d1d 24px
+    );
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.5),
+    0 0 4px rgba(251, 191, 36, 0.6),
+    0 0 8px rgba(220, 38, 38, 0.3);
+}
+
+.hovercard-royal-border::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: 6px;
+  background: inherit;
+}
