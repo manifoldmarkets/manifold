@@ -1,6 +1,8 @@
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
+import { XCircleIcon } from '@heroicons/react/solid'
+import { FaSearch } from 'react-icons/fa'
 import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/api/api'
@@ -8,6 +10,7 @@ import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../bet/yes-no-selector'
 import { ResolveConfirmationButton } from '../buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
+import { searchInAny } from 'common/util/parse'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
@@ -16,6 +19,7 @@ import { getAnswerProbability } from 'common/calculate'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { ResolutionExplainer, ResolveHeader } from '../resolution-panel'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { Input } from '../widgets/input'
 import {
   AnswerBar,
   CreatorAndAnswerLabel,
@@ -30,6 +34,32 @@ import { YesNoCancelSelector } from '../bet/yes-no-selector'
 import { resolution } from 'common/contract'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { GradientContainer } from '../widgets/gradient-container'
+
+function ResolutionSearchInput(props: {
+  query: string
+  setQuery: (q: string) => void
+}) {
+  const { query, setQuery } = props
+  return (
+    <div className="relative">
+      <Input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="!bg-canvas-50 !h-8 w-full !rounded-full !pl-7 !text-sm"
+        placeholder="Search answers"
+      />
+      <FaSearch className="text-ink-400 absolute left-2 top-2 h-4 w-4" />
+      {query && (
+        <button
+          className="absolute right-2 top-1"
+          onClick={() => setQuery('')}
+        >
+          <XCircleIcon className="fill-ink-500 h-6 w-6" />
+        </button>
+      )}
+    </div>
+  )
+}
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -248,6 +278,7 @@ export const AnswersResolvePanel = (props: {
   const [chosenAnswers, setChosenAnswers] = useState<{
     [answerId: string]: number
   }>({})
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     setChosenAnswers({})
@@ -292,6 +323,11 @@ export const AnswersResolvePanel = (props: {
     addAnswersMode === 'ANYONE' ||
     answers.some((a) => a.userId !== contract.creatorId)
 
+  const filteredAnswers = query
+    ? answers.filter((a) => searchInAny(query, a.text))
+    : answers
+  const hiddenCount = answers.length - filteredAnswers.length
+
   return (
     <Col className="gap-3">
       <ResolveHeader
@@ -304,14 +340,9 @@ export const AnswersResolvePanel = (props: {
         <div className="text-ink-500">wrong resolution panel</div>
       ) : (
         <>
-          <AnswersResolveOptions
-            contract={contract}
-            resolveOption={resolveOption}
-            setResolveOption={setResolveOption}
-            chosenAnswers={chosenAnswers}
-          />
+          <ResolutionSearchInput query={query} setQuery={setQuery} />
           <Col className="gap-2">
-            {answers.map((answer) => (
+            {filteredAnswers.map((answer) => (
               <ResolutionAnswerItem
                 key={answer.id}
                 answer={answer}
@@ -324,7 +355,22 @@ export const AnswersResolvePanel = (props: {
                 showAvatar={showAvatars}
               />
             ))}
+            {hiddenCount > 0 && (
+              <div className="text-ink-500 py-2 text-center text-sm">
+                {hiddenCount} answer{hiddenCount !== 1 ? 's' : ''} hidden by
+                search
+              </div>
+            )}
           </Col>
+          <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+            <AnswersResolveOptions
+              contract={contract}
+              resolveOption={resolveOption}
+              setResolveOption={setResolveOption}
+              chosenAnswers={chosenAnswers}
+              isInModal={inModal}
+            />
+          </div>
         </>
       )}
       <ResolutionExplainer />
@@ -441,6 +487,7 @@ export const IndependentAnswersResolvePanel = (props: {
 
   const { answers } = contract
   const sortedAnswers = getSortedIndependentAnswers(contract)
+  const [query, setQuery] = useState('')
 
   // Track resolutions for batch submission
   const [selectedResolutions, setSelectedResolutions] =
@@ -744,6 +791,11 @@ export const IndependentAnswersResolvePanel = (props: {
     )
   }
 
+  const filteredAnswers = query
+    ? sortedAnswers.filter((a) => searchInAny(query, a.text))
+    : sortedAnswers
+  const hiddenCount = sortedAnswers.length - filteredAnswers.length
+
   return (
     <GradientContainer>
       <Col className="gap-3">
@@ -753,22 +805,10 @@ export const IndependentAnswersResolvePanel = (props: {
           onClose={onClose}
         />
 
-        <Row className="bg-primary-50 items-center justify-between rounded p-3">
-          <div>
-            <span className="font-medium">{selectedCount}</span> answer
-            {selectedCount !== 1 ? 's' : ''} selected for resolution
-          </div>
-          <Button
-            color="indigo"
-            disabled={selectedCount === 0}
-            onClick={() => setIsShowingConfirmation(true)}
-          >
-            Review & Submit
-          </Button>
-        </Row>
+        <ResolutionSearchInput query={query} setQuery={setQuery} />
 
         <Col className="gap-2">
-          {sortedAnswers.map((answer) => (
+          {filteredAnswers.map((answer) => (
             <IndependentResolutionAnswerItem
               key={answer.id}
               contract={contract}
@@ -782,8 +822,30 @@ export const IndependentAnswersResolvePanel = (props: {
               onSetResolutionProb={handleSetResolutionProb}
             />
           ))}
+          {hiddenCount > 0 && (
+            <div className="text-ink-500 py-2 text-center text-sm">
+              {hiddenCount} answer{hiddenCount !== 1 ? 's' : ''} hidden by
+              search
+            </div>
+          )}
         </Col>
         <ResolutionExplainer independentMulti />
+
+        <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+          <Row className="bg-primary-50 items-center justify-between rounded p-3">
+            <div>
+              <span className="font-medium">{selectedCount}</span> answer
+              {selectedCount !== 1 ? 's' : ''} selected for resolution
+            </div>
+            <Button
+              color="indigo"
+              disabled={selectedCount === 0}
+              onClick={() => setIsShowingConfirmation(true)}
+            >
+              Review & Submit
+            </Button>
+          </Row>
+        </div>
       </Col>
     </GradientContainer>
   )
@@ -811,6 +873,7 @@ export const IndependentAnswersUnresolvePanel = (props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [completedAnswerIds, setCompletedAnswerIds] = useState<string[]>([])
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     if (!show) return
@@ -818,6 +881,7 @@ export const IndependentAnswersUnresolvePanel = (props: {
     setIsShowingConfirmation(false)
     setError(undefined)
     setCompletedAnswerIds([])
+    setQuery('')
   }, [show])
 
   if (!show) return null
@@ -961,6 +1025,11 @@ export const IndependentAnswersUnresolvePanel = (props: {
     )
   }
 
+  const filteredAnswers = query
+    ? sortedAnswers.filter((a) => searchInAny(query, a.text))
+    : sortedAnswers
+  const hiddenCount = sortedAnswers.length - filteredAnswers.length
+
   return (
     <GradientContainer>
       <Col className="gap-3">
@@ -970,32 +1039,19 @@ export const IndependentAnswersUnresolvePanel = (props: {
           </Button>
         </Row>
         <div className="text-lg">
-          Unresolve answers for "{contract.question}"
+          Unresolve answers for &ldquo;{contract.question}&rdquo;
         </div>
         <div className="text-ink-600 text-sm">
           Select resolved answers to unresolve. This is serious business and
           undoes payouts for selected answers.
         </div>
 
-        <Row className="bg-primary-50 items-center justify-between rounded p-3">
-          <div>
-            <span className="font-medium">{selectedAnswerIds.length}</span>{' '}
-            answer{selectedAnswerIds.length === 1 ? '' : 's'} selected to
-            unresolve
-          </div>
-          <Button
-            color="indigo"
-            disabled={selectedAnswerIds.length === 0}
-            onClick={() => setIsShowingConfirmation(true)}
-          >
-            Review & Submit
-          </Button>
-        </Row>
+        <ResolutionSearchInput query={query} setQuery={setQuery} />
 
         {!!error && <div className="text-scarlet-500 p-2">{error}</div>}
 
         <Col className="gap-2">
-          {sortedAnswers.map((answer) => (
+          {filteredAnswers.map((answer) => (
             <IndependentUnresolveAnswerItem
               key={answer.id}
               contract={contract}
@@ -1005,7 +1061,30 @@ export const IndependentAnswersUnresolvePanel = (props: {
               onToggle={toggleAnswer}
             />
           ))}
+          {hiddenCount > 0 && (
+            <div className="text-ink-500 py-2 text-center text-sm">
+              {hiddenCount} answer{hiddenCount !== 1 ? 's' : ''} hidden by
+              search
+            </div>
+          )}
         </Col>
+
+        <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+          <Row className="bg-primary-50 items-center justify-between rounded p-3">
+            <div>
+              <span className="font-medium">{selectedAnswerIds.length}</span>{' '}
+              answer{selectedAnswerIds.length === 1 ? '' : 's'} selected to
+              unresolve
+            </div>
+            <Button
+              color="indigo"
+              disabled={selectedAnswerIds.length === 0}
+              onClick={() => setIsShowingConfirmation(true)}
+            >
+              Review & Submit
+            </Button>
+          </Row>
+        </div>
       </Col>
     </GradientContainer>
   )
