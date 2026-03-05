@@ -75,6 +75,10 @@ import { ShopItem } from 'common/shop/items'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
+import {
+  MAX_WATCHED_MARKETS,
+  WATCHED_MARKETS_PAGE_SIZE,
+} from 'common/watched-markets'
 import { UserEntitlement } from 'common/shop/types'
 import { YEAR_MS } from 'common/util/time'
 import { Dictionary } from 'lodash'
@@ -1757,6 +1761,28 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as {
       groups: Group[]
+    },
+  },
+  'get-watched-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z
+      .object({
+        userId: z.string(),
+        term: z.string().optional(),
+        limit: z.coerce
+          .number()
+          .gte(0)
+          .lte(MAX_WATCHED_MARKETS)
+          .default(WATCHED_MARKETS_PAGE_SIZE),
+        offset: z.coerce.number().gte(0).default(0),
+      })
+      .strict(),
+    returns: {} as {
+      contracts: Contract[]
+      totalCount: number
     },
   },
   'get-user-portfolio': {

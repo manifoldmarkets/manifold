@@ -90,6 +90,7 @@ import { getCurrentPrivateUser } from './get-current-private-user'
 import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-and-contracts'
 import { getDashboardFromSlug } from './get-dashboard-from-slug'
 import { getFollowedGroups } from './get-followed-groups'
+import { getWatchedMarkets } from './get-watched-markets'
 import { getGroup } from './get-group'
 import { getGroups } from './get-groups'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
@@ -360,6 +361,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-public-chat-message': createPublicChatMessage,
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
+  'get-watched-markets': getWatchedMarkets,
   'unique-bet-group-count': getUniqueBetGroupCount,
   'record-contract-interaction': recordContractInteraction,
   'get-user-portfolio': getUserPortfolio,

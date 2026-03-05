@@ -46,6 +46,7 @@ import { BlockedUser } from 'web/components/profile/blocked-user'
 import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { SEO } from 'web/components/SEO'
 import { UserHandles } from 'web/components/user/user-handles'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
@@ -525,6 +526,7 @@ function ProfilePublicStats(props: {
       </TextButton>
 
       {isCurrentUser && <UserLikedContractsButton user={user} />}
+      {isCurrentUser && <UserWatchedContractsButton user={user} />}
 
       {leagueInfo && (
         <Link
