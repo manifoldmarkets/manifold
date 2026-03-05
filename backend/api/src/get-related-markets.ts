@@ -45,7 +45,11 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
 
   let marketsFromEmbeddings = unfilteredMarketsFromEmbeddings
 
-  if ((uniqueBettorCount ?? 0) > 50 && question) {
+  if (
+    (uniqueBettorCount ?? 0) > 50 &&
+    question &&
+    marketsFromEmbeddings.length > 0
+  ) {
     log('Filtering related markets with Gemini', { contractId, question })
     try {
       const relatedMarketsData = marketsFromEmbeddings.map((market) => ({
