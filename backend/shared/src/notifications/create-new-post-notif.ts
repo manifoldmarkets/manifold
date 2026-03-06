@@ -26,6 +26,8 @@ export const createNewPostFromFollowedUserNotification = async (
     ? await getAllUserIds(pg)
     : await getUserFollowerIds(creator.id, pg)
 
+  const sourceText = richTextToString(post.content).slice(0, 200)
+
   if (isAnnouncement) {
     for (const userId of followerIds) {
       const notification: Notification = {
@@ -40,7 +42,7 @@ export const createNewPostFromFollowedUserNotification = async (
         sourceUserName: creator.name,
         sourceUserUsername: creator.username,
         sourceUserAvatarUrl: creator.avatarUrl,
-        sourceText: richTextToString(post.content),
+        sourceText,
         sourceSlug: `post/${post.slug}`,
         sourceTitle: post.title,
       }
@@ -76,7 +78,7 @@ export const createNewPostFromFollowedUserNotification = async (
           sourceUserName: creator.name,
           sourceUserUsername: creator.username,
           sourceUserAvatarUrl: creator.avatarUrl,
-          sourceText: richTextToString(post.content).slice(0, 200),
+          sourceText,
           sourceSlug: `post/${post.slug}`,
           sourceTitle: post.title,
         }

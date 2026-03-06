@@ -1,4 +1,4 @@
-import { sortBy } from 'lodash'
+import { chunk, sortBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './init'
 import { Column, DataFor, Row, TableName, Tables } from 'common/supabase/utils'
 
@@ -50,8 +50,14 @@ export async function bulkInsert<
   if (values.length == 0) {
     return []
   }
-  const query = bulkInsertQuery(table, values)
-  return await db.many<Row<T>>(query)
+  const batches = chunk(values, 25000)
+  const results: Row<T>[] = []
+  for (const batch of batches) {
+    const query = bulkInsertQuery(table, batch)
+    const rows = await db.many<Row<T>>(query)
+    results.push(...rows)
+  }
+  return results
 }
 
 export async function update<
