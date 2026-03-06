@@ -45,7 +45,8 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     `select count(distinct ban_type)::int as count from user_bans
      where user_id = $1
        and ban_type in ('posting', 'trading', 'marketControl')
-       and (expires_at is null or expires_at > now())`,
+       and ended_at is null
+       and (end_time is null or end_time > now())`,
     [userId]
   )
   if (activeBanCount.count >= 3) {
