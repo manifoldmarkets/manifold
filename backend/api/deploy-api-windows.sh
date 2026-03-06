@@ -46,6 +46,7 @@ IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
 # Windows-compatible build: run each step directly in bash
 # instead of going through yarn's cmd.exe script runner
 echo "Building..."
+cd "$(dirname "$0")"
 npx tsc -b
 (cd ../../common && npx tsc-alias)
 (cd ../shared && npx tsc-alias)
@@ -56,9 +57,9 @@ rm -rf dist
 mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/api/lib
 
 # dist:copy (using cp -r instead of rsync for Windows compatibility)
-cp -r ../../common/lib/ dist/common/lib
-cp -r ../shared/lib/ dist/backend/shared/lib
-cp -r ./lib/ dist/backend/api/lib
+cp -r ../../common/lib/* dist/common/lib
+cp -r ../shared/lib/* dist/backend/shared/lib
+cp -r ./lib/* dist/backend/api/lib
 cp ../../yarn.lock dist
 cp package.json dist
 
