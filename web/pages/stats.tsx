@@ -709,14 +709,17 @@ function ManaSalesTab(props: { stats: rowfor<'daily_stats'>[] }) {
       <span className="text-ink-500 italic">
         mana purchased divided by 100, except from{' '}
         <DateTimeTooltip time={MANA_PURCHASE_RATE_CHANGE_DATE.valueOf()}>
-          <span>{formatTimeShort(MANA_PURCHASE_RATE_CHANGE_DATE.valueOf())}</span>
+          <span>
+            {formatTimeShort(MANA_PURCHASE_RATE_CHANGE_DATE.valueOf())}
+          </span>
         </DateTimeTooltip>{' '}
         to{' '}
         <DateTimeTooltip time={MANA_PURCHASE_RATE_REVERT_DATE.valueOf()}>
-          <span>{formatTimeShort(MANA_PURCHASE_RATE_REVERT_DATE.valueOf())}</span>
+          <span>
+            {formatTimeShort(MANA_PURCHASE_RATE_REVERT_DATE.valueOf())}
+          </span>
         </DateTimeTooltip>{' '}
-        it is
-        divided by 1000
+        it is divided by 1000
       </span>
     </Col>
   )
