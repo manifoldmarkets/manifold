@@ -2,13 +2,13 @@ import clsx from 'clsx'
 import { getSourceUrl, Notification } from 'common/notification'
 import Link from 'next/link'
 import { ReactNode } from 'react'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
-import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { SparklesIcon, XCircleIcon } from '@heroicons/react/solid'
@@ -233,7 +233,7 @@ export function NotificationFrame(props: {
             {highlighted && !isMobile && (
               <SparklesIcon className="text-primary-600 h-4 w-4" />
             )}
-            <RelativeTimestampNoTooltip
+            <RelativeTimestamp
               time={notification.createdTime}
               shortened={isMobile}
               className={clsx(

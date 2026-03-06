@@ -22,6 +22,7 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { UserLink } from '../widgets/user-link'
+import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 
 export function PostCard(props: {
   post: TopLevelPost
@@ -122,16 +123,20 @@ export function PostCard(props: {
               />
               <Row className="text-ink-500 items-center gap-1.5 text-xs">
                 <ClockIcon className="h-3.5 w-3.5" />
-                <span>
-                  {new Date(post.createdTime).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
+                <DateTimeTooltip time={post.createdTime}>
+                  <span>
+                    {new Date(post.createdTime).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </DateTimeTooltip>
                 {post.lastCommentTime && (
                   <>
                     <span>·</span>
-                    <span>Active {fromNow(post.lastCommentTime)}</span>
+                    <DateTimeTooltip time={post.lastCommentTime}>
+                      <span>Active {fromNow(post.lastCommentTime)}</span>
+                    </DateTimeTooltip>
                   </>
                 )}
               </Row>

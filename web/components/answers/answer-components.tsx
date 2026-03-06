@@ -20,7 +20,7 @@ import { ReactNode, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { formatTimeShort } from 'client-common/lib/time'
+import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { SellSharesModal } from '../bet/sell-row'
 import { Button } from '../buttons/button'
@@ -141,7 +141,7 @@ export const CreatorAndAnswerLabel = (props: {
 
   const answerTextTooltip = truncated === text ? false : text
 
-  const dateText = `created ${formatTimeShort(createdTime)}`
+  const dateText = `created ${formatTime(createdTime)}`
   const dateTooltip = creator ? `${creator.name} ${dateText}` : dateText
 
   return (

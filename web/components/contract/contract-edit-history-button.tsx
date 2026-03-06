@@ -14,6 +14,7 @@ import { UserFromId } from 'web/components/user-from-id'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { JSONContent } from '@tiptap/core'
 import { filterDefined } from 'common/util/array'
+import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 
 type ContractEdit = {
   id: string
@@ -168,7 +169,9 @@ export const ContractHistoryButton = (props: {
 
                     <div className="text-ink-500 flex gap-1 ">
                       {i === edits.length - 1 ? 'created' : 'updated'}
-                      <span>on {formatTimeShort(edit.editCreated)}</span>
+                      <DateTimeTooltip time={edit.editCreated}>
+                        <span>on {formatTimeShort(edit.editCreated)}</span>
+                      </DateTimeTooltip>
                     </div>
                   </Row>
 

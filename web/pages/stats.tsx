@@ -33,6 +33,7 @@ import { TopicDauSummary } from 'web/components/stats/topic-dau-summary'
 import { Contract, contractPath } from 'common/contract'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserIcon, EyeIcon } from '@heroicons/react/solid'
+import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 
 export const getStaticProps = async () => {
   try {
@@ -707,8 +708,14 @@ function ManaSalesTab(props: { stats: rowfor<'daily_stats'>[] }) {
       <Spacer h={8} />
       <span className="text-ink-500 italic">
         mana purchased divided by 100, except from{' '}
-        {formatTimeShort(MANA_PURCHASE_RATE_CHANGE_DATE.valueOf())} to{' '}
-        {formatTimeShort(MANA_PURCHASE_RATE_REVERT_DATE.valueOf())} it is
+        <DateTimeTooltip time={MANA_PURCHASE_RATE_CHANGE_DATE.valueOf()}>
+          <span>{formatTimeShort(MANA_PURCHASE_RATE_CHANGE_DATE.valueOf())}</span>
+        </DateTimeTooltip>{' '}
+        to{' '}
+        <DateTimeTooltip time={MANA_PURCHASE_RATE_REVERT_DATE.valueOf()}>
+          <span>{formatTimeShort(MANA_PURCHASE_RATE_REVERT_DATE.valueOf())}</span>
+        </DateTimeTooltip>{' '}
+        it is
         divided by 1000
       </span>
     </Col>
