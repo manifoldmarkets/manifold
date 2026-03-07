@@ -10,8 +10,7 @@ import ModReportItem from 'web/components/mod-report-item'
 import UserReportItem from 'web/components/user-report-item'
 import { Title } from 'web/components/widgets/title'
 import { api } from 'web/lib/api/api'
-import { useState } from 'react'
-import { usePagination } from 'web/hooks/use-pagination'
+import { useEffect, useState } from 'react'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { getReports, LiteReport } from 'web/pages/admin/reports'
 import { Select } from 'web/components/widgets/select'
@@ -32,14 +31,6 @@ const updateModReport = async (
   }
 }
 
-const fetchUserReports = async (p: {
-  limit: number
-  offset?: number
-  after?: { createdTime?: number | undefined }
-}) => {
-  return await getReports(p)
-}
-
 export default function ReportsPage() {
   const isAdminOrMod = useAdminOrMod()
   const [activeTab, setActiveTab] = useState('mod-reports')
@@ -56,13 +47,7 @@ export default function ReportsPage() {
     setReportStatuses,
     setModNotes,
   } = useModReports(selectedStatuses)
-  const [bannedIds, setBannedIds] = useState<string[]>([])
   const [showBannedUsers, setShowBannedUsers] = useState(false)
-
-  const userReportsPagination = usePagination<LiteReport>({
-    pageSize: USER_REPORTS_PAGE_SIZE,
-    q: fetchUserReports,
-  })
 
   const handleStatusChange = async (
     reportId: number,
@@ -136,54 +121,24 @@ export default function ReportsPage() {
     </Col>
   )
 
-  const renderUserReportsList = () => {
-    const filteredReports = userReportsPagination.items?.filter((report) => {
-      if (showBannedUsers) return true
-      // Check if user is banned either from stored bannedIds or from the isBannedFromPosting flag
-      return !(
-        bannedIds.includes(report.owner.id) || report.owner.isBannedFromPosting
-      )
-    })
-
-    return (
-      <Col className="w-full">
-        <Row className="mb-4 mt-2 justify-end">
-          <Select
-            className="max-w-xs"
-            onChange={(e) => setShowBannedUsers(e.target.value === 'all')}
-            value={showBannedUsers ? 'all' : 'hide-banned'}
-          >
-            <option value="all">Show All Users</option>
-            <option value="hide-banned">Hide Banned Users</option>
-          </Select>
-        </Row>
-
-        <PaginationNextPrev {...userReportsPagination} className="mb-4" />
-
-        {userReportsPagination.isLoading ? (
-          <div className="my-8 text-center">Loading user reports...</div>
-        ) : filteredReports && filteredReports.length > 0 ? (
-          filteredReports.map((report) => (
-            <UserReportItem
-              key={report.id}
-              report={report}
-              bannedIds={bannedIds}
-              onBan={(userId) => setBannedIds([...bannedIds, userId])}
-            />
-          ))
-        ) : (
-          <div className="my-8 text-center">
-            {userReportsPagination.items &&
-            userReportsPagination.items.length > 0
-              ? 'No visible reports with current filter settings.'
-              : 'No user reports found.'}
-          </div>
-        )}
-
-        <PaginationNextPrev {...userReportsPagination} className="mt-4" />
-      </Col>
-    )
-  }
+  const renderUserReportsList = () => (
+    <Col className="w-full">
+      <Row className="mb-4 mt-2 justify-end">
+        <Select
+          className="max-w-xs"
+          onChange={(e) => setShowBannedUsers(e.target.value === 'all')}
+          value={showBannedUsers ? 'all' : 'hide-banned'}
+        >
+          <option value="all">Show All Users</option>
+          <option value="hide-banned">Hide Banned Users</option>
+        </Select>
+      </Row>
+      <UserReportsListInner
+        key={String(showBannedUsers)}
+        hideBanned={!showBannedUsers}
+      />
+    </Col>
+  )
 
   const renderModReportsContent = () => (
     <Col className="w-full">
@@ -235,13 +190,6 @@ export default function ReportsPage() {
       title: 'User Reports',
       content: renderUserReportsList(),
       queryString: 'user-reports',
-      inlineTabIcon:
-        userReportsPagination.items &&
-        userReportsPagination.items.length > 0 ? (
-          <div className="text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3">
-            {userReportsPagination.items.length}
-          </div>
-        ) : null,
     },
   ]
 
@@ -265,5 +213,67 @@ export default function ReportsPage() {
         />
       </Col>
     </Page>
+  )
+}
+
+function UserReportsListInner(props: { hideBanned: boolean }) {
+  const { hideBanned } = props
+  const [allReports, setAllReports] = useState<LiteReport[] | undefined>()
+  const [bannedIds, setBannedIds] = useState<string[]>([])
+  const [page, setPage] = useState(0)
+
+  useEffect(() => {
+    getReports({ limit: 100 }).then(setAllReports)
+  }, [])
+
+  const filtered = allReports?.filter((r) => {
+    if (!hideBanned) return true
+    return !r.owner.isBannedFromPosting && !bannedIds.includes(r.owner.id)
+  })
+
+  const pageStart = page * USER_REPORTS_PAGE_SIZE
+  const pageItems = filtered?.slice(pageStart, pageStart + USER_REPORTS_PAGE_SIZE)
+  const isStart = page === 0
+  const isEnd = filtered
+    ? pageStart + USER_REPORTS_PAGE_SIZE >= filtered.length
+    : true
+
+  return (
+    <>
+      <PaginationNextPrev
+        className="mb-4"
+        isStart={isStart}
+        isEnd={isEnd}
+        isLoading={!allReports}
+        isComplete={!!allReports}
+        getPrev={() => setPage((p) => Math.max(0, p - 1))}
+        getNext={() => setPage((p) => p + 1)}
+      />
+
+      {!allReports ? (
+        <div className="my-8 text-center">Loading user reports...</div>
+      ) : pageItems && pageItems.length > 0 ? (
+        pageItems.map((report) => (
+          <UserReportItem
+            key={report.id}
+            report={report}
+            bannedIds={bannedIds}
+            onBan={(userId) => setBannedIds((ids) => [...ids, userId])}
+          />
+        ))
+      ) : (
+        <div className="my-8 text-center">No user reports found.</div>
+      )}
+
+      <PaginationNextPrev
+        className="mt-4"
+        isStart={isStart}
+        isEnd={isEnd}
+        isLoading={!allReports}
+        isComplete={!!allReports}
+        getPrev={() => setPage((p) => Math.max(0, p - 1))}
+        getNext={() => setPage((p) => p + 1)}
+      />
+    </>
   )
 }
