@@ -1843,9 +1843,9 @@ function AvatarOverlay(props: {
       // Red cap — 9 style variants
       // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
       const capSizeFull =
-        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
       const capSizeSmall =
-        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
       const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
       const isFrontFacing = capStyle <= 2
       const capSize = isSmall ? capSizeSmall : capSizeFull
@@ -1862,7 +1862,7 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1876,9 +1876,9 @@ function AvatarOverlay(props: {
       // Green cap — 9 style variants
       // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
       const capSizeFull =
-        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
       const capSizeSmall =
-        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
       const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
       const isFrontFacing = capStyle <= 2
       const capSize = isSmall ? capSizeSmall : capSizeFull
@@ -1895,7 +1895,7 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1909,9 +1909,9 @@ function AvatarOverlay(props: {
       // Black cap — 9 style variants
       // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
       const capSizeFull =
-        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
       const capSizeSmall =
-        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
       const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
       const isFrontFacing = capStyle <= 2
       const capSize = isSmall ? capSizeSmall : capSizeFull
@@ -1928,7 +1928,7 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1942,9 +1942,9 @@ function AvatarOverlay(props: {
       // Blue cap — 9 style variants
       // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
       const capSizeFull =
-        size === '2xs' || size === 'xs' ? 18 : size === 'sm' ? 24 : 30
+        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
       const capSizeSmall =
-        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 19 : 24
+        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
       const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
       const isFrontFacing = capStyle <= 2
       const capSize = isSmall ? capSizeSmall : capSizeFull
@@ -1961,7 +1961,7 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
