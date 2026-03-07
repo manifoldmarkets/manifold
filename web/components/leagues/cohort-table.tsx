@@ -10,7 +10,11 @@ import Link from 'next/link'
 import { sortBy } from 'lodash'
 
 import { Row } from '../layout/row'
-import { DIVISION_NAMES, league_user_info } from 'common/leagues'
+import {
+  DIVISION_NAMES,
+  capPromotionDemotion,
+  league_user_info,
+} from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { Col } from '../layout/col'
@@ -56,20 +60,29 @@ export const CohortTable = (props: {
   const noPromotionDemotion = cohort === 'bots'
   const shouldTruncateZeros = division === 1 || division === 2 || division === 3
 
+  // Cap counts so demotion zone never overlaps promotion zone in small cohorts
+  const capped = capPromotionDemotion(
+    promotionCount,
+    doublePromotionCount,
+    demotionCount,
+    sortedRows.length
+  )
+
   const adjustedDoublePromotionCount =
     division === 1
       ? Math.min(
           sortedRows.findLastIndex((row) => row.mana_earned >= 100) + 1,
-          doublePromotionCount
+          capped.doublePromotion
         )
-      : doublePromotionCount
+      : capped.doublePromotion
   const adjustedPromotionCount =
     division === 1
       ? Math.min(
           sortedRows.findLastIndex((row) => row.mana_earned >= 100) + 1,
-          promotionCount
+          capped.promotion
         )
-      : promotionCount
+      : capped.promotion
+  const adjustedDemotionCount = capped.demotion
 
   return (
     <Col className="gap-3">
@@ -90,7 +103,7 @@ export const CohortTable = (props: {
                 sortedRows.length,
                 adjustedPromotionCount,
                 adjustedDoublePromotionCount,
-                demotionCount
+                adjustedDemotionCount
               )
             : { zone: 'stay' as const, classes: '' }
 
@@ -139,8 +152,8 @@ export const CohortTable = (props: {
                         type="promote"
                       />
                     )}
-                  {demotionCount > 0 &&
-                    sortedRows.length - (i + 1) === demotionCount && (
+                  {adjustedDemotionCount > 0 &&
+                    sortedRows.length - (i + 1) === adjustedDemotionCount && (
                       <ZoneDivider
                         label={`Demotes to ${prevDivisionName}`}
                         type="demote"

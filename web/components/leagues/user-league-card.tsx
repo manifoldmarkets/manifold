@@ -4,6 +4,7 @@ import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/solid'
 
 import {
   DIVISION_NAMES,
+  capPromotionDemotion,
   getDemotionAndPromotionCountBySeason,
   league_user_info,
 } from 'common/leagues'
@@ -30,8 +31,17 @@ export function UserLeagueCard(props: {
   const { userRow, user, season, cohortSize } = props
   const { division, cohort, rank, mana_earned } = userRow
 
-  const { demotion, promotion, doublePromotion } =
-    getDemotionAndPromotionCountBySeason(season, division, cohortSize)
+  const raw = getDemotionAndPromotionCountBySeason(
+    season,
+    division,
+    cohortSize
+  )
+  const { demotion, promotion, doublePromotion } = capPromotionDemotion(
+    raw.promotion,
+    raw.doublePromotion,
+    raw.demotion,
+    cohortSize
+  )
 
   const getZone = () => {
     if (rank <= doublePromotion)
@@ -46,7 +56,7 @@ export function UserLeagueCard(props: {
         label: 'Promotion zone',
         color: 'text-teal-600',
       }
-    if (rank > cohortSize - demotion)
+    if (demotion > 0 && rank > cohortSize - demotion)
       return {
         type: 'demote',
         label: 'Demotion zone',
