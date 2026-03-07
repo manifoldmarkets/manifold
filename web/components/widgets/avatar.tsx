@@ -1862,7 +1862,14 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top:
+              size === '2xs'
+                ? -2
+                : size === 'xs'
+                ? -3
+                : size === 'sm'
+                ? -5
+                : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1895,7 +1902,14 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top:
+              size === '2xs'
+                ? -2
+                : size === 'xs'
+                ? -3
+                : size === 'sm'
+                ? -5
+                : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1928,7 +1942,14 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top:
+              size === '2xs'
+                ? -2
+                : size === 'xs'
+                ? -3
+                : size === 'sm'
+                ? -5
+                : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
@@ -1961,7 +1982,14 @@ function AvatarOverlay(props: {
             transform: isFrontFacing
               ? 'translateX(-50%)'
               : 'translateX(-50%) rotate(-5deg)',
-            top: size === '2xs' ? -2 : size === 'xs' ? -3 : size === 'sm' ? -5 : -7,
+            top:
+              size === '2xs'
+                ? -2
+                : size === 'xs'
+                ? -3
+                : size === 'sm'
+                ? -5
+                : -7,
             width: capSize,
             height: capSize,
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
