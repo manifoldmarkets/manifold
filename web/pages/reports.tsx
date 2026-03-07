@@ -41,6 +41,7 @@ export default function ReportsPage() {
   ])
   const {
     reports: modReports,
+    userReports,
     initialLoading,
     reportStatuses,
     modNotes,
@@ -48,6 +49,10 @@ export default function ReportsPage() {
     setModNotes,
   } = useModReports(selectedStatuses)
   const [showBannedUsers, setShowBannedUsers] = useState(false)
+
+  const userReportCount = userReports?.filter(
+    (r) => !r.owner.isBannedFromPosting
+  ).length
 
   const handleStatusChange = async (
     reportId: number,
@@ -190,6 +195,12 @@ export default function ReportsPage() {
       title: 'User Reports',
       content: renderUserReportsList(),
       queryString: 'user-reports',
+      inlineTabIcon:
+        userReportCount && userReportCount > 0 ? (
+          <div className="text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3">
+            {userReportCount}
+          </div>
+        ) : null,
     },
   ]
 
