@@ -31,11 +31,7 @@ export function UserLeagueCard(props: {
   const { userRow, user, season, cohortSize } = props
   const { division, cohort, rank, mana_earned } = userRow
 
-  const raw = getDemotionAndPromotionCountBySeason(
-    season,
-    division,
-    cohortSize
-  )
+  const raw = getDemotionAndPromotionCountBySeason(season, division, cohortSize)
   const { demotion, promotion, doublePromotion } = capPromotionDemotion(
     raw.promotion,
     raw.doublePromotion,
