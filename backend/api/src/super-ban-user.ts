@@ -40,7 +40,9 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     (r) => convertPost(r)
   )
 
-  // Skip if already superbanned (has all three blocking ban types active)
+  // Check if already superbanned (has all three blocking ban types active).
+  // If so, skip expensive market/notification operations but still run comment
+  // deletion in case a previous superban was interrupted or skipped comments.
   const activeBanCount = await pg.one<{ count: number }>(
     `select count(distinct ban_type)::int as count from user_bans
      where user_id = $1
@@ -49,10 +51,7 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
        and (end_time is null or end_time > now())`,
     [userId]
   )
-  if (activeBanCount.count >= 3) {
-    log(`User ${userId} already has all bans active, skipping superban.`)
-    return
-  }
+  const alreadyBanned = activeBanCount.count >= 3
 
   if (contracts.length > 5) {
     throw new APIError(
@@ -61,26 +60,37 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     )
   }
 
-  for (const contract of contracts) {
-    if (contract.visibility === 'unlisted') continue
-    await updateContract(pg, contract.id, {
-      visibility: 'unlisted',
-    })
-  }
-
-  try {
-    for (const contract of contracts.filter(
-      (c) =>
-        (c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1') &&
-        !c.isResolved
-    )) {
-      await resolveMarketHelper(contract as MarketContract, resolver, creator, {
-        outcome: 'CANCEL',
+  if (!alreadyBanned) {
+    for (const contract of contracts) {
+      if (contract.visibility === 'unlisted') continue
+      await updateContract(pg, contract.id, {
+        visibility: 'unlisted',
       })
     }
-  } catch (error) {
-    log.error('Error resolving contracts:', { error })
-    throw new APIError(500, 'Failed to update one or more contracts.')
+
+    try {
+      for (const contract of contracts.filter(
+        (c) =>
+          (c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1') &&
+          !c.isResolved
+      )) {
+        await resolveMarketHelper(
+          contract as MarketContract,
+          resolver,
+          creator,
+          {
+            outcome: 'CANCEL',
+          }
+        )
+      }
+    } catch (error) {
+      log.error('Error resolving contracts:', { error })
+      throw new APIError(500, 'Failed to update one or more contracts.')
+    }
+  } else {
+    log(
+      `User ${userId} already has all bans active, skipping market operations.`
+    )
   }
 
   const isNewUser = creator.createdTime > Date.now() - WEEK_MS
@@ -174,47 +184,49 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
     log.error('Error bulk hiding post comments:', { error })
   }
 
-  // Fire-and-forget: clean up spam notifications in the background.
-  // Original CTE scoped to affected users (followers + contract creators).
-  // Not awaited so the superban returns immediately while this runs.
-  const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
-  pg.result(
-    `with affected_users as (
-      select distinct follow_id as uid
-      from contract_follows
-      where contract_id in (
-        select distinct contract_id from contract_comments where user_id = $1
+  if (!alreadyBanned) {
+    // Fire-and-forget: clean up spam notifications in the background.
+    // Original CTE scoped to affected users (followers + contract creators).
+    // Not awaited so the superban returns immediately while this runs.
+    const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
+    pg.result(
+      `with affected_users as (
+        select distinct follow_id as uid
+        from contract_follows
+        where contract_id in (
+          select distinct contract_id from contract_comments where user_id = $1
+        )
+        union
+        select distinct creator_id as uid
+        from contracts
+        where id in (
+          select distinct contract_id from contract_comments where user_id = $1
+        )
       )
-      union
-      select distinct creator_id as uid
-      from contracts
-      where id in (
-        select distinct contract_id from contract_comments where user_id = $1
-      )
+      delete from user_notifications
+      where user_id in (select uid from affected_users)
+        and (data->>'createdTime')::bigint > $3
+        and data->>'sourceUserUsername' = $2`,
+      [userId, creator.username, threeDaysAgo]
     )
-    delete from user_notifications
-    where user_id in (select uid from affected_users)
-      and (data->>'createdTime')::bigint > $3
-      and data->>'sourceUserUsername' = $2`,
-    [userId, creator.username, threeDaysAgo]
-  )
-    .then(({ rowCount }) => {
-      log(`Deleted ${rowCount} spam notifications for user ${userId}.`)
-    })
-    .catch((error) => {
-      log.error('Error cleaning up spam notifications:', { error })
-    })
-
-  if (posts.length > 0) {
-    log(`Found ${posts.length} posts to unlist.`)
-    for (const post of posts) {
-      await updateData(pg, 'old_posts', 'id', {
-        id: post.id,
-        visibility: 'unlisted',
+      .then(({ rowCount }) => {
+        log(`Deleted ${rowCount} spam notifications for user ${userId}.`)
       })
-      revalidatePost(post)
-      log(`Unlisted post ${post.id}`)
+      .catch((error) => {
+        log.error('Error cleaning up spam notifications:', { error })
+      })
+
+    if (posts.length > 0) {
+      log(`Found ${posts.length} posts to unlist.`)
+      for (const post of posts) {
+        await updateData(pg, 'old_posts', 'id', {
+          id: post.id,
+          visibility: 'unlisted',
+        })
+        revalidatePost(post)
+        log(`Unlisted post ${post.id}`)
+      }
+      log('Successfully unlisted all posts for the user.')
     }
-    log('Successfully unlisted all posts for the user.')
   }
 }
