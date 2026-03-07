@@ -29,13 +29,17 @@ function validateItemMetadata(itemId: string, metadata: Record<string, string | 
       }
       break
     }
-    case 'avatar-crown': {
+    case 'avatar-crown':
+    case 'avatar-blue-cap':
+    case 'avatar-team-red-hat':
+    case 'avatar-team-green-hat':
+    case 'avatar-black-cap': {
       if (Object.keys(metadata).length !== 1 || !('style' in metadata)) {
-        throw new APIError(400, 'avatar-crown metadata must contain only "style"')
+        throw new APIError(400, `${itemId} metadata must contain only "style"`)
       }
       const style = Number(metadata.style)
-      if (!Number.isInteger(style) || style < 0 || style > 2) {
-        throw new APIError(400, 'avatar-crown style must be 0 (Right), 1 (Center), or 2 (Left)')
+      if (!Number.isInteger(style) || style < 0 || style > 20) {
+        throw new APIError(400, 'style must be an integer between 0 and 20')
       }
       break
     }
