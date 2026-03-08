@@ -19,7 +19,9 @@ alter table lover_comments enable row level security;
 -- Policies
 drop policy if exists "public read" on lover_comments;
 
-create policy "public read" on lover_comments for all using (true);
+create policy "public read" on lover_comments for
+select
+  using (true);
 
 -- Indexes
 drop index if exists lover_comments_pkey;

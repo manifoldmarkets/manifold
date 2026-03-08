@@ -14,8 +14,6 @@ alter table scheduler_info enable row level security;
 -- Policies
 drop policy if exists "public read" on scheduler_info;
 
-create policy "public read" on scheduler_info for all using (true);
-
 -- Indexes
 drop index if exists scheduler_info_job_name_key;
 

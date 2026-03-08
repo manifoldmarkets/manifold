@@ -16,7 +16,9 @@ alter table love_questions enable row level security;
 -- Policies
 drop policy if exists "public read" on love_questions;
 
-create policy "public read" on love_questions for all using (true);
+create policy "public read" on love_questions for
+select
+  using (true);
 
 -- Indexes
 drop index if exists love_questions_pkey;
