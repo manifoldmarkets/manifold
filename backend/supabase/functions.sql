@@ -248,7 +248,7 @@ or replace function public.get_donations_by_charity () returns table (
   charity_id text,
   num_supporters bigint,
   total numeric
-) language sql as $function$
+) language sql security definer as $function$
     select to_id as charity_id,
       count(distinct from_id) as num_supporters,
       sum(case
@@ -430,7 +430,7 @@ END;
 $function$;
 
 create
-or replace function public.get_user_manalink_claims (creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) language sql as $function$
+or replace function public.get_user_manalink_claims (creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) language sql security definer as $function$
     select mc.manalink_id, (tx.data)->>'toId' as claimant_id, ((tx.data)->'createdTime')::bigint as ts
     from manalink_claims as mc
     join manalinks as m on mc.manalink_id = m.id
