@@ -126,7 +126,7 @@ export const Stats = (props: {
       contract.outcomeType === 'BOUNTIED_QUESTION')
 
   return (
-    <Table>
+    <Table className="table-fixed whitespace-normal sm:whitespace-nowrap">
       <tbody>
         <tr>
           <td>Type</td>
@@ -617,33 +617,37 @@ function AdminHomePageScoreAdjustmentRows(props: {
         <td>{contract.freshnessScore.toFixed(3)}</td>
       </tr>
       <tr className="bg-purple-500/30">
-        <td>
-          Home page score adjustment{' '}
-          <InfoTooltip text="Adds a value from -1 to 1 to both importance and freshness scores until it expires." />
-        </td>
-        <td className="whitespace-normal">
-          {hasActiveAdjustment ? (
-            <span>
-              {contract.homePageScoreAdjustment?.toFixed(3)}
-              {hasValidExpiry ? ` until ${formatTime(expiresAt)}` : ''}
-            </span>
-          ) : contract.homePageScoreAdjustment !== undefined ? (
-            <span>
-              {contract.homePageScoreAdjustment.toFixed(3)}
-              {hasValidExpiry
-                ? ` (expired ${formatTime(expiresAt)})`
-                : ' (expired)'}
-            </span>
-          ) : (
-            'None'
-          )}
+        <td colSpan={2} className="whitespace-normal">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div>
+              Home page score adjustment{' '}
+              <InfoTooltip text="Adds a value from -1 to 1 to both importance and freshness scores until it expires." />
+            </div>
+            <div className="sm:text-right">
+              {hasActiveAdjustment ? (
+                <span>
+                  {contract.homePageScoreAdjustment?.toFixed(3)}
+                  {hasValidExpiry ? ` until ${formatTime(expiresAt)}` : ''}
+                </span>
+              ) : contract.homePageScoreAdjustment !== undefined ? (
+                <span>
+                  {contract.homePageScoreAdjustment.toFixed(3)}
+                  {hasValidExpiry
+                    ? ` (expired ${formatTime(expiresAt)})`
+                    : ' (expired)'}
+                </span>
+              ) : (
+                'None'
+              )}
+            </div>
+          </div>
         </td>
       </tr>
       <tr className="bg-purple-500/30 align-top">
-        <td>Adjust home page score</td>
-        <td className="whitespace-normal">
-          <div className="flex max-w-full flex-col gap-2">
-            <div className="grid max-w-sm grid-cols-1 gap-2 sm:grid-cols-2">
+        <td colSpan={2} className="whitespace-normal">
+          <div className="flex max-w-full flex-col gap-3">
+            <div className="text-sm font-medium">Adjust home page score</div>
+            <div className="grid grid-cols-1 gap-2 sm:max-w-sm sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-ink-600">Adjustment</span>
                 <input
