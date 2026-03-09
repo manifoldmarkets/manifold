@@ -480,7 +480,9 @@ export const Stats = (props: {
         {/* Admin debug info - show at the very end */}
         {(isAdmin || isDev) && (
           <>
-            {isAdmin && <AdminHomePageScoreAdjustmentRows contract={contract} />}
+            {isAdmin && (
+              <AdminHomePageScoreAdjustmentRows contract={contract} />
+            )}
             <tr className="bg-purple-500/30">
               <td>Supabase link</td>
               <td>
@@ -671,7 +673,9 @@ function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
               </button>
               <button
                 type="button"
-                disabled={isSaving || contract.homePageScoreAdjustment === undefined}
+                disabled={
+                  isSaving || contract.homePageScoreAdjustment === undefined
+                }
                 onClick={clearAdjustment}
                 className="border-ink-300 text-ink-700 hover:bg-canvas-50 disabled:text-ink-400 w-full rounded-md border px-3 py-2 text-sm font-medium sm:w-auto"
               >
