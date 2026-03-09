@@ -264,10 +264,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           maxSelections: maxSelections,
         })
       )
-      const nativeKeys = nativeContractColumnsArray.map(camelCase)
-      const nativeValues = nativeKeys
-        .filter((col) => col in contract)
-        .map((col) => contract[col as keyof Contract])
+      const nativeColumns = nativeContractColumnsArray.filter(
+        (column) => column !== 'data'
+      )
+      const nativeValues = nativeColumns.map((column) => {
+        const camelKey = camelCase(column) as keyof Contract
+        return camelKey in contract ? contract[camelKey] : null
+      })
+      const nativeKeys = nativeColumns.map(camelCase)
 
       const contractDataToInsert = Object.fromEntries(
         Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
@@ -278,7 +282,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           : 'select 1 where false'
       const contractQuery = pgp.as.format(
         `insert into contracts 
-        (id, ${contractColumnsToSelect})
+        (id, data, ${nativeColumns.join(',')})
          values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`)});`,
         [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
       )
