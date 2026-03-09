@@ -72,15 +72,15 @@ import { RanksType } from 'common/achievements'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
 import { ShopItem } from 'common/shop/items'
+import { UserEntitlement } from 'common/shop/types'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
+import { YEAR_MS } from 'common/util/time'
 import {
   MAX_WATCHED_MARKETS,
   WATCHED_MARKETS_PAGE_SIZE,
 } from 'common/watched-markets'
-import { UserEntitlement } from 'common/shop/types'
-import { YEAR_MS } from 'common/util/time'
 import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1596,7 +1596,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string().optional(),
         postId: z.string().optional(),
         userId: z.string().optional(),
-        includePending: z.boolean().default(false),
+        includePending: coerceBoolean.optional(),
         limit: z.number().int().positive().max(1000).default(100),
         offset: z.number().int().min(0).default(0),
       })
@@ -3126,7 +3126,12 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({ giveawayNum: z.coerce.number().optional(), userId: z.string().optional() }).strict(),
+    props: z
+      .object({
+        giveawayNum: z.coerce.number().optional(),
+        userId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       giveaway?: {
         giveawayNum: number
