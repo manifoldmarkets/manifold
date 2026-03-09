@@ -1,3 +1,4 @@
+import { formatTime } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
@@ -10,12 +11,14 @@ import {
 } from 'common/envs/constants'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
+import { formatWithCommas } from 'common/util/format'
 import dayjs from 'dayjs'
 import { capitalize, sumBy } from 'lodash'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useAdmin, useDev, useTrusted } from 'web/hooks/use-admin'
 import { api, updateMarket } from 'web/lib/api/api'
-import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
@@ -23,16 +26,13 @@ import { ShareQRButton } from '../buttons/share-qr-button'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import SuperBanControl from '../SuperBanControl'
+import { useSweepstakes } from '../sweepstakes-provider'
 import { InfoBox } from '../widgets/info-box'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
+import { linkClass } from '../widgets/site-link'
 import { Table } from '../widgets/table'
 import { ContractHistoryButton } from './contract-edit-history-button'
-import { useSweepstakes } from '../sweepstakes-provider'
-import Link from 'next/link'
-import { linkClass } from '../widgets/site-link'
-import { formatWithCommas } from 'common/util/format'
-import { useEffect, useState } from 'react'
 
 export const Stats = (props: {
   contract: Contract
@@ -478,10 +478,13 @@ export const Stats = (props: {
         )}
 
         {/* Admin debug info - show at the very end */}
-        {(isAdmin || isDev) && (
+        {(isAdmin || isMod || isDev) && (
           <>
-            {isAdmin && (
-              <AdminHomePageScoreAdjustmentRows contract={contract} />
+            {(isAdmin || isMod) && (
+              <AdminHomePageScoreAdjustmentRows
+                contract={contract}
+                canEdit={isAdmin || isMod}
+              />
             )}
             <tr className="bg-purple-500/30">
               <td>Supabase link</td>
@@ -516,8 +519,11 @@ export const Stats = (props: {
   )
 }
 
-function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
-  const { contract } = props
+function AdminHomePageScoreAdjustmentRows(props: {
+  contract: Contract
+  canEdit: boolean
+}) {
+  const { contract, canEdit } = props
   const [adjustment, setAdjustment] = useState(
     contract.homePageScoreAdjustment?.toString() ?? ''
   )
@@ -615,7 +621,7 @@ function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
           Home page score adjustment{' '}
           <InfoTooltip text="Adds a value from -1 to 1 to both importance and freshness scores until it expires." />
         </td>
-        <td>
+        <td className="whitespace-normal">
           {hasActiveAdjustment ? (
             <span>
               {contract.homePageScoreAdjustment?.toFixed(3)}
@@ -635,9 +641,9 @@ function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
       </tr>
       <tr className="bg-purple-500/30 align-top">
         <td>Adjust home page score</td>
-        <td>
+        <td className="whitespace-normal">
           <div className="flex max-w-full flex-col gap-2">
-            <div className="flex max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="grid max-w-sm grid-cols-1 gap-2 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-ink-600">Adjustment</span>
                 <input
@@ -646,9 +652,9 @@ function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
                   max={1}
                   step={0.01}
                   value={adjustment}
-                  disabled={isSaving}
+                  disabled={isSaving || !canEdit}
                   onChange={(e) => setAdjustment(e.target.value)}
-                  className="bg-canvas-0 border-ink-300 w-full rounded-md border px-3 py-2 sm:w-28"
+                  className="bg-canvas-0 border-ink-300 w-full rounded-md border px-3 py-2"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -658,14 +664,16 @@ function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
                   min={1}
                   step={1}
                   value={days}
-                  disabled={isSaving}
+                  disabled={isSaving || !canEdit}
                   onChange={(e) => setDays(e.target.value)}
-                  className="bg-canvas-0 border-ink-300 w-full rounded-md border px-3 py-2 sm:w-24"
+                  className="bg-canvas-0 border-ink-300 w-full rounded-md border px-3 py-2"
                 />
               </label>
+            </div>
+            <div className="flex max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
-                disabled={isSaving}
+                disabled={isSaving || !canEdit}
                 onClick={saveAdjustment}
                 className="bg-primary-600 hover:bg-primary-700 disabled:bg-ink-300 w-full rounded-md px-3 py-2 text-sm font-medium text-white sm:w-auto"
               >
@@ -674,7 +682,9 @@ function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
               <button
                 type="button"
                 disabled={
-                  isSaving || contract.homePageScoreAdjustment === undefined
+                  isSaving ||
+                  !canEdit ||
+                  contract.homePageScoreAdjustment === undefined
                 }
                 onClick={clearAdjustment}
                 className="border-ink-300 text-ink-700 hover:bg-canvas-50 disabled:text-ink-400 w-full rounded-md border px-3 py-2 text-sm font-medium sm:w-auto"
@@ -682,7 +692,7 @@ function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
                 Clear
               </button>
             </div>
-            <div className="text-ink-600 text-sm">
+            <div className="text-ink-600 max-w-sm text-sm">
               Negative values derank the market on home. Positive values boost
               it.
             </div>
