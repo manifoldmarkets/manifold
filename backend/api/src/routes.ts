@@ -4,6 +4,7 @@ import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
 import { getBalanceChanges } from 'api/get-balance-changes'
 import { getBestComments } from 'api/get-best-comments'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
+import { getBoostHistory } from 'api/get-boost-history'
 import { getFeed } from 'api/get-feed'
 import { getUnifiedFeed } from 'api/get-unified-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
@@ -352,6 +353,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'super-ban-user': superBanUser,
   'get-user-bans': getUserBans,
   'get-boost-analytics': getBoostAnalytics,
+  'get-boost-history': getBoostHistory,
   'set-news': setnews,
   'search-groups': searchGroups,
   'search-my-groups': searchMyGroups,

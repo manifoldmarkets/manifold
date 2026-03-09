@@ -2,6 +2,11 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import {
+  BOOST_INITIATED_EVENT_NAMES,
+  BOOST_PAYMENT_TYPE,
+  BOOST_PURCHASE_EVENT_NAMES,
+} from 'common/boost'
 import { Contract, contractUrl } from 'common/contract'
 import {
   BOOST_COST_MANA,
@@ -39,6 +44,7 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
   onlyUsersWhoCanPerformAction('boost', async (props, auth) => {
   const { contractId, postId, startTime, method } = props
   const userId = auth.uid
+  const contentType = contractId ? 'contract' : 'post'
 
   const pg = createSupabaseDirectClient()
 
@@ -66,6 +72,7 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
 
   const fundViaCash = method === 'cash'
   const freeAdminBoost = method === 'admin-free'
+  let boostId = ''
 
   // Check if user is admin/mod for free boost
   if (freeAdminBoost && !isAdminId(userId) && !isModId(userId)) {
@@ -155,18 +162,20 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
     if (!session.url) {
       throw new APIError(500, 'Failed to create Stripe checkout session')
     }
+    boostId = boost.id.toString()
 
     return {
       result: { success: true, checkoutUrl: session.url },
       continue: async () => {
         trackPublicEvent(
           auth.uid,
-          `${contractId ? 'contract' : 'post'} boost initiated`,
+          BOOST_INITIATED_EVENT_NAMES[contentType],
           {
             contractId,
             postId,
+            boostId,
             slug: contentSlug,
-            paymentMethod: 'cash',
+            paymentMethod: BOOST_PAYMENT_TYPE.CASH,
           }
         )
       },
@@ -186,6 +195,7 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
           startTime + DAY_MS,
         ]
       )
+      boostId = boost.id.toString()
       if (!freeAdminBoost) {
         const txnData: TxnData = {
           category: 'CONTRACT_BOOST_PURCHASE',
@@ -209,12 +219,15 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
     continue: async () => {
       trackPublicEvent(
         auth.uid,
-        `${contractId ? 'contract' : 'post'} boost purchased`,
+        BOOST_PURCHASE_EVENT_NAMES[contentType],
         {
           contractId,
           postId,
+          boostId,
           slug: contentSlug,
-          paymentMethod: 'mana',
+          paymentMethod: freeAdminBoost
+            ? BOOST_PAYMENT_TYPE.FREE
+            : BOOST_PAYMENT_TYPE.MANA,
         }
       )
       if (startTime <= Date.now() && !fundViaCash && contract) {

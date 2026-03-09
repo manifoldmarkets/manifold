@@ -1587,6 +1587,43 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  'get-boost-history': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string().optional(),
+        postId: z.string().optional(),
+        userId: z.string().optional(),
+        includePending: z.boolean().default(false),
+        limit: z.number().int().positive().max(1000).default(100),
+        offset: z.number().int().min(0).default(0),
+      })
+      .strict(),
+    returns: {} as {
+      boosts: {
+        id: number
+        contentType: 'contract' | 'post'
+        contentId: string
+        contractId: string | null
+        postId: string | null
+        title: string
+        slug: string | null
+        url: string | null
+        userId: string
+        userName: string
+        userUsername: string
+        createdTime: number
+        startTime: number
+        endTime: number
+        funded: boolean
+        paymentType: 'free' | 'mana' | 'cash'
+        isFree: boolean
+        manaPurchaseTxnId: string | null
+      }[]
+    },
+  },
   'get-seen-market-ids': {
     method: 'POST',
     visibility: 'undocumented',

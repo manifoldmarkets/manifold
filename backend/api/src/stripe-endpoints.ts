@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 import { Request, Response } from 'express'
 
+import { BOOST_PAYMENT_TYPE, BOOST_PURCHASE_EVENT_NAMES } from 'common/boost'
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
@@ -252,12 +253,12 @@ const handleBoostPayment = async (session: StripeSession) => {
 
   await trackPublicEvent(
     userId,
-    `${contractId ? 'contract' : 'post'} boost purchased`,
+    BOOST_PURCHASE_EVENT_NAMES[contractId ? 'contract' : 'post'],
     {
       contractId,
       postId,
       boostId,
-      paymentMethod: 'cash',
+      paymentMethod: BOOST_PAYMENT_TYPE.CASH,
     }
   )
 }

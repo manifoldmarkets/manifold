@@ -77,6 +77,7 @@ pathMatchers:
           - pathTemplateMatch: /v0/bet-points
           - pathTemplateMatch: /v0/get-site-activity
           - pathTemplateMatch: /get-boost-analytics
+          - pathTemplateMatch: /v0/get-boost-history
           - pathTemplateMatch: /v0/answer/*
           - pathTemplateMatch: /v0/market/*/answers
           - pathTemplateMatch: /v0/user-comments

@@ -1624,6 +1624,52 @@ Example response:
 
 Note: This API corresponds to the `txns` postgres table and does not include bets and liquidity injections.
 
+### `GET /v0/get-boost-history`
+
+Get a paginated list of all contract and post boosts, including whether each boost was paid with mana, cash, or granted for free.
+
+Requires no auth.
+
+Parameters:
+
+- `contractId`: Optional. Only return boosts for this contract.
+- `postId`: Optional. Only return boosts for this post.
+- `userId`: Optional. Only return boosts created by this user.
+- `includePending`: Optional. Include unfunded cash boosts that have not completed payment yet. Defaults to `false`.
+- `limit`: Optional. Number of boosts to return. Default `100`, max `1000`.
+- `offset`: Optional. Number of boosts to skip. Default `0`.
+
+Response type:
+
+```tsx
+type BoostHistoryEntry = {
+  id: number
+  contentType: 'contract' | 'post'
+  contentId: string
+  contractId: string | null
+  postId: string | null
+  title: string
+  slug: string | null
+  url: string | null
+  userId: string
+  userName: string
+  userUsername: string
+  createdTime: number
+  startTime: number
+  endTime: number
+  funded: boolean
+  paymentType: 'free' | 'mana' | 'cash'
+  isFree: boolean
+  manaPurchaseTxnId: string | null
+}
+```
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/get-boost-history?limit=50&includePending=true"
+```
+
 ## Websockets
 
 Manifold provides a real-time websocket server that allows you to subscribe to updates about markets, bets, and other events. The websocket endpoint is available at `wss://api.manifold.markets/ws` and `wss://api.dev.manifold.markets/ws`.
@@ -1768,6 +1814,7 @@ Parameters:
 
 ## Changelog
 
+- 2026-03-09: Add `/get-boost-history` documentation
 - 2024-10-30: Remove undefined parameter from `/v0/market/[marketId]/sell` and remove `sell-shares-dpm` endpoint
 - 2023-12-19: Formatting & copy improvements. Updated parameters and return types.
 - 2023-12-18: `manifold.markets/api` -> `api.manifold.markets`. Please migrate old code.
