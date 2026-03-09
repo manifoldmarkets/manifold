@@ -332,6 +332,7 @@ export const computeContractScores = (
   const todayScore = likesToday + tradersToday
   const thisWeekScore = likesWeek + tradersWeek
   const wasCreatedToday = contract.createdTime > now - DAY_MS
+  const homePageScoreAdjustment = getActiveHomePageScoreAdjustment(contract, now)
 
   const { createdTime, closeTime, isResolved, outcomeType, resolutionTime } =
     contract
@@ -389,18 +390,26 @@ export const computeContractScores = (
         0,
         1
       )
-      const importanceScore = traderScore * MIN_IMPORTANCE_SCORE
+      const importanceScore = applyHomePageScoreAdjustment(
+        traderScore * MIN_IMPORTANCE_SCORE,
+        homePageScoreAdjustment
+      )
+      const freshnessScore = applyHomePageScoreAdjustment(
+        0,
+        homePageScoreAdjustment
+      )
 
       return {
         todayScore,
         thisWeekScore,
-        freshnessScore: 0,
+        freshnessScore,
         dailyScore: 0,
         importanceScore,
         logOddsChange: 0,
         rawMarketImportanceBreakdown: {
           contractId: contract.id,
           resolvedTraderBonus: traderScore,
+          homePageScoreAdjustment,
         },
       }
     }
@@ -475,22 +484,50 @@ export const computeContractScores = (
     freshLastUpdated,
     // Poll components
     newness: newnessComponent,
+    homePageScoreAdjustment,
   }
 
-  const freshnessScore =
+  const baseFreshnessScore =
     outcomeType === 'POLL' || outcomeType === 'BOUNTIED_QUESTION'
       ? freshnessFactor * importanceScore
       : normalize(rawMarketFreshness, 3)
+  const freshnessScore = applyHomePageScoreAdjustment(
+    baseFreshnessScore,
+    homePageScoreAdjustment
+  )
+  const adjustedImportanceScore = applyHomePageScoreAdjustment(
+    importanceScore,
+    homePageScoreAdjustment
+  )
 
   return {
     todayScore,
     thisWeekScore,
     freshnessScore,
     dailyScore,
-    importanceScore,
+    importanceScore: adjustedImportanceScore,
     logOddsChange,
     rawMarketImportanceBreakdown,
   }
+}
+
+const getActiveHomePageScoreAdjustment = (
+  contract: Contract,
+  now: number
+) => {
+  const { homePageScoreAdjustment, homePageScoreAdjustmentExpiresAt } = contract
+  if (homePageScoreAdjustment === undefined) return 0
+  if (
+    homePageScoreAdjustmentExpiresAt !== undefined &&
+    homePageScoreAdjustmentExpiresAt <= now
+  ) {
+    return 0
+  }
+  return homePageScoreAdjustment
+}
+
+const applyHomePageScoreAdjustment = (score: number, adjustment: number) => {
+  return clamp(score + adjustment, 0, 1)
 }
 
 const bountiedImportanceScore = (

@@ -1,14 +1,19 @@
 import { JSONContent } from '@tiptap/core'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { Contract } from 'common/contract'
-import { isAdminId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { DAY_MS } from 'common/util/time'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { isEmpty } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
+import { trackAuditEvent } from 'shared/audit-events'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { recordContractEdit } from 'shared/record-contract-edit'
-import { updateContract } from 'shared/supabase/contracts'
+import {
+  updateContract,
+  updateContractNativeColumns,
+} from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { FieldVal } from 'shared/supabase/utils'
 import { anythingToRichText } from 'shared/tiptap'
@@ -29,6 +34,8 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       question,
       coverImageUrl,
       display,
+      homePageScoreAdjustment,
+      homePageScoreAdjustmentDays,
 
       description: raw,
       descriptionHtml: html,
@@ -41,6 +48,43 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
     const contract = await getContract(pg, contractId)
     if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
     if (contract.creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
+
+    const isUpdatingHomePageScoreAdjustment =
+      homePageScoreAdjustment !== undefined ||
+      homePageScoreAdjustmentDays !== undefined
+
+    if (isUpdatingHomePageScoreAdjustment) {
+      if (!isAdminId(auth.uid) && !isModId(auth.uid)) {
+        throw new APIError(
+          403,
+          'Only admins or mods can update the home page score adjustment'
+        )
+      }
+      if (homePageScoreAdjustment === undefined) {
+        throw new APIError(
+          400,
+          'Must provide homePageScoreAdjustment when updating the home page score adjustment'
+        )
+      }
+      if (
+        homePageScoreAdjustment === null &&
+        homePageScoreAdjustmentDays !== undefined
+      ) {
+        throw new APIError(
+          400,
+          'Cannot provide homePageScoreAdjustmentDays when clearing the home page score adjustment'
+        )
+      }
+      if (
+        homePageScoreAdjustment !== null &&
+        homePageScoreAdjustmentDays === undefined
+      ) {
+        throw new APIError(
+          400,
+          'Must provide homePageScoreAdjustmentDays when setting the home page score adjustment'
+        )
+      }
+    }
 
     if (contract.isResolved && closeTime !== undefined) {
       throw new APIError(403, 'Cannot update closeTime for resolved contracts')
@@ -77,6 +121,19 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
           ? FieldVal.delete()
           : update.coverImageUrl || undefined,
     })
+    const homePageScoreAdjustmentExpiresAt =
+      homePageScoreAdjustment != null && homePageScoreAdjustmentDays != null
+        ? Date.now() + homePageScoreAdjustmentDays * DAY_MS
+        : null
+    if (isUpdatingHomePageScoreAdjustment) {
+      await updateContractNativeColumns(pg, contractId, {
+        home_page_score_adjustment: homePageScoreAdjustment,
+        home_page_score_adjustment_expires_at:
+          homePageScoreAdjustmentExpiresAt == null
+            ? null
+            : new Date(homePageScoreAdjustmentExpiresAt).toISOString(),
+      })
+    }
 
     log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
@@ -90,7 +147,10 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
           closeTime,
           addAnswersMode,
           question,
-          description
+          description,
+          isUpdatingHomePageScoreAdjustment,
+          homePageScoreAdjustment,
+          homePageScoreAdjustmentExpiresAt ?? undefined
         ),
     }
   })
@@ -103,7 +163,10 @@ export const updateMarketContinuation = async (
   closeTime: number | undefined,
   addAnswersMode: string | undefined,
   question: string | undefined,
-  description: JSONContent | undefined
+  description: JSONContent | undefined,
+  isUpdatingHomePageScoreAdjustment: boolean,
+  homePageScoreAdjustment: number | null | undefined,
+  homePageScoreAdjustmentExpiresAt: number | undefined
 ) => {
   log(`Revalidating contract ${contract.id}.`)
   await revalidateContractStaticProps(contract)
@@ -115,8 +178,22 @@ export const updateMarketContinuation = async (
       visibility,
       closeTime,
       addAnswersMode,
+      homePageScoreAdjustment,
+      homePageScoreAdjustmentExpiresAt,
     })
   )
+  if (isUpdatingHomePageScoreAdjustment) {
+    await trackAuditEvent(
+      userId,
+      'admin update market home page score adjustment',
+      contract.id,
+      undefined,
+      removeUndefinedProps({
+        homePageScoreAdjustment,
+        homePageScoreAdjustmentExpiresAt,
+      })
+    )
+  }
   if (question || closeTime || visibility || description) {
     await recordContractEdit(
       contract,

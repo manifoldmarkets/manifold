@@ -32,6 +32,7 @@ import { useSweepstakes } from '../sweepstakes-provider'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { formatWithCommas } from 'common/util/format'
+import { useEffect, useState } from 'react'
 
 export const Stats = (props: {
   contract: Contract
@@ -479,6 +480,7 @@ export const Stats = (props: {
         {/* Admin debug info - show at the very end */}
         {(isAdmin || isDev) && (
           <>
+            {isAdmin && <AdminHomePageScoreAdjustmentRows contract={contract} />}
             <tr className="bg-purple-500/30">
               <td>Supabase link</td>
               <td>
@@ -509,6 +511,181 @@ export const Stats = (props: {
         )}
       </tbody>
     </Table>
+  )
+}
+
+function AdminHomePageScoreAdjustmentRows(props: { contract: Contract }) {
+  const { contract } = props
+  const [adjustment, setAdjustment] = useState(
+    contract.homePageScoreAdjustment?.toString() ?? ''
+  )
+  const [days, setDays] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    setAdjustment(contract.homePageScoreAdjustment?.toString() ?? '')
+    setDays('')
+  }, [
+    contract.homePageScoreAdjustment,
+    contract.homePageScoreAdjustmentExpiresAt,
+    contract.id,
+  ])
+
+  const saveAdjustment = async () => {
+    const parsedAdjustment = Number(adjustment)
+    const parsedDays = Number(days)
+
+    if (
+      adjustment.trim() === '' ||
+      Number.isNaN(parsedAdjustment) ||
+      parsedAdjustment < -1 ||
+      parsedAdjustment > 1
+    ) {
+      toast.error('Adjustment must be a number between -1 and 1.')
+      return
+    }
+
+    if (
+      days.trim() === '' ||
+      !Number.isInteger(parsedDays) ||
+      parsedDays <= 0
+    ) {
+      toast.error('Duration must be a positive whole number of days.')
+      return
+    }
+
+    setIsSaving(true)
+    await toast
+      .promise(
+        updateMarket({
+          contractId: contract.id,
+          homePageScoreAdjustment: parsedAdjustment,
+          homePageScoreAdjustmentDays: parsedDays,
+        }),
+        {
+          loading: 'Saving home page score adjustment...',
+          success: 'Saved home page score adjustment.',
+          error: 'Failed to save home page score adjustment.',
+        }
+      )
+      .finally(() => setIsSaving(false))
+  }
+
+  const clearAdjustment = async () => {
+    setIsSaving(true)
+    await toast
+      .promise(
+        updateMarket({
+          contractId: contract.id,
+          homePageScoreAdjustment: null,
+        }),
+        {
+          loading: 'Clearing home page score adjustment...',
+          success: 'Cleared home page score adjustment.',
+          error: 'Failed to clear home page score adjustment.',
+        }
+      )
+      .then(() => {
+        setAdjustment('')
+        setDays('')
+      })
+      .finally(() => setIsSaving(false))
+  }
+
+  const expiresAt = contract.homePageScoreAdjustmentExpiresAt
+  const hasValidExpiry = expiresAt !== undefined && Number.isFinite(expiresAt)
+  const hasActiveAdjustment =
+    contract.homePageScoreAdjustment !== undefined &&
+    (!hasValidExpiry || expiresAt > Date.now())
+
+  return (
+    <>
+      <tr className="bg-purple-500/30">
+        <td>Importance score</td>
+        <td>{contract.importanceScore.toFixed(3)}</td>
+      </tr>
+      <tr className="bg-purple-500/30">
+        <td>Freshness score</td>
+        <td>{contract.freshnessScore.toFixed(3)}</td>
+      </tr>
+      <tr className="bg-purple-500/30">
+        <td>
+          Home page score adjustment{' '}
+          <InfoTooltip text="Adds a value from -1 to 1 to both importance and freshness scores until it expires." />
+        </td>
+        <td>
+          {hasActiveAdjustment ? (
+            <span>
+              {contract.homePageScoreAdjustment?.toFixed(3)}
+              {hasValidExpiry ? ` until ${formatTime(expiresAt)}` : ''}
+            </span>
+          ) : contract.homePageScoreAdjustment !== undefined ? (
+            <span>
+              {contract.homePageScoreAdjustment.toFixed(3)}
+              {hasValidExpiry
+                ? ` (expired ${formatTime(expiresAt)})`
+                : ' (expired)'}
+            </span>
+          ) : (
+            'None'
+          )}
+        </td>
+      </tr>
+      <tr className="bg-purple-500/30 align-top">
+        <td>Adjust home page score</td>
+        <td>
+          <div className="flex max-w-full flex-col gap-2">
+            <div className="flex max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-ink-600">Adjustment</span>
+                <input
+                  type="number"
+                  min={-1}
+                  max={1}
+                  step={0.01}
+                  value={adjustment}
+                  disabled={isSaving}
+                  onChange={(e) => setAdjustment(e.target.value)}
+                  className="bg-canvas-0 border-ink-300 w-full rounded-md border px-3 py-2 sm:w-28"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-ink-600">Days</span>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={days}
+                  disabled={isSaving}
+                  onChange={(e) => setDays(e.target.value)}
+                  className="bg-canvas-0 border-ink-300 w-full rounded-md border px-3 py-2 sm:w-24"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={saveAdjustment}
+                className="bg-primary-600 hover:bg-primary-700 disabled:bg-ink-300 w-full rounded-md px-3 py-2 text-sm font-medium text-white sm:w-auto"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                disabled={isSaving || contract.homePageScoreAdjustment === undefined}
+                onClick={clearAdjustment}
+                className="border-ink-300 text-ink-700 hover:bg-canvas-50 disabled:text-ink-400 w-full rounded-md border px-3 py-2 text-sm font-medium sm:w-auto"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="text-ink-600 text-sm">
+              Negative values derank the market on home. Positive values boost
+              it.
+            </div>
+          </div>
+        </td>
+      </tr>
+    </>
   )
 }
 

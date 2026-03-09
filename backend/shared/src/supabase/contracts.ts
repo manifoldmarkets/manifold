@@ -301,7 +301,10 @@ export const updateContractNativeColumns = async (
   )
   log('updated contract native columns', updated)
   const updatedValues = Object.fromEntries(
-    Object.entries(fullUpdate).map(([k, v]) => [camelCase(k), v])
+    Object.keys(fullUpdate).map((k) => {
+      const camelKey = camelCase(k)
+      return [camelKey, newContract[camelKey as keyof Contract] ?? null]
+    })
   ) as Partial<Contract> & { id: string }
   broadcastUpdatedContract(newContract.visibility, updatedValues)
   return newContract

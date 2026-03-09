@@ -115,6 +115,10 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
   /** @deprecated - not deprecated, only updated in native column though*/
+  homePageScoreAdjustment?: number
+  /** @deprecated - not deprecated, only updated in native column though*/
+  homePageScoreAdjustmentExpiresAt?: number
+  /** @deprecated - not deprecated, only updated in native column though*/
   dailyScore: number
   /** @deprecated - not deprecated, only updated in native column though*/
   freshnessScore: number
@@ -571,6 +575,8 @@ export type AIGeneratedMarket = Pick<
 export const nativeContractColumnsArray = [
   'data',
   'importance_score',
+  'home_page_score_adjustment',
+  'home_page_score_adjustment_expires_at',
   'freshness_score',
   'conversion_score',
   'view_count',

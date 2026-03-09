@@ -16,6 +16,8 @@ create table if not exists
     ) stored,
     freshness_score numeric default 0 not null,
     group_slugs text[],
+    home_page_score_adjustment numeric,
+    home_page_score_adjustment_expires_at timestamp with time zone,
     id text primary key not null,
     importance_score numeric default 0 not null,
     is_spice_payout boolean default false,

@@ -48,7 +48,7 @@ export const getContracts = async (
 
 // NOTE: this should be nativeContractColumnsArray.join(',') but throwing type errors
 export const contractFields =
-  'data, importance_score, view_count, conversion_score, freshness_score, daily_score, token, boosted'
+  'data, importance_score, home_page_score_adjustment, home_page_score_adjustment_expires_at, view_count, conversion_score, freshness_score, daily_score, token, boosted'
 
 export const getUnresolvedContractsCount = async (
   creatorId: string,
@@ -135,6 +135,8 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
 export const convertContract = <T extends Contract>(c: {
   data: Json
   importance_score: number | null
+  home_page_score_adjustment?: number | null
+  home_page_score_adjustment_expires_at?: string | null
   view_count?: number | null
   conversion_score?: number | null
   freshness_score?: number | null
@@ -146,6 +148,10 @@ export const convertContract = <T extends Contract>(c: {
     ...(c.data as T),
     // Only updated in supabase:
     importanceScore: c.importance_score,
+    homePageScoreAdjustment: c.home_page_score_adjustment ?? undefined,
+    homePageScoreAdjustmentExpiresAt: c.home_page_score_adjustment_expires_at
+      ? tsToMillis(c.home_page_score_adjustment_expires_at)
+      : undefined,
     conversionScore: c.conversion_score,
     freshnessScore: c.freshness_score,
     viewCount: Number(c.view_count),

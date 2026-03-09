@@ -676,6 +676,8 @@ export type Database = {
           description_fts: unknown
           freshness_score: number
           group_slugs: string[] | null
+          home_page_score_adjustment: number | null
+          home_page_score_adjustment_expires_at: string | null
           id: string
           importance_score: number
           is_spice_payout: boolean | null
@@ -709,6 +711,8 @@ export type Database = {
           description_fts?: unknown
           freshness_score?: number
           group_slugs?: string[] | null
+          home_page_score_adjustment?: number | null
+          home_page_score_adjustment_expires_at?: string | null
           id: string
           importance_score?: number
           is_spice_payout?: boolean | null
@@ -742,6 +746,8 @@ export type Database = {
           description_fts?: unknown
           freshness_score?: number
           group_slugs?: string[] | null
+          home_page_score_adjustment?: number | null
+          home_page_score_adjustment_expires_at?: string | null
           id?: string
           importance_score?: number
           is_spice_payout?: boolean | null
