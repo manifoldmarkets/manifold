@@ -60,7 +60,6 @@ import {
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
 import {
-  contractColumnsToSelect,
   htmlToRichText,
   isProd,
   log,
