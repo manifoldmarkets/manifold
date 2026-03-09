@@ -1596,6 +1596,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string().optional(),
         postId: z.string().optional(),
         userId: z.string().optional(),
+        // GET query params arrive as strings, so booleans/numbers need coercion.
         includePending: coerceBoolean.optional(),
         limit: z.coerce.number().int().positive().max(1000).default(100),
         offset: z.coerce.number().int().min(0).default(0),

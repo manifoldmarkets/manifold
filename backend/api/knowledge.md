@@ -151,6 +151,8 @@ props: z.object({
 }).strict(),
 ```
 
+For `GET` endpoints, remember that query params arrive as strings. Use coercion/parsing in the schema for non-string fields, e.g. `z.coerce.number()` for numeric params and `coerceBoolean` for boolean params, so requests like `?limit=50&includePending=true` validate correctly.
+
 ### Data schema
 
 Tables like contract_comments, contract_bets, contract_follows, etc, use two primary ids: contract_id, and an id specific to the table: comment_id, bet_id, or follow_id. Thus they have no primary 'id' column.
