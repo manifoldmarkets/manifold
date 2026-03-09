@@ -1597,8 +1597,8 @@ export const API = (_apiTypeCheck = {
         postId: z.string().optional(),
         userId: z.string().optional(),
         includePending: coerceBoolean.optional(),
-        limit: z.number().int().positive().max(1000).default(100),
-        offset: z.number().int().min(0).default(0),
+        limit: z.coerce.number().int().positive().max(1000).default(100),
+        offset: z.coerce.number().int().min(0).default(0),
       })
       .strict(),
     returns: {} as {
