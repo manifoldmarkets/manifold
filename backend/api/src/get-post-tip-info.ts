@@ -20,10 +20,7 @@ export const getPostTipInfo: APIHandler<'get-post-tip-info'> = async (
        and token = 'M$'
        and from_id = $1
        and to_id = $2
-       and (
-         data->'data'->>'postId' = $3
-         or data->'data'->>'groupId' = $3
-       )`,
+       and data->'data'->>'postId' = $3`,
     [auth.uid, post.creatorId, postId]
   )
 
