@@ -2,8 +2,8 @@ export default function TipJar({
   size = 18,
   color = '#66667C',
   strokeWidth = 1.5,
-  fill = 'none',
-  opacity = 100,
+  fill = '#66667C',
+  opacity = 50,
 }) {
   return (
     <svg

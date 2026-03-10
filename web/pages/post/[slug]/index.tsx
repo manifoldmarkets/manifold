@@ -3,6 +3,7 @@ import {
   EyeOffIcon,
   PencilIcon,
 } from '@heroicons/react/solid'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { PostComment } from 'common/comment'
 import { getPostShareUrl, TopLevelPost } from 'common/src/top-level-post'
 import { formatMoney } from 'common/util/format'
@@ -89,8 +90,15 @@ export default function PostPage(props: {
   const isAdminOrMod = useAdminOrMod()
   const [editing, setEditing] = useState(false)
   const [tipping, setTipping] = useState(false)
-  const [userTippedAmount, setUserTippedAmount] = useState(0)
   const currentUser = useUser()
+  const userPostTipStateKey =
+    currentUser && props.post
+      ? `post-tip-info-${currentUser.id}-${props.post.id}`
+      : 'post-tip-info-anon'
+  const [userTippedAmount, setUserTippedAmount] = usePersistentInMemoryState(
+    0,
+    userPostTipStateKey
+  )
   useSaveReferral(currentUser, {
     defaultReferrerUsername: post?.creatorUsername,
   })
@@ -281,7 +289,7 @@ export default function PostPage(props: {
                   }
                 >
                   {post.tippedAmount && post.tippedAmount > 0 ? '+' : ''}
-                  {formatMoney(post.tippedAmount ?? 0)} tipped
+                  {formatMoney(post.tippedAmount ?? 0)} tips
                 </span>
                 {(isAdminOrMod || post.creatorId === currentUser?.id) &&
                   post && (

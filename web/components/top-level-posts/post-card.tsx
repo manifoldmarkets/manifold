@@ -4,6 +4,7 @@ import { fromNow } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -20,9 +21,9 @@ import { ReactButton } from '../contract/react-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
+import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { UserLink } from '../widgets/user-link'
-import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 
 export function PostCard(props: {
   post: TopLevelPost
@@ -192,33 +193,42 @@ export function PostCard(props: {
             )}
           </Row>
 
-          {/* Like button */}
-          <div
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-            className="relative z-10"
-          >
-            <ReactButton
-              contentId={post.id}
-              contentCreatorId={post.creatorId}
-              user={currentUser}
-              contentType={'post'}
-              contentText={post.title}
-              trackingLocation={'post card'}
-              reactionType={'like'}
-              size={'xs'}
-              color="gray-white"
-              className="group"
-              heartClassName="stroke-ink-700 dark:stroke-ink-400 group-hover:stroke-ink-900 dark:group-hover:stroke-ink-300"
-              userReactedWith={
-                currentUser && post.likedByUserIds?.includes(currentUser.id)
-                  ? 'like'
-                  : 'none'
-              }
-            />
-          </div>
+          <Row className="items-center gap-3">
+            {(post.tippedAmount ?? 0) > 0 && (
+              <span className="text-sm font-medium text-teal-500">
+                {(post.tippedAmount ?? 0) > 0 ? '+' : ''}
+                {formatMoney(post.tippedAmount ?? 0)} tips
+              </span>
+            )}
+
+            {/* Like button */}
+            <div
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              className="relative z-10"
+            >
+              <ReactButton
+                contentId={post.id}
+                contentCreatorId={post.creatorId}
+                user={currentUser}
+                contentType={'post'}
+                contentText={post.title}
+                trackingLocation={'post card'}
+                reactionType={'like'}
+                size={'xs'}
+                color="gray-white"
+                className="group"
+                heartClassName="stroke-ink-700 dark:stroke-ink-400 group-hover:stroke-ink-900 dark:group-hover:stroke-ink-300"
+                userReactedWith={
+                  currentUser && post.likedByUserIds?.includes(currentUser.id)
+                    ? 'like'
+                    : 'none'
+                }
+              />
+            </div>
+          </Row>
         </Row>
       </div>
 
