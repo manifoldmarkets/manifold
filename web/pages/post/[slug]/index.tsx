@@ -5,6 +5,7 @@ import {
 } from '@heroicons/react/solid'
 import { PostComment } from 'common/comment'
 import { getPostShareUrl, TopLevelPost } from 'common/src/top-level-post'
+import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -39,6 +40,8 @@ import { getCommentsOnPost } from 'web/lib/supabase/comments'
 import { getPostBySlug } from 'web/lib/supabase/posts'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 import Custom404 from 'web/pages/404'
+import { PaymentsModal } from 'web/pages/payments'
+import TipJar from 'web/public/custom-components/tipJar'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -85,6 +88,8 @@ export default function PostPage(props: {
   const [post, setPost] = useState(props.post)
   const isAdminOrMod = useAdminOrMod()
   const [editing, setEditing] = useState(false)
+  const [tipping, setTipping] = useState(false)
+  const [userTippedAmount, setUserTippedAmount] = useState(0)
   const currentUser = useUser()
   useSaveReferral(currentUser, {
     defaultReferrerUsername: post?.creatorUsername,
@@ -93,10 +98,44 @@ export default function PostPage(props: {
     setPost(props.post)
   }, [props.post])
 
+  useEffect(() => {
+    if (
+      !currentUser ||
+      currentUser.id === props.post?.creatorId ||
+      !props.post
+    ) {
+      setUserTippedAmount(0)
+      return
+    }
+
+    let cancelled = false
+    api('get-post-tip-info', {
+      postId: props.post.id,
+    }).then(({ amountTippedByUser }) => {
+      if (cancelled) return
+      setUserTippedAmount(amountTippedByUser)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentUser, props.post])
+
   if (!post || !creator) {
     return <Custom404 />
   }
   const shareUrl = getPostShareUrl(post, currentUser?.username)
+  const isCreator = currentUser?.id === post.creatorId
+  const hasTippedPost = userTippedAmount > 0
+
+  const handleTipSuccess = (amount: number) => {
+    setUserTippedAmount((current) => current + amount)
+    setPost((prevPost) =>
+      prevPost
+        ? { ...prevPost, tippedAmount: (prevPost.tippedAmount ?? 0) + amount }
+        : null
+    )
+  }
 
   const handleReact = () => {
     if (!currentUser || !post) return
@@ -178,7 +217,7 @@ export default function PostPage(props: {
                   )}
                 </span>
               </Row>
-              <Row className="mt-3 items-center gap-2 ">
+              <Row className="mt-3 flex-wrap items-center gap-2">
                 {post && (
                   <ReactButton
                     contentId={post.id}
@@ -214,6 +253,36 @@ export default function PostPage(props: {
                 {currentUser && (
                   <FollowPostButton post={post} user={currentUser} />
                 )}
+                {currentUser && !isCreator && (
+                  <Button
+                    size="sm"
+                    color={hasTippedPost ? 'green-outline' : 'gray-outline'}
+                    className="px-2.5 sm:px-3"
+                    onClick={() => setTipping(true)}
+                  >
+                    <Row className="items-center gap-x-1.5 whitespace-nowrap text-xs sm:gap-x-2 sm:text-sm">
+                      <TipJar
+                        size={20}
+                        color="currentcolor"
+                        strokeWidth={1.75}
+                        fill={hasTippedPost ? 'currentcolor' : 'none'}
+                      />
+                      {hasTippedPost
+                        ? `Tipped ${formatMoney(userTippedAmount)}`
+                        : 'Tip'}
+                    </Row>
+                  </Button>
+                )}
+                <span
+                  className={
+                    post.tippedAmount && post.tippedAmount > 0
+                      ? 'text-sm font-medium text-teal-500'
+                      : 'text-ink-500 text-sm font-medium'
+                  }
+                >
+                  {post.tippedAmount && post.tippedAmount > 0 ? '+' : ''}
+                  {formatMoney(post.tippedAmount ?? 0)} tipped
+                </span>
                 {(isAdminOrMod || post.creatorId === currentUser?.id) &&
                   post && (
                     <DropdownMenu
@@ -256,6 +325,20 @@ export default function PostPage(props: {
                     />
                   )}
               </Row>
+              {currentUser && !isCreator && (
+                <PaymentsModal
+                  fromUser={currentUser}
+                  toUser={creator}
+                  setShow={setTipping}
+                  show={tipping}
+                  groupId={post.id}
+                  postId={post.id}
+                  onSuccess={handleTipSuccess}
+                  defaultMessage={`Tip for post "${
+                    post.title
+                  }" ${getPostShareUrl(post, undefined)}`}
+                />
+              )}
             </Col>
 
             <Row className="border-canvas-50 items-center justify-between gap-4 border-b py-4">

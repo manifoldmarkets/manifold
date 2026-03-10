@@ -44,6 +44,7 @@ export const createPost: APIHandler<'create-post'> = onlyUsersWhoCanPerformActio
       creatorName: creator.name,
       creatorUsername: creator.username,
       creatorAvatarUrl: creator.avatarUrl,
+      tippedAmount: 0,
       visibility: (isCursedUser ? 'unlisted' : visibility) ?? 'public',
       isAnnouncement,
       isChangeLog,

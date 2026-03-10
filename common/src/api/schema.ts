@@ -1006,6 +1006,7 @@ export const API = (_apiTypeCheck = {
         toIds: z.array(z.string()),
         message: z.string().max(MAX_COMMENT_LENGTH),
         groupId: z.string().max(MAX_ID_LENGTH).optional(),
+        postId: z.string().max(MAX_ID_LENGTH).optional(),
         token: z.enum(['M$', 'CASH']).default('M$'),
       })
       .strict(),
@@ -1098,6 +1099,17 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(100).default(100),
         before: z.coerce.number().optional(),
         after: z.coerce.number().optional(),
+      })
+      .strict(),
+  },
+  'get-post-tip-info': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { amountTippedByUser: number },
+    props: z
+      .object({
+        postId: z.string(),
       })
       .strict(),
   },

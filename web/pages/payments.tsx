@@ -337,12 +337,16 @@ export const PaymentsModal = (props: {
   defaultMessage?: string
   defaultAmount?: number
   groupId?: string
+  postId?: string
+  onSuccess?: (amount: number) => void
 }) => {
   const {
     fromUser,
     groupId,
+    postId,
     defaultMessage = '',
     defaultAmount = 10,
+    onSuccess,
     toUser,
     setShow,
     show,
@@ -488,10 +492,12 @@ export const PaymentsModal = (props: {
                   amount,
                   message,
                   groupId,
+                  postId,
                   token: 'M$',
                 })
                 setError('')
                 setShow(false)
+                onSuccess?.(amount)
               } catch (e: any) {
                 setError(e.message)
                 console.error(e)
