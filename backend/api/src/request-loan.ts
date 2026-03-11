@@ -13,6 +13,7 @@ import {
 import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
+import { sumBy } from 'lodash'
 import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
@@ -125,15 +126,26 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     contractsById
   )
 
+  // Calculate current loan from live contract metrics (not cached portfolio history)
+  // to stay consistent with get-next-loan-amount which also sums from metrics.
+  const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
+  const currentMarginLoan = sumBy(metrics, (m) => m.marginLoan ?? 0)
+  const loanTotal = currentFreeLoan + currentMarginLoan
+
   // Calculate equity from net portfolio value (already excludes loans).
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
   // Note: Balance is not included since loans are taken against positions.
-  const loanTotal = portfolioMetric.loanTotal ?? 0
   const equity = Math.max(0, portfolioValueNet)
 
   // Check total loan limit based on equity (tier-specific)
+  // Override loanTotal with live value so validation matches the UI display
   if (
-    !isUserEligibleForGeneralLoan(portfolioMetric, equity, amount, maxLoanPercent)
+    !isUserEligibleForGeneralLoan(
+      { ...portfolioMetric, loanTotal },
+      equity,
+      amount,
+      maxLoanPercent
+    )
   ) {
     const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
     const currentLoan = loanTotal
