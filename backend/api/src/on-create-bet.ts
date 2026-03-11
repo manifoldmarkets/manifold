@@ -33,8 +33,8 @@ import {
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
-import { getBenefit, SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
+import { getBenefit } from 'common/supporter-config'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { Answer } from 'common/answer'
 import {
@@ -291,17 +291,7 @@ const payBettingStreak = async (
     }
 
     // Fetch user's supporter entitlements for bonus multiplier
-    const supporterEntitlementRows = await tx.manyOrNone(
-      `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
-       WHERE user_id = $1
-       AND entitlement_id = ANY($2)
-       AND enabled = true
-       AND (expires_time IS NULL OR expires_time > NOW())`,
-      [oldUser.id, SUPPORTER_ENTITLEMENT_IDS]
-    )
-
-    // Convert to UserEntitlement format for getBenefit
-    const entitlements = supporterEntitlementRows.map(convertEntitlement)
+    const entitlements = await getActiveSupporterEntitlements(tx, oldUser.id)
 
     // Get tier-specific quest multiplier (1x for non-supporters)
     const questMultiplier = getBenefit(entitlements, 'questMultiplier')
