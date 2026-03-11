@@ -13,7 +13,6 @@ import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-url
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { getUser, getUserByUsername, log } from 'shared/utils'
-import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
@@ -77,26 +76,15 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  const { name, username, avatarUrl, ...rest } = update
-  await updateUser(pg, userId, removeUndefinedProps(rest))
-  if (name || username || avatarUrl) {
-    if (name) {
-      await pg.none(`update users set name = $1 where id = $2`, [name, userId])
-    }
-    if (username) {
-      await pg.none(`update users set username = $1 where id = $2`, [
-        username,
-        userId,
-      ])
-    }
-    if (avatarUrl) {
-      await updateUser(pg, userId, { avatarUrl })
-    }
+  // updateUser now handles name/username as top-level columns automatically
+  await updateUser(pg, userId, removeUndefinedProps(update))
 
-    broadcastUpdatedUser(
-      removeUndefinedProps({ id: userId, name, username, avatarUrl })
-    )
-    await updateUserDenormalizedFields(userId, { name, username, avatarUrl })
+  if (update.name || update.username || update.avatarUrl) {
+    await updateUserDenormalizedFields(userId, {
+      name: update.name,
+      username: update.username,
+      avatarUrl: update.avatarUrl,
+    })
   }
 
   if (isAdminUpdate) {
