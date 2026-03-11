@@ -23,6 +23,7 @@ import {
   getBenefit,
   getMaxStreakFreezes,
 } from 'common/supporter-config'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { DAY_MS } from 'common/util/time'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
@@ -187,16 +188,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
     // Check streak freeze purchase cap based on supporter tier
     if (itemId === 'streak-forgiveness') {
-      // Fetch user's supporter entitlements to determine max capacity
-      const supporterEntitlements = await tx.manyOrNone(
-        `SELECT * FROM user_entitlements
-         WHERE user_id = $1
-         AND entitlement_id = ANY($2)
-         AND enabled = true
-         AND (expires_time IS NULL OR expires_time > NOW())`,
-        [auth.uid, [...SUPPORTER_ENTITLEMENT_IDS]]
-      )
-      const entitlements = supporterEntitlements.map(convertEntitlement)
+      const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
       const maxFreezes = getMaxStreakFreezes(entitlements)
 
       // Get current streak freeze count
@@ -217,55 +209,35 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     )
 
     // For supporter tier purchases, check for existing supporter entitlement to calculate upgrade credit
-    let existingSupporter: {
-      entitlement_id: string
-      expires_time: Date | null
-    } | null = null
+    let existingSupporter: UserEntitlement | null = null
     let upgradeCredit = 0
 
     if (isSupporterTierPurchase) {
-      existingSupporter = await tx.oneOrNone<{
-        entitlement_id: string
-        expires_time: Date | null
-      }>(
-        `SELECT entitlement_id, expires_time FROM user_entitlements
-         WHERE user_id = $1
-         AND entitlement_id = ANY($2)
-         AND enabled = true
-         AND (expires_time IS NULL OR expires_time > NOW())`,
-        [auth.uid, [...SUPPORTER_ENTITLEMENT_IDS]]
-      )
+      const supporterEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
+      existingSupporter = supporterEntitlements[0] ?? null
 
       // Calculate prorated credit from remaining time on existing tier
-      if (existingSupporter?.expires_time) {
-        const msRemaining =
-          existingSupporter.expires_time.getTime() - Date.now()
+      if (existingSupporter?.expiresTime) {
+        const msRemaining = existingSupporter.expiresTime - Date.now()
         const daysRemaining = Math.max(0, msRemaining / DAY_MS)
 
         // Get old tier price
         const oldTierPrice =
-          SHOP_ITEMS.find((i) => i.id === existingSupporter!.entitlement_id)
+          SHOP_ITEMS.find((i) => i.id === existingSupporter!.entitlementId)
             ?.price ?? 0
 
         // Credit = remaining days * (oldPrice / 30 days)
         // Only apply credit when switching to a different tier
-        if (existingSupporter.entitlement_id !== entitlementId) {
+        if (existingSupporter.entitlementId !== entitlementId) {
           upgradeCredit = Math.floor(daysRemaining * (oldTierPrice / 30))
         }
       }
     }
 
-    // Get current entitlements to check supporter status
+    // Get current supporter entitlements to check discount eligibility
     let currentEntitlements: UserEntitlement[] = []
     if (!isSupporterTierPurchase) {
-      const entRows = await tx.manyOrNone(
-        `SELECT * FROM user_entitlements
-         WHERE user_id = $1
-         AND enabled = true
-         AND (expires_time IS NULL OR expires_time > NOW())`,
-        [auth.uid]
-      )
-      currentEntitlements = entRows.map(convertEntitlement)
+      currentEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
     }
 
     // Get discount from supporter benefits (0 for non-supporters)
@@ -376,14 +348,13 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
         // For other items, stack time on existing entitlement
         if (isSupporterTierPurchase) {
           const isSameTierRenewal =
-            existingSupporter?.entitlement_id === entitlementId
+            existingSupporter?.entitlementId === entitlementId
 
-          if (isSameTierRenewal && existingSupporter?.expires_time) {
+          if (isSameTierRenewal && existingSupporter?.expiresTime) {
             // Same tier renewal - stack time on existing expiration
-            const currentExpires = existingSupporter.expires_time
             const baseTime =
-              currentExpires > new Date()
-                ? currentExpires.getTime()
+              existingSupporter.expiresTime > Date.now()
+                ? existingSupporter.expiresTime
                 : Date.now()
             expiresTime = new Date(baseTime + item.duration)
           } else {

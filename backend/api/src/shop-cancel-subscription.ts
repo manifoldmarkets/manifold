@@ -1,7 +1,7 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertEntitlement } from 'common/shop/types'
-import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
 export const shopCancelSubscription: APIHandler<
   'shop-cancel-subscription'
@@ -13,15 +13,9 @@ export const shopCancelSubscription: APIHandler<
   const pg = createSupabaseDirectClient()
 
   const result = await pg.tx(async (tx) => {
-    // Find user's active supporter entitlement
-    const supporterEntitlement = await tx.oneOrNone(
-      `SELECT * FROM user_entitlements
-       WHERE user_id = $1
-       AND entitlement_id = ANY($2)
-       AND enabled = true
-       AND (expires_time IS NULL OR expires_time > NOW())`,
-      [auth.uid, [...SUPPORTER_ENTITLEMENT_IDS]]
-    )
+    // Find user's active supporter entitlement (includes grace period)
+    const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
+    const supporterEntitlement = entitlements[0]
 
     if (!supporterEntitlement) {
       throw new APIError(404, 'No active membership subscription found')
@@ -32,7 +26,7 @@ export const shopCancelSubscription: APIHandler<
       `UPDATE user_entitlements
        SET auto_renew = false
        WHERE user_id = $1 AND entitlement_id = $2`,
-      [auth.uid, supporterEntitlement.entitlement_id]
+      [auth.uid, supporterEntitlement.entitlementId]
     )
 
     // Fetch all entitlements after the update to return current state

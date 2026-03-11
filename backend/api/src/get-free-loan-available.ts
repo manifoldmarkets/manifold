@@ -18,9 +18,8 @@ import { keyBy, sumBy } from 'lodash'
 import {
   getFreeLoanRate,
   getMaxLoanNetWorthPercent,
-  SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
 export const getFreeLoanAvailable: APIHandler<
   'get-free-loan-available'
@@ -47,22 +46,7 @@ export const getFreeLoanAvailable: APIHandler<
   }
 
   // Fetch supporter entitlements for tier-specific max loan
-  const supporterEntitlementRows = await pg.manyOrNone<{
-    user_id: string
-    entitlement_id: string
-    granted_time: string
-    expires_time: string | null
-    enabled: boolean
-  }>(
-    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
-     FROM user_entitlements
-     WHERE user_id = $1
-     AND entitlement_id = ANY($2)
-     AND enabled = true
-     AND (expires_time IS NULL OR expires_time > NOW())`,
-    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
-  )
-  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const entitlements = await getActiveSupporterEntitlements(pg, userId)
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
   const freeLoanRate = getFreeLoanRate(entitlements)
 

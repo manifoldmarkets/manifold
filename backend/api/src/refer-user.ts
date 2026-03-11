@@ -12,8 +12,8 @@ import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 import { updateUser } from 'shared/supabase/users'
-import { getBenefit, SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
+import { getBenefit } from 'common/supporter-config'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
 export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
   const { referredByUsername, contractId } = props
@@ -96,17 +96,7 @@ async function handleReferral(
     log('creating referral txns')
 
     // Fetch referrer's supporter entitlements for bonus multiplier
-    const supporterEntitlementRows = await tx.manyOrNone(
-      `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
-       WHERE user_id = $1
-       AND entitlement_id = ANY($2)
-       AND enabled = true
-       AND (expires_time IS NULL OR expires_time > NOW())`,
-      [referredByUserId, SUPPORTER_ENTITLEMENT_IDS]
-    )
-
-    // Convert to UserEntitlement format for getBenefit
-    const entitlements = supporterEntitlementRows.map(convertEntitlement)
+    const entitlements = await getActiveSupporterEntitlements(tx, referredByUserId)
 
     // Get tier-specific referral multiplier (1x for non-supporters)
     const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')

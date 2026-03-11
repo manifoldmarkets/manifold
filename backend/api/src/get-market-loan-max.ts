@@ -16,11 +16,8 @@ import {
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
 import { APIError } from './helpers/endpoint'
-import {
-  getMaxLoanNetWorthPercent,
-  SUPPORTER_ENTITLEMENT_IDS,
-} from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
+import { getMaxLoanNetWorthPercent } from 'common/supporter-config'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { type Row } from 'common/supabase/utils'
 
 export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
@@ -36,22 +33,7 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   }
 
   // Fetch supporter entitlements for tier-specific max loan
-  const supporterEntitlementRows = await pg.manyOrNone<{
-    user_id: string
-    entitlement_id: string
-    granted_time: string
-    expires_time: string | null
-    enabled: boolean
-  }>(
-    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
-     FROM user_entitlements
-     WHERE user_id = $1
-     AND entitlement_id = ANY($2)
-     AND enabled = true
-     AND (expires_time IS NULL OR expires_time > NOW())`,
-    [auth.uid, [...SUPPORTER_ENTITLEMENT_IDS]]
-  )
-  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const entitlements = await getActiveSupporterEntitlements(pg, auth.uid)
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
 
   const contract = await getContract(pg, contractId)
