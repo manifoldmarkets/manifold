@@ -57,13 +57,13 @@ export const getBoostHistory: APIHandler<'get-boost-history'> = async (props) =>
        offset $6
      ),
      mana_txns as (
-       select distinct on (t.data->>'boostId')
-         t.data->>'boostId' as boost_id,
+       select distinct on (t.data->'data'->>'boostId')
+         t.data->'data'->>'boostId' as boost_id,
          t.id
        from txns t
-       join boosts b on t.data->>'boostId' = b.id::text
+       join boosts b on t.data->'data'->>'boostId' = b.id::text
        where t.category = 'CONTRACT_BOOST_PURCHASE'
-       order by t.data->>'boostId', t.created_time desc
+       order by t.data->'data'->>'boostId', t.created_time desc
      ),
      cash_audits as (
        select distinct on (ae.user_id, ae.data->>'boostId')
