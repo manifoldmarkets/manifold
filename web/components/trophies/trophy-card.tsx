@@ -72,8 +72,10 @@ export function TrophyCard(props: {
   isOwnProfile?: boolean
   onClaim?: (trophyId: string, milestone: string) => void
   claiming?: boolean
+  justClaimed?: boolean
+  onPinToProfile?: () => void
 }) {
-  const { definition, progress, claimedMilestone, isOwnProfile, onClaim, claiming } = props
+  const { definition, progress, claimedMilestone, isOwnProfile, onClaim, claiming, justClaimed, onPinToProfile } = props
   const { milestones } = definition
   const { currentValue, highestMilestone } = progress
 
@@ -246,10 +248,23 @@ export function TrophyCard(props: {
 
           {/* Per-tier claim button or claimed indicator */}
           {isReached && viewingIdx <= claimedIdx && (
-            <Row className="mt-1 items-center justify-center gap-1 text-xs">
-              <CheckCircleIcon className={clsx('h-4 w-4', style.textColor)} />
-              <span className={clsx('font-medium', style.textColor)}>Claimed</span>
-            </Row>
+            justClaimed && onPinToProfile ? (
+              <button
+                className={clsx(
+                  'mt-1 w-full rounded-lg py-1.5 text-sm font-semibold text-white transition-all',
+                  'bg-gradient-to-r hover:brightness-110',
+                  style.gradient
+                )}
+                onClick={onPinToProfile}
+              >
+                Pin to Profile
+              </button>
+            ) : (
+              <Row className="mt-1 items-center justify-center gap-1 text-xs">
+                <CheckCircleIcon className={clsx('h-4 w-4', style.textColor)} />
+                <span className={clsx('font-medium', style.textColor)}>Claimed</span>
+              </Row>
+            )
           )}
           {isOwnProfile &&
             isReached &&
@@ -286,8 +301,10 @@ export function TrophyGrid(props: {
   isOwnProfile?: boolean
   onClaim?: (trophyId: string, milestone: string) => void
   claimingId?: string | null
+  justClaimedId?: string | null
+  onPinToProfile?: () => void
 }) {
-  const { progressList, definitions, claimedTrophies, isOwnProfile, onClaim, claimingId } = props
+  const { progressList, definitions, claimedTrophies, isOwnProfile, onClaim, claimingId, justClaimedId, onPinToProfile } = props
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
   const claimedMap = new Map(
     (claimedTrophies ?? []).map((c) => [c.trophyId, c.milestone])
@@ -307,6 +324,8 @@ export function TrophyGrid(props: {
             isOwnProfile={isOwnProfile}
             onClaim={onClaim}
             claiming={claimingId === def.id}
+            justClaimed={justClaimedId === def.id}
+            onPinToProfile={onPinToProfile}
           />
         )
       })}

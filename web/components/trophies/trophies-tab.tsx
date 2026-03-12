@@ -44,7 +44,7 @@ const DEV_PRESETS: Record<string, Record<string, number>> = {
 export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const { userId, isOwnProfile } = props
 
-  const { data: achievements, refresh } = useAPIGetter(
+  const { data: achievements, refresh, setData } = useAPIGetter(
     'get-user-achievements',
     { userId }
   )
@@ -53,6 +53,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const isAdmin = currentUser ? isAdminId(currentUser.id) : false
 
   const [claimingId, setClaimingId] = useState<string | null>(null)
+  const [justClaimed, setJustClaimed] = useState<string | null>(null)
   const [devOverrides, setDevOverrides] = useState<Record<string, number>>({})
   const [showDevPanel, setShowDevPanel] = useState(false)
   const isDev = ENV !== 'PROD'
@@ -61,7 +62,17 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
     setClaimingId(trophyId)
     try {
       await api('claim-trophy', { trophyId, milestone })
-      refresh()
+      // Optimistically update shared cache so ProfileShowcase sees new claim instantly
+      if (achievements) {
+        const existingClaims = achievements.claimedTrophies ?? []
+        const updatedClaims = [
+          ...existingClaims.filter((c: any) => c.trophyId !== trophyId),
+          { trophyId, milestone },
+        ]
+        setData({ ...achievements, claimedTrophies: updatedClaims } as any)
+      }
+      setJustClaimed(trophyId)
+      refresh() // also refresh in background for full consistency
     } catch (e) {
       console.error('Failed to claim trophy:', e)
     } finally {
@@ -138,6 +149,11 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               isOwnProfile={isOwnProfile}
               onClaim={handleClaim}
               claimingId={claimingId}
+              justClaimedId={justClaimed}
+              onPinToProfile={() => {
+                setJustClaimed(null)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
             />
           </Col>
         )
@@ -203,3 +219,4 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
     </Col>
   )
 }
+
