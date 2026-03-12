@@ -238,6 +238,40 @@ export function ProfileShowcase(props: {
   }, [serverPins, isOwnProfile, userId])
 
   const [showPicker, setShowPicker] = useState(false)
+  const [pickerMessage, setPickerMessage] = useState<string | null>(null)
+
+  // Listen for 'open-showcase-picker' events from TrophiesTab
+  useEffect(() => {
+    if (!isOwnProfile) return
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { pinId?: string } | undefined
+      const pinId = detail?.pinId
+      if (!pinId) {
+        setShowPicker(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+
+      // Try to auto-pin
+      setLocalPins((prev) => {
+        const current = (prev ?? []).filter((x) => x !== pinId)
+        if (current.length >= MAX_PINNED) {
+          setPickerMessage('Unpin a different trophy first')
+          setShowPicker(true)
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          return prev
+        }
+        const next = [...current, pinId]
+        api('set-showcase-pins', { pins: next })
+        setPickerMessage(null)
+        setShowPicker(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return next
+      })
+    }
+    window.addEventListener('open-showcase-picker', handler)
+    return () => window.removeEventListener('open-showcase-picker', handler)
+  }, [isOwnProfile])
 
   const savePins = useCallback(
     (newPins: string[]) => {
@@ -345,7 +379,7 @@ export function ProfileShowcase(props: {
             </span>
             <button
               className="text-ink-500 text-xs hover:underline"
-              onClick={() => setShowPicker(false)}
+              onClick={() => { setShowPicker(false); setPickerMessage(null) }}
             >
               Done
             </button>
@@ -361,9 +395,15 @@ export function ProfileShowcase(props: {
               />
             ))}
           </div>
-          <span className="text-ink-500 text-xs">
-            Select up to {MAX_PINNED}. Click a pinned badge to remove it.
-          </span>
+          {pickerMessage ? (
+            <span className="text-sm font-medium text-amber-600">
+              {pickerMessage}
+            </span>
+          ) : (
+            <span className="text-ink-500 text-xs">
+              Select up to {MAX_PINNED}. Click a pinned badge to remove it.
+            </span>
+          )}
         </Col>
       )}
     </>

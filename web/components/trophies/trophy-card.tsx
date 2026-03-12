@@ -73,7 +73,7 @@ export function TrophyCard(props: {
   onClaim?: (trophyId: string, milestone: string) => void
   claiming?: boolean
   justClaimed?: boolean
-  onPinToProfile?: () => void
+  onPinToProfile?: (trophyId: string) => void
 }) {
   const { definition, progress, claimedMilestone, isOwnProfile, onClaim, claiming, justClaimed, onPinToProfile } = props
   const { milestones } = definition
@@ -255,7 +255,7 @@ export function TrophyCard(props: {
                   'bg-gradient-to-r hover:brightness-110',
                   style.gradient
                 )}
-                onClick={onPinToProfile}
+                onClick={() => onPinToProfile(definition.id)}
               >
                 Pin to Profile
               </button>
@@ -302,7 +302,7 @@ export function TrophyGrid(props: {
   onClaim?: (trophyId: string, milestone: string) => void
   claimingId?: string | null
   justClaimedId?: string | null
-  onPinToProfile?: () => void
+  onPinToProfile?: (trophyId: string) => void
 }) {
   const { progressList, definitions, claimedTrophies, isOwnProfile, onClaim, claimingId, justClaimedId, onPinToProfile } = props
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))

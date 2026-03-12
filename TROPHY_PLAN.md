@@ -94,7 +94,44 @@ Notification toasts when milestones are newly reached. Confetti + milestone disp
 | web/hooks/use-trophy-milestones.ts | Create — detect newly claimable milestones |
 | web/pages/[username]/index.tsx | Wire up celebration on first visit after new milestone |
 
-### Stage 5: Trophy Expansion
+### Stage 5: Claim Rewards (non-mana)
+
+Tangible rewards when claiming milestones, designed to avoid mana inflation.
+
+**Subscription days:**
+- Claiming a milestone grants days of Plus membership
+- If already subscribed: days stack onto current billing period end date
+- If on higher tier (Pro): days still add to current plan
+- Serves as acquisition funnel — users who taste Plus features are more likely to subscribe
+
+**Streak freezes:**
+- Earn freezes that prevent your betting streak from breaking on missed days
+- Thematic fit with prediction streak trophy, but awarded across all trophies
+- Needs: `streak_freezes` column on users, logic in streak calculation, UI indicator
+
+**Cosmetic unlocks (future):**
+- Specific emoji reactions, profile effects, card borders tied to trophies
+- Zero economic impact, pure status
+
+**Reward schedule by tier:**
+
+| Tier | Reward |
+|------|--------|
+| Green | 1 streak freeze |
+| Blue | 2 days Plus |
+| Purple | 3 days Plus + 1 streak freeze |
+| Crimson | 5 days Plus |
+| Gold | 7 days Plus + 2 streak freezes |
+| Prismatic | 14 days Plus + 3 streak freezes |
+
+**Implementation:**
+- Add `reward` field to `TrophyMilestone` type (optional, per-tier)
+- `claim-trophy` endpoint grants rewards on successful claim
+- Subscription extension: call existing billing logic to add days
+- Streak freezes: new column + consumption logic in streak scheduler
+- UI: show reward preview on unclaimed milestones, celebration on claim
+
+### Stage 6: Trophy Expansion
 
 New trophy types beyond the core stat-based ones:
 
@@ -116,7 +153,7 @@ New trophy types beyond the core stat-based ones:
 
 **Design:** All new trophies use the same `TrophyDefinition` format — easily expandable by adding entries to `TROPHY_DEFINITIONS` array. Some may be single-tier (1 milestone). Shop/subscription trophies may need new `statKey` sources in `get-user-achievements`.
 
-### Stage 6: Gifted Titles
+### Stage 7: Gifted Titles
 
 Titles like "Sniper", "Legend", "God Creator" — bought by OTHER users for you, can't self-buy.
 Pin IDs use format "title-sniper" etc., stored in user_showcase.pins alongside trophy pins.
@@ -129,7 +166,7 @@ Pin IDs use format "title-sniper" etc., stored in user_showcase.pins alongside t
 | web/components/trophies/gift-title-modal.tsx | Create modal |
 | web/pages/[username]/index.tsx | Gift button on others' profiles |
 
-### Stage 7: Custom Art + Visual Polish
+### Stage 8: Custom Art + Visual Polish
 
 Replace emoji placeholders with custom artwork per milestone. Animations scale with tier importance.
 

@@ -1,4 +1,12 @@
 import { useState } from 'react'
+import clsx from 'clsx'
+import Image from 'next/image'
+import { RanksType } from 'common/achievements'
+import {
+  formatMoney,
+  formatMoneyUSD,
+  formatWithCommas,
+} from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -150,14 +158,21 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               onClaim={handleClaim}
               claimingId={claimingId}
               justClaimedId={justClaimed}
-              onPinToProfile={() => {
+              onPinToProfile={(trophyId: string) => {
                 setJustClaimed(null)
-                window.scrollTo({ top: 0, behavior: 'smooth' })
+                window.dispatchEvent(
+                  new CustomEvent('open-showcase-picker', {
+                    detail: { pinId: `trophy-${trophyId}` },
+                  })
+                )
               }}
             />
           </Col>
         )
       })}
+
+      {/* Achievements / Stats section */}
+      <AchievementsSection data={achievements} />
 
       {/* Admin tools: unclaim trophies */}
       {isAdmin && isOwnProfile && achievements.claimedTrophies.length > 0 && (
@@ -217,6 +232,266 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
         </Col>
       )}
     </Col>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Achievements / Stats section (moved from profile page)
+// ---------------------------------------------------------------------------
+
+const RANK_KEY_BY_ID: Record<string, keyof RanksType> = {
+  totalVolumeMana: 'volume',
+  totalReferrals: 'totalReferrals',
+  totalReferredProfitMana: 'totalReferredProfit',
+  creatorTraders: 'creatorTraders',
+  totalLiquidityCreatedMarkets: 'liquidity',
+  profitableMarketsCount: 'profitableMarkets',
+  unprofitableMarketsCount: 'unprofitableMarkets',
+  largestProfitableTradeValue: 'largestProfitableTrade',
+  largestUnprofitableTradeValue: 'largestUnprofitableTrade',
+  seasonsPlatinumOrHigher: 'seasonsPlatinumOrHigher',
+  seasonsDiamondOrHigher: 'seasonsDiamondOrHigher',
+  seasonsMasters: 'seasonsMasters',
+  largestLeagueSeasonEarnings: 'largestLeagueSeasonEarnings',
+  numberOfComments: 'comments',
+  totalTradesCount: 'trades',
+  totalMarketsCreated: 'marketsCreated',
+  accountAgeYears: 'accountAge',
+  longestBettingStreak: 'longestBettingStreak',
+  modTicketsResolved: 'modTickets',
+  charityDonatedMana: 'charityDonated',
+}
+
+const ACHIEVEMENT_IMAGES: Record<string, string> = {
+  accountAgeYears: '/achievement-badges/accountAgeYears.png',
+  charityDonatedMana: '/achievement-badges/charityDonatedMana.png',
+  creatorTraders: '/achievement-badges/creatorTraders.png',
+  largestProfitableTradeValue: '/achievement-badges/largestProfitableTradeValue.png',
+  largestLeagueSeasonEarnings: '/achievement-badges/largestLeagueSeasonEarnings.png',
+  largestUnprofitableTradeValue: '/achievement-badges/largestUnprofitableTradeValue.png',
+  longestBettingStreak: '/achievement-badges/longestBettingStreak.png',
+  modTicketsResolved: '/achievement-badges/modTicketsResolved.png',
+  numberOfComments: '/achievement-badges/numberOfComments.png',
+  profitableMarketsCount: '/achievement-badges/profitableMarketsCount.png',
+  seasonsDiamondOrHigher: '/achievement-badges/seasonsDiamondOrHigher.png',
+  seasonsMasters: '/achievement-badges/seasonsMasters.png',
+  seasonsPlatinumOrHigher: '/achievement-badges/seasonsPlatinumOrHigher.png',
+  totalLiquidityCreatedMarkets: '/achievement-badges/totalLiquidityCreatedMarkets.png',
+  totalMarketsCreated: '/achievement-badges/totalMarketsCreated.png',
+  totalReferrals: '/achievement-badges/totalReferrals.png',
+  totalReferredProfitMana: '/achievement-badges/totalReferredProfitMana.png',
+  totalTradesCount: '/achievement-badges/totalTradesCount.png',
+  totalVolumeMana: '/achievement-badges/totalVolumeMana.png',
+  unprofitableMarketsCount: '/achievement-badges/unprofitableMarketsCount.png',
+}
+
+type AchievementBucket =
+  | 'Top 50 Users'
+  | 'Top 200 Users'
+  | 'Top 1000 Users'
+  | 'Top 5000 Users'
+  | 'Top 20,000 Users'
+  | 'To Earn'
+
+const BUCKET_STYLES: Record<AchievementBucket, string> = {
+  'Top 50 Users': 'from-fuchsia-500 to-indigo-500',
+  'Top 200 Users': 'from-indigo-500 to-sky-500',
+  'Top 1000 Users': 'from-sky-500 to-teal-500',
+  'Top 5000 Users': 'from-emerald-500 to-lime-500',
+  'Top 20,000 Users': 'from-slate-500 to-zinc-500',
+  'To Earn': 'from-zinc-400 to-zinc-600',
+}
+
+const BUCKET_ORDER: AchievementBucket[] = [
+  'Top 50 Users',
+  'Top 200 Users',
+  'Top 1000 Users',
+  'Top 5000 Users',
+  'Top 20,000 Users',
+  'To Earn',
+]
+
+function bucketOf(rank: number | null): AchievementBucket {
+  if (rank == null) return 'To Earn'
+  if (rank <= 50) return 'Top 50 Users'
+  if (rank <= 200) return 'Top 200 Users'
+  if (rank <= 1000) return 'Top 1000 Users'
+  if (rank <= 5000) return 'Top 5000 Users'
+  if (rank <= 20000) return 'Top 20,000 Users'
+  return 'To Earn'
+}
+
+function AchievementsSection(props: { data: Record<string, any> }) {
+  const { data } = props
+
+  const defs = [
+    { id: 'totalVolumeMana', title: 'Any Whales?', desc: 'Total trading volume.', fmt: () => formatMoney(data.totalVolumeMana, 'MANA') },
+    { id: 'totalReferrals', title: 'Manifold Hype Man', desc: 'Friends you brought to Manifold.', fmt: () => formatWithCommas(data.totalReferrals) },
+    { id: 'totalReferredProfitMana', title: 'Proud Parent', desc: 'Profit earned by your referrals.', fmt: () => formatMoney(data.totalReferredProfitMana, 'MANA') },
+    { id: 'creatorTraders', title: 'Fan Favorite', desc: 'Unique traders on your markets.', fmt: () => formatWithCommas(data.creatorTraders) },
+    { id: 'totalLiquidityCreatedMarkets', title: 'No Slippage Here', desc: 'Total liquidity across all your created markets.', fmt: () => formatMoney(data.totalLiquidityCreatedMarkets, 'MANA') },
+    { id: 'profitableMarketsCount', title: 'Market Maven', desc: 'Number of markets you made a profit on.', fmt: () => formatWithCommas(data.profitableMarketsCount) },
+    { id: 'unprofitableMarketsCount', title: 'Ineffective Altruism', desc: 'Number of markets you lost mana on.', fmt: () => formatWithCommas(data.unprofitableMarketsCount) },
+    { id: 'largestProfitableTradeValue', title: 'Biggest Win', desc: 'Largest profit made on a single market.', fmt: () => formatMoney(data.largestProfitableTradeValue, 'MANA') },
+    { id: 'largestUnprofitableTradeValue', title: 'Wealth Redistributor', desc: 'Largest loss made on a single market.', fmt: () => formatMoney(data.largestUnprofitableTradeValue, 'MANA') },
+    { id: 'seasonsPlatinumOrHigher', title: 'Positively Platinum', desc: 'Seasons finished Platinum or higher.', fmt: () => formatWithCommas(data.seasonsPlatinumOrHigher) },
+    { id: 'seasonsDiamondOrHigher', title: 'Diamond Hands', desc: 'Seasons finished Diamond or higher.', fmt: () => formatWithCommas(data.seasonsDiamondOrHigher) },
+    { id: 'seasonsMasters', title: 'Master Mind', desc: 'Seasons finished Masters.', fmt: () => formatWithCommas(data.seasonsMasters) },
+    { id: 'largestLeagueSeasonEarnings', title: 'Sensational Season', desc: 'Largest earnings in a single season.', fmt: () => formatMoney(data.largestLeagueSeasonEarnings, 'MANA') },
+    { id: 'numberOfComments', title: 'Chatterbox', desc: 'Comments posted with at least 1 like.', fmt: () => formatWithCommas(data.numberOfComments) },
+    { id: 'totalTradesCount', title: 'High Frequency Trader', desc: 'Total trades executed (excludes API trades).', fmt: () => formatWithCommas(data.totalTradesCount) },
+    { id: 'totalMarketsCreated', title: 'Doing The Hard Part', desc: 'Markets you\u2019ve created.', fmt: () => formatWithCommas(data.totalMarketsCreated) },
+    {
+      id: 'accountAgeYears', title: 'Age Is Just A Number', desc: 'Account age in years.',
+      fmt: () => {
+        const totalMonths = Math.round(data.accountAgeYears * 12)
+        const years = Math.floor(totalMonths / 12)
+        const months = totalMonths % 12
+        return `${years} ${years === 1 ? 'year' : 'years'} ${months} ${months === 1 ? 'month' : 'months'}`
+      },
+    },
+    { id: 'longestBettingStreak', title: 'Longest Daily Streak', desc: 'Longest consecutive days trading.', fmt: () => formatWithCommas(data.longestBettingStreak) },
+    { id: 'modTicketsResolved', title: 'Helpful Moderator', desc: 'Mod tickets resolved (since mod rewards).', fmt: () => formatWithCommas(data.modTicketsResolved) },
+    { id: 'charityDonatedMana', title: 'Giver', desc: 'Total donated to charity (USD).', fmt: () => formatMoneyUSD(data.charityDonatedMana, true) },
+  ] as const
+
+  const achs = defs.map(({ id, title, desc, fmt }) => {
+    const key = RANK_KEY_BY_ID[id]
+    const raw = data[id] ?? 0
+    const rk = key ? data.ranks?.[key]?.rank ?? null : null
+    const pc = key ? data.ranks?.[key]?.percentile ?? null : null
+    return { id, title, desc, value: fmt(), rank: raw === 0 ? null : rk, percentile: raw === 0 ? null : pc }
+  })
+
+  const byBucket: Record<AchievementBucket, typeof achs> = {
+    'Top 50 Users': [], 'Top 200 Users': [], 'Top 1000 Users': [],
+    'Top 5000 Users': [], 'Top 20,000 Users': [], 'To Earn': [],
+  }
+  achs.forEach((a) => { byBucket[bucketOf(a.rank)].push(a) })
+
+  return (
+    <Col className="gap-6">
+      <Col className="gap-1">
+        <Row className="items-center gap-2">
+          <span className="text-2xl">{'\u{2728}'}</span>
+          <span className="text-ink-900 text-lg font-bold">Stats & Achievements</span>
+        </Row>
+        <span className="text-ink-500 text-sm">
+          Your rank among all Manifold users for each stat.
+        </span>
+      </Col>
+
+      {BUCKET_ORDER.map((bucket) => {
+        const items = byBucket[bucket]
+        if (!items.length) return null
+        const sorted = items.slice().sort((a, b) => {
+          const ra = a.rank ?? Infinity
+          const rb = b.rank ?? Infinity
+          if (ra !== rb) return ra - rb
+          return (a.percentile ?? Infinity) - (b.percentile ?? Infinity)
+        })
+        return (
+          <Col key={bucket} className="gap-3">
+            <div className="text-ink-800 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
+              {bucket}
+              <span className="bg-ink-200 h-px flex-1" />
+            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {sorted.map((a) => (
+                <AchievementBadgeCard
+                  key={a.id}
+                  title={a.title}
+                  description={a.desc}
+                  value={a.value}
+                  rank={a.rank}
+                  percentile={a.percentile}
+                  imageSrc={ACHIEVEMENT_IMAGES[a.id] || '/achievement-badges/totalVolumeMana.png'}
+                  bucket={bucket}
+                />
+              ))}
+            </div>
+          </Col>
+        )
+      })}
+    </Col>
+  )
+}
+
+function AchievementBadgeCard(props: {
+  title: string
+  description: string
+  value: string
+  rank: number | null
+  percentile: number | null
+  bucket: AchievementBucket
+  imageSrc?: string
+}) {
+  const { title, description, value, rank, percentile, bucket, imageSrc } = props
+
+  return (
+    <div
+      className="border-ink-200 group relative rounded-xl border p-[1px] transition-shadow hover:shadow-lg"
+      aria-label={title}
+    >
+      {rank != null && rank <= 20000 && (
+        <div className="absolute right-0 top-0 z-20">
+          <div className="bg-primary-500 text-ink-0 rounded-bl-lg px-2 py-1 text-xs font-semibold shadow-sm">
+            #{rank}
+          </div>
+        </div>
+      )}
+      <div
+        className={clsx(
+          'h-full rounded-xl bg-gradient-to-br',
+          BUCKET_STYLES[bucket]
+        )}
+      >
+        <div className="bg-canvas-0 flex h-full flex-col items-center space-y-3 rounded-[11px] px-4 pb-6 pt-6">
+          <div
+            className={clsx(
+              'ring-ink-300/50 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ring-1',
+              bucket === 'To Earn' && 'opacity-40 grayscale'
+            )}
+          >
+            {imageSrc ? (
+              <Image
+                src={imageSrc}
+                alt={title}
+                width={128}
+                height={128}
+                className="h-32 w-32 scale-125 rounded-full object-contain"
+              />
+            ) : null}
+          </div>
+          <div
+            className={clsx(
+              'pt-4 text-center',
+              bucket === 'To Earn' && 'opacity-40'
+            )}
+          >
+            <div className="text-ink-900 text-lg font-semibold">{title}</div>
+            <div className="text-ink-600 mt-1 text-sm leading-snug">
+              {description}
+            </div>
+            <div className="text-ink-900 mt-3 text-lg">{value}</div>
+          </div>
+
+          <div className="pointer-events-none absolute left-full top-4 z-20 hidden pl-3 group-hover:block">
+            <div className="bg-canvas-50 text-ink-900 border-ink-200 w-64 rounded-md border p-3 shadow-xl">
+              <div className="mt-1 text-lg font-semibold">
+                Rank: {rank ?? 'N/A'}
+              </div>
+              <div className="text-ink-600 my-1 text-sm">
+                {percentile != null
+                  ? `In the top ${Number(Math.max(percentile, 0.01).toFixed(2))}% of all users`
+                  : 'N/A'}
+              </div>
+              <div className="text-ink-600 text-sm">Value: {value}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
