@@ -68,22 +68,27 @@ const LEAGUE_EMOJI: Record<number, string> = {
 // ---------------------------------------------------------------------------
 
 function generateBadgesFromTrophies(
-  stats: Record<string, unknown>
+  stats: Record<string, unknown>,
+  claimedTrophies: { trophyId: string; milestone: string }[]
 ): ShowcaseBadgeData[] {
+  const claimedMap = new Map(claimedTrophies.map((c) => [c.trophyId, c.milestone]))
   const progressList = computeAllTrophyProgress(stats)
+  const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
   const badges: ShowcaseBadgeData[] = []
 
-  for (const progress of progressList) {
-    if (!progress.highestMilestone) continue
-    const def = TROPHY_DEFINITIONS.find((d) => d.id === progress.trophyId)
-    if (!def) continue
+  for (const def of TROPHY_DEFINITIONS) {
+    const claimedMilestoneName = claimedMap.get(def.id)
+    if (!claimedMilestoneName) continue
+    const m = def.milestones.find((ms) => ms.name === claimedMilestoneName)
+    if (!m) continue
 
-    const m = progress.highestMilestone
+    const currentValue = progressMap.get(def.id)?.currentValue ?? m.threshold
+
     badges.push({
       id: `trophy-${def.id}`,
       label: m.name,
-      stat: formatTrophyValue(def, progress.currentValue),
-      detail: `${def.label}: ${formatTrophyValue(def, progress.currentValue)} ${def.unit}`,
+      stat: formatTrophyValue(def, currentValue),
+      detail: `${def.label}: ${formatTrophyValue(def, currentValue)} ${def.unit}`,
       emoji: m.emoji,
       tier: m.tier,
     })
@@ -266,9 +271,9 @@ export function ProfileShowcase(props: {
   const allBadges: ShowcaseBadgeData[] = []
   const seenIds = new Set<string>()
 
-  // 1. From trophy milestones (the exciting ones)
+  // 1. From claimed trophy milestones only
   if (achievements) {
-    for (const b of generateBadgesFromTrophies(achievements)) {
+    for (const b of generateBadgesFromTrophies(achievements, achievements.claimedTrophies ?? [])) {
       if (!seenIds.has(b.id)) {
         seenIds.add(b.id)
         allBadges.push(b)
