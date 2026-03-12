@@ -85,6 +85,7 @@ export const CATEGORY_ORDER: TrophyCategory[] = [
 export type TrophyDefinition = {
   id: string
   label: string // short display name for the trophy line
+  description: string // one-line explainer shown on the card
   category: TrophyCategory
   statKey: string // maps to get-user-achievements field
   unit: string // "mana", "days", "markets", etc.
@@ -100,6 +101,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'trading-volume',
     label: 'Trading Volume',
+    description: 'Total mana wagered across all your trades',
     category: 'trading',
     statKey: 'totalVolumeMana',
     unit: 'mana',
@@ -115,6 +117,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'total-trades',
     label: 'Trades Placed',
+    description: 'Number of individual trades you\'ve made',
     category: 'trading',
     statKey: 'totalTradesCount',
     unit: 'trades',
@@ -130,6 +133,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'prediction-streak',
     label: 'Prediction Streak',
+    description: 'Longest streak of consecutive days placing a bet',
     category: 'trading',
     statKey: 'longestBettingStreak',
     unit: 'days',
@@ -145,6 +149,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'profitable-markets',
     label: 'Profitable Markets',
+    description: 'Markets where you walked away with a profit',
     category: 'trading',
     statKey: 'profitableMarketsCount',
     unit: 'markets',
@@ -161,6 +166,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'markets-created',
     label: 'Markets Created',
+    description: 'Questions you\'ve created for the community to trade on',
     category: 'creating',
     statKey: 'totalMarketsCreated',
     unit: 'markets',
@@ -175,6 +181,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'creator-traders',
     label: 'Creator Popularity',
+    description: 'Unique traders who\'ve bet on your markets',
     category: 'creating',
     statKey: 'creatorTraders',
     unit: 'unique traders',
@@ -191,6 +198,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'comments',
     label: 'Comments',
+    description: 'Comments you\'ve written that received likes',
     category: 'social',
     statKey: 'numberOfComments',
     unit: 'comments',
@@ -205,6 +213,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'referrals',
     label: 'Referrals',
+    description: 'People who joined Manifold through your invite',
     category: 'social',
     statKey: 'totalReferrals',
     unit: 'referrals',
@@ -218,6 +227,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'charity-donated',
     label: 'Charity Donations',
+    description: 'Mana donated to charity through Manifold for Good',
     category: 'social',
     statKey: 'charityDonatedMana',
     unit: 'mana',
@@ -234,6 +244,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'masters-seasons',
     label: 'Masters Seasons',
+    description: 'League seasons where you reached the Masters division',
     category: 'prestige',
     statKey: 'seasonsMasters',
     unit: 'seasons',
@@ -247,11 +258,12 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'account-age',
     label: 'Account Age',
+    description: 'How long you\'ve been a member of Manifold',
     category: 'prestige',
     statKey: 'accountAgeYears',
     unit: 'years',
     milestones: [
-      { name: 'Newcomer', emoji: '\u{1F331}', threshold: 1, tier: 'green' },
+      { name: 'Newcomer', emoji: '\u{1F331}', threshold: 0, tier: 'green' },
       { name: 'Established', emoji: '\u{1F333}', threshold: 2, tier: 'blue' },
       { name: 'Veteran', emoji: '\u{1F396}', threshold: 3, tier: 'purple' },
       { name: 'Elder', emoji: '\u{1F3DB}', threshold: 4, tier: 'gold' },

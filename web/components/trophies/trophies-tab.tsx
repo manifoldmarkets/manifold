@@ -91,12 +91,18 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   return (
     <Col className="gap-6 pt-4">
       {/* Hero summary */}
-      <Row className="items-center gap-2">
-        <span className="text-2xl">{'\u{1F3C6}'}</span>
-        <span className="text-ink-900 text-lg font-bold">
-          {reached} of {total} milestones reached
+      <Col className="gap-1">
+        <Row className="items-center gap-2">
+          <span className="text-2xl">{'\u{1F3C6}'}</span>
+          <span className="text-ink-900 text-lg font-bold">
+            {reached} of {total} milestones reached
+          </span>
+        </Row>
+        <span className="text-ink-500 text-sm">
+          Earn trophies by trading, creating markets, and being active.
+          Claim milestones to pin them on your profile.
         </span>
-      </Row>
+      </Col>
 
       {/* Categories */}
       {CATEGORY_ORDER.map((category) => {

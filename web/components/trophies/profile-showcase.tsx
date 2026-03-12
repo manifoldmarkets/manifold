@@ -298,7 +298,7 @@ export function ProfileShowcase(props: {
   const tierOrder = ['prismatic', 'gold', 'crimson', 'purple', 'blue', 'green', 'gray']
   allBadges.sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier))
 
-  if (allBadges.length === 0) return null
+  if (allBadges.length === 0 && !isOwnProfile) return null
 
   const badgeMap = new Map(allBadges.map((b) => [b.id, b]))
   const validIdSet = new Set(badgeMap.keys())

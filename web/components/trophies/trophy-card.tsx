@@ -123,6 +123,16 @@ export function TrophyCard(props: {
       />
 
       <Col className="gap-3 p-4">
+        {/* Trophy label + description */}
+        <Col className="items-center gap-0.5">
+          <span className="text-ink-900 text-sm font-semibold">
+            {definition.label}
+          </span>
+          <span className="text-ink-500 text-center text-xs">
+            {definition.description}
+          </span>
+        </Col>
+
         {/* Header: arrows + milestone name + emoji */}
         <Row className="items-center justify-between">
           <button
