@@ -89,6 +89,7 @@ export type TrophyDefinition = {
   category: TrophyCategory
   statKey: string // maps to get-user-achievements field
   unit: string // "mana", "days", "markets", etc.
+  formatPrefix?: string // e.g. "$" — shown before the value instead of unit after
   milestones: TrophyMilestone[] // ordered low→high
 }
 
@@ -143,7 +144,10 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
       { name: 'Blaze', emoji: '\u{1F525}', threshold: 60, tier: 'purple' },
       { name: 'Inferno', emoji: '\u{1F30B}', threshold: 100, tier: 'crimson' },
       { name: 'Phoenix', emoji: '\u{1F426}\u{200D}\u{1F525}', threshold: 200, tier: 'gold' },
-      { name: 'Eternal Flame', emoji: '\u{2600}', threshold: 365, tier: 'prismatic' },
+      { name: 'Eternal Flame', emoji: '\u{2600}', threshold: 365, tier: 'gold' },
+      { name: 'Undying', emoji: '\u{1F9BF}', threshold: 700, tier: 'prismatic' },
+      { name: 'Timeless', emoji: '\u{231B}', threshold: 1_065, tier: 'prismatic' },
+      { name: 'Immortal', emoji: '\u{1F3DB}', threshold: 1_500, tier: 'prismatic' },
     ],
   },
   {
@@ -155,10 +159,13 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'markets',
     milestones: [
       { name: 'Lucky', emoji: '\u{1F340}', threshold: 10, tier: 'green' },
-      { name: 'Sharp', emoji: '\u{1F52A}', threshold: 50, tier: 'blue' },
-      { name: 'Oracle', emoji: '\u{1F52E}', threshold: 200, tier: 'purple' },
-      { name: 'Clairvoyant', emoji: '\u{1F441}', threshold: 500, tier: 'gold' },
-      { name: 'Omniscient', emoji: '\u{1F31F}', threshold: 1_000, tier: 'prismatic' },
+      { name: 'Savvy', emoji: '\u{1F9E0}', threshold: 25, tier: 'green' },
+      { name: 'Sharp', emoji: '\u{1F52A}', threshold: 75, tier: 'blue' },
+      { name: 'Tactician', emoji: '\u{265F}', threshold: 150, tier: 'blue' },
+      { name: 'Oracle', emoji: '\u{1F52E}', threshold: 300, tier: 'purple' },
+      { name: 'Sage', emoji: '\u{1F9D9}', threshold: 500, tier: 'crimson' },
+      { name: 'Clairvoyant', emoji: '\u{1F441}', threshold: 800, tier: 'gold' },
+      { name: 'Omniscient', emoji: '\u{1F31F}', threshold: 1_500, tier: 'prismatic' },
     ],
   },
 
@@ -172,10 +179,14 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'markets',
     milestones: [
       { name: 'Apprentice', emoji: '\u{1F528}', threshold: 5, tier: 'green' },
-      { name: 'Builder', emoji: '\u{1F3D7}', threshold: 25, tier: 'blue' },
-      { name: 'Architect', emoji: '\u{1F3DB}', threshold: 100, tier: 'purple' },
-      { name: 'City Planner', emoji: '\u{1F306}', threshold: 500, tier: 'gold' },
-      { name: 'World Builder', emoji: '\u{1F30D}', threshold: 1_000, tier: 'prismatic' },
+      { name: 'Journeyman', emoji: '\u{1F6E0}', threshold: 15, tier: 'green' },
+      { name: 'Builder', emoji: '\u{1F3D7}', threshold: 50, tier: 'blue' },
+      { name: 'Architect', emoji: '\u{1F3DB}', threshold: 150, tier: 'blue' },
+      { name: 'City Planner', emoji: '\u{1F306}', threshold: 400, tier: 'purple' },
+      { name: 'Visionary', emoji: '\u{1F52D}', threshold: 800, tier: 'crimson' },
+      { name: 'World Builder', emoji: '\u{1F30D}', threshold: 1_500, tier: 'gold' },
+      { name: 'Titan of Questions', emoji: '\u{1F3D4}', threshold: 3_000, tier: 'gold' },
+      { name: 'Infinite Curiosity', emoji: '\u{267E}', threshold: 5_000, tier: 'prismatic' },
     ],
   },
   {
@@ -187,10 +198,16 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'unique traders',
     milestones: [
       { name: 'Unknown', emoji: '\u{1F464}', threshold: 50, tier: 'green' },
-      { name: 'Notable', emoji: '\u{1F465}', threshold: 250, tier: 'blue' },
-      { name: 'Famous', emoji: '\u{2B50}', threshold: 1_000, tier: 'purple' },
-      { name: 'Legendary', emoji: '\u{1F31F}', threshold: 5_000, tier: 'gold' },
-      { name: 'Celebrity', emoji: '\u{1F451}', threshold: 10_000, tier: 'prismatic' },
+      { name: 'Recognized', emoji: '\u{1F44B}', threshold: 150, tier: 'green' },
+      { name: 'Notable', emoji: '\u{1F465}', threshold: 500, tier: 'blue' },
+      { name: 'Popular', emoji: '\u{1F4E2}', threshold: 1_500, tier: 'purple' },
+      { name: 'Famous', emoji: '\u{2B50}', threshold: 3_000, tier: 'crimson' },
+      { name: 'Legendary', emoji: '\u{1F31F}', threshold: 6_000, tier: 'gold' },
+      { name: 'Icon', emoji: '\u{1F3AC}', threshold: 12_000, tier: 'gold' },
+      { name: 'Celebrity', emoji: '\u{1F451}', threshold: 25_000, tier: 'gold' },
+      { name: 'Superstar', emoji: '\u{1F4AB}', threshold: 50_000, tier: 'prismatic' },
+      { name: 'Phenomenon', emoji: '\u{1F320}', threshold: 75_000, tier: 'prismatic' },
+      { name: 'Transcendent', emoji: '\u{1F30C}', threshold: 100_000, tier: 'prismatic' },
     ],
   },
 
@@ -204,10 +221,13 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'comments',
     milestones: [
       { name: 'Chatterbox', emoji: '\u{1F4AC}', threshold: 50, tier: 'green' },
-      { name: 'Debater', emoji: '\u{1F5E3}', threshold: 250, tier: 'blue' },
-      { name: 'Pundit', emoji: '\u{1F4E3}', threshold: 1_000, tier: 'purple' },
+      { name: 'Conversationalist', emoji: '\u{1F4AD}', threshold: 150, tier: 'green' },
+      { name: 'Debater', emoji: '\u{1F5E3}', threshold: 400, tier: 'blue' },
+      { name: 'Commentator', emoji: '\u{1F4DD}', threshold: 1_000, tier: 'purple' },
+      { name: 'Pundit', emoji: '\u{1F4E3}', threshold: 2_500, tier: 'crimson' },
       { name: 'Influencer', emoji: '\u{1F4E2}', threshold: 5_000, tier: 'gold' },
-      { name: 'Voice of the People', emoji: '\u{1F3A4}', threshold: 10_000, tier: 'prismatic' },
+      { name: 'Thought Leader', emoji: '\u{1F4A1}', threshold: 10_000, tier: 'gold' },
+      { name: 'Voice of the People', emoji: '\u{1F3A4}', threshold: 20_000, tier: 'prismatic' },
     ],
   },
   {
@@ -219,24 +239,30 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'referrals',
     milestones: [
       { name: 'Networker', emoji: '\u{1F91D}', threshold: 5, tier: 'green' },
-      { name: 'Recruiter', emoji: '\u{1F4E8}', threshold: 25, tier: 'blue' },
-      { name: 'Ambassador', emoji: '\u{1F3C5}', threshold: 100, tier: 'purple' },
+      { name: 'Connector', emoji: '\u{1F517}', threshold: 15, tier: 'blue' },
+      { name: 'Recruiter', emoji: '\u{1F4E8}', threshold: 40, tier: 'purple' },
+      { name: 'Ambassador', emoji: '\u{1F3C5}', threshold: 100, tier: 'crimson' },
       { name: 'Evangelist', emoji: '\u{1F4E1}', threshold: 250, tier: 'gold' },
+      { name: 'Pied Piper', emoji: '\u{1F3B5}', threshold: 500, tier: 'gold' },
+      { name: 'Kingmaker', emoji: '\u{1F451}', threshold: 1_000, tier: 'prismatic' },
+      { name: 'Movement Leader', emoji: '\u{1F3C1}', threshold: 2_500, tier: 'prismatic' },
+      { name: 'Founding Force', emoji: '\u{26A1}', threshold: 5_000, tier: 'prismatic' },
     ],
   },
   {
     id: 'charity-donated',
-    label: 'Charity Donations',
-    description: 'Mana donated to charity through Manifold for Good',
+    label: 'Legacy Charity',
+    description: 'Dollars donated through the original Manifold for Charity program',
     category: 'social',
     statKey: 'charityDonatedMana',
-    unit: 'mana',
+    unit: 'donated',
+    formatPrefix: '$',
     milestones: [
-      { name: 'Donor', emoji: '\u{1F49A}', threshold: 1_000, tier: 'green' },
-      { name: 'Patron', emoji: '\u{1F49C}', threshold: 10_000, tier: 'blue' },
-      { name: 'Philanthropist', emoji: '\u{2764}', threshold: 50_000, tier: 'purple' },
-      { name: 'Benefactor', emoji: '\u{1F496}', threshold: 250_000, tier: 'gold' },
-      { name: 'Saint', emoji: '\u{1F607}', threshold: 1_000_000, tier: 'prismatic' },
+      { name: 'Donor', emoji: '\u{1F49A}', threshold: 10, tier: 'green' },
+      { name: 'Patron', emoji: '\u{1F49C}', threshold: 50, tier: 'blue' },
+      { name: 'Philanthropist', emoji: '\u{2764}', threshold: 100, tier: 'purple' },
+      { name: 'Benefactor', emoji: '\u{1F496}', threshold: 1_000, tier: 'gold' },
+      { name: 'Saint', emoji: '\u{1F607}', threshold: 2_500, tier: 'prismatic' },
     ],
   },
 
@@ -264,10 +290,10 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'years',
     milestones: [
       { name: 'Newcomer', emoji: '\u{1F331}', threshold: 0, tier: 'green' },
-      { name: 'Established', emoji: '\u{1F333}', threshold: 2, tier: 'blue' },
-      { name: 'Veteran', emoji: '\u{1F396}', threshold: 3, tier: 'purple' },
-      { name: 'Elder', emoji: '\u{1F474}', threshold: 4, tier: 'gold' },
-      { name: 'Founding Member', emoji: '\u{1F3DB}', threshold: 5, tier: 'prismatic' },
+      { name: 'Established', emoji: '\u{1F333}', threshold: 1, tier: 'blue' },
+      { name: 'Veteran', emoji: '\u{1F396}', threshold: 2, tier: 'purple' },
+      { name: 'Elder', emoji: '\u{1F474}', threshold: 3, tier: 'gold' },
+      { name: 'Founding Member', emoji: '\u{1F3DB}', threshold: 4, tier: 'prismatic' },
     ],
   },
 ]
@@ -359,13 +385,19 @@ export function getTotalPossibleMilestones(): number {
 
 /** Format a value for display based on trophy unit */
 export function formatTrophyValue(def: TrophyDefinition, value: number): string {
+  const prefix = def.formatPrefix ?? ''
   if (def.unit === 'mana') {
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-    if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`
-    return value.toLocaleString()
+    if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`
+    if (value >= 1_000) return `${prefix}${(value / 1_000).toFixed(0)}K`
+    return `${prefix}${value.toLocaleString()}`
   }
   if (def.unit === 'years') {
     return `${value.toFixed(1)}yr`
+  }
+  if (prefix) {
+    if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`
+    if (value >= 1_000) return `${prefix}${(value / 1_000).toFixed(0)}K`
+    return `${prefix}${value.toLocaleString()}`
   }
   return value.toLocaleString()
 }
