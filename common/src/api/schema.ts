@@ -2498,6 +2498,17 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'unclaim-trophy': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        trophyId: z.string(),
+      })
+      .strict(),
+  },
   'get-user-calibration': {
     method: 'GET',
     visibility: 'public',

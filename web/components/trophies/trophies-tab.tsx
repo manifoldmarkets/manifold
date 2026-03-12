@@ -4,7 +4,8 @@ import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
 import { api } from 'web/lib/api/api'
-import { ENV } from 'common/envs/constants'
+import { ENV, isAdminId } from 'common/envs/constants'
+import { useUser } from 'web/hooks/use-user'
 import {
   TROPHY_DEFINITIONS,
   CATEGORY_ORDER,
@@ -48,6 +49,9 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
     { userId }
   )
 
+  const currentUser = useUser()
+  const isAdmin = currentUser ? isAdminId(currentUser.id) : false
+
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [devOverrides, setDevOverrides] = useState<Record<string, number>>({})
   const [showDevPanel, setShowDevPanel] = useState(false)
@@ -62,6 +66,15 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
       console.error('Failed to claim trophy:', e)
     } finally {
       setClaimingId(null)
+    }
+  }
+
+  const handleUnclaim = async (trophyId: string) => {
+    try {
+      await api('unclaim-trophy', { trophyId })
+      refresh()
+    } catch (e) {
+      console.error('Failed to unclaim trophy:', e)
     }
   }
 
@@ -129,6 +142,26 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
           </Col>
         )
       })}
+
+      {/* Admin tools: unclaim trophies */}
+      {isAdmin && isOwnProfile && achievements.claimedTrophies.length > 0 && (
+        <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
+          <span className="text-ink-500 text-xs font-mono">
+            [ADMIN] Unclaim trophies
+          </span>
+          <Row className="flex-wrap gap-2">
+            {achievements.claimedTrophies.map((c) => (
+              <button
+                key={c.trophyId}
+                className="rounded bg-red-100 px-2 py-1 text-xs text-red-600 hover:bg-red-200"
+                onClick={() => handleUnclaim(c.trophyId)}
+              >
+                {c.trophyId}: {c.milestone}
+              </button>
+            ))}
+          </Row>
+        </Col>
+      )}
 
       {/* Dev-only stat inflator */}
       {isDev && isOwnProfile && (
