@@ -1,10 +1,9 @@
 import clsx from 'clsx'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 import { DIVISION_NAMES } from 'common/leagues'
 import {
   TROPHY_DEFINITIONS,
-  TROPHY_TIER_STYLES,
   computeAllTrophyProgress,
   formatTrophyValue,
 } from 'common/trophies'
@@ -13,7 +12,7 @@ import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { api } from 'web/lib/api/api'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -194,30 +193,73 @@ export function ProfileShowcase(props: {
 }) {
   const { userId, isOwnProfile } = props
 
-  // Try to fetch achievements (may fail if MVs don't exist locally)
+  // Fetch achievements (includes showcasePins from server)
   const { data: achievements } = useAPIGetter('get-user-achievements', {
     userId,
   })
   const league = useLeagueInfo(userId)
 
-  // null = "never configured" (auto-show top badges), [] = "user cleared all"
-  const [pinnedIds, setPinnedIds] = usePersistentLocalState<string[] | null>(
-    null,
-    `showcase-pins-${userId}`
+  // Local optimistic state for pins — undefined = not yet loaded
+  const [localPins, setLocalPins] = useState<string[] | null | undefined>(
+    undefined
   )
+  // Server returns null (no row), [] (explicitly cleared), or string[] (has pins)
+  const serverPins = achievements ? achievements.showcasePins : undefined
+  const initializedRef = useRef(false)
+
+  // Sync server pins to local state once on load
+  useEffect(() => {
+    if (serverPins !== undefined && !initializedRef.current) {
+      initializedRef.current = true
+      setLocalPins(serverPins)
+
+      // One-time migration: if server has no pins (null) but localStorage does, push to server
+      if (isOwnProfile && serverPins === null) {
+        try {
+          const stored = localStorage.getItem(`showcase-pins-${userId}`)
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setLocalPins(parsed.slice(0, MAX_PINNED))
+              api('set-showcase-pins', { pins: parsed.slice(0, MAX_PINNED) })
+              localStorage.removeItem(`showcase-pins-${userId}`)
+            }
+          }
+        } catch {
+          // Ignore localStorage errors
+        }
+      }
+    }
+  }, [serverPins, isOwnProfile, userId])
+
   const [showPicker, setShowPicker] = useState(false)
+
+  const savePins = useCallback(
+    (newPins: string[]) => {
+      setLocalPins(newPins)
+      api('set-showcase-pins', { pins: newPins })
+    },
+    []
+  )
 
   const togglePin = useCallback(
     (id: string, validIds: Set<string>) => {
-      setPinnedIds((prev: string[] | null) => {
-        // Filter out stale IDs from old badge system
-        const current = (prev ?? []).filter((x: string) => validIds.has(x))
-        if (current.includes(id)) return current.filter((x: string) => x !== id)
-        if (current.length >= MAX_PINNED) return current
-        return [...current, id]
+      setLocalPins((prev) => {
+        const current = (prev ?? []).filter((x) => validIds.has(x))
+        let next: string[]
+        if (current.includes(id)) {
+          next = current.filter((x) => x !== id)
+        } else if (current.length >= MAX_PINNED) {
+          return current
+        } else {
+          next = [...current, id]
+        }
+        // Fire-and-forget save
+        api('set-showcase-pins', { pins: next })
+        return next
       })
     },
-    [setPinnedIds]
+    []
   )
 
   // Build badges from whatever data sources are available
@@ -256,11 +298,15 @@ export function ProfileShowcase(props: {
   const badgeMap = new Map(allBadges.map((b) => [b.id, b]))
   const validIdSet = new Set(badgeMap.keys())
 
-  // null = never configured → auto-show top 2; [] = user cleared all → show nothing
+  // Use local optimistic pins, fall back to server, fall back to auto-show top 2
+  // null = server has no row (never configured) → auto-show top 2
+  // [] = user explicitly cleared all pins → show nothing
+  // undefined = not loaded yet → auto-show top 2
+  const pins = localPins !== undefined ? localPins : serverPins
   const effectivePins =
-    pinnedIds === null
+    pins === null || pins === undefined
       ? allBadges.slice(0, 2).map((b) => b.id)
-      : pinnedIds.filter((id) => badgeMap.has(id))
+      : pins.filter((id) => badgeMap.has(id))
 
   const pinnedBadges = effectivePins
     .map((id) => badgeMap.get(id))

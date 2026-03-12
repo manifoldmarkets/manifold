@@ -451,7 +451,7 @@ function UserProfile(props: {
                 title: 'Trophies',
                 prerender: true,
                 stackedTabIcon: <TrophyIcon className="h-5" />,
-                content: <TrophiesTab userId={user.id} />,
+                content: <TrophiesTab userId={user.id} isOwnProfile={!!isCurrentUser} />,
               },
               {
                 title: 'Achievements',

@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
+import { api } from 'web/lib/api/api'
+import { ENV } from 'common/envs/constants'
 import {
   TROPHY_DEFINITIONS,
   CATEGORY_ORDER,
@@ -11,12 +14,56 @@ import {
   getTotalPossibleMilestones,
 } from 'common/trophies'
 
-export function TrophiesTab(props: { userId: string }) {
-  const { userId } = props
+// Dev-only stat overrides for testing trophy thresholds
+const DEV_PRESETS: Record<string, Record<string, number>> = {
+  'Whale trader': {
+    totalVolumeMana: 60_000_000,
+    totalTradesCount: 30_000,
+    longestBettingStreak: 250,
+    profitableMarketsCount: 600,
+  },
+  'Prolific creator': {
+    totalMarketsCreated: 600,
+    creatorTraders: 6_000,
+    numberOfComments: 6_000,
+  },
+  'Social butterfly': {
+    numberOfComments: 12_000,
+    totalReferrals: 150,
+    charityDonatedMana: 100_000,
+  },
+  'Max everything': Object.fromEntries(
+    TROPHY_DEFINITIONS.map((d) => [
+      d.statKey,
+      d.milestones[d.milestones.length - 1].threshold * 1.1,
+    ])
+  ),
+}
 
-  const { data: achievements } = useAPIGetter('get-user-achievements', {
-    userId,
-  })
+export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
+  const { userId, isOwnProfile } = props
+
+  const { data: achievements, refresh } = useAPIGetter(
+    'get-user-achievements',
+    { userId }
+  )
+
+  const [claimingId, setClaimingId] = useState<string | null>(null)
+  const [devOverrides, setDevOverrides] = useState<Record<string, number>>({})
+  const [showDevPanel, setShowDevPanel] = useState(false)
+  const isDev = ENV !== 'PROD'
+
+  const handleClaim = async (trophyId: string) => {
+    setClaimingId(trophyId)
+    try {
+      await api('claim-trophy', { trophyId })
+      refresh()
+    } catch (e) {
+      console.error('Failed to claim trophy:', e)
+    } finally {
+      setClaimingId(null)
+    }
+  }
 
   if (!achievements) {
     return (
@@ -26,7 +73,10 @@ export function TrophiesTab(props: { userId: string }) {
     )
   }
 
-  const progressList = computeAllTrophyProgress(achievements)
+  // Merge real achievements with dev overrides for local testing
+  const effectiveStats = { ...achievements, ...devOverrides }
+
+  const progressList = computeAllTrophyProgress(effectiveStats)
   const reached = countReachedMilestones(progressList)
   const total = getTotalPossibleMilestones()
 
@@ -62,10 +112,55 @@ export function TrophiesTab(props: { userId: string }) {
               {CATEGORY_LABELS[category]}
               <span className="bg-ink-200 h-px flex-1" />
             </div>
-            <TrophyGrid progressList={catProgress} definitions={defs} />
+            <TrophyGrid
+              progressList={catProgress}
+              definitions={defs}
+              claimedTrophies={achievements.claimedTrophies}
+              isOwnProfile={isOwnProfile}
+              onClaim={handleClaim}
+              claimingId={claimingId}
+            />
           </Col>
         )
       })}
+
+      {/* Dev-only stat inflator */}
+      {isDev && isOwnProfile && (
+        <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
+          <button
+            className="text-ink-500 text-xs font-mono hover:underline"
+            onClick={() => setShowDevPanel(!showDevPanel)}
+          >
+            [DEV] Trophy stat overrides {showDevPanel ? '▲' : '▼'}
+          </button>
+          {showDevPanel && (
+            <Col className="gap-2">
+              <Row className="flex-wrap gap-2">
+                {Object.keys(DEV_PRESETS).map((preset) => (
+                  <button
+                    key={preset}
+                    className="bg-ink-100 hover:bg-ink-200 rounded px-2 py-1 text-xs"
+                    onClick={() => setDevOverrides(DEV_PRESETS[preset])}
+                  >
+                    {preset}
+                  </button>
+                ))}
+                <button
+                  className="rounded bg-red-100 px-2 py-1 text-xs text-red-600 hover:bg-red-200"
+                  onClick={() => setDevOverrides({})}
+                >
+                  Reset
+                </button>
+              </Row>
+              {Object.keys(devOverrides).length > 0 && (
+                <div className="text-ink-500 font-mono text-[10px]">
+                  Overrides: {JSON.stringify(devOverrides)}
+                </div>
+              )}
+            </Col>
+          )}
+        </Col>
+      )}
     </Col>
   )
 }

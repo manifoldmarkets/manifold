@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import {
+  CheckCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/solid'
@@ -13,6 +14,7 @@ import {
   type TrophyMilestone,
   type ComputedTrophyProgress,
   TROPHY_TIER_STYLES,
+  getHighestMilestone,
   getNextMilestone,
   getProgressFraction,
   formatTrophyValue,
@@ -66,10 +68,23 @@ function MilestoneDots(props: {
 export function TrophyCard(props: {
   definition: TrophyDefinition
   progress: ComputedTrophyProgress
+  claimedMilestone?: string // milestone name from server
+  isOwnProfile?: boolean
+  onClaim?: (trophyId: string) => void
+  claiming?: boolean
 }) {
-  const { definition, progress } = props
+  const { definition, progress, claimedMilestone, isOwnProfile, onClaim, claiming } = props
   const { milestones } = definition
   const { currentValue, highestMilestone } = progress
+
+  // Determine if there's a new milestone to claim
+  const claimedIdx = claimedMilestone
+    ? milestones.findIndex((m) => m.name === claimedMilestone)
+    : -1
+  const canClaim =
+    isOwnProfile &&
+    highestMilestone !== null &&
+    (claimedIdx < 0 || milestones.indexOf(highestMilestone) > claimedIdx)
 
   const highestIdx = highestMilestone
     ? milestones.indexOf(highestMilestone)
@@ -222,6 +237,29 @@ export function TrophyCard(props: {
               </span>
             </>
           )}
+
+          {/* Claim button or claimed indicator */}
+          {canClaim && onClaim && (
+            <button
+              className={clsx(
+                'mt-1 w-full rounded-lg py-1.5 text-sm font-semibold text-white transition-all',
+                claiming
+                  ? 'cursor-wait bg-gradient-to-r opacity-75'
+                  : 'bg-gradient-to-r hover:brightness-110',
+                style.gradient
+              )}
+              onClick={() => onClaim(definition.id)}
+              disabled={claiming}
+            >
+              {claiming ? 'Claiming...' : `Claim ${highestMilestone!.name}`}
+            </button>
+          )}
+          {claimedMilestone && !canClaim && viewingIdx <= claimedIdx && (
+            <Row className="mt-1 items-center justify-center gap-1 text-xs">
+              <CheckCircleIcon className={clsx('h-4 w-4', style.textColor)} />
+              <span className={clsx('font-medium', style.textColor)}>Claimed</span>
+            </Row>
+          )}
         </Col>
       </Col>
     </Col>
@@ -235,16 +273,33 @@ export function TrophyCard(props: {
 export function TrophyGrid(props: {
   progressList: ComputedTrophyProgress[]
   definitions: TrophyDefinition[]
+  claimedTrophies?: { trophyId: string; milestone: string }[]
+  isOwnProfile?: boolean
+  onClaim?: (trophyId: string) => void
+  claimingId?: string | null
 }) {
-  const { progressList, definitions } = props
+  const { progressList, definitions, claimedTrophies, isOwnProfile, onClaim, claimingId } = props
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
+  const claimedMap = new Map(
+    (claimedTrophies ?? []).map((c) => [c.trophyId, c.milestone])
+  )
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {definitions.map((def) => {
         const progress = progressMap.get(def.id)
         if (!progress) return null
-        return <TrophyCard key={def.id} definition={def} progress={progress} />
+        return (
+          <TrophyCard
+            key={def.id}
+            definition={def}
+            progress={progress}
+            claimedMilestone={claimedMap.get(def.id)}
+            isOwnProfile={isOwnProfile}
+            onClaim={onClaim}
+            claiming={claimingId === def.id}
+          />
+        )
       })}
     </div>
   )
