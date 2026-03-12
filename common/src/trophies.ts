@@ -266,7 +266,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
       { name: 'Newcomer', emoji: '\u{1F331}', threshold: 0, tier: 'green' },
       { name: 'Established', emoji: '\u{1F333}', threshold: 2, tier: 'blue' },
       { name: 'Veteran', emoji: '\u{1F396}', threshold: 3, tier: 'purple' },
-      { name: 'Elder', emoji: '\u{1F3DB}', threshold: 4, tier: 'gold' },
+      { name: 'Elder', emoji: '\u{1F474}', threshold: 4, tier: 'gold' },
       { name: 'Founding Member', emoji: '\u{1F3DB}', threshold: 5, tier: 'prismatic' },
     ],
   },

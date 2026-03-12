@@ -68,23 +68,19 @@ function MilestoneDots(props: {
 export function TrophyCard(props: {
   definition: TrophyDefinition
   progress: ComputedTrophyProgress
-  claimedMilestone?: string // milestone name from server
+  claimedMilestone?: string // highest claimed milestone name from server
   isOwnProfile?: boolean
-  onClaim?: (trophyId: string) => void
+  onClaim?: (trophyId: string, milestone: string) => void
   claiming?: boolean
 }) {
   const { definition, progress, claimedMilestone, isOwnProfile, onClaim, claiming } = props
   const { milestones } = definition
   const { currentValue, highestMilestone } = progress
 
-  // Determine if there's a new milestone to claim
+  // Claimed index: all milestones at or below this index are considered claimed
   const claimedIdx = claimedMilestone
     ? milestones.findIndex((m) => m.name === claimedMilestone)
     : -1
-  const canClaim =
-    isOwnProfile &&
-    highestMilestone !== null &&
-    (claimedIdx < 0 || milestones.indexOf(highestMilestone) > claimedIdx)
 
   const highestIdx = highestMilestone
     ? milestones.indexOf(highestMilestone)
@@ -248,28 +244,31 @@ export function TrophyCard(props: {
             </>
           )}
 
-          {/* Claim button or claimed indicator */}
-          {canClaim && onClaim && (
-            <button
-              className={clsx(
-                'mt-1 w-full rounded-lg py-1.5 text-sm font-semibold text-white transition-all',
-                claiming
-                  ? 'cursor-wait bg-gradient-to-r opacity-75'
-                  : 'bg-gradient-to-r hover:brightness-110',
-                style.gradient
-              )}
-              onClick={() => onClaim(definition.id)}
-              disabled={claiming}
-            >
-              {claiming ? 'Claiming...' : `Claim ${highestMilestone!.name}`}
-            </button>
-          )}
-          {claimedMilestone && !canClaim && viewingIdx <= claimedIdx && (
+          {/* Per-tier claim button or claimed indicator */}
+          {isReached && viewingIdx <= claimedIdx && (
             <Row className="mt-1 items-center justify-center gap-1 text-xs">
               <CheckCircleIcon className={clsx('h-4 w-4', style.textColor)} />
               <span className={clsx('font-medium', style.textColor)}>Claimed</span>
             </Row>
           )}
+          {isOwnProfile &&
+            isReached &&
+            viewingIdx > claimedIdx &&
+            onClaim && (
+              <button
+                className={clsx(
+                  'mt-1 w-full rounded-lg py-1.5 text-sm font-semibold text-white transition-all',
+                  claiming
+                    ? 'cursor-wait bg-gradient-to-r opacity-75'
+                    : 'bg-gradient-to-r hover:brightness-110',
+                  style.gradient
+                )}
+                onClick={() => onClaim(definition.id, viewing.name)}
+                disabled={claiming}
+              >
+                {claiming ? 'Claiming...' : `Claim ${viewing.name}`}
+              </button>
+            )}
         </Col>
       </Col>
     </Col>
@@ -285,7 +284,7 @@ export function TrophyGrid(props: {
   definitions: TrophyDefinition[]
   claimedTrophies?: { trophyId: string; milestone: string }[]
   isOwnProfile?: boolean
-  onClaim?: (trophyId: string) => void
+  onClaim?: (trophyId: string, milestone: string) => void
   claimingId?: string | null
 }) {
   const { progressList, definitions, claimedTrophies, isOwnProfile, onClaim, claimingId } = props

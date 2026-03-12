@@ -2495,6 +2495,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         trophyId: z.string(),
+        milestone: z.string(),
       })
       .strict(),
   },

@@ -57,10 +57,10 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const [showDevPanel, setShowDevPanel] = useState(false)
   const isDev = ENV !== 'PROD'
 
-  const handleClaim = async (trophyId: string) => {
+  const handleClaim = async (trophyId: string, milestone: string) => {
     setClaimingId(trophyId)
     try {
-      await api('claim-trophy', { trophyId })
+      await api('claim-trophy', { trophyId, milestone })
       refresh()
     } catch (e) {
       console.error('Failed to claim trophy:', e)
