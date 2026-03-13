@@ -20,9 +20,119 @@ import {
   CATEGORY_LABELS,
   computeAllTrophyProgress,
   countReachedMilestones,
+  countClaimedMilestones,
   getTotalPossibleMilestones,
   formatTrophyValue,
 } from 'common/trophies'
+
+// ---------------------------------------------------------------------------
+// Showcase slot unlock tracker
+// ---------------------------------------------------------------------------
+
+type SlotDef =
+  | { type: 'free'; requiredClaims: number }
+  | { type: 'purchase'; price: number }
+
+const SHOWCASE_SLOTS: SlotDef[] = [
+  { type: 'free', requiredClaims: 0 },
+  { type: 'free', requiredClaims: 25 },
+  { type: 'free', requiredClaims: 50 },
+  // Future: purchasable slots
+  // { type: 'purchase', price: 2_500 },
+  // { type: 'purchase', price: 5_000 },
+]
+
+function ShowcaseSlotTracker(props: {
+  claimedCount: number
+  reachedCount: number // trophies earned by stats but not yet claimed
+}) {
+  const { claimedCount, reachedCount } = props
+  const max = SHOWCASE_SLOTS[SHOWCASE_SLOTS.length - 1]
+  const maxClaims = max.type === 'free' ? max.requiredClaims : 50
+  const claimedPct = Math.min(claimedCount / maxClaims, 1) * 100
+  const ghostPct = Math.min(reachedCount / maxClaims, 1) * 100
+
+  const nextSlot = SHOWCASE_SLOTS.find(
+    (s) => s.type === 'free' && claimedCount < s.requiredClaims
+  )
+  const unlockedCount = SHOWCASE_SLOTS.filter(
+    (s) => s.type === 'free' && claimedCount >= s.requiredClaims
+  ).length
+  const hintText =
+    nextSlot && nextSlot.type === 'free'
+      ? `${nextSlot.requiredClaims - claimedCount} more to unlock pin ${unlockedCount + 1}`
+      : null
+
+  return (
+    <Col className="gap-2.5 rounded-xl border border-amber-400/40 bg-amber-50/50 px-4 py-3 dark:border-amber-500/20 dark:bg-amber-950/10">
+      <Row className="items-center gap-2">
+        <span className="text-base">{'\u{1F3C6}'}</span>
+        <Col className="min-w-0 flex-1 gap-0.5">
+          <span className="text-ink-900 text-sm font-semibold">
+            {unlockedCount} / {SHOWCASE_SLOTS.length} showcase pins
+          </span>
+          {hintText ? (
+            <span className="text-ink-500 text-xs">{hintText}</span>
+          ) : (
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              All pins unlocked!
+            </span>
+          )}
+        </Col>
+      </Row>
+
+      {/* Progress bar with ghost + slot markers */}
+      <div className="relative">
+        <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-amber-300/60 bg-amber-100/30 dark:border-amber-700/40 dark:bg-amber-900/30">
+          {/* Ghost bar: reached but unclaimed trophies */}
+          {ghostPct > claimedPct && (
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-300/60 to-yellow-400/50 dark:from-amber-600/30 dark:to-yellow-600/30"
+              style={{ width: `${ghostPct}%` }}
+            />
+          )}
+          {/* Solid bar: claimed trophies */}
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 transition-all"
+            style={{ width: `${claimedPct}%` }}
+          />
+        </div>
+
+        {/* Slot markers below the bar */}
+        <Row className="mt-1.5 justify-between">
+          {SHOWCASE_SLOTS.map((slot, i) => {
+            if (slot.type !== 'free') return null
+            const unlocked = claimedCount >= slot.requiredClaims
+            return (
+              <Row key={i} className="items-center gap-1">
+                <div
+                  className={clsx(
+                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold',
+                    unlocked
+                      ? 'bg-amber-500 text-white shadow-sm dark:bg-amber-400 dark:text-amber-950'
+                      : 'border border-amber-300/60 bg-amber-100/50 text-amber-400 dark:border-amber-600/40 dark:bg-amber-900/30 dark:text-amber-600'
+                  )}
+                >
+                  {i + 1}
+                </div>
+                <span
+                  className={clsx(
+                    'text-[11px] leading-none',
+                    unlocked
+                      ? 'font-medium text-amber-700 dark:text-amber-400'
+                      : 'text-ink-400'
+                  )}
+                >
+                  {unlocked ? 'Unlocked' : `${slot.requiredClaims}`}
+                </span>
+              </Row>
+            )
+          })}
+        </Row>
+      </div>
+    </Col>
+  )
+}
 
 export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const { userId, isOwnProfile } = props
@@ -52,7 +162,9 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
         setData({ ...achievements, claimedTrophies: updatedClaims } as any)
       }
       setJustClaimed(trophyId)
-      refresh() // also refresh in background for full consistency
+      // Delay refresh so the server cache (1s TTL) expires before we re-fetch,
+      // otherwise stale data overwrites the optimistic setData above
+      setTimeout(() => refresh(), 2000)
     } catch (e) {
       console.error('Failed to claim trophy:', e)
     } finally {
@@ -80,6 +192,8 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const progressList = computeAllTrophyProgress(achievements)
   const reached = countReachedMilestones(progressList)
   const total = getTotalPossibleMilestones()
+  const claimedCount = countClaimedMilestones(achievements.claimedTrophies ?? [])
+  const unclaimedCount = reached - claimedCount
 
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
 
@@ -103,19 +217,29 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
       <Col className="gap-1">
         <Row className="items-center gap-2">
           <span className="text-2xl">{'\u{1F3C6}'}</span>
-          <span className="text-ink-900 text-lg font-bold">
-            {isOwnProfile
-              ? `${reached} of ${total} milestones reached`
-              : `${(achievements.claimedTrophies ?? []).length} milestones claimed`}
-          </span>
+          <Col className="gap-0">
+            <span className="text-ink-900 text-lg font-bold">
+              {isOwnProfile
+                ? `${reached} of ${total} trophies earned`
+                : `${claimedCount} trophies claimed`}
+            </span>
+            {isOwnProfile && unclaimedCount > 0 && (
+              <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                {unclaimedCount} unclaimed
+              </span>
+            )}
+          </Col>
         </Row>
         {isOwnProfile && (
           <span className="text-ink-500 text-sm">
             Earn trophies by trading, creating markets, and being active.
-            Claim milestones to pin them on your profile.
+            Claim trophies to pin them to your profile showcase.
           </span>
         )}
       </Col>
+
+      {/* Showcase slot unlock tracker — own profile only */}
+      {isOwnProfile && <ShowcaseSlotTracker claimedCount={claimedCount} reachedCount={reached} />}
 
       {/* Categories */}
       {CATEGORY_ORDER.map((category) => {

@@ -19,39 +19,40 @@ export const TROPHY_TIER_STYLES: Record<
 > = {
   green: {
     gradient: 'from-emerald-400 to-emerald-600',
-    textColor: 'text-emerald-600',
+    textColor: 'text-emerald-600 dark:text-emerald-400',
     label: 'Green',
-    bgTint: 'bg-emerald-50 dark:bg-emerald-950/20',
+    bgTint: 'bg-emerald-50 dark:bg-emerald-900/40',
   },
   blue: {
     gradient: 'from-sky-400 to-blue-600',
-    textColor: 'text-blue-600',
+    textColor: 'text-blue-600 dark:text-blue-400',
     label: 'Blue',
-    bgTint: 'bg-blue-50 dark:bg-blue-950/20',
+    bgTint: 'bg-blue-50 dark:bg-blue-900/40',
   },
   purple: {
     gradient: 'from-violet-400 to-purple-600',
-    textColor: 'text-violet-600',
+    textColor: 'text-violet-600 dark:text-violet-400',
     label: 'Purple',
-    bgTint: 'bg-violet-50 dark:bg-violet-950/20',
+    bgTint: 'bg-violet-50 dark:bg-violet-900/40',
   },
   crimson: {
     gradient: 'from-red-500 to-rose-700',
-    textColor: 'text-red-600',
+    textColor: 'text-red-600 dark:text-red-400',
     label: 'Crimson',
-    bgTint: 'bg-red-50 dark:bg-red-950/20',
+    bgTint: 'bg-red-50 dark:bg-red-900/40',
   },
   gold: {
     gradient: 'from-amber-400 to-yellow-600',
-    textColor: 'text-amber-600',
+    textColor: 'text-amber-600 dark:text-amber-400',
     label: 'Gold',
-    bgTint: 'bg-amber-50 dark:bg-amber-950/20',
+    bgTint: 'bg-amber-50 dark:bg-amber-900/40',
   },
   prismatic: {
     gradient: 'from-pink-400 via-cyan-400 to-yellow-400',
-    textColor: 'text-purple-600',
+    textColor: 'text-purple-600 dark:text-purple-400',
     label: 'Prismatic',
-    bgTint: 'bg-gradient-to-br from-pink-50/50 via-cyan-50/50 to-yellow-50/50',
+    bgTint:
+      'bg-gradient-to-br from-pink-50/50 via-cyan-50/50 to-yellow-50/50 dark:from-pink-900/30 dark:via-cyan-900/30 dark:to-yellow-900/30',
   },
 }
 
@@ -380,6 +381,22 @@ export function countReachedMilestones(
       (m) => m.name === p.highestMilestone!.name
     )
     count += idx + 1
+  }
+  return count
+}
+
+/** Count total milestones claimed across all trophies.
+ *  Each claimed trophy row stores only the highest milestone name,
+ *  but claiming milestone N implies all milestones 0..N are claimed. */
+export function countClaimedMilestones(
+  claimedTrophies: { trophyId: string; milestone: string }[]
+): number {
+  let count = 0
+  for (const c of claimedTrophies) {
+    const def = TROPHY_DEFINITIONS.find((d) => d.id === c.trophyId)
+    if (!def) continue
+    const idx = def.milestones.findIndex((m) => m.name === c.milestone)
+    if (idx >= 0) count += idx + 1
   }
   return count
 }

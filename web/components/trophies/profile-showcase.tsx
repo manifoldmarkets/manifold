@@ -5,6 +5,7 @@ import { DIVISION_NAMES } from 'common/leagues'
 import {
   TROPHY_DEFINITIONS,
   computeAllTrophyProgress,
+  countClaimedMilestones,
   formatTrophyValue,
 } from 'common/trophies'
 import { Col } from 'web/components/layout/col'
@@ -31,13 +32,13 @@ const TIER_STYLES: Record<
   ShowcaseBadgeData['tier'],
   { gradient: string; text: string }
 > = {
-  gray: { gradient: 'from-zinc-400 to-zinc-500', text: 'text-zinc-600' },
-  green: { gradient: 'from-emerald-400 to-emerald-600', text: 'text-emerald-600' },
-  blue: { gradient: 'from-sky-400 to-blue-600', text: 'text-blue-600' },
-  purple: { gradient: 'from-violet-400 to-purple-600', text: 'text-violet-600' },
-  crimson: { gradient: 'from-red-500 to-rose-700', text: 'text-red-600' },
-  gold: { gradient: 'from-amber-400 to-yellow-600', text: 'text-amber-600' },
-  prismatic: { gradient: 'from-pink-400 via-cyan-400 to-yellow-400', text: 'text-purple-600' },
+  gray: { gradient: 'from-zinc-400 to-zinc-500', text: 'text-zinc-600 dark:text-zinc-400' },
+  green: { gradient: 'from-emerald-400 to-emerald-600', text: 'text-emerald-600 dark:text-emerald-400' },
+  blue: { gradient: 'from-sky-400 to-blue-600', text: 'text-blue-600 dark:text-blue-400' },
+  purple: { gradient: 'from-violet-400 to-purple-600', text: 'text-violet-600 dark:text-violet-400' },
+  crimson: { gradient: 'from-red-500 to-rose-700', text: 'text-red-600 dark:text-red-400' },
+  gold: { gradient: 'from-amber-400 to-yellow-600', text: 'text-amber-600 dark:text-amber-400' },
+  prismatic: { gradient: 'from-pink-400 via-cyan-400 to-yellow-400', text: 'bg-gradient-to-r from-pink-500 via-cyan-500 to-yellow-500 bg-clip-text text-transparent' },
 }
 
 // ---------------------------------------------------------------------------
@@ -218,7 +219,7 @@ export function ProfileShowcase(props: {
   const league = useLeagueInfo(userId)
 
   // Dynamic max pins based on claimed milestone count
-  const claimedCount = (achievements?.claimedTrophies ?? []).length
+  const claimedCount = countClaimedMilestones(achievements?.claimedTrophies ?? [])
   const maxPinned = getMaxPinned(claimedCount)
   const maxPinnedRef = useRef(maxPinned)
   maxPinnedRef.current = maxPinned

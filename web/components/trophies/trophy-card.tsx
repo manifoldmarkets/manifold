@@ -104,15 +104,17 @@ export function TrophyCard(props: {
   return (
     <Col
       className={clsx(
-        'border-ink-200 relative overflow-hidden rounded-xl border transition-all',
-        isReached ? style.bgTint : 'bg-canvas-0'
+        'relative overflow-hidden rounded-xl border transition-all',
+        isReached
+          ? `border-ink-200 dark:border-ink-300/20 ${style.bgTint}`
+          : 'border-ink-200 bg-canvas-0 dark:border-ink-300/10'
       )}
     >
       {/* Gradient accent bar at top */}
       <div
         className={clsx(
           'h-1 w-full bg-gradient-to-r',
-          isReached ? style.gradient : 'from-ink-200 to-ink-300'
+          isReached ? style.gradient : 'from-ink-200 to-ink-300 dark:from-ink-500 dark:to-ink-600'
         )}
       />
 
@@ -174,12 +176,12 @@ export function TrophyCard(props: {
         {/* Progress section — bar is always relative to the VIEWED tier */}
         <Col className="gap-1">
           <Row className="items-baseline justify-between">
-            <span className={clsx('text-xs font-medium', isReached ? 'text-ink-700' : 'text-ink-500')}>
+            <span className={clsx('text-xs font-medium', isReached ? 'text-ink-700 dark:text-ink-300' : 'text-ink-500')}>
               {formatTrophyValue(definition, currentValue)} / {formatTrophyValue(definition, viewing.threshold)}{' '}
               {definition.unit}
             </span>
           </Row>
-          <div className="bg-ink-200 h-1.5 w-full overflow-hidden rounded-full">
+          <div className="bg-ink-200 dark:bg-ink-600 h-1.5 w-full overflow-hidden rounded-full">
             <div
               className={clsx(
                 'h-full rounded-full bg-gradient-to-r transition-all',
