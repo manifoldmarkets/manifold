@@ -177,8 +177,9 @@ export function TrophyCard(props: {
         <Col className="gap-1">
           <Row className="items-baseline justify-between">
             <span className={clsx('text-xs font-medium', isReached ? 'text-ink-700 dark:text-ink-300' : 'text-ink-500')}>
-              {formatTrophyValue(definition, currentValue)} / {formatTrophyValue(definition, viewing.threshold)}{' '}
-              {definition.unit}
+              {definition.unit === 'years'
+                ? `${Math.round(currentValue * 365)} days / ${formatTrophyValue(definition, viewing.threshold)} ${definition.unit}`
+                : `${formatTrophyValue(definition, currentValue)} / ${formatTrophyValue(definition, viewing.threshold)} ${definition.unit}`}
             </span>
           </Row>
           <div className="bg-ink-200 dark:bg-ink-600 h-1.5 w-full overflow-hidden rounded-full">
@@ -196,7 +197,9 @@ export function TrophyCard(props: {
           {/* "Next up" hint — always shows the next unearned milestone globally */}
           {nextMilestone ? (
             <span className="text-ink-400 text-[11px]">
-              {formatTrophyValue(definition, nextMilestone.threshold - currentValue)} more for{' '}
+              {definition.unit === 'years'
+                ? `${Math.round((nextMilestone.threshold - currentValue) * 365)} days`
+                : formatTrophyValue(definition, nextMilestone.threshold - currentValue)}{' '}more for{' '}
               {nextMilestone.name}
             </span>
           ) : (

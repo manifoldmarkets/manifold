@@ -60,7 +60,7 @@ function ShowcaseSlotTracker(props: {
   ).length
   const hintText =
     nextSlot && nextSlot.type === 'free'
-      ? `${nextSlot.requiredClaims - claimedCount} more to unlock pin ${unlockedCount + 1}`
+      ? `Claim ${nextSlot.requiredClaims - claimedCount} more trophies to unlock pin ${unlockedCount + 1}`
       : null
 
   return (
