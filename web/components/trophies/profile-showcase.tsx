@@ -242,6 +242,10 @@ export function ProfileShowcase(props: {
   // Badges injected via CustomEvent (for just-claimed trophies not yet in our data)
   const [injectedBadges, setInjectedBadges] = useState<ShowcaseBadgeData[]>([])
 
+  // Keep a ref to localPins so the event handler always reads current state
+  const localPinsRef = useRef(localPins)
+  localPinsRef.current = localPins
+
   // Listen for 'open-showcase-picker' events from TrophiesTab
   useEffect(() => {
     if (!isOwnProfile) return
@@ -269,7 +273,7 @@ export function ProfileShowcase(props: {
       }
 
       // Try to auto-pin (compute new pins, then apply side effects)
-      const current = (localPins ?? []).filter((x) => x !== pinId)
+      const current = (localPinsRef.current ?? []).filter((x) => x !== pinId)
       if (current.length >= MAX_PINNED) {
         setPickerMessage('Unpin a different trophy first')
         setShowPicker(true)
@@ -285,12 +289,12 @@ export function ProfileShowcase(props: {
     }
     window.addEventListener('open-showcase-picker', handler)
     return () => window.removeEventListener('open-showcase-picker', handler)
-  }, [isOwnProfile, localPins])
+  }, [isOwnProfile, refresh])
 
 
   const togglePin = useCallback(
     (id: string, validIds: Set<string>) => {
-      const current = (localPins ?? []).filter((x) => validIds.has(x))
+      const current = (localPinsRef.current ?? []).filter((x) => validIds.has(x))
       let next: string[]
       if (current.includes(id)) {
         next = current.filter((x) => x !== id)
@@ -302,7 +306,7 @@ export function ProfileShowcase(props: {
       setLocalPins(next)
       api('set-showcase-pins', { pins: next })
     },
-    [localPins]
+    []
   )
 
   // Build badges from whatever data sources are available

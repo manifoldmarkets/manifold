@@ -123,6 +123,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'totalTradesCount',
     unit: 'trades',
     milestones: [
+      { name: 'Rookie', emoji: '\u{1F3AF}', threshold: 10, tier: 'green' },
       { name: 'Dabbler', emoji: '\u{1F3B2}', threshold: 50, tier: 'green' },
       { name: 'Regular', emoji: '\u{1F4CA}', threshold: 250, tier: 'blue' },
       { name: 'Hustler', emoji: '\u{1F4B9}', threshold: 1_000, tier: 'purple' },
@@ -147,7 +148,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
       { name: 'Eternal Flame', emoji: '\u{2600}', threshold: 365, tier: 'gold' },
       { name: 'Undying', emoji: '\u{1F9BF}', threshold: 700, tier: 'prismatic' },
       { name: 'Timeless', emoji: '\u{231B}', threshold: 1_065, tier: 'prismatic' },
-      { name: 'Immortal', emoji: '\u{1F3DB}', threshold: 1_500, tier: 'prismatic' },
+      { name: 'Immortal', emoji: '\u{23F3}', threshold: 1_500, tier: 'prismatic' },
     ],
   },
   {
@@ -197,6 +198,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'creatorTraders',
     unit: 'unique traders',
     milestones: [
+      { name: 'Invisible', emoji: '\u{1F47B}', threshold: 10, tier: 'green' },
       { name: 'Unknown', emoji: '\u{1F464}', threshold: 50, tier: 'green' },
       { name: 'Recognized', emoji: '\u{1F44B}', threshold: 150, tier: 'green' },
       { name: 'Notable', emoji: '\u{1F465}', threshold: 500, tier: 'blue' },
@@ -241,7 +243,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
       { name: 'Networker', emoji: '\u{1F91D}', threshold: 5, tier: 'green' },
       { name: 'Connector', emoji: '\u{1F517}', threshold: 15, tier: 'blue' },
       { name: 'Recruiter', emoji: '\u{1F4E8}', threshold: 40, tier: 'purple' },
-      { name: 'Ambassador', emoji: '\u{1F3C5}', threshold: 100, tier: 'crimson' },
+      { name: 'Ambassador', emoji: '\u{1F3C7}', threshold: 100, tier: 'crimson' },
       { name: 'Evangelist', emoji: '\u{1F4E1}', threshold: 250, tier: 'gold' },
       { name: 'Pied Piper', emoji: '\u{1F3B5}', threshold: 500, tier: 'gold' },
       { name: 'Kingmaker', emoji: '\u{1FA84}', threshold: 1_000, tier: 'prismatic' },

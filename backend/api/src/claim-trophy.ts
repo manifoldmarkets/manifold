@@ -16,10 +16,11 @@ export const claimTrophy: APIHandler<'claim-trophy'> = async (
   }
 
   // Fetch the user's live stats to validate eligibility
+  // getUserAchievements doesn't use `req`, but the APIHandler type requires it
   const stats = await getUserAchievements(
     { userId: auth.uid },
     auth,
-    undefined as any
+    {} as any
   )
 
   const value = Number((stats as Record<string, unknown>)[def.statKey]) || 0
@@ -31,7 +32,7 @@ export const claimTrophy: APIHandler<'claim-trophy'> = async (
     )
   }
 
-  const highestReachedIdx = def.milestones.indexOf(highest)
+  const highestReachedIdx = def.milestones.findIndex((m) => m.name === highest.name)
   if (requestedIdx > highestReachedIdx) {
     throw new APIError(
       403,
