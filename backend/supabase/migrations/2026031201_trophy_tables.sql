@@ -2,7 +2,7 @@
 
 -- Permanent claimed milestones (claim once, keep forever)
 create table if not exists user_trophy_claims (
-    user_id    text         not null references users(id),
+    user_id    text         not null references users(id) on delete cascade,
     trophy_id  text         not null,
     milestone  text         not null,
     claimed_at timestamptz  not null default now(),
@@ -11,8 +11,8 @@ create table if not exists user_trophy_claims (
 
 -- Profile showcase pins (up to 3 badge IDs per user)
 create table if not exists user_showcase (
-    user_id    text    primary key references users(id),
-    pins       text[]  not null default '{}',
+    user_id    text    primary key references users(id) on delete cascade,
+    pins       text[]  not null default '{}' check (cardinality(pins) <= 3),
     updated_at timestamptz not null default now()
 );
 
@@ -21,7 +21,10 @@ alter table user_trophy_claims enable row level security;
 alter table user_showcase enable row level security;
 
 -- Public read for both (anyone can see trophies/pins on profiles)
+drop policy if exists "public read" on user_trophy_claims;
 create policy "public read" on user_trophy_claims for select using (true);
+
+drop policy if exists "public read" on user_showcase;
 create policy "public read" on user_showcase for select using (true);
 
 -- No write policies needed — backend uses createSupabaseDirectClient()

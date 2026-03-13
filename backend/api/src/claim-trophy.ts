@@ -43,7 +43,8 @@ export const claimTrophy: APIHandler<'claim-trophy'> = async (
 
   // Check existing claim
   const existing = await pg.oneOrNone(
-    `select milestone from user_trophy_claims
+    `select milestone, claimed_at as "claimedAt"
+     from user_trophy_claims
      where user_id = $1 and trophy_id = $2`,
     [auth.uid, trophyId]
   )
@@ -57,7 +58,9 @@ export const claimTrophy: APIHandler<'claim-trophy'> = async (
       return {
         trophyId,
         milestone: existing.milestone,
-        claimedAt: new Date().toISOString(),
+        claimedAt: existing.claimedAt instanceof Date
+          ? existing.claimedAt.toISOString()
+          : String(existing.claimedAt),
       }
     }
   }

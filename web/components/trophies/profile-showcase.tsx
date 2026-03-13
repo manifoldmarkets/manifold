@@ -199,7 +199,7 @@ export function ProfileShowcase(props: {
   const { userId, isOwnProfile } = props
 
   // Fetch achievements (includes showcasePins from server)
-  const { data: achievements } = useAPIGetter('get-user-achievements', {
+  const { data: achievements, refresh } = useAPIGetter('get-user-achievements', {
     userId,
   })
   const league = useLeagueInfo(userId)
@@ -239,66 +239,70 @@ export function ProfileShowcase(props: {
 
   const [showPicker, setShowPicker] = useState(false)
   const [pickerMessage, setPickerMessage] = useState<string | null>(null)
+  // Badges injected via CustomEvent (for just-claimed trophies not yet in our data)
+  const [injectedBadges, setInjectedBadges] = useState<ShowcaseBadgeData[]>([])
 
   // Listen for 'open-showcase-picker' events from TrophiesTab
   useEffect(() => {
     if (!isOwnProfile) return
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { pinId?: string } | undefined
+      const detail = (e as CustomEvent).detail as
+        | { pinId?: string; badge?: ShowcaseBadgeData }
+        | undefined
       const pinId = detail?.pinId
+
+      // Inject badge data if provided (so we can render it without stale cache)
+      if (detail?.badge) {
+        setInjectedBadges((prev) => {
+          if (prev.some((b) => b.id === detail.badge!.id)) return prev
+          return [...prev, detail.badge!]
+        })
+      }
+
+      // Also refresh our own data for eventual consistency
+      refresh()
+
       if (!pinId) {
         setShowPicker(true)
         window.scrollTo({ top: 0, behavior: 'smooth' })
         return
       }
 
-      // Try to auto-pin
-      setLocalPins((prev) => {
-        const current = (prev ?? []).filter((x) => x !== pinId)
-        if (current.length >= MAX_PINNED) {
-          setPickerMessage('Unpin a different trophy first')
-          setShowPicker(true)
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-          return prev
-        }
-        const next = [...current, pinId]
-        api('set-showcase-pins', { pins: next })
-        setPickerMessage(null)
+      // Try to auto-pin (compute new pins, then apply side effects)
+      const current = (localPins ?? []).filter((x) => x !== pinId)
+      if (current.length >= MAX_PINNED) {
+        setPickerMessage('Unpin a different trophy first')
         setShowPicker(true)
         window.scrollTo({ top: 0, behavior: 'smooth' })
-        return next
-      })
+        return
+      }
+      const next = [...current, pinId]
+      setLocalPins(next)
+      api('set-showcase-pins', { pins: next })
+      setPickerMessage(null)
+      setShowPicker(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
     window.addEventListener('open-showcase-picker', handler)
     return () => window.removeEventListener('open-showcase-picker', handler)
-  }, [isOwnProfile])
+  }, [isOwnProfile, localPins])
 
-  const savePins = useCallback(
-    (newPins: string[]) => {
-      setLocalPins(newPins)
-      api('set-showcase-pins', { pins: newPins })
-    },
-    []
-  )
 
   const togglePin = useCallback(
     (id: string, validIds: Set<string>) => {
-      setLocalPins((prev) => {
-        const current = (prev ?? []).filter((x) => validIds.has(x))
-        let next: string[]
-        if (current.includes(id)) {
-          next = current.filter((x) => x !== id)
-        } else if (current.length >= MAX_PINNED) {
-          return current
-        } else {
-          next = [...current, id]
-        }
-        // Fire-and-forget save
-        api('set-showcase-pins', { pins: next })
-        return next
-      })
+      const current = (localPins ?? []).filter((x) => validIds.has(x))
+      let next: string[]
+      if (current.includes(id)) {
+        next = current.filter((x) => x !== id)
+      } else if (current.length >= MAX_PINNED) {
+        return
+      } else {
+        next = [...current, id]
+      }
+      setLocalPins(next)
+      api('set-showcase-pins', { pins: next })
     },
-    []
+    [localPins]
   )
 
   // Build badges from whatever data sources are available
@@ -315,7 +319,15 @@ export function ProfileShowcase(props: {
     }
   }
 
-  // 2. From league info
+  // 2. From injected badges (just-claimed trophies not yet in our data)
+  for (const b of injectedBadges) {
+    if (!seenIds.has(b.id)) {
+      seenIds.add(b.id)
+      allBadges.push(b)
+    }
+  }
+
+  // 3. From league info
   if (league) {
     const lb = generateLeagueBadge({
       division: league.division,

@@ -21,6 +21,7 @@ import {
   computeAllTrophyProgress,
   countReachedMilestones,
   getTotalPossibleMilestones,
+  formatTrophyValue,
 } from 'common/trophies'
 
 // Dev-only stat overrides for testing trophy thresholds
@@ -74,8 +75,8 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
       if (achievements) {
         const existingClaims = achievements.claimedTrophies ?? []
         const updatedClaims = [
-          ...existingClaims.filter((c: any) => c.trophyId !== trophyId),
-          { trophyId, milestone },
+          ...existingClaims.filter((c) => c.trophyId !== trophyId),
+          { trophyId, milestone, claimedAt: new Date().toISOString() },
         ]
         setData({ ...achievements, claimedTrophies: updatedClaims } as any)
       }
@@ -90,7 +91,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
 
   const handleUnclaim = async (trophyId: string) => {
     try {
-      await api('unclaim-trophy', { trophyId })
+      await api('unclaim-trophy', { trophyId, userId })
       refresh()
     } catch (e) {
       console.error('Failed to unclaim trophy:', e)
@@ -160,9 +161,31 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               justClaimedId={justClaimed}
               onPinToProfile={(trophyId: string) => {
                 setJustClaimed(null)
+                // Build badge data so ProfileShowcase can render it
+                // without waiting for its own data refresh
+                const def = TROPHY_DEFINITIONS.find((d) => d.id === trophyId)
+                const progress = progressMap.get(trophyId)
+                const claimed = achievements.claimedTrophies?.find(
+                  (c) => c.trophyId === trophyId
+                )
+                const m = def?.milestones.find(
+                  (ms) => ms.name === claimed?.milestone
+                )
                 window.dispatchEvent(
                   new CustomEvent('open-showcase-picker', {
-                    detail: { pinId: `trophy-${trophyId}` },
+                    detail: {
+                      pinId: `trophy-${trophyId}`,
+                      badge: m && def
+                        ? {
+                            id: `trophy-${trophyId}`,
+                            label: m.name,
+                            stat: formatTrophyValue(def, progress?.currentValue ?? m.threshold),
+                            detail: `${def.label}: ${formatTrophyValue(def, progress?.currentValue ?? m.threshold)} ${def.unit}`,
+                            emoji: m.emoji,
+                            tier: m.tier,
+                          }
+                        : undefined,
+                    },
                   })
                 )
               }}
@@ -262,28 +285,19 @@ const RANK_KEY_BY_ID: Record<string, keyof RanksType> = {
   charityDonatedMana: 'charityDonated',
 }
 
-const ACHIEVEMENT_IMAGES: Record<string, string> = {
-  accountAgeYears: '/achievement-badges/accountAgeYears.png',
-  charityDonatedMana: '/achievement-badges/charityDonatedMana.png',
-  creatorTraders: '/achievement-badges/creatorTraders.png',
-  largestProfitableTradeValue: '/achievement-badges/largestProfitableTradeValue.png',
-  largestLeagueSeasonEarnings: '/achievement-badges/largestLeagueSeasonEarnings.png',
-  largestUnprofitableTradeValue: '/achievement-badges/largestUnprofitableTradeValue.png',
-  longestBettingStreak: '/achievement-badges/longestBettingStreak.png',
-  modTicketsResolved: '/achievement-badges/modTicketsResolved.png',
-  numberOfComments: '/achievement-badges/numberOfComments.png',
-  profitableMarketsCount: '/achievement-badges/profitableMarketsCount.png',
-  seasonsDiamondOrHigher: '/achievement-badges/seasonsDiamondOrHigher.png',
-  seasonsMasters: '/achievement-badges/seasonsMasters.png',
-  seasonsPlatinumOrHigher: '/achievement-badges/seasonsPlatinumOrHigher.png',
-  totalLiquidityCreatedMarkets: '/achievement-badges/totalLiquidityCreatedMarkets.png',
-  totalMarketsCreated: '/achievement-badges/totalMarketsCreated.png',
-  totalReferrals: '/achievement-badges/totalReferrals.png',
-  totalReferredProfitMana: '/achievement-badges/totalReferredProfitMana.png',
-  totalTradesCount: '/achievement-badges/totalTradesCount.png',
-  totalVolumeMana: '/achievement-badges/totalVolumeMana.png',
-  unprofitableMarketsCount: '/achievement-badges/unprofitableMarketsCount.png',
-}
+const ACHIEVEMENT_IMAGE_KEYS = [
+  'accountAgeYears', 'charityDonatedMana', 'creatorTraders',
+  'largestProfitableTradeValue', 'largestLeagueSeasonEarnings',
+  'largestUnprofitableTradeValue', 'longestBettingStreak', 'modTicketsResolved',
+  'numberOfComments', 'profitableMarketsCount', 'seasonsDiamondOrHigher',
+  'seasonsMasters', 'seasonsPlatinumOrHigher', 'totalLiquidityCreatedMarkets',
+  'totalMarketsCreated', 'totalReferrals', 'totalReferredProfitMana',
+  'totalTradesCount', 'totalVolumeMana', 'unprofitableMarketsCount',
+] as const
+
+const ACHIEVEMENT_IMAGES: Record<string, string> = Object.fromEntries(
+  ACHIEVEMENT_IMAGE_KEYS.map((k) => [k, `/achievement-badges/${k}.png`])
+)
 
 type AchievementBucket =
   | 'Top 50 Users'

@@ -63,7 +63,6 @@ import { useUserBans } from 'web/hooks/use-user-bans'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
-import { api } from 'web/lib/api/api'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
@@ -189,6 +188,28 @@ function UserProfile(props: {
       setExpandProfileInfo(true)
     }
   }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
+
+  // When TrophiesTab dispatches 'open-showcase-picker', ensure profile is expanded
+  // so ProfileShowcase is mounted and can handle the event.
+  useEffect(() => {
+    if (!isCurrentUser) return
+    const handler = (e: Event) => {
+      setExpandProfileInfo((prev) => {
+        if (prev) return prev // already expanded, ProfileShowcase will handle it
+        // Expand first, then re-dispatch so ProfileShowcase picks it up after mount
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('open-showcase-picker', {
+              detail: (e as CustomEvent).detail,
+            })
+          )
+        }, 50)
+        return true
+      })
+    }
+    window.addEventListener('open-showcase-picker', handler)
+    return () => window.removeEventListener('open-showcase-picker', handler)
+  }, [isCurrentUser])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
   const { bans: userBans } = useUserBans(user.id)

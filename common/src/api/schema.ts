@@ -2479,7 +2479,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as { success: boolean },
     props: z
       .object({
-        pins: z.array(z.string()).max(3),
+        pins: z.array(z.string().max(100)).max(3),
       })
       .strict(),
   },
@@ -2494,8 +2494,8 @@ export const API = (_apiTypeCheck = {
     },
     props: z
       .object({
-        trophyId: z.string(),
-        milestone: z.string(),
+        trophyId: z.string().max(100),
+        milestone: z.string().max(100),
       })
       .strict(),
   },
@@ -2506,7 +2506,8 @@ export const API = (_apiTypeCheck = {
     returns: {} as { success: boolean },
     props: z
       .object({
-        trophyId: z.string(),
+        trophyId: z.string().max(100),
+        userId: z.string(),
       })
       .strict(),
   },

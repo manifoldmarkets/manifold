@@ -3,7 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 
 export const unclaimTrophy: APIHandler<'unclaim-trophy'> = async (
-  { trophyId },
+  { trophyId, userId },
   auth
 ) => {
   if (!isAdminId(auth.uid)) {
@@ -13,7 +13,7 @@ export const unclaimTrophy: APIHandler<'unclaim-trophy'> = async (
   const pg = createSupabaseDirectClient()
   await pg.none(
     `delete from user_trophy_claims where user_id = $1 and trophy_id = $2`,
-    [auth.uid, trophyId]
+    [userId, trophyId]
   )
 
   return { success: true }
