@@ -107,12 +107,14 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'totalVolumeMana',
     unit: 'mana',
     milestones: [
+      { name: 'Goldfish', emoji: '\u{1F421}', threshold: 10_000, tier: 'green' },
       { name: 'Minnow', emoji: '\u{1F41F}', threshold: 100_000, tier: 'green' },
-      { name: 'Big Fish', emoji: '\u{1F420}', threshold: 500_000, tier: 'blue' },
+      { name: 'Swordfish', emoji: '\u{1F420}', threshold: 500_000, tier: 'blue' },
       { name: 'Shark', emoji: '\u{1F988}', threshold: 2_000_000, tier: 'purple' },
-      { name: 'Orca', emoji: '\u{1F42C}', threshold: 10_000_000, tier: 'crimson' },
-      { name: 'Whale', emoji: '\u{1F433}', threshold: 50_000_000, tier: 'gold' },
-      { name: 'Leviathan', emoji: '\u{1F30A}', threshold: 200_000_000, tier: 'prismatic' },
+      { name: 'Orca', emoji: '\u{1F42C}', threshold: 5_000_000, tier: 'crimson' },
+      { name: 'Whale', emoji: '\u{1F433}', threshold: 10_000_000, tier: 'gold' },
+      { name: 'Leviathan', emoji: '\u{1F30A}', threshold: 50_000_000, tier: 'prismatic' },
+      { name: 'Kraken', emoji: '\u{1F991}', threshold: 100_000_000, tier: 'prismatic' },
     ],
   },
   {

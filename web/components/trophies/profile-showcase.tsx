@@ -190,7 +190,20 @@ function ShowcaseBadge(props: {
 // Main component
 // ---------------------------------------------------------------------------
 
-const MAX_PINNED = 3
+// Showcase pin slots unlock with claimed milestone count
+const SLOT_THRESHOLDS = [
+  { claimedRequired: 0, slots: 1 },
+  { claimedRequired: 25, slots: 2 },
+  { claimedRequired: 50, slots: 3 },
+]
+
+function getMaxPinned(claimedCount: number): number {
+  let slots = 1
+  for (const t of SLOT_THRESHOLDS) {
+    if (claimedCount >= t.claimedRequired) slots = t.slots
+  }
+  return slots
+}
 
 export function ProfileShowcase(props: {
   userId: string
@@ -203,6 +216,12 @@ export function ProfileShowcase(props: {
     userId,
   })
   const league = useLeagueInfo(userId)
+
+  // Dynamic max pins based on claimed milestone count
+  const claimedCount = (achievements?.claimedTrophies ?? []).length
+  const maxPinned = getMaxPinned(claimedCount)
+  const maxPinnedRef = useRef(maxPinned)
+  maxPinnedRef.current = maxPinned
 
   // Local optimistic state for pins — undefined = not yet loaded
   const [localPins, setLocalPins] = useState<string[] | null | undefined>(
@@ -225,8 +244,8 @@ export function ProfileShowcase(props: {
           if (stored) {
             const parsed = JSON.parse(stored)
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setLocalPins(parsed.slice(0, MAX_PINNED))
-              api('set-showcase-pins', { pins: parsed.slice(0, MAX_PINNED) })
+              setLocalPins(parsed.slice(0, maxPinnedRef.current))
+              api('set-showcase-pins', { pins: parsed.slice(0, maxPinnedRef.current) })
               localStorage.removeItem(`showcase-pins-${userId}`)
             }
           }
@@ -274,7 +293,7 @@ export function ProfileShowcase(props: {
 
       // Try to auto-pin (compute new pins, then apply side effects)
       const current = (localPinsRef.current ?? []).filter((x) => x !== pinId)
-      if (current.length >= MAX_PINNED) {
+      if (current.length >= maxPinnedRef.current) {
         setPickerMessage('Unpin a different trophy first')
         setShowPicker(true)
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -298,7 +317,7 @@ export function ProfileShowcase(props: {
       let next: string[]
       if (current.includes(id)) {
         next = current.filter((x) => x !== id)
-      } else if (current.length >= MAX_PINNED) {
+      } else if (current.length >= maxPinnedRef.current) {
         return
       } else {
         next = [...current, id]
@@ -360,7 +379,7 @@ export function ProfileShowcase(props: {
   const pins = localPins !== undefined ? localPins : serverPins
   const effectivePins =
     pins === null || pins === undefined
-      ? allBadges.slice(0, 2).map((b) => b.id)
+      ? allBadges.slice(0, maxPinned).map((b) => b.id)
       : pins.filter((id) => badgeMap.has(id))
 
   const pinnedBadges = effectivePins
@@ -377,7 +396,7 @@ export function ProfileShowcase(props: {
             onClick={isOwnProfile ? () => setShowPicker(true) : undefined}
           />
         ))}
-        {isOwnProfile && effectivePins.length < MAX_PINNED && (
+        {isOwnProfile && effectivePins.length < maxPinned && (
           <button
             className="border-ink-300 hover:border-ink-400 rounded-lg border border-dashed px-2 py-1 transition-colors"
             onClick={() => setShowPicker(!showPicker)}
@@ -417,7 +436,7 @@ export function ProfileShowcase(props: {
             </span>
           ) : (
             <span className="text-ink-500 text-xs">
-              Select up to {MAX_PINNED}. Click a pinned badge to remove it.
+              Select up to {maxPinned}. Click a pinned badge to remove it.
             </span>
           )}
         </Col>

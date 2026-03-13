@@ -14,9 +14,7 @@ import {
   type TrophyMilestone,
   type ComputedTrophyProgress,
   TROPHY_TIER_STYLES,
-  getHighestMilestone,
   getNextMilestone,
-  getProgressFraction,
   formatTrophyValue,
 } from 'common/trophies'
 
@@ -102,8 +100,6 @@ export function TrophyCard(props: {
 
   // Progress bar: show toward the NEXT milestone after highest reached
   const nextMilestone = getNextMilestone(definition, highestMilestone)
-  const fraction = getProgressFraction(definition, currentValue, highestMilestone)
-  const isMaxed = !nextMilestone
 
   return (
     <Col
@@ -120,22 +116,12 @@ export function TrophyCard(props: {
         )}
       />
 
-      <Col className="gap-3 p-4">
-        {/* Trophy label + description */}
-        <Col className="items-center gap-0.5">
-          <span className="text-ink-900 text-sm font-semibold">
-            {definition.label}
-          </span>
-          <span className="text-ink-500 text-center text-xs">
-            {definition.description}
-          </span>
-        </Col>
-
-        {/* Header: arrows + milestone name + emoji */}
+      <Col className="gap-2 p-3">
+        {/* Header: arrows + emoji/milestone + label */}
         <Row className="items-center justify-between">
           <button
             className={clsx(
-              'rounded-full p-1 transition-colors',
+              'rounded-full p-0.5 transition-colors',
               canGoLeft
                 ? 'hover:bg-ink-200 text-ink-600'
                 : 'text-ink-300 cursor-default'
@@ -143,27 +129,29 @@ export function TrophyCard(props: {
             onClick={() => canGoLeft && setViewingIdx(viewingIdx - 1)}
             disabled={!canGoLeft}
           >
-            <ChevronLeftIcon className="h-5 w-5" />
+            <ChevronLeftIcon className="h-4 w-4" />
           </button>
 
-          <Col className="items-center gap-0.5">
-            <span className="text-2xl">{viewing.emoji}</span>
-            <span
-              className={clsx(
-                'text-base font-bold',
-                isReached ? style.textColor : 'text-ink-400'
-              )}
-            >
-              {viewing.name}
-            </span>
-            <span className="text-ink-500 text-xs">
-              {formatTrophyValue(definition, viewing.threshold)} {definition.unit}
+          <Col className="items-center gap-0">
+            <Row className="items-center gap-1.5">
+              <span className="text-lg">{viewing.emoji}</span>
+              <span
+                className={clsx(
+                  'text-sm font-bold',
+                  isReached ? style.textColor : 'text-ink-400'
+                )}
+              >
+                {viewing.name}
+              </span>
+            </Row>
+            <span className="text-ink-500 text-[11px]">
+              {definition.label}
             </span>
           </Col>
 
           <button
             className={clsx(
-              'rounded-full p-1 transition-colors',
+              'rounded-full p-0.5 transition-colors',
               canGoRight
                 ? 'hover:bg-ink-200 text-ink-600'
                 : 'text-ink-300 cursor-default'
@@ -171,7 +159,7 @@ export function TrophyCard(props: {
             onClick={() => canGoRight && setViewingIdx(viewingIdx + 1)}
             disabled={!canGoRight}
           >
-            <ChevronRightIcon className="h-5 w-5" />
+            <ChevronRightIcon className="h-4 w-4" />
           </button>
         </Row>
 
@@ -183,67 +171,36 @@ export function TrophyCard(props: {
           onSelect={setViewingIdx}
         />
 
-        {/* Progress section */}
-        <Col className="gap-1.5">
-          {isReached ? (
-            <>
-              <Row className="items-baseline justify-between">
-                <span className="text-ink-700 text-sm font-medium">
-                  {formatTrophyValue(definition, currentValue)} {definition.unit}
-                </span>
-                {nextMilestone && (
-                  <span className="text-ink-500 text-xs">
-                    {formatTrophyValue(definition, nextMilestone.threshold)} for{' '}
-                    {nextMilestone.name}
-                  </span>
-                )}
-                {isMaxed && (
-                  <span className="text-xs font-medium text-amber-500">
-                    Max reached!
-                  </span>
-                )}
-              </Row>
-              {nextMilestone && (
-                <div className="bg-ink-200 h-2 w-full overflow-hidden rounded-full">
-                  <div
-                    className={clsx(
-                      'h-full rounded-full bg-gradient-to-r transition-all',
-                      TROPHY_TIER_STYLES[nextMilestone.tier].gradient
-                    )}
-                    style={{ width: `${fraction * 100}%` }}
-                  />
-                </div>
+        {/* Progress section — bar is always relative to the VIEWED tier */}
+        <Col className="gap-1">
+          <Row className="items-baseline justify-between">
+            <span className={clsx('text-xs font-medium', isReached ? 'text-ink-700' : 'text-ink-500')}>
+              {formatTrophyValue(definition, currentValue)} / {formatTrophyValue(definition, viewing.threshold)}{' '}
+              {definition.unit}
+            </span>
+          </Row>
+          <div className="bg-ink-200 h-1.5 w-full overflow-hidden rounded-full">
+            <div
+              className={clsx(
+                'h-full rounded-full bg-gradient-to-r transition-all',
+                style.gradient
               )}
-            </>
+              style={{
+                width: `${Math.min((currentValue / viewing.threshold) * 100, 100)}%`,
+                opacity: isReached ? 1 : 0.5,
+              }}
+            />
+          </div>
+          {/* "Next up" hint — always shows the next unearned milestone globally */}
+          {nextMilestone ? (
+            <span className="text-ink-400 text-[11px]">
+              {formatTrophyValue(definition, nextMilestone.threshold - currentValue)} more for{' '}
+              {nextMilestone.name}
+            </span>
           ) : (
-            <>
-              <Row className="items-baseline justify-between">
-                <span className="text-ink-500 text-sm">
-                  {formatTrophyValue(definition, currentValue)} /{' '}
-                  {formatTrophyValue(definition, viewing.threshold)}{' '}
-                  {definition.unit}
-                </span>
-              </Row>
-              <div className="bg-ink-200 h-2 w-full overflow-hidden rounded-full">
-                <div
-                  className={clsx(
-                    'h-full rounded-full bg-gradient-to-r transition-all',
-                    style.gradient
-                  )}
-                  style={{
-                    width: `${Math.min((currentValue / viewing.threshold) * 100, 100)}%`,
-                    opacity: 0.5,
-                  }}
-                />
-              </div>
-              <span className="text-ink-400 text-xs">
-                {formatTrophyValue(
-                  definition,
-                  viewing.threshold - currentValue
-                )}{' '}
-                more to unlock {viewing.name}
-              </span>
-            </>
+            <span className="text-[11px] font-medium text-amber-500">
+              Max reached!
+            </span>
           )}
 
           {/* Per-tier claim button or claimed indicator */}
@@ -251,7 +208,7 @@ export function TrophyCard(props: {
             justClaimed && onPinToProfile ? (
               <button
                 className={clsx(
-                  'mt-1 w-full rounded-lg py-1.5 text-sm font-semibold text-white transition-all',
+                  'w-full rounded-lg py-1 text-xs font-semibold text-white transition-all',
                   'bg-gradient-to-r hover:brightness-110',
                   style.gradient
                 )}
@@ -260,8 +217,8 @@ export function TrophyCard(props: {
                 Pin to Profile
               </button>
             ) : (
-              <Row className="mt-1 items-center justify-center gap-1 text-xs">
-                <CheckCircleIcon className={clsx('h-4 w-4', style.textColor)} />
+              <Row className="items-center justify-center gap-1 text-[11px]">
+                <CheckCircleIcon className={clsx('h-3.5 w-3.5', style.textColor)} />
                 <span className={clsx('font-medium', style.textColor)}>Claimed</span>
               </Row>
             )
@@ -272,7 +229,7 @@ export function TrophyCard(props: {
             onClaim && (
               <button
                 className={clsx(
-                  'mt-1 w-full rounded-lg py-1.5 text-sm font-semibold text-white transition-all',
+                  'w-full rounded-lg py-1 text-xs font-semibold text-white transition-all',
                   claiming
                     ? 'cursor-wait bg-gradient-to-r opacity-75'
                     : 'bg-gradient-to-r hover:brightness-110',
@@ -311,7 +268,7 @@ export function TrophyGrid(props: {
   )
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {definitions.map((def) => {
         const progress = progressMap.get(def.id)
         if (!progress) return null

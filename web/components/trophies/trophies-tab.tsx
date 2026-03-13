@@ -12,7 +12,7 @@ import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
 import { api } from 'web/lib/api/api'
-import { ENV, isAdminId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import {
   TROPHY_DEFINITIONS,
@@ -23,32 +23,6 @@ import {
   getTotalPossibleMilestones,
   formatTrophyValue,
 } from 'common/trophies'
-
-// Dev-only stat overrides for testing trophy thresholds
-const DEV_PRESETS: Record<string, Record<string, number>> = {
-  'Whale trader': {
-    totalVolumeMana: 60_000_000,
-    totalTradesCount: 30_000,
-    longestBettingStreak: 250,
-    profitableMarketsCount: 600,
-  },
-  'Prolific creator': {
-    totalMarketsCreated: 600,
-    creatorTraders: 6_000,
-    numberOfComments: 6_000,
-  },
-  'Social butterfly': {
-    numberOfComments: 12_000,
-    totalReferrals: 150,
-    charityDonatedMana: 100_000,
-  },
-  'Max everything': Object.fromEntries(
-    TROPHY_DEFINITIONS.map((d) => [
-      d.statKey,
-      d.milestones[d.milestones.length - 1].threshold * 1.1,
-    ])
-  ),
-}
 
 export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const { userId, isOwnProfile } = props
@@ -63,9 +37,6 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
 
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
-  const [devOverrides, setDevOverrides] = useState<Record<string, number>>({})
-  const [showDevPanel, setShowDevPanel] = useState(false)
-  const isDev = ENV !== 'PROD'
 
   const handleClaim = async (trophyId: string, milestone: string) => {
     setClaimingId(trophyId)
@@ -106,19 +77,24 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
     )
   }
 
-  // Merge real achievements with dev overrides for local testing
-  const effectiveStats = { ...achievements, ...devOverrides }
-
-  const progressList = computeAllTrophyProgress(effectiveStats)
+  const progressList = computeAllTrophyProgress(achievements)
   const reached = countReachedMilestones(progressList)
   const total = getTotalPossibleMilestones()
 
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
 
+  // When viewing someone else's profile, only show trophies they've claimed
+  const claimedIds = new Set(
+    (achievements.claimedTrophies ?? []).map((c) => c.trophyId)
+  )
+  const visibleDefs = isOwnProfile
+    ? TROPHY_DEFINITIONS
+    : TROPHY_DEFINITIONS.filter((d) => claimedIds.has(d.id))
+
   // Group definitions by category
   const byCategory = new Map<string, typeof TROPHY_DEFINITIONS>()
   for (const cat of CATEGORY_ORDER) byCategory.set(cat, [])
-  for (const def of TROPHY_DEFINITIONS)
+  for (const def of visibleDefs)
     byCategory.get(def.category)?.push(def)
 
   return (
@@ -128,13 +104,17 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
         <Row className="items-center gap-2">
           <span className="text-2xl">{'\u{1F3C6}'}</span>
           <span className="text-ink-900 text-lg font-bold">
-            {reached} of {total} milestones reached
+            {isOwnProfile
+              ? `${reached} of ${total} milestones reached`
+              : `${(achievements.claimedTrophies ?? []).length} milestones claimed`}
           </span>
         </Row>
-        <span className="text-ink-500 text-sm">
-          Earn trophies by trading, creating markets, and being active.
-          Claim milestones to pin them on your profile.
-        </span>
+        {isOwnProfile && (
+          <span className="text-ink-500 text-sm">
+            Earn trophies by trading, creating markets, and being active.
+            Claim milestones to pin them on your profile.
+          </span>
+        )}
       </Col>
 
       {/* Categories */}
@@ -217,43 +197,6 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
         </Col>
       )}
 
-      {/* Dev-only stat inflator */}
-      {isDev && isOwnProfile && (
-        <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
-          <button
-            className="text-ink-500 text-xs font-mono hover:underline"
-            onClick={() => setShowDevPanel(!showDevPanel)}
-          >
-            [DEV] Trophy stat overrides {showDevPanel ? '▲' : '▼'}
-          </button>
-          {showDevPanel && (
-            <Col className="gap-2">
-              <Row className="flex-wrap gap-2">
-                {Object.keys(DEV_PRESETS).map((preset) => (
-                  <button
-                    key={preset}
-                    className="bg-ink-100 hover:bg-ink-200 rounded px-2 py-1 text-xs"
-                    onClick={() => setDevOverrides(DEV_PRESETS[preset])}
-                  >
-                    {preset}
-                  </button>
-                ))}
-                <button
-                  className="rounded bg-red-100 px-2 py-1 text-xs text-red-600 hover:bg-red-200"
-                  onClick={() => setDevOverrides({})}
-                >
-                  Reset
-                </button>
-              </Row>
-              {Object.keys(devOverrides).length > 0 && (
-                <div className="text-ink-500 font-mono text-[10px]">
-                  Overrides: {JSON.stringify(devOverrides)}
-                </div>
-              )}
-            </Col>
-          )}
-        </Col>
-      )}
     </Col>
   )
 }
@@ -410,7 +353,7 @@ function AchievementsSection(props: { data: Record<string, any> }) {
               {bucket}
               <span className="bg-ink-200 h-px flex-1" />
             </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {sorted.map((a) => (
                 <AchievementBadgeCard
                   key={a.id}
@@ -444,26 +387,26 @@ function AchievementBadgeCard(props: {
 
   return (
     <div
-      className="border-ink-200 group relative rounded-xl border p-[1px] transition-shadow hover:shadow-lg"
+      className="border-ink-200 group relative rounded-lg border p-[1px] transition-shadow hover:shadow-md"
       aria-label={title}
     >
       {rank != null && rank <= 20000 && (
         <div className="absolute right-0 top-0 z-20">
-          <div className="bg-primary-500 text-ink-0 rounded-bl-lg px-2 py-1 text-xs font-semibold shadow-sm">
+          <div className="bg-primary-500 text-ink-0 rounded-bl-md rounded-tr-lg px-1.5 py-0.5 text-[10px] font-semibold shadow-sm">
             #{rank}
           </div>
         </div>
       )}
       <div
         className={clsx(
-          'h-full rounded-xl bg-gradient-to-br',
+          'h-full rounded-lg bg-gradient-to-br',
           BUCKET_STYLES[bucket]
         )}
       >
-        <div className="bg-canvas-0 flex h-full flex-col items-center space-y-3 rounded-[11px] px-4 pb-6 pt-6">
+        <div className="bg-canvas-0 flex h-full items-center gap-3 rounded-[7px] px-3 py-2.5">
           <div
             className={clsx(
-              'ring-ink-300/50 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ring-1',
+              'ring-ink-300/50 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1',
               bucket === 'To Earn' && 'opacity-40 grayscale'
             )}
           >
@@ -471,36 +414,36 @@ function AchievementBadgeCard(props: {
               <Image
                 src={imageSrc}
                 alt={title}
-                width={128}
-                height={128}
-                className="h-32 w-32 scale-125 rounded-full object-contain"
+                width={48}
+                height={48}
+                className="h-12 w-12 scale-125 rounded-full object-contain"
               />
             ) : null}
           </div>
           <div
             className={clsx(
-              'pt-4 text-center',
+              'min-w-0 flex-1',
               bucket === 'To Earn' && 'opacity-40'
             )}
           >
-            <div className="text-ink-900 text-lg font-semibold">{title}</div>
-            <div className="text-ink-600 mt-1 text-sm leading-snug">
+            <div className="text-ink-900 text-sm font-semibold leading-tight">{title}</div>
+            <div className="text-ink-600 text-xs leading-snug">
               {description}
             </div>
-            <div className="text-ink-900 mt-3 text-lg">{value}</div>
+            <div className="text-ink-900 text-sm font-medium">{value}</div>
           </div>
 
           <div className="pointer-events-none absolute left-full top-4 z-20 hidden pl-3 group-hover:block">
-            <div className="bg-canvas-50 text-ink-900 border-ink-200 w-64 rounded-md border p-3 shadow-xl">
-              <div className="mt-1 text-lg font-semibold">
+            <div className="bg-canvas-50 text-ink-900 border-ink-200 w-56 rounded-md border p-2.5 shadow-xl">
+              <div className="text-sm font-semibold">
                 Rank: {rank ?? 'N/A'}
               </div>
-              <div className="text-ink-600 my-1 text-sm">
+              <div className="text-ink-600 my-0.5 text-xs">
                 {percentile != null
-                  ? `In the top ${Number(Math.max(percentile, 0.01).toFixed(2))}% of all users`
+                  ? `Top ${Number(Math.max(percentile, 0.01).toFixed(2))}% of all users`
                   : 'N/A'}
               </div>
-              <div className="text-ink-600 text-sm">Value: {value}</div>
+              <div className="text-ink-600 text-xs">Value: {value}</div>
             </div>
           </div>
         </div>
