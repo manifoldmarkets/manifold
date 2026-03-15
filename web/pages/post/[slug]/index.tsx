@@ -20,6 +20,7 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { JsonLd } from 'web/components/JsonLd'
 import { SEO } from 'web/components/SEO'
 import {
   PostCommentsActivity,
@@ -37,6 +38,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { api, report as reportContent } from 'web/lib/api/api'
+import { buildPostDiscussion } from 'web/lib/json-ld'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
 import { getPostBySlug } from 'web/lib/supabase/posts'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
@@ -210,6 +212,7 @@ export default function PostPage(props: {
         url={'/post/' + post.slug}
         shouldIgnore={post.visibility === 'unlisted'}
       />
+      <PostJsonLd post={post} comments={comments} />
       <Col className="mx-auto w-full max-w-2xl px-4 py-4 ">
         {!editing && (
           <Col>
@@ -454,4 +457,33 @@ function RichEditPost(props: {
       )}
     </Col>
   )
+}
+
+function PostJsonLd(props: {
+  post: TopLevelPost
+  comments: PostComment[]
+}) {
+  const { post, comments } = props
+  const filteredComments = comments
+    .filter((c) => !c.deleted && !c.hidden && c.visibility !== 'unlisted')
+    .filter((c) => !c.replyToCommentId)
+
+  const data = buildPostDiscussion({
+    title: post.title,
+    body: richTextToString(post.content),
+    url: `https://manifold.markets/post/${post.slug}`,
+    creatorName: post.creatorName,
+    creatorUsername: post.creatorUsername,
+    createdTime: post.createdTime,
+    commentCount: filteredComments.length,
+    visibility: post.visibility,
+    comments: filteredComments.slice(0, 5).map((c) => ({
+      text: richTextToString(c.content),
+      authorName: c.userName,
+      authorUsername: c.userUsername,
+      createdTime: c.createdTime,
+    })),
+  })
+
+  return <JsonLd data={data} id="post" />
 }
