@@ -49,13 +49,21 @@ export default function ReportsPage() {
   } = useModReports(selectedStatuses)
   const [showBannedUsers, setShowBannedUsers] = useState(false)
   const [allUserReports, setAllUserReports] = useState<LiteReport[]>()
+  const [userReportsError, setUserReportsError] = useState(false)
+  const [bannedIds, setBannedIds] = useState<string[]>([])
 
   useEffect(() => {
-    getReports({ limit: 100 }).then(setAllUserReports)
+    getReports({ limit: 50 })
+      .then(setAllUserReports)
+      .catch((e) => {
+        console.error('Error fetching user reports:', e)
+        setUserReportsError(true)
+      })
   }, [])
 
   const filteredUserReports = allUserReports?.filter(
-    (r) => !r.owner.isBannedFromPosting
+    (r) =>
+      !r.owner.isBannedFromPosting && !bannedIds.includes(r.owner.id)
   )
 
   const handleStatusChange = async (
@@ -143,9 +151,11 @@ export default function ReportsPage() {
         </Select>
       </Row>
       <UserReportsListInner
-        key={String(showBannedUsers)}
         allReports={allUserReports}
+        allReportsError={userReportsError}
         hideBanned={!showBannedUsers}
+        bannedIds={bannedIds}
+        onBan={(userId) => setBannedIds((ids) => [...ids, userId])}
       />
     </Col>
   )
@@ -234,10 +244,12 @@ export default function ReportsPage() {
 
 function UserReportsListInner(props: {
   allReports: LiteReport[] | undefined
+  allReportsError: boolean
   hideBanned: boolean
+  bannedIds: string[]
+  onBan: (userId: string) => void
 }) {
-  const { allReports, hideBanned } = props
-  const [bannedIds, setBannedIds] = useState<string[]>([])
+  const { allReports, allReportsError, hideBanned, bannedIds, onBan } = props
   const [page, setPage] = useState(0)
 
   const filtered = allReports?.filter((r) => {
@@ -251,6 +263,10 @@ function UserReportsListInner(props: {
   const isEnd = filtered
     ? pageStart + USER_REPORTS_PAGE_SIZE >= filtered.length
     : true
+
+  if (allReportsError) {
+    return <div className="my-8 text-center">Failed to load user reports.</div>
+  }
 
   return (
     <>
@@ -272,7 +288,7 @@ function UserReportsListInner(props: {
             key={report.id}
             report={report}
             bannedIds={bannedIds}
-            onBan={(userId) => setBannedIds((ids) => [...ids, userId])}
+            onBan={onBan}
           />
         ))
       ) : (
