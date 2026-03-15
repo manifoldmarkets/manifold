@@ -41,7 +41,6 @@ export default function ReportsPage() {
   ])
   const {
     reports: modReports,
-    userReports,
     initialLoading,
     reportStatuses,
     modNotes,
@@ -49,10 +48,15 @@ export default function ReportsPage() {
     setModNotes,
   } = useModReports(selectedStatuses)
   const [showBannedUsers, setShowBannedUsers] = useState(false)
+  const [allUserReports, setAllUserReports] = useState<LiteReport[]>()
 
-  const userReportCount = userReports?.filter(
+  useEffect(() => {
+    getReports({ limit: 100 }).then(setAllUserReports)
+  }, [])
+
+  const filteredUserReports = allUserReports?.filter(
     (r) => !r.owner.isBannedFromPosting
-  ).length
+  )
 
   const handleStatusChange = async (
     reportId: number,
@@ -140,6 +144,7 @@ export default function ReportsPage() {
       </Row>
       <UserReportsListInner
         key={String(showBannedUsers)}
+        allReports={allUserReports}
         hideBanned={!showBannedUsers}
       />
     </Col>
@@ -196,9 +201,9 @@ export default function ReportsPage() {
       content: renderUserReportsList(),
       queryString: 'user-reports',
       inlineTabIcon:
-        userReportCount && userReportCount > 0 ? (
+        filteredUserReports && filteredUserReports.length > 0 ? (
           <div className="text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3">
-            {userReportCount}
+            {filteredUserReports.length}
           </div>
         ) : null,
     },
@@ -227,15 +232,13 @@ export default function ReportsPage() {
   )
 }
 
-function UserReportsListInner(props: { hideBanned: boolean }) {
-  const { hideBanned } = props
-  const [allReports, setAllReports] = useState<LiteReport[] | undefined>()
+function UserReportsListInner(props: {
+  allReports: LiteReport[] | undefined
+  hideBanned: boolean
+}) {
+  const { allReports, hideBanned } = props
   const [bannedIds, setBannedIds] = useState<string[]>([])
   const [page, setPage] = useState(0)
-
-  useEffect(() => {
-    getReports({ limit: 100 }).then(setAllReports)
-  }, [])
 
   const filtered = allReports?.filter((r) => {
     if (!hideBanned) return true
