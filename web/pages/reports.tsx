@@ -62,8 +62,7 @@ export default function ReportsPage() {
   }, [])
 
   const filteredUserReports = allUserReports?.filter(
-    (r) =>
-      !r.owner.isBannedFromPosting && !bannedIds.includes(r.owner.id)
+    (r) => !r.owner.isBannedFromPosting && !bannedIds.includes(r.owner.id)
   )
 
   const handleStatusChange = async (
@@ -258,7 +257,10 @@ function UserReportsListInner(props: {
   })
 
   const pageStart = page * USER_REPORTS_PAGE_SIZE
-  const pageItems = filtered?.slice(pageStart, pageStart + USER_REPORTS_PAGE_SIZE)
+  const pageItems = filtered?.slice(
+    pageStart,
+    pageStart + USER_REPORTS_PAGE_SIZE
+  )
   const isStart = page === 0
   const isEnd = filtered
     ? pageStart + USER_REPORTS_PAGE_SIZE >= filtered.length
