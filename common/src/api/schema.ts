@@ -2459,9 +2459,54 @@ export const API = (_apiTypeCheck = {
       modTicketsResolved: number
       charityDonatedMana: number
       ranks: RanksType
+      showcasePins: string[] | null
+      claimedTrophies: {
+        trophyId: string
+        milestone: string
+        claimedAt: string
+      }[]
     },
     props: z
       .object({
+        userId: z.string(),
+      })
+      .strict(),
+  },
+  'set-showcase-pins': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        pins: z.array(z.string().max(100)).max(3),
+      })
+      .strict(),
+  },
+  'claim-trophy': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as {
+      trophyId: string
+      milestone: string
+      claimedAt: string
+    },
+    props: z
+      .object({
+        trophyId: z.string().max(100),
+        milestone: z.string().max(100),
+      })
+      .strict(),
+  },
+  'unclaim-trophy': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        trophyId: z.string().max(100),
         userId: z.string(),
       })
       .strict(),

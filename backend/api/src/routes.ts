@@ -208,6 +208,9 @@ import { getSiteActivity } from './get-site-activity'
 import { getSportsGames } from './get-sports-games'
 import { getSuspectedSpamComments } from './get-suspected-spam-comments'
 import { getUserAchievements } from './get-user-achievements'
+import { setShowcasePins } from './set-showcase-pins'
+import { claimTrophy } from './claim-trophy'
+import { unclaimTrophy } from './unclaim-trophy'
 import { getUserCalibration } from './get-user-calibration'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { getUserLastActiveTime } from './get-user-last-active-time'
@@ -455,6 +458,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user-comments': getUserComments,
   'get-user-last-active-time': getUserLastActiveTime,
   'get-user-achievements': getUserAchievements,
+  'set-showcase-pins': setShowcasePins,
+  'claim-trophy': claimTrophy,
+  'unclaim-trophy': unclaimTrophy,
   'get-user-calibration': getUserCalibration,
   'get-monthly-bets-2025': getmonthlybets2025,
   'get-max-min-profit-2025': getmaxminprofit2025,
