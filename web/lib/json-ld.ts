@@ -70,7 +70,10 @@ export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   const truncated = text.slice(0, maxLength)
   const lastSpace = truncated.lastIndexOf(' ')
-  return (lastSpace > maxLength * 0.8 ? truncated.slice(0, lastSpace) : truncated) + '...'
+  return (
+    (lastSpace > maxLength * 0.8 ? truncated.slice(0, lastSpace) : truncated) +
+    '...'
+  )
 }
 
 function getVagueLabel(probability: number): string {
@@ -126,7 +129,8 @@ export function buildMarketQAPage(
 ): Record<string, unknown> | null {
   if (input.visibility !== 'public' || input.deleted) return null
   if (EXCLUDED_OUTCOME_TYPES.has(input.outcomeType)) return null
-  if (input.resolution && EXCLUDED_RESOLUTIONS.has(input.resolution)) return null
+  if (input.resolution && EXCLUDED_RESOLUTIONS.has(input.resolution))
+    return null
 
   const answerResult = formatMarketAnswer(input)
   if (!answerResult) return null
@@ -161,7 +165,10 @@ export function buildMarketQAPage(
 
 function formatMarketAnswer(
   input: MarketJsonLdInput
-): { key: 'suggestedAnswer' | 'acceptedAnswer'; answer: Record<string, unknown> } | null {
+): {
+  key: 'suggestedAnswer' | 'acceptedAnswer'
+  answer: Record<string, unknown>
+} | null {
   const { outcomeType, resolution } = input
   const dateLabel = input.lastUpdatedTime
     ? formatHumanDate(input.lastUpdatedTime)
@@ -171,7 +178,10 @@ function formatMarketAnswer(
   )
 
   // Resolved binary
-  if (outcomeType === 'BINARY' && (resolution === 'YES' || resolution === 'NO')) {
+  if (
+    outcomeType === 'BINARY' &&
+    (resolution === 'YES' || resolution === 'NO')
+  ) {
     const resolvedDate = input.resolutionTime
       ? formatHumanDate(input.resolutionTime)
       : 'unknown date'
@@ -179,7 +189,9 @@ function formatMarketAnswer(
       key: 'acceptedAnswer',
       answer: {
         '@type': 'Answer',
-        text: `${resolution === 'YES' ? 'Yes' : 'No'} — resolved on ${resolvedDate} by Manifold Markets prediction market.`,
+        text: `${
+          resolution === 'YES' ? 'Yes' : 'No'
+        } — resolved on ${resolvedDate} by Manifold Markets prediction market.`,
         datePublished: isoDate,
         author: MANIFOLD_ORG,
       },
@@ -239,7 +251,9 @@ function formatMarketAnswer(
       key: 'suggestedAnswer',
       answer: {
         '@type': 'Answer',
-        text: `Per Manifold Markets prediction market, ${names} ${top3.length === 1 ? 'is' : 'are'} most likely. See the market for live updates (${input.uniqueBettorCount.toLocaleString()} traders, as of ${dateLabel}).`,
+        text: `Per Manifold Markets prediction market, ${names} ${
+          top3.length === 1 ? 'is' : 'are'
+        } most likely. See the market for live updates (${input.uniqueBettorCount.toLocaleString()} traders, as of ${dateLabel}).`,
         url: input.url,
         dateModified: isoDate,
         author: MANIFOLD_ORG,

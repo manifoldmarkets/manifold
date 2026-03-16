@@ -459,10 +459,7 @@ function RichEditPost(props: {
   )
 }
 
-function PostJsonLd(props: {
-  post: TopLevelPost
-  comments: PostComment[]
-}) {
+function PostJsonLd(props: { post: TopLevelPost; comments: PostComment[] }) {
   const { post, comments } = props
   const filteredComments = comments
     .filter((c) => !c.deleted && !c.hidden && c.visibility !== 'unlisted')
