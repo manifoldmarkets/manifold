@@ -3,7 +3,16 @@ import { isAdminId } from 'common/envs/constants'
 import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { PRINTFUL_API_URL } from 'common/shop/items'
+import { PRINTFUL_API_URL, getShopItem } from 'common/shop/items'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { Notification } from 'common/notification'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
+import { nanoid } from 'common/util/random'
 
 export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
   { orderId },
@@ -15,7 +24,7 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
 
   // All checks + refund happen inside one transaction to prevent double-refund race.
   // We lock the order row with FOR UPDATE so concurrent cancel requests serialize.
-  const { refundAmount, printfulOrderId } = await betsQueue.enqueueFn(
+  const { refundAmount, printfulOrderId, userId, itemId: orderItemId } = await betsQueue.enqueueFn(
     () =>
       runTransactionWithRetries(async (tx) => {
         const order = await tx.oneOrNone(
@@ -68,6 +77,8 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
         return {
           refundAmount: amount,
           printfulOrderId: (order.printful_order_id as string) ?? null,
+          userId: order.user_id as string,
+          itemId: order.item_id as string,
         }
       }),
     [orderId]
@@ -93,10 +104,34 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
             await res.text().catch(() => '')
           )
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn(`Printful cancel request failed for ${printfulOrderId}:`, e)
       }
     }
+  }
+
+  // Notify the user their order was cancelled and refunded
+  try {
+    const pg = createSupabaseDirectClient()
+    const item = getShopItem(orderItemId)
+    const itemName = item?.name ?? orderItemId
+    const notification: Notification = {
+      id: nanoid(6),
+      userId,
+      reason: 'merch_order_update',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: orderId,
+      sourceType: 'merch_order_update',
+      sourceUserName: MANIFOLD_USER_NAME,
+      sourceUserUsername: MANIFOLD_USER_USERNAME,
+      sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+      sourceText: `Your ${itemName} order has been cancelled and refunded.`,
+      data: { itemId: orderItemId, itemName, event: 'cancelled', refundAmount },
+    }
+    await insertNotificationToSupabase(notification, pg)
+  } catch (e: unknown) {
+    console.warn('Merch cancel notification failed:', e)
   }
 
   return { success: true, refundedAmount: refundAmount }
