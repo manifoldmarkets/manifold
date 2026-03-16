@@ -42,8 +42,8 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
           throw new APIError(400, 'Order is already cancelled/refunded')
         }
 
-        if (order.status === 'DELIVERED') {
-          throw new APIError(400, 'Cannot cancel a delivered order')
+        if (order.status === 'SHIPPED' || order.status === 'DELIVERED') {
+          throw new APIError(400, 'Cannot cancel an order that has already shipped')
         }
 
         const amount = Number(order.price_mana)
