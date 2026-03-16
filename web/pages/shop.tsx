@@ -825,6 +825,7 @@ function MerchItemCard(props: {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [fetchingRates, setFetchingRates] = useState(false)
   const [shippingRates, setShippingRates] = useState<ShippingRate[] | null>(
     null
@@ -1363,7 +1364,10 @@ function MerchItemCard(props: {
             <Button
               color="indigo"
               disabled={!shippingInfo.name || !selectedShipping}
-              onClick={() => setShowConfirmOrderModal(true)}
+              onClick={() => {
+                setAcceptedTerms(false)
+                setShowConfirmOrderModal(true)
+              }}
             >
               Place Order ({formatMoney(discountedPrice)}
               {selectedShipping &&
@@ -1456,14 +1460,20 @@ function MerchItemCard(props: {
             </Row>
           </Col>
 
-          <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5"
+            />
             <span className="text-amber-700 dark:text-amber-300">
-              Please verify all details above. Orders are final once confirmed
-              with our fulfillment partner. Refunds may be issued at admin
-              discretion before an order ships. Mana spent on merch is
-              non-refundable after shipment.
+              I understand that orders are final once confirmed with our
+              fulfillment partner. Refunds may be issued at admin discretion
+              before an order ships. Mana spent on merch is non-refundable
+              after shipment.
             </span>
-          </div>
+          </label>
 
           <Row className="justify-end gap-2">
             <Button
@@ -1475,7 +1485,7 @@ function MerchItemCard(props: {
             <Button
               color="indigo"
               loading={purchasing}
-              disabled={countdown > 0 || purchasing}
+              disabled={countdown > 0 || purchasing || !acceptedTerms}
               onClick={handleSubmitOrder}
             >
               {purchasing
