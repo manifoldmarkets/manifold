@@ -37,6 +37,10 @@ export default function AdminMerchPage() {
       <NoSEO />
       <Col className="mx-8 gap-8">
         <Title>Merch Management</Title>
+        <p className="text-ink-500 -mt-4 text-sm">
+          Always refresh the page before cancelling an order in case the status
+          has changed.
+        </p>
         <StockManagement />
         <OrderManagement />
       </Col>
@@ -226,7 +230,7 @@ function OrderRow(props: {
   const itemName = item?.name ?? order.itemId
   const statusColor =
     ORDER_STATUS_COLORS[order.status] ?? 'bg-gray-100 text-gray-800'
-  const canCancel = !['CANCELLED', 'REFUNDED', 'FAILED', 'DELIVERED'].includes(
+  const canCancel = !['SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED', 'FAILED'].includes(
     order.status
   )
 
