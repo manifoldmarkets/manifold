@@ -256,6 +256,11 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
+import { cancelMerchOrder } from './cancel-merch-order'
+import { getMerchOrders } from './get-merch-orders'
+import { getMerchStockStatus } from './get-merch-stock-status'
+import { getUserMerchOrders } from './get-user-merch-orders'
+import { toggleMerchStock } from './toggle-merch-stock'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
@@ -542,4 +547,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-charity-champion': claimCharityChampion,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,
+  'get-merch-orders': getMerchOrders,
+  'get-merch-stock-status': getMerchStockStatus,
+  'toggle-merch-stock': toggleMerchStock,
+  'cancel-merch-order': cancelMerchOrder,
+  'get-user-merch-orders': getUserMerchOrders,
 } as const
