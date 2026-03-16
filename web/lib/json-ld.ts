@@ -163,9 +163,7 @@ export function buildMarketQAPage(
   }
 }
 
-function formatMarketAnswer(
-  input: MarketJsonLdInput
-): {
+function formatMarketAnswer(input: MarketJsonLdInput): {
   key: 'suggestedAnswer' | 'acceptedAnswer'
   answer: Record<string, unknown>
 } | null {
