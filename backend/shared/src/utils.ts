@@ -111,6 +111,9 @@ export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 // TODO: deprecate in favor of common/src/envs/is-prod.ts
 export const isProd = () => {
+  if (process.env.LOCAL_ONLY === 'true') {
+    return false
+  }
   // ian: The first clause is for the API server, and the
   // second clause is for local scripts and cloud functions
   if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {

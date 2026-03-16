@@ -39,6 +39,19 @@ type KeyCredentials = { kind: 'key'; data: string }
 type Credentials = JwtCredentials | KeyCredentials
 
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
+  // LOCAL_ONLY mode: accept X-Local-User header as trusted auth
+  // Never fall through to Firebase — it isn't initialized.
+  if (process.env.LOCAL_ONLY === 'true') {
+    const localUserId = req.get('X-Local-User')
+    if (localUserId) {
+      return {
+        kind: 'jwt',
+        data: { user_id: localUserId } as unknown as admin.auth.DecodedIdToken,
+      }
+    }
+    throw new APIError(401, 'Missing X-Local-User header (LOCAL_ONLY mode).')
+  }
+
   const auth = admin.auth()
   const authHeader = req.get('Authorization')
   if (!authHeader) {
