@@ -31,6 +31,7 @@ import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
+import { JsonLd } from 'web/components/JsonLd'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -67,6 +68,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { useUserBans } from 'web/hooks/use-user-bans'
 import { User } from 'web/lib/firebase/users'
+import { buildPersonProfile } from 'web/lib/json-ld'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { api } from 'web/lib/api/api'
@@ -246,6 +248,22 @@ function UserProfile(props: {
         description={shouldIgnoreUser ? '' : user.bio ?? ''}
         url={`/${user.username}`}
         shouldIgnore={shouldIgnoreUser}
+      />
+      <JsonLd
+        data={
+          shouldIgnoreUser
+            ? null
+            : buildPersonProfile({
+                name: user.name,
+                username: user.username,
+                avatarUrl: user.avatarUrl,
+                bio: user.bio,
+                website: user.website,
+                twitterHandle: user.twitterHandle,
+                createdTime: user.createdTime,
+              })
+        }
+        id="person"
       />
       {showConfetti && <FullscreenConfetti />}
 
