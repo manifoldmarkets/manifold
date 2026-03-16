@@ -31,12 +31,12 @@ export function pathWithPrefix(path: APIPath) {
 }
 
 export function getWebsocketUrl() {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return `ws://${process.env.NEXT_PUBLIC_API_URL}/ws`
-  } else {
-    const { apiEndpoint } = ENV_CONFIG
-    return `wss://${apiEndpoint}/ws`
-  }
+  // if (process.env.NEXT_PUBLIC_API_URL) {
+  //   return `ws://${process.env.NEXT_PUBLIC_API_URL}/ws`
+  // } else {
+  const { apiEndpoint } = ENV_CONFIG
+  return `wss://${apiEndpoint}/ws`
+  // }
 }
 
 // TODO: strictly type
