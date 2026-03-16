@@ -3,6 +3,15 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { getShopItem } from 'common/shop/items'
+import { Notification } from 'common/notification'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
+import { nanoid } from 'common/util/random'
 
 // Printful webhook event types we care about
 // See: https://developers.printful.com/docs/#tag/Webhook-API
@@ -72,17 +81,19 @@ export const printfulWebhook = async (req: Request, res: Response) => {
 
   const pg = createSupabaseDirectClient()
 
+  let shippedRowCount = 0
   try {
     if (newStatus === 'SHIPPED') {
-      await pg.none(
+      const result = await pg.result(
         `UPDATE shop_orders
          SET status = 'SHIPPED',
              shipped_time = now(),
              printful_status = $2
          WHERE printful_order_id = $1
-         AND status NOT IN ('CANCELLED', 'REFUNDED', 'FAILED')`,
+         AND status NOT IN ('SHIPPED', 'CANCELLED', 'REFUNDED', 'FAILED')`,
         [printfulOrderId, event.data.order.status]
       )
+      shippedRowCount = result.rowCount ?? 0
     } else {
       await pg.none(
         `UPDATE shop_orders
@@ -93,7 +104,7 @@ export const printfulWebhook = async (req: Request, res: Response) => {
         [printfulOrderId, newStatus, event.data.order.status]
       )
     }
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('Printful webhook DB update failed:', e)
     res.status(500).send('Internal error')
     return
@@ -103,7 +114,7 @@ export const printfulWebhook = async (req: Request, res: Response) => {
   if (REFUND_EVENTS.has(event.type)) {
     try {
       await refundOrder(pg, printfulOrderId, event.type)
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(`Printful webhook auto-refund failed for ${printfulOrderId}:`, e)
     }
   }
@@ -114,6 +125,15 @@ export const printfulWebhook = async (req: Request, res: Response) => {
       `ACTION REQUIRED: Printful package returned for order ${printfulOrderId}. ` +
       `Check /admin/merch and contact the user to resolve.`
     )
+  }
+
+  // Notify user on shipped orders (only if the update actually changed a row)
+  if (newStatus === 'SHIPPED' && shippedRowCount > 0) {
+    try {
+      await notifyShipped(pg, printfulOrderId)
+    } catch (e: unknown) {
+      console.warn(`Merch shipped notification failed for ${printfulOrderId}:`, e)
+    }
   }
 
   res.status(200).send('OK')
@@ -169,4 +189,35 @@ async function refundOrder(
       }),
     [order.id]
   )
+}
+
+async function notifyShipped(
+  pg: ReturnType<typeof createSupabaseDirectClient>,
+  printfulOrderId: string
+) {
+  const order = await pg.oneOrNone(
+    `SELECT id, user_id, item_id FROM shop_orders WHERE printful_order_id = $1`,
+    [printfulOrderId]
+  )
+  if (!order) return
+
+  const item = getShopItem(order.item_id)
+  const itemName = item?.name ?? order.item_id
+
+  const notification: Notification = {
+    id: nanoid(6),
+    userId: order.user_id,
+    reason: 'merch_order_update',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: String(order.id),
+    sourceType: 'merch_order_update',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: `Your ${itemName} has shipped!`,
+    data: { itemId: order.item_id, itemName, event: 'shipped' },
+  }
+
+  await insertNotificationToSupabase(notification, pg)
 }

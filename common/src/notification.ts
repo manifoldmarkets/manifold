@@ -94,6 +94,7 @@ export type notification_source_types =
   | 'membership_subscription'
   | 'prize_winner'
   | 'charity_champion'
+  | 'merch_order_update'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -366,6 +367,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Membership subscription updates',
     detailed:
       'Updates when your membership auto-renews or is cancelled due to insufficient balance',
+  },
+  merch_order_update: {
+    simple: 'Merch order updates',
+    detailed: 'Updates when your merch order ships or is cancelled',
   },
   market_movements: {
     simple: 'Market movements',

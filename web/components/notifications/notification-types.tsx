@@ -209,6 +209,14 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'merch_order_update') {
+    return (
+      <MerchOrderNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'bounty_added') {
     return (
       <BountyAddedNotification
@@ -2347,6 +2355,44 @@ function CharityGiveawayCampaignNotification(props: {
         <span>
           Charity Giveaway #{data.giveawayNum} ends in {timeLeft}.{' '}
           <b>{prizeAmount}</b> prize amount.
+        </span>
+      )}
+    </NotificationFrame>
+  )
+}
+
+function MerchOrderNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const data = notification.data as {
+    itemName?: string
+    event?: string
+    refundAmount?: number
+  }
+  const isShipped = data?.event === 'shipped'
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <GiftIcon
+          className={
+            isShipped ? 'text-primary-500 h-8 w-8' : 'text-ink-500 h-8 w-8'
+          }
+        />
+      }
+      link="/shop"
+    >
+      <span>{notification.sourceText}</span>
+      {data?.refundAmount != null && (
+        <span className="text-ink-600">
+          {' '}
+          ({formatMoney(data.refundAmount)} refunded)
         </span>
       )}
     </NotificationFrame>
