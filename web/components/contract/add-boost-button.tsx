@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { BOOST_CONTRACT_SUBSIDY_MANA, contractBoostAddsSubsidy } from 'common/boost'
+import {
+  BOOST_CONTRACT_SUBSIDY_MANA,
+  contractBoostAddsSubsidy,
+} from 'common/boost'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
