@@ -3,9 +3,11 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import {
+  BOOST_CONTRACT_SUBSIDY_MANA,
   BOOST_INITIATED_EVENT_NAMES,
   BOOST_PAYMENT_TYPE,
   BOOST_PURCHASE_EVENT_NAMES,
+  contractBoostAddsSubsidy,
 } from 'common/boost'
 import { Contract, contractUrl } from 'common/contract'
 import {
@@ -19,6 +21,7 @@ import { TopLevelPost } from 'common/top-level-post'
 import { ContractBoostPurchaseTxn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { trackPublicEvent } from 'shared/analytics'
+import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
 import { boostContractImmediately } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
@@ -230,6 +233,13 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
             : BOOST_PAYMENT_TYPE.MANA,
         }
       )
+      if (
+        contract &&
+        !freeAdminBoost &&
+        contractBoostAddsSubsidy(contract)
+      ) {
+        await addHouseSubsidy(contract.id, BOOST_CONTRACT_SUBSIDY_MANA)
+      }
       if (startTime <= Date.now() && !fundViaCash && contract) {
         await boostContractImmediately(pg, contract)
       }

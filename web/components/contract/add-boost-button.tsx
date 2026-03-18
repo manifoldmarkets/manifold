@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BOOST_CONTRACT_SUBSIDY_MANA, contractBoostAddsSubsidy } from 'common/boost'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
@@ -93,6 +94,7 @@ function BoostPurchaseModal(props: {
   if (!user) return null
 
   const notEnoughFunds = (user.balance ?? 0) < BOOST_COST_MANA
+  const paidBoostAddsSubsidy = contractBoostAddsSubsidy(contract)
 
   const purchaseBoost = async (paymentMethod: 'mana' | 'cash') => {
     setLoading(paymentMethod)
@@ -109,7 +111,11 @@ function BoostPurchaseModal(props: {
       }
 
       toast.success(
-        'Market boosted! It will be featured on the homepage for 24 hours.'
+        paidBoostAddsSubsidy
+          ? `Market boosted! It will be featured on the homepage for 24 hours and receive ${formatMoney(
+              BOOST_CONTRACT_SUBSIDY_MANA
+            )} in subsidy.`
+          : 'Market boosted! It will be featured on the homepage for 24 hours.'
       )
       setOpen(false)
     } catch (e) {
@@ -158,6 +164,13 @@ function BoostPurchaseModal(props: {
                   .add(24, 'hours')
                   .format('MMM D')}`}
           </div>
+
+          {paidBoostAddsSubsidy && (
+            <div className="text-ink-600 text-sm">
+              Paid boosts also add {formatMoney(BOOST_CONTRACT_SUBSIDY_MANA)} in
+              subsidy to this contract.
+            </div>
+          )}
 
           <Row className="items-center gap-2">
             <div className="text-ink-600">Start time:</div>
