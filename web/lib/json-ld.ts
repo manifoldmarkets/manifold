@@ -138,7 +138,7 @@ export function buildMarketQAPage(
   const question: Record<string, unknown> = {
     '@type': 'Question',
     name: input.question,
-    text: truncateText(input.description, 5000),
+    text: truncateText(input.description || input.question, 5000),
     url: input.url,
     datePublished: safeIsoDate(input.createdTime),
     dateModified: safeIsoDate(input.lastUpdatedTime),
