@@ -38,6 +38,21 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
 
   const pg = createSupabaseDirectClient()
 
+  // Check if item is out of stock (fail-closed: if table doesn't exist, block purchase)
+  try {
+    const stockStatus = await pg.oneOrNone(
+      `SELECT out_of_stock FROM merch_stock_status WHERE item_id = $1`,
+      [itemId]
+    )
+    if (!stockStatus || stockStatus.out_of_stock) {
+      throw new APIError(400, 'This item is currently out of stock')
+    }
+  } catch (e) {
+    if (e instanceof APIError) throw e
+    console.warn('merch_stock_status check failed (blocking purchase):', e)
+    throw new APIError(400, 'This item is currently out of stock')
+  }
+
   // Pre-phase: Verify shipping cost against Printful's actual rates.
   // We don't trust the client-provided shippingCost — always validate server-side.
   // Fail closed: if Printful rates API is unavailable, reject the order.

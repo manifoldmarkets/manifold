@@ -230,6 +230,26 @@ export default function ShopPage() {
   const isAdminOrMod = useAdminOrMod()
   const optimisticContext = useOptimisticEntitlements()
 
+  // Fetch user's merch orders to show "Already purchased" state
+  const { data: userMerchData, refresh: refreshMerchOrders } = useAPIGetter(
+    'get-user-merch-orders',
+    {},
+    undefined,
+    undefined,
+    !!user
+  )
+  const purchasedMerchIds = useMemo(
+    () => new Set((userMerchData?.orders ?? []).map((o) => o.itemId)),
+    [userMerchData]
+  )
+
+  // Fetch merch stock status
+  const { data: stockData } = useAPIGetter('get-merch-stock-status', {})
+  const outOfStockIds = useMemo(
+    () => new Set(stockData?.outOfStockItems ?? []),
+    [stockData]
+  )
+
   // Fetch charity giveaway data once for both cards
   const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
     'get-charity-giveaway',
@@ -694,6 +714,9 @@ export default function ShopPage() {
                       item={item}
                       user={user}
                       allEntitlements={effectiveEntitlements}
+                      alreadyPurchased={purchasedMerchIds.has(item.id)}
+                      outOfStock={outOfStockIds.has(item.id)}
+                      onPurchased={refreshMerchOrders}
                     />
                   ))}
               </div>
@@ -785,8 +808,11 @@ function MerchItemCard(props: {
   item: ShopItem
   user: User | null | undefined
   allEntitlements?: UserEntitlement[]
+  alreadyPurchased?: boolean
+  outOfStock?: boolean
+  onPurchased?: () => void
 }) {
-  const { item, user, allEntitlements } = props
+  const { item, user, allEntitlements, alreadyPurchased, outOfStock, onPurchased } = props
   const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
   const discountedPrice =
     shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
@@ -799,6 +825,7 @@ function MerchItemCard(props: {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [fetchingRates, setFetchingRates] = useState(false)
   const [shippingRates, setShippingRates] = useState<ShippingRate[] | null>(
     null
@@ -909,6 +936,7 @@ function MerchItemCard(props: {
         zip: '',
         country: 'US',
       })
+      onPurchased?.()
     } catch (e: any) {
       toast.error(e.message || 'Failed to place order')
       setShowConfirmOrderModal(false)
@@ -922,8 +950,23 @@ function MerchItemCard(props: {
 
   return (
     <>
-      <Card className="group relative flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30">
-        {item.hidden && (
+      <Card className={clsx(
+        'group relative flex flex-col gap-3 p-4 transition-all duration-200',
+        outOfStock || alreadyPurchased
+          ? 'opacity-75'
+          : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30'
+      )}>
+        {outOfStock && (
+          <div className="absolute right-2 top-2 z-10 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-400">
+            Out of Stock
+          </div>
+        )}
+        {alreadyPurchased && !outOfStock && (
+          <div className="absolute right-2 top-2 z-10 rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-400">
+            Purchased
+          </div>
+        )}
+        {item.hidden && !outOfStock && !alreadyPurchased && (
           <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
             Hidden
           </div>
@@ -1030,13 +1073,21 @@ function MerchItemCard(props: {
               <Row className="text-ink-500 mt-0.5 items-center gap-1 text-xs">
                 <span>Limit 1 per customer</span>
                 <InfoTooltip
-                  text="We hope to lift this restriction once the mana shop is up and running smoothly!"
+                  text="Can't get enough? Keep an eye out for new merch drops!"
                   size="sm"
                 />
               </Row>
             )}
           </Col>
-          {!canPurchase && user ? (
+          {outOfStock ? (
+            <Button size="sm" color="gray" disabled>
+              Out of Stock
+            </Button>
+          ) : alreadyPurchased ? (
+            <Button size="sm" color="gray" disabled>
+              Purchased
+            </Button>
+          ) : !canPurchase && user ? (
             <Link href="/checkout">
               <Button size="sm" color="gradient-pink">
                 Buy mana
@@ -1313,7 +1364,10 @@ function MerchItemCard(props: {
             <Button
               color="indigo"
               disabled={!shippingInfo.name || !selectedShipping}
-              onClick={() => setShowConfirmOrderModal(true)}
+              onClick={() => {
+                setAcceptedTerms(false)
+                setShowConfirmOrderModal(true)
+              }}
             >
               Place Order ({formatMoney(discountedPrice)}
               {selectedShipping &&
@@ -1406,14 +1460,20 @@ function MerchItemCard(props: {
             </Row>
           </Col>
 
-          <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
-            <Row className="items-start gap-2">
-              <span className="text-amber-700 dark:text-amber-300">
-                Please verify all details above. Orders cannot be modified after
-                submission.
-              </span>
-            </Row>
-          </div>
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span className="text-amber-700 dark:text-amber-300">
+              I understand that orders are final once confirmed with our
+              fulfillment partner. Refunds may be issued at admin discretion
+              before an order ships. Mana spent on merch is non-refundable
+              after shipment.
+            </span>
+          </label>
 
           <Row className="justify-end gap-2">
             <Button
@@ -1425,7 +1485,7 @@ function MerchItemCard(props: {
             <Button
               color="indigo"
               loading={purchasing}
-              disabled={countdown > 0 || purchasing}
+              disabled={countdown > 0 || purchasing || !acceptedTerms}
               onClick={handleSubmitOrder}
             >
               {purchasing

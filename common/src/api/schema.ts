@@ -72,7 +72,7 @@ import { RanksType } from 'common/achievements'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
 import { ShopItem } from 'common/shop/items'
-import { UserEntitlement } from 'common/shop/types'
+import { UserEntitlement, ShopOrder } from 'common/shop/types'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
@@ -3507,6 +3507,58 @@ export const API = (_apiTypeCheck = {
         totalCount: number
       }[]
     },
+  },
+  // Merch admin endpoints
+  'get-merch-orders': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limit: z.coerce.number().int().min(1).max(200).default(50),
+        offset: z.coerce.number().int().min(0).default(0),
+      })
+      .strict(),
+    returns: {} as {
+      orders: (ShopOrder & { username: string; displayName: string })[]
+      total: number
+    },
+  },
+  'get-merch-stock-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as { outOfStockItems: string[] },
+  },
+  'toggle-merch-stock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+      })
+      .strict(),
+    returns: {} as { itemId: string; outOfStock: boolean },
+  },
+  'cancel-merch-order': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        orderId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; refundedAmount: number },
+  },
+  'get-user-merch-orders': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { orders: ShopOrder[] },
   },
 } as const)
 

@@ -98,6 +98,7 @@ export default function AdminPage() {
         <LabCard title="🗺️ user journeys" href="/admin/journeys" />
         <LabCard title="🥩 new user questions" href="/newbies" />
         <LabCard title="🤬 reports" href="/admin/reports" />
+        <LabCard title="👕 merch management" href="/admin/merch" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
         <LabCard title="👤 update user" href="/admin/update-user" />
