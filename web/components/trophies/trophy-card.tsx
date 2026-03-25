@@ -16,6 +16,7 @@ import {
   TROPHY_TIER_STYLES,
   getNextMilestone,
   formatTrophyValue,
+  getTrophyBadgeUrl,
 } from 'common/trophies'
 
 // ---------------------------------------------------------------------------
@@ -101,69 +102,109 @@ export function TrophyCard(props: {
   // Progress bar: show toward the NEXT milestone after highest reached
   const nextMilestone = getNextMilestone(definition, highestMilestone)
 
+  const badgeUrl = getTrophyBadgeUrl(definition.id, viewing.name)
+  const [imgError, setImgError] = useState<Record<string, boolean>>({})
+  const hasBadgeImage = !imgError[badgeUrl]
+
+  // Progress toward the viewed milestone (0-1)
+  const progressPct = Math.min(currentValue / viewing.threshold, 1)
+
   return (
     <Col
       className={clsx(
-        'relative overflow-hidden rounded-xl border transition-all',
+        'relative overflow-hidden rounded-2xl transition-all',
         isReached
-          ? `border-ink-200 dark:border-ink-300/20 ${style.bgTint}`
-          : 'border-ink-200 bg-canvas-0 dark:border-ink-300/10'
+          ? 'bg-canvas-0 dark:bg-canvas-0'
+          : 'bg-canvas-0 dark:bg-canvas-0'
       )}
     >
-      {/* Gradient accent bar at top */}
-      <div
-        className={clsx(
-          'h-1 w-full bg-gradient-to-r',
-          isReached ? style.gradient : 'from-ink-200 to-ink-300 dark:from-ink-500 dark:to-ink-600'
-        )}
-      />
-
-      <Col className="gap-2 p-3">
-        {/* Header: arrows + emoji/milestone + label */}
-        <Row className="items-center justify-between">
-          <button
-            className={clsx(
-              'rounded-full p-0.5 transition-colors',
-              canGoLeft
-                ? 'hover:bg-ink-200 text-ink-600'
-                : 'text-ink-300 cursor-default'
-            )}
-            onClick={() => canGoLeft && setViewingIdx(viewingIdx - 1)}
-            disabled={!canGoLeft}
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-          </button>
-
-          <Col className="items-center gap-0">
-            <Row className="items-center gap-1.5">
-              <span className="text-lg">{viewing.emoji}</span>
-              <span
+      {/* Art-centric layout: large image dominates */}
+      <div className="relative">
+        {/* Background: the badge image or emoji, full-width */}
+        {hasBadgeImage ? (
+          <div className="flex items-center justify-center px-6 pt-5 pb-2">
+            <div
+              className={clsx(
+                'rounded-full bg-gradient-to-br transition-all',
+                style.gradient,
+                style.ringWidth,
+                isReached ? style.glow : 'opacity-40 grayscale'
+              )}
+            >
+              <img
+                src={badgeUrl}
+                alt={viewing.name}
                 className={clsx(
-                  'text-sm font-bold',
-                  isReached ? style.textColor : 'text-ink-400'
+                  'h-28 w-28 rounded-full object-cover brightness-125 contrast-110 dark:brightness-100 dark:contrast-100',
+                  !isReached && 'grayscale opacity-60'
                 )}
-              >
-                {viewing.name}
-              </span>
-            </Row>
-            <span className="text-ink-500 text-[11px]">
-              {definition.label}
-            </span>
-          </Col>
+                onError={() =>
+                  setImgError((prev) => ({ ...prev, [badgeUrl]: true }))
+                }
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center px-6 pt-5 pb-2">
+            <div
+              className={clsx(
+                'flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br',
+                style.gradient,
+                isReached ? style.glow : 'opacity-40 grayscale'
+              )}
+            >
+              <span className="text-5xl">{viewing.emoji}</span>
+            </div>
+          </div>
+        )}
 
-          <button
-            className={clsx(
-              'rounded-full p-0.5 transition-colors',
-              canGoRight
-                ? 'hover:bg-ink-200 text-ink-600'
-                : 'text-ink-300 cursor-default'
-            )}
-            onClick={() => canGoRight && setViewingIdx(viewingIdx + 1)}
-            disabled={!canGoRight}
-          >
-            <ChevronRightIcon className="h-4 w-4" />
-          </button>
-        </Row>
+        {/* Navigation arrows — positioned over the image area */}
+        <button
+          className={clsx(
+            'absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors',
+            canGoLeft
+              ? 'text-ink-500 hover:text-ink-700 hover:bg-ink-100 dark:hover:bg-ink-700'
+              : 'text-ink-300 dark:text-ink-600 cursor-default'
+          )}
+          onClick={() => canGoLeft && setViewingIdx(viewingIdx - 1)}
+          disabled={!canGoLeft}
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </button>
+        <button
+          className={clsx(
+            'absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors',
+            canGoRight
+              ? 'text-ink-500 hover:text-ink-700 hover:bg-ink-100 dark:hover:bg-ink-700'
+              : 'text-ink-300 dark:text-ink-600 cursor-default'
+          )}
+          onClick={() => canGoRight && setViewingIdx(viewingIdx + 1)}
+          disabled={!canGoRight}
+        >
+          <ChevronRightIcon className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Info section below the art */}
+      <Col className="items-center gap-1.5 px-3 pb-3 pt-1">
+        {/* Name */}
+        <span
+          className={clsx(
+            'text-base font-bold',
+            isReached ? style.textColor : 'text-ink-400'
+          )}
+        >
+          {viewing.name}
+        </span>
+
+        {/* Category label + stat */}
+        <span className="text-ink-500 text-xs">
+          {definition.label}
+          {' \u00B7 '}
+          {definition.unit === 'years'
+            ? `${Math.round(currentValue * 365)} days`
+            : `${formatTrophyValue(definition, currentValue)} ${definition.unit}`}
+        </span>
 
         {/* Dot navigation */}
         <MilestoneDots
@@ -173,80 +214,65 @@ export function TrophyCard(props: {
           onSelect={setViewingIdx}
         />
 
-        {/* Progress section — bar is always relative to the VIEWED tier */}
-        <Col className="gap-1">
-          <Row className="items-baseline justify-between">
-            <span className={clsx('text-xs font-medium', isReached ? 'text-ink-700 dark:text-ink-300' : 'text-ink-500')}>
-              {definition.unit === 'years'
-                ? `${Math.round(currentValue * 365)} days / ${formatTrophyValue(definition, viewing.threshold)} ${definition.unit}`
-                : `${formatTrophyValue(definition, currentValue)} / ${formatTrophyValue(definition, viewing.threshold)} ${definition.unit}`}
-            </span>
-          </Row>
-          <div className="bg-ink-200 dark:bg-ink-600 h-1.5 w-full overflow-hidden rounded-full">
-            <div
+        {/* Thin progress bar */}
+        <div className="bg-ink-200 dark:bg-ink-700 h-1 w-full overflow-hidden rounded-full">
+          <div
+            className={clsx(
+              'h-full rounded-full bg-gradient-to-r transition-all',
+              style.gradient
+            )}
+            style={{
+              width: `${progressPct * 100}%`,
+              opacity: isReached ? 1 : 0.4,
+            }}
+          />
+        </div>
+
+        {/* Next milestone hint OR claim button */}
+        {isOwnProfile && isReached && viewingIdx > claimedIdx && onClaim ? (
+          <button
+            className={clsx(
+              'mt-1 w-full rounded-lg py-1.5 text-xs font-semibold text-white transition-all',
+              claiming
+                ? 'cursor-wait bg-gradient-to-r opacity-75'
+                : 'bg-gradient-to-r hover:brightness-110',
+              style.gradient
+            )}
+            onClick={() => onClaim(definition.id, viewing.name)}
+            disabled={claiming}
+          >
+            {claiming ? 'Claiming...' : `Claim ${viewing.name}`}
+          </button>
+        ) : isReached && viewingIdx <= claimedIdx ? (
+          justClaimed && onPinToProfile ? (
+            <button
               className={clsx(
-                'h-full rounded-full bg-gradient-to-r transition-all',
+                'mt-1 w-full rounded-lg py-1.5 text-xs font-semibold text-white transition-all',
+                'bg-gradient-to-r hover:brightness-110',
                 style.gradient
               )}
-              style={{
-                width: `${Math.min((currentValue / viewing.threshold) * 100, 100)}%`,
-                opacity: isReached ? 1 : 0.5,
-              }}
-            />
-          </div>
-          {/* "Next up" hint — always shows the next unearned milestone globally */}
-          {nextMilestone ? (
-            <span className="text-ink-400 text-[11px]">
-              {definition.unit === 'years'
-                ? `${Math.round((nextMilestone.threshold - currentValue) * 365)} days`
-                : formatTrophyValue(definition, nextMilestone.threshold - currentValue)}{' '}more for{' '}
-              {nextMilestone.name}
-            </span>
+              onClick={() => onPinToProfile(definition.id)}
+            >
+              Pin to Profile
+            </button>
           ) : (
-            <span className="text-[11px] font-medium text-amber-500">
-              Max reached!
-            </span>
-          )}
-
-          {/* Per-tier claim button or claimed indicator */}
-          {isReached && viewingIdx <= claimedIdx && (
-            justClaimed && onPinToProfile ? (
-              <button
-                className={clsx(
-                  'w-full rounded-lg py-1 text-xs font-semibold text-white transition-all',
-                  'bg-gradient-to-r hover:brightness-110',
-                  style.gradient
-                )}
-                onClick={() => onPinToProfile(definition.id)}
-              >
-                Pin to Profile
-              </button>
-            ) : (
-              <Row className="items-center justify-center gap-1 text-[11px]">
-                <CheckCircleIcon className={clsx('h-3.5 w-3.5', style.textColor)} />
-                <span className={clsx('font-medium', style.textColor)}>Claimed</span>
-              </Row>
-            )
-          )}
-          {isOwnProfile &&
-            isReached &&
-            viewingIdx > claimedIdx &&
-            onClaim && (
-              <button
-                className={clsx(
-                  'w-full rounded-lg py-1 text-xs font-semibold text-white transition-all',
-                  claiming
-                    ? 'cursor-wait bg-gradient-to-r opacity-75'
-                    : 'bg-gradient-to-r hover:brightness-110',
-                  style.gradient
-                )}
-                onClick={() => onClaim(definition.id, viewing.name)}
-                disabled={claiming}
-              >
-                {claiming ? 'Claiming...' : `Claim ${viewing.name}`}
-              </button>
-            )}
-        </Col>
+            <Row className="mt-0.5 items-center gap-1 text-[11px]">
+              <CheckCircleIcon className={clsx('h-3.5 w-3.5', style.textColor)} />
+              <span className={clsx('font-medium', style.textColor)}>Claimed</span>
+            </Row>
+          )
+        ) : nextMilestone ? (
+          <span className="text-ink-400 text-[11px]">
+            {definition.unit === 'years'
+              ? `${Math.round((nextMilestone.threshold - currentValue) * 365)} days`
+              : formatTrophyValue(definition, nextMilestone.threshold - currentValue)}{' '}more for{' '}
+            {nextMilestone.name}
+          </span>
+        ) : (
+          <span className="text-[11px] font-medium text-amber-500">
+            Max reached!
+          </span>
+        )}
       </Col>
     </Col>
   )
@@ -273,7 +299,7 @@ export function TrophyGrid(props: {
   )
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {definitions.map((def) => {
         const progress = progressMap.get(def.id)
         if (!progress) return null

@@ -302,7 +302,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
       <AchievementsSection data={achievements} />
 
       {/* Admin tools: unclaim trophies */}
-      {isAdmin && isOwnProfile && achievements.claimedTrophies.length > 0 && (
+      {isAdmin && isOwnProfile && achievements.claimedTrophies?.length > 0 && (
         <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
           <span className="text-ink-500 text-xs font-mono">
             [ADMIN] Unclaim trophies

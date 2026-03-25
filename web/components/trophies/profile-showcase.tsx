@@ -7,6 +7,7 @@ import {
   computeAllTrophyProgress,
   countClaimedMilestones,
   formatTrophyValue,
+  getTrophyBadgeUrl,
 } from 'common/trophies'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -25,6 +26,7 @@ type ShowcaseBadgeData = {
   stat?: string // e.g. "2.3M" — shown inline after label
   detail: string // tooltip text
   emoji: string
+  badgeImageUrl?: string // e.g. /trophy-badges/trading-volume/shark.png
   tier: 'gray' | 'green' | 'blue' | 'purple' | 'crimson' | 'gold' | 'prismatic'
 }
 
@@ -91,6 +93,7 @@ function generateBadgesFromTrophies(
       stat: formatTrophyValue(def, currentValue),
       detail: `${def.label}: ${formatTrophyValue(def, currentValue)} ${def.unit}`,
       emoji: m.emoji,
+      badgeImageUrl: getTrophyBadgeUrl(def.id, m.name),
       tier: m.tier,
     })
   }
@@ -119,6 +122,33 @@ function generateLeagueBadge(
 // ---------------------------------------------------------------------------
 // Badge UI
 // ---------------------------------------------------------------------------
+
+function BadgeIcon(props: {
+  badge: ShowcaseBadgeData
+  size: 'sm' | 'lg'
+}) {
+  const { badge, size } = props
+  const [imgError, setImgError] = useState(false)
+  const px = size === 'lg' ? 28 : 20
+
+  if (badge.badgeImageUrl && !imgError) {
+    return (
+      <img
+        src={badge.badgeImageUrl}
+        alt={badge.label}
+        width={px}
+        height={px}
+        className="rounded-full object-cover"
+        onError={() => setImgError(true)}
+      />
+    )
+  }
+  return (
+    <span className={size === 'lg' ? 'text-lg' : 'text-sm'}>
+      {badge.emoji}
+    </span>
+  )
+}
 
 function ShowcaseBadge(props: {
   badge: ShowcaseBadgeData
@@ -158,9 +188,7 @@ function ShowcaseBadge(props: {
                 'linear-gradient(135deg, rgb(var(--color-canvas-0) / 0.88), rgb(var(--color-canvas-0) / 0.94))',
             }}
           >
-            <span className={isLarge ? 'text-lg' : 'text-sm'}>
-              {badge.emoji}
-            </span>
+            <BadgeIcon badge={badge} size={size ?? 'sm'} />
             <span
               className={clsx(
                 'font-semibold',
