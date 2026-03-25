@@ -1,5 +1,6 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { Button } from 'web/components/buttons/button'
 
@@ -46,6 +47,8 @@ export function BettingStreakProgressModal(props: {
   questMultiplier?: number
 }) {
   const { open, setOpen, currentStreak, questMultiplier = 1 } = props
+  const user = useUser()
+  const freezes = user?.streakForgiveness ?? 0
   return (
     <Modal open={open} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 rounded-md px-8 py-6">
@@ -64,9 +67,17 @@ export function BettingStreakProgressModal(props: {
           />
         </div>
 
-        <Button onClick={() => setOpen(false)} className="self-end">
-          Got it
-        </Button>
+        <Row className="w-full items-center justify-between">
+          <Row className="items-center gap-1.5 text-sm text-ink-500">
+            <span>🧊</span>
+            <span>
+              {freezes > 0
+                ? `${freezes} streak freeze${freezes === 1 ? '' : 's'} owned`
+                : 'No streak freezes — buy more in the shop!'}
+            </span>
+          </Row>
+          <Button onClick={() => setOpen(false)}>Got it</Button>
+        </Row>
       </Col>
     </Modal>
   )

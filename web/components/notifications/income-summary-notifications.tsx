@@ -7,6 +7,7 @@ import {
   ManaPaymentData,
   Notification,
   ReferralData,
+  StreakFreezeUsedData,
   UniqueBettorData,
 } from 'common/notification'
 import { formatMoney, maybePluralize } from 'common/util/format'
@@ -390,6 +391,47 @@ export function BettingStreakExpiringNotification(props: {
       <span className="line-clamp-3">
         Don't let your <span>🔥 {streakInDays} day</span>{' '}
         <PrimaryNotificationLink text="Prediction Streak" /> expire!
+      </span>
+      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+    </NotificationFrame>
+  )
+}
+
+export function BettingStreakFreezeUsedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const [open, setOpen] = useState(false)
+  const user = useUser()
+  const data = notification.data as StreakFreezeUsedData | undefined
+  const streak = data?.streak ?? 0
+  const freezesRemaining = data?.freezesRemaining ?? 0
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'🧊'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-blue-400 to-cyan-300'
+          }
+        />
+      }
+      onClick={() => setOpen(true)}
+      subtitle={
+        freezesRemaining > 0
+          ? `You have ${freezesRemaining} streak freeze${freezesRemaining === 1 ? '' : 's'} remaining.`
+          : 'You have no streak freezes left — predict today to keep your streak!'
+      }
+    >
+      <span className="line-clamp-3">
+        A <PrimaryNotificationLink text="Streak Freeze" /> was used to save
+        your <span>🔥 {streak} day</span> prediction streak!
       </span>
       <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
     </NotificationFrame>
