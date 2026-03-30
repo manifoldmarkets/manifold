@@ -251,7 +251,6 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
-import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
