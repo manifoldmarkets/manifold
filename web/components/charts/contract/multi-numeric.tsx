@@ -28,20 +28,12 @@ const getBetPoints = (contract: MultiNumericContract, bets: MultiPoints) => {
           y: pt.y * answersById[answerId].midpoint!,
         }))
     )
-    const rawProbs = Object.values(filledInBetPoints)
     return map(
-      zip(...expectedValues, ...rawProbs) as Array<
-        { x: number; y: number }[]
-      >,
-      (group) => {
-        const n = expectedValues.length
-        const weightedSum = sum(group.slice(0, n).map((pt) => pt.y)) ?? 0
-        const totalProb = sum(group.slice(n).map((pt) => pt.y)) ?? 0
-        return {
-          y: totalProb > 0 ? weightedSum / totalProb : 0,
-          x: group[0].x,
-        }
-      }
+      zip(...expectedValues) as Array<{ x: number; y: number }[]>,
+      (group) => ({
+        y: sum(group.map((pt) => pt.y)) ?? 0,
+        x: group[0].x,
+      })
     )
   } else {
     // Handle threshold-style expected value calculation

@@ -27,16 +27,10 @@ const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
         y: pt.y * answerTextToMidpoint(answerTexts[answerId].text),
       }))
   )
-  const rawProbs = Object.values(filledInBetPoints)
-  return map(zip(...expectedValues, ...rawProbs), (group) => {
-    const n = expectedValues.length
-    const weightedSum = sum(group.slice(0, n).map((pt) => pt.y)) ?? 0
-    const totalProb = sum(group.slice(n).map((pt) => pt.y)) ?? 0
-    return {
-      y: totalProb > 0 ? weightedSum / totalProb : 0,
-      x: group[0].x,
-    }
-  })
+  return map(zip(...expectedValues), (group) => ({
+    y: sum(group.map((pt) => pt.y)) ?? 0,
+    x: group[0].x,
+  }))
 }
 
 export const DistributionChartTooltip = (props: {
