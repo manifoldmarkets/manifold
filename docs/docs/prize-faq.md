@@ -33,7 +33,7 @@ Sorry, but we can't offer prize drawings in these places:
 
 **US States:**
 
-- Delaware, Idaho, Michigan, Nevada, New York, Washington, and Washington D.C.
+- Delaware, Idaho, Massachusetts, Michigan, Nevada, New York, Washington, and Washington D.C.
 
 **Canada:**
 

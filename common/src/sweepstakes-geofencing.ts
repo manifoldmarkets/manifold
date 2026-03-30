@@ -34,6 +34,7 @@ export const RESTRICTED_US_STATES: string[] = [
   'NV', // Nevada
   'DE', // Delaware
   'ID', // Idaho
+  'MA', // Massachusetts
   'MI', // Michigan
   'WA', // Washington
   'DC', // Washington D.C.

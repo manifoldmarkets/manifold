@@ -36,6 +36,7 @@ Prize Drawings are **VOID** in the following locations, and residents of these t
 **Restricted U.S. States and Territories:**
 - Delaware (DE)
 - Idaho (ID)
+- Massachusetts (MA)
 - Michigan (MI)
 - Nevada (NV)
 - New York (NY)
