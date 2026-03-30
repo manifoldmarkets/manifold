@@ -2,10 +2,17 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 import { Request, Response } from 'express'
 
+import {
+  BOOST_CONTRACT_SUBSIDY_MANA,
+  BOOST_PAYMENT_TYPE,
+  BOOST_PURCHASE_EVENT_NAMES,
+  contractBoostAddsSubsidy,
+} from 'common/boost'
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from 'common/api/utils'
+import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
@@ -235,23 +242,48 @@ const handleBoostPayment = async (session: StripeSession) => {
 
   const pg = createSupabaseDirectClient()
 
-  const boost = await pg.tx(async (tx) =>
-    tx.one(
+  const { boost, wasJustFunded } = await pg.tx(async (tx) => {
+    const updatedBoost = await tx.oneOrNone(
       `update contract_boosts 
          set funded = true 
          where id = $1 and user_id = $2 and (
            (contract_id = $3 and post_id is null) or 
            (post_id = $4 and contract_id is null)
          )
+         and not funded
          returning *`,
       [boostId, userId, contractId ?? null, postId ?? null]
     )
-  )
+    if (updatedBoost) return { boost: updatedBoost, wasJustFunded: true }
+
+    const existingBoost = await tx.oneOrNone(
+      `select *
+       from contract_boosts
+       where id = $1 and user_id = $2 and (
+         (contract_id = $3 and post_id is null) or
+         (post_id = $4 and contract_id is null)
+       )`,
+      [boostId, userId, contractId ?? null, postId ?? null]
+    )
+    if (!existingBoost) {
+      throw new APIError(404, 'Boost not found')
+    }
+    return { boost: existingBoost, wasJustFunded: false }
+  })
+
+  if (!wasJustFunded) return
+
+  let contract
+  if (contractId) {
+    contract = await getContract(pg, contractId)
+    if (!contract) throw new APIError(404, 'Contract not found')
+    if (contractBoostAddsSubsidy(contract)) {
+      await addHouseSubsidy(contractId, BOOST_CONTRACT_SUBSIDY_MANA)
+    }
+  }
 
   if (new Date(boost.start_time) <= new Date()) {
-    if (contractId) {
-      const contract = await getContract(pg, contractId)
-      if (!contract) throw new APIError(404, 'Contract not found')
+    if (contract) {
       await boostContractImmediately(pg, contract)
     }
     if (postId) {
@@ -263,12 +295,12 @@ const handleBoostPayment = async (session: StripeSession) => {
 
   await trackPublicEvent(
     userId,
-    `${contractId ? 'contract' : 'post'} boost purchased`,
+    BOOST_PURCHASE_EVENT_NAMES[contractId ? 'contract' : 'post'],
     {
       contractId,
       postId,
       boostId,
-      paymentMethod: 'cash',
+      paymentMethod: BOOST_PAYMENT_TYPE.CASH,
     }
   )
 }

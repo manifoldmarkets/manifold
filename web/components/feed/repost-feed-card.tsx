@@ -10,9 +10,9 @@ import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import router from 'next/router'
 import { memo, useState } from 'react'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { TbDroplet, TbMoneybag } from 'react-icons/tb'
 import { Button } from 'web/components/buttons/button'
-import { CommentsButton } from 'web/components/comments/comments-button'
+import { RepostButton } from 'web/components/comments/repost-modal'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { FeedDropdown } from 'web/components/feed/card-dropdown'
@@ -143,6 +143,7 @@ export const RepostFeedCard = memo(function (props: {
           <BottomActionRow
             className={'ml-4'}
             contract={contract}
+            bet={bet}
             user={user}
             comment={comment}
             privateUser={privateUser}
@@ -219,12 +220,13 @@ function RepostLabel(props: {
 
 export const BottomActionRow = (props: {
   contract: Contract
+  bet?: Bet
   comment: ContractComment
   user: User | null | undefined
   privateUser: PrivateUser | null | undefined
   className?: string
 }) => {
-  const { contract, className, comment, privateUser, user } = props
+  const { contract, className, comment, privateUser, user, bet } = props
   const isCashContract = contract.token == 'CASH'
   return (
     <Row className={clsx('justify-between pt-2', 'pb-2', className)}>
@@ -257,7 +259,7 @@ export const BottomActionRow = (props: {
               <Row
                 className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
               >
-                <TbDropletHeart className="h-6 w-6 stroke-2" />
+                <TbDroplet className="h-6 w-6 stroke-2" />
                 <div className="text-ink-600">
                   {formatWithToken({
                     amount: contract.totalLiquidity,
@@ -272,10 +274,12 @@ export const BottomActionRow = (props: {
       )}
 
       <BottomRowButtonWrapper>
-        <CommentsButton
-          highlightCommentId={comment.id}
-          contract={contract}
-          user={user}
+        <RepostButton
+          playContract={contract}
+          bet={bet}
+          size={'2xs'}
+          className={'h-full'}
+          iconClassName={'text-ink-500'}
         />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>

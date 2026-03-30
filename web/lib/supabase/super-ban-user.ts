@@ -7,6 +7,16 @@ async function superBanUser(userId: string) {
   const posts = await api('get-posts', { userId })
   const comments = await api('comments', { userId })
 
+  // Call backend FIRST so the already-banned check sees the pre-ban state.
+  // This ensures markets get unlisted, comments deleted, and notifications cleaned.
+  try {
+    await api('super-ban-user', { userId })
+    marketsStatus = "successfully unlisted & NA'd"
+  } catch (error) {
+    console.error('Failed to unlist and cancel user contracts:', error)
+    marketsStatus = 'not affected (>5)'
+  }
+
   // Apply all ban types permanently (no unbanTime = permanent)
   try {
     await banUser({
@@ -25,22 +35,12 @@ async function superBanUser(userId: string) {
     banStatus = 'failed to apply'
   }
 
-  try {
-    await api('super-ban-user', { userId })
-    marketsStatus = "successfully unlisted & NA'd"
-  } catch (error) {
-    console.error('Failed to unlist and cancel user contracts:', error)
-    marketsStatus = 'not affected (>5)'
-  }
-
   if (comments.length > 30) {
-    commentsStatus = 'not hidden (>30)'
+    commentsStatus = 'not hidden unless new user (>30)'
+  } else if (comments.length > 0) {
+    commentsStatus = 'successfully deleted'
   } else {
-    if (comments.length > 0) {
-      commentsStatus = 'successfully deleted'
-    } else {
-      commentsStatus = 'were not found'
-    }
+    commentsStatus = 'were not found'
   }
 
   return `Super ban completed. Bans: ${banStatus}. Markets ${marketsStatus}. Comments ${commentsStatus}. Posts hidden: ${posts.length}.`

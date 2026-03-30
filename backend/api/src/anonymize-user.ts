@@ -43,16 +43,18 @@ export const anonymizeUser: APIHandler<'anonymize-user'> = async (
   const randomUsername = `deleted_${randomString(8)}`
   const randomName = `Deleted User ${randomString(4)}`
 
-  // Update public user data - remove all identifying information
+  // Update public user data - remove all identifying information.
+  // updateUser handles name/username as top-level columns automatically.
   await updateUser(pg, userId, {
     name: randomName,
     username: randomUsername,
-    avatarUrl: '', // Remove avatar
-    bio: undefined,
-    website: undefined,
-    twitterHandle: undefined,
-    discordHandle: undefined,
-  })
+    avatarUrl: '',
+    userDeleted: true,
+    bio: FieldVal.delete(),
+    website: FieldVal.delete(),
+    twitterHandle: FieldVal.delete(),
+    discordHandle: FieldVal.delete(),
+  } as any)
 
   // Update private user data - remove identifying information
   await updatePrivateUser(pg, userId, {

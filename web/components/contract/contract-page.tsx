@@ -149,6 +149,7 @@ export function ContractPageContent(props: ContractParams) {
   const isCreator = creatorId === user?.id
   const isClosed = !!(closeTime && closeTime < Date.now())
   const [showResolver, setShowResolver] = useState(false)
+  const [showUnresolver, setShowUnresolver] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [showReview, setShowReview] = useState(false)
 
@@ -354,6 +355,7 @@ export function ContractPageContent(props: ContractParams) {
                   key={liveContract.id} // reset state when switching play vs cash
                   betPoints={betPoints}
                   showResolver={showResolver}
+                  showUnresolver={showUnresolver}
                   resolutionRating={
                     userHasReviewed ? (
                       <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
@@ -364,6 +366,7 @@ export function ContractPageContent(props: ContractParams) {
                     ) : null
                   }
                   setShowResolver={setShowResolver}
+                  setShowUnresolver={setShowUnresolver}
                   onAnswerCommentClick={setReplyTo}
                   chartAnnotations={chartAnnotations}
                   hideGraph={hideGraph}
@@ -446,6 +449,8 @@ export function ContractPageContent(props: ContractParams) {
               contract={liveContract}
               showResolver={showResolver}
               setShowResolver={setShowResolver}
+              showUnresolver={showUnresolver}
+              setShowUnresolver={setShowUnresolver}
               showReview={showReview}
               setShowReview={setShowReview}
               userHasBet={!!myContractMetrics}

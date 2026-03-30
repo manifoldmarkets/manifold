@@ -1,17 +1,14 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-// Supporter tier item IDs
-const SUBSCRIPTION_ITEM_IDS = [
-  'supporter-basic',
-  'supporter-plus',
-  'supporter-premium',
-]
+// Re-use the canonical list from supporter-config
+const SUBSCRIPTION_ITEM_IDS = [...SUPPORTER_ENTITLEMENT_IDS]
 
 export type ShopStats = {
   // Daily subscription sales (supporter tiers)

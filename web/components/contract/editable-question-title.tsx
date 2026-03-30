@@ -57,7 +57,7 @@ export const EditableQuestionTitle = (props: {
       {canEdit && (
         <button
           onClick={edit}
-          className="align-center hover:bg-ink-100 hover:text-ink-600 text-ink-500 ml-1 rounded p-1 transition-colors lg:hidden lg:group-hover:inline"
+          className="align-center hover:bg-ink-100 hover:text-ink-600 text-ink-500 ml-1 rounded p-1 transition-colors lg:hidden lg:group-hover:inline lg:[@media(hover:none)]:inline"
         >
           <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>

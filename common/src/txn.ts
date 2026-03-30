@@ -513,6 +513,7 @@ type ManaPay = {
     visibility: 'public' | 'private'
     message: string
     groupId: string // for multiple payments
+    postId?: string
   }
 }
 

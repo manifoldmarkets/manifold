@@ -4,6 +4,7 @@ import { buildArray } from 'common/util/array'
 import * as crypto from 'crypto'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getPost, incrementPostTippedAmount } from 'shared/supabase/posts'
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { insertTxns } from 'shared/txn/run-txn'
 import { getUser, getUsers } from 'shared/utils'
@@ -13,12 +14,14 @@ import { UserBan } from 'common/user'
 
 import { BURN_MANA_USER_ID } from 'common/economy'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { revalidatePost } from './create-post-comment'
 const IS_PAUSED = false
 
 export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
   'managram',
   async (props, auth) => {
-    const { amount, toIds, message, token, groupId: passedGroupId } = props
+    const { amount, toIds, message, token, groupId: passedGroupId, postId } =
+      props
     const fromId = auth.uid
 
     if (IS_PAUSED && !isAdminId(fromId)) {
@@ -40,6 +43,7 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
     }
 
     const pg = createSupabaseDirectClient()
+    let tippedPost = null
 
     const fromUser = await betsQueue.enqueueFn(async () => {
       // Run as transaction to prevent race conditions.
@@ -80,6 +84,24 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
         const toUsers = await getUsers(toIds, tx)
         if (toUsers.length !== toIds.length) {
           throw new APIError(404, 'Some destination users not found.')
+        }
+        if (postId) {
+          if (token !== 'M$') {
+            throw new APIError(400, 'Post tips must use mana.')
+          }
+          if (toIds.length !== 1) {
+            throw new APIError(400, 'Post tips must have exactly one recipient.')
+          }
+          const post = await getPost(tx, postId)
+          if (!post) {
+            throw new APIError(404, 'Post not found.')
+          }
+          if (post.creatorId !== toIds[0]) {
+            throw new APIError(
+              400,
+              'Post tip recipient must match the post creator.'
+            )
+          }
         }
         if (
           token === 'CASH' &&
@@ -124,12 +146,25 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
               data: {
                 message,
                 groupId,
+                postId,
                 visibility: 'public',
               },
               description: message || 'Mana payment',
             } as const)
         )
-        await pg.tx((tx) => insertTxns(tx, txns))
+        await insertTxns(tx, txns)
+
+        if (postId) {
+          tippedPost = await incrementPostTippedAmount(
+            tx,
+            postId,
+            toIds[0],
+            amount
+          )
+          if (!tippedPost) {
+            throw new APIError(404, 'Post not found.')
+          }
+        }
 
         return fromUser
       })
@@ -140,5 +175,9 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
         createManaPaymentNotification(fromUser, toId, amount, message, token)
       )
     )
+
+    if (tippedPost) {
+      await revalidatePost(tippedPost)
+    }
   }
 )

@@ -25,7 +25,6 @@ import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
-import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkInsert } from 'shared/supabase/utils'
 import { type User } from 'common/user'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -66,10 +65,8 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
            select distinct user_id from user_contract_interactions
            where created_time > now() - interval '6 weeks'
        ) or
-       users.id in (
-           select id from users where username in ($2:list) and
-           (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '6 weeks')
-        ) or
+       (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '6 weeks')
+       or
        ($1 < 0.05 and id in (
            select distinct users.id from users
             join user_contract_metrics on users.id = user_contract_metrics.user_id
@@ -78,8 +75,8 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
              and user_contract_metrics.has_shares = true
       ))
     )
-        order by uph.last_calculated nulls first limit $3`,
-        [random, BOT_USERNAMES, LIMIT],
+        order by uph.last_calculated nulls first limit $2`,
+        [random, LIMIT],
         (r) => r.id as string
       )
 

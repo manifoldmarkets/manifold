@@ -72,11 +72,15 @@ import { RanksType } from 'common/achievements'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
 import { ShopItem } from 'common/shop/items'
+import { UserEntitlement } from 'common/shop/types'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
-import { UserEntitlement } from 'common/shop/types'
 import { YEAR_MS } from 'common/util/time'
+import {
+  MAX_WATCHED_MARKETS,
+  WATCHED_MARKETS_PAGE_SIZE,
+} from 'common/watched-markets'
 import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -363,6 +367,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string(),
+        term: z.string().optional(),
       })
       .strict(),
   },
@@ -1013,6 +1018,7 @@ export const API = (_apiTypeCheck = {
         toIds: z.array(z.string()),
         message: z.string().max(MAX_COMMENT_LENGTH),
         groupId: z.string().max(MAX_ID_LENGTH).optional(),
+        postId: z.string().max(MAX_ID_LENGTH).optional(),
         token: z.enum(['M$', 'CASH']).default('M$'),
       })
       .strict(),
@@ -1105,6 +1111,17 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(100).default(100),
         before: z.coerce.number().optional(),
         after: z.coerce.number().optional(),
+      })
+      .strict(),
+  },
+  'get-post-tip-info': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { amountTippedByUser: number },
+    props: z
+      .object({
+        postId: z.string(),
       })
       .strict(),
   },
@@ -1596,6 +1613,44 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  'get-boost-history': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string().optional(),
+        postId: z.string().optional(),
+        userId: z.string().optional(),
+        // GET query params arrive as strings, so booleans/numbers need coercion.
+        includePending: coerceBoolean.optional(),
+        limit: z.coerce.number().int().positive().max(1000).default(100),
+        offset: z.coerce.number().int().min(0).default(0),
+      })
+      .strict(),
+    returns: {} as {
+      boosts: {
+        id: number
+        contentType: 'contract' | 'post'
+        contentId: string
+        contractId: string | null
+        postId: string | null
+        title: string
+        slug: string | null
+        url: string | null
+        userId: string
+        userName: string
+        userUsername: string
+        createdTime: number
+        startTime: number
+        endTime: number
+        funded: boolean
+        paymentType: 'free' | 'mana' | 'cash'
+        isFree: boolean
+        manaPurchaseTxnId: string | null
+      }[]
+    },
+  },
   'get-seen-market-ids': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1770,6 +1825,28 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as {
       groups: Group[]
+    },
+  },
+  'get-watched-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z
+      .object({
+        userId: z.string(),
+        term: z.string().optional(),
+        limit: z.coerce
+          .number()
+          .gte(0)
+          .lte(MAX_WATCHED_MARKETS)
+          .default(WATCHED_MARKETS_PAGE_SIZE),
+        offset: z.coerce.number().gte(0).default(0),
+      })
+      .strict(),
+    returns: {} as {
+      contracts: Contract[]
+      totalCount: number
     },
   },
   'get-user-portfolio': {
@@ -2477,6 +2554,41 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-unified-feed': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      // Personalized feed data
+      contracts: Contract[]
+      comments: ContractComment[]
+      bets: Bet[]
+      reposts: Repost[]
+      idsToReason: { [id: string]: string }
+      // Boosted markets
+      boostedContracts: Contract[]
+      // Activity data
+      activityBets: Bet[]
+      activityComments: CommentWithTotalReplies[]
+      activityNewContracts: Contract[]
+      activityRelatedContracts: Contract[]
+    },
+    props: z
+      .object({
+        userId: z.string().optional(),
+        feedLimit: z.coerce.number().gt(0).lte(50).default(3),
+        feedOffset: z.coerce.number().gte(0).default(0),
+        activityLimit: z.coerce.number().gt(0).lte(50).default(5),
+        activityOffset: z.coerce.number().gte(0).default(0),
+        ignoreContractIds: z.array(z.string()).optional(),
+        blockedUserIds: z.array(z.string()).optional(),
+        blockedGroupSlugs: z.array(z.string()).optional(),
+        blockedContractIds: z.array(z.string()).optional(),
+        minBetAmount: z.coerce.number().optional(),
+      })
+      .strict(),
+  },
   'get-sports-games': {
     method: 'GET',
     visibility: 'public',
@@ -3044,7 +3156,12 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
+    props: z
+      .object({
+        giveawayNum: z.coerce.number().optional(),
+        userId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       giveaway?: {
         giveawayNum: number
@@ -3062,6 +3179,39 @@ export const API = (_apiTypeCheck = {
       totalTickets: number
       winningCharity?: string
       winner?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+      }
+      champion?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+      }
+      topUsers?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        rank: number
+      }[]
+      yourEntry?: {
+        rank: number
+        totalTickets: number
+      }
+      trophyHolder?: {
+        id: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalTickets: number
+        claimedTime: number
+      }
+      previousTrophyHolder?: {
         id: string
         username: string
         name: string
@@ -3118,7 +3268,7 @@ export const API = (_apiTypeCheck = {
       .object({
         giveawayNum: z.number(),
         charityId: z.string(),
-        numTickets: z.number().positive(),
+        numTickets: z.number().int().positive(),
       })
       .strict(),
     returns: {} as {
@@ -3511,12 +3661,88 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
+  'shop-update-metadata': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        metadata: z
+          .record(z.union([z.string().max(500), z.number()]))
+          .refine((obj) => Object.keys(obj).length <= 10, {
+            message: 'metadata cannot have more than 10 keys',
+          }),
+      })
+      .strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
   'shop-reset-all': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
+  },
+  'shop-purchase-merch': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        variantId: z.string(),
+        shippingCost: z.number().int().min(0),
+        shipping: z.object({
+          name: z.string().max(200),
+          address1: z.string().max(200),
+          address2: z.string().max(200).optional(),
+          city: z.string().max(100),
+          state: z.string().max(100),
+          zip: z.string().max(20),
+          country: z.string().regex(/^[A-Z]{2}$/),
+        }),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      printfulOrderId: string
+      printfulStatus: string
+    },
+  },
+  'shop-shipping-rates': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        variantId: z.string(),
+        address: z.object({
+          address1: z.string().max(200),
+          city: z.string().max(100),
+          state: z.string().max(100).optional(),
+          zip: z.string().max(20),
+          country: z.string().regex(/^[A-Z]{2}$/),
+        }),
+      })
+      .strict(),
+    returns: {} as {
+      rates: Array<{
+        id: string
+        name: string
+        rate: string
+        currency: string
+        minDeliveryDays: number
+        maxDeliveryDays: number
+      }>
+    },
+  },
+  'claim-charity-champion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ enabled: z.boolean().optional() }).strict(),
+    returns: {} as { success: boolean; entitlements: UserEntitlement[] },
   },
   // Admin spam detection endpoints
   'get-suspected-spam-comments': {
@@ -3596,10 +3822,9 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z
       .object({
-        limitDays: z.coerce.number(),
+        limitDays: z.coerce.number().int().min(1).max(365),
       })
       .strict(),
     returns: {} as {

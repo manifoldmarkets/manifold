@@ -11,6 +11,7 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ClaimInfo, ManalinkInfo } from 'web/lib/supabase/manalinks'
 import Logo from 'web/public/logo.svg'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { DateTimeTooltip } from './widgets/datetime-tooltip'
 
 export function linkClaimed(info: ManalinkInfo, numClaims: number) {
   return (
@@ -43,11 +44,13 @@ export function ManalinkCard(props: {
               : `Unlimited use`}
           </div>
           <div>
-            {expiresTime != null
-              ? `Expire${expiresTime < Date.now() ? 'd' : 's'} ${fromNow(
-                  expiresTime
-                )}`
-              : 'Never expires'}
+            {expiresTime != null ? (
+              <DateTimeTooltip time={expiresTime}>
+                <span>{getExpirationLabel(expiresTime)}</span>
+              </DateTimeTooltip>
+            ) : (
+              'Never expires'
+            )}
           </div>
         </Col>
 
@@ -114,11 +117,13 @@ export function ManalinkCardFromView(props: {
                 : `Unlimited use`}
             </div>
             <div>
-              {expiresTime != null
-                ? `Expire${expiresTime < Date.now() ? 'd' : 's'} ${fromNow(
-                    expiresTime
-                  )}`
-                : 'Never expires'}
+              {expiresTime != null ? (
+                <DateTimeTooltip time={expiresTime}>
+                  <span>{getExpirationLabel(expiresTime)}</span>
+                </DateTimeTooltip>
+              ) : (
+                'Never expires'
+              )}
             </div>
           </Col>
           <Logo className="my-auto block w-1/3 select-none self-center stroke-white py-3" />
@@ -195,7 +200,9 @@ function Claim(props: { claim: ClaimInfo }) {
   return (
     <Row className="my-1 gap-2 text-xs">
       <div>{who?.name || 'Loading...'}</div>
-      <div className="text-ink-500">{fromNow(claim.ts)}</div>
+      <DateTimeTooltip time={claim.ts}>
+        <div className="text-ink-500">{fromNow(claim.ts)}</div>
+      </DateTimeTooltip>
     </Row>
   )
 }
@@ -234,4 +241,8 @@ function getManalinkAmountColor(info: ManalinkInfo, numClaims: number) {
 
 function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
+}
+
+function getExpirationLabel(expiresTime: number) {
+  return `Expire${expiresTime < Date.now() ? 'd' : 's'} ${fromNow(expiresTime)}`
 }

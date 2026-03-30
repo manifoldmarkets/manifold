@@ -30,10 +30,6 @@ alter table txns enable row level security;
 -- Policies
 drop policy if exists "public read" on txns;
 
-create policy "public read" on txns for
-select
-  using (true);
-
 -- Indexes
 drop index if exists txns_category_native;
 

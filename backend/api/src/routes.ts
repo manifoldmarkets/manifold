@@ -4,10 +4,10 @@ import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
 import { getBalanceChanges } from 'api/get-balance-changes'
 import { getBestComments } from 'api/get-best-comments'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
+import { getBoostHistory } from 'api/get-boost-history'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
-import { getTopMarketsYesterday } from 'api/get-top-markets-yesterday'
 import { getNotifications } from 'api/get-notifications'
 import {
   getChannelMemberships,
@@ -16,9 +16,11 @@ import {
   setChannelLastSeenTime,
 } from 'api/get-private-messages'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
+import { getTopMarketsYesterday } from 'api/get-top-markets-yesterday'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getTotalLoanAmount } from 'api/get-total-loan-amount'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
+import { getUnifiedFeed } from 'api/get-unified-feed'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
 import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
@@ -52,7 +54,6 @@ import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { awardBounty } from './award-bounty'
 import { banuser } from './ban-user'
-import { getUserBans } from './get-user-bans'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
@@ -60,6 +61,7 @@ import { cancelBet } from './cancel-bet'
 import { castpollvote } from './cast-poll-vote'
 import { checkPollSuggestion } from './check-poll-suggestion'
 import { checkSportsEvent } from './check-sports-event'
+import { claimFreeLoan } from './claim-free-loan'
 import { closeMarket } from './close-market'
 import { convertCashToMana } from './convert-cash-to-mana'
 import { convertSpiceToMana } from './convert-sp-to-mana'
@@ -71,6 +73,7 @@ import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
 import { dismissmodalert } from './dismiss-mod-alert'
 import { donate } from './donate'
+import { editComment } from './edit-comment'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { followContract } from './follow-contract'
 import { generateAIAnswers } from './generate-ai-answers'
@@ -92,6 +95,7 @@ import { getCurrentPrivateUser } from './get-current-private-user'
 import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-and-contracts'
 import { getDashboardFromSlug } from './get-dashboard-from-slug'
 import { getFollowedGroups } from './get-followed-groups'
+import { getFreeLoanAvailable } from './get-free-loan-available'
 import { getGroup } from './get-group'
 import { getGroups } from './get-groups'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
@@ -110,8 +114,6 @@ import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
-import { getFreeLoanAvailable } from './get-free-loan-available'
-import { claimFreeLoan } from './claim-free-loan'
 import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getPredictle } from './get-predictle-markets'
@@ -123,14 +125,15 @@ import { getTopicDashboards } from './get-topic-dashboards'
 import { getTopicTopics } from './get-topic-topics'
 import { getTxns } from './get-txns'
 import { getLiteUser, getUserById, getUserByUsername } from './get-user'
+import { getUserBans } from './get-user-bans'
 import { getUserPortfolio } from './get-user-portfolio'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { getUserPrivateData } from './get-user-private-data'
 import { getUsers } from './get-users'
 import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
+import { getWatchedMarkets } from './get-watched-markets'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 import { type APIHandler } from './helpers/endpoint'
-import { editComment } from './edit-comment'
 import { hideComment } from './hide-comment'
 import { leaveReview } from './leave-review'
 import { managram } from './managram'
@@ -175,6 +178,7 @@ import { adminSetBonusEligibility } from './admin-set-bonus-eligibility'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
+import { claimCharityChampion } from './claim-charity-champion'
 import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
 import { getSweepstakes } from './get-sweepstakes'
 import { buySweepstakesTickets } from './buy-sweepstakes-tickets'
@@ -216,6 +220,7 @@ import {
   getContractVoters,
 } from './get-contract-voters'
 import { getMarketProps } from './get-market-props'
+import { getPostTipInfo } from './get-post-tip-info'
 import { getPosts } from './get-posts'
 import { getReactions } from './get-reactions'
 import { getSeasonInfo } from './get-season-info'
@@ -246,10 +251,14 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
-import { shopPurchase } from './shop-purchase'
-import { shopResetAll } from './shop-reset-all'
-import { shopToggle } from './shop-toggle'
+import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
 import { shopCancelSubscription } from './shop-cancel-subscription'
+import { shopPurchase } from './shop-purchase'
+import { shopPurchaseMerch } from './shop-purchase-merch'
+import { shopResetAll } from './shop-reset-all'
+import { shopShippingRates } from './shop-shipping-rates'
+import { shopToggle } from './shop-toggle'
+import { shopUpdateMetadata } from './shop-update-metadata'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
 
@@ -368,6 +377,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'super-ban-user': superBanUser,
   'get-user-bans': getUserBans,
   'get-boost-analytics': getBoostAnalytics,
+  'get-boost-history': getBoostHistory,
   'set-news': setnews,
   'search-groups': searchGroups,
   'search-my-groups': searchMyGroups,
@@ -375,12 +385,14 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-balance-changes': getBalanceChanges,
   'get-partner-stats': getPartnerStats,
   'get-posts': getPosts,
+  'get-post-tip-info': getPostTipInfo,
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
+  'get-watched-markets': getWatchedMarkets,
   'unique-bet-group-count': getUniqueBetGroupCount,
   'record-contract-interaction': recordContractInteraction,
   'get-user-portfolio': getUserPortfolio,
@@ -390,6 +402,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-otp': requestOTP,
   'multi-sell': multiSell,
   'get-feed': getFeed,
+  'get-unified-feed': getUnifiedFeed,
   'get-mana-supply': getManaSupply,
   'update-mod-report': updateModReport,
   'get-mod-reports': getModReports,
@@ -503,9 +516,13 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-shop-items': getShopItems,
   'get-shop-stats': getShopStats,
   'shop-purchase': shopPurchase,
+  'shop-purchase-merch': shopPurchaseMerch,
+  'shop-shipping-rates': shopShippingRates,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
   'shop-cancel-subscription': shopCancelSubscription,
+  'shop-update-metadata': shopUpdateMetadata,
+  'claim-charity-champion': claimCharityChampion,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,
 } as const

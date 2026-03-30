@@ -9,7 +9,6 @@ import { UserIcon } from '@heroicons/react/solid'
 import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
 import { EyeOffIcon } from '@heroicons/react/outline'
-import { BoostedTooltip } from '../contract/boost-column'
 
 export function PostRow(props: {
   post: TopLevelPost
@@ -73,11 +72,6 @@ export function PostRow(props: {
             className={clsx('w-full items-center justify-end gap-8 sm:w-fit')}
           >
             <Row>
-              <BoostedTooltip
-                boosted={post.boosted}
-                placement={'top'}
-                className="mr-3 w-4"
-              />
               <Tooltip
                 text={`${post.uniqueUsers} unique users commented or reacted`}
               >

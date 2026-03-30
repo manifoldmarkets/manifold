@@ -1,4 +1,3 @@
-import { ReplyIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DisplayUser } from 'common/api/user-types'
 import { Bet, fill } from 'common/bet'
@@ -21,9 +20,7 @@ import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import dayjs from 'dayjs'
 import { sumBy, uniq } from 'lodash'
 import { memo, useEffect, useState } from 'react'
-import { FaArrowTrendUp } from 'react-icons/fa6'
-import { LuShare } from 'react-icons/lu'
-import { Button } from 'web/components/buttons/button'
+import { LuLineChart, LuReply, LuShare2 } from 'react-icons/lu'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { Col } from 'web/components/layout/col'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
@@ -39,6 +36,7 @@ import {
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
+import { useAnswer } from 'web/hooks/use-answers'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -54,6 +52,11 @@ const MAX_FILLS_TO_SHOW = 10
 const isNormalLimitOrder = (bet: Bet) =>
   bet.limitProb !== undefined && bet.orderAmount !== undefined && !bet.silent
 
+const getAnswerFromContract = (contract: Contract, answerId?: string) =>
+  contract.mechanism === 'cpmm-multi-1' && answerId && 'answers' in contract
+    ? contract.answers?.find((answer) => answer.id === answerId)
+    : undefined
+
 function BetTooltipContent(props: {
   bet: Bet
   isCashContract: boolean
@@ -61,10 +64,11 @@ function BetTooltipContent(props: {
 }) {
   const { bet, isCashContract, contract } = props
   const formatAmount = isCashContract ? formatSweepies : formatMoney
-  const answer =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers?.find((a) => a.id === bet.answerId)
-      : undefined
+  const answerId =
+    contract.mechanism === 'cpmm-multi-1' ? bet.answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, answerId)
+  const { answer: fetchedAnswer } = useAnswer(answerId)
+  const answer = answerFromContract ?? fetchedAnswer
   const isLimitOrder = isNormalLimitOrder(bet)
   const isOrderSale = (bet.orderAmount ?? 0) < 0
   const isAmountSale = bet.amount < 0
@@ -185,13 +189,131 @@ function BetTooltipContent(props: {
 function BetUserLink(props: {
   userId: string
   user: DisplayUser | null | undefined
+  className?: string
 }) {
-  const { userId, user } = props
+  const { userId, user, className } = props
 
   return (
     <UserHovercard userId={userId}>
-      <UserLink user={user} className={'font-semibold'} />
+      <UserLink
+        user={user}
+        className={clsx('text-ink-900 text-sm font-semibold', className)}
+      />
     </UserHovercard>
+  )
+}
+
+// Compact action text (e.g., "bought M$100 YES")
+function BetActionText(props: { bet: Bet; contract: Contract }) {
+  const { bet, contract } = props
+  const { amount, outcome, answerId } = bet
+  const isCashContract = contract.token === 'CASH'
+  const isLimitOrder = isNormalLimitOrder(bet)
+  const anyFilled = !floatingLesserEqual(amount, 0)
+
+  const bought = amount >= 0 ? 'bought' : 'sold'
+  const absAmount = Math.abs(amount)
+  const money = (
+    <span className="font-semibold">
+      <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
+    </span>
+  )
+  const orderAmount =
+    bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
+      <span className="font-semibold">
+        <MoneyDisplay
+          amount={bet.orderAmount}
+          isCashContract={isCashContract}
+        />
+      </span>
+    ) : null
+
+  const resolvedAnswerId =
+    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
+  const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
+  const answer = answerFromContract ?? fetchedAnswer
+
+  return (
+    <span className="text-ink-700 text-sm">
+      {isLimitOrder ? (
+        anyFilled ? (
+          <>
+            <span className="text-ink-500">filled</span> {money}/{orderAmount}{' '}
+          </>
+        ) : (
+          <>
+            <span className="text-ink-500">limit</span> {orderAmount}{' '}
+          </>
+        )
+      ) : (
+        <>
+          <span className="text-ink-500">{bought}</span> {money}{' '}
+        </>
+      )}
+      <OutcomeLabel
+        pseudonym={getPseudonym(contract)}
+        outcome={outcome}
+        answer={answer}
+        contract={contract}
+        truncate="short"
+      />
+    </span>
+  )
+}
+
+// Details line (price info)
+function BetDetailsText(props: { bet: Bet; contract: Contract }) {
+  const { bet, contract } = props
+  const { outcome, isApi } = bet
+  const isLimitOrder = isNormalLimitOrder(bet)
+  const cancelledOrExpired =
+    bet.isCancelled ||
+    (bet.expiresAt && bet.expiresAt < Date.now() && !bet.silent)
+  const allFilled = floatingEqual(bet.amount, bet.orderAmount ?? bet.amount)
+
+  const getProb = (prob: number) =>
+    !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
+
+  const probBefore = getProb(bet.probBefore)
+  const probAfter = getProb(bet.probAfter)
+  const limitProb =
+    bet.limitProb === undefined || !isBinaryMulti(contract)
+      ? bet.limitProb
+      : getBinaryMCProb(bet.limitProb, outcome)
+  const hadPoolMatch = bet.fills?.length ?? false
+
+  const fromProb = hadPoolMatch
+    ? getFormattedMappedValue(contract, probBefore)
+    : getFormattedMappedValue(contract, limitProb ?? probBefore)
+  const toProb = hadPoolMatch
+    ? getFormattedMappedValue(contract, probAfter)
+    : getFormattedMappedValue(contract, limitProb ?? probAfter)
+
+  return (
+    <span className="text-ink-500">
+      {isLimitOrder ? (
+        <>
+          <span className="text-ink-700 font-medium">{toProb}</span>
+          {cancelledOrExpired && !allFilled && (
+            <span className="text-ink-400 ml-1">(cancelled)</span>
+          )}
+        </>
+      ) : fromProb === toProb ? (
+        <span className="text-ink-700 font-medium">{fromProb}</span>
+      ) : (
+        <>
+          <span className="text-ink-600">{fromProb}</span>
+          <span className="text-ink-400 mx-0.5">→</span>
+          <span className="text-ink-900 font-semibold">{toProb}</span>
+        </>
+      )}
+      {isApi && (
+        <InfoTooltip text="Placed via the API" className="ml-1">
+          🤖
+        </InfoTooltip>
+      )}
+    </span>
   )
 }
 
@@ -219,47 +341,61 @@ export const FeedBet = memo(function FeedBet(props: {
   const isCashContract = contract.token === 'CASH'
 
   return (
-    <Col className={'w-full'}>
-      <Row className={'justify-between'}>
-        <Row className={clsx(className, 'items-center gap-2')}>
+    <div
+      className={clsx(
+        'group/trade bg-canvas-0 hover:bg-canvas-50 border-ink-200 w-full rounded-lg border px-3 py-2.5 transition-colors sm:px-4 sm:py-3',
+        className
+      )}
+    >
+      <Row className="items-start justify-between gap-2">
+        <Row className="min-w-0 flex-1 items-start gap-2.5 sm:gap-3">
           {showUser ? (
             <UserHovercard userId={userId}>
               <Avatar
-                size={avatarSize}
+                size={avatarSize ?? 'sm'}
                 avatarUrl={user?.avatarUrl}
                 username={user?.username}
                 entitlements={user?.entitlements}
                 displayContext={displayContext}
+                className="mt-0.5 shrink-0"
               />
             </UserHovercard>
           ) : (
-            <EmptyAvatar className="mx-1" />
+            <EmptyAvatar className="mt-0.5 shrink-0" size={8} />
           )}
-          {showUser && <BetUserLink userId={userId} user={user} />}
-          <Tooltip
-            text={
-              <BetTooltipContent
-                bet={bet}
-                isCashContract={isCashContract}
-                contract={contract}
+          <Col className="min-w-0 flex-1 gap-0.5">
+            <Row className="flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              {showUser && (
+                <BetUserLink userId={userId} user={user} className="shrink-0" />
+              )}
+              <Tooltip
+                text={
+                  <BetTooltipContent
+                    bet={bet}
+                    isCashContract={isCashContract}
+                    contract={contract}
+                  />
+                }
+                placement="top"
+              >
+                <BetActionText bet={bet} contract={contract} />
+              </Tooltip>
+            </Row>
+            <Row className="text-ink-500 flex-wrap items-center gap-x-2 text-xs">
+              <BetDetailsText bet={bet} contract={contract} />
+              <RelativeTimestamp
+                time={createdTime}
+                shortened={true}
+                className="text-ink-400"
               />
-            }
-            placement="top"
-            className="flex-1"
-          >
-            <BetStatusText
-              bet={bet}
-              contract={contract}
-              hideUser={!showUser}
-              omitUser={showUser}
-            />
-          </Tooltip>
+            </Row>
+          </Col>
         </Row>
         {!hideActions && (
           <BetActions onReply={onReply} bet={bet} contract={contract} />
         )}
       </Row>
-    </Col>
+    </div>
   )
 })
 
@@ -288,41 +424,59 @@ export const FeedBetWithGraphAction = memo(
     const isCashContract = contract.token === 'CASH'
 
     return (
-      <Col className={'w-full'}>
-        <Row className={'justify-between'}>
-          <Row className={clsx(className, 'items-center gap-2')}>
+      <div
+        className={clsx(
+          'group/trade bg-canvas-0 hover:bg-canvas-50 border-ink-200 w-full rounded-lg border px-3 py-2.5 transition-colors sm:px-4 sm:py-3',
+          className
+        )}
+      >
+        <Row className="items-start justify-between gap-2">
+          <Row className="min-w-0 flex-1 items-start gap-2.5 sm:gap-3">
             {showUser ? (
               <UserHovercard userId={userId}>
                 <Avatar
-                  size={avatarSize}
+                  size={avatarSize ?? 'sm'}
                   avatarUrl={user?.avatarUrl}
                   username={user?.username}
                   entitlements={user?.entitlements}
                   displayContext="feed"
+                  className="mt-0.5 shrink-0"
                 />
               </UserHovercard>
             ) : (
-              <EmptyAvatar className="mx-1" />
+              <EmptyAvatar className="mt-0.5 shrink-0" size={8} />
             )}
-            {showUser && <BetUserLink userId={userId} user={user} />}
-            <Tooltip
-              text={
-                <BetTooltipContent
-                  bet={bet}
-                  isCashContract={isCashContract}
-                  contract={contract}
+            <Col className="min-w-0 flex-1 gap-0.5">
+              <Row className="flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                {showUser && (
+                  <BetUserLink
+                    userId={userId}
+                    user={user}
+                    className="shrink-0"
+                  />
+                )}
+                <Tooltip
+                  text={
+                    <BetTooltipContent
+                      bet={bet}
+                      isCashContract={isCashContract}
+                      contract={contract}
+                    />
+                  }
+                  placement="top"
+                >
+                  <BetActionText bet={bet} contract={contract} />
+                </Tooltip>
+              </Row>
+              <Row className="text-ink-500 flex-wrap items-center gap-x-2 text-xs">
+                <BetDetailsText bet={bet} contract={contract} />
+                <RelativeTimestamp
+                  time={createdTime}
+                  shortened={true}
+                  className="text-ink-400"
                 />
-              }
-              placement="top"
-              className="flex-1"
-            >
-              <BetStatusText
-                bet={bet}
-                contract={contract}
-                hideUser={!showUser}
-                omitUser={showUser}
-              />
-            </Tooltip>
+              </Row>
+            </Col>
           </Row>
           <BetActionsWithGraph
             onReply={onReply}
@@ -333,7 +487,7 @@ export const FeedBetWithGraphAction = memo(
             setHideGraph={setHideGraph}
           />
         </Row>
-      </Col>
+      </div>
     )
   }
 )
@@ -440,6 +594,11 @@ export function BetStatusesText(props: {
   const { amount, outcome, createdTime, answerId, userId } = bets[0]
   const user = useDisplayUserById(userId)
   const isCashContract = contract.token === 'CASH'
+  const resolvedAnswerId =
+    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
+  const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
+  const answer = answerFromContract ?? fetchedAnswer
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(sumBy(bets, (b) => b.amount))
@@ -466,11 +625,7 @@ export function BetStatusesText(props: {
         {bought} {money}{' '}
         <OutcomeLabel
           outcome={outcome}
-          answer={
-            contract.mechanism === 'cpmm-multi-1'
-              ? contract.answers?.find((a) => a.id === answerId)
-              : undefined
-          }
+          answer={answer}
           contract={contract}
           truncate="short"
         />{' '}
@@ -527,10 +682,11 @@ export function BetStatusText(props: {
     ? getFormattedMappedValue(contract, probAfter)
     : getFormattedMappedValue(contract, limitProb ?? probAfter)
 
-  const answer =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers?.find((a) => a.id === answerId)
-      : undefined
+  const resolvedAnswerId =
+    contract.mechanism === 'cpmm-multi-1' ? answerId : undefined
+  const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
+  const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
+  const answer = answerFromContract ?? fetchedAnswer
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
@@ -603,25 +759,27 @@ function BetActions(props: {
   const bettor = useDisplayUserById(bet.userId)
 
   return (
-    <Row className="items-center gap-1">
+    <Row className="shrink-0 items-center gap-0.5 sm:gap-1">
       {user && (
         <RepostButton
           bet={bet}
           size={'2xs'}
-          className={'!p-1'}
+          className="text-ink-400 hover:text-ink-600 hover:bg-ink-100 !p-1.5 transition-colors"
           playContract={contract}
         />
       )}
-      {onReply && (
-        <Tooltip
-          text={`Reply to this ${TRADE_TERM}`}
-          placement="top"
-          className="mr-2"
+      <Tooltip text="Share" placement="top">
+        <button
+          className="text-ink-400 hover:text-ink-600 hover:bg-ink-100 rounded-md p-1.5 transition-colors"
+          onClick={() => setIsSharing(true)}
         >
-          <Button
-            className={'!p-1'}
-            color={'gray-white'}
-            size={'2xs'}
+          <LuShare2 className="h-4 w-4" />
+        </button>
+      </Tooltip>
+      {onReply && (
+        <Tooltip text={`Reply to this ${TRADE_TERM}`} placement="top">
+          <button
+            className="text-ink-400 hover:text-ink-600 hover:bg-ink-100 rounded-md p-1.5 transition-colors"
             onClick={() => {
               onReply(bet)
               track(`reply to ${TRADE_TERM}`, {
@@ -630,20 +788,10 @@ function BetActions(props: {
               })
             }}
           >
-            <ReplyIcon className=" h-5 w-5" />
-          </Button>
+            <LuReply className="h-4 w-4" />
+          </button>
         </Tooltip>
       )}
-      <Tooltip text="Share bet" placement="top">
-        <Button
-          className={'!p-1'}
-          color={'gray-white'}
-          size={'2xs'}
-          onClick={() => setIsSharing(true)}
-        >
-          <LuShare className="h-5 w-5" />
-        </Button>
-      </Tooltip>
 
       {isSharing && bettor && (
         <ShareBetModal
@@ -721,28 +869,28 @@ function BetActionsWithGraph(props: {
   }
 
   return (
-    <Row className="items-center gap-1">
+    <Row className="shrink-0 items-center gap-0.5 sm:gap-1">
       <Tooltip text="Graph trades" placement="top">
-        <Button
-          className={'!p-1'}
-          color={'gray-white'}
-          size={'2xs'}
+        <button
+          className="text-ink-400 hover:text-primary-600 hover:bg-primary-100 disabled:text-ink-300 rounded-md p-1.5 transition-colors disabled:cursor-not-allowed"
           onClick={handleGraphTrades}
           disabled={!bettor}
         >
-          <FaArrowTrendUp className="h-5 w-5" />
-        </Button>
+          <LuLineChart className="h-4 w-4" />
+        </button>
+      </Tooltip>
+      <Tooltip text="Share" placement="top">
+        <button
+          className="text-ink-400 hover:text-ink-600 hover:bg-ink-100 rounded-md p-1.5 transition-colors"
+          onClick={() => setIsSharing(true)}
+        >
+          <LuShare2 className="h-4 w-4" />
+        </button>
       </Tooltip>
       {onReply && (
-        <Tooltip
-          text={`Reply to this ${TRADE_TERM}`}
-          placement="top"
-          className="mr-2"
-        >
-          <Button
-            className={'!p-1'}
-            color={'gray-white'}
-            size={'2xs'}
+        <Tooltip text={`Reply to this ${TRADE_TERM}`} placement="top">
+          <button
+            className="text-ink-400 hover:text-ink-600 hover:bg-ink-100 rounded-md p-1.5 transition-colors"
             onClick={() => {
               onReply(bet)
               track(`reply to ${TRADE_TERM}`, {
@@ -751,20 +899,10 @@ function BetActionsWithGraph(props: {
               })
             }}
           >
-            <ReplyIcon className=" h-5 w-5" />
-          </Button>
+            <LuReply className="h-4 w-4" />
+          </button>
         </Tooltip>
       )}
-      <Tooltip text="Share bet" placement="top">
-        <Button
-          className={'!p-1'}
-          color={'gray-white'}
-          size={'2xs'}
-          onClick={() => setIsSharing(true)}
-        >
-          <LuShare className="h-5 w-5" />
-        </Button>
-      </Tooltip>
 
       {isSharing && bettor && (
         <ShareBetModal

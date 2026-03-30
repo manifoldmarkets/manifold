@@ -50,6 +50,12 @@ drop index if exists contract_comments_created_time_idx;
 
 create index contract_comments_created_time_idx on public.contract_comments using btree (created_time desc);
 
+drop index if exists contract_comments_public_created_time_idx;
+
+create index contract_comments_public_created_time_idx on public.contract_comments using btree (created_time desc)
+where
+  (visibility = 'public'::text);
+
 drop index if exists contract_comments_id;
 
 create index contract_comments_id on public.contract_comments using btree (comment_id);

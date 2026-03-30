@@ -7,6 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { Input } from '../widgets/input'
 import { CostSection } from './cost-section'
+import { getAnteAnswerCount } from './utils/get-ante-answer-count'
 
 const POLL_TYPE_OPTIONS: { value: PollType; label: string }[] = [
   { value: 'single', label: 'Single Vote' },
@@ -57,9 +58,14 @@ export function ContextualEditorPanel(props: {
 }) {
   const { formState, onUpdate, balance, validationErrors } = props
 
-  const { outcomeType, answers, liquidityTier } = formState
+  const { outcomeType, answers, liquidityTier, addAnswersMode } = formState
   const isPoll = outcomeType === 'POLL'
   const hasBalanceError = !!validationErrors.balance
+  const numAnswersForCost = getAnteAnswerCount(
+    answers,
+    addAnswersMode,
+    formState.shouldAnswersSumToOne
+  )
 
   return (
     <Col
@@ -85,7 +91,9 @@ export function ContextualEditorPanel(props: {
                 outcomeType={outcomeType as any}
                 liquidityTier={liquidityTier}
                 setLiquidityTier={(tier) => onUpdate('liquidityTier', tier)}
-                numAnswers={answers.length > 0 ? answers.length : undefined}
+                numAnswers={
+                  numAnswersForCost > 0 ? numAnswersForCost : undefined
+                }
               />
             </Col>
           )}

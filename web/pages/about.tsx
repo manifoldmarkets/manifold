@@ -26,7 +26,7 @@ export default function AboutPage() {
         )} on current events, politics, tech, & AI with play money. Or create your own prediction market for others to trade on!`}
       />
 
-      <Col className=" p-4">
+      <Col className="mx-auto w-full max-w-3xl p-4">
         <Title className="hidden sm:flex">About</Title>
         <ManifoldLogo className="mb-4 flex sm:hidden" />
         <Col className="gap-4">

@@ -12,6 +12,7 @@ import {
   TrendingUpIcon,
   UserIcon,
 } from '@heroicons/react/outline'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { PrivateUser } from 'common/user'
@@ -31,13 +32,12 @@ import { Button } from 'web/components/buttons/button'
 import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { SwitchSetting } from 'web/components/switch-setting'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
+import { SwitchSetting } from 'web/components/switch-setting'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { api } from 'web/lib/api/api'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { api } from 'web/lib/api/api'
 import { useNativeInfo } from './native-message-provider'
 
 const emailsEnabled: Array<notification_preference> = [
@@ -210,7 +210,7 @@ export function NotificationSettings(props: {
           {user ? (
             <UserWatchedContractsButton user={user} />
           ) : (
-            <span>Watched Questions</span>
+            <span>Watched Markets</span>
           )}
           <InformationCircleIcon
             className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"

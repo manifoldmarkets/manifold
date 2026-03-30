@@ -1,0 +1,2 @@
+export const MAX_WATCHED_MARKETS = 1000
+export const WATCHED_MARKETS_PAGE_SIZE = 100

@@ -14,22 +14,40 @@ export const getUserContractMetricsWithContracts: APIHandler<
   const { userId, limit, offset = 0, perAnswer = false, order } = props
   const visibilitySQL = getContractPrivacyWhereSQLFilter(auth?.uid, 'c.id')
   const pg = createSupabaseDirectClient()
-  const orderBySQL =
+  const metricFilterSQL = `(c.mechanism <> 'cpmm-multi-1' OR ucm.answer_id is not null)`
+  const rankedOrderBySQL =
     order === 'profit'
-      ? `sum(ucm.profit) DESC`
-      : `max((ucm.data->>'lastBetTime')::bigint) DESC NULLS LAST`
+      ? `total_profit DESC`
+      : `last_bet_time DESC NULLS LAST`
+  const finalOrderBySQL =
+    order === 'profit'
+      ? `rc.total_profit DESC`
+      : `rc.last_bet_time DESC NULLS LAST`
   const q = `
-        SELECT 
+        WITH ranked_contracts AS (
+          SELECT
+            c.id as contract_id,
+            sum(ucm.profit) as total_profit,
+            max((ucm.data->>'lastBetTime')::bigint) as last_bet_time
+          FROM contracts c
+          JOIN user_contract_metrics ucm ON c.id = ucm.contract_id
+          WHERE ${visibilitySQL}
+            AND ucm.user_id = $1
+            AND ${metricFilterSQL}
+          GROUP BY c.id
+          ORDER BY ${rankedOrderBySQL}
+          OFFSET $2 LIMIT $3
+        )
+        SELECT
           (select row_to_json(t) from (select ${prefixedContractColumnsToSelect}) t) as contract,
           jsonb_agg(ucm.data) as metrics
-        FROM contracts c
-        JOIN user_contract_metrics ucm ON c.id = ucm.contract_id
-        WHERE ${visibilitySQL}
-          AND ucm.user_id = $1
-          and case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end
-        GROUP BY c.id, ${prefixedContractColumnsToSelect}
-        ORDER BY ${orderBySQL}
-        OFFSET $2 LIMIT $3
+        FROM ranked_contracts rc
+        JOIN contracts c ON c.id = rc.contract_id
+        JOIN user_contract_metrics ucm ON ucm.contract_id = rc.contract_id
+        WHERE ucm.user_id = $1
+          AND ${metricFilterSQL}
+        GROUP BY c.id, rc.total_profit, rc.last_bet_time
+        ORDER BY ${finalOrderBySQL}
       `
   const results = await pg.map(q, [userId, offset, limit], (row) => ({
     contract: convertContract<MarketContract>(row.contract),

@@ -13,28 +13,30 @@ import {
   canAccessMarginLoans,
   getFreeLoanRate,
   getMaxLoanNetWorthPercent,
-  SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { type Row } from 'common/supabase/utils'
 
 export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   userId,
 }) => {
   const pg = createSupabaseDirectClient()
 
-  const portfolioMetric = await pg.oneOrNone(
+  const portfolioMetricRow = await pg.oneOrNone<Row<'user_portfolio_history_latest'>>(
     `select *
      from user_portfolio_history_latest
      where user_id = $1`,
-    [userId],
-    convertPortfolioHistory
+    [userId]
   )
+  const portfolioMetric = portfolioMetricRow
+    ? convertPortfolioHistory(portfolioMetricRow)
+    : null
   if (!portfolioMetric) {
     return {
       maxGeneralLoan: 0,
@@ -59,22 +61,7 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   }
 
   // Fetch supporter entitlements for tier-specific benefits
-  const supporterEntitlementRows = await pg.manyOrNone<{
-    user_id: string
-    entitlement_id: string
-    granted_time: string
-    expires_time: string | null
-    enabled: boolean
-  }>(
-    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
-     FROM user_entitlements
-     WHERE user_id = $1
-     AND entitlement_id = ANY($2)
-     AND enabled = true
-     AND (expires_time IS NULL OR expires_time > NOW())`,
-    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
-  )
-  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const entitlements = await getActiveSupporterEntitlements(pg, userId)
   const hasMarginLoanAccess = canAccessMarginLoans(entitlements)
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
   const freeLoanRate = getFreeLoanRate(entitlements)

@@ -23,6 +23,7 @@ export type TopLevelPost = {
 
   likedByUserIds?: string[]
   likedByUserCount?: number
+  tippedAmount?: number
 
   /** @deprecated */
   commentCount?: number
@@ -42,6 +43,8 @@ export type TopLevelPost = {
   /** @deprecated - not deprecated, only available via the get-posts endpoint*/
   lastCommentTime?: number | null
 }
+
+export const POST_TIPPED_AMOUNT_FIELD = 'tippedAmount' as const
 
 export const convertPost = (sqlPost: Row<'old_posts'>) =>
   convertSQLtoTS<'old_posts', TopLevelPost>(sqlPost, {

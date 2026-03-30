@@ -1,4 +1,6 @@
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
+import { WEEK_MS } from 'common/util/time'
+import dayjs from 'dayjs'
 import { useEffect } from 'react'
 import {
   useAdmin,
@@ -8,15 +10,15 @@ import {
 import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
-import { Row } from '../layout/row'
-import { WEEK_MS } from 'common/util/time'
-import dayjs from 'dayjs'
 import { UnresolveButton } from '../buttons/unresolve-button'
+import { Row } from '../layout/row'
 
 export function DangerZone(props: {
   contract: Contract
   showResolver: boolean
   setShowResolver: (showResolver: boolean) => void
+  showUnresolver: boolean
+  setShowUnresolver: (showUnresolver: boolean) => void
   showReview: boolean
   setShowReview: (showReview: boolean) => void
   userHasBet: boolean
@@ -26,6 +28,8 @@ export function DangerZone(props: {
     contract,
     showResolver,
     setShowResolver,
+    showUnresolver,
+    setShowUnresolver,
     showReview,
     setShowReview,
     userHasBet,
@@ -87,12 +91,26 @@ export function DangerZone(props: {
     resolutionTime &&
     now.diff(dayjs(resolutionTime), 'minute') < MINUTES_ALLOWED_TO_UNRESOLVE
 
+  const isIndependentMulti =
+    outcomeType === 'MULTIPLE_CHOICE' &&
+    mechanism === 'cpmm-multi-1' &&
+    'shouldAnswersSumToOne' in contract &&
+    !contract.shouldAnswersSumToOne
+  const hasResolvedIndependentAnswers =
+    isIndependentMulti &&
+    'answers' in contract &&
+    contract.answers.some((answer) => !!answer.resolution)
+
   const canUnresolve =
     isResolved &&
-    (mechanism === 'cpmm-multi-1' ? contract.shouldAnswersSumToOne : true) &&
+    !isIndependentMulti &&
     (token === 'CASH'
       ? isAdmin
       : isAdmin || isMod || (isCreator && creatorCanUnresolve))
+
+  const canUnresolveIndependentAnswers =
+    hasResolvedIndependentAnswers &&
+    (token === 'CASH' ? isAdmin : isAdmin || isMod || isCreator)
 
   useEffect(() => {
     if (
@@ -123,7 +141,8 @@ export function DangerZone(props: {
     !canUpdateReview &&
     !canDelete &&
     !canResolve &&
-    !canUnresolve
+    !canUnresolve &&
+    !canUnresolveIndependentAnswers
   )
     return null
 
@@ -154,9 +173,12 @@ export function DangerZone(props: {
       {canDelete && <DeleteMarketButton contractId={contract.id} />}
       {canResolve && !showResolver && (
         <Button
-          color={highlightResolver ? 'red' : 'gray'}
-          size="2xs"
-          onClick={() => setShowResolver(!showResolver)}
+          color={highlightResolver ? 'indigo' : 'gray'}
+          size="xs"
+          onClick={() => {
+            setShowUnresolver(false)
+            setShowResolver(!showResolver)
+          }}
         >
           {isCreator
             ? 'Resolve'
@@ -168,6 +190,20 @@ export function DangerZone(props: {
         </Button>
       )}
       {canUnresolve && <UnresolveButton contractId={contract.id} />}
+      {canUnresolveIndependentAnswers && (
+        <>
+          <Button
+            size="2xs"
+            color="gray"
+            onClick={() => {
+              setShowResolver(false)
+              setShowUnresolver(!showUnresolver)
+            }}
+          >
+            Unresolve
+          </Button>
+        </>
+      )}
     </Row>
   )
 }

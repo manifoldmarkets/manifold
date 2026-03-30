@@ -1,4 +1,4 @@
-import { fromNow } from 'client-common/lib/time'
+import { formatTime } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { Contract, contractPath } from 'common/contract'
 import { TRADED_TERM } from 'common/envs/constants'
@@ -68,8 +68,8 @@ function tooltipLabel(contract: Contract) {
   const { resolutionTime, creatorName, volume, closeTime = 0 } = contract
   const isCashContract = contract.token === 'CASH'
   const dateFormat = resolutionTime
-    ? `Resolved ${fromNow(resolutionTime)}`
-    : `${closeTime < Date.now() ? 'Closed' : 'Closes'} ${fromNow(closeTime)}`
+    ? `Resolved ${formatTime(resolutionTime)}`
+    : `${closeTime < Date.now() ? 'Closed' : 'Closes'} ${formatTime(closeTime)}`
 
   return `By ${creatorName}. ${formatWithToken({
     amount: volume,

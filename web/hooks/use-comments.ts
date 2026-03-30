@@ -134,5 +134,5 @@ export const useCommentThreads = (
     loadMore()
   }, [contractId, disabled])
 
-  return { threads, loadMore, loading }
+  return { threads, loadMore, loading, page }
 }

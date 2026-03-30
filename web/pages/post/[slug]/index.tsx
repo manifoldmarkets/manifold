@@ -3,8 +3,10 @@ import {
   EyeOffIcon,
   PencilIcon,
 } from '@heroicons/react/solid'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { PostComment } from 'common/comment'
 import { getPostShareUrl, TopLevelPost } from 'common/src/top-level-post'
+import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -18,7 +20,7 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { AddPostBoostButton } from 'web/components/posts/add-post-boost-button'
+import { JsonLd } from 'web/components/JsonLd'
 import { SEO } from 'web/components/SEO'
 import {
   PostCommentsActivity,
@@ -36,10 +38,13 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { api, report as reportContent } from 'web/lib/api/api'
+import { buildPostDiscussion } from 'web/lib/json-ld'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
 import { getPostBySlug } from 'web/lib/supabase/posts'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 import Custom404 from 'web/pages/404'
+import { PaymentsModal } from 'web/pages/payments'
+import TipJar from 'web/public/custom-components/tipJar'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -86,7 +91,16 @@ export default function PostPage(props: {
   const [post, setPost] = useState(props.post)
   const isAdminOrMod = useAdminOrMod()
   const [editing, setEditing] = useState(false)
+  const [tipping, setTipping] = useState(false)
   const currentUser = useUser()
+  const userPostTipStateKey =
+    currentUser && props.post
+      ? `post-tip-info-${currentUser.id}-${props.post.id}`
+      : 'post-tip-info-anon'
+  const [userTippedAmount, setUserTippedAmount] = usePersistentInMemoryState(
+    0,
+    userPostTipStateKey
+  )
   useSaveReferral(currentUser, {
     defaultReferrerUsername: post?.creatorUsername,
   })
@@ -94,10 +108,44 @@ export default function PostPage(props: {
     setPost(props.post)
   }, [props.post])
 
+  useEffect(() => {
+    if (
+      !currentUser ||
+      currentUser.id === props.post?.creatorId ||
+      !props.post
+    ) {
+      setUserTippedAmount(0)
+      return
+    }
+
+    let cancelled = false
+    api('get-post-tip-info', {
+      postId: props.post.id,
+    }).then(({ amountTippedByUser }) => {
+      if (cancelled) return
+      setUserTippedAmount(amountTippedByUser)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentUser, props.post])
+
   if (!post || !creator) {
     return <Custom404 />
   }
   const shareUrl = getPostShareUrl(post, currentUser?.username)
+  const isCreator = currentUser?.id === post.creatorId
+  const hasTippedPost = userTippedAmount > 0
+
+  const handleTipSuccess = (amount: number) => {
+    setUserTippedAmount((current) => current + amount)
+    setPost((prevPost) =>
+      prevPost
+        ? { ...prevPost, tippedAmount: (prevPost.tippedAmount ?? 0) + amount }
+        : null
+    )
+  }
 
   const handleReact = () => {
     if (!currentUser || !post) return
@@ -164,6 +212,7 @@ export default function PostPage(props: {
         url={'/post/' + post.slug}
         shouldIgnore={post.visibility === 'unlisted'}
       />
+      <PostJsonLd post={post} comments={comments} />
       <Col className="mx-auto w-full max-w-2xl px-4 py-4 ">
         {!editing && (
           <Col>
@@ -179,7 +228,7 @@ export default function PostPage(props: {
                   )}
                 </span>
               </Row>
-              <Row className="mt-3 items-center gap-2 ">
+              <Row className="mt-3 flex-wrap items-center gap-2">
                 {post && (
                   <ReactButton
                     contentId={post.id}
@@ -215,6 +264,36 @@ export default function PostPage(props: {
                 {currentUser && (
                   <FollowPostButton post={post} user={currentUser} />
                 )}
+                {currentUser && !isCreator && (
+                  <Button
+                    size="sm"
+                    color={hasTippedPost ? 'green-outline' : 'gray-outline'}
+                    className="px-2.5 sm:px-3"
+                    onClick={() => setTipping(true)}
+                  >
+                    <Row className="items-center gap-x-1.5 whitespace-nowrap text-xs sm:gap-x-2 sm:text-sm">
+                      <TipJar
+                        size={20}
+                        color="currentcolor"
+                        strokeWidth={1.75}
+                        fill={hasTippedPost ? 'currentcolor' : 'none'}
+                      />
+                      {hasTippedPost
+                        ? `Tipped ${formatMoney(userTippedAmount)}`
+                        : 'Tip'}
+                    </Row>
+                  </Button>
+                )}
+                <span
+                  className={
+                    post.tippedAmount && post.tippedAmount > 0
+                      ? 'text-sm font-medium text-teal-500'
+                      : 'text-ink-500 text-sm font-medium'
+                  }
+                >
+                  {post.tippedAmount && post.tippedAmount > 0 ? '+' : ''}
+                  {formatMoney(post.tippedAmount ?? 0)} tips
+                </span>
                 {(isAdminOrMod || post.creatorId === currentUser?.id) &&
                   post && (
                     <DropdownMenu
@@ -257,6 +336,20 @@ export default function PostPage(props: {
                     />
                   )}
               </Row>
+              {currentUser && !isCreator && (
+                <PaymentsModal
+                  fromUser={currentUser}
+                  toUser={creator}
+                  setShow={setTipping}
+                  show={tipping}
+                  groupId={post.id}
+                  postId={post.id}
+                  onSuccess={handleTipSuccess}
+                  defaultMessage={`Tip for post "${
+                    post.title
+                  }" ${getPostShareUrl(post, undefined)}`}
+                />
+              )}
             </Col>
 
             <Row className="border-canvas-50 items-center justify-between gap-4 border-b py-4">
@@ -281,9 +374,6 @@ export default function PostPage(props: {
             />
           </div>
         </div>
-        <Row className="my-2">
-          <AddPostBoostButton post={post} />
-        </Row>
         <Spacer h={4} />
         <PostCommentsActivity post={post} comments={comments} />
       </Col>
@@ -367,4 +457,30 @@ function RichEditPost(props: {
       )}
     </Col>
   )
+}
+
+function PostJsonLd(props: { post: TopLevelPost; comments: PostComment[] }) {
+  const { post, comments } = props
+  const filteredComments = comments
+    .filter((c) => !c.deleted && !c.hidden && c.visibility !== 'unlisted')
+    .filter((c) => !c.replyToCommentId)
+
+  const data = buildPostDiscussion({
+    title: post.title,
+    body: richTextToString(post.content),
+    url: `https://manifold.markets/post/${post.slug}`,
+    creatorName: post.creatorName,
+    creatorUsername: post.creatorUsername,
+    createdTime: post.createdTime,
+    commentCount: filteredComments.length,
+    visibility: post.visibility,
+    comments: filteredComments.slice(0, 5).map((c) => ({
+      text: richTextToString(c.content),
+      authorName: c.userName,
+      authorUsername: c.userUsername,
+      createdTime: c.createdTime,
+    })),
+  })
+
+  return <JsonLd data={data} id="post" />
 }

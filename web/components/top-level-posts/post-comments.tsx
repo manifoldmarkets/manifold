@@ -39,6 +39,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
@@ -194,6 +195,7 @@ export function PostCommentItem(props: {
   const { post, comment, indent, onReplyClick } = props
   const { userId, userUsername, userName, userAvatarUrl, createdTime } = comment
   const user = useUser()
+  const displayUser = useDisplayUserById(userId)
   const isAdminOrMod = useAdminOrMod()
   const commentRef = useRef<HTMLDivElement>(null)
   const [highlighted, setHighlighted] = useState(false)
@@ -284,6 +286,8 @@ export function PostCommentItem(props: {
               username={userUsername}
               size={isParent ? 'sm' : '2xs'}
               avatarUrl={userAvatarUrl}
+              entitlements={displayUser?.entitlements}
+              displayContext="posts"
             />
           </UserHovercard>
         </Row>

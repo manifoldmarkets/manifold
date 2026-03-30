@@ -7,6 +7,7 @@ import {
   ManaPaymentData,
   Notification,
   ReferralData,
+  StreakFreezeUsedData,
   UniqueBettorData,
 } from 'common/notification'
 import { formatMoney, maybePluralize } from 'common/util/format'
@@ -396,6 +397,47 @@ export function BettingStreakExpiringNotification(props: {
   )
 }
 
+export function BettingStreakFreezeUsedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const [open, setOpen] = useState(false)
+  const user = useUser()
+  const data = notification.data as StreakFreezeUsedData | undefined
+  const streak = data?.streak ?? 0
+  const freezesRemaining = data?.freezesRemaining ?? 0
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'🧊'}
+          symbolBackgroundClass={'bg-gradient-to-br from-blue-400 to-cyan-300'}
+        />
+      }
+      onClick={() => setOpen(true)}
+      subtitle={
+        freezesRemaining > 0
+          ? `You have ${freezesRemaining} streak freeze${
+              freezesRemaining === 1 ? '' : 's'
+            } remaining.`
+          : 'You have no streak freezes left — predict today to keep your streak!'
+      }
+    >
+      <span className="line-clamp-3">
+        A <PrimaryNotificationLink text="Streak Freeze" /> was used to save your{' '}
+        <span>🔥 {streak} day</span> prediction streak!
+      </span>
+      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+    </NotificationFrame>
+  )
+}
+
 export function LoanIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -461,6 +503,65 @@ export function ManaPaymentReceivedNotification(props: {
         />
         <PrimaryNotificationLink text=" sent you " />
         <IncomeNotificationLabel notification={notification} token={token} />
+      </span>
+    </NotificationFrame>
+  )
+}
+
+export function CharityChampionDethronedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const { sourceId, sourceUserName, sourceUserUsername } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🏆'} />
+      }
+      link="/shop"
+    >
+      <span>
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+          className=""
+        />
+        <span> claimed the </span>
+        <PrimaryNotificationLink text="Charity Champion Trophy" />
+        <span> from you!</span>
+      </span>
+    </NotificationFrame>
+  )
+}
+
+export function CharityChampionEligibleNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <NotificationIcon
+          symbol={'🏆'}
+          symbolBackgroundClass="bg-gradient-to-br from-amber-500 to-yellow-300"
+        />
+      }
+      link="/shop"
+    >
+      <span>
+        You're the <span className="font-semibold">#1 ticket buyer</span>!{' '}
+        <PrimaryNotificationLink text="Claim the Charity Champion Trophy" />
       </span>
     </NotificationFrame>
   )

@@ -27,6 +27,7 @@ import { Pagination } from '../widgets/pagination'
 import { MoneyDisplay } from './money-display'
 import { ContractMetric } from 'common/contract-metric'
 import { getPseudonym } from '../charts/contract/choice'
+import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -267,7 +268,11 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
           formatPercent(bet.limitProb ?? 0)
         )}
       </td>
-      <td className="text-ink-500">{formatTimeShort(createdTime)}</td>
+      <td className="text-ink-500">
+        <DateTimeTooltip time={createdTime}>
+          <span>{formatTimeShort(createdTime)}</span>
+        </DateTimeTooltip>
+      </td>
     </tr>
   )
 }
@@ -370,7 +375,11 @@ function MultiNumberBetRow(props: {
           <span>{expectedValueAfter}</span>
         </span>
       </td>
-      <td className="text-ink-500">{formatTimeShort(createdTime)}</td>
+      <td className="text-ink-500">
+        <DateTimeTooltip time={createdTime}>
+          <span>{formatTimeShort(createdTime)}</span>
+        </DateTimeTooltip>
+      </td>
     </tr>
   )
 }

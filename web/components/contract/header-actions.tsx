@@ -17,7 +17,7 @@ import { IoDuplicate } from 'react-icons/io5'
 import { MdOutlineReport } from 'react-icons/md'
 import { TiVolumeMute } from 'react-icons/ti'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { RepostModal } from 'web/components/comments/repost-modal'
+import { RepostButton, RepostModal } from 'web/components/comments/repost-modal'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
@@ -240,6 +240,14 @@ export function HeaderActions(props: {
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
       {!contract.coverImageUrl && isCreator && (
         <ChangeBannerButton contract={contract} className="ml-3 first:ml-0" />
+      )}
+      {user && (
+        <RepostButton
+          playContract={contract}
+          size="xs"
+          className="text-ink-500 hover:text-ink-600"
+          iconClassName="h-5 w-5"
+        />
       )}
       <FollowMarketIconButton contract={contract} user={user} />
       <CopyLinkOrShareButton

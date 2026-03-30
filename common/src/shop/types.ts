@@ -6,6 +6,7 @@ export type UserEntitlement = {
   expiresTime?: number // null = permanent
   enabled: boolean
   autoRenew: boolean // for membership subscriptions
+  metadata?: Record<string, any> // custom data (e.g., selected button text)
 }
 
 // Database row from shop_orders table
@@ -21,10 +22,12 @@ export type ShopOrder = {
   status:
     | 'CREATED'
     | 'COMPLETED'
+    | 'PENDING_FULFILLMENT'
     | 'SHIPPED'
     | 'DELIVERED'
     | 'CANCELLED'
     | 'FAILED'
+    | 'REFUNDED'
   metadata?: Record<string, any> // size, color, variant, etc.
   createdTime: number
   shippedTime?: number
@@ -39,6 +42,7 @@ export const convertEntitlement = (row: {
   expires_time?: string | null
   enabled: boolean
   auto_renew?: boolean // Optional for backwards compatibility with existing queries
+  metadata?: Record<string, any> | null
 }): UserEntitlement => ({
   userId: row.user_id,
   entitlementId: row.entitlement_id,
@@ -46,6 +50,7 @@ export const convertEntitlement = (row: {
   expiresTime: row.expires_time ? new Date(row.expires_time).getTime() : undefined,
   enabled: row.enabled,
   autoRenew: row.auto_renew ?? false, // Default to false if not selected
+  metadata: row.metadata ?? undefined,
 })
 
 export const convertShopOrder = (row: {

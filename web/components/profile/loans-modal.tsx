@@ -45,7 +45,7 @@ export function LoansModal(props: {
     'get-next-loan-amount',
     { userId: user.id }
   )
-  const { refresh: refetchTotalLoan } = useAPIGetter(
+  const { data: totalLoanData, refresh: refetchTotalLoan } = useAPIGetter(
     'get-total-loan-amount',
     {}
   )
@@ -212,7 +212,7 @@ export function LoansModal(props: {
         <Row className="border-ink-100 gap-3 border-b px-6 py-4">
           <Col className="flex-1 gap-1">
             <span className="text-ink-500 text-xs font-medium uppercase tracking-wide">
-              Available today
+              Available to borrow
             </span>
             <span className="text-primary-600 text-2xl font-semibold">
               {formatMoney(requestLoanMax)}
@@ -235,6 +235,21 @@ export function LoansModal(props: {
             <span className="text-ink-500 text-xs">
               Free: {formatMoney(loanData?.currentFreeLoan ?? 0)} • Margin:{' '}
               {formatMoney(loanData?.currentMarginLoan ?? 0)}
+              {(() => {
+                // totalOwed from get-total-loan-amount only includes margin
+                // loan principal + interest (free loans are excluded), so
+                // subtract only the margin principal to isolate interest.
+                const marginPrincipal = loanData?.currentMarginLoan ?? 0
+                const interest =
+                  (totalLoanData?.totalOwed ?? marginPrincipal) -
+                  marginPrincipal
+                return interest > 0 ? (
+                  <>
+                    <br />
+                    Incl. ~{formatMoney(interest)} accrued interest
+                  </>
+                ) : null
+              })()}
             </span>
           </Col>
         </Row>

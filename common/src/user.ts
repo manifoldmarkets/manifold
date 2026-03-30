@@ -94,6 +94,7 @@ export type User = {
   lastBetTime?: number
   currentBettingStreak?: number
   streakForgiveness: number
+  lastStreakFreezeTime?: number // timestamp when a streak freeze was last used
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   seenStreakModal?: boolean

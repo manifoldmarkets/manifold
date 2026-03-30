@@ -2,20 +2,15 @@ import { useEffect, useState } from 'react'
 import { api } from 'web/lib/api/api'
 import { ModReport, ReportStatus } from 'common/src/mod-report'
 import { keyBy, mapValues } from 'lodash'
-import { getReports, LiteReport } from 'web/pages/admin/reports'
 
 export const useModReports = (statuses: ReportStatus[]) => {
   const [reports, setReports] = useState<ModReport[] | undefined>(undefined)
-  const [userReports, setUserReports] = useState<LiteReport[] | undefined>(
-    undefined
-  )
   const [reportStatuses, setReportStatuses] = useState<{
     [key: number]: ReportStatus
   }>({})
   const [modNotes, setModNotes] = useState<{
     [key: number]: string | undefined
   }>({})
-  const [isLoadingUserReports, setIsLoadingUserReports] = useState(true)
 
   const getModReports = async () => {
     try {
@@ -49,32 +44,13 @@ export const useModReports = (statuses: ReportStatus[]) => {
     }
   }
 
-  const getUserReports = async () => {
-    setIsLoadingUserReports(true)
-    try {
-      const response = await getReports({ limit: 40 })
-      if (response) {
-        setUserReports(response)
-      } else {
-        console.error('Failed to fetch user reports:', response)
-      }
-    } catch (error) {
-      console.error('Error fetching user reports:', error)
-    } finally {
-      setIsLoadingUserReports(false)
-    }
-  }
-
   useEffect(() => {
     getModReports()
-    getUserReports()
   }, [JSON.stringify(statuses)])
 
   return {
     reports,
-    userReports,
     initialLoading: reports === undefined,
-    isLoadingUserReports,
     reportStatuses,
     modNotes,
     setReportStatuses,

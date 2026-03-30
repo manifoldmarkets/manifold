@@ -36,8 +36,11 @@ import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
 import {
   BettingStreakBonusIncomeNotification,
   BettingStreakExpiringNotification,
+  BettingStreakFreezeUsedNotification,
   LeagueChangedNotification,
   LoanIncomeNotification,
+  CharityChampionDethronedNotification,
+  CharityChampionEligibleNotification,
   ManaPaymentReceivedNotification,
   PushNotificationBonusNotification,
   QuestIncomeNotification,
@@ -140,6 +143,14 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'betting_streak_freeze_used') {
+    return (
+      <BettingStreakFreezeUsedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'loan_income') {
     return (
       <LoanIncomeNotification
@@ -151,6 +162,22 @@ export function NotificationItem(props: {
   } else if (reason === 'mana_payment_received') {
     return (
       <ManaPaymentReceivedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'charity_champion_dethroned') {
+    return (
+      <CharityChampionDethronedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'charity_champion_eligible') {
+    return (
+      <CharityChampionEligibleNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

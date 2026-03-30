@@ -214,7 +214,38 @@ type SearchProps = {
   initialTopics?: LiteGroup[]
   showTopicsFilterPills?: boolean
   refreshOnVisible?: boolean
+  showHotTopics?: boolean
 }
+
+// Collect all group IDs from SEARCH_TOPICS_TO_SUBTOPICS to filter out duplicates
+const getDefaultTopicGroupIds = (): Set<string> => {
+  const groupIds = new Set<string>()
+  Object.values(SEARCH_TOPICS_TO_SUBTOPICS).forEach((subtopics) => {
+    subtopics.forEach((subtopic) => {
+      subtopic.groupIds.forEach((id) => groupIds.add(id))
+    })
+  })
+  return groupIds
+}
+
+// Collect all subtopic names (without emojis) to filter out duplicates
+const getDefaultTopicNames = (): Set<string> => {
+  const names = new Set<string>()
+  // Add parent topic names
+  Object.keys(SEARCH_TOPICS_TO_SUBTOPICS).forEach((topic) => {
+    names.add(removeEmojis(topic).toLowerCase().trim())
+  })
+  // Add subtopic names
+  Object.values(SEARCH_TOPICS_TO_SUBTOPICS).forEach((subtopics) => {
+    subtopics.forEach((subtopic) => {
+      names.add(removeEmojis(subtopic.name).toLowerCase().trim())
+    })
+  })
+  return names
+}
+
+const DEFAULT_TOPIC_GROUP_IDS = getDefaultTopicGroupIds()
+const DEFAULT_TOPIC_NAMES = getDefaultTopicNames()
 
 export function Search(props: SearchProps) {
   const {
@@ -241,7 +272,21 @@ export function Search(props: SearchProps) {
     hideAvatars,
     showTopicsFilterPills,
     refreshOnVisible,
+    showHotTopics,
+    initialTopics,
   } = props
+
+  // Filter hot topics to exclude duplicates of default topics and subtopics
+  const hotTopics = (initialTopics ?? [])
+    .filter((topic) => {
+      // Filter out if the topic's ID is in any default subtopic groupIds
+      if (DEFAULT_TOPIC_GROUP_IDS.has(topic.id)) return false
+      // Filter out if the topic's name matches a default topic or subtopic name
+      const normalizedName = removeEmojis(topic.name).toLowerCase().trim()
+      if (DEFAULT_TOPIC_NAMES.has(normalizedName)) return false
+      return true
+    })
+    .slice(0, 30)
 
   const isMobile = useIsMobile()
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
@@ -397,7 +442,8 @@ export function Search(props: SearchProps) {
         (subtopic) => groupIds === subtopic.groupIds.join(',')
       )
     : undefined
-  const selectedAll = !selectedTopic && !selectedFollowed
+  const selectedAll =
+    !selectedTopic && !selectedFollowed && !searchParams[TOPIC_FILTER_KEY]
   const user = useUser()
   const {
     data: followedGroupsData,
@@ -463,13 +509,10 @@ export function Search(props: SearchProps) {
       <Col className={clsx('bg-canvas-0 sticky top-0 z-20', headerClassName)}>
         <Col className="mb-2">
           {showTopicsFilterPills && (
-            <Carousel
-              fadeEdges
-              labelsParentClassName="gap-4 items-baseline border-b border-ink-100 dark:border-ink-200 pb-2"
-            >
+            <Row className="border-ink-100 dark:border-ink-200 items-baseline gap-4 border-b pb-2">
               <button
                 className={clsx(
-                  'font-medium',
+                  'shrink-0 font-medium',
                   selectedAll ? 'text-primary-600' : 'text-ink-500'
                 )}
                 onClick={() => {
@@ -485,54 +528,87 @@ export function Search(props: SearchProps) {
               >
                 All
               </button>
-              {!!user?.id && (
-                <button
-                  className={clsx(
-                    'font-medium',
-                    selectedFollowed ? 'text-primary-600' : 'text-ink-500'
-                  )}
-                  onClick={() => {
-                    if (!selectedFollowed) {
-                      track('select search topic', { topic: 'followed' })
-                      const changes: Partial<SearchParams> = {
-                        [TOPIC_FILTER_KEY]: 'followed',
-                        [GROUP_IDS_KEY]: '',
+              <Carousel
+                fadeEdges
+                showArrowsOnHover
+                labelsParentClassName="gap-4 items-baseline"
+                className="min-w-0 flex-1"
+              >
+                {!!user?.id && (
+                  <button
+                    className={clsx(
+                      'font-medium',
+                      selectedFollowed ? 'text-primary-600' : 'text-ink-500'
+                    )}
+                    onClick={() => {
+                      if (!selectedFollowed) {
+                        track('select search topic', { topic: 'followed' })
+                        const changes: Partial<SearchParams> = {
+                          [TOPIC_FILTER_KEY]: 'followed',
+                          [GROUP_IDS_KEY]: '',
+                        }
+                        onChange(changes)
                       }
-                      onChange(changes)
-                    }
-                  }}
-                >
-                  Followed
-                </button>
-              )}
-              {ALL_PARENT_TOPICS.map((topic) => (
-                <button
-                  key={topic}
-                  className={clsx(
-                    'whitespace-nowrap font-medium',
-                    selectedTopic === topic
-                      ? 'text-primary-600'
-                      : 'text-ink-500'
-                  )}
-                  onClick={() => {
-                    if (selectedTopic != topic) {
-                      track('select search topic', { topic })
-                      // Join all group IDs for this topic's subtopics
-                      const allGroupIds = SEARCH_TOPICS_TO_SUBTOPICS[topic]
-                        .map((subtopic) => subtopic.groupIds)
-                        .flat()
-                      const changes: Partial<SearchParams> = {
-                        [GROUP_IDS_KEY]: allGroupIds.join(','),
-                        [TOPIC_FILTER_KEY]: '', // Clear direct topicSlug when a parent topic is selected
+                    }}
+                  >
+                    Followed
+                  </button>
+                )}
+                {ALL_PARENT_TOPICS.map((topic) => (
+                  <button
+                    key={topic}
+                    className={clsx(
+                      'whitespace-nowrap font-medium',
+                      selectedTopic === topic
+                        ? 'text-primary-600'
+                        : 'text-ink-500'
+                    )}
+                    onClick={() => {
+                      if (selectedTopic != topic) {
+                        track('select search topic', { topic })
+                        // Join all group IDs for this topic's subtopics
+                        const allGroupIds = SEARCH_TOPICS_TO_SUBTOPICS[topic]
+                          .map((subtopic) => subtopic.groupIds)
+                          .flat()
+                        const changes: Partial<SearchParams> = {
+                          [GROUP_IDS_KEY]: allGroupIds.join(','),
+                          [TOPIC_FILTER_KEY]: '', // Clear direct topicSlug when a parent topic is selected
+                        }
+                        onChange(changes)
                       }
-                      onChange(changes)
-                    }
-                  }}
-                >
-                  {removeEmojis(topic)}
-                </button>
-              ))}
-            </Carousel>
+                    }}
+                  >
+                    {removeEmojis(topic)}
+                  </button>
+                ))}
+                {showHotTopics &&
+                  hotTopics.map((topic) => {
+                    const isSelected =
+                      searchParams[TOPIC_FILTER_KEY] === topic.slug
+                    return (
+                      <button
+                        key={topic.id}
+                        className={clsx(
+                          'whitespace-nowrap font-medium',
+                          isSelected ? 'text-primary-600' : 'text-ink-500'
+                        )}
+                        onClick={() => {
+                          if (!isSelected) {
+                            track('select search topic', { topic: topic.slug })
+                            const changes: Partial<SearchParams> = {
+                              [TOPIC_FILTER_KEY]: topic.slug,
+                              [GROUP_IDS_KEY]: '',
+                            }
+                            onChange(changes)
+                          }
+                        }}
+                      >
+                        {removeEmojis(topic.name)}
+                      </button>
+                    )
+                  })}
+              </Carousel>
+            </Row>
           )}
         </Col>
         {!hideSearch && (
@@ -930,7 +1006,20 @@ export const useSearchResults = (props: {
               filter,
               sort,
               contractType,
-              offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+              ...(() => {
+                const useCursor =
+                  !freshQuery && sort === 'newest' && !!state.contracts?.length
+                return useCursor
+                  ? {
+                      offset: 0,
+                      beforeTime:
+                        state.contracts![state.contracts!.length - 1]
+                          ?.createdTime,
+                    }
+                  : {
+                      offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+                    }
+              })(),
               limit: CONTRACTS_PER_SEARCH_PAGE,
               topicSlug: topicSlug !== '' ? topicSlug : undefined,
               creatorId: additionalFilter?.creatorId,

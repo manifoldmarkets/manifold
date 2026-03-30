@@ -31,7 +31,9 @@ alter table chart_annotations enable row level security;
 -- Policies
 drop policy if exists "public read" on chart_annotations;
 
-create policy "public read" on chart_annotations for all using (true);
+create policy "public read" on chart_annotations for
+select
+  using (true);
 
 -- Indexes
 drop index if exists chart_annotations_pkey;

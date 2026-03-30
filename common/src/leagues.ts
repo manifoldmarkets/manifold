@@ -283,6 +283,30 @@ export const getDivisionChange = (
   return 0
 }
 
+/**
+ * When a cohort is smaller than promotionCount + demotionCount, the zones
+ * overlap. Cap demotion so it never encroaches into the promotion zone.
+ * This matches getDivisionChange() priority: promotion wins over demotion.
+ */
+export const capPromotionDemotion = (
+  promotionCount: number,
+  doublePromotionCount: number,
+  demotionCount: number,
+  cohortSize: number
+) => {
+  const cappedDemotion = Math.max(
+    0,
+    Math.min(demotionCount, cohortSize - promotionCount)
+  )
+  const cappedPromotion = Math.min(promotionCount, cohortSize)
+  const cappedDoublePromotion = Math.min(doublePromotionCount, cohortSize)
+  return {
+    promotion: cappedPromotion,
+    doublePromotion: cappedDoublePromotion,
+    demotion: cappedDemotion,
+  }
+}
+
 export const getMaxDivisionBySeason = (season: number) => {
   if (season === 1) return 4
   if (season === 2) return 5

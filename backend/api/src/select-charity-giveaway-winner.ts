@@ -1,11 +1,14 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient, SERIAL_MODE } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 import { createHash } from 'crypto'
 
 export const selectCharityGiveawayWinner: APIHandler<
   'select-charity-giveaway-winner'
 > = async (props, auth) => {
+  const toMillis = (timestamp: string | Date) =>
+    timestamp instanceof Date ? timestamp.getTime() : new Date(timestamp).getTime()
+
   // Admin-only check
   if (!isAdminId(auth.uid)) {
     throw new APIError(403, 'Only admins can select the giveaway winner')
@@ -14,16 +17,17 @@ export const selectCharityGiveawayWinner: APIHandler<
   const { giveawayNum } = props
   const pg = createSupabaseDirectClient()
 
-  return await pg.tx(async (tx) => {
+  return await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
     // Get giveaway and verify it's closed and has no winner yet
     // Note: nonce is secret until winner is selected, then revealed for verification
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
-      close_time: string
+      close_time: string | Date
       winning_ticket_id: string | null
       nonce: string
+      db_now: string | Date
     }>(
-      `SELECT giveaway_num, close_time, winning_ticket_id, nonce 
+      `SELECT giveaway_num, close_time, winning_ticket_id, nonce, NOW() AS db_now
        FROM charity_giveaways 
        WHERE giveaway_num = $1 
        FOR UPDATE`,
@@ -34,7 +38,7 @@ export const selectCharityGiveawayWinner: APIHandler<
       throw new APIError(404, 'Giveaway not found')
     }
 
-    if (new Date(giveaway.close_time) > new Date()) {
+    if (toMillis(giveaway.close_time) > toMillis(giveaway.db_now)) {
       throw new APIError(400, 'Giveaway has not closed yet')
     }
 
@@ -58,10 +62,11 @@ export const selectCharityGiveawayWinner: APIHandler<
 
     // Get the last 10 tickets' timestamps for provably fair seeding
     // Using multiple timestamps makes it impossible for any single buyer to manipulate the outcome
-    const lastTickets = await tx.manyOrNone<{ created_time: string }>(
-      `SELECT created_time FROM charity_giveaway_tickets 
+    const lastTickets = await tx.manyOrNone<{ created_time_ms: number }>(
+      `SELECT ts_to_millis(created_time) AS created_time_ms
+       FROM charity_giveaway_tickets 
        WHERE giveaway_num = $1 
-       ORDER BY created_time DESC 
+       ORDER BY created_time DESC, id DESC
        LIMIT 10`,
       [giveawayNum]
     )
@@ -77,9 +82,8 @@ export const selectCharityGiveawayWinner: APIHandler<
 
     // XOR each ticket's timestamp into the seed
     for (const ticket of lastTickets) {
-      const timestamp = new Date(ticket.created_time).getTime()
       const timestampBuffer = Buffer.alloc(8)
-      timestampBuffer.writeBigInt64BE(BigInt(timestamp))
+      timestampBuffer.writeBigInt64BE(BigInt(ticket.created_time_ms))
 
       for (let i = 0; i < 8; i++) {
         seedBuffer[i] ^= timestampBuffer[i]
@@ -108,7 +112,7 @@ export const selectCharityGiveawayWinner: APIHandler<
       `SELECT id, charity_id, user_id, num_tickets 
        FROM charity_giveaway_tickets 
        WHERE giveaway_num = $1 
-       ORDER BY created_time ASC`,
+       ORDER BY created_time ASC, id ASC`,
       [giveawayNum]
     )
 

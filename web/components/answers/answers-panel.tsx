@@ -4,7 +4,6 @@ import {
   ChevronDownIcon,
   DotsVerticalIcon,
   PencilIcon,
-  RefreshIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
 import { UserIcon } from '@heroicons/react/solid'
@@ -426,67 +425,6 @@ export const EditAnswerModal = (props: {
   )
 }
 
-export const UnresolveAnswerModal = (props: {
-  open: boolean
-  setOpen: (show: boolean) => void
-  contract: Contract
-  answer: Answer
-}) => {
-  const { answer, contract, open, setOpen } = props
-  const [isUnresolving, setIsUnresolving] = useState(false)
-  const [unresolveText, setUnresolveText] = useState('')
-  const [error, setError] = useState<string | null>(null)
-
-  const unresolveAnswer = async () => {
-    if (isUnresolving) return
-    setIsUnresolving(true)
-
-    try {
-      await api('unresolve', {
-        contractId: contract.id,
-        answerId: answer.id,
-      })
-      toast.success('Answer unresolved')
-      setIsUnresolving(false)
-      setUnresolveText('')
-      setOpen(false)
-    } catch (e) {
-      setIsUnresolving(false)
-      setError(e instanceof Error ? e.message : 'Failed to unresolve answer')
-    }
-  }
-
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx('bg-canvas-50 gap-2 rounded-md p-4')}>
-        <span className={'font-semibold'}>Unresolve Answer</span>
-        <span className={'text-ink-600 text-sm'}>
-          Type "UNRESOLVE" to confirm unresolving this answer.
-        </span>
-        <Row className={'gap-1'}>
-          <Input
-            value={unresolveText}
-            placeholder={'Type UNRESOLVE to unresolve'}
-            onChange={(e) => setUnresolveText(e.target.value)}
-            className="w-full"
-            disabled={isUnresolving}
-          />
-          <Button
-            size={'xs'}
-            color={'red'}
-            loading={isUnresolving}
-            onClick={unresolveAnswer}
-            disabled={unresolveText !== 'UNRESOLVE' || isUnresolving}
-          >
-            Unresolve
-          </Button>
-        </Row>
-        {error ? <span className="text-red-500">{error}</span> : null}
-      </Col>
-    </Modal>
-  )
-}
-
 // just the bars
 export function SimpleAnswerBars(props: {
   contract: CPMMMultiContract
@@ -582,7 +520,6 @@ export function AnswerComponent(props: {
 
   const prob = getAnswerProbability(contract, answer.id)
   const [editingAnswer, setEditingAnswer] = useState<Answer>()
-  const [unresolveModalOpen, setUnresolveModalOpen] = useState(false)
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -679,16 +616,7 @@ export function AnswerComponent(props: {
       icon: <ScaleIcon className="h-4 w-4" />,
       name: getOrderBookButtonLabel(unfilledBets),
       onClick: () => setLimitBetModalOpen(true),
-    },
-    user &&
-      (isModId(user.id) ||
-        isAdminId(user.id) ||
-        contract.creatorId === user.id) &&
-      answer.resolutionTime && {
-        icon: <RefreshIcon className="h-4 w-4" />,
-        name: 'Unresolve',
-        onClick: () => setUnresolveModalOpen(true),
-      }
+    }
   )
 
   return (
@@ -791,14 +719,6 @@ export function AnswerComponent(props: {
           contract={contract}
           answer={editingAnswer}
           color={color}
-        />
-      )}
-      {unresolveModalOpen && (
-        <UnresolveAnswerModal
-          open={unresolveModalOpen}
-          setOpen={setUnresolveModalOpen}
-          contract={contract}
-          answer={answer}
         />
       )}
       {tradesModalOpen && (

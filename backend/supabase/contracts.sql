@@ -16,6 +16,8 @@ create table if not exists
     ) stored,
     freshness_score numeric default 0 not null,
     group_slugs text[],
+    home_page_score_adjustment numeric,
+    home_page_score_adjustment_expires_at timestamp with time zone,
     id text primary key not null,
     importance_score numeric default 0 not null,
     is_spice_payout boolean default false,
@@ -156,9 +158,15 @@ drop index if exists contracts_creator_id;
 
 create index contracts_creator_id on public.contracts using btree (creator_id, created_time);
 
-drop index if exists contracts_daily_score;
+drop index if exists contracts_feed_created;
 
-create index contracts_daily_score on public.contracts using btree (daily_score desc);
+create index contracts_feed_created on public.contracts using btree (token, created_time desc)
+where
+  (
+    resolution_time is null
+    and deleted = false
+    and visibility = 'public'::text
+  );
 
 drop index if exists contracts_elasticity;
 
@@ -168,9 +176,9 @@ drop index if exists contracts_freshness_score;
 
 create index contracts_freshness_score on public.contracts using btree (freshness_score desc);
 
-drop index if exists contracts_group_slugs_importance;
+drop index if exists contracts_group_slugs;
 
-create index contracts_group_slugs_importance on public.contracts using gin (group_slugs, importance_score);
+create index contracts_group_slugs on public.contracts using gin (group_slugs);
 
 drop index if exists contracts_importance_score;
 

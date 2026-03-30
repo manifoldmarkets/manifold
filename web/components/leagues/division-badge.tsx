@@ -149,7 +149,12 @@ export function getRankZoneStyles(
       classes: 'bg-teal-50/50 dark:bg-teal-1000/40',
     }
   }
-  if (rank > totalUsers - demotionCount) {
+  // Cap demotion so it never overlaps with promotion zone in small cohorts
+  const cappedDemotion = Math.max(
+    0,
+    Math.min(demotionCount, totalUsers - promotionCount)
+  )
+  if (cappedDemotion > 0 && rank > totalUsers - cappedDemotion) {
     return {
       zone: 'demote',
       classes: 'bg-scarlet-50/40 dark:bg-scarlet-1000/40',

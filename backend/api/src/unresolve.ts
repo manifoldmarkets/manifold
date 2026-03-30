@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from 'api/helpers/rate-limit'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -31,7 +32,10 @@ import { UserUpdate, bulkIncrementBalancesQuery } from 'shared/supabase/users'
 import { FieldVal } from 'shared/supabase/utils'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { getContract, isProd, log } from 'shared/utils'
-import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
+import {
+  broadcastUpdatedAnswers,
+  broadcastUpdatedContract,
+} from 'shared/websockets/helpers'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -54,10 +58,25 @@ export const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
 
     await verifyUserCanUnresolve(tx, contract, auth.uid, answerId)
 
-    await undoResolution(tx, contract, auth.uid, answerId)
+    const undoResult = await undoResolution(tx, contract, auth.uid, answerId)
 
-    return { success: true as const }
+    return {
+      success: true as const,
+      answerUpdates: undoResult.answerUpdates,
+      contractWebsocketUpdates: undoResult.contractWebsocketUpdates,
+      visibility: contract.visibility,
+    }
   })
+
+  if (result.answerUpdates.length > 0) {
+    broadcastUpdatedAnswers(contractId, result.answerUpdates)
+  }
+  if (result.contractWebsocketUpdates) {
+    broadcastUpdatedContract(result.visibility, {
+      id: contractId,
+      ...result.contractWebsocketUpdates,
+    })
+  }
 
   await trackPublicEvent(auth.uid, 'unresolve market', {
     contractId,
@@ -249,6 +268,9 @@ const undoResolution = async (
 
   log('reverted txns')
 
+  let contractWebsocketUpdates: Partial<Contract> | undefined = undefined
+  let answerUpdates: (Partial<Answer> & { id: string })[] = []
+
   if (contract.isResolved || contract.resolutionTime) {
     // Restore subsidyPool from the contract state before resolution
     const preResolutionSubsidyPool = await pg.oneOrNone(
@@ -278,6 +300,20 @@ const undoResolution = async (
     })
     await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
+    contractWebsocketUpdates = {
+      isResolved: false,
+      resolutionTime: undefined,
+      resolverId: undefined,
+      resolution: undefined,
+      resolutions: undefined,
+      resolutionProbability: undefined,
+      closeTime: Date.now(),
+      prob:
+        contract.mechanism === 'cpmm-1'
+          ? getCpmmProbability(contract.pool, contract.p)
+          : undefined,
+      subsidyPool: preResolutionSubsidyPool ?? 0,
+    }
   }
   if (!answerId) {
     const contractMetrics = await getContractMetricsForContract(
@@ -325,7 +361,14 @@ const undoResolution = async (
       [contractId],
       convertAnswer
     )
-    broadcastUpdatedAnswers(contractId, newAnswers)
+    answerUpdates = newAnswers.map((answer) => ({
+      ...answer,
+      // Explicit nulls are required so websocket merge can clear old values.
+      resolution: null as any,
+      resolutionTime: null as any,
+      resolutionProbability: null as any,
+      resolverId: null as any,
+    }))
   } else if (answerId) {
     const contractMetrics = await getContractMetricsForContract(
       pg,
@@ -374,10 +417,20 @@ const undoResolution = async (
       [answerId, contractId, preResolutionSubsidyPool ?? 0],
       convertAnswer
     )
-    broadcastUpdatedAnswers(contractId, [answer])
+    answerUpdates = [
+      {
+        ...answer,
+        // Explicit nulls are required so websocket merge can clear old values.
+        resolution: null as any,
+        resolutionTime: null as any,
+        resolutionProbability: null as any,
+        resolverId: null as any,
+      },
+    ]
   }
 
   log('updated contract')
+  return { answerUpdates, contractWebsocketUpdates }
 }
 
 export function getUndoOldContractPayout(

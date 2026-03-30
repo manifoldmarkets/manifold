@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import { canReceiveBonuses, User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
@@ -11,6 +12,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   BettingStreakModal,
   hasCompletedStreakToday,
+  wasStreakFrozenRecently,
 } from 'web/components/profile/betting-streak-modal'
 import { Title } from 'web/components/widgets/title'
 import { ProgressBar } from 'web/components/progress-bar'
@@ -33,6 +35,7 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   user: User | null | undefined
 }) {
   const { user } = props
+  const router = useRouter()
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
@@ -56,20 +59,36 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
     setShowQuestsModal(true)
   }
 
+  // Preview mode: ?previewFrozen=true forces frozen state
+  const previewFrozen = router.query.previewFrozen === 'true'
+
+  const missingStreak = !hasCompletedStreakToday(user)
+  const wasFrozen = previewFrozen || wasStreakFrozenRecently(user)
+
+  // Determine visual state:
+  // - Normal (colored): streak completed today
+  // - Frozen: streak not completed but freeze was used (or previewFrozen)
+  // - Grayscale: streak not completed, no freeze used
+  const showFrozen = previewFrozen || (missingStreak && wasFrozen)
+  const getStyle = () => {
+    if (showFrozen) return ''
+    if (!missingStreak) return ''
+    return 'grayscale'
+  }
+
   return (
     <>
       <button
         className={clsx('cursor-pointer', dailyStatsClass)}
         onClick={handleQuestsClick}
       >
-        <Col
-          className={clsx(
-            user && !hasCompletedStreakToday(user) && 'grayscale',
-            'items-center'
-          )}
-        >
-          <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-          <span className="text-ink-600 text-xs">Streak</span>
+        <Col className={clsx(getStyle(), 'items-center')}>
+          <span>
+            {showFrozen ? '🧊' : '🔥'} {user?.currentBettingStreak ?? 0}
+          </span>
+          <span className="text-ink-600 text-xs">
+            {showFrozen ? 'Frozen' : 'Streak'}
+          </span>
         </Col>
       </button>
       {showQuestsModal && (
@@ -77,6 +96,7 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
           open={showQuestsModal}
           setOpen={setShowQuestsModal}
           user={user}
+          previewFrozen={previewFrozen}
         />
       )}
       {showVerificationModal && (
@@ -95,8 +115,9 @@ export function QuestsModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
+  previewFrozen?: boolean
 }) {
-  const { open, setOpen, user } = props
+  const { open, setOpen, user, previewFrozen } = props
   const questStatus = useQuestStatus(user)
   const [showStreakModal, setShowStreakModal] = useState(false)
 
@@ -196,6 +217,7 @@ export function QuestsModal(props: {
         isOpen={showStreakModal}
         setOpen={setShowStreakModal}
         currentUser={user}
+        previewFrozen={previewFrozen}
       />
     </Modal>
   )

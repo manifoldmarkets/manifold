@@ -13,6 +13,7 @@ import {
 import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
+import { sumBy } from 'lodash'
 import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
@@ -35,9 +36,9 @@ import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-met
 import {
   canAccessMarginLoans,
   getMaxLoanNetWorthPercent,
-  SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
-import { convertEntitlement } from 'common/shop/types'
+import { type Row } from 'common/supabase/utils'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
 export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { amount, contractId, answerId: _answerId } = props
@@ -64,22 +65,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   }
 
   // Check if user has margin loan access (Pro or Premium tier required)
-  const supporterEntitlementRows = await pg.manyOrNone<{
-    user_id: string
-    entitlement_id: string
-    granted_time: string
-    expires_time: string | null
-    enabled: boolean
-  }>(
-    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled
-     FROM user_entitlements
-     WHERE user_id = $1
-     AND entitlement_id = ANY($2)
-     AND enabled = true
-     AND (expires_time IS NULL OR expires_time > NOW())`,
-    [auth.uid, [...SUPPORTER_ENTITLEMENT_IDS]]
-  )
-  const entitlements = supporterEntitlementRows.map(convertEntitlement)
+  const entitlements = await getActiveSupporterEntitlements(pg, auth.uid)
 
   if (!canAccessMarginLoans(entitlements)) {
     throw new APIError(
@@ -91,13 +77,15 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   // Get tier-specific max loan percent
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
 
-  const portfolioMetric = await pg.oneOrNone(
+  const portfolioMetricRow = await pg.oneOrNone<Row<'user_portfolio_history_latest'>>(
     `select *
      from user_portfolio_history_latest
      where user_id = $1`,
-    [auth.uid],
-    convertPortfolioHistory
+    [auth.uid]
   )
+  const portfolioMetric = portfolioMetricRow
+    ? convertPortfolioHistory(portfolioMetricRow)
+    : null
   if (!portfolioMetric) {
     throw new APIError(404, `No portfolio found for user ${auth.uid}`)
   }
@@ -122,15 +110,26 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     contractsById
   )
 
+  // Calculate current loan from live contract metrics (not cached portfolio history)
+  // to stay consistent with get-next-loan-amount which also sums from metrics.
+  const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
+  const currentMarginLoan = sumBy(metrics, (m) => m.marginLoan ?? 0)
+  const loanTotal = currentFreeLoan + currentMarginLoan
+
   // Calculate equity from net portfolio value (already excludes loans).
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
   // Note: Balance is not included since loans are taken against positions.
-  const loanTotal = portfolioMetric.loanTotal ?? 0
   const equity = Math.max(0, portfolioValueNet)
 
   // Check total loan limit based on equity (tier-specific)
+  // Override loanTotal with live value so validation matches the UI display
   if (
-    !isUserEligibleForGeneralLoan(portfolioMetric, equity, amount, maxLoanPercent)
+    !isUserEligibleForGeneralLoan(
+      { ...portfolioMetric, loanTotal },
+      equity,
+      amount,
+      maxLoanPercent
+    )
   ) {
     const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
     const currentLoan = loanTotal

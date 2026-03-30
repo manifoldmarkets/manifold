@@ -63,6 +63,7 @@ export type notification_source_types =
   | 'bonus' // strictly unique bettor bonuses atm
   | 'betting_streak_bonus'
   | 'betting_streak_expiring'
+  | 'betting_streak_freeze_used'
   | 'loan'
   | 'tip_and_like'
   | 'badge'
@@ -92,6 +93,7 @@ export type notification_source_types =
   | 'payment_status'
   | 'membership_subscription'
   | 'prize_winner'
+  | 'charity_champion'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -146,6 +148,8 @@ export type notification_reason_types =
   | 'bounty_canceled'
   | 'mana_payment_received'
   | 'prize_winner'
+  | 'charity_champion_dethroned'
+  | 'charity_champion_eligible'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -381,6 +385,11 @@ export type BettingStreakData = {
   bonusAmount: number
   cashAmount?: number
 }
+
+export type StreakFreezeUsedData = {
+  streak: number
+  freezesRemaining: number
+}
 export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
   newLeague: { season: number; division: number; cohort: string }
@@ -478,7 +487,8 @@ export type ReferralData = {
 export type MembershipSubscriptionData = {
   tierName: string
   amount: number
-  type: 'renewed' | 'cancelled'
+  type: 'renewed' | 'cancelled' | 'expiring_soon'
+  daysUntilExpiry?: number
   newExpiresTime?: number // Only for renewals
 }
 

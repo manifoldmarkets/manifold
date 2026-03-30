@@ -46,6 +46,7 @@ import { MarketPreview, PreviewContractData } from './market-preview'
 import { ProminentTypeSelector } from './prominent-type-selector'
 import { TypeSwitcherModal } from './type-switcher-modal'
 import { scrollToFirstError } from './utils/scroll-to-error'
+import { getAnteAnswerCount } from './utils/get-ante-answer-count'
 
 const MAX_DESCRIPTION_LENGTH = 16000
 
@@ -729,7 +730,11 @@ export function NewContractPanel(props: {
   )
 
   // Calculate cost
-  const numAnswers = formState.answers.length
+  const numAnswers = getAnteAnswerCount(
+    formState.answers,
+    formState.addAnswersMode,
+    formState.shouldAnswersSumToOne
+  )
   const cost = getAnte(
     formState.outcomeType as any,
     numAnswers > 0 ? numAnswers : undefined,
@@ -1360,6 +1365,13 @@ export function NewContractPanel(props: {
             onToggleIncludeSeeResults={() =>
               updateField('includeSeeResults', !formState.includeSeeResults)
             }
+            onReplaceQuestionText={(original, replacement) => {
+              const newQuestion = formState.question.replace(
+                original,
+                replacement
+              )
+              updateFieldWithErrorClear('question', newQuestion)
+            }}
           />
 
           {/* Overlay when no market type selected */}

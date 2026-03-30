@@ -225,7 +225,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       fromType: 'USER',
       toId: 'BANK',
       toType: 'BANK',
-      amount: -repaymentAmount,
+      amount: repaymentAmount,
       token: 'M$',
       category: 'LOAN_PAYMENT',
       data: {
@@ -432,7 +432,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     fromType: 'USER',
     toId: 'BANK',
     toType: 'BANK',
-    amount: -repaymentAmount,
+    amount: repaymentAmount,
     token: 'M$',
     category: 'LOAN_PAYMENT',
     data: {

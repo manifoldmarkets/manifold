@@ -1,5 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnInBetQueue, type TxnData } from 'shared/txn/run-txn'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import {
   SUPPORTER_ENTITLEMENT_IDS,
   SUPPORTER_TIERS,
@@ -125,7 +126,7 @@ export async function processMembershipRenewals() {
     let notificationToSend: NotificationInfo | null = null
 
     try {
-      const result = await pg.tx(async (tx) => {
+      const result = await runTransactionWithRetries(async (tx) => {
         // Get user's current balance
         const user = await tx.oneOrNone<{ balance: number }>(
           `SELECT balance FROM users WHERE id = $1`,
@@ -163,9 +164,6 @@ export async function processMembershipRenewals() {
             [newExpiresTime, user_id, entitlement_id]
           )
 
-          log(`Successfully renewed ${tierInfo.name} for user ${user_id}`)
-          renewedCount++
-
           return {
             type: 'renewed' as const,
             newExpiresTime: newExpiresTime.getTime(),
@@ -179,12 +177,18 @@ export async function processMembershipRenewals() {
             [user_id, entitlement_id]
           )
 
-          log(`Cancelled ${tierInfo.name} auto-renewal for user ${user_id} (insufficient balance: ${user.balance} < ${tierInfo.price})`)
-          failedCount++
-
           return { type: 'cancelled' as const }
         }
       })
+
+      // Track counters outside the retryable callback to avoid double-counting on retry
+      if (result?.type === 'renewed') {
+        log(`Successfully renewed ${tierInfo.name} for user ${user_id}`)
+        renewedCount++
+      } else if (result?.type === 'cancelled') {
+        log(`Cancelled ${tierInfo.name} auto-renewal for user ${user_id} (insufficient balance)`)
+        failedCount++
+      }
 
       notificationToSend = result
 

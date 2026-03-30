@@ -658,22 +658,34 @@ export default function LimitOrderPanel(props: {
               </Row>
 
               {lastBetDetails && (
-                <Row className="bg-primary-100 mt-2 items-center justify-between rounded-lg p-3">
-                  <Row className="items-baseline gap-2">
-                    <span className="text-primary-700 text-sm ">
-                      {isSubmitting ? 'Placing trade...' : 'Trade successful!'}
+                <Row className="bg-canvas-50 border-ink-200 mt-2 items-center justify-between rounded-lg border px-3 py-2">
+                  <Row className="items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-500/10">
+                      <svg
+                        className="h-3.5 w-3.5 text-teal-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-ink-600 text-sm">
+                      {isSubmitting ? 'Placing trade...' : 'Trade placed'}
                     </span>
                   </Row>
-                  <Button
-                    className="w-1/2"
-                    color="gradient"
+                  <button
+                    className="text-primary-600 hover:text-primary-700 flex items-center gap-1.5 text-sm font-medium transition-colors"
                     onClick={() => setIsSharing(true)}
                   >
-                    <Row className="items-center gap-1.5">
-                      <LuShare className="h-5 w-5" aria-hidden />
-                      Share Bet
-                    </Row>
-                  </Button>
+                    <LuShare className="h-4 w-4" aria-hidden />
+                    Share
+                  </button>
                 </Row>
               )}
 

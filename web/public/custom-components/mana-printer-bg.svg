@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 200" width="224" height="200">
+  <defs>
+    <!-- Mana coin gradient -->
+    <radialGradient id="manaCoin" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#C4B5FD"/>
+      <stop offset="70%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </radialGradient>
+
+    <!-- Subtle glow for coins -->
+    <filter id="coinGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Subtle "BRRR" text in background - very low opacity -->
+  <g opacity="0.06" fill="#A78BFA">
+    <text x="20" y="45" font-family="Arial Black, sans-serif" font-size="18" font-weight="900">BRRR</text>
+    <text x="130" y="90" font-family="Arial Black, sans-serif" font-size="14" font-weight="900">BRRR</text>
+    <text x="60" y="140" font-family="Arial Black, sans-serif" font-size="16" font-weight="900">BRRR</text>
+    <text x="150" y="175" font-family="Arial Black, sans-serif" font-size="12" font-weight="900">BRRR</text>
+  </g>
+
+  <!-- Printer outline at top - subtle -->
+  <g opacity="0.12" stroke="#A78BFA" stroke-width="1.5" fill="none">
+    <!-- Printer body -->
+    <rect x="70" y="5" width="84" height="28" rx="3"/>
+    <!-- Paper slot -->
+    <line x1="85" y1="33" x2="139" y2="33"/>
+    <!-- Printer details -->
+    <rect x="78" y="12" width="12" height="6" rx="1" fill="#A78BFA" opacity="0.3"/>
+    <circle cx="140" cy="18" r="3"/>
+  </g>
+
+  <!-- Falling mana coins - various sizes and opacities -->
+  <!-- Row 1 - coming from printer -->
+  <g filter="url(#coinGlow)">
+    <circle cx="100" cy="48" r="8" fill="url(#manaCoin)" opacity="0.25"/>
+    <text x="100" y="52" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#4C1D95" opacity="0.4">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="124" cy="55" r="7" fill="url(#manaCoin)" opacity="0.22"/>
+    <text x="124" y="58.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#4C1D95" opacity="0.35">M</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g filter="url(#coinGlow)">
+    <circle cx="85" cy="75" r="9" fill="url(#manaCoin)" opacity="0.2"/>
+    <text x="85" y="79" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#4C1D95" opacity="0.35">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="140" cy="80" r="6" fill="url(#manaCoin)" opacity="0.18"/>
+    <text x="140" y="83" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#4C1D95" opacity="0.3">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="112" cy="88" r="10" fill="url(#manaCoin)" opacity="0.23"/>
+    <text x="112" y="92" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#4C1D95" opacity="0.4">M</text>
+  </g>
+
+  <!-- Row 3 -->
+  <g filter="url(#coinGlow)">
+    <circle cx="65" cy="105" r="7" fill="url(#manaCoin)" opacity="0.15"/>
+    <text x="65" y="108.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#4C1D95" opacity="0.28">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="95" cy="115" r="8" fill="url(#manaCoin)" opacity="0.2"/>
+    <text x="95" y="119" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#4C1D95" opacity="0.35">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="155" cy="110" r="9" fill="url(#manaCoin)" opacity="0.17"/>
+    <text x="155" y="114" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#4C1D95" opacity="0.32">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="130" cy="125" r="6" fill="url(#manaCoin)" opacity="0.14"/>
+    <text x="130" y="128" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#4C1D95" opacity="0.26">M</text>
+  </g>
+
+  <!-- Row 4 - bottom -->
+  <g filter="url(#coinGlow)">
+    <circle cx="50" cy="145" r="8" fill="url(#manaCoin)" opacity="0.12"/>
+    <text x="50" y="149" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#4C1D95" opacity="0.22">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="80" cy="155" r="7" fill="url(#manaCoin)" opacity="0.15"/>
+    <text x="80" y="158.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#4C1D95" opacity="0.28">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="115" cy="160" r="9" fill="url(#manaCoin)" opacity="0.18"/>
+    <text x="115" y="164" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#4C1D95" opacity="0.32">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="150" cy="150" r="6" fill="url(#manaCoin)" opacity="0.13"/>
+    <text x="150" y="153" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#4C1D95" opacity="0.24">M</text>
+  </g>
+
+  <g filter="url(#coinGlow)">
+    <circle cx="175" cy="165" r="8" fill="url(#manaCoin)" opacity="0.16"/>
+    <text x="175" y="169" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#4C1D95" opacity="0.3">M</text>
+  </g>
+
+  <!-- Scattered small M$ symbols for extra effect -->
+  <g opacity="0.08" fill="#C4B5FD" font-family="Arial, sans-serif" font-weight="bold">
+    <text x="30" y="70" font-size="10">M$</text>
+    <text x="180" y="50" font-size="8">M$</text>
+    <text x="25" y="130" font-size="9">M$</text>
+    <text x="185" y="130" font-size="10">M$</text>
+    <text x="45" y="180" font-size="8">M$</text>
+    <text x="175" y="190" font-size="9">M$</text>
+  </g>
+
+  <!-- Subtle motion lines to suggest falling/printing -->
+  <g opacity="0.06" stroke="#A78BFA" stroke-width="1">
+    <line x1="100" y1="35" x2="100" y2="42"/>
+    <line x1="124" y1="35" x2="124" y2="48"/>
+    <line x1="112" y1="35" x2="112" y2="40"/>
+  </g>
+</svg>

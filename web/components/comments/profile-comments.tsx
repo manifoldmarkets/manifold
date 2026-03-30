@@ -74,9 +74,10 @@ function UserCommentsListContent(props: { user: User; searchTerm: string }) {
         userId: user.id,
         limit: p.limit,
         page,
+        term: searchTerm || undefined,
       })) as (ContractComment | PostComment)[]
     },
-    [user.id]
+    [user.id, searchTerm]
   )
   const pagination = usePagination({ pageSize: 50, q })
 

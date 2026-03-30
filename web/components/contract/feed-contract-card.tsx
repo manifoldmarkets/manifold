@@ -9,7 +9,7 @@ import { User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { TbDroplet, TbMoneybag } from 'react-icons/tb'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { Button } from 'web/components/buttons/button'
@@ -33,7 +33,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
-import { CommentsButton } from '../comments/comments-button'
+import { RepostButton } from '../comments/repost-modal'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
@@ -251,30 +251,32 @@ export function FeedContractCard(props: {
             {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-            <ContractStatusLabel
-              className="text-lg font-bold"
-              contract={contract}
-              chanceLabel
-            />
+            <Row className="items-center justify-between">
+              <ContractStatusLabel
+                className="text-lg font-bold"
+                contract={contract}
+                chanceLabel
+              />
+              {isBinaryCpmm && !isClosed && (
+                <BetButton
+                  feedReason={feedReason}
+                  contract={contract}
+                  user={user}
+                  className="h-min"
+                />
+              )}
+              {!isClosed && isStonk && (
+                <BetButton
+                  feedReason={feedReason}
+                  contract={contract}
+                  user={user}
+                  className="h-min"
+                  labels={{ yes: 'Buy', no: 'Short' }}
+                />
+              )}
+              {isNumber && <NumericBetButton contract={contract} user={user} />}
+            </Row>
           )}
-          {isBinaryCpmm && !isClosed && (
-            <BetButton
-              feedReason={feedReason}
-              contract={contract}
-              user={user}
-              className="h-min"
-            />
-          )}
-          {!isClosed && isStonk && (
-            <BetButton
-              feedReason={feedReason}
-              contract={contract}
-              user={user}
-              className="h-min"
-              labels={{ yes: 'Buy', no: 'Short' }}
-            />
-          )}
-          {isNumber && <NumericBetButton contract={contract} user={user} />}
         </Col>
       </Col>
 
@@ -332,8 +334,7 @@ export function FeedContractCard(props: {
             {!hideTags && (
               <CategoryTags
                 categories={topics.data}
-                // hide tags after first line. (tags are 24 px tall)
-                className="h-6 flex-wrap overflow-hidden"
+                className="flex-wrap gap-1"
               />
             )}
             <BottomActionRow
@@ -405,7 +406,7 @@ const BottomActionRow = (props: {
               <Row
                 className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
               >
-                <TbDropletHeart className="h-6 w-6 stroke-2" />
+                <TbDroplet className="h-6 w-6 stroke-2" />
                 <div className="text-ink-600">
                   {formatWithToken({
                     amount: contract.totalLiquidity,
@@ -420,7 +421,12 @@ const BottomActionRow = (props: {
       )}
 
       <BottomRowButtonWrapper>
-        <CommentsButton contract={contract} user={user} className={'h-full'} />
+        <RepostButton
+          playContract={contract}
+          size={'2xs'}
+          className={'h-full'}
+          iconClassName={'text-ink-500'}
+        />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
         <ReactButton
@@ -449,16 +455,24 @@ export function YourMetricsFooter(props: {
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
 
+  const profitPositive = profit && profit > 0
+  const profitNegative = profit && profit < 0
+
   return (
     <Row
       className={clsx(
-        'bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm',
+        'border-ink-200 mt-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t pt-2 text-sm',
         className
       )}
     >
-      <Row className="items-center gap-2">
-        <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
-        <span className="text-ink-700 font-semibold">
+      <Row className="items-center gap-1.5">
+        <span className="text-ink-500 text-xs">Position</span>
+        <span
+          className={clsx(
+            'font-semibold',
+            maxSharesOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
+          )}
+        >
           {maxSharesOutcome === 'YES'
             ? formatWithToken({
                 amount: yesShares,
@@ -468,18 +482,27 @@ export function YourMetricsFooter(props: {
                 amount: noShares,
                 token: isCashContract ? 'CASH' : 'M$',
               })}{' '}
+          {maxSharesOutcome}
         </span>
       </Row>
-      <Row className="items-center gap-2">
-        <div className="text-ink-500">Profit </div>
-        <div className={clsx('text-ink-700 font-semibold')}>
+      <Row className="items-center gap-1.5">
+        <span className="text-ink-500 text-xs">Profit</span>
+        <span
+          className={clsx(
+            'font-semibold',
+            profitPositive && 'text-teal-600',
+            profitNegative && 'text-scarlet-600',
+            !profitPositive && !profitNegative && 'text-ink-600'
+          )}
+        >
           {profit
-            ? formatWithToken({
+            ? (profitPositive ? '+' : '') +
+              formatWithToken({
                 amount: profit,
                 token: isCashContract ? 'CASH' : 'M$',
               })
             : '--'}
-        </div>
+        </span>
       </Row>
     </Row>
   )

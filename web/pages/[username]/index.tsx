@@ -31,6 +31,7 @@ import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
+import { JsonLd } from 'web/components/JsonLd'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -46,6 +47,7 @@ import { BlockedUser } from 'web/components/profile/blocked-user'
 import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { SEO } from 'web/components/SEO'
 import { UserHandles } from 'web/components/user/user-handles'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
@@ -66,6 +68,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { useUserBans } from 'web/hooks/use-user-bans'
 import { User } from 'web/lib/firebase/users'
+import { buildPersonProfile } from 'web/lib/json-ld'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { api } from 'web/lib/api/api'
@@ -246,6 +249,22 @@ function UserProfile(props: {
         url={`/${user.username}`}
         shouldIgnore={shouldIgnoreUser}
       />
+      <JsonLd
+        data={
+          shouldIgnoreUser
+            ? null
+            : buildPersonProfile({
+                name: user.name,
+                username: user.username,
+                avatarUrl: user.avatarUrl,
+                bio: user.bio,
+                website: user.website,
+                twitterHandle: user.twitterHandle,
+                createdTime: user.createdTime,
+              })
+        }
+        id="person"
+      />
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="relative">
@@ -296,11 +315,12 @@ function UserProfile(props: {
                       animateHat={expandProfileInfo}
                     />
                   }
+                  size={48}
                 />
 
                 <ChevronDownIcon
                   className={clsx(
-                    'group-hover:bg-primary-700 bg-primary-600 shadow-primary-300 text-ink-0 absolute bottom-0 right-0 h-5 w-5 rounded-full p-0.5 shadow-sm transition-all',
+                    'group-hover:bg-primary-700 bg-primary-600 shadow-primary-300 text-ink-0 absolute bottom-0 right-0 z-20 h-5 w-5 rounded-full p-0.5 shadow-sm transition-all',
                     expandProfileInfo ? 'rotate-180' : 'rotate-0'
                   )}
                 />
@@ -328,6 +348,7 @@ function UserProfile(props: {
                     displayContext="profile_page"
                   />
                 }
+                size={48}
               />
               <StackedUserNames
                 usernameClassName={'sm:text-base'}
@@ -525,6 +546,7 @@ function ProfilePublicStats(props: {
       </TextButton>
 
       {isCurrentUser && <UserLikedContractsButton user={user} />}
+      {isCurrentUser && <UserWatchedContractsButton user={user} />}
 
       {leagueInfo && (
         <Link

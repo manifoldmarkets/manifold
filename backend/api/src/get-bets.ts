@@ -10,7 +10,29 @@ import { convertBet, NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { filterDefined } from 'common/util/array'
 import { ValidatedAPIParams } from 'common/api/schema'
 
+const POINTS_QUERY_CACHE_TTL_MS = 20_000
+const MAX_POINTS_QUERY_CACHE_ENTRIES = 500
+
+type CachedPointsResult = {
+  result: Awaited<ReturnType<typeof getBetsWithFilter>>
+  cachedAt: number
+}
+
+const cachedPointsQueries = new Map<string, CachedPointsResult>()
+
 export const getBetsInternal = async (props: ValidatedAPIParams<'bets'>) => {
+  const shouldUseCache = shouldCachePointsQuery(props)
+  const cacheKey = shouldUseCache ? getPointsCacheKey(props) : undefined
+  if (cacheKey) {
+    const cached = cachedPointsQueries.get(cacheKey)
+    if (
+      cached &&
+      Date.now() - cached.cachedAt <= POINTS_QUERY_CACHE_TTL_MS
+    ) {
+      return cached.result
+    }
+  }
+
   const {
     limit,
     username,
@@ -90,7 +112,15 @@ export const getBetsInternal = async (props: ValidatedAPIParams<'bets'>) => {
     commentRepliesOnly,
   }
 
-  return await getBetsWithFilter(pg, opts)
+  const result = await getBetsWithFilter(pg, opts)
+  if (cacheKey) {
+    cachedPointsQueries.set(cacheKey, {
+      result,
+      cachedAt: Date.now(),
+    })
+    trimPointsCache()
+  }
+  return result
 }
 
 export const getBets: APIHandler<'bets'> = async (props) =>
@@ -110,4 +140,42 @@ async function getBetTime(pg: SupabaseDirectClient, id: string) {
     (r) => r.createdTime
   )
   return created ?? undefined
+}
+
+const shouldCachePointsQuery = (props: ValidatedAPIParams<'bets'>) => {
+  return (
+    !!props.points &&
+    !props.count &&
+    !props.id &&
+    !props.before &&
+    !props.after
+  )
+}
+
+const getPointsCacheKey = (props: ValidatedAPIParams<'bets'>) => {
+  // Keep a single source of truth for cache key shape.
+  return JSON.stringify({
+    contractId: props.contractId,
+    contractSlug: props.contractSlug,
+    answerId: props.answerId,
+    beforeTime: props.beforeTime,
+    afterTime: props.afterTime,
+    filterRedemptions: props.filterRedemptions,
+    includeZeroShareRedemptions: props.includeZeroShareRedemptions,
+    minAmount: props.minAmount,
+    commentRepliesOnly: props.commentRepliesOnly,
+    order: props.order,
+    limit: props.limit,
+    userId: props.userId,
+    username: props.username,
+    kinds: props.kinds,
+  })
+}
+
+const trimPointsCache = () => {
+  while (cachedPointsQueries.size > MAX_POINTS_QUERY_CACHE_ENTRIES) {
+    const oldestKey = cachedPointsQueries.keys().next().value
+    if (!oldestKey) return
+    cachedPointsQueries.delete(oldestKey)
+  }
 }

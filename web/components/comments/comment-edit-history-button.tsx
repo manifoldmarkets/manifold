@@ -77,9 +77,11 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
                   key={edit.id}
                   className={'bg-ink-100 gap-2 rounded-xl rounded-tl-none p-2'}
                 >
-                  <div className="text-ink-500 text-sm">
-                    {formatTimeShort(edit.editCreatedTime)}
-                  </div>
+                  <DateTimeTooltip time={edit.editCreatedTime}>
+                    <div className="text-ink-500 text-sm">
+                      {formatTimeShort(edit.editCreatedTime)}
+                    </div>
+                  </DateTimeTooltip>
                   <Content
                     size="sm"
                     className="mt-1 grow"

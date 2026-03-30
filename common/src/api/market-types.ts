@@ -493,6 +493,8 @@ export const updateMarketProps = z
     descriptionMarkdown: z.string().optional(),
     descriptionJson: z.string().optional(),
     display: z.enum(['clock', 'default']).optional(),
+    homePageScoreAdjustment: z.number().gte(-1).lte(1).nullable().optional(),
+    homePageScoreAdjustmentDays: z.number().int().positive().optional(),
   })
   .strict()
 
