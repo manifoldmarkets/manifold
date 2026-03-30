@@ -117,8 +117,7 @@ function CheckoutContent() {
               Payment Successful!
             </h2>
             <p className="text-ink-600 mb-6 text-sm">
-              Your mana is being credited to your account. This usually takes
-              just a few seconds.
+              Your mana is being credited to your account. This may take a few minutes.
             </p>
             <Link href="/">
               <Button color="indigo" size="lg">
