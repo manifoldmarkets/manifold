@@ -44,6 +44,8 @@ export const secrets = (
     'IDENFY_API_SECRET',
     'IDENFY_CALLBACK_SECRET',
     'DAIMO_WEBHOOK_SECRET',
+    'DAIMO_API_KEY',
+    'DAIMO_HOT_WALLET_ADDRESS',
     'IP_API_PRO_KEY',
     'PRINTFUL_API_TOKEN',
     // Some typescript voodoo to keep the string literal types while being not readonly.

@@ -205,7 +205,10 @@ type ManaPurchase = {
         paidInCents: number
       }
     | {
-        daimoPaymentId: string
+        daimoPaymentId?: string
+        daimoSessionId?: string
+        daimoEventId?: string
+        daimoTxHash?: string
         type: 'crypto'
         paidInCents: number
         bonusAmount: number

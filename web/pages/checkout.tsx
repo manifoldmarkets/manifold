@@ -1,16 +1,11 @@
 'use client'
-import { DaimoPayButton } from '@daimo/pay'
-import { baseUSDC } from '@daimo/pay-common'
-import { getAddress, type Address } from 'viem'
+import { DaimoModal } from '@daimo/sdk/web'
 import clsx from 'clsx'
 
 import { isUserBanned } from 'common/ban-utils'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import {
-  CryptoProviders,
-  useCryptoReady,
-} from 'web/components/crypto/crypto-providers'
+import { DaimoProviders } from 'web/components/crypto/crypto-providers'
 import { SEO } from 'web/components/SEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
@@ -32,18 +27,20 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { CRYPTO_BULK_THRESHOLD_DISPLAY } from 'common/economy'
+import { api } from 'web/lib/api/api'
 
-// Hot wallet address for receiving crypto payments
-const HOT_WALLET_ADDRESS: Address = (process.env
-  .NEXT_PUBLIC_DAIMO_HOT_WALLET_ADDRESS ||
-  '0x0000000000000000000000000000000000000000') as Address
+type SessionState =
+  | { status: 'idle' }
+  | { status: 'creating' }
+  | { status: 'ready'; sessionId: string; clientSecret: string }
+  | { status: 'completed' }
+  | { status: 'error'; message: string }
 
 function CheckoutContent() {
   const user = useUser()
-  const cryptoReady = useCryptoReady()
-  const [paymentStatus, setPaymentStatus] = useState<
-    'idle' | 'started' | 'completed' | 'error'
-  >('idle')
+  const [sessionState, setSessionState] = useState<SessionState>({
+    status: 'idle',
+  })
 
   // Check if user has made a crypto purchase before
   const { data: cryptoStatus } = useAPIGetter('get-crypto-purchase-status', {})
@@ -61,13 +58,35 @@ function CheckoutContent() {
     : false
   const canPay = !!user?.id && !isPurchaseBanned
 
-  const handlePaymentStarted = () => {
-    setPaymentStatus('started')
+  const handleBuyManaClick = async () => {
+    if (!canPay) return
+
+    setSessionState({ status: 'creating' })
+
+    try {
+      const result = await api('create-daimo-session', {})
+      setSessionState({
+        status: 'ready',
+        sessionId: result.sessionId,
+        clientSecret: result.clientSecret,
+      })
+    } catch (e) {
+      console.error('Failed to create Daimo session:', e)
+      setSessionState({
+        status: 'error',
+        message: 'Failed to start payment. Please try again.',
+      })
+    }
   }
 
-  const handlePaymentCompleted = (payment: { [key: string]: unknown }) => {
-    setPaymentStatus('completed')
-    console.log('Payment completed:', payment)
+  const handlePaymentCompleted = () => {
+    setSessionState({ status: 'completed' })
+  }
+
+  const handleModalClose = () => {
+    if (sessionState.status === 'ready') {
+      setSessionState({ status: 'idle' })
+    }
   }
 
   return (
@@ -89,7 +108,7 @@ function CheckoutContent() {
         </div>
 
         {/* Payment Status States */}
-        {paymentStatus === 'completed' ? (
+        {sessionState.status === 'completed' ? (
           <Col className="items-center p-6 text-center sm:p-8">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900/30">
               <CheckCircleIcon className="h-8 w-8 text-teal-600" />
@@ -107,22 +126,34 @@ function CheckoutContent() {
               </Button>
             </Link>
           </Col>
-        ) : paymentStatus === 'started' ? (
+        ) : sessionState.status === 'creating' ? (
           <Col className="items-center p-6 text-center sm:p-8">
             <div className="mb-4">
               <LoadingIndicator size="lg" />
             </div>
             <h2 className="text-ink-900 mb-2 text-lg font-semibold">
-              Processing Payment
+              Starting Payment
             </h2>
             <p className="text-ink-500 text-sm">
-              Please complete the payment in the popup window...
+              Setting up your payment session...
             </p>
           </Col>
-        ) : !cryptoReady ? (
-          <div className="flex items-center justify-center p-12">
-            <LoadingIndicator />
-          </div>
+        ) : sessionState.status === 'error' ? (
+          <Col className="items-center p-6 text-center sm:p-8">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+              <BanIcon className="h-8 w-8 text-red-600" />
+            </div>
+            <h2 className="text-ink-900 mb-2 text-lg font-semibold">
+              Payment Error
+            </h2>
+            <p className="text-ink-500 mb-4 text-sm">{sessionState.message}</p>
+            <Button
+              color="indigo"
+              onClick={() => setSessionState({ status: 'idle' })}
+            >
+              Try Again
+            </Button>
+          </Col>
         ) : (
           <Col className="gap-4 p-6 sm:p-8">
             {/* Mana Image */}
@@ -171,36 +202,23 @@ function CheckoutContent() {
                   </Row>
                 </button>
               ) : (
-                <DaimoPayButton.Custom
-                  appId="pay-manifoldmarkets-C5iZ9eKA8sFTUanLHufQZj"
-                  toAddress={HOT_WALLET_ADDRESS}
-                  toChain={baseUSDC.chainId}
-                  toToken={getAddress(baseUSDC.token)}
-                  refundAddress={HOT_WALLET_ADDRESS}
-                  onPaymentStarted={handlePaymentStarted}
-                  onPaymentCompleted={handlePaymentCompleted}
-                  metadata={{
-                    userId: user?.id,
-                  }}
-                >
-                  {({ show }) => (
-                    <button
-                      onClick={show}
-                      className={clsx(
-                        'group relative w-full max-w-sm overflow-hidden rounded-xl',
-                        'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
-                        'px-8 py-4 text-lg font-semibold text-white shadow-lg',
-                        'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
-                        'active:scale-[0.98]'
-                      )}
-                    >
-                      <Row className="items-center justify-center gap-3">
-                        <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                        <span>Buy mana</span>
-                      </Row>
-                    </button>
+                <button
+                  onClick={handleBuyManaClick}
+                  disabled={sessionState.status === 'ready'}
+                  className={clsx(
+                    'group relative w-full max-w-sm overflow-hidden rounded-xl',
+                    'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
+                    'px-8 py-4 text-lg font-semibold text-white shadow-lg',
+                    'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
+                    'active:scale-[0.98]',
+                    'disabled:cursor-not-allowed disabled:opacity-50'
                   )}
-                </DaimoPayButton.Custom>
+                >
+                  <Row className="items-center justify-center gap-3">
+                    <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                    <span>Buy mana</span>
+                  </Row>
+                </button>
               )}
 
               {/* Trust indicators */}
@@ -271,6 +289,16 @@ function CheckoutContent() {
           </Col>
         )}
       </div>
+
+      {/* Daimo Modal - rendered when session is ready */}
+      {sessionState.status === 'ready' && (
+        <DaimoModal
+          sessionId={sessionState.sessionId}
+          clientSecret={sessionState.clientSecret}
+          onPaymentCompleted={handlePaymentCompleted}
+          onClose={handleModalClose}
+        />
+      )}
     </Col>
   )
 }
@@ -287,9 +315,9 @@ export default function CheckoutPage() {
         image="/buy-mana-graphics/100k.png"
       />
 
-      <CryptoProviders>
+      <DaimoProviders>
         <CheckoutContent />
-      </CryptoProviders>
+      </DaimoProviders>
     </Page>
   )
 }

@@ -1,3 +1,4 @@
+import * as crypto from 'crypto'
 import { Request, Response } from 'express'
 
 import { getPrivateUser, getUser, log } from 'shared/utils'
@@ -14,131 +15,192 @@ import {
   CRYPTO_BULK_THRESHOLD_INTERNAL,
 } from 'common/economy'
 
-// Daimo Pay webhook event types (based on actual payload structure)
+const TIMESTAMP_TOLERANCE_SEC = 300 // 5 minutes
+
 type DaimoWebhookEvent = {
-  type:
-    | 'payment_started'
-    | 'payment_completed'
-    | 'payment_bounced'
-    | 'payment_refunded'
-  paymentId: string
-  chainId?: number
-  txHash?: string
-  payment: {
-    id: string
-    status: string
-    createdAt: string
-    display?: {
-      intent: string
-      paymentValue: string
-      currency: string
-    }
-    source?: {
-      payerAddress: string
-      txHash: string
-      chainId: string
-      amountUnits: string // Amount in USDC (e.g., "1" = $1 USDC)
-      tokenSymbol: string
-      tokenAddress: string
-    }
-    destination?: {
-      destinationAddress: string
-      txHash: string
-      chainId: string
-      amountUnits: string // Amount in USDC (e.g., "1" = $1 USDC)
-      tokenSymbol: string
-      tokenAddress: string
-      callData: string
-    }
-    externalId?: string | null
-    metadata?: {
-      userId?: string
-      [key: string]: unknown
+  id: string
+  type: 'session.processing' | 'session.succeeded' | 'session.bounced'
+  createdAt: number
+  isTestEvent?: boolean
+  data: {
+    session: {
+      sessionId: string
+      status: string
+      destination: {
+        type: string
+        address: string
+        chainId: number
+        chainName: string
+        tokenAddress: string
+        tokenSymbol: string
+        amountUnits?: string
+        delivery?: {
+          txHash: string
+          receivedUnits: string
+        }
+      }
+      display: {
+        title: string
+        verb: string
+      }
+      paymentMethod: {
+        type: string
+        receiverAddress?: string
+        createdAt: number
+      } | null
+      metadata: Record<string, string> | null
+      createdAt: number
+      expiresAt: number
     }
   }
 }
 
-export const daimowebhook = async (req: Request, res: Response) => {
-  // Verify Basic auth
-  const authHeader = req.headers.authorization
-  const expectedToken = process.env.DAIMO_WEBHOOK_SECRET
+function verifyWebhookSignature(
+  secret: string,
+  signatureHeader: string,
+  rawBody: string
+): boolean {
+  const parts = Object.fromEntries(
+    signatureHeader.split(',').map((p) => {
+      const [k, ...v] = p.split('=')
+      return [k, v.join('=')]
+    })
+  )
+  const ts = parts['t']
+  const sig = parts['v1']
+  if (!ts || !sig) return false
 
-  if (!expectedToken) {
+  const tsNum = parseInt(ts, 10)
+  if (isNaN(tsNum)) return false
+  const age = Math.abs(Math.floor(Date.now() / 1000) - tsNum)
+  if (age > TIMESTAMP_TOLERANCE_SEC) return false
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${ts}.${rawBody}`)
+    .digest('hex')
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(sig, 'hex'),
+      Buffer.from(expected, 'hex')
+    )
+  } catch {
+    return false
+  }
+}
+
+export const daimowebhook = async (req: Request, res: Response) => {
+  const webhookSecret = process.env.DAIMO_WEBHOOK_SECRET
+
+  if (!webhookSecret) {
     log.error('DAIMO_WEBHOOK_SECRET not configured')
     res.status(500).send('Webhook not configured')
     return
   }
 
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    log('Webhook missing or invalid auth header')
-    res.status(401).send('Unauthorized')
+  const rawBody = Buffer.isBuffer(req.body)
+    ? req.body.toString('utf8')
+    : JSON.stringify(req.body)
+
+  const signatureHeader = req.headers['daimo-signature'] as string | undefined
+  if (!signatureHeader) {
+    log('Daimo webhook missing signature header')
+    res.status(401).send('Missing signature')
     return
   }
 
-  const providedToken = authHeader.replace('Basic ', '')
-  if (providedToken !== expectedToken) {
-    log('Webhook auth token mismatch')
-    res.status(401).send('Unauthorized')
+  if (!verifyWebhookSignature(webhookSecret, signatureHeader, rawBody)) {
+    log('Daimo webhook signature verification failed')
+    res.status(401).send('Invalid signature')
     return
   }
 
   let event: DaimoWebhookEvent
   try {
-    event = req.body as DaimoWebhookEvent
+    event = JSON.parse(rawBody) as DaimoWebhookEvent
   } catch (e) {
-    log.error('Failed to parse webhook body', { error: e })
+    log.error('Failed to parse Daimo webhook body', { error: e })
     res.status(400).send('Invalid request body')
     return
   }
 
-  log('Daimo webhook received:', event.type, event.paymentId)
+  log('Daimo webhook received:', {
+    eventId: event.id,
+    type: event.type,
+    sessionId: event.data?.session?.sessionId,
+    isTestEvent: event.isTestEvent,
+  })
 
-  // Only process completed payments
-  if (event.type === 'payment_completed') {
+  if (event.isTestEvent) {
+    log('Ignoring test event:', event.id)
+    res.status(200).send('test event acknowledged')
+    return
+  }
+
+  if (event.type === 'session.processing') {
+    log('Ignoring session.processing event:', event.id)
+    res.status(200).send('processing event acknowledged')
+    return
+  }
+
+  if (event.type === 'session.bounced') {
+    log.warn('Daimo session bounced:', {
+      eventId: event.id,
+      sessionId: event.data?.session?.sessionId,
+      userId: event.data?.session?.metadata?.userId,
+    })
+    res.status(200).send('bounced event acknowledged')
+    return
+  }
+
+  if (event.type === 'session.succeeded') {
     try {
-      await handlePaymentCompleted(event.payment)
+      await handleSessionSucceeded(event)
     } catch (e) {
-      log.error('Error processing payment', { error: e })
-      // Still return 200 to prevent retries for non-recoverable errors
-      // Log the error for manual investigation
+      log.error('Error processing session.succeeded', { error: e })
     }
   }
 
   res.status(200).send('success')
 }
 
-const handlePaymentCompleted = async (
-  payment: DaimoWebhookEvent['payment']
-) => {
-  const paymentId = payment.id
+const handleSessionSucceeded = async (event: DaimoWebhookEvent) => {
+  const { session } = event.data
+  const eventId = event.id
+  const sessionId = session.sessionId
 
-  if (!paymentId) {
-    log.error('Missing payment id')
+  if (!sessionId) {
+    log.error('Missing sessionId in webhook event', { eventId })
     return
   }
 
-  // Get userId from metadata (sent by frontend)
-  const userId = payment.metadata?.userId
+  const userId = session.metadata?.userId
   if (!userId) {
-    log.error('Missing userId in payment metadata', { paymentId })
+    log.error('Missing userId in session metadata', { eventId, sessionId })
+    return
+  }
+
+  const delivery = session.destination?.delivery
+  if (!delivery?.receivedUnits) {
+    log.error('Missing delivery amount in succeeded session', {
+      eventId,
+      sessionId,
+    })
+    return
+  }
+
+  const usdcAmount = Number(delivery.receivedUnits)
+  if (usdcAmount <= 0 || isNaN(usdcAmount)) {
+    log.error('Invalid USDC amount', {
+      receivedUnits: delivery.receivedUnits,
+      eventId,
+      sessionId,
+    })
     return
   }
 
   const pg = createSupabaseDirectClient()
-
-  // Parse the USDC amount - amountUnits is already in USDC (e.g., "1" = $1 USDC)
-  if (!payment.destination?.amountUnits) {
-    log.error('Missing payment destination amount', { paymentId })
-    return
-  }
-  const amountUnits = payment.destination.amountUnits
-  const usdcAmount = amountUnits ? Number(amountUnits) : 0
-
-  if (usdcAmount <= 0) {
-    log.error('Invalid USDC amount', { amountUnits, paymentId })
-    return
-  }
-
   const paidInCents = Math.round(usdcAmount * 100)
 
   let success = false
@@ -150,27 +212,24 @@ const handlePaymentCompleted = async (
 
   try {
     await pg.tx(async (tx) => {
-      // Check if this is the user's first crypto purchase (before inserting new record)
       const existingPurchase = await tx.oneOrNone<{ count: string }>(
         `SELECT COUNT(*) as count FROM crypto_payment_intents WHERE user_id = $1`,
         [userId]
       )
-      isFirstCryptoPurchase = !existingPurchase || parseInt(existingPurchase.count) === 0
+      isFirstCryptoPurchase =
+        !existingPurchase || parseInt(existingPurchase.count) === 0
 
-      // Check if this qualifies for bulk purchase bonus (>= $995 to cover fees, advertised as $1000)
       isBulkPurchase = usdcAmount >= CRYPTO_BULK_THRESHOLD_INTERNAL
 
-      // Calculate bonus percentage
       let bonusPct = 0
       if (isFirstCryptoPurchase) bonusPct += CRYPTO_FIRST_PURCHASE_BONUS_PCT
       if (isBulkPurchase) bonusPct += CRYPTO_BULK_PURCHASE_BONUS_PCT
 
-      // Calculate mana amounts
       const baseAmount = Math.floor(usdcAmount * CRYPTO_MANA_PER_DOLLAR)
       bonusAmount = Math.floor(baseAmount * bonusPct)
       finalManaAmount = baseAmount + bonusAmount
 
-      log('Processing crypto payment:', {
+      log('Processing Daimo crypto payment:', {
         userId,
         usdcAmount,
         baseAmount,
@@ -179,16 +238,16 @@ const handlePaymentCompleted = async (
         bonusPct,
         isFirstCryptoPurchase,
         isBulkPurchase,
-        paymentId,
+        sessionId,
+        eventId,
       })
 
-      // Insert for idempotency - skip if already processed
       const insertResult = await tx.oneOrNone(
         `INSERT INTO crypto_payment_intents (intent_id, user_id, mana_amount, usdc_amount)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (intent_id) DO NOTHING
          RETURNING id`,
-        [paymentId, userId, finalManaAmount, usdcAmount]
+        [sessionId, userId, finalManaAmount, usdcAmount]
       )
       if (!insertResult) {
         alreadyProcessed = true
@@ -204,7 +263,9 @@ const handlePaymentCompleted = async (
         token: 'M$',
         category: 'MANA_PURCHASE',
         data: {
-          daimoPaymentId: paymentId,
+          daimoSessionId: sessionId,
+          daimoEventId: eventId,
+          daimoTxHash: delivery.txHash,
           type: 'crypto',
           paidInCents,
           bonusAmount,
@@ -224,7 +285,7 @@ const handlePaymentCompleted = async (
   } catch (e) {
     log.error(
       'Must reconcile crypto_payment_intents with purchase txns. User may not have received mana!',
-      { error: e }
+      { error: e, sessionId, eventId }
     )
     if (e instanceof APIError) {
       log.error('APIError in runTxn', { message: e.message })
@@ -233,7 +294,7 @@ const handlePaymentCompleted = async (
   }
 
   if (alreadyProcessed) {
-    log('Payment already processed (concurrent request):', paymentId)
+    log('Session already processed (duplicate delivery):', { sessionId, eventId })
     return
   }
 
@@ -242,6 +303,7 @@ const handlePaymentCompleted = async (
       bonusAmount,
       isFirstCryptoPurchase,
       isBulkPurchase,
+      sessionId,
     })
 
     const user = await getUser(userId)
@@ -266,7 +328,8 @@ const handlePaymentCompleted = async (
         bonusAmount,
         isFirstCryptoPurchase,
         isBulkPurchase,
-        paymentId,
+        sessionId,
+        eventId,
         usdcAmount,
       },
       { revenue: usdcAmount }

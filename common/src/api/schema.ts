@@ -3246,6 +3246,16 @@ export const API = (_apiTypeCheck = {
       hasCryptoPurchase: boolean
     },
   },
+  'create-daimo-session': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      sessionId: string
+      clientSecret: string
+    },
+  },
   'admin-create-charity-giveaway': {
     method: 'POST',
     visibility: 'undocumented',

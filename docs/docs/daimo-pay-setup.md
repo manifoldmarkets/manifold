@@ -1,15 +1,19 @@
 # Daimo Pay Setup Guide
 
-This guide covers setting up Daimo Pay for crypto-to-mana purchases on Manifold.
+This guide covers setting up Daimo Pay for crypto-to-mana purchases on Manifold using Daimo's session-based SDK.
 
 ## Overview
 
 Daimo Pay allows users to purchase mana using cryptocurrency (USDC) from any supported chain. The flow is:
 
-1. User clicks "Buy mana with crypto" on `/checkout`
-2. Daimo modal opens, user pays from any chain
-3. Daimo settles USDC to Manifold's hot wallet on Base
-4. Daimo calls our webhook → backend credits mana to user (100 mana per $1 USDC)
+1. User clicks "Buy mana" on `/checkout`
+2. Frontend calls our `create-daimo-session` API endpoint
+3. Backend creates a Daimo session via `POST https://api.daimo.com/v1/sessions` with Bearer API key auth
+4. Backend returns `sessionId` and `clientSecret` to frontend
+5. Frontend renders `DaimoModal` with the session credentials
+6. User selects payment method and pays via the Daimo modal
+7. Daimo calls our webhook with `session.succeeded` event
+8. Backend verifies HMAC signature and credits mana to user (100 mana per $1 USDC)
 
 ## Prerequisites
 
@@ -19,83 +23,80 @@ Daimo Pay allows users to purchase mana using cryptocurrency (USDC) from any sup
 
 ## 1. Get Daimo Credentials
 
-1. Contact Daimo team to get:
+Contact the Daimo team to get:
 
-   - **App ID** (e.g., `pay-manifoldmarkets-XXXXX`)
-   - **Webhook secret** (Basic auth token for webhook authentication)
+- **API Key** (UUID format) - used server-side to create sessions
 
-2. Set up your hot wallet address on Base to receive USDC payments
+## 2. Register Webhook Endpoint
 
-## 2. Configure Webhook in Daimo Dashboard
+Register your webhook endpoint via the Daimo API:
 
-Create a webhook in Daimo's dashboard pointing to:
+```bash
+curl -X POST https://api.daimo.com/v1/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://api.manifold.markets/daimo-webhook",
+    "events": ["session.succeeded"],
+    "description": "Manifold mana fulfillment"
+  }'
+```
 
-| Environment | Webhook URL                                         |
-| ----------- | --------------------------------------------------- |
-| Dev         | `https://api.dev.manifold.markets/v0/daimo-webhook` |
-| Prod        | `https://api.manifold.markets/daimo-webhook`        |
+The response includes a `webhook.secret` - **save this securely**, it's only shown once. This HMAC secret is used to verify webhook signatures.
 
-Daimo will provide a Basic auth token when you create the webhook.
+| Environment | Webhook URL                                      |
+| ----------- | ------------------------------------------------ |
+| Dev         | `https://api.dev.manifold.markets/daimo-webhook` |
+| Prod        | `https://api.manifold.markets/daimo-webhook`     |
 
 ## 3. Set Up Secrets (GCP Secret Manager)
 
-Add `DAIMO_WEBHOOK_SECRET` to GCP Secret Manager:
+Add the following secrets to GCP Secret Manager:
 
 - **Dev**: [dev-mantic-markets secrets](https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets)
 - **Prod**: [mantic-markets secrets](https://console.cloud.google.com/security/secret-manager?project=mantic-markets)
 
-The value should be the Basic auth token provided by Daimo when you created the webhook.
+| Secret                 | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `DAIMO_API_KEY`        | Bearer token for creating sessions             |
+| `DAIMO_WEBHOOK_SECRET` | HMAC secret from webhook registration response |
+| `DAIMO_HOT_WALLET_ADDRESS` | Hot wallet address on Base to receive USDC |
 
-The secret is already registered in `common/src/secrets.ts` and will be loaded automatically.
+These secrets are registered in `common/src/secrets.ts` and will be loaded automatically.
 
-## 4. Set Up Frontend Environment Variables
+## 4. Database Table
 
-Add to your deployment environment (Vercel):
+The `crypto_payment_intents` table is used for idempotency to prevent double-crediting mana. It stores `intent_id` (now the Daimo `sessionId`) as the unique key.
 
-| Variable                               | Description                                     |
-| -------------------------------------- | ----------------------------------------------- |
-| `NEXT_PUBLIC_DAIMO_HOT_WALLET_ADDRESS` | Your hot wallet address on Base (e.g., `0x...`) |
+See `backend/supabase/crypto_payment_intents.sql` for the schema.
 
-This is used by the frontend to tell Daimo where to send payments.
+## 5. Session Lifecycle
 
-## 5. Create Database Table
+Daimo sessions follow this lifecycle (handled automatically by `DaimoModal`):
 
-Run this SQL in Supabase for both dev and prod:
+1. `requires_payment_method` - Session created, waiting for user to choose how to pay
+2. `waiting_payment` - Payment method set, waiting for deposit transaction
+3. `processing` - Deposit detected, funds being routed to destination
+4. Terminal states:
+   - `succeeded` - Funds delivered to destination (triggers webhook)
+   - `bounced` - Delivery failed, funds returned to refund address
+   - `expired` - Session timed out
 
-```sql
-create table
-  if not exists crypto_payment_intents (
-    id bigint primary key generated always as identity not null,
-    intent_id text not null,
-    user_id text not null,
-    created_time timestamp
-    with
-      time zone default now () not null,
-      usdc_amount numeric(20, 6),
-      mana_amount integer
-  );
+## 6. Webhook Verification
 
-alter table crypto_payment_intents add constraint crypto_payment_intents_user_id_fkey foreign key (user_id) references users (id);
+The webhook uses HMAC-SHA256 signature verification:
 
-alter table crypto_payment_intents enable row level security;
+1. Daimo sends `Daimo-Signature` header with format: `t=<timestamp>,v1=<hmac_hex>`
+2. Backend computes `HMAC_SHA256("${t}.${rawBody}")` with `DAIMO_WEBHOOK_SECRET`
+3. Backend compares signatures using `crypto.timingSafeEqual`
+4. Rejects timestamps older than 5 minutes to prevent replay attacks
 
-create unique index crypto_payment_intents_intent_id_idx on public.crypto_payment_intents using btree (intent_id);
+Event types:
+- `session.processing` - Ignored (just for UI feedback)
+- `session.succeeded` - Triggers mana crediting
+- `session.bounced` - Logged for visibility, no mana credited
 
-create index crypto_payment_intents_user_id_idx on public.crypto_payment_intents using btree (user_id);
-```
-
-This table is used for idempotency to prevent double-crediting mana if Daimo sends duplicate webhook calls.
-
-## 6. Update Frontend App ID
-
-In `web/pages/checkout.tsx`, update the `appId` prop:
-
-```tsx
-<DaimoPayButton.Custom
-  appId="pay-manifoldmarkets-XXXXX"  // Your actual app ID
-  // ...
->
-```
+Test events include `isTestEvent: true` and are acknowledged but don't trigger mana crediting.
 
 ## 7. Deploy
 
@@ -115,28 +116,16 @@ Deploy via your normal frontend deployment process (Vercel).
 
 ## Testing
 
-### Test Webhook Endpoint
+### Send Test Webhook Event
 
 ```bash
-# Test that endpoint is reachable (should return "Unauthorized")
-curl -X POST https://api.manifold.markets/daimo-webhook \
+curl -X POST https://api.daimo.com/v1/webhooks/{webhookId}/test \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"type":"test"}'
-
-# Test with auth (should return "success")
-curl -X POST https://api.manifold.markets/daimo-webhook \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Basic YOUR_WEBHOOK_SECRET" \
-  -d '{
-    "type": "payment_completed",
-    "paymentId": "test-123",
-    "payment": {
-      "id": "test-123",
-      "destination": { "amountUnits": "1" },
-      "metadata": { "userId": "YOUR_USER_ID" }
-    }
-  }'
+  -d '{"eventType": "session.succeeded"}'
 ```
+
+Test events contain `isTestEvent: true` and won't credit mana.
 
 ### Check Logs
 
@@ -146,26 +135,37 @@ curl -X POST https://api.manifold.markets/daimo-webhook \
 Filter for webhook logs:
 
 ```
-"daimo" OR "webhook" OR "/daimo-webhook"
+"daimo" OR "webhook" OR "/daimo-webhook" OR "session.succeeded"
 ```
 
 ## Troubleshooting
 
-| Error                                | Cause                             | Fix                                     |
-| ------------------------------------ | --------------------------------- | --------------------------------------- |
-| `Webhook not configured`             | `DAIMO_WEBHOOK_SECRET` not in GCP | Add secret to Secret Manager            |
-| `Unauthorized`                       | Wrong auth token                  | Verify token matches what Daimo sends   |
-| `pgPromise background error`         | Table doesn't exist               | Run SQL migration in Supabase           |
-| `Missing userId in payment metadata` | Frontend not sending userId       | Check `metadata` prop on DaimoPayButton |
+| Error                                  | Cause                               | Fix                                          |
+| -------------------------------------- | ----------------------------------- | -------------------------------------------- |
+| `Webhook not configured`               | `DAIMO_WEBHOOK_SECRET` not in GCP   | Add secret to Secret Manager                 |
+| `Missing signature`                    | `Daimo-Signature` header missing    | Check webhook registration                   |
+| `Invalid signature`                    | Wrong secret or tampered body       | Verify `DAIMO_WEBHOOK_SECRET` matches Daimo  |
+| `Crypto payment service not configured`| `DAIMO_API_KEY` or hot wallet missing | Add secrets to GCP                          |
+| `Missing userId in session metadata`   | Session created without userId      | Check `create-daimo-session` endpoint        |
 
 ## File Locations
 
-| File                                          | Purpose                           |
-| --------------------------------------------- | --------------------------------- |
-| `web/pages/checkout.tsx`                      | Frontend page with DaimoPayButton |
-| `web/components/crypto/crypto-providers.tsx`  | Wagmi/Daimo providers             |
-| `backend/api/src/daimo-webhook.ts`            | Webhook handler                   |
-| `backend/api/src/old-routes.ts`               | Route registration                |
-| `backend/supabase/crypto_payment_intents.sql` | Database schema                   |
-| `common/src/secrets.ts`                       | Secret registration               |
-| `common/src/economy.ts`                       | `CRYPTO_MANA_PER_DOLLAR` constant |
+| File                                          | Purpose                              |
+| --------------------------------------------- | ------------------------------------ |
+| `web/pages/checkout.tsx`                      | Frontend checkout with DaimoModal    |
+| `web/components/crypto/crypto-providers.tsx`  | DaimoSDKProvider wrapper             |
+| `backend/api/src/create-daimo-session.ts`     | Session creation endpoint            |
+| `backend/api/src/daimo-webhook.ts`            | Webhook handler with HMAC verification |
+| `backend/api/src/old-routes.ts`               | Route registration                   |
+| `backend/supabase/crypto_payment_intents.sql` | Database schema                      |
+| `common/src/secrets.ts`                       | Secret registration                  |
+| `common/src/api/schema.ts`                    | API schema for create-daimo-session  |
+| `common/src/economy.ts`                       | `CRYPTO_MANA_PER_DOLLAR` constant    |
+
+## References
+
+- [Daimo Quickstart](https://docs.daimo.com/quickstart)
+- [Daimo API Overview](https://docs.daimo.com/api-reference/overview)
+- [Daimo Sessions](https://docs.daimo.com/guides/sessions)
+- [Daimo Modal](https://docs.daimo.com/guides/modal)
+- [Daimo Webhooks](https://docs.daimo.com/guides/webhooks)
