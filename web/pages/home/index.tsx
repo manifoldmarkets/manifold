@@ -4,7 +4,7 @@ import Router from 'next/router'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
-import { DowntimeBanner } from 'web/components/nav/banner'
+import { DowntimeBanner, PrizeDrawingBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
@@ -24,6 +24,7 @@ export default function Home() {
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
+      <PrizeDrawingBanner />
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (
