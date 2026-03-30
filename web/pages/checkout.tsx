@@ -126,18 +126,6 @@ function CheckoutContent() {
               </Button>
             </Link>
           </Col>
-        ) : sessionState.status === 'creating' ? (
-          <Col className="items-center p-6 text-center sm:p-8">
-            <div className="mb-4">
-              <LoadingIndicator size="lg" />
-            </div>
-            <h2 className="text-ink-900 mb-2 text-lg font-semibold">
-              Starting Payment
-            </h2>
-            <p className="text-ink-500 text-sm">
-              Setting up your payment session...
-            </p>
-          </Col>
         ) : sessionState.status === 'error' ? (
           <Col className="items-center p-6 text-center sm:p-8">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
@@ -204,7 +192,10 @@ function CheckoutContent() {
               ) : (
                 <button
                   onClick={handleBuyManaClick}
-                  disabled={sessionState.status === 'ready'}
+                  disabled={
+                    sessionState.status === 'creating' ||
+                    sessionState.status === 'ready'
+                  }
                   className={clsx(
                     'group relative w-full max-w-sm overflow-hidden rounded-xl',
                     'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
@@ -215,8 +206,17 @@ function CheckoutContent() {
                   )}
                 >
                   <Row className="items-center justify-center gap-3">
-                    <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                    <span>Buy mana</span>
+                    {sessionState.status === 'creating' ? (
+                      <>
+                        <LoadingIndicator size="sm" className="!text-white" />
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                        <span>Buy mana</span>
+                      </>
+                    )}
                   </Row>
                 </button>
               )}
