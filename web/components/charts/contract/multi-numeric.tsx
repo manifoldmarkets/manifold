@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { last, map, sum, zip, keyBy, max, min } from 'lodash'
+import { last, map, sum, zip, keyBy, max, min, sortBy } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { MultiNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
@@ -16,7 +16,8 @@ import {
 import { getAnswerProbAtEveryBetTime } from 'common/contract-params'
 
 const getBetPoints = (contract: MultiNumericContract, bets: MultiPoints) => {
-  const { answers, shouldAnswersSumToOne } = contract
+  const { shouldAnswersSumToOne } = contract
+  const answers = sortBy(contract.answers, 'index')
   const answersById = keyBy(answers, 'id')
   const filledInBetPoints = getAnswerProbAtEveryBetTime(bets, contract)
   if (shouldAnswersSumToOne) {
