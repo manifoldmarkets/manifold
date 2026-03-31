@@ -21,7 +21,7 @@ import { UniqueBettorBonusTxn } from 'common/txn'
 import { User, UserBan } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
-import { groupBy, mapValues, orderBy, sumBy, uniq, uniqBy } from 'lodash'
+import { groupBy, mapValues, orderBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 import { log } from 'shared/monitoring/log'
 import {
@@ -161,7 +161,10 @@ export const fetchContractBetDataAndValidate = async (
     throw new APIError(400, 'This is not a market')
 
   if (contract.mechanism === 'cpmm-multi-1')
-    contract.answers = uniqBy([...answers, ...contract.answers], 'id')
+    contract.answers = sortBy(
+      uniqBy([...answers, ...contract.answers], 'id'),
+      'index'
+    )
 
   const { closeTime, isResolved } = contract
   if (closeTime && Date.now() > closeTime)
