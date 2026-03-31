@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 import { buildArray } from 'common/util/array'
@@ -44,9 +44,8 @@ import { NavItem, SidebarItem } from './sidebar-item'
 
 export const SPEND_MANA_ENABLED = true
 
-// Bump this number to re-show the NEW badge on Shop for all users
-const SHOP_NEW_VERSION = 1
-const SHOP_SEEN_KEY = 'shop-new-seen-version'
+// Set to true to show a "NEW" badge on the Shop nav item
+const SHOW_SHOP_NEW_BADGE = false
 
 export default function Sidebar(props: {
   className?: string
@@ -70,30 +69,16 @@ export default function Sidebar(props: {
 
   const isLiveTV = useTVIsLive(10)
 
-  const [showShopBadge, setShowShopBadge] = useState(false)
-  useEffect(() => {
-    const seen = parseInt(localStorage.getItem(SHOP_SEEN_KEY) ?? '0', 10)
-    setShowShopBadge(seen < SHOP_NEW_VERSION)
-  }, [])
-  const onShopClick = () => {
-    localStorage.setItem(SHOP_SEEN_KEY, String(SHOP_NEW_VERSION))
-    setShowShopBadge(false)
-  }
-
   const navOptions = isMobile
     ? getMobileNav(!!user, () => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
-        showShopBadge,
-        onShopClick,
       })
     : getDesktopNav(!!user, () => setIsModalOpen(true), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
-        showShopBadge,
-        onShopClick,
       })
 
   const bottomNavOptions = bottomNav(
@@ -165,8 +150,6 @@ const getDesktopNav = (
     isNewUser: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
-    showShopBadge: boolean
-    onShopClick: () => void
   }
 ) => {
   const { isLiveTV } = options
@@ -200,8 +183,7 @@ const getDesktopNav = (
         name: 'Shop',
         href: '/shop',
         icon: LuGem,
-        onClick: options.onShopClick,
-        children: options.showShopBadge ? (
+        children: SHOW_SHOP_NEW_BADGE ? (
           <>
             Shop
             <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
@@ -232,8 +214,6 @@ const getMobileNav = (
     isNewUser: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
-    showShopBadge: boolean
-    onShopClick: () => void
   }
 ) => {
   const { isAdminOrMod, isLiveTV } = options
@@ -262,8 +242,7 @@ const getMobileNav = (
       name: 'Shop',
       href: '/shop',
       icon: LuGem,
-      onClick: options.onShopClick,
-      children: options.showShopBadge ? (
+      children: SHOW_SHOP_NEW_BADGE ? (
         <>
           Shop
           <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">

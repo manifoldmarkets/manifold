@@ -744,7 +744,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     hidden: true,
     name: 'Bunny Ears',
     description: 'Adorable bunny ears for spring celebrations',
-    price: 10000,
+    price: 2500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
