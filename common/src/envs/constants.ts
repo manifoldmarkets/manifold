@@ -182,6 +182,7 @@ export const BOT_USERNAMES = [
   'Evansbot',
   'PugBot',
   'cot',
+  'XBot'
 ]
 
 export const MOD_IDS = [
