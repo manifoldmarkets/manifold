@@ -24,6 +24,12 @@ const LinkComponent = (props: { href: string; children: ReactNode }) => {
 
 export const DisplayLink = TiptapLink.extend({
   renderHTML({ HTMLAttributes }) {
+    // Block dangerous protocols (javascript:, data:, vbscript:, etc.)
+    const href = HTMLAttributes.href
+    if (href && !/^https?:\/\//i.test(href) && !href.startsWith('/') && !href.startsWith('#')) {
+      HTMLAttributes.href = '#'
+    }
+
     // This is used for SSR and copy/paste
     HTMLAttributes.target = isInternal(HTMLAttributes.href) ? '_self' : '_blank'
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)

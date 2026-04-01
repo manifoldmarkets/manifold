@@ -2,6 +2,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { convertPost, TopLevelPost } from 'common/top-level-post'
 import { removeUndefinedProps } from 'common/util/object'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { sanitizeJsonContent } from 'shared/utils'
 import { getPost } from 'shared/supabase/posts'
 import { updateData } from 'shared/supabase/utils'
 import { revalidatePost } from './create-post-comment'
@@ -28,7 +29,7 @@ export const updatePost: APIHandler<'update-post'> = onlyUsersWhoCanPerformActio
     const newData: Partial<TopLevelPost> = removeUndefinedProps({
       id,
       title,
-      content,
+      content: content ? sanitizeJsonContent(content) : undefined,
     })
 
     if (visibility === 'public') {
