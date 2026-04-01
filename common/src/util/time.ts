@@ -8,3 +8,8 @@ export const HOUR_SECONDS = 60 * 60
 
 export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
+
+export const isAprilFools = (): boolean => {
+  const now = new Date()
+  return now.getMonth() === 3 && now.getDate() === 1
+}

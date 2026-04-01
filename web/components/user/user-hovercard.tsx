@@ -39,6 +39,7 @@ import { Avatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { StackedUserNames } from '../widgets/user-link'
 import { TrophySvg } from '../shop/trophy-svg'
+import { isAprilFools } from 'common/util/time'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -156,6 +157,7 @@ const FetchUserHovercardContent = forwardRef(
       user?.lastBetTime ?? 0
     )
 
+    const aprilFools = isAprilFools()
     const hasGlow = userHasHovercardGlow(user?.entitlements)
     const hasSpinningBorder = userHasHovercardSpinningBorder(user?.entitlements)
     const hasRoyalBorder = userHasHovercardRoyalBorder(user?.entitlements)
@@ -218,7 +220,7 @@ const FetchUserHovercardContent = forwardRef(
           background === 'trading-floor' && 'text-green-50',
           background === 'champions-legacy' && 'text-amber-50',
           hasDarkBackground && 'divide-white/20',
-          hasSpinningBorder
+          aprilFools || hasSpinningBorder
             ? 'hovercard-spinning-border'
             : hasRoyalBorder
             ? 'hovercard-royal-border'
@@ -328,10 +330,31 @@ const FetchUserHovercardContent = forwardRef(
             )}
           </Row>
         </div>
+        {aprilFools && <FakeAdBanner userId={userId} />}
       </div>
     ) : null
   }
 )
+
+const APRIL_FOOLS_AD_COPY = [
+  'Hot singles in your probability space',
+  "You won't BELIEVE this market's resolution",
+  'Manifold Pro: because your predictions deserve better (and so do we)',
+]
+
+function FakeAdBanner({ userId }: { userId: string }) {
+  const adIndex = userId.charCodeAt(0) % APRIL_FOOLS_AD_COPY.length
+  return (
+    <div className="relative z-10 border-t border-ink-200 px-4 py-2">
+      <div className="text-ink-400 mb-0.5 text-[9px] uppercase tracking-widest">
+        Sponsored
+      </div>
+      <div className="text-ink-600 text-xs italic">
+        {APRIL_FOOLS_AD_COPY[adIndex]}
+      </div>
+    </div>
+  )
+}
 
 // Trading Floor background overlay - clean stonks chart
 function TradingFloorOverlay() {
