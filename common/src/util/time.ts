@@ -10,6 +10,10 @@ export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
 export const isAprilFools = (): boolean => {
-  const now = new Date()
-  return now.getMonth() === 3 && now.getDate() === 1
+  const sf = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/Los_Angeles',
+    month: 'numeric',
+    day: 'numeric',
+  })
+  return sf === '4/1'
 }

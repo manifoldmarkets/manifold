@@ -36,6 +36,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import SuperBanControl from '../SuperBanControl'
 import { Avatar } from '../widgets/avatar'
+import Link from 'next/link'
 import { Linkify } from '../widgets/linkify'
 import { StackedUserNames } from '../widgets/user-link'
 import { TrophySvg } from '../shop/trophy-svg'
@@ -345,14 +346,29 @@ const APRIL_FOOLS_AD_COPY = [
 function FakeAdBanner({ userId }: { userId: string }) {
   const adIndex = userId.charCodeAt(0) % APRIL_FOOLS_AD_COPY.length
   return (
-    <div className="relative z-10 border-t border-ink-200 px-4 py-2">
-      <div className="text-ink-400 mb-0.5 text-[9px] uppercase tracking-widest">
-        Sponsored
+    <Link
+      href="/shop"
+      className="relative z-10 block border-t-2 border-amber-400 px-4 py-2.5"
+      style={{
+        background:
+          'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 30%, #FBBF24 60%, #FDE68A 80%, #FEF3C7 100%)',
+      }}
+    >
+      <div className="mb-0.5 flex items-center gap-1">
+        <span
+          className="text-[9px] font-black uppercase tracking-widest text-black"
+          style={{ textShadow: '0 0 3px rgba(251,191,36,0.5)' }}
+        >
+          Sponsored
+        </span>
       </div>
-      <div className="text-ink-600 text-xs italic">
+      <div className="text-xs font-semibold italic text-amber-900">
         {APRIL_FOOLS_AD_COPY[adIndex]}
       </div>
-    </div>
+      <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 underline">
+        Shop Now →
+      </div>
+    </Link>
   )
 }
 

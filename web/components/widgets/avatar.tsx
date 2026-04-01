@@ -125,12 +125,8 @@ export const Avatar = memo(
     const hasBadAura = userHasAvatarDecoration(entitlements, 'avatar-bad-aura')
     // Get active avatar overlay (hat) - excludes halo and crown since they're unique slots
     const aprilFools = isAprilFools()
-    const _activeOverlay = getActiveAvatarOverlay(entitlements)
-    // April Fools: everyone gets a jester hat
-    const activeOverlay = aprilFools
-      ? ('avatar-jester-hat' as AvatarDecorationId)
-      : _activeOverlay
-    const overlayStyle = getOverlayStyle(entitlements, _activeOverlay)
+    const activeOverlay = getActiveAvatarOverlay(entitlements)
+    const overlayStyle = getOverlayStyle(entitlements, activeOverlay)
     // Check for halo separately (unique slot - combines with other hats)
     const hasHalo = userHasHalo(entitlements)
     // Check for crown separately (unique slot - combines with other hats)
@@ -189,31 +185,22 @@ export const Avatar = memo(
     const hasHat = !!activeOverlay
 
     // Scale hat/overlay icons based on avatar size
-    // April Fools: scale hat size by entitlement count (wealth proxy)
-    const entitlementCount = entitlements?.length ?? 0
-    const hatSizeClass = aprilFools
-      ? entitlementCount > 8
-        ? size === '2xs' || size === 'xs'
-          ? 'h-5 w-5'
-          : size === 'sm'
-          ? 'h-7 w-7'
-          : 'h-10 w-10'
-        : entitlementCount > 3
-        ? size === '2xs' || size === 'xs'
-          ? 'h-4 w-4'
-          : size === 'sm'
-          ? 'h-5 w-5'
-          : 'h-7 w-7'
-        : size === '2xs' || size === 'xs'
+    const hatSizeClass =
+      size === '2xs' || size === 'xs'
         ? 'h-3 w-3'
         : size === 'sm'
         ? 'h-4 w-4'
         : 'h-5 w-5'
-      : size === '2xs' || size === 'xs'
-      ? 'h-3 w-3'
-      : size === 'sm'
-      ? 'h-4 w-4'
-      : 'h-5 w-5'
+
+    // April Fools: scale hat size by entitlement count (wealth proxy)
+    const entitlementCount = entitlements?.length ?? 0
+    const hatScale = aprilFools
+      ? entitlementCount > 8
+        ? 2
+        : entitlementCount > 3
+        ? 1.5
+        : 1
+      : 1
 
     // Scale position offset based on avatar size
     // For small avatars, position hat more towards top-right corner to avoid golden glow overlap
@@ -364,6 +351,7 @@ export const Avatar = memo(
             animatePropeller={animatePropeller}
             size={size}
             capStyle={overlayStyle}
+            hatScale={hatScale}
           />
         )}
         {/* Crown — unique slot, sandwiched between halo halves */}
@@ -377,6 +365,7 @@ export const Avatar = memo(
             animatePropeller={false}
             size={size}
             crownPosition={crownPosition}
+            hatScale={hatScale}
           />
         )}
         {/* Halo front half — in front of the avatar (and hat/crown if any) */}
@@ -1406,9 +1395,10 @@ function AvatarOverlay(props: {
   haloHalf?: 'back' | 'front'
   capStyle?: number
   crownPosition?: CrownPosition
+  hatScale?: number
 }) {
   const {
-    overlay: rawOverlay,
+    overlay,
     hatSizeClass,
     hatPositionClass,
     animateHatOnHover,
@@ -1418,15 +1408,8 @@ function AvatarOverlay(props: {
     haloHalf,
     capStyle = 0,
     crownPosition = 0,
+    hatScale = 1,
   } = props
-
-  // April Fools: all hats become jester hats (except crown and halo which are unique-slot)
-  const overlay =
-    isAprilFools() &&
-    rawOverlay !== 'avatar-halo' &&
-    rawOverlay !== 'avatar-crown'
-      ? ('avatar-jester-hat' as AvatarDecorationId)
-      : rawOverlay
 
   // Corner position (for graduation cap, microphone - sits at top-right)
   const cornerClasses = clsx(
@@ -1479,7 +1462,7 @@ function AvatarOverlay(props: {
     animateHat && '-translate-y-0.5 scale-110'
   )
 
-  switch (overlay) {
+  const content = (() => { switch (overlay) {
     case 'avatar-crown': {
       // Position order: 0=Right, 1=Left, 2=Center (smooth directional cycling)
       const positionClasses =
@@ -2224,7 +2207,24 @@ function AvatarOverlay(props: {
     }
     default:
       return null
-  }
+  }})()
+
+  if (!content || hatScale === 1 || overlay === 'avatar-halo') return content
+  // Scale hat visuals at full hatScale. The zoom provides a partial (40%)
+  // position correction — pulling hats back toward the avatar without
+  // fully overcorrecting.
+  const positionCorrection = 1 + (hatScale - 1) * 0.4
+  return (
+    <div
+      className="absolute inset-0"
+      style={{
+        zoom: positionCorrection,
+        transform: `scale(${hatScale / positionCorrection})`,
+      }}
+    >
+      {content}
+    </div>
+  )
 }
 
 // Component to render avatar accessories (monocle, crystal ball, thought bubbles, stonks)
