@@ -194,13 +194,7 @@ export const Avatar = memo(
 
     // April Fools: scale hat size by entitlement count (wealth proxy)
     const entitlementCount = entitlements?.length ?? 0
-    const hatScale = aprilFools
-      ? entitlementCount > 8
-        ? 2
-        : entitlementCount > 3
-        ? 1.5
-        : 1
-      : 1
+    const hatScale = aprilFools ? 1.5 + Math.min(entitlementCount, 12) * 0.25 : 1
 
     // Scale position offset based on avatar size
     // For small avatars, position hat more towards top-right corner to avoid golden glow overlap
