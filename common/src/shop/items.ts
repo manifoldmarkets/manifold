@@ -243,6 +243,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-graduation-cap',
+    hidden: true,
     name: 'Graduation Cap',
     description: 'A scholarly graduation cap on your avatar',
     price: 10000,
@@ -402,7 +403,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-wizard-hat',
     name: 'Wizard Hat',
     description: 'A mystical wizard hat for the oracle of markets',
-    price: 20000,
+    price: 12000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -499,7 +500,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-fire-item',
     name: 'Flames',
     description: 'Blazing flames on your avatar',
-    price: 30000,
+    price: 22000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -563,7 +564,6 @@ export const SHOP_ITEMS: ShopItem[] = [
       threshold: 100000,
       description: 'Owe at least M$100,000',
     },
-    hidden: true,
   },
   {
     id: 'avatar-thought-yes',
@@ -638,6 +638,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   // Blue cap — MANA branded cap in blue with style variants
   {
     id: 'avatar-blue-cap',
+    hidden: true,
     name: 'Blue Cap',
     description: 'A sleek blue MANA cap with dark stitch accents',
     price: 2500,
@@ -649,6 +650,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   // Team items - mutually exclusive (can only equip one team's items)
   {
     id: 'avatar-team-red-hat',
+    hidden: true,
     name: 'Red Cap',
     description: 'Show your allegiance to Team Red',
     price: 2500,
@@ -659,7 +661,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-team-green-hat',
-    hidden: true,
     name: 'Green Cap',
     description: 'Show your allegiance to Team Green',
     price: 2500,
@@ -670,7 +671,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-black-cap',
-    hidden: true,
     name: 'Black Cap',
     description: 'A sleek black MANA cap with panel seams',
     price: 2500,
