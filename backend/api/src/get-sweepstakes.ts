@@ -1,7 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
 import { tsToMillis } from 'common/supabase/utils'
-import { createHash } from 'crypto'
 import {
   SweepstakesPrize,
   getPrizeForRank,
@@ -24,7 +23,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     prizes: SweepstakesPrize[]
     close_time: string
     winning_ticket_ids: string[] | null
-    nonce: string
+    nonce: string | null
     created_time: string
   }>(
     sweepstakesNum
@@ -40,11 +39,6 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
   if (!sweepstakes) {
     return { userStats: [], totalTickets: 0 }
   }
-
-  // Calculate MD5 hash of the nonce for provably fair verification
-  // IMPORTANT: Only reveal the actual nonce AFTER the winners are selected.
-  // Before that, only the hash should be shared so users can record it for verification.
-  const nonceHash = createHash('md5').update(sweepstakes.nonce).digest('hex')
 
   // Get ticket stats per user for this sweepstakes
   const userStats = await pg.manyOrNone<{
@@ -169,12 +163,12 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     })),
     totalTickets,
     winners,
-    // Provably fair: always share hash, only reveal nonce AFTER winners are selected
-    nonceHash,
+    // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+    // Only revealed AFTER winners are selected. Users verify by finding first block after closeTime.
     nonce:
       sweepstakes.winning_ticket_ids &&
       sweepstakes.winning_ticket_ids.length > 0
-        ? sweepstakes.nonce
+        ? sweepstakes.nonce ?? undefined
         : undefined,
     hasClaimedFreeTicket,
     userTotalManaInvested,

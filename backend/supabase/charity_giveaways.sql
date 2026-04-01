@@ -6,10 +6,11 @@ create table if not exists
     prize_amount_usd numeric not null,
     close_time timestamp with time zone not null,
     winning_ticket_id text,
-    -- Provably fair: nonce is secret UNTIL winner is selected.
-    -- Before: only share MD5(nonce) so users can record it.
-    -- After: reveal nonce so users can verify MD5(nonce) matches.
-    nonce text not null default encode(gen_random_bytes (32), 'hex'),
+    -- Provably fair: nonce stores the Bitcoin block hash used to determine the winner.
+    -- NULL until winner is selected. The block used is the first one mined after close_time.
+    -- Users can verify by looking up the first block after close_time on any block explorer.
+    -- Note: Giveaway #1 used the old method (random nonce + last 10 timestamps).
+    nonce text,
     created_time timestamp with time zone default now() not null
   );
 

@@ -15,6 +15,7 @@ import {
 import { Notification, PrizeWinnerData } from 'common/notification'
 import { bulkInsertNotifications } from 'shared/supabase/notifications'
 import { nanoid } from 'common/util/random'
+import { getFirstBlockAfter } from 'common/bitcoin'
 
 export const selectSweepstakesWinners: APIHandler<
   'select-sweepstakes-winners'
@@ -33,10 +34,9 @@ export const selectSweepstakesWinners: APIHandler<
       sweepstakes_num: number
       close_time: string
       winning_ticket_ids: string[] | null
-      nonce: string
       prizes: SweepstakesPrize[]
     }>(
-      `SELECT sweepstakes_num, close_time, winning_ticket_ids, nonce, prizes 
+      `SELECT sweepstakes_num, close_time, winning_ticket_ids, prizes 
        FROM sweepstakes 
        WHERE sweepstakes_num = $1 
        FOR UPDATE`,
@@ -95,34 +95,12 @@ export const selectSweepstakesWinners: APIHandler<
       totalTickets += numTickets
     }
 
-    // Get the last 10 tickets' timestamps for provably fair seeding
-    const lastTickets = await tx.manyOrNone<{ created_time: string }>(
-      `SELECT created_time FROM sweepstakes_tickets 
-       WHERE sweepstakes_num = $1 
-       ORDER BY created_time DESC 
-       LIMIT 10`,
-      [sweepstakesNum]
+    // Get the first Bitcoin block mined after close_time for provably fair seeding
+    const closeTimeSeconds = Math.floor(
+      new Date(sweepstakes.close_time).getTime() / 1000
     )
-
-    // Create seed by XOR-ing nonce with all ticket timestamps
-    const nonceBuffer = Buffer.from(sweepstakes.nonce, 'hex')
-    const seedBuffer = Buffer.alloc(8)
-
-    // Start with first 8 bytes of nonce
-    for (let i = 0; i < 8; i++) {
-      seedBuffer[i] = nonceBuffer[i]
-    }
-
-    // XOR each ticket's timestamp into the seed
-    for (const ticket of lastTickets) {
-      const timestamp = new Date(ticket.created_time).getTime()
-      const timestampBuffer = Buffer.alloc(8)
-      timestampBuffer.writeBigInt64BE(BigInt(timestamp))
-
-      for (let i = 0; i < 8; i++) {
-        seedBuffer[i] ^= timestampBuffer[i]
-      }
-    }
+    const block = await getFirstBlockAfter(closeTimeSeconds)
+    const blockHash = block.id
 
     // Determine how many winners we need
     const numWinners = getTotalWinnerCount(sweepstakes.prizes)
@@ -165,10 +143,9 @@ export const selectSweepstakesWinners: APIHandler<
         break
       }
 
-      // Create deterministic random value using SHA256 hash of seed + rank
+      // Create deterministic random value using SHA256 hash of blockHash + rank
       const hash = createHash('sha256')
-        .update(new Uint8Array(seedBuffer))
-        .update(new Uint8Array(nonceBuffer))
+        .update(blockHash)
         .update(Buffer.from([rank])) // Include rank to get different value for each winner
         .digest()
 
@@ -211,12 +188,12 @@ export const selectSweepstakesWinners: APIHandler<
       })
     }
 
-    // Update the sweepstakes with the winning ticket IDs
+    // Update the sweepstakes with the winning ticket IDs and Bitcoin block hash
     await tx.none(
       `UPDATE sweepstakes 
-       SET winning_ticket_ids = $1 
-       WHERE sweepstakes_num = $2`,
-      [winningTicketIds, sweepstakesNum]
+       SET winning_ticket_ids = $1, nonce = $2
+       WHERE sweepstakes_num = $3`,
+      [winningTicketIds, blockHash, sweepstakesNum]
     )
 
     // Send notifications to all winners
@@ -250,7 +227,7 @@ export const selectSweepstakesWinners: APIHandler<
       await bulkInsertNotifications(notifications, tx)
     }
 
-    return { winners }
+    return { winners, blockHash, blockHeight: block.height }
   })
 }
 

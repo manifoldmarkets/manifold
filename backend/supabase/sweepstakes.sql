@@ -6,10 +6,10 @@ create table if not exists
     prizes jsonb not null, -- [{rank: 1, amountUsdc: 1000, label: "1st"}, {rankStart: 4, rankEnd: 10, amountUsdc: 50, label: "4th-10th"}]
     close_time timestamp with time zone not null,
     winning_ticket_ids text[], -- Array of winner ticket IDs in rank order
-    -- Provably fair: nonce is secret UNTIL winners are selected.
-    -- Before: only share MD5(nonce) so users can record it.
-    -- After: reveal nonce so users can verify MD5(nonce) matches.
-    nonce text not null default encode(gen_random_bytes (32), 'hex'),
+    -- Provably fair: nonce stores the Bitcoin block hash used to determine winners.
+    -- NULL until winners are selected. The block used is the first one mined after close_time.
+    -- Users can verify by looking up the first block after close_time on any block explorer.
+    nonce text,
     created_time timestamp with time zone default now() not null
   );
 

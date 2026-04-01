@@ -3217,9 +3217,9 @@ export const API = (_apiTypeCheck = {
         name: string
         avatarUrl: string
       }
-      // Provably fair fields
-      nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists
-      nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
+      // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+      // Only revealed AFTER winner is selected. Users verify by finding first block after closeTime.
+      nonce?: string
     },
   },
   'get-charity-giveaway-list': {
@@ -3320,6 +3320,8 @@ export const API = (_apiTypeCheck = {
       ticketId: string
       charityId: string
       userId: string
+      blockHash: string
+      blockHeight: number
     },
   },
   'get-sweepstakes': {
@@ -3360,9 +3362,9 @@ export const API = (_apiTypeCheck = {
           avatarUrl: string
         }
       }[]
-      // Provably fair fields
-      nonceHash?: string // MD5 hash of nonce, always shown when sweepstakes exists
-      nonce?: string // Actual nonce, only revealed AFTER winners are selected for verification
+      // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+      // Only revealed AFTER winners are selected. Users verify by finding first block after closeTime.
+      nonce?: string
       // Free ticket status for current user
       hasClaimedFreeTicket?: boolean
       // Investment requirement fields (for current user)
@@ -3471,7 +3473,23 @@ export const API = (_apiTypeCheck = {
         ticketId: string
         userId: string
       }[]
+      blockHash: string
+      blockHeight: number
     },
+  },
+  'check-bitcoin-block': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ closeTime: z.coerce.number() }).strict(),
+    returns: {} as
+      | { available: false }
+      | {
+          available: true
+          blockHeight: number
+          blockHash: string
+          blockTimestamp: number
+        },
   },
   'claim-sweepstakes-prize': {
     method: 'POST',

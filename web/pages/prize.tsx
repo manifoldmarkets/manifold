@@ -152,8 +152,7 @@ export default function SweepstakesPage({
   const userStats = data ? data.userStats : []
   const totalTickets = data ? data.totalTickets : 0
   const winners = data ? data.winners : undefined
-  const nonceHash = data ? data.nonceHash : undefined
-  const nonce = data ? data.nonce : undefined
+  const blockHash = data ? data.nonce : undefined // nonce now contains Bitcoin block hash
   const hasClaimedFreeTicket = data ? data.hasClaimedFreeTicket : false
   const meetsInvestmentRequirement = data?.meetsInvestmentRequirement ?? true
   const userTotalManaInvested = data?.userTotalManaInvested ?? 0
@@ -642,10 +641,10 @@ export default function SweepstakesPage({
         />
 
         {/* Provably Fair Banner */}
-        {nonceHash && (
+        {sweepstakes && (
           <ProvablyFairBanner
-            nonceHash={nonceHash}
-            nonce={nonce}
+            closeTime={sweepstakes.closeTime}
+            blockHash={blockHash}
             hasWinners={hasWinners}
           />
         )}
@@ -1441,12 +1440,38 @@ function SaleRow(props: {
 }
 
 function ProvablyFairBanner(props: {
-  nonceHash: string
-  nonce?: string
+  closeTime: number
+  blockHash?: string
   hasWinners: boolean
 }) {
-  const { nonceHash, nonce, hasWinners } = props
+  const { closeTime, blockHash, hasWinners } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCheckingBlock, setIsCheckingBlock] = useState(false)
+  const [blockInfo, setBlockInfo] = useState<{
+    height: number
+    hash: string
+  } | null>(null)
+
+  const isClosed = closeTime <= Date.now()
+
+  const handleCheckBlock = async () => {
+    setIsCheckingBlock(true)
+    try {
+      const result = await api('check-bitcoin-block', { closeTime })
+      if (result.available) {
+        setBlockInfo({ height: result.blockHeight, hash: result.blockHash })
+      } else {
+        toast.error('Bitcoin block not yet mined. Please try again later.')
+      }
+    } catch (e) {
+      toast.error('Failed to check Bitcoin block')
+    } finally {
+      setIsCheckingBlock(false)
+    }
+  }
+
+  const displayHash = blockHash || blockInfo?.hash
+  const displayHeight = blockInfo?.height
 
   return (
     <>
@@ -1469,53 +1494,71 @@ function ProvablyFairBanner(props: {
             <h2 className="text-ink-900 text-xl font-bold">Provably Fair</h2>
           </Row>
 
-          <p className="text-ink-700 text-sm leading-relaxed">
-            Before the drawing, we publish a hash of a secret nonce. When it's
-            time to pick winners, we combine the nonce with the timestamps of
-            the last 10 entries to generate random numbers that determine the
-            winning entries. After the drawing, we reveal the nonce so you can
-            verify the results weren't manipulated.
+          <p className="text-ink-700 text-sm">
+            Winners are determined by the first Bitcoin block mined after{' '}
+            <span className="font-semibold">
+              {new Date(closeTime).toLocaleString()}
+            </span>
+            . The block hash seeds a deterministic RNG. Verify on any block
+            explorer.
           </p>
 
-          <Col className="bg-canvas-50 gap-3 rounded-lg p-4">
-            <Col className="gap-1">
-              <span className="text-ink-600 text-sm font-medium">
-                Nonce Hash (MD5)
-              </span>
+          {displayHash && (
+            <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
+              <Row className="items-center justify-between">
+                <span className="text-ink-600 text-sm font-medium">
+                  Block{displayHeight ? ` #${displayHeight}` : ''}
+                </span>
+                <Row className="gap-2">
+                  <a
+                    href={`https://mempool.space/block/${displayHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 text-xs hover:underline"
+                  >
+                    mempool.space
+                  </a>
+                  <a
+                    href={`https://blockstream.info/block/${displayHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 text-xs hover:underline"
+                  >
+                    blockstream
+                  </a>
+                </Row>
+              </Row>
               <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
-                {nonceHash}
+                {displayHash}
               </code>
             </Col>
+          )}
 
-            {hasWinners && nonce && (
-              <Col className="gap-1">
-                <span className="text-ink-600 text-sm font-medium">
-                  Revealed Nonce
-                </span>
-                <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
-                  {nonce}
-                </code>
-              </Col>
-            )}
-          </Col>
-
-          {hasWinners && nonce ? (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
-              <p className="text-sm text-green-800 dark:text-green-300">
-                ✓ Winners have been selected. You can verify by computing{' '}
-                <code className="rounded bg-green-100 px-1 dark:bg-green-900/50">
-                  MD5(nonce)
-                </code>{' '}
-                and confirming it matches the hash above.
+          {hasWinners && blockHash ? (
+            <p className="text-sm text-green-700 dark:text-green-400">
+              ✓ Winners selected using the block hash above.
+            </p>
+          ) : isClosed && !hasWinners ? (
+            <Col className="gap-2">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                ⏳ Drawing closed. Awaiting winner selection.
               </p>
-            </div>
+              {!displayHash && (
+                <Button
+                  color="indigo"
+                  size="xs"
+                  onClick={handleCheckBlock}
+                  loading={isCheckingBlock}
+                  disabled={isCheckingBlock}
+                >
+                  Check for Bitcoin Block
+                </Button>
+              )}
+            </Col>
           ) : (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
-              <p className="text-sm text-amber-800 dark:text-amber-300">
-                ⏳ Record the hash above. After the drawing, the full nonce will
-                be revealed so you can verify the results.
-              </p>
-            </div>
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              ⏳ Awaiting close time to determine block.
+            </p>
           )}
         </Col>
       </Modal>

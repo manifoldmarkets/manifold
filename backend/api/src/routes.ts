@@ -185,6 +185,7 @@ import { buySweepstakesTickets } from './buy-sweepstakes-tickets'
 import { claimFreeSweepstakesTicket } from './claim-free-sweepstakes-ticket'
 import { getSweepstakesSales } from './get-sweepstakes-sales'
 import { selectSweepstakesWinners } from './select-sweepstakes-winners'
+import { checkBitcoinBlock } from './check-bitcoin-block'
 import { claimSweepstakesPrize } from './claim-sweepstakes-prize'
 import { getSweepstakesPrizeClaim } from './get-sweepstakes-prize-claim'
 import { adminGetPrizeClaims } from './admin-get-prize-claims'
@@ -504,6 +505,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-sweepstakes-sales': getSweepstakesSales,
   'get-sweepstakes-list': getSweepstakesList,
   'select-sweepstakes-winners': selectSweepstakesWinners,
+  'check-bitcoin-block': checkBitcoinBlock,
   'claim-sweepstakes-prize': claimSweepstakesPrize,
   'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
   'admin-create-sweepstakes': adminCreateSweepstakes,
