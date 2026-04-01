@@ -18,6 +18,11 @@ const centerModalStyles = `
   .daimo-items-end {
     align-items: center !important;
   }
+  /* @tailwindcss/forms adds padding to input[type="text"] which collapses
+     Daimo's dynamic-width amount input (width: Nch) to 0px content area */
+  input.daimo-bg-transparent {
+    padding: 0;
+  }
 `
 
 // Context to track if crypto providers are ready
