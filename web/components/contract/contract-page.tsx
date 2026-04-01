@@ -576,7 +576,12 @@ export function ContractPageContent(props: ContractParams) {
         </Col>
       </Row>
 
-      <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
+      <ScrollToTopButton
+        className={clsx(
+          'fixed right-2 z-20 lg:bottom-2 xl:hidden',
+          showResolver || showUnresolver ? 'bottom-40' : 'bottom-16'
+        )}
+      />
     </>
   )
 }

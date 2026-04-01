@@ -359,7 +359,7 @@ export const AnswersResolvePanel = (props: {
               </div>
             )}
           </Col>
-          <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+          <div className="bg-canvas-0 border-ink-200 sticky -bottom-[58px] lg:bottom-0 z-10 border-t pt-3">
             <AnswersResolveOptions
               contract={contract}
               resolveOption={resolveOption}
@@ -828,7 +828,7 @@ export const IndependentAnswersResolvePanel = (props: {
         </Col>
         <ResolutionExplainer independentMulti />
 
-        <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+        <div className="bg-canvas-0 border-ink-200 sticky -bottom-[58px] lg:bottom-0 z-10 border-t pt-3">
           <Row className="bg-primary-50 items-center justify-between rounded p-3">
             <div>
               <span className="font-medium">{selectedCount}</span> answer
@@ -1066,7 +1066,7 @@ export const IndependentAnswersUnresolvePanel = (props: {
           )}
         </Col>
 
-        <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+        <div className="bg-canvas-0 border-ink-200 sticky -bottom-[58px] lg:bottom-0 z-10 border-t pt-3">
           <Row className="bg-primary-50 items-center justify-between rounded p-3">
             <div>
               <span className="font-medium">{selectedAnswerIds.length}</span>{' '}
