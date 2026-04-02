@@ -4,6 +4,7 @@ import { select } from 'd3-selection'
 import { scaleBand, scaleLinear, scaleOrdinal } from 'd3-scale'
 import { stack } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
+import 'd3-transition'
 import { max } from 'd3-array'
 import {
   groupBy,

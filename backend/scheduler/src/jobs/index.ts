@@ -24,6 +24,7 @@ import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
+import { Cron } from 'croner'
 import { createJob } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
@@ -54,7 +55,7 @@ import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 
-export function createJobs() {
+export function createJobs(): Cron[] {
   return [
     createJob(
       'auto-leagues-cycle',
