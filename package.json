@@ -16,6 +16,9 @@
     "lint": "yarn --cwd=web lint-fix; eslint common --fix ; eslint backend/api --fix ; eslint backend/shared --fix",
     "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
   },
+  "resolutions": {
+    "typescript": "5.5.4"
+  },
   "dependencies": {},
   "devDependencies": {
     "@types/node": "18.18.8",
