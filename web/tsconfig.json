@@ -37,5 +37,5 @@
     "../client-common/src/**/*.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "../common/src/**/*.test.ts"]
 }
