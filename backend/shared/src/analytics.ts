@@ -1,4 +1,4 @@
-import * as Amplitude from '@amplitude/node'
+import Amplitude from '@amplitude/node'
 import { Request } from 'express'
 
 import { DEV_CONFIG } from 'common/envs/dev'

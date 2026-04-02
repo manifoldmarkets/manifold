@@ -3,6 +3,7 @@
     "rootDir": "src",
     "composite": true,
     "module": "commonjs",
+    "esModuleInterop": true,
     "moduleResolution": "node",
     "noImplicitReturns": true,
     "outDir": "lib",

@@ -1,4 +1,4 @@
-import * as mailgun from 'mailgun-js'
+import mailgun from 'mailgun-js'
 import { tryOrLogError } from 'shared/helpers/try-or-log-error'
 import { log } from './utils'
 

@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as sharp from 'sharp'
+import sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
 import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'

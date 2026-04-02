@@ -1,5 +1,5 @@
 import { last } from 'lodash'
-import * as metadata from 'gcp-metadata'
+import metadata from 'gcp-metadata'
 
 export type InstanceInfo = {
   projectId: string

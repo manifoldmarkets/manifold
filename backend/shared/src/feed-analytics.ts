@@ -1,7 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { VIEW_RECORDINGS_START } from 'common/feed'
-import * as dayjs from 'dayjs'
+import dayjs from 'dayjs'
 
 export const getFeedConversionScores = async (
   pg: SupabaseDirectClient,

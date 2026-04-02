@@ -1,4 +1,4 @@
-import * as express from 'express'
+import express from 'express'
 import { health } from './health'
 import { claimmanalink } from './claim-manalink'
 import { creategroup } from './create-group'

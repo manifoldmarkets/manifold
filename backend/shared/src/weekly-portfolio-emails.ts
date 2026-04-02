@@ -18,7 +18,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { DIVISION_NAMES } from 'common/leagues'
-import * as numeral from 'numeral'
+import numeral from 'numeral'
 import { getContractsDirect } from 'shared/supabase/contracts'
 
 const USERS_TO_EMAIL = 1000
