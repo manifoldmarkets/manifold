@@ -35,18 +35,18 @@ jobs:
       - name: Build common
         working-directory: common
         run: yarn build
+      - name: Check TypeScript Version
+        run: npx tsc --version
       - name: Run Typescript checker on web client
         working-directory: web
-        run: tsc --pretty --project tsconfig.json --noEmit
+        run: npx tsc --pretty --project tsconfig.json --noEmit
       - name: Build shared
         if: ${{ success() || failure() }}
         working-directory: backend/shared
         run: yarn build
-      - name: Check TypeScript Version
-        run: tsc --version
       - name: Run Typescript checker on API
         working-directory: backend/api
-        run: tsc --noEmit --skipLibCheck --pretty
+        run: npx tsc --noEmit --skipLibCheck --pretty
       - name: Lint API
         if: ${{ success() }}
         working-directory: backend/api
@@ -54,4 +54,4 @@ jobs:
       - name: Run Typescript checker on scheduler
         if: ${{ success() || failure() }}
         working-directory: backend/scheduler
-        run: tsc --noEmit --skipLibCheck --pretty
+        run: npx tsc --noEmit --skipLibCheck --pretty
