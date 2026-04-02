@@ -30,7 +30,7 @@ export function createJob(
   name: string,
   schedule: string | null,
   fn: (ctx: JobContext) => Promise<void>
-) {
+): Cron {
   const opts = { name, ...DEFAULT_OPTS }
   return new Cron(schedule ?? new Date(0), opts, async () => {
     const traceId = crypto.randomUUID()
