@@ -74,6 +74,7 @@ export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
 // TODO: These should maybe be part of the env config?
 export const BOT_USERNAMES = [
   'Terminator2',
+  'Cvillsbot',
   'TenShinoBot',
   'JDVance1',
   'Merchant',
@@ -183,6 +184,8 @@ export const BOT_USERNAMES = [
   'Evansbot',
   'PugBot',
   'cot',
+  'timestwo',
+  'XBot'
 ]
 
 export const MOD_IDS = [

@@ -76,10 +76,10 @@ import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
+import { LogoIcon } from '../icons/logo-icon'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 import { MarketContext } from './market-context'
 import { YourTrades } from './your-trades'
-import { LogoIcon } from '../icons/logo-icon'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -96,7 +96,9 @@ export function ContractPageContent(props: ContractParams) {
 
   // Just use the contract that was navigated to directly
   const liveContract = useLiveContract(props.contract)
+
   const user = useUser()
+
   useSaveReferral(user, {
     defaultReferrerUsername: props.contract.creatorUsername,
     contractId: props.contract.id,
@@ -576,7 +578,12 @@ export function ContractPageContent(props: ContractParams) {
         </Col>
       </Row>
 
-      <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
+      <ScrollToTopButton
+        className={clsx(
+          'fixed right-2 z-20 lg:bottom-2 xl:hidden',
+          showResolver || showUnresolver ? 'bottom-40' : 'bottom-16'
+        )}
+      />
     </>
   )
 }

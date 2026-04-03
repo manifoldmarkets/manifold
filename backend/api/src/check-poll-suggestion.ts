@@ -52,7 +52,7 @@ Only suggest a poll (isSubjective: true) when you're reasonably confident the qu
           confidence: number
           reason: string
         }>(prompt, {
-          model: aiModels.haiku,
+          model: aiModels.flash,
           parseAsJson: true,
         })
 
@@ -65,10 +65,7 @@ Only suggest a poll (isSubjective: true) when you're reasonably confident the qu
         return result
       } catch (e) {
         log.error('Failed to check poll suggestion:', { e })
-        throw new APIError(
-          500,
-          'Failed to analyze question. Please try again.'
-        )
+        throw new APIError(500, 'Failed to analyze question. Please try again.')
       }
     },
     { maxCalls: 120, windowMs: HOUR_MS }

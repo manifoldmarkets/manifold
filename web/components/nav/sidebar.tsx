@@ -13,11 +13,11 @@ import {
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 import { buildArray } from 'common/util/array'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, isAprilFools } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -44,9 +44,76 @@ import { NavItem, SidebarItem } from './sidebar-item'
 
 export const SPEND_MANA_ENABLED = true
 
-// Bump this number to re-show the NEW badge on Shop for all users
-const SHOP_NEW_VERSION = 1
-const SHOP_SEEN_KEY = 'shop-new-seen-version'
+// Set to true to show a "NEW" badge on the Shop nav item
+const SHOW_SHOP_NEW_BADGE = false
+
+const BADGE_COLORS = [
+  'bg-red-500 text-white',
+  'bg-amber-400 text-amber-900',
+  'bg-green-500 text-white',
+  'bg-blue-500 text-white',
+  'bg-purple-500 text-white',
+  'bg-pink-500 text-white',
+  'bg-cyan-400 text-cyan-900',
+  'bg-orange-500 text-white',
+  'bg-indigo-500 text-white',
+  'bg-emerald-500 text-white',
+  'bg-rose-500 text-white',
+  'bg-yellow-300 text-yellow-900',
+  'bg-lime-400 text-lime-900',
+  'bg-fuchsia-500 text-white',
+  'bg-teal-500 text-white',
+  'bg-sky-400 text-sky-900',
+  'bg-violet-500 text-white',
+  'bg-red-400 text-white',
+  'bg-amber-500 text-white',
+  'bg-green-400 text-white',
+]
+
+// Deterministic pseudo-random from seed
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
+function AprilFoolsBadgeExplosion() {
+  // Distribute badges in an elliptical spread around the button center,
+  // evenly spaced by angle with some randomized jitter for personality.
+  const cx = 70 // approx center of Shop button
+  const cy = 16
+  const count = BADGE_COLORS.length
+  return (
+    <>
+      {BADGE_COLORS.map((color, i) => {
+        const r = (n: number) => seededRandom(i * 7 + n)
+        const angle = (i / count) * Math.PI * 2 + (r(1) - 0.5) * 0.5
+        const radiusX = 55 + r(2) * 40
+        const radiusY = 22 + r(3) * 16
+        const x = cx + Math.cos(angle) * radiusX
+        const y = cy + Math.sin(angle) * radiusY
+        const rotation = r(4) * 40 - 20
+        const scale = 0.65 + r(5) * 0.5
+        return (
+          <span
+            key={i}
+            className={clsx(
+              'pointer-events-none absolute whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+              color
+            )}
+            style={{
+              left: `${x}px`,
+              top: `${y}px`,
+              transform: `rotate(${rotation}deg) scale(${scale})`,
+              zIndex: i,
+            }}
+          >
+            NEW
+          </span>
+        )
+      })}
+    </>
+  )
+}
 
 export default function Sidebar(props: {
   className?: string
@@ -70,30 +137,16 @@ export default function Sidebar(props: {
 
   const isLiveTV = useTVIsLive(10)
 
-  const [showShopBadge, setShowShopBadge] = useState(false)
-  useEffect(() => {
-    const seen = parseInt(localStorage.getItem(SHOP_SEEN_KEY) ?? '0', 10)
-    setShowShopBadge(seen < SHOP_NEW_VERSION)
-  }, [])
-  const onShopClick = () => {
-    localStorage.setItem(SHOP_SEEN_KEY, String(SHOP_NEW_VERSION))
-    setShowShopBadge(false)
-  }
-
   const navOptions = isMobile
     ? getMobileNav(!!user, () => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
-        showShopBadge,
-        onShopClick,
       })
     : getDesktopNav(!!user, () => setIsModalOpen(true), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
-        showShopBadge,
-        onShopClick,
       })
 
   const bottomNavOptions = bottomNav(
@@ -129,9 +182,20 @@ export default function Sidebar(props: {
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
       <div className="mb-4 flex flex-col gap-1">
-        {navOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
-        ))}
+        {navOptions.map((item) =>
+          item.name === 'Shop' && isAprilFools() ? (
+            <div key={item.name} className="relative">
+              <SidebarItem item={item} currentPage={currentPage} />
+              <AprilFoolsBadgeExplosion />
+            </div>
+          ) : (
+            <SidebarItem
+              key={item.name}
+              item={item}
+              currentPage={currentPage}
+            />
+          )
+        )}
 
         <MobileAppsQRCodeDialog
           key="mobile-apps-qr-code"
@@ -165,8 +229,6 @@ const getDesktopNav = (
     isNewUser: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
-    showShopBadge: boolean
-    onShopClick: () => void
   }
 ) => {
   const { isLiveTV } = options
@@ -200,8 +262,7 @@ const getDesktopNav = (
         name: 'Shop',
         href: '/shop',
         icon: LuGem,
-        onClick: options.onShopClick,
-        children: options.showShopBadge ? (
+        children: SHOW_SHOP_NEW_BADGE ? (
           <>
             Shop
             <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
@@ -232,8 +293,6 @@ const getMobileNav = (
     isNewUser: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
-    showShopBadge: boolean
-    onShopClick: () => void
   }
 ) => {
   const { isAdminOrMod, isLiveTV } = options
@@ -262,8 +321,7 @@ const getMobileNav = (
       name: 'Shop',
       href: '/shop',
       icon: LuGem,
-      onClick: options.onShopClick,
-      children: options.showShopBadge ? (
+      children: SHOW_SHOP_NEW_BADGE ? (
         <>
           Shop
           <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">

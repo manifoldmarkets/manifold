@@ -41,7 +41,42 @@ export const logMemory = () => {
 }
 
 export function htmlToRichText(html: string) {
-  return generateJSON(html, extensions)
+  return sanitizeJsonContent(generateJSON(html, extensions))
+}
+
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, 'https://placeholder.invalid')
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
+/** Recursively sanitize JSONContent: strip unsafe iframe nodes and link marks */
+export function sanitizeJsonContent(node: any): any {
+  if (!node) return node
+  if (node.type === 'iframe') {
+    const src = node.attrs?.src
+    if (!src || !isSafeUrl(src)) {
+      return null
+    }
+  }
+  // Sanitize link marks (blocks javascript: hrefs via crafted JSONContent)
+  if (node.marks) {
+    node.marks = node.marks.filter((mark: any) => {
+      if (mark.type === 'link' && mark.attrs?.href) {
+        return isSafeUrl(mark.attrs.href)
+      }
+      return true
+    })
+  }
+  if (node.content) {
+    node.content = node.content
+      .map((child: any) => sanitizeJsonContent(child))
+      .filter(Boolean)
+  }
+  return node
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {

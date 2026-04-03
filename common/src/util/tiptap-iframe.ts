@@ -8,6 +8,17 @@ export interface IframeOptions {
   }
 }
 
+/** Returns true if the URL uses a safe protocol (http or https). */
+function isSafeUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  try {
+    const parsed = new URL(url, 'https://placeholder.invalid')
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     iframe: {
@@ -56,15 +67,29 @@ export default Node.create<IframeOptions>({
       this.options.HTMLAttributes
     )
 
-    const blacklistedAttributes = ['srcdoc']
-    const keysToRemove = Object.keys(iframeAttributes).filter((key) =>
-      blacklistedAttributes.includes(key.toLowerCase())
-    )
-    for (const key of keysToRemove) {
-      delete iframeAttributes[key]
+    const allowedAttributes = [
+      'src',
+      'frameborder',
+      'class',
+      'width',
+      'height',
+      'sandbox',
+      'style',
+      'allowfullscreen',
+      'allow',
+    ]
+    for (const key of Object.keys(iframeAttributes)) {
+      if (!allowedAttributes.includes(key.toLowerCase())) {
+        delete iframeAttributes[key]
+      }
     }
 
     const { src } = HTMLAttributes
+
+    // Block dangerous protocols (javascript:, data:, vbscript:, etc.)
+    if (!isSafeUrl(src)) {
+      return ['div', { class: 'iframe-blocked' }]
+    }
 
     // This is a hack to prevent native from opening the iframe in an in-app browser
     // and mobile in another tab. In native, links with target='_blank' open in the in-app browser.

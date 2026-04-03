@@ -12,6 +12,9 @@ CLEAR, EASY-TO-VERIFY RESOLUTION CRITERIA
 - Markets do NOT resolve via 'votes'. If you can't come up with good, objective resollution criteria you have two options:
 1. Markets resolve to a poll that other users vote on. This is the preferred option and makes sense for subjective questions.
 2. Markets resolve to the user's opinion if their question title includes the first person, like which option will I prefer, or how will I feel about the event/news/thing.
+- Markets must be forward-looking only: at creation time, the outcome is always unknown.
+- If current reporting already establishes the event has happened, make explicit that the market resolves to the next time the event occurs.
+- Past events may be included as context, but not as evidence that the market should already resolve
 `
 
 export const guidelinesPrompt = `

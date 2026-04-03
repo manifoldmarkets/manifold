@@ -1171,7 +1171,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({}),
     returns: {} as FullUser,
   },
@@ -2317,7 +2316,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     cache: DEFAULT_CACHE_STRATEGY,
-    authed: true,
+    authed: false,
     returns: {} as {
       available: number
       canClaim: boolean
@@ -2341,7 +2340,7 @@ export const API = (_apiTypeCheck = {
       // Today's claimed free loan
       todaysFreeLoan: number
     },
-    props: z.object({}),
+    props: z.object({ userId: z.string() }),
   },
   'claim-free-loan': {
     method: 'POST',
