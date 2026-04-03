@@ -40,7 +40,7 @@ export function DailyLoan(props: {
     data: freeLoanData,
     refresh: refreshFreeLoan,
     loading: freeLoanLoading,
-  } = useAPIGetter('get-free-loan-available', {})
+  } = useAPIGetter('get-free-loan-available', { userId: user.id })
   const canClaimFreeLoan = freeLoanData?.canClaim ?? false
   const freeLoanAmount = freeLoanData?.available ?? 0
 

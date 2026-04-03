@@ -23,9 +23,8 @@ import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
 export const getFreeLoanAvailable: APIHandler<
   'get-free-loan-available'
-> = async (_, auth) => {
+> = async ({ userId }) => {
   const pg = createSupabaseDirectClient()
-  const userId = auth.uid
 
   // Get user info including last free loan claim time
   const user = await getUser(userId)

@@ -507,7 +507,7 @@ Parameters:
 - `topicSlug`: Optional. Only include questions with the topic tag with this slug.
 - `creatorId`: Optional. Only include questions created by the user with this id.
 - `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
-- `offset`: Optional. Number of contracts to skip. Max 1000 when using `sort=newest` — use `beforeTime` for deeper pagination.
+- `offset`: Optional. Number of contracts to skip. Max 1000 — use `sort=newest` with `beforeTime` for deeper pagination.
 - `beforeTime`: Optional. Millisecond timestamp cursor for efficient pagination with `sort=newest`. Returns only markets created before this time. Pass the `createdTime` of the last result from the previous page.
 - `liquidity`: Optional. Minimum liquidity per contract (or per answer according to tier map)
 - `creatorId`: Optional. Only markets from creator id.
