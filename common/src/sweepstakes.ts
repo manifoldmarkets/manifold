@@ -58,7 +58,7 @@ const MANA_PER_DOLLAR = 100
 // Scale factor scales with total prize pool so the bonding curve stays
 // proportional to the value at stake. For a $1000 prize this equals 1,000,000.
 export function getSweepstakesScaleFactor(totalPrizeUsd: number): number {
-  return totalPrizeUsd * MANA_PER_DOLLAR / SWEEPSTAKES_BASE_PRICE
+  return Math.max(1, totalPrizeUsd) * MANA_PER_DOLLAR / SWEEPSTAKES_BASE_PRICE
 }
 
 // Calculate the cost to buy numTickets starting from currentTickets

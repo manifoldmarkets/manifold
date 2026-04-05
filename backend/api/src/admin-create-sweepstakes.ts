@@ -15,6 +15,10 @@ export const adminCreateSweepstakes: APIHandler<
     throw new APIError(400, 'At least one prize is required')
   }
 
+  if (prizes.some((p) => p.amountUsdc <= 0)) {
+    throw new APIError(400, 'All prize amounts must be greater than 0')
+  }
+
   if (closeTime <= Date.now()) {
     throw new APIError(400, 'Close time must be in the future')
   }
