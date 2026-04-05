@@ -35,7 +35,10 @@ export const ClickFrame = forwardRef(
     const resolvedRole = isKeyboardInteractive ? (role ?? 'button') : undefined
 
     const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (
+        e.currentTarget === e.target &&
+        (e.key === 'Enter' || e.key === ' ')
+      ) {
         e.preventDefault()
         onClick(e as any)
       }
