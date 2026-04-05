@@ -3,7 +3,7 @@ import { PostComment } from 'common/comment'
 import { canReceiveBonuses } from 'common/user'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getPrivateUser, revalidateStaticProps } from 'shared/utils'
+import { getUser, getPrivateUser, revalidateStaticProps, sanitizeJsonContent } from 'shared/utils'
 import { getPost } from 'shared/supabase/posts'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/monitoring/log'
@@ -52,7 +52,7 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     const commentObjectForDataColumn: Omit<PostComment, 'createdTime'> = {
       id: nanoid(8),
       userId: creator.id,
-      content,
+      content: sanitizeJsonContent(content),
       userName: creator.name,
       userUsername: creator.username,
       userAvatarUrl: creator.avatarUrl,

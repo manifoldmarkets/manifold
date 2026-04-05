@@ -14,6 +14,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { anythingToRichText } from 'shared/tiptap'
+import { sanitizeJsonContent } from 'shared/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getContract, getUser, log } from 'shared/utils'
 import { broadcastNewComment } from 'shared/websockets/helpers'
@@ -235,7 +236,8 @@ export const validateComment = async (
     )
   }
 
-  const contentJson = content || anythingToRichText({ html, markdown })
+  const contentJson = (content ? sanitizeJsonContent(content) : null) ||
+    anythingToRichText({ html, markdown })
 
   if (!contentJson) {
     throw new APIError(400, 'No comment content provided.')

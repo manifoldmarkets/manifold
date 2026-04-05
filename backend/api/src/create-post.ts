@@ -10,7 +10,7 @@ import {
   createSupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
-import { getUser } from 'shared/utils'
+import { getUser, sanitizeJsonContent } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
@@ -49,7 +49,7 @@ export const createPost: APIHandler<'create-post'> = onlyUsersWhoCanPerformActio
       slug,
       title,
       createdTime: Date.now(),
-      content: content,
+      content: sanitizeJsonContent(content),
       creatorName: creator.name,
       creatorUsername: creator.username,
       creatorAvatarUrl: creator.avatarUrl,

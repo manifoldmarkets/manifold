@@ -967,14 +967,14 @@ export const useSearchResults = (props: {
         const postApiParams: APIParams<'get-posts'> = {
           sortBy: sort === 'score' ? 'importance_score' : 'created_time',
           term: query,
-          limit: 10,
+          limit: sort === 'score' ? 1 : 3,
           userId: additionalFilter?.creatorId,
           offset: freshQuery ? 0 : state.posts?.length ?? 0,
         }
         try {
           if (contractType === 'POSTS') {
             const posts = await api('get-posts', postApiParams)
-            const shouldLoadMore = posts.length === 10
+            const shouldLoadMore = posts.length === postApiParams.limit
             setState({
               contracts: [],
               users: undefined,

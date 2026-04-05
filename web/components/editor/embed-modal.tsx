@@ -14,10 +14,21 @@ type EmbedPattern = {
   rewrite: (text: string) => string
 }
 
+function isSafeIframeSrc(html: string): boolean {
+  const srcMatch = html.match(/src\s*=\s*["']([^"']+)["']/)
+  if (!srcMatch) return false
+  try {
+    const url = new URL(srcMatch[1], 'https://placeholder.invalid')
+    return url.protocol === 'https:' || url.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
 const embedPatterns: EmbedPattern[] = [
   {
     regex: /^(<iframe.*<\/iframe>)$/,
-    rewrite: (text: string) => text,
+    rewrite: (text: string) => (isSafeIframeSrc(text) ? text : ''),
   },
   {
     regex: /^https?:\/\/manifold\.markets\/([^\/]+\/[^\/]+)/,
@@ -151,7 +162,9 @@ export function EmbedModal(props: {
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {embed && <div dangerouslySetInnerHTML={{ __html: embed }}></div>}
+        {embed && (
+          <div className="text-ink-500 text-sm">Embed preview ready</div>
+        )}
         <Spacer h={2} />
 
         <Row className="gap-2">

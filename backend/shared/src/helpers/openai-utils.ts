@@ -7,8 +7,8 @@ import { log } from 'shared/utils'
 import { parseAIResponseAsJson } from './gemini'
 dayjs.extend(utc)
 export const models = {
-  gpt5: 'gpt-5',
-  gpt5mini: 'gpt-5-mini',
+  gpt5: 'gpt-5.4',
+  gpt5mini: 'gpt-5.4-mini',
 } as const
 
 export const generateEmbeddings = async (question: string) => {

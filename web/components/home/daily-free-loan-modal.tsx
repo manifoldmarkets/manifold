@@ -1,14 +1,14 @@
-import { User } from 'common/user'
-import { Modal } from 'web/components/layout/modal'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/util/format'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { GiTwoCoins, GiOpenChest } from 'react-icons/gi'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { getBenefit } from 'common/supporter-config'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import clsx from 'clsx'
+import { getBenefit } from 'common/supporter-config'
+import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
+import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
+import { Row } from 'web/components/layout/row'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function DailyFreeLoanModal(props: {
   isOpen: boolean
@@ -17,7 +17,9 @@ export function DailyFreeLoanModal(props: {
 }) {
   const { isOpen, setOpen, user } = props
 
-  const { data: freeLoanData } = useAPIGetter('get-free-loan-available', {})
+  const { data: freeLoanData } = useAPIGetter('get-free-loan-available', {
+    userId: user.id,
+  })
 
   if (!freeLoanData) {
     return (

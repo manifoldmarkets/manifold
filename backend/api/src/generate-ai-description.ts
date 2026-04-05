@@ -61,18 +61,17 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         - Incorporate any relevant information from the user's description into your own description
         - If the user supplied answers, provide any relevant background information for each answer
         - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
-        - Include only up to 3 sections and only 3 sections in the description: Resolution criteria, Background, and Considerations. Do not write anything else.
+        - Include only 2 sections in the description: Resolution criteria and Background. Do not write anything else.
         - The "Resolution criteria" section should be the first section and describe how the market will be resolved:
         - ${resolutionCriteriaPrompt}
         - Include relevant sources and data when available from your web search
         - Don't repeat the question in the description
         - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
         - Format the response as markdown
-        - Also include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise.
-        - Only include a "Considerations" section if there are unexpected aspects of the question that traders may not know about E.g. if the question is about something that has never happened before, if the county uses ranked-choice voting, etc. Do NOT add fluff like 'candidates represent a range of positions and different issues matter to voters.' That's not unexpected information. ${
+        - Also include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise. ${
           addAnswersMode === 'DISABLED' &&
           outcomeKey === 'DEPENDENT_MULTIPLE_CHOICE'
-            ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
+            ? 'If the answers are not exhaustive, mention in the background that the market may resolve N/A.'
             : ''
         }
         - Remember, the audience is sick of seeing AI slop, be concise and to the point.
@@ -87,7 +86,7 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         Only return the markdown description, nothing else.
         `
         const gptResponse = await promptAI(prompt, {
-          model: aiModels.haiku,
+          model: aiModels.flash,
           webSearch: true,
         })
 
@@ -111,7 +110,9 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
           hasExistingDescription: !!description,
         })
 
-        return { description: anythingToRichText({ markdown: cleanedResponse }) }
+        return {
+          description: anythingToRichText({ markdown: cleanedResponse }),
+        }
       } catch (e) {
         log.error('Failed to generate description:', { e })
         throw new APIError(

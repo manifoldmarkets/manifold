@@ -64,10 +64,10 @@ const search = async (
     return []
   }
 
-  if (offset > 1000 && sort === 'newest' && !props.beforeTime) {
+  if (offset > 1000) {
     throw new APIError(
       400,
-      'offset must be <= 1000 when sorting by newest. Use the beforeTime parameter to cursor through results efficiently.'
+      'offset must be <= 1000. Use sort=newest with the beforeTime parameter to page through contracts to see our entire market list.'
     )
   }
 
