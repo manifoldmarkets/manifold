@@ -26,8 +26,9 @@ export const buyCharityGiveawayTickets: APIHandler<
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
       close_time: string
+      prize_amount_usd: number
     }>(
-      `SELECT giveaway_num, close_time FROM charity_giveaways WHERE giveaway_num = $1 FOR UPDATE`,
+      `SELECT giveaway_num, close_time, prize_amount_usd FROM charity_giveaways WHERE giveaway_num = $1 FOR UPDATE`,
       [giveawayNum]
     )
 
@@ -49,7 +50,7 @@ export const buyCharityGiveawayTickets: APIHandler<
     const currentTickets = parseFloat(ticketStats?.total_tickets ?? '0')
 
     // Calculate cost
-    const manaSpent = calculateGiveawayTicketCost(currentTickets, numTickets)
+    const manaSpent = calculateGiveawayTicketCost(currentTickets, numTickets, giveaway.prize_amount_usd)
 
     // Minimum purchase of 1 mana
     if (manaSpent < 1) {

@@ -53,37 +53,48 @@ export interface SweepstakesWinner {
 
 // Bonding curve constants (same as charity giveaway)
 export const SWEEPSTAKES_BASE_PRICE = 0.1 // 0.10 mana per ticket to start
-export const SWEEPSTAKES_SCALE_FACTOR = 1000000 // Price doubles at 1,000,000 tickets
+const MANA_PER_DOLLAR = 100
+
+// Scale factor scales with total prize pool so the bonding curve stays
+// proportional to the value at stake. For a $1000 prize this equals 1,000,000.
+export function getSweepstakesScaleFactor(totalPrizeUsd: number): number {
+  return totalPrizeUsd * MANA_PER_DOLLAR / SWEEPSTAKES_BASE_PRICE
+}
 
 // Calculate the cost to buy numTickets starting from currentTickets
 export function calculateSweepstakesTicketCost(
   currentTickets: number,
-  numTickets: number
+  numTickets: number,
+  totalPrizeUsd: number
 ): number {
+  const S = getSweepstakesScaleFactor(totalPrizeUsd)
   const n1 = currentTickets
   const n2 = currentTickets + numTickets
   return (
     SWEEPSTAKES_BASE_PRICE *
-    (n2 - n1 + (n2 * n2 - n1 * n1) / (2 * SWEEPSTAKES_SCALE_FACTOR))
+    (n2 - n1 + (n2 * n2 - n1 * n1) / (2 * S))
   )
 }
 
 // Get current price per ticket (for display)
 export function getCurrentSweepstakesTicketPrice(
-  currentTickets: number
+  currentTickets: number,
+  totalPrizeUsd: number
 ): number {
-  return SWEEPSTAKES_BASE_PRICE * (1 + currentTickets / SWEEPSTAKES_SCALE_FACTOR)
+  const S = getSweepstakesScaleFactor(totalPrizeUsd)
+  return SWEEPSTAKES_BASE_PRICE * (1 + currentTickets / S)
 }
 
 // Calculate how many tickets you can buy with a given amount of mana
 // Uses quadratic formula to invert the cost function
 export function calculateSweepstakesTicketsFromMana(
   currentTickets: number,
-  mana: number
+  mana: number,
+  totalPrizeUsd: number
 ): number {
   if (mana <= 0) return 0
 
-  const S = SWEEPSTAKES_SCALE_FACTOR
+  const S = getSweepstakesScaleFactor(totalPrizeUsd)
   const B = SWEEPSTAKES_BASE_PRICE
   const n = currentTickets
 

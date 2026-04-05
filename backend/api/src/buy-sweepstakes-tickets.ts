@@ -4,7 +4,9 @@ import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser } from 'shared/utils'
 import {
   calculateSweepstakesTicketCost,
+  getTotalPrizePool,
   SWEEPSTAKES_MIN_MANA_INVESTED,
+  SweepstakesPrize,
 } from 'common/sweepstakes'
 import { getIp } from 'shared/analytics'
 import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
@@ -28,8 +30,9 @@ export const buySweepstakesTickets: APIHandler<'buy-sweepstakes-tickets'> =
       const sweepstakes = await tx.oneOrNone<{
         sweepstakes_num: number
         close_time: string
+        prizes: SweepstakesPrize[]
       }>(
-        `SELECT sweepstakes_num, close_time
+        `SELECT sweepstakes_num, close_time, prizes
          FROM sweepstakes
          WHERE sweepstakes_num = $1
          FOR UPDATE`,
@@ -54,7 +57,8 @@ export const buySweepstakesTickets: APIHandler<'buy-sweepstakes-tickets'> =
       const currentTickets = parseFloat(ticketStats?.total_tickets ?? '0')
 
       // Calculate cost
-      const manaSpent = calculateSweepstakesTicketCost(currentTickets, numTickets)
+      const totalPrizeUsd = getTotalPrizePool(sweepstakes.prizes)
+      const manaSpent = calculateSweepstakesTicketCost(currentTickets, numTickets, totalPrizeUsd)
 
       // Check user balance and eligibility
       const user = await getUser(auth.uid, tx)

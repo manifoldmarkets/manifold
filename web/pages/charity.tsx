@@ -163,12 +163,14 @@ export default function CharityGiveawayPage(props: {
   )
   const currentCharityTickets = selectedCharityStats?.totalTickets ?? 0
 
+  const prizeAmountUsd = giveaway?.prizeAmountUsd ?? 0
+
   const numTickets = useMemo(() => {
     if (manaAmount <= 0) return 0
-    return calculateTicketsFromMana(totalTickets, manaAmount)
-  }, [totalTickets, manaAmount])
+    return calculateTicketsFromMana(totalTickets, manaAmount, prizeAmountUsd)
+  }, [totalTickets, manaAmount, prizeAmountUsd])
 
-  const currentPrice = getCurrentGiveawayTicketPrice(totalTickets)
+  const currentPrice = getCurrentGiveawayTicketPrice(totalTickets, prizeAmountUsd)
   const isClosed = giveaway && giveaway.closeTime <= Date.now()
   const hasWinner = !!giveaway?.winningTicketId
 

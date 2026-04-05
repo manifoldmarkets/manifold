@@ -193,15 +193,16 @@ export default function SweepstakesPage({
     return () => clearInterval(interval)
   }, [sweepstakes?.closeTime])
 
+  const totalPrizePool = sweepstakes ? getTotalPrizePool(sweepstakes.prizes) : 0
+
   const numTickets = useMemo(() => {
     if (manaAmount <= 0) return 0
-    return calculateSweepstakesTicketsFromMana(totalTickets, manaAmount)
-  }, [totalTickets, manaAmount])
+    return calculateSweepstakesTicketsFromMana(totalTickets, manaAmount, totalPrizePool)
+  }, [totalTickets, manaAmount, totalPrizePool])
 
-  const currentPrice = getCurrentSweepstakesTicketPrice(totalTickets)
+  const currentPrice = getCurrentSweepstakesTicketPrice(totalTickets, totalPrizePool)
   const isClosed = sweepstakes && sweepstakes.closeTime <= Date.now()
   const hasWinners = !!(winners && winners.length > 0)
-  const totalPrizePool = sweepstakes ? getTotalPrizePool(sweepstakes.prizes) : 0
 
   const sweepstakesList = sweepstakesListData?.sweepstakes ?? []
   const activeSweepstakes = sweepstakesList.find(
