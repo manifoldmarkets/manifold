@@ -2,7 +2,6 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
-import { STARTING_BALANCE } from 'common/economy'
 import { TRADE_TERM } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { convertGroup } from 'common/supabase/groups'
@@ -15,7 +14,6 @@ import { User } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { formatMoney } from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { removeEmojis } from 'common/util/string'
 import { capitalize, intersection, orderBy, uniq, uniqBy } from 'lodash'
@@ -304,9 +302,7 @@ function PredictionMarketPage() {
         How it works
       </div>
       <div className="mt-2 text-lg">
-        We've sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        play money. {capitalize(TRADE_TERM)} on the answer you think is right.
+        {capitalize(TRADE_TERM)} on the answer you think is right.
       </div>
       <div className="mt-2 text-lg">
         Research shows wagering currency leads to more accurate predictions than

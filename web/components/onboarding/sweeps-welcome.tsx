@@ -1,6 +1,5 @@
 import Image from 'next/image'
-import { formatMoney, SWEEPIES_MONIKER } from 'common/util/format'
-import { STARTING_BALANCE } from 'common/economy'
+import { SWEEPIES_MONIKER } from 'common/util/format'
 import { capitalize } from 'lodash'
 import {
   ENV_CONFIG,
@@ -70,8 +69,7 @@ export function SweepsWelcomePage() {
         />
       </Row>
       <div>
-        We've sent you <strong>{formatMoney(STARTING_BALANCE)}</strong> in play
-        money. {capitalize(TRADE_TERM)} on the answer you think is right.
+        {capitalize(TRADE_TERM)} on the answer you think is right.
       </div>
       <div className="mt-2">
         Research shows wagering currency leads to more accurate predictions than
