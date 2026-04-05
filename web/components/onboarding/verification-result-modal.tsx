@@ -70,8 +70,7 @@ function ApprovedContent({ onClose }: { onClose: () => void }) {
         Identity Verified!
       </div>
       <div className="text-ink-600 text-center">
-        Your identity has been successfully verified. Thank you for helping keep
-        Manifold safe!
+        Your identity has been successfully verified.
       </div>
       <Button onClick={onClose} className="mt-4 w-full">
         Continue
