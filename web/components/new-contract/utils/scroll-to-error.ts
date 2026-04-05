@@ -59,8 +59,9 @@ export function scrollToFirstError(errors: ValidationErrors): void {
     element instanceof HTMLTextAreaElement ||
     element instanceof HTMLButtonElement
   ) {
+    const focusableElement = element
     setTimeout(() => {
-      element.focus()
+      focusableElement.focus()
     }, 300) // Delay to allow scroll animation to complete
   }
 }

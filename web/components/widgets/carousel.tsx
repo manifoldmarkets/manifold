@@ -5,14 +5,16 @@ import { useState, useEffect, forwardRef, useRef, Ref, ReactNode } from 'react'
 import { Row } from '../layout/row'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
-export function Carousel(props: {
+type CarouselProps = {
   children: ReactNode
   loadMore?: () => void
   className?: string
   labelsParentClassName?: string
   fadeEdges?: boolean
   showArrowsOnHover?: boolean
-}) {
+} & Omit<JSX.IntrinsicElements['div'], 'children' | 'className'>
+
+export function Carousel(props: CarouselProps) {
   const {
     children,
     labelsParentClassName,
@@ -20,6 +22,7 @@ export function Carousel(props: {
     className,
     fadeEdges,
     showArrowsOnHover,
+    ...rest
   } = props
 
   const ref = useRef<HTMLDivElement>(null)
@@ -38,6 +41,7 @@ export function Carousel(props: {
       className={clsx('relative', className)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      {...rest}
     >
       <div
         className={clsx(
