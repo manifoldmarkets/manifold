@@ -33,6 +33,11 @@ export type ColorType =
   | 'sienna'
   | 'indigo-white'
 
+type NativeButtonProps = Omit<
+  JSX.IntrinsicElements['button'],
+  'className' | 'size' | 'color' | 'type' | 'disabled' | 'ref'
+>
+
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
   xs: 'px-2.5 py-1.5 text-sm',
@@ -112,8 +117,9 @@ export const Button = forwardRef(function Button(
     size?: SizeType
     color?: ColorType
     type?: 'button' | 'reset' | 'submit'
+    disabled?: boolean
     loading?: boolean
-  } & JSX.IntrinsicElements['button'],
+  } & NativeButtonProps,
   ref: Ref<HTMLButtonElement>
 ) {
   const {
@@ -158,7 +164,7 @@ export function IconButton(
     size?: SizeType
     type?: 'button' | 'reset' | 'submit'
     disabled?: boolean
-  } & JSX.IntrinsicElements['button']
+  } & NativeButtonProps
 ) {
   const {
     children,
