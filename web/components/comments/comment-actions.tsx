@@ -78,6 +78,7 @@ export function CommentActions(props: {
       {user && (
         <IconButton
           size={'xs'}
+          aria-label="Repost comment to followers"
           onClick={() => setReposting(true)}
           className={'text-ink-500 min-w-[60px]'}
         >
@@ -88,6 +89,7 @@ export function CommentActions(props: {
       )}
       {user && liveContract.outcomeType === 'BINARY' && (
         <IconButton
+          aria-label={`Reply with a ${TRADE_TERM}`}
           onClick={() => {
             track('bet intent', {
               location: 'comment on contract',
@@ -121,6 +123,7 @@ export function CommentActions(props: {
       {user && onReplyClick && (
         <IconButton
           size={'xs'}
+          aria-label="Reply with a comment"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -138,6 +141,7 @@ export function CommentActions(props: {
         <Modal
           open={showBetModal}
           setOpen={setShowBetModal}
+          ariaLabel={`Reply with a ${TRADE_TERM}`}
           className={clsx(
             MODAL_CLASS,
             'pointer-events-auto max-h-[32rem] overflow-auto'

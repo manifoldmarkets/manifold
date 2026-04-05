@@ -13,6 +13,9 @@
   ],
   "scripts": {
     "verify": "yarn --cwd=common verify:dir; yarn --cwd=web verify:dir; yarn --cwd=backend/shared verify:dir",
+    "typecheck:web": "tsc --pretty --project web/tsconfig.json --noEmit",
+    "typecheck:api": "tsc --pretty --project backend/api/tsconfig.json --noEmit --skipLibCheck",
+    "typecheck:scheduler": "tsc --pretty --project backend/scheduler/tsconfig.json --noEmit --skipLibCheck",
     "lint": "yarn --cwd=web lint-fix; eslint common --fix ; eslint backend/api --fix ; eslint backend/shared --fix",
     "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
   },

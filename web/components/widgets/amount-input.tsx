@@ -4,7 +4,6 @@ import { MANA_MIN_BET, SWEEPS_MIN_BET } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import {
-  formatMoney,
   formatWithToken,
   InputTokenType,
 } from 'common/util/format'
@@ -18,6 +17,7 @@ import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
+import { LiveRegion } from './live-region'
 import { sliderColors } from './slider'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { buildArray } from 'common/util/array'
@@ -38,6 +38,7 @@ export function AmountInput(
     allowFloat?: boolean
     allowNegative?: boolean
     disableClearButton?: boolean
+    ariaLabel?: string
   } & JSX.IntrinsicElements['input']
 ) {
   const {
@@ -53,6 +54,7 @@ export function AmountInput(
     quickAddMoreButton,
     allowNegative,
     disableClearButton,
+    ariaLabel,
     ...rest
   } = props
 
@@ -93,6 +95,7 @@ export function AmountInput(
       >
         <Input
           {...rest}
+          aria-label={ariaLabel ?? 'Bet amount'}
           className={clsx(label && 'pl-9', 'text-lg', inputClassName)}
           style={inputStyle}
           ref={inputRef}
@@ -123,6 +126,8 @@ export function AmountInput(
           : !disableClearButton &&
             amount !== undefined && (
               <button
+                type="button"
+                aria-label="Clear bet amount"
                 className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
                 onClick={() => onChangeAmount(undefined)}
               >
@@ -160,6 +165,7 @@ export function BuyAmountInput(props: {
   disableQuickButtons?: boolean
   token?: InputTokenType
   sliderColor?: keyof typeof sliderColors
+  fieldLabel?: string
 }) {
   const {
     amount,
@@ -181,6 +187,7 @@ export function BuyAmountInput(props: {
     disableQuickButtons,
     token = 'M$',
     sliderColor,
+    fieldLabel = 'Bet amount',
   } = props
   const user = useUser()
 
@@ -253,6 +260,13 @@ export function BuyAmountInput(props: {
   return (
     <>
       <Col className={clsx('relative w-full max-w-[350px]', parentClassName)}>
+        <LiveRegion
+          message={
+            amount == undefined
+              ? ''
+              : `${fieldLabel} ${formatWithToken({ amount, token })}`
+          }
+        />
         <AmountInput
           className={className}
           inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
@@ -272,11 +286,18 @@ export function BuyAmountInput(props: {
           disabled={disabled}
           inputRef={inputRef}
           disableClearButton={!disableQuickButtons}
+          ariaLabel={fieldLabel}
         />
         {!disableQuickButtons && (
           <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
             {values.map((v) => (
               <button
+                type="button"
+                aria-label={
+                  v > 0
+                    ? `Increase ${fieldLabel.toLowerCase()} by ${v}`
+                    : `Decrease ${fieldLabel.toLowerCase()} by ${Math.abs(v)}`
+                }
                 className={incrementButtonsClassName}
                 key={v}
                 onClick={() => incrementBy(v)}
@@ -296,10 +317,11 @@ export function BuyAmountInput(props: {
             smallAmounts={!hasLotsOfMoney}
             token={token}
             sliderColor={sliderColor}
+            ariaLabel={fieldLabel}
           />
         )}
         {error ? (
-          <div className="text-scarlet-500 mt-2 flex-wrap text-sm">
+          <div className="text-scarlet-500 mt-2 flex-wrap text-sm" role="alert">
             {error === 'Insufficient balance' ? (
               <BuyMoreFunds user={user} />
             ) : (
@@ -322,7 +344,7 @@ export function BuyAmountInput(props: {
   )
 }
 
-const BuyMoreFunds = (props: { user: User | null | undefined }) => {
+const BuyMoreFunds = (_props: { user: User | null | undefined }) => {
   return (
     <>
       Not enough funds.

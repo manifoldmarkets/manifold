@@ -246,6 +246,7 @@ export const RegisterUserForm = (props: {
         <span className="text-ink-700">
           <input
             type="checkbox"
+            aria-label="I am a resident of the United States excluding Delaware, Idaho, Michigan, and Washington, and I am over 18 years old"
             checked={canContinue}
             onChange={(e) => setCanContinue(e.target.checked)}
             className="bg-canvas-0 mb-1 mr-2"
@@ -307,6 +308,8 @@ export const RegisterUserForm = (props: {
           <Col className={sectionClass}>
             <InputTitle>First Name</InputTitle>
             <Input
+              aria-label="First Name"
+              aria-required="true"
               value={userInfo.FirstName}
               type={'text'}
               onChange={(e) =>
@@ -318,6 +321,8 @@ export const RegisterUserForm = (props: {
           <Col className={sectionClass}>
             <InputTitle>Last Name</InputTitle>
             <Input
+              aria-label="Last Name"
+              aria-required="true"
               value={userInfo.LastName}
               type={'text'}
               onChange={(e) =>
@@ -329,6 +334,8 @@ export const RegisterUserForm = (props: {
         <Col className={sectionClass}>
           <InputTitle>Date of Birth</InputTitle>
           <Input
+            aria-label="Date of Birth"
+            aria-required="true"
             className={'w-full '}
             type={'date'}
             value={
@@ -344,6 +351,8 @@ export const RegisterUserForm = (props: {
         <Col className={sectionClass}>
           <InputTitle>Email Address</InputTitle>
           <Input
+            aria-label="Email Address"
+            aria-required="true"
             value={userInfo.EmailAddress}
             type={'text'}
             onChange={(e) =>
@@ -382,6 +391,8 @@ export const RegisterUserForm = (props: {
         <Col className={sectionClass}>
           <InputTitle>Address Line 1</InputTitle>
           <Input
+            aria-label="Address Line 1"
+            aria-required="true"
             value={userInfo.AddressLine1}
             type={'text'}
             onChange={(e) =>
@@ -393,6 +404,7 @@ export const RegisterUserForm = (props: {
           <Col className={clsx(sectionClass, 'sm:w-[50%]')}>
             <InputTitle>Address Line 2</InputTitle>
             <Input
+              aria-label="Address Line 2"
               placeholder={'Unit #, etc. (optional)'}
               value={userInfo.AddressLine2}
               type={'text'}
@@ -404,6 +416,8 @@ export const RegisterUserForm = (props: {
           <Col className={clsx(sectionClass, 'sm:w-[50%]')}>
             <InputTitle>City</InputTitle>
             <Input
+              aria-label="City"
+              aria-required="true"
               value={userInfo.City}
               type={'text'}
               onChange={(e) =>
@@ -416,6 +430,7 @@ export const RegisterUserForm = (props: {
           <Col className={'w-1/2 gap-0.5'}>
             <InputTitle>State</InputTitle>
             <Input
+              aria-label="State"
               value={userInfo.StateCode}
               type={'text'}
               onChange={(e) =>
@@ -426,6 +441,8 @@ export const RegisterUserForm = (props: {
           <Col className={'w-1/2 gap-0.5'}>
             <InputTitle>Postal Code</InputTitle>
             <Input
+              aria-label="Postal Code"
+              aria-required="true"
               value={userInfo.PostalCode}
               type={'text'}
               onChange={(e) =>
@@ -437,6 +454,7 @@ export const RegisterUserForm = (props: {
         <Col className={'w-full gap-0.5'}>
           <InputTitle>Referral Code</InputTitle>
           <Input
+            aria-label="Referral Code"
             placeholder={'R2I3E (optional)'}
             className={'w-full '}
             value={userInfo.ReferralCode}
@@ -447,7 +465,7 @@ export const RegisterUserForm = (props: {
           />
         </Col>
         {error && (
-          <Col className={'text-error'}>
+          <Col className={'text-error'} role="alert">
             {error}
             <Row>
               {error === ID_ERROR_MSG ? (

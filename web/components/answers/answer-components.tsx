@@ -262,6 +262,7 @@ const YesNoBetButtons = (props: {
     <>
       <Modal
         open={outcome != undefined}
+        ariaLabel={`Bet on ${answer.text}`}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
       >
         <AnswerCpmmBetPanel
@@ -276,6 +277,8 @@ const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="green-outline"
+        aria-label={`Bet Yes on ${answer.text}`}
+        aria-haspopup="dialog"
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
@@ -289,6 +292,8 @@ const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="red-outline"
+        aria-label={`Bet No on ${answer.text}`}
+        aria-haspopup="dialog"
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()

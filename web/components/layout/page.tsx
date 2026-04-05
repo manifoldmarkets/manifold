@@ -76,6 +76,12 @@ export function Page(props: {
         <Toaster
           position={isMobile ? 'bottom-center' : 'top-center'}
           containerClassName="!bottom-[70px]"
+          toastOptions={{
+            ariaProps: {
+              role: 'status',
+              'aria-live': 'polite',
+            },
+          }}
         />
         {hideSidebar ? (
           <div className="lg:col-span-2 lg:flex" />
@@ -83,6 +89,7 @@ export function Page(props: {
           <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex" />
         )}
         <main
+          id="main-content"
           className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
         >
           {banner}

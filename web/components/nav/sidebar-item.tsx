@@ -59,7 +59,9 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         />
       )}
       <span className="truncate">{item.children ?? item.name}</span>
-      {item.external && <ExternalLinkIcon className="ml-2 h-4 w-4" />}
+      {item.external && (
+        <ExternalLinkIcon className="ml-2 h-4 w-4" aria-hidden="true" />
+      )}
     </>
   )
 
@@ -79,7 +81,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     )
   } else {
     return (
-      <button onClick={onClick} className={sidebarClass}>
+      <button type="button" onClick={onClick} className={sidebarClass}>
         {sidebarItem}
       </button>
     )

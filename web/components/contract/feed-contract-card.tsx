@@ -141,6 +141,7 @@ export function FeedContractCard(props: {
 
   return (
     <ClickFrame
+      tabIndex={-1}
       className={clsx(
         'ring-primary-200 hover:ring-1',
 
@@ -263,6 +264,7 @@ export function FeedContractCard(props: {
                   contract={contract}
                   user={user}
                   className="h-min"
+                  questionTitle={contract.question}
                 />
               )}
               {!isClosed && isStonk && (
@@ -272,6 +274,7 @@ export function FeedContractCard(props: {
                   user={user}
                   className="h-min"
                   labels={{ yes: 'Buy', no: 'Short' }}
+                  questionTitle={contract.question}
                 />
               )}
               {isNumber && <NumericBetButton contract={contract} user={user} />}

@@ -28,13 +28,20 @@ export function FilterPill(props: {
   className?: string
   children: ReactNode
   type?: 'spice' | 'sweepies'
+  ariaLabel?: string
+  role?: string
 }) {
   const { children, selected, onSelect, className, type, color, disabled } =
     props
 
   return (
     <button
+      type="button"
       disabled={disabled}
+      aria-label={props.ariaLabel}
+      aria-pressed={props.role ? undefined : selected}
+      role={props.role as any}
+      aria-checked={props.role === 'radio' ? selected : undefined}
       className={clsx(
         'flex shrink-0 select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
@@ -79,6 +86,8 @@ export function AdditionalFilterPill(props: {
     >
       {children}
       <button
+        type="button"
+        aria-label="Remove filter"
         className="text-ink-200 dark:text-ink-800 cursor-pointer rounded-full transition-colors hover:text-white hover:dark:text-white"
         onClick={onXClick}
       >

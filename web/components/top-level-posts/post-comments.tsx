@@ -351,6 +351,7 @@ export function PostCommentItem(props: {
             {onReplyClick && (
               <Tooltip text="Reply" placement="bottom">
                 <IconButton
+                  aria-label="Reply to comment"
                   size="xs"
                   onClick={() => onReplyClick(comment)}
                   className="hover:text-primary-700"

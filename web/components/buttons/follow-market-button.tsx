@@ -73,6 +73,7 @@ export const FollowMarketIconButton = (props: {
   return (
     <IconButton
       size="xs"
+      aria-label={following ? 'Unfollow market' : 'Follow market'}
       onClick={async () => {
         if (!user) return firebaseLogin()
         if (following) {

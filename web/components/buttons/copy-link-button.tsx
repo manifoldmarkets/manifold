@@ -182,7 +182,12 @@ export function SimpleCopyTextButton(props: {
   }
 
   return (
-    <IconButton onClick={onClick} className={className} disabled={!text}>
+    <IconButton
+      aria-label={tooltip ?? 'Copy link'}
+      onClick={onClick}
+      className={className}
+      disabled={!text}
+    >
       <Tooltip text={tooltip ?? 'Copy link'} noTap placement="bottom">
         <ClipboardCopyIcon className={'h-5'} aria-hidden="true" />
       </Tooltip>

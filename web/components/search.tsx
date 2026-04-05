@@ -43,6 +43,7 @@ import { UserResults } from './search/user-results'
 import { useSweepstakes } from './sweepstakes-provider'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { Carousel } from './widgets/carousel'
+import { LiveRegion } from './widgets/live-region'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -350,6 +351,17 @@ export function Search(props: SearchProps) {
 
   const showTopics = topics && topics.length > 0 && query && query.length > 0
   const showUsers = users && users.length > 0 && query && query.length > 0
+  const searchInputId = `${persistPrefix}-search-input`
+  const searchResultsId = `${persistPrefix}-search-results`
+  const searchInstructionsId = `${persistPrefix}-search-instructions`
+  const totalResults =
+    (contracts?.length ?? 0) + (topics?.length ?? 0) + (users?.length ?? 0)
+  const searchAnnouncement =
+    query.length === 0
+      ? ''
+      : loading
+      ? `Searching for ${query}`
+      : `${totalResults} results for ${query}`
 
   const onChange = (changes: Partial<SearchParams>) => {
     const updatedParams = { ...changes }
@@ -612,21 +624,32 @@ export function Search(props: SearchProps) {
           )}
         </Col>
         {!hideSearch && (
-          <SearchInput
-            value={query}
-            setValue={setQuery}
-            placeholder={
-              searchType === 'Users'
-                ? 'Search users'
-                : searchType === 'Questions' || contractsOnly
-                ? 'Search questions'
-                : isMobile
-                ? 'Search'
-                : 'Search questions, users, topics, and posts'
-            }
-            autoFocus={autoFocus}
-            loading={loading}
-          />
+          <>
+            <div id={searchInstructionsId} className="sr-only">
+              Search for markets, users, topics, and posts. Results update below
+              as you type.
+            </div>
+            <SearchInput
+              value={query}
+              setValue={setQuery}
+              placeholder={
+                searchType === 'Users'
+                  ? 'Search users'
+                  : searchType === 'Questions' || contractsOnly
+                  ? 'Search questions'
+                  : isMobile
+                  ? 'Search'
+                  : 'Search questions, users, topics, and posts'
+              }
+              autoFocus={autoFocus}
+              loading={loading}
+              inputId={searchInputId}
+              listboxId={searchResultsId}
+              instructionsId={searchInstructionsId}
+              expanded={query.length > 0 && totalResults > 0}
+            />
+            <LiveRegion message={searchAnnouncement} />
+          </>
         )}
 
         {/* Subtopics row */}
@@ -697,118 +720,122 @@ export function Search(props: SearchProps) {
         )}
       </Col>
       <Spacer h={1} />
-      {selectedFollowed && (
-        <Col className="mb-2">
-          <>
-            <Row className="text-ink-500 items-center gap-1 text-sm">
-              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-              <span>Your Followed Topics</span>
-              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-            </Row>
-            {usersFollowedGroups ? (
-              <BrowseTopicPills
-                className={'relative w-full px-2 py-1'}
-                topics={usersFollowedGroups}
-                clipOnMobile={true}
-              />
-            ) : isLoadingFollowedGroups ? (
-              <div className="text-ink-500 px-2 py-3 text-sm">
-                Loading your followed topics...
-              </div>
-            ) : null}
-          </>
-
-          {shouldShowTrendingTopics && (
+      <div id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
+        {selectedFollowed && (
+          <Col className="mb-2">
             <>
               <Row className="text-ink-500 items-center gap-1 text-sm">
                 <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-                <span>Explore Topics To Follow</span>
+                <span>Your Followed Topics</span>
                 <hr className="border-ink-300 mr-2 grow sm:mr-0" />
               </Row>
-              {trendingTopics ? (
+              {usersFollowedGroups ? (
                 <BrowseTopicPills
                   className={'relative w-full px-2 py-1'}
-                  topics={trendingTopics}
-                  clipOnMobile={!shouldShowALotOfTrendingTopics}
-                  initialShown={shouldShowALotOfTrendingTopics ? 20 : undefined}
+                  topics={usersFollowedGroups}
+                  clipOnMobile={true}
                 />
-              ) : isLoadingTrendingTopics ? (
+              ) : isLoadingFollowedGroups ? (
                 <div className="text-ink-500 px-2 py-3 text-sm">
-                  Loading trending topics...
+                  Loading your followed topics...
                 </div>
               ) : null}
             </>
-          )}
-        </Col>
-      )}
-      {showSearchTypes && (
-        <Col>
-          {showTopics && (
-            <>
+
+            {shouldShowTrendingTopics && (
+              <>
+                <Row className="text-ink-500 items-center gap-1 text-sm">
+                  <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+                  <span>Explore Topics To Follow</span>
+                  <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+                </Row>
+                {trendingTopics ? (
+                  <BrowseTopicPills
+                    className={'relative w-full px-2 py-1'}
+                    topics={trendingTopics}
+                    clipOnMobile={!shouldShowALotOfTrendingTopics}
+                    initialShown={
+                      shouldShowALotOfTrendingTopics ? 20 : undefined
+                    }
+                  />
+                ) : isLoadingTrendingTopics ? (
+                  <div className="text-ink-500 px-2 py-3 text-sm">
+                    Loading trending topics...
+                  </div>
+                ) : null}
+              </>
+            )}
+          </Col>
+        )}
+        {showSearchTypes && (
+          <Col>
+            {showTopics && (
+              <>
+                <Row className="text-ink-500 items-center gap-1 text-sm">
+                  <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+                  <span>
+                    {!query || !topics?.length
+                      ? ''
+                      : topics.length >= 100
+                      ? '100+'
+                      : `${topics.length}`}{' '}
+                    {!query || !topics?.length ? 'Topics' : 'topics'}
+                  </span>
+                  <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+                </Row>
+                <BrowseTopicPills
+                  className={'relative w-full px-2 pb-4'}
+                  topics={topics}
+                />
+              </>
+            )}
+            {showUsers && <UserResults userResults={users} />}
+            {(showTopics || showUsers) && (
               <Row className="text-ink-500 items-center gap-1 text-sm">
                 <hr className="border-ink-300 ml-2 grow sm:ml-0" />
                 <span>
-                  {!query || !topics?.length
+                  {!query || !contracts?.length
                     ? ''
-                    : topics.length >= 100
+                    : contracts.length >= 100
                     ? '100+'
-                    : `${topics.length}`}{' '}
-                  {!query || !topics?.length ? 'Topics' : 'topics'}
+                    : shouldLoadMore && !loading
+                    ? `${contracts.length}+`
+                    : `${contracts.length}`}{' '}
+                  {!query || !contracts?.length ? 'Questions' : 'questions'}
                 </span>
                 <hr className="border-ink-300 mr-2 grow sm:mr-0" />
               </Row>
-              <BrowseTopicPills
-                className={'relative w-full px-2 pb-4'}
-                topics={topics}
-              />
-            </>
-          )}
-          {showUsers && <UserResults userResults={users} />}
-          {(showTopics || showUsers) && (
-            <Row className="text-ink-500 items-center gap-1 text-sm">
-              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-              <span>
-                {!query || !contracts?.length
-                  ? ''
-                  : contracts.length >= 100
-                  ? '100+'
-                  : shouldLoadMore && !loading
-                  ? `${contracts.length}+`
-                  : `${contracts.length}`}{' '}
-                {!query || !contracts?.length ? 'Questions' : 'questions'}
-              </span>
-              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-            </Row>
-          )}
-        </Col>
-      )}
+            )}
+          </Col>
+        )}
 
-      {!contracts && !posts ? (
-        <LoadingContractResults />
-      ) : contracts?.length === 0 && posts?.length === 0 ? (
-        emptyContractsState
-      ) : (
-        <>
-          {contracts || posts ? (
-            <CombinedResults
-              contracts={contracts ?? []}
-              posts={posts ?? []}
-              searchParams={searchParams}
-              onContractClick={onContractClick}
-              highlightContractIds={highlightContractIds}
-              answersByContractId={answersByContractId}
-              hideAvatars={hideAvatars}
-              hideActions={hideActions}
-              hasBets={hasBets}
-            />
-          ) : null}
-          <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
-          {shouldLoadMore && <LoadingContractResults />}
-          {!shouldLoadMore && (
-            <NoMoreResults params={searchParams} onChange={onChange} />
-          )}
-        </>
-      )}
+        {!contracts && !posts ? (
+          <LoadingContractResults />
+        ) : contracts?.length === 0 && posts?.length === 0 ? (
+          emptyContractsState
+        ) : (
+          <>
+            {contracts || posts ? (
+              <CombinedResults
+                contracts={contracts ?? []}
+                posts={posts ?? []}
+                searchParams={searchParams}
+                onContractClick={onContractClick}
+                highlightContractIds={highlightContractIds}
+                answersByContractId={answersByContractId}
+                hideAvatars={hideAvatars}
+                hideActions={hideActions}
+                hasBets={hasBets}
+              />
+            ) : null}
+            <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            {shouldLoadMore && <LoadingContractResults />}
+            {!shouldLoadMore && (
+              <NoMoreResults params={searchParams} onChange={onChange} />
+            )}
+          </>
+        )}
+      </div>
     </Col>
   )
 }

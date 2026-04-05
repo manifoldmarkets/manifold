@@ -39,6 +39,7 @@ export function Banner(props: {
 
       {setShowBanner && (
         <IconButton
+          aria-label="Dismiss banner"
           className={'h-8'}
           size={'sm'}
           onClick={() => {

@@ -1,0 +1,24 @@
+---
+description: WCAG-minded accessibility guardrails for Manifold web UI
+globs: web/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Web Accessibility
+
+- Preserve current visuals for typical users. Prefer semantic HTML, ARIA, `sr-only`, and `focus-visible` over visible layout changes.
+- Ensure every interactive control has an accessible name. Icon-only buttons and links need `aria-label` or equivalent text.
+- Keep keyboard navigation complete. Interactive elements must be reachable, operable with Enter/Space when appropriate, and show a visible `:focus-visible` state.
+- Use real structure first: `button` for actions, `a`/`Link` for navigation, `nav`, `main`, `footer`, lists for grouped navigation, and headings in logical order.
+- Label all form controls with visible text, `aria-label`, or `aria-labelledby`. Mark required fields and expose validation errors to assistive tech.
+- Make dialogs, menus, tabs, comboboxes, sliders, and filter groups expose the expected ARIA roles, states, and labels when custom UI is used.
+- Announce important dynamic updates with polite or assertive live regions instead of relying on visuals alone.
+- Give images appropriate alt text: meaningful images need descriptive `alt`; decorative images should use empty `alt` or be hidden from assistive tech.
+- Avoid redundant keyboard stops for duplicate navigation targets inside cards or composite widgets.
+
+```tsx
+// Good: no visual change, but accessible to screen readers and keyboard users.
+<IconButton aria-label="Clear search">
+  <XIcon aria-hidden="true" />
+</IconButton>
+```
