@@ -4,7 +4,9 @@ import { CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/solid'
 
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
+import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 
 type VerificationResult = 'approved' | 'denied' | 'unverified' | null
@@ -80,6 +82,24 @@ function ApprovedContent({ onClose }: { onClose: () => void }) {
 }
 
 function DeniedContent({ onClose }: { onClose: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleRetry = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      track('identity verification: retry from denied dialog')
+      const response = await api('create-idenfy-session', {})
+      window.location.href = response.redirectUrl
+    } catch (e) {
+      console.error('Failed to start verification:', e)
+      setError('Failed to start verification. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <>
       <XCircleIcon className="text-scarlet-500 mx-auto h-16 w-16" />
@@ -88,12 +108,24 @@ function DeniedContent({ onClose }: { onClose: () => void }) {
       </div>
       <div className="text-ink-600 text-center">
         We were unable to verify your identity. This could be due to image
-        quality issues or document problems. You can try again later from your
-        profile settings.
+        quality issues or document problems.
       </div>
-      <Button onClick={onClose} color="gray" className="mt-4 w-full">
-        Continue
-      </Button>
+      {error && (
+        <div className="text-scarlet-500 mt-2 text-center text-sm">{error}</div>
+      )}
+      <Row className="mt-4 w-full gap-3">
+        <Button onClick={onClose} color="gray-outline" className="flex-1">
+          Maybe Later
+        </Button>
+        <Button
+          onClick={handleRetry}
+          className="flex-1"
+          loading={loading}
+          disabled={loading}
+        >
+          Try Again
+        </Button>
+      </Row>
     </>
   )
 }

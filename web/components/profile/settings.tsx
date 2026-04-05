@@ -11,10 +11,11 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
 import ShortToggle from '../widgets/short-toggle'
 import { Title } from '../widgets/title'
-import { PrivateUser, User } from 'common/user'
+import { canReceiveBonuses, PrivateUser, User } from 'common/user'
 import { useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import { DeleteYourselfButton } from './delete-yourself'
 import { capitalize } from 'lodash'
 import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
@@ -48,6 +49,9 @@ export const AccountSettings = (props: {
 
   return (
     <Col className="gap-5">
+      {!canReceiveBonuses(user) && (
+        <IdentityVerificationSetting />
+      )}
       <div>
         <label className="mb-1 block">
           {capitalize(TRADE_TERM)} warnings{' '}
@@ -134,5 +138,40 @@ export const AccountSettings = (props: {
         </div>
       </div>
     </Col>
+  )
+}
+
+function IdentityVerificationSetting() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleVerify = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      track('identity verification: started from settings')
+      const response = await api('create-idenfy-session', {})
+      window.location.href = response.redirectUrl
+    } catch (e) {
+      console.error('Failed to start verification:', e)
+      setError('Failed to start verification. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <label className="mb-1 block">Identity Verification</label>
+      <div className="text-ink-600 mb-2 text-sm">
+        Verify your identity to be eligible for bonuses and cash prize raffles.
+      </div>
+      {error && (
+        <div className="text-scarlet-500 mb-2 text-sm">{error}</div>
+      )}
+      <Button onClick={handleVerify} loading={loading} disabled={loading}>
+        Verify Identity
+      </Button>
+    </div>
   )
 }
