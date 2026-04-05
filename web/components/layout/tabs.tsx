@@ -39,16 +39,24 @@ function onTabKeyDown(
   e: KeyboardEvent<HTMLElement>,
   activeIndex: number,
   count: number,
-  activateTab: (index: number) => void
+  activateTab: (index: number) => void,
+  focusTab: (index: number) => void
 ) {
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End')
     return
 
   e.preventDefault()
-  if (e.key === 'Home') activateTab(0)
-  else if (e.key === 'End') activateTab(count - 1)
-  else if (e.key === 'ArrowRight') activateTab((activeIndex + 1) % count)
-  else if (e.key === 'ArrowLeft') activateTab((activeIndex - 1 + count) % count)
+  const nextIndex =
+    e.key === 'Home'
+      ? 0
+      : e.key === 'End'
+      ? count - 1
+      : e.key === 'ArrowRight'
+      ? (activeIndex + 1) % count
+      : (activeIndex - 1 + count) % count
+
+  activateTab(nextIndex)
+  focusTab(nextIndex)
 }
 
 export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
@@ -63,7 +71,12 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
   } = props
 
   const hasRenderedIndexRef = useRef(new Set<number>())
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   hasRenderedIndexRef.current.add(activeIndex)
+
+  const focusTab = (index: number) => {
+    requestAnimationFrame(() => tabRefs.current[index]?.focus())
+  }
 
   return (
     <>
@@ -76,6 +89,7 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
           <button
             type="button"
             key={tab.queryString ?? tab.title}
+            ref={(el) => (tabRefs.current[i] = el)}
             role="tab"
             id={`minimal-tab-${i}`}
             aria-selected={activeIndex === i}
@@ -93,12 +107,17 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
               }
             }}
             onKeyDown={(e) =>
-              onTabKeyDown(e, activeIndex, tabs.length, (index) =>
-                onClick?.(
-                  tabs[index].queryString?.toLowerCase() ??
-                    tabs[index].title.toLowerCase(),
-                  index
-                )
+              onTabKeyDown(
+                e,
+                activeIndex,
+                tabs.length,
+                (index) =>
+                  onClick?.(
+                    tabs[index].queryString?.toLowerCase() ??
+                      tabs[index].title.toLowerCase(),
+                    index
+                  ),
+                focusTab
               )
             }
             className={clsx(
@@ -154,7 +173,12 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   } = props
 
   const hasRenderedIndexRef = useRef(new Set<number>())
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   hasRenderedIndexRef.current.add(activeIndex)
+
+  const focusTab = (index: number) => {
+    requestAnimationFrame(() => tabRefs.current[index]?.focus())
+  }
 
   return (
     <>
@@ -168,6 +192,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
           <button
             type="button"
             key={tab.queryString ?? tab.title}
+            ref={(el) => (tabRefs.current[i] = el)}
             role="tab"
             id={`controlled-tab-${i}`}
             aria-selected={activeIndex === i}
@@ -186,12 +211,17 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
               }
             }}
             onKeyDown={(e) =>
-              onTabKeyDown(e, activeIndex, tabs.length, (index) =>
-                onClick?.(
-                  tabs[index].queryString?.toLowerCase() ??
-                    tabs[index].title.toLowerCase(),
-                  index
-                )
+              onTabKeyDown(
+                e,
+                activeIndex,
+                tabs.length,
+                (index) =>
+                  onClick?.(
+                    tabs[index].queryString?.toLowerCase() ??
+                      tabs[index].title.toLowerCase(),
+                    index
+                  ),
+                focusTab
               )
             }
             className={clsx(

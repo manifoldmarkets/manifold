@@ -26,11 +26,13 @@ export const ClickFrame = forwardRef(
       className,
       onMouseEnter,
       onMouseLeave,
-      role = 'button',
+      role,
       tabIndex = 0,
       ariaLabel,
       onKeyDown,
     } = props
+    const isKeyboardInteractive = tabIndex >= 0
+    const resolvedRole = isKeyboardInteractive ? (role ?? 'button') : undefined
 
     const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -46,11 +48,11 @@ export const ClickFrame = forwardRef(
           'stop-prop cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500',
           className
         )}
-        role={role}
+        role={resolvedRole}
         aria-label={ariaLabel}
         tabIndex={tabIndex}
         onClick={onClick}
-        onKeyDown={handleKeyDown}
+        onKeyDown={isKeyboardInteractive ? handleKeyDown : onKeyDown}
         ref={ref}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

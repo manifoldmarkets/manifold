@@ -142,7 +142,6 @@ export function FeedContractCard(props: {
   return (
     <ClickFrame
       tabIndex={-1}
-      role="button"
       className={clsx(
         'ring-primary-200 hover:ring-1',
 
