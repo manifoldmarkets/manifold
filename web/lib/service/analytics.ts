@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import * as amplitude from '@amplitude/analytics-browser'
-import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { ENV } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
@@ -9,8 +7,6 @@ import { api, completeQuest } from 'web/lib/api/api'
 import { QuestType } from 'common/quest'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { Json } from 'common/supabase/schema'
-
-amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
 
 type EventIds = {
   contractId?: string | null
@@ -21,30 +17,21 @@ type EventIds = {
 type EventData = Record<string, Json | undefined>
 
 export async function track(name: string, properties?: EventIds & EventData) {
-  const deviceId = amplitude.getDeviceId()
-  const sessionId = amplitude.getSessionId()
-  const userId = amplitude.getUserId()
+  const userId = undefined
   const isNative = getIsNative()
 
   // mqp: did you know typescript can't type `const x = { a: b, ...c }` correctly?
   // see https://github.com/microsoft/TypeScript/issues/27273
   const allProperties = Object.assign(properties ?? {}, {
     isNative,
-    deviceId,
-    sessionId,
   })
 
   const { contractId, adId, commentId, ...data } = allProperties
   try {
     if (ENV !== 'PROD') {
       console.log(name, userId, allProperties)
-      await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
-      return
     }
-    await Promise.all([
-      amplitude.track(name, removeUndefinedProps(allProperties)).promise,
-      insertUserEvent(name, data, db, userId, contractId, commentId, adId),
-    ])
+    await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
   } catch (e) {
     console.log('error tracking event:', e)
   }
@@ -68,26 +55,6 @@ export const withTracking =
     track(eventName, eventProperties)
     await promise
   }
-
-export function identifyUser(userId: string | null) {
-  if (userId) {
-    amplitude.setUserId(userId)
-  } else {
-    amplitude.setUserId(null as any)
-  }
-}
-
-export async function setUserProperty(property: string, value: string) {
-  const identifyObj = new amplitude.Identify()
-  identifyObj.set(property, value)
-  await amplitude.identify(identifyObj).promise
-}
-
-export async function setOnceUserProperty(property: string, value: string) {
-  const identifyObj = new amplitude.Identify()
-  identifyObj.setOnce(property, value)
-  await amplitude.identify(identifyObj).promise
-}
 
 export async function trackShareEvent(
   eventName: string,

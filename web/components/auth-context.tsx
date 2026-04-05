@@ -5,7 +5,6 @@ import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth, firebaseLogout } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
-import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import {
   AUTH_COOKIE_NAME,
@@ -208,14 +207,6 @@ export function AuthProvider(props: {
 
   const uid = authUser ? authUser.user.id : authUser
 
-  useEffect(() => {
-    if (uid) {
-      identifyUser(uid)
-    } else if (uid === null) {
-      identifyUser(null)
-    }
-  }, [uid])
-
   const listenUser = useWebsocketUser(uid ?? undefined)
   useEffectCheckEquality(() => {
     if (authLoaded && listenUser) {
@@ -235,13 +226,6 @@ export function AuthProvider(props: {
   useEffectCheckEquality(() => {
     if (authLoaded && listenPrivateUser) setPrivateUser(listenPrivateUser)
   }, [authLoaded, listenPrivateUser])
-
-  const username = authUser?.user.username
-  useEffect(() => {
-    if (username != null) {
-      setUserProperty('username', username)
-    }
-  }, [username])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>

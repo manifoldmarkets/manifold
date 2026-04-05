@@ -49,19 +49,6 @@ module.exports = {
     'unused-imports/no-unused-imports': 'warn',
     'react-hooks/exhaustive-deps': 'off',
     'no-constant-condition': 'off',
-    'no-restricted-imports': [
-      'error',
-      {
-        paths: [
-          {
-            name: '@amplitude/analytics-browser',
-            importNames: ['track'],
-            message:
-              'Please import track from `web/lib/service/analytics` instead',
-          },
-        ],
-      },
-    ],
   },
   ignorePatterns: ['/public/mtg/*'],
   env: {

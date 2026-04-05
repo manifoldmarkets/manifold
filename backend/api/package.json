@@ -23,7 +23,6 @@
   },
   "main": "lib/serve.js",
   "dependencies": {
-    "@amplitude/node": "1.10.2",
     "@anthropic-ai/sdk": "0.60.0",
     "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
     "@giphy/js-fetch-api": "5.0.0",
