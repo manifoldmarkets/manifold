@@ -163,7 +163,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover user-scalable=no"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
         {/* set safari overscroll/address bar to canvas-0. TODO: change based on site theme preference */}
@@ -203,6 +203,12 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         </div>
       ) : (
         <ThemeProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:bg-primary-500 focus:text-ink-0 focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded focus:px-4 focus:py-2"
+          >
+            Skip to main content
+          </a>
           <AuthProvider serverUser={pageProps.auth}>
             <OptimisticEntitlementsProvider>
               <Sweepstakes>

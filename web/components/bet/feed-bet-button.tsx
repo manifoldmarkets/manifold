@@ -20,8 +20,9 @@ export function BetButton(props: {
   feedReason?: string
   className?: string
   labels?: { yes: string; no: string }
+  questionTitle?: string
 }) {
-  const { contract, labels, user, className, feedReason } = props
+  const { contract, labels, user, className, feedReason, questionTitle } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const customYesText = getCustomYesButtonText(user?.entitlements)
@@ -50,6 +51,10 @@ export function BetButton(props: {
       <Button
         color="green-outline"
         size="xs"
+        aria-label={`${
+          labels?.yes ?? customYesText ?? `${capitalize(TRADE_TERM)} Yes`
+        } on ${questionTitle ?? contract.question}`}
+        aria-haspopup="dialog"
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
@@ -59,6 +64,10 @@ export function BetButton(props: {
       <Button
         color="red-outline"
         size="xs"
+        aria-label={`${
+          labels?.no ?? customNoText ?? `${capitalize(TRADE_TERM)} No`
+        } on ${questionTitle ?? contract.question}`}
+        aria-haspopup="dialog"
         onClick={() => handleBetButtonClick('NO')}
       >
         {labels?.no ?? customNoText ?? `${capitalize(TRADE_TERM)} No`}
@@ -67,6 +76,7 @@ export function BetButton(props: {
       {open && (
         <Modal
           open={open}
+          ariaLabel={`Bet on ${questionTitle ?? contract.question}`}
           setOpen={(open) => {
             setDialogueThatIsOpen(open ? dialogueThatIsOpen : undefined)
           }}
@@ -76,7 +86,7 @@ export function BetButton(props: {
           )}
         >
           <Col>
-            <div className="mb-4 mt-0 text-xl">{contract.question}</div>
+            <h2 className="mb-4 mt-0 text-xl">{questionTitle ?? contract.question}</h2>
             <BuyPanel
               contract={contract}
               initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}

@@ -49,6 +49,7 @@ import { useUser } from 'web/hooks/use-user'
 import { LIQUIDITY_KEY } from '../search'
 import { formatMoney } from 'common/util/format'
 import { liquidityTiers } from 'common/tier'
+import { LiveRegion } from '../widgets/live-region'
 
 export const LIQUIDITY_TIER_LABELS = liquidityTiers.map((tier) => ({
   label: formatMoney(tier) + '+',
@@ -81,6 +82,7 @@ export function ContractFilters(props: {
 
     updateParams({ f: selection })
     track('select search filter', { filter: selection })
+    setAnnouncement(`Selected filter ${getLabelFromValue(FILTERS, selection)}`)
   }
 
   const selectSort = (selection: Sort) => {
@@ -108,14 +110,24 @@ export function ContractFilters(props: {
       updateParams({ ct: selection })
     }
     track('select contract type', { contractType: selection })
+    setAnnouncement(
+      `Selected market type ${getLabelFromValue(CONTRACT_TYPES, selection)}`
+    )
   }
 
   const selectLiquidityFilter = (selection: string) => {
     if (selection === liquidity) {
       updateParams({ [LIQUIDITY_KEY]: '' })
+      setAnnouncement('Removed liquidity filter')
     } else {
       updateParams({ [LIQUIDITY_KEY]: selection })
       track('select liquidity tier', { tier: selection })
+      setAnnouncement(
+        `Selected liquidity filter ${
+          LIQUIDITY_TIER_LABELS.find((tier) => tier.value === selection)?.label ??
+          selection
+        }`
+      )
     }
   }
 
@@ -141,6 +153,7 @@ export function ContractFilters(props: {
     contractType == 'BOUNTIED_QUESTION' ? DEFAULT_BOUNTY_SORTS : []
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
+  const [announcement, setAnnouncement] = useState('')
 
   const nonDefaultSort =
     !DEFAULT_SORTS.some((s) => s == sort) && sort !== DEFAULT_SORT
@@ -153,6 +166,7 @@ export function ContractFilters(props: {
 
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
+      <LiveRegion message={announcement} />
       <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
         {isSweeps && !hideSweepsToggle && (
           <SweepsToggle
@@ -163,8 +177,15 @@ export function ContractFilters(props: {
           />
         )}
 
-        <Row className="bg-ink-100 dark:bg-ink-300 items-center rounded-full ">
+        <Row
+          role="radiogroup"
+          aria-label="Sort markets by"
+          className="bg-ink-100 dark:bg-ink-300 items-center rounded-full "
+        >
           <button
+            type="button"
+            role="radio"
+            aria-checked={sort == 'score'}
             key="score"
             className={clsx(
               'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
@@ -174,14 +195,19 @@ export function ContractFilters(props: {
             onClick={() => {
               if (sort === 'score') {
                 selectSort('freshness-score')
+                setAnnouncement('Sorted by Hot, results updated')
               } else {
                 selectSort('score')
+                setAnnouncement('Sorted by Best, results updated')
               }
             }}
           >
             Best
           </button>
           <button
+            type="button"
+            role="radio"
+            aria-checked={sort == 'freshness-score'}
             key="freshness-score"
             className={clsx(
               'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
@@ -193,14 +219,19 @@ export function ContractFilters(props: {
             onClick={() => {
               if (sort === 'freshness-score') {
                 selectSort('score')
+                setAnnouncement('Sorted by Best, results updated')
               } else {
                 selectSort('freshness-score')
+                setAnnouncement('Sorted by Hot, results updated')
               }
             }}
           >
             Hot
           </button>
           <button
+            type="button"
+            role="radio"
+            aria-checked={sort == 'newest'}
             key="newest"
             className={clsx(
               'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
@@ -212,8 +243,10 @@ export function ContractFilters(props: {
             onClick={() => {
               if (sort === 'newest') {
                 selectSort('score')
+                setAnnouncement('Sorted by Best, results updated')
               } else {
                 selectSort('newest')
+                setAnnouncement('Sorted by New, results updated')
               }
             }}
           >
@@ -227,8 +260,10 @@ export function ContractFilters(props: {
             onSelect={() => {
               if (sort === sortValue) {
                 selectSort(DEFAULT_SORT)
+                setAnnouncement(`Removed sort ${getLabelFromValue(SORTS, sortValue)}`)
               } else {
                 selectSort(sortValue as Sort)
+                setAnnouncement(`Selected sort ${getLabelFromValue(SORTS, sortValue)}`)
               }
             }}
           >
@@ -247,6 +282,9 @@ export function ContractFilters(props: {
               updateParams({
                 hb: hasBets === '1' ? '0' : '1',
               })
+              setAnnouncement(
+                hasBets === '1' ? 'Removed Your bets filter' : 'Selected Your bets filter'
+              )
             }}
           >
             Your bets
@@ -313,7 +351,11 @@ export function ContractFilters(props: {
             {getLabelFromValue(CONTRACT_TYPES, contractValue)}
           </FilterPill>
         ))}
-        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
+        <IconButton
+          size="2xs"
+          aria-label="Open filters"
+          onClick={() => setOpenFilterModal(true)}
+        >
           <FaSliders className="h-4 w-4" />
         </IconButton>
       </Carousel>
@@ -383,11 +425,18 @@ function FilterModal(props: {
       : PREDICTION_MARKET_SORTS
 
   return (
-    <Modal open={open} setOpen={setOpen}>
+    <Modal open={open} setOpen={setOpen} ariaLabel="Filter options">
       <Col className={clsx(MODAL_CLASS, 'text-ink-600 !items-stretch text-sm')}>
         {!hideFilter && (
-          <Col className="gap-2">
-            <Row className="items-center gap-1 font-semibold">
+          <Col
+            role="group"
+            aria-labelledby="filter-section-filters"
+            className="gap-2"
+          >
+            <Row
+              id="filter-section-filters"
+              className="items-center gap-1 font-semibold"
+            >
               <FaFilter className="h-4 w-4" />
               Filters
             </Row>
@@ -430,27 +479,40 @@ function FilterModal(props: {
                 </FilterPill>
               )}
             </Row>
-            <Row className="items-center gap-1 font-semibold">
-              <FaDroplet className="h-4 w-4" />
-              Liquidity filters
-            </Row>
-            <Row className="flex-wrap gap-1">
-              {LIQUIDITY_TIER_LABELS.slice(1, LIQUIDITY_TIER_LABELS.length).map(
-                ({ label, value }) => (
-                  <FilterPill
-                    key={value}
-                    selected={value === liquidityTier}
-                    onSelect={() => selectLiquidityTier(value)}
-                  >
-                    {label}
-                  </FilterPill>
-                )
-              )}
-            </Row>
           </Col>
         )}
-        <Col className="gap-2">
-          <Row className="items-center gap-1 font-semibold">
+        <Col
+          role="group"
+          aria-labelledby="filter-section-liquidity"
+          className="gap-2"
+        >
+          <Row
+            id="filter-section-liquidity"
+            className="items-center gap-1 font-semibold"
+          >
+            <FaDroplet className="h-4 w-4" />
+            Liquidity filters
+          </Row>
+          <Row className="flex-wrap gap-1">
+            {LIQUIDITY_TIER_LABELS.slice(1, LIQUIDITY_TIER_LABELS.length).map(
+              ({ label, value }) => (
+                <FilterPill
+                  key={value}
+                  selected={value === liquidityTier}
+                  onSelect={() => selectLiquidityTier(value)}
+                >
+                  {label}
+                </FilterPill>
+              )
+            )}
+          </Row>
+        </Col>
+        <Col
+          role="group"
+          aria-labelledby="filter-section-sorts"
+          className="gap-2"
+        >
+          <Row id="filter-section-sorts" className="items-center gap-1 font-semibold">
             <FaSortAmountDownAlt className="h-4 w-4" />
             Sorts
           </Row>
@@ -472,8 +534,15 @@ function FilterModal(props: {
             ))}
           </Row>
         </Col>
-        <Col className="gap-2">
-          <Row className="items-center gap-1 font-semibold">
+        <Col
+          role="group"
+          aria-labelledby="filter-section-market-type"
+          className="gap-2"
+        >
+          <Row
+            id="filter-section-market-type"
+            className="items-center gap-1 font-semibold"
+          >
             <FaFileContract className="h-4 w-4" />
             Market Type
           </Row>

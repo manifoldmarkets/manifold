@@ -5,13 +5,14 @@ module.exports = {
       version: 'detect',
     },
   },
-  plugins: ['lodash', 'unused-imports'],
+  plugins: ['lodash', 'unused-imports', 'jsx-a11y'],
   extends: [
     'next/core-web-vitals',
     'plugin:@typescript-eslint/recommended',
     'plugin:react-hooks/recommended',
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
+    'plugin:jsx-a11y/recommended',
     'plugin:@next/next/recommended',
     'prettier',
   ],
@@ -39,6 +40,7 @@ module.exports = {
       },
     ],
     '@next/next/no-img-element': 'off',
+    'jsx-a11y/anchor-is-valid': 'off',
     'linebreak-style': [
       'error',
       process.platform === 'win32' ? 'windows' : 'unix',

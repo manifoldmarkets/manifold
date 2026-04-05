@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { MouseEventHandler, forwardRef } from 'react'
+import { KeyboardEventHandler, MouseEventHandler, forwardRef } from 'react'
 
 /**
  *  A clickable container that can include buttons and links that work like you want.
@@ -13,16 +13,44 @@ export const ClickFrame = forwardRef(
       className?: string
       onMouseEnter?: MouseEventHandler<HTMLDivElement>
       onMouseLeave?: MouseEventHandler<HTMLDivElement>
+      role?: 'button' | 'link'
+      tabIndex?: number
+      ariaLabel?: string
+      onKeyDown?: KeyboardEventHandler<HTMLDivElement>
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const { children, onClick, className, onMouseEnter, onMouseLeave } = props
+    const {
+      children,
+      onClick,
+      className,
+      onMouseEnter,
+      onMouseLeave,
+      role = 'button',
+      tabIndex = 0,
+      ariaLabel,
+      onKeyDown,
+    } = props
+
+    const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onClick(e as any)
+      }
+      onKeyDown?.(e)
+    }
 
     return (
       <div
-        className={clsx('stop-prop cursor-pointer', className)}
-        tabIndex={-1}
+        className={clsx(
+          'stop-prop cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500',
+          className
+        )}
+        role={role}
+        aria-label={ariaLabel}
+        tabIndex={tabIndex}
         onClick={onClick}
+        onKeyDown={handleKeyDown}
         ref={ref}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

@@ -11,15 +11,36 @@ export const SearchInput = (props: {
   placeholder?: string
   autoFocus?: boolean
   loading?: boolean
+  inputId?: string
+  listboxId?: string
+  instructionsId?: string
+  expanded?: boolean
 }) => {
-  const { value, setValue, placeholder, autoFocus, loading } = props
+  const {
+    value,
+    setValue,
+    placeholder,
+    autoFocus,
+    loading,
+    inputId,
+    listboxId,
+    instructionsId,
+    expanded,
+  } = props
   const hasQuery = value !== ''
 
   return (
     <div className="relative w-full">
       <Input
+        id={inputId}
         type="text"
         inputMode="search"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-controls={listboxId}
+        aria-describedby={instructionsId}
+        aria-expanded={expanded}
+        aria-label={placeholder ?? 'Search markets'}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={trackCallback('search', { query: value })}
@@ -30,6 +51,7 @@ export const SearchInput = (props: {
       />
       {hasQuery && (
         <IconButton
+          aria-label="Clear search"
           className="absolute right-2 top-1/2 -translate-y-1/2"
           onClick={() => setValue('')}
         >

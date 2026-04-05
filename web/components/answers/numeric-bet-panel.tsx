@@ -256,6 +256,7 @@ export const NumericBetPanel = (props: {
           <Row className={'justify-between'}>
             <span className={' text-xl'}>Probability Distribution</span>
             <IconButton
+              aria-label="Close probability distribution"
               className={'w-12'}
               onClick={() => setMode(undefined)}
               disabled={isSubmitting}
@@ -358,6 +359,7 @@ export const NumericBetPanel = (props: {
               </Button>
               {!showDistribution && (
                 <IconButton
+                  aria-label="Close advanced numeric bet"
                   className={'w-12'}
                   onClick={() => setMode(undefined)}
                   disabled={isSubmitting}

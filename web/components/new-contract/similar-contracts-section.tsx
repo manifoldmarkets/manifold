@@ -39,6 +39,7 @@ export const SimilarContractsSection = (props: {
         </Link>
         <IconButton
           size={'2xs'}
+          aria-label="Dismiss similar questions"
           onClick={() => {
             setSimilarContracts([])
             setDismissedSimilarContractTitles((titles) =>

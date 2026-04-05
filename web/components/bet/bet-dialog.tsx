@@ -56,6 +56,7 @@ export function BetDialog(props: {
     <Modal
       open={open}
       setOpen={setOpen}
+      ariaLabel={`Bet on ${questionPseudonym ?? question}`}
       className={clsx(MODAL_CLASS, '!px-0 !py-0')}
     >
       <Col className="max-h-[42rem] overflow-auto px-4 py-4">
@@ -108,6 +109,7 @@ export function MultiBetDialog(props: {
     <Modal
       open={open}
       setOpen={setOpen}
+      ariaLabel={`Bet on ${question}`}
       size={'lg'}
       className={clsx(
         MODAL_CLASS,

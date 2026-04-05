@@ -43,6 +43,7 @@ import { UserResults } from './search/user-results'
 import { useSweepstakes } from './sweepstakes-provider'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { Carousel } from './widgets/carousel'
+import { LiveRegion } from './widgets/live-region'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -350,6 +351,17 @@ export function Search(props: SearchProps) {
 
   const showTopics = topics && topics.length > 0 && query && query.length > 0
   const showUsers = users && users.length > 0 && query && query.length > 0
+  const searchInputId = `${persistPrefix}-search-input`
+  const searchResultsId = `${persistPrefix}-search-results`
+  const searchInstructionsId = `${persistPrefix}-search-instructions`
+  const totalResults =
+    (contracts?.length ?? 0) + (topics?.length ?? 0) + (users?.length ?? 0)
+  const searchAnnouncement =
+    query.length === 0
+      ? ''
+      : loading
+      ? `Searching for ${query}`
+      : `${totalResults} results for ${query}`
 
   const onChange = (changes: Partial<SearchParams>) => {
     const updatedParams = { ...changes }
@@ -612,21 +624,32 @@ export function Search(props: SearchProps) {
           )}
         </Col>
         {!hideSearch && (
-          <SearchInput
-            value={query}
-            setValue={setQuery}
-            placeholder={
-              searchType === 'Users'
-                ? 'Search users'
-                : searchType === 'Questions' || contractsOnly
-                ? 'Search questions'
-                : isMobile
-                ? 'Search'
-                : 'Search questions, users, topics, and posts'
-            }
-            autoFocus={autoFocus}
-            loading={loading}
-          />
+          <>
+            <div id={searchInstructionsId} className="sr-only">
+              Search for markets, users, topics, and posts. Results update below
+              as you type.
+            </div>
+            <SearchInput
+              value={query}
+              setValue={setQuery}
+              placeholder={
+                searchType === 'Users'
+                  ? 'Search users'
+                  : searchType === 'Questions' || contractsOnly
+                  ? 'Search questions'
+                  : isMobile
+                  ? 'Search'
+                  : 'Search questions, users, topics, and posts'
+              }
+              autoFocus={autoFocus}
+              loading={loading}
+              inputId={searchInputId}
+              listboxId={searchResultsId}
+              instructionsId={searchInstructionsId}
+              expanded={query.length > 0 && totalResults > 0}
+            />
+            <LiveRegion message={searchAnnouncement} />
+          </>
         )}
 
         {/* Subtopics row */}
@@ -697,6 +720,7 @@ export function Search(props: SearchProps) {
         )}
       </Col>
       <Spacer h={1} />
+      <div id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
       {selectedFollowed && (
         <Col className="mb-2">
           <>
@@ -809,6 +833,7 @@ export function Search(props: SearchProps) {
           )}
         </>
       )}
+      </div>
     </Col>
   )
 }

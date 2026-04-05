@@ -37,15 +37,16 @@ export const EditableModNote = ({
       <Input
         className="grow"
         type="text"
+        aria-label="Moderator note"
         maxLength={200}
         value={modNote}
         onChange={(e) => setModNote(e.target.value || '')}
         autoFocus
       />
-      <IconButton onClick={handleSave} className="p-1">
+      <IconButton aria-label="Save moderator note" onClick={handleSave} className="p-1">
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
-      <IconButton onClick={handleCancel} className="p-1">
+      <IconButton aria-label="Cancel editing moderator note" onClick={handleCancel} className="p-1">
         <XIcon className="text-scarlet-400 h-4 w-4" />
       </IconButton>
     </Row>
@@ -53,6 +54,8 @@ export const EditableModNote = ({
     <Row className="text-md items-center">
       <span>{modNote}</span>
       <button
+        type="button"
+        aria-label="Edit moderator note"
         onClick={edit}
         className="align-center hover:bg-ink-100 hover:text-ink-600 text-ink-500 ml-1 rounded p-1 transition-colors sm:group-hover:inline"
       >

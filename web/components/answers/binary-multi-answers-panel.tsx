@@ -83,6 +83,8 @@ const BetButton = (props: {
       <Button
         size={size ?? 'xl'}
         color="none"
+        aria-label={`Bet ${outcome} on ${answer.text}`}
+        aria-haspopup="dialog"
         style={{ backgroundColor: color }}
         className={'flex flex-1 items-center justify-between gap-1 text-white'}
         onClick={() => {
@@ -147,6 +149,7 @@ function BinaryMultiChoiceBetPanel(props: {
             <div>
               <Button
                 color="gray-white"
+                aria-label={`Edit answer ${answer.text}`}
                 className="visible group-hover:visible sm:invisible"
                 size="xs"
                 onClick={() => setEditing(true)}

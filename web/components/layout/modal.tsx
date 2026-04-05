@@ -17,6 +17,7 @@ export function Modal(props: {
   position?: 'center' | 'top' | 'bottom'
   className?: string
   onClose?: () => void
+  ariaLabel?: string
 }) {
   const {
     children,
@@ -26,6 +27,7 @@ export function Modal(props: {
     size = 'md',
     className,
     onClose,
+    ariaLabel,
   } = props
 
   const sizeClass = {
@@ -56,6 +58,7 @@ export function Modal(props: {
       className="text-ink-1000 relative z-50 focus:outline-none"
       open={open}
       onClose={setOpen ?? (() => {})}
+      aria-label={ariaLabel}
       // prevent modal from re-opening from bubbled event if Modal is child of the open button
       onClick={(e: any) => e.stopPropagation()}
     >
@@ -81,6 +84,7 @@ export function Modal(props: {
             {setOpen && (
               <button
                 onClick={() => setOpen(false)}
+                aria-label="Close dialog"
                 className={clsx(
                   'text-ink-700 bottom-50 hover:text-primary-400 focus:text-primary-400 absolute -top-4 right-4 -translate-y-full cursor-pointer outline-none sm:right-0',
                   position === 'top' &&

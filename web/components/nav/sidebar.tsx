@@ -181,43 +181,56 @@ export default function Sidebar(props: {
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
-      <div className="mb-4 flex flex-col gap-1">
-        {navOptions.map((item) =>
-          item.name === 'Shop' && isAprilFools() ? (
-            <div key={item.name} className="relative">
+      <MobileAppsQRCodeDialog
+        key="mobile-apps-qr-code"
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+      />
+      <ul role="list" className="list-none m-0 mb-4 flex flex-col gap-1 p-0">
+        {navOptions.map((item) => (
+          <li key={item.name}>
+            {item.name === 'Shop' && isAprilFools() ? (
+              <div className="relative">
+                <SidebarItem item={item} currentPage={currentPage} />
+                <AprilFoolsBadgeExplosion />
+              </div>
+            ) : (
               <SidebarItem item={item} currentPage={currentPage} />
-              <AprilFoolsBadgeExplosion />
-            </div>
-          ) : (
-            <SidebarItem
-              key={item.name}
-              item={item}
-              currentPage={currentPage}
-            />
-          )
-        )}
-
-        <MobileAppsQRCodeDialog
-          key="mobile-apps-qr-code"
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-        />
-
-        {!user && <SidebarSignUpButton />}
-
-        <Col className="gap-2">
-          {createMarketButton}
-          {addFundsButton}
-        </Col>
-      </div>
-      <div
-        className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
-      >
-        {!!user && <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />}
-        {bottomNavOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
+            )}
+          </li>
         ))}
-      </div>
+        {!user && (
+          <li>
+            <SidebarSignUpButton />
+          </li>
+        )}
+        {(createMarketButton || addFundsButton) && (
+          <li>
+            <Col className="gap-2">
+              {createMarketButton}
+              {addFundsButton}
+            </Col>
+          </li>
+        )}
+      </ul>
+      <ul
+        role="list"
+        className={clsx(
+          'list-none m-0 mb-6 mt-auto flex flex-col gap-1 p-0',
+          isMobile && 'pb-8'
+        )}
+      >
+        {!!user && (
+          <li className="list-none">
+            <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
+          </li>
+        )}
+        {bottomNavOptions.map((item) => (
+          <li key={item.name}>
+            <SidebarItem item={item} currentPage={currentPage} />
+          </li>
+        ))}
+      </ul>
     </nav>
   )
 }

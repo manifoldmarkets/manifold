@@ -30,15 +30,16 @@ export const EditablePaymentInfo = () => {
       <Input
         className="grow"
         type="text"
+        aria-label="Payment information"
         maxLength={60}
         value={paymentInfo}
         onChange={(e) => setPaymentInfo(e.target.value || '')}
         autoFocus
       />
-      <IconButton onClick={() => onSave(paymentInfo)} className="p-1">
+      <IconButton aria-label="Save payment information" onClick={() => onSave(paymentInfo)} className="p-1">
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
-      <IconButton onClick={() => setEditing(false)} className="p-1">
+      <IconButton aria-label="Cancel editing payment information" onClick={() => setEditing(false)} className="p-1">
         <XIcon className="text-scarlet-400 h-4 w-4" />
       </IconButton>
     </div>
@@ -46,6 +47,8 @@ export const EditablePaymentInfo = () => {
     <div className="text-md flex items-center">
       <span>{paymentInfo}</span>
       <button
+        type="button"
+        aria-label="Edit payment information"
         onClick={edit}
         className="align-center hover:bg-ink-100 hover:text-ink-600 text-ink-500 ml-1 rounded p-1 transition-colors sm:group-hover:inline"
       >

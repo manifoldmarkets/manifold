@@ -74,8 +74,9 @@ export function BetButton(props: {
   contract: Contract
   user?: User | null
   initialOutcome?: BinaryOutcomes
+  questionTitle?: string
 }) {
-  const { contract, initialOutcome } = props
+  const { contract, initialOutcome, questionTitle } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
   const [openMC, setOpenMC] = useState(false)
@@ -89,6 +90,8 @@ export function BetButton(props: {
         <Button
           size="2xs"
           color={'indigo-outline'}
+          aria-label={`${capitalize(TRADE_TERM)} on ${questionTitle ?? contract.question}`}
+          aria-haspopup="dialog"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -123,6 +126,7 @@ export function BetButton(props: {
             setOpen={setOpen}
             trackingLocation="contract table"
             initialOutcome={initialOutcome}
+            questionPseudonym={questionTitle}
           />
         )}
       </>

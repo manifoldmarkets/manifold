@@ -134,29 +134,45 @@ export function BottomNavBar() {
   const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
 
   return (
-    <nav className="border-ink-100/30 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t text-xs lg:hidden">
-      {navigationOptions.map((item) => (
-        <NavBarItem
-          key={item.name}
-          item={item}
-          currentPage={currentPage}
-          user={user}
-          className={item.name === 'Politics' ? '-mt-1' : ''}
-        />
-      ))}
+    <nav
+      aria-label="Bottom navigation"
+      className="border-ink-100/30 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t text-xs lg:hidden"
+    >
+      <ul
+        role="list"
+        className="list-none m-0 flex w-full items-center justify-between p-0"
+      >
+        {navigationOptions.map((item) => (
+          <li key={item.name} className="flex-1">
+            <NavBarItem
+              item={item}
+              currentPage={currentPage}
+              user={user}
+              className={item.name === 'Politics' ? '-mt-1' : ''}
+            />
+          </li>
+        ))}
+        {!!user && (
+          <li className="flex-1">
+            <button
+              type="button"
+              aria-label="More menu"
+              aria-expanded={sidebarOpen}
+              className={clsx(
+                itemClass,
+                'relative',
+                sidebarOpen ? selectedItemClass : ''
+              )}
+              onClick={() => setSidebarOpen(true)}
+            >
+              <MenuAlt3Icon className={iconClassName} aria-hidden="true" />
+              More
+            </button>
+          </li>
+        )}
+      </ul>
       {!!user && (
         <>
-          <div
-            className={clsx(
-              itemClass,
-              'relative',
-              sidebarOpen ? selectedItemClass : ''
-            )}
-            onClick={() => setSidebarOpen(true)}
-          >
-            <MenuAlt3Icon className={iconClassName} aria-hidden="true" />
-            More
-          </div>
           <MobileSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
@@ -192,6 +208,8 @@ function NavBarItem(props: {
       <Link
         prefetch={item?.prefetch ?? true}
         href={item.href ?? '#'}
+        aria-current={isOnUserProfile ? 'page' : undefined}
+        aria-label={item.name}
         className={clsx(
           itemClass,
           touched && touchItemClass,
@@ -234,6 +252,7 @@ function NavBarItem(props: {
   if (!item.href) {
     return (
       <button
+        type="button"
         className={clsx(itemClass, touched && touchItemClass, className)}
         onClick={() => {
           track()
@@ -262,6 +281,7 @@ function NavBarItem(props: {
   return (
     <Link
       href={item.href}
+      aria-current={isCurrentPage ? 'page' : undefined}
       className={clsx(
         itemClass,
         touched && touchItemClass,

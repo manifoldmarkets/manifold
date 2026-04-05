@@ -54,7 +54,8 @@ export function ManalinkCard(props: {
           </div>
         </Col>
 
-        <Logo
+          <Logo
+            aria-hidden="true"
           className={clsx(
             'block h-1/3 w-1/3 self-center stroke-white transition-all group-hover:rotate-12',
             preview ? 'my-2' : 'w-1/2 md:mb-6 md:h-1/2'
@@ -126,7 +127,10 @@ export function ManalinkCardFromView(props: {
               )}
             </div>
           </Col>
-          <Logo className="my-auto block w-1/3 select-none self-center stroke-white py-3" />
+          <Logo
+            aria-hidden="true"
+            className="my-auto block w-1/3 select-none self-center stroke-white py-3"
+          />
         </Col>
         <Row className="bg-canvas-0 relative w-full rounded-b-lg px-4 py-2 align-middle text-lg">
           <div
@@ -138,7 +142,11 @@ export function ManalinkCardFromView(props: {
             {formatMoney(amount)}
           </div>
 
-          <IconButton size="2xs" onClick={() => (window.location.href = qrUrl)}>
+          <IconButton
+            size="2xs"
+            aria-label="Open QR code"
+            onClick={() => (window.location.href = qrUrl)}
+          >
             <QrcodeIcon className="h-6 w-6" />
           </IconButton>
 
@@ -149,6 +157,7 @@ export function ManalinkCardFromView(props: {
           />
           <IconButton
             size="xs"
+            aria-label={showDetails ? 'Hide claim details' : 'Show claim details'}
             onClick={() => setShowDetails(!showDetails)}
             className={clsx(
               showDetails ? ' text-primary-600 hover:text-primary-700' : ''

@@ -44,10 +44,10 @@ export const EditableQuestionTitle = (props: {
           }
         }}
       />
-      <IconButton onClick={() => onSave(text)} size="xs">
+      <IconButton aria-label="Save question" onClick={() => onSave(text)} size="xs">
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
-      <IconButton onClick={() => setEditing(false)} size="xs">
+      <IconButton aria-label="Cancel editing question" onClick={() => setEditing(false)} size="xs">
         <XIcon className="text-scarlet-400 h-4 w-4" />
       </IconButton>
     </div>
@@ -56,6 +56,8 @@ export const EditableQuestionTitle = (props: {
       <Linkify text={contract.question} />
       {canEdit && (
         <button
+          type="button"
+          aria-label="Edit question"
           onClick={edit}
           className="align-center hover:bg-ink-100 hover:text-ink-600 text-ink-500 ml-1 rounded p-1 transition-colors lg:hidden lg:group-hover:inline lg:[@media(hover:none)]:inline"
         >

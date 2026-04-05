@@ -40,10 +40,14 @@ export const EditableTopicName = (props: {
           }
         }}
       />
-      <IconButton onClick={() => onSave(text)} size="xs">
+      <IconButton aria-label="Save topic name" onClick={() => onSave(text)} size="xs">
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
-      <IconButton onClick={() => onFinishEditing(false)} size="xs">
+      <IconButton
+        aria-label="Cancel editing topic name"
+        onClick={() => onFinishEditing(false)}
+        size="xs"
+      >
         <XIcon className="text-scarlet-600 h-4 w-4" />
       </IconButton>
     </Row>

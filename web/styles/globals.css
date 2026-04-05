@@ -6,6 +6,41 @@
   html {
     -webkit-tap-highlight-color: transparent;
   }
+  :where(
+      a,
+      button,
+      input,
+      select,
+      textarea,
+      summary,
+      [role='button'],
+      [role='combobox'],
+      [role='link'],
+      [role='radio'],
+      [role='slider'],
+      [role='tab'],
+      [tabindex]:not([tabindex='-1'])
+    ):focus-visible {
+    outline: 2px solid rgb(var(--color-primary-500));
+    outline-offset: 2px;
+  }
+  :where(
+      a,
+      button,
+      input,
+      select,
+      textarea,
+      summary,
+      [role='button'],
+      [role='combobox'],
+      [role='link'],
+      [role='radio'],
+      [role='slider'],
+      [role='tab'],
+      [tabindex]:not([tabindex='-1'])
+    ):focus:not(:focus-visible) {
+    outline: none;
+  }
   :root {
     --color-ink-0: 255 255 255;
     --color-ink-50: 248 248 252;

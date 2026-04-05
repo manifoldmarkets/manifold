@@ -78,6 +78,7 @@ export const UserPositionSearchButton = (props: {
       ) : (
         <IconButton
           size={'xs'}
+          aria-label={searchUsers ? 'Close user position search' : 'Graph user positions'}
           onClick={() => {
             track('click graph user positions button')
             if (searchUsers) {

@@ -40,6 +40,7 @@ export const BetSlider = (props: {
   className?: string
   token?: InputTokenType
   sliderColor?: keyof typeof sliderColors
+  ariaLabel?: string
 }) => {
   const {
     amount,
@@ -49,6 +50,7 @@ export const BetSlider = (props: {
     disabled,
     className,
     sliderColor,
+    ariaLabel,
   } = props
 
   const token = props.token ?? 'M$'
@@ -105,6 +107,11 @@ export const BetSlider = (props: {
           : 'gray'
       }
       amount={sliderIndex}
+      ariaLabel={ariaLabel ?? 'Bet amount'}
+      ariaValueText={formatWithToken({
+        amount: sliderAmounts[sliderIndex] ?? sliderAmounts[0],
+        token,
+      })}
       onChange={(value) => {
         onAmountChange(sliderAmounts[value])
       }}

@@ -34,6 +34,8 @@ export function Slider(props: {
   disabled?: boolean
   inverted?: boolean
   fillToRight?: boolean
+  ariaLabel?: string
+  ariaValueText?: string
 }) {
   const {
     amount,
@@ -47,12 +49,16 @@ export function Slider(props: {
     color = 'indigo',
     inverted,
     fillToRight,
+    ariaLabel,
+    ariaValueText,
   } = props
 
   const [trackClasses, thumbClasses] = sliderColors[color]
 
   return (
     <RxSlider.Root
+      aria-label={ariaLabel}
+      aria-valuetext={ariaValueText}
       className={clsx(
         className,
         'relative flex touch-none select-none items-center',

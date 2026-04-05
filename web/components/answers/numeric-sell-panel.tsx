@@ -217,7 +217,12 @@ export const NumericSellPanel = (props: {
     <Col className={'mt-2 gap-2'}>
       <Row className={'justify-between'}>
         <span className={'mb-2 text-xl'}>Probability Distribution</span>
-        <IconButton className={'w-12'} disabled={isSubmitting} onClick={cancel}>
+        <IconButton
+          aria-label="Close probability distribution"
+          className={'w-12'}
+          disabled={isSubmitting}
+          onClick={cancel}
+        >
           <XIcon className={'h-4 w-4'} />
         </IconButton>
       </Row>
