@@ -16,8 +16,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Button } from 'web/components/buttons/button'
 import {
   CurrencyDollarIcon,
-  ShieldCheckIcon,
-  LightningBoltIcon,
   CheckCircleIcon,
   ArrowRightIcon,
   SparklesIcon,
@@ -220,21 +218,6 @@ function CheckoutContent() {
                 </button>
               )}
 
-              {/* Trust indicators */}
-              <Row className="text-ink-400 flex-wrap justify-center gap-x-5 gap-y-1 text-xs">
-                <Row className="items-center gap-1">
-                  <ShieldCheckIcon className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>Secure</span>
-                </Row>
-                <Row className="items-center gap-1">
-                  <LightningBoltIcon className="h-3.5 w-3.5 text-amber-500" />
-                  <span>Instant</span>
-                </Row>
-                <Row className="items-center gap-1">
-                  <CheckCircleIcon className="h-3.5 w-3.5 text-indigo-500" />
-                  <span>Any Chain</span>
-                </Row>
-              </Row>
             </Col>
             {/* Legal disclaimer */}
             <div className="text-ink-600 rounded-lg bg-amber-50/50 p-4 text-sm dark:bg-amber-950/20">
