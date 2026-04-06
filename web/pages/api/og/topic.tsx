@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og'
-import { type ImageResponseOptions } from '@vercel/og/dist/types'
+
+type ImageResponseOptions = ConstructorParameters<typeof ImageResponse>[1]
 import { NextRequest } from 'next/server'
 import { OgTopic, OgTopicProps } from 'web/components/og/og-topic'
 import { classToTw } from 'web/components/og/utils'
