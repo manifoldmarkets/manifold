@@ -220,15 +220,16 @@ export const validateComment = async (
   if (!you) throw new APIError(401, 'Your account was not found')
   if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
 
-  // Require bonus eligibility (verified or grandfathered) to comment on markets
-  if (!canReceiveBonuses(you)) {
+  if (!contract) throw new APIError(404, 'Contract not found')
+
+  // Allow market creators to comment on their own markets even if they
+  // cannot receive bonuses; require bonus eligibility for everyone else.
+  if (!canReceiveBonuses(you) && contract.creatorId !== you.id) {
     throw new APIError(
       403,
-      'Please verify your identity to comment on markets.'
+      'Please verify your identity to comment on other users\' markets.'
     )
   }
-
-  if (!contract) throw new APIError(404, 'Contract not found')
   if (contract.token !== 'MANA') {
     throw new APIError(
       400,
