@@ -88,7 +88,7 @@ const queueDependenciesThenBet = async (
   const { dryRun, contractId } = props
   const minimalDeps = [auth.uid, contractId]
   return await ordersQueue.enqueueFn(async () => {
-    const { contract, answers, unfilledBets, balanceByUserId, creator } =
+    const { contract, answers, unfilledBets, balanceByUserId } =
       await fetchContractBetDataAndValidate(
         createSupabaseDirectClient(),
         props,
