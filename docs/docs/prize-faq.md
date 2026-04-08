@@ -24,6 +24,7 @@ Don't want to predict? You can still enter for free at [manifold.markets/prize](
 - **Active predictor:** You need at least **1,000 mana invested across markets** to enter. This ensures the prize drawing is for people actually using the platform, not just drive-by entries.
 - **One account per person:** Only your main account can enter. If you have bot accounts or alts, send that mana to your main account — those other accounts can't enter separately.
 - **Not in a restricted location:** See below.
+- **Not a Manifold employee:** Employees, officers, directors of Manifold (and their immediate family members and household members) are not eligible.
 
 ---
 
@@ -47,15 +48,55 @@ If you're in one of these places, you can still use Manifold — you just can't 
 
 ---
 
-## How are winners picked?
-
-Winners are selected through a fair, tamper-proof algorithmic process. Every eligible entry has an equal chance of winning. More entries = better odds, but it's still random.
-
----
-
 ## What do I win?
 
 Prizes are paid in **USDC** (a stablecoin pegged to the US dollar). The specific prize amounts and number of winners vary — check [manifold.markets/prize](https://manifold.markets/prize) for current drawings.
+
+---
+
+## What is USDC? I don't have a crypto wallet.
+
+**USDC** (USD Coin) is a stablecoin — a cryptocurrency that's pegged 1:1 to the US dollar. 1 USDC = $1. It's one of the most widely used stablecoins and is available on most major exchanges and wallets.
+
+If you don't have a crypto wallet yet, you'll need one to receive your prize. Most wallets are free and take just a few minutes to set up. You'll need a wallet that supports receiving USDC — the prize page will specify which blockchain network the USDC is sent on.
+
+---
+
+## How are winners picked?
+
+Winners are selected through a **provably fair** process seeded by the Bitcoin blockchain. After the drawing closes, we take the first Bitcoin block mined after the close time and use its hash to deterministically select winners via SHA-256. For multi-prize drawings, each prize gets its own independent selection by combining the block hash with the prize rank.
+
+No one — including Manifold — can predict or influence which block hash Bitcoin miners will produce, so the outcome is tamper-proof. We publish the block hash after selection so anyone can verify it on a block explorer like [mempool.space](https://mempool.space) or [blockstream.info](https://blockstream.info) and replay the result.
+
+Every eligible entry has an equal chance of winning. More entries = better odds, but it's still random.
+
+---
+
+## Do free entries have the same chance of winning?
+
+**Yes.** Every entry — whether it's a free entry or one you got by spending mana — has exactly the same chance of being selected. The method of entry does not affect the odds of any individual entry being selected.
+
+---
+
+## Can the same person win multiple prizes?
+
+**No.** In drawings with multiple prizes, each person can only win once. If you're selected for a higher-ranked prize, your entries are removed from the pool before the next prize is drawn. This gives more people a chance to win.
+
+---
+
+## What is mana?
+
+Mana is Manifold's play-money currency. You earn it by making predictions on markets, receiving bonuses, and participating on the platform. Mana has no cash value on its own, but you can spend it to get entries into prize drawings. Learn more at [manifold.markets](https://manifold.markets).
+
+---
+
+## How does entry conversion work?
+
+The mana-to-entry conversion follows a **bonding curve** — earlier entries require less mana and later entries require more. This keeps things fair and prevents any single person from cheaply accumulating a huge share of entries at the last minute.
+
+The initial rate is very low (a fraction of a mana per entry) and increases gradually as more entries are claimed. The curve scales with the total prize pool, so larger drawings have more room before the rate rises significantly.
+
+You can see the current conversion rate and how many entries you'll get for your mana on the [prize page](https://manifold.markets/prize) before you commit.
 
 ---
 
@@ -64,8 +105,6 @@ Prizes are paid in **USDC** (a stablecoin pegged to the US dollar). The specific
 1. We'll notify you in the app if you win
 2. You have **5 days** to give us a crypto wallet address that can receive USDC
 3. We send you the USDC
-
-That's it. If you don't respond within 5 days, you forfeit the prize.
 
 ---
 
@@ -112,6 +151,30 @@ We intend to keep running prize drawings and will share as much information as w
 ## Is there a Manifold token?
 
 **No.** Manifold has not issued any cryptocurrency token. If someone is promoting a "Manifold token" or asking you to buy/trade one, it's a scam.
+
+---
+
+## What happens if a winner doesn't claim their prize?
+
+If a winner doesn't provide a valid wallet address within the claim period, the prize is forfeited. Manifold may select an alternate winner or donate the amount to charity.
+
+---
+
+## How often are drawings held?
+
+There's no fixed schedule. We run drawings periodically and announce them in advance on the [prize page](https://manifold.markets/prize). Check there for upcoming drawings and entry deadlines.
+
+---
+
+## Can I see how many entries I have?
+
+Yes. Visit the [prize page](https://manifold.markets/prize) during an active drawing to see your total entry count and how it compares to the overall pool.
+
+---
+
+## Is there a maximum number of entries?
+
+There's no hard cap on entries. However, the bonding curve means each additional entry costs more mana than the last, so there's a natural soft limit based on how much mana you're willing to spend.
 
 ---
 
