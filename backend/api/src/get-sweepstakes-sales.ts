@@ -11,6 +11,20 @@ export const getSweepstakesSales: APIHandler<'get-sweepstakes-sales'> = async (
   const safeSweepstakesNum = Math.max(0, Math.floor(sweepstakesNum))
   const pg = createSupabaseDirectClient()
 
+  const beforeSale = beforeId
+    ? await pg.oneOrNone<{ created_time: string; id: string }>(
+        `SELECT created_time, id
+         FROM sweepstakes_tickets
+         WHERE sweepstakes_num = $1
+           AND id = $2`,
+        [safeSweepstakesNum, beforeId]
+      )
+    : undefined
+
+  if (beforeId && !beforeSale) {
+    return { sales: [] }
+  }
+
   const sales = await pg.manyOrNone<{
     id: string
     sweepstakes_num: number
@@ -23,11 +37,18 @@ export const getSweepstakesSales: APIHandler<'get-sweepstakes-sales'> = async (
     `SELECT id, sweepstakes_num, user_id, num_tickets, mana_spent, is_free, created_time
      FROM sweepstakes_tickets
      WHERE sweepstakes_num = $1
-     ${beforeId ? 'AND id < $3' : ''}
-     ORDER BY created_time DESC
+     ${
+       beforeSale
+         ? `AND (
+              created_time < $3
+              OR (created_time = $3 AND id < $4)
+            )`
+         : ''
+     }
+     ORDER BY created_time DESC, id DESC
      LIMIT $2`,
-    beforeId
-      ? [safeSweepstakesNum, safeLimit, beforeId]
+    beforeSale
+      ? [safeSweepstakesNum, safeLimit, beforeSale.created_time, beforeSale.id]
       : [safeSweepstakesNum, safeLimit]
   )
 
