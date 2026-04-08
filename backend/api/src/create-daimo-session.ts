@@ -1,5 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { isUserBanned } from 'common/ban-utils'
+import { getActiveUserBans } from 'api/helpers/rate-limit'
 import { getPrivateUser, getUser, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { track } from 'shared/analytics'
@@ -57,13 +58,8 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
     throw new APIError(404, 'Private user not found')
   }
 
-  // Check if user is banned from purchasing
-  const userBans = await pg.manyOrNone<{ ban_type: string }>(
-    `SELECT ban_type FROM user_bans WHERE user_id = $1`,
-    [auth.uid]
-  )
-  const bans = userBans.map((b) => b.ban_type)
-  if (isUserBanned(bans as any, 'purchase')) {
+  const activeBans = await getActiveUserBans(auth.uid, pg)
+  if (isUserBanned(activeBans, 'purchase')) {
     throw new APIError(403, 'User is banned from making purchases')
   }
 
