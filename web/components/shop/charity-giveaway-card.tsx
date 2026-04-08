@@ -206,7 +206,7 @@ export function CharityGiveawayCard(props: {
                 <div className="text-lg font-bold text-cyan-600 sm:text-xl">
                   {Math.floor(totalTickets).toLocaleString()}
                 </div>
-                <div className="text-ink-500 text-[10px]">Tickets</div>
+                <div className="text-ink-500 text-[10px]">Entries</div>
               </Col>
             </Row>
 
@@ -267,7 +267,7 @@ export function CharityGiveawayCard(props: {
                 <div className="text-lg font-bold text-amber-600 sm:text-xl">
                   {Math.floor(totalTickets).toLocaleString()}
                 </div>
-                <div className="text-ink-500 text-[10px]">Tickets</div>
+                <div className="text-ink-500 text-[10px]">Entries</div>
               </Col>
             </Row>
 
@@ -333,7 +333,7 @@ export function CharityGiveawayCard(props: {
             </Row>
             {winner && (
               <div className="text-ink-500 mt-1 text-sm">
-                Winning ticket by @{winner.username}
+                Winning entry by @{winner.username}
               </div>
             )}
           </Col>

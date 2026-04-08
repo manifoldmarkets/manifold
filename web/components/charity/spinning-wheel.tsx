@@ -308,7 +308,7 @@ export function SpinningWheel(props: SpinningWheelProps) {
                 🎉 {winningSegment.label} wins! 🎉
               </p>
               <p className="text-ink-500 text-sm">
-                {winningSegment.percentage.toFixed(1)}% of tickets
+                {winningSegment.percentage.toFixed(1)}% of entries
               </p>
             </div>
 
@@ -336,7 +336,7 @@ export function SpinningWheel(props: SpinningWheelProps) {
             {/* Winning ticket purchaser */}
             {winner && (
               <Row className="text-ink-600 items-center gap-2 text-sm">
-                <span>Winning ticket purchased by</span>
+                <span>Winning entry converted by</span>
                 <Avatar
                   username={winner.username}
                   avatarUrl={winner.avatarUrl}

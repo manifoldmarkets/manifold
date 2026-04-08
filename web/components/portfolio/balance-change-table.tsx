@@ -727,7 +727,7 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'PUSH_NOTIFICATION_BONUS':
       return 'Push notification bonus'
     case 'CHARITY_GIVEAWAY_TICKET':
-      return 'Charity giveaway tickets'
+      return 'Charity giveaway entries'
     case 'SWEEPSTAKES_TICKET':
       return 'Prize drawing entries'
     case 'MEMBERSHIP_PAYMENT':
@@ -792,7 +792,7 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CHARITY':
       return 'Donation'
     case 'CHARITY_GIVEAWAY_TICKET':
-      return 'Charity raffle tickets'
+      return 'Charity giveaway entries'
     case 'SWEEPSTAKES_TICKET':
       return 'Prize drawing'
     case 'LOAN':
