@@ -951,6 +951,7 @@ export const BuyPanelBody = (
               contract={contract}
               multiProps={multiProps}
               user={user}
+              userEntitlements={user?.entitlements}
               unfilledBets={unfilledBets}
               balanceByUserId={balanceByUserId}
               outcome={outcome}
