@@ -8,8 +8,10 @@ async function superBanUser(userId: string) {
   const comments = await api('comments', { userId })
 
   try {
-    await api('super-ban-user', { userId })
-    marketsStatus = "successfully unlisted & NA'd"
+    const result = await api('super-ban-user', { userId })
+    marketsStatus = result.skippedMarketCleanup
+      ? 'not affected (>5)'
+      : "successfully unlisted & NA'd"
     banStatus = 'all ban types applied permanently'
   } catch (error) {
     console.error('Failed to superban user:', error)

@@ -7,7 +7,11 @@ export const superBanUser: APIHandler<'super-ban-user'> = async (
   auth
 ) => {
   throwErrorIfNotMod(auth.uid)
-  await superBanUserCore(userId, auth.uid, 'Superbanned by moderator')
+  const result = await superBanUserCore(
+    userId,
+    auth.uid,
+    'Superbanned by moderator'
+  )
 
-  return { success: true }
+  return { success: true, ...result }
 }

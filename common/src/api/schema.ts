@@ -1566,7 +1566,7 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
       })
       .strict(),
-    returns: {} as { success: boolean },
+    returns: {} as { success: boolean; skippedMarketCleanup: boolean },
   },
   'get-user-bans': {
     method: 'GET',

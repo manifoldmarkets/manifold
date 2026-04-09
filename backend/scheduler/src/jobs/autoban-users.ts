@@ -209,6 +209,7 @@ export async function autobanUsers({ lastEndTime }: JobContext) {
   let autobannedCount = 0
   let addedIpCount = 0
   let addedDeviceTokenCount = 0
+  let failedCount = 0
 
   for (const candidate of candidates) {
     const hasBets = usersWithBets.has(candidate.id)
@@ -256,33 +257,44 @@ export async function autobanUsers({ lastEndTime }: JobContext) {
     if (score < 80) continue
 
     const reason = `Auto-banned: spam account (score: ${score}, signals: ${signals.join(', ')})`
-    await superBanUserCore(candidate.id, manifoldUser.id, reason)
+    try {
+      await superBanUserCore(candidate.id, manifoldUser.id, reason)
 
-    const addedIp = await addBlocklistEntry(
-      pg,
-      'ip',
-      initialIpAddress,
-      reason,
-      candidate.id
-    )
-    const addedDeviceToken = await addBlocklistEntry(
-      pg,
-      'device_token',
-      initialDeviceToken,
-      reason,
-      candidate.id
-    )
+      const addedIp = await addBlocklistEntry(
+        pg,
+        'ip',
+        initialIpAddress,
+        reason,
+        candidate.id
+      )
+      const addedDeviceToken = await addBlocklistEntry(
+        pg,
+        'device_token',
+        initialDeviceToken,
+        reason,
+        candidate.id
+      )
 
-    autobannedCount++
-    if (addedIp) addedIpCount++
-    if (addedDeviceToken) addedDeviceTokenCount++
+      autobannedCount++
+      if (addedIp) addedIpCount++
+      if (addedDeviceToken) addedDeviceTokenCount++
 
-    log(
-      `Auto-banned ${candidate.username} (score: ${score}, signals: ${signals.join(', ')})`
-    )
+      log(
+        `Auto-banned ${candidate.username} (score: ${score}, signals: ${signals.join(', ')})`
+      )
+    } catch (error) {
+      failedCount++
+      log.error('Failed to autoban candidate user', {
+        error,
+        userId: candidate.id,
+        username: candidate.username,
+        score,
+        signals,
+      })
+    }
   }
 
   log(
-    `Auto-banned ${autobannedCount} users, added ${addedIpCount} IPs and ${addedDeviceTokenCount} device tokens to blocklist.`
+    `Auto-banned ${autobannedCount} users, added ${addedIpCount} IPs and ${addedDeviceTokenCount} device tokens to blocklist, with ${failedCount} failures.`
   )
 }

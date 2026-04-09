@@ -128,15 +128,13 @@ export async function superBanUserCore(
     [userId]
   )
   const alreadyBanned = activeBanCount.count >= 3
+  const skippedMarketCleanup = contracts.length > 5
 
-  if (contracts.length > 5) {
-    throw new APIError(
-      400,
-      `This user has ${contracts.length} markets. You can only super ban users with 5 or less.`
+  if (skippedMarketCleanup) {
+    log(
+      `User ${userId} has ${contracts.length} markets; skipping market cleanup but applying permanent bans.`
     )
-  }
-
-  if (!alreadyBanned) {
+  } else if (!alreadyBanned) {
     for (const contract of contracts) {
       if (contract.visibility === 'unlisted') continue
       await updateContract(pg, contract.id, {
@@ -254,7 +252,7 @@ export async function superBanUserCore(
     log.error('Error bulk hiding post comments:', { error })
   }
 
-  if (!alreadyBanned) {
+  if (!alreadyBanned && !skippedMarketCleanup) {
     const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
     pg.result(
       `with affected_users as (
@@ -310,4 +308,6 @@ export async function superBanUserCore(
     reason,
   })
   log('superbanned user', userId, { reason, added: SUPER_BAN_TYPES })
+
+  return { skippedMarketCleanup }
 }
