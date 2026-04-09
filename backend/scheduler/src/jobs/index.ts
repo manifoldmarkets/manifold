@@ -20,6 +20,7 @@ import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { applyPendingClarifications } from './apply-pending-clarifications'
 import { autoAwardBounty } from './auto-award-bounty'
+import { autobanUsers } from './autoban-users'
 import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
@@ -111,6 +112,11 @@ export function createJobs() {
       'auto-award-bounty',
       '0 55 * * * *', // on the 55th minute of every hour
       autoAwardBounty
+    ),
+    createJob(
+      'autoban-users',
+      '0 */15 * * * *', // every 15 minutes
+      autobanUsers
     ),
     createJob(
       'update-user-portfolio-histories',

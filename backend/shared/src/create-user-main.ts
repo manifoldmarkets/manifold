@@ -73,6 +73,17 @@ export const createUserMain = async (
 
   const pg = createSupabaseDirectClient()
 
+  const isBlocked = await pg.oneOrNone<{ id: number }>(
+    `select id from signup_blocklist
+     where (entry_type = 'ip' and value = $1)
+        or (entry_type = 'device_token' and value = $2)
+     limit 1`,
+    [ip, deviceToken]
+  )
+  if (isBlocked) {
+    throw new APIError(403, 'Account creation is not available')
+  }
+
   let username = cleanUsername(name)
 
   // Check username case-insensitive
@@ -103,10 +114,6 @@ export const createUserMain = async (
       streakForgiveness: 0,
       shouldShowWelcome: true,
       creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      isBannedFromPosting: Boolean(
-        (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
-          (ip && bannedIpAddresses.includes(ip))
-      ),
       signupBonusPaid: 0,
     }
 
@@ -234,19 +241,3 @@ export function getStorageBucket() {
     : DEV_CONFIG.firebaseConfig.storageBucket
   return getStorage().bucket(id)
 }
-
-// Automatically ban users with these device tokens or ip addresses.
-const bannedDeviceTokens = [
-  'fa807d664415',
-  'dcf208a11839',
-  'bbf18707c15d',
-  '4c2d15a6cc0c',
-  '0da6b4ea79d3',
-]
-const bannedIpAddresses: string[] = [
-  '24.176.214.250',
-  '2607:fb90:bd95:dbcd:ac39:6c97:4e35:3fed',
-  '2607:fb91:389:ddd0:ac39:8397:4e57:f060',
-  '2607:fb90:ed9a:4c8f:ac39:cf57:4edd:4027',
-  '2607:fb90:bd36:517a:ac39:6c91:812c:6328',
-]

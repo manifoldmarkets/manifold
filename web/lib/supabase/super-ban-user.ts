@@ -1,4 +1,4 @@
-import { api, banUser } from 'web/lib/api/api'
+import { api } from 'web/lib/api/api'
 
 async function superBanUser(userId: string) {
   let marketsStatus = "could not be unlisted nor N/A'd due to an unknown error"
@@ -7,31 +7,13 @@ async function superBanUser(userId: string) {
   const posts = await api('get-posts', { userId })
   const comments = await api('comments', { userId })
 
-  // Call backend FIRST so the already-banned check sees the pre-ban state.
-  // This ensures markets get unlisted, comments deleted, and notifications cleaned.
   try {
     await api('super-ban-user', { userId })
     marketsStatus = "successfully unlisted & NA'd"
-  } catch (error) {
-    console.error('Failed to unlist and cancel user contracts:', error)
-    marketsStatus = 'not affected (>5)'
-  }
-
-  // Apply all ban types permanently (no unbanTime = permanent)
-  try {
-    await banUser({
-      userId,
-      bans: {
-        posting: true,
-        marketControl: true,
-        trading: true,
-        purchase: true,
-      },
-      reason: 'Superbanned by moderator',
-    })
     banStatus = 'all ban types applied permanently'
   } catch (error) {
-    console.error('Failed to apply bans:', error)
+    console.error('Failed to superban user:', error)
+    marketsStatus = 'not affected (>5)'
     banStatus = 'failed to apply'
   }
 
