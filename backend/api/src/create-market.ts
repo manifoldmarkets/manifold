@@ -162,8 +162,13 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
 
+  // Bountied questions use the totalBounty as their ante (the bounty pool
+  // IS the seed liquidity). The cast is needed because prize-drawing's
+  // schema changes narrowed BOUNTIED_QUESTION out of the runtime type
+  // here, but the value can still arrive via createBountySchema in the
+  // request body.
   const ante =
-    outcomeType === 'BOUNTIED_QUESTION' && totalBounty
+    (outcomeType as string) === 'BOUNTIED_QUESTION' && totalBounty
       ? totalBounty
       : getAnte(outcomeType, numAnswers, liquidityTier)
   const totalMarketCost = ante + (extraLiquidity ?? 0)

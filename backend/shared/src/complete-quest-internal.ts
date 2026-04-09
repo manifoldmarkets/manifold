@@ -142,6 +142,11 @@ const awardQuestBonus = async (
 
   const pg = createSupabaseDirectClient()
   return await pg.tx(async (tx) => {
+    // Lock the user row to serialize concurrent quest reward grants for this
+    // user. Without this, two concurrent /completequest calls can both pass
+    // the previousTxn check below and both insert reward txns.
+    await tx.oneOrNone('select 1 from users where id = $1 for update', [user.id])
+
     // make sure we don't already have a txn for this user/questType
     const previousTxn = await tx.oneOrNone(
       `select * from txns

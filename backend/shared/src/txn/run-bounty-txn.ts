@@ -15,16 +15,20 @@ export async function runAddBountyTxn(
   const { amount, toId } = txnData
   const pg = createSupabaseDirectClient()
 
-  const contract = await getContract(pg, toId)
-  if (!contract) throw new APIError(404, `Contract ${toId} not found`)
-  if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
-    throw new APIError(
-      403,
-      'Invalid contract, only bountied questions are supported'
-    )
-  }
-
   const txn = await pg.tx(async (tx) => {
+    // Lock the contract row for symmetry with award/cancel — keeps the
+    // bountyLeft accounting consistent across concurrent add/award/cancel.
+    await tx.oneOrNone('select 1 from contracts where id = $1 for update', [toId])
+
+    const contract = await getContract(tx, toId)
+    if (!contract) throw new APIError(404, `Contract ${toId} not found`)
+    if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
+      throw new APIError(
+        403,
+        'Invalid contract, only bountied questions are supported'
+      )
+    }
+
     const txn = await runTxnInBetQueue(tx, txnData)
 
     // update bountied contract
@@ -43,6 +47,12 @@ export async function runAwardBountyTxn(
   txnData: Omit<BountyAwardedTxn, 'id' | 'createdTime'>
 ) {
   const { amount, fromId } = txnData
+
+  // Lock the contract row to serialize concurrent bounty awards/cancels.
+  // Without this, two concurrent calls can both pass the bountyLeft check
+  // and double-spend, generating unbounded mana.
+  await tx.oneOrNone('select 1 from contracts where id = $1 for update', [fromId])
+
   const contract = await getContract(tx, fromId)
   if (!contract) throw new APIError(404, `Contract not found`)
   if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
@@ -52,7 +62,6 @@ export async function runAwardBountyTxn(
     )
   }
 
-  const txn = await runTxnInBetQueue(tx, txnData)
   const { bountyLeft } = contract
   if (bountyLeft < amount) {
     throw new APIError(
@@ -60,6 +69,8 @@ export async function runAwardBountyTxn(
       `There is only M${bountyLeft} of bounty left to award, which is less than M${amount}`
     )
   }
+
+  const txn = await runTxnInBetQueue(tx, txnData)
 
   await updateContract(tx, fromId, {
     bountyLeft: FieldVal.increment(-amount),
@@ -76,6 +87,10 @@ export async function runCancelBountyTxn(
   const pg = createSupabaseDirectClient()
 
   return await pg.tx(async (tx) => {
+    // Lock the contract row to serialize concurrent bounty awards/cancels.
+    // Prevents double-spend via race condition (see runAwardBountyTxn).
+    await tx.oneOrNone('select 1 from contracts where id = $1 for update', [fromId])
+
     const contract = await getContract(tx, fromId)
     if (!contract) throw new APIError(404, `Contract not found`)
     if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
