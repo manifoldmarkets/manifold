@@ -225,40 +225,56 @@ export const getAnswerProbAtEveryBetTime = (
   const sortedTimestamps = Array.from(allUniqueProbChangeTimes).sort(
     (a, b) => a - b
   )
-  const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
-  answers.forEach((ans) => {
+
+  const answerInfo = answers.map((ans) => {
     const startingProb = getInitialAnswerProbability(contract, ans) ?? 0
-    const rawPoints = [
-      { x: createdTime, y: startingProb, answerId: ans.id },
-      ...(pointsByAnswerId[ans.id] ?? []),
-    ]
+    const probByTime = new Map<number, number>([
+      [createdTime, startingProb],
+      ...(pointsByAnswerId[ans.id] ?? []).map(
+        (p) => [p.x, p.y] as [number, number]
+      ),
+    ])
+    return { id: ans.id, startingProb, probByTime }
+  })
 
-    const pointsByTime = new Map(rawPoints.map((p) => [p.x, p]))
+  const currentProb: { [id: string]: number } = {}
+  const pointsByAns: { [id: string]: { x: number; y: number }[] } = {}
+  for (const ans of answerInfo) {
+    currentProb[ans.id] = ans.startingProb
+    pointsByAns[ans.id] = []
+  }
 
-    const normalizedPoints = sortedTimestamps.map((timestamp) => {
-      // If we have a point at this exact timestamp, use it
-      if (pointsByTime.has(timestamp)) {
-        return {
-          x: timestamp,
-          y: pointsByTime.get(timestamp)!.y,
+  for (const t of sortedTimestamps) {
+    for (const ans of answerInfo) {
+      if (ans.probByTime.has(t)) {
+        currentProb[ans.id] = ans.probByTime.get(t)!
+      }
+    }
+
+    if (contract.shouldAnswersSumToOne) {
+      let realSum = 0
+      let staleSum = 0
+      for (const ans of answerInfo) {
+        if (ans.probByTime.has(t)) realSum += currentProb[ans.id]
+        else staleSum += currentProb[ans.id]
+      }
+      if (staleSum > 0 && realSum < 1) {
+        const scale = (1 - realSum) / staleSum
+        for (const ans of answerInfo) {
+          if (!ans.probByTime.has(t)) currentProb[ans.id] *= scale
+        }
+      } else {
+        const total = realSum + staleSum
+        if (total > 0) {
+          for (const id in currentProb) currentProb[id] /= total
         }
       }
+    }
 
-      // Otherwise find the closest previous point
-      const prevPoints = rawPoints
-        .filter((p) => p.x <= timestamp)
-        .sort((a, b) => b.x - a.x)
-
-      const closestPoint = prevPoints[0]
-
-      return {
-        x: timestamp,
-        y: closestPoint ? closestPoint.y : startingProb,
-      }
-    })
-
-    pointsByAns[ans.id] = normalizedPoints
-  })
+    for (const ans of answerInfo) {
+      pointsByAns[ans.id].push({ x: t, y: currentProb[ans.id] })
+    }
+  }
 
   return pointsByAns
 }

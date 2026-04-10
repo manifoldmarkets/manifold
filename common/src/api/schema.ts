@@ -167,6 +167,18 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'admin-set-bonus-eligibility': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        bonusEligibility: z.enum(['verified', 'grandfathered', 'ineligible']),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
   'admin-search-users-by-email': {
     method: 'GET',
     visibility: 'undocumented',
@@ -1503,6 +1515,7 @@ export const API = (_apiTypeCheck = {
             posting: z.boolean().optional(),
             marketControl: z.boolean().optional(),
             trading: z.boolean().optional(),
+            purchase: z.boolean().optional(),
             modAlert: z.boolean().optional(), // false to clear active mod alert
           })
           .optional(),
@@ -1511,6 +1524,7 @@ export const API = (_apiTypeCheck = {
             posting: z.number().optional(),
             marketControl: z.number().optional(),
             trading: z.number().optional(),
+            purchase: z.number().optional(),
             modAlert: z.number().optional(), // mod alerts don't auto-expire, but included for type consistency
           })
           .optional(),
@@ -1552,6 +1566,18 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
       })
       .strict(),
+    returns: {} as { success: boolean; skippedMarketCleanup: boolean },
+  },
+  'admin-ip-ban-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; added: boolean; ipAddress: string },
   },
   'get-user-bans': {
     method: 'GET',
@@ -2020,6 +2046,9 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // DEPRECATED: GIDX endpoints - replaced by idenfy for identity verification
+  // Use create-idenfy-session and get-idenfy-status instead
+  // Kept for: historical transaction processing, gradual migration
   'register-gidx': {
     method: 'POST',
     visibility: 'undocumented',
@@ -2252,7 +2281,7 @@ export const API = (_apiTypeCheck = {
   'get-next-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: DEFAULT_CACHE_STRATEGY,
+    cache: LIGHT_CACHE_STRATEGY,
     authed: false,
     returns: {} as {
       maxGeneralLoan: number
@@ -2278,7 +2307,7 @@ export const API = (_apiTypeCheck = {
   'get-market-loan-max': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: DEFAULT_CACHE_STRATEGY,
+    cache: LIGHT_CACHE_STRATEGY,
     authed: true,
     returns: {} as {
       maxLoan: number
@@ -2315,7 +2344,7 @@ export const API = (_apiTypeCheck = {
   'get-free-loan-available': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: DEFAULT_CACHE_STRATEGY,
+    cache: LIGHT_CACHE_STRATEGY,
     authed: false,
     returns: {} as {
       available: number
@@ -2706,6 +2735,17 @@ export const API = (_apiTypeCheck = {
         }
       ),
     returns: {} as { success: boolean; checkoutUrl?: string },
+  },
+  'remove-boost': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
   },
   'generate-ai-numeric-ranges': {
     method: 'POST',
@@ -3199,9 +3239,57 @@ export const API = (_apiTypeCheck = {
         name: string
         avatarUrl: string
       }
-      // Provably fair fields
-      nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists
-      nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
+      // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+      // Only revealed AFTER winner is selected. Users verify by finding first block after closeTime.
+      nonce?: string
+    },
+  },
+  'get-charity-giveaway-list': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      giveaways: Array<{
+        giveawayNum: number
+        name: string
+        closeTime: number
+        createdTime: number
+        hasWinner: boolean
+      }>
+    },
+  },
+  'get-crypto-purchase-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      hasCryptoPurchase: boolean
+    },
+  },
+  'create-daimo-session': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      sessionId: string
+      clientSecret: string
+    },
+  },
+  'admin-create-charity-giveaway': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        closeTime: z.number(),
+        prizeAmountUsd: z.number(),
+      })
+      .strict(),
+    returns: {} as {
+      giveawayNum: number
     },
   },
   'buy-charity-giveaway-tickets': {
@@ -3254,6 +3342,316 @@ export const API = (_apiTypeCheck = {
       ticketId: string
       charityId: string
       userId: string
+      blockHash: string
+      blockHeight: number
+    },
+  },
+  'get-sweepstakes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ sweepstakesNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      sweepstakes?: {
+        sweepstakesNum: number
+        name: string
+        prizes: {
+          rank?: number
+          rankStart?: number
+          rankEnd?: number
+          amountUsdc: number
+          label: string
+        }[]
+        closeTime: number
+        winningTicketIds: string[] | null
+        createdTime: number
+      }
+      userStats: {
+        userId: string
+        totalTickets: number
+        totalManaSpent: number
+      }[]
+      totalTickets: number
+      winners?: {
+        rank: number
+        label: string
+        prizeUsdc: number
+        ticketId: string
+        user: {
+          id: string
+          username: string
+          name: string
+          avatarUrl: string
+        }
+      }[]
+      // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+      // Only revealed AFTER winners are selected. Users verify by finding first block after closeTime.
+      nonce?: string
+      // Free ticket status for current user
+      hasClaimedFreeTicket?: boolean
+      // Investment requirement fields (for current user)
+      userTotalManaInvested?: number
+      meetsInvestmentRequirement?: boolean
+      minManaInvested?: number
+    },
+  },
+  'get-sweepstakes-list': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      sweepstakes: Array<{
+        sweepstakesNum: number
+        name: string
+        closeTime: number
+        createdTime: number
+        hasWinners: boolean
+      }>
+    },
+  },
+  'admin-create-sweepstakes': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        closeTime: z.number(),
+        prizes: z
+          .array(
+            z.object({
+              rank: z.number(),
+              amountUsdc: z.number(),
+              label: z.string(),
+            })
+          )
+          .min(1),
+      })
+      .strict(),
+    returns: {} as {
+      sweepstakesNum: number
+    },
+  },
+  'buy-sweepstakes-tickets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        numTickets: z.number().positive(),
+      })
+      .strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+      manaSpent: number
+    },
+  },
+  'claim-free-sweepstakes-ticket': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.number() }).strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+    },
+  },
+  'get-sweepstakes-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        sweepstakesNum: z.coerce.number(),
+        limit: z.coerce.number().min(1).max(100).default(50),
+        before: z.string().optional(),
+      })
+      .strict(),
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      sales: {
+        id: string
+        sweepstakesNum: number
+        userId: string
+        numTickets: number
+        manaSpent: number
+        isFree: boolean
+        createdTime: number
+      }[]
+    },
+  },
+  'select-sweepstakes-winners': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.number() }).strict(),
+    returns: {} as {
+      winners: {
+        rank: number
+        label: string
+        prizeUsdc: number
+        ticketId: string
+        userId: string
+      }[]
+      blockHash: string
+      blockHeight: number
+    },
+  },
+  'check-bitcoin-block': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ closeTime: z.coerce.number() }).strict(),
+    returns: {} as
+      | { available: false }
+      | {
+          available: true
+          blockHeight: number
+          blockHash: string
+          blockTimestamp: number
+        },
+  },
+  'claim-sweepstakes-prize': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        walletAddress: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      claimId: string
+    },
+  },
+  'get-sweepstakes-prize-claim': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.coerce.number() }).strict(),
+    returns: {} as {
+      claim: {
+        id: string
+        rank: number
+        prizeAmountUsdc: number
+        walletAddress: string
+        paymentStatus: 'awaiting' | 'sent' | 'rejected'
+        paymentTxnHash: string | null
+        createdTime: number
+      } | null
+      winnerInfo: {
+        rank: number
+        prizeAmountUsdc: number
+      } | null
+    },
+  },
+  'admin-get-prize-claims': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      claims: Array<{
+        id: string | null
+        sweepstakesNum: number
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        rank: number
+        prizeAmountUsdc: number
+        walletAddress: string | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | null
+        paymentTxnHash: string | null
+        createdTime: number | null
+      }>
+    },
+  },
+  'admin-update-prize-payment': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        claimId: z.string(),
+        paymentStatus: z.enum(['awaiting', 'sent', 'rejected']),
+        paymentTxnHash: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
+  'admin-get-mana-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      sales: Array<{
+        id: string
+        createdTime: number
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        amount: number
+        paidInCents: number | null
+        paymentType: 'stripe' | 'apple' | 'gidx' | 'crypto' | 'unknown'
+      }>
+    },
+  },
+  'admin-get-top-whale-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      users: Array<{
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalPaidCents: number
+        totalMana: number
+        purchaseCount: number
+        lastPurchaseTime: number
+        byType: {
+          stripe: { paidCents: number; mana: number; count: number }
+          apple: { paidCents: number; mana: number; count: number }
+          gidx: { paidCents: number; mana: number; count: number }
+          crypto: { paidCents: number; mana: number; count: number }
+          unknown: { paidCents: number; mana: number; count: number }
+        }
+      }>
+    },
+  },
+  'admin-get-new-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      users: Array<{
+        id: string
+        createdTime: number
+        username: string
+        name: string
+        avatarUrl: string
+        balance: number
+        isBannedFromPosting: boolean
+        referredByUserId: string | null
+        referredByUsername: string | null
+        referredByName: string | null
+        bonusEligibility: 'verified' | 'grandfathered' | 'ineligible' | null
+        purchasedMana: boolean
+        email: string | null
+        ipAddress: string | null
+      }>
     },
   },
   'get-predictle-percentile': {
@@ -3504,6 +3902,44 @@ export const API = (_apiTypeCheck = {
         plusCount: number
         premiumCount: number
         totalCount: number
+      }[]
+    },
+  },
+  // iDenfy identity verification endpoints
+  'create-idenfy-session': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { redirectUrl: string; scanRef: string },
+  },
+  'get-idenfy-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'pending' | 'approved' | 'denied' | 'suspected' | null
+      verifiedTime: number | null
+    },
+  },
+  'get-idenfy-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z
+      .object({
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+    returns: {} as {
+      dailyStats: {
+        date: string
+        approvals: number
+        denials: number
+        pending: number
+        suspected: number
       }[]
     },
   },

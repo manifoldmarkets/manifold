@@ -1,7 +1,7 @@
 import { Group } from 'common/group'
 import { TopicSelector } from '../topics/topic-selector'
 import { useEffect, useState } from 'react'
-import { XIcon } from '@heroicons/react/solid'
+import { XIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { TopicTag } from '../topics/topic-tag'
 import { Button } from '../buttons/button'
@@ -33,15 +33,16 @@ export function DashboardSetTopics(props: {
             location={'create page'}
             key={group.id}
             topic={group}
-            className="bg-ink-100"
+            className="bg-ink-100 hover:bg-ink-200"
           >
             <button
+              className="text-ink-400 hover:text-ink-700 hover:bg-ink-200 ml-0.5 rounded-full p-0.5 transition-colors"
               onClick={() => {
                 const cleared = selectedGroups.filter((g) => g.id !== group.id)
                 setSelectedGroups(cleared)
               }}
             >
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+              <XIcon className="h-3.5 w-3.5" />
             </button>
           </TopicTag>
         ))}

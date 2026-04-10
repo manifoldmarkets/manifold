@@ -1,24 +1,15 @@
 import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import {
-  MANA_MIN_BET,
-  PHONE_VERIFICATION_BONUS,
-  SWEEPS_MIN_BET,
-} from 'common/economy'
+import { MANA_MIN_BET, SWEEPS_MIN_BET } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { humanish, User } from 'common/user'
-import {
-  formatMoney,
-  formatWithToken,
-  InputTokenType,
-} from 'common/util/format'
+import { User } from 'common/user'
+import { formatWithToken, InputTokenType } from 'common/util/format'
+import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
-import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { AddFundsModal } from '../add-funds-modal'
 import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -350,31 +341,16 @@ export function BuyAmountInput(props: {
   )
 }
 
-const BuyMoreFunds = (props: { user: User | null | undefined }) => {
-  const { user } = props
-  const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
-  const [showVerifyPhone, setShowVerifyPhone] = useState(false)
+const BuyMoreFunds = (_props: { user: User | null | undefined }) => {
   return (
     <>
       Not enough funds.
-      <button
-        type="button"
+      <Link
+        href="/checkout"
         className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
-        onClick={() => setAddFundsModalOpen(true)}
       >
         Buy more?
-      </button>
-      {user && !humanish(user) && (
-        <button
-          type="button"
-          className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
-          onClick={() => setShowVerifyPhone(true)}
-        >
-          Verify your phone number for {formatMoney(PHONE_VERIFICATION_BONUS)}
-        </button>
-      )}
-      <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
-      <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
+      </Link>
     </>
   )
 }

@@ -130,6 +130,7 @@ export const placeBetMain = async (
   const {
     user,
     contract,
+    creator,
     answers,
     unfilledBets,
     balanceByUserId,
@@ -204,6 +205,7 @@ export const placeBetMain = async (
       newBetResult,
       contract,
       user,
+      creator,
       isApi,
       contractMetrics,
       balanceByUserId,
@@ -330,6 +332,7 @@ export const executeNewBetResult = async (
   newBetResult: NewBetResult,
   contract: MarketContract,
   user: User,
+  creator: User | undefined,
   isApi: boolean,
   contractMetrics: ContractMetric[],
   balanceByUserId: Record<string, number>,
@@ -436,7 +439,8 @@ export const executeNewBetResult = async (
     const { balanceUpdate, txnQuery } = getUniqueBettorBonusQuery(
       contract,
       user,
-      newBet
+      newBet,
+      creator
     )
     if (balanceUpdate) {
       userBalanceUpdates.push(balanceUpdate)

@@ -3,6 +3,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import { canReceiveBonuses } from 'common/user'
 import {
   createBinarySchema,
   createBountySchema,
@@ -161,8 +162,13 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
 
+  // Bountied questions use the totalBounty as their ante (the bounty pool
+  // IS the seed liquidity). The cast is needed because prize-drawing's
+  // schema changes narrowed BOUNTIED_QUESTION out of the runtime type
+  // here, but the value can still arrive via createBountySchema in the
+  // request body.
   const ante =
-    outcomeType === 'BOUNTIED_QUESTION' && totalBounty
+    (outcomeType as string) === 'BOUNTIED_QUESTION' && totalBounty
       ? totalBounty
       : getAnte(outcomeType, numAnswers, liquidityTier)
   const totalMarketCost = ante + (extraLiquidity ?? 0)
@@ -200,6 +206,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       )
       const user = first(userAndSlugResult[0].map(convertUser))
       if (!user) throw new APIError(401, 'Your account was not found')
+
+      // Prevent bonus-ineligible users from creating unlisted markets
+      if (visibility === 'unlisted' && !canReceiveBonuses(user)) {
+        throw new APIError(
+          403,
+          'Please verify your identity to create unlisted markets.'
+        )
+      }
 
       const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
       if (!isFree && totalMarketCost > user.balance)

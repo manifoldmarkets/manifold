@@ -1,6 +1,7 @@
 import { isAdminId } from 'common/envs/constants'
 import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
 import { TopLevelPost } from 'common/top-level-post'
+import { canReceiveBonuses } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { nanoid, randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
@@ -28,6 +29,14 @@ export const createPost: APIHandler<'create-post'> = onlyUsersWhoCanPerformActio
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
+
+  // Require bonus eligibility (verified or grandfathered) to create posts
+  if (!canReceiveBonuses(creator)) {
+    throw new APIError(
+      403,
+      'Please verify your identity to create forum posts.'
+    )
+  }
 
   const isCursedUser = creator.name === 'Rima Akter'
 

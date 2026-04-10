@@ -2199,7 +2199,7 @@ export function MarketPreview(props: {
           setOpen={handleSetTopicsModal}
           size="md"
         >
-          <Col className="bg-canvas-0 max-h-[70vh] min-h-[20rem] overflow-auto rounded p-6">
+          <Col className="bg-canvas-0 max-h-[70vh] min-h-[15rem] overflow-auto rounded-md px-4 py-5 sm:px-6 sm:py-6">
             <ContractTopicsList
               canEdit={true}
               canEditTopic={() => true}

@@ -31,6 +31,9 @@ import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
 import { register } from 'api/gidx/register'
 import { uploadDocument } from 'api/gidx/upload-document'
+import { createIdenfySession } from 'api/idenfy/create-session'
+import { getIdenfyStatus } from 'api/idenfy/get-status'
+import { getIdenfyStats } from './get-idenfy-stats'
 import { getMarkets } from 'api/markets'
 import { multiSell } from 'api/multi-sell'
 import { placeMultiBet } from 'api/place-multi-bet'
@@ -139,6 +142,7 @@ import { placeBet } from './place-bet'
 import { setPushToken } from './push-token'
 import { addOrRemoveReaction } from './reaction'
 import { refreshAllClients } from './refresh-all-clients'
+import { removeBoost } from './remove-boost'
 import { removeLiquidity } from './remove-liquidity'
 import { resolveMarket } from './resolve-market'
 import { savePredicleResult } from './save-predictle-result'
@@ -170,11 +174,33 @@ import { updateTask } from './update-task'
 import { adminDeleteUser } from './admin-delete-user'
 import { adminGetRelatedUsers } from './admin-get-related-users'
 import { adminGetUserInfo } from './admin-get-user-info'
+import { adminIpBanUser } from './admin-ip-ban-user'
 import { adminRecoverUser } from './admin-recover-user'
+import { adminSetBonusEligibility } from './admin-set-bonus-eligibility'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
 import { claimCharityChampion } from './claim-charity-champion'
+import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
+import { getSweepstakes } from './get-sweepstakes'
+import { buySweepstakesTickets } from './buy-sweepstakes-tickets'
+import { claimFreeSweepstakesTicket } from './claim-free-sweepstakes-ticket'
+import { getSweepstakesSales } from './get-sweepstakes-sales'
+import { selectSweepstakesWinners } from './select-sweepstakes-winners'
+import { checkBitcoinBlock } from './check-bitcoin-block'
+import { claimSweepstakesPrize } from './claim-sweepstakes-prize'
+import { getSweepstakesPrizeClaim } from './get-sweepstakes-prize-claim'
+import { adminGetPrizeClaims } from './admin-get-prize-claims'
+import { adminUpdatePrizePayment } from './admin-update-prize-payment'
+import { adminGetManaSales } from './admin-get-mana-sales'
+import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
+import { adminGetNewUsers } from './admin-get-new-users'
+import { getSweepstakesList } from './get-sweepstakes-list'
+import { adminCreateSweepstakes } from './admin-create-sweepstakes'
+import { getCharityGiveawayList } from './get-charity-giveaway-list'
+import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
+import { createDaimoSession } from './create-daimo-session'
+import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -229,7 +255,6 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
-import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
@@ -245,6 +270,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'recover-user': adminRecoverUser,
   'get-user-info': adminGetUserInfo,
   'admin-delete-user': adminDeleteUser,
+  'admin-ip-ban-user': adminIpBanUser,
+  'admin-set-bonus-eligibility': adminSetBonusEligibility,
   'admin-get-related-users': adminGetRelatedUsers,
   'admin-search-users-by-email': adminSearchUsersByEmail,
   'anonymize-user': anonymizeUser,
@@ -397,6 +424,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'upload-document-gidx': uploadDocument,
   'get-verification-documents-gidx': getVerificationDocuments,
   'get-monitor-status-gidx': getMonitorStatus,
+  // iDenfy identity verification
+  'create-idenfy-session': createIdenfySession,
+  'get-idenfy-status': getIdenfyStatus,
+  'get-idenfy-stats': getIdenfyStats,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,
@@ -431,6 +462,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-contract-voters': getContractVoters,
   'get-contract-option-voters': getContractOptionVoters,
   'purchase-boost': purchaseContractBoost,
+  'remove-boost': removeBoost,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
   'infer-numeric-unit': inferNumericUnit,
@@ -465,9 +497,28 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'save-predictle-result': savePredicleResult,
   'get-predictle-result': getPredictleResult,
   'get-charity-giveaway': getCharityGiveaway,
+  'get-charity-giveaway-list': getCharityGiveawayList,
+  'get-crypto-purchase-status': getCryptoPurchaseStatus,
+  'create-daimo-session': createDaimoSession,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
+  'get-sweepstakes': getSweepstakes,
+  'buy-sweepstakes-tickets': buySweepstakesTickets,
+  'claim-free-sweepstakes-ticket': claimFreeSweepstakesTicket,
+  'get-sweepstakes-sales': getSweepstakesSales,
+  'get-sweepstakes-list': getSweepstakesList,
+  'select-sweepstakes-winners': selectSweepstakesWinners,
+  'check-bitcoin-block': checkBitcoinBlock,
+  'claim-sweepstakes-prize': claimSweepstakesPrize,
+  'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
+  'admin-create-sweepstakes': adminCreateSweepstakes,
+  'admin-create-charity-giveaway': adminCreateCharityGiveaway,
+  'admin-get-prize-claims': adminGetPrizeClaims,
+  'admin-update-prize-payment': adminUpdatePrizePayment,
+  'admin-get-mana-sales': adminGetManaSales,
+  'admin-get-top-whale-users': adminGetTopWhaleUsers,
+  'admin-get-new-users': adminGetNewUsers,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'get-shop-stats': getShopStats,

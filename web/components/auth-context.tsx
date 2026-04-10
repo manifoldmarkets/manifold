@@ -4,7 +4,6 @@ import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth, firebaseLogout } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/api/api'
-import { randomString } from 'common/util/random'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import {
   AUTH_COOKIE_NAME,
@@ -26,6 +25,7 @@ import { useWebsocketUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
 import toast from 'react-hot-toast'
+import { ensureDeviceToken } from 'web/lib/util/device-token'
 import { Row } from './layout/row'
 import { TokenNumber } from './widgets/token-number'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
@@ -37,15 +37,6 @@ export type AuthUser =
   | null
   | (UserAndPrivateUser & { authLoaded: boolean })
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
-
-export const ensureDeviceToken = () => {
-  let deviceToken = safeLocalStorage?.getItem('device-token')
-  if (!deviceToken) {
-    deviceToken = randomString()
-    safeLocalStorage?.setItem('device-token', deviceToken)
-  }
-  return deviceToken
-}
 const getAdminToken = () => {
   const key = 'TEST_CREATE_USER_KEY'
   const cookie = getCookie(key)

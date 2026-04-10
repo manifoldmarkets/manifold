@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FaGift, FaTrophy } from 'react-icons/fa6'
+import { FaHeart, FaGift, FaTrophy } from 'react-icons/fa6'
 import { User } from 'common/user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Col } from '../layout/col'
@@ -181,7 +181,7 @@ export function CharityGiveawayCard(props: {
           <div className="rounded-lg bg-white p-4 dark:bg-gray-900">
             {/* Header */}
             <Row className="mb-3 items-center gap-2">
-              <FaGift className="h-5 w-5 text-emerald-500" />
+              <FaHeart className="h-5 w-5 text-emerald-500" />
               <span className="text-lg font-semibold">Charity Giveaway</span>
               <span className="ml-auto rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                 LIVE
@@ -206,7 +206,7 @@ export function CharityGiveawayCard(props: {
                 <div className="text-lg font-bold text-cyan-600 sm:text-xl">
                   {Math.floor(totalTickets).toLocaleString()}
                 </div>
-                <div className="text-ink-500 text-[10px]">Tickets</div>
+                <div className="text-ink-500 text-[10px]">Entries</div>
               </Col>
             </Row>
 
@@ -267,7 +267,7 @@ export function CharityGiveawayCard(props: {
                 <div className="text-lg font-bold text-amber-600 sm:text-xl">
                   {Math.floor(totalTickets).toLocaleString()}
                 </div>
-                <div className="text-ink-500 text-[10px]">Tickets</div>
+                <div className="text-ink-500 text-[10px]">Entries</div>
               </Col>
             </Row>
 
@@ -313,7 +313,7 @@ export function CharityGiveawayCard(props: {
         <div className="flex flex-col rounded-lg bg-white p-4 dark:bg-gray-900">
           {/* Header */}
           <Row className="mb-3 items-center gap-2">
-            <FaGift className="h-5 w-5 text-amber-500" />
+            <FaHeart className="h-5 w-5 text-amber-500" />
             <span className="text-lg font-semibold">Charity Giveaway</span>
             <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
               ENDED
@@ -333,7 +333,7 @@ export function CharityGiveawayCard(props: {
             </Row>
             {winner && (
               <div className="text-ink-500 mt-1 text-sm">
-                Winning ticket by @{winner.username}
+                Winning entry by @{winner.username}
               </div>
             )}
           </Col>

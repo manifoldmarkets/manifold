@@ -507,6 +507,8 @@ const TxnBalanceChangeRow = (props: {
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     CHARITY_GIVEAWAY_TICKET:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    SWEEPSTAKES_TICKET:
+      'bg-gradient-to-br from-amber-300 via-green-300 to-emerald-400',
     CONTRACT_RESOLUTION_FEE:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
@@ -554,6 +556,8 @@ const TxnBalanceChangeRow = (props: {
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
             ) : type === 'CHARITY_GIVEAWAY_TICKET' ? (
               '🎟️'
+            ) : type === 'SWEEPSTAKES_TICKET' ? (
+              '🎁'
             ) : type === 'CHARITY' ||
               type === 'REFERRAL' ||
               type === 'ADMIN_REWARD' ? (
@@ -723,7 +727,9 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'PUSH_NOTIFICATION_BONUS':
       return 'Push notification bonus'
     case 'CHARITY_GIVEAWAY_TICKET':
-      return 'Charity giveaway tickets'
+      return 'Charity giveaway entries'
+    case 'SWEEPSTAKES_TICKET':
+      return 'Prize drawing entries'
     case 'MEMBERSHIP_PAYMENT':
       return change.description ?? 'Membership'
     case 'SHOP_PURCHASE':
@@ -786,7 +792,9 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CHARITY':
       return 'Donation'
     case 'CHARITY_GIVEAWAY_TICKET':
-      return 'Charity raffle tickets'
+      return 'Charity giveaway entries'
+    case 'SWEEPSTAKES_TICKET':
+      return 'Prize drawing'
     case 'LOAN':
       return ''
     case 'MARGIN_LOAN':

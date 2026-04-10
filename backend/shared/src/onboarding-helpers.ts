@@ -6,6 +6,7 @@ import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { NEXT_DAY_BONUS } from 'common/economy'
 import { isProd, log } from 'shared/utils'
 import {
+  canReceiveBonuses,
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USER_NAME,
   MANIFOLD_USER_USERNAME,
@@ -185,6 +186,12 @@ const processUserForBonus = async (
   // Check if user already received bonus
   if (privateUser.manaBonusSent) {
     log(`User ${user.id} already received mana bonus`)
+    return undefined
+  }
+
+  // Only send bonus to users who can receive bonuses (verified or grandfathered)
+  if (!canReceiveBonuses(user)) {
+    log(`User ${user.id} not eligible for next day bonus - not verified`)
     return undefined
   }
 

@@ -2,6 +2,7 @@ import { charities } from 'common/charity'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -25,20 +26,20 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
+import { FaHeart } from 'react-icons/fa6'
 
 import {
   calculateTicketsFromMana,
   getCurrentGiveawayTicketPrice,
 } from 'common/charity-giveaway'
 
-// Format tickets with appropriate precision
-function formatTickets(tickets: number): string {
-  if (tickets >= 1000) {
-    return tickets.toLocaleString(undefined, { maximumFractionDigits: 1 })
-  } else if (tickets >= 1) {
-    return tickets.toLocaleString(undefined, { maximumFractionDigits: 2 })
+function formatEntries(entries: number): string {
+  if (entries >= 1000) {
+    return entries.toLocaleString(undefined, { maximumFractionDigits: 1 })
+  } else if (entries >= 1) {
+    return entries.toLocaleString(undefined, { maximumFractionDigits: 2 })
   } else {
-    return tickets.toLocaleString(undefined, { maximumFractionDigits: 4 })
+    return entries.toLocaleString(undefined, { maximumFractionDigits: 4 })
   }
 }
 
@@ -73,16 +74,30 @@ const COLORS = [
   '#d946ef', // fuchsia
 ]
 
-export default function CharityGiveawayPage() {
+export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
+  const { giveawayNum } = props
   const user = useUser()
   const isAdmin = useAdmin()
-  const { data, refresh } = useAPIGetter('get-charity-giveaway', {})
+  const router = useRouter()
+  const { data, refresh } = useAPIGetter(
+    'get-charity-giveaway',
+    giveawayNum ? { giveawayNum } : {}
+  )
+  const { data: giveawayListData } = useAPIGetter(
+    'get-charity-giveaway-list',
+    {}
+  )
 
   const [selectedCharityId, setSelectedCharityId] = useState<string>('')
   const [hoveredCharityId, setHoveredCharityId] = useState<string | null>(null)
   const [manaAmount, setManaAmount] = useState<number>(100)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [salesRefreshKey, setSalesRefreshKey] = useState(0)
+
+  const [showCreateGiveawayModal, setShowCreateGiveawayModal] = useState(false)
+  const [newCloseTime, setNewCloseTime] = useState('')
+  const [newPrizeAmount, setNewPrizeAmount] = useState('1000')
+  const [isCreatingGiveaway, setIsCreatingGiveaway] = useState(false)
 
   // Winner reveal state
   const [isSelectingWinner, setIsSelectingWinner] = useState(false)
@@ -99,8 +114,7 @@ export default function CharityGiveawayPage() {
   const totalTickets = data ? data.totalTickets : 0
   const winningCharity = data ? data.winningCharity : undefined
   const winner = data ? data.winner : undefined
-  const nonceHash = data ? data.nonceHash : undefined
-  const nonce = data ? data.nonce : undefined
+  const blockHash = data ? data.nonce : undefined // nonce now contains Bitcoin block hash
   const totalManaSpent = charityStats.reduce(
     (sum, s) => sum + s.totalManaSpent,
     0
@@ -140,19 +154,22 @@ export default function CharityGiveawayPage() {
     return () => clearInterval(interval)
   }, [giveaway?.closeTime])
 
-  const selectedCharityStats = charityStats.find(
-    (s) => s.charityId === selectedCharityId
-  )
-  const currentCharityTickets = selectedCharityStats?.totalTickets ?? 0
+  const prizeAmountUsd = giveaway?.prizeAmountUsd ?? 0
 
   const numTickets = useMemo(() => {
     if (manaAmount <= 0) return 0
-    return calculateTicketsFromMana(totalTickets, manaAmount)
-  }, [totalTickets, manaAmount])
+    return calculateTicketsFromMana(totalTickets, manaAmount, prizeAmountUsd)
+  }, [totalTickets, manaAmount, prizeAmountUsd])
 
-  const currentPrice = getCurrentGiveawayTicketPrice(totalTickets)
+  const currentPrice = getCurrentGiveawayTicketPrice(
+    totalTickets,
+    prizeAmountUsd
+  )
   const isClosed = giveaway && giveaway.closeTime <= Date.now()
   const hasWinner = !!giveaway?.winningTicketId
+
+  const giveawayList = giveawayListData?.giveaways ?? []
+  const activeGiveaway = giveawayList.find((g) => g.closeTime > Date.now())
 
   // Check if user has already seen the reveal animation
   const [hasSeenReveal, setHasSeenReveal] = useState(false)
@@ -222,6 +239,38 @@ export default function CharityGiveawayPage() {
     }
   }
 
+  const handleCreateGiveaway = async () => {
+    if (isCreatingGiveaway) return
+    const closeTimestamp = Date.parse(newCloseTime)
+    if (!Number.isFinite(closeTimestamp)) {
+      toast.error('Please enter a valid close date/time')
+      return
+    }
+    const prizeAmount = Number(newPrizeAmount)
+    if (!Number.isFinite(prizeAmount) || prizeAmount <= 0) {
+      toast.error('Please enter a valid prize amount')
+      return
+    }
+    setIsCreatingGiveaway(true)
+    try {
+      await api('admin-create-charity-giveaway', {
+        closeTime: closeTimestamp,
+        prizeAmountUsd: prizeAmount,
+      })
+      toast.success('New giveaway created!')
+      setShowCreateGiveawayModal(false)
+      setNewPrizeAmount('1000')
+      setNewCloseTime('')
+      refresh()
+    } catch (e) {
+      const msg =
+        e instanceof APIError ? e.message : 'Failed to create giveaway'
+      toast.error(msg)
+    } finally {
+      setIsCreatingGiveaway(false)
+    }
+  }
+
   const handleWheelComplete = () => {
     setShowConfetti(true)
     // Mark as seen in localStorage
@@ -243,9 +292,9 @@ export default function CharityGiveawayPage() {
         numTickets,
       })
       toast.success(
-        `Purchased ${formatTickets(
+        `Converted ${formatMoney(result.manaSpent)} into ${formatEntries(
           result.numTickets
-        )} tickets for ${formatMoney(result.manaSpent)}!`
+        )} entries!`
       )
       track('charity giveaway purchase', {
         giveawayNum: giveaway.giveawayNum,
@@ -259,7 +308,7 @@ export default function CharityGiveawayPage() {
       setSalesRefreshKey((k) => k + 1)
     } catch (e) {
       const msg =
-        e instanceof APIError ? e.message : 'Failed to purchase tickets'
+        e instanceof APIError ? e.message : 'Failed to convert entries'
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
@@ -281,7 +330,7 @@ export default function CharityGiveawayPage() {
       <Page trackPageView={'charity giveaway'}>
         <SEO
           title="Charity Giveaway"
-          description="Buy tickets for your favorite charity to win $1,000!"
+          description="Get entries for your favorite charity to win $1,000!"
           url="/charity"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
@@ -294,7 +343,25 @@ export default function CharityGiveawayPage() {
             <br />
             Check back soon for the next drawing!
           </p>
+          {isAdmin && (
+            <Button
+              color="indigo"
+              onClick={() => setShowCreateGiveawayModal(true)}
+            >
+              Create New Giveaway
+            </Button>
+          )}
         </Col>
+        <CreateGiveawayModal
+          open={showCreateGiveawayModal}
+          setOpen={setShowCreateGiveawayModal}
+          newCloseTime={newCloseTime}
+          setNewCloseTime={setNewCloseTime}
+          newPrizeAmount={newPrizeAmount}
+          setNewPrizeAmount={setNewPrizeAmount}
+          isCreatingGiveaway={isCreatingGiveaway}
+          onCreate={handleCreateGiveaway}
+        />
       </Page>
     )
   }
@@ -303,7 +370,7 @@ export default function CharityGiveawayPage() {
     <Page trackPageView={'charity giveaway'}>
       <SEO
         title="Manifold Charity Giveaway"
-        description="Buy tickets for your favorite charity to win $1,000!"
+        description="Get entries for your favorite charity to win $1,000!"
         url="/charity"
       />
 
@@ -311,16 +378,55 @@ export default function CharityGiveawayPage() {
         {/* Header */}
         <Col className="gap-4">
           <Row className="items-center gap-3">
-            <span className="text-3xl">🎟️</span>
+            <FaHeart className="h-8 w-8 text-emerald-500" />
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
               Manifold Charity Giveaway
             </h1>
+            <div className="ml-auto flex items-center gap-2">
+              {giveawayList.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={String(giveaway.giveawayNum)}
+                    onChange={(e) => {
+                      const nextNum = Number(e.target.value)
+                      if (
+                        activeGiveaway &&
+                        nextNum === activeGiveaway.giveawayNum
+                      ) {
+                        router.push('/charity')
+                      } else {
+                        router.push(`/charity/${nextNum}`)
+                      }
+                    }}
+                    className="bg-canvas-50 border-canvas-200 text-ink-700 appearance-none rounded-md border px-2 py-1 pr-7 text-sm"
+                  >
+                    {giveawayList.map((g) => (
+                      <option key={g.giveawayNum} value={g.giveawayNum}>
+                        {`Giveaway #${g.giveawayNum}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {isAdmin &&
+                isClosed &&
+                (!activeGiveaway ||
+                  activeGiveaway.giveawayNum === giveaway.giveawayNum) && (
+                  <Button
+                    color="indigo"
+                    size="sm"
+                    onClick={() => setShowCreateGiveawayModal(true)}
+                  >
+                    Create New Giveaway
+                  </Button>
+                )}
+            </div>
           </Row>
           <p className="text-ink-600 text-lg leading-relaxed">
             Manifold is giving ${giveaway.prizeAmountUsd.toLocaleString()} to
-            charity—you decide which one. Buy tickets to boost a charity's odds,
-            and on March 1st, we'll draw one lucky ticket to determine the
-            winning charity.
+            charity—you decide which one. Convert mana into entries to boost a
+            charity's odds, and on March 1st, we'll draw one lucky entry to
+            determine the winning charity.
           </p>
         </Col>
 
@@ -338,7 +444,7 @@ export default function CharityGiveawayPage() {
             color={isClosed ? 'red' : 'amber'}
           />
           <StatCard
-            label="Tickets Sold"
+            label="Total Entries"
             value={Math.round(totalTickets).toLocaleString()}
             color="indigo"
           />
@@ -371,8 +477,6 @@ export default function CharityGiveawayPage() {
             setManaAmount={setManaAmount}
             numTickets={numTickets}
             currentPrice={currentPrice}
-            totalTickets={totalTickets}
-            currentCharityTickets={currentCharityTickets}
             isSubmitting={isSubmitting}
             handleBuyTickets={handleBuyTickets}
           />
@@ -431,7 +535,7 @@ export default function CharityGiveawayPage() {
                 loading={isSelectingWinner}
                 disabled={isSelectingWinner}
               >
-                🎟️ Draw Winning Ticket
+                🎟️ Draw Winning Entry
               </Button>
             </Col>
           </div>
@@ -443,7 +547,7 @@ export default function CharityGiveawayPage() {
             <div className="mb-2 text-2xl">⏳</div>
             <h3 className="text-ink-900 font-semibold">Giveaway Closed</h3>
             <p className="text-ink-600 mt-1 text-sm">
-              The winning ticket will be drawn soon. Check back!
+              The winning entry will be drawn soon. Check back!
             </p>
           </div>
         )}
@@ -458,13 +562,25 @@ export default function CharityGiveawayPage() {
         />
 
         {/* Provably Fair Banner */}
-        {nonceHash && (
+        {giveaway && (
           <ProvablyFairBanner
-            nonceHash={nonceHash}
-            nonce={nonce}
+            giveawayNum={giveaway.giveawayNum}
+            closeTime={giveaway.closeTime}
+            blockHash={blockHash}
             hasWinner={hasWinner}
           />
         )}
+
+        <CreateGiveawayModal
+          open={showCreateGiveawayModal}
+          setOpen={setShowCreateGiveawayModal}
+          newCloseTime={newCloseTime}
+          setNewCloseTime={setNewCloseTime}
+          newPrizeAmount={newPrizeAmount}
+          setNewPrizeAmount={setNewPrizeAmount}
+          isCreatingGiveaway={isCreatingGiveaway}
+          onCreate={handleCreateGiveaway}
+        />
       </Col>
     </Page>
   )
@@ -515,8 +631,6 @@ function PurchaseForm(props: {
   setManaAmount: (amount: number) => void
   numTickets: number
   currentPrice: number
-  totalTickets: number
-  currentCharityTickets: number
   isSubmitting: boolean
   handleBuyTickets: () => void
 }) {
@@ -529,8 +643,6 @@ function PurchaseForm(props: {
     setManaAmount,
     numTickets,
     currentPrice,
-    totalTickets,
-    currentCharityTickets,
     isSubmitting,
     handleBuyTickets,
   } = props
@@ -543,7 +655,7 @@ function PurchaseForm(props: {
   return (
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
-        <h3 className="text-ink-900 font-semibold">Buy Tickets</h3>
+        <h3 className="text-ink-900 font-semibold">Get Entries</h3>
         <p className="text-ink-500 mt-0.5 text-sm">
           Support a charity and enter the drawing
         </p>
@@ -606,9 +718,17 @@ function PurchaseForm(props: {
         {selectedCharityId && (
           <>
             <Col className="gap-2">
-              <label className="text-ink-700 text-sm font-medium">
-                Amount to spend
-              </label>
+              <Row className="items-center gap-1">
+                <label className="text-ink-700 text-sm font-medium">
+                  Amount to convert
+                </label>
+                <InfoTooltip
+                  text={`Current rate: ${formatMoneyWithDecimals(
+                    currentPrice
+                  )} per entry. Entries follow a bonding curve — earlier entries cost less mana.`}
+                  size="sm"
+                />
+              </Row>
               <Row className="items-center gap-2">
                 <Row className="bg-canvas-50 border-canvas-100 flex-1 items-center gap-1.5 rounded-lg border px-3 py-2">
                   <ManaCoin />
@@ -647,43 +767,6 @@ function PurchaseForm(props: {
               </Row>
             </Col>
 
-            {/* Summary */}
-            <div className="bg-canvas-50 rounded-lg p-4">
-              <Row className="text-ink-600 items-center justify-between text-sm">
-                <Row className="items-center gap-1">
-                  <span>Price per ticket</span>
-                  <InfoTooltip
-                    text="Tickets are priced on a bonding curve, making it cheaper to buy earlier."
-                    size="sm"
-                  />
-                </Row>
-                <span className="font-medium">
-                  {formatMoneyWithDecimals(currentPrice)}
-                </span>
-              </Row>
-              <Row className="text-ink-600 mt-2 items-center justify-between text-sm">
-                <span>Total sold</span>
-                <span>{formatTickets(totalTickets)} tickets</span>
-              </Row>
-              {currentCharityTickets > 0 && (
-                <Row className="text-ink-600 mt-2 items-center justify-between text-sm">
-                  <span>
-                    {charities.find((c) => c.id === selectedCharityId)?.name}'s
-                    tickets
-                  </span>
-                  <span>{formatTickets(currentCharityTickets)}</span>
-                </Row>
-              )}
-              <div className="border-canvas-200 mt-3 border-t pt-3">
-                <Row className="items-center justify-between">
-                  <span className="text-ink-900 font-medium">You'll get</span>
-                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                    {formatTickets(numTickets)} tickets
-                  </span>
-                </Row>
-              </div>
-            </div>
-
             {/* Buy Button */}
             <Button
               color="indigo"
@@ -693,8 +776,8 @@ function PurchaseForm(props: {
               disabled={!selectedCharityId || numTickets <= 0 || isSubmitting}
               className="w-full justify-center rounded-lg py-3 font-semibold"
             >
-              Buy {formatTickets(numTickets)} tickets for{' '}
-              {formatMoney(manaAmount)}
+              Convert {formatMoney(manaAmount)} into {formatEntries(numTickets)}{' '}
+              entries
             </Button>
           </>
         )}
@@ -712,7 +795,7 @@ function SignInPrompt(props: { previewCharityId: string }) {
   return (
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 bg-canvas-50 border-b px-5 py-4">
-        <h3 className="text-ink-900 font-semibold">Buy Tickets</h3>
+        <h3 className="text-ink-900 font-semibold">Get Entries</h3>
         <p className="text-ink-500 mt-0.5 text-sm">
           Support a charity and enter the drawing
         </p>
@@ -741,7 +824,7 @@ function SignInPrompt(props: { previewCharityId: string }) {
           <div className="text-ink-300 text-4xl">🎟️</div>
         )}
         <p className="text-ink-600 text-center text-sm">
-          Sign in to buy tickets and support your favorite charity
+          Sign in to get entries and support your favorite charity
         </p>
         <Button color="indigo" className="w-full justify-center">
           Sign in to participate
@@ -774,7 +857,7 @@ function GiveawayPieChart(props: {
     return (
       <div className="bg-canvas-0 border-canvas-50 flex flex-col items-center justify-center rounded-xl border p-12 shadow-sm">
         <div className="text-ink-200 mb-3 text-5xl">📊</div>
-        <p className="text-ink-900 font-medium">No tickets yet</p>
+        <p className="text-ink-900 font-medium">No entries yet</p>
         <p className="text-ink-500 mt-1 text-sm">
           Be the first to participate!
         </p>
@@ -843,7 +926,7 @@ function GiveawayPieChart(props: {
   return (
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 border-b px-5 py-4">
-        <h3 className="text-ink-900 font-semibold">Ticket Distribution</h3>
+        <h3 className="text-ink-900 font-semibold">Entry Distribution</h3>
         <p className="text-ink-500 mt-0.5 text-sm">Breakdown by charity</p>
       </div>
 
@@ -908,7 +991,7 @@ function GiveawayPieChart(props: {
                 {Math.round(totalTickets).toLocaleString()}
               </div>
               <div className="text-ink-400 text-xs font-medium uppercase tracking-wide">
-                tickets
+                entries
               </div>
             </div>
           </div>
@@ -993,7 +1076,7 @@ function SalesHistory(props: { giveawayNum: number; refreshKey: number }) {
     <div className="bg-canvas-0 border-canvas-50 overflow-hidden rounded-xl border shadow-sm">
       <div className="border-canvas-50 border-b px-5 py-4">
         <h3 className="text-ink-900 font-semibold">Recent Activity</h3>
-        <p className="text-ink-500 mt-0.5 text-sm">Latest ticket purchases</p>
+        <p className="text-ink-500 mt-0.5 text-sm">Latest entry conversions</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -1007,7 +1090,7 @@ function SalesHistory(props: { giveawayNum: number; refreshKey: number }) {
                 Charity
               </th>
               <th className="text-ink-500 px-5 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                Tickets
+                Entries
               </th>
               <th className="text-ink-500 px-5 py-3 text-right text-xs font-medium uppercase tracking-wider">
                 Cost
@@ -1069,7 +1152,7 @@ function SaleRow(props: {
         {charityName}
       </td>
       <td className="text-ink-900 px-5 py-4 text-right text-sm font-medium tabular-nums">
-        {formatTickets(sale.numTickets)}
+        {formatEntries(sale.numTickets)}
       </td>
       <td className="text-ink-600 px-5 py-4 text-right text-sm tabular-nums">
         {formatMoney(sale.manaSpent)}
@@ -1129,7 +1212,7 @@ function WinnerCard(props: {
                 <span className="font-semibold text-amber-600 dark:text-amber-400">
                   {percentage.toFixed(1)}%
                 </span>{' '}
-                of tickets ({formatTickets(charityTickets)})
+                of entries ({formatEntries(charityTickets)})
               </div>
             </Col>
           </Row>
@@ -1144,7 +1227,7 @@ function WinnerCard(props: {
           </p>
           {winner && (
             <Row className="text-ink-600 mt-2 items-center justify-center gap-2 text-sm">
-              <span>Winning ticket purchased by</span>
+              <span>Winning entry converted by</span>
               <Avatar
                 username={winner.username}
                 avatarUrl={winner.avatarUrl}
@@ -1167,12 +1250,40 @@ function WinnerCard(props: {
 }
 
 function ProvablyFairBanner(props: {
-  nonceHash: string
-  nonce?: string
+  giveawayNum: number
+  closeTime: number
+  blockHash?: string
   hasWinner: boolean
 }) {
-  const { nonceHash, nonce, hasWinner } = props
+  const { giveawayNum, closeTime, blockHash, hasWinner } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCheckingBlock, setIsCheckingBlock] = useState(false)
+  const [blockInfo, setBlockInfo] = useState<{
+    height: number
+    hash: string
+  } | null>(null)
+
+  const isClosed = closeTime <= Date.now()
+  const isLegacyGiveaway = giveawayNum === 1
+
+  const handleCheckBlock = async () => {
+    setIsCheckingBlock(true)
+    try {
+      const result = await api('check-bitcoin-block', { closeTime })
+      if (result.available) {
+        setBlockInfo({ height: result.blockHeight, hash: result.blockHash })
+      } else {
+        toast.error('Bitcoin block not yet mined. Please try again later.')
+      }
+    } catch (e) {
+      toast.error('Failed to check Bitcoin block')
+    } finally {
+      setIsCheckingBlock(false)
+    }
+  }
+
+  const displayHash = blockHash || blockInfo?.hash
+  const displayHeight = blockInfo?.height
 
   return (
     <>
@@ -1195,56 +1306,173 @@ function ProvablyFairBanner(props: {
             <h2 className="text-ink-900 text-xl font-bold">Provably Fair</h2>
           </Row>
 
-          <p className="text-ink-700 text-sm leading-relaxed">
-            Before the drawing, we publish a hash of a secret nonce. When it's
-            time to pick a winner, we combine the nonce with the timestamps of
-            the last 10 purchases to generate a random number that determines
-            the winning ticket. After the drawing, we reveal the nonce so you
-            can verify the result wasn't manipulated.
-          </p>
-
-          <Col className="bg-canvas-50 gap-3 rounded-lg p-4">
-            <Col className="gap-1">
-              <span className="text-ink-600 text-sm font-medium">
-                Nonce Hash (MD5)
-              </span>
-              <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
-                {nonceHash}
-              </code>
-            </Col>
-
-            {hasWinner && nonce && (
-              <Col className="gap-1">
-                <span className="text-ink-600 text-sm font-medium">
-                  Revealed Nonce
-                </span>
-                <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
-                  {nonce}
-                </code>
-              </Col>
-            )}
-          </Col>
-
-          {hasWinner && nonce ? (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
-              <p className="text-sm text-green-800 dark:text-green-300">
-                ✓ Winner has been selected. You can verify by computing{' '}
-                <code className="rounded bg-green-100 px-1 dark:bg-green-900/50">
-                  MD5(nonce)
-                </code>{' '}
-                and confirming it matches the hash above.
+          {isLegacyGiveaway ? (
+            <>
+              <p className="text-ink-700 text-sm">
+                This giveaway used our original method: a secret nonce combined
+                with timestamps of the last 10 purchases.
               </p>
-            </div>
+              {hasWinner && blockHash && (
+                <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
+                  <span className="text-ink-600 text-sm font-medium">
+                    Nonce
+                  </span>
+                  <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
+                    {blockHash}
+                  </code>
+                </Col>
+              )}
+              {hasWinner && (
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  ✓ Winner selected using the original method.
+                </p>
+              )}
+            </>
           ) : (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
-              <p className="text-sm text-amber-800 dark:text-amber-300">
-                ⏳ Record the hash above. After the drawing, the full nonce will
-                be revealed so you can verify the result.
+            <>
+              <p className="text-ink-700 text-sm">
+                Winner determined by the first Bitcoin block mined after{' '}
+                <span className="font-semibold">
+                  {new Date(closeTime).toLocaleString()}
+                </span>
+                . The block hash seeds a deterministic RNG. Verify on any block
+                explorer.
               </p>
-            </div>
+
+              {displayHash && (
+                <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
+                  <Row className="items-center justify-between">
+                    <span className="text-ink-600 text-sm font-medium">
+                      Block{displayHeight ? ` #${displayHeight}` : ''}
+                    </span>
+                    <Row className="gap-2">
+                      <a
+                        href={`https://mempool.space/block/${displayHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 text-xs hover:underline"
+                      >
+                        mempool.space
+                      </a>
+                      <a
+                        href={`https://blockstream.info/block/${displayHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 text-xs hover:underline"
+                      >
+                        blockstream
+                      </a>
+                    </Row>
+                  </Row>
+                  <code className="bg-canvas-100 text-ink-900 break-all rounded px-2 py-1 font-mono text-xs">
+                    {displayHash}
+                  </code>
+                </Col>
+              )}
+
+              {hasWinner && blockHash ? (
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  ✓ Winner selected using the block hash above.
+                </p>
+              ) : isClosed && !hasWinner ? (
+                <Col className="gap-2">
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    ⏳ Giveaway closed. Awaiting winner selection.
+                  </p>
+                  {!displayHash && (
+                    <Button
+                      color="indigo"
+                      size="xs"
+                      onClick={handleCheckBlock}
+                      loading={isCheckingBlock}
+                      disabled={isCheckingBlock}
+                    >
+                      Check for Bitcoin Block
+                    </Button>
+                  )}
+                </Col>
+              ) : (
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  ⏳ Awaiting close time to determine block.
+                </p>
+              )}
+            </>
           )}
         </Col>
       </Modal>
     </>
+  )
+}
+
+function CreateGiveawayModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  newCloseTime: string
+  setNewCloseTime: (value: string) => void
+  newPrizeAmount: string
+  setNewPrizeAmount: (value: string) => void
+  isCreatingGiveaway: boolean
+  onCreate: () => void
+}) {
+  const {
+    open,
+    setOpen,
+    newCloseTime,
+    setNewCloseTime,
+    newPrizeAmount,
+    setNewPrizeAmount,
+    isCreatingGiveaway,
+    onCreate,
+  } = props
+
+  return (
+    <Modal open={open} setOpen={setOpen} size="md">
+      <Col className={clsx(MODAL_CLASS, 'gap-5')}>
+        <Col className="gap-1">
+          <h3 className="text-ink-900 text-lg font-semibold">
+            Create New Charity Giveaway
+          </h3>
+          <p className="text-ink-500 text-sm">
+            Set a close date/time and prize pool amount.
+          </p>
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">Close time</label>
+          <Input
+            type="datetime-local"
+            value={newCloseTime}
+            onChange={(e) => setNewCloseTime(e.target.value)}
+          />
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">
+            Prize pool (USD)
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={newPrizeAmount}
+            onChange={(e) => setNewPrizeAmount(e.target.value)}
+          />
+        </Col>
+
+        <Row className="justify-end gap-2">
+          <Button color="gray-outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="indigo"
+            loading={isCreatingGiveaway}
+            disabled={isCreatingGiveaway}
+            onClick={onCreate}
+          >
+            Create giveaway
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }

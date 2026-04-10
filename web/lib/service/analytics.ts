@@ -5,6 +5,7 @@ import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
 import { api, completeQuest } from 'web/lib/api/api'
 import { auth } from 'web/lib/firebase/users'
+import { ensureDeviceToken } from 'web/lib/util/device-token'
 import { QuestType } from 'common/quest'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { Json } from 'common/supabase/schema'
@@ -19,12 +20,14 @@ type EventData = Record<string, Json | undefined>
 
 export async function track(name: string, properties?: EventIds & EventData) {
   const userId = auth.currentUser?.uid
+  const deviceId = ensureDeviceToken()
   const isNative = getIsNative()
 
   // mqp: did you know typescript can't type `const x = { a: b, ...c }` correctly?
   // see https://github.com/microsoft/TypeScript/issues/27273
   const allProperties = Object.assign(properties ?? {}, {
     isNative,
+    deviceId,
   })
 
   const { contractId, adId, commentId, ...data } = allProperties

@@ -10,7 +10,8 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
-import { getPrivateUser, getUser } from 'shared/utils'
+import { getPrivateUser, getUser, log } from 'shared/utils'
+import { canReceiveBonuses } from 'common/user'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -45,12 +46,18 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     )
     const newPrivateUser = convertPrivateUser(updatedRow)
     if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
-      const txn = await payUserPushNotificationsBonus(
-        auth.uid,
-        PUSH_NOTIFICATION_BONUS,
-        tx
-      )
-      return { newPrivateUser, txn }
+      // Only pay push notification bonus if user can receive bonuses (verified or grandfathered)
+      if (canReceiveBonuses(user)) {
+        const txn = await payUserPushNotificationsBonus(
+          auth.uid,
+          PUSH_NOTIFICATION_BONUS,
+          tx
+        )
+        return { newPrivateUser, txn }
+      } else {
+        log(`Skipped push notification bonus for user ${auth.uid} - not eligible for bonuses`)
+        return { newPrivateUser, txn: null }
+      }
     }
     return { newPrivateUser: null, txn: null }
   })

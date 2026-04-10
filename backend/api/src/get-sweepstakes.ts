@@ -1,0 +1,178 @@
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { APIHandler } from 'api/helpers/endpoint'
+import { tsToMillis } from 'common/supabase/utils'
+import {
+  SweepstakesPrize,
+  getPrizeForRank,
+  SweepstakesWinner,
+  SWEEPSTAKES_MIN_MANA_INVESTED,
+} from 'common/sweepstakes'
+
+export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
+  props,
+  auth
+) => {
+  const { sweepstakesNum } = props
+  const pg = createSupabaseDirectClient()
+
+  // If no sweepstakesNum specified, get the most recent active sweepstakes (not yet closed)
+  // or the most recent sweepstakes overall
+  const sweepstakes = await pg.oneOrNone<{
+    sweepstakes_num: number
+    name: string
+    prizes: SweepstakesPrize[]
+    close_time: string
+    winning_ticket_ids: string[] | null
+    nonce: string | null
+    created_time: string
+  }>(
+    sweepstakesNum
+      ? `SELECT * FROM sweepstakes WHERE sweepstakes_num = $1`
+      : `SELECT * FROM sweepstakes 
+         ORDER BY 
+           CASE WHEN close_time > NOW() THEN 0 ELSE 1 END,
+           close_time DESC
+         LIMIT 1`,
+    sweepstakesNum ? [sweepstakesNum] : []
+  )
+
+  if (!sweepstakes) {
+    return { userStats: [], totalTickets: 0 }
+  }
+
+  // Get ticket stats per user for this sweepstakes
+  const userStats = await pg.manyOrNone<{
+    user_id: string
+    total_tickets: string
+    total_mana_spent: string
+  }>(
+    `SELECT 
+       user_id,
+       SUM(num_tickets) as total_tickets,
+       SUM(mana_spent) as total_mana_spent
+     FROM sweepstakes_tickets
+     WHERE sweepstakes_num = $1
+     GROUP BY user_id
+     ORDER BY total_tickets DESC`,
+    [sweepstakes.sweepstakes_num]
+  )
+
+  const totalTickets = userStats.reduce(
+    (sum, s) => sum + parseFloat(s.total_tickets),
+    0
+  )
+
+  // If there are winning tickets, get the winner details
+  let winners: SweepstakesWinner[] | undefined
+
+  if (
+    sweepstakes.winning_ticket_ids &&
+    sweepstakes.winning_ticket_ids.length > 0
+  ) {
+    const winningTickets = await pg.manyOrNone<{
+      id: string
+      user_id: string
+    }>(
+      `SELECT id, user_id FROM sweepstakes_tickets WHERE id = ANY($1)`,
+      [sweepstakes.winning_ticket_ids]
+    )
+
+    // Create a map for quick lookup
+    const ticketMap = new Map(winningTickets.map((t) => [t.id, t]))
+
+    // Get all unique user IDs
+    const userIds = [...new Set(winningTickets.map((t) => t.user_id))]
+
+    const users = await pg.manyOrNone<{
+      id: string
+      username: string
+      name: string
+      avatar_url: string
+    }>(
+      `SELECT id, username, name, data->>'avatarUrl' as avatar_url FROM users WHERE id = ANY($1)`,
+      [userIds]
+    )
+
+    const userMap = new Map(users.map((u) => [u.id, u]))
+
+    winners = []
+    for (let i = 0; i < sweepstakes.winning_ticket_ids.length; i++) {
+      const ticketId = sweepstakes.winning_ticket_ids[i]
+      const ticket = ticketMap.get(ticketId)
+      if (!ticket) continue
+
+      const user = userMap.get(ticket.user_id)
+      if (!user) continue
+
+      const rank = i + 1
+      const prize = getPrizeForRank(sweepstakes.prizes, rank)
+      if (!prize) continue
+
+      winners.push({
+        rank,
+        label: prize.label,
+        prizeUsdc: prize.amountUsdc,
+        ticketId,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          avatarUrl: user.avatar_url,
+        },
+      })
+    }
+  }
+
+  // Check if current user has claimed free ticket and get their total mana invested
+  let hasClaimedFreeTicket: boolean | undefined
+  let userTotalManaInvested: number | undefined
+  let meetsInvestmentRequirement: boolean | undefined
+
+  if (auth) {
+    const freeTicket = await pg.oneOrNone(
+      `SELECT 1 FROM sweepstakes_free_tickets WHERE sweepstakes_num = $1 AND user_id = $2`,
+      [sweepstakes.sweepstakes_num, auth.uid]
+    )
+    hasClaimedFreeTicket = !!freeTicket
+
+    // Get user's total mana invested across all markets
+    const investedResult = await pg.oneOrNone<{ total_invested: string }>(
+      `SELECT COALESCE(SUM((data->>'totalAmountInvested')::numeric), 0) as total_invested
+       FROM user_contract_metrics
+       WHERE user_id = $1`,
+      [auth.uid]
+    )
+    userTotalManaInvested = parseFloat(investedResult?.total_invested ?? '0')
+    meetsInvestmentRequirement =
+      userTotalManaInvested >= SWEEPSTAKES_MIN_MANA_INVESTED
+  }
+
+  return {
+    sweepstakes: {
+      sweepstakesNum: sweepstakes.sweepstakes_num,
+      name: sweepstakes.name,
+      prizes: sweepstakes.prizes,
+      closeTime: tsToMillis(sweepstakes.close_time),
+      winningTicketIds: sweepstakes.winning_ticket_ids,
+      createdTime: tsToMillis(sweepstakes.created_time),
+    },
+    userStats: userStats.map((s) => ({
+      userId: s.user_id,
+      totalTickets: parseFloat(s.total_tickets),
+      totalManaSpent: parseFloat(s.total_mana_spent),
+    })),
+    totalTickets,
+    winners,
+    // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+    // Only revealed AFTER winners are selected. Users verify by finding first block after closeTime.
+    nonce:
+      sweepstakes.winning_ticket_ids &&
+      sweepstakes.winning_ticket_ids.length > 0
+        ? sweepstakes.nonce ?? undefined
+        : undefined,
+    hasClaimedFreeTicket,
+    userTotalManaInvested,
+    meetsInvestmentRequirement,
+    minManaInvested: SWEEPSTAKES_MIN_MANA_INVESTED,
+  }
+}

@@ -11,6 +11,7 @@ import {
   MembershipSubscriptionData,
   Notification,
   PaymentCompletedData,
+  PrizeWinnerData,
   ReactionNotificationTypes,
   ReviewNotificationData,
 } from 'common/notification'
@@ -512,6 +513,15 @@ export function NotificationItem(props: {
   } else if (sourceType === 'membership_subscription') {
     return (
       <MembershipSubscriptionNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'prize_winner') {
+    return (
+      <PrizeWinnerNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -2482,6 +2492,42 @@ function MembershipSubscriptionNotification(props: {
           <span className="font-semibold">{formatMoney(amount)}</span> needed)
         </span>
       )}
+    </NotificationFrame>
+  )
+}
+
+function PrizeWinnerNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const data = notification.data as PrizeWinnerData | undefined
+  const prizeLabel = data?.prizeLabel ?? '1st'
+  const prizeAmount = data?.prizeAmountUsdc ?? 0
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link="/prize"
+      icon={
+        <NotificationIcon
+          symbol={'🎉'}
+          symbolBackgroundClass="bg-gradient-to-br from-teal-400 to-cyan-400"
+        />
+      }
+      subtitle="You'll receive your USDC prize via crypto wallet"
+    >
+      <span>
+        Congratulations! You won{' '}
+        <span className="font-semibold">{prizeLabel} place</span> in the Prize
+        Drawing:{' '}
+        <span className="font-semibold text-teal-600">${prizeAmount} USDC</span>
+      </span>
     </NotificationFrame>
   )
 }

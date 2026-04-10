@@ -92,6 +92,7 @@ export type notification_source_types =
   | 'extra_purchased_mana'
   | 'payment_status'
   | 'membership_subscription'
+  | 'prize_winner'
   | 'charity_champion'
 
 export type love_notification_source_types =
@@ -146,6 +147,7 @@ export type notification_reason_types =
   | 'bounty_added'
   | 'bounty_canceled'
   | 'mana_payment_received'
+  | 'prize_winner'
   | 'charity_champion_dethroned'
   | 'charity_champion_eligible'
 
@@ -488,6 +490,13 @@ export type MembershipSubscriptionData = {
   type: 'renewed' | 'cancelled' | 'expiring_soon'
   daysUntilExpiry?: number
   newExpiresTime?: number // Only for renewals
+}
+
+export type PrizeWinnerData = {
+  rank: number
+  prizeLabel: string
+  prizeAmountUsdc: number
+  sweepstakesNum: number
 }
 
 export function getSourceIdForLinkComponent(

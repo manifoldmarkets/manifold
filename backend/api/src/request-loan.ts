@@ -262,6 +262,35 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
 
   const { userUpdates } = await betsQueue.enqueueFn(async () => {
     return pg.tx(async (tx) => {
+      // Lock the user row to serialize concurrent loan requests for this user.
+      // The in-process betsQueue keyed on auth.uid is not sufficient because it
+      // is per-instance only — multiple API replicas can race. The pre-tx
+      // daily-limit check at lines ~149-157 reads without a lock, so we must
+      // re-check inside the locked transaction.
+      await tx.oneOrNone('select 1 from users where id = $1 for update', [user.id])
+
+      // Re-check daily loan limit inside the transaction (race-safe).
+      const lockedTotalRow = await tx.oneOrNone<{ total: number }>(
+        `select coalesce(sum(amount), 0)::float as total
+         from txns
+         where to_id = $1
+           and category in ('MARGIN_LOAN', 'LOAN')
+           and created_time >= $2`,
+        [user.id, midnightPT.toISOString()]
+      )
+      const todayLoansLocked = lockedTotalRow?.total ?? 0
+      if (todayLoansLocked + amount > dailyLimit) {
+        const availableTodayLocked = Math.max(0, dailyLimit - todayLoansLocked)
+        throw new APIError(
+          400,
+          `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
+            2
+          )} per day (resets at midnight PT). You've already borrowed ${todayLoansLocked.toFixed(
+            2
+          )} today. Available today: ${availableTodayLocked.toFixed(2)}`
+        )
+      }
+
       const res = await tx.multi(
         `${balanceUpdateQuery};
          ${txnQuery};

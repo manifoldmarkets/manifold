@@ -38,6 +38,7 @@ export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 
 /* Mana bonuses */
+export const PRE_KYC_STARTING_BALANCE = 50
 export const STARTING_BALANCE = 1000
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
@@ -155,6 +156,15 @@ export const MANI_IOS_PRICES = [
 
 export const SWEEPIES_CASHOUT_FEE = 5
 export const MIN_CASHOUT_AMOUNT = 25
+
+// Crypto purchase rate: 100 mana per $1 USDC
+export const CRYPTO_MANA_PER_DOLLAR = 100
+
+// Crypto purchase bonuses
+export const CRYPTO_FIRST_PURCHASE_BONUS_PCT = 0.1 // 10% for first crypto purchase
+export const CRYPTO_BULK_PURCHASE_BONUS_PCT = 0.1 // 10% for $1000+ purchases
+export const CRYPTO_BULK_THRESHOLD_INTERNAL = 995 // Internal threshold (covers fees)
+export const CRYPTO_BULK_THRESHOLD_DISPLAY = 1000 // Displayed threshold
 
 export const SWEEPS_MIN_BET = 1
 export const MANA_MIN_BET = 1

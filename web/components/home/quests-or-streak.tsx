@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { User } from 'common/user'
+import { canReceiveBonuses, User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
@@ -27,6 +27,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { StreakProgressBar } from '../profile/streak-progress-bar'
+import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -37,6 +38,10 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   const router = useRouter()
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+
+  // Check if user can receive bonuses (verified or grandfathered)
+  const userCanReceiveBonuses = user ? canReceiveBonuses(user) : false
 
   useEffect(() => {
     if (showQuestsModal) {
@@ -45,28 +50,37 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   }, [showQuestsModal])
   if (!user) return <></>
 
+  const handleQuestsClick = () => {
+    // Check if user needs verification first
+    if (!userCanReceiveBonuses) {
+      setShowVerificationModal(true)
+      return
+    }
+    setShowQuestsModal(true)
+  }
+
   // Preview mode: ?previewFrozen=true forces frozen state
   const previewFrozen = router.query.previewFrozen === 'true'
 
-  const missingStreak = user && !hasCompletedStreakToday(user)
-  const wasFrozen = previewFrozen || (user && wasStreakFrozenRecently(user))
+  const missingStreak = !hasCompletedStreakToday(user)
+  const wasFrozen = previewFrozen || wasStreakFrozenRecently(user)
 
   // Determine visual state:
   // - Normal (colored): streak completed today
-  // - Frozen: streak not completed but freeze was used (or previewFrozen) - show ice cube, no filter
+  // - Frozen: streak not completed but freeze was used (or previewFrozen)
   // - Grayscale: streak not completed, no freeze used
   const showFrozen = previewFrozen || (missingStreak && wasFrozen)
   const getStyle = () => {
-    if (showFrozen) return '' // Ice cube emoji is already blue, no filter needed
-    if (!missingStreak) return '' // Normal
-    return 'grayscale' // Gray
+    if (showFrozen) return ''
+    if (!missingStreak) return ''
+    return 'grayscale'
   }
 
   return (
     <>
       <button
         className={clsx('cursor-pointer', dailyStatsClass)}
-        onClick={() => setShowQuestsModal(true)}
+        onClick={handleQuestsClick}
       >
         <Col className={clsx(getStyle(), 'items-center')}>
           <span>
@@ -83,6 +97,14 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
           setOpen={setShowQuestsModal}
           user={user}
           previewFrozen={previewFrozen}
+        />
+      )}
+      {showVerificationModal && (
+        <VerificationRequiredModal
+          open={showVerificationModal}
+          setOpen={setShowVerificationModal}
+          user={user}
+          action="earn quest rewards"
         />
       )}
     </>

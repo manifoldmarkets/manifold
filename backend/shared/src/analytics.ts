@@ -1,4 +1,5 @@
 import { Request } from 'express'
+import { getBestClientIp } from 'common/client-ip'
 
 import { tryOrLogError } from 'shared/helpers/try-or-log-error'
 import { trackAuditEvent } from 'shared/audit-events'
@@ -25,11 +26,5 @@ export const trackPublicEvent = async (
 }
 
 export const getIp = (req: Request) => {
-  const xForwarded = req.headers['x-forwarded-for']
-  const xForwardedIp = Array.isArray(xForwarded) ? xForwarded[0] : xForwarded
-  const ip = xForwardedIp ?? req.socket.remoteAddress ?? req.ip
-  if (ip?.includes(',')) {
-    return ip.split(',')[0].trim()
-  }
-  return ip ?? ''
+  return getBestClientIp(req.headers, [req.socket.remoteAddress, req.ip])
 }

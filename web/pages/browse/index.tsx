@@ -15,6 +15,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { DEFAULT_FOR_YOU, Welcome } from 'web/components/onboarding/welcome'
+import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 export default function BrowsePage() {
   const user = useUser()
@@ -26,6 +27,7 @@ export default function BrowsePage() {
       {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
       <div className="lg:mb-4"></div>
       <Welcome />
+      <VerificationResultModal />
       <BrowsePageContent />
     </Page>
   )

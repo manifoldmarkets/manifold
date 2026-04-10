@@ -7,6 +7,7 @@
  * - 'posting': blocks comments, messages, posts, answers, poll votes, managrams
  * - 'marketControl': blocks creating/editing/resolving markets, hiding comments, answers, topics
  * - 'trading': blocks betting, managrams, liquidity, answers, poll votes
+ * - 'purchase': blocks purchasing mana
  * - 'modAlert': does NOT block any actions, used for audit logging of mod alerts
  *
  * To add a new bannable action:
@@ -97,6 +98,8 @@ export function getBanTypesForAction(action: string): BanType[] {
     'addTopic': ['marketControl'],
     // Poll voting affects market outcome (trading), market structure (marketControl), and is a form of participation (posting)
     'pollVote': ['posting', 'marketControl', 'trading'],
+    // Purchasing mana
+    'purchase': ['purchase'],
   }
   return actionMap[action] || []
 }
@@ -127,6 +130,7 @@ export function getBanTypeDisplayName(banType: BanType): string {
     posting: 'Posting',
     marketControl: 'Market Control',
     trading: 'Trading',
+    purchase: 'Purchase',
     modAlert: 'Mod Alert',
   }
   return names[banType]
@@ -137,6 +141,7 @@ export function getBanTypeDescription(banType: BanType): string {
     posting: 'commenting, messaging, creating posts, adding answers, poll voting',
     marketControl: 'creating, editing, resolving markets, hiding comments, adding/editing answers, poll voting',
     trading: 'betting, managrams, liquidity changes, adding answers, poll voting',
+    purchase: 'buying mana',
     modAlert: 'warning message from moderators (no actions blocked)',
   }
   return descriptions[banType]

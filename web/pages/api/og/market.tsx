@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og'
-import { ImageResponseOptions } from '@vercel/og/dist/types'
+
+type ImageResponseOptions = ConstructorParameters<typeof ImageResponse>[1]
 import { OgCardProps } from 'common/contract-seo'
 import { NextRequest } from 'next/server'
 import { OgMarket } from 'web/components/og/og-market'

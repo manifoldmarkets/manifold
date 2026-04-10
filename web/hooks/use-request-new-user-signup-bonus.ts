@@ -7,7 +7,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { uniq } from 'lodash'
 import { MARKET_VISIT_BONUS, MARKET_VISIT_BONUS_TOTAL } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { humanish } from 'common/user'
+import { canReceiveBonuses } from 'common/user'
 
 /**
  * @deprecated market visit bonus no longer in use
@@ -49,7 +49,7 @@ export const useRequestNewUserSignupBonus = (contractId: string) => {
       newContractIdsVisited.includes(contractId) ||
       remainingBonuses <= 0 ||
       !user ||
-      !humanish(user) ||
+      !canReceiveBonuses(user) ||
       user.signupBonusPaid === undefined ||
       user.signupBonusPaid >= MARKET_VISIT_BONUS_TOTAL
     )

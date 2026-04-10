@@ -5,7 +5,7 @@ import { Notification } from 'common/notification'
 
 import { Token } from 'components/token/token'
 import { imageSizeMap } from 'components/user/avatar-circle'
-import { humanish } from 'common/user'
+import { canReceiveBonuses } from 'common/user'
 import { BETTING_STREAK_BONUS_MAX } from 'common/economy'
 import { WrittenAmount } from 'components/number/writtenCurrency'
 
@@ -33,9 +33,9 @@ export function BettingStreakBonusIncomeNotification(props: {
         />
       }
       subtitle={
-        noBonus && user && !humanish(user) ? (
+        noBonus && user && !canReceiveBonuses(user) ? (
           <>
-            Verify your phone number to get up to{' '}
+            Verify your identity to get up to{' '}
             <WrittenAmount
               amount={BETTING_STREAK_BONUS_MAX}
               token="M$"
@@ -46,7 +46,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         ) : (
           noBonus &&
           user &&
-          humanish(user) && (
+          canReceiveBonuses(user) && (
             <>Come back and predict again tomorrow for a bonus!</>
           )
         )

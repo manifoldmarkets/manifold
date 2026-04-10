@@ -2,7 +2,6 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
-import { STARTING_BALANCE } from 'common/economy'
 import { TRADE_TERM } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { convertGroup } from 'common/supabase/groups'
@@ -15,12 +14,12 @@ import { User } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { formatMoney } from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { removeEmojis } from 'common/util/string'
 import { capitalize, intersection, orderBy, uniq, uniqBy } from 'lodash'
 import { Button } from 'web/components/buttons/button'
 import { PillButton } from 'web/components/buttons/pill-button'
+import { IdentityVerificationPage } from 'web/components/onboarding/identity-verification-page'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useUser } from 'web/hooks/use-user'
 import { api, followTopic, followUser, updateUser } from 'web/lib/api/api'
@@ -55,6 +54,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       track('welcome screen: how it works')
     } else if (page === 3) {
       track('welcome screen: topic selection')
+    } else if (page === 4) {
+      track('welcome screen: identity verification')
     }
     setPage(page)
   }
@@ -89,8 +90,13 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
         goBack={() => handleSetPage(page - 1)}
       />
     ),
-    // user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
+    <IdentityVerificationPage
+      user={user}
+      onSkip={finishOnboarding}
+      onComplete={finishOnboarding}
+    />,
   ])
+  // Pages 0, 1, 2 show bottom buttons; pages 3 (TopicsPage) and 4 (IdentityVerificationPage) have their own
   const showBottomButtons = page < 3
 
   const getTrendingAndUserCategories = async (userId: string) => {
@@ -147,16 +153,20 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       getTrendingAndUserCategories(user.id)
   }, [user?.id, shouldShowWelcomeModal])
 
+  async function finishOnboarding() {
+    if (user) await api('me/update', { shouldShowWelcome: false })
+    track('welcome screen: complete')
+    setOpen(false)
+
+    if (window.location.pathname === '/home' && DEFAULT_FOR_YOU) {
+      window.location.reload() // reload to ensure personalized feed
+    }
+  }
+
   async function increasePage() {
     if (page < availablePages.length - 1) handleSetPage(page + 1)
     else {
-      if (user) await api('me/update', { shouldShowWelcome: false })
-      track('welcome screen: complete')
-      setOpen(false)
-
-      if (window.location.pathname === '/home' && DEFAULT_FOR_YOU) {
-        window.location.reload() // reload to ensure personalized feed
-      }
+      await finishOnboarding()
     }
   }
 
@@ -220,7 +230,8 @@ function WhatIsManifoldPage() {
         Welcome to Manifold!
       </div>
       <div className="mb-4 text-lg">
-        Manifold is a play money prediction market platform.
+        Manifold is a play money prediction market platform where you can win
+        real cash prizes.
       </div>
       <div className="mb-4 text-lg">
         Bet on politics, tech, sports, and more. Your {TRADE_TERM}s contribute
@@ -292,9 +303,7 @@ function PredictionMarketPage() {
         How it works
       </div>
       <div className="mt-2 text-lg">
-        We've sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        play money. {capitalize(TRADE_TERM)} on the answer you think is right.
+        {capitalize(TRADE_TERM)} on the answer you think is right.
       </div>
       <div className="mt-2 text-lg">
         Research shows wagering currency leads to more accurate predictions than

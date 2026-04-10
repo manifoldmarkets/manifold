@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "serve": "next dev",
-    "ts-watch": "tsc --watch --noEmit --incremental --preserveWatchOutput --pretty",
+    "ts-watch": "tsc --watch --noEmit --incremental --preserveWatchOutput --pretty 2>&1 | grep -v 'node_modules'",
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"yarn serve\" \"yarn ts-watch\"",
     "dev:dev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV yarn dev",
     "dev:prod": "cross-env NEXT_PUBLIC_FIREBASE_ENV=PROD yarn dev",
@@ -24,6 +24,8 @@
     "verify:dir": "npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@amplitude/analytics-browser": "1.9.4",
+    "@daimo/sdk": "1.3.0",
     "@floating-ui/react": "0.26.28",
     "@google-cloud/secret-manager": "4.2.1",
     "@headlessui/react": "2.2.0",
@@ -31,6 +33,7 @@
     "@heroicons/react": "1.0.6",
     "@radix-ui/react-slider": "1.2.1",
     "@react-spring/web": "9.7.1",
+    "@tanstack/react-query": "5.95.2",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/extension-character-count": "2.0.0-beta.204",
     "@tiptap/extension-image": "2.0.0-beta.204",
@@ -73,7 +76,9 @@
     "react-snowfall": "2.2.0",
     "react-twitter-embed": "4.0.4",
     "string-similarity": "4.0.4",
-    "tippy.js": "6.3.7"
+    "tippy.js": "6.3.7",
+    "viem": "^2.40.1",
+    "wagmi": "^2.0.0"
   },
   "devDependencies": {
     "@svgr/webpack": "8.1.0",

@@ -1,3 +1,10 @@
+/**
+ * @fileoverview DEPRECATED - GIDX document verification helpers
+ *
+ * This module is being replaced by idenfy for identity verification.
+ * Document uploads are now handled through idenfy's verification flow.
+ */
+
 import {
   GIDX_REGISTATION_DOCUMENTS_REQUIRED,
   GIDXDocument,

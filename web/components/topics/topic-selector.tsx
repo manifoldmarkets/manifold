@@ -6,7 +6,11 @@ import {
   ComboboxOptions,
   Label,
 } from '@headlessui/react'
-import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
+import {
+  PlusCircleIcon,
+  SearchIcon,
+  ChevronDownIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Group, LiteGroup, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
@@ -55,25 +59,27 @@ export function TopicSelector(props: {
       return
     }
     if (group) setSelectedGroup(group)
-    setQuery('') // Clear the input
-    setIsDropdownOpen(false) // Close dropdown on selection
+    setQuery('')
+    setIsDropdownOpen(false)
   }
 
   const atMax = max != undefined && selectedIds && selectedIds.length >= max
 
-  // Force close dropdown when disabled
   useEffect(() => {
     if (atMax) {
       setIsDropdownOpen(false)
     }
   }, [atMax])
 
-  // Open dropdown when typing
   useEffect(() => {
     if (query.length > 0 && !atMax && !isDropdownOpen) {
       setIsDropdownOpen(true)
     }
   }, [query, atMax, isDropdownOpen])
+
+  const filteredGroups = searchedGroups.filter(
+    (group) => !selectedIds?.some((id) => id == group.id)
+  )
 
   return (
     <Col className={clsx('w-full items-start', className)}>
@@ -92,87 +98,105 @@ export function TopicSelector(props: {
           </Label>
         )}
         <div className="relative w-full">
+          <SearchIcon
+            className={clsx(
+              'absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2',
+              atMax ? 'text-ink-300' : 'text-ink-400'
+            )}
+          />
           <ComboboxInput
-            className="border-ink-300 disabled:border-ink-100 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
+            className={clsx(
+              'bg-canvas-0 w-full rounded-md border py-2.5 pl-9 pr-9 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1',
+              atMax
+                ? 'border-ink-200 text-ink-400 cursor-not-allowed'
+                : 'border-ink-300 placeholder-ink-400 hover:border-ink-400 focus:border-primary-500 focus:ring-primary-500'
+            )}
             onChange={(e) => setQuery(e.target.value)}
             displayValue={(group: Group) => group && group.name}
             placeholder={
               atMax
-                ? `You're at ${MAX_GROUPS_PER_MARKET} tags. Remove tags to add more.`
-                : placeholder ?? 'Search topics'
+                ? `Limit of ${MAX_GROUPS_PER_MARKET} topics reached`
+                : placeholder ?? 'Search topics…'
             }
             onFocus={() => !atMax && setIsDropdownOpen(true)}
             onClick={() => !atMax && setIsDropdownOpen(true)}
-            onBlur={(e) => {
-              // Only close if we're not clicking within the dropdown
-              // This timeout gives time for click events to register on options
+            onBlur={() => {
               setTimeout(() => {
                 setIsDropdownOpen(false)
               }, 200)
             }}
           />
           <ComboboxButton
-            className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none"
-            onClick={(e) => {
+            className="absolute inset-y-0 right-0 flex items-center px-2.5"
+            onClick={() => {
               if (!atMax) {
                 setIsDropdownOpen(!isDropdownOpen)
               }
             }}
           >
-            <SelectorIcon className="text-ink-400 h-5 w-5" aria-hidden="true" />
+            <ChevronDownIcon
+              className={clsx(
+                'h-4 w-4 transition-transform',
+                atMax ? 'text-ink-300' : 'text-ink-400',
+                isDropdownOpen && !atMax && 'rotate-180'
+              )}
+              aria-hidden="true"
+            />
           </ComboboxButton>
 
           {isDropdownOpen && !atMax && (
             <ComboboxOptions
               static={isCreatingNewGroup}
-              className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+              className="bg-canvas-0 ring-ink-300 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 focus:outline-none"
             >
               {loading ? (
                 <>
-                  <LoadingOption className={'w-3/4'} />
-                  <LoadingOption className={'w-1/2'} />
-                  <LoadingOption className={'w-3/4'} />
+                  <LoadingOption className="w-3/4" />
+                  <LoadingOption className="w-1/2" />
+                  <LoadingOption className="w-3/4" />
                 </>
+              ) : filteredGroups.length === 0 && !user ? (
+                <div className="text-ink-400 px-4 py-3 text-sm">
+                  No topics found
+                </div>
               ) : (
-                searchedGroups
-                  .filter((group) => !selectedIds?.some((id) => id == group.id))
-                  .map((group: LiteGroup) => (
-                    <ComboboxOption
-                      key={group.id}
-                      value={group}
-                      className={({ active }) =>
-                        clsx(
-                          'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
-                          active
-                            ? 'bg-primary-200 text-ink-1000'
-                            : 'text-ink-900'
-                        )
-                      }
-                    >
-                      <div className={'truncate'}>
-                        {group.name} ({group.totalMembers} followers)
-                      </div>
+                filteredGroups.map((group: LiteGroup) => (
+                  <ComboboxOption
+                    key={group.id}
+                    value={group}
+                    className={({ active }) =>
+                      clsx(
+                        'relative flex cursor-pointer select-none items-center justify-between px-4 py-2.5 transition-colors',
+                        active ? 'bg-primary-50 text-ink-1000' : 'text-ink-900'
+                      )
+                    }
+                  >
+                    <span className="truncate">{group.name}</span>
+                    <Row className="items-center gap-2">
+                      <span className="text-ink-400 text-xs">
+                        {group.totalMembers} followers
+                      </span>
                       {group.privacyStatus != 'public' && (
-                        <Row className={'text-ink-500'}>
+                        <span className="text-ink-400">
                           {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
-                        </Row>
+                        </span>
                       )}
-                    </ComboboxOption>
-                  ))
+                    </Row>
+                  </ComboboxOption>
+                ))
               )}
 
               {user && !loading && (
                 <ComboboxOption
                   value={'new'}
                   className={clsx(
-                    'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
-                    'data-[focus]:bg-primary-200 data-[focus]:text-ink-1000 text-ink-900',
-                    loading ? 'animate-pulse' : ''
+                    'border-ink-200 relative flex cursor-pointer select-none items-center border-t px-4 py-2.5 transition-colors',
+                    'data-[focus]:bg-primary-50 data-[focus]:text-ink-1000 text-ink-700'
                   )}
                 >
-                  <Row className={'items-center gap-1 truncate'}>
-                    <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
-                    Create a new topic
+                  <Row className="items-center gap-2">
+                    <PlusCircleIcon className="h-4 w-4 text-teal-500" />
+                    <span className="text-sm">Create a new topic</span>
                   </Row>
                 </ComboboxOption>
               )}
@@ -198,8 +222,8 @@ export function TopicSelector(props: {
 }
 
 const LoadingOption = (props: { className: string }) => (
-  <div className="flex h-12 w-full animate-pulse select-none items-center px-6">
-    <div className={clsx('bg-ink-300 h-4 rounded-full', props.className)} />
+  <div className="flex w-full animate-pulse select-none items-center px-4 py-2.5">
+    <div className={clsx('bg-ink-200 h-4 rounded-full', props.className)} />
   </div>
 )
 

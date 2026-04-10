@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { isUserBanned } from 'common/ban-utils'
 import { WebPriceInDollars } from 'common/economy'
 import { DOLLAR_PURCHASE_LIMIT } from 'common/envs/constants'
 import { formatMoneyUSD } from 'common/util/format'
@@ -10,6 +11,7 @@ import {
 import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePrices } from 'web/hooks/use-prices'
 import { useUser } from 'web/hooks/use-user'
 import { AlertBox } from '../widgets/alert-box'
@@ -21,6 +23,15 @@ export function FundsSelector(props: {
   const { onSelectPriceInDollars, loadingPrice } = props
   const basePrices = usePrices()
   const user = useUser()
+
+  // Check if user is banned from purchasing
+  const { data: userBansData } = useAPIGetter(
+    'get-user-bans',
+    user?.id ? { userId: user.id } : undefined
+  )
+  const isPurchaseBanned = userBansData?.bans
+    ? isUserBanned(userBansData.bans as any, 'purchase')
+    : false
 
   const prices = basePrices
   const totalPurchased = use24hrUsdPurchasesInDollars(user?.id || '')
@@ -51,13 +62,18 @@ export function FundsSelector(props: {
               amounts={amounts}
               index={index}
               loadingPrice={loadingPrice}
-              disabled={pastLimit}
+              disabled={pastLimit || isPurchaseBanned}
               user={user}
               onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
             />
           ))}
       </div>
-      {pastLimit && (
+      {isPurchaseBanned && (
+        <AlertBox title="Purchases disabled" className="my-4">
+          Your account has been restricted from purchasing mana.
+        </AlertBox>
+      )}
+      {pastLimit && !isPurchaseBanned && (
         <AlertBox title="Purchase limit" className="my-4">
           You have reached your daily purchase limit of{' '}
           {formatMoneyUSD(DOLLAR_PURCHASE_LIMIT)}. Please try again tomorrow.

@@ -1,0 +1,238 @@
+import { APIHandler, APIError } from 'api/helpers/endpoint'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { isAdminId } from 'common/envs/constants'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
+import { createHash } from 'crypto'
+import {
+  SweepstakesPrize,
+  getTotalWinnerCount,
+  getPrizeForRank,
+} from 'common/sweepstakes'
+import { Notification, PrizeWinnerData } from 'common/notification'
+import { bulkInsertNotifications } from 'shared/supabase/notifications'
+import { nanoid } from 'common/util/random'
+import { getFirstBlockAfter } from 'common/bitcoin'
+
+export const selectSweepstakesWinners: APIHandler<
+  'select-sweepstakes-winners'
+> = async (props, auth) => {
+  // Admin-only check
+  if (!isAdminId(auth.uid)) {
+    throw new APIError(403, 'Only admins can select sweepstakes winners')
+  }
+
+  const { sweepstakesNum } = props
+  const pg = createSupabaseDirectClient()
+
+  return await pg.tx(async (tx) => {
+    // Get sweepstakes and verify it's closed and has no winners yet
+    const sweepstakes = await tx.oneOrNone<{
+      sweepstakes_num: number
+      close_time: string
+      winning_ticket_ids: string[] | null
+      prizes: SweepstakesPrize[]
+    }>(
+      `SELECT sweepstakes_num, close_time, winning_ticket_ids, prizes 
+       FROM sweepstakes 
+       WHERE sweepstakes_num = $1 
+       FOR UPDATE`,
+      [sweepstakesNum]
+    )
+
+    if (!sweepstakes) {
+      throw new APIError(404, 'Sweepstakes not found')
+    }
+
+    if (new Date(sweepstakes.close_time) > new Date()) {
+      throw new APIError(400, 'Sweepstakes has not closed yet')
+    }
+
+    if (
+      sweepstakes.winning_ticket_ids &&
+      sweepstakes.winning_ticket_ids.length > 0
+    ) {
+      throw new APIError(400, 'Winners have already been selected')
+    }
+
+    // Get all tickets with their cumulative ticket counts
+    const tickets = await tx.manyOrNone<{
+      id: string
+      user_id: string
+      num_tickets: string
+    }>(
+      `SELECT id, user_id, num_tickets 
+       FROM sweepstakes_tickets 
+       WHERE sweepstakes_num = $1 
+       ORDER BY created_time ASC`,
+      [sweepstakesNum]
+    )
+
+    if (tickets.length === 0) {
+      throw new APIError(400, 'No tickets have been purchased')
+    }
+
+    // Calculate total tickets
+    let totalTickets = 0
+    const ticketRanges: {
+      id: string
+      userId: string
+      start: number
+      end: number
+    }[] = []
+
+    for (const ticket of tickets) {
+      const numTickets = parseFloat(ticket.num_tickets)
+      ticketRanges.push({
+        id: ticket.id,
+        userId: ticket.user_id,
+        start: totalTickets,
+        end: totalTickets + numTickets,
+      })
+      totalTickets += numTickets
+    }
+
+    // Get the first Bitcoin block mined after close_time for provably fair seeding
+    const closeTimeSeconds = Math.floor(
+      new Date(sweepstakes.close_time).getTime() / 1000
+    )
+    const block = await getFirstBlockAfter(closeTimeSeconds)
+    const blockHash = block.id
+
+    // Determine how many winners we need
+    const numWinners = getTotalWinnerCount(sweepstakes.prizes)
+
+    // Select winners iteratively (top prizes first)
+    const winningTicketIds: string[] = []
+    const winners: {
+      rank: number
+      label: string
+      prizeUsdc: number
+      ticketId: string
+      userId: string
+    }[] = []
+
+    // Track which users have already won (each user can only win once)
+    const wonUserIds = new Set<string>()
+
+    for (let rank = 1; rank <= numWinners; rank++) {
+      // Calculate remaining tickets (excluding tickets from users who already won)
+      let remainingTotal = 0
+      const remainingRanges: typeof ticketRanges = []
+
+      for (const range of ticketRanges) {
+        // Exclude all tickets from users who have already won
+        if (!wonUserIds.has(range.userId)) {
+          remainingRanges.push({
+            ...range,
+            start: remainingTotal,
+            end: remainingTotal + (range.end - range.start),
+          })
+          remainingTotal += range.end - range.start
+        }
+      }
+
+      // If no more eligible users remain, stop selecting winners
+      if (remainingRanges.length === 0 || remainingTotal === 0) {
+        console.log(
+          `Sweepstakes ${sweepstakesNum}: Only ${winners.length} winners selected (not enough unique users for ${numWinners} prizes)`
+        )
+        break
+      }
+
+      // Create deterministic random value using SHA256 hash of blockHash + rank
+      const hash = createHash('sha256')
+        .update(blockHash)
+        .update(Buffer.from([rank])) // Include rank to get different value for each winner
+        .digest()
+
+      // Convert first 8 bytes of hash to a number between 0 and 1
+      const randomValue =
+        Number(hash.readBigUInt64BE(0)) / Number(BigInt(2) ** BigInt(64))
+      const winningTicketNumber = randomValue * remainingTotal
+
+      // Find the winning ticket
+      let winningTicket: (typeof remainingRanges)[0] | null = null
+
+      for (const range of remainingRanges) {
+        if (
+          winningTicketNumber >= range.start &&
+          winningTicketNumber < range.end
+        ) {
+          winningTicket = range
+          break
+        }
+      }
+
+      // Edge case: if we somehow didn't find one, use the last ticket
+      if (!winningTicket) {
+        winningTicket = remainingRanges[remainingRanges.length - 1]
+      }
+
+      // Mark this user as having won (they can't win again)
+      wonUserIds.add(winningTicket.userId)
+      winningTicketIds.push(winningTicket.id)
+
+      // Get prize info for this rank
+      const prize = getPrizeForRank(sweepstakes.prizes, rank)
+
+      winners.push({
+        rank,
+        label: prize?.label ?? `${rank}${getOrdinalSuffix(rank)}`,
+        prizeUsdc: prize?.amountUsdc ?? 0,
+        ticketId: winningTicket.id,
+        userId: winningTicket.userId,
+      })
+    }
+
+    // Update the sweepstakes with the winning ticket IDs and Bitcoin block hash
+    await tx.none(
+      `UPDATE sweepstakes 
+       SET winning_ticket_ids = $1, nonce = $2
+       WHERE sweepstakes_num = $3`,
+      [winningTicketIds, blockHash, sweepstakesNum]
+    )
+
+    // Send notifications to all winners
+    if (winners.length > 0) {
+      const notifications: Notification[] = winners.map((winner) => {
+        const data: PrizeWinnerData = {
+          rank: winner.rank,
+          prizeLabel: winner.label,
+          prizeAmountUsdc: winner.prizeUsdc,
+          sweepstakesNum,
+        }
+
+        return {
+          id: nanoid(6),
+          userId: winner.userId,
+          reason: 'prize_winner' as const,
+          createdTime: Date.now(),
+          isSeen: false,
+          sourceId: `sweepstakes-${sweepstakesNum}-winner-${winner.rank}`,
+          sourceType: 'prize_winner' as const,
+          sourceUserName: MANIFOLD_USER_NAME,
+          sourceUserUsername: MANIFOLD_USER_USERNAME,
+          sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+          sourceText: `$${winner.prizeUsdc}`,
+          sourceSlug: '/prize',
+          sourceTitle: `You won ${winner.label} place ($${winner.prizeUsdc} USDC) in the Prize Drawing!`,
+          data,
+        }
+      })
+
+      await bulkInsertNotifications(notifications, tx)
+    }
+
+    return { winners, blockHash, blockHeight: block.height }
+  })
+}
+
+function getOrdinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return s[(v - 20) % 10] || s[v] || s[0]
+}

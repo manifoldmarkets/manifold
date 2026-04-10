@@ -17,7 +17,6 @@ export default function AdminPage() {
   useRedirectIfSignedOut()
   const isAdmin = useAdmin()
   const [manaStatus, setManaStatus] = useState(true)
-  const [cashStatus, setCashStatus] = useState(true)
   const [loanStatus, setLoanStatus] = useState(true)
   const [togglesEnabled, setTogglesEnabled] = useState(false)
 
@@ -30,18 +29,15 @@ export default function AdminPage() {
       .then((result) => {
         const statuses = result.data ?? []
         setManaStatus(statuses.find((s) => s.token === 'MANA')?.status ?? true)
-        setCashStatus(statuses.find((s) => s.token === 'CASH')?.status ?? true)
         setLoanStatus(statuses.find((s) => s.token === 'LOAN')?.status ?? true)
       })
   }, [])
 
-  const toggleStatus = async (token: 'MANA' | 'CASH' | 'LOAN') => {
+  const toggleStatus = async (token: 'MANA' | 'LOAN') => {
     if (!togglesEnabled) return
     const result = await api('toggle-system-trading-status', { token })
     if (token === 'MANA') {
       setManaStatus(result.status)
-    } else if (token === 'CASH') {
-      setCashStatus(result.status)
     } else {
       setLoanStatus(result.status)
     }
@@ -67,12 +63,6 @@ export default function AdminPage() {
             setOn={() => toggleStatus('MANA')}
             disabled={!togglesEnabled}
           />
-          <span>Cash trading: {cashStatus ? 'Enabled' : 'Disabled'}</span>
-          <ShortToggle
-            on={cashStatus}
-            setOn={() => toggleStatus('CASH')}
-            disabled={!togglesEnabled}
-          />
           <span>Loans: {loanStatus ? 'Enabled' : 'Disabled'}</span>
           <ShortToggle
             on={loanStatus}
@@ -81,6 +71,10 @@ export default function AdminPage() {
           />
         </Row>
 
+        <LabCard title="🧾 sales" href="/admin/sales" />
+        <LabCard title="🆕 new users" href="/admin/new-users" />
+        <LabCard title="🎁 prize payouts" href="/admin/prize" />
+        <LabCard title="🐋 whales" href="/admin/whales" />
         <LabCard title="💹 stats" href="/stats" />
         <LabCard
           title="🍚 umami"
@@ -95,8 +89,6 @@ export default function AdminPage() {
           title="💤 postgres logs"
           href="https://app.supabase.com/project/pxidrgkatumlvfqaxcll/logs/postgres-logs"
         />
-        <LabCard title="🗺️ user journeys" href="/admin/journeys" />
-        <LabCard title="🥩 new user questions" href="/newbies" />
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />

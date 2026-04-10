@@ -316,20 +316,42 @@ export const CharityGiveawayBanner = () => {
 }
 
 export const ShopBanner = () => {
-  const [showBanner, hideBanner] = useBanner('shop-launch-2026')
+  const [showBanner, hideBanner] = useBanner('prize-drawing-2026')
   if (!showBanner) return null
   return (
     <Banner
-      className="items-center bg-gradient-to-r from-violet-100 to-amber-100 py-2 transition-colors hover:from-violet-200 hover:to-amber-200 dark:from-violet-900/30 dark:to-amber-900/30 dark:hover:from-violet-900/50 dark:hover:to-amber-900/50"
-      link="/shop"
+      className="items-center bg-gradient-to-r from-amber-100 to-green-100 py-2 transition-colors hover:from-amber-200 hover:to-green-200 dark:from-amber-900/30 dark:to-green-900/30 dark:hover:from-amber-900/50 dark:hover:to-green-900/50"
+      link="/prize"
       target="_self"
       setShowBanner={hideBanner}
     >
       <Row className="items-center gap-2">
-        <span>✨</span>
+        <span>🎉</span>
         <div className="text-ink-700">
           <span className="font-semibold">Mana Shop is live!</span> Get
           membership perks, cosmetics & merch
+        </div>
+        <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
+
+export const PrizeDrawingBanner = () => {
+  const [showBanner, hideBanner] = useBanner('prize-drawing-banner-2026')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-amber-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:to-indigo-200 dark:from-amber-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:to-indigo-900/50"
+      link="/prize"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>🎁</span>
+        <div className="text-ink-700">
+          <span className="font-semibold">Prize Drawing!</span> Enter for a
+          chance to win USDC prizes
         </div>
         <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
       </Row>

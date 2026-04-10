@@ -24,12 +24,10 @@ import { getUser, getUserByUsername, isProd, log } from 'shared/utils'
 
 import { ValidatedAPIParams } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
-import { STARTING_BALANCE } from 'common/economy'
+import { PRE_KYC_STARTING_BALANCE } from 'common/economy'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
-import { SignupBonusTxn } from 'common/txn'
 import { onCreateUser } from 'shared/helpers/on-create-user'
 import { insert } from 'shared/supabase/utils'
-import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export const createUserMain = async (
   props: ValidatedAPIParams<'createuser'>,
@@ -76,6 +74,17 @@ export const createUserMain = async (
 
   const pg = createSupabaseDirectClient()
 
+  const isBlocked = await pg.oneOrNone<{ id: number }>(
+    `select id from signup_blocklist
+     where (entry_type = 'ip' and value = $1)
+        or (entry_type = 'device_token' and value = $2)
+     limit 1`,
+    [ip, deviceToken]
+  )
+  if (isBlocked) {
+    throw new APIError(403, 'Account creation is not available')
+  }
+
   let username = cleanUsername(name)
 
   // Check username case-insensitive
@@ -106,10 +115,6 @@ export const createUserMain = async (
       streakForgiveness: 0,
       shouldShowWelcome: true,
       creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      isBannedFromPosting: Boolean(
-        (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
-          (ip && bannedIpAddresses.includes(ip))
-      ),
       signupBonusPaid: 0,
     }
 
@@ -129,22 +134,13 @@ export const createUserMain = async (
       id: userId,
       name: name,
       username: username,
+      balance: PRE_KYC_STARTING_BALANCE,
+      total_deposits: PRE_KYC_STARTING_BALANCE,
       data: userData,
     })
 
-    const startingBonusTxn: Omit<
-      SignupBonusTxn,
-      'id' | 'createdTime' | 'fromId'
-    > = {
-      fromType: 'BANK',
-      toId: userId,
-      toType: 'USER',
-      amount: STARTING_BALANCE,
-      token: 'M$',
-      category: 'SIGNUP_BONUS',
-      description: 'Signup bonus',
-    }
-    await runTxnFromBank(tx, startingBonusTxn)
+    // Note: Signup bonus is now paid after identity verification (iDenfy)
+    // See backend/api/src/idenfy/callback.ts
 
     const privateUserRow = await insert(tx, 'private_users', {
       id: privateUser.id,
@@ -248,19 +244,3 @@ export function getStorageBucket() {
     : DEV_CONFIG.firebaseConfig.storageBucket
   return getStorage().bucket(id)
 }
-
-// Automatically ban users with these device tokens or ip addresses.
-const bannedDeviceTokens = [
-  'fa807d664415',
-  'dcf208a11839',
-  'bbf18707c15d',
-  '4c2d15a6cc0c',
-  '0da6b4ea79d3',
-]
-const bannedIpAddresses: string[] = [
-  '24.176.214.250',
-  '2607:fb90:bd95:dbcd:ac39:6c97:4e35:3fed',
-  '2607:fb91:389:ddd0:ac39:8397:4e57:f060',
-  '2607:fb90:ed9a:4c8f:ac39:cf57:4edd:4027',
-  '2607:fb90:bd36:517a:ac39:6c91:812c:6328',
-]

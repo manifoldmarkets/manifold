@@ -1,6 +1,7 @@
 import {
   ChatIcon,
   DeviceMobileIcon,
+  GiftIcon,
   HeartIcon,
   LoginIcon,
   LogoutIcon,
@@ -125,7 +126,6 @@ export default function Sidebar(props: {
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
   const { theme, setTheme } = useTheme()
 
@@ -138,7 +138,7 @@ export default function Sidebar(props: {
   const isLiveTV = useTVIsLive(10)
 
   const navOptions = isMobile
-    ? getMobileNav(!!user, () => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
+    ? getMobileNav(!!user, {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
@@ -301,7 +301,6 @@ const getDesktopNav = (
 
 const getMobileNav = (
   loggedIn: boolean,
-  toggleModal: () => void,
   options: {
     isNewUser: boolean
     isLiveTV?: boolean
@@ -311,6 +310,19 @@ const getMobileNav = (
   const { isAdminOrMod, isLiveTV } = options
 
   return buildArray<NavItem>(
+    {
+      name: 'Prize Drawing',
+      href: '/prize',
+      icon: GiftIcon,
+      children: (
+        <>
+          Prize Drawing
+          <span className="ml-2 rounded-full bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            $1k
+          </span>
+        </>
+      ),
+    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },

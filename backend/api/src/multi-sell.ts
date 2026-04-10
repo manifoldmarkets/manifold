@@ -132,6 +132,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         newBetResult,
         contract,
         user,
+        undefined, // creator - not needed for sells (no unique bettor bonus)
         isApi,
         contractMetrics,
         balancesByUserId,
