@@ -112,6 +112,7 @@ export type User = {
   userDeleted?: boolean
   optOutBetWarnings?: boolean
   signupBonusPaid?: number
+  isBot?: boolean
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
   verifiedPhone?: boolean

@@ -1490,6 +1490,16 @@ export const API = (_apiTypeCheck = {
       context: JSONContent | undefined
     },
   },
+  'set-bot-status': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      userId: z.string(),
+      isBot: z.boolean(),
+    }),
+    returns: {} as { success: boolean },
+  },
   'ban-user': {
     method: 'POST',
     visibility: 'undocumented',

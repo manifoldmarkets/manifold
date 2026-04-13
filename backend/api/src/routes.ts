@@ -51,6 +51,7 @@ import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { awardBounty } from './award-bounty'
 import { banuser } from './ban-user'
+import { setbotstatus } from './set-bot-status'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
@@ -349,6 +350,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'get-market-context': getMarketContext,
+  'set-bot-status': setbotstatus,
   'ban-user': banuser,
   'dismiss-mod-alert': dismissmodalert,
   'super-ban-user': superBanUser,

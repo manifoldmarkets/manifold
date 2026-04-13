@@ -72,6 +72,7 @@ export const CORS_ORIGIN_VERCEL = new RegExp(
 export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
 
 // TODO: These should maybe be part of the env config?
+/** @deprecated Use is_bot column on users table. Kept only as fallback during transition. */
 export const BOT_USERNAMES = [
   'TenShinoBot',
   'JDVance1',

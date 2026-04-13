@@ -25,7 +25,7 @@ export function toUserAPIResponse(user: User): FullUser {
   return {
     ...user,
     url: `https://${ENV_CONFIG.domain}/${user.username}`,
-    isBot: BOT_USERNAMES.includes(user.username),
+    isBot: user.isBot ?? BOT_USERNAMES.includes(user.username),
     isAdmin: ENV_CONFIG.adminIds.includes(user.id),
     isTrustworthy: MOD_IDS.includes(user.id),
   }

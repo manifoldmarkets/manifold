@@ -1,4 +1,3 @@
-import { BOT_USERNAMES } from 'common/envs/constants'
 import { groupBy, mapValues } from 'lodash'
 import { runScript } from 'run-script'
 import {
@@ -37,9 +36,8 @@ const _reassignBots = (pg: SupabaseDirectClient) => {
         cohort = 'bots'
     where user_id in (
         select id from users
-        where username in ($1:csv)
+        where is_bot = true
         limit 40
-    )`,
-    [BOT_USERNAMES]
+    )`
   )
 }

@@ -20,7 +20,7 @@ import {
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { log, prefixedContractColumnsToSelect } from 'shared/utils'
 
-import { BOT_USERNAMES } from 'common/envs/constants'
+
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { convertPost } from 'common/top-level-post'
@@ -289,10 +289,10 @@ export const getContractTraders = async (
        from contract_bets cb
                 join users u on cb.user_id = u.id
        where cb.created_time >= millis_to_ts($1)
-         and u.username <> ANY(ARRAY[$2])
-          and cb.contract_id = ANY(ARRAY[$3])
+         and u.is_bot = false
+          and cb.contract_id = ANY(ARRAY[$2])
        group by cb.contract_id`,
-      [since, BOT_USERNAMES, inContractIds],
+      [since, inContractIds],
       (r) => [r.contract_id as string, r.n as number]
     )
   )
@@ -309,10 +309,10 @@ export const getContractVoters = async (
        from votes cb
                 join users u on cb.user_id = u.id
        where cb.created_time >= millis_to_ts($1)
-         and u.username <> ANY(ARRAY[$2])
-          and cb.contract_id = ANY(ARRAY[$3])
+         and u.is_bot = false
+          and cb.contract_id = ANY(ARRAY[$2])
        group by cb.contract_id`,
-      [since, BOT_USERNAMES, inContractIds],
+      [since, inContractIds],
       (r) => [r.contract_id as string, r.n as number]
     )
   )

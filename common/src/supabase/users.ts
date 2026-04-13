@@ -43,6 +43,12 @@ export function convertUser(row: Row<'users'> | null): User | null {
     spiceBalance: row.spice_balance,
     totalDeposits: row.total_deposits,
     totalCashDeposits: row.total_cash_deposits,
+    isBot:
+      'is_bot' in row
+        ? (row as any).is_bot
+        : 'isBot' in row
+        ? (row as any).isBot
+        : undefined,
   } as User)
 }
 
@@ -54,7 +60,7 @@ export function convertPrivateUser(
   return row.data as PrivateUser
 }
 
-export const displayUserColumns = `id,name,username,data->>'avatarUrl' as "avatarUrl",data->'isBannedFromPosting' as "isBannedFromPosting"`
+export const displayUserColumns = `id,name,username,is_bot as "isBot",data->>'avatarUrl' as "avatarUrl",data->'isBannedFromPosting' as "isBannedFromPosting"`
 export const prefixedDisplayUserColumns = displayUserColumns
   .split(',')
   .map((col) => `u.${col}`)

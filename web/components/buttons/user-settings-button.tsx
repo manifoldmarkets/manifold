@@ -8,6 +8,7 @@ import { User, UserBan } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import {
@@ -37,6 +38,7 @@ export function UserSettingButton(props: { user: User }) {
   const [tabIndex, setTabIndex] = useState(0)
   const [showBanModal, setShowBanModal] = useState(false)
   const [bans, setBans] = useState<UserBan[]>([])
+  const [togglingBot, setTogglingBot] = useState(false)
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
   const numReferrals = useReferralCount(user)
@@ -131,6 +133,38 @@ export function UserSettingButton(props: { user: User }) {
                     onClick={() => setShowBanModal(true)}
                   >
                     Manage Bans
+                  </Button>
+                  <Button
+                    color={user.isBot ? 'green' : 'yellow'}
+                    size="xs"
+                    disabled={togglingBot}
+                    onClick={async () => {
+                      const confirmed = confirm(
+                        user.isBot
+                          ? `Remove bot status from ${user.username}?`
+                          : `Mark ${user.username} as a bot?`
+                      )
+                      if (!confirmed) return
+                      setTogglingBot(true)
+                      try {
+                        await api('set-bot-status', {
+                          userId,
+                          isBot: !user.isBot,
+                        })
+                        toast.success(
+                          user.isBot
+                            ? 'Bot status removed'
+                            : 'Marked as bot'
+                        )
+                        router.reload()
+                      } catch (e: any) {
+                        toast.error(e.message ?? 'Failed to update bot status')
+                      } finally {
+                        setTogglingBot(false)
+                      }
+                    }}
+                  >
+                    {user.isBot ? 'Unmark Bot' : 'Mark Bot'}
                   </Button>
                 </Row>
               )}

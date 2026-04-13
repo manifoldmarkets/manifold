@@ -279,6 +279,7 @@ export function RestrictedBadge({
 export function UserBadge(props: {
   userId: string
   username: string
+  isBot?: boolean
   fresh?: boolean
   marketCreator?: boolean
   entitlements?: UserEntitlement[]
@@ -289,6 +290,7 @@ export function UserBadge(props: {
   const {
     userId,
     username,
+    isBot,
     fresh,
     marketCreator,
     entitlements,
@@ -308,7 +310,7 @@ export function UserBadge(props: {
     : false
 
   const badges = []
-  if (BOT_USERNAMES.includes(username)) {
+  if (isBot ?? BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
   }
   if (ENV_CONFIG.adminIds.includes(userId)) {

@@ -86,11 +86,11 @@ export const updateUser = async (
   id: string,
   update: Partial<User>
 ) => {
-  const { name, username, ...rest } = update
+  const { name, username, isBot, ...rest } = update
 
-  // name and username are top-level columns, not in the data JSONB.
+  // name, username, and is_bot are top-level columns, not in the data JSONB.
   // Set them directly so they don't silently land in the wrong place.
-  if (name !== undefined || username !== undefined) {
+  if (name !== undefined || username !== undefined || isBot !== undefined) {
     const setClauses: string[] = []
     const values: any[] = []
     let idx = 1
@@ -101,6 +101,10 @@ export const updateUser = async (
     if (username !== undefined) {
       setClauses.push(`username = $${idx++}`)
       values.push(username)
+    }
+    if (isBot !== undefined) {
+      setClauses.push(`is_bot = $${idx++}`)
+      values.push(isBot)
     }
     values.push(id)
     await db.none(

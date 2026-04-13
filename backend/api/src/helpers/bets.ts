@@ -10,7 +10,6 @@ import { ContractMetric, isSummary } from 'common/contract-metric'
 import { getUniqueBettorBonusAmount } from 'common/economy'
 import {
   BANNED_TRADING_USER_IDS,
-  BOT_USERNAMES,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
 import { CandidateBet } from 'common/new-bet'
@@ -447,7 +446,7 @@ export const getUniqueBettorBonusQuery = (
 ) => {
   const { answerId, isRedemption, isApi } = bet
 
-  const isBot = BOT_USERNAMES.includes(bettor.username)
+  const isBot = bettor.isBot ?? false
   const isUnlisted = contract.visibility === 'unlisted'
 
   const answer =
