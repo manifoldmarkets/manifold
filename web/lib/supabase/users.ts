@@ -56,7 +56,7 @@ export async function getDisplayUsers(userIds: string[]) {
       db
         .from('users')
         .select(
-          `id, name, username, data->avatarUrl, data->isBannedFromPosting`
+          `id, name, username, is_bot, data->avatarUrl, data->isBannedFromPosting`
         )
         .in('id', userIds)
     ),
@@ -85,6 +85,7 @@ export async function getDisplayUsers(userIds: string[]) {
   // Merge entitlements into users
   return (users ?? []).map((user) => ({
     ...user,
+    isBot: (user as any).is_bot ?? undefined,
     entitlements: (entitlementsByUser.get(user.id) ?? []).map(
       convertEntitlement
     ),
