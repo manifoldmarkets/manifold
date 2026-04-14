@@ -38,7 +38,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                 <span className="break-anywhere text-lg font-bold sm:text-2xl">
                   {user.name}
                   {' (Blocked) '}
-                  {<UserBadge userId={user.id} username={user.username} />}
+                  {<UserBadge userId={user.id} username={user.username} isBot={user.isBot} />}
                   <RestrictedBadge user={user} />
                 </span>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">

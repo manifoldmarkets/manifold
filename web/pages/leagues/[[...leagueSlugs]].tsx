@@ -503,6 +503,7 @@ function UserLeagueStatus(props: {
                 <UserBadge
                   userId={userData.id}
                   username={userData.username}
+                  isBot={userData.isBot}
                   entitlements={userData.entitlements}
                   displayContext="leagues"
                 />

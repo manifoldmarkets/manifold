@@ -7,6 +7,7 @@ export type DisplayUser = {
   name: string
   username: string
   avatarUrl: string
+  isBot?: boolean
   isBannedFromPosting?: boolean
   entitlements?: UserEntitlement[]
 }
