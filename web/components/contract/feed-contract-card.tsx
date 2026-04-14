@@ -9,7 +9,8 @@ import { User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
-import { TbDroplet, TbMoneybag } from 'react-icons/tb'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { formatJustDateShort } from 'client-common/lib/time'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { Button } from 'web/components/buttons/button'
@@ -145,8 +146,8 @@ export function FeedContractCard(props: {
       className={clsx(
         'ring-primary-200 hover:ring-1',
 
-        'relative cursor-pointer rounded-xl transition-all ',
-        'flex w-full flex-col gap-0.5 px-4 py-2',
+        'relative cursor-pointer overflow-hidden rounded-xl transition-all ',
+        'flex w-full flex-col p-4',
 
         size === 'sm'
           ? 'bg-canvas-50'
@@ -176,19 +177,19 @@ export function FeedContractCard(props: {
       ) : (
         <></>
       )}
-      <Col className={clsx('w-full', size === 'xs' ? '' : 'gap-1.5 ', 'pt-4')}>
+      <Col className={clsx('w-full flex-none', size === 'xs' ? '' : 'gap-1.5')}>
         {getIsLive(contract) && (
           <Row className="items-center gap-2 text-red-500">
             <div className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
             Live
           </Row>
         )}
-        <Row className="w-full justify-between">
-          <UserHovercard userId={creatorId}>
-            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+        <Row className="w-full items-center justify-between gap-1 overflow-hidden">
+          <UserHovercard userId={creatorId} className="min-w-0 flex-1">
+            <Row className={'text-ink-500 min-w-0 items-center gap-1 text-sm'}>
               <Avatar
                 size={size === 'xs' ? '2xs' : 'xs'}
-                className={'mr-0.5'}
+                className={'mr-0.5 flex-none'}
                 avatarUrl={creator?.avatarUrl ?? creatorAvatarUrl}
                 username={creator?.username ?? creatorUsername}
                 entitlements={creator?.entitlements}
@@ -202,13 +203,11 @@ export function FeedContractCard(props: {
                   entitlements: creator?.entitlements,
                 }}
                 displayContext="feed"
-                className={
-                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-                }
+                className="min-w-0 flex-1 truncate"
               />
             </Row>
           </UserHovercard>
-          <Row className="gap-2">
+          <Row className="flex-none gap-2">
             {isCashContract && (
               <span
                 className={clsx(
@@ -225,9 +224,13 @@ export function FeedContractCard(props: {
                 probChange={probChange}
                 since={startTime}
               />
-            ) : (
-              <LiquidityTooltip contract={contract} />
-            )}
+            ) : closeTime ? (
+              <span className="text-ink-400 text-xs">
+                {isClosed
+                  ? 'Closed'
+                  : `Closes ${formatJustDateShort(closeTime)}`}
+              </span>
+            ) : null}
             {hide && (
               <FeedDropdown
                 contract={contract}
@@ -243,7 +246,10 @@ export function FeedContractCard(props: {
         <Col className={clsx(size === 'xs' ? '' : 'gap-4')}>
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
-            className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
+            className={clsx(
+              'hover:text-primary-700 line-clamp-2 grow items-start overflow-hidden transition-colors',
+              size !== 'sm' && 'sm:text-lg'
+            )}
             href={path}
             onClick={trackClick}
             style={{ fontWeight: 500 }}
@@ -285,7 +291,7 @@ export function FeedContractCard(props: {
 
       <div
         className={clsx(
-          'w-full overflow-hidden',
+          'min-h-0 w-full flex-1 overflow-hidden',
           size === 'xs' ? 'pt-0.5' : 'pt-2'
         )}
       >
@@ -295,7 +301,7 @@ export function FeedContractCard(props: {
         {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
           <SimpleAnswerBars
             contract={contract}
-            maxAnswers={4}
+            maxAnswers={3}
             feedReason={feedReason}
           />
         )}
@@ -332,24 +338,25 @@ export function FeedContractCard(props: {
             nonTextDescription={nonTextDescription}
           />
         )}
-        {!hideBottomRow && (
-          <Col>
-            {!hideTags && (
-              <CategoryTags
-                categories={topics.data}
-                className="flex-wrap gap-1"
-              />
-            )}
-            <BottomActionRow
-              contract={contract}
-              user={user}
-              underline={!!children}
-              feedReason={feedReason}
-            />
-            {children}
-          </Col>
-        )}
       </div>
+      {!hideBottomRow && (
+        <Col className="flex-none">
+          {!hideTags && (
+            <CategoryTags
+              categories={topics.data}
+              // hide tags after first line. (tags are 24 px tall)
+              className="h-6 flex-wrap overflow-hidden"
+            />
+          )}
+          <BottomActionRow
+            contract={contract}
+            user={user}
+            underline={!!children}
+            feedReason={feedReason}
+          />
+          {children}
+        </Col>
+      )}
     </ClickFrame>
   )
 }
