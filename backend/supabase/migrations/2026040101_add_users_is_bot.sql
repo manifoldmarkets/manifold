@@ -1,6 +1,6 @@
 alter table users add column if not exists is_bot boolean not null default false;
 
--- Seed from the existing BOT_USERNAMES list (109 entries, case-sensitive match)
+-- Seed from the existing BOT_USERNAMES list (116 entries, case-sensitive match)
 update users set is_bot = true
 where username in (
   'TenShinoBot', 'JDVance1', 'Merchant', 'benedict', 'subooferbot',
@@ -24,5 +24,7 @@ where username in (
   'spacedroplet', 'AriZernerBot', 'PV_bot', 'draaglom_bot', 'SiriusBOT',
   'bradbot', 'ShrimpLute', 'kbot', 'ataribot', 'RISKBOT',
   'harmonia', 'Dagonet', 'Galahad', 'zn_bot', 'abot',
-  'GoodheartLabsBot', 'Evansbot', 'PugBot', 'cot'
+  'GoodheartLabsBot', 'Evansbot', 'PugBot', 'cot',
+  'Cvillsbot', 'Gluten', 'Rice', 'Terminator2', 'XBot',
+  'pythia', 'timestwo'
 );
