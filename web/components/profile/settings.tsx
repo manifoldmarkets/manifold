@@ -6,13 +6,14 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
 import ShortToggle from '../widgets/short-toggle'
 import { Title } from '../widgets/title'
 import { canReceiveBonuses, PrivateUser, User } from 'common/user'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -21,6 +22,7 @@ import { capitalize } from 'lodash'
 import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
 import { useNativeInfo } from '../native-message-provider'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { useRouter } from 'next/router'
 
 export const AccountSettings = (props: {
   user: User
@@ -129,6 +131,12 @@ export const AccountSettings = (props: {
           </ConfirmationButton>
         </Row>
       </div>
+      {!user.isBot && (
+        <div>
+          <label className="mb-1 block">Bot status</label>
+          <MarkSelfAsBotButton user={user} />
+        </div>
+      )}
       <div>
         <label className="mb-1 block">Delete Account </label>
         <div className="flex  items-center  ">
@@ -169,5 +177,82 @@ function IdentityVerificationSetting() {
         Verify Identity
       </Button>
     </div>
+  )
+}
+
+function MarkSelfAsBotButton(props: { user: User }) {
+  const { user } = props
+  const router = useRouter()
+  const [showModal, setShowModal] = useState(false)
+  const [countdown, setCountdown] = useState(10)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!showModal) {
+      setCountdown(10)
+      return
+    }
+    if (countdown <= 0) return
+    const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [showModal, countdown])
+
+  const handleConfirm = async () => {
+    setSubmitting(true)
+    try {
+      await api('set-bot-status', { userId: user.id, isBot: true })
+      toast.success('Account marked as bot')
+      router.reload()
+    } catch (e: any) {
+      toast.error(e.message ?? 'Failed to update bot status')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <Button color="yellow" size="xs" onClick={() => setShowModal(true)}>
+        Mark my account as a bot
+      </Button>
+      <Modal open={showModal} setOpen={setShowModal} size="md">
+        <Col className="bg-canvas-0 rounded-xl p-6 gap-4">
+          <Title className="!mb-0">Mark account as bot</Title>
+          <div className="text-ink-700 text-sm leading-relaxed space-y-3">
+            <p>
+              This will <b>permanently</b> mark your account as a bot. This
+              action <b>cannot be undone</b> without contacting a moderator.
+            </p>
+            <p className="font-semibold">Bot accounts:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Display a "Bot" badge next to your name</li>
+              <li>Are excluded from leagues and placed in the Silicon division</li>
+              <li>Do not count toward unique bettor bonuses for market creators</li>
+              <li>Are excluded from importance score calculations</li>
+              <li>Cannot earn bettor bonuses for other users</li>
+            </ul>
+            <p>
+              Only do this if your account is operated by an automated system
+              (trading bot, API script, etc.), not a human.
+            </p>
+          </div>
+          <Row className="mt-2 justify-end gap-3">
+            <Button color="gray" onClick={() => setShowModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              disabled={countdown > 0 || submitting}
+              loading={submitting}
+              onClick={handleConfirm}
+            >
+              {countdown > 0
+                ? `I understand (${countdown}s)`
+                : 'Mark as bot permanently'}
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
+    </>
   )
 }

@@ -11,7 +11,12 @@ export const setbotstatus: APIHandler<'set-bot-status'> = async (
   auth
 ) => {
   const { userId, isBot } = props
-  throwErrorIfNotMod(auth.uid)
+
+  // Allow users to self-mark as bot (one-way only), mods can toggle anyone
+  const isSelfMark = auth.uid === userId && isBot === true
+  if (!isSelfMark) {
+    throwErrorIfNotMod(auth.uid)
+  }
   if (isAdminId(userId))
     throw new APIError(403, 'Cannot modify admin bot status')
 
