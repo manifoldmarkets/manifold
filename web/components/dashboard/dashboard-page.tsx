@@ -10,6 +10,7 @@ import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { useEffect, useState } from 'react'
 import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { SEO } from 'web/components/SEO'
 import Head from 'next/head'
 import { Col } from 'web/components/layout/col'
@@ -92,6 +93,19 @@ export function DashboardPage(props: {
   const isOnlyMod =
     !isCreator && user && (isAdminId(user.id) || isModId(user.id))
 
+  type DashboardSort =
+    | 'custom'
+    | 'az'
+    | 'close-date'
+    | 'liquidity'
+    | 'volume'
+    | '24h'
+
+  const [dashboardSort, setDashboardSort] = usePersistentLocalState<DashboardSort>(
+    'custom',
+    `dashboard-sort-${slug}`
+  )
+
   const [editMode, setEditMode] = useState(editByDefault)
   useWarnUnsavedChanges(editMode)
 
@@ -166,6 +180,23 @@ export function DashboardPage(props: {
                   </Button>
                 )}
               </div>
+            </Row>
+          )}
+          {!editMode && (
+            <Row className="mb-2 items-center gap-2 text-sm text-ink-500">
+              <div>Sort markets:</div>
+              <select
+                value={dashboardSort}
+                onChange={(e) => setDashboardSort(e.target.value as DashboardSort)}
+                className="rounded border border-ink-300 bg-white px-2 py-1 text-xs"
+              >
+                <option value="custom">Custom (manual order)</option>
+                <option value="az">A-Z</option>
+                <option value="close-date">Close date</option>
+                <option value="liquidity">Liquidity</option>
+                <option value="volume">Volume</option>
+                <option value="24h">24h volume</option>
+              </select>
             </Row>
           )}
         </div>
@@ -256,6 +287,7 @@ export function DashboardPage(props: {
           setTopics={updateTopics}
           isEditing={editMode}
           hideTopicLinks={embeddedInParent}
+          sortMode={dashboardSort}
         />
       </Col>
     </>

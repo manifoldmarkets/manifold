@@ -5,6 +5,7 @@ import {
 } from '../news/dashboard-news-item'
 import { FeedContractCard } from '../contract/feed-contract-card'
 import { useState } from 'react'
+import { orderBy } from 'lodash'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { DashboardItem, DashboardQuestionItem } from 'common/dashboard'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -16,6 +17,14 @@ import clsx from 'clsx'
 import { TopicTag } from '../topics/topic-tag'
 import { useGroupsFromIds } from 'web/hooks/use-group-supabase'
 
+export type DashboardSortMode =
+  | 'custom'
+  | 'az'
+  | 'close-date'
+  | 'liquidity'
+  | 'volume'
+  | '24h'
+
 export const DashboardContent = (props: {
   items: DashboardItem[]
   previews?: LinkPreviews
@@ -25,6 +34,8 @@ export const DashboardContent = (props: {
   setTopics?: (topics: string[]) => void
   isEditing?: boolean
   hideTopicLinks?: boolean
+  sortMode?: DashboardSortMode
+  numCols?: 2 | 3
 }) => {
   const {
     items,
@@ -37,6 +48,12 @@ export const DashboardContent = (props: {
     hideTopicLinks,
   } = props
 
+  const numCols = props.numCols ?? 2
+  const gridCols =
+    numCols === 3
+      ? 'sm:grid-cols-2 lg:grid-cols-3'
+      : 'sm:grid-cols-2'
+
   const questions = items.filter(
     (x): x is DashboardQuestionItem => x.type === 'question'
   )
@@ -47,11 +64,56 @@ export const DashboardContent = (props: {
   const [hoverIndex, setHoverIndex] = useState<number>()
   const [hoverTop, setHoverTop] = useState<number>()
 
+  const sortMode = props.sortMode ?? 'custom'
+
+  const nonQuestionItems = items.filter((x) => x.type !== 'question')
+
+  const itemsWithContracts = questions.map((item) => ({
+    item,
+    contract: contracts.find((c) => c.slug === item.slug),
+  }))
+
+  const openQuestionItems = itemsWithContracts.filter(
+    (x) => !x.contract?.isResolved
+  )
+  const closedQuestionItems = itemsWithContracts.filter(
+    (x) => !!x.contract?.isResolved
+  )
+
+  const sortItems = (
+    list: typeof itemsWithContracts
+  ): typeof itemsWithContracts => {
+    if (sortMode === 'custom') return list
+
+    const sortKeyFn = (x: typeof itemsWithContracts[number]) => {
+      const c = x.contract
+      switch (sortMode) {
+        case 'az':
+          return c?.question?.toLowerCase() ?? ''
+        case 'close-date':
+          return c?.closeTime ?? Number.POSITIVE_INFINITY
+        case 'liquidity':
+          return -((c as any)?.totalLiquidity ?? 0)
+        case 'volume':
+          return -(c?.volume ?? 0)
+        case '24h':
+          return -(c?.volume24Hours ?? 0)
+        default:
+          return 0
+      }
+    }
+
+    return orderBy(list, [sortKeyFn], ['asc'])
+  }
+
+  const sortedOpenQuestionItems = sortItems(openQuestionItems)
+  const sortedClosedQuestionItems = sortItems(closedQuestionItems)
+
   return (
     <>
       {!isEditing ? (
-        <div className="mb-4 flex flex-col gap-4">
-          {items.map((item) => (
+        <div className="mb-4">
+          {nonQuestionItems.map((item) => (
             <Card
               key={key(item)}
               item={item}
@@ -59,6 +121,35 @@ export const DashboardContent = (props: {
               contracts={contracts}
             />
           ))}
+
+          <div className={clsx('grid gap-4', gridCols)}>
+            {sortedOpenQuestionItems.map((entry) => (
+              <Card
+                key={key(entry.item)}
+                item={entry.item}
+                previews={previews}
+                contracts={contracts}
+              />
+            ))}
+          </div>
+
+          {sortedClosedQuestionItems.length > 0 && (
+            <>
+              <div className="mt-6 mb-2 text-sm font-semibold text-ink-600">
+                Closed markets
+              </div>
+              <div className={clsx('grid gap-4', gridCols)}>
+                {sortedClosedQuestionItems.map((entry) => (
+                  <Card
+                    key={key(entry.item)}
+                    item={entry.item}
+                    previews={previews}
+                    contracts={contracts}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <DragDropContext
@@ -188,8 +279,9 @@ const Card = (props: {
   previews?: LinkPreviews
   contracts: Contract[]
   isEditing?: boolean
+  className?: string
 }) => {
-  const { item, setItem, previews, contracts, isEditing } = props
+  const { item, setItem, previews, contracts, isEditing, className } = props
   if (item.type === 'link') {
     const preview = previews?.[item.url]
 
@@ -205,7 +297,7 @@ const Card = (props: {
   if (item.type === 'question') {
     const contract = contracts.find((c) => c.slug === item.slug)
     if (!contract) return <DashboardNewsItemPlaceholder pulse />
-    return <FeedContractCard key={contract.id} contract={contract} />
+    return <FeedContractCard key={contract.id} contract={contract} size="sm" className={className} />
   }
 
   if (item.type === 'text') {
