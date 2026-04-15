@@ -72,6 +72,7 @@ export default function AdminPage() {
         </Row>
 
         <LabCard title="🧾 sales" href="/admin/sales" />
+        <LabCard title="🎟️ manifest tickets" href="/admin/tickets" />
         <LabCard title="🆕 new users" href="/admin/new-users" />
         <LabCard title="🎁 prize payouts" href="/admin/prize" />
         <LabCard title="🐋 whales" href="/admin/whales" />

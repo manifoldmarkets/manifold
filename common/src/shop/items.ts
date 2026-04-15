@@ -16,6 +16,7 @@ export type ShopItemCategory =
   | 'consumable'
   | 'hovercard'
   | 'merch'
+  | 'ticket'
 
 // Merch size variant for clothing items
 export type MerchVariant = {
@@ -100,6 +101,7 @@ export const CATEGORY_LABELS: Record<ShopItemCategory, string> = {
   consumable: 'Consumable',
   hovercard: 'Hovercard',
   merch: 'Merch',
+  ticket: 'Ticket',
 }
 
 // Get all entitlement IDs for items in a given category
@@ -172,6 +174,10 @@ export type ShopItem = {
   animationTypes?: AnimationType[]
   // If true, item is hidden from shop unless user owns it
   hidden?: boolean
+  // Global stock cap — total active purchases across all users (optional)
+  maxStock?: number
+  // If true, item is shown in UI but not purchasable (for "coming soon" states)
+  comingSoon?: boolean
   // Merch-specific fields
   variants?: MerchVariant[]
   // Image carousel for merch cards: [{label, url}, ...]
@@ -840,7 +846,39 @@ export const SHOP_ITEMS: ShopItem[] = [
       { size: 'One Size', printfulSyncVariantId: '699c786e6c50b2' },
     ],
   },
+
+  // Tickets
+  {
+    id: 'manifest-ticket',
+    name: 'Manifest 2026 — Early Bird Ticket',
+    description:
+      'Claim your spot at Manifest 2026 — Lighthaven, Berkeley · June 12–14. You will receive a 100% off early-bird discount code, redeemable on manifest.is. Limited to the first 10 Manifold early-bird claims — more tickets at standard pricing will be added later. Code is single-use and non-transferable; the email on your manifest.is ticket must match your Manifold email.',
+    price: 55000,
+    type: 'instant',
+    limit: 'one-time',
+    category: 'ticket',
+    slot: 'unique',
+    maxStock: 10,
+  },
+  {
+    id: 'manifest-ticket-standard',
+    name: 'Manifest 2026 — Standard Ticket',
+    description:
+      'Standard-pricing discount code for Manifest 2026 — Lighthaven, Berkeley · June 12–14. Available after early-bird sells out.',
+    price: 67500,
+    type: 'instant',
+    limit: 'one-time',
+    category: 'ticket',
+    slot: 'unique',
+    comingSoon: true,
+  },
 ]
+
+export const getTicketItems = (): ShopItem[] =>
+  SHOP_ITEMS.filter((item) => item.category === 'ticket')
+
+export const isTicketItem = (item: ShopItem): boolean =>
+  item.category === 'ticket'
 
 // Available options for custom button text
 export const YES_BUTTON_OPTIONS = [

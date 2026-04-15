@@ -258,6 +258,10 @@ import { referUser } from './refer-user'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
+import { shopPurchaseTicket } from './shop-purchase-ticket'
+import { getTicketStock } from './get-ticket-stock'
+import { getTicketOrders } from './get-ticket-orders'
+import { getUserTicketPurchased } from './get-user-ticket-purchased'
 import { shopResetAll } from './shop-reset-all'
 import { shopShippingRates } from './shop-shipping-rates'
 import { shopToggle } from './shop-toggle'
@@ -524,6 +528,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-shop-stats': getShopStats,
   'shop-purchase': shopPurchase,
   'shop-purchase-merch': shopPurchaseMerch,
+  'shop-purchase-ticket': shopPurchaseTicket,
+  'get-ticket-stock': getTicketStock,
+  'get-ticket-orders': getTicketOrders,
+  'get-user-ticket-purchased': getUserTicketPurchased,
   'shop-shipping-rates': shopShippingRates,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
