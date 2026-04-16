@@ -22,7 +22,11 @@ import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Modal } from 'web/components/layout/modal'
+import {
+  Modal,
+  MODAL_CLASS,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -274,8 +278,8 @@ export function BanModal({
   const anyBanSelected = Object.values(banTypes).some((v) => v)
 
   return (
-    <Modal open={isOpen} setOpen={onClose}>
-      <Col className="bg-canvas-0 max-h-[85vh] max-w-2xl gap-4 !overflow-auto rounded-md p-6">
+    <Modal open={isOpen} setOpen={onClose} className={MODAL_CLASS} size="lg">
+      <Col className={SCROLLABLE_MODAL_CLASS}>
         <Title>Ban User: {user.name}</Title>
 
         {/* Bonus Eligibility Section */}
