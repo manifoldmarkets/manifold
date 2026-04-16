@@ -1,3 +1,7 @@
+import BackToManifold from '@site/src/components/BackToManifold'
+
+<BackToManifold href="https://manifold.markets/prize" label="Back to Prize Drawing" />
+
 # Manifold Prize Drawing FAQ
 
 ## What are Prize Drawings?
