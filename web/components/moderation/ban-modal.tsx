@@ -22,11 +22,7 @@ import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import {
-  Modal,
-  MODAL_CLASS,
-  SCROLLABLE_MODAL_CLASS,
-} from 'web/components/layout/modal'
+import { Modal } from 'web/components/layout/modal'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -278,10 +274,15 @@ export function BanModal({
   const anyBanSelected = Object.values(banTypes).some((v) => v)
 
   return (
-    <Modal open={isOpen} setOpen={onClose} className={MODAL_CLASS} size="lg">
-      <Col className={SCROLLABLE_MODAL_CLASS}>
-        <Title>Ban User: {user.name}</Title>
+    <Modal open={isOpen} setOpen={onClose} size="lg">
+      <Col className="bg-canvas-0 max-h-[85vh] overflow-hidden rounded-md">
+        {/* Fixed Header */}
+        <div className="px-6 pt-6 pb-2">
+          <Title>Ban User: {user.name}</Title>
+        </div>
 
+        {/* Scrollable Body */}
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-2">
         {/* Bonus Eligibility Section */}
         <BonusEligibilityControl user={user} />
 
@@ -624,20 +625,24 @@ export function BanModal({
           )}
         </div>
 
-        {/* Actions */}
-        <Row className="gap-2">
-          <Button
-            color="red"
-            disabled={!reason.trim() || (!anyBanSelected && !modAlertOnly)}
-            loading={isSubmitting}
-            onClick={handleSubmit}
-          >
-            {modAlertOnly ? 'Send Alert' : 'Apply Ban'}
-          </Button>
-          <Button color="gray-white" onClick={onClose}>
-            Cancel
-          </Button>
-        </Row>
+        </div>
+
+        {/* Fixed Footer */}
+        <div className="border-ink-200 border-t px-6 py-4">
+          <Row className="gap-2">
+            <Button
+              color="red"
+              disabled={!reason.trim() || (!anyBanSelected && !modAlertOnly)}
+              loading={isSubmitting}
+              onClick={handleSubmit}
+            >
+              {modAlertOnly ? 'Send Alert' : 'Apply Ban'}
+            </Button>
+            <Button color="gray-white" onClick={onClose}>
+              Cancel
+            </Button>
+          </Row>
+        </div>
       </Col>
 
       {/* Unban Confirmation Modal */}
