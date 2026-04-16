@@ -1,3 +1,7 @@
+import BackToManifold from '@site/src/components/BackToManifold'
+
+<BackToManifold href="https://manifold.markets/prize" label="Back to Prize Drawing" />
+
 # MANIFOLD PRIZE DRAWING OFFICIAL RULES
 
 **NO PURCHASE NECESSARY TO ENTER OR WIN. A PURCHASE WILL NOT IMPROVE YOUR CHANCES OF WINNING. VOID WHERE PROHIBITED.**
