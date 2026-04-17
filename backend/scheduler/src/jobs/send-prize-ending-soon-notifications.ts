@@ -7,11 +7,15 @@ import { log } from 'shared/utils'
 import { JobContext } from './helpers'
 
 export async function sendPrizeEndingSoonNotifications({
-  lastEndTime,
+  lastStartTime,
 }: JobContext) {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
-  const previousRunTime = lastEndTime ?? now - 5 * MINUTE_MS
+  // Use the previous run's START time (not end time) so consecutive runs'
+  // windows abut exactly at `prevStart + 2h`. Using end time would leave a
+  // gap equal to the previous run's runtime, permanently missing any items
+  // whose close_time falls inside that sliver.
+  const previousRunTime = lastStartTime ?? now - 5 * MINUTE_MS
   const previousThreshold = new Date(previousRunTime + 2 * HOUR_MS).toISOString()
   const currentThreshold = new Date(now + 2 * HOUR_MS).toISOString()
   const nowIso = new Date(now).toISOString()

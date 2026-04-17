@@ -7,6 +7,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 // type for scheduled job functions
 export type JobContext = {
   lastEndTime?: number
+  lastStartTime?: number
 }
 
 // todo: would be nice if somehow we got these hooked up to the job logging context
@@ -39,13 +40,17 @@ export function createJob(
       log('Starting up.')
       const db = createSupabaseClient()
 
-      // Get last end time in case function wants to use it
-      const lastEndTimeStamp = (
+      // Get last end/start time in case the function wants to use them.
+      // Read before overwriting last_start_time below so the value reflects
+      // the PREVIOUS run's start, not the current one.
+      const priorInfo = (
         await db
           .from('scheduler_info')
-          .select('last_end_time')
+          .select('last_end_time, last_start_time')
           .eq('job_name', name)
-      ).data?.[0]?.last_end_time
+      ).data?.[0]
+      const lastEndTimeStamp = priorInfo?.last_end_time
+      const lastStartTimeStamp = priorInfo?.last_start_time
 
       // Update last start time
       await db
@@ -59,6 +64,9 @@ export function createJob(
       const jobPromise = fn({
         lastEndTime: lastEndTimeStamp
           ? new Date(lastEndTimeStamp).valueOf()
+          : undefined,
+        lastStartTime: lastStartTimeStamp
+          ? new Date(lastStartTimeStamp).valueOf()
           : undefined,
       })
 
