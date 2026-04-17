@@ -5,12 +5,14 @@ import {
   AirdropData,
   BetFillData,
   BetReplyNotificationData,
+  CharityGiveawayNotificationData,
   ContractResolutionData,
   ExtraPurchasedManaData,
   getSourceUrl,
   MembershipSubscriptionData,
   Notification,
   PaymentCompletedData,
+  PrizeDrawingNotificationData,
   PrizeWinnerData,
   ReactionNotificationTypes,
   ReviewNotificationData,
@@ -186,6 +188,22 @@ export function NotificationItem(props: {
   } else if (reason === 'payment_status') {
     return (
       <PaymentSuccessNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'prize_drawings') {
+    return (
+      <PrizeDrawingCampaignNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'charity_giveaways') {
+    return (
+      <CharityGiveawayCampaignNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -2251,6 +2269,72 @@ export function PaymentSuccessNotification(props: {
         Your {paymentMethodType} payment for {formatMoneyUSD(amount)} {currency}{' '}
         was approved!
       </span>
+    </NotificationFrame>
+  )
+}
+
+function PrizeDrawingCampaignNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const data = notification.data as PrizeDrawingNotificationData
+  const prizeAmount = formatMoneyUSD(data.totalPrizeUsd)
+  const timeLeft = formatDuration(data.closeTime - Date.now())
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
+      link={getSourceUrl(notification)}
+      subtitle={<></>}
+    >
+      {data.eventType === 'created' ? (
+        <span>
+          New prize drawing with <b>{prizeAmount}</b> in prizes.
+        </span>
+      ) : (
+        <span>
+          Prize Drawing #{data.sweepstakesNum} ends in {timeLeft}. <b>{prizeAmount}</b>{' '}
+          in prizes.
+        </span>
+      )}
+    </NotificationFrame>
+  )
+}
+
+function CharityGiveawayCampaignNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const data = notification.data as CharityGiveawayNotificationData
+  const prizeAmount = formatMoneyUSD(data.prizeAmountUsd)
+  const timeLeft = formatDuration(data.closeTime - Date.now())
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
+      link={getSourceUrl(notification)}
+      subtitle={<></>}
+    >
+      {data.eventType === 'created' ? (
+        <span>
+          New charity giveaway with <b>{prizeAmount}</b> prize amount.
+        </span>
+      ) : (
+        <span>
+          Charity Giveaway #{data.giveawayNum} ends in {timeLeft}. <b>{prizeAmount}</b>{' '}
+          prize amount.
+        </span>
+      )}
     </NotificationFrame>
   )
 }

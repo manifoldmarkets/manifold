@@ -49,6 +49,7 @@ import {
 import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
 import { scoreContracts } from './score-contracts'
 import { sendMarketCloseEmails } from './send-market-close-emails'
+import { sendPrizeEndingSoonNotifications } from './send-prize-ending-soon-notifications'
 import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
@@ -107,6 +108,11 @@ export function createJobs() {
       'calculate-conversion-scores',
       '0 46 * * * *', // on the 46th minute of every hour
       calculateConversionScore
+    ),
+    createJob(
+      'send-prize-ending-soon-notifications',
+      '0 */5 * * * *', // every 5 minutes
+      sendPrizeEndingSoonNotifications
     ),
     createJob(
       'auto-award-bounty',

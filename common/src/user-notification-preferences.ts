@@ -71,6 +71,8 @@ export type notification_preferences = {
   // General
   trending_markets: notification_destination_types[]
   profit_loss_updates: notification_destination_types[]
+  prize_drawings: notification_destination_types[]
+  charity_giveaways: notification_destination_types[]
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
   opt_out_all: notification_destination_types[]
@@ -172,6 +174,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // General
     trending_markets: constructPref(false, true, false),
     profit_loss_updates: constructPref(true, true, false),
+    prize_drawings: constructPref(true, false, true),
+    charity_giveaways: constructPref(true, false, true),
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),

@@ -1,7 +1,11 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getTotalPrizePool } from 'common/sweepstakes'
+import { formatMoneyUSD } from 'common/util/format'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { SweepstakesPrize } from 'common/sweepstakes'
+import { createPrizeCampaignNotification } from 'shared/notifications/create-prize-campaign-notification'
+import { log } from 'shared/utils'
 
 export const adminCreateSweepstakes: APIHandler<
   'admin-create-sweepstakes'
@@ -56,6 +60,25 @@ export const adminCreateSweepstakes: APIHandler<
      VALUES ($1, $2, $3::jsonb, to_timestamp($4 / 1000.0))`,
     [sweepstakesNum, name, JSON.stringify(normalizedPrizes), closeTime]
   )
+
+  try {
+    const totalPrizeUsd = getTotalPrizePool(normalizedPrizes)
+    await createPrizeCampaignNotification(pg, {
+      reason: 'prize_drawings',
+      eventType: 'created',
+      sourceSlug: 'prize',
+      title: 'New prize drawing',
+      body: `${formatMoneyUSD(totalPrizeUsd)} in total prizes.`,
+      data: {
+        eventType: 'created',
+        sweepstakesNum,
+        totalPrizeUsd,
+        closeTime,
+      },
+    })
+  } catch (err) {
+    log.error('Failed to send prize drawing notifications', { err })
+  }
 
   return { sweepstakesNum }
 }

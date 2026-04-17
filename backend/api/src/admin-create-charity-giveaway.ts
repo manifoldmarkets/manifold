@@ -1,6 +1,9 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { formatMoneyUSD } from 'common/util/format'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
+import { createPrizeCampaignNotification } from 'shared/notifications/create-prize-campaign-notification'
+import { log } from 'shared/utils'
 
 export const adminCreateCharityGiveaway: APIHandler<
   'admin-create-charity-giveaway'
@@ -42,6 +45,24 @@ export const adminCreateCharityGiveaway: APIHandler<
      VALUES ($1, $2, $3, to_timestamp($4 / 1000.0))`,
     [giveawayNum, name, prizeAmountUsd, closeTime]
   )
+
+  try {
+    await createPrizeCampaignNotification(pg, {
+      reason: 'charity_giveaways',
+      eventType: 'created',
+      sourceSlug: 'charity',
+      title: 'New charity giveaway',
+      body: `${formatMoneyUSD(prizeAmountUsd)} prize amount.`,
+      data: {
+        eventType: 'created',
+        giveawayNum,
+        prizeAmountUsd,
+        closeTime,
+      },
+    })
+  } catch (err) {
+    log.error('Failed to send charity giveaway notifications', { err })
+  }
 
   return { giveawayNum }
 }

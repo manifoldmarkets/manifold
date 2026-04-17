@@ -94,6 +94,8 @@ const mobilePushEnabled: Array<notification_preference> = [
   'betting_streaks',
   'market_movements',
   'limit_order_fills',
+  'prize_drawings',
+  'charity_giveaways',
   'all_comments_on_followed_posts',
   // TODO: add these
   // 'contract_from_followed_user',
@@ -182,6 +184,8 @@ const generalOther: NotificationSectionData = {
     'thank_you_for_purchases',
     'onboarding_flow',
     'profit_loss_updates',
+    'prize_drawings',
+    'charity_giveaways',
   ],
 }
 

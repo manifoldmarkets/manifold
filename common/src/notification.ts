@@ -212,6 +212,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Weekly portfolio updates',
     detailed: 'Weekly portfolio updates',
   },
+  prize_drawings: {
+    simple: 'Prize drawings',
+    detailed: 'New prize drawings and prize drawings closing soon',
+  },
+  charity_giveaways: {
+    simple: 'Charity giveaways',
+    detailed: 'New charity giveaways and charity giveaways closing soon',
+  },
   referral_bonuses: {
     simple: 'Referring new users',
     detailed: 'Bonuses you receive from referring a new user',
@@ -477,6 +485,20 @@ export type PaymentCompletedData = {
   currency: string
   paymentMethodType: string
   paymentAmountType: string
+}
+
+export type PrizeDrawingNotificationData = {
+  eventType: 'created' | 'ending_soon'
+  sweepstakesNum: number
+  totalPrizeUsd: number
+  closeTime: number
+}
+
+export type CharityGiveawayNotificationData = {
+  eventType: 'created' | 'ending_soon'
+  giveawayNum: number
+  prizeAmountUsd: number
+  closeTime: number
 }
 
 export type ReferralData = {
