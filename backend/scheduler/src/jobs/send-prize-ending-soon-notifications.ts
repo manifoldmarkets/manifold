@@ -3,6 +3,7 @@ import { getTotalPrizePool, SweepstakesPrize } from 'common/sweepstakes'
 import { formatMoneyUSD } from 'common/util/format'
 import { createPrizeCampaignNotification } from 'shared/notifications/create-prize-campaign-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { log } from 'shared/utils'
 import { JobContext } from './helpers'
 
 export async function sendPrizeEndingSoonNotifications({
@@ -29,20 +30,27 @@ export async function sendPrizeEndingSoonNotifications({
   )
 
   for (const sweepstakes of endingSoonSweepstakes) {
-    const totalPrizeUsd = getTotalPrizePool(sweepstakes.prizes)
-    await createPrizeCampaignNotification(pg, {
-      reason: 'prize_drawings',
-      eventType: 'ending_soon',
-      sourceSlug: `prize/${sweepstakes.sweepstakes_num}`,
-      title: `Prize Drawing #${sweepstakes.sweepstakes_num} ends soon`,
-      body: `${formatMoneyUSD(totalPrizeUsd)} in total prizes. Ends in about 2 hours.`,
-      data: {
+    try {
+      const totalPrizeUsd = getTotalPrizePool(sweepstakes.prizes)
+      await createPrizeCampaignNotification(pg, {
+        reason: 'prize_drawings',
         eventType: 'ending_soon',
-        sweepstakesNum: sweepstakes.sweepstakes_num,
-        totalPrizeUsd,
-        closeTime: new Date(sweepstakes.close_time).valueOf(),
-      },
-    })
+        sourceSlug: `prize/${sweepstakes.sweepstakes_num}`,
+        title: `Prize Drawing #${sweepstakes.sweepstakes_num} ends soon`,
+        body: `${formatMoneyUSD(totalPrizeUsd)} in total prizes. Ends in about 2 hours.`,
+        data: {
+          eventType: 'ending_soon',
+          sweepstakesNum: sweepstakes.sweepstakes_num,
+          totalPrizeUsd,
+          closeTime: new Date(sweepstakes.close_time).valueOf(),
+        },
+      })
+    } catch (err) {
+      log.error(
+        `Failed to send ending-soon notifications for Prize Drawing #${sweepstakes.sweepstakes_num}`,
+        { err }
+      )
+    }
   }
 
   const endingSoonGiveaways = await pg.manyOrNone<{
@@ -59,18 +67,25 @@ export async function sendPrizeEndingSoonNotifications({
   )
 
   for (const giveaway of endingSoonGiveaways) {
-    await createPrizeCampaignNotification(pg, {
-      reason: 'charity_giveaways',
-      eventType: 'ending_soon',
-      sourceSlug: `charity/${giveaway.giveaway_num}`,
-      title: `Charity Giveaway #${giveaway.giveaway_num} ends soon`,
-      body: `${formatMoneyUSD(giveaway.prize_amount_usd)} prize amount. Ends in about 2 hours.`,
-      data: {
+    try {
+      await createPrizeCampaignNotification(pg, {
+        reason: 'charity_giveaways',
         eventType: 'ending_soon',
-        giveawayNum: giveaway.giveaway_num,
-        prizeAmountUsd: giveaway.prize_amount_usd,
-        closeTime: new Date(giveaway.close_time).valueOf(),
-      },
-    })
+        sourceSlug: `charity/${giveaway.giveaway_num}`,
+        title: `Charity Giveaway #${giveaway.giveaway_num} ends soon`,
+        body: `${formatMoneyUSD(giveaway.prize_amount_usd)} prize amount. Ends in about 2 hours.`,
+        data: {
+          eventType: 'ending_soon',
+          giveawayNum: giveaway.giveaway_num,
+          prizeAmountUsd: giveaway.prize_amount_usd,
+          closeTime: new Date(giveaway.close_time).valueOf(),
+        },
+      })
+    } catch (err) {
+      log.error(
+        `Failed to send ending-soon notifications for Charity Giveaway #${giveaway.giveaway_num}`,
+        { err }
+      )
+    }
   }
 }
