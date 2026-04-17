@@ -13,6 +13,7 @@ export async function sendPrizeEndingSoonNotifications({
   const previousRunTime = lastEndTime ?? now - 5 * MINUTE_MS
   const previousThreshold = new Date(previousRunTime + 2 * HOUR_MS).toISOString()
   const currentThreshold = new Date(now + 2 * HOUR_MS).toISOString()
+  const nowIso = new Date(now).toISOString()
 
   const endingSoonSweepstakes = await pg.manyOrNone<{
     sweepstakes_num: number
@@ -22,8 +23,9 @@ export async function sendPrizeEndingSoonNotifications({
     `select sweepstakes_num, prizes, close_time
      from sweepstakes
      where close_time > $1
-       and close_time <= $2`,
-    [previousThreshold, currentThreshold]
+       and close_time <= $2
+       and close_time > $3`,
+    [previousThreshold, currentThreshold, nowIso]
   )
 
   for (const sweepstakes of endingSoonSweepstakes) {
@@ -31,7 +33,7 @@ export async function sendPrizeEndingSoonNotifications({
     await createPrizeCampaignNotification(pg, {
       reason: 'prize_drawings',
       eventType: 'ending_soon',
-      sourceSlug: 'prize',
+      sourceSlug: `prize/${sweepstakes.sweepstakes_num}`,
       title: `Prize Drawing #${sweepstakes.sweepstakes_num} ends soon`,
       body: `${formatMoneyUSD(totalPrizeUsd)} in total prizes. Ends in about 2 hours.`,
       data: {
@@ -51,15 +53,16 @@ export async function sendPrizeEndingSoonNotifications({
     `select giveaway_num, prize_amount_usd, close_time
      from charity_giveaways
      where close_time > $1
-       and close_time <= $2`,
-    [previousThreshold, currentThreshold]
+       and close_time <= $2
+       and close_time > $3`,
+    [previousThreshold, currentThreshold, nowIso]
   )
 
   for (const giveaway of endingSoonGiveaways) {
     await createPrizeCampaignNotification(pg, {
       reason: 'charity_giveaways',
       eventType: 'ending_soon',
-      sourceSlug: 'charity',
+      sourceSlug: `charity/${giveaway.giveaway_num}`,
       title: `Charity Giveaway #${giveaway.giveaway_num} ends soon`,
       body: `${formatMoneyUSD(giveaway.prize_amount_usd)} prize amount. Ends in about 2 hours.`,
       data: {

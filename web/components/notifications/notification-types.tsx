@@ -2281,7 +2281,9 @@ function PrizeDrawingCampaignNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const data = notification.data as PrizeDrawingNotificationData
   const prizeAmount = formatMoneyUSD(data.totalPrizeUsd)
-  const timeLeft = formatDuration(data.closeTime - Date.now())
+  const msUntilClose = data.closeTime - Date.now()
+  const hasEnded = msUntilClose <= 0
+  const timeLeft = formatDuration(msUntilClose)
 
   return (
     <NotificationFrame
@@ -2295,6 +2297,11 @@ function PrizeDrawingCampaignNotification(props: {
       {data.eventType === 'created' ? (
         <span>
           New prize drawing with <b>{prizeAmount}</b> in prizes.
+        </span>
+      ) : hasEnded ? (
+        <span>
+          Prize Drawing #{data.sweepstakesNum} has ended. <b>{prizeAmount}</b> in
+          prizes.
         </span>
       ) : (
         <span>
@@ -2314,7 +2321,9 @@ function CharityGiveawayCampaignNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const data = notification.data as CharityGiveawayNotificationData
   const prizeAmount = formatMoneyUSD(data.prizeAmountUsd)
-  const timeLeft = formatDuration(data.closeTime - Date.now())
+  const msUntilClose = data.closeTime - Date.now()
+  const hasEnded = msUntilClose <= 0
+  const timeLeft = formatDuration(msUntilClose)
 
   return (
     <NotificationFrame
@@ -2328,6 +2337,11 @@ function CharityGiveawayCampaignNotification(props: {
       {data.eventType === 'created' ? (
         <span>
           New charity giveaway with <b>{prizeAmount}</b> prize amount.
+        </span>
+      ) : hasEnded ? (
+        <span>
+          Charity Giveaway #{data.giveawayNum} has ended. <b>{prizeAmount}</b> prize
+          amount.
         </span>
       ) : (
         <span>

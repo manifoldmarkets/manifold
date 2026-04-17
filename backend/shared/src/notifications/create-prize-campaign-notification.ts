@@ -22,7 +22,7 @@ type PrizeCampaignNotification =
   | {
       reason: 'prize_drawings'
       eventType: 'created' | 'ending_soon'
-      sourceSlug: 'prize'
+      sourceSlug: string
       title: string
       body: string
       data: PrizeDrawingNotificationData
@@ -30,7 +30,7 @@ type PrizeCampaignNotification =
   | {
       reason: 'charity_giveaways'
       eventType: 'created' | 'ending_soon'
-      sourceSlug: 'charity'
+      sourceSlug: string
       title: string
       body: string
       data: CharityGiveawayNotificationData
@@ -51,6 +51,7 @@ export async function createPrizeCampaignNotification(
     const privateUsers: PrivateUserBatchRow[] = await pg.map(
       `select pu.*, pu.id as cursor_id
        from private_users pu
+       join users u on pu.id = u.id
        where ($1::text is null or pu.id > $1)
        order by pu.id
        limit $2`,

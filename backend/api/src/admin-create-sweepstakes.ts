@@ -66,7 +66,7 @@ export const adminCreateSweepstakes: APIHandler<
     await createPrizeCampaignNotification(pg, {
       reason: 'prize_drawings',
       eventType: 'created',
-      sourceSlug: 'prize',
+      sourceSlug: `prize/${sweepstakesNum}`,
       title: 'New prize drawing',
       body: `${formatMoneyUSD(totalPrizeUsd)} in total prizes.`,
       data: {

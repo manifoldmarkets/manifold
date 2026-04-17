@@ -50,7 +50,7 @@ export const adminCreateCharityGiveaway: APIHandler<
     await createPrizeCampaignNotification(pg, {
       reason: 'charity_giveaways',
       eventType: 'created',
-      sourceSlug: 'charity',
+      sourceSlug: `charity/${giveawayNum}`,
       title: 'New charity giveaway',
       body: `${formatMoneyUSD(prizeAmountUsd)} prize amount.`,
       data: {
