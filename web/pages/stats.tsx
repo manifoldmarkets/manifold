@@ -108,6 +108,11 @@ type ShopStats = {
     quantity: number
     revenue: number
   }[]
+  ticketSales: {
+    itemId: string
+    quantity: number
+    revenue: number
+  }[]
   subscribersByTier: {
     tier: 'basic' | 'plus' | 'premium'
     count: number
@@ -806,6 +811,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
   const {
     subscriptionSales,
     digitalGoodsSales,
+    ticketSales,
     subscribersByTier,
     subscriptionsOverTime,
   } = shopStats
@@ -1051,6 +1057,23 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
         items={goodsItemSalesArray}
         itemDisplayNames={itemDisplayNames}
       />
+
+      {/* MANIFEST TICKETS SECTION */}
+      {ticketSales.length > 0 && (
+        <>
+          <Spacer h={12} />
+          <Title>Manifest Tickets</Title>
+          <Spacer h={4} />
+          <SalesTable
+            title="Ticket Sales"
+            items={ticketSales}
+            itemDisplayNames={{
+              'manifest-ticket': 'Early Bird Ticket',
+              'manifest-ticket-standard': 'Standard Ticket',
+            }}
+          />
+        </>
+      )}
     </Col>
   )
 }

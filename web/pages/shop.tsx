@@ -859,6 +859,7 @@ function TicketItemCard(props: {
   const maxStock = stockData?.maxStock ?? item.maxStock ?? 0
   const soldOut = available !== null && available <= 0
   const comingSoon = !!item.comingSoon
+  const isEarlyBird = item.id === 'manifest-ticket'
   const canPurchase =
     user &&
     user.balance >= discountedPrice &&
@@ -906,7 +907,11 @@ function TicketItemCard(props: {
       <div
         className={clsx(
           'bg-canvas-0 text-ink-900 relative overflow-hidden rounded-xl border-2 shadow-sm',
-          comingSoon ? 'border-ink-300 opacity-80' : 'border-amber-400'
+          comingSoon
+            ? 'border-ink-300 opacity-80'
+            : isEarlyBird
+            ? 'border-amber-400'
+            : 'border-indigo-400'
         )}
       >
         {/* Top banner */}
@@ -915,11 +920,17 @@ function TicketItemCard(props: {
             'flex items-center justify-between px-4 py-1.5 text-xs font-bold uppercase tracking-widest',
             comingSoon
               ? 'bg-gradient-to-r from-indigo-500 to-indigo-400 text-indigo-950'
-              : 'bg-gradient-to-r from-amber-500 to-amber-400 text-amber-950'
+              : isEarlyBird
+              ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-amber-950'
+              : 'bg-gradient-to-r from-indigo-500 to-indigo-400 text-indigo-950'
           )}
         >
           <span>
-            {comingSoon ? '⏳ Standard — Available Soon' : 'Early Bird'}
+            {comingSoon
+              ? '⏳ Available Soon'
+              : isEarlyBird
+              ? 'Early Bird'
+              : 'Standard'}
           </span>
           {soldOut && !comingSoon && (
             <span className="text-scarlet-800">Sold Out</span>
@@ -930,19 +941,27 @@ function TicketItemCard(props: {
         <Col
           className={clsx(
             'items-center justify-center gap-1 px-4 py-6 text-center',
-            comingSoon ? 'bg-canvas-50' : 'bg-amber-200/50 dark:bg-amber-500/10'
+            comingSoon
+              ? 'bg-canvas-50'
+              : isEarlyBird
+              ? 'bg-amber-200/50 dark:bg-amber-500/10'
+              : 'bg-indigo-200/50 dark:bg-indigo-500/10'
           )}
         >
           <div
             className={clsx(
               'text-sm font-semibold uppercase tracking-widest',
-              comingSoon ? 'text-ink-500' : 'text-amber-700 dark:text-amber-500'
+              comingSoon
+                ? 'text-ink-500'
+                : isEarlyBird
+                ? 'text-amber-700 dark:text-amber-500'
+                : 'text-indigo-700 dark:text-indigo-400'
             )}
           >
             Manifest 2026
           </div>
           <div className="text-lg font-bold leading-tight">
-            {comingSoon ? 'Standard Ticket' : 'Early Bird Ticket'}
+            {isEarlyBird ? 'Early Bird Ticket' : 'Standard Ticket'}
           </div>
         </Col>
 
@@ -977,24 +996,43 @@ function TicketItemCard(props: {
             .
           </div>
 
-          {/* Stock progress (early bird only) */}
+          {/* Stock display */}
           {!comingSoon && available !== null && (
-            <Col className="gap-1">
-              <Row className="text-ink-600 justify-between text-[11px]">
-                <span>
-                  {maxStock - available}/{maxStock} claimed
-                </span>
-                <span className="text-amber-700 dark:text-amber-500">
-                  {available} left
-                </span>
-              </Row>
-              <div className="bg-ink-200 h-1.5 overflow-hidden rounded-full">
-                <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all"
-                  style={{ width: `${pctClaimed}%` }}
-                />
+            isEarlyBird ? (
+              <Col className="gap-1">
+                <Row className="text-ink-600 justify-between text-[11px]">
+                  <span>
+                    {maxStock - available}/{maxStock} claimed
+                  </span>
+                  <span className="text-amber-700 dark:text-amber-500">
+                    {available} left
+                  </span>
+                </Row>
+                <div className="bg-ink-200 h-1.5 overflow-hidden rounded-full">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all"
+                    style={{ width: `${pctClaimed}%` }}
+                  />
+                </div>
+              </Col>
+            ) : (
+              <div
+                className={clsx(
+                  'text-xs',
+                  soldOut
+                    ? 'text-scarlet-600'
+                    : available <= 5
+                    ? 'text-scarlet-600 dark:text-scarlet-400'
+                    : 'text-teal-600 dark:text-teal-400'
+                )}
+              >
+                {soldOut
+                  ? 'Sold out'
+                  : available <= 5
+                  ? 'Less than 5 remaining — limited stock'
+                  : 'More than 5 remaining — limited stock'}
               </div>
-            </Col>
+            )
           )}
 
           {/* Price + CTA */}
@@ -1030,7 +1068,9 @@ function TicketItemCard(props: {
                 ? 'Sign in to claim'
                 : user.balance < discountedPrice
                 ? 'Insufficient balance'
-                : 'Claim Early Bird Code'}
+                : isEarlyBird
+                ? 'Claim Early Bird Code'
+                : 'Claim Ticket Code'}
             </Button>
           </Col>
         </Col>
