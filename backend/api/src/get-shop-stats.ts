@@ -1,6 +1,7 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
+import { getTicketItems } from 'common/shop/items'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
@@ -9,6 +10,7 @@ dayjs.extend(timezone)
 
 // Re-use the canonical list from supporter-config
 const SUBSCRIPTION_ITEM_IDS = [...SUPPORTER_ENTITLEMENT_IDS]
+const TICKET_ITEM_IDS = getTicketItems().map((t) => t.id)
 
 export type ShopStats = {
   // Daily subscription sales (supporter tiers)
@@ -18,9 +20,15 @@ export type ShopStats = {
     quantity: number
     revenue: number
   }[]
-  // Daily digital goods sales (non-subscription items)
+  // Daily digital goods sales (non-subscription, non-ticket items)
   digitalGoodsSales: {
     date: string
+    itemId: string
+    quantity: number
+    revenue: number
+  }[]
+  // Ticket sales (all-time, grouped by item)
+  ticketSales: {
     itemId: string
     quantity: number
     revenue: number
@@ -80,7 +88,8 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     [start, SUBSCRIPTION_ITEM_IDS]
   )
 
-  // Get daily digital goods sales (non-subscription items)
+  // Get daily digital goods sales (non-subscription, non-ticket items)
+  const excludeFromGoods = [...SUBSCRIPTION_ITEM_IDS, ...TICKET_ITEM_IDS]
   const digitalGoodsSales = await pg.manyOrNone<{
     date: string
     itemId: string
@@ -88,7 +97,7 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     revenue: number
   }>(
     `
-    select 
+    select
       date_trunc('day', created_time at time zone 'America/Los_Angeles')::date::text as date,
       item_id as "itemId",
       sum(quantity)::int as quantity,
@@ -100,7 +109,26 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     group by date, item_id
     order by date, item_id
     `,
-    [start, SUBSCRIPTION_ITEM_IDS]
+    [start, excludeFromGoods]
+  )
+
+  // Get ticket sales
+  const ticketSales = await pg.manyOrNone<{
+    itemId: string
+    quantity: number
+    revenue: number
+  }>(
+    `
+    select
+      item_id as "itemId",
+      count(*)::int as quantity,
+      sum(price_mana)::bigint as revenue
+    from shop_orders
+    where status = 'COMPLETED'
+      and item_id = any($1)
+    group by item_id
+    `,
+    [TICKET_ITEM_IDS]
   )
 
   // Get current active subscriber counts by tier
@@ -183,6 +211,7 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
   return {
     subscriptionSales: subscriptionSales ?? [],
     digitalGoodsSales: digitalGoodsSales ?? [],
+    ticketSales: ticketSales ?? [],
     subscribersByTier: subscribersByTier ?? [],
     subscriptionsOverTime: subscriptionsOverTime ?? [],
   }

@@ -864,13 +864,13 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'manifest-ticket-standard',
     name: 'Manifest 2026 — Standard Ticket',
     description:
-      'Standard-pricing discount code for Manifest 2026 — Lighthaven, Berkeley · June 12–14. Available after early-bird sells out.',
+      'Discount code for Manifest 2026 — Lighthaven, Berkeley · June 12–14. Code is single-use and non-transferable; the email on your manifest.is ticket must match your Manifold email.',
     price: 67500,
     type: 'instant',
     limit: 'one-time',
     category: 'ticket',
     slot: 'unique',
-    comingSoon: true,
+    maxStock: 20,
   },
 ]
 

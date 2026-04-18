@@ -19,7 +19,7 @@ export const shopPurchaseTicket: APIHandler<'shop-purchase-ticket'> = async (
 
   // Serialize ALL ticket purchases for this item globally (not per-user) so two
   // different users racing for the last slot can't both pass the stock check.
-  const { orderId, remainingStock } = await betsQueue.enqueueFn(
+  const { orderId, remainingStock, orderPosition } = await betsQueue.enqueueFn(
     () =>
       runTransactionWithRetries(async (tx) => {
         const user = await getUser(auth.uid, tx)
@@ -114,15 +114,33 @@ export const shopPurchaseTicket: APIHandler<'shop-purchase-ticket'> = async (
         return {
           orderId: order.id,
           remainingStock: Math.max(0, (item.maxStock ?? 0) - newCount),
+          orderPosition: newCount,
         }
       }),
     [`ticket:${itemId}`]
   )
 
+  // Support comma-separated codes (e.g. "CODE1,CODE2") — each covers 10 uses.
+  // First 10 buyers get CODE1, next 10 get CODE2, etc.
+  const CODES_PER_BATCH = 10
+  const codes = (process.env.MANIFEST_DISCOUNT_CODE ?? '')
+    .split(',')
+    .map((c) => c.trim())
+    .filter(Boolean)
+  const discountCode =
+    codes.length > 0
+      ? codes[
+          Math.min(
+            Math.floor((orderPosition - 1) / CODES_PER_BATCH),
+            codes.length - 1
+          )
+        ]
+      : null
+
   return {
     success: true,
     orderId,
-    discountCode: process.env.MANIFEST_DISCOUNT_CODE ?? null,
+    discountCode,
     remainingStock,
   }
 }
