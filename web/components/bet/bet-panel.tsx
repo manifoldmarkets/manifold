@@ -877,8 +877,13 @@ export const BuyPanelBody = (
                             />
                           ) : (
                             <span
-                              className={clsx('cursor-pointer hover:underline')}
+                              className={clsx(
+                                contract.mechanism === 'dpm-2'
+                                  ? ''
+                                  : 'cursor-pointer hover:underline'
+                              )}
                               onClick={() => {
+                                if (contract.mechanism === 'dpm-2') return
                                 setEditablePayout(Math.floor(currentPayout))
                                 setIsEditingPayout(true)
                               }}

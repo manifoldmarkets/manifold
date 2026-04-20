@@ -368,7 +368,14 @@ function augmentAnswerWithProbability(
 // create market
 
 export const createBinarySchema = z.object({
-  outcomeType: z.enum(['BINARY', 'STONK']),
+  outcomeType: z.literal('BINARY'),
+  initialProb: z.number().min(1).max(99).optional(),
+  // Binary-only: choose between Classic (cpmm-1) and DPM.
+  mechanism: z.enum(['cpmm-1', 'dpm-2']).optional(),
+})
+
+export const createStonkSchema = z.object({
+  outcomeType: z.literal('STONK'),
   initialProb: z.number().min(1).max(99).optional(),
 })
 
@@ -473,6 +480,7 @@ export const createMarketProps = z
       createBountySchema,
       createPollSchema,
       createBinarySchema,
+      createStonkSchema,
       createNumberSchema,
       createMultiNumericSchema,
       createMultiDateSchema,

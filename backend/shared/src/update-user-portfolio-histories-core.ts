@@ -366,8 +366,8 @@ export const getUnresolvedStatsForToken = (
       const totalLoan = (cm.loan ?? 0) + (cm.marginLoan ?? 0)
       return {
         value:
-          calculateProfitMetricsAtProbOrCancel(answer.prob, cm).payout -
-          totalLoan,
+          calculateProfitMetricsAtProbOrCancel(answer.prob, cm, contract)
+            .payout - totalLoan,
         invested: cm.invested ?? 0,
         dailyProfit: cm.from?.day?.profit ?? 0,
         loan: totalLoan,
@@ -378,8 +378,8 @@ export const getUnresolvedStatsForToken = (
     const totalLoan = (cm.loan ?? 0) + (cm.marginLoan ?? 0)
     return {
       value:
-        calculateProfitMetricsAtProbOrCancel(contract.prob, cm).payout -
-        totalLoan,
+        calculateProfitMetricsAtProbOrCancel(contract.prob, cm, contract)
+          .payout - totalLoan,
       invested: cm.invested ?? 0,
       dailyProfit: cm.from?.day?.profit ?? 0,
       loan: totalLoan,

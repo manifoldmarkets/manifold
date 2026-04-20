@@ -15,6 +15,7 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   Contract,
+  DPMContract,
   MultiDateContract,
   MultiNumericContract,
   PseudoNumericContract,
@@ -61,6 +62,7 @@ import {
 } from '../answers/answer-resolve-panel'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BuyPanel } from '../bet/bet-panel'
+import { DpmConvertPanel } from './dpm-convert-panel'
 import { UserBetsSummary } from '../bet/user-bet-summary'
 import {
   ChartAnnotations,
@@ -1148,7 +1150,10 @@ export function BinaryBetPanel(props: {
   const { contract } = props
 
   return (
-    <Col className="mt-2 w-full">
+    <Col className="mt-2 w-full gap-2">
+      {contract.mechanism === 'dpm-2' && (
+        <DpmConvertPanel contract={contract as DPMContract} />
+      )}
       <BuyPanel inModal={false} contract={contract} className="bg-canvas-50" />
     </Col>
   )

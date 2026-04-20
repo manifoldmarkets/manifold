@@ -47,6 +47,7 @@ type AnyContractType =
   | CPMMNumber
   | MultiNumeric
   | MultiDate
+  | (DPM & Binary)
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -138,12 +139,14 @@ export type CPMMMultiContract = Contract & CPMMMulti
 export type CPMMNumericContract = Contract & CPMMNumber
 export type MultiNumericContract = Contract & MultiNumeric
 export type MultiDateContract = Contract & MultiDate
+export type DPMContract = Contract & DPM
 export type MarketContract =
   | CPMMContract
   | CPMMMultiContract
   | CPMMNumericContract
   | MultiNumericContract
   | MultiDateContract
+  | DPMContract
 export type BinaryContract = Contract & Binary
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type QuadraticFundingContract = Contract & QuadraticFunding
@@ -162,6 +165,28 @@ export type CPMM = {
   p: number // probability constant in y^p * n^(1-p) = k
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
   subsidyPool: number // current value of subsidy pool in Ṁ
+  prob: number
+  probChanges: {
+    day: number
+    week: number
+    month: number
+  }
+}
+
+/**
+ * Dynamic parimutuel market. Each YES share pays C/y on YES resolution
+ * and each NO share pays C/n on NO resolution, where C = sqrt(y^2 + n^2)
+ * is the total amount wagered. Probability is y^2 / (y^2 + n^2).
+ *
+ * DPM markets do not support selling shares and must be converted to
+ * cpmm-1 before they can be resolved.
+ */
+export type DPM = {
+  mechanism: 'dpm-2'
+  pool: { YES: number; NO: number }
+  initialPool: { YES: number; NO: number }
+  totalLiquidity: number // ante, for mana accounting
+  subsidyPool: 0
   prob: number
   probChanges: {
     day: number

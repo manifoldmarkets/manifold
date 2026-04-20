@@ -883,6 +883,9 @@ export function NewContractPanel(props: {
       // Add type-specific fields
       if (formState.outcomeType === 'BINARY') {
         payload.initialProb = formState.probability || 50
+        if (formState.binaryMechanism === 'dpm-2') {
+          payload.mechanism = 'dpm-2'
+        }
       } else if (formState.outcomeType === 'MULTIPLE_CHOICE') {
         payload.answers = formState.answers.filter((a) => a.trim().length > 0)
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
