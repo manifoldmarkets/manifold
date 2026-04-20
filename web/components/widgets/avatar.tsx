@@ -343,13 +343,30 @@ export const Avatar = memo(
             <LuSprout className="h-4 w-4 text-green-500" />
           </div>
         )}
-        {/* Avatar accessory — rendered BEFORE hats so things like the
-            Disguise (face-covering) sit below a hat rather than on top. */}
+        {/* Head-appendage overlays (ears, horns) render BEHIND the accessory
+            so a face-covering accessory (disguise) sits in front of them —
+            they sprout from the head, not above it. */}
+        {activeOverlay && isHeadAppendageOverlay(activeOverlay) && (
+          <AvatarOverlay
+            overlay={activeOverlay}
+            hatSizeClass={hatSizeClass}
+            hatPositionClass={hatPositionClass}
+            animateHatOnHover={animateHatOnHover}
+            animateHat={animateHat}
+            animatePropeller={animatePropeller}
+            size={size}
+            capStyle={overlayStyle}
+            hatScale={hatScale}
+          />
+        )}
+        {/* Avatar accessory — sits on the face, covers head appendages behind
+            but not actual hats in front. */}
         {activeAccessory && (
           <AvatarAccessory accessory={activeAccessory} size={size} />
         )}
-        {/* Avatar overlay (hat) - sandwiched between halo halves */}
-        {activeOverlay && (
+        {/* Actual hats (caps, top hats, wizard hats, etc.) — render ON TOP
+            of the accessory so the brim / crown sits above the disguise. */}
+        {activeOverlay && !isHeadAppendageOverlay(activeOverlay) && (
           <AvatarOverlay
             overlay={activeOverlay}
             hatSizeClass={hatSizeClass}
@@ -1387,6 +1404,20 @@ export function BlackCapSvg({ style = 0 }: { style?: number }) {
   )
 }
 
+// Overlays in the "hat" slot that are anatomically part of the head
+// (ears, horns) rather than a hat resting on top of the head. These render
+// BEHIND face-covering accessories (the disguise) so the mask sits on top
+// of them, matching real-world physics.
+const HEAD_APPENDAGE_OVERLAYS = new Set<AvatarDecorationId>([
+  'avatar-cat-ears',
+  'avatar-bear-ears',
+  'avatar-bunny-ears',
+  'avatar-bull-horns',
+  'avatar-devil-horns',
+])
+const isHeadAppendageOverlay = (id: AvatarDecorationId): boolean =>
+  HEAD_APPENDAGE_OVERLAYS.has(id)
+
 // Component to render avatar overlays (hats)
 function AvatarOverlay(props: {
   overlay: AvatarDecorationId
@@ -2393,10 +2424,14 @@ function AvatarAccessory(props: {
     case 'avatar-disguise': {
       // Sized larger than the avatar so the earpieces poke past both edges.
       const disguiseSize =
-        size === '2xs' || size === 'xs'
-          ? 22
+        size === '2xs'
+          ? 18
+          : size === 'xs'
+          ? 27
           : size === 'sm'
-          ? 38
+          ? 36
+          : size === 'md'
+          ? 45
           : size === 'xl'
           ? 108
           : 54
@@ -2405,13 +2440,17 @@ function AvatarAccessory(props: {
           className="absolute left-1/2 -translate-x-1/2"
           style={{
             top:
-              size === '2xs' || size === 'xs'
-                ? -1
+              size === '2xs'
+                ? 1
+                : size === 'xs'
+                ? 1
                 : size === 'sm'
-                ? -1
-                : size === 'xl'
+                ? 2
+                : size === 'md'
                 ? 3
-                : 0,
+                : size === 'xl'
+                ? 8
+                : 4,
             width: disguiseSize,
             height: disguiseSize * 0.68,
             // Subtle white outline (works in both modes — barely visible on

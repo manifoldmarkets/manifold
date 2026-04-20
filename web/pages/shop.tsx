@@ -3313,9 +3313,9 @@ function DisguisePreview(props: { user: User | null | undefined }) {
         <DisguiseSvg
           className="absolute left-1/2 -translate-x-1/2"
           style={{
-            top: 0,
+            top: 5,
             width: 54,
-            height: 37,
+            height: 54 * 0.68,
             filter:
               'drop-shadow(0 0 0.5px rgba(255,255,255,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}

@@ -303,86 +303,86 @@ export function DisguiseSvg(props: SvgProps) {
       {/* Bushy black left eyebrow — twitches up on hover */}
       <g className="origin-center transition-transform duration-150 group-hover:-translate-y-[1.5px]">
         <path
-          d="M1 5 Q 8 0, 16 4 Q 15 8, 9 7 Q 4 8, 1 5 Z"
+          d="M5 7 Q 12 2, 20 6 Q 19 10, 13 9 Q 8 10, 5 7 Z"
           fill="#0A0A0A"
         />
       </g>
       {/* Bushy black right eyebrow — twitches up on hover */}
       <g className="origin-center transition-transform duration-150 group-hover:-translate-y-[1.5px]">
         <path
-          d="M49 5 Q 42 0, 34 4 Q 35 8, 41 7 Q 46 8, 49 5 Z"
+          d="M45 7 Q 38 2, 30 6 Q 31 10, 37 9 Q 42 10, 45 7 Z"
           fill="#0A0A0A"
         />
       </g>
-      {/* Earpieces — extend past the lens edges */}
+      {/* Earpieces — extend only slightly past the avatar edge */}
       <line
-        x1="3"
-        y1="14"
-        x2="0"
-        y2="11"
+        x1="9"
+        y1="16"
+        x2="2"
+        y2="13"
         stroke="#1F2937"
         strokeWidth="2"
         strokeLinecap="round"
       />
       <line
-        x1="47"
-        y1="14"
-        x2="50"
-        y2="11"
+        x1="41"
+        y1="16"
+        x2="48"
+        y2="13"
         stroke="#1F2937"
         strokeWidth="2"
         strokeLinecap="round"
       />
-      {/* Glasses lenses — chunky black frames */}
+      {/* Glasses lenses — pulled further toward centre */}
       <circle
-        cx="12"
-        cy="14"
-        r="9"
+        cx="16"
+        cy="16"
+        r="7"
         fill="rgba(200,220,255,0.2)"
         stroke="#1F2937"
         strokeWidth="2.5"
       />
       <circle
-        cx="38"
-        cy="14"
-        r="9"
+        cx="34"
+        cy="16"
+        r="7"
         fill="rgba(200,220,255,0.2)"
         stroke="#1F2937"
         strokeWidth="2.5"
       />
       {/* Bridge across the nose */}
       <path
-        d="M21 13 Q 25 10 29 13"
+        d="M23 15 Q 25 12 27 15"
         stroke="#1F2937"
         strokeWidth="2.5"
         fill="none"
       />
-      {/* Iconic Groucho nose — narrow at top, widens to a bulbous hooked tip */}
+      {/* Thick black painted-on mustache — condensed width, extra vertical heft */}
       <path
-        d="M24 12 Q22 15, 21.5 19 Q20.5 25, 22.5 28 Q25 30, 27.5 28 Q29.5 25, 28.5 19 Q28 15, 26 12 Z"
+        d="M16 27 Q20 22, 25 27 Q30 22, 34 27 Q33.5 31.5, 28.5 31.7 Q27 31.4, 25 30.3 Q23 31.4, 21.5 31.7 Q16.5 31.5, 16 27 Z"
+        fill="#0A0A0A"
+      />
+      {/* Iconic Groucho nose — rendered above mustache so it drapes over it */}
+      <path
+        d="M24 15 Q22 17, 21.5 19 Q20.5 24, 22.5 26 Q25 28, 27.5 26 Q29.5 24, 28.5 19 Q28 17, 26 15 Z"
         fill="#FBBF8E"
       />
       {/* Shadow/depth on lower half of nose */}
       <path
-        d="M22.5 21 Q21 25, 22.5 28 Q25 30, 27.5 28 Q29 25, 27.5 21 Q25 22, 22.5 21 Z"
+        d="M22.5 21 Q21 24, 22.5 26 Q25 28, 27.5 26 Q29 24, 27.5 21 Q25 22, 22.5 21 Z"
         fill="#F5A67A"
       />
       {/* Highlight along the upper-left ridge */}
       <path
-        d="M23 13 Q22 17, 22 22"
+        d="M23 16 Q22 19, 22 22"
         stroke="rgba(255,255,255,0.45)"
         strokeWidth="1.3"
         fill="none"
         strokeLinecap="round"
       />
       {/* Nostrils */}
-      <ellipse cx="23.5" cy="27" rx="0.9" ry="0.7" fill="#C46B45" />
-      <ellipse cx="26.5" cy="27" rx="0.9" ry="0.7" fill="#C46B45" />
-      {/* Thick black painted-on mustache */}
-      <path
-        d="M14 30 Q19 27, 25 30 Q31 27, 36 30 Q35.5 33.7, 30 33.8 Q27 33.5, 25 32.2 Q23 33.5, 20 33.8 Q14.5 33.7, 14 30 Z"
-        fill="#0A0A0A"
-      />
+      <ellipse cx="23.5" cy="25" rx="0.9" ry="0.7" fill="#C46B45" />
+      <ellipse cx="26.5" cy="25" rx="0.9" ry="0.7" fill="#C46B45" />
     </svg>
   )
 }
