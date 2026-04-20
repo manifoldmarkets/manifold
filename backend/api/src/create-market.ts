@@ -153,6 +153,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     voterVisibility,
     pollType,
     maxSelections,
+    mechanism,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -275,6 +276,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           voterVisibility: voterVisibility as PollVoterVisibility | undefined,
           pollType: pollType as PollType | undefined,
           maxSelections: maxSelections,
+          mechanism,
         })
       )
       const nativeColumns = nativeContractColumnsArray.filter(
@@ -413,7 +415,8 @@ function validateMarketBody(body: Body) {
     timezone: string | undefined,
     voterVisibility: PollVoterVisibility | undefined,
     pollType: PollType | undefined,
-    maxSelections: number | undefined
+    maxSelections: number | undefined,
+    mechanism: 'cpmm-1' | 'dpm-2' | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -443,7 +446,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'BINARY') {
     const parsed = validateMarketType(outcomeType, createBinarySchema, body)
 
-    ;({ initialProb } = parsed)
+    ;({ initialProb, mechanism } = parsed)
   }
   if (outcomeType === 'NUMBER') {
     if (!NUMBER_CREATION_ENABLED)
@@ -587,6 +590,7 @@ function validateMarketBody(body: Body) {
     voterVisibility,
     pollType,
     maxSelections,
+    mechanism,
   }
 }
 
