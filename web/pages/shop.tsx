@@ -101,6 +101,10 @@ import {
   formatEntries,
 } from 'web/components/shop/charity-giveaway-card'
 import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
+import {
+  GiveawayPromoCard,
+  promoStatSizeClass,
+} from 'web/components/shop/giveaway-promo-card'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
@@ -809,7 +813,7 @@ export default function ShopPage() {
           <>
             <Row className="mb-4 mt-2 items-center gap-2">
               <span
-                className="flex h-5 w-12 items-center justify-center rounded-full bg-amber-400 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 antialiased dark:ring-amber-500/40"
+                className="flex h-5 w-14 items-center justify-center rounded-full bg-amber-400 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 antialiased dark:ring-amber-500/40"
                 style={{
                   transform: 'rotate(-8deg)',
                   backfaceVisibility: 'hidden',
@@ -2882,67 +2886,77 @@ function PrizeDrawingCard() {
 
   const isClosed = sweepstakes.closeTime <= Date.now()
 
+  if (isClosed) {
+    return (
+      <GiveawayPromoCard
+        href="/prize"
+        gradientClassName="from-amber-400 via-yellow-400 to-orange-400"
+        hoverShadowClassName="hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30"
+        icon={<FaGift className="h-5 w-5 text-amber-500" />}
+        title="Prize Drawing"
+        pill={{
+          text: 'ENDED',
+          className:
+            'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+        }}
+        stats={[
+          {
+            value: `$${totalPrizePool.toLocaleString()}`,
+            label: 'Prize Pool',
+            valueClassName: 'text-2xl font-bold text-amber-600',
+          },
+          {
+            value: formatEntries(totalTickets),
+            label: 'Entries',
+            valueClassName: clsx(
+              'font-bold text-amber-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+          },
+        ]}
+        message="Drawing has ended. Winner will be announced soon!"
+        ctaText="View Results →"
+        ctaColor="amber"
+      />
+    )
+  }
+
   return (
-    <Link href="/prize" className="block h-full">
-      <div
-        className={clsx(
-          'group relative flex h-full flex-col overflow-hidden rounded-xl p-1 transition-all duration-200',
-          'bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-500',
-          'hover:shadow-lg hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30',
-          'hover:-translate-y-1'
-        )}
-      >
-        <div className="flex h-full flex-col rounded-lg bg-white p-4 dark:bg-gray-900">
-          {/* Header */}
-          <Row className="mb-3 items-center gap-2">
-            <FaGift className="h-5 w-5 text-teal-500" />
-            <span className="text-lg font-semibold">Prize Drawing</span>
-            {!isClosed && (
-              <span className="ml-auto rounded bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-700 dark:bg-teal-500 dark:text-white">
-                LIVE
-              </span>
-            )}
-          </Row>
-
-          {/* Stats row */}
-          <Row className="mb-3 gap-4 text-center">
-            <Col className="flex-1">
-              <div className="text-2xl font-bold text-teal-600">
-                ${totalPrizePool.toLocaleString()}
-              </div>
-              <div className="text-ink-500 text-xs">Prize Pool</div>
-            </Col>
-            <Col className="flex-1">
-              <div className="text-2xl font-bold text-cyan-600">
-                {timeRemaining || '...'}
-              </div>
-              <div className="text-ink-500 text-xs">Time Left</div>
-            </Col>
-            <Col className="flex-1">
-              <div
-                className={clsx(
-                  'font-bold text-blue-600',
-                  // Shrink for 7+ figures so the number stays inside the card
-                  totalTickets >= 1_000_000 ? 'text-lg sm:text-xl' : 'text-2xl'
-                )}
-              >
-                {formatEntries(totalTickets)}
-              </div>
-              <div className="text-ink-500 text-xs">Entries</div>
-            </Col>
-          </Row>
-
-          {/* CTA */}
-          <Button
-            color="indigo"
-            size="sm"
-            className="mt-auto w-full group-hover:shadow-md"
-          >
-            Enter Drawing →
-          </Button>
-        </div>
-      </div>
-    </Link>
+    <GiveawayPromoCard
+      href="/prize"
+      gradientClassName="from-teal-400 via-cyan-400 to-blue-500"
+      hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+      icon={<FaGift className="h-5 w-5 text-teal-500" />}
+      title="Prize Drawing"
+      pill={{
+        text: 'LIVE',
+        className:
+          'bg-teal-100 text-teal-700 dark:bg-teal-500 dark:text-white',
+      }}
+      stats={[
+        {
+          value: `$${totalPrizePool.toLocaleString()}`,
+          label: 'Prize Pool',
+          valueClassName: 'text-2xl font-bold text-teal-600',
+        },
+        {
+          value: timeRemaining || '...',
+          label: 'Time Left',
+          valueClassName: 'text-2xl font-bold text-cyan-600',
+          extraClassName: 'whitespace-nowrap',
+        },
+        {
+          value: formatEntries(totalTickets),
+          label: 'Entries',
+          valueClassName: clsx(
+            'font-bold text-blue-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+        },
+      ]}
+      ctaText="Enter Drawing →"
+      ctaColor="indigo"
+    />
   )
 }
 
