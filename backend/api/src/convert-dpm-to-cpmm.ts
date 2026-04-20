@@ -163,7 +163,17 @@ const convertDpmToCpmmMain = async (contractId: string, userId: string) => {
     const newMetrics = Object.entries(betsByUser).flatMap(([uid, userBets]) =>
       calculateUserMetricsWithoutLoans(newContract, userBets, uid)
     )
-    const cleanedMetrics = newMetrics.map((m) => removeUndefinedProps(m))
+    // `calculateUserMetricsWithoutLoans` leaves `loan`/`marginLoan` undefined,
+    // but both columns are NOT NULL in `user_contract_metrics`. DPM markets
+    // don't carry loans, so default to 0; the next portfolio update will
+    // re-derive loan amounts for the now-CPMM market if needed.
+    const cleanedMetrics = newMetrics.map((m) =>
+      removeUndefinedProps({
+        ...m,
+        loan: m.loan ?? 0,
+        marginLoan: m.marginLoan ?? 0,
+      })
+    )
 
     await tx.none(
       `delete from user_contract_metrics where contract_id = $1`,
