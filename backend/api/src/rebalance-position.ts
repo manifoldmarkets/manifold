@@ -4,6 +4,7 @@ import { computeRebalance } from 'common/rebalance'
 import { ContractMetric } from 'common/contract-metric'
 import { MarketContract } from 'common/contract'
 import { noFees } from 'common/fees'
+import { EPSILON } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
@@ -17,7 +18,7 @@ import {
   bulkIncrementBalancesQuery,
   UserUpdate,
 } from 'shared/supabase/users'
-import { contractColumnsToSelect, getContract, log } from 'shared/utils'
+import { getContract, log } from 'shared/utils'
 import { convertAnswer } from 'common/supabase/contracts'
 import * as crypto from 'crypto'
 
@@ -55,10 +56,11 @@ const rebalanceInTransaction = async (
 ) => {
   return pg.tx(async (tx) => {
     const contractId = contract.id
-    const [metricRows, answerRows] = await tx.multi(
+    const [metricRows, answerRows, userRows] = await tx.multi(
       `select data, margin_loan, loan from user_contract_metrics
          where contract_id = $1 and user_id = $2;
-       select * from answers where contract_id = $1 order by index;`,
+       select * from answers where contract_id = $1 order by index;
+       select balance, cash_balance from users where id = $2;`,
       [contractId, userId]
     )
     const contractMetrics: ContractMetric[] = metricRows.map(
@@ -73,34 +75,30 @@ const rebalanceInTransaction = async (
     if (answers.length < 2) {
       throw new APIError(400, 'Market has fewer than two answers.')
     }
-    const answerIds = answers.map((a) => a.id)
+    if (userRows.length === 0) {
+      throw new APIError(404, 'User not found.')
+    }
+    const preBalance =
+      contract.token === 'CASH'
+        ? Number(userRows[0].cash_balance)
+        : Number(userRows[0].balance)
 
+    const answerIds = answers.map((a) => a.id)
     const perAnswerMetrics = contractMetrics.filter((m) => m.answerId != null)
+    const metricByAnswer = Object.fromEntries(
+      perAnswerMetrics.map((m) => [m.answerId!, m])
+    )
     const yesShares: Record<string, number> = {}
     const noShares: Record<string, number> = {}
-    for (const m of perAnswerMetrics) {
-      if (!m.answerId) continue
-      yesShares[m.answerId] = m.totalShares['YES'] ?? 0
-      noShares[m.answerId] = m.totalShares['NO'] ?? 0
-    }
-
-    // v1: disallow rebalance when loans are outstanding. Loan repayment on
-    // rebalance has policy questions (what should be repaid when a position
-    // shrinks but doesn't go to zero?) that are out of scope for the initial
-    // cut. Users can repay via /repay-loan first.
-    const totalLoan = perAnswerMetrics.reduce(
-      (acc, m) => acc + (m.loan ?? 0) + (m.marginLoan ?? 0),
-      0
-    )
-    if (totalLoan > 0) {
-      throw new APIError(
-        400,
-        'Outstanding loans on this market — repay before rebalancing.'
-      )
+    for (const id of answerIds) {
+      const m = metricByAnswer[id]
+      yesShares[id] = m?.totalShares['YES'] ?? 0
+      noShares[id] = m?.totalShares['NO'] ?? 0
     }
 
     const rebalance = computeRebalance({ answerIds, yesShares, noShares })
-    const { minShares, cashRedeemed, yesDelta, noDelta } = rebalance
+    const { minShares, cashRedeemed, yesDelta, noDelta, finalYesShares } =
+      rebalance
 
     const hasAnyDelta = answerIds.some(
       (id) => yesDelta[id] !== 0 || noDelta[id] !== 0
@@ -112,8 +110,37 @@ const rebalanceInTransaction = async (
           cashRedeemed: 0,
           minShares: 0,
           betCount: 0,
+          loanPaid: 0,
         },
       }
+    }
+
+    // Loan policy: "full repay on empty". For each answer whose final position
+    // is zero, pay off both free and margin loan on that answer. Loans on
+    // answers with a remaining YES position carry forward unchanged — mirrors
+    // sell-shares edge case (sell-all → full repay; partial → untouched).
+    const loanByAnswer: Record<string, number> = {}
+    for (const id of answerIds) {
+      const m = metricByAnswer[id]
+      if (!m) {
+        loanByAnswer[id] = 0
+        continue
+      }
+      const answerLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
+      loanByAnswer[id] = finalYesShares[id] === 0 ? answerLoan : 0
+    }
+    const totalLoanPaid = Object.values(loanByAnswer).reduce(
+      (a, b) => a + b,
+      0
+    )
+
+    // Loans only exist on MANA markets (claim-free-loan gates on this). If we
+    // somehow see one on a CASH contract, something is very wrong — bail out.
+    if (contract.token === 'CASH' && totalLoanPaid > 0) {
+      throw new APIError(
+        500,
+        'Unexpected loan on CASH contract — aborting rebalance.'
+      )
     }
 
     const now = Date.now()
@@ -123,6 +150,12 @@ const rebalanceInTransaction = async (
     for (const id of answerIds) {
       const answer = answersById[id]
       const p = answer.prob
+      // Pre-count how many bets this answer will emit so we can split
+      // loanAmount evenly across them. calculateUserMetricsWithNewBetsOnly
+      // groups loanAmount per (userId, answerId) so splitting here is fine.
+      const emits =
+        (noDelta[id] !== 0 ? 1 : 0) + (yesDelta[id] !== 0 ? 1 : 0)
+      const loanPerBet = emits > 0 ? -loanByAnswer[id] / emits : 0
       if (noDelta[id] !== 0) {
         bets.push(
           removeUndefinedProps({
@@ -133,6 +166,7 @@ const rebalanceInTransaction = async (
             createdTime: now,
             amount: noDelta[id] * (1 - p),
             shares: noDelta[id],
+            loanAmount: loanPerBet,
             outcome: 'NO',
             probBefore: p,
             probAfter: p,
@@ -153,6 +187,7 @@ const rebalanceInTransaction = async (
             createdTime: now,
             amount: yesDelta[id] * p,
             shares: yesDelta[id],
+            loanAmount: loanPerBet,
             outcome: 'YES',
             probBefore: p,
             probAfter: p,
@@ -172,8 +207,20 @@ const rebalanceInTransaction = async (
       false
     )
 
-    const balanceField = contract.token === 'CASH' ? 'cashBalance' : 'balance'
-    const balanceUpdate = { id: userId, [balanceField]: cashRedeemed }
+    // Loans are always mana-denominated; cash redemption credits whichever
+    // token the contract is in.
+    const cashField = contract.token === 'CASH' ? 'cashBalance' : 'balance'
+    const balanceUpdate: {
+      id: string
+      balance?: number
+      cashBalance?: number
+    } = { id: userId }
+    if (contract.token === 'CASH') {
+      balanceUpdate.cashBalance = cashRedeemed
+      // totalLoanPaid is guaranteed 0 here; no balance change.
+    } else {
+      balanceUpdate.balance = cashRedeemed - totalLoanPaid
+    }
 
     const insertBetsQuery = bulkInsertBetsQuery(bets)
     const metricsQuery = bulkUpdateContractMetricsQuery(updatedMetrics)
@@ -185,10 +232,24 @@ const rebalanceInTransaction = async (
        ${metricsQuery}; --2`
     )
     const userUpdates = queryResults[0] as UserUpdate[]
+
+    // Sell-shares-style guard: if loan repayment drove the balance negative
+    // from a non-negative starting point, fail. Matches place-bet.ts:628-636.
+    // Only relevant when we're decrementing — pure credit (no loans) can
+    // only move balance up.
+    if (totalLoanPaid > 0 && userUpdates.length > 0) {
+      const postBalance = Number(userUpdates[0].balance)
+      if (postBalance < -EPSILON && postBalance < preBalance) {
+        throw new APIError(
+          403,
+          'Insufficient balance to cover loan repayment on rebalance.'
+        )
+      }
+    }
     broadcastUserUpdates(userUpdates)
 
     log(
-      `rebalance-position ${userId} on ${contractId}: redeemed ${minShares} shares for ${cashRedeemed} ${contract.token}, ${bets.length} synthetic bets`
+      `rebalance-position ${userId} on ${contractId}: redeemed ${minShares} shares for ${cashRedeemed} ${contract.token}, loan repaid ${totalLoanPaid}, ${bets.length} synthetic bets`
     )
 
     return {
@@ -196,6 +257,7 @@ const rebalanceInTransaction = async (
         cashRedeemed,
         minShares,
         betCount: bets.length,
+        loanPaid: totalLoanPaid,
       },
     }
   })

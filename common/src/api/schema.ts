@@ -499,6 +499,7 @@ export const API = (_apiTypeCheck = {
       cashRedeemed: number
       minShares: number
       betCount: number
+      loanPaid: number
     },
     props: z
       .object({
