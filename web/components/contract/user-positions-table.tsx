@@ -5,6 +5,7 @@ import {
   BinaryContract,
   CPMMContract,
   CPMMMultiContract,
+  DPMContract,
   getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
@@ -428,7 +429,7 @@ export const UserPositionsTable = memo(
 
 const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
-    contract: CPMMContract | CPMMMultiContract
+    contract: CPMMContract | CPMMMultiContract | DPMContract
     positionsByShares: ContractMetric[] | undefined
     positionsByProfit: ContractMetric[] | undefined
     totalYesPositions: number

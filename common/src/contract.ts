@@ -622,7 +622,7 @@ export const clampChange = (currentProb: number, probChange: number) => {
   }
 }
 
-export const dayProbChange = (contract: CPMMContract) => {
+export const dayProbChange = (contract: CPMMContract | DPMContract) => {
   const { createdTime } = contract
   if (Date.now() - createdTime < DAY_MS) {
     return 0

@@ -48,7 +48,7 @@ export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
   if (contract.mechanism === 'dpm-2') {
-    return getDpmProbability((contract as DPMContract).pool)
+    return getDpmProbability(contract.pool)
   }
   return getCpmmProbability(contract.pool, contract.p)
 }
@@ -62,11 +62,10 @@ export function getDisplayProbability(
 export function getInitialProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
-  if (contract.initialProbability) return contract.initialProbability
-
   if (contract.mechanism === 'dpm-2') {
-    return getDpmProbability((contract as DPMContract).initialPool)
+    return getDpmProbability(contract.initialPool)
   }
+  if (contract.initialProbability) return contract.initialProbability
   return getCpmmProbability(contract.pool, contract.p)
 }
 

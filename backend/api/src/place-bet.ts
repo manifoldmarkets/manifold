@@ -562,7 +562,9 @@ export const executeNewBetResult = async (
         : contract.mechanism === 'dpm-2'
         ? {
             pool: newPool,
-            prob: newPool ? getDpmProbability(newPool) : undefined,
+            prob: newPool
+              ? getDpmProbability(newPool as { YES: number; NO: number })
+              : undefined,
           }
         : contract.mechanism === 'cpmm-multi-1' &&
           answerUpdates.length > 0 &&

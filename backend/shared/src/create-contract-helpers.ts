@@ -49,7 +49,7 @@ export async function generateAntes(
     // LP row for accounting (subsidies are disallowed, so no drizzle).
     const lp = getCpmmInitialLiquidity(
       providerId,
-      contract as BinaryContract,
+      contract,
       ante,
       contract.createdTime
     )

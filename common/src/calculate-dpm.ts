@@ -61,8 +61,8 @@ export const dpmBuyShares = (
  * and the corresponding cost. Returns 0 when the current probability is
  * already past the target (in the direction of the outcome).
  *
- * For YES: s_max = n * sqrt(p*/(1-p*)) - y. Valid only when p* > current p.
- * For NO:  s_max = y * sqrt((1-p*)/p*) - n. Valid only when p* < current p.
+ * For YES: s_max = n * sqrt(p_star / (1 - p_star)) - y. Valid only when p_star > current p.
+ * For NO:  s_max = y * sqrt((1 - p_star) / p_star) - n. Valid only when p_star < current p.
  */
 export const dpmSharesToReachProb = (
   pool: { YES: number; NO: number },
