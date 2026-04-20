@@ -2893,7 +2893,10 @@ function PrizeDrawingCard() {
           {
             value: `$${totalPrizePool.toLocaleString()}`,
             label: 'Prize Pool',
-            valueClassName: 'text-2xl font-bold text-teal-600',
+            valueClassName: clsx(
+              'font-bold text-teal-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
           },
           {
             value: formatEntries(totalTickets),
@@ -2927,12 +2930,18 @@ function PrizeDrawingCard() {
         {
           value: `$${totalPrizePool.toLocaleString()}`,
           label: 'Prize Pool',
-          valueClassName: 'text-2xl font-bold text-teal-600',
+          valueClassName: clsx(
+            'font-bold text-teal-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
         },
         {
           value: timeRemaining || '...',
           label: 'Time Left',
-          valueClassName: 'text-2xl font-bold text-cyan-600',
+          valueClassName: clsx(
+            'font-bold text-cyan-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
           extraClassName: 'whitespace-nowrap',
         },
         {

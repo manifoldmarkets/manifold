@@ -192,12 +192,18 @@ export function CharityGiveawayCard(props: {
           {
             value: prizeDisplay,
             label: 'Prize Pool',
-            valueClassName: 'text-2xl font-bold text-emerald-600',
+            valueClassName: clsx(
+              'font-bold text-emerald-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
           },
           {
             value: timeRemaining || '...',
             label: 'Time Left',
-            valueClassName: 'text-2xl font-bold text-teal-600',
+            valueClassName: clsx(
+              'font-bold text-teal-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
             extraClassName: 'whitespace-nowrap',
           },
           {
@@ -230,7 +236,10 @@ export function CharityGiveawayCard(props: {
           {
             value: prizeDisplay,
             label: 'Prize Pool',
-            valueClassName: 'text-2xl font-bold text-emerald-600',
+            valueClassName: clsx(
+              'font-bold text-emerald-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
           },
           {
             value: formatEntries(totalTickets),
@@ -248,8 +257,10 @@ export function CharityGiveawayCard(props: {
     )
   }
 
-  // Winner selected — winner info on the left, Entries stat on the right so
-  // the card stays visually balanced next to the Prize Drawing's 2-stat card.
+  // Winner selected — uses the same header / 2-stat / message / CTA layout
+  // as the prize-drawing ended card so the two cards align side-by-side. The
+  // charity and winner are moved into the message line.
+  const charityName = winningCharityInfo?.name ?? winningCharity
   return (
     <GiveawayPromoCard
       href="/charity"
@@ -259,36 +270,30 @@ export function CharityGiveawayCard(props: {
       icon={<FaHeart className="h-5 w-5 text-emerald-500" />}
       title="Charity Giveaway"
       pill={ENDED_PILL}
-      body={
-        <Row className="mb-3 items-start gap-4">
-          <Col className="flex-1">
-            <div className="font-semibold text-emerald-600">
-              {winningCharityInfo?.name ?? winningCharity}
-            </div>
-            <Row className="items-baseline gap-2">
-              <div className="text-2xl font-bold text-emerald-600">
-                {prizeDisplay}
-              </div>
-              <div className="text-ink-500 text-xs">donated</div>
-            </Row>
-            {winner && (
-              <div className="text-ink-500 mt-1 text-sm">
-                Winning entry by @{winner.username}
-              </div>
-            )}
-          </Col>
-          <Col className="shrink-0 text-center">
-            <div
-              className={clsx(
-                'font-bold text-cyan-600',
-                promoStatSizeClass(totalTickets, true)
-              )}
-            >
-              {formatEntries(totalTickets)}
-            </div>
-            <div className="text-ink-500 text-xs">Entries</div>
-          </Col>
-        </Row>
+      stats={[
+        {
+          value: prizeDisplay,
+          label: 'Donated',
+          valueClassName: clsx(
+            'font-bold text-emerald-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+        },
+        {
+          value: formatEntries(totalTickets),
+          label: 'Entries',
+          valueClassName: clsx(
+            'font-bold text-cyan-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+        },
+      ]}
+      message={
+        <>
+          To{' '}
+          <span className="font-semibold text-emerald-600">{charityName}</span>
+          {winner && <> · Won by @{winner.username}</>}
+        </>
       }
       ctaText="See Results & Next Giveaway →"
       ctaColor="green"
