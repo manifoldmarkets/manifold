@@ -28,6 +28,9 @@ import {
   JesterHatSvg,
   FedoraSvg,
   DevilHornSvg,
+  HaloSvg,
+  HALO_BACK_ARC,
+  HALO_FRONT_ARC,
 } from '../shop/item-svgs'
 import {
   userHasAvatarDecoration,
@@ -51,6 +54,19 @@ import {
 import { isAprilFools } from 'common/util/time'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+
+/** Pick a per-size value from a partial lookup. Missing sizes fall through to
+ *  `fallback` (typically the lg/default value). Replaces long nested ternaries
+ *  like `size === '2xs' || size === 'xs' ? A : size === 'sm' ? B : C`. */
+export function pickBySize<T>(
+  size: AvatarSizeType | undefined,
+  table: Partial<Record<AvatarSizeType, T>>,
+  fallback: T
+): T {
+  const resolved = size ?? 'lg'
+  const v = table[resolved]
+  return v !== undefined ? v : fallback
+}
 export const Avatar = memo(
   (props: {
     username?: string
@@ -1542,144 +1558,38 @@ function AvatarOverlay(props: {
           </div>
         )
       case 'avatar-halo': {
-        // Unified halo dimensions — same whether hat is equipped or not
-        const haloW =
-          size === '2xs' || size === 'xs'
-            ? '1.75rem'
-            : size === 'sm'
-            ? '2.35rem'
-            : '3.3rem'
-        const haloH =
-          size === '2xs' || size === 'xs'
-            ? '0.55rem'
-            : size === 'sm'
-            ? '0.65rem'
-            : '0.85rem'
+        const haloW = pickBySize(
+          size,
+          { '2xs': '1.75rem', xs: '1.75rem', sm: '2.35rem' },
+          '3.3rem'
+        )
+        const haloH = pickBySize(
+          size,
+          { '2xs': '0.55rem', xs: '0.55rem', sm: '0.65rem' },
+          '0.85rem'
+        )
+        const haloTopClass = pickBySize(
+          size,
+          { '2xs': '-top-0.5', xs: '-top-0.5', sm: '-top-1' },
+          '-top-1.5'
+        )
         const haloPositionClass = clsx(
           'absolute left-1/2 -translate-x-1/2 transition-transform duration-300',
-          size === '2xs' || size === 'xs'
-            ? '-top-0.5'
-            : size === 'sm'
-            ? '-top-1'
-            : '-top-1.5',
+          haloTopClass,
           animateHatOnHover && 'group-hover:-translate-y-0.5',
           animateHat && '-translate-y-0.5'
         )
-
-        // Halo stroke colors: white with amber lining
-        const whiteStroke = 'rgba(255, 252, 240, 0.95)'
-        const amberStroke = 'rgba(217, 170, 50, 0.7)'
-        const amberStrokeDark = 'rgba(200, 160, 60, 0.5)'
-
-        // When split for hat overlap, render only one arc half
-        // Otherwise render the full ellipse — same viewBox/sizes either way
+        // When split for hat overlap, render one arc half; otherwise the full
+        // ellipse — same viewBox either way.
         const arcPath = haloHalf
           ? haloHalf === 'back'
-            ? 'M 2,6 A 18,5 0 0,0 38,6' // counter-clockwise = lower arc (behind hat)
-            : 'M 2,6 A 18,5 0 0,1 38,6' // clockwise = upper arc (in front of hat)
+            ? HALO_BACK_ARC
+            : HALO_FRONT_ARC
           : null
-
-        const lightFilter =
-          'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))'
-        const darkFilter =
-          'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))'
 
         return (
           <div className={haloPositionClass}>
-            {/* Light mode */}
-            <svg
-              className="dark:hidden"
-              width={haloW}
-              height={haloH}
-              viewBox="0 0 40 12"
-              overflow="visible"
-              style={{ transform: 'rotate(-8deg)', filter: lightFilter }}
-            >
-              {arcPath ? (
-                <>
-                  <path
-                    d={arcPath}
-                    stroke={amberStroke}
-                    strokeWidth="3.5"
-                    fill="none"
-                  />
-                  <path
-                    d={arcPath}
-                    stroke={whiteStroke}
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </>
-              ) : (
-                <>
-                  <ellipse
-                    cx="20"
-                    cy="6"
-                    rx="18"
-                    ry="5"
-                    stroke={amberStroke}
-                    strokeWidth="3.5"
-                    fill="none"
-                  />
-                  <ellipse
-                    cx="20"
-                    cy="6"
-                    rx="18"
-                    ry="5"
-                    stroke={whiteStroke}
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </>
-              )}
-            </svg>
-            {/* Dark mode */}
-            <svg
-              className="hidden dark:block"
-              width={haloW}
-              height={haloH}
-              viewBox="0 0 40 12"
-              overflow="visible"
-              style={{ transform: 'rotate(-8deg)', filter: darkFilter }}
-            >
-              {arcPath ? (
-                <>
-                  <path
-                    d={arcPath}
-                    stroke={amberStrokeDark}
-                    strokeWidth="3.5"
-                    fill="none"
-                  />
-                  <path
-                    d={arcPath}
-                    stroke={whiteStroke}
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </>
-              ) : (
-                <>
-                  <ellipse
-                    cx="20"
-                    cy="6"
-                    rx="18"
-                    ry="5"
-                    stroke={amberStrokeDark}
-                    strokeWidth="3.5"
-                    fill="none"
-                  />
-                  <ellipse
-                    cx="20"
-                    cy="6"
-                    rx="18"
-                    ry="5"
-                    stroke={whiteStroke}
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </>
-              )}
-            </svg>
+            <HaloSvg width={haloW} height={haloH} arcPath={arcPath} />
           </div>
         )
       }
@@ -2376,6 +2286,42 @@ function AvatarOverlay(props: {
   )
 }
 
+/** Per-size geometry for the disguise overlay. Shared by the live-avatar
+ *  rendering and the shop-page preview so the two can't drift. Height derives
+ *  from width via the viewBox aspect ratio (0.68). */
+const DISGUISE_GEOMETRY: Record<
+  AvatarSizeType,
+  { width: number; top: number }
+> = {
+  '2xs': { width: 18, top: 1 },
+  xs: { width: 27, top: 1 },
+  sm: { width: 36, top: 2 },
+  md: { width: 45, top: 3 },
+  lg: { width: 54, top: 4 },
+  xl: { width: 108, top: 8 },
+}
+
+/** Renders the Groucho disguise positioned over an avatar of the given size.
+ *  Exported so the shop preview and live-avatar rendering share one source of
+ *  truth for width/top/filter. */
+export function DisguiseOnAvatar({ size }: { size?: AvatarSizeType }) {
+  const { width, top } = DISGUISE_GEOMETRY[size ?? 'lg']
+  return (
+    <DisguiseSvg
+      className="absolute left-1/2 -translate-x-1/2"
+      style={{
+        top,
+        width,
+        height: width * 0.68,
+        // Subtle white outline to separate the dark frames from dark avatars,
+        // stacked on top of the existing soft drop shadow.
+        filter:
+          'drop-shadow(0 0 0.5px rgba(255,255,255,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+      }}
+    />
+  )
+}
+
 // Component to render avatar accessories (monocle, crystal ball, thought bubbles, stonks)
 function AvatarAccessory(props: {
   accessory: AvatarDecorationId
@@ -2421,47 +2367,9 @@ function AvatarAccessory(props: {
         />
       )
     }
-    case 'avatar-disguise': {
-      // Sized larger than the avatar so the earpieces poke past both edges.
-      const disguiseSize =
-        size === '2xs'
-          ? 18
-          : size === 'xs'
-          ? 27
-          : size === 'sm'
-          ? 36
-          : size === 'md'
-          ? 45
-          : size === 'xl'
-          ? 108
-          : 54
-      return (
-        <DisguiseSvg
-          className="absolute left-1/2 -translate-x-1/2"
-          style={{
-            top:
-              size === '2xs'
-                ? 1
-                : size === 'xs'
-                ? 1
-                : size === 'sm'
-                ? 2
-                : size === 'md'
-                ? 3
-                : size === 'xl'
-                ? 8
-                : 4,
-            width: disguiseSize,
-            height: disguiseSize * 0.68,
-            // Subtle white outline (works in both modes — barely visible on
-            // light bg, just enough to separate the dark frames from dark avatars)
-            // stacked on top of the existing soft drop shadow.
-            filter:
-              'drop-shadow(0 0 0.5px rgba(255,255,255,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-          }}
-        />
-      )
-    }
+    case 'avatar-disguise':
+      return <DisguiseOnAvatar size={size} />
+
     case 'avatar-thought-yes': {
       // YES thought bubble at top-left with trailing bubbles
       const bubbleSize =

@@ -5,6 +5,107 @@ import { useId } from 'react'
 type SvgProps = { className?: string; style?: React.CSSProperties }
 
 // =============================================================================
+// HALO — dual-stroke ellipse (white inner + amber outer), rotated -8deg.
+// Renders light + dark mode SVGs side-by-side; the `dark:` media classes
+// toggle which is shown. Supports splitting into upper/lower arcs when a hat
+// is equipped and the halo needs to render around it.
+// =============================================================================
+
+const HALO_WHITE_STROKE = 'rgba(255, 252, 240, 0.95)'
+const HALO_AMBER_STROKE = 'rgba(217, 170, 50, 0.7)'
+const HALO_AMBER_STROKE_DARK = 'rgba(200, 160, 60, 0.5)'
+const HALO_LIGHT_FILTER =
+  'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))'
+const HALO_DARK_FILTER =
+  'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))'
+
+export const HALO_BACK_ARC = 'M 2,6 A 18,5 0 0,0 38,6' // behind the hat
+export const HALO_FRONT_ARC = 'M 2,6 A 18,5 0 0,1 38,6' // in front of the hat
+
+/** Halo SVG pair (light + dark). Pass `arcPath` to render one half only. */
+export function HaloSvg(props: {
+  width: string | number
+  height: string | number
+  /** If provided, draws a path arc instead of the full ellipse. Use the
+   *  HALO_BACK_ARC / HALO_FRONT_ARC constants for hat-split rendering. */
+  arcPath?: string | null
+}) {
+  const { width, height, arcPath } = props
+  return (
+    <>
+      {/* Light mode */}
+      <svg
+        className="dark:hidden"
+        width={width}
+        height={height}
+        viewBox="0 0 40 12"
+        overflow="visible"
+        style={{ transform: 'rotate(-8deg)', filter: HALO_LIGHT_FILTER }}
+      >
+        <HaloStrokes
+          arcPath={arcPath}
+          outerStroke={HALO_AMBER_STROKE}
+          innerStroke={HALO_WHITE_STROKE}
+        />
+      </svg>
+      {/* Dark mode */}
+      <svg
+        className="hidden dark:block"
+        width={width}
+        height={height}
+        viewBox="0 0 40 12"
+        overflow="visible"
+        style={{ transform: 'rotate(-8deg)', filter: HALO_DARK_FILTER }}
+      >
+        <HaloStrokes
+          arcPath={arcPath}
+          outerStroke={HALO_AMBER_STROKE_DARK}
+          innerStroke={HALO_WHITE_STROKE}
+        />
+      </svg>
+    </>
+  )
+}
+
+function HaloStrokes(props: {
+  arcPath: string | null | undefined
+  outerStroke: string
+  innerStroke: string
+}) {
+  const { arcPath, outerStroke, innerStroke } = props
+  if (arcPath) {
+    return (
+      <>
+        <path d={arcPath} stroke={outerStroke} strokeWidth="3.5" fill="none" />
+        <path d={arcPath} stroke={innerStroke} strokeWidth="1.5" fill="none" />
+      </>
+    )
+  }
+  return (
+    <>
+      <ellipse
+        cx="20"
+        cy="6"
+        rx="18"
+        ry="5"
+        stroke={outerStroke}
+        strokeWidth="3.5"
+        fill="none"
+      />
+      <ellipse
+        cx="20"
+        cy="6"
+        rx="18"
+        ry="5"
+        stroke={innerStroke}
+        strokeWidth="1.5"
+        fill="none"
+      />
+    </>
+  )
+}
+
+// =============================================================================
 // BORDERS & EFFECTS
 // =============================================================================
 

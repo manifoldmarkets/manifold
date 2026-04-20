@@ -51,7 +51,6 @@ import {
   AngelWingSvg,
   MonocleSvg,
   CrystalBallSvg,
-  DisguiseSvg,
   ArrowBadgeSvg,
   StonksMemeArrowSvg,
   BullHornSvg,
@@ -65,6 +64,7 @@ import {
   JesterHatSvg,
   FedoraSvg,
   DevilHornSvg,
+  HaloSvg,
 } from 'web/components/shop/item-svgs'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -79,6 +79,7 @@ import {
   RedCapSvg,
   GreenCapSvg,
   BlackCapSvg,
+  DisguiseOnAvatar,
 } from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -105,6 +106,7 @@ import {
   GiveawayPromoCard,
   promoStatSizeClass,
 } from 'web/components/shop/giveaway-promo-card'
+import { NewBadge } from 'web/components/shop/new-badge'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
@@ -812,16 +814,7 @@ export default function ShopPage() {
         {filterOption === 'all' && newRegularItems.length > 0 && (
           <>
             <Row className="mb-4 mt-2 items-center gap-2">
-              <span
-                className="flex h-5 w-14 items-center justify-center rounded-full bg-amber-400 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 antialiased dark:ring-amber-500/40"
-                style={{
-                  transform: 'rotate(-8deg)',
-                  backfaceVisibility: 'hidden',
-                  willChange: 'transform',
-                }}
-              >
-                NEW
-              </span>
+              <NewBadge variant="inline" />
               <span className="text-lg font-semibold">Just added</span>
             </Row>
             <div className="mb-2 grid grid-cols-1 gap-4 pt-3 min-[480px]:grid-cols-2 lg:grid-cols-3">
@@ -3338,16 +3331,7 @@ function DisguisePreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        <DisguiseSvg
-          className="absolute left-1/2 -translate-x-1/2"
-          style={{
-            top: 5,
-            width: 54,
-            height: 54 * 0.68,
-            filter:
-              'drop-shadow(0 0 0.5px rgba(255,255,255,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-          }}
-        />
+        <DisguiseOnAvatar size="lg" />
       </div>
     </div>
   )
@@ -4251,70 +4235,7 @@ function HatPreview(props: {
       case 'halo':
         return (
           <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 transition-transform duration-300 group-hover:-translate-y-0.5">
-            {/* Light mode — dual-stroke SVG matching live avatar halo */}
-            <svg
-              className="dark:hidden"
-              width="3.3rem"
-              height="0.85rem"
-              viewBox="0 0 40 12"
-              overflow="visible"
-              style={{
-                transform: 'rotate(-8deg)',
-                filter:
-                  'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))',
-              }}
-            >
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(217, 170, 50, 0.7)"
-                strokeWidth="3.5"
-                fill="none"
-              />
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(255, 252, 240, 0.95)"
-                strokeWidth="1.5"
-                fill="none"
-              />
-            </svg>
-            {/* Dark mode — dual-stroke SVG matching live avatar halo */}
-            <svg
-              className="hidden dark:block"
-              width="3.3rem"
-              height="0.85rem"
-              viewBox="0 0 40 12"
-              overflow="visible"
-              style={{
-                transform: 'rotate(-8deg)',
-                filter:
-                  'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))',
-              }}
-            >
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(200, 160, 60, 0.5)"
-                strokeWidth="3.5"
-                fill="none"
-              />
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(255, 252, 240, 0.95)"
-                strokeWidth="1.5"
-                fill="none"
-              />
-            </svg>
+            <HaloSvg width="3.3rem" height="0.85rem" />
           </div>
         )
       case 'propeller-hat':
@@ -5647,26 +5568,8 @@ function ShopItemCard(props: {
               'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
           )}
         >
-          {/* NEW sticker — overflows above the card, sits center-ish, tilted.
-              Fixed even-pixel box + composite transform so -50% lands on whole
-              pixels and Windows Chrome keeps the text crisp under rotation. */}
-          {isNew && (
-            <span
-              className={clsx(
-                'pointer-events-none absolute left-1/2 top-0 z-20',
-                'flex h-5 w-14 items-center justify-center',
-                'rounded-full bg-amber-400 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md antialiased',
-                'ring-2 ring-amber-300/70 dark:ring-amber-500/40'
-              )}
-              style={{
-                transform: 'translate(-50%, -50%) rotate(-8deg)',
-                backfaceVisibility: 'hidden',
-                willChange: 'transform',
-              }}
-            >
-              NEW
-            </span>
-          )}
+          {/* NEW sticker — overflows the card's clipping */}
+          {isNew && <NewBadge variant="sticker" />}
 
           {/* Loading overlay during purchase */}
           {purchasing && (

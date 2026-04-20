@@ -1153,60 +1153,40 @@ export const userHasCrown = (
   return hasActiveEntitlement(entitlements, 'avatar-crown')
 }
 
-// Get the active avatar overlay (hat) if any
-// Note: This excludes halo and crown since they're unique slot items that combine with other hats
-// Use userHasHalo() and userHasCrown() separately to check for those
+// Item IDs that share a slot but are rendered via dedicated code paths and
+// therefore shouldn't appear in the generic overlay/accessory iteration.
+// Halo and crown render as unique slot items (not 'hat') so they're naturally
+// excluded. Fire item has slot 'profile-accessory' but is rendered by its own
+// `hasFireItem` check, not by `AvatarAccessory`.
+const SPECIAL_RENDERED_DECORATIONS = new Set<string>(['avatar-fire-item'])
+
+/** IDs of items that can occupy the given slot, in catalog order. Filtered
+ *  through SPECIAL_RENDERED_DECORATIONS so items with dedicated rendering
+ *  paths don't accidentally short-circuit the generic render switch. */
+const getDecorationIdsForSlot = (slot: ShopItemSlot): AvatarDecorationId[] =>
+  SHOP_ITEMS.filter(
+    (item) =>
+      item.slot === slot && !SPECIAL_RENDERED_DECORATIONS.has(item.id)
+  ).map((item) => item.id as AvatarDecorationId)
+
+// Get the active avatar overlay (hat) if any.
+// Halo and crown live in the 'unique' slot, not 'hat', so they're excluded
+// automatically — use userHasHalo() / userHasCrown() for those.
 export const getActiveAvatarOverlay = (
   entitlements: UserEntitlement[] | undefined
 ): AvatarDecorationId | null => {
-  const overlays: AvatarDecorationId[] = [
-    // Note: crown excluded here - check separately with userHasCrown()
-    'avatar-graduation-cap',
-    'avatar-top-hat',
-    // Note: halo excluded here - check separately with userHasHalo()
-    'avatar-propeller-hat',
-    'avatar-wizard-hat',
-    'avatar-tinfoil-hat',
-    'avatar-microphone',
-    'avatar-jester-hat',
-    'avatar-fedora',
-    'avatar-devil-horns',
-    'avatar-blue-cap',
-    'avatar-team-red-hat',
-    'avatar-team-green-hat',
-    'avatar-black-cap',
-    'avatar-bull-horns',
-    'avatar-bear-ears',
-    'avatar-cat-ears',
-    'avatar-santa-hat',
-    'avatar-bunny-ears',
-  ]
-  for (const overlay of overlays) {
-    if (hasActiveEntitlement(entitlements, overlay)) {
-      return overlay
-    }
+  for (const overlay of getDecorationIdsForSlot('hat')) {
+    if (hasActiveEntitlement(entitlements, overlay)) return overlay
   }
   return null
 }
 
-// Get the active avatar accessory if any
+// Get the active avatar accessory if any.
 export const getActiveAvatarAccessory = (
   entitlements: UserEntitlement[] | undefined
 ): AvatarDecorationId | null => {
-  const accessories: AvatarDecorationId[] = [
-    'avatar-monocle',
-    'avatar-crystal-ball',
-    'avatar-disguise',
-    'avatar-thought-yes',
-    'avatar-thought-no',
-    'avatar-stonks-up',
-    'avatar-stonks-down',
-    'avatar-stonks-meme',
-  ]
-  for (const accessory of accessories) {
-    if (hasActiveEntitlement(entitlements, accessory)) {
-      return accessory
-    }
+  for (const accessory of getDecorationIdsForSlot('profile-accessory')) {
+    if (hasActiveEntitlement(entitlements, accessory)) return accessory
   }
   return null
 }
