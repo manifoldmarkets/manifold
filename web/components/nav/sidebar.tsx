@@ -298,15 +298,18 @@ const getDesktopNav = (
           options.showShopNewBadge || SHOW_SHOP_MANIFEST_BADGE ? (
             <>
               Shop
-              {options.showShopNewBadge && (
+              {/* NEW takes priority over Manifest — Manifest reappears once
+                  the user has cleared the NEW badge by visiting /shop. */}
+              {options.showShopNewBadge ? (
                 <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
                   NEW
                 </span>
-              )}
-              {SHOW_SHOP_MANIFEST_BADGE && (
-                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                  Manifest
-                </span>
+              ) : (
+                SHOW_SHOP_MANIFEST_BADGE && (
+                  <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
+                    Manifest
+                  </span>
+                )
               )}
             </>
           ) : undefined,
@@ -378,15 +381,18 @@ const getMobileNav = (
         showShopNewBadge || SHOW_SHOP_MANIFEST_BADGE ? (
           <>
             Shop
-            {showShopNewBadge && (
+            {/* NEW takes priority over Manifest — Manifest reappears once
+                the user has cleared the NEW badge by visiting /shop. */}
+            {showShopNewBadge ? (
               <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
                 NEW
               </span>
-            )}
-            {SHOW_SHOP_MANIFEST_BADGE && (
-              <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                Manifest
-              </span>
+            ) : (
+              SHOW_SHOP_MANIFEST_BADGE && (
+                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
+                  Manifest
+                </span>
+              )
             )}
           </>
         ) : undefined,
