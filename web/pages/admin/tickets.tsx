@@ -10,18 +10,16 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { formatMoney } from 'common/util/format'
+import { getShopItem, getTicketItems } from 'common/shop/items'
 import Link from 'next/link'
 
 export default function AdminTicketsPage() {
   useRedirectIfSignedOut()
   const isAdmin = useAdmin()
 
-  const { data, loading } = useAPIGetter('get-ticket-orders', {
-    itemId: 'manifest-ticket',
-  })
-  const { data: stockData } = useAPIGetter('get-ticket-stock', {
-    itemId: 'manifest-ticket',
-  })
+  // No itemId → backend aggregates across all ticket items
+  const { data, loading } = useAPIGetter('get-ticket-orders', {})
+  const { data: stockData } = useAPIGetter('get-ticket-stock', {})
 
   const [copying, setCopying] = useState(false)
 
@@ -64,15 +62,31 @@ export default function AdminTicketsPage() {
         </div>
 
         {stockData && (
-          <Row className="items-center gap-4">
-            <div className="text-lg">
-              <b>{stockData.sold}</b> of <b>{stockData.maxStock}</b> tickets
-              sold
+          <Col className="gap-1">
+            <Row className="items-center gap-4">
+              <div className="text-lg">
+                <b>{stockData.sold}</b> of <b>{stockData.maxStock}</b> tickets
+                sold
+              </div>
+              <div className="text-ink-500">
+                ({stockData.available} remaining)
+              </div>
+            </Row>
+            {/* Per-ticket-type breakdown */}
+            <div className="text-ink-500 text-xs">
+              {getTicketItems().map((t) => {
+                const soldForItem = orders.filter(
+                  (o) => o.itemId === t.id
+                ).length
+                return (
+                  <div key={t.id}>
+                    {t.name}: <b>{soldForItem}</b>
+                    {t.maxStock != null && <> / {t.maxStock}</>}
+                  </div>
+                )
+              })}
             </div>
-            <div className="text-ink-500">
-              ({stockData.available} remaining)
-            </div>
-          </Row>
+          </Col>
         )}
 
         <Row className="gap-2">
@@ -99,6 +113,7 @@ export default function AdminTicketsPage() {
                   <th className="px-3 py-2">Date</th>
                   <th className="px-3 py-2">User</th>
                   <th className="px-3 py-2">Email</th>
+                  <th className="px-3 py-2">Item</th>
                   <th className="px-3 py-2">Amount</th>
                   <th className="px-3 py-2">Status</th>
                 </tr>
@@ -123,6 +138,9 @@ export default function AdminTicketsPage() {
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
                       {o.email ?? '—'}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-xs">
+                      {getShopItem(o.itemId)?.name ?? o.itemId}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2">
                       {formatMoney(o.priceMana)}

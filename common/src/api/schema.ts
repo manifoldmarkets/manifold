@@ -3766,7 +3766,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: 'public, max-age=2, stale-while-revalidate=10',
-    props: z.object({ itemId: z.string() }).strict(),
+    props: z.object({ itemId: z.string().optional() }).strict(),
     returns: {} as { sold: number; maxStock: number; available: number },
   },
   'get-user-ticket-purchased': {

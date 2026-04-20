@@ -1008,21 +1008,36 @@ function TicketItemCard(props: {
 
           {/* Price + CTA */}
           <Col className="mt-auto gap-2">
-            <Row className="items-baseline justify-between">
-              <div className="text-ink-500 text-[10px] uppercase tracking-wider">
-                {comingSoon ? 'Price' : 'Your cost'}
-              </div>
-              <Row className="items-baseline gap-2">
-                {hasDiscount && (
-                  <span className="text-ink-500 text-sm line-through opacity-70">
-                    {formatMoney(item.price)}
-                  </span>
+            <Col className="gap-1">
+              <Row className="items-baseline justify-between gap-2">
+                <div className="text-ink-500 text-[10px] uppercase tracking-wider">
+                  {comingSoon ? 'Price' : 'Your cost'}
+                </div>
+                {hasDiscount ? (
+                  <Row className="items-center gap-1.5">
+                    <span className="text-ink-500 text-sm line-through opacity-70">
+                      {formatMoney(item.price)}
+                    </span>
+                    <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                      -
+                      {Math.round(
+                        (1 - discountedPrice / item.price) * 100
+                      )}
+                      %
+                    </span>
+                  </Row>
+                ) : (
+                  <div className="text-ink-900 text-xl font-bold">
+                    {formatMoney(discountedPrice)}
+                  </div>
                 )}
-                <div className="text-ink-900 text-xl font-bold">
+              </Row>
+              {hasDiscount && (
+                <div className="text-ink-900 text-right text-xl font-bold">
                   {formatMoney(discountedPrice)}
                 </div>
-              </Row>
-            </Row>
+              )}
+            </Col>
             <Button
               color={comingSoon ? 'gray' : 'amber'}
               size="sm"
@@ -5440,52 +5455,56 @@ function ShopItemCard(props: {
             </div>
           )}
 
-          {item.hidden &&
-            !(item.seasonalAvailability && isSeasonalItemAvailable(item)) && (
-              <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
-                Hidden
-              </div>
-            )}
-
-          {/* Card header with badge inline */}
-          <Row className="items-start justify-between gap-2">
+          {/* Card header — title takes remaining space; badges wrap when crowded */}
+          <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
             <div
               className={clsx(
-                'text-base font-semibold sm:text-lg',
+                'min-w-0 flex-1 text-base font-semibold sm:text-lg',
                 isPremiumItem && 'text-amber-700 dark:text-amber-400'
               )}
             >
               {item.name}
             </div>
-            {/* OWNED badge for purchased items */}
-            {owned && (
-              <div
-                className={clsx(
-                  'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
-                  isPremiumItem
-                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                )}
-              >
-                OWNED
-              </div>
-            )}
-            {/* LEGENDARY badge for halo, wings, crown only */}
-            {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(
-              item.id
-            ) &&
-              !owned && (
-                <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
-                  LEGENDARY
+            <div className="flex flex-wrap items-start justify-end gap-1">
+              {/* OWNED badge for purchased items */}
+              {owned && (
+                <div
+                  className={clsx(
+                    'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
+                    isPremiumItem
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                      : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                  )}
+                >
+                  OWNED
                 </div>
               )}
-            {/* SEASONAL badge */}
-            {item.seasonalAvailability && (
-              <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
-                SEASONAL
-              </div>
-            )}
-          </Row>
+              {/* LEGENDARY badge for halo, wings, crown only */}
+              {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(
+                item.id
+              ) &&
+                !owned && (
+                  <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+                    LEGENDARY
+                  </div>
+                )}
+              {/* SEASONAL badge */}
+              {item.seasonalAvailability && (
+                <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+                  SEASONAL
+                </div>
+              )}
+              {/* Hidden badge — inline so it doesn't overlap the others */}
+              {item.hidden &&
+                !(
+                  item.seasonalAvailability && isSeasonalItemAvailable(item)
+                ) && (
+                  <div className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 sm:px-2 sm:text-xs dark:bg-amber-900/50 dark:text-amber-400">
+                    Hidden
+                  </div>
+                )}
+            </div>
+          </div>
 
           {/* Slot tag */}
           {EXCLUSIVE_SLOTS.includes(item.slot) && (
@@ -5652,10 +5671,10 @@ function ShopItemCard(props: {
             // Non-owned item layout - stacks vertically on very narrow screens
             <>
               <Col className="mt-auto gap-2 pt-2">
-                <Row className="items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   {hasDiscount || item.originalPrice ? (
-                    <Col className="gap-0.5">
-                      <Row className="items-center gap-1.5">
+                    <Col className="min-w-0 gap-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-ink-400 text-xs line-through">
                           {formatMoney(item.originalPrice ?? item.price)}
                         </span>
@@ -5676,7 +5695,7 @@ function ShopItemCard(props: {
                             %
                           </span>
                         )}
-                      </Row>
+                      </div>
                       <div className="font-semibold text-teal-600">
                         {formatMoney(discountedPrice)}
                       </div>
@@ -5714,7 +5733,7 @@ function ShopItemCard(props: {
                       </Button>
                     )}
                   </div>
-                </Row>
+                </div>
 
                 {/* Full-width button on narrow screens */}
                 <div className="min-[480px]:hidden">

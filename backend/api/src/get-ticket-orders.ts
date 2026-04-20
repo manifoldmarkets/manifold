@@ -1,6 +1,7 @@
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
+import { getTicketItems } from 'common/shop/items'
 
 export const getTicketOrders: APIHandler<'get-ticket-orders'> = async (
   { itemId },
@@ -10,8 +11,11 @@ export const getTicketOrders: APIHandler<'get-ticket-orders'> = async (
 
   const pg = createSupabaseDirectClient()
 
-  const itemFilter = itemId ? `AND so.item_id = $1` : `AND so.item_id = 'manifest-ticket'`
-  const params = itemId ? [itemId] : []
+  // Specific item → filter by it; otherwise pull every ticket item.
+  const itemFilter = itemId ? `AND so.item_id = $1` : `AND so.item_id = ANY($1)`
+  const params: unknown[] = itemId
+    ? [itemId]
+    : [getTicketItems().map((t) => t.id)]
 
   const rows = await pg.manyOrNone<{
     id: string
