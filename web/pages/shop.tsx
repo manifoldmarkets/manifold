@@ -98,6 +98,7 @@ import {
 import {
   CharityGiveawayCard,
   CharityGiveawayData,
+  formatEntries,
 } from 'web/components/shop/charity-giveaway-card'
 import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -2918,8 +2919,14 @@ function PrizeDrawingCard() {
               <div className="text-ink-500 text-xs">Time Left</div>
             </Col>
             <Col className="flex-1">
-              <div className="text-2xl font-bold text-blue-600">
-                {Math.floor(totalTickets).toLocaleString()}
+              <div
+                className={clsx(
+                  'font-bold text-blue-600',
+                  // Shrink for 7+ figures so the number stays inside the card
+                  totalTickets >= 1_000_000 ? 'text-lg sm:text-xl' : 'text-2xl'
+                )}
+              >
+                {formatEntries(totalTickets)}
               </div>
               <div className="text-ink-500 text-xs">Entries</div>
             </Col>

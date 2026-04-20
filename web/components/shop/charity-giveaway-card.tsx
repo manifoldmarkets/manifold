@@ -9,14 +9,11 @@ import { Row } from '../layout/row'
 import { Button } from '../buttons/button'
 import { charities } from 'common/charity'
 
-function formatEntries(entries: number): string {
-  if (entries >= 1000) {
-    return entries.toLocaleString(undefined, { maximumFractionDigits: 1 })
-  } else if (entries >= 1) {
-    return entries.toLocaleString(undefined, { maximumFractionDigits: 2 })
-  } else {
-    return entries.toLocaleString(undefined, { maximumFractionDigits: 4 })
-  }
+// Shared entry formatter: always whole-number entries for a cleaner display.
+// Sub-1 counts still round to 0 (they shouldn't appear in prod since partial
+// entries are contract-level, not user-facing in these summary tiles).
+export function formatEntries(entries: number): string {
+  return Math.round(entries).toLocaleString()
 }
 
 // Export the data type for use by other components
