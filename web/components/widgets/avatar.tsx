@@ -20,6 +20,7 @@ import {
   BullHornSvg,
   BearEarSvg,
   CatEarSvg,
+  CatWhiskersSvg,
   SantaHatSvg,
   BunnyEarSvg,
   WizardHatSvg,
@@ -256,7 +257,27 @@ export const Avatar = memo(
         {hasFireItem && (
           <FireItemDecoration size={size} animate={animateFireItem} />
         )}
-        {/* Angel wings - feathered wings flanking avatar (behind profile pic) */}
+        {/* Solid border ring — extracted from the avatar image so wings can
+            sit on top of it (but still behind the avatar photo itself). */}
+        {(isUserFresh ||
+          hasGoldenBorder ||
+          hasBadAura ||
+          hasManaAura ||
+          hasBlackHole) && (
+          <div
+            className={clsx(
+              'pointer-events-none absolute inset-0 rounded-full',
+              isUserFresh && 'ring-1 ring-green-500',
+              hasGoldenBorder && 'ring-2 ring-amber-400',
+              hasBadAura && 'ring-2 ring-red-500',
+              hasManaAura && 'ring-2 ring-violet-400',
+              hasBlackHole &&
+                'shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40'
+            )}
+            style={{ zIndex: -2 }}
+          />
+        )}
+        {/* Angel wings - feathered wings flanking avatar (behind profile pic, in front of border ring) */}
         {hasAngelWings && (
           <AngelWingsDecoration
             size={size}
@@ -286,14 +307,7 @@ export const Avatar = memo(
               'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
               `w-${s} h-${s}`,
               !noLink && 'cursor-pointer',
-              className,
-              isUserFresh && 'ring-1 ring-green-500',
-              hasGoldenBorder && 'relative ring-2 ring-amber-400',
-              hasBadAura && 'relative ring-2 ring-red-500',
-              hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole &&
-                'relative shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40',
-              hasFireItem && 'relative'
+              className
             )}
             style={{
               maxWidth: `${s * 0.25}rem`,
@@ -313,14 +327,7 @@ export const Avatar = memo(
           <UserCircleIcon
             className={clsx(
               `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
-              className,
-              isUserFresh && 'ring-1 ring-green-500',
-              hasGoldenBorder && 'relative ring-2 ring-amber-400',
-              hasBadAura && 'relative ring-2 ring-red-500',
-              hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole &&
-                'relative shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40',
-              hasFireItem && 'relative'
+              className
             )}
             style={{ position: 'relative', zIndex: 0 }}
             onClick={onClick}
@@ -406,7 +413,7 @@ function AngelWingsDecoration(props: {
           animateOnHover && 'group-hover:rotate-6',
           animate && 'rotate-6'
         )}
-        style={{ left: offset, width: wingW, height: wingH, zIndex: -2 }}
+        style={{ left: offset, width: wingW, height: wingH, zIndex: -1 }}
       >
         <AngelWingSvg style={{ width: wingW, height: wingH, opacity: 0.9 }} />
       </div>
@@ -417,7 +424,7 @@ function AngelWingsDecoration(props: {
           animateOnHover && 'group-hover:-rotate-6',
           animate && '-rotate-6'
         )}
-        style={{ right: offset, width: wingW, height: wingH, zIndex: -2 }}
+        style={{ right: offset, width: wingW, height: wingH, zIndex: -1 }}
       >
         <AngelWingSvg
           style={{
@@ -2078,30 +2085,31 @@ function AvatarOverlay(props: {
       case 'avatar-bear-ears': {
         const earSize =
           size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
-        const bearEarClasses = clsx(
-          'absolute transition-transform duration-300',
-          animateHatOnHover &&
-            'group-hover:-translate-y-0.5 group-hover:scale-110',
-          animateHat && '-translate-y-0.5 scale-110'
-        )
+        const bearEarClasses =
+          'absolute origin-bottom transition-transform duration-300'
         return (
           <>
             <BearEarSvg
               side="left"
-              className={bearEarClasses}
+              className={clsx(
+                bearEarClasses,
+                'rotate-[-25deg]',
+                animateHatOnHover && 'group-hover:rotate-[-20deg]',
+                animateHat && 'rotate-[-20deg]'
+              )}
               style={{
                 left:
                   size === '2xs' || size === 'xs'
-                    ? -3
+                    ? -1
                     : size === 'sm'
-                    ? -4
-                    : -6,
+                    ? -1
+                    : -2,
                 top:
                   size === '2xs' || size === 'xs'
-                    ? -5
+                    ? -1
                     : size === 'sm'
-                    ? -6
-                    : -8,
+                    ? -2
+                    : -3,
                 width: earSize,
                 height: earSize,
                 filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
@@ -2109,20 +2117,25 @@ function AvatarOverlay(props: {
             />
             <BearEarSvg
               side="right"
-              className={bearEarClasses}
+              className={clsx(
+                bearEarClasses,
+                '-scale-x-100 rotate-[25deg]',
+                animateHatOnHover && 'group-hover:rotate-[20deg]',
+                animateHat && 'rotate-[20deg]'
+              )}
               style={{
                 right:
                   size === '2xs' || size === 'xs'
-                    ? -3
+                    ? -1
                     : size === 'sm'
-                    ? -4
-                    : -6,
+                    ? -1
+                    : -2,
                 top:
                   size === '2xs' || size === 'xs'
-                    ? -5
+                    ? -1
                     : size === 'sm'
-                    ? -6
-                    : -8,
+                    ? -2
+                    : -3,
                 width: earSize,
                 height: earSize,
                 filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
@@ -2132,62 +2145,100 @@ function AvatarOverlay(props: {
         )
       }
       case 'avatar-cat-ears': {
-        const earW =
-          size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 18 : 22
-        const earH =
-          size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 13 : 16
+        const isTiny = size === '2xs' || size === 'xs'
+        const isSm = size === 'sm'
+        const isMd = size === 'md'
+        const isXl = size === 'xl'
+        // ear SVG is 20x14 (flat/wide); anchor base at circle's upper-corner
+        const ear = isTiny
+          ? { w: 12, h: 7, side: -2, top: -1 }
+          : isSm
+          ? { w: 16, h: 10, side: -3, top: -2 }
+          : isMd
+          ? { w: 19, h: 11, side: -4, top: -1 }
+          : isXl
+          ? { w: 44, h: 26, side: -8, top: -3 }
+          : { w: 24, h: 14, side: -5, top: -2 }
+        const hasWhiskers = capStyle === 1
+        const whiskerW = isTiny ? 7 : isSm ? 10 : isXl ? 28 : 14
+        const whiskerH = isTiny ? 4 : isSm ? 5 : isXl ? 14 : 7
+        const whiskerOffset = isTiny ? -3 : isSm ? -5 : isXl ? -14 : -7
         return (
           <>
+            {hasWhiskers && (
+              <>
+                {/* Light mode whiskers */}
+                <CatWhiskersSvg
+                  className="absolute top-1/2 dark:hidden"
+                  style={{
+                    left: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                    transform: 'translateY(-50%) scaleX(-1)',
+                  }}
+                />
+                <CatWhiskersSvg
+                  className="absolute top-1/2 dark:hidden"
+                  style={{
+                    right: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                    transform: 'translateY(-50%)',
+                  }}
+                />
+                {/* Dark mode whiskers — white glow outline */}
+                <CatWhiskersSvg
+                  className="absolute top-1/2 hidden dark:block"
+                  style={{
+                    left: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                    transform: 'translateY(-50%) scaleX(-1)',
+                  }}
+                />
+                <CatWhiskersSvg
+                  className="absolute top-1/2 hidden dark:block"
+                  style={{
+                    right: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                    transform: 'translateY(-50%)',
+                  }}
+                />
+              </>
+            )}
             <CatEarSvg
               className={clsx(
-                'absolute transition-transform duration-300',
-                animateHatOnHover &&
-                  'group-hover:-translate-y-0.5 group-hover:rotate-[-5deg]',
-                animateHat && '-translate-y-0.5 rotate-[-5deg]'
+                'absolute origin-bottom transition-transform duration-300',
+                'rotate-[-52deg]',
+                animateHatOnHover && 'group-hover:rotate-[-44deg]',
+                animateHat && 'rotate-[-44deg]'
               )}
               style={{
-                left:
-                  size === '2xs' || size === 'xs'
-                    ? -2
-                    : size === 'sm'
-                    ? -2
-                    : -2,
-                top:
-                  size === '2xs' || size === 'xs'
-                    ? -5
-                    : size === 'sm'
-                    ? -7
-                    : -9,
-                width: earW,
-                height: earH,
-                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-                transform: 'rotate(-12deg)',
+                left: ear.side,
+                top: ear.top,
+                width: ear.w,
+                height: ear.h,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
               }}
             />
             <CatEarSvg
               className={clsx(
-                'absolute transition-transform duration-300',
-                animateHatOnHover &&
-                  'group-hover:-translate-y-0.5 group-hover:rotate-[5deg]',
-                animateHat && '-translate-y-0.5 rotate-[5deg]'
+                'absolute origin-bottom transition-transform duration-300',
+                '-scale-x-100 rotate-[52deg]',
+                animateHatOnHover && 'group-hover:rotate-[44deg]',
+                animateHat && 'rotate-[44deg]'
               )}
               style={{
-                right:
-                  size === '2xs' || size === 'xs'
-                    ? -2
-                    : size === 'sm'
-                    ? -2
-                    : -2,
-                top:
-                  size === '2xs' || size === 'xs'
-                    ? -5
-                    : size === 'sm'
-                    ? -7
-                    : -9,
-                width: earW,
-                height: earH,
-                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-                transform: 'rotate(12deg) scaleX(-1)',
+                right: ear.side,
+                top: ear.top,
+                width: ear.w,
+                height: ear.h,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
               }}
             />
           </>
@@ -2341,15 +2392,29 @@ function AvatarAccessory(props: {
       )
     }
     case 'avatar-disguise': {
+      // Sized larger than the avatar so the earpieces poke past both edges.
       const disguiseSize =
-        size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 22 : 28
+        size === '2xs' || size === 'xs'
+          ? 22
+          : size === 'sm'
+          ? 38
+          : size === 'xl'
+          ? 108
+          : 54
       return (
         <DisguiseSvg
           className="absolute left-1/2 -translate-x-1/2"
           style={{
-            top: size === '2xs' || size === 'xs' ? 4 : size === 'sm' ? 6 : 8,
+            top:
+              size === '2xs' || size === 'xs'
+                ? 1
+                : size === 'sm'
+                ? 2
+                : size === 'xl'
+                ? 8
+                : 4,
             width: disguiseSize,
-            height: disguiseSize * 0.7,
+            height: disguiseSize * 0.68,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         />

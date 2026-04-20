@@ -65,6 +65,54 @@ async function checkItemRequirement(
       valueName = 'loss'
       break
     }
+    case 'yesProfit': {
+      // Profit from contracts where the user has net-bought YES (sum of YES bet amounts > sum of NO).
+      const row = await pg.oneOrNone<{ profit: number }>(
+        `WITH user_direction AS (
+           SELECT contract_id,
+                  SUM(CASE WHEN outcome = 'YES' THEN amount ELSE 0 END) -
+                  SUM(CASE WHEN outcome = 'NO'  THEN amount ELSE 0 END) AS net_yes
+             FROM contract_bets
+            WHERE user_id = $1
+            GROUP BY contract_id
+         )
+         SELECT COALESCE(SUM(ucm.profit), 0) AS profit
+           FROM user_contract_metrics ucm
+           JOIN user_direction ud ON ud.contract_id = ucm.contract_id
+          WHERE ucm.user_id = $1
+            AND ucm.answer_id IS NULL
+            AND ucm.profit > 0
+            AND ud.net_yes > 0`,
+        [userId]
+      )
+      userValue = row?.profit ?? 0
+      valueName = 'YES-side profit'
+      break
+    }
+    case 'noProfit': {
+      // Profit from contracts where the user has net-bought NO.
+      const row = await pg.oneOrNone<{ profit: number }>(
+        `WITH user_direction AS (
+           SELECT contract_id,
+                  SUM(CASE WHEN outcome = 'YES' THEN amount ELSE 0 END) -
+                  SUM(CASE WHEN outcome = 'NO'  THEN amount ELSE 0 END) AS net_yes
+             FROM contract_bets
+            WHERE user_id = $1
+            GROUP BY contract_id
+         )
+         SELECT COALESCE(SUM(ucm.profit), 0) AS profit
+           FROM user_contract_metrics ucm
+           JOIN user_direction ud ON ud.contract_id = ucm.contract_id
+          WHERE ucm.user_id = $1
+            AND ucm.answer_id IS NULL
+            AND ucm.profit > 0
+            AND ud.net_yes < 0`,
+        [userId]
+      )
+      userValue = row?.profit ?? 0
+      valueName = 'NO-side profit'
+      break
+    }
     case 'volume': {
       const row = await pg.oneOrNone<{ volume: number }>(
         `SELECT COALESCE(SUM(ABS(amount)), 0) as volume FROM contract_bets WHERE user_id = $1`,

@@ -57,6 +57,7 @@ import {
   BullHornSvg,
   BearEarSvg,
   CatEarSvg,
+  CatWhiskersSvg,
   SantaHatSvg,
   BunnyEarSvg,
   WizardHatSvg,
@@ -731,7 +732,13 @@ export default function ShopPage() {
             </>
           )}
 
-        {/* {isAdminOrMod && <AdminTestingTools user={user} showHidden={showHidden} setShowHidden={setShowHidden} />} */}
+        {isAdminOrMod && (
+          <AdminTestingTools
+            user={user}
+            showHidden={showHidden}
+            setShowHidden={setShowHidden}
+          />
+        )}
       </Col>
     </Page>
   )
@@ -3118,9 +3125,9 @@ function DisguisePreview(props: { user: User | null | undefined }) {
         <DisguiseSvg
           className="absolute left-1/2 -translate-x-1/2"
           style={{
-            top: 8,
-            width: 28,
-            height: 20,
+            top: 4,
+            width: 54,
+            height: 37,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         />
@@ -3665,10 +3672,10 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
         {/* Left ear */}
         <BearEarSvg
           side="left"
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          className="absolute origin-bottom rotate-[-25deg] transition-transform duration-300 group-hover:rotate-[-20deg]"
           style={{
-            left: -4,
-            top: -7,
+            left: -1,
+            top: -2,
             width: 18,
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
@@ -3677,10 +3684,10 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
         {/* Right ear */}
         <BearEarSvg
           side="right"
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          className="absolute origin-bottom -scale-x-100 rotate-[25deg] transition-transform duration-300 group-hover:rotate-[20deg]"
           style={{
-            right: -4,
-            top: -7,
+            right: -1,
+            top: -2,
             width: 18,
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
@@ -3762,43 +3769,129 @@ function BunnyEarsPreview(props: { user: User | null | undefined }) {
   )
 }
 
-function CatEarsPreview(props: { user: User | null | undefined }) {
-  const { user } = props
+const CAT_EARS_STYLE_COUNT = 2
+const CAT_EARS_STYLE_LABELS = ['Ears', 'Ears + Whiskers']
+
+function CatEarsStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, CAT_EARS_STYLE_COUNT - 1))
+  )
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + CAT_EARS_STYLE_COUNT) % CAT_EARS_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) onSelect(newIndex)
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % CAT_EARS_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) onSelect(newIndex)
+  }
+
+  const showWhiskers = previewIndex === 1
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        <Avatar
-          username={user?.username}
-          avatarUrl={user?.avatarUrl}
-          size="lg"
-          noLink
-        />
-        {/* Left ear */}
-        <CatEarSvg
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
-          style={{
-            left: -2,
-            top: -9,
-            width: 22,
-            height: 16,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-            transform: 'rotate(-12deg)',
-          }}
-        />
-        {/* Right ear (mirrored) */}
-        <CatEarSvg
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[3deg]"
-          style={{
-            right: -2,
-            top: -9,
-            width: 22,
-            height: 16,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-            transform: 'rotate(12deg) scaleX(-1)',
-          }}
-        />
-      </div>
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          {showWhiskers && (
+            <>
+              {/* Light mode whiskers */}
+              <CatWhiskersSvg
+                className="absolute top-1/2 dark:hidden"
+                style={{
+                  left: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                  transform: 'translateY(-50%) scaleX(-1)',
+                }}
+              />
+              <CatWhiskersSvg
+                className="absolute top-1/2 dark:hidden"
+                style={{
+                  right: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                  transform: 'translateY(-50%)',
+                }}
+              />
+              {/* Dark mode whiskers — subtle white glow */}
+              <CatWhiskersSvg
+                className="absolute top-1/2 hidden dark:block"
+                style={{
+                  left: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                  transform: 'translateY(-50%) scaleX(-1)',
+                }}
+              />
+              <CatWhiskersSvg
+                className="absolute top-1/2 hidden dark:block"
+                style={{
+                  right: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                  transform: 'translateY(-50%)',
+                }}
+              />
+            </>
+          )}
+          <CatEarSvg
+            className="absolute origin-bottom rotate-[-52deg] transition-transform duration-300 group-hover:rotate-[-44deg]"
+            style={{
+              left: -5,
+              top: -2,
+              width: 24,
+              height: 14,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
+            }}
+          />
+          <CatEarSvg
+            className="absolute origin-bottom -scale-x-100 rotate-[52deg] transition-transform duration-300 group-hover:rotate-[44deg]"
+            style={{
+              right: -5,
+              top: -2,
+              width: 24,
+              height: 14,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
+            }}
+          />
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">
+        {CAT_EARS_STYLE_LABELS[previewIndex]}
+      </span>
     </div>
   )
 }
@@ -5091,7 +5184,18 @@ function ItemPreview(props: {
     case 'avatar-bunny-ears':
       return <BunnyEarsPreview user={user} />
     case 'avatar-cat-ears':
-      return <CatEarsPreview user={user} />
+      return (
+        <CatEarsStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview

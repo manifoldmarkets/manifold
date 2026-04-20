@@ -118,6 +118,8 @@ export type AchievementRequirementType =
   | 'streak' // currentBettingStreak
   | 'profit' // total profit
   | 'loss' // total loss (absolute value)
+  | 'yesProfit' // profit from contracts where user was net-long YES
+  | 'noProfit' // profit from contracts where user was net-long NO
   | 'volume' // total trading volume
   | 'donations' // $ donated to charity
   | 'referrals' // number of referrals
@@ -332,10 +334,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'hovercard-oracle',
-    hidden: true,
     name: 'Starfield Background',
     description: 'A mystical starfield background with twinkling stars',
-    price: 100000,
+    price: 6500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
@@ -384,7 +385,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-halo',
-    hidden: true,
     name: 'Halo',
     description: 'A golden halo for the most virtuous forecasters',
     price: 150000,
@@ -460,7 +460,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-devil-horns',
-    hidden: true,
     name: 'Devil Horns',
     description: 'Devilish horns for the market manipulator',
     price: 100000,
@@ -471,7 +470,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-angel-wings',
-    hidden: true,
     name: 'Angel Wings',
     description: 'Feathered wings flanking your avatar',
     price: 100000,
@@ -520,7 +518,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-bad-aura',
-    hidden: true,
     name: 'Bad Aura',
     description: 'A menacing crimson glow around your avatar',
     price: 25000,
@@ -690,39 +687,39 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-bull-horns',
     hidden: true,
     name: 'Bull Horns',
-    description: 'Mighty bull horns for the profitable trader',
+    description: 'Mighty horns for the bullish trader who profits going long YES',
     price: 100000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
     requirement: {
-      type: 'profit',
+      type: 'yesProfit',
       threshold: 100000,
-      description: 'Earn M$100k in total profit',
+      description: 'Earn M$100k profit on YES-side positions',
     },
   },
   {
     id: 'avatar-bear-ears',
     hidden: true,
     name: 'Bear Ears',
-    description: 'Fluffy bear ears for the seasoned trader who has weathered losses',
+    description: 'Fluffy ears for the bearish trader who profits going short NO',
     price: 100000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
     requirement: {
-      type: 'loss',
+      type: 'noProfit',
       threshold: 100000,
-      description: 'Lose M$100k in total (a badge of experience)',
+      description: 'Earn M$100k profit on NO-side positions',
     },
   },
   {
     id: 'avatar-cat-ears',
-    hidden: true,
     name: 'Cat Ears',
-    description: 'Cute pointed cat ears for the curious trader',
+    description:
+      'Cute cat ears - dynamic light/dark mode style. Toggle whiskers from the style picker',
     price: 30000,
     type: 'permanent-toggleable',
     limit: 'one-time',
