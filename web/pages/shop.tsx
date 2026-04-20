@@ -190,7 +190,13 @@ const filterItems = (items: ShopItem[], filter: FilterOption): ShopItem[] => {
   if (filter === 'merch') return [] // merch handled by separate section
   if (filter === 'ticket') return [] // tickets handled by separate section
   const allowedSlots = FILTER_CONFIG[filter].slots
-  return items.filter((item) => allowedSlots.includes(item.slot))
+  return items.filter((item) => {
+    // filterOverride takes precedence over slot-based categorization so that
+    // e.g. `slot: 'unique'` items (Halo, Angel Wings, Crown) can appear under
+    // Hats / Avatar instead of being dumped into Hovercard.
+    if (item.filterOverride) return item.filterOverride === filter
+    return allowedSlots.includes(item.slot)
+  })
 }
 
 // Check if a filter tab has any visible items (for dynamic tab visibility)
@@ -216,7 +222,10 @@ const hasVisibleItems = (
   const allowedSlots = FILTER_CONFIG[filter].slots
   return allItems.some(
     (item) =>
-      allowedSlots.includes(item.slot) &&
+      // filterOverride takes precedence over slot-based matching
+      (item.filterOverride
+        ? item.filterOverride === filter
+        : allowedSlots.includes(item.slot)) &&
       (visibleItemIds.has(item.id) || showHidden)
   )
 }
@@ -231,6 +240,12 @@ const CATEGORY_PILL_ORDER: FilterOption[] = [
 ]
 
 const getCategoryRank = (item: ShopItem): number => {
+  // filterOverride takes precedence so Halo / Crown / Angel Wings sort with
+  // their intended category instead of being pushed to Hovercard by slot.
+  if (item.filterOverride) {
+    const idx = CATEGORY_PILL_ORDER.indexOf(item.filterOverride)
+    if (idx >= 0) return idx
+  }
   for (let i = 0; i < CATEGORY_PILL_ORDER.length; i++) {
     if (FILTER_CONFIG[CATEGORY_PILL_ORDER[i]].slots.includes(item.slot)) {
       return i
@@ -270,6 +285,13 @@ export default function ShopPage() {
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
   const optimisticContext = useOptimisticEntitlements()
+
+  // Mark /shop as visited so the NEW badge on the sidebar + per-card stickers
+  // clear for this user. Fire-and-forget; next visit retries on failure.
+  useEffect(() => {
+    if (!user) return
+    api('me/update', { lastShopVisitTime: Date.now() }).catch(() => {})
+  }, [user?.id])
 
   const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
     'get-charity-giveaway',
@@ -348,6 +370,29 @@ export default function ShopPage() {
       .filter((e) => isEntitlementOwned(e))
       .map((e) => e.entitlementId)
   )
+
+  // "NEW to user" predicate. Falls back to createdTime so fresh signups don't
+  // see every historically-added item flagged. Suppresses NEW for items the
+  // user already owns (nothing "new to discover" there).
+  //
+  // lastShopVisit is snapshotted via useMemo([user?.id]) so that the value
+  // stays stable for the duration of the page visit — otherwise the WebSocket
+  // update triggered by our own me/update call below would collapse the NEW
+  // section mid-view, and stickers would vanish while the user is still
+  // looking. The snapshot only refreshes on login/logout.
+  //
+  // DO NOT add user.lastShopVisitTime or user.createdTime to the deps list —
+  // the eslint-auto-fix would reintroduce the mid-view collapse bug.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const lastShopVisit = useMemo(
+    () => user?.lastShopVisitTime ?? user?.createdTime ?? 0,
+    [user?.id]
+  )
+  const isItemNewToUser = (item: ShopItem): boolean =>
+    !!user && // logged-out visitors never see NEW (matches the sidebar badge)
+    !!item.visibleSinceTime &&
+    item.visibleSinceTime > lastShopVisit &&
+    !ownedItemIds.has(getEntitlementId(item))
 
   // Set of item IDs that are visible in the shop (for dynamic filter tab visibility)
   const visibleShopItemIds = new Set(
@@ -568,6 +613,85 @@ export default function ShopPage() {
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
 
+  // Filtered + sorted regular shop items (excludes tickets/merch/supporter).
+  // Computed once so we can split into the NEW section and the main grid.
+  const sortedRegularItems =
+    filterOption === 'ticket' || filterOption === 'merch'
+      ? []
+      : sortItems(
+          filterItems(
+            SHOP_ITEMS.filter(
+              (item) =>
+                !SUPPORTER_ENTITLEMENT_IDS.includes(
+                  item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+                ) &&
+                item.category !== 'merch' &&
+                item.category !== 'ticket' &&
+                (!item.hidden ||
+                  showHidden ||
+                  ownedItemIds.has(getEntitlementId(item)) ||
+                  (item.seasonalAvailability &&
+                    isSeasonalItemAvailable(item)))
+            ),
+            filterOption
+          ),
+          sortOption
+        )
+
+  // On the 'all' filter, pull NEW-to-user items out into a dedicated section
+  // above the main grid. On narrower filters, NEW items stay in place and
+  // get the per-card sticker only.
+  const newRegularItems =
+    filterOption === 'all'
+      ? sortedRegularItems.filter(isItemNewToUser)
+      : []
+  const mainRegularItems =
+    filterOption === 'all'
+      ? sortedRegularItems.filter((i) => !isItemNewToUser(i))
+      : sortedRegularItems
+
+  // Shared render so the NEW section + main grid handle items identically,
+  // including the charity-champion-trophy special case.
+  const renderShopItem = (item: ShopItem) => {
+    if (item.id === 'charity-champion-trophy') {
+      return (
+        <CharityChampionCard
+          key={item.id}
+          data={charityGiveawayData}
+          isLoading={isCharityLoading}
+          user={user}
+          entitlements={effectiveEntitlements}
+          isNew={isItemNewToUser(item)}
+          onEntitlementsChange={(newEntitlements) => {
+            setLocalEntitlements(newEntitlements)
+            refreshCharityData()
+          }}
+        />
+      )
+    }
+    const entitlementId = getEntitlementId(item)
+    const entitlement = effectiveEntitlements.find(
+      (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
+    )
+    return (
+      <ShopItemCard
+        key={item.id}
+        item={item}
+        user={user}
+        owned={ownedItemIds.has(entitlementId)}
+        entitlement={entitlement}
+        allEntitlements={effectiveEntitlements}
+        justPurchased={justPurchased === item.id}
+        isNew={isItemNewToUser(item)}
+        onPurchaseComplete={handlePurchaseComplete}
+        onToggleComplete={handleToggleComplete}
+        onMetadataChange={handleMetadataChange}
+        getToggleVersion={getToggleVersion}
+        localStreakBonus={localStreakBonus}
+      />
+    )
+  }
+
   return (
     <Page trackPageView="shop page" className="!col-span-7">
       <SEO
@@ -679,6 +803,21 @@ export default function ShopPage() {
           })}
         </Row>
 
+        {/* NEW section — only on the 'all' filter, when user has unseen items */}
+        {filterOption === 'all' && newRegularItems.length > 0 && (
+          <>
+            <Row className="mb-4 mt-2 items-center gap-2">
+              <span className="-rotate-[8deg] rounded-full bg-amber-400 px-2 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 dark:ring-amber-500/40">
+                NEW
+              </span>
+              <span className="text-lg font-semibold">Just added</span>
+            </Row>
+            <div className="mb-2 grid grid-cols-1 gap-4 pt-3 min-[480px]:grid-cols-2 lg:grid-cols-3">
+              {newRegularItems.map(renderShopItem)}
+            </div>
+          </>
+        )}
+
         {/* Tickets + shop items — hidden when merch filter is active */}
         {filterOption !== 'merch' && (
           <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
@@ -696,65 +835,9 @@ export default function ShopPage() {
                 ))}
 
             {/* Regular shop items — hidden when ticket filter is active.
-                The charity-champion-trophy item is included so it sorts
-                alongside other items, but rendered as <CharityChampionCard>. */}
-            {filterOption !== 'ticket' &&
-              sortItems(
-                filterItems(
-                  SHOP_ITEMS.filter(
-                    (item) =>
-                      !SUPPORTER_ENTITLEMENT_IDS.includes(
-                        item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-                      ) &&
-                      item.category !== 'merch' &&
-                      item.category !== 'ticket' &&
-                      (!item.hidden ||
-                        showHidden ||
-                        ownedItemIds.has(getEntitlementId(item)) ||
-                        (item.seasonalAvailability &&
-                          isSeasonalItemAvailable(item)))
-                  ),
-                  filterOption
-                ),
-                sortOption
-              ).map((item) => {
-                if (item.id === 'charity-champion-trophy') {
-                  return (
-                    <CharityChampionCard
-                      key={item.id}
-                      data={charityGiveawayData}
-                      isLoading={isCharityLoading}
-                      user={user}
-                      entitlements={effectiveEntitlements}
-                      onEntitlementsChange={(newEntitlements) => {
-                        setLocalEntitlements(newEntitlements)
-                        refreshCharityData()
-                      }}
-                    />
-                  )
-                }
-                const entitlementId = getEntitlementId(item)
-                const entitlement = effectiveEntitlements.find(
-                  (e) =>
-                    e.entitlementId === entitlementId && isEntitlementOwned(e)
-                )
-                return (
-                  <ShopItemCard
-                    key={item.id}
-                    item={item}
-                    user={user}
-                    owned={ownedItemIds.has(entitlementId)}
-                    entitlement={entitlement}
-                    allEntitlements={effectiveEntitlements}
-                    justPurchased={justPurchased === item.id}
-                    onPurchaseComplete={handlePurchaseComplete}
-                    onToggleComplete={handleToggleComplete}
-                    onMetadataChange={handleMetadataChange}
-                    getToggleVersion={getToggleVersion}
-                    localStreakBonus={localStreakBonus}
-                  />
-                )
-              })}
+                On 'all' filter, NEW items are already rendered above, so
+                mainRegularItems has them filtered out. */}
+            {filterOption !== 'ticket' && mainRegularItems.map(renderShopItem)}
           </div>
         )}
 
@@ -5367,6 +5450,7 @@ function ShopItemCard(props: {
   entitlement?: UserEntitlement
   allEntitlements?: UserEntitlement[]
   justPurchased?: boolean
+  isNew?: boolean
   onPurchaseComplete: (itemId: string, entitlements?: UserEntitlement[]) => void
   onToggleComplete: (
     itemId: string,
@@ -5391,6 +5475,7 @@ function ShopItemCard(props: {
     entitlement,
     allEntitlements,
     justPurchased,
+    isNew,
     onPurchaseComplete,
     onToggleComplete,
     onMetadataChange,
@@ -5533,6 +5618,20 @@ function ShopItemCard(props: {
               'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
           )}
         >
+          {/* NEW sticker — overflows above the card, sits center-ish, tilted */}
+          {isNew && (
+            <span
+              className={clsx(
+                'pointer-events-none absolute left-1/2 top-0 z-20',
+                '-translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
+                'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md',
+                'ring-2 ring-amber-300/70 dark:ring-amber-500/40'
+              )}
+            >
+              NEW
+            </span>
+          )}
+
           {/* Loading overlay during purchase */}
           {purchasing && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/80">

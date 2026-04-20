@@ -18,6 +18,7 @@ import { useState } from 'react'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 import { buildArray } from 'common/util/array'
+import { SHOP_ITEMS } from 'common/shop/items'
 import { DAY_MS, isAprilFools } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import Link from 'next/link'
@@ -45,11 +46,15 @@ import { NavItem, SidebarItem } from './sidebar-item'
 
 export const SPEND_MANA_ENABLED = true
 
-// Set to true to show a "NEW" badge on the Shop nav item
-const SHOW_SHOP_NEW_BADGE = true
-
 // Set to true to show a "Manifest" badge on the Shop nav item (early-bird tickets)
 const SHOW_SHOP_MANIFEST_BADGE = false
+
+// Newest visibleSinceTime across all visible items. The sidebar NEW badge
+// fires when this exceeds the current user's lastShopVisitTime.
+const NEWEST_SHOP_ITEM_TIME = Math.max(
+  0,
+  ...SHOP_ITEMS.filter((i) => !i.hidden).map((i) => i.visibleSinceTime ?? 0)
+)
 
 const BADGE_COLORS = [
   'bg-red-500 text-white',
@@ -140,16 +145,26 @@ export default function Sidebar(props: {
 
   const isLiveTV = useTVIsLive(10)
 
+  // Per-user NEW badge: shows once user data is loaded AND any visible shop
+  // item became visible since the user last visited /shop. Default-to-hide
+  // while user is loading prevents the badge from flashing in then out.
+  const lastShopVisit =
+    user?.lastShopVisitTime ?? user?.createdTime ?? 0
+  const showShopNewBadge =
+    !!user && NEWEST_SHOP_ITEM_TIME > lastShopVisit
+
   const navOptions = isMobile
     ? getMobileNav(!!user, {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
+        showShopNewBadge,
       })
     : getDesktopNav(!!user, () => setIsModalOpen(true), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
+        showShopNewBadge,
       })
 
   const bottomNavOptions = bottomNav(
@@ -243,6 +258,7 @@ const getDesktopNav = (
   openDownloadApp: () => void,
   options: {
     isNewUser: boolean
+    showShopNewBadge: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
   }
@@ -279,10 +295,10 @@ const getDesktopNav = (
         href: '/shop',
         icon: LuGem,
         children:
-          SHOW_SHOP_NEW_BADGE || SHOW_SHOP_MANIFEST_BADGE ? (
+          options.showShopNewBadge || SHOW_SHOP_MANIFEST_BADGE ? (
             <>
               Shop
-              {SHOW_SHOP_NEW_BADGE && (
+              {options.showShopNewBadge && (
                 <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
                   NEW
                 </span>
@@ -314,11 +330,12 @@ const getMobileNav = (
   loggedIn: boolean,
   options: {
     isNewUser: boolean
+    showShopNewBadge: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
   }
 ) => {
-  const { isAdminOrMod, isLiveTV } = options
+  const { isAdminOrMod, isLiveTV, showShopNewBadge } = options
 
   return buildArray<NavItem>(
     {
@@ -358,10 +375,10 @@ const getMobileNav = (
       href: '/shop',
       icon: LuGem,
       children:
-        SHOW_SHOP_NEW_BADGE || SHOW_SHOP_MANIFEST_BADGE ? (
+        showShopNewBadge || SHOW_SHOP_MANIFEST_BADGE ? (
           <>
             Shop
-            {SHOW_SHOP_NEW_BADGE && (
+            {showShopNewBadge && (
               <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
                 NEW
               </span>

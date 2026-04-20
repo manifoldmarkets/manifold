@@ -98,6 +98,7 @@ export type User = {
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   seenStreakModal?: boolean
+  lastShopVisitTime?: number // timestamp of user's most recent /shop visit; drives the NEW badge dismissal
   /** @deprecated Use user_bans table instead */
   isBannedFromPosting?: boolean
   /** @deprecated Use user_bans table instead */

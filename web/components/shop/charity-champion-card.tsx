@@ -23,6 +23,7 @@ export function CharityChampionCard(props: {
   user?: User | null
   className?: string
   entitlements?: UserEntitlement[]
+  isNew?: boolean
   onEntitlementsChange?: (entitlements: UserEntitlement[]) => void
 }) {
   const {
@@ -31,6 +32,7 @@ export function CharityChampionCard(props: {
     user,
     className,
     entitlements,
+    isNew,
     onEntitlementsChange,
   } = props
   const [claiming, setClaiming] = useState(false)
@@ -128,16 +130,30 @@ export function CharityChampionCard(props: {
   }
 
   return (
-    <Card
-      className={clsx(
-        'relative flex flex-col gap-2 overflow-hidden p-4 transition-all duration-200',
-        'dark:via-yellow-900/15 bg-gradient-to-br from-amber-50/50 via-yellow-50/30 to-orange-50/50 dark:from-amber-900/20 dark:to-orange-900/20',
-        'hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:ring-2 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
-        className
+    <div className="relative">
+      {/* NEW sticker — sibling of Card so it can overflow the card's clipping */}
+      {isNew && (
+        <span
+          className={clsx(
+            'pointer-events-none absolute left-1/2 top-0 z-20',
+            '-translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
+            'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md',
+            'ring-2 ring-amber-300/70 dark:ring-amber-500/40'
+          )}
+        >
+          NEW
+        </span>
       )}
-    >
-      {/* Floating trophy background decoration */}
-      <ShopCardFloatingTrophy />
+      <Card
+        className={clsx(
+          'relative flex flex-col gap-2 overflow-hidden p-4 transition-all duration-200',
+          'dark:via-yellow-900/15 bg-gradient-to-br from-amber-50/50 via-yellow-50/30 to-orange-50/50 dark:from-amber-900/20 dark:to-orange-900/20',
+          'hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:ring-2 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
+          className
+        )}
+      >
+        {/* Floating trophy background decoration */}
+        <ShopCardFloatingTrophy />
 
       {/* Header */}
       <Row className="items-center gap-2">
@@ -263,7 +279,8 @@ export function CharityChampionCard(props: {
           </div>
         )}
       </Col>
-    </Card>
+      </Card>
+    </div>
   )
 }
 

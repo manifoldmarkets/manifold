@@ -113,6 +113,15 @@ export const getEntitlementIdsForCategory = (
   )
 }
 
+// Filter-pill category an item should appear under, overriding slot-based
+// categorization. Applies only to the 5 standard pills (not all/merch/ticket/seasonal).
+export type ShopItemFilterCategory =
+  | 'hats'
+  | 'avatar'
+  | 'hovercard'
+  | 'buttons'
+  | 'other'
+
 // Achievement requirement types
 export type AchievementRequirementType =
   | 'streak' // currentBettingStreak
@@ -180,6 +189,13 @@ export type ShopItem = {
   maxStock?: number
   // If true, item is shown in UI but not purchasable (for "coming soon" states)
   comingSoon?: boolean
+  // Timestamp when this item became user-visible. Drives the "NEW" badge.
+  // Set on add or when unhiding an item; leave undefined to skip the badge.
+  visibleSinceTime?: number
+  // Force the item into a specific filter-pill category, overriding the
+  // default slot-based mapping (e.g. 'unique'-slot items that should appear
+  // under Hats or Avatar instead of Hovercard).
+  filterOverride?: ShopItemFilterCategory
   // Merch-specific fields
   variants?: MerchVariant[]
   // Image carousel for merch cards: [{label, url}, ...]
@@ -248,6 +264,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'unique', // Combines with everything
+    filterOverride: 'hats',
   },
   {
     id: 'avatar-graduation-cap',
@@ -341,6 +358,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'hovercard',
     slot: 'hovercard-background',
+    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
   },
   {
     id: 'hovercard-trading-floor',
@@ -392,6 +410,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'unique',
+    filterOverride: 'hats',
+    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-propeller-hat',
@@ -467,6 +487,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
+    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-angel-wings',
@@ -477,6 +498,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-border',
     slot: 'unique', // Combines with everything
+    filterOverride: 'avatar',
+    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-mana-aura',
@@ -725,6 +748,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
+    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
   },
   // Seasonal items - only available during their season
   {
