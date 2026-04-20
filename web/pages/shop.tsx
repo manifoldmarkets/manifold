@@ -807,7 +807,14 @@ export default function ShopPage() {
         {filterOption === 'all' && newRegularItems.length > 0 && (
           <>
             <Row className="mb-4 mt-2 items-center gap-2">
-              <span className="transform-gpu -rotate-[8deg] rounded-full bg-amber-400 px-2 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 antialiased dark:ring-amber-500/40">
+              <span
+                className="flex h-5 w-12 items-center justify-center rounded-full bg-amber-400 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 antialiased dark:ring-amber-500/40"
+                style={{
+                  transform: 'rotate(-8deg)',
+                  backfaceVisibility: 'hidden',
+                  willChange: 'transform',
+                }}
+              >
                 NEW
               </span>
               <span className="text-lg font-semibold">Just added</span>
@@ -5619,15 +5626,22 @@ function ShopItemCard(props: {
               'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
           )}
         >
-          {/* NEW sticker — overflows above the card, sits center-ish, tilted */}
+          {/* NEW sticker — overflows above the card, sits center-ish, tilted.
+              Fixed even-pixel box + composite transform so -50% lands on whole
+              pixels and Windows Chrome keeps the text crisp under rotation. */}
           {isNew && (
             <span
               className={clsx(
                 'pointer-events-none absolute left-1/2 top-0 z-20',
-                'transform-gpu -translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
-                'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md antialiased',
+                'flex h-5 w-14 items-center justify-center',
+                'rounded-full bg-amber-400 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md antialiased',
                 'ring-2 ring-amber-300/70 dark:ring-amber-500/40'
               )}
+              style={{
+                transform: 'translate(-50%, -50%) rotate(-8deg)',
+                backfaceVisibility: 'hidden',
+                willChange: 'transform',
+              }}
             >
               NEW
             </span>

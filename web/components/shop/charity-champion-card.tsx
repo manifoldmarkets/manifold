@@ -131,15 +131,22 @@ export function CharityChampionCard(props: {
 
   return (
     <div className="relative h-full">
-      {/* NEW sticker — sibling of Card so it can overflow the card's clipping */}
+      {/* NEW sticker — sibling of Card so it can overflow the card's clipping.
+          Fixed even-pixel box + composite transform so -50% lands on whole
+          pixels and Windows Chrome keeps the text crisp under rotation. */}
       {isNew && (
         <span
           className={clsx(
             'pointer-events-none absolute left-1/2 top-0 z-20',
-            'transform-gpu -translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
-            'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md antialiased',
+            'flex h-5 w-14 items-center justify-center',
+            'rounded-full bg-amber-400 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md antialiased',
             'ring-2 ring-amber-300/70 dark:ring-amber-500/40'
           )}
+          style={{
+            transform: 'translate(-50%, -50%) rotate(-8deg)',
+            backfaceVisibility: 'hidden',
+            willChange: 'transform',
+          }}
         >
           NEW
         </span>
