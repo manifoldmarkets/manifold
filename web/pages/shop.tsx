@@ -103,6 +103,7 @@ import {
 } from 'web/components/shop/charity-giveaway-card'
 import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
 import {
+  ENDED_PILL,
   GiveawayPromoCard,
   promoStatSizeClass,
 } from 'web/components/shop/giveaway-promo-card'
@@ -2883,33 +2884,29 @@ function PrizeDrawingCard() {
     return (
       <GiveawayPromoCard
         href="/prize"
-        gradientClassName="from-amber-400 via-yellow-400 to-orange-400"
-        hoverShadowClassName="hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30"
-        icon={<FaGift className="h-5 w-5 text-amber-500" />}
+        gradientClassName="from-teal-400 via-cyan-400 to-blue-500"
+        hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+        icon={<FaGift className="h-5 w-5 text-teal-500" />}
         title="Prize Drawing"
-        pill={{
-          text: 'ENDED',
-          className:
-            'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
-        }}
+        pill={ENDED_PILL}
         stats={[
           {
             value: `$${totalPrizePool.toLocaleString()}`,
             label: 'Prize Pool',
-            valueClassName: 'text-2xl font-bold text-amber-600',
+            valueClassName: 'text-2xl font-bold text-teal-600',
           },
           {
             value: formatEntries(totalTickets),
             label: 'Entries',
             valueClassName: clsx(
-              'font-bold text-amber-600',
+              'font-bold text-blue-600',
               promoStatSizeClass(totalTickets, true)
             ),
           },
         ]}
         message="Drawing has ended. Winner will be announced soon!"
         ctaText="View Results →"
-        ctaColor="amber"
+        ctaColor="indigo"
       />
     )
   }

@@ -52,6 +52,15 @@ export function promoStatSizeClass(
     : 'text-2xl'
 }
 
+/** Shared neutral pill used across every card in the ended/winner-selected
+ *  state. Kept theme-agnostic so ENDED reads consistently regardless of
+ *  which card's gradient it sits on. */
+export const ENDED_PILL = {
+  text: 'ENDED',
+  className:
+    'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+}
+
 /** Shared shell for the Prize Drawing / Charity Giveaway promo tiles.
  *  Handles the gradient border, header, stats row, optional message, and CTA.
  *  Per-card state (live vs ended) is expressed purely through the props. */

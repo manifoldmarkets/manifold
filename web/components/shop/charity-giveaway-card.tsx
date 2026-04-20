@@ -6,7 +6,11 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { charities } from 'common/charity'
-import { GiveawayPromoCard, promoStatSizeClass } from './giveaway-promo-card'
+import {
+  ENDED_PILL,
+  GiveawayPromoCard,
+  promoStatSizeClass,
+} from './giveaway-promo-card'
 
 // Shared entry formatter: always whole-number entries for a cleaner display.
 // Sub-1 counts still round to 0 (they shouldn't appear in prod since partial
@@ -217,72 +221,77 @@ export function CharityGiveawayCard(props: {
       <GiveawayPromoCard
         href="/charity"
         className={className}
-        gradientClassName="from-amber-400 via-yellow-400 to-orange-400"
-        hoverShadowClassName="hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30"
-        icon={<FaGift className="h-5 w-5 text-amber-500" />}
+        gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
+        hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+        icon={<FaGift className="h-5 w-5 text-emerald-500" />}
         title="Charity Giveaway"
-        pill={{
-          text: 'ENDED',
-          className:
-            'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
-        }}
+        pill={ENDED_PILL}
         stats={[
           {
             value: prizeDisplay,
             label: 'Prize Pool',
-            valueClassName: 'text-2xl font-bold text-amber-600',
+            valueClassName: 'text-2xl font-bold text-emerald-600',
           },
           {
             value: formatEntries(totalTickets),
             label: 'Entries',
             valueClassName: clsx(
-              'font-bold text-amber-600',
+              'font-bold text-cyan-600',
               promoStatSizeClass(totalTickets, true)
             ),
           },
         ]}
         message="Giveaway has ended. Winner will be drawn soon!"
         ctaText="View Results →"
-        ctaColor="amber"
+        ctaColor="green"
       />
     )
   }
 
-  // Winner selected — custom body with charity name + donated amount in place
-  // of the standard stats row.
+  // Winner selected — winner info on the left, Entries stat on the right so
+  // the card stays visually balanced next to the Prize Drawing's 2-stat card.
   return (
     <GiveawayPromoCard
       href="/charity"
       className={className}
-      gradientClassName="from-amber-400 via-yellow-400 to-orange-400"
-      hoverShadowClassName="hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30"
-      icon={<FaHeart className="h-5 w-5 text-amber-500" />}
+      gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
+      hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+      icon={<FaHeart className="h-5 w-5 text-emerald-500" />}
       title="Charity Giveaway"
-      pill={{
-        text: 'ENDED',
-        className:
-          'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
-      }}
+      pill={ENDED_PILL}
       body={
-        <Col className="mb-3">
-          <div className="font-semibold text-amber-600">
-            {winningCharityInfo?.name ?? winningCharity}
-          </div>
-          <Row className="items-baseline gap-2">
-            <div className="text-2xl font-bold text-amber-600">
-              {prizeDisplay}
+        <Row className="mb-3 items-start gap-4">
+          <Col className="flex-1">
+            <div className="font-semibold text-emerald-600">
+              {winningCharityInfo?.name ?? winningCharity}
             </div>
-            <div className="text-ink-500 text-xs">donated</div>
-          </Row>
-          {winner && (
-            <div className="text-ink-500 mt-1 text-sm">
-              Winning entry by @{winner.username}
+            <Row className="items-baseline gap-2">
+              <div className="text-2xl font-bold text-emerald-600">
+                {prizeDisplay}
+              </div>
+              <div className="text-ink-500 text-xs">donated</div>
+            </Row>
+            {winner && (
+              <div className="text-ink-500 mt-1 text-sm">
+                Winning entry by @{winner.username}
+              </div>
+            )}
+          </Col>
+          <Col className="shrink-0 text-center">
+            <div
+              className={clsx(
+                'font-bold text-cyan-600',
+                promoStatSizeClass(totalTickets, true)
+              )}
+            >
+              {formatEntries(totalTickets)}
             </div>
-          )}
-        </Col>
+            <div className="text-ink-500 text-xs">Entries</div>
+          </Col>
+        </Row>
       }
       ctaText="See Results & Next Giveaway →"
-      ctaColor="amber"
+      ctaColor="green"
     />
   )
 }
