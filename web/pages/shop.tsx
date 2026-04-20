@@ -1139,8 +1139,16 @@ function TicketItemCard(props: {
                     ticket must match your Manifold email.
                   </li>
                   <li>
-                    Apply it at checkout on the Manifest ticket page for 100%
-                    off.
+                    Apply it at checkout on the{' '}
+                    <a
+                      href="https://manifest.is/#tickets"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold underline"
+                    >
+                      Manifest ticket page
+                    </a>{' '}
+                    for 100% off.
                   </li>
                   <li>Save this code now — it will not be shown again.</li>
                 </ul>

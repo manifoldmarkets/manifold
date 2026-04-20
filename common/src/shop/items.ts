@@ -387,7 +387,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-halo',
     name: 'Halo',
     description: 'A golden halo for the most virtuous forecasters',
-    price: 150000,
+    price: 100000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -462,7 +462,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-devil-horns',
     name: 'Devil Horns',
     description: 'Devilish horns for the market manipulator',
-    price: 100000,
+    price: 45000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -472,7 +472,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-angel-wings',
     name: 'Angel Wings',
     description: 'Feathered wings flanking your avatar',
-    price: 100000,
+    price: 65000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
@@ -641,7 +641,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   // Blue cap — MANA branded cap in blue with style variants
   {
     id: 'avatar-blue-cap',
-    hidden: true,
     name: 'Blue Cap',
     description: 'A sleek blue MANA cap with dark stitch accents',
     price: 2500,
@@ -653,7 +652,6 @@ export const SHOP_ITEMS: ShopItem[] = [
   // Team items - mutually exclusive (can only equip one team's items)
   {
     id: 'avatar-team-red-hat',
-    hidden: true,
     name: 'Red Cap',
     description: 'Show your allegiance to Team Red',
     price: 2500,
@@ -664,6 +662,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-team-green-hat',
+    hidden: true,
     name: 'Green Cap',
     description: 'Show your allegiance to Team Green',
     price: 2500,
@@ -674,6 +673,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-black-cap',
+    hidden: true,
     name: 'Black Cap',
     description: 'A sleek black MANA cap with panel seams',
     price: 2500,
