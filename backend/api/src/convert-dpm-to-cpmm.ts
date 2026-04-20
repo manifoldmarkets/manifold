@@ -1,6 +1,5 @@
 import { groupBy } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { log } from 'shared/utils'
@@ -30,8 +29,6 @@ export const convertDpmToCpmm: APIHandler<'convert-dpm-to-cpmm'> = async (
 }
 
 const convertDpmToCpmmMain = async (contractId: string, userId: string) => {
-  const pg = createSupabaseDirectClient()
-
   const result = await runTransactionWithRetries(async (tx) => {
     const contractRow = await tx.oneOrNone(
       `select * from contracts where id = $1 for update`,
