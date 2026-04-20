@@ -343,6 +343,11 @@ export const Avatar = memo(
             <LuSprout className="h-4 w-4 text-green-500" />
           </div>
         )}
+        {/* Avatar accessory — rendered BEFORE hats so things like the
+            Disguise (face-covering) sit below a hat rather than on top. */}
+        {activeAccessory && (
+          <AvatarAccessory accessory={activeAccessory} size={size} />
+        )}
         {/* Avatar overlay (hat) - sandwiched between halo halves */}
         {activeOverlay && (
           <AvatarOverlay
@@ -383,10 +388,6 @@ export const Avatar = memo(
             size={size}
             haloHalf="front"
           />
-        )}
-        {/* Avatar accessory */}
-        {activeAccessory && (
-          <AvatarAccessory accessory={activeAccessory} size={size} />
         )}
       </div>
     )
@@ -2405,15 +2406,19 @@ function AvatarAccessory(props: {
           style={{
             top:
               size === '2xs' || size === 'xs'
-                ? 1
+                ? -1
                 : size === 'sm'
-                ? 2
+                ? -1
                 : size === 'xl'
-                ? 8
-                : 4,
+                ? 3
+                : 0,
             width: disguiseSize,
             height: disguiseSize * 0.68,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            // Subtle white outline (works in both modes — barely visible on
+            // light bg, just enough to separate the dark frames from dark avatars)
+            // stacked on top of the existing soft drop shadow.
+            filter:
+              'drop-shadow(0 0 0.5px rgba(255,255,255,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         />
       )

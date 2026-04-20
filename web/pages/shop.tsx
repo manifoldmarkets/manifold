@@ -807,7 +807,7 @@ export default function ShopPage() {
         {filterOption === 'all' && newRegularItems.length > 0 && (
           <>
             <Row className="mb-4 mt-2 items-center gap-2">
-              <span className="-rotate-[8deg] rounded-full bg-amber-400 px-2 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 dark:ring-amber-500/40">
+              <span className="transform-gpu -rotate-[8deg] rounded-full bg-amber-400 px-2 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-sm ring-2 ring-amber-300/70 antialiased dark:ring-amber-500/40">
                 NEW
               </span>
               <span className="text-lg font-semibold">Just added</span>
@@ -3313,10 +3313,11 @@ function DisguisePreview(props: { user: User | null | undefined }) {
         <DisguiseSvg
           className="absolute left-1/2 -translate-x-1/2"
           style={{
-            top: 4,
+            top: 0,
             width: 54,
             height: 37,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            filter:
+              'drop-shadow(0 0 0.5px rgba(255,255,255,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
           }}
         />
       </div>
@@ -5623,8 +5624,8 @@ function ShopItemCard(props: {
             <span
               className={clsx(
                 'pointer-events-none absolute left-1/2 top-0 z-20',
-                '-translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
-                'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md',
+                'transform-gpu -translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
+                'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md antialiased',
                 'ring-2 ring-amber-300/70 dark:ring-amber-500/40'
               )}
             >

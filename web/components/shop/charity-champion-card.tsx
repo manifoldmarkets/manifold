@@ -136,8 +136,8 @@ export function CharityChampionCard(props: {
         <span
           className={clsx(
             'pointer-events-none absolute left-1/2 top-0 z-20',
-            '-translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
-            'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md',
+            'transform-gpu -translate-x-1/2 -translate-y-1/2 -rotate-[8deg]',
+            'rounded-full bg-amber-400 px-3 py-0.5 text-xs font-extrabold uppercase tracking-wider text-amber-900 shadow-md antialiased',
             'ring-2 ring-amber-300/70 dark:ring-amber-500/40'
           )}
         >
