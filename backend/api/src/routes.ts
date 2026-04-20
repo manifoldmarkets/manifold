@@ -150,6 +150,7 @@ import {
 } from './search-contracts'
 import { searchGroups, searchMyGroups } from './search-groups'
 import { searchUsers } from './search-users'
+import { rebalancePosition } from './rebalance-position'
 import { sellShares } from './sell-shares'
 import { setnews } from './set-news'
 import { superBanUser } from './super-ban-user'
@@ -253,6 +254,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
+  'market/:contractId/rebalance': rebalancePosition,
   bets: getBets,
   'bet-points': getBetPointsBetween,
   'get-bettors-from-bet-ids': getBettorsFromBetIds,
