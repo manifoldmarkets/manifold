@@ -3776,7 +3776,6 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
         />
         {/* Left ear */}
         <BearEarSvg
-          side="left"
           className="absolute origin-bottom rotate-[-25deg] transition-transform duration-300 group-hover:rotate-[-20deg]"
           style={{
             left: -1,
@@ -3788,7 +3787,6 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
         />
         {/* Right ear */}
         <BearEarSvg
-          side="right"
           className="absolute origin-bottom -scale-x-100 rotate-[25deg] transition-transform duration-300 group-hover:rotate-[20deg]"
           style={{
             right: -1,

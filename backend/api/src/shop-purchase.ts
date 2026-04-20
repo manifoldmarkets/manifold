@@ -66,7 +66,9 @@ async function checkItemRequirement(
       break
     }
     case 'yesProfit': {
-      // Profit from contracts where the user has net-bought YES (sum of YES bet amounts > sum of NO).
+      // Profit from contracts where the user has net-bought YES.
+      // Excludes redemption bets (sells) so we measure conviction on entry,
+      // not net current position.
       const row = await pg.oneOrNone<{ profit: number }>(
         `WITH user_direction AS (
            SELECT contract_id,
@@ -74,6 +76,7 @@ async function checkItemRequirement(
                   SUM(CASE WHEN outcome = 'NO'  THEN amount ELSE 0 END) AS net_yes
              FROM contract_bets
             WHERE user_id = $1
+              AND is_redemption = false
             GROUP BY contract_id
          )
          SELECT COALESCE(SUM(ucm.profit), 0) AS profit
@@ -91,6 +94,8 @@ async function checkItemRequirement(
     }
     case 'noProfit': {
       // Profit from contracts where the user has net-bought NO.
+      // Excludes redemption bets (sells) so we measure conviction on entry,
+      // not net current position.
       const row = await pg.oneOrNone<{ profit: number }>(
         `WITH user_direction AS (
            SELECT contract_id,
@@ -98,6 +103,7 @@ async function checkItemRequirement(
                   SUM(CASE WHEN outcome = 'NO'  THEN amount ELSE 0 END) AS net_yes
              FROM contract_bets
             WHERE user_id = $1
+              AND is_redemption = false
             GROUP BY contract_id
          )
          SELECT COALESCE(SUM(ucm.profit), 0) AS profit

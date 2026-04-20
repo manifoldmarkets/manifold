@@ -2090,7 +2090,6 @@ function AvatarOverlay(props: {
         return (
           <>
             <BearEarSvg
-              side="left"
               className={clsx(
                 bearEarClasses,
                 'rotate-[-25deg]',
@@ -2116,7 +2115,6 @@ function AvatarOverlay(props: {
               }}
             />
             <BearEarSvg
-              side="right"
               className={clsx(
                 bearEarClasses,
                 '-scale-x-100 rotate-[25deg]',

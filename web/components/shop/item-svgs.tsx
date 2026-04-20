@@ -505,9 +505,7 @@ export function BullHornSvg(props: SvgProps) {
  *  "left ear" orientation: outer-bottom corner low (sits down on the avatar
  *  edge), inner-bottom corner high (clears the avatar circle), base concave
  *  to hug the curve. Apply `scaleX(-1)` for the right ear. */
-export function BearEarSvg(
-  props: SvgProps & { side?: 'left' | 'right' }
-) {
+export function BearEarSvg(props: SvgProps) {
   const uid = useId().replace(/:/g, '')
   return (
     <svg className={props.className} style={props.style} viewBox="0 0 24 24">
