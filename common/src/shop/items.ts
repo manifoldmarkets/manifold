@@ -358,7 +358,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'hovercard',
     slot: 'hovercard-background',
-    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'hovercard-trading-floor',
@@ -411,7 +411,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'avatar-overlay',
     slot: 'unique',
     filterOverride: 'hats',
-    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-propeller-hat',
@@ -487,7 +487,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
-    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-angel-wings',
@@ -499,7 +499,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'avatar-border',
     slot: 'unique', // Combines with everything
     filterOverride: 'avatar',
-    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-mana-aura',
@@ -541,13 +541,14 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-bad-aura',
-    name: 'Bad Aura',
+    name: 'Evil Aura',
     description: 'A menacing crimson glow around your avatar',
     price: 25000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
     slot: 'profile-border',
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   // Avatar Accessories
   {
@@ -748,7 +749,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
-    visibleSinceTime: new Date('2026-04-20T18:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   // Seasonal items - only available during their season
   {

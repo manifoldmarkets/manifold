@@ -47,7 +47,7 @@ import { NavItem, SidebarItem } from './sidebar-item'
 export const SPEND_MANA_ENABLED = true
 
 // Set to true to show a "Manifest" badge on the Shop nav item (early-bird tickets)
-const SHOW_SHOP_MANIFEST_BADGE = false
+const SHOW_SHOP_MANIFEST_BADGE = true
 
 // Newest visibleSinceTime across all visible items. The sidebar NEW badge
 // fires when this exceeds the current user's lastShopVisitTime.
