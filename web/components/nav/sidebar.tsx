@@ -46,10 +46,10 @@ import { NavItem, SidebarItem } from './sidebar-item'
 export const SPEND_MANA_ENABLED = true
 
 // Set to true to show a "NEW" badge on the Shop nav item
-const SHOW_SHOP_NEW_BADGE = false
+const SHOW_SHOP_NEW_BADGE = true
 
 // Set to true to show a "Manifest" badge on the Shop nav item (early-bird tickets)
-const SHOW_SHOP_MANIFEST_BADGE = true
+const SHOW_SHOP_MANIFEST_BADGE = false
 
 const BADGE_COLORS = [
   'bg-red-500 text-white',
@@ -278,21 +278,22 @@ const getDesktopNav = (
         name: 'Shop',
         href: '/shop',
         icon: LuGem,
-        children: SHOW_SHOP_MANIFEST_BADGE ? (
-          <>
-            Shop
-            <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-              Manifest
-            </span>
-          </>
-        ) : SHOW_SHOP_NEW_BADGE ? (
-          <>
-            Shop
-            <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
-              NEW
-            </span>
-          </>
-        ) : undefined,
+        children:
+          SHOW_SHOP_NEW_BADGE || SHOW_SHOP_MANIFEST_BADGE ? (
+            <>
+              Shop
+              {SHOW_SHOP_NEW_BADGE && (
+                <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                  NEW
+                </span>
+              )}
+              {SHOW_SHOP_MANIFEST_BADGE && (
+                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
+                  Manifest
+                </span>
+              )}
+            </>
+          ) : undefined,
       },
       options.isAdminOrMod && {
         name: 'Reports',
@@ -356,21 +357,22 @@ const getMobileNav = (
       name: 'Shop',
       href: '/shop',
       icon: LuGem,
-      children: SHOW_SHOP_MANIFEST_BADGE ? (
-        <>
-          Shop
-          <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-            Manifest
-          </span>
-        </>
-      ) : SHOW_SHOP_NEW_BADGE ? (
-        <>
-          Shop
-          <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
-            NEW
-          </span>
-        </>
-      ) : undefined,
+      children:
+        SHOW_SHOP_NEW_BADGE || SHOW_SHOP_MANIFEST_BADGE ? (
+          <>
+            Shop
+            {SHOW_SHOP_NEW_BADGE && (
+              <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                NEW
+              </span>
+            )}
+            {SHOW_SHOP_MANIFEST_BADGE && (
+              <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
+                Manifest
+              </span>
+            )}
+          </>
+        ) : undefined,
     }
   )
 }

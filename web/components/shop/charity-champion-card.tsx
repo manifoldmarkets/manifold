@@ -40,6 +40,8 @@ export function CharityChampionCard(props: {
   const champion = data?.champion
   const trophyHolder = data?.trophyHolder
   const previousTrophyHolder = data?.previousTrophyHolder
+  const topUsers = data?.topUsers
+  const yourEntry = data?.yourEntry
 
   // Show loading skeleton while data is being fetched
   if (isLoading) {
@@ -171,12 +173,15 @@ export function CharityChampionCard(props: {
                     }}
                   />
                 </Row>
+                <span className="text-xs font-semibold text-amber-600">
+                  {Math.floor(trophyHolder.totalTickets).toLocaleString()}{' '}
+                  {Math.floor(trophyHolder.totalTickets) === 1
+                    ? 'entry'
+                    : 'entries'}
+                </span>
               </Col>
-              <span className="shrink-0 text-sm font-bold text-amber-600">
-                {Math.floor(trophyHolder.totalTickets).toLocaleString()}
-              </span>
             </Row>
-            <div className="text-ink-400 mt-1 text-xs">
+            <div className="text-ink-400 mt-1 whitespace-nowrap text-xs">
               Held since <RelativeTimestamp time={trophyHolder.claimedTime} />
             </div>
             {previousTrophyHolder && (
@@ -202,9 +207,18 @@ export function CharityChampionCard(props: {
         )}
       </div>
 
+      {/* Top buyers leaderboard */}
+      {topUsers && topUsers.length > 0 && (
+        <MiniLeaderboard
+          topUsers={topUsers}
+          yourEntry={yourEntry}
+          user={user}
+        />
+      )}
+
       {/* Description */}
       <p className="text-ink-500 text-xs">
-        Reserved for the #1 ticket buyer in the charity raffle.
+        Reserved for the person with the most entries in the charity giveaway.
       </p>
 
       {/* Footer */}
@@ -244,12 +258,94 @@ export function CharityChampionCard(props: {
             <span>
               {champion
                 ? `Outbid @${champion.username} to claim`
-                : 'Buy raffle tickets to claim'}
+                : 'Earn entries in the giveaway to claim'}
             </span>
           </div>
         )}
       </Col>
     </Card>
+  )
+}
+
+function MiniLeaderboard(props: {
+  topUsers: NonNullable<CharityGiveawayData['topUsers']>
+  yourEntry?: CharityGiveawayData['yourEntry']
+  user?: User | null
+}) {
+  const { topUsers, yourEntry, user } = props
+
+  // Always show top 3, then show the user's row below if they're not already visible
+  const visibleUsers = topUsers.slice(0, 3)
+  const userAlreadyShown = user && visibleUsers.some((u) => u.id === user.id)
+  const showYourRow = user && yourEntry && !userAlreadyShown
+
+  return (
+    <Col className="gap-0.5 rounded-lg bg-amber-50/80 px-3 py-2 dark:bg-amber-900/20">
+      {visibleUsers.map((u) => {
+        const isYou = user && u.id === user.id
+        return (
+          <LeaderboardRow
+            key={u.id}
+            rank={u.rank}
+            name={isYou ? 'You' : u.name}
+            tickets={u.totalTickets}
+            isLeader={u.rank === 1}
+            isYou={!!isYou}
+          />
+        )
+      })}
+      {showYourRow && (
+        <>
+          <div className="text-ink-400 px-1 text-xs leading-tight">···</div>
+          <LeaderboardRow
+            rank={yourEntry.rank}
+            name="You"
+            tickets={yourEntry.totalTickets}
+            isLeader={false}
+            isYou
+          />
+        </>
+      )}
+    </Col>
+  )
+}
+
+function LeaderboardRow(props: {
+  rank: number
+  name: string
+  tickets: number
+  isLeader: boolean
+  isYou: boolean
+}) {
+  const { rank, name, tickets, isLeader, isYou } = props
+  return (
+    <Row className="items-center gap-1.5 text-sm">
+      {isLeader ? (
+        <FaTrophy
+          className="h-3 w-3 shrink-0 text-amber-500"
+          style={{ filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))' }}
+        />
+      ) : (
+        <span className="text-ink-400 w-3 shrink-0 text-center text-xs">
+          {rank}
+        </span>
+      )}
+      <span
+        className={clsx(
+          'min-w-0 truncate',
+          isYou
+            ? 'font-bold text-teal-700 dark:text-teal-400'
+            : isLeader
+            ? 'font-semibold text-amber-700 dark:text-amber-400'
+            : 'text-ink-600'
+        )}
+      >
+        {name}
+      </span>
+      <span className="text-ink-400 ml-auto shrink-0 text-xs">
+        {Math.floor(tickets).toLocaleString()}
+      </span>
+    </Row>
   )
 }
 

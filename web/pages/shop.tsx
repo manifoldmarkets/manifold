@@ -99,6 +99,7 @@ import {
   CharityGiveawayCard,
   CharityGiveawayData,
 } from 'web/components/shop/charity-giveaway-card'
+import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
@@ -112,6 +113,11 @@ const isEntitlementOwned = (e: UserEntitlement) => {
 // Default item order (manual curation)
 const ITEM_ORDER: Record<string, number> = {
   'streak-forgiveness': 1,
+  // 1.5 / 1.6 keep the trophy + champion's legacy in default positions 3 & 4
+  // (after manifest ticket and streak-forgiveness). Other sorts move them
+  // naturally; the legacy lands in the 'hovercard' category pill via its slot.
+  'charity-champion-trophy': 1.5,
+  'former-charity-champion': 1.6,
   'avatar-tinfoil-hat': 2,
   'avatar-golden-border': 3,
   'avatar-crown': 4,
@@ -142,6 +148,7 @@ const ITEM_ORDER: Record<string, number> = {
 
 type SortOption =
   | 'default'
+  | 'category'
   | 'price-asc'
   | 'price-desc'
   | 'name-asc'
@@ -214,6 +221,24 @@ const hasVisibleItems = (
   )
 }
 
+// Order in which non-special category pills appear; drives the 'category' sort
+const CATEGORY_PILL_ORDER: FilterOption[] = [
+  'hats',
+  'avatar',
+  'hovercard',
+  'buttons',
+  'other',
+]
+
+const getCategoryRank = (item: ShopItem): number => {
+  for (let i = 0; i < CATEGORY_PILL_ORDER.length; i++) {
+    if (FILTER_CONFIG[CATEGORY_PILL_ORDER[i]].slots.includes(item.slot)) {
+      return i
+    }
+  }
+  return CATEGORY_PILL_ORDER.length // unknown / falls to the end
+}
+
 const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
   const sorted = [...items]
   switch (sort) {
@@ -225,6 +250,14 @@ const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
       return sorted.sort((a, b) => a.name.localeCompare(b.name))
     case 'name-desc':
       return sorted.sort((a, b) => b.name.localeCompare(a.name))
+    case 'category':
+      return sorted.sort((a, b) => {
+        const ra = getCategoryRank(a)
+        const rb = getCategoryRank(b)
+        if (ra !== rb) return ra - rb
+        // Within a category, fall back to the default curated order
+        return (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99)
+      })
     case 'default':
     default:
       return sorted.sort(
@@ -238,9 +271,12 @@ export default function ShopPage() {
   const isAdminOrMod = useAdminOrMod()
   const optimisticContext = useOptimisticEntitlements()
 
-  const { data: charityData } = useAPIGetter('get-charity-giveaway', {
-    userId: user?.id,
-  })
+  const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
+    'get-charity-giveaway',
+    {
+      userId: user?.id,
+    }
+  )
   const charityGiveawayData = charityData as CharityGiveawayData | undefined
   const isCharityLoading = charityData === undefined
 
@@ -552,7 +588,7 @@ export default function ShopPage() {
           <FaGem className="h-6 w-6 text-violet-500" />
           Mana Shop
         </Row>
-        {user && (
+        {user ? (
           <Row className="text-ink-700 mb-6 items-center gap-4 text-sm">
             <span>
               Your balance:{' '}
@@ -566,6 +602,12 @@ export default function ShopPage() {
             >
               Buy mana →
             </Link>
+          </Row>
+        ) : (
+          // Skeleton placeholder so the page doesn't shift when the user loads
+          <Row className="mb-6 animate-pulse items-center gap-4">
+            <div className="h-4 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-700" />
           </Row>
         )}
 
@@ -594,6 +636,7 @@ export default function ShopPage() {
             className="bg-canvas-0 border-ink-300 text-ink-700 rounded-md border px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="default">Default order</option>
+            <option value="category">Category</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
             <option value="name-asc">Name: A to Z</option>
@@ -652,7 +695,9 @@ export default function ShopPage() {
                   />
                 ))}
 
-            {/* Regular shop items — hidden when ticket filter is active */}
+            {/* Regular shop items — hidden when ticket filter is active.
+                The charity-champion-trophy item is included so it sorts
+                alongside other items, but rendered as <CharityChampionCard>. */}
             {filterOption !== 'ticket' &&
               sortItems(
                 filterItems(
@@ -661,7 +706,6 @@ export default function ShopPage() {
                       !SUPPORTER_ENTITLEMENT_IDS.includes(
                         item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
                       ) &&
-                      item.id !== 'charity-champion-trophy' &&
                       item.category !== 'merch' &&
                       item.category !== 'ticket' &&
                       (!item.hidden ||
@@ -674,6 +718,21 @@ export default function ShopPage() {
                 ),
                 sortOption
               ).map((item) => {
+                if (item.id === 'charity-champion-trophy') {
+                  return (
+                    <CharityChampionCard
+                      key={item.id}
+                      data={charityGiveawayData}
+                      isLoading={isCharityLoading}
+                      user={user}
+                      entitlements={effectiveEntitlements}
+                      onEntitlementsChange={(newEntitlements) => {
+                        setLocalEntitlements(newEntitlements)
+                        refreshCharityData()
+                      }}
+                    />
+                  )
+                }
                 const entitlementId = getEntitlementId(item)
                 const entitlement = effectiveEntitlements.find(
                   (e) =>
@@ -2704,8 +2763,31 @@ function PrizeDrawingCard() {
     return () => clearInterval(interval)
   }, [sweepstakes?.closeTime])
 
-  // Don't render if no sweepstakes data
-  if (!sweepstakes) return null
+  // Loading skeleton — keeps the layout stable until sweepstakes data arrives
+  if (!sweepstakes) {
+    return (
+      <div
+        className={clsx(
+          'overflow-hidden rounded-xl p-1',
+          'bg-gradient-to-br from-gray-300 via-gray-200 to-gray-300 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700'
+        )}
+      >
+        <div className="animate-pulse rounded-lg bg-white p-4 dark:bg-gray-900">
+          <Row className="mb-3 items-center gap-2">
+            <div className="h-5 w-5 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+          </Row>
+          <Row className="mb-3 gap-4">
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+          </Row>
+          <div className="mb-3 h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+      </div>
+    )
+  }
 
   const isClosed = sweepstakes.closeTime <= Date.now()
 
