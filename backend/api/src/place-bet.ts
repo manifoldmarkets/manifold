@@ -597,12 +597,24 @@ export const executeNewBetResult = async (
         )
       : contractMetrics
 
+  // DPM payout math reads `contract.pool`; pass the post-trade pool so
+  // per-user metrics (payout/profit) reflect the new market state rather
+  // than the stale pre-trade pool.
+  const contractForMetrics =
+    contract.mechanism === 'dpm-2' && newPool
+      ? ({
+          ...contract,
+          pool: newPool,
+          prob: getDpmProbability(newPool as { YES: number; NO: number }),
+        } as MarketContract)
+      : contract
+
   const updatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
     pgTrans,
     betsToInsert,
     metrics,
     false,
-    contract
+    contractForMetrics
   )
 
   const {
@@ -611,7 +623,12 @@ export const executeNewBetResult = async (
     balanceUpdates: makerRedemptionAndFillBalanceUpdates,
     bulkUpdateLimitOrdersQuery,
     updatedMakers,
-  } = await updateMakers(makersByTakerBetId, contract, updatedMetrics, pgTrans)
+  } = await updateMakers(
+    makersByTakerBetId,
+    contractForMetrics,
+    updatedMetrics,
+    pgTrans
+  )
   // Create redemption bets for bettor w/o limit fills if needed:
   // DPM has no concept of complete-set redemption: shares are pool claims and
   // can't be netted out pairwise. Skip redemption entirely for dpm-2.

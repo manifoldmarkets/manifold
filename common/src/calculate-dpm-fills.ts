@@ -108,8 +108,11 @@ export const computeDpmFills = (
     })
   }
 
+  // Strictly beyond limit. Reaching exactly the limit price is fine: Phase 2
+  // pinning at that price doesn't move the pool further, and Phase 3 stops
+  // at the same cap via `fillAgainstPoolToTarget`'s no-op semantics.
   const probCrossesLimitForTaker = (prob: number) =>
-    outcome === 'YES' ? prob >= priceCeiling : prob <= priceFloor
+    outcome === 'YES' ? prob > priceCeiling : prob < priceFloor
 
   // DPM-only fill up to a target probability p*.
   // Returns (sharesBought, costSpent) and mutates pool + amount.
@@ -199,10 +202,12 @@ export const computeDpmFills = (
     if (amount <= 0) break
     const pStar = matched.limitProb
     const pStarClamped = Math.min(hardMax, Math.max(hardMin, pStar))
-    // Maker's limit is outside our acceptable price range — we would cross
-    // the global 99/1 cap before we could match it. Skip.
-    if (outcome === 'YES' && pStarClamped >= priceCeiling) break
-    if (outcome === 'NO' && pStarClamped <= priceFloor) break
+    // Maker's limit is strictly outside our acceptable price range — we would
+    // cross the global 99/1 cap or the taker's limit before matching. Skip.
+    // Matching at exactly the limit price is allowed (and required for
+    // same-price order crossing).
+    if (outcome === 'YES' && pStarClamped > priceCeiling) break
+    if (outcome === 'NO' && pStarClamped < priceFloor) break
 
     // Phase 1: DPM-only up to maker's price.
     fillAgainstPoolToTarget(pStarClamped)
