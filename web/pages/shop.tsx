@@ -1429,7 +1429,7 @@ function MerchSection(props: {
       )}
       <div
         className={clsx(
-          'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2 lg:grid-cols-3',
+          'mb-8 grid grid-cols-1 gap-4 min-[360px]:grid-cols-2 lg:grid-cols-3',
           filterOption === 'merch' && 'mt-0'
         )}
       >
