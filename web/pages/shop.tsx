@@ -1693,13 +1693,13 @@ function MerchItemCard(props: {
             <span className="text-ink-600 text-sm font-medium">
               Select size:
             </span>
-            <Row className="flex-wrap gap-2">
+            <Row className="flex-wrap gap-1.5">
               {variants.map((variant) => (
                 <button
                   key={variant.size}
                   onClick={() => setSelectedSize(variant.size)}
                   className={clsx(
-                    'rounded-md border-2 px-3 py-1.5 text-sm font-medium transition-all',
+                    'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedSize === variant.size
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
                       : 'border-ink-200 hover:border-ink-400 text-ink-700'
