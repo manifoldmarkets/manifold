@@ -108,8 +108,8 @@ export const AnswerBar = (props: {
         {renderBackgroundLayer}
       </div>
 
-      <Row className="group relative my-auto h-full items-center justify-between gap-x-2 px-3 py-1 leading-none">
-        <div className="min-w-0 flex-grow truncate">{label}</div>
+      <Row className="group relative my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
+        <div className="flex-grow">{label}</div>
         <Row
           className="relative items-center justify-end gap-2"
           onClick={(e) => e.stopPropagation()}
@@ -130,7 +130,7 @@ export const CreatorAndAnswerLabel = (props: {
     | false
   className?: string
 }) => {
-  const { text, createdTime, truncate = 'long', creator, className } = props
+  const { text, createdTime, truncate = 'none', creator, className } = props
 
   const ELLIPSES_LENGTH = 3
   const maxLength = { short: 20, long: 75, none: undefined }[truncate]

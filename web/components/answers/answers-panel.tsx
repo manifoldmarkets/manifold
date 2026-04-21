@@ -481,22 +481,9 @@ export function SimpleAnswerBars(props: {
     prob: getAnswerProbability(contract, a.id),
   }))
 
-  // For resolved contracts, show only winning answers
-  const resolvedYesAnswers = answers.filter((a) => a.resolution === 'YES')
-  const candidateAnswers = contract.isResolved
-    ? shouldAnswersSumToOne
-      ? answers.filter((a) => a.id === contract.resolution)
-      : resolvedYesAnswers.length > 0
-      ? resolvedYesAnswers.sort((a, b) => b.prob - a.prob)
-      : answers // fallback: show top answers if none resolved YES
-    : answers
+  const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
-  const displayedAnswers = sortAnswers(contract, candidateAnswers).slice(
-    0,
-    maxAnswers
-  )
-
-  const moreCount = candidateAnswers.length - displayedAnswers.length
+  const moreCount = answers.length - displayedAnswers.length
 
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =

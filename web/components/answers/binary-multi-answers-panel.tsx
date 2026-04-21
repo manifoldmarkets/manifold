@@ -26,13 +26,9 @@ export function BinaryMultiAnswersPanel(props: {
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   if (contract.isResolved) {
-    const winningAnswers = answers.filter(
-      (a) => a.id === contract.resolution || a.resolution === 'YES'
-    )
-    const displayAnswers = winningAnswers.length > 0 ? winningAnswers : answers
     return (
       <>
-        {displayAnswers.map((answer) => (
+        {answers.map((answer) => (
           <AnswerComponent
             shouldShowLimitOrderChart={false}
             key={answer.id}
