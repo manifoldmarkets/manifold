@@ -906,13 +906,15 @@ export default function ShopPage() {
           />
         )}
 
-        {isAdminOrMod && (
+        {/* Admin testing tools — hidden for the merch launch. Uncomment to
+            re-enable for admin/mod debugging. */}
+        {/* {isAdminOrMod && (
           <AdminTestingTools
             user={user}
             showHidden={showHidden}
             setShowHidden={setShowHidden}
           />
-        )}
+        )} */}
       </Col>
     </Page>
   )
