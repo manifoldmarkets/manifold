@@ -1203,8 +1203,7 @@ FIRE therefore defends and promotes the value of free speech for all Americans i
     photo: 'https://i.imgur.com/iJvDcJc.png',
     preview:
       'A mass migration of liberty-minded people to New Hampshire, working to build the freest society on earth.',
-    description: `The Free State Project is a movement encouraging liberty-loving people to move to New Hampshire in order to concentrate their efforts and maximize their impact on public policy. Since surpassing its goal of 20,000 signers in 2016, thousands of participants have relocated and become active in their communities as entrepreneurs, volunteers, activists, and elected officials.
-
-The organization hosts flagship events including PorcFest and the Liberty Forum, which bring together thousands of attendees each year to share ideas on free markets, civil liberties, and peaceful voluntary cooperation. Donations support the Project's outreach, events, and efforts to grow a resilient liberty community in New Hampshire.`,
+    description:
+      "The Free State Project encourages liberty-minded people to move to New Hampshire to concentrate their efforts on building the freest society on earth. Thousands have relocated since the Project hit its 20,000-signer goal in 2016, and the organization hosts flagship events like PorcFest and the Liberty Forum each year.",
   },
 ]
