@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add c:Projectsmanifoldwebpackage.json)",
-      "WebFetch(domain:claude.ai)"
+      "Bash(git add c:Projectsmanifoldwebpackage.json)"
     ],
     "deny": [],
     "ask": []
