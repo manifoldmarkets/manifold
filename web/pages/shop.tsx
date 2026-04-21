@@ -676,6 +676,16 @@ export default function ShopPage() {
       ? sortedRegularItems.filter((i) => !isItemNewToUser(i))
       : sortedRegularItems
 
+  // When merch has launched and at least one merch item is NEW to this user,
+  // promote the merch section to the top of the page so first-time visitors
+  // see it before scrolling. Once they visit /shop and clear the NEW state,
+  // merch falls back to its usual position below the regular grid.
+  const merchHasNewItems =
+    filterOption === 'all' &&
+    getMerchItems().some(
+      (item) => (!item.hidden || showHidden) && isItemNewToUser(item)
+    )
+
   // Shared render so the NEW section + main grid handle items identically,
   // including the charity-champion-trophy special case.
   const renderShopItem = (item: ShopItem) => {
@@ -842,6 +852,22 @@ export default function ShopPage() {
           </>
         )}
 
+        {/* Promote merch above tickets/regular grid on first visit after launch
+            (any merch item is NEW to this user). Falls back to its usual
+            position below the regular grid once they've cleared the NEW state. */}
+        {merchHasNewItems && (
+          <MerchSection
+            user={user}
+            entitlements={effectiveEntitlements}
+            purchasedMerchIds={purchasedMerchIds}
+            outOfStockIds={outOfStockIds}
+            isItemNewToUser={isItemNewToUser}
+            showHidden={showHidden}
+            filterOption={filterOption}
+            onPurchased={refreshMerchOrders}
+          />
+        )}
+
         {/* Tickets + shop items — hidden when merch filter is active */}
         {filterOption !== 'merch' && (
           <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
@@ -865,41 +891,20 @@ export default function ShopPage() {
           </div>
         )}
 
-        {/* Merch section — shown on 'all' and 'merch' filters */}
-        {(filterOption === 'all' || filterOption === 'merch') &&
-          getMerchItems().filter((item) => !item.hidden || showHidden).length >
-            0 && (
-            <>
-              {filterOption !== 'merch' && (
-                <Row className="mb-4 mt-8 items-center gap-2">
-                  <span className="text-lg font-semibold">Merch</span>
-                  <span className="text-ink-500 text-sm">
-                    (Ships worldwide)
-                  </span>
-                </Row>
-              )}
-              <div
-                className={clsx(
-                  'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2 lg:grid-cols-3',
-                  filterOption === 'merch' && 'mt-0'
-                )}
-              >
-                {getMerchItems()
-                  .filter((item) => !item.hidden || showHidden)
-                  .map((item) => (
-                    <MerchItemCard
-                      key={item.id}
-                      item={item}
-                      user={user}
-                      allEntitlements={effectiveEntitlements}
-                      alreadyPurchased={purchasedMerchIds.has(item.id)}
-                      outOfStock={outOfStockIds.has(item.id)}
-                      onPurchased={refreshMerchOrders}
-                    />
-                  ))}
-              </div>
-            </>
-          )}
+        {/* Merch section in its default position. Skipped when already
+            promoted above so we don't render the cards twice. */}
+        {!merchHasNewItems && (
+          <MerchSection
+            user={user}
+            entitlements={effectiveEntitlements}
+            purchasedMerchIds={purchasedMerchIds}
+            outOfStockIds={outOfStockIds}
+            isItemNewToUser={isItemNewToUser}
+            showHidden={showHidden}
+            filterOption={filterOption}
+            onPurchased={refreshMerchOrders}
+          />
+        )}
 
         {isAdminOrMod && (
           <AdminTestingTools
@@ -1385,15 +1390,82 @@ function TicketItemCard(props: {
   )
 }
 
+/** Renders the merch grid plus its "Merch" heading (heading hidden on the
+ *  merch filter, since the page header already names the section). Pulled out
+ *  so the shop page can render it in two positions: promoted above the regular
+ *  grid when any merch item is NEW to the user, or in its default spot below. */
+function MerchSection(props: {
+  user: User | null | undefined
+  entitlements: UserEntitlement[]
+  purchasedMerchIds: Set<string>
+  outOfStockIds: Set<string>
+  isItemNewToUser: (item: ShopItem) => boolean
+  showHidden: boolean
+  filterOption: string
+  onPurchased: () => void
+}) {
+  const {
+    user,
+    entitlements,
+    purchasedMerchIds,
+    outOfStockIds,
+    isItemNewToUser,
+    showHidden,
+    filterOption,
+    onPurchased,
+  } = props
+  if (filterOption !== 'all' && filterOption !== 'merch') return null
+  const items = getMerchItems().filter((item) => !item.hidden || showHidden)
+  if (items.length === 0) return null
+  return (
+    <>
+      {filterOption !== 'merch' && (
+        <Row className="mb-4 mt-8 items-center gap-2">
+          <span className="text-lg font-semibold">Merch</span>
+          <span className="text-ink-500 text-sm">(Ships worldwide)</span>
+        </Row>
+      )}
+      <div
+        className={clsx(
+          'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2 lg:grid-cols-3',
+          filterOption === 'merch' && 'mt-0'
+        )}
+      >
+        {items.map((item) => (
+          <MerchItemCard
+            key={item.id}
+            item={item}
+            user={user}
+            allEntitlements={entitlements}
+            alreadyPurchased={purchasedMerchIds.has(item.id)}
+            outOfStock={outOfStockIds.has(item.id)}
+            isNew={isItemNewToUser(item)}
+            onPurchased={onPurchased}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
 function MerchItemCard(props: {
   item: ShopItem
   user: User | null | undefined
   allEntitlements?: UserEntitlement[]
   alreadyPurchased?: boolean
   outOfStock?: boolean
+  isNew?: boolean
   onPurchased?: () => void
 }) {
-  const { item, user, allEntitlements, alreadyPurchased, outOfStock, onPurchased } = props
+  const {
+    item,
+    user,
+    allEntitlements,
+    alreadyPurchased,
+    outOfStock,
+    isNew,
+    onPurchased,
+  } = props
   const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
   const discountedPrice =
     shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
@@ -1531,8 +1603,12 @@ function MerchItemCard(props: {
 
   return (
     <>
+      {/* Wrap Card in a relative div so the NEW sticker can overflow the
+          card's clipping (matches the CharityChampionCard pattern). */}
+      <div className="relative h-full">
+        {isNew && <NewBadge variant="sticker" />}
       <Card className={clsx(
-        'group relative flex flex-col gap-3 p-4 transition-all duration-200',
+        'group relative flex h-full flex-col gap-3 overflow-hidden p-4 transition-all duration-200',
         outOfStock || alreadyPurchased
           ? 'opacity-75'
           : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30'
@@ -1686,6 +1762,7 @@ function MerchItemCard(props: {
           )}
         </Row>
       </Card>
+      </div>
 
       {/* Purchase confirmation modal */}
       <Modal open={showPurchaseModal} setOpen={setShowPurchaseModal} size="md">
