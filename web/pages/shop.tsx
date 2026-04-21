@@ -1712,9 +1712,18 @@ function MerchItemCard(props: {
           </Col>
         )}
 
-        {/* Price and buy button */}
-        <Row className="border-ink-200 mt-auto items-center justify-between border-t pt-3">
-          <Col>
+        {/* Price block + full-width buy button stacked below.
+            Keeps the 3-wide grid readable — the old side-by-side layout
+            crammed the pricing into ~half a card and wrapped the button
+            text. Strikethrough original price sits ABOVE the discounted
+            price, matching the regular ShopItemCard layout. */}
+        <Col className="border-ink-200 mt-auto gap-2 border-t pt-3">
+          <Col className="gap-0.5">
+            {hasDiscount && (
+              <span className="text-ink-400 text-xs line-through">
+                {formatMoney(item.price)}
+              </span>
+            )}
             <div className="text-lg font-bold text-teal-600">
               {hasDiscount
                 ? formatMoney(discountedPrice)
@@ -1725,11 +1734,6 @@ function MerchItemCard(props: {
                 </span>
               )}
             </div>
-            {hasDiscount && (
-              <span className="text-ink-400 text-xs line-through">
-                {formatMoney(item.price)}
-              </span>
-            )}
             <span className="text-ink-500 text-xs">
               + shipping (paid in mana)
             </span>
@@ -1744,16 +1748,16 @@ function MerchItemCard(props: {
             )}
           </Col>
           {outOfStock ? (
-            <Button size="sm" color="gray" disabled>
+            <Button size="sm" color="gray" disabled className="w-full">
               Out of Stock
             </Button>
           ) : alreadyPurchased ? (
-            <Button size="sm" color="gray" disabled>
+            <Button size="sm" color="gray" disabled className="w-full">
               Purchased
             </Button>
           ) : !canPurchase && user ? (
-            <Link href="/checkout">
-              <Button size="sm" color="gradient-pink">
+            <Link href="/checkout" className="w-full">
+              <Button size="sm" color="gradient-pink" className="w-full">
                 Buy mana
               </Button>
             </Link>
@@ -1763,11 +1767,12 @@ function MerchItemCard(props: {
               color="indigo"
               disabled={!user || !selectedSize}
               onClick={handleBuyClick}
+              className="w-full"
             >
               {selectedSize ? 'Buy' : 'Select a size'}
             </Button>
           )}
-        </Row>
+        </Col>
       </Card>
       </div>
 
