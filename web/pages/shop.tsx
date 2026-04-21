@@ -1605,16 +1605,21 @@ function MerchItemCard(props: {
 
   return (
     <>
-      {/* Wrap Card in a relative div so the NEW sticker can overflow the
-          card's clipping (matches the CharityChampionCard pattern). */}
-      <div className="relative h-full">
+      {/* Wrap Card in a relative flex column so (a) the NEW sticker can
+          overflow the card's clipping, and (b) the Card stretches to the full
+          grid-cell height — without that the inner mt-auto on the price/buy
+          row has no extra space to consume and the button doesn't anchor to
+          the bottom. */}
+      <div className="relative flex h-full flex-col">
         {isNew && <NewBadge variant="sticker" />}
-      <Card className={clsx(
-        'group relative flex h-full flex-col gap-3 overflow-hidden p-4 transition-all duration-200',
-        outOfStock || alreadyPurchased
-          ? 'opacity-75'
-          : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30'
-      )}>
+        <Card
+          className={clsx(
+            'group relative flex flex-1 flex-col gap-3 overflow-hidden p-4 transition-all duration-200',
+            outOfStock || alreadyPurchased
+              ? 'opacity-75'
+              : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30'
+          )}
+        >
         {outOfStock && (
           <div className="absolute right-2 top-2 z-10 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-400">
             Out of Stock
