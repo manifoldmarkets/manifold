@@ -132,9 +132,15 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
           throw new APIError(403, 'Insufficient balance')
         }
 
-        // Create transaction to deduct mana (item price + shipping)
+        // Create transaction to deduct mana (item price + shipping).
+        // Description includes colour when the variant has one so admins can
+        // eyeball Black/M vs Navy/M in the txn log without clicking through
+        // to Printful.
         const discountPercent = Math.round(shopDiscount * 100)
-        const descriptionParts = [`Purchased ${item.name} (${variant.size})`]
+        const variantLabel = variant.color
+          ? `${variant.color} / ${variant.size}`
+          : variant.size
+        const descriptionParts = [`Purchased ${item.name} (${variantLabel})`]
         if (discountPercent > 0) {
           descriptionParts.push(`(${discountPercent}% supporter discount)`)
         }
@@ -205,13 +211,32 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
     throw err
   }
 
-  // Phase 3: Update the order record with Printful details
-  await pg.none(
-    `UPDATE shop_orders
-     SET printful_order_id = $1, printful_status = $2
-     WHERE txn_id = $3`,
-    [printfulOrder.id.toString(), printfulOrder.status, txnId]
-  )
+  // Phase 3: Link the Printful order back to our order row.
+  // The mana is already debited AND Printful has the draft order, so from the
+  // customer's perspective the purchase has succeeded. If this UPDATE fails
+  // (DB blip, connection loss), we do NOT surface an error — surfacing it
+  // would imply the order failed, when really it just means our audit row is
+  // stale. Log loudly instead so admin can reconcile via /admin/merch (the
+  // order shows up in Printful with the external_id `manifold-<txnId>`).
+  try {
+    await pg.none(
+      `UPDATE shop_orders
+       SET printful_order_id = $1, printful_status = $2
+       WHERE txn_id = $3`,
+      [printfulOrder.id.toString(), printfulOrder.status, txnId]
+    )
+  } catch (err) {
+    console.error(
+      `[shop-purchase-merch] Failed to link printful order to shop_orders row`,
+      {
+        txnId,
+        printfulOrderId: printfulOrder.id,
+        userId: auth.uid,
+        itemId,
+        err,
+      }
+    )
+  }
 
   return {
     success: true as const,

@@ -1472,10 +1472,44 @@ function MerchItemCard(props: {
   const discountedPrice =
     shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
   const hasDiscount = shopDiscount > 0
-  const singleVariant = (item.variants ?? []).length === 1
-  const [selectedSize, setSelectedSize] = useState<string | null>(
-    singleVariant ? item.variants![0].size : null
+  // Distinct colours offered by this item (in catalog order). Empty for
+  // single-colour items (caps, AGGC tee) — colour selector hides when empty.
+  const colors = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (item.variants ?? [])
+            .map((v) => v.color)
+            .filter((c): c is string => !!c)
+        )
+      ),
+    [item.variants]
   )
+  const hasColors = colors.length > 0
+  const [selectedColor, setSelectedColor] = useState<string | null>(
+    hasColors ? colors[0] : null
+  )
+  // Sizes available for the current colour selection (or all sizes if the
+  // item is single-colour).
+  const sizesForSelection = (item.variants ?? []).filter(
+    (v) => !hasColors || v.color === selectedColor
+  )
+  const singleVariant = sizesForSelection.length === 1
+  const [selectedSize, setSelectedSize] = useState<string | null>(
+    singleVariant ? sizesForSelection[0].size : null
+  )
+  // If the user picks a colour where their previously-selected size doesn't
+  // exist, drop the selection so they re-pick.
+  useEffect(() => {
+    if (
+      selectedSize &&
+      !sizesForSelection.some((v) => v.size === selectedSize)
+    ) {
+      setSelectedSize(singleVariant ? sizesForSelection[0].size : null)
+    }
+    // sizesForSelection rebuilds every render — depend on selectedColor instead
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
@@ -1513,9 +1547,25 @@ function MerchItemCard(props: {
   const canPurchase = user && user.balance >= discountedPrice
   const variants = item.variants ?? []
 
-  const images = item.merchImages ?? [
-    { label: 'Front', url: item.imageUrl || '' },
-  ]
+  // Per-colour image carousel takes precedence when set; falls back to the
+  // shared `merchImages` for single-colour items.
+  const images =
+    (hasColors && selectedColor && item.merchImagesByColor?.[selectedColor]) ||
+    item.merchImages ||
+    [{ label: 'Front', url: item.imageUrl || '' }]
+  // Reset the carousel when the user swaps colours so they always start on
+  // the new colour's first image.
+  useEffect(() => {
+    setCurrentImageIndex(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor])
+
+  // Pick the variant matching the user's colour + size selection.
+  const findSelectedVariant = () =>
+    variants.find(
+      (v) =>
+        v.size === selectedSize && (!hasColors || v.color === selectedColor)
+    )
 
   const handleBuyClick = () => {
     if (!selectedSize) {
@@ -1533,7 +1583,7 @@ function MerchItemCard(props: {
   }
 
   const handleGetShippingRates = async () => {
-    const variant = variants.find((v) => v.size === selectedSize)
+    const variant = findSelectedVariant()
     if (!variant) return
 
     setFetchingRates(true)
@@ -1564,7 +1614,7 @@ function MerchItemCard(props: {
 
   const handleSubmitOrder = async () => {
     if (!user || !selectedSize || !selectedShipping) return
-    const variant = variants.find((v) => v.size === selectedSize)
+    const variant = findSelectedVariant()
     if (!variant) return
 
     setPurchasing(true)
@@ -1687,13 +1737,38 @@ function MerchItemCard(props: {
         <div className="text-base font-semibold sm:text-lg">{item.name}</div>
         <p className="text-ink-600 text-sm">{item.description}</p>
 
+        {/* Colour selector — shown only when the item has multiple colours.
+            Same flex-wrap pattern as the size row below. Each colour swap
+            updates the image carousel and re-filters the available sizes. */}
+        {hasColors && (
+          <Row className="flex-wrap items-center gap-1.5">
+            <span className="text-ink-600 mr-1 text-sm font-medium">
+              Colour:
+            </span>
+            {colors.map((color) => (
+              <button
+                key={color}
+                onClick={() => setSelectedColor(color)}
+                className={clsx(
+                  'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
+                  selectedColor === color
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                    : 'border-ink-200 hover:border-ink-400 text-ink-700'
+                )}
+              >
+                {color}
+              </button>
+            ))}
+          </Row>
+        )}
+
         {/* Size selector (hidden for single-variant items like one-size caps).
             Label + buttons share one flex-wrap row so the first few sizes sit
             inline with "Size:" and only the overflow wraps onto line 2. */}
         {!singleVariant && (
           <Row className="flex-wrap items-center gap-1.5">
             <span className="text-ink-600 mr-1 text-sm font-medium">Size:</span>
-            {variants.map((variant) => (
+            {sizesForSelection.map((variant) => (
               <button
                 key={variant.size}
                 onClick={() => setSelectedSize(variant.size)}

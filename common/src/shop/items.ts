@@ -18,9 +18,11 @@ export type ShopItemCategory =
   | 'merch'
   | 'ticket'
 
-// Merch size variant for clothing items
+// Merch size/colour variant for clothing items. `color` is optional — items
+// like the caps and the AGGC tee that ship in a single colour omit it.
 export type MerchVariant = {
   size: string
+  color?: string
   printfulSyncVariantId: string
 }
 
@@ -200,6 +202,10 @@ export type ShopItem = {
   variants?: MerchVariant[]
   // Image carousel for merch cards: [{label, url}, ...]
   merchImages?: { label: string; url: string }[]
+  // Per-colour image carousel for items with multiple colour variants.
+  // Keyed by the same `color` string used in `variants`. When set, the card
+  // swaps the carousel as the user picks a colour. Falls back to merchImages.
+  merchImagesByColor?: Record<string, { label: string; url: string }[]>
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -808,7 +814,49 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'hovercard',
     slot: 'hovercard-background',
   },
-  // Merch items
+  // Merch items (newest first)
+  {
+    id: 'merch-wordmark-tshirt',
+    name: 'White Wordmark Unisex T-Shirt',
+    description:
+      'White Manifold wordmark print — pick your colour and size.',
+    price: 5000,
+    type: 'instant',
+    limit: 'one-time',
+    category: 'merch',
+    slot: 'consumable',
+    imageUrl: '/merch/White-wordmark-black-t-shirt-front.png',
+    merchImagesByColor: {
+      Black: [
+        { label: 'Front', url: '/merch/White-wordmark-black-t-shirt-front.png' },
+        { label: 'Back', url: '/merch/White-wordmark-black-t-shirt-back.png' },
+      ],
+      Navy: [
+        { label: 'Front', url: '/merch/White-wordmark-navy-t-shirt-front.png' },
+        { label: 'Back', url: '/merch/White-wordmark-navy-t-shirt-back.png' },
+      ],
+    },
+    // Bella + Canvas 3001 unisex tee. 4XL / 5XL variants exist on Printful but
+    // are intentionally excluded — their wholesale price pushes margin below
+    // acceptable at the uniform M$5,000 shelf price.
+    variants: [
+      { size: 'XS', color: 'Black', printfulSyncVariantId: '69e70ad8bc1045' },
+      { size: 'S', color: 'Black', printfulSyncVariantId: '69e70ad8bc1202' },
+      { size: 'M', color: 'Black', printfulSyncVariantId: '69e70ad8bc12f9' },
+      { size: 'L', color: 'Black', printfulSyncVariantId: '69e70ad8bc13b5' },
+      { size: 'XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc1463' },
+      { size: '2XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc1517' },
+      { size: '3XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc15d1' },
+      { size: 'XS', color: 'Navy', printfulSyncVariantId: '69026b379412e7' },
+      { size: 'S', color: 'Navy', printfulSyncVariantId: '69026b37941355' },
+      { size: 'M', color: 'Navy', printfulSyncVariantId: '69026b379413a7' },
+      { size: 'L', color: 'Navy', printfulSyncVariantId: '69026b37941404' },
+      { size: 'XL', color: 'Navy', printfulSyncVariantId: '69026b37941459' },
+      { size: '2XL', color: 'Navy', printfulSyncVariantId: '69026b379414b6' },
+      { size: '3XL', color: 'Navy', printfulSyncVariantId: '69026b37941505' },
+    ],
+    visibleSinceTime: new Date('2026-04-22T12:00:00+09:30').getTime(),
+  },
   {
     id: 'merch-aggc-tshirt',
     name: 'AGGC T-Shirt',
@@ -831,7 +879,7 @@ export const SHOP_ITEMS: ShopItem[] = [
       { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
       { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
     ],
-    visibleSinceTime: new Date('2026-04-21T17:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-22T12:00:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-white-logo',
@@ -846,11 +894,12 @@ export const SHOP_ITEMS: ShopItem[] = [
     merchImages: [
       { label: 'Front', url: '/merch/White-Logo-Cap-Black.png' },
       { label: 'Angle', url: '/merch/White-Logo-Cap-Black-Tilt.png' },
+      { label: 'Back', url: '/merch/White-Logo-Cap-Black-Back.png' },
     ],
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c7bf5859673' },
     ],
-    visibleSinceTime: new Date('2026-04-21T17:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-22T12:00:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-purple-logo',
@@ -865,11 +914,12 @@ export const SHOP_ITEMS: ShopItem[] = [
     merchImages: [
       { label: 'Front', url: '/merch/Purple-Logo-Cap-White.png' },
       { label: 'Angle', url: '/merch/Purple-Logo-Cap-White-Tilt.png' },
+      { label: 'Back', url: '/merch/Purple-Logo-Cap-White-Back.png' },
     ],
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c786e6c50b2' },
     ],
-    visibleSinceTime: new Date('2026-04-21T17:00:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-22T12:00:00+09:30').getTime(),
   },
 
   // Tickets
