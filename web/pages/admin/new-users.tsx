@@ -60,7 +60,7 @@ function NewUsersTable() {
     try {
       await api('admin-set-bonus-eligibility', {
         userId,
-        bonusEligibility: value === '' ? null : value,
+        bonusEligibility: value || null,
       })
       toast.success('Bonus eligibility updated')
       refresh()
