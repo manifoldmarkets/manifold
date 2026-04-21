@@ -2,6 +2,7 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ChatAlt2Icon } from '@heroicons/react/outline'
+import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 export default function CommunityGuidelinesCommentGuidelinesPage() {
   return (
@@ -14,46 +15,33 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
         </div>
 
         <p className="mt-3 text-lg text-ink-400">
-          Manifold is a community-driven platform; comments should foster constructive discussion and avoid harassment.
+          Manifold supports open discussion. The following types of comments may be hidden, deleted, or result in a ban.
         </p>
 
+        <GuidelinesSearch />
+
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Respect and civility</h2>
+          <h2 id="comment-hiding" className="text-xl font-semibold text-ink-900">How comment hiding works</h2>
+          <p className="mt-3 text-ink-700">Market creators can hide any comment on their own market at their discretion. Hidden comments remain publicly accessible behind a "comment hidden" message — they aren't deleted.</p>
+          <p className="mt-3 text-ink-700">Moderators and admins can also hide or delete comments that violate these guidelines.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="whats-not-allowed" className="text-xl font-semibold text-ink-900">What's not allowed</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Be respectful: no insults, hate speech, or ad hominem attacks.</li>
-            <li>Stay on-topic: keep comments relevant to the market content and resolution criteria.</li>
-            <li>Disagree constructively and provide reasoning; avoid low-effort trolling.</li>
-            <li>Keep the conversation safe for everyone in the community.</li>
+            <li>Spam</li>
+            <li>Hateful or discriminatory content directed at a person, group, or user</li>
+            <li>Repeated harassment targeting another user</li>
+            <li>Content that links to or contains material illegal under US law</li>
+            <li>Doxxing — sharing or helping others find someone's private information</li>
+            <li>Automated or bot comments that are low-effort, repetitive, or frequently reported may result in a mod alert or temporary posting ban. See <a className="text-primary-500 underline" href="/community-guidelines/moderation">Mod Guidelines</a> for how bans work.</li>
+            <li>Promoting your own markets in the comments of unrelated markets — don't use other people's markets as a traffic source for your own.</li>
           </ul>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Prohibited content</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>No doxxing or sharing personal information about private individuals.</li>
-            <li>No explicit content, harassment, or discriminatory language.</li>
-            <li>No persistent low-quality comments, spam, or repeated one-word posts.</li>
-            <li>Do not post content that violates platform policies or legal requirements.</li>
-          </ul>
-        </div>
-
-        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Reporting and moderation</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Use hide/report tools for comments that violate guidelines.</li>
-            <li>If you see a comment that should be moderated, report it with context and a link.</li>
-            <li>Moderation decisions are intended to be minimal and transparent.</li>
-            <li>Repeat offenders may be restricted or banned from commenting.</li>
-          </ul>
-        </div>
-
-        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Best practices</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Use strong evidence or logic in your comments; this improves market quality.</li>
-            <li>Listen, learn, and adapt from community feedback.</li>
-            <li>Treat disagreements as opportunities to refine predictions.</li>
-          </ul>
+          <h2 id="what-can-get-you-banned" className="text-xl font-semibold text-ink-900">What can get you banned</h2>
+          <p className="mt-3 text-ink-700">Any of the above can result in a restriction or ban depending on severity and history. Repeated violations are treated more harshly than first offenses.</p>
         </div>
       </Col>
     </Page>

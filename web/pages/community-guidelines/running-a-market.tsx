@@ -2,6 +2,7 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { CollectionIcon } from '@heroicons/react/outline'
+import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 export default function CommunityGuidelinesRunningAMarketPage() {
   return (
@@ -14,60 +15,90 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         </div>
 
         <p className="mt-3 text-lg text-ink-400">
-          Guidelines for creating and managing markets on Manifold.
+          Creators are held to a higher standard than general users. The platform has game-like incentives and we want you to have fun with them, but not by exploiting loopholes or technicalities on your own markets. If your resolution criteria become unclear due to new events, update them.
         </p>
 
+        <GuidelinesSearch />
+
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Market Creation</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Markets should have clear, unambiguous resolution criteria.</li>
-            <li>Include a reasonable close date and resolution date.</li>
-            <li>Write engaging descriptions that provide context and relevant information.</li>
-            <li>Avoid creating markets that could be seen as spam or low-effort.</li>
-            <li>Personal markets must be clearly declared in the market description.</li>
-          </ul>
+          <h2 id="market-states" className="text-xl font-semibold text-ink-900">Market states</h2>
+          <p className="mt-3 text-ink-700">Every market has three independently toggleable states: Ranked, Subsidized, and Unlisted. Admins and moderators can change any of these.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Ban List</h2>
-          <p className="mt-3 text-ink-700">The following topics are banned from markets:</p>
+          <h2 id="ranked" className="text-xl font-semibold text-ink-900">Ranked</h2>
+          <p className="mt-3 text-ink-700">All markets are ranked by default, meaning they count toward leagues.</p>
+          <p className="mt-3 text-ink-700">A market may be set to unranked if:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Illegal activities or content that violates laws.</li>
-            <li>Harmful or dangerous content that could encourage harm.</li>
-            <li>Personal information or doxxing of individuals.</li>
-            <li>Markets designed to manipulate or harass others.</li>
-            <li>Spam markets or those created solely for bonuses.</li>
+            <li>It's unlisted — unlisted markets are always unranked, regardless of the toggle</li>
+            <li>It's self-referential</li>
+            <li>It's about the results of Leagues</li>
+            <li>It resolves to something purely random or gambling-like (e.g. "will this coin flip be heads?")</li>
+            <li>Resolution criteria can only be known by the creator or their immediate friends (e.g. "will I eat pizza tonight?")</li>
+            <li>It isn't predicting anything</li>
+            <li>It can never be resolved or could only ever resolve one way</li>
+          </ul>
+          <p className="mt-3 text-sm text-ink-600">If you're not sure why your market is unranked, ask in <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a>.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="subsidized" className="text-xl font-semibold text-ink-900">Subsidized</h2>
+          <p className="mt-3 text-ink-700">Creators receive 5 mana per unique trader for the first 50 traders, then 1 mana up to a cap of 10,000. Markets also receive a 20 mana liquidity subsidy from the house for the first 50 traders, then 5 mana to the same cap.</p>
+          <p className="mt-3 text-ink-700">A market may be unsubsidized if:</p>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
+            <li>It's unlisted — unlisted markets are never subsidized by default</li>
+            <li>It's self-referential</li>
+            <li>It resolves to something purely random or gambling-like</li>
+            <li>It's spam or extremely low quality (e.g. "will the sun explode tomorrow?")</li>
+            <li>It can never be resolved or could only ever resolve one way</li>
+            <li>It's an exact or near-exact duplicate of an existing market</li>
+            <li>It falls under the unlisting criteria below but isn't severe enough to act on</li>
+          </ul>
+          <p className="mt-3 text-sm text-ink-600">Note: unsubsidization may be applied after some initial bonuses have already been received and is not retroactive. Markets that technically qualify but seem genuinely valuable may still be left subsidized.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="unlisted-na-deleted" className="text-xl font-semibold text-ink-900">Markets that may be unlisted, N/A'd, or deleted</h2>
+          <p className="mt-3 text-ink-700">We default to unlisting — this makes a market only accessible via direct URL. Depending on severity, markets may be N/A'd or deleted instead.</p>
+          <p className="mt-3 text-ink-700">The following may trigger action:</p>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
+            <li>Abandoned markets with vague criteria</li>
+            <li>Sexually graphic content or significant violence</li>
+            <li>Content that encourages or could directly facilitate terrorism, abuse, or violence</li>
+            <li>Hateful content discriminating based on race, gender, sex, or disability — reviewed by admin on a case-by-case basis</li>
+            <li>Titles containing trending spoilers</li>
+            <li>Markets that resolve to something purely random or gambling-like</li>
+            <li>Self-referential markets (e.g. "will this market get more upvotes than downvotes?")</li>
+            <li>Low-quality non-predictive markets</li>
+            <li>Markets designed to harvest or redistribute Manifold bonuses</li>
+            <li>Markets designed to defraud users — these will typically be N/A'd retroactively rather than unlisted</li>
+            <li>Markets that could incentivize mass trading or commenting at a scale that creates significant server costs</li>
+            <li>Content revealing or incentivizing leaking of users' private information (doxxing)</li>
+            <li>Content that is illegal under US law or incentivizes criminal acts</li>
+            <li>Sexual content involving minors</li>
+            <li>Sexual exploitation, blackmail, or non-consensual intimate content</li>
+            <li>Spam</li>
+            <li>Media depicting self-harm or suicide</li>
+            <li>Markets that incentivize indiscriminate trading, commenting, or posting</li>
+            <li>Markets designed to exploit the Manifold codebase or abuse bugs</li>
+            <li>Markets that incentivize violating another platform's terms of service</li>
           </ul>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Labeling Rankings</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Use appropriate tags and categories for your markets.</li>
-            <li>Rankings should reflect the market's importance and relevance.</li>
-            <li>Avoid artificially inflating rankings through manipulation.</li>
-            <li>Personal markets should be labeled as such to avoid confusion.</li>
-          </ul>
+          <h2 id="third-party-platforms" className="text-xl font-semibold text-ink-900">A note on third-party platforms</h2>
+          <p className="mt-3 text-ink-700">Copying Metaculus tournament questions while the community prediction is hidden violates their terms of service and undermines their tournaments. Don't do it. General questions inspired by external forecasting topics are fine — for example, "will Twitter have a data breach?" is allowed.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Market Rules</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Follow the established market rules and mechanics.</li>
-            <li>Resolve markets promptly and fairly once the outcome is known.</li>
-            <li>Provide clear reasoning for resolutions, especially in disputed cases.</li>
-            <li>Avoid abandoning markets without resolution.</li>
-            <li>Report any issues or disputes to moderators if needed.</li>
-          </ul>
-        </div>
-
-        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Personal Markets</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Personal markets must be clearly declared in the title or description.</li>
-            <li>Examples include "Will I finish my project by Friday?" or "Will my team win the game?"</li>
-            <li>Personal markets should not deceive other users about their nature.</li>
-            <li>They are allowed but must be transparent about being personal wagers.</li>
+          <h2 id="personal-markets" className="text-xl font-semibold text-ink-900">Personal markets</h2>
+          <p className="mt-3 text-ink-700">Personal goal markets are a use case we actively want to support.</p>
+          <p className="mt-3 text-ink-700">Creators of personal markets have the right to resolve N/A at any time. We strongly encourage stating this upfront in your market description — something like "I reserve the right to resolve this N/A at any point" helps set expectations for traders.</p>
+          <p className="mt-3 text-ink-700">A few things to know:</p>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
+            <li>Most personal goal markets will be unranked since the creator is participating and they're easier to manipulate — traders can still profit normally.</li>
+            <li>Some personal markets involve others or private matters that make clean resolution genuinely difficult. N/A is always available in those cases.</li>
+            <li>Manifold can't force a creator to resolve a market if they leave the platform or go inactive.</li>
           </ul>
         </div>
       </Col>

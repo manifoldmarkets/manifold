@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { LightningBoltIcon, UsersIcon, ShieldCheckIcon, CheckCircleIcon, CollectionIcon, ChatAlt2Icon } from '@heroicons/react/outline'
+import { LightningBoltIcon, UsersIcon, ShieldCheckIcon, CheckCircleIcon, CollectionIcon, ChatAlt2Icon, GiftIcon } from '@heroicons/react/outline'
+import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 const GUIDELINES = [
   'Be excellent to each other.',
@@ -15,39 +16,45 @@ const GUIDELINES = [
 const SECTIONS = [
   {
     title: 'Accounts & Market Manipulation',
-    description:
-      'No alt accounts, impersonation, collusion, front-running, or insider trading. Keep each account honest and fair.',
+    description: 'Account rules, alts, impersonation, market manipulation, insider trading.',
     icon: LightningBoltIcon,
+    href: '/community-guidelines/accounts',
   },
   {
     title: 'Running a Market',
-    description:
-      'Follow the ban list, label rankings correctly, and play by the market rules. Personal markets must be clearly declared.',
+    description: "What's banned, ranked vs unranked, subsidies, creator expectations, personal markets.",
     icon: CollectionIcon,
+    href: '/community-guidelines/running-a-market',
   },
   {
     title: 'Resolving Markets',
-    description:
-      'Creators should resolve markets fairly, with clear reasoning. Avoid leaving abandoned markets unresolved and update your dispute details promptly.',
+    description: 'Creator resolution, mod intervention, abandoned markets.',
     icon: CheckCircleIcon,
+    href: '/community-guidelines/resolving-markets',
   },
   {
     title: 'Comment Guidelines',
-    description:
-      'No harassment, doxxing, repeated low-quality comments, or safety violations. Use hiding and reporting tools responsibly.',
+    description: "What's not allowed, how hiding works, what can get you banned.",
     icon: ChatAlt2Icon,
+    href: '/community-guidelines/comment-guidelines',
   },
   {
     title: 'Platform Conduct',
-    description:
-      'No spammy DMs, predatory mana sales, or abusive content. Respect our community and platform space.',
+    description: 'Mana sales, DM spam, review conduct, and other platform-wide rules.',
     icon: UsersIcon,
+    href: '/community-guidelines/platform-conduct',
   },
   {
     title: 'Moderation',
-    description:
-      'Moderation is minimal and transparent. If you disagree with a moderation decision, contact support and provide clear context.',
+    description: 'How moderation works, who mods are, and what to do if you disagree with a decision.',
     icon: ShieldCheckIcon,
+    href: '/community-guidelines/moderation',
+  },
+  {
+    title: 'Prize Drawings',
+    description: 'FAQs for Manifold Prize Drawings',
+    icon: GiftIcon,
+    href: '/community-guidelines/prize-drawings-faq',
   },
 ]
 
@@ -62,8 +69,10 @@ export default function CommunityGuidelinesPage() {
           not micromanage it.
         </p>
 
+        <GuidelinesSearch />
+
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-5 shadow-sm">
-          <h2 className="text-xl font-semibold text-ink-900">Short Version</h2>
+          <h2 id="short-version" className="text-xl font-semibold text-ink-900">Short Version</h2>
           <ul className="mt-3 space-y-2 text-sm text-ink-700">
             {GUIDELINES.map((line) => (
               <li key={line} className="flex items-start gap-2">
@@ -76,16 +85,6 @@ export default function CommunityGuidelinesPage() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {SECTIONS.map((item) => {
-            const linkMap: Record<string, string | undefined> = {
-              'Accounts & Market Manipulation': '/community-guidelines/accounts',
-              'Running a Market': '/community-guidelines/running-a-market',
-              'Resolving Markets': '/community-guidelines/resolving-markets',
-              'Comment Guidelines': '/community-guidelines/comment-guidelines',
-              'Platform Conduct': '/community-guidelines/platform-conduct',
-              'Moderation': '/community-guidelines/moderation',
-            }
-            const href = linkMap[item.title]
-
             const cardBody = (
               <>
                 <div className="flex items-center gap-2">
@@ -96,11 +95,11 @@ export default function CommunityGuidelinesPage() {
               </>
             )
 
-            if (href) {
+            if (item.href) {
               return (
                 <Link
                   key={item.title}
-                  href={href}
+                  href={item.href}
                   className="block rounded-xl border-2 border-ink-200 bg-canvas-0 p-5 shadow-sm transition hover:border-primary-300"
                 >
                   {cardBody}

@@ -2,6 +2,7 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { UsersIcon } from '@heroicons/react/outline'
+import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 export default function CommunityGuidelinesPlatformConductPage() {
   return (
@@ -14,37 +15,38 @@ export default function CommunityGuidelinesPlatformConductPage() {
         </div>
 
         <p className="mt-3 text-lg text-ink-400">
-          Keep Manifold a safe and sustainable place by avoiding spam, predatory behavior, and abusive content.
+          Rules that apply across the platform and don't fit neatly into other sections.
         </p>
 
+        <GuidelinesSearch />
+
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">General conduct</h2>
+          <h2 id="mana-and-money" className="text-xl font-semibold text-ink-900">Mana & money</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>No spammy direct messages or unsolicited promotions.</li>
-            <li>Do not harass or target users with repetitive negative behavior.</li>
-            <li>No predatory mana sales, bots, or third-party schemes to exploit the platform.</li>
-            <li>Respect discussion norms and don’t derail conversations with low-effort content.</li>
+            <li>Selling mana to another user for real money is not allowed.</li>
           </ul>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Content restrictions</h2>
+          <h2 id="messaging" className="text-xl font-semibold text-ink-900">Messaging</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>No doxxing, illegal content, or actionable personal details.</li>
-            <li>No hate speech, discrimination, extreme violence, or explicit content.</li>
-            <li>Do not use the platform for misinformation or content that encourages harmful behavior.</li>
-            <li>Follow all community and legal guidelines when sharing external links or information.</li>
+            <li>Unsolicited promotional direct messages are considered spam and may result in a ban.</li>
           </ul>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 className="text-xl font-semibold text-ink-900">Moderation support</h2>
+          <h2 id="reviews" className="text-xl font-semibold text-ink-900">Reviews</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Use reporting tools to flag policy-violating content.</li>
-            <li>Contact support with context if you see repeated abuse.</li>
-            <li>Moderators may take action for consistent or severe conduct violations.</li>
-            <li>Approach disagreements respectfully and use the dispute channels.</li>
+            <li>Threatening another user in response to a poor resolution rating may result in warnings, suspension of creator privileges, or a ban.</li>
+            <li>Leaving frequent inaccurate reviews may result in losing the ability to leave reviews and further disciplinary action.</li>
           </ul>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="reporting-and-feedback" className="text-xl font-semibold text-ink-900">Reporting & feedback</h2>
+          <p className="mt-3 text-ink-700">
+            If you believe a rule has been broken or want to flag something to the team, reach out on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>.
+          </p>
         </div>
       </Col>
     </Page>
