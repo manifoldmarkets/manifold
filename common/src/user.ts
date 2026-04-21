@@ -213,6 +213,12 @@ export const canReceiveBonuses = (user: User) =>
   user.bonusEligibility === 'verified' ||
   user.bonusEligibility === 'grandfathered'
 
+// Users unlock commenting by verifying identity OR by ever purchasing mana.
+// Purchasing mana is a strong anti-spam signal, so we treat it as equivalent
+// to verification for the purpose of leaving comments.
+export const canComment = (user: User) =>
+  canReceiveBonuses(user) || user.purchasedMana === true
+
 // expires: sep 26th, ~530pm PT
 const LIMITED_TIME_DEAL_END = 1727311753233 + DAY_MS
 export const introductoryTimeWindow = (user: User) =>

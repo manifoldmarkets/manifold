@@ -5,7 +5,7 @@ import { type Contract } from 'common/contract'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
-import { canReceiveBonuses } from 'common/user'
+import { canComment } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { first } from 'lodash'
@@ -223,11 +223,12 @@ export const validateComment = async (
   if (!contract) throw new APIError(404, 'Contract not found')
 
   // Allow market creators to comment on their own markets even if they
-  // cannot receive bonuses; require bonus eligibility for everyone else.
-  if (!canReceiveBonuses(you) && contract.creatorId !== you.id) {
+  // cannot comment elsewhere; everyone else must be verified or have ever
+  // purchased mana.
+  if (!canComment(you) && contract.creatorId !== you.id) {
     throw new APIError(
       403,
-      'Please verify your identity to comment on other users\' markets.'
+      'Verify your identity or purchase mana to comment on other users\' markets.'
     )
   }
   if (contract.token !== 'MANA') {

@@ -8,7 +8,7 @@ import { Bet } from 'common/bet'
 import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
 import { Contract } from 'common/contract'
 import { STARTING_BALANCE } from 'common/economy'
-import { canReceiveBonuses, User } from 'common/user'
+import { canComment, User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -110,7 +110,7 @@ export function CommentInput(props: {
 
   if (
     user &&
-    !canReceiveBonuses(user) &&
+    !canComment(user) &&
     user.bonusEligibility !== 'ineligible'
   )
     return <VerifyToCommentPrompt className={className} />
@@ -304,6 +304,7 @@ function VerifyToCommentPrompt(props: { className?: string }) {
           <span className="font-semibold">
             {formatMoney(STARTING_BALANCE, 'MANA')}
           </span>
+          . Purchasing mana also unlocks commenting.
         </span>
         <Button
           size="xs"
