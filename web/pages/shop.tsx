@@ -1687,29 +1687,27 @@ function MerchItemCard(props: {
         <div className="text-base font-semibold sm:text-lg">{item.name}</div>
         <p className="text-ink-600 text-sm">{item.description}</p>
 
-        {/* Size selector (hidden for single-variant items like one-size caps) */}
+        {/* Size selector (hidden for single-variant items like one-size caps).
+            Label + buttons share one flex-wrap row so the first few sizes sit
+            inline with "Size:" and only the overflow wraps onto line 2. */}
         {!singleVariant && (
-          <Col className="gap-2">
-            <span className="text-ink-600 text-sm font-medium">
-              Select size:
-            </span>
-            <Row className="flex-wrap gap-1.5">
-              {variants.map((variant) => (
-                <button
-                  key={variant.size}
-                  onClick={() => setSelectedSize(variant.size)}
-                  className={clsx(
-                    'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
-                    selectedSize === variant.size
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
-                      : 'border-ink-200 hover:border-ink-400 text-ink-700'
-                  )}
-                >
-                  {variant.size}
-                </button>
-              ))}
-            </Row>
-          </Col>
+          <Row className="flex-wrap items-center gap-1.5">
+            <span className="text-ink-600 mr-1 text-sm font-medium">Size:</span>
+            {variants.map((variant) => (
+              <button
+                key={variant.size}
+                onClick={() => setSelectedSize(variant.size)}
+                className={clsx(
+                  'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
+                  selectedSize === variant.size
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                    : 'border-ink-200 hover:border-ink-400 text-ink-700'
+                )}
+              >
+                {variant.size}
+              </button>
+            ))}
+          </Row>
         )}
 
         {/* Price block + full-width buy button stacked below.
