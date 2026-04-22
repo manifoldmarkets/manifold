@@ -1047,6 +1047,27 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-perp-funding-events': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      ts: number
+      fundingRate: number
+      oraclePrice: number
+      numLiquidations: number
+      adlFactorLong: number
+      adlFactorShort: number
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        since: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
+      })
+      .strict(),
+  },
   leagues: {
     method: 'GET',
     visibility: 'public',

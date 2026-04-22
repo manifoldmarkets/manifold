@@ -28,7 +28,7 @@ explicit (see "Integration points" below).
 
 - `queries.ts` — small SQL helpers used by `engine.ts` to keep the engine focused
   on state transitions rather than SQL construction. Row ↔ object converters live
-  here too (e.g. `rowToPerpPosition`).
+  here too (e.g. `rowToPosition`).
 
 - `user-contract-metrics.ts` — rebuilds `user_contract_metrics` rows for a perp
   contract from its events + positions. The engine is the authoritative writer

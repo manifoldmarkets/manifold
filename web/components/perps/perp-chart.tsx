@@ -33,15 +33,24 @@ export const PerpChart = (props: {
         })
         .finally(() => !cancelled && setLoading(false))
     } else {
-      // TODO(perps): once a funding-events API is added, fetch & render a step
-      // chart of fundingRate over time. For v1 we render the latest rate as a
-      // horizontal line so the toggle is wired up end-to-end.
-      const rate = (contract as any).fundingRate ?? 0
-      setFundingPoints([
-        { ts: since, value: rate },
-        { ts: Date.now(), value: rate },
-      ])
-      setLoading(false)
+      api('get-perp-funding-events', {
+        contractId: contract.id,
+        since,
+        limit: 1000,
+      })
+        .then((res) => {
+          if (cancelled) return
+          const series = res.map((p) => ({
+            ts: p.ts,
+            value: p.fundingRate,
+          }))
+          // Anchor the last point to "now" with the current rate so the chart
+          // doesn't drop off before the next funding tick.
+          const currentRate = (contract as any).fundingRate ?? 0
+          series.push({ ts: Date.now(), value: currentRate })
+          setFundingPoints(series)
+        })
+        .finally(() => !cancelled && setLoading(false))
     }
     return () => {
       cancelled = true

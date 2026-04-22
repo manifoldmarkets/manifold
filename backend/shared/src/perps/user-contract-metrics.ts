@@ -2,133 +2,136 @@
 // authoritative write path for perp ContractMetric — no per-trade mirror path.
 //
 // Behavior:
-//   invested   = sum of originalCostBasis across the user's open + closed
-//                positions (i.e. gross margin deposited).
+//   invested   = sum of positive originalCostBasis deltas across the user's
+//                open + closed positions (gross margin deposited).
 //   payout     = current position value (c + π) at the oracle price (0 if no
 //                open position).
 //   profit     = payout + totalAmountSold - totalAmountInvested
 //                where totalAmountSold is the sum of payouts already credited
 //                back on closes / liquidations.
 //   totalShares is repurposed to { LONG, SHORT } in notional mana.
+//   maxSharesOutcome is always null — perps don't fit the YES/NO taxonomy and
+//                we keep side info in totalShares instead.
 //
-// Since invested/sold are derived by summing `contract_perp_events`, the
-// computation is robust against crashes and partial writes.
+// The caller passes the *post-transaction* event list and position list so we
+// don't need to re-read the DB (which would return pre-tx state when this
+// runs inside a pgTrans.multi composition).
 
 import { ContractMetric } from 'common/contract-metric'
 import { PerpContract } from 'common/contract'
 import { getPositionValue } from 'common/perps/amm'
-import { PerpPosition } from 'common/perps/position'
+import { PerpEvent, PerpPosition } from 'common/perps/position'
 import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
 import { SupabaseTransaction } from 'shared/supabase/init'
-import { pgp } from 'shared/supabase/init'
 
 type EventAgg = {
   userId: string
-  totalInvested: number // sum of positive originalCostBasis deltas (opens/adds)
-  totalSold: number // sum of absolute originalCostBasis deltas on closes/liquidations/adl; mana returned
+  totalInvested: number
+  totalSold: number
+}
+
+const emptyAgg = (userId: string): EventAgg => ({
+  userId,
+  totalInvested: 0,
+  totalSold: 0,
+})
+
+const isSoldEventType = (t: string) =>
+  t === 'close' || t === 'liquidation' || t === 'adl'
+
+const applyEventToAgg = (
+  agg: EventAgg,
+  eventType: string,
+  originalCostBasisDelta: number,
+  payout: number
+) => {
+  if (eventType === 'open' || eventType === 'add') {
+    if (originalCostBasisDelta > 0) agg.totalInvested += originalCostBasisDelta
+  } else if (isSoldEventType(eventType)) {
+    agg.totalSold += payout
+  }
+}
+
+type BuildArgs = {
+  contract: PerpContract
+  userIds: string[]
+  /** Events created by this transaction that aren't yet in the DB. */
+  newEvents?: PerpEvent[]
+  /** Final positions after the transaction applied its writes. */
+  finalPositions: PerpPosition[]
 }
 
 /** Returns the list of ContractMetric rows (one per affected user) built from
- * the event log plus the current positions table. */
+ * the historical event log plus this transaction's new events and the final
+ * in-memory position state. */
 export const buildPerpUserContractMetrics = async (
   pgTrans: SupabaseTransaction,
-  contract: PerpContract,
-  userIds: string[]
+  { contract, userIds, newEvents = [], finalPositions }: BuildArgs
 ): Promise<Omit<ContractMetric, 'id'>[]> => {
   if (!userIds.length) return []
 
-  const eventRows = await pgTrans.any<{
-    user_id: string
-    original_cost_basis_delta: number | string
-    event_type: string
-  }>(
-    `select user_id, original_cost_basis_delta, event_type
-     from contract_perp_events
-     where contract_id = $1 and user_id = any($2)`,
-    [contract.id, userIds]
+  const aggByUser: Record<string, EventAgg> = Object.fromEntries(
+    userIds.map((uid) => [uid, emptyAgg(uid)])
   )
 
-  const aggByUser: Record<string, EventAgg> = {}
-  for (const uid of userIds) {
-    aggByUser[uid] = { userId: uid, totalInvested: 0, totalSold: 0 }
-  }
-  for (const row of eventRows) {
-    const d = Number(row.original_cost_basis_delta)
+  // Historical invested (from open/add events already in DB).
+  const investedRows = await pgTrans.any<{
+    user_id: string
+    original_cost_basis_delta: number | string
+  }>(
+    `select user_id, original_cost_basis_delta
+     from contract_perp_events
+     where contract_id = $1
+       and user_id = any($2)
+       and event_type in ('open','add')`,
+    [contract.id, userIds]
+  )
+  for (const row of investedRows) {
     const agg = aggByUser[row.user_id]
     if (!agg) continue
-    if (row.event_type === 'open' || row.event_type === 'add') {
-      if (d > 0) agg.totalInvested += d
-    } else if (
-      row.event_type === 'close' ||
-      row.event_type === 'liquidation' ||
-      row.event_type === 'adl'
-    ) {
-      // close event records negative originalCostBasis delta; mana returned
-      // is tracked in the event's `data.payout` (see engine). We fall back to
-      // |delta| if payout is not present (e.g. for partial liquidation).
-    }
+    const d = Number(row.original_cost_basis_delta)
+    if (d > 0) agg.totalInvested += d
   }
 
-  // For totalSold (and for accurate current payout) we need payouts from the
-  // event data column. Fetch separately — keeping two queries lets the first
-  // use an index-only scan.
-  const payoutRows = await pgTrans.any<{
+  // Historical sold (from close/liquidation/adl events already in DB).
+  const soldRows = await pgTrans.any<{
     user_id: string
     data: { payout?: number } | null
     event_type: string
   }>(
     `select user_id, data, event_type
      from contract_perp_events
-     where contract_id = $1 and user_id = any($2)
+     where contract_id = $1
+       and user_id = any($2)
        and event_type in ('close','liquidation','adl')`,
     [contract.id, userIds]
   )
-  for (const row of payoutRows) {
+  for (const row of soldRows) {
     const agg = aggByUser[row.user_id]
     if (!agg) continue
-    const payout = Number(row.data?.payout ?? 0)
-    agg.totalSold += payout
+    agg.totalSold += Number(row.data?.payout ?? 0)
   }
 
-  const positionRows = await pgTrans.any<{
-    user_id: string
-    direction: string
-    size: string | number
-    cost_basis: string | number
-    original_cost_basis: string | number
-    entry_price: string | number
-    leverage: string | number
-    liquidation_price: string | number
-    opened_time: string
-    updated_time: string
-  }>(
-    `select * from contract_perp_positions
-     where contract_id = $1 and user_id = any($2)`,
-    [contract.id, userIds]
-  )
+  // Apply this transaction's new events on top so the metrics reflect
+  // post-tx state even though the writes haven't been flushed yet.
+  for (const ev of newEvents) {
+    if (!ev.userId) continue
+    const agg = aggByUser[ev.userId]
+    if (!agg) continue
+    const payout = Number((ev.data as { payout?: number } | null)?.payout ?? 0)
+    applyEventToAgg(agg, ev.eventType, ev.originalCostBasisDelta ?? 0, payout)
+  }
 
   const positionsByUser: Record<string, PerpPosition[]> = {}
-  for (const r of positionRows) {
-    const p: PerpPosition = {
-      userId: r.user_id,
-      contractId: contract.id,
-      direction: r.direction as 'long' | 'short',
-      size: Number(r.size),
-      costBasis: Number(r.cost_basis),
-      originalCostBasis: Number(r.original_cost_basis),
-      entryPrice: Number(r.entry_price),
-      leverage: Number(r.leverage),
-      liquidationPrice: Number(r.liquidation_price),
-      openedTime: new Date(r.opened_time).getTime(),
-      updatedTime: new Date(r.updated_time).getTime(),
-    }
+  for (const p of finalPositions) {
+    if (p.size <= 0) continue
     if (!positionsByUser[p.userId]) positionsByUser[p.userId] = []
     positionsByUser[p.userId].push(p)
   }
 
   const now = Date.now()
-  const metrics: Omit<ContractMetric, 'id'>[] = userIds.map((uid) => {
-    const agg = aggByUser[uid] ?? { userId: uid, totalInvested: 0, totalSold: 0 }
+  return userIds.map((uid) => {
+    const agg = aggByUser[uid] ?? emptyAgg(uid)
     const positions = positionsByUser[uid] ?? []
     let longSize = 0
     let shortSize = 0
@@ -155,8 +158,7 @@ export const buildPerpUserContractMetrics = async (
       invested,
       loan: 0,
       marginLoan: 0,
-      maxSharesOutcome:
-        longSize > shortSize ? 'LONG' : shortSize > longSize ? 'SHORT' : null,
+      maxSharesOutcome: null,
       totalShares: { LONG: longSize, SHORT: shortSize },
       totalSpent: undefined,
       payout,
@@ -167,20 +169,14 @@ export const buildPerpUserContractMetrics = async (
       from: undefined,
     }
   })
-
-  return metrics
 }
 
 /** Rebuild-and-upsert in a single query string for pgTrans.multi composition. */
 export const buildPerpUserContractMetricsQuery = async (
   pgTrans: SupabaseTransaction,
-  contract: PerpContract,
-  userIds: string[]
+  args: BuildArgs
 ) => {
-  const metrics = await buildPerpUserContractMetrics(pgTrans, contract, userIds)
+  const metrics = await buildPerpUserContractMetrics(pgTrans, args)
   if (!metrics.length) return 'select 1 where false'
   return bulkUpdateContractMetricsQuery(metrics)
 }
-
-// Avoid "import not used" warning if caller only imports one of these.
-export { pgp }

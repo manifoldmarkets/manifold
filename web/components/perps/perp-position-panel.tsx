@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
+import { getUserFacingPnl } from 'common/perps/pnl'
+import { PerpPosition } from 'common/perps/position'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -71,10 +73,13 @@ export const PerpPositionPanel = (props: { contract: PerpContract }) => {
       <div className="text-ink-700 text-sm font-semibold">Your positions</div>
       {positions.map((p) => {
         const price = Number(contract.oraclePrice)
-        const side = p.direction === 'long' ? 1 : -1
-        const unrealized = side * p.size * (price - p.entryPrice)
-        const displayPnl =
-          unrealized + (p.costBasis - p.originalCostBasis) * -1
+        // getUserFacingPnl = (costBasis + π) - originalCostBasis, where π is
+        // the paper's (P - Pe)/Pe · q. This matches what the trader deposited
+        // net of any funding haircut/bonus.
+        const displayPnl = getUserFacingPnl(
+          { ...p, openedTime: 0, updatedTime: 0, contractId: contract.id } as PerpPosition,
+          price
+        )
         return (
           <Row
             key={p.direction}

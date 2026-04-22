@@ -72,31 +72,20 @@ const updateOnePerp = async (contract: PerpContract) => {
           originalCostBasis: liq.originalCostBasis,
         })
       }
-      if (
-        oracleResult.adlFactorLong < 1 ||
-        oracleResult.adlFactorShort < 1
-      ) {
-        // Notify remaining holders of the ADL-affected side.
-        const survivors = await pg.manyOrNone<{
-          user_id: string
-          direction: 'long' | 'short'
-        }>(
-          `select user_id, direction from contract_perp_positions
-           where contract_id = $1`,
-          [contract.id]
-        )
-        for (const s of survivors) {
-          const factor =
-            s.direction === 'long'
-              ? oracleResult.adlFactorLong
-              : oracleResult.adlFactorShort
-          if (factor >= 1) continue
-          await createPerpAdlNotification(pg, contract, s.user_id, {
-            direction: s.direction,
-            scaleFactor: factor,
+      // Only notify users whose positions were actually scaled — applyADL
+      // only shrinks profitable positions on the winning side, so a blanket
+      // "everyone on this side" notification would mislead losers.
+      for (const adj of oracleResult.adlAdjusted) {
+        await createPerpAdlNotification(
+          pg,
+          contract,
+          adj.position.userId,
+          {
+            direction: adj.position.direction,
+            scaleFactor: adj.scaleFactor,
             oraclePrice: latest.price,
-          })
-        }
+          }
+        )
       }
     }
 
@@ -112,7 +101,7 @@ const updateOnePerp = async (contract: PerpContract) => {
       ? new Date(lastFunding.ts).getTime()
       : 0
     if (now - lastFundingMs >= FUNDING_PERIOD_MS) {
-      await runFunding(contract.id, now)
+      await runFunding(contract.id, now, oracleResult)
     }
   } catch (err) {
     log(`error updating perp ${contract.slug}:`, err)

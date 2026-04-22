@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
-import { rowToPerpPosition } from 'shared/perps/queries'
+import { rowToPosition } from 'shared/perps/queries'
 
 export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
   body
@@ -17,7 +17,7 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
         [contractId]
       )
   return rows.map((r) => {
-    const p = rowToPerpPosition(r)
+    const p = rowToPosition(r)
     return {
       userId: p.userId,
       direction: p.direction,
