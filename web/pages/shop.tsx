@@ -1515,7 +1515,9 @@ function MerchItemCard(props: {
     // sizesForSelection rebuilds every render — depend on selectedColor instead
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor])
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentImageIndex, setCurrentImageIndex] = useState(
+    item.defaultImageIndex ?? 0
+  )
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
@@ -1559,9 +1561,9 @@ function MerchItemCard(props: {
     item.merchImagesByColor?.[selectedColor]) ||
     item.merchImages || [{ label: 'Front', url: item.imageUrl || '' }]
   // Reset the carousel when the user swaps colours so they always start on
-  // the new colour's first image.
+  // the new colour's default image (or the first image when no default set).
   useEffect(() => {
-    setCurrentImageIndex(0)
+    setCurrentImageIndex(item.defaultImageIndex ?? 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor])
 
@@ -1725,6 +1727,11 @@ function MerchItemCard(props: {
               alt={`${item.name} - ${images[currentImageIndex].label}`}
               className="h-full w-full object-contain p-2"
             />
+            {images.length > 1 && (
+              <div className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
+                {images[currentImageIndex].label}
+              </div>
+            )}
             <Row className="absolute bottom-2 left-1/2 -translate-x-1/2 gap-1.5">
               {images.map((_, idx) => (
                 <button

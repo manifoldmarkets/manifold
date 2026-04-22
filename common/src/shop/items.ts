@@ -206,6 +206,10 @@ export type ShopItem = {
   // Keyed by the same `color` string used in `variants`. When set, the card
   // swaps the carousel as the user picks a colour. Falls back to merchImages.
   merchImagesByColor?: Record<string, { label: string; url: string }[]>
+  // Index of the image to show first in the carousel. Lets you keep the
+  // natural Front-then-Back ordering of dots while landing the user on a
+  // different image initially. Also used as the reset target on colour swap.
+  defaultImageIndex?: number
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -868,9 +872,10 @@ export const SHOP_ITEMS: ShopItem[] = [
     slot: 'consumable',
     imageUrl: '/merch/AGGC-back-ghost.png',
     merchImages: [
-      { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
       { label: 'Front', url: '/merch/AGGC-front-ghost.png' },
+      { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
     ],
+    defaultImageIndex: 1,
     variants: [
       { size: 'S', printfulSyncVariantId: '69026b955ba991' },
       { size: 'M', printfulSyncVariantId: '69026b955baa12' },
