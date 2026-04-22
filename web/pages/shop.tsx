@@ -1771,36 +1771,51 @@ function MerchItemCard(props: {
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchEnd}
           >
-            <div
-              className={clsx(
-                'flex h-full will-change-transform',
-                // Soft ease-out-quint (cubic-bezier(0.22, 1, 0.36, 1)) +
-                // ~400ms feels deliberate: small swipes glide back, commits
-                // settle into place rather than snapping.
-                !isSwipeActive &&
-                  'transition-transform duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
-              )}
-              style={{
-                width: `${images.length * 100}%`,
-                transform: `translateX(calc(${
-                  -currentImageIndex * (100 / images.length)
-                }% + ${dragOffset}px))`,
-              }}
-            >
-              {images.map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img.url}
-                  alt={`${item.name} - ${img.label}`}
-                  className="h-full object-contain p-2"
+            {(() => {
+              // Pad the strip with wrap-around clones so a swipe at either
+              // edge reveals the image it'll wrap to (last image pulls in
+              // from the left at index 0; first image pulls in from the right
+              // at the last index). After commit, the index flips and the
+              // strip silently snaps to the real position of the same image
+              // (see isWrap branch in handleTouchEnd) — no visible jump since
+              // both padded positions display the same URL.
+              const hasMultiple = images.length > 1
+              const padded = hasMultiple
+                ? [images[images.length - 1], ...images, images[0]]
+                : images
+              const slot = hasMultiple ? currentImageIndex + 1 : 0
+              return (
+                <div
+                  className={clsx(
+                    'flex h-full will-change-transform',
+                    // Soft ease-out-quint (cubic-bezier(0.22, 1, 0.36, 1)) +
+                    // ~400ms: small swipes glide back, commits settle in.
+                    !isSwipeActive &&
+                      'transition-transform duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
+                  )}
                   style={{
-                    width: `${100 / images.length}%`,
-                    flexShrink: 0,
+                    width: `${padded.length * 100}%`,
+                    transform: `translateX(calc(${
+                      -slot * (100 / padded.length)
+                    }% + ${dragOffset}px))`,
                   }}
-                  draggable={false}
-                />
-              ))}
-            </div>
+                >
+                  {padded.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img.url}
+                      alt={`${item.name} - ${img.label}`}
+                      className="h-full object-contain p-2"
+                      style={{
+                        width: `${100 / padded.length}%`,
+                        flexShrink: 0,
+                      }}
+                      draggable={false}
+                    />
+                  ))}
+                </div>
+              )
+            })()}
             {images.length > 1 && (
               <div className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
                 {images[currentImageIndex].label}
