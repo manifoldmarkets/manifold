@@ -20,6 +20,7 @@ import {
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
+import { Contract } from 'common/contract'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { type Row } from 'common/supabase/utils'
 
@@ -119,7 +120,7 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     if (!contract) return false
     if (contract.token !== 'MANA') return false
     if (contract.isResolved) return false
-    if (contract.mechanism === 'perp') return false // perps excluded from loans
+    if ((contract as Contract).mechanism === 'perp') return false // perps excluded from loans
     if ((m.payout ?? 0) <= 0 && (m.invested ?? 0) <= 0) return false
     return isMarketEligibleForLoan({
       visibility: contract.visibility,

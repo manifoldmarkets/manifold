@@ -11,11 +11,13 @@ export const getOraclePrice: APIHandler<'get-oracle-price'> = async (body) => {
      limit 1`,
     [feedId]
   )
-  if (!row) return null
+  if (!row) return { latest: null }
   return {
-    feedId,
-    price: Number(row.price),
-    ts: new Date(row.ts).getTime(),
+    latest: {
+      feedId,
+      price: Number(row.price),
+      ts: new Date(row.ts).getTime(),
+    },
   }
 }
 

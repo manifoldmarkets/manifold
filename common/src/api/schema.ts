@@ -988,7 +988,9 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as { feedId: string; price: number; ts: number } | null,
+    returns: {} as {
+      latest: { feedId: string; price: number; ts: number } | null
+    },
     props: z.object({ feedId: z.string().min(1) }).strict(),
   },
   'get-oracle-price-series': {

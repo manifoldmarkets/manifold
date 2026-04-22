@@ -29,6 +29,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
+  SupabaseDirectClient,
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -92,7 +93,7 @@ const loadStateForUpdate = async (
 }
 
 const getLatestOraclePrice = async (
-  pgTrans: SupabaseTransaction,
+  pgTrans: SupabaseDirectClient,
   feedId: string
 ): Promise<{ price: number; ts: number } | null> => {
   const row = await pgTrans.oneOrNone<{ ts: string; price: number | string }>(
