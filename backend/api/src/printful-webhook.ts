@@ -45,8 +45,13 @@ const STATUS_MAP: Record<string, string> = {
   package_returned: 'FAILED',
 }
 
-// Events that should trigger an automatic mana refund
-const REFUND_EVENTS = new Set(['order_failed'])
+// Events that should trigger an automatic mana refund. Includes
+// `order_canceled` so a Printful-side cancellation refunds the user
+// without admin intervention. Admin-initiated cancels (via /admin/merch)
+// already refund inside the cancel handler and set status to CANCELLED;
+// when Printful bounces the resulting `order_canceled` webhook back at us,
+// `refundOrder`'s status guard short-circuits it (no double refund).
+const REFUND_EVENTS = new Set(['order_failed', 'order_canceled'])
 
 // Events that need manual admin attention (log loud warning)
 const MANUAL_REVIEW_EVENTS = new Set(['package_returned'])
@@ -85,41 +90,55 @@ export const printfulWebhook = async (req: Request, res: Response) => {
 
   const pg = createSupabaseDirectClient()
 
+  // For refund-eligible events, skip the naive status UPDATE here and let
+  // refundOrder own the transition (refund + status → REFUNDED + notify
+  // happen atomically inside one transaction). If we UPDATE'd to CANCELLED
+  // first, refundOrder's `status === 'CANCELLED'` guard would short-circuit
+  // the refund. The same guard still protects against double refunds when
+  // an admin-cancel (which sets status = CANCELLED + refunds in /admin/merch)
+  // bounces back to us as an `order_canceled` webhook.
   let shippedRowCount = 0
-  try {
-    if (newStatus === 'SHIPPED') {
-      const result = await pg.result(
-        `UPDATE shop_orders
-         SET status = 'SHIPPED',
-             shipped_time = now(),
-             printful_status = $2
-         WHERE printful_order_id = $1
-         AND status NOT IN ('SHIPPED', 'CANCELLED', 'REFUNDED', 'FAILED')`,
-        [printfulOrderId, event.data.order.status]
-      )
-      shippedRowCount = result.rowCount ?? 0
-    } else {
-      await pg.none(
-        `UPDATE shop_orders
-         SET status = $2,
-             printful_status = $3
-         WHERE printful_order_id = $1
-         AND status NOT IN ('CANCELLED', 'REFUNDED')`,
-        [printfulOrderId, newStatus, event.data.order.status]
-      )
-    }
-  } catch (e: unknown) {
-    console.error('Printful webhook DB update failed:', e)
-    res.status(500).send('Internal error')
-    return
-  }
-
-  // Auto-refund for failed orders
   if (REFUND_EVENTS.has(event.type)) {
     try {
-      await refundOrder(pg, printfulOrderId, event.type)
+      await refundOrder(
+        pg,
+        printfulOrderId,
+        event.type,
+        event.data.order.status
+      )
     } catch (e: unknown) {
-      console.error(`Printful webhook auto-refund failed for ${printfulOrderId}:`, e)
+      console.error(
+        `Printful webhook auto-refund failed for ${printfulOrderId}:`,
+        e
+      )
+    }
+  } else {
+    try {
+      if (newStatus === 'SHIPPED') {
+        const result = await pg.result(
+          `UPDATE shop_orders
+           SET status = 'SHIPPED',
+               shipped_time = now(),
+               printful_status = $2
+           WHERE printful_order_id = $1
+           AND status NOT IN ('SHIPPED', 'CANCELLED', 'REFUNDED', 'FAILED')`,
+          [printfulOrderId, event.data.order.status]
+        )
+        shippedRowCount = result.rowCount ?? 0
+      } else {
+        await pg.none(
+          `UPDATE shop_orders
+           SET status = $2,
+               printful_status = $3
+           WHERE printful_order_id = $1
+           AND status NOT IN ('CANCELLED', 'REFUNDED')`,
+          [printfulOrderId, newStatus, event.data.order.status]
+        )
+      }
+    } catch (e: unknown) {
+      console.error('Printful webhook DB update failed:', e)
+      res.status(500).send('Internal error')
+      return
     }
   }
 
@@ -146,7 +165,8 @@ export const printfulWebhook = async (req: Request, res: Response) => {
 async function refundOrder(
   pg: ReturnType<typeof createSupabaseDirectClient>,
   printfulOrderId: string,
-  reason: string
+  eventType: string,
+  printfulStatus: string
 ) {
   const order = await pg.oneOrNone(
     `SELECT id, user_id, item_id, price_mana, status
@@ -154,6 +174,10 @@ async function refundOrder(
     [printfulOrderId]
   )
   if (!order) return
+  // Status guard: an admin-cancel via /admin/merch already set status to
+  // CANCELLED and refunded the user. When Printful bounces the resulting
+  // `order_canceled` webhook back at us, we early-return here — no double
+  // refund. Same logic for already-REFUNDED rows from a duplicate webhook.
   if (['CANCELLED', 'REFUNDED'].includes(order.status)) return
 
   const amount = Number(order.price_mana)
@@ -181,7 +205,7 @@ async function refundOrder(
           toId: order.user_id,
           amount,
           token: 'M$',
-          description: `Auto-refund: Printful ${reason} (order ${order.id})`,
+          description: `Auto-refund: Printful ${eventType} (order ${order.id})`,
           data: {
             itemId: order.item_id,
             merchOrder: true,
@@ -193,20 +217,29 @@ async function refundOrder(
 
         await runTxnOutsideBetQueue(tx, refundTxn)
         await tx.none(
-          `UPDATE shop_orders SET status = 'REFUNDED' WHERE id = $1`,
-          [order.id]
+          `UPDATE shop_orders
+           SET status = 'REFUNDED', printful_status = $2
+           WHERE id = $1`,
+          [order.id, printfulStatus]
         )
-        console.warn(`Webhook auto-refund: ${amount} mana to ${order.user_id} (${reason})`)
+        console.warn(`Webhook auto-refund: ${amount} mana to ${order.user_id} (${eventType})`)
         didRefund = true
       }),
     [order.id]
   )
 
-  // Notify the user that their merch order failed and was auto-refunded
-  // (only if we actually performed a refund — skip on duplicate webhooks).
+  // Notify the user (only if we actually performed a refund — duplicate
+  // webhooks short-circuit before reaching here).
   if (didRefund) {
     try {
-      await notifyAutoRefunded(pg, order.id, order.user_id, order.item_id, amount)
+      await notifyAutoRefunded(
+        pg,
+        order.id,
+        order.user_id,
+        order.item_id,
+        amount,
+        eventType
+      )
     } catch (e: unknown) {
       console.warn(`Auto-refund notification failed for order ${order.id}:`, e)
     }
@@ -218,10 +251,20 @@ async function notifyAutoRefunded(
   shopOrderId: string,
   userId: string,
   itemId: string,
-  refundAmount: number
+  refundAmount: number,
+  eventType: string
 ) {
   const item = getShopItem(itemId)
   const itemName = item?.name ?? itemId
+  // Different wording depending on whether Printful canceled the order
+  // (likely admin-on-Printful-side or stock issue) vs. the order outright
+  // failed during fulfillment validation.
+  const sourceText =
+    eventType === 'order_canceled'
+      ? `Your ${itemName} order was canceled by our fulfillment partner ` +
+        `and automatically refunded (${formatMoney(refundAmount)}).`
+      : `Your ${itemName} order failed at the fulfillment stage and was ` +
+        `automatically refunded (${formatMoney(refundAmount)}).`
   const notification: Notification = {
     id: nanoid(6),
     userId,
@@ -233,10 +276,8 @@ async function notifyAutoRefunded(
     sourceUserName: MANIFOLD_USER_NAME,
     sourceUserUsername: MANIFOLD_USER_USERNAME,
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText:
-      `Your ${itemName} order failed at the fulfillment stage and was ` +
-      `automatically refunded (${formatMoney(refundAmount)}).`,
-    data: { itemId, itemName, event: 'auto_refunded', refundAmount },
+    sourceText,
+    data: { itemId, itemName, event: 'auto_refunded', eventType, refundAmount },
   }
   await insertNotificationToSupabase(notification, pg)
 }
