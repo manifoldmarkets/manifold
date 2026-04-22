@@ -1,5 +1,8 @@
 import { PerpContract } from 'common/contract'
-import { PERPS_ENABLED } from 'common/envs/constants'
+import {
+  PERPS_ENABLED,
+  PERPS_SKIP_ORACLE_FRESHNESS,
+} from 'common/envs/constants'
 import { mapAsync } from 'common/util/promise'
 import {
   createPerpAdlNotification,
@@ -48,7 +51,10 @@ const updateOnePerp = async (contract: PerpContract) => {
       log(`skipping ${contract.slug}: no oracle price for feed`)
       return
     }
-    if (now - latest.ts > contract.maxOraclePriceAgeMs) {
+    if (
+      !PERPS_SKIP_ORACLE_FRESHNESS &&
+      now - latest.ts > contract.maxOraclePriceAgeMs
+    ) {
       log(
         `skipping ${contract.slug}: oracle feed ${contract.oracleFeedId} stale (${
           now - latest.ts

@@ -7,6 +7,7 @@
 
 import { APIError } from 'common/api/utils'
 import { PerpContract } from 'common/contract'
+import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import {
   applyADL,
   applyFunding,
@@ -178,6 +179,7 @@ export const openOrAddPosition = async (
     // Oracle freshness.
     const now = Date.now()
     if (
+      !PERPS_SKIP_ORACLE_FRESHNESS &&
       contract.oraclePriceTime &&
       now - contract.oraclePriceTime > contract.maxOraclePriceAgeMs
     ) {
@@ -338,6 +340,7 @@ export const closePosition = async (
     // check here so both sides of the trade use the same guardrail.
     const now = Date.now()
     if (
+      !PERPS_SKIP_ORACLE_FRESHNESS &&
       contract.oraclePriceTime &&
       now - contract.oraclePriceTime > contract.maxOraclePriceAgeMs
     ) {
