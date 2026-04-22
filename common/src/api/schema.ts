@@ -1041,11 +1041,47 @@ export const API = (_apiTypeCheck = {
       entryPrice: number
       leverage: number
       liquidationPrice: number
+      openedTime: number
+      updatedTime: number
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
     }[],
     props: z
       .object({
         contractId: z.string().min(1),
         userId: z.string().min(1).optional(),
+      })
+      .strict(),
+  },
+  'get-perp-events': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      id: number
+      ts: number
+      userId: string | null
+      direction: 'long' | 'short' | null
+      eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+      oraclePrice: number
+      sizeDelta: number
+      costBasisDelta: number
+      originalCostBasisDelta: number
+      leverage: number | null
+      payout: number | null
+      pnl: number | null
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        userId: z.string().min(1).optional(),
+        beforeId: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(200).optional(),
       })
       .strict(),
   },
