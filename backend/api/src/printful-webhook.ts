@@ -12,6 +12,7 @@ import {
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
 import { nanoid } from 'common/util/random'
+import { formatMoney } from 'common/util/format'
 
 // Printful webhook event types we care about
 // See: https://developers.printful.com/docs/#tag/Webhook-API
@@ -33,7 +34,10 @@ type PrintfulEvent = {
   }
 }
 
-// Map Printful statuses to our shop_orders statuses
+// Map Printful event types to our shop_orders statuses. Note: Printful uses
+// US spelling for events (`order_canceled`) while our DB enum has historically
+// stored UK spelling (`'CANCELLED'`) — kept as-is to match existing data and
+// every other status check in the codebase (ticket flows, etc.).
 const STATUS_MAP: Record<string, string> = {
   package_shipped: 'SHIPPED',
   order_canceled: 'CANCELLED',
@@ -100,7 +104,7 @@ export const printfulWebhook = async (req: Request, res: Response) => {
          SET status = $2,
              printful_status = $3
          WHERE printful_order_id = $1
-         AND status NOT IN ('CANCELLED', 'REFUNDED', 'DELIVERED')`,
+         AND status NOT IN ('CANCELLED', 'REFUNDED')`,
         [printfulOrderId, newStatus, event.data.order.status]
       )
     }
@@ -158,6 +162,7 @@ async function refundOrder(
     return
   }
 
+  let didRefund = false
   await betsQueue.enqueueFn(
     () =>
       runTransactionWithRetries(async (tx) => {
@@ -177,7 +182,13 @@ async function refundOrder(
           amount,
           token: 'M$',
           description: `Auto-refund: Printful ${reason} (order ${order.id})`,
-          data: { itemId: order.item_id, merchOrder: true, refund: true },
+          data: {
+            itemId: order.item_id,
+            merchOrder: true,
+            refund: true,
+            printfulOrderId,
+            shopOrderId: order.id,
+          },
         }
 
         await runTxnOutsideBetQueue(tx, refundTxn)
@@ -186,9 +197,48 @@ async function refundOrder(
           [order.id]
         )
         console.warn(`Webhook auto-refund: ${amount} mana to ${order.user_id} (${reason})`)
+        didRefund = true
       }),
     [order.id]
   )
+
+  // Notify the user that their merch order failed and was auto-refunded
+  // (only if we actually performed a refund — skip on duplicate webhooks).
+  if (didRefund) {
+    try {
+      await notifyAutoRefunded(pg, order.id, order.user_id, order.item_id, amount)
+    } catch (e: unknown) {
+      console.warn(`Auto-refund notification failed for order ${order.id}:`, e)
+    }
+  }
+}
+
+async function notifyAutoRefunded(
+  pg: ReturnType<typeof createSupabaseDirectClient>,
+  shopOrderId: string,
+  userId: string,
+  itemId: string,
+  refundAmount: number
+) {
+  const item = getShopItem(itemId)
+  const itemName = item?.name ?? itemId
+  const notification: Notification = {
+    id: nanoid(6),
+    userId,
+    reason: 'merch_order_update',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: shopOrderId,
+    sourceType: 'merch_order_update',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText:
+      `Your ${itemName} order failed at the fulfillment stage and was ` +
+      `automatically refunded (${formatMoney(refundAmount)}).`,
+    data: { itemId, itemName, event: 'auto_refunded', refundAmount },
+  }
+  await insertNotificationToSupabase(notification, pg)
 }
 
 async function notifyShipped(

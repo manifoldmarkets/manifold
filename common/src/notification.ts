@@ -370,7 +370,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   },
   merch_order_update: {
     simple: 'Merch order updates',
-    detailed: 'Updates when your merch order ships or is cancelled',
+    detailed: 'Updates when your merch order ships or is canceled',
   },
   market_movements: {
     simple: 'Market movements',

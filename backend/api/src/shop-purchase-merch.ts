@@ -133,14 +133,16 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
         }
 
         // Create transaction to deduct mana (item price + shipping).
-        // Description includes colour when the variant has one so admins can
-        // eyeball Black/M vs Navy/M in the txn log without clicking through
-        // to Printful.
+        // Description deliberately OMITS the size — the balance log is public
+        // and a user's t-shirt size shouldn't be. Colour is included when
+        // present (low-sensitivity, useful context). The variantId stays on
+        // txn.data for refund/audit lookups (opaque Printful hex, not
+        // human-readable). Full size/colour/variant lives on shop_orders
+        // .metadata below for admin-only lookup.
         const discountPercent = Math.round(shopDiscount * 100)
-        const variantLabel = variant.color
-          ? `${variant.color} / ${variant.size}`
-          : variant.size
-        const descriptionParts = [`Purchased ${item.name} (${variantLabel})`]
+        const descriptionParts = [
+          `Purchased ${item.name}${variant.color ? ` (${variant.color})` : ''}`,
+        ]
         if (discountPercent > 0) {
           descriptionParts.push(`(${discountPercent}% supporter discount)`)
         }
@@ -161,11 +163,18 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
 
         const txn = await runTxnOutsideBetQueue(tx, txnData)
 
-        // Insert order record as PENDING_FULFILLMENT — Printful details added after tx
+        // Insert order record as PENDING_FULFILLMENT — Printful details added
+        // after tx. metadata captures what was actually ordered so /admin/merch
+        // can render the variant inline without joining txns or Printful.
+        const orderMetadata = {
+          size: variant.size,
+          ...(variant.color ? { color: variant.color } : {}),
+          variantId,
+        }
         await tx.none(
-          `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status)
-           VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT')`,
-          [auth.uid, itemId, totalCharge, txn.id]
+          `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status, metadata)
+           VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT', $5)`,
+          [auth.uid, itemId, totalCharge, txn.id, orderMetadata]
         )
 
         return { txnId: txn.id, price: totalCharge, username: user.username }

@@ -8,7 +8,8 @@ create table if not exists
 insert into merch_stock_status (item_id, out_of_stock) values
   ('merch-aggc-tshirt', true),
   ('merch-cap-white-logo', true),
-  ('merch-cap-purple-logo', true)
+  ('merch-cap-purple-logo', true),
+  ('merch-wordmark-tshirt', true)
 on conflict (item_id) do nothing;
 
 -- RLS: public read, no client-side writes (all mutations go through service role)

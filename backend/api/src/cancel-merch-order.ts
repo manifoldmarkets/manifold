@@ -39,10 +39,10 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
         }
 
         if (order.status === 'CANCELLED' || order.status === 'REFUNDED' || order.status === 'FAILED') {
-          throw new APIError(400, 'Order is already cancelled/refunded')
+          throw new APIError(400, 'Order is already canceled/refunded')
         }
 
-        if (order.status === 'SHIPPED' || order.status === 'DELIVERED') {
+        if (order.status === 'SHIPPED') {
           throw new APIError(400, 'Cannot cancel an order that has already shipped')
         }
 
@@ -59,12 +59,19 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
           toId: order.user_id,
           amount,
           token: 'M$',
-          description: `Admin refund: merch order ${orderId} cancelled`,
+          description: `Admin refund: merch order ${orderId} canceled`,
           data: {
             itemId: order.item_id,
             merchOrder: true,
             refund: true,
-            cancelledBy: auth.uid,
+            canceledBy: auth.uid,
+            shopOrderId: orderId,
+            // Printful order ID stored for cross-correlation between our
+            // refund txn and the Printful draft we cancel below. Opaque
+            // numeric ID — no API access without our Bearer token.
+            ...(order.printful_order_id
+              ? { printfulOrderId: order.printful_order_id as string }
+              : {}),
           },
         }
 
@@ -110,7 +117,7 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
     }
   }
 
-  // Notify the user their order was cancelled and refunded
+  // Notify the user their order was canceled and refunded
   try {
     const pg = createSupabaseDirectClient()
     const item = getShopItem(orderItemId)
@@ -126,8 +133,8 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
       sourceUserName: MANIFOLD_USER_NAME,
       sourceUserUsername: MANIFOLD_USER_USERNAME,
       sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-      sourceText: `Your ${itemName} order has been cancelled and refunded.`,
-      data: { itemId: orderItemId, itemName, event: 'cancelled', refundAmount },
+      sourceText: `Your ${itemName} order has been canceled and refunded.`,
+      data: { itemId: orderItemId, itemName, event: 'canceled', refundAmount },
     }
     await insertNotificationToSupabase(notification, pg)
   } catch (e: unknown) {

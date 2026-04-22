@@ -20,7 +20,6 @@ const ORDER_STATUS_COLORS: Record<string, string> = {
   PENDING_FULFILLMENT: 'bg-yellow-100 text-yellow-800',
   COMPLETED: 'bg-blue-100 text-blue-800',
   SHIPPED: 'bg-indigo-100 text-indigo-800',
-  DELIVERED: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
   FAILED: 'bg-red-100 text-red-800',
   REFUNDED: 'bg-gray-100 text-gray-800',
@@ -38,7 +37,7 @@ export default function AdminMerchPage() {
       <Col className="mx-8 gap-8">
         <Title>Merch Management</Title>
         <p className="text-ink-500 -mt-4 text-sm">
-          Always refresh the page before cancelling an order in case the status
+          Always refresh the page before canceling an order in case the status
           has changed.
         </p>
         <StockManagement />
@@ -125,31 +124,34 @@ function OrderManagement() {
   })
   const orders = data?.orders ?? []
   const total = data?.total ?? 0
-  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [cancelingId, setCancelingId] = useState<string | null>(null)
 
   const handleCancel = async (
     orderId: string,
     username: string,
     itemName: string,
-    amount: number
+    amount: number,
+    printfulOrderId: string | undefined
   ) => {
     if (
       !confirm(
-        `Cancel order for @${username}?\n\nItem: ${itemName}\nRefund: ${formatMoney(amount)}\n\nThis will refund the full amount to the user.`
+        `Cancel order for @${username}?\n\nItem: ${itemName}\nRefund: ${formatMoney(
+          amount
+        )}\nPrintful: ${printfulOrderId ?? '\u2014'}\n\nThis will refund the full amount to the user and cancel the draft on Printful.`
       )
     )
       return
-    setCancellingId(orderId)
+    setCancelingId(orderId)
     try {
       const result = await api('cancel-merch-order', { orderId })
       toast.success(
-        `Order cancelled. Refunded ${formatMoney(result.refundedAmount)} to @${username}`
+        `Order canceled. Refunded ${formatMoney(result.refundedAmount)} to @${username}`
       )
       refresh()
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to cancel order')
     } finally {
-      setCancellingId(null)
+      setCancelingId(null)
     }
   }
 
@@ -203,7 +205,7 @@ function OrderManagement() {
                 <OrderRow
                   key={order.id}
                   order={order}
-                  cancelling={cancellingId === order.id}
+                  canceling={cancelingId === order.id}
                   onCancel={handleCancel}
                 />
               ))}
@@ -217,20 +219,32 @@ function OrderManagement() {
 
 function OrderRow(props: {
   order: ShopOrder & { username: string; displayName: string }
-  cancelling: boolean
+  canceling: boolean
   onCancel: (
     orderId: string,
     username: string,
     itemName: string,
-    amount: number
+    amount: number,
+    printfulOrderId: string | undefined
   ) => void
 }) {
-  const { order, cancelling, onCancel } = props
+  const { order, canceling, onCancel } = props
   const item = getShopItem(order.itemId)
   const itemName = item?.name ?? order.itemId
+  // Build a short variant suffix from order.metadata (populated on new orders
+  // since the wordmark-tshirt commit). Skipped for single-variant items where
+  // 'One Size' would be noise. Legacy orders pre-metadata show no suffix.
+  const meta = order.metadata as
+    | { size?: string; color?: string }
+    | undefined
+  const variantLabel = meta?.color
+    ? `${meta.color} / ${meta.size ?? '?'}`
+    : meta?.size && meta.size !== 'One Size'
+    ? meta.size
+    : null
   const statusColor =
     ORDER_STATUS_COLORS[order.status] ?? 'bg-gray-100 text-gray-800'
-  const canCancel = !['SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED', 'FAILED'].includes(
+  const canCancel = !['SHIPPED', 'CANCELLED', 'REFUNDED', 'FAILED'].includes(
     order.status
   )
 
@@ -252,7 +266,12 @@ function OrderRow(props: {
           @{order.username}
         </a>
       </td>
-      <td className="px-3 py-2">{itemName}</td>
+      <td className="px-3 py-2">
+        {itemName}
+        {variantLabel && (
+          <span className="text-ink-500"> — {variantLabel}</span>
+        )}
+      </td>
       <td className="px-3 py-2">{formatMoney(order.priceMana)}</td>
       <td className="px-3 py-2">
         <span
@@ -262,16 +281,31 @@ function OrderRow(props: {
         </span>
       </td>
       <td className="px-3 py-2 font-mono text-xs">
-        {order.txnId ? `manifold-${order.txnId}` : '\u2014'}
+        {/* Printful ID stacked above our manifold-{txnId} ref so admins can
+            cross-reference both without widening the table. */}
+        <div>
+          <span className="text-ink-500">Printful:</span>{' '}
+          {order.printfulOrderId ?? '\u2014'}
+        </div>
+        <div>
+          <span className="text-ink-500">Manifold:</span>{' '}
+          {order.txnId ? `manifold-${order.txnId}` : '\u2014'}
+        </div>
       </td>
       <td className="px-3 py-2">
         {canCancel && (
           <Button
             size="2xs"
             color="red"
-            loading={cancelling}
+            loading={canceling}
             onClick={() =>
-              onCancel(order.id, order.username, itemName, order.priceMana)
+              onCancel(
+                order.id,
+                order.username,
+                variantLabel ? `${itemName} — ${variantLabel}` : itemName,
+                order.priceMana,
+                order.printfulOrderId
+              )
             }
           >
             Cancel & Refund
