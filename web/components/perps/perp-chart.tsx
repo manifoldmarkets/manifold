@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { line } from 'd3-shape'
 import { PerpContract } from 'common/contract'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { api } from 'web/lib/api/api'
 
 type Point = { ts: number; value: number }
@@ -99,6 +100,11 @@ export const PerpChart = (props: {
   }
 
   const yTicks = yScale.ticks(4)
+  // Infer decimals from the whole series so every tick uses the same scale.
+  // For price mode, integer-valued series (e.g. DAU) render as "39" not
+  // "39.0000"; for funding, we always want 3 decimals on the percentage.
+  const priceDecimals =
+    mode === 'price' ? inferPriceDecimals(points.map((p) => p.value)) : 0
 
   return (
     <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
@@ -119,7 +125,7 @@ export const PerpChart = (props: {
             fill="currentColor"
             opacity={0.6}
           >
-            {formatTick(t, mode)}
+            {formatTick(t, mode, priceDecimals)}
           </text>
         </g>
       ))}
@@ -134,7 +140,11 @@ export const PerpChart = (props: {
   )
 }
 
-const formatTick = (v: number, mode: 'price' | 'funding') => {
+const formatTick = (
+  v: number,
+  mode: 'price' | 'funding',
+  priceDecimals: number
+) => {
   if (mode === 'funding') return `${(v * 100).toFixed(3)}%`
-  return Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(4)
+  return formatPrice(v, priceDecimals)
 }
