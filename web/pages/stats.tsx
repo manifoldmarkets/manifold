@@ -108,6 +108,12 @@ type ShopStats = {
     quantity: number
     revenue: number
   }[]
+  merchSales: {
+    date: string
+    itemId: string
+    quantity: number
+    revenue: number
+  }[]
   ticketSales: {
     itemId: string
     quantity: number
@@ -812,6 +818,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
     subscriptionSales,
     digitalGoodsSales,
     ticketSales,
+    merchSales = [],
     subscribersByTier,
     subscriptionsOverTime,
   } = shopStats
@@ -868,6 +875,47 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
       return new Date(s.date) >= thirtyDaysAgo
     })
     .reduce((sum, s) => sum + s.revenue, 0)
+
+  // Aggregate merch sales by date (same shape as digital goods)
+  const merchSalesByDate = merchSales.reduce((acc, sale) => {
+    if (!acc[sale.date]) {
+      acc[sale.date] = { quantity: 0, revenue: 0 }
+    }
+    acc[sale.date].quantity += sale.quantity
+    acc[sale.date].revenue += sale.revenue
+    return acc
+  }, {} as Record<string, { quantity: number; revenue: number }>)
+  const dailyMerchSales = Object.entries(merchSalesByDate)
+    .map(([date, data]) => ({ x: date, y: data.quantity }))
+    .sort((a, b) => a.x.localeCompare(b.x))
+  const dailyMerchRevenue = Object.entries(merchSalesByDate)
+    .map(([date, data]) => ({ x: date, y: data.revenue / 1000 }))
+    .sort((a, b) => a.x.localeCompare(b.x))
+
+  const last30dMerchRevenue = merchSales
+    .filter((s) => {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      return new Date(s.date) >= thirtyDaysAgo
+    })
+    .reduce((sum, s) => sum + s.revenue, 0)
+
+  const merchItemSales = merchSales.reduce((acc, sale) => {
+    if (!acc[sale.itemId]) {
+      acc[sale.itemId] = { quantity: 0, revenue: 0 }
+    }
+    acc[sale.itemId].quantity += sale.quantity
+    acc[sale.itemId].revenue += sale.revenue
+    return acc
+  }, {} as Record<string, { quantity: number; revenue: number }>)
+  const merchItemSalesArray = orderBy(
+    Object.entries(merchItemSales).map(([itemId, data]) => ({
+      itemId,
+      ...data,
+    })),
+    'revenue',
+    'desc'
+  )
 
   // Get sales breakdown by item for subscriptions
   const subItemSales = subscriptionSales.reduce((acc, sale) => {
@@ -933,6 +981,10 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
     'avatar-crown': 'Crown',
     'avatar-graduation-cap': 'Graduation Cap',
     'hovercard-glow': 'Profile Border',
+    'merch-aggc-tshirt': 'AGGC T-Shirt',
+    'merch-wordmark-tshirt': 'White Wordmark T-Shirt',
+    'merch-cap-white-logo': 'White Logo Cap',
+    'merch-cap-purple-logo': 'Purple Logo Cap',
   }
 
   return (
@@ -1057,6 +1109,55 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
         items={goodsItemSalesArray}
         itemDisplayNames={itemDisplayNames}
       />
+
+      {/* MERCH SECTION — physical items fulfilled via Printful. Tracked
+          separately from Digital Goods because merch orders never reach
+          'COMPLETED' status (they flow PENDING_FULFILLMENT → SHIPPED and
+          were silently dropped by the digital-goods query before). */}
+      {merchSales.length > 0 && (
+        <>
+          <Spacer h={12} />
+          <Title>Merch</Title>
+          <Spacer h={4} />
+          <h3 className="text-lg font-semibold">Merch Sales</h3>
+          <p className="text-ink-500">
+            <b>{formatMoney(last30dMerchRevenue)}</b> from merch in the last 30d
+          </p>
+          <Spacer h={4} />
+          <Tabs
+            className="mb-4"
+            defaultIndex={0}
+            tabs={[
+              {
+                title: 'Daily Items Sold',
+                content:
+                  dailyMerchSales.length > 0 ? (
+                    <DailyChart values={dailyMerchSales} />
+                  ) : (
+                    <p className="text-ink-500">
+                      No merch sales data available.
+                    </p>
+                  ),
+              },
+              {
+                title: 'Daily Revenue (÷1000)',
+                content:
+                  dailyMerchRevenue.length > 0 ? (
+                    <DailyChart values={dailyMerchRevenue} />
+                  ) : (
+                    <p className="text-ink-500">No revenue data available.</p>
+                  ),
+              },
+            ]}
+          />
+
+          <SalesTable
+            title="Merch Sales by Item"
+            items={merchItemSalesArray}
+            itemDisplayNames={itemDisplayNames}
+          />
+        </>
+      )}
 
       {/* MANIFEST TICKETS SECTION */}
       {ticketSales.length > 0 && (

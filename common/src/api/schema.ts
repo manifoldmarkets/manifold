@@ -3955,6 +3955,12 @@ export const API = (_apiTypeCheck = {
         quantity: number
         revenue: number
       }[]
+      merchSales: {
+        date: string
+        itemId: string
+        quantity: number
+        revenue: number
+      }[]
       subscribersByTier: {
         tier: 'basic' | 'plus' | 'premium'
         count: number
