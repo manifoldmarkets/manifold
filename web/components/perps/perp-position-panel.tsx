@@ -1,8 +1,10 @@
+import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -56,9 +58,9 @@ export const PerpPositionPanel = (props: { contract: PerpContract }) => {
         direction,
       })
       toast.success(
-        `Closed ${direction} — payout ${formatMoney(res.payout)} (PnL ${formatMoney(
-          res.pnl
-        )})`
+        `Closed ${direction} — payout ${formatMoney(
+          res.payout
+        )} (PnL ${formatMoney(res.pnl)})`
       )
       setRefresh((r) => r + 1)
     } catch (err: any) {
@@ -69,54 +71,170 @@ export const PerpPositionPanel = (props: { contract: PerpContract }) => {
   }
 
   return (
-    <Col className="border-ink-200 gap-2 rounded-md border p-4">
-      <div className="text-ink-700 text-sm font-semibold">Your positions</div>
-      {positions.map((p) => {
-        const price = Number(contract.oraclePrice)
-        // getUserFacingPnl = (costBasis + π) - originalCostBasis, where π is
-        // the paper's (P - Pe)/Pe · q. This matches what the trader deposited
-        // net of any funding haircut/bonus.
-        const displayPnl = getUserFacingPnl(
-          { ...p, openedTime: 0, updatedTime: 0, contractId: contract.id } as PerpPosition,
-          price
-        )
-        return (
-          <Row
-            key={p.direction}
-            className="items-center justify-between gap-4"
-          >
-            <Col>
-              <div
-                className={
-                  p.direction === 'long' ? 'text-teal-600' : 'text-red-600'
-                }
-              >
-                {p.direction.toUpperCase()} {p.leverage.toFixed(2)}×
-              </div>
-              <div className="text-ink-500 text-xs">
-                size {p.size.toFixed(4)} @ {p.entryPrice.toFixed(4)} — liq{' '}
-                {p.liquidationPrice.toFixed(4)}
-              </div>
-            </Col>
-            <Col className="items-end">
-              <div
-                className={displayPnl >= 0 ? 'text-teal-600' : 'text-red-600'}
-              >
-                {formatMoney(displayPnl)}
-              </div>
-              <Button
-                size="xs"
-                color="gray-outline"
-                onClick={() => close(p.direction)}
-                loading={closing === p.direction}
-                disabled={closing !== null}
-              >
-                Close
-              </Button>
-            </Col>
-          </Row>
-        )
-      })}
+    <Col className="gap-3">
+      {positions.map((p) => (
+        <PositionCard
+          key={p.direction}
+          position={p}
+          contract={contract}
+          onClose={() => close(p.direction)}
+          closing={closing === p.direction}
+          anyClosing={closing !== null}
+        />
+      ))}
     </Col>
   )
 }
+
+const PositionCard = (props: {
+  position: Position
+  contract: PerpContract
+  onClose: () => void
+  closing: boolean
+  anyClosing: boolean
+}) => {
+  const { position: p, contract, onClose, closing, anyClosing } = props
+  const markPrice = Number(contract.oraclePrice)
+  const priceDecimals = inferPriceDecimals([
+    markPrice,
+    p.entryPrice,
+    p.liquidationPrice,
+  ])
+
+  const pnl = getUserFacingPnl(
+    {
+      ...p,
+      openedTime: 0,
+      updatedTime: 0,
+      contractId: contract.id,
+    } as PerpPosition,
+    markPrice
+  )
+  const pnlPct =
+    p.originalCostBasis > 0 ? (pnl / p.originalCostBasis) * 100 : 0
+
+  const isLong = p.direction === 'long'
+  const accent = isLong ? 'teal' : 'red'
+  const accentBar = isLong ? 'bg-teal-500' : 'bg-red-500'
+  const accentText = isLong ? 'text-teal-600' : 'text-red-600'
+  const accentBadge = isLong
+    ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
+    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-red-600'
+
+  // Distance to liquidation as a percentage of mark — useful risk signal.
+  const distToLiq = isLong
+    ? (markPrice - p.liquidationPrice) / markPrice
+    : (p.liquidationPrice - markPrice) / markPrice
+  const liqDangerClass =
+    distToLiq < 0.05
+      ? 'text-red-600'
+      : distToLiq < 0.15
+      ? 'text-amber-600'
+      : 'text-ink-900'
+
+  return (
+    <Col
+      className={clsx(
+        'border-ink-200 bg-canvas-0 relative overflow-hidden rounded-lg border'
+      )}
+    >
+      <div className={clsx('absolute inset-y-0 left-0 w-1', accentBar)} />
+      <Col className="gap-3 p-4 pl-5">
+        {/* Header: side + leverage badge, then PnL */}
+        <Row className="items-start justify-between gap-2">
+          <Col className="gap-0.5">
+            <Row className="items-center gap-2">
+              <span
+                className={clsx(
+                  'rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wide',
+                  accentBadge
+                )}
+              >
+                {p.direction}
+              </span>
+              <span className={clsx('font-semibold', accentText)}>
+                {p.leverage.toFixed(2)}× leverage
+              </span>
+            </Row>
+            <div className="text-ink-900 text-2xl font-bold tabular-nums">
+              {formatMoney(p.size)}
+              <span className="text-ink-400 ml-1.5 text-sm font-normal">
+                notional
+              </span>
+            </div>
+            <div className="text-ink-500 text-xs">
+              {formatMoney(p.originalCostBasis)} margin · {p.leverage.toFixed(2)}×
+            </div>
+          </Col>
+          <Col className="items-end">
+            <div className="text-ink-400 text-xs">Unrealized PnL</div>
+            <div className={clsx('text-xl font-bold tabular-nums', pnlColor)}>
+              {pnl >= 0 ? '+' : ''}
+              {formatMoney(pnl)}
+            </div>
+            <div className={clsx('text-xs tabular-nums', pnlColor)}>
+              {pnl >= 0 ? '+' : ''}
+              {pnlPct.toFixed(2)}%
+            </div>
+          </Col>
+        </Row>
+
+        {/* Price stats grid */}
+        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3 text-sm">
+          <PriceStat
+            label="Entry"
+            value={formatPrice(p.entryPrice, priceDecimals)}
+          />
+          <PriceStat
+            label="Mark"
+            value={formatPrice(markPrice, priceDecimals)}
+          />
+          <PriceStat
+            label="Liquidation"
+            value={formatPrice(p.liquidationPrice, priceDecimals)}
+            valueClass={liqDangerClass}
+            sublabel={
+              distToLiq > 0
+                ? `${(distToLiq * 100).toFixed(1)}% away`
+                : 'at risk'
+            }
+          />
+        </div>
+
+        <Button
+          color={accent === 'teal' ? 'gray-outline' : 'gray-outline'}
+          onClick={onClose}
+          loading={closing}
+          disabled={anyClosing}
+          size="md"
+          className="w-full"
+        >
+          Close position @ {formatPrice(markPrice, priceDecimals)}
+        </Button>
+      </Col>
+    </Col>
+  )
+}
+
+const PriceStat = (props: {
+  label: string
+  value: string
+  valueClass?: string
+  sublabel?: string
+}) => (
+  <Col className="gap-0.5">
+    <div className="text-ink-500 text-xs">{props.label}</div>
+    <div
+      className={clsx(
+        'text-ink-900 font-mono font-semibold tabular-nums',
+        props.valueClass
+      )}
+    >
+      {props.value}
+    </div>
+    {props.sublabel && (
+      <div className="text-ink-400 text-xs">{props.sublabel}</div>
+    )}
+  </Col>
+)

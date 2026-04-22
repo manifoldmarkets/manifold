@@ -377,21 +377,23 @@ export function ContractPageContent(props: ContractParams) {
                   setGraphUser={setGraphUser}
                 />
 
-                <UserBetsSummary
-                  className="border-ink-200 mb-2 "
-                  contract={liveContract}
-                  includeSellButton={
-                    tradingAllowed(liveContract) &&
-                    (outcomeType === 'NUMBER' ||
-                      outcomeType === 'MULTIPLE_CHOICE' ||
-                      isBinaryMulti(liveContract) ||
-                      outcomeType === 'BINARY' ||
-                      outcomeType === 'PSEUDO_NUMERIC' ||
-                      outcomeType === 'STONK')
-                      ? user
-                      : undefined
-                  }
-                />
+                {liveContract.mechanism !== 'perp' && (
+                  <UserBetsSummary
+                    className="border-ink-200 mb-2 "
+                    contract={liveContract}
+                    includeSellButton={
+                      tradingAllowed(liveContract) &&
+                      (outcomeType === 'NUMBER' ||
+                        outcomeType === 'MULTIPLE_CHOICE' ||
+                        isBinaryMulti(liveContract) ||
+                        outcomeType === 'BINARY' ||
+                        outcomeType === 'PSEUDO_NUMERIC' ||
+                        outcomeType === 'STONK')
+                        ? user
+                        : undefined
+                    }
+                  />
+                )}
 
                 <YourTrades
                   contract={liveContract}
