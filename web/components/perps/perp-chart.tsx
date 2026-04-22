@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { line } from 'd3-shape'
 import { PerpContract } from 'common/contract'
-import { DAY_MS } from 'common/util/time'
 import { api } from 'web/lib/api/api'
 
 type Point = { ts: number; value: number }
@@ -20,11 +19,11 @@ export const PerpChart = (props: {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    const since = Date.now() - 30 * DAY_MS
+    // No `since` filter: backend returns the most recent `limit` points.
+    // 1000 points ≈ 3 years at daily cadence, plenty for the chart view.
     if (mode === 'price') {
       api('get-oracle-price-series', {
         feedId: contract.oracleFeedId,
-        since,
         limit: 1000,
       })
         .then((res) => {
@@ -35,7 +34,6 @@ export const PerpChart = (props: {
     } else {
       api('get-perp-funding-events', {
         contractId: contract.id,
-        since,
         limit: 1000,
       })
         .then((res) => {

@@ -14,13 +14,19 @@ export const getPerpFundingEvents: APIHandler<
     adl_factor_long: number | string
     adl_factor_short: number | string
   }>(
+    // Most-recent-N semantics (ordered asc for charting).
     `select ts, funding_rate, oracle_price, num_liquidations,
             adl_factor_long, adl_factor_short
-       from contract_perp_funding_events
-      where contract_id = $1
-        and ($2::bigint is null or extract(epoch from ts) * 1000 >= $2::bigint)
-      order by ts asc
-      limit $3`,
+       from (
+         select ts, funding_rate, oracle_price, num_liquidations,
+                adl_factor_long, adl_factor_short
+           from contract_perp_funding_events
+          where contract_id = $1
+            and ($2::bigint is null or extract(epoch from ts) * 1000 >= $2::bigint)
+          order by ts desc
+          limit $3
+       ) sub
+       order by ts asc`,
     [contractId, since ?? null, limit]
   )
   return rows.map((r) => ({

@@ -26,12 +26,18 @@ export const getOraclePriceSeries: APIHandler<
 > = async (body) => {
   const { feedId, since, limit = 5000 } = body
   const pg = createSupabaseDirectClient()
+  // Return the *most recent* N points (newest first, then reversed to asc for
+  // charting). If `since` is provided we also filter to points >= since, but
+  // we still cap at `limit` most-recent rows inside the window.
   const rows = await pg.manyOrNone<{ ts: string; price: number | string }>(
-    `select ts, price from oracle_prices
-     where feed_id = $1
-       and ($2::bigint is null or extract(epoch from ts) * 1000 >= $2::bigint)
-     order by ts asc
-     limit $3`,
+    `select ts, price from (
+       select ts, price from oracle_prices
+       where feed_id = $1
+         and ($2::bigint is null or extract(epoch from ts) * 1000 >= $2::bigint)
+       order by ts desc
+       limit $3
+     ) sub
+     order by ts asc`,
     [feedId, since ?? null, limit]
   )
   return rows.map((r) => ({
