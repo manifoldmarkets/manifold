@@ -783,9 +783,11 @@ export const SHOP_ITEMS: ShopItem[] = [
       daysBuffer: 14, // Mar 18 - Apr 15
     },
   },
-  // Special earned items (not purchasable)
+  // Special earned items (not purchasable) — hidden from shop listing; past
+  // champions who own the entitlement still see them in their inventory.
   {
     id: 'charity-champion-trophy',
+    hidden: true,
     name: 'Charity Champion Trophy',
     description: 'Exclusive trophy for the #1 ticket buyer in the charity raffle',
     price: 0, // Cannot be purchased
@@ -796,6 +798,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'former-charity-champion',
+    hidden: true,
     name: "Champion's Legacy",
     description:
       'A trophy-themed hovercard background for former and current Charity Champions',
