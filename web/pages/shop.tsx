@@ -1774,7 +1774,11 @@ function MerchItemCard(props: {
             <div
               className={clsx(
                 'flex h-full will-change-transform',
-                !isSwipeActive && 'transition-transform duration-200 ease-out'
+                // Soft ease-out-quint (cubic-bezier(0.22, 1, 0.36, 1)) +
+                // ~400ms feels deliberate: small swipes glide back, commits
+                // settle into place rather than snapping.
+                !isSwipeActive &&
+                  'transition-transform duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
               )}
               style={{
                 width: `${images.length * 100}%`,
