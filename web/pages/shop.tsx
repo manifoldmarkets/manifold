@@ -1606,6 +1606,7 @@ function MerchItemCard(props: {
     touchStartRef.current = null
     if (!wasActive) {
       setDragOffset(0)
+      setIsSwipeActive(false)
       return
     }
     if (Math.abs(dx) < SWIPE_COMMIT_THRESHOLD) {
@@ -1614,17 +1615,24 @@ function MerchItemCard(props: {
       setIsSwipeActive(false)
       return
     }
-    // Above threshold: flip index and zero the offset in the same render.
-    // isSwipeActive stays true for this render so the transition is suppressed
-    // (no animation from dx → 0 on the incoming image, which would look wrong).
-    // Re-enable transitions on the next frame for the snap-back of future swipes.
+    // Above threshold: flip index, then let the strip's transition slide it
+    // to the new resting position. Wrap-around (last → first or first → last)
+    // would slide the strip across every image in between, so for those we
+    // suppress the transition for one frame and snap to the target instead.
+    const isWrap =
+      (dx < 0 && currentImageIndex === images.length - 1) ||
+      (dx > 0 && currentImageIndex === 0)
     if (dx < 0) {
       setCurrentImageIndex((i) => (i === images.length - 1 ? 0 : i + 1))
     } else {
       setCurrentImageIndex((i) => (i === 0 ? images.length - 1 : i - 1))
     }
     setDragOffset(0)
-    requestAnimationFrame(() => setIsSwipeActive(false))
+    if (isWrap) {
+      requestAnimationFrame(() => setIsSwipeActive(false))
+    } else {
+      setIsSwipeActive(false)
+    }
   }
 
   // Pick the variant matching the user's colour + size selection.
@@ -1753,7 +1761,9 @@ function MerchItemCard(props: {
             </div>
           )}
 
-          {/* Image carousel */}
+          {/* Image carousel — all images laid out in a horizontal strip; we
+              translate the strip rather than the visible image so neighbouring
+              images slide in from the side as the user drags. */}
           <div
             className="relative aspect-square touch-pan-y overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
             onTouchStart={handleTouchStart}
@@ -1761,16 +1771,32 @@ function MerchItemCard(props: {
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchEnd}
           >
-            <img
-              src={images[currentImageIndex].url}
-              alt={`${item.name} - ${images[currentImageIndex].label}`}
+            <div
               className={clsx(
-                'h-full w-full object-contain p-2 will-change-transform',
+                'flex h-full will-change-transform',
                 !isSwipeActive && 'transition-transform duration-200 ease-out'
               )}
-              style={{ transform: `translateX(${dragOffset}px)` }}
-              draggable={false}
-            />
+              style={{
+                width: `${images.length * 100}%`,
+                transform: `translateX(calc(${
+                  -currentImageIndex * (100 / images.length)
+                }% + ${dragOffset}px))`,
+              }}
+            >
+              {images.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img.url}
+                  alt={`${item.name} - ${img.label}`}
+                  className="h-full object-contain p-2"
+                  style={{
+                    width: `${100 / images.length}%`,
+                    flexShrink: 0,
+                  }}
+                  draggable={false}
+                />
+              ))}
+            </div>
             {images.length > 1 && (
               <div className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
                 {images[currentImageIndex].label}
