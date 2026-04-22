@@ -1567,27 +1567,64 @@ function MerchItemCard(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor])
 
-  // Touch-swipe gestures for the image carousel. Captures horizontal swipes
-  // past a threshold; ignores mostly-vertical motion so page scroll still
-  // works when the finger starts on the image.
+  // Touch-swipe gestures for the image carousel. The image translates with
+  // the finger in real time for tactile feedback; on release we either commit
+  // (if dragged past the threshold) or snap back with a transition.
+  // Direction is locked after 8px of motion — mostly-vertical motion is
+  // ignored so page scroll still works when the finger starts on the image.
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isSwipeActive, setIsSwipeActive] = useState(false)
+  const SWIPE_COMMIT_THRESHOLD = 40
+  const SWIPE_DIRECTION_LOCK = 8
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0]
     touchStartRef.current = { x: t.clientX, y: t.clientY }
+    setIsSwipeActive(false)
   }
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     const start = touchStartRef.current
-    touchStartRef.current = null
     if (!start || images.length <= 1) return
-    const t = e.changedTouches[0]
+    const t = e.touches[0]
     const dx = t.clientX - start.x
     const dy = t.clientY - start.y
-    if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return
+    if (!isSwipeActive) {
+      if (Math.abs(dx) < SWIPE_DIRECTION_LOCK && Math.abs(dy) < SWIPE_DIRECTION_LOCK) return
+      if (Math.abs(dx) <= Math.abs(dy)) {
+        // User is scrolling vertically — abandon this gesture for the carousel.
+        touchStartRef.current = null
+        return
+      }
+      setIsSwipeActive(true)
+    }
+    setDragOffset(dx)
+  }
+  const handleTouchEnd = () => {
+    const dx = dragOffset
+    const wasActive = isSwipeActive
+    touchStartRef.current = null
+    if (!wasActive) {
+      setDragOffset(0)
+      return
+    }
+    if (Math.abs(dx) < SWIPE_COMMIT_THRESHOLD) {
+      // Below threshold: snap back with the transition.
+      setDragOffset(0)
+      setIsSwipeActive(false)
+      return
+    }
+    // Above threshold: flip index and zero the offset in the same render.
+    // isSwipeActive stays true for this render so the transition is suppressed
+    // (no animation from dx → 0 on the incoming image, which would look wrong).
+    // Re-enable transitions on the next frame for the snap-back of future swipes.
     if (dx < 0) {
       setCurrentImageIndex((i) => (i === images.length - 1 ? 0 : i + 1))
     } else {
       setCurrentImageIndex((i) => (i === 0 ? images.length - 1 : i - 1))
     }
+    setDragOffset(0)
+    requestAnimationFrame(() => setIsSwipeActive(false))
   }
 
   // Pick the variant matching the user's colour + size selection.
@@ -1720,12 +1757,19 @@ function MerchItemCard(props: {
           <div
             className="relative aspect-square touch-pan-y overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
           >
             <img
               src={images[currentImageIndex].url}
               alt={`${item.name} - ${images[currentImageIndex].label}`}
-              className="h-full w-full object-contain p-2"
+              className={clsx(
+                'h-full w-full object-contain p-2 will-change-transform',
+                !isSwipeActive && 'transition-transform duration-200 ease-out'
+              )}
+              style={{ transform: `translateX(${dragOffset}px)` }}
+              draggable={false}
             />
             {images.length > 1 && (
               <div className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
