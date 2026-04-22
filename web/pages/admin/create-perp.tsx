@@ -12,6 +12,9 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
 
+// Funding events run once per hour (FUNDING_PERIOD_MS = HOUR_MS in the engine).
+const HOURS_PER_YEAR = 24 * 365
+
 export default function AdminCreatePerpPage() {
   useRedirectIfSignedOut()
   const isAdmin = useAdmin()
@@ -21,12 +24,13 @@ export default function AdminCreatePerpPage() {
     description: '',
     oracleFeedId: '',
     maxLeverage: 10,
-    maxFundingRate: 0.01,
+    // Annualized max funding rate as a percentage (e.g. 50 means 50%/yr).
+    maxFundingRateAnnualPct: 50,
     fundingSensitivity: 1,
     maxPositionNotionalFraction: 0.25,
-    maxOraclePriceAgeMs: 6 * HOUR_MS,
-    subsidyLong: 500,
-    subsidyShort: 500,
+    maxOraclePriceAgeHours: 6,
+    // Total creator subsidy, split 50/50 across the long and short pools.
+    subsidyTotal: 1000,
   })
   const [knownFeeds, setKnownFeeds] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -41,6 +45,14 @@ export default function AdminCreatePerpPage() {
   const update = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
 
+  // Split the total 50/50; put the stray mana on the long side for odd totals.
+  const subsidyLong = Math.ceil(form.subsidyTotal / 2)
+  const subsidyShort = Math.floor(form.subsidyTotal / 2)
+
+  // Convert annual % to per-hour fraction (the unit the engine stores).
+  const maxFundingRatePerPeriod =
+    form.maxFundingRateAnnualPct / 100 / HOURS_PER_YEAR
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
@@ -50,12 +62,14 @@ export default function AdminCreatePerpPage() {
         description: form.description || undefined,
         oracleFeedId: form.oracleFeedId,
         maxLeverage: form.maxLeverage,
-        maxFundingRate: form.maxFundingRate,
+        maxFundingRate: maxFundingRatePerPeriod,
         fundingSensitivity: form.fundingSensitivity,
         maxPositionNotionalFraction: form.maxPositionNotionalFraction,
-        maxOraclePriceAgeMs: form.maxOraclePriceAgeMs,
-        subsidyLong: form.subsidyLong,
-        subsidyShort: form.subsidyShort,
+        maxOraclePriceAgeMs: Math.round(
+          form.maxOraclePriceAgeHours * HOUR_MS
+        ),
+        subsidyLong,
+        subsidyShort,
       })
       toast.success(`Created ${res.question}`)
       window.location.href = res.url
@@ -123,12 +137,13 @@ export default function AdminCreatePerpPage() {
               min={1.01}
             />
             <NumberInput
-              label="Max funding rate (fraction / period)"
-              value={form.maxFundingRate}
-              onChange={(v) => update('maxFundingRate', v)}
-              step={0.001}
-              min={0.0001}
-              max={1}
+              label="Max funding rate (% / year)"
+              value={form.maxFundingRateAnnualPct}
+              onChange={(v) => update('maxFundingRateAnnualPct', v)}
+              step={1}
+              min={0.01}
+              max={100}
+              hint={`= ${(maxFundingRatePerPeriod * 100).toFixed(4)}% per hour`}
             />
             <NumberInput
               label="Funding sensitivity (k)"
@@ -146,35 +161,22 @@ export default function AdminCreatePerpPage() {
               max={1}
             />
             <NumberInput
-              label="Max oracle price age (ms)"
-              value={form.maxOraclePriceAgeMs}
-              onChange={(v) => update('maxOraclePriceAgeMs', v)}
-              step={HOUR_MS}
-              min={60_000}
+              label="Max oracle price age (hours)"
+              value={form.maxOraclePriceAgeHours}
+              onChange={(v) => update('maxOraclePriceAgeHours', v)}
+              step={1}
+              min={0.0167} // ~1 minute
             />
           </Row>
 
-          <Row className="gap-4">
-            <NumberInput
-              label="Long pool subsidy"
-              value={form.subsidyLong}
-              onChange={(v) => update('subsidyLong', v)}
-              step={10}
-              min={1}
-            />
-            <NumberInput
-              label="Short pool subsidy"
-              value={form.subsidyShort}
-              onChange={(v) => update('subsidyShort', v)}
-              step={10}
-              min={1}
-            />
-          </Row>
-
-          <p className="text-ink-600 text-sm">
-            Total subsidy: {form.subsidyLong + form.subsidyShort} mana (paid
-            by creator at market creation).
-          </p>
+          <NumberInput
+            label="Total subsidy (mana)"
+            value={form.subsidyTotal}
+            onChange={(v) => update('subsidyTotal', v)}
+            step={100}
+            min={2}
+            hint={`Split 50/50: ${subsidyLong} long / ${subsidyShort} short. Paid by creator at market creation.`}
+          />
 
           <Col>
             <Button type="submit" loading={submitting} disabled={submitting}>
@@ -211,9 +213,14 @@ const NumberInput = (props: {
   label: string
   value: number
   onChange: (v: number) => void
+  // Accepted for caller API compatibility but not forwarded to the DOM.
+  // HTML5 step validation rejects values that aren't min + n*step, which
+  // surprises users (e.g. min=1.01, step=1 rejects 100). We always use
+  // step="any" and rely only on min/max bounds.
   step?: number
   min?: number
   max?: number
+  hint?: string
 }) => (
   <div className="min-w-[180px] flex-1">
     <label className="text-ink-700 mb-2 block text-sm font-medium">
@@ -223,10 +230,13 @@ const NumberInput = (props: {
       type="number"
       value={props.value}
       onChange={(e) => props.onChange(Number(e.target.value))}
-      step={props.step}
+      step="any"
       min={props.min}
       max={props.max}
       className="w-full"
     />
+    {props.hint && (
+      <p className="text-ink-500 mt-1 text-xs">{props.hint}</p>
+    )}
   </div>
 )
