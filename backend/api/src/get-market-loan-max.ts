@@ -45,6 +45,10 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     throw new APIError(400, 'Contract must be a market contract')
   }
 
+  if (contract.mechanism === 'perp') {
+    throw new APIError(400, 'Perp markets are not eligible for loans')
+  }
+
   // Check market eligibility for new loans
   const eligibility = isMarketEligibleForLoan({
     visibility: contract.visibility,

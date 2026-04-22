@@ -349,6 +349,19 @@ export const getUnresolvedStatsForToken = (
       }
     }
 
+    // Perps: the engine already writes an authoritative synthetic metric
+    // row with payout (current position value at oracle price) and invested
+    // (gross originalCostBasis). Just plumb those through; perps are never
+    // eligible for loans so loan=0.
+    if (contract.mechanism === 'perp') {
+      return {
+        value: cm.payout ?? 0,
+        invested: cm.invested ?? 0,
+        dailyProfit: cm.from?.day?.profit ?? 0,
+        loan: 0,
+      }
+    }
+
     // ignore summary metrics
     if (contract.mechanism === 'cpmm-multi-1') {
       if (!cm.answerId)

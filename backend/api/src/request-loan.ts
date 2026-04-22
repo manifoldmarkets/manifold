@@ -174,6 +174,8 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     if (!contract || contract.isResolved || contract.token !== 'MANA') {
       return false
     }
+    // Perps are inherently leveraged — exclude from the loans system.
+    if (contract.mechanism === 'perp') return false
     // Apply market eligibility criteria for new loans
     return isMarketEligibleForLoan({
       visibility: contract.visibility,

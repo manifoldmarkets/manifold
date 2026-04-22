@@ -1,0 +1,781 @@
+// ManiPerp engine — orchestrates open/close, oracle updates, funding, and
+// resolution. All entry points open a serializable transaction, acquire a
+// per-contract advisory lock, load pool + positions, run the pure math in
+// common/src/perps/amm.ts, and write back via pgTrans.multi.
+//
+// This keeps the rest of place-bet / CPMM untouched.
+
+import { APIError } from 'common/api/utils'
+import { PerpContract } from 'common/contract'
+import {
+  applyADL,
+  applyFunding,
+  closePosition as closePositionMath,
+  computeFundingRate,
+  getLeverage,
+  getPositionValue,
+  liquidationPrice as computeLiquidationPrice,
+  openPosition as openPositionMath,
+  PerpState,
+  processLiquidations,
+  solvencyFactor,
+} from 'common/perps/amm'
+import {
+  PerpDirection,
+  PerpEvent,
+  PerpFundingEvent,
+  PerpPosition,
+} from 'common/perps/position'
+import { removeUndefinedProps } from 'common/util/object'
+import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+  pgp,
+} from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import {
+  advisoryLockQuery,
+  deletePositionsQuery,
+  insertFundingEventQuery,
+  insertPerpEventsQuery,
+  mergeContractDataQuery,
+  rowToPosition,
+  selectContractForUpdateQuery,
+  selectLatestOraclePriceQuery,
+  selectPositionsForUpdateQuery,
+  upsertPositionsQuery,
+} from './queries'
+import { buildPerpUserContractMetricsQuery } from './user-contract-metrics'
+import { log } from 'shared/utils'
+import { getUser } from 'shared/utils'
+import { HOUR_MS } from 'common/util/time'
+
+// -----------------------------------------------------------------------
+// helpers
+// -----------------------------------------------------------------------
+
+type LoadedState = {
+  contract: PerpContract
+  state: PerpState
+}
+
+const buildState = (
+  contract: PerpContract,
+  positions: PerpPosition[]
+): PerpState => ({
+  pool: { L: contract.poolLong, S: contract.poolShort },
+  positions,
+})
+
+const loadStateForUpdate = async (
+  pgTrans: SupabaseTransaction,
+  contractId: string
+): Promise<LoadedState> => {
+  await pgTrans.none(advisoryLockQuery(contractId))
+
+  const contractRow = await pgTrans.oneOrNone<{ data: PerpContract }>(
+    selectContractForUpdateQuery(contractId)
+  )
+  if (!contractRow)
+    throw new APIError(404, `Contract ${contractId} not found`)
+  const contract = contractRow.data
+  if (contract.mechanism !== 'perp')
+    throw new APIError(400, `Contract ${contractId} is not a perp`)
+  if (contract.isResolved)
+    throw new APIError(400, `Contract ${contractId} is resolved`)
+
+  const positionRows = await pgTrans.any(selectPositionsForUpdateQuery(contractId))
+  const positions = positionRows.map((r: any) => rowToPosition(r))
+
+  return { contract, state: buildState(contract, positions) }
+}
+
+const getLatestOraclePrice = async (
+  pgTrans: SupabaseTransaction,
+  feedId: string
+): Promise<{ price: number; ts: number } | null> => {
+  const row = await pgTrans.oneOrNone<{ ts: string; price: number | string }>(
+    selectLatestOraclePriceQuery(feedId)
+  )
+  if (!row) return null
+  return { price: Number(row.price), ts: new Date(row.ts).getTime() }
+}
+
+const asEvent = (
+  contract: PerpContract,
+  partial: Omit<PerpEvent, 'contractId' | 'ts' | 'oraclePrice'> & {
+    ts?: number
+    oraclePrice?: number
+  }
+): PerpEvent => ({
+  contractId: contract.id,
+  ts: partial.ts ?? Date.now(),
+  oraclePrice: partial.oraclePrice ?? contract.oraclePrice,
+  ...partial,
+})
+
+const diffForWrite = (
+  before: PerpPosition[],
+  after: PerpPosition[]
+): {
+  upserts: PerpPosition[]
+  deletes: { userId: string; direction: PerpDirection }[]
+} => {
+  const key = (p: PerpPosition) => `${p.userId}:${p.direction}`
+  const beforeByKey = new Map(before.map((p) => [key(p), p]))
+  const afterByKey = new Map(after.map((p) => [key(p), p]))
+  const upserts: PerpPosition[] = []
+  const deletes: { userId: string; direction: PerpDirection }[] = []
+  for (const [k, p] of afterByKey) {
+    const prev = beforeByKey.get(k)
+    if (p.size <= 0) {
+      if (prev && prev.size > 0)
+        deletes.push({ userId: p.userId, direction: p.direction })
+      continue
+    }
+    if (!prev || prev.size !== p.size || prev.costBasis !== p.costBasis)
+      upserts.push(p)
+  }
+  for (const [k, p] of beforeByKey) {
+    if (!afterByKey.has(k) && p.size > 0)
+      deletes.push({ userId: p.userId, direction: p.direction })
+  }
+  return { upserts, deletes }
+}
+
+// -----------------------------------------------------------------------
+// open / add
+// -----------------------------------------------------------------------
+
+export const openOrAddPosition = async (
+  contractId: string,
+  userId: string,
+  direction: PerpDirection,
+  mana: number,
+  leverage: number
+) => {
+  if (mana <= 0) throw new APIError(400, 'mana must be positive')
+  if (leverage <= 0) throw new APIError(400, 'leverage must be positive')
+
+  const user = await getUser(userId)
+  if (!user) throw new APIError(404, `User ${userId} not found`)
+  if (user.balance < mana)
+    throw new APIError(403, `Insufficient balance: needed ${mana}`)
+
+  return runTransactionWithRetries(async (pgTrans) => {
+    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+    if (leverage > contract.maxLeverage)
+      throw new APIError(
+        400,
+        `Leverage ${leverage} exceeds max ${contract.maxLeverage}`
+      )
+
+    // Oracle freshness.
+    const now = Date.now()
+    if (
+      contract.oraclePriceTime &&
+      now - contract.oraclePriceTime > contract.maxOraclePriceAgeMs
+    ) {
+      throw new APIError(
+        400,
+        `Oracle feed is stale (age ${
+          now - contract.oraclePriceTime
+        }ms > ${contract.maxOraclePriceAgeMs}ms)`
+      )
+    }
+
+    // One-way mode: reject open against an existing opposite-side position.
+    const existingOpposite = state.positions.find(
+      (p) =>
+        p.userId === userId &&
+        p.direction !== direction &&
+        p.size > 0
+    )
+    if (existingOpposite)
+      throw new APIError(
+        400,
+        `Close your ${existingOpposite.direction} position first`
+      )
+
+    const existingSame = state.positions.find(
+      (p) => p.userId === userId && p.direction === direction && p.size > 0
+    )
+    const isNewUniqueBettor = !state.positions.some(
+      (p) => p.userId === userId && p.size > 0
+    )
+
+    // Notional cap: position notional ≤ maxPositionNotionalFraction * oppositePool.
+    const oppositePool =
+      direction === 'long' ? contract.poolShort : contract.poolLong
+    const newNotional =
+      mana * leverage + (existingSame ? existingSame.size : 0)
+    const cap = contract.maxPositionNotionalFraction * oppositePool
+    if (newNotional > cap)
+      throw new APIError(
+        400,
+        `Position notional ${newNotional.toFixed(
+          2
+        )} exceeds cap ${cap.toFixed(2)} (${
+          contract.maxPositionNotionalFraction
+        }× opposite pool)`
+      )
+
+    const price = contract.oraclePrice
+    const open = openPositionMath(
+      state,
+      userId,
+      contractId,
+      direction,
+      mana,
+      leverage,
+      price,
+      existingSame,
+      now
+    )
+
+    // Post-trade solvency must be >= 1.
+    const solv = solvencyFactor(direction, open.state, price)
+    if (solv < 1)
+      throw new APIError(
+        400,
+        `Post-trade solvency ${solv.toFixed(3)} < 1; try lower leverage or size`
+      )
+
+    const { upserts, deletes } = diffForWrite(state.positions, open.state.positions)
+
+    const event: PerpEvent = asEvent(contract, {
+      userId,
+      eventType: existingSame ? 'add' : 'open',
+      direction,
+      leverage: open.position.leverage,
+      sizeDelta: open.deltaSize,
+      costBasisDelta: open.deltaCostBasis,
+      originalCostBasisDelta: open.deltaOriginalCostBasis,
+      data: {
+        entryPrice: open.position.entryPrice,
+        liquidationPrice: open.position.liquidationPrice,
+        mana,
+        leverage,
+      },
+      ts: now,
+      oraclePrice: price,
+    })
+
+    const contractPatch = removeUndefinedProps({
+      poolLong: open.state.pool.L,
+      poolShort: open.state.pool.S,
+      lastBetTime: now,
+      lastUpdatedTime: now,
+      volume: (contract.volume ?? 0) + mana * leverage,
+      volume24Hours: (contract.volume24Hours ?? 0) + mana * leverage,
+      uniqueBettorCount: existingSame
+        ? contract.uniqueBettorCount
+        : contract.uniqueBettorCount + 1,
+    })
+
+    // Debit user balance via a txn. Uses the existing txn machinery so
+    // cash/mana + total_deposits are tracked correctly.
+    await runTxnOutsideBetQueue(
+      pgTrans,
+      {
+        category: 'CREATE_CONTRACT_ANTE',
+        fromId: userId,
+        fromType: 'USER',
+        toId: contractId,
+        toType: 'CONTRACT',
+        amount: mana,
+        token: 'M$',
+      },
+      true
+    )
+
+    const metricsQuery = await buildPerpUserContractMetricsQuery(
+      pgTrans,
+      { ...contract, ...contractPatch } as PerpContract,
+      [userId]
+    )
+
+    await pgTrans.multi(
+      [
+        upsertPositionsQuery(upserts),
+        deletePositionsQuery(contractId, deletes),
+        insertPerpEventsQuery([event]),
+        mergeContractDataQuery(contractId, contractPatch),
+        metricsQuery,
+      ].join(';\n')
+    )
+
+    return { position: open.position, event, isNewUniqueBettor }
+  })
+}
+
+// -----------------------------------------------------------------------
+// close
+// -----------------------------------------------------------------------
+
+export const closePosition = async (
+  contractId: string,
+  userId: string,
+  direction: PerpDirection
+) => {
+  return runTransactionWithRetries(async (pgTrans) => {
+    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const position = state.positions.find(
+      (p) => p.userId === userId && p.direction === direction && p.size > 0
+    )
+    if (!position) throw new APIError(404, 'No open position to close')
+
+    const price = contract.oraclePrice
+    const result = closePositionMath(state, position, price)
+    const now = Date.now()
+
+    const event: PerpEvent = asEvent(contract, {
+      userId,
+      eventType: 'close',
+      direction,
+      leverage: 0,
+      sizeDelta: -position.size,
+      costBasisDelta: -position.costBasis,
+      originalCostBasisDelta: -position.originalCostBasis,
+      data: {
+        payout: result.payout,
+        pnl: result.pnl,
+        entryPrice: position.entryPrice,
+        closePrice: price,
+        originalCostBasis: position.originalCostBasis,
+      },
+      ts: now,
+      oraclePrice: price,
+    })
+
+    const contractPatch = removeUndefinedProps({
+      poolLong: result.state.pool.L,
+      poolShort: result.state.pool.S,
+      lastBetTime: now,
+      lastUpdatedTime: now,
+    })
+
+    // Credit user balance.
+    if (result.payout > 0) {
+      await runTxnOutsideBetQueue(
+        pgTrans,
+        {
+          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          fromId: contractId,
+          fromType: 'CONTRACT',
+          toId: userId,
+          toType: 'USER',
+          amount: result.payout,
+          token: 'M$',
+          data: {},
+        },
+        true
+      )
+    }
+
+    const metricsQuery = await buildPerpUserContractMetricsQuery(
+      pgTrans,
+      { ...contract, ...contractPatch } as PerpContract,
+      [userId]
+    )
+
+    await pgTrans.multi(
+      [
+        deletePositionsQuery(contractId, [{ userId, direction }]),
+        insertPerpEventsQuery([event]),
+        mergeContractDataQuery(contractId, contractPatch),
+        metricsQuery,
+      ].join(';\n')
+    )
+
+    return { payout: result.payout, pnl: result.pnl }
+  })
+}
+
+// -----------------------------------------------------------------------
+// oracle update: liquidation + ADL
+// -----------------------------------------------------------------------
+
+export type OracleUpdateResult = {
+  liquidated: PerpPosition[]
+  adlFactorLong: number
+  adlFactorShort: number
+  poolLongBefore: number
+  poolLongAfter: number
+  poolShortBefore: number
+  poolShortAfter: number
+}
+
+export const runOracleUpdate = async (
+  contractId: string,
+  newPrice: number,
+  ts: number
+): Promise<OracleUpdateResult | null> => {
+  return runTransactionWithRetries(async (pgTrans) => {
+    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+    if (newPrice <= 0) throw new APIError(400, 'invalid oracle price')
+
+    const poolLongBefore = state.pool.L
+    const poolShortBefore = state.pool.S
+
+    // 1) Liquidate at the new oracle price.
+    const liqRes = processLiquidations(state, newPrice)
+    // 2) ADL if needed.
+    const adlRes = applyADL(liqRes.state, newPrice)
+    const finalState = adlRes.state
+
+    const events: PerpEvent[] = []
+    const now = ts
+
+    for (const liq of liqRes.liquidated) {
+      events.push(
+        asEvent(contract, {
+          userId: liq.userId,
+          eventType: 'liquidation',
+          direction: liq.direction,
+          leverage: 0,
+          sizeDelta: -liq.size,
+          costBasisDelta: -liq.costBasis,
+          originalCostBasisDelta: -liq.originalCostBasis,
+          data: {
+            entryPrice: liq.entryPrice,
+            liquidationPrice: liq.liquidationPrice,
+            originalCostBasis: liq.originalCostBasis,
+            payout: 0, // margin forfeited to pool
+          },
+          ts: now,
+          oraclePrice: newPrice,
+        })
+      )
+    }
+
+    // ADL summary event (one row capturing the scaling factors).
+    if (adlRes.adlFactorLong < 1 || adlRes.adlFactorShort < 1) {
+      events.push(
+        asEvent(contract, {
+          userId: null,
+          eventType: 'adl',
+          direction: null,
+          leverage: null,
+          sizeDelta: 0,
+          costBasisDelta: 0,
+          originalCostBasisDelta: 0,
+          data: {
+            adlFactorLong: adlRes.adlFactorLong,
+            adlFactorShort: adlRes.adlFactorShort,
+          },
+          ts: now,
+          oraclePrice: newPrice,
+        })
+      )
+    }
+
+    const { upserts, deletes } = diffForWrite(
+      state.positions,
+      finalState.positions
+    )
+
+    const contractPatch = removeUndefinedProps({
+      poolLong: finalState.pool.L,
+      poolShort: finalState.pool.S,
+      oraclePrice: newPrice,
+      oraclePriceTime: now,
+      lastUpdatedTime: now,
+    })
+
+    // Users whose metrics might have changed: anyone with a position before
+    // the update (payout value changed) plus anyone liquidated.
+    const affectedUsers = Array.from(
+      new Set<string>([
+        ...state.positions.map((p) => p.userId),
+        ...finalState.positions.map((p) => p.userId),
+      ])
+    )
+
+    const metricsQuery = await buildPerpUserContractMetricsQuery(
+      pgTrans,
+      { ...contract, ...contractPatch } as PerpContract,
+      affectedUsers
+    )
+
+    await pgTrans.multi(
+      [
+        upsertPositionsQuery(upserts),
+        deletePositionsQuery(contractId, deletes),
+        insertPerpEventsQuery(events),
+        mergeContractDataQuery(contractId, contractPatch),
+        metricsQuery,
+      ].join(';\n')
+    )
+
+    return {
+      liquidated: liqRes.liquidated,
+      adlFactorLong: adlRes.adlFactorLong,
+      adlFactorShort: adlRes.adlFactorShort,
+      poolLongBefore,
+      poolLongAfter: finalState.pool.L,
+      poolShortBefore,
+      poolShortAfter: finalState.pool.S,
+    }
+  })
+}
+
+// -----------------------------------------------------------------------
+// funding
+// -----------------------------------------------------------------------
+
+export const runFunding = async (
+  contractId: string,
+  ts: number
+): Promise<PerpFundingEvent | null> => {
+  return runTransactionWithRetries(async (pgTrans) => {
+    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+    const fundingRate = computeFundingRate(
+      state.pool.L,
+      state.pool.S,
+      contract.fundingSensitivity,
+      contract.maxFundingRate
+    )
+
+    const poolLongBefore = state.pool.L
+    const poolShortBefore = state.pool.S
+
+    const next = applyFunding(state, fundingRate)
+    const { upserts, deletes } = diffForWrite(state.positions, next.positions)
+
+    const fundingEvent: PerpFundingEvent = {
+      contractId,
+      ts,
+      oraclePrice: contract.oraclePrice,
+      poolLongBefore,
+      poolLongAfter: next.pool.L,
+      poolShortBefore,
+      poolShortAfter: next.pool.S,
+      fundingRate,
+      numLiquidations: 0,
+      adlFactorLong: 1,
+      adlFactorShort: 1,
+    }
+
+    const contractPatch = removeUndefinedProps({
+      poolLong: next.pool.L,
+      poolShort: next.pool.S,
+      lastFundingTime: ts,
+      fundingRate,
+      lastUpdatedTime: ts,
+    })
+
+    const affectedUsers = Array.from(
+      new Set(state.positions.map((p) => p.userId))
+    )
+
+    const metricsQuery = await buildPerpUserContractMetricsQuery(
+      pgTrans,
+      { ...contract, ...contractPatch } as PerpContract,
+      affectedUsers
+    )
+
+    // Per-user funding event rows for PnL attribution/audit trail.
+    const perUserEvents: PerpEvent[] = next.positions
+      .filter((p) => p.size > 0)
+      .map((p) => {
+        const before = state.positions.find(
+          (q) => q.userId === p.userId && q.direction === p.direction
+        )
+        if (!before) return null
+        return asEvent(contract, {
+          userId: p.userId,
+          eventType: 'funding',
+          direction: p.direction,
+          leverage: p.leverage,
+          sizeDelta: p.size - before.size,
+          costBasisDelta: p.costBasis - before.costBasis,
+          originalCostBasisDelta: 0,
+          data: { fundingRate },
+          ts,
+          oraclePrice: contract.oraclePrice,
+        })
+      })
+      .filter(Boolean) as PerpEvent[]
+
+    await pgTrans.multi(
+      [
+        upsertPositionsQuery(upserts),
+        deletePositionsQuery(contractId, deletes),
+        insertPerpEventsQuery(perUserEvents),
+        insertFundingEventQuery(fundingEvent),
+        mergeContractDataQuery(contractId, contractPatch),
+        metricsQuery,
+      ].join(';\n')
+    )
+
+    return fundingEvent
+  })
+}
+
+// -----------------------------------------------------------------------
+// resolution
+// -----------------------------------------------------------------------
+
+export const resolvePerp = async (
+  contractId: string,
+  resolverId: string
+): Promise<{
+  closedPositions: { userId: string; direction: PerpDirection; payout: number }[]
+  residualPayout: number
+  finalPrice: number
+}> => {
+  // Pull latest oracle price (outside lock to minimize lock window).
+  const pg = createSupabaseDirectClient()
+  const contractRow = await pg.oneOrNone<{ data: PerpContract }>(
+    `select data from contracts where id = $1`,
+    [contractId]
+  )
+  if (!contractRow) throw new APIError(404, `Contract ${contractId} not found`)
+  const preContract = contractRow.data
+  if (preContract.mechanism !== 'perp')
+    throw new APIError(400, 'Not a perp contract')
+
+  const latest = await getLatestOraclePrice(pg, preContract.oracleFeedId)
+  const finalPrice = latest?.price ?? preContract.oraclePrice
+
+  // Run one final oracle update to apply any pending liquidations/ADL.
+  await runOracleUpdate(contractId, finalPrice, latest?.ts ?? Date.now())
+
+  return runTransactionWithRetries(async (pgTrans) => {
+    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+    const events: PerpEvent[] = []
+    const closedPositions: {
+      userId: string
+      direction: PerpDirection
+      payout: number
+    }[] = []
+
+    let runningState = state
+    const now = Date.now()
+    for (const p of state.positions) {
+      if (p.size <= 0) continue
+      const res = closePositionMath(runningState, p, finalPrice)
+      runningState = res.state
+      closedPositions.push({
+        userId: p.userId,
+        direction: p.direction,
+        payout: res.payout,
+      })
+      events.push(
+        asEvent(contract, {
+          userId: p.userId,
+          eventType: 'close',
+          direction: p.direction,
+          leverage: 0,
+          sizeDelta: -p.size,
+          costBasisDelta: -p.costBasis,
+          originalCostBasisDelta: -p.originalCostBasis,
+          data: {
+            payout: res.payout,
+            pnl: res.pnl,
+            resolvedAt: finalPrice,
+            reason: 'resolve-market',
+          },
+          ts: now,
+          oraclePrice: finalPrice,
+        })
+      )
+
+      if (res.payout > 0) {
+        await runTxnOutsideBetQueue(
+          pgTrans,
+          {
+            category: 'CONTRACT_RESOLUTION_PAYOUT',
+            fromId: contractId,
+            fromType: 'CONTRACT',
+            toId: p.userId,
+            toType: 'USER',
+            amount: res.payout,
+            token: 'M$',
+            data: {},
+          },
+          true
+        )
+      }
+    }
+
+    // Residual pool funds go to creator.
+    const residualPayout = Math.max(runningState.pool.L + runningState.pool.S, 0)
+    if (residualPayout > 0) {
+      await runTxnOutsideBetQueue(
+        pgTrans,
+        {
+          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          fromId: contractId,
+          fromType: 'CONTRACT',
+          toId: contract.creatorId,
+          toType: 'USER',
+          amount: residualPayout,
+          token: 'M$',
+          data: {},
+        },
+        true
+      )
+    }
+
+    const contractPatch = removeUndefinedProps({
+      poolLong: 0,
+      poolShort: 0,
+      isResolved: true,
+      resolutionTime: now,
+      resolverId,
+      resolution: 'MKT',
+      resolvedOraclePrice: finalPrice,
+      lastUpdatedTime: now,
+    })
+
+    const affectedUsers = Array.from(
+      new Set(state.positions.map((p) => p.userId))
+    )
+
+    const metricsQuery = await buildPerpUserContractMetricsQuery(
+      pgTrans,
+      { ...contract, ...contractPatch, oraclePrice: finalPrice } as PerpContract,
+      affectedUsers
+    )
+
+    await pgTrans.multi(
+      [
+        pgp.as.format(
+          `delete from contract_perp_positions where contract_id = $1`,
+          [contractId]
+        ),
+        insertPerpEventsQuery(events),
+        mergeContractDataQuery(contractId, contractPatch),
+        metricsQuery,
+      ].join(';\n')
+    )
+
+    return { closedPositions, residualPayout, finalPrice }
+  })
+}
+
+// Convenience exports for scheduler / tests.
+export const getLatestOraclePriceForFeed = async (feedId: string) => {
+  const pg = createSupabaseDirectClient()
+  return getLatestOraclePrice(pg, feedId)
+}
+
+export const FUNDING_PERIOD_MS = HOUR_MS
+
+// Re-exports used by callers.
+export {
+  computeFundingRate,
+  computeLiquidationPrice,
+  getLeverage,
+  getPositionValue,
+}
+
+// Silence unused warnings for utility re-exports.
+void log

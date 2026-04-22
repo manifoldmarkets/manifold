@@ -592,6 +592,153 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_perp_events: {
+        Row: {
+          contract_id: string
+          cost_basis_delta: number
+          data: Json | null
+          direction: string | null
+          event_type: string
+          id: number
+          leverage: number | null
+          oracle_price: number | null
+          original_cost_basis_delta: number
+          size_delta: number
+          ts: string
+          user_id: string | null
+        }
+        Insert: {
+          contract_id: string
+          cost_basis_delta?: number
+          data?: Json | null
+          direction?: string | null
+          event_type: string
+          id?: number
+          leverage?: number | null
+          oracle_price?: number | null
+          original_cost_basis_delta?: number
+          size_delta?: number
+          ts?: string
+          user_id?: string | null
+        }
+        Update: {
+          contract_id?: string
+          cost_basis_delta?: number
+          data?: Json | null
+          direction?: string | null
+          event_type?: string
+          id?: number
+          leverage?: number | null
+          oracle_price?: number | null
+          original_cost_basis_delta?: number
+          size_delta?: number
+          ts?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      contract_perp_funding_events: {
+        Row: {
+          adl_factor_long: number
+          adl_factor_short: number
+          contract_id: string
+          funding_rate: number
+          num_liquidations: number
+          oracle_price: number
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+          ts: string
+        }
+        Insert: {
+          adl_factor_long?: number
+          adl_factor_short?: number
+          contract_id: string
+          funding_rate: number
+          num_liquidations?: number
+          oracle_price: number
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+          ts: string
+        }
+        Update: {
+          adl_factor_long?: number
+          adl_factor_short?: number
+          contract_id?: string
+          funding_rate?: number
+          num_liquidations?: number
+          oracle_price?: number
+          pool_long_after?: number
+          pool_long_before?: number
+          pool_short_after?: number
+          pool_short_before?: number
+          ts?: string
+        }
+        Relationships: []
+      }
+      contract_perp_positions: {
+        Row: {
+          contract_id: string
+          cost_basis: number
+          direction: string
+          entry_price: number
+          leverage: number
+          liquidation_price: number
+          opened_time: string
+          original_cost_basis: number
+          size: number
+          updated_time: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          cost_basis: number
+          direction: string
+          entry_price: number
+          leverage: number
+          liquidation_price: number
+          opened_time?: string
+          original_cost_basis: number
+          size: number
+          updated_time?: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          cost_basis?: number
+          direction?: string
+          entry_price?: number
+          leverage?: number
+          liquidation_price?: number
+          opened_time?: string
+          original_cost_basis?: number
+          size?: number
+          updated_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oracle_prices: {
+        Row: {
+          feed_id: string
+          price: number
+          ts: string
+        }
+        Insert: {
+          feed_id: string
+          price: number
+          ts: string
+        }
+        Update: {
+          feed_id?: string
+          price?: number
+          ts?: string
+        }
+        Relationships: []
+      }
       contract_movement_notifications: {
         Row: {
           answer_id: string | null

@@ -34,6 +34,12 @@ export const TRADED_TERM = 'bet'
 export const TRADING_TERM = 'betting'
 export const TRADER_TERM = 'trader'
 
+// Master switch for perpetual futures (ManiPerp). When false, admin UI,
+// create-perp API, place-perp-trade API, close-perp-position API, the
+// `update-perps` scheduler job, and the market-page PERP branch are all
+// disabled. See backend/shared/src/perps/README.md for full removal steps.
+export const PERPS_ENABLED = true
+
 export const ENV_CONFIG = CONFIGS[ENV]
 
 export function isAdminId(id: string) {

@@ -126,6 +126,7 @@ export const CONTRACT_TYPES = [
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
+  { label: 'Perp', value: 'PERP' },
   { label: 'Posts', value: 'POSTS' },
 ] as const
 

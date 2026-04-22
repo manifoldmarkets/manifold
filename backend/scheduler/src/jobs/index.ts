@@ -55,6 +55,7 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { updatePerps } from './update-perps'
 
 export function createJobs() {
   return [
@@ -163,6 +164,11 @@ export function createJobs() {
       'apply-pending-clarifications',
       '0 */5 * * * *', // every 5 minutes
       applyPendingClarifications
+    ),
+    createJob(
+      'update-perps',
+      '0 0 * * * *', // every hour on the hour
+      updatePerps
     ),
     // Daily jobs:
     createJob(

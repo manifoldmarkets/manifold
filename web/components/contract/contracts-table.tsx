@@ -497,6 +497,14 @@ export function ContractStatusLabel(props: {
     case 'POLL': {
       return <span className="text-fuchsia-500/70">POLL</span>
     }
+    case 'PERP': {
+      const price = Number((contract as any).oraclePrice ?? 0)
+      return (
+        <span className={clsx(probTextColor, className)}>
+          {price.toFixed(price >= 1 ? 2 : 4)}
+        </span>
+      )
+    }
     default:
       return <span>-</span>
   }
