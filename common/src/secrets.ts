@@ -48,6 +48,7 @@ export const secrets = (
     'DAIMO_HOT_WALLET_ADDRESS',
     'IP_API_PRO_KEY',
     'PRINTFUL_API_TOKEN',
+    'PRINTFUL_WEBHOOK_SECRET',
     'MANIFEST_DISCOUNT_CODE',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
