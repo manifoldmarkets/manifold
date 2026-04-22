@@ -817,6 +817,7 @@ export default function ShopPage() {
             )
               return null
             const isSeasonal = filter === 'seasonal'
+            const isMerch = filter === 'merch'
             const isActive = filterOption === filter
             return (
               <button
@@ -826,10 +827,14 @@ export default function ShopPage() {
                   'rounded-full px-3 py-1 text-sm font-medium transition-colors',
                   isActive && isSeasonal
                     ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-sm'
+                    : isActive && isMerch
+                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white shadow-sm ring-1 ring-amber-300/60'
                     : isActive
                     ? 'bg-primary-500 text-white'
                     : isSeasonal
                     ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 hover:from-pink-200 hover:to-rose-200 dark:from-pink-900/30 dark:to-rose-900/30 dark:text-pink-300'
+                    : isMerch
+                    ? 'bg-gradient-to-r from-amber-100 via-yellow-100 to-amber-200 text-amber-800 shadow-sm ring-1 ring-amber-300/50 hover:from-amber-200 hover:via-yellow-200 hover:to-amber-300 dark:from-amber-900/40 dark:via-yellow-900/30 dark:to-amber-900/50 dark:text-amber-200 dark:ring-amber-500/40'
                     : 'bg-canvas-50 text-ink-600 hover:bg-canvas-100'
                 )}
               >
@@ -1560,6 +1565,29 @@ function MerchItemCard(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor])
 
+  // Touch-swipe gestures for the image carousel. Captures horizontal swipes
+  // past a threshold; ignores mostly-vertical motion so page scroll still
+  // works when the finger starts on the image.
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    touchStartRef.current = { x: t.clientX, y: t.clientY }
+  }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!start || images.length <= 1) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return
+    if (dx < 0) {
+      setCurrentImageIndex((i) => (i === images.length - 1 ? 0 : i + 1))
+    } else {
+      setCurrentImageIndex((i) => (i === 0 ? images.length - 1 : i - 1))
+    }
+  }
+
   // Pick the variant matching the user's colour + size selection.
   const findSelectedVariant = () =>
     variants.find(
@@ -1687,7 +1715,11 @@ function MerchItemCard(props: {
           )}
 
           {/* Image carousel */}
-          <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+          <div
+            className="relative aspect-square touch-pan-y overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <img
               src={images[currentImageIndex].url}
               alt={`${item.name} - ${images[currentImageIndex].label}`}

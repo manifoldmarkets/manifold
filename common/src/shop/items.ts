@@ -866,10 +866,10 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'merch',
     slot: 'consumable',
-    imageUrl: '/merch/AGGC-front-ghost.png',
+    imageUrl: '/merch/AGGC-back-ghost.png',
     merchImages: [
-      { label: 'Front', url: '/merch/AGGC-front-ghost.png' },
       { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
+      { label: 'Front', url: '/merch/AGGC-front-ghost.png' },
     ],
     variants: [
       { size: 'S', printfulSyncVariantId: '69026b955ba991' },
