@@ -859,7 +859,7 @@ export const SHOP_ITEMS: ShopItem[] = [
       { size: '2XL', color: 'Navy', printfulSyncVariantId: '69026b379414b6' },
       { size: '3XL', color: 'Navy', printfulSyncVariantId: '69026b37941505' },
     ],
-    visibleSinceTime: new Date('2026-04-23T00:15:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
   {
     id: 'merch-aggc-tshirt',
@@ -884,7 +884,7 @@ export const SHOP_ITEMS: ShopItem[] = [
       { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
       { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
     ],
-    visibleSinceTime: new Date('2026-04-23T00:15:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-white-logo',
@@ -904,7 +904,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c7bf5859673' },
     ],
-    visibleSinceTime: new Date('2026-04-23T00:15:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-purple-logo',
@@ -924,7 +924,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c786e6c50b2' },
     ],
-    visibleSinceTime: new Date('2026-04-23T00:15:00+09:30').getTime(),
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
 
   // Tickets
