@@ -73,7 +73,9 @@ const loadStateForUpdate = async (
   pgTrans: SupabaseTransaction,
   contractId: string
 ): Promise<LoadedState> => {
-  await pgTrans.none(advisoryLockQuery(contractId))
+  // `select pg_advisory_xact_lock(...)` returns a row (void column), so
+  // .none() would throw "No return data was expected". .one() is correct.
+  await pgTrans.one(advisoryLockQuery(contractId))
 
   const contractRow = await pgTrans.oneOrNone<{ data: PerpContract }>(
     selectContractForUpdateQuery(contractId)
