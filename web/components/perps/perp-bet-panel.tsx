@@ -1,3 +1,4 @@
+import { ArrowDownIcon, ArrowUpIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -34,6 +35,7 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
   const user = useUser()
 
   const [direction, setDirection] = useState<'long' | 'short'>('long')
+  const [expanded, setExpanded] = useState(false)
   const [margin, setMargin] = useState<number | undefined>(10)
   const [leverage, setLeverage] = useState<number>(2)
   const [submitting, setSubmitting] = useState(false)
@@ -144,15 +146,72 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
         marginAmount
       )}`
 
+  const onPickDirection = (d: 'long' | 'short') => {
+    if ((d === 'long' && longDisabled) || (d === 'short' && shortDisabled)) {
+      toast.error(
+        `Close your ${openDirection} position before opening a ${d}`
+      )
+      return
+    }
+    setDirection(d)
+    setExpanded(true)
+  }
+
+  // Collapsed state: two big side-by-side Long/Short buttons, matching the
+  // binary YES/NO entry point on normal markets.
+  if (!expanded) {
+    return (
+      <Col className="mt-2 w-full gap-1">
+        <Row className="w-full items-center gap-3">
+          <Button
+            color="green"
+            size="xl"
+            onClick={() => onPickDirection('long')}
+            disabled={longDisabled}
+            className="flex-1 px-2 sm:px-6"
+          >
+            {openDirection === 'long' ? 'Add Long' : 'Long'}
+            <ArrowUpIcon className="ml-1 h-4 w-4" />
+          </Button>
+          <Button
+            color="red"
+            size="xl"
+            onClick={() => onPickDirection('short')}
+            disabled={shortDisabled}
+            className="flex-1 px-2 sm:px-6"
+          >
+            {openDirection === 'short' ? 'Add Short' : 'Short'}
+            <ArrowDownIcon className="ml-1 h-4 w-4" />
+          </Button>
+        </Row>
+        {openDirection && (
+          <div className="text-ink-500 px-1 text-xs">
+            One-way mode: close your {openDirection} position to switch sides.
+          </div>
+        )}
+      </Col>
+    )
+  }
+
   return (
-    <Col className="border-ink-200 bg-canvas-0 gap-4 rounded-lg border p-4">
-      <DirectionToggle
-        direction={direction}
-        onChange={setDirection}
-        longDisabled={longDisabled}
-        shortDisabled={shortDisabled}
-        openDirection={openDirection}
-      />
+    <Col className="bg-canvas-50 border-ink-200 gap-4 rounded-lg border p-4">
+      <Row className="items-center justify-between">
+        <DirectionToggle
+          direction={direction}
+          onChange={setDirection}
+          longDisabled={longDisabled}
+          shortDisabled={shortDisabled}
+          openDirection={openDirection}
+        />
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="text-ink-500 hover:text-ink-700 ml-3 shrink-0"
+          aria-label="Close"
+        >
+          <XIcon className="h-5 w-5" />
+        </button>
+      </Row>
 
       <Col className="gap-1.5">
         <label className="text-ink-600 text-sm font-medium">Margin</label>
@@ -222,33 +281,26 @@ const DirectionToggle = (props: {
   const { direction, onChange, longDisabled, shortDisabled, openDirection } =
     props
   return (
-    <Col className="gap-1">
-      <Row className="bg-canvas-100 border-ink-200 overflow-hidden rounded-lg border p-1">
-        <ToggleButton
-          active={direction === 'long'}
-          disabled={longDisabled}
-          onClick={() => onChange('long')}
-          activeClass="bg-teal-600 text-white shadow-sm"
-          inactiveClass="text-teal-700 dark:text-teal-400 hover:bg-canvas-50"
-        >
-          {openDirection === 'long' ? 'Add to long' : 'Long'}
-        </ToggleButton>
-        <ToggleButton
-          active={direction === 'short'}
-          disabled={shortDisabled}
-          onClick={() => onChange('short')}
-          activeClass="bg-red-600 text-white shadow-sm"
-          inactiveClass="text-red-700 dark:text-red-400 hover:bg-canvas-50"
-        >
-          {openDirection === 'short' ? 'Add to short' : 'Short'}
-        </ToggleButton>
-      </Row>
-      {openDirection && (
-        <div className="text-ink-500 text-xs">
-          One-way mode: close your {openDirection} position to switch sides.
-        </div>
-      )}
-    </Col>
+    <Row className="bg-canvas-100 border-ink-200 flex-1 overflow-hidden rounded-lg border p-1">
+      <ToggleButton
+        active={direction === 'long'}
+        disabled={longDisabled}
+        onClick={() => onChange('long')}
+        activeClass="bg-teal-600 text-white shadow-sm"
+        inactiveClass="text-teal-700 dark:text-teal-400 hover:bg-canvas-50"
+      >
+        {openDirection === 'long' ? 'Add to long' : 'Long'}
+      </ToggleButton>
+      <ToggleButton
+        active={direction === 'short'}
+        disabled={shortDisabled}
+        onClick={() => onChange('short')}
+        activeClass="bg-red-600 text-white shadow-sm"
+        inactiveClass="text-red-700 dark:text-red-400 hover:bg-canvas-50"
+      >
+        {openDirection === 'short' ? 'Add to short' : 'Short'}
+      </ToggleButton>
+    </Row>
   )
 }
 
