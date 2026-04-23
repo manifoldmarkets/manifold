@@ -191,19 +191,14 @@ export const openOrAddPosition = async (
       )
     }
 
-    // One-way mode: reject open against an existing opposite-side position.
+    // Flip behavior: if the user has an existing opposite-side position, we
+    // auto-close it at the oracle price first, in the same tx. This used to
+    // throw a "close your long first" error; the parimutuel AMM doesn't need
+    // the one-way restriction, and forcing a separate round-trip is just
+    // friction for a flip.
     const existingOpposite = state.positions.find(
-      (p) =>
-        p.userId === userId &&
-        p.direction !== direction &&
-        p.size > 0
+      (p) => p.userId === userId && p.direction !== direction && p.size > 0
     )
-    if (existingOpposite)
-      throw new APIError(
-        400,
-        `Close your ${existingOpposite.direction} position first`
-      )
-
     const existingSame = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
     )
@@ -217,8 +212,38 @@ export const openOrAddPosition = async (
     // and funding + ADL handle persistent imbalance over time.
 
     const price = contract.oraclePrice
+
+    // Auto-close opposite side first, then open on top of the resulting state.
+    let workingState: PerpState = state
+    let closeEvent: PerpEvent | undefined
+    let closePayout = 0
+    if (existingOpposite) {
+      const closeRes = closePositionMath(workingState, existingOpposite, price)
+      workingState = closeRes.state
+      closePayout = closeRes.payout
+      closeEvent = asEvent(contract, {
+        userId,
+        eventType: 'close',
+        direction: existingOpposite.direction,
+        leverage: 0,
+        sizeDelta: -existingOpposite.size,
+        costBasisDelta: -existingOpposite.costBasis,
+        originalCostBasisDelta: -existingOpposite.originalCostBasis,
+        data: {
+          payout: closeRes.payout,
+          pnl: closeRes.pnl,
+          entryPrice: existingOpposite.entryPrice,
+          closePrice: price,
+          originalCostBasis: existingOpposite.originalCostBasis,
+          reason: 'flip',
+        },
+        ts: now,
+        oraclePrice: price,
+      })
+    }
+
     const open = openPositionMath(
-      state,
+      workingState,
       userId,
       contractId,
       direction,
@@ -257,17 +282,41 @@ export const openOrAddPosition = async (
       oraclePrice: price,
     })
 
+    // Count any auto-closed opposite notional toward volume so the market
+    // chart reflects the full round-trip (flip = close + open on one click).
+    const flipVolume = existingOpposite?.size ?? 0
     const contractPatch = removeUndefinedProps({
       poolLong: open.state.pool.L,
       poolShort: open.state.pool.S,
       lastBetTime: now,
       lastUpdatedTime: now,
-      volume: (contract.volume ?? 0) + mana * leverage,
-      volume24Hours: (contract.volume24Hours ?? 0) + mana * leverage,
+      volume: (contract.volume ?? 0) + mana * leverage + flipVolume,
+      volume24Hours:
+        (contract.volume24Hours ?? 0) + mana * leverage + flipVolume,
       uniqueBettorCount: existingSame
         ? contract.uniqueBettorCount
         : contract.uniqueBettorCount + 1,
     })
+
+    // Credit the close payout (if any) back to the user. Must run before the
+    // open-debit so the user's balance reflects the freed margin if they're
+    // re-using it to fund the new position.
+    if (closePayout > 0) {
+      await runTxnOutsideBetQueue(
+        pgTrans,
+        {
+          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          fromId: contractId,
+          fromType: 'CONTRACT',
+          toId: userId,
+          toType: 'USER',
+          amount: closePayout,
+          token: 'M$',
+          data: {},
+        },
+        true
+      )
+    }
 
     // Debit user balance via a txn. `ADD_SUBSIDY` is the USER→CONTRACT category
     // that matches what actually happens here (trader margin enters a pool),
@@ -287,18 +336,25 @@ export const openOrAddPosition = async (
       true
     )
 
+    const newEvents = closeEvent ? [closeEvent, event] : [event]
+
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
       userIds: [userId],
-      newEvents: [event],
+      newEvents,
       finalPositions: open.state.positions,
     })
 
+    // Deletes must run before upserts: on a flip, the new same-side position
+    // and the old opposite-side position share (contract_id, user_id), and
+    // the partial unique index `contract_perp_positions_one_way` (keyed on
+    // those two cols where size > 0) is immediate, so the upsert would fail
+    // if the opposite row still existed at the point of insert.
     await pgTrans.multi(
       [
-        upsertPositionsQuery(upserts),
         deletePositionsQuery(contractId, deletes),
-        insertPerpEventsQuery([event]),
+        upsertPositionsQuery(upserts),
+        insertPerpEventsQuery(newEvents),
         mergeContractDataQuery(contractId, contractPatch),
         metricsQuery,
       ].join(';\n')

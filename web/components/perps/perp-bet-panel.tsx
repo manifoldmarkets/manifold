@@ -93,9 +93,10 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
     direction === 'long' ? fundingRate : -fundingRate
   const userFundingCostPerPeriod = notional * userFundingRate
 
-  const longDisabled = openDirection === 'short'
-  const shortDisabled = openDirection === 'long'
   const isAdd = openDirection === direction
+  // Flipping: user holds a position in the opposite direction, and we'll
+  // auto-close it before opening the new one (engine does this atomically).
+  const isFlip = !!openDirection && openDirection !== direction
   const maxLeverage = contract.maxLeverage
 
   const onSubmit = async () => {
@@ -111,12 +112,6 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
       toast.error(`Max leverage is ${maxLeverage}×`)
       return
     }
-    if (openDirection && direction !== openDirection) {
-      toast.error(
-        `Close your ${openDirection} position before opening a ${direction}`
-      )
-      return
-    }
     setSubmitting(true)
     try {
       const res = await api('place-perp-trade', {
@@ -125,8 +120,9 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
         mana: margin,
         leverage,
       })
+      const verb = isAdd ? 'Added to' : isFlip ? 'Flipped to' : 'Opened'
       toast.success(
-        `${isAdd ? 'Added to' : 'Opened'} ${direction} at ${formatPrice(
+        `${verb} ${direction} at ${formatPrice(
           res.position.entryPrice,
           priceDecimals
         )}`
@@ -142,17 +138,13 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
   const submitColor = direction === 'long' ? 'green' : 'red'
   const submitLabel = isAdd
     ? `Add to ${direction} · ${formatMoney(marginAmount)}`
+    : isFlip
+    ? `Flip to ${direction} · ${formatMoney(marginAmount)}`
     : `${direction === 'long' ? 'Open long' : 'Open short'} · ${formatMoney(
         marginAmount
       )}`
 
   const onPickDirection = (d: 'long' | 'short') => {
-    if ((d === 'long' && longDisabled) || (d === 'short' && shortDisabled)) {
-      toast.error(
-        `Close your ${openDirection} position before opening a ${d}`
-      )
-      return
-    }
     setDirection(d)
     setExpanded(true)
   }
@@ -167,26 +159,33 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
             color="green"
             size="xl"
             onClick={() => onPickDirection('long')}
-            disabled={longDisabled}
             className="flex-1 px-2 sm:px-6"
           >
-            {openDirection === 'long' ? 'Add Long' : 'Long'}
+            {openDirection === 'long'
+              ? 'Add Long'
+              : openDirection === 'short'
+              ? 'Flip to Long'
+              : 'Long'}
             <ArrowUpIcon className="ml-1 h-4 w-4" />
           </Button>
           <Button
             color="red"
             size="xl"
             onClick={() => onPickDirection('short')}
-            disabled={shortDisabled}
             className="flex-1 px-2 sm:px-6"
           >
-            {openDirection === 'short' ? 'Add Short' : 'Short'}
+            {openDirection === 'short'
+              ? 'Add Short'
+              : openDirection === 'long'
+              ? 'Flip to Short'
+              : 'Short'}
             <ArrowDownIcon className="ml-1 h-4 w-4" />
           </Button>
         </Row>
         {openDirection && (
           <div className="text-ink-500 px-1 text-xs">
-            One-way mode: close your {openDirection} position to switch sides.
+            Opening the opposite side will close your current {openDirection}{' '}
+            position at the oracle price.
           </div>
         )}
       </Col>
@@ -199,8 +198,6 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
         <DirectionToggle
           direction={direction}
           onChange={setDirection}
-          longDisabled={longDisabled}
-          shortDisabled={shortDisabled}
           openDirection={openDirection}
         />
         <button
@@ -274,31 +271,38 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
 const DirectionToggle = (props: {
   direction: 'long' | 'short'
   onChange: (d: 'long' | 'short') => void
-  longDisabled: boolean
-  shortDisabled: boolean
   openDirection: 'long' | 'short' | null
 }) => {
-  const { direction, onChange, longDisabled, shortDisabled, openDirection } =
-    props
+  const { direction, onChange, openDirection } = props
+  const longLabel =
+    openDirection === 'long'
+      ? 'Add to long'
+      : openDirection === 'short'
+      ? 'Flip to long'
+      : 'Long'
+  const shortLabel =
+    openDirection === 'short'
+      ? 'Add to short'
+      : openDirection === 'long'
+      ? 'Flip to short'
+      : 'Short'
   return (
     <Row className="bg-canvas-100 border-ink-200 flex-1 overflow-hidden rounded-lg border p-1">
       <ToggleButton
         active={direction === 'long'}
-        disabled={longDisabled}
         onClick={() => onChange('long')}
         activeClass="bg-teal-600 text-white shadow-sm"
         inactiveClass="text-teal-700 dark:text-teal-400 hover:bg-canvas-50"
       >
-        {openDirection === 'long' ? 'Add to long' : 'Long'}
+        {longLabel}
       </ToggleButton>
       <ToggleButton
         active={direction === 'short'}
-        disabled={shortDisabled}
         onClick={() => onChange('short')}
         activeClass="bg-red-600 text-white shadow-sm"
         inactiveClass="text-red-700 dark:text-red-400 hover:bg-canvas-50"
       >
-        {openDirection === 'short' ? 'Add to short' : 'Short'}
+        {shortLabel}
       </ToggleButton>
     </Row>
   )
@@ -306,7 +310,6 @@ const DirectionToggle = (props: {
 
 const ToggleButton = (props: {
   active: boolean
-  disabled: boolean
   onClick: () => void
   activeClass: string
   inactiveClass: string
@@ -314,15 +317,10 @@ const ToggleButton = (props: {
 }) => (
   <button
     type="button"
-    disabled={props.disabled}
     onClick={props.onClick}
     className={clsx(
       'flex-1 rounded-md py-2 text-center text-sm font-semibold transition-colors',
-      props.disabled
-        ? 'text-ink-400 cursor-not-allowed'
-        : props.active
-        ? props.activeClass
-        : props.inactiveClass
+      props.active ? props.activeClass : props.inactiveClass
     )}
   >
     {props.children}

@@ -145,6 +145,7 @@ export function ContractPageContent(props: ContractParams) {
   const { coverImageUrl } = liveContract
 
   const description = liveContract.description
+  const isPerp = liveContract.mechanism === 'perp'
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -351,6 +352,18 @@ export function ContractPageContent(props: ContractParams) {
                   isCashContract={isCashContract}
                 />
               </Row>
+              {isPerp && (
+                // Perps surface the description directly above the analytics
+                // panel so traders can see what the oracle tracks (e.g. "30-day
+                // trailing average Trump approval rating") before they trade,
+                // instead of having it buried below the chart.
+                <ContractDescription
+                  contractId={props.contract.id}
+                  creatorId={props.contract.creatorId}
+                  isSweeps={isCashContract}
+                  description={description}
+                />
+              )}
               <Col className="gap-2">
                 <ContractOverview
                   contract={liveContract}
@@ -477,7 +490,7 @@ export function ContractPageContent(props: ContractParams) {
                   {liveContract.question}
                 </Link>
               </span>
-            ) : (
+            ) : isPerp ? null : ( // perps render description above the analytics panel instead
               <ContractDescription
                 contractId={props.contract.id}
                 creatorId={props.contract.creatorId}
