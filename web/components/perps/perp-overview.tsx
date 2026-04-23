@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PerpContract } from 'common/contract'
+import { computeFundingRate } from 'common/perps/amm'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -21,6 +22,18 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   // decimals, fractional prices scale to their magnitude.
   const priceDecimals = inferPriceDecimals([price])
 
+  // Compute the funding rate live from the current pool balances rather than
+  // reading `contract.fundingRate`, which is only refreshed hourly by the
+  // scheduler. Without this, a user who just flipped the pool balance would
+  // still see the previous period's rate — often with the opposite sign —
+  // until the next funding tick, which reads as "backwards".
+  const liveFundingRate = computeFundingRate(
+    contract.poolLong,
+    contract.poolShort,
+    contract.fundingSensitivity,
+    contract.maxFundingRate
+  )
+
   return (
     <Col className="gap-4">
       <Row className="items-baseline justify-between">
@@ -31,7 +44,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
               {formatPrice(price, priceDecimals)}
             </div>
           </Col>
-          <FundingRateColumn rate={contract.fundingRate} />
+          <FundingRateColumn rate={liveFundingRate} />
         </Row>
         <Row className="border-ink-200 overflow-hidden rounded-md border">
           <button
