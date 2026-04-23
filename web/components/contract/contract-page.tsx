@@ -352,18 +352,6 @@ export function ContractPageContent(props: ContractParams) {
                   isCashContract={isCashContract}
                 />
               </Row>
-              {isPerp && (
-                // Perps surface the description directly above the analytics
-                // panel so traders can see what the oracle tracks (e.g. "30-day
-                // trailing average Trump approval rating") before they trade,
-                // instead of having it buried below the chart.
-                <ContractDescription
-                  contractId={props.contract.id}
-                  creatorId={props.contract.creatorId}
-                  isSweeps={isCashContract}
-                  description={description}
-                />
-              )}
               <Col className="gap-2">
                 <ContractOverview
                   contract={liveContract}
@@ -473,6 +461,18 @@ export function ContractPageContent(props: ContractParams) {
               userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
+            {isPerp && (
+              // Perps render the description directly above the boost/share
+              // panel so the oracle context (e.g. "30-day trailing average
+              // Trump approval rating") is visible near the top of the page
+              // flow, not buried below MarketContext.
+              <ContractDescription
+                contractId={props.contract.id}
+                creatorId={props.contract.creatorId}
+                isSweeps={isCashContract}
+                description={description}
+              />
+            )}
             {!isResolved && !isClosed && isCreator && (
               <>
                 {showResolver && <Spacer h={4} />}
@@ -490,7 +490,7 @@ export function ContractPageContent(props: ContractParams) {
                   {liveContract.question}
                 </Link>
               </span>
-            ) : isPerp ? null : ( // perps render description above the analytics panel instead
+            ) : isPerp ? null : ( // perps render description above the boost panel instead
               <ContractDescription
                 contractId={props.contract.id}
                 creatorId={props.contract.creatorId}

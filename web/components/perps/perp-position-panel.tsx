@@ -114,12 +114,8 @@ const PositionCard = (props: {
     p.originalCostBasis > 0 ? (pnl / p.originalCostBasis) * 100 : 0
 
   const isLong = p.direction === 'long'
-  const accent = isLong ? 'teal' : 'red'
   const accentBar = isLong ? 'bg-teal-500' : 'bg-red-500'
   const accentText = isLong ? 'text-teal-600' : 'text-red-600'
-  const accentBadge = isLong
-    ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
-    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-red-600'
 
   // Distance to liquidation as a percentage of mark — useful risk signal.
@@ -145,16 +141,8 @@ const PositionCard = (props: {
         <Row className="items-start justify-between gap-2">
           <Col className="gap-0.5">
             <Row className="items-center gap-2">
-              <span
-                className={clsx(
-                  'rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wide',
-                  accentBadge
-                )}
-              >
-                {p.direction}
-              </span>
-              <span className={clsx('font-semibold', accentText)}>
-                {p.leverage.toFixed(2)}× leverage
+              <span className={clsx('font-semibold capitalize', accentText)}>
+                {p.direction} {formatLeverage(p.leverage)}×
               </span>
             </Row>
             <div className="text-ink-900 text-2xl font-bold tabular-nums">
@@ -164,7 +152,7 @@ const PositionCard = (props: {
               </span>
             </div>
             <div className="text-ink-500 text-xs">
-              {formatMoney(p.originalCostBasis)} margin · {p.leverage.toFixed(2)}×
+              {formatMoney(p.originalCostBasis)} margin
             </div>
           </Col>
           <Col className="items-end">
@@ -203,7 +191,7 @@ const PositionCard = (props: {
         </div>
 
         <Button
-          color={accent === 'teal' ? 'gray-outline' : 'gray-outline'}
+          color="gray-outline"
           onClick={onClose}
           loading={closing}
           disabled={anyClosing}
@@ -215,6 +203,13 @@ const PositionCard = (props: {
       </Col>
     </Col>
   )
+}
+
+// Drop trailing zeros so whole leverages render as "100×" not "100.00×",
+// but fractional ones keep one decimal of precision (e.g. "1.5×").
+const formatLeverage = (leverage: number) => {
+  const rounded = Math.round(leverage * 10) / 10
+  return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)
 }
 
 const PriceStat = (props: {

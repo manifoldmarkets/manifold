@@ -19,10 +19,10 @@ import { useUser } from 'web/hooks/use-user'
 
 type OpenPosition = { direction: 'long' | 'short' }
 
-// Preset leverage stops that the slider snaps to. We interpolate between
-// them so low leverage has finer granularity (1/1.5/2/3/5...) and high
-// leverage has coarser jumps — matches how most futures UIs lay this out.
-const LEVERAGE_MARKS = [1, 2, 3, 5, 10, 20, 50, 100]
+// Tick labels rendered under the leverage slider. Kept sparse so the first
+// few marks don't pile on top of each other at narrow widths — the slider
+// itself is still continuous (step=0.1), these are just visual anchors.
+const LEVERAGE_MARKS = [1, 5, 10, 25, 50, 100]
 
 const getLeverageMarks = (maxLeverage: number) => {
   const marks = LEVERAGE_MARKS.filter((m) => m <= maxLeverage)
@@ -91,7 +91,6 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
   // fraction of notional per period. Short sees the opposite sign.
   const userFundingRate =
     direction === 'long' ? fundingRate : -fundingRate
-  const userFundingCostPerPeriod = notional * userFundingRate
 
   const isAdd = openDirection === direction
   // Flipping: user holds a position in the opposite direction, and we'll
@@ -161,11 +160,7 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
             onClick={() => onPickDirection('long')}
             className="flex-1 px-2 sm:px-6"
           >
-            {openDirection === 'long'
-              ? 'Add Long'
-              : openDirection === 'short'
-              ? 'Flip to Long'
-              : 'Long'}
+            Long
             <ArrowUpIcon className="ml-1 h-4 w-4" />
           </Button>
           <Button
@@ -174,20 +169,10 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
             onClick={() => onPickDirection('short')}
             className="flex-1 px-2 sm:px-6"
           >
-            {openDirection === 'short'
-              ? 'Add Short'
-              : openDirection === 'long'
-              ? 'Flip to Short'
-              : 'Short'}
+            Short
             <ArrowDownIcon className="ml-1 h-4 w-4" />
           </Button>
         </Row>
-        {openDirection && (
-          <div className="text-ink-500 px-1 text-xs">
-            Opening the opposite side will close your current {openDirection}{' '}
-            position at the oracle price.
-          </div>
-        )}
       </Col>
     )
   }
@@ -195,11 +180,7 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
   return (
     <Col className="bg-canvas-50 border-ink-200 gap-4 rounded-lg border p-4">
       <Row className="items-center justify-between">
-        <DirectionToggle
-          direction={direction}
-          onChange={setDirection}
-          openDirection={openDirection}
-        />
+        <DirectionToggle direction={direction} onChange={setDirection} />
         <button
           type="button"
           onClick={() => setExpanded(false)}
@@ -248,8 +229,8 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
         entryPrice={price}
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
-        fundingCost={userFundingCostPerPeriod}
-        fundingRate={userFundingRate}
+        marketFundingRate={fundingRate}
+        userFundingRate={userFundingRate}
       />
 
       <Button
@@ -271,21 +252,8 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
 const DirectionToggle = (props: {
   direction: 'long' | 'short'
   onChange: (d: 'long' | 'short') => void
-  openDirection: 'long' | 'short' | null
 }) => {
-  const { direction, onChange, openDirection } = props
-  const longLabel =
-    openDirection === 'long'
-      ? 'Add to long'
-      : openDirection === 'short'
-      ? 'Flip to long'
-      : 'Long'
-  const shortLabel =
-    openDirection === 'short'
-      ? 'Add to short'
-      : openDirection === 'long'
-      ? 'Flip to short'
-      : 'Short'
+  const { direction, onChange } = props
   return (
     <Row className="bg-canvas-100 border-ink-200 flex-1 overflow-hidden rounded-lg border p-1">
       <ToggleButton
@@ -294,7 +262,7 @@ const DirectionToggle = (props: {
         activeClass="bg-teal-600 text-white shadow-sm"
         inactiveClass="text-teal-700 dark:text-teal-400 hover:bg-canvas-50"
       >
-        {longLabel}
+        Long
       </ToggleButton>
       <ToggleButton
         active={direction === 'short'}
@@ -302,7 +270,7 @@ const DirectionToggle = (props: {
         activeClass="bg-red-600 text-white shadow-sm"
         inactiveClass="text-red-700 dark:text-red-400 hover:bg-canvas-50"
       >
-        {shortLabel}
+        Short
       </ToggleButton>
     </Row>
   )
@@ -365,17 +333,23 @@ const StatsGrid = (props: {
   entryPrice: number
   liqPrice: number
   priceDecimals: number
-  fundingCost: number
-  fundingRate: number
+  // Market rate (positive = longs pay shorts), mirrors the Funding column in
+  // the overview header.
+  marketFundingRate: number
+  // Same rate from this user's perspective (positive = this user pays).
+  // Drives row color so a payer reads red, a receiver reads teal.
+  userFundingRate: number
 }) => {
   const {
     notional,
     entryPrice,
     liqPrice,
     priceDecimals,
-    fundingCost,
-    fundingRate,
+    marketFundingRate,
+    userFundingRate,
   } = props
+  const hourlyPct = marketFundingRate * 100
+  const sign = hourlyPct > 0 ? '+' : ''
   return (
     <Col className="bg-canvas-50 border-ink-200 gap-2 rounded-md border p-3 text-sm">
       <StatRow label="Notional" value={formatMoney(notional)} bold />
@@ -389,11 +363,15 @@ const StatsGrid = (props: {
         valueClass="text-red-600"
       />
       <StatRow
-        label={`Funding (${(fundingRate * 100).toFixed(3)}%/hr)`}
-        value={`${fundingCost >= 0 ? '-' : '+'}${formatMoney(
-          Math.abs(fundingCost)
-        )}/hr`}
-        valueClass={fundingCost <= 0 ? 'text-teal-600' : 'text-red-600'}
+        label="Funding"
+        value={`${sign}${hourlyPct.toFixed(3)}%/hr`}
+        valueClass={
+          userFundingRate > 0
+            ? 'text-red-600'
+            : userFundingRate < 0
+            ? 'text-teal-600'
+            : undefined
+        }
       />
     </Col>
   )
