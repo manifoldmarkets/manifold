@@ -2,6 +2,7 @@ import { SupabaseDirectClient } from './supabase/init'
 import { bulkUpsert } from './supabase/utils'
 
 export const MANIFOLD_DAU_FEED_ID = 'manifold-dau'
+export const TRUMP_APPROVAL_FEED_ID = 'trump-approval-rating'
 
 // Upsert oracle price points for a feed. Idempotent on (feed_id, ts) — safe
 // to re-run with the same inputs. Timestamps are epoch millis; converted to
