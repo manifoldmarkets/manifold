@@ -211,21 +211,10 @@ export const openOrAddPosition = async (
       (p) => p.userId === userId && p.size > 0
     )
 
-    // Notional cap: position notional ≤ maxPositionNotionalFraction * oppositePool.
-    const oppositePool =
-      direction === 'long' ? contract.poolShort : contract.poolLong
-    const newNotional =
-      mana * leverage + (existingSame ? existingSame.size : 0)
-    const cap = contract.maxPositionNotionalFraction * oppositePool
-    if (newNotional > cap)
-      throw new APIError(
-        400,
-        `Position notional ${newNotional.toFixed(
-          2
-        )} exceeds cap ${cap.toFixed(2)} (${
-          contract.maxPositionNotionalFraction
-        }× opposite pool)`
-      )
+    // No notional cap vs. the opposite pool: this AMM is parimutuel, so
+    // the opposite pool is meant to be bootstrapped by imbalanced early
+    // flow. Solvency is still enforced below (post-trade solvency >= 1)
+    // and funding + ADL handle persistent imbalance over time.
 
     const price = contract.oraclePrice
     const open = openPositionMath(

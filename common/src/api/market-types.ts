@@ -567,7 +567,6 @@ export const createPerpSchema = z.object({
   maxLeverage: z.number().gt(1).lte(100),
   maxFundingRate: z.number().gt(0).lte(1),
   fundingSensitivity: z.number().gt(0).lte(100),
-  maxPositionNotionalFraction: z.number().gt(0).lte(1),
   maxOraclePriceAgeMs: z.number().int().positive(),
   subsidyLong: z.number().gt(0),
   subsidyShort: z.number().gt(0),

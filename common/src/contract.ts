@@ -300,7 +300,6 @@ export type Perp = {
   maxLeverage: number // ℓ_max
   maxFundingRate: number // f_max per period
   fundingSensitivity: number // k
-  maxPositionNotionalFraction: number // e.g. 0.25 — no single position > fraction of opposite pool
   maxOraclePriceAgeMs: number // block trades if feed stale
   resolution?: 'MKT' | 'CANCEL'
 }

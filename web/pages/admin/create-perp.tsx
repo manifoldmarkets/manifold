@@ -27,7 +27,6 @@ export default function AdminCreatePerpPage() {
     // Annualized max funding rate as a percentage (e.g. 50 means 50%/yr).
     maxFundingRateAnnualPct: 50,
     fundingSensitivity: 1,
-    maxPositionNotionalFraction: 0.25,
     maxOraclePriceAgeHours: 6,
     // Total creator subsidy, split 50/50 across the long and short pools.
     subsidyTotal: 1000,
@@ -64,7 +63,6 @@ export default function AdminCreatePerpPage() {
         maxLeverage: form.maxLeverage,
         maxFundingRate: maxFundingRatePerPeriod,
         fundingSensitivity: form.fundingSensitivity,
-        maxPositionNotionalFraction: form.maxPositionNotionalFraction,
         maxOraclePriceAgeMs: Math.round(
           form.maxOraclePriceAgeHours * HOUR_MS
         ),
@@ -151,14 +149,6 @@ export default function AdminCreatePerpPage() {
               onChange={(v) => update('fundingSensitivity', v)}
               step={0.1}
               min={0.01}
-            />
-            <NumberInput
-              label="Max position notional (fraction of opposite pool)"
-              value={form.maxPositionNotionalFraction}
-              onChange={(v) => update('maxPositionNotionalFraction', v)}
-              step={0.05}
-              min={0.01}
-              max={1}
             />
             <NumberInput
               label="Max oracle price age (hours)"
