@@ -202,9 +202,18 @@ export const openOrAddPosition = async (
     const existingSame = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
     )
-    const isNewUniqueBettor = !state.positions.some(
-      (p) => p.userId === userId && p.size > 0
+    // Check the event log rather than the current positions table: closing a
+    // position deletes the row, so a repeat trader would otherwise keep
+    // looking "new" on every re-open and repeatedly trigger the
+    // UNIQUE_BETTOR_BONUS. `contract_perp_events` is append-only, so any
+    // prior open/add/close by this user disqualifies them.
+    const priorEvent = await pgTrans.oneOrNone<{ user_id: string }>(
+      `select user_id from contract_perp_events
+        where contract_id = $1 and user_id = $2
+        limit 1`,
+      [contractId, userId]
     )
+    const isNewUniqueBettor = !priorEvent
 
     // No notional cap vs. the opposite pool: this AMM is parimutuel, so
     // the opposite pool is meant to be bootstrapped by imbalanced early
@@ -293,9 +302,13 @@ export const openOrAddPosition = async (
       volume: (contract.volume ?? 0) + mana * leverage + flipVolume,
       volume24Hours:
         (contract.volume24Hours ?? 0) + mana * leverage + flipVolume,
-      uniqueBettorCount: existingSame
-        ? contract.uniqueBettorCount
-        : contract.uniqueBettorCount + 1,
+      // Only bump on a genuine first-time bettor. Previously this checked
+      // `existingSame`, so a flip (existingOpposite set, existingSame unset)
+      // would double-count the same user and drift the metadata used by
+      // ranking/scoring.
+      uniqueBettorCount: isNewUniqueBettor
+        ? contract.uniqueBettorCount + 1
+        : contract.uniqueBettorCount,
     })
 
     // Credit the close payout (if any) back to the user. Must run before the
