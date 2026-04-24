@@ -24,8 +24,16 @@ import {
 } from '@heroicons/react/solid'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CRYPTO_BULK_THRESHOLD_DISPLAY } from 'common/economy'
+import {
+  CRYPTO_BULK_PURCHASE_BONUS_PCT,
+  CRYPTO_BULK_THRESHOLD_DISPLAY,
+  CRYPTO_FIRST_PURCHASE_BONUS_PCT,
+  CRYPTO_MANA_PER_DOLLAR,
+} from 'common/economy'
+import { formatMoney } from 'common/util/format'
 import { api } from 'web/lib/api/api'
+
+const MANA_TIERS_USD = [10, 25, 50, 100, 500, 1000, 2500]
 
 type SessionState =
   | { status: 'idle' }
@@ -33,6 +41,101 @@ type SessionState =
   | { status: 'ready'; sessionId: string; clientSecret: string }
   | { status: 'completed' }
   | { status: 'error'; message: string }
+
+function ManaRewardsTable(props: { isFirstCryptoPurchase: boolean }) {
+  const { isFirstCryptoPurchase } = props
+  return (
+    <Col className="gap-2">
+      <Row className="items-center justify-between">
+        <span className="text-ink-700 text-sm font-semibold">
+          What you'll get
+        </span>
+        {isFirstCryptoPurchase && (
+          <Row className="items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <SparklesIcon className="h-3.5 w-3.5" />
+            First-purchase +10% applied
+          </Row>
+        )}
+      </Row>
+      <div className="border-ink-200 dark:border-ink-300 overflow-hidden rounded-lg border">
+        <table className="w-full text-sm">
+          <thead className="bg-canvas-50 text-ink-600 text-xs uppercase">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Pay</th>
+              <th className="px-3 py-2 text-right font-medium">You get</th>
+              <th className="px-3 py-2 text-right font-medium">Bonus</th>
+            </tr>
+          </thead>
+          <tbody className="divide-ink-100 dark:divide-ink-200 divide-y">
+            {MANA_TIERS_USD.map((dollars) => {
+              const base = dollars * CRYPTO_MANA_PER_DOLLAR
+              const bulkBonus =
+                dollars >= CRYPTO_BULK_THRESHOLD_DISPLAY
+                  ? Math.floor(base * CRYPTO_BULK_PURCHASE_BONUS_PCT)
+                  : 0
+              const firstBonus = isFirstCryptoPurchase
+                ? Math.floor(base * CRYPTO_FIRST_PURCHASE_BONUS_PCT)
+                : 0
+              const bonus = bulkBonus + firstBonus
+              const total = base + bonus
+              const isBulk = dollars >= CRYPTO_BULK_THRESHOLD_DISPLAY
+              return (
+                <tr
+                  key={dollars}
+                  className={clsx(
+                    isBulk &&
+                      'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/30 dark:via-yellow-950/30 dark:to-amber-950/30'
+                  )}
+                >
+                  <td className="text-ink-800 px-3 py-2 font-medium">
+                    ${dollars.toLocaleString()}
+                  </td>
+                  <td
+                    className={clsx(
+                      'px-3 py-2 text-right font-semibold',
+                      isBulk
+                        ? 'text-amber-700 dark:text-amber-300'
+                        : 'text-ink-900'
+                    )}
+                  >
+                    {isBulk && (
+                      <SparklesIcon className="mr-1 inline h-3.5 w-3.5 text-amber-500" />
+                    )}
+                    {formatMoney(total)}
+                  </td>
+                  <td className="px-3 py-2 text-right text-xs">
+                    {bonus > 0 ? (
+                      <span
+                        className={clsx(
+                          'font-semibold',
+                          isBulk
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-emerald-600 dark:text-emerald-400'
+                        )}
+                      >
+                        +{formatMoney(bonus)}
+                      </span>
+                    ) : (
+                      <span className="text-ink-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-ink-500 text-xs">
+        $1 USDC = {formatMoney(CRYPTO_MANA_PER_DOLLAR)}. Purchases of $
+        {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ receive a{' '}
+        {Math.round(CRYPTO_BULK_PURCHASE_BONUS_PCT * 100)}% bulk bonus
+        {isFirstCryptoPurchase
+          ? ', which stacks with your first-purchase bonus.'
+          : '.'}
+      </p>
+    </Col>
+  )
+}
 
 function CheckoutContent() {
   const user = useUser()
@@ -219,6 +322,7 @@ function CheckoutContent() {
                 </button>
               )}
             </Col>
+
             {/* Legal disclaimer */}
             <div className="text-ink-600 rounded-lg bg-amber-50/50 p-4 text-sm dark:bg-amber-950/20">
               <p>
@@ -268,6 +372,9 @@ function CheckoutContent() {
                 </p>
               </div>
             )}
+
+            {/* Mana rewards table */}
+            <ManaRewardsTable isFirstCryptoPurchase={isFirstCryptoPurchase} />
           </Col>
         )}
       </div>
