@@ -1,4 +1,7 @@
 -- Rename loan transaction categories
+-- Historical context: Before DAILY_FREE_LOAN was introduced, all free loans used the LOAN category.
+-- After DAILY_FREE_LOAN was introduced, LOAN started being used for margin loans.
+
 -- Wrapped in DO block to skip gracefully if table doesn't exist yet (local dev)
 -- On production, this migration has already been applied.
 do $$
