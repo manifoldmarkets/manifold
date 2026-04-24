@@ -13,8 +13,17 @@ export function initSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const localKey =
     process.env.NEXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY
-  if (localUrl && localKey) {
-    return createClient(localUrl, localKey)
+  if (
+    process.env.LOCAL_ONLY === 'true' ||
+    process.env.NEXT_PUBLIC_LOCAL_ONLY === 'true'
+  ) {
+    if (localUrl && localKey) {
+      return createClient(localUrl, localKey)
+    } else {
+      throw new Error(
+        'LOCAL_ONLY mode requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_KEY to be set'
+      )
+    }
   }
 
   const instanceId = getSupabaseInstanceId()

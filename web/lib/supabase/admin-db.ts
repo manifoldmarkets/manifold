@@ -21,6 +21,10 @@ export async function initSupabaseAdmin() {
   ) {
     if (localUrl && localKey) {
       return createClient(localUrl, localKey)
+    } else {
+      console.error(
+        'LOCAL_ONLY mode requires NEXT_PUBLIC_SUPABASE_URL and DEV_ADMIN_SUPABASE_KEY to be set'
+      )
     }
   }
 
