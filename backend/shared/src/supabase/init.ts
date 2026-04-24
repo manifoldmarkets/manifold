@@ -7,7 +7,7 @@ import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { getMonitoringContext } from 'shared/monitoring/context'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
-import { isProd, log, metrics } from '../utils'
+import { LOCAL_ONLY, isProd, log, metrics } from '../utils'
 export { type SupabaseClient } from 'common/supabase/utils'
 
 export const pgp = pgPromise({
@@ -113,14 +113,18 @@ export function createSupabaseDirectClient(opts?: {
 }): SupabaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
 
-  const localOnly = process.env.LOCAL_ONLY === 'true'
   const host = process.env.SUPABASE_HOST
   const port = process.env.SUPABASE_PORT
     ? parseInt(process.env.SUPABASE_PORT)
     : 5432
 
   let dbHost: string
-  if (localOnly && host) {
+  if (LOCAL_ONLY) {
+    if (!host) {
+      throw new Error(
+        'LOCAL_ONLY mode requires process.env.SUPABASE_HOST to be set.'
+      )
+    }
     // LOCAL_ONLY mode: connect directly to local Supabase postgres
     dbHost = host
   } else {

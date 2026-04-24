@@ -11,7 +11,7 @@ import {
   ValidatedAPIParams,
 } from 'common/api/schema'
 import { PrivateUser } from 'common/user'
-import { getUnbannedPrivateUserByKey, log } from 'shared/utils'
+import { getUnbannedPrivateUserByKey, log, LOCAL_ONLY } from 'shared/utils'
 export { APIError } from 'common//api/utils'
 
 export type Json = Record<string, unknown> | Json[]
@@ -41,7 +41,7 @@ type Credentials = JwtCredentials | KeyCredentials
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
   // LOCAL_ONLY mode: accept X-Local-User header as trusted auth
   // Never fall through to Firebase — it isn't initialized.
-  if (process.env.LOCAL_ONLY === 'true') {
+  if (LOCAL_ONLY) {
     const localUserId = req.get('X-Local-User')
     if (localUserId) {
       return {

@@ -1,4 +1,4 @@
-const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+import { LOCAL_ONLY } from 'shared/utils'
 
 if (!LOCAL_ONLY) {
   // Normal mode: initialize Firebase and GCP services
@@ -37,8 +37,10 @@ const startupProcess = async () => {
   if (LOCAL_ONLY) {
     log('LOCAL_ONLY mode: skipping Secret Manager, using env vars directly.')
   } else {
-    const { loadSecretsToEnv, getServiceAccountCredentials } =
-      require('common/secrets')
+    const {
+      loadSecretsToEnv,
+      getServiceAccountCredentials,
+    } = require('common/secrets')
     const { getLocalEnv } = require('shared/init-admin')
     const { LOCAL_DEV } = require('shared/utils')
     const credentials = LOCAL_DEV

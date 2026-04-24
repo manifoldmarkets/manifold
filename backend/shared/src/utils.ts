@@ -20,7 +20,6 @@ import { extensions } from 'common/util/parse'
 import * as dayjs from 'dayjs'
 import * as timezone from 'dayjs/plugin/timezone'
 import * as utc from 'dayjs/plugin/utc'
-import * as admin from 'firebase-admin'
 import { first, uniq } from 'lodash'
 import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
@@ -142,11 +141,23 @@ export async function revalidateContractStaticProps(contract: {
     revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
+
+/**
+ * Auto-detected and set when running locally but still connecting to remote Supabase/Firebase.
+ * Uses local service account credentials.
+ */
 export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
-// TODO: deprecate in favor of common/src/envs/is-prod.ts
+/**
+ * Set via `.env.local` for running the entire stack locally, including Supabase.
+ * This is mainly for external contributors who don't have access to Supabase/Firebase.
+ * Also useful for testing major backend changes.
+ */
+export const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+
+/** @deprecated in favor of common/src/envs/is-prod.ts */
 export const isProd = () => {
-  if (process.env.LOCAL_ONLY === 'true') {
+  if (LOCAL_ONLY) {
     return false
   }
   // ian: The first clause is for the API server, and the
@@ -154,6 +165,8 @@ export const isProd = () => {
   if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
     return process.env.NEXT_PUBLIC_FIREBASE_ENV === 'PROD'
   } else {
+    // Lazy-load firebase-admin to avoid initializing it in LOCAL_ONLY mode.
+    const admin = require('firebase-admin')
     return admin.app().options.projectId === 'mantic-markets'
   }
 }

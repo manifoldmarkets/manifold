@@ -1,4 +1,4 @@
-const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+import { LOCAL_ONLY } from 'shared/utils'
 
 if (!LOCAL_ONLY) {
   const { initFirebase } = require('./utils')
@@ -26,7 +26,9 @@ const indexTemplate = loadTemplate('index.hbs')
 
 async function start() {
   if (LOCAL_ONLY) {
-    log.info('Scheduler starting in LOCAL_ONLY mode, skipping secrets and metrics.')
+    log.info(
+      'Scheduler starting in LOCAL_ONLY mode, skipping secrets and metrics.'
+    )
   } else {
     const { initSecrets } = require('./utils')
     await initSecrets()
