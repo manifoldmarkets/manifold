@@ -181,6 +181,7 @@ export function AuthProvider(props: {
         if (!resp.ok) {
           console.error('Failed to fetch local test user:', resp.statusText)
           setUser(null)
+          setAuthLoaded(true)
           return
         }
         const userData = (await resp.json()) as User
@@ -194,6 +195,7 @@ export function AuthProvider(props: {
       } catch (e) {
         console.error('Error fetching local test user:', e)
         setUser(null)
+        setAuthLoaded(true)
       }
     }
     fetchLocalUser()
