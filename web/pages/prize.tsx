@@ -15,6 +15,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
 import { useAdmin } from 'web/hooks/use-admin'
 import { api, APIError } from 'web/lib/api/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { SelectDropdown } from 'web/components/widgets/select-dropdown'
@@ -1083,7 +1084,11 @@ function SignInPrompt() {
         <p className="text-ink-600 text-center text-sm">
           Sign in to enter the prize drawing
         </p>
-        <Button color="indigo" className="w-full justify-center">
+        <Button
+          color="indigo"
+          className="w-full justify-center"
+          onClick={firebaseLogin}
+        >
           Sign in to participate
         </Button>
       </Col>
