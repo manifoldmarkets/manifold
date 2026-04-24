@@ -19,6 +19,7 @@ import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 import { buildArray } from 'common/util/array'
 import { SHOP_ITEMS } from 'common/shop/items'
+import { getTotalPrizePool, SweepstakesPrize } from 'common/sweepstakes'
 import { DAY_MS, isAprilFools } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import Link from 'next/link'
@@ -29,6 +30,7 @@ import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-ge
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useTheme } from 'web/hooks/use-theme'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
@@ -43,6 +45,17 @@ import { useTVIsLive } from '../tv/tv-schedule'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
+
+function formatPrizePoolLabel(
+  prizes: SweepstakesPrize[] | undefined
+): string | undefined {
+  if (!prizes) return undefined
+  const total = getTotalPrizePool(prizes)
+  if (!Number.isFinite(total) || total <= 0) return undefined
+  if (total < 1000) return `$${total}`
+  const thousands = total / 1000
+  return `$${thousands.toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
+}
 
 export const SPEND_MANA_ENABLED = true
 
@@ -151,18 +164,25 @@ export default function Sidebar(props: {
   const lastShopVisit = user?.lastShopVisitTime ?? user?.createdTime ?? 0
   const showShopNewBadge = !!user && NEWEST_SHOP_ITEM_TIME > lastShopVisit
 
+  const { data: sweepstakesData } = useAPIGetter('get-sweepstakes', {})
+  const prizePoolLabel = formatPrizePoolLabel(
+    sweepstakesData?.sweepstakes?.prizes
+  )
+
   const navOptions = isMobile
     ? getMobileNav(!!user, {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
         showShopNewBadge,
+        prizePoolLabel,
       })
     : getDesktopNav(!!user, () => setIsModalOpen(true), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
         showShopNewBadge,
+        prizePoolLabel,
       })
 
   const bottomNavOptions = bottomNav(
@@ -259,6 +279,7 @@ const getDesktopNav = (
     showShopNewBadge: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
+    prizePoolLabel?: string
   }
 ) => {
   const { isLiveTV } = options
@@ -303,9 +324,10 @@ const getDesktopNav = (
                   NEW
                 </span>
               ) : (
-                SHOW_SHOP_MANIFEST_BADGE && (
+                SHOW_SHOP_MANIFEST_BADGE &&
+                options.prizePoolLabel && (
                   <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                    $10k prize
+                    Prize {options.prizePoolLabel}
                   </span>
                 )
               )}
@@ -321,6 +343,19 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
+    {
+      name: 'Prize Drawing',
+      href: '/prize',
+      icon: GiftIcon,
+      children: options.prizePoolLabel ? (
+        <>
+          Prize Drawing
+          <span className="ml-2 rounded-full bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            {options.prizePoolLabel}
+          </span>
+        </>
+      ) : undefined,
+    },
     { name: 'Predictle', href: '/predictle', icon: SparklesIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -334,23 +369,24 @@ const getMobileNav = (
     showShopNewBadge: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
+    prizePoolLabel?: string
   }
 ) => {
-  const { isAdminOrMod, isLiveTV, showShopNewBadge } = options
+  const { isAdminOrMod, isLiveTV, showShopNewBadge, prizePoolLabel } = options
 
   return buildArray<NavItem>(
     {
       name: 'Prize Drawing',
       href: '/prize',
       icon: GiftIcon,
-      children: (
+      children: prizePoolLabel ? (
         <>
           Prize Drawing
           <span className="ml-2 rounded-full bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-            $10k
+            {prizePoolLabel}
           </span>
         </>
-      ),
+      ) : undefined,
     },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
