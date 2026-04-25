@@ -44,6 +44,16 @@ export async function generateAntes(
     )
 
     await insertLiquidity(pg, lp)
+  } else if (contract.mechanism === 'dpm-2') {
+    // DPM markets have no Maniswap pool to seed, but we still record an ante
+    // LP row for accounting (subsidies are disallowed, so no drizzle).
+    const lp = getCpmmInitialLiquidity(
+      providerId,
+      contract,
+      ante,
+      contract.createdTime
+    )
+    await insertLiquidity(pg, lp)
   }
   const drizzledAmount = totalMarketCost - ante
   if (

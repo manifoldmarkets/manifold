@@ -842,6 +842,13 @@ export const API = (_apiTypeCheck = {
     returns: {} as { message: string },
     props: resolveMarketProps,
   },
+  'convert-dpm-to-cpmm': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: true },
+    props: z.object({ contractId: z.string() }).strict(),
+  },
   'market/:contractId/add-liquidity': {
     method: 'POST',
     visibility: 'public',

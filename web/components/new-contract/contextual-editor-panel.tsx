@@ -41,6 +41,9 @@ export type FormState = {
   // Poll-specific options
   pollType?: PollType // 'single' | 'multi-select' | 'ranked-choice'
   maxSelections?: number // For multi-select polls
+  // Binary-only: which market mechanism to use. Defaults to 'cpmm-1' (Classic)
+  // when undefined; 'dpm-2' selects Dynamic Parimutuel.
+  binaryMechanism?: 'cpmm-1' | 'dpm-2'
 }
 
 export type ValidationErrors = {
@@ -80,6 +83,10 @@ export function ContextualEditorPanel(props: {
         <PollOptionsSection formState={formState} onUpdate={onUpdate} />
       ) : (
         <>
+          {outcomeType === 'BINARY' && (
+            <BinaryMechanismSection formState={formState} onUpdate={onUpdate} />
+          )}
+
           {/* Liquidity & Cost */}
           {balance !== undefined && (
             <Col className="gap-3">
@@ -167,6 +174,35 @@ function PollOptionsSection(props: {
           />
         </Col>
       )}
+    </Col>
+  )
+}
+
+function BinaryMechanismSection(props: {
+  formState: FormState
+  onUpdate: (field: string, value: any) => void
+}) {
+  const { formState, onUpdate } = props
+  const mechanism = formState.binaryMechanism ?? 'cpmm-1'
+  return (
+    <Col className="gap-2">
+      <span className="text-ink-700 text-sm font-semibold">Market type</span>
+      <ChoicesToggleGroup
+        className="w-fit"
+        currentChoice={mechanism}
+        choicesMap={{
+          Classic: 'cpmm-1',
+          'Dynamic Parimutuel': 'dpm-2',
+        }}
+        setChoice={(value) =>
+          onUpdate('binaryMechanism', value as 'cpmm-1' | 'dpm-2')
+        }
+      />
+      <p className="text-ink-600 text-sm">
+        {mechanism === 'cpmm-1'
+          ? 'Classic: constant-product market maker + limit orders. Traders can buy and sell shares at any time.'
+          : 'Dynamic Parimutuel: traders buy pool shares; payouts are proportional to the final pool size. Shares cannot be sold — the creator must convert to Classic before resolving.'}
+      </p>
     </Col>
   )
 }

@@ -9,6 +9,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
+import { Contract } from 'common/contract'
 import { Tables } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
@@ -88,7 +89,8 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   pgTrans: SupabaseDirectClient,
   newBets: MarginalBet[],
   contractMetrics: ContractMetric[],
-  writeUpdates: boolean
+  writeUpdates: boolean,
+  contract?: Contract
 ) => {
   const marginalBets = newBets.filter((b) => b.amount !== 0 || b.shares !== 0)
   if (marginalBets.length === 0) {
@@ -138,7 +140,8 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
     marginalBets,
     contractMetrics,
     contractId,
-    isMultiMarket
+    isMultiMarket,
+    contract
   )
   if (writeUpdates) {
     await bulkUpdateContractMetrics(updatedMetrics, pgTrans)

@@ -24,6 +24,11 @@ import {
   getCpmmProbability,
 } from './calculate-cpmm'
 import {
+  calculateDpmPayout,
+  dpmBuyShares,
+  getDpmProbability,
+} from './calculate-dpm'
+import {
   calculateFixedPayout,
   calculateFixedPayoutMulti,
 } from './calculate-fixed-payouts'
@@ -31,6 +36,7 @@ import {
   BinaryContract,
   Contract,
   CPMMContract,
+  DPMContract,
   MarketContract,
   MultiContract,
   PseudoNumericContract,
@@ -41,6 +47,9 @@ import { floatingEqual, floatingGreaterEqual } from './util/math'
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
+  if (contract.mechanism === 'dpm-2') {
+    return getDpmProbability(contract.pool)
+  }
   return getCpmmProbability(contract.pool, contract.p)
 }
 
@@ -53,8 +62,10 @@ export function getDisplayProbability(
 export function getInitialProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
+  if (contract.mechanism === 'dpm-2') {
+    return getDpmProbability(contract.initialPool)
+  }
   if (contract.initialProbability) return contract.initialProbability
-
   return getCpmmProbability(contract.pool, contract.p)
 }
 
@@ -65,6 +76,10 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
       return outcome === 'YES'
         ? getCpmmProbability(contract.pool, contract.p)
         : 1 - getCpmmProbability(contract.pool, contract.p)
+    case 'dpm-2': {
+      const p = getDpmProbability((contract as DPMContract).pool)
+      return outcome === 'YES' ? p : 1 - p
+    }
     case 'cpmm-multi-1':
       return 0
     default:
@@ -122,6 +137,16 @@ export function getOutcomeProbabilityAfterBet(
   switch (mechanism) {
     case 'cpmm-1':
       return getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
+    case 'dpm-2': {
+      const dpmContract = contract as DPMContract
+      const { newPool } = dpmBuyShares(
+        dpmContract.pool,
+        outcome as 'YES' | 'NO',
+        bet
+      )
+      const p = getDpmProbability(newPool)
+      return outcome === 'YES' ? p : 1 - p
+    }
     case 'cpmm-multi-1':
       return 0
     default:
@@ -138,6 +163,14 @@ export function calculateSharesBought(
   switch (mechanism) {
     case 'cpmm-1':
       return calculateCpmmPurchase(contract, amount, outcome).shares
+    case 'dpm-2': {
+      const { shares } = dpmBuyShares(
+        (contract as DPMContract).pool,
+        outcome as 'YES' | 'NO',
+        amount
+      )
+      return shares
+    }
     default:
       throw new Error('calculateSharesBought not implemented')
   }
@@ -145,16 +178,30 @@ export function calculateSharesBought(
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   const { mechanism } = contract
-  return mechanism === 'cpmm-1'
-    ? calculateFixedPayout(contract, bet, outcome)
-    : mechanism === 'cpmm-multi-1'
-    ? calculateFixedPayoutMulti(contract, bet, outcome)
-    : bet?.amount ?? 0
+  if (mechanism === 'cpmm-1') return calculateFixedPayout(contract, bet, outcome)
+  if (mechanism === 'cpmm-multi-1')
+    return calculateFixedPayoutMulti(contract, bet, outcome)
+  if (mechanism === 'dpm-2')
+    return calculateDpmPayout(
+      contract as DPMContract,
+      bet,
+      outcome as 'YES' | 'NO' | 'MKT' | 'CANCEL'
+    )
+  return bet?.amount ?? 0
 }
 
 export function resolvedPayout(contract: Contract, bet: Bet) {
   const { resolution, mechanism } = contract
   if (!resolution) throw new Error('Contract not resolved')
+
+  if (mechanism === 'dpm-2') {
+    // DPM markets must be converted before resolution. This is also blocked
+    // at the API layer; we throw here defensively so callers don't silently
+    // get bet.amount back as if the market were unknown-mechanism.
+    throw new Error(
+      'resolvedPayout called on a dpm-2 contract; DPM markets must be converted first'
+    )
+  }
 
   return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, resolution)
@@ -210,6 +257,7 @@ export function getSimpleCpmmInvested(yourBets: Bet[]) {
 export function getInvested(contract: Contract, yourBets: Bet[]) {
   const { mechanism } = contract
   if (mechanism === 'cpmm-1') return getCpmmInvested(yourBets)
+  if (mechanism === 'dpm-2') return getCpmmInvested(yourBets)
   if (mechanism === 'cpmm-multi-1') {
     const betsByAnswerId = groupBy(yourBets, 'answerId')
     const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)

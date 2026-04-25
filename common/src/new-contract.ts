@@ -1,5 +1,6 @@
 import { Answer } from './answer'
 import { getMultiCpmmLiquidity } from './calculate-cpmm'
+import { dpmInitialPool } from './calculate-dpm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import {
   Binary,
@@ -9,6 +10,7 @@ import {
   CPMMNumber,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
+  DPM,
   MultiDate,
   MultiNumeric,
   NonBet,
@@ -45,6 +47,9 @@ export function getNewContract(
     outcomeType: (typeof CREATEABLE_OUTCOME_TYPES)[number]
     initialProb: number
     ante: number
+
+    // Binary mechanism selection. Only consulted when outcomeType === 'BINARY'.
+    mechanism?: 'cpmm-1' | 'dpm-2'
 
     // Numeric
     min: number
@@ -111,11 +116,15 @@ export function getNewContract(
     voterVisibility,
     pollType,
     maxSelections,
+    mechanism: binaryMechanism,
   } = props
   const createdTime = Date.now()
 
   const propsByOutcomeType = {
-    BINARY: () => getBinaryCpmmProps(initialProb, ante),
+    BINARY: () =>
+      binaryMechanism === 'dpm-2'
+        ? getBinaryDpmProps(initialProb, ante)
+        : getBinaryCpmmProps(initialProb, ante),
     PSEUDO_NUMERIC: () =>
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
     MULTIPLE_CHOICE: () =>
@@ -190,6 +199,8 @@ export function getNewContract(
         ? computeBinaryCpmmElasticityFromAnte(ante)
         : propsByOutcomeType.mechanism === 'cpmm-multi-1'
         ? 4.99 // TODO: calculate
+        : propsByOutcomeType.mechanism === 'dpm-2'
+        ? computeBinaryCpmmElasticityFromAnte(ante)
         : 1_000_000,
 
     collectedFees: {
@@ -216,26 +227,24 @@ export function getNewContract(
   return contract as Contract
 }
 
-/*
-import { PHANTOM_ANTE } from './antes'
-import { calcDpmInitialPool } from './calculate-dpm'
 const getBinaryDpmProps = (initialProb: number, ante: number) => {
-  const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
-    calcDpmInitialPool(initialProb, ante, PHANTOM_ANTE)
+  const p = initialProb / 100
+  const pool = dpmInitialPool(ante, p)
 
   const system: DPM & Binary = {
     mechanism: 'dpm-2',
     outcomeType: 'BINARY',
-    initialProbability: initialProb / 100,
-    phantomShares: { YES: phantomYes, NO: phantomNo },
-    pool: { YES: poolYes, NO: poolNo },
-    totalShares: { YES: sharesYes, NO: sharesNo },
-    totalBets: { YES: poolYes, NO: poolNo },
+    totalLiquidity: ante,
+    subsidyPool: 0,
+    initialProbability: p,
+    initialPool: { ...pool },
+    pool,
+    prob: p,
+    probChanges: { day: 0, week: 0, month: 0 },
   }
 
   return system
 }
-*/
 
 const getBinaryCpmmProps = (initialProb: number, ante: number) => {
   const pool = { YES: ante, NO: ante }

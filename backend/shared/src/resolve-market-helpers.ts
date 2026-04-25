@@ -128,6 +128,8 @@ export const resolveMarketHelper = async (
         ? resolutionProbability
         : unresolvedContract.mechanism === 'cpmm-1'
         ? unresolvedContract.prob
+        : unresolvedContract.mechanism === 'dpm-2'
+        ? unresolvedContract.prob
         : unresolvedContract.answers.find((a) => a.id === answerId)?.prob
     const newProb =
       outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : probBeforeResolution

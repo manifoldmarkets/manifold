@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { BinaryContract, CPMMMultiContract } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMContract,
+  CPMMMultiContract,
+} from 'common/contract'
 import { TRADED_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { sumBy } from 'lodash'
@@ -144,10 +148,10 @@ export function BinaryUserPosition(props: {
       <span className="mx-auto items-center gap-1 whitespace-nowrap">
         You {TRADED_TERM} <span className={clsx('font-semibold ')}>UP</span>
       </span>
-      {openModal && (
+      {openModal && contract.mechanism === 'cpmm-1' && (
         <>
           <SellSharesModal
-            contract={contract}
+            contract={contract as BinaryContract & CPMMContract}
             user={user}
             metric={metric}
             shares={Math.abs(sharesSum)}

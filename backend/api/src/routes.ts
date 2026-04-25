@@ -146,6 +146,7 @@ import { refreshAllClients } from './refresh-all-clients'
 import { removeBoost } from './remove-boost'
 import { removeLiquidity } from './remove-liquidity'
 import { resolveMarket } from './resolve-market'
+import { convertDpmToCpmm } from './convert-dpm-to-cpmm'
 import { savePredicleResult } from './save-predictle-result'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import {
@@ -334,6 +335,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/update': updateMarket,
   'market/:contractId/close': closeMarket,
   'market/:contractId/resolve': resolveMarket,
+  'convert-dpm-to-cpmm': convertDpmToCpmm,
   'market/:contractId/add-liquidity': addLiquidity,
   'market/:contractId/remove-liquidity': removeLiquidity,
   'market/:contractId/add-bounty': addBounty,

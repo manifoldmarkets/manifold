@@ -114,6 +114,29 @@ export function ResolutionPanel(props: {
     }
   }
 
+  if (contract.mechanism === 'dpm-2') {
+    return (
+      <>
+        <ResolveHeader
+          contract={contract}
+          isCreator={isCreator}
+          onClose={onClose}
+          fullTitle={inModal}
+        />
+        <Col className="gap-2 text-sm">
+          <span>
+            This is a Dynamic Parimutuel market and can&apos;t be resolved
+            directly.
+          </span>
+          <span>
+            Convert it to a Classic market from the main market page first,
+            then resolve as usual.
+          </span>
+        </Col>
+      </>
+    )
+  }
+
   return (
     <>
       <ResolveHeader

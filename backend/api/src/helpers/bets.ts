@@ -383,7 +383,8 @@ export const updateMakers = async (
     pgTrans,
     allFillsAsNewBets,
     contractMetrics,
-    false
+    false,
+    contract
   )
 
   const bulkLimitOrderBalanceUpdates = Object.entries(allSpentByUser).map(
@@ -394,18 +395,29 @@ export const updateMakers = async (
   )
 
   const makerIds = uniq(allMakerIds)
-  log('Redeeming shares for makers', makerIds)
+  // DPM has no CPMM-style complete-set redemption. Skip redemption entirely
+  // for dpm-2 and pass through the metric updates from fills.
   const {
     betsToInsert: redemptionBets,
     updatedMetrics: redemptionUpdatedMetrics,
     balanceUpdates: redemptionBalanceUpdates,
-  } = await redeemShares(
-    pgTrans,
-    makerIds,
-    contract,
-    allFillsAsNewBets,
-    allUpdatedMetrics
-  )
+  } =
+    contract.mechanism === 'dpm-2'
+      ? {
+          betsToInsert: [],
+          updatedMetrics: allUpdatedMetrics,
+          balanceUpdates: [],
+        }
+      : await (async () => {
+          log('Redeeming shares for makers', makerIds)
+          return redeemShares(
+            pgTrans,
+            makerIds,
+            contract,
+            allFillsAsNewBets,
+            allUpdatedMetrics
+          )
+        })()
   const { query: bulkUpdateLimitOrdersQuery, updatedMakers } =
     getBulkUpdateLimitOrdersQueryAndValues(allUpdates)
   return {

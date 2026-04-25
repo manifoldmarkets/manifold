@@ -38,6 +38,12 @@ export const resolveMarketMain: APIHandler<
   if (outcomeType === 'STONK') {
     throw new APIError(403, 'STONK contracts cannot be resolved')
   }
+  if (contract.mechanism === 'dpm-2') {
+    throw new APIError(
+      403,
+      'DPM markets cannot be resolved directly. Convert this market to Classic first.'
+    )
+  }
 
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')

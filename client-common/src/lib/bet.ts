@@ -9,7 +9,13 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import { sumBy } from 'lodash'
 import { addObjects } from 'common/util/object'
 import { computeCpmmBet } from 'common/new-bet'
-import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
+import { computeDpmBet } from 'common/calculate-dpm-fills'
+import { getDpmProbability } from 'common/calculate-dpm'
+import {
+  DPMContract,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
+} from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { MarketContract } from 'common/contract'
 import { isBinaryMulti } from 'common/contract'
@@ -37,6 +43,7 @@ export const getLimitBetReturns = (
       : undefined) ?? binaryOutcome
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isDpm = contract.mechanism === 'dpm-2'
   const cpmmState = isCpmmMulti
     ? {
         pool: {
@@ -46,12 +53,20 @@ export const getLimitBetReturns = (
         p: 0.5,
         collectedFees: contract.collectedFees,
       }
+    : isDpm
+    ? {
+        pool: (contract as DPMContract).pool,
+        p: 0.5,
+        collectedFees: contract.collectedFees,
+      }
     : {
         pool: contract.pool,
         p: contract.p,
         collectedFees: contract.collectedFees,
       }
-  const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const prob = isDpm
+    ? getDpmProbability((contract as DPMContract).pool)
+    : getCpmmProbability(cpmmState.pool, cpmmState.p)
   const slippage = slippageProtection ? DEFAULT_SLIPPAGE : 1
   const floatLimitProb = Math.max(
     MIN_CPMM_PROB,
@@ -101,6 +116,22 @@ export const getLimitBetReturns = (
         newBetResult.cpmmState.pool,
         newBetResult.cpmmState.p
       )
+    } else if (isDpm) {
+      const dpmResult = computeDpmBet(
+        { pool: (contract as DPMContract).pool },
+        outcome,
+        betAmount,
+        limitProb,
+        unfilledBets,
+        balanceByUserId
+      )
+      amount = dpmResult.amount
+      shares = dpmResult.shares
+      fees = noFees
+      betDeps = dpmResult.makers
+        .map((m) => m.bet)
+        .concat(dpmResult.ordersToCancel)
+      probAfter = dpmResult.probAfter
     } else {
       const result = computeCpmmBet(
         cpmmState,

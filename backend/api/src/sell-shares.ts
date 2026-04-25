@@ -84,6 +84,11 @@ const calculateSellResult = (
       ),
     }
   } else {
+    if (contract.mechanism === 'dpm-2')
+      throw new APIError(
+        403,
+        'DPM markets do not support selling shares. Convert to Classic first.'
+      )
     if (!answers) throw new APIError(404, 'Should have fetched answers...')
 
     const answer = answers.find((a) => a.id === answerId)
@@ -160,6 +165,12 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     isApi,
     !!sellForUserId
   )
+  if (contract.mechanism === 'dpm-2') {
+    throw new APIError(
+      403,
+      'DPM markets do not support selling shares. The creator must convert this market to Classic first.'
+    )
+  }
   const simulatedResult = calculateSellResult(
     contract,
     answers,

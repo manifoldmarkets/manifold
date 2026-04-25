@@ -11,6 +11,7 @@ import { Answer } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
+import { getDpmProbability } from 'common/calculate-dpm'
 import {
   CPMM_MIN_POOL_QTY,
   MarketContract,
@@ -24,6 +25,7 @@ import {
   getBinaryCpmmBetInfo,
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
+import { getBinaryDpmBetInfo } from 'common/new-bet-dpm'
 import { convertBet } from 'common/supabase/bets'
 import { convertContract } from 'common/supabase/contracts'
 import { convertTxn } from 'common/supabase/txns'
@@ -266,6 +268,38 @@ export const calculateBetResult = (
     }
 
     return getBinaryCpmmBetInfo(
+      contract,
+      outcome,
+      amount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId,
+      expiresAt,
+      expiresMillisAfter
+    )
+  } else if (mechanism == 'dpm-2') {
+    // eslint-disable-next-line prefer-const
+    let { outcome, limitProb, expiresAt } = body
+    if (expiresAt && expiresAt < Date.now())
+      throw new APIError(400, 'Bet cannot expire in the past.')
+
+    if (outcomeType !== 'BINARY')
+      throw new APIError(400, 'DPM is only supported for binary markets')
+
+    if (limitProb !== undefined) {
+      const isRounded = floatingEqual(
+        Math.round(limitProb * 100),
+        limitProb * 100
+      )
+      if (!isRounded)
+        throw new APIError(
+          400,
+          'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+        )
+      limitProb = Math.round(limitProb * 100) / 100
+    }
+
+    return getBinaryDpmBetInfo(
       contract,
       outcome,
       amount,
@@ -525,6 +559,13 @@ export const executeNewBetResult = async (
             prob:
               newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
           }
+        : contract.mechanism === 'dpm-2'
+        ? {
+            pool: newPool,
+            prob: newPool
+              ? getDpmProbability(newPool as { YES: number; NO: number })
+              : undefined,
+          }
         : contract.mechanism === 'cpmm-multi-1' &&
           answerUpdates.length > 0 &&
           contract.answers.length > 0
@@ -556,11 +597,24 @@ export const executeNewBetResult = async (
         )
       : contractMetrics
 
+  // DPM payout math reads `contract.pool`; pass the post-trade pool so
+  // per-user metrics (payout/profit) reflect the new market state rather
+  // than the stale pre-trade pool.
+  const contractForMetrics =
+    contract.mechanism === 'dpm-2' && newPool
+      ? ({
+          ...contract,
+          pool: newPool,
+          prob: getDpmProbability(newPool as { YES: number; NO: number }),
+        } as MarketContract)
+      : contract
+
   const updatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
     pgTrans,
     betsToInsert,
     metrics,
-    false
+    false,
+    contractForMetrics
   )
 
   const {
@@ -569,19 +623,33 @@ export const executeNewBetResult = async (
     balanceUpdates: makerRedemptionAndFillBalanceUpdates,
     bulkUpdateLimitOrdersQuery,
     updatedMakers,
-  } = await updateMakers(makersByTakerBetId, contract, updatedMetrics, pgTrans)
+  } = await updateMakers(
+    makersByTakerBetId,
+    contractForMetrics,
+    updatedMetrics,
+    pgTrans
+  )
   // Create redemption bets for bettor w/o limit fills if needed:
+  // DPM has no concept of complete-set redemption: shares are pool claims and
+  // can't be netted out pairwise. Skip redemption entirely for dpm-2.
   const {
     betsToInsert: bettorRedemptionBetsToInsert,
     updatedMetrics: bettorRedemptionUpdatedMetrics,
     balanceUpdates: bettorRedemptionBalanceUpdates,
-  } = await redeemShares(
-    pgTrans,
-    [user.id],
-    contract,
-    [candidateBet],
-    makerRedemptionAndFillUpdatedMetrics
-  )
+  } =
+    contract.mechanism === 'dpm-2'
+      ? {
+          betsToInsert: [],
+          updatedMetrics: makerRedemptionAndFillUpdatedMetrics,
+          balanceUpdates: [],
+        }
+      : await redeemShares(
+          pgTrans,
+          [user.id],
+          contract,
+          [candidateBet],
+          makerRedemptionAndFillUpdatedMetrics
+        )
 
   const userBalanceUpdatesQuery = bulkIncrementBalancesQuery([
     ...userBalanceUpdates,

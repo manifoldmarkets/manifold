@@ -16,7 +16,11 @@ import {
   getContractBetMetricsPerAnswerWithoutLoans,
 } from './calculate'
 import { computeFills, CpmmState, getCpmmProbability } from './calculate-cpmm'
-import { Contract, MultiContract } from './contract'
+import {
+  calculateDpmPayoutFromShares,
+  getDpmProbability,
+} from './calculate-dpm'
+import { Contract, DPMContract, MultiContract } from './contract'
 import { noFees } from './fees'
 import { floatingEqual, logit } from './util/math'
 import { removeUndefinedProps } from './util/object'
@@ -43,6 +47,25 @@ export const computeInvestmentValueCustomProb = (
   contract: Contract,
   p: number
 ) => {
+  if (contract.mechanism === 'dpm-2') {
+    // DPM bets are worth (shares / pool_side) * C * prob on their outcome's side.
+    // Use current pool to derive the per-bet pool-weighted value; scale the
+    // yes/no probability by `p` (passed in) so day/week/month value uses the
+    // custom probability the caller asked for.
+    const { YES: y, NO: n } = (contract as DPMContract).pool
+    if (y <= 0 && n <= 0) return 0
+    const C = Math.sqrt(y * y + n * n)
+    return sumBy(bets, (bet) => {
+      const { outcome, shares } = bet
+      const betP = outcome === 'YES' ? p : 1 - p
+      const side = outcome === 'YES' ? y : n
+      if (side <= 0) return 0
+      const value = betP * (shares / side) * C
+      if (isNaN(value)) return 0
+      return value
+    })
+  }
+
   return sumBy(bets, (bet) => {
     if (!contract) return 0
     const { outcome, shares } = bet
@@ -77,9 +100,34 @@ export const computeElasticity = (
         contract,
         betAmount
       )
+    case 'dpm-2':
+      return computeDpmElasticity(contract as DPMContract, betAmount)
     default: // there are some contracts on the dev DB with crazy mechanisms
       return 1_000_000
   }
+}
+
+/**
+ * DPM elasticity = logit(p_after_yes_bet) - logit(p_after_no_bet).
+ * Same shape as the CPMM version so discovery ranking is consistent.
+ * We ignore the book here; elasticity is only a ranking heuristic.
+ */
+const computeDpmElasticity = (contract: DPMContract, betAmount: number) => {
+  const { YES: y, NO: n } = contract.pool
+  if (y <= 0 || n <= 0) return 1_000_000
+  const C = Math.sqrt(y * y + n * n)
+  // After spending `betAmount` on YES: newC = C + betAmount, newY = sqrt(newC^2 - n^2).
+  const newCYes = C + betAmount
+  const newYesY = Math.sqrt(Math.max(0, newCYes * newCYes - n * n))
+  const probYes = (newYesY * newYesY) / (newYesY * newYesY + n * n)
+  const newCNo = C + betAmount
+  const newNoN = Math.sqrt(Math.max(0, newCNo * newCNo - y * y))
+  const probNo = (y * y) / (y * y + newNoN * newNoN)
+  const safeYes = Number.isFinite(probYes)
+    ? Math.min(probYes, 0.995)
+    : 0.995
+  const safeNo = Number.isFinite(probNo) ? Math.max(probNo, 0.005) : 0.005
+  return logit(safeYes) - logit(safeNo)
 }
 
 export const computeBinaryCpmmElasticity = (
@@ -259,7 +307,8 @@ export type MarginalBet = Pick<
 
 export const calculateUserMetricsWithNewBetsOnly = (
   newBets: MarginalBet[],
-  um: Omit<ContractMetric, 'id'>
+  um: Omit<ContractMetric, 'id'>,
+  contract?: Contract
 ) => {
   const needsTotalSpentBackfilled = !um.totalSpent
   const initialTotalSpent: { [key: string]: number } = um.totalSpent ?? {}
@@ -322,7 +371,13 @@ export const calculateUserMetricsWithNewBetsOnly = (
     : 'YES'
   const lastBet = orderBy(newBets, (b) => b.createdTime, 'desc')[0]
   // Calculate payout from both YES and NO shares - they can be redeemed together for 1 mana each
-  const payout = calculatePayoutFromShares(totalShares, lastBet.probAfter)
+  const payout =
+    contract?.mechanism === 'dpm-2'
+      ? calculateDpmPayoutFromShares(
+          totalShares,
+          (contract as DPMContract).pool
+        )
+      : calculatePayoutFromShares(totalShares, lastBet.probAfter)
   const totalAmountSold =
     (um.totalAmountSold ?? 0) +
     sumBy(
@@ -367,7 +422,8 @@ export const calculateProfitMetricsAtProbOrCancel = <
   T extends Omit<ContractMetric, 'id'> | ContractMetric
 >(
   newState: number | 'CANCEL',
-  um: T
+  um: T,
+  contract?: Contract
 ) => {
   const {
     totalAmountSold = 0,
@@ -380,6 +436,11 @@ export const calculateProfitMetricsAtProbOrCancel = <
   const payout =
     newState === 'CANCEL'
       ? invested
+      : contract?.mechanism === 'dpm-2'
+      ? calculateDpmPayoutFromShares(
+          totalShares,
+          (contract as DPMContract).pool
+        )
       : calculatePayoutFromShares(totalShares, newState)
   const profit =
     newState === 'CANCEL' ? 0 : payout + totalAmountSold - totalAmountInvested
@@ -400,7 +461,8 @@ export const calculateAnswerMetricsWithNewBetsOnly = (
   newBets: MarginalBet[],
   userMetrics: Omit<ContractMetric, 'id'>[],
   contractId: string,
-  isMultiMarket: boolean
+  isMultiMarket: boolean,
+  contract?: Contract
 ) => {
   const betsByUser = groupBy(newBets, 'userId')
 
@@ -429,7 +491,7 @@ export const calculateAnswerMetricsWithNewBetsOnly = (
         const userMetric =
           oldMetric ?? getDefaultMetric(userId, contractId, answerId)
 
-        return calculateUserMetricsWithNewBetsOnly(bets, userMetric)
+        return calculateUserMetricsWithNewBetsOnly(bets, userMetric, contract)
       }
     )
     if (!isMultiMarket) {
@@ -558,7 +620,20 @@ export const calculateUpdatedMetricsForContracts = (
           // For binary markets, update metrics with current probability
           const metric = first(userMetrics)
           return metric
-            ? [calculateProfitMetricsAtProbOrCancel(state, metric)]
+            ? [calculateProfitMetricsAtProbOrCancel(state, metric, contract)]
+            : []
+        } else if (contract.mechanism === 'dpm-2') {
+          const dpmContract = contract as DPMContract
+          const state = dpmContract.prob
+          const metric = first(userMetrics)
+          return metric
+            ? [
+                calculateProfitMetricsAtProbOrCancel(
+                  state,
+                  metric,
+                  dpmContract
+                ),
+              ]
             : []
         } else if (contract.mechanism === 'cpmm-multi-1') {
           const oldSummary = useIncludedSummaryMetric
@@ -584,7 +659,7 @@ export const calculateUpdatedMetricsForContracts = (
                 // Subtract the old stats from the old summary metric
                 applyMetricToSummary(m, oldSummary, false)
               }
-              return calculateProfitMetricsAtProbOrCancel(state, m)
+              return calculateProfitMetricsAtProbOrCancel(state, m, contract)
             }
             return m
           })
@@ -624,12 +699,18 @@ export const calculateMetricsFromProbabilityChanges = (
       newProb = answer.prob
     } else if (contract.mechanism === 'cpmm-1') {
       newProb = contract.prob
+    } else if (contract.mechanism === 'dpm-2') {
+      newProb = (contract as DPMContract).prob
     } else {
       return metric
     }
 
     // Calculate new metrics based on probability change
-    const updatedMetric = calculateProfitMetricsAtProbOrCancel(newProb, metric)
+    const updatedMetric = calculateProfitMetricsAtProbOrCancel(
+      newProb,
+      metric,
+      contract
+    )
 
     // Calculate period profit changes (from calculatePeriodProfit logic)
     const calculatePeriodChange = (period: 'day' | 'week' | 'month') => {
@@ -639,19 +720,43 @@ export const calculateMetricsFromProbabilityChanges = (
         probChange = answer?.probChanges[period] ?? 0
       } else if (contract.mechanism === 'cpmm-1') {
         probChange = contract.probChanges?.[period] ?? 0
+      } else if (contract.mechanism === 'dpm-2') {
+        probChange = (contract as DPMContract).probChanges?.[period] ?? 0
       } else {
         probChange = 0
       }
 
       const prevProb = newProb - probChange
       const { totalShares, totalAmountInvested = 0 } = metric
-
-      // Calculate value change based on shares and probability change
       const yesShares = totalShares.YES ?? 0
       const noShares = totalShares.NO ?? 0
 
-      const prevValue = yesShares * prevProb + noShares * (1 - prevProb)
-      const currentValue = yesShares * newProb + noShares * (1 - newProb)
+      let prevValue: number
+      let currentValue: number
+      if (contract.mechanism === 'dpm-2') {
+        const dpmContract = contract as DPMContract
+        // We only have the current pool; prev-value approximates by assuming
+        // the pool was at the same shape but yielded prevProb (i.e. scale C
+        // proportionally). Matches how the CPMM branch approximates with
+        // `shares * prob` and `shares * prevProb` rather than simulating the
+        // old pool. Consistent day/week/month accounting.
+        currentValue = calculateDpmPayoutFromShares(
+          totalShares,
+          dpmContract.pool
+        )
+        // Use current pool scaled to prevProb's implied shape: the payout
+        // formula is p * (shares / y) * C for YES and (1-p) * (shares / n) * C
+        // for NO. We simulate prevValue by replacing newProb with prevProb while
+        // keeping the per-side shares-to-pool ratio fixed.
+        const { YES: y, NO: n } = dpmContract.pool
+        const C = Math.sqrt(y * y + n * n)
+        const yesContrib = y > 0 ? prevProb * (yesShares / y) * C : 0
+        const noContrib = n > 0 ? (1 - prevProb) * (noShares / n) * C : 0
+        prevValue = yesContrib + noContrib
+      } else {
+        prevValue = yesShares * prevProb + noShares * (1 - prevProb)
+        currentValue = yesShares * newProb + noShares * (1 - newProb)
+      }
       const valueChange = currentValue - prevValue
 
       const profit = valueChange
