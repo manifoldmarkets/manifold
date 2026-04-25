@@ -74,6 +74,8 @@ export const MANACHAN_TWEET_COST = 250
 export const PUSH_NOTIFICATION_BONUS = 1000
 export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 
+// Credit card purchases are flat 100 mana per $1 USD (no purchase bonuses; those
+// are reserved for crypto purchases).
 const PaymentAmounts = [
   {
     mana: 500,
@@ -90,14 +92,14 @@ const PaymentAmounts = [
     prodStripeId: 'price_1QrTRIGdoFKoCJW776dK3ZDo',
   },
   {
-    mana: 11_000,
+    mana: 10_000,
     priceInDollars: 100,
     bonusInDollars: 0,
     devStripeId: 'price_1QrTU0GdoFKoCJW7OLzDtdaM',
     prodStripeId: 'price_1QrTPCGdoFKoCJW7aXHQAGy4',
   },
   {
-    mana: 120_000,
+    mana: 100_000,
     priceInDollars: 1_000,
     bonusInDollars: 0,
     devStripeId: 'price_1QrTT7GdoFKoCJW79y4VgggM',

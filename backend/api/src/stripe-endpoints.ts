@@ -18,6 +18,9 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { STRIPE_PAYMENTS_ENABLED } from 'common/envs/constants'
 import { WEB_PRICES } from 'common/economy'
+import { canReceiveBonuses } from 'common/user'
+import { isUserBanned } from 'common/ban-utils'
+import { getActiveUserBans } from './helpers/rate-limit'
 import { getContract } from 'shared/utils'
 import { boostContractImmediately } from 'shared/supabase/contracts'
 import { getPost } from 'shared/supabase/posts'
@@ -75,6 +78,25 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
     return
   }
   const priceId = isProd() ? price.prodStripeId : price.devStripeId
+
+  const user = await getUser(userId)
+  if (!user) {
+    res.status(404).send('User not found')
+    return
+  }
+  if (!canReceiveBonuses(user)) {
+    res
+      .status(403)
+      .send(
+        'Identity verification is required to purchase mana with a credit card.'
+      )
+    return
+  }
+  const bans = await getActiveUserBans(userId)
+  if (isUserBanned(bans, 'purchase')) {
+    res.status(403).send('Your account is restricted from purchasing mana.')
+    return
+  }
 
   const referrer =
     req.query.referer || req.headers.referer || 'https://manifold.markets'

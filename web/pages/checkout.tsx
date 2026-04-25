@@ -3,6 +3,7 @@ import { DaimoModal } from '@daimo/sdk/web'
 import clsx from 'clsx'
 
 import { isUserBanned } from 'common/ban-utils'
+import { canReceiveBonuses } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { DaimoProviders } from 'web/components/crypto/crypto-providers'
@@ -14,6 +15,10 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Button } from 'web/components/buttons/button'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { BuyManaTab } from 'web/components/add-funds-modal'
+import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 import {
   CurrencyDollarIcon,
   CheckCircleIcon,
@@ -22,6 +27,7 @@ import {
   GiftIcon,
   BanIcon,
 } from '@heroicons/react/solid'
+import { FaCreditCard } from 'react-icons/fa6'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -142,6 +148,8 @@ function CheckoutContent() {
   const [sessionState, setSessionState] = useState<SessionState>({
     status: 'idle',
   })
+  const [creditCardModalOpen, setCreditCardModalOpen] = useState(false)
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false)
 
   // Check if user has made a crypto purchase before
   const { data: cryptoStatus } = useAPIGetter('get-crypto-purchase-status', {})
@@ -158,6 +166,8 @@ function CheckoutContent() {
     ? isUserBanned(userBansData.bans as any, 'purchase')
     : false
   const canPay = !!user?.id && !isPurchaseBanned
+  const isBonusEligible = !!user && canReceiveBonuses(user)
+  const canUseCreditCard = canPay && isBonusEligible
 
   const handleBuyManaClick = async () => {
     if (!canPay) return
@@ -196,12 +206,12 @@ function CheckoutContent() {
       <div className="bg-canvas-0 overflow-hidden rounded-xl shadow-md">
         {/* Header */}
         <div className="border-ink-100 border-b bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 dark:from-indigo-950/30 dark:to-purple-950/30">
-          <Row className="items-center justify-between">
+          <Row className="items-center justify-between gap-2">
             <h1 className="text-primary-700 text-xl font-semibold sm:text-2xl">
               Buy mana
             </h1>
             <Row className="items-center gap-1 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm dark:from-teal-600/80 dark:to-emerald-600/80">
-              <span>$1 USDC</span>
+              <span>$1</span>
               <ArrowRightIcon className="h-3 w-3" />
               <span>100 mana</span>
             </Row>
@@ -257,16 +267,16 @@ function CheckoutContent() {
             </div>
 
             <p className="text-ink-600 text-center text-sm">
-              Pay with USDC from any wallet or chain
+              Pay with USDC from any wallet or chain, or use a credit card
             </p>
 
-            {/* Payment Button */}
-            <Col className="items-center gap-4">
+            {/* Payment Buttons */}
+            <Col className="mx-auto w-full max-w-sm gap-3">
               {!user?.id ? (
                 <button
                   disabled
                   className={clsx(
-                    'relative w-full max-w-sm overflow-hidden rounded-xl',
+                    'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
                     'cursor-not-allowed bg-gray-400',
                     'px-8 py-4 text-lg font-semibold text-white shadow-lg'
                   )}
@@ -280,7 +290,7 @@ function CheckoutContent() {
                 <button
                   disabled
                   className={clsx(
-                    'relative w-full max-w-sm overflow-hidden rounded-xl',
+                    'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
                     'cursor-not-allowed bg-gray-400',
                     'px-8 py-4 text-lg font-semibold text-white shadow-lg'
                   )}
@@ -291,35 +301,70 @@ function CheckoutContent() {
                   </Row>
                 </button>
               ) : (
-                <button
-                  onClick={handleBuyManaClick}
-                  disabled={
-                    sessionState.status === 'creating' ||
-                    sessionState.status === 'ready'
-                  }
-                  className={clsx(
-                    'group relative w-full max-w-sm overflow-hidden rounded-xl',
-                    'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
-                    'px-8 py-4 text-lg font-semibold text-white shadow-lg',
-                    'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
-                    'active:scale-[0.98]',
-                    'disabled:cursor-not-allowed disabled:opacity-50'
-                  )}
-                >
-                  <Row className="items-center justify-center gap-3">
-                    {sessionState.status === 'creating' ? (
-                      <>
-                        <LoadingIndicator size="sm" className="!text-white" />
-                        <span>Loading...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                        <span>Buy mana</span>
-                      </>
+                <>
+                  <button
+                    onClick={handleBuyManaClick}
+                    disabled={
+                      sessionState.status === 'creating' ||
+                      sessionState.status === 'ready'
+                    }
+                    className={clsx(
+                      'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
+                      'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
+                      'px-8 py-4 text-lg font-semibold text-white shadow-lg',
+                      'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
+                      'active:scale-[0.98]',
+                      'disabled:cursor-not-allowed disabled:opacity-50'
                     )}
-                  </Row>
-                </button>
+                  >
+                    <Row className="items-center justify-center gap-3">
+                      {sessionState.status === 'creating' ? (
+                        <>
+                          <LoadingIndicator size="sm" className="!text-white" />
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                          <span>Buy with crypto</span>
+                        </>
+                      )}
+                    </Row>
+                  </button>
+
+                  <Tooltip
+                    text={
+                      canUseCreditCard
+                        ? null
+                        : 'Verify your identity to enable credit card purchases.'
+                    }
+                    placement="bottom"
+                    className="block w-full"
+                  >
+                    <button
+                      onClick={() => {
+                        if (canUseCreditCard) {
+                          setCreditCardModalOpen(true)
+                        } else {
+                          setVerificationModalOpen(true)
+                        }
+                      }}
+                      className={clsx(
+                        'group relative w-full overflow-hidden rounded-xl border-2',
+                        'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
+                        'active:scale-[0.98]',
+                        canUseCreditCard
+                          ? 'border-indigo-600 bg-canvas-0 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
+                          : 'border-ink-300 bg-canvas-50 text-ink-500 dark:bg-canvas-100'
+                      )}
+                    >
+                      <Row className="items-center justify-center gap-3">
+                        <FaCreditCard className="h-5 w-5 transition-transform group-hover:scale-110" />
+                        <span>Buy with credit card</span>
+                      </Row>
+                    </button>
+                  </Tooltip>
+                </>
               )}
             </Col>
 
@@ -348,13 +393,14 @@ function CheckoutContent() {
                 <Row className="items-center gap-2">
                   <SparklesIcon className="h-5 w-5 text-amber-500" />
                   <span className="font-semibold text-amber-700 dark:text-amber-400">
-                    First Purchase Bonus: Get up to 20% extra mana!
+                    First Crypto Purchase Bonus: Get up to 20% extra mana!
                   </span>
                 </Row>
                 <p className="text-ink-600 mt-1 text-sm">
-                  As a first-time buyer, you'll receive a 10% bonus on your
-                  purchase — plus an additional 10% on orders of $
-                  {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more!
+                  As a first-time crypto buyer, you'll receive a 10% bonus on
+                  your purchase — plus an additional 10% on orders of $
+                  {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more.
+                  Bonuses apply to crypto purchases only.
                 </p>
               </div>
             ) : (
@@ -362,13 +408,15 @@ function CheckoutContent() {
                 <Row className="items-center gap-2">
                   <GiftIcon className="h-5 w-5 text-purple-500" />
                   <span className="font-semibold text-purple-700 dark:text-purple-400">
-                    Bulk Bonus: 10% extra on $
-                    {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ purchases
+                    Crypto Bulk Bonus: 10% extra on $
+                    {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ crypto
+                    purchases
                   </span>
                 </Row>
                 <p className="text-ink-600 mt-1 text-sm">
                   Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}{' '}
-                  USDC or more and receive a 10% bonus.
+                  USDC or more and receive a 10% bonus. Credit card purchases
+                  are not eligible for bonuses.
                 </p>
               </div>
             )}
@@ -386,6 +434,38 @@ function CheckoutContent() {
           clientSecret={sessionState.clientSecret}
           onPaymentCompleted={handlePaymentCompleted}
           onClose={handleModalClose}
+        />
+      )}
+
+      {/* Credit Card Purchase Modal */}
+      <Modal
+        open={creditCardModalOpen}
+        setOpen={setCreditCardModalOpen}
+        size="lg"
+        className={clsx(MODAL_CLASS, '!p-6 sm:!p-8')}
+      >
+        <Col className="w-full gap-3">
+          <Row className="items-center justify-between gap-2">
+            <h2 className="text-primary-700 text-xl font-semibold sm:text-2xl">
+              Buy mana with credit card
+            </h2>
+          </Row>
+          <p className="text-ink-600 text-sm">
+            $1 USD = 100 mana. Credit card purchases are not eligible for
+            first-purchase or bulk bonuses — those apply to crypto purchases
+            only.
+          </p>
+          <BuyManaTab />
+        </Col>
+      </Modal>
+
+      {/* Verification Required Modal */}
+      {user && verificationModalOpen && (
+        <VerificationRequiredModal
+          open={verificationModalOpen}
+          setOpen={setVerificationModalOpen}
+          user={user}
+          action="buy mana with a credit card"
         />
       )}
     </Col>

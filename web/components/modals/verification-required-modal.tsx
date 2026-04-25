@@ -14,7 +14,11 @@ type VerificationRequiredModalProps = {
   setOpen: (open: boolean) => void
   user: User
   // What the user is trying to do (for messaging)
-  action?: 'claim free loan' | 'earn quest rewards' | 'receive bonuses'
+  action?:
+    | 'claim free loan'
+    | 'earn quest rewards'
+    | 'receive bonuses'
+    | 'buy mana with a credit card'
 }
 
 export function VerificationRequiredModal({
