@@ -17,8 +17,9 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Button } from 'web/components/buttons/button'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { BuyManaTab } from 'web/components/add-funds-modal'
+import { PriceTile } from 'web/components/add-funds-modal'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
+import { usePrices } from 'web/hooks/use-prices'
 import {
   CurrencyDollarIcon,
   CheckCircleIcon,
@@ -140,6 +141,31 @@ function ManaRewardsTable(props: { isFirstCryptoPurchase: boolean }) {
           : '.'}
       </p>
     </Col>
+  )
+}
+
+function CreditCardPurchaseGrid() {
+  const user = useUser()
+  const prices = usePrices()
+  const [loadingPrice, setLoadingPrice] = useState<number | null>(null)
+
+  return (
+    <div className="grid grid-cols-2 gap-4 gap-y-6">
+      {prices
+        .slice()
+        .sort((a, b) => a.priceInDollars - b.priceInDollars)
+        .map((amounts, index) => (
+          <PriceTile
+            key={`price-tile-${amounts.mana}`}
+            amounts={amounts}
+            index={index}
+            loadingPrice={loadingPrice as any}
+            disabled={false}
+            user={user}
+            onClick={() => setLoadingPrice(amounts.priceInDollars)}
+          />
+        ))}
+    </div>
   )
 }
 
@@ -444,18 +470,11 @@ function CheckoutContent() {
         size="lg"
         className={clsx(MODAL_CLASS, '!p-6 sm:!p-8')}
       >
-        <Col className="w-full gap-3">
-          <Row className="items-center justify-between gap-2">
-            <h2 className="text-primary-700 text-xl font-semibold sm:text-2xl">
-              Buy mana with credit card
-            </h2>
-          </Row>
-          <p className="text-ink-600 text-sm">
-            $1 USD = 100 mana. Credit card purchases are not eligible for
-            first-purchase or bulk bonuses — those apply to crypto purchases
-            only.
-          </p>
-          <BuyManaTab />
+        <Col className="w-full gap-4">
+          <h2 className="text-primary-700 text-xl font-semibold sm:text-2xl">
+            Buy mana with credit card
+          </h2>
+          <CreditCardPurchaseGrid />
         </Col>
       </Modal>
 

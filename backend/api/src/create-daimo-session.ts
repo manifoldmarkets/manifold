@@ -83,7 +83,7 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
       tokenAddress: BASE_USDC_ADDRESS,
     },
     display: {
-      title: 'Buy mana',
+      title: 'Buy mana with crypto',
       verb: 'Deposit',
     },
     metadata: {
