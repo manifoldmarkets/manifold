@@ -3813,8 +3813,8 @@ export const API = (_apiTypeCheck = {
           address1: z.string().max(200),
           address2: z.string().max(200).optional(),
           city: z.string().max(100),
-          state: z.string().max(100),
-          zip: z.string().max(20),
+          state: z.string().max(100).optional(),
+          zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
         }),
       })
@@ -3836,7 +3836,7 @@ export const API = (_apiTypeCheck = {
           address1: z.string().max(200),
           city: z.string().max(100),
           state: z.string().max(100).optional(),
-          zip: z.string().max(20),
+          zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
         }),
       })

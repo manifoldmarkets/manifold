@@ -1,5 +1,6 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SHOP_ITEMS, PRINTFUL_API_URL } from 'common/shop/items'
+import { requiresPostalCode } from 'common/shop/printful-address'
 
 export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
   { variantId, address },
@@ -16,6 +17,12 @@ export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
   )
   if (!isValidVariant) {
     throw new APIError(400, 'Invalid variant ID')
+  }
+
+  // Per-country zip enforcement — schema lets zip be omitted, this catches
+  // the case where the country actually requires one.
+  if (requiresPostalCode(address.country) && !address.zip?.trim()) {
+    throw new APIError(400, 'Postal code is required for this country')
   }
 
   const printfulToken = process.env.PRINTFUL_API_TOKEN
@@ -36,7 +43,7 @@ export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
         city: address.city,
         state_code: address.state || undefined,
         country_code: address.country,
-        zip: address.zip,
+        zip: address.zip || undefined,
       },
       items: [
         {

@@ -24,6 +24,7 @@ import {
   getTicketItems,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
+import { requiresPostalCode } from 'common/shop/printful-address'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import {
@@ -1729,8 +1730,11 @@ function MerchItemCard(props: {
     }
   }
 
+  const zipRequired = requiresPostalCode(shippingInfo.country)
   const canGetRates =
-    shippingInfo.address1 && shippingInfo.city && shippingInfo.zip
+    shippingInfo.address1 &&
+    shippingInfo.city &&
+    (!zipRequired || shippingInfo.zip)
 
   return (
     <>
@@ -2143,7 +2147,7 @@ function MerchItemCard(props: {
               />
               <input
                 type="text"
-                placeholder="ZIP"
+                placeholder={zipRequired ? 'ZIP' : 'ZIP (optional)'}
                 value={shippingInfo.zip}
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, zip: e.target.value }))
@@ -2284,7 +2288,13 @@ function MerchItemCard(props: {
                 {shippingInfo.address1}
                 {shippingInfo.address2 && `, ${shippingInfo.address2}`}
                 <br />
-                {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zip}
+                {[
+                  shippingInfo.city,
+                  shippingInfo.state,
+                  shippingInfo.zip,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
                 <br />
                 {COUNTRIES.find((c) => c.code === shippingInfo.country)?.name}
               </span>

@@ -4,6 +4,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
 import { getShopItem, isMerchItem, PRINTFUL_API_URL } from 'common/shop/items'
+import { requiresPostalCode } from 'common/shop/printful-address'
 import { getBenefit } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -29,6 +30,12 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
 
   if (!auth) {
     throw new APIError(401, 'Must be logged in')
+  }
+
+  // Per-country zip enforcement — schema lets zip be omitted, this catches
+  // the case where the country actually requires one.
+  if (requiresPostalCode(shipping.country) && !shipping.zip?.trim()) {
+    throw new APIError(400, 'Postal code is required for this country')
   }
 
   const printfulToken = process.env.PRINTFUL_API_TOKEN
@@ -66,9 +73,9 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       recipient: {
         address1: shipping.address1,
         city: shipping.city,
-        state_code: shipping.state,
+        state_code: shipping.state || undefined,
         country_code: shipping.country,
-        zip: shipping.zip,
+        zip: shipping.zip || undefined,
       },
       items: [{ external_variant_id: variantId, quantity: 1 }],
     }),
@@ -286,9 +293,9 @@ async function createPrintfulOrder(
         address1: params.shipping.address1,
         address2: params.shipping.address2 || undefined,
         city: params.shipping.city,
-        state_code: params.shipping.state,
+        state_code: params.shipping.state || undefined,
         country_code: params.shipping.country,
-        zip: params.shipping.zip,
+        zip: params.shipping.zip || undefined,
       },
       items: [
         {
