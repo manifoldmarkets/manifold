@@ -26,7 +26,25 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+SCHEMA_DIR="$SCRIPT_DIR/.."
+
+DB_HOST="127.0.0.1"
+DB_PORT="54322"
+DB_PASSWORD="postgres"
+
+ENV_FILE="$SCRIPT_DIR/../../api/.env.local"
+if [ -f "$ENV_FILE" ]; then
+  # Extract values from .env.local if they exist, stripping potential quotes and carriage returns
+  HOST_VAL=$(grep -E '^SUPABASE_HOST=' "$ENV_FILE" | cut -d '=' -f 2- | tr -d '"' | tr -d "'" | tr -d '\r' || true)
+  PORT_VAL=$(grep -E '^SUPABASE_PORT=' "$ENV_FILE" | cut -d '=' -f 2- | tr -d '"' | tr -d "'" | tr -d '\r' || true)
+  PASS_VAL=$(grep -E '^SUPABASE_PASSWORD=' "$ENV_FILE" | cut -d '=' -f 2- | tr -d '"' | tr -d "'" | tr -d '\r' || true)
+
+  [ -n "$HOST_VAL" ] && DB_HOST="$HOST_VAL"
+  [ -n "$PORT_VAL" ] && DB_PORT="$PORT_VAL"
+  [ -n "$PASS_VAL" ] && DB_PASSWORD="$PASS_VAL"
+fi
+
+DB_URL="postgresql://postgres:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/postgres"
 
 run_sql_file() {
   local file="$1"
@@ -47,7 +65,7 @@ run_functions() {
   local label="$1"
   echo -n "  functions.sql ($label)... "
   local err_count
-  err_count=$(sed 's/ leakproof / /gi' "$SCRIPT_DIR/functions.sql" \
+  err_count=$(sed 's/ leakproof / /gi' "$SCHEMA_DIR/functions.sql" \
     | psql "$DB_URL" -f - 2>&1 \
     | grep -ci "error" || true)
   err_count="${err_count:-0}"
@@ -59,11 +77,12 @@ run_functions() {
 }
 
 echo "=== Loading Supabase schema into local database ==="
+echo "Using database: postgresql://postgres:***@${DB_HOST}:${DB_PORT}/postgres"
 echo ""
 
 # Phase 1: Extensions and text search configuration
 echo "Phase 1: Extensions and base configuration"
-run_sql_file "$SCRIPT_DIR/seed.sql"
+run_sql_file "$SCHEMA_DIR/seed.sql"
 
 # Phase 2: Functions — two pre-table passes
 # Pass 1: Creates base functions (extract_text_from_rich_text_json, etc.)
@@ -99,7 +118,7 @@ for f in \
   old_posts.sql \
   charity_giveaways.sql \
   ; do
-  run_sql_file "$SCRIPT_DIR/$f"
+  run_sql_file "$SCHEMA_DIR/$f"
 done
 
 # Phase 4: All remaining table files (alphabetical)
@@ -121,7 +140,7 @@ declare -A loaded=(
   [achievement_materialized_views.sql]=1
 )
 
-for f in "$SCRIPT_DIR"/*.sql; do
+for f in "$SCHEMA_DIR"/*.sql; do
   name="$(basename "$f")"
   if [[ -z "${loaded[$name]:-}" ]]; then
     run_sql_file "$f"
@@ -141,7 +160,7 @@ run_functions "pass 3 — table-dependent"
 echo ""
 echo "Phase 5b: Triggers (re-run table files)"
 trigger_count=0
-for f in "$SCRIPT_DIR"/*.sql; do
+for f in "$SCHEMA_DIR"/*.sql; do
   name="$(basename "$f")"
   if [[ -n "${loaded[$name]:-}" ]]; then
     continue  # skip non-table files (seed, functions, views)
@@ -154,8 +173,8 @@ for f in "$SCRIPT_DIR"/*.sql; do
 done
 # Also re-run core table files that have triggers
 for f in users.sql contracts.sql groups.sql old_posts.sql; do
-  if grep -qi 'create trigger' "$SCRIPT_DIR/$f"; then
-    psql "$DB_URL" -f "$SCRIPT_DIR/$f" > /dev/null 2>&1
+  if grep -qi 'create trigger' "$SCHEMA_DIR/$f"; then
+    psql "$DB_URL" -f "$SCHEMA_DIR/$f" > /dev/null 2>&1
     trigger_count=$((trigger_count + 1))
   fi
 done
@@ -164,8 +183,8 @@ echo "  Re-ran $trigger_count table files for trigger creation"
 # Phase 6: Views and materialized views (depend on tables + functions)
 echo ""
 echo "Phase 6: Views and materialized views"
-run_sql_file "$SCRIPT_DIR/views.sql"
-run_sql_file "$SCRIPT_DIR/achievement_materialized_views.sql"
+run_sql_file "$SCHEMA_DIR/views.sql"
+run_sql_file "$SCHEMA_DIR/achievement_materialized_views.sql"
 
 echo ""
 echo "=== Schema loading complete ==="
