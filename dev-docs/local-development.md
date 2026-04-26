@@ -34,7 +34,7 @@ mv migrations _migrations
 npx supabase start
 
 # Load the full schema from scratch
-./load-local-schema.sh
+./local-dev/load-local-schema.sh
 
 # Restore migrations and apply them now that tables exist
 mv _migrations migrations
@@ -152,7 +152,7 @@ cd backend/supabase
 npx supabase db reset
 
 # Then reload schema and test data
-./load-local-schema.sh
+./local-dev/load-local-schema.sh
 psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f seed-local-data.sql
 ```
 
