@@ -31,6 +31,7 @@ import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { FaGift } from 'react-icons/fa6'
 import { useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi'
+import { isAddress } from 'viem'
 import {
   CryptoProviders,
   useCryptoReady,
@@ -1772,6 +1773,13 @@ function WalletClaimFormInner(props: {
   const connectors = useConnectors()
   const hasBrowserWallet = useHasBrowserWallet(connectors)
 
+  // Reset on auto-reconnect so the user doesn't land back on manual entry with empty state if they later disconnect.
+  useEffect(() => {
+    if (isConnected && showManualEntry) {
+      setShowManualEntry(false)
+    }
+  }, [isConnected, showManualEntry])
+
   // Hide the generic fallback `injected` connector when no browser wallet is
   // actually present — clicking it produces a cryptic viem error. Keep any
   // EIP-6963-detected wallets (id !== 'injected') and WalletConnect.
@@ -1980,19 +1988,28 @@ type AddressValidation =
 
 function validateEthAddress(input: string): AddressValidation {
   if (input.length === 0) return { kind: 'empty' }
-  if (/^0x[a-fA-F0-9]{40}$/.test(input)) {
-    return {
-      kind: 'valid',
-      message: '✓ This is a valid Ethereum wallet address',
-    }
+  if (!/^0x[a-fA-F0-9]*$/.test(input)) {
+    return { kind: 'invalid', message: '❌ This is not an Ethereum wallet address' }
   }
-  if (/^0x[a-fA-F0-9]*$/.test(input)) {
-    if (input.length < 42) {
-      return { kind: 'incomplete', message: '⚠️ This wallet address is incomplete' }
-    }
+  if (input.length < 42) {
+    return { kind: 'incomplete', message: '⚠️ This wallet address is incomplete' }
+  }
+  if (input.length > 42) {
     return { kind: 'invalid', message: '❌ This wallet address is too long' }
   }
-  return { kind: 'invalid', message: '❌ This is not an Ethereum wallet address' }
+  // viem's default isAddress requires either all-lowercase, all-uppercase, or
+  // a valid EIP-55 checksum — catches typos in mixed-case pastes.
+  if (!isAddress(input)) {
+    return {
+      kind: 'invalid',
+      message:
+        '❌ This address has a checksum error — likely a typo. Double-check every character.',
+    }
+  }
+  return {
+    kind: 'valid',
+    message: '✓ This is a valid Ethereum wallet address',
+  }
 }
 
 function ManualWalletEntry(props: {
