@@ -156,8 +156,8 @@ export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
  */
 export const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
 
-if (LOCAL_ONLY && process.env.NEXT_PUBLIC_FIREBASE_ENV === 'PROD') {
-  throw new Error('LOCAL_ONLY cannot be true when environment is PROD')
+if (LOCAL_ONLY && !LOCAL_DEV) {
+  throw new Error('LOCAL_ONLY cannot be true in a deployed environment')
 }
 
 /** @deprecated in favor of common/src/envs/is-prod.ts */
