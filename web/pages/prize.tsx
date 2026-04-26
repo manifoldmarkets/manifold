@@ -1691,7 +1691,12 @@ function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
         <p className="text-ink-700 text-sm">
           Connect your Ethereum wallet to receive your prize. Make sure this is
           a wallet you control—we cannot recover funds sent to the wrong
-          address.
+          address.{' '}
+          <span className="font-semibold">
+            Your submission is final and cannot be changed. The wallet you
+            choose applies only to this prize — you'll choose a wallet again
+            for any future prize.
+          </span>
         </p>
 
         <WalletClaimFormWrapper
@@ -1760,6 +1765,7 @@ function WalletClaimFormInner(props: {
   const { sweepstakesNum, isSubmitting, setIsSubmitting, onSuccess } = props
 
   const [showWalletModal, setShowWalletModal] = useState(false)
+  const [showManualEntry, setShowManualEntry] = useState(false)
   const { address, isConnected } = useAccount()
   const { connect, isPending: isConnecting, error: connectError } = useConnect()
   const { disconnect } = useDisconnect()
@@ -1793,6 +1799,18 @@ function WalletClaimFormInner(props: {
   }
 
   if (!isConnected) {
+    if (showManualEntry) {
+      return (
+        <ManualWalletEntry
+          sweepstakesNum={sweepstakesNum}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+          onSuccess={onSuccess}
+          onCancel={() => setShowManualEntry(false)}
+        />
+      )
+    }
+
     const friendlyConnectError = connectError
       ? getFriendlyConnectError(connectError, hasBrowserWallet)
       : null
@@ -1834,6 +1852,14 @@ function WalletClaimFormInner(props: {
               </div>
             )}
           </Col>
+
+          <button
+            type="button"
+            onClick={() => setShowManualEntry(true)}
+            className="text-scarlet-600 hover:text-scarlet-700 dark:text-scarlet-400 dark:hover:text-scarlet-300 self-center text-xs font-medium underline"
+          >
+            Not recommended: Add wallet address manually
+          </button>
         </Col>
 
         {/* Wallet Selection Modal */}
@@ -1942,6 +1968,183 @@ function WalletClaimFormInner(props: {
       >
         🎁 Claim Prize
       </Button>
+    </Col>
+  )
+}
+
+type AddressValidation =
+  | { kind: 'empty' }
+  | { kind: 'valid'; message: string }
+  | { kind: 'incomplete'; message: string }
+  | { kind: 'invalid'; message: string }
+
+function validateEthAddress(input: string): AddressValidation {
+  if (input.length === 0) return { kind: 'empty' }
+  if (/^0x[a-fA-F0-9]{40}$/.test(input)) {
+    return {
+      kind: 'valid',
+      message: '✓ This is a valid Ethereum wallet address',
+    }
+  }
+  if (/^0x[a-fA-F0-9]*$/.test(input)) {
+    if (input.length < 42) {
+      return { kind: 'incomplete', message: '⚠️ This wallet address is incomplete' }
+    }
+    return { kind: 'invalid', message: '❌ This wallet address is too long' }
+  }
+  return { kind: 'invalid', message: '❌ This is not an Ethereum wallet address' }
+}
+
+function ManualWalletEntry(props: {
+  sweepstakesNum: number
+  isSubmitting: boolean
+  setIsSubmitting: (isSubmitting: boolean) => void
+  onSuccess: () => void
+  onCancel: () => void
+}) {
+  const {
+    sweepstakesNum,
+    isSubmitting,
+    setIsSubmitting,
+    onSuccess,
+    onCancel,
+  } = props
+
+  const [address, setAddress] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
+
+  const trimmed = address.trim()
+  const validation = validateEthAddress(trimmed)
+  const canSubmit =
+    validation.kind === 'valid' && confirmed && !isSubmitting
+
+  const normalize = (raw: string) => raw.trim().replace(/^0X/, '0x')
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      setAddress(normalize(text))
+    } catch {
+      toast.error('Could not read clipboard. Please paste manually.')
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return
+    setIsSubmitting(true)
+    try {
+      await api('claim-sweepstakes-prize', {
+        sweepstakesNum,
+        walletAddress: trimmed,
+      })
+      toast.success('Prize claim submitted successfully!')
+      onSuccess()
+    } catch (e) {
+      const msg = e instanceof APIError ? e.message : 'Failed to submit claim'
+      toast.error(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Col className="gap-4">
+      <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 rounded-lg border p-3">
+        <p className="text-scarlet-700 dark:text-scarlet-300 text-sm font-semibold">
+          ⚠️ Not recommended
+        </p>
+        <p className="text-scarlet-600 dark:text-scarlet-400 mt-1 text-xs">
+          Manually entering a wallet address is risky. If the address is wrong
+          or not a wallet you control, your prize will be lost forever and
+          cannot be recovered. Connect a browser wallet whenever possible.
+        </p>
+        <p className="text-scarlet-700 dark:text-scarlet-300 mt-2 text-xs font-semibold">
+          The address you submit is your first and final answer for this
+          prize — it cannot be edited after you click Claim Prize. Double-check
+          every character. (Future prizes are claimed separately.)
+        </p>
+      </div>
+
+      <Col className="gap-1.5">
+        <label
+          htmlFor="manual-wallet-address"
+          className="text-ink-700 text-sm font-medium"
+        >
+          Ethereum wallet address
+        </label>
+        <Row className="gap-2">
+          <Input
+            id="manual-wallet-address"
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(normalize(e.target.value))}
+            placeholder="0x..."
+            className="flex-1 font-mono"
+            autoComplete="off"
+            spellCheck={false}
+            error={validation.kind === 'invalid'}
+          />
+          <Button
+            color="gray-outline"
+            size="md"
+            onClick={handlePaste}
+            disabled={isSubmitting}
+          >
+            Paste
+          </Button>
+        </Row>
+        {validation.kind !== 'empty' && (
+          <p
+            className={clsx(
+              'text-xs',
+              validation.kind === 'valid' &&
+                'text-green-700 dark:text-green-400',
+              validation.kind === 'incomplete' &&
+                'text-amber-700 dark:text-amber-400',
+              validation.kind === 'invalid' &&
+                'text-scarlet-700 dark:text-scarlet-300'
+            )}
+          >
+            {validation.message}
+          </p>
+        )}
+      </Col>
+
+      <label className="flex cursor-pointer items-start gap-2">
+        <input
+          type="checkbox"
+          checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+          className="mt-1"
+          disabled={isSubmitting}
+        />
+        <span className="text-ink-700 text-sm">
+          I understand that if this is not my wallet, my prize will be lost
+          and cannot be recovered.
+        </span>
+      </label>
+
+      <Row className="gap-2">
+        <Button
+          color="gray-outline"
+          size="lg"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="flex-1"
+        >
+          Back
+        </Button>
+        <Button
+          color="gradient"
+          size="lg"
+          className="flex-[2]"
+          onClick={handleSubmit}
+          loading={isSubmitting}
+          disabled={!canSubmit}
+        >
+          🎁 Claim Prize
+        </Button>
+      </Row>
     </Col>
   )
 }
