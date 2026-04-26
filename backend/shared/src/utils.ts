@@ -20,6 +20,7 @@ import { extensions } from 'common/util/parse'
 import * as dayjs from 'dayjs'
 import * as timezone from 'dayjs/plugin/timezone'
 import * as utc from 'dayjs/plugin/utc'
+import * as admin from 'firebase-admin'
 import { first, uniq } from 'lodash'
 import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
@@ -169,9 +170,6 @@ export const isProd = () => {
   if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
     return process.env.NEXT_PUBLIC_FIREBASE_ENV === 'PROD'
   } else {
-    // Lazy-load firebase-admin to avoid initializing it in LOCAL_ONLY mode.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const admin = require('firebase-admin')
     return admin.app().options.projectId === 'mantic-markets'
   }
 }

@@ -1,20 +1,18 @@
-import { LOCAL_ONLY } from 'shared/utils'
-
-if (!LOCAL_ONLY) {
-  const { initFirebase } = require('./utils')
-  initFirebase()
-}
-
 import * as fs from 'fs'
 import * as path from 'path'
 import * as Handlebars from 'handlebars'
 import * as express from 'express'
 import * as basicAuth from 'express-basic-auth'
 import { sortBy } from 'lodash'
-import { isProd } from 'shared/utils'
-import { log } from 'shared/utils'
+import { LOCAL_ONLY, isProd, log } from 'shared/utils'
 import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
+import { initFirebase, initSecrets } from './utils'
+import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
+
+if (!LOCAL_ONLY) {
+  initFirebase()
+}
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -30,9 +28,7 @@ async function start() {
       'Scheduler starting in LOCAL_ONLY mode, skipping secrets and metrics.'
     )
   } else {
-    const { initSecrets } = require('./utils')
     await initSecrets()
-    const { METRIC_WRITER } = require('shared/monitoring/metric-writer')
     METRIC_WRITER.start()
   }
 

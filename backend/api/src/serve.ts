@@ -1,16 +1,15 @@
-import { LOCAL_ONLY } from 'shared/utils'
+import * as admin from 'firebase-admin'
+import { getLocalEnv, initAdmin } from 'shared/init-admin'
+import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
+import { LOCAL_DEV, LOCAL_ONLY, log } from 'shared/utils'
+import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
+import { initCaches } from 'shared/init-caches'
+import { listen as webSocketListen } from 'shared/websockets/server'
+import { app } from './app'
 
 if (!LOCAL_ONLY) {
   // Normal mode: initialize Firebase and GCP services
-
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const admin = require('firebase-admin')
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { initAdmin } = require('shared/init-admin')
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { LOCAL_DEV, log: normalLog } = require('shared/utils')
-
-  normalLog('Api server starting up...')
+  log('Api server starting up...')
 
   if (LOCAL_DEV) {
     initAdmin()
@@ -22,19 +21,10 @@ if (!LOCAL_ONLY) {
     })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { METRIC_WRITER } = require('shared/monitoring/metric-writer')
   METRIC_WRITER.start()
-}
-
-import { log } from 'shared/utils'
-import { listen as webSocketListen } from 'shared/websockets/server'
-
-if (LOCAL_ONLY) {
+} else {
   log('Api server starting up in LOCAL_ONLY mode...')
 }
-
-import { app } from './app'
 
 const DB_RESPONSE_TIMEOUT = 30_000
 
@@ -42,14 +32,6 @@ const startupProcess = async () => {
   if (LOCAL_ONLY) {
     log('LOCAL_ONLY mode: skipping Secret Manager, using env vars directly.')
   } else {
-    const {
-      loadSecretsToEnv,
-      getServiceAccountCredentials,
-    } = require('common/secrets') // eslint-disable-line @typescript-eslint/no-require-imports
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getLocalEnv } = require('shared/init-admin')
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { LOCAL_DEV } = require('shared/utils')
     const credentials = LOCAL_DEV
       ? getServiceAccountCredentials(getLocalEnv())
       : undefined
@@ -70,8 +52,6 @@ const startupProcess = async () => {
     clearTimeout(timeoutId)
     log('LOCAL_ONLY mode: skipping cache initialization.')
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { initCaches } = require('shared/init-caches')
     await initCaches(timeoutId)
     log('Caches loaded.')
   }
