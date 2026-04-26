@@ -1,12 +1,16 @@
 # Local Development Guide
 
-Run Manifold locally without Firebase or GCP credentials using `LOCAL_ONLY` mode.
+How to run Manifold locally without Firebase or GCP credentials by using `LOCAL_ONLY` mode.
+
+This mode is not explicitly supported by Manifold, and may break as we change things in the future.
+If you're having issues with this setup, post a message in the `#api-and-bots` channel of 
+[Discord](https://discord.gg/3Zuth9792G).
 
 ## Prerequisites
 
-- Node.js 18+ and Yarn
-- Docker (for Supabase local containers)
-- PostgreSQL client (`psql`) for schema loading
+- [Node.js 20](https://github.com/nvm-sh/nvm) and [Yarn 1.x](https://classic.yarnpkg.com/lang/en/docs/install/)
+- [Docker](https://docs.docker.com/engine/install/) (for Supabase local containers)
+- [PostgreSQL client](https://www.postgresql.org/download/) (`psql`) for schema loading
 
 ## Quick Start
 
@@ -21,16 +25,32 @@ yarn install
 
 ```bash
 cd backend/supabase
-npx supabase start        # First run pulls ~1-2GB of Docker images
-./load-local-schema.sh    # Load all table schemas (3-pass function loading)
+
+# Hide migrations so supabase start doesn't try to run them
+mv migrations _migrations
+
+# Start Supabase (spins up Postgres, PostgREST, etc.)
+# Note: First run pulls ~1-2GB of Docker images
+npx supabase start
+
+# Load the full schema from scratch
+./load-local-schema.sh
+
+# Restore migrations and apply them now that tables exist
+mv _migrations migrations
+npx supabase migration up --local
 ```
 
 Note the output from `npx supabase start` — it shows the anon key, service_role key,
 and URLs. The default values in the template files should match.
 
+Once Supabase is running and the schema is loaded you can directly explore/modify the 
+database via the Supabase web UI at [http://localhost:54323](http://localhost:54323).
+
 ### 3. Configure environment files
 
 ```bash
+cd /path/to/manifold
 cp backend/api/.env.local.template backend/api/.env.local
 cp backend/scheduler/.env.local.template backend/scheduler/.env.local
 cp web/.env.local.template web/.env.local
@@ -54,19 +74,21 @@ This creates:
 ### 5. Start the API server
 
 ```bash
-cd backend/api
+cd /path/to/manifold/backend/api
 set -a && source .env.local && set +a
 yarn dev
 ```
 
 The API server starts on port 8088.
 
+If you get an error with `buffer-equal-constant-time`, try rolling back to an older version of Node. 
+
 ### 6. Start the web frontend
 
 In a separate terminal:
 
 ```bash
-cd web
+cd /path/to/manifold/web
 yarn dev:local
 ```
 
