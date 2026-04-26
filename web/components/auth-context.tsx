@@ -175,9 +175,7 @@ export function AuthProvider(props: {
     const fetchLocalUser = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'localhost:8088'
-        const resp = await fetch(
-          `http://${apiUrl}/v0/user/${LOCAL_TEST_USER}`
-        )
+        const resp = await fetch(`http://${apiUrl}/v0/user/${LOCAL_TEST_USER}`)
         if (!resp.ok) {
           console.error('Failed to fetch local test user:', resp.statusText)
           setUser(null)
