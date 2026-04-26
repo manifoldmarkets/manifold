@@ -2,8 +2,12 @@ import { LOCAL_ONLY } from 'shared/utils'
 
 if (!LOCAL_ONLY) {
   // Normal mode: initialize Firebase and GCP services
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const admin = require('firebase-admin')
-  const { getLocalEnv, initAdmin } = require('shared/init-admin')
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { initAdmin } = require('shared/init-admin')
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { LOCAL_DEV, log: normalLog } = require('shared/utils')
 
   normalLog('Api server starting up...')
@@ -18,6 +22,7 @@ if (!LOCAL_ONLY) {
     })
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { METRIC_WRITER } = require('shared/monitoring/metric-writer')
   METRIC_WRITER.start()
 }
@@ -40,8 +45,10 @@ const startupProcess = async () => {
     const {
       loadSecretsToEnv,
       getServiceAccountCredentials,
-    } = require('common/secrets')
+    } = require('common/secrets') // eslint-disable-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getLocalEnv } = require('shared/init-admin')
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { LOCAL_DEV } = require('shared/utils')
     const credentials = LOCAL_DEV
       ? getServiceAccountCredentials(getLocalEnv())
@@ -63,6 +70,7 @@ const startupProcess = async () => {
     clearTimeout(timeoutId)
     log('LOCAL_ONLY mode: skipping cache initialization.')
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { initCaches } = require('shared/init-caches')
     await initCaches(timeoutId)
     log('Caches loaded.')

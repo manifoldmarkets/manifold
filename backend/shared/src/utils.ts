@@ -166,6 +166,7 @@ export const isProd = () => {
     return process.env.NEXT_PUBLIC_FIREBASE_ENV === 'PROD'
   } else {
     // Lazy-load firebase-admin to avoid initializing it in LOCAL_ONLY mode.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const admin = require('firebase-admin')
     return admin.app().options.projectId === 'mantic-markets'
   }
