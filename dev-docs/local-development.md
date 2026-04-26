@@ -29,7 +29,7 @@ cd backend/supabase
 # Hide migrations so supabase start doesn't try to run them
 mv migrations _migrations
 
-# Start Supabase (spins up Postgres, PostgREST, etc.)
+# Start Supabase (spins up Postgres, PostgREST, WebUI, etc.)
 # Note: First run pulls ~1-2GB of Docker images
 npx supabase start
 
@@ -61,8 +61,7 @@ The templates have sensible defaults for local Supabase. No edits needed for bas
 ### 4. Create test data
 
 ```bash
-cd backend/supabase
-psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f seed-local-data.sql
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f backend/supabase/local-dev/seed-local-data.sql
 ```
 
 This creates:
@@ -74,7 +73,7 @@ This creates:
 ### 5. Start the API server
 
 ```bash
-cd /path/to/manifold/backend/api
+cd backend/api
 set -a && source .env.local && set +a
 yarn dev
 ```
