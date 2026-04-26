@@ -12,6 +12,8 @@ If you're having issues with this setup, post a message in the `#api-and-bots` c
 - [Docker](https://docs.docker.com/engine/install/) (for Supabase local containers)
 - [PostgreSQL client](https://www.postgresql.org/download/) (`psql`) for schema loading
 
+Additionally, ensure your dev machine has at least 8 GB of memory available.
+
 ## Quick Start
 
 ### 1. Install dependencies
@@ -20,6 +22,8 @@ If you're having issues with this setup, post a message in the `#api-and-bots` c
 cd /path/to/manifold
 yarn install
 ```
+
+There will be many warnings during this step (and other steps) but there should be no hard errors.
 
 ### 2. Start Supabase
 
@@ -80,7 +84,7 @@ yarn dev
 
 The API server starts on port 8088.
 
-If you get an error with `buffer-equal-constant-time`, try rolling back to an older version of Node. 
+If you get an error with `buffer-equal-constant-time`, ensure you are using Node version 20. 
 
 ### 6. Start the web frontend
 
@@ -153,7 +157,7 @@ npx supabase db reset
 
 # Then reload schema and test data
 ./local-dev/load-local-schema.sh
-psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f seed-local-data.sql
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f ./local-dev/seed-local-data.sql
 ```
 
 ## Stopping Services
