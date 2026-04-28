@@ -34,6 +34,7 @@ import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Carousel } from 'web/components/widgets/carousel'
 import { UserBadge } from 'web/components/widgets/user-link'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 import { Countdown } from 'web/components/widgets/countdown'
@@ -308,7 +309,11 @@ export default function Leagues(props: LeaguesProps) {
           <Col className="gap-4">
             {/* Division Tabs */}
             <div className="border-ink-200 border-b">
-              <Row className="scrollbar-hide -mb-px gap-1 overflow-x-auto">
+              <Carousel
+                fadeEdges
+                showArrowsOnHover
+                labelsParentClassName="-mb-px gap-1"
+              >
                 {divisions.map((div) => {
                   const isSelected = div === division
                   const isUserDivision = div === userDivision
@@ -333,7 +338,7 @@ export default function Leagues(props: LeaguesProps) {
                     </button>
                   )
                 })}
-              </Row>
+              </Carousel>
             </div>
 
             {/* Cohort Selector */}
