@@ -309,11 +309,7 @@ export default function Leagues(props: LeaguesProps) {
           <Col className="gap-4">
             {/* Division Tabs */}
             <div className="border-ink-200 border-b">
-              <Carousel
-                fadeEdges
-                showArrowsOnHover
-                labelsParentClassName="-mb-px gap-1"
-              >
+              <Carousel labelsParentClassName="-mb-px gap-1">
                 {divisions.map((div) => {
                   const isSelected = div === division
                   const isUserDivision = div === userDivision
