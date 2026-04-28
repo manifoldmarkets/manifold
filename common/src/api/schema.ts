@@ -42,7 +42,10 @@ import { PrivateUser, User, UserBan } from '../user'
 import { searchProps } from './market-search-types'
 import {
   FullMarket,
+  closePerpPositionSchema,
   createMarketProps,
+  createPerpSchema,
+  placePerpTradeSchema,
   resolveMarketProps,
   updateMarketProps,
   type LiteMarket,
@@ -945,6 +948,161 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().max(MAX_ANSWER_LENGTH),
         answerId: z.string().max(MAX_ANSWER_LENGTH).optional(),
+      })
+      .strict(),
+  },
+  'create-perp': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as LiteMarket,
+    props: createPerpSchema,
+  },
+  'place-perp-trade': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      position: {
+        userId: string
+        direction: 'long' | 'short'
+        size: number
+        costBasis: number
+        originalCostBasis: number
+        entryPrice: number
+        leverage: number
+        liquidationPrice: number
+      }
+    },
+    props: placePerpTradeSchema,
+  },
+  'close-perp-position': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { payout: number; pnl: number },
+    props: closePerpPositionSchema,
+  },
+  'get-oracle-price': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as {
+      latest: { feedId: string; price: number; ts: number } | null
+    },
+    props: z.object({ feedId: z.string().min(1) }).strict(),
+  },
+  'get-oracle-price-series': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as { ts: number; price: number }[],
+    props: z
+      .object({
+        feedId: z.string().min(1),
+        since: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
+      })
+      .strict(),
+  },
+  'get-known-oracle-feeds': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as string[],
+    props: z.object({}).strict(),
+  },
+  'internal-write-oracle-price': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        feedId: z.string().min(1).max(200),
+        ts: z.number().int(),
+        price: z.number().finite(),
+      })
+      .strict(),
+  },
+  'get-perp-positions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      userId: string
+      direction: 'long' | 'short'
+      size: number
+      costBasis: number
+      originalCostBasis: number
+      entryPrice: number
+      leverage: number
+      liquidationPrice: number
+      openedTime: number
+      updatedTime: number
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        userId: z.string().min(1).optional(),
+      })
+      .strict(),
+  },
+  'get-perp-events': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      id: number
+      ts: number
+      userId: string | null
+      direction: 'long' | 'short' | null
+      eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+      oraclePrice: number
+      sizeDelta: number
+      costBasisDelta: number
+      originalCostBasisDelta: number
+      leverage: number | null
+      payout: number | null
+      pnl: number | null
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        userId: z.string().min(1).optional(),
+        beforeId: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(200).optional(),
+      })
+      .strict(),
+  },
+  'get-perp-funding-events': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      ts: number
+      fundingRate: number
+      oraclePrice: number
+      numLiquidations: number
+      adlFactorLong: number
+      adlFactorShort: number
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        since: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
       })
       .strict(),
   },

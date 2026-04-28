@@ -391,6 +391,15 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'All new comments on posts you follow',
     verb: 'commented',
   },
+  perp_liquidation: {
+    simple: 'Perp liquidations',
+    detailed: 'When one of your perpetual futures positions is liquidated',
+  },
+  perp_adl: {
+    simple: 'Perp auto-deleveraging',
+    detailed:
+      'When your perpetual futures position is auto-deleveraged (ADL) because the opposing pool is insolvent',
+  },
 }
 
 export type BettingStreakData = {

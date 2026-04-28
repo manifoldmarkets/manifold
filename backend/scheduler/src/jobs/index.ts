@@ -55,6 +55,8 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { updatePerps } from './update-perps'
+import { updateTrumpApproval } from './update-trump-approval'
 
 export function createJobs() {
   return [
@@ -164,6 +166,11 @@ export function createJobs() {
       '0 */5 * * * *', // every 5 minutes
       applyPendingClarifications
     ),
+    createJob(
+      'update-perps',
+      '0 0 * * * *', // every hour on the hour
+      updatePerps
+    ),
     // Daily jobs:
     createJob(
       'process-membership-renewals',
@@ -257,6 +264,11 @@ export function createJobs() {
       'update-stats',
       '0 20 4 * * *', // on 4:20am daily
       () => updateStatsCore(7)
+    ),
+    createJob(
+      'update-trump-approval',
+      '0 30 5 * * *', // 5:30am daily
+      updateTrumpApproval
     ),
     createJob(
       'onboarding-notification',

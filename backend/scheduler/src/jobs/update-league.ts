@@ -147,9 +147,82 @@ export async function updateLeague(
     category: 'UNIQUE_BETTOR_BONUS',
   }))
 
+  // Perp PnL per user during the season, computed from contract_perp_events.
+  // Profit = sum(payouts received on close/liq/adl + current-position value at
+  // oracle price) - sum(originalCostBasis deposited during the season).
+  // Only counts contracts that satisfy the league-inclusion filter (public,
+  // MANA, ranked, and bettor is not the creator).
+  const perpProfitRows = await pg.manyOrNone<{
+    user_id: string
+    profit: number
+  }>(
+    `with season_events as (
+       select e.*, c.creator_id, c.data
+       from contract_perp_events e
+       join contracts c on c.id = e.contract_id
+       where e.ts >= millis_to_ts($1)
+         and e.ts < millis_to_ts($2)
+         and e.user_id = any($3)
+         and c.token = 'MANA'
+         and c.visibility = 'public'
+         and coalesce((c.data->'isRanked')::boolean, true) = true
+         and e.user_id != c.creator_id
+     ),
+     invested as (
+       select user_id, sum(
+         case when event_type in ('open','add') and original_cost_basis_delta > 0
+              then original_cost_basis_delta else 0 end
+       ) as total_invested
+       from season_events
+       group by user_id
+     ),
+     realized as (
+       select user_id, sum(coalesce((data->>'payout')::numeric, 0)) as total_payout
+       from season_events
+       where event_type in ('close','liquidation','adl')
+       group by user_id
+     ),
+     unrealized as (
+       select p.user_id,
+         sum(
+           case when p.direction = 'long'
+                then p.cost_basis + p.size * ((c.data->>'oraclePrice')::numeric - p.entry_price) / p.entry_price
+                else p.cost_basis - p.size * ((c.data->>'oraclePrice')::numeric - p.entry_price) / p.entry_price
+           end
+         ) as total_unrealized
+       from contract_perp_positions p
+       join contracts c on c.id = p.contract_id
+       where p.user_id = any($3)
+         and c.token = 'MANA'
+         and c.visibility = 'public'
+         and coalesce((c.data->'isRanked')::boolean, true) = true
+         and p.user_id != c.creator_id
+       group by p.user_id
+     )
+     select u.user_id,
+       (coalesce(r.total_payout, 0)
+        + coalesce(un.total_unrealized, 0)
+        - coalesce(u.total_invested, 0))::numeric as profit
+     from invested u
+     left join realized r on r.user_id = u.user_id
+     left join unrealized un on un.user_id = u.user_id`,
+    [seasonStart, seasonEnd, userIds]
+  )
+
+  const perpProfitByUser: {
+    user_id: string
+    amount: number
+    category: 'perp_profit'
+  }[] = perpProfitRows.map((r) => ({
+    user_id: r.user_id,
+    amount: +r.profit,
+    category: 'perp_profit',
+  }))
+
   const combined = [
     ...userProfit.map((u) => ({ ...u, amount: +u.amount })),
     ...userUniqueBonuses,
+    ...perpProfitByUser,
   ]
 
   const amountByUserId = groupBy(combined, 'user_id')

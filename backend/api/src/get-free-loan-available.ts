@@ -20,6 +20,7 @@ import {
   getMaxLoanNetWorthPercent,
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { Contract } from 'common/contract'
 
 export const getFreeLoanAvailable: APIHandler<
   'get-free-loan-available'
@@ -109,6 +110,7 @@ export const getFreeLoanAvailable: APIHandler<
     if (!contract) return false
     if (contract.token !== 'MANA') return false
     if (contract.isResolved) return false
+    if ((contract as Contract).mechanism === 'perp') return false // perps excluded from loans
     if ((m.payout ?? 0) <= 0 && (m.invested ?? 0) <= 0) return false
 
     // Check market eligibility

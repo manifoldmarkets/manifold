@@ -82,6 +82,7 @@ import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CancelLabel } from '../outcome-label'
+import { PerpOverview } from '../perps/perp-overview'
 import { PollPanel } from '../poll/poll-panel'
 import { AlertBox } from '../widgets/alert-box'
 import { GradientContainer } from '../widgets/gradient-container'
@@ -218,6 +219,8 @@ export const ContractOverview = memo(
         return <BountyPanel contract={contract} />
       case 'POLL':
         return <PollPanel contract={contract} />
+      case 'PERP':
+        return <PerpOverview contract={contract} />
       default:
         return <AlertBox title="Invalid contract" />
     }

@@ -145,6 +145,7 @@ export function ContractPageContent(props: ContractParams) {
   const { coverImageUrl } = liveContract
 
   const description = liveContract.description
+  const isPerp = liveContract.mechanism === 'perp'
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -377,21 +378,23 @@ export function ContractPageContent(props: ContractParams) {
                   setGraphUser={setGraphUser}
                 />
 
-                <UserBetsSummary
-                  className="border-ink-200 mb-2 "
-                  contract={liveContract}
-                  includeSellButton={
-                    tradingAllowed(liveContract) &&
-                    (outcomeType === 'NUMBER' ||
-                      outcomeType === 'MULTIPLE_CHOICE' ||
-                      isBinaryMulti(liveContract) ||
-                      outcomeType === 'BINARY' ||
-                      outcomeType === 'PSEUDO_NUMERIC' ||
-                      outcomeType === 'STONK')
-                      ? user
-                      : undefined
-                  }
-                />
+                {liveContract.mechanism !== 'perp' && (
+                  <UserBetsSummary
+                    className="border-ink-200 mb-2 "
+                    contract={liveContract}
+                    includeSellButton={
+                      tradingAllowed(liveContract) &&
+                      (outcomeType === 'NUMBER' ||
+                        outcomeType === 'MULTIPLE_CHOICE' ||
+                        isBinaryMulti(liveContract) ||
+                        outcomeType === 'BINARY' ||
+                        outcomeType === 'PSEUDO_NUMERIC' ||
+                        outcomeType === 'STONK')
+                        ? user
+                        : undefined
+                    }
+                  />
+                )}
 
                 <YourTrades
                   contract={liveContract}
@@ -458,6 +461,18 @@ export function ContractPageContent(props: ContractParams) {
               userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
+            {isPerp && (
+              // Perps render the description directly above the boost/share
+              // panel so the oracle context (e.g. "30-day trailing average
+              // Trump approval rating") is visible near the top of the page
+              // flow, not buried below MarketContext.
+              <ContractDescription
+                contractId={props.contract.id}
+                creatorId={props.contract.creatorId}
+                isSweeps={isCashContract}
+                description={description}
+              />
+            )}
             {!isResolved && !isClosed && isCreator && (
               <>
                 {showResolver && <Spacer h={4} />}
@@ -475,7 +490,7 @@ export function ContractPageContent(props: ContractParams) {
                   {liveContract.question}
                 </Link>
               </span>
-            ) : (
+            ) : isPerp ? null : ( // perps render description above the boost panel instead
               <ContractDescription
                 contractId={props.contract.id}
                 creatorId={props.contract.creatorId}

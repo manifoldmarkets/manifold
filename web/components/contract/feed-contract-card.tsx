@@ -37,6 +37,7 @@ import { RepostButton } from '../comments/repost-modal'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
+import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -99,6 +100,7 @@ export function FeedContractCard(props: {
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isStonk = outcomeType === 'STONK'
   const isNumber = outcomeType === 'NUMBER'
+  const isPerp = outcomeType === 'PERP'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
@@ -318,6 +320,8 @@ export function FeedContractCard(props: {
             startDate={startTime ? startTime : contract.createdTime}
           />
         )}
+
+        {isPerp && <FeedPerpPriceSparkline contract={contract} />}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter

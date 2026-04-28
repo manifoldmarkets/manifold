@@ -162,6 +162,11 @@ export const fetchContractBetDataAndValidate = async (
   if (!contract) throw new APIError(404, 'Contract not found.')
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
+  if (contract.mechanism === 'perp')
+    throw new APIError(
+      400,
+      'Perp markets use the /place-perp-trade endpoint instead.'
+    )
 
   if (contract.mechanism === 'cpmm-multi-1')
     contract.answers = sortBy(

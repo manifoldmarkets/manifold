@@ -552,3 +552,34 @@ export const resolveMarketProps = z
       resolvePseudoNumericSchema,
     ])
   )
+
+// ---- Perpetual futures (ManiPerp) ----
+
+export const createPerpSchema = z.object({
+  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+  description: contentSchema.or(z.string()).optional(),
+  descriptionHtml: z.string().optional(),
+  descriptionMarkdown: z.string().optional(),
+  descriptionJson: z.string().optional(),
+  visibility: z.enum(VISIBILITIES).default('public').optional(),
+  groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
+  oracleFeedId: z.string().min(1).max(200),
+  maxLeverage: z.number().gt(1).lte(100),
+  maxFundingRate: z.number().gt(0).lte(1),
+  fundingSensitivity: z.number().gt(0).lte(100),
+  maxOraclePriceAgeMs: z.number().int().positive(),
+  subsidyLong: z.number().gt(0),
+  subsidyShort: z.number().gt(0),
+})
+
+export const placePerpTradeSchema = z.object({
+  contractId: z.string().min(1),
+  direction: z.enum(['long', 'short']),
+  mana: z.number().gt(0),
+  leverage: z.number().gt(0),
+})
+
+export const closePerpPositionSchema = z.object({
+  contractId: z.string().min(1),
+  direction: z.enum(['long', 'short']),
+})

@@ -33,6 +33,7 @@ import { getFeedConversionScores } from 'shared/feed-analytics'
 import { buildArray } from 'common/util/array'
 import { type Tables } from 'common/supabase/utils'
 import { recalculateAllUserPortfolios } from 'shared/mana-supply'
+import { MANIFOLD_DAU_FEED_ID, upsertOraclePrices } from 'shared/oracle'
 
 interface StatEvent {
   id: string
@@ -281,6 +282,20 @@ export const updateActivityStats = async (
       mav: average(
         dailyViewers.slice(i - 29, i + 1).map((v) => v.viewer_count)
       ),
+    }))
+  )
+
+  // Mirror daily DAV into the `manifold-dau` oracle feed. Each point is
+  // keyed at midnight America/Los_Angeles for its day (matching daily_stats
+  // semantics). Idempotent upsert so the rolling bufferDays window can
+  // safely re-emit old days.
+  log('upsert manifold-dau oracle points')
+  await upsertOraclePrices(
+    pg,
+    MANIFOLD_DAU_FEED_ID,
+    dailyViewers.map((viewers) => ({
+      ts: dayjs.tz(viewers.day, 'America/Los_Angeles').startOf('day').valueOf(),
+      price: viewers.viewer_count,
     }))
   )
 
