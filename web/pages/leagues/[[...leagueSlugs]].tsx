@@ -42,6 +42,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
@@ -90,6 +91,7 @@ interface LeaguesProps {
 export default function Leagues(props: LeaguesProps) {
   const { initialSeasonInfo, currentSeasonInfo } = props
   const user = useUser()
+  const isMobile = useIsMobile()
 
   const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
     [],
@@ -309,7 +311,11 @@ export default function Leagues(props: LeaguesProps) {
           <Col className="gap-4">
             {/* Division Tabs */}
             <div className="border-ink-200 border-b">
-              <Carousel labelsParentClassName="-mb-px gap-1">
+              <Carousel
+                fadeEdges={!isMobile}
+                showArrowsOnHover={!isMobile}
+                labelsParentClassName="-mb-px gap-1"
+              >
                 {divisions.map((div) => {
                   const isSelected = div === division
                   const isUserDivision = div === userDivision
