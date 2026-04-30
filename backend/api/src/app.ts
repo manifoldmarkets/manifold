@@ -137,13 +137,16 @@ Object.entries(handlers).forEach(([path, handler]) => {
 // are intentionally generous for legitimate MCP sessions while bounding cost.
 app.post(
   '/v0/mcp',
+  // CORS first so that 429 (and any other short-circuit) responses still
+  // include Access-Control-Allow-Origin; otherwise browser-based MCP clients
+  // see a CORS failure instead of the JSON-RPC rate-limit body + Retry-After.
+  allowCorsUnrestricted,
   ipRateLimitMiddleware({
     maxCalls: 60,
     windowMs: MINUTE_MS,
     metricName: 'mcp/rate_limit',
   }),
   express.json({ limit: '256kb' }),
-  allowCorsUnrestricted,
   handleMcpRequest
 )
 
