@@ -68,12 +68,17 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import {
+  WIN_BET_MIN_PROFIT,
+  WIN_BET_RECENT_RESOLUTION_MS,
+} from 'common/store-review'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { LogoIcon } from '../icons/logo-icon'
@@ -143,6 +148,21 @@ export function ContractPageContent(props: ContractParams) {
   const { isResolved, outcomeType, resolution, closeTime, creatorId } =
     liveContract
   const { coverImageUrl } = liveContract
+
+  const tryOfferReview = useStoreReviewNudge('win-bet')
+  // Boolean instead of raw profit so streaming-bet metric ticks don't
+  // re-arm the 3s timer; we only care about the threshold transition.
+  const winNudgeEligible =
+    isResolved &&
+    !!privateUser &&
+    (myContractMetrics?.profit ?? 0) >= WIN_BET_MIN_PROFIT &&
+    !!liveContract.resolutionTime &&
+    Date.now() - liveContract.resolutionTime <= WIN_BET_RECENT_RESOLUTION_MS
+  useEffect(() => {
+    if (!winNudgeEligible) return
+    const t = setTimeout(tryOfferReview, 3000)
+    return () => clearTimeout(t)
+  }, [winNudgeEligible, tryOfferReview])
 
   const description = liveContract.description
 

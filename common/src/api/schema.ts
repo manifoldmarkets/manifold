@@ -1244,6 +1244,7 @@ export const API = (_apiTypeCheck = {
         installedAppPlatforms: z.array(z.string()).optional(),
         paymentInfo: z.string().optional(),
         lastAppReviewTime: z.number().optional(),
+        optOutAppReviewPrompts: z.boolean().optional(),
       })
       .strict(),
   },
