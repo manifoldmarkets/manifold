@@ -4,6 +4,7 @@ import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { Request, RequestHandler } from 'express'
 import { getIp } from 'shared/analytics'
 import { log, metrics } from 'shared/utils'
+import type { MetricType } from 'shared/monitoring/metrics'
 import { createSupabaseDirectClient, SupabaseDirectClient } from 'shared/supabase/init'
 import { UserBan } from 'common/user'
 import { convertUser } from 'common/supabase/users'
@@ -138,7 +139,7 @@ export const rateLimitByIp = <N extends APIPath>(
 // don't go through typedEndpoint (e.g. /v0/mcp). Stores timestamps per IP in
 // memory; opportunistically evicts stale entries to bound memory growth.
 export const ipRateLimitMiddleware = (
-  options: RateLimitOptions & { metricName?: string } = {}
+  options: RateLimitOptions & { metricName?: MetricType } = {}
 ): RequestHandler => {
   const { maxCalls = 60, windowMs = MINUTE_MS, metricName } = options
   const buckets = new Map<string, number[]>()

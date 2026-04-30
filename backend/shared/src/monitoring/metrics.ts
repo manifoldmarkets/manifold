@@ -95,6 +95,10 @@ export const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  'mcp/rate_limit': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
 } as const satisfies { [k: string]: MetricDescriptor }
 
 // the typing for all this could be way fancier, but seems overkill
