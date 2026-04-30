@@ -28,9 +28,11 @@ select
 
 drop policy if exists "user can insert" on user_events;
 
-create policy "user can insert" on user_events for insert
+drop policy if exists "user can insert own events" on user_events;
+
+create policy "user can insert own events" on user_events for insert
 with
-  check (true);
+  check ((user_id is not distinct from firebase_uid ()));
 
 -- Indexes
 drop index if exists user_events_pkey;
