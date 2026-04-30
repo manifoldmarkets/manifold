@@ -10,7 +10,9 @@ import { hrtime } from 'node:process'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { log, metrics } from 'shared/utils'
 import { typedEndpoint } from './helpers/endpoint'
+import { ipRateLimitMiddleware } from './helpers/rate-limit'
 import { handleMcpRequest } from './mcp'
+import { MINUTE_MS } from 'common/util/time'
 import { addOldRoutes } from './old-routes'
 import { handlers } from './routes'
 
@@ -130,7 +132,19 @@ Object.entries(handlers).forEach(([path, handler]) => {
   }
 })
 
-// Add MCP POST endpoint
-app.post('/v0/mcp', express.json(), allowCorsUnrestricted, handleMcpRequest)
+// Add MCP POST endpoint. The handler is unauthenticated (it wraps already-public
+// read-only tools), so rate-limit by client IP to prevent abuse / DoS. Limits
+// are intentionally generous for legitimate MCP sessions while bounding cost.
+app.post(
+  '/v0/mcp',
+  ipRateLimitMiddleware({
+    maxCalls: 60,
+    windowMs: MINUTE_MS,
+    metricName: 'mcp/rate_limit',
+  }),
+  express.json({ limit: '256kb' }),
+  allowCorsUnrestricted,
+  handleMcpRequest
+)
 
 addOldRoutes(app)
