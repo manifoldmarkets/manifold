@@ -30,6 +30,7 @@ import {
 import { CandidateBet } from 'common/new-bet'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
+import { STREAK_MILESTONES } from 'common/store-review'
 import {
   getCustomYesButtonText,
   getCustomNoButtonText,
@@ -52,6 +53,7 @@ import { useFocus } from 'web/hooks/use-focus'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -254,6 +256,17 @@ export const BuyPanelBody = (
   const customYesText = getCustomYesButtonText(user?.entitlements)
   const customNoText = getCustomNoButtonText(user?.entitlements)
   const privateUser = usePrivateUser()
+  const tryOfferReview = useStoreReviewNudge('streak-milestone')
+  const reviewNudgeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+  useEffect(() => {
+    return () => {
+      if (reviewNudgeTimeoutRef.current) {
+        clearTimeout(reviewNudgeTimeoutRef.current)
+      }
+    }
+  }, [])
   const liquidityTier =
     'answers' in contract
       ? getTierIndexFromLiquidityAndAnswers(
@@ -548,6 +561,25 @@ export const BuyPanelBody = (
             boosted: contract.boosted,
           })
         )
+        // The server may have just incremented the streak; the user object
+        // will reflect the new value within a beat. Defer past WAIT_TO_DISMISS
+        // so the bet-success modal isn't fighting the OS review modal.
+        if (
+          (STREAK_MILESTONES as readonly number[]).includes(
+            (user.currentBettingStreak ?? 0) + 1
+          ) ||
+          (STREAK_MILESTONES as readonly number[]).includes(
+            user.currentBettingStreak ?? 0
+          )
+        ) {
+          if (reviewNudgeTimeoutRef.current) {
+            clearTimeout(reviewNudgeTimeoutRef.current)
+          }
+          reviewNudgeTimeoutRef.current = setTimeout(
+            tryOfferReview,
+            WAIT_TO_DISMISS + 500
+          )
+        }
       } else {
         if (!toastId) {
           console.error('No toastId')

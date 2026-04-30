@@ -425,7 +425,12 @@ const App = () => {
       log('Has review action requested from web')
       const isAvailable = await StoreReview.isAvailableAsync()
       const hasAction = await StoreReview.hasAction()
-      communicateWithWebview('hasReviewAction', { hasAction, isAvailable })
+      const reason = payload?.reason
+      communicateWithWebview('hasReviewAction', {
+        hasAction,
+        isAvailable,
+        reason,
+      })
     } else if (type === 'versionRequested') {
       log('Version requested from web')
       const version = Constants.expoConfig?.version

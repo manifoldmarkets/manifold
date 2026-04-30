@@ -11,10 +11,13 @@ import {
   UniqueBettorData,
 } from 'common/notification'
 import { formatMoney, maybePluralize } from 'common/util/format'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
+import { STREAK_MILESTONES } from 'common/store-review'
+import { DAY_MS } from 'common/util/time'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useUser } from 'web/hooks/use-user'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
 import { LoansModal } from '../profile/loans-modal'
@@ -288,15 +291,32 @@ export function BettingStreakBonusIncomeNotification(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
-  const { sourceText } = notification
+  const { sourceText, createdTime } = notification
   const [open, setOpen] = useState(false)
   const user = useUser()
+  const tryOfferReview = useStoreReviewNudge('streak-bonus-modal')
   const {
     streak: streakInDays,
     cashAmount,
     bonusAmount,
   } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
+
+  const handleOpen = () => {
+    setOpen(true)
+    // Only nudge on a fresh milestone — clicking a year-old streak-7 notification
+    // should not arm the prompt.
+    const isFresh = Date.now() - createdTime < DAY_MS
+    if (
+      isFresh &&
+      !noBonus &&
+      streakInDays &&
+      (STREAK_MILESTONES as readonly number[]).includes(streakInDays)
+    ) {
+      // Let the celebration modal land before the OS review prompt overlays it.
+      setTimeout(tryOfferReview, 2500)
+    }
+  }
 
   // Get quest multiplier from membership tier (1x for non-supporters)
   const questMultiplier = getBenefit(user?.entitlements, 'questMultiplier')
@@ -331,7 +351,7 @@ export function BettingStreakBonusIncomeNotification(props: {
           }
         />
       }
-      onClick={() => setOpen(true)}
+      onClick={handleOpen}
     >
       {noBonus ? (
         <span className="line-clamp-3">
@@ -582,8 +602,20 @@ export function ReferralNotification(props: {
     sourceUserUsername,
     sourceText,
     data,
+    createdTime,
   } = notification
   const user = useUser()
+  const tryOfferReview = useStoreReviewNudge('referral-bonus')
+
+  // Fire once on mount when the user is viewing a fresh referral bonus.
+  // Multiple fresh referrals rendering at once are de-duped by the hook's
+  // module-level localLastFireTime + cooldown; stale referrals (>1d old) skip.
+  const isFresh = Date.now() - createdTime < DAY_MS
+  useEffect(() => {
+    if (!isFresh) return
+    const t = setTimeout(tryOfferReview, 1500)
+    return () => clearTimeout(t)
+  }, [isFresh, tryOfferReview])
   const isYourMarket = sourceContractCreatorUsername === user?.username
   // Use data.manaAmount if available, fall back to sourceText for old notifications
   const referralData = data as ReferralData | undefined

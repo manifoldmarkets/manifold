@@ -55,6 +55,7 @@ export type MesageTypeMap = {
   hasReviewAction: {
     hasAction: boolean
     isAvailable: boolean
+    reason?: string
   }
   locationPermissionStatus: {
     status: 'granted' | 'denied' | 'undetermined'
