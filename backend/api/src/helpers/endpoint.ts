@@ -94,7 +94,7 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       const key = creds.data
       const privateUser = await getUnbannedPrivateUserByKey(key)
       if (!privateUser) {
-        throw new APIError(401, `No private user exists with API key ${key}.`)
+        throw new APIError(401, 'No private user exists with the provided API key.')
       }
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
