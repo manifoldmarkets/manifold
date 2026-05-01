@@ -182,6 +182,95 @@ const applyMakersToWorkingState = (
   }
 }
 
+// Compute fills for a "direct" leg on one answer plus a cascade of legs
+// across the other answers, sharing the same working maker-balance and
+// unfilled-orders state across all legs. Without this shared state, a
+// maker with limit orders on multiple of these answers would be charged
+// once per leg against their full starting balance, which is the bug
+// fixed for the buy path in `buyNoSharesInOtherAnswersThenYesInAnswer`.
+// The helper clones the input maps so it is safe to call repeatedly
+// (e.g. from inside `binarySearch`) without polluting caller state.
+const computeArbitrageDirectAndCascadeFills = (
+  directAnswer: Answer,
+  otherAnswers: Answer[],
+  directShares: number,
+  directOutcome: 'YES' | 'NO',
+  directLimitProb: number | undefined,
+  cascadeShares: number,
+  cascadeOutcome: 'YES' | 'NO',
+  unfilledBetsByAnswer: Dictionary<LimitBet[]>,
+  balanceByUserId: { [userId: string]: number },
+  collectedFees: Fees
+) => {
+  const workingBalanceByUserId = { ...balanceByUserId }
+  const workingUnfilledBetsByAnswer = mapValues(
+    unfilledBetsByAnswer,
+    (arr) => [...arr]
+  )
+
+  const directPool = { YES: directAnswer.poolYes, NO: directAnswer.poolNo }
+  const directAmount = calculateAmountToBuySharesFixedP(
+    { pool: directPool, p: 0.5, collectedFees },
+    directShares,
+    directOutcome,
+    workingUnfilledBetsByAnswer[directAnswer.id] ?? [],
+    workingBalanceByUserId
+  )
+  const directResult = computeFills(
+    { pool: directPool, p: 0.5, collectedFees },
+    directOutcome,
+    directAmount,
+    directLimitProb,
+    workingUnfilledBetsByAnswer[directAnswer.id] ?? [],
+    workingBalanceByUserId
+  )
+  applyMakersToWorkingState(
+    directResult.makers,
+    directResult.ordersToCancel,
+    workingUnfilledBetsByAnswer,
+    workingBalanceByUserId
+  )
+
+  const otherAmounts: number[] = []
+  const otherResults: (ReturnType<typeof computeFills> & {
+    answer: Answer
+  })[] = []
+  for (const answer of otherAnswers) {
+    const pool = { YES: answer.poolYes, NO: answer.poolNo }
+    const amount = calculateAmountToBuySharesFixedP(
+      { pool, p: 0.5, collectedFees },
+      cascadeShares,
+      cascadeOutcome,
+      workingUnfilledBetsByAnswer[answer.id] ?? [],
+      workingBalanceByUserId,
+      true
+    )
+    otherAmounts.push(amount)
+    const result = {
+      ...computeFills(
+        { pool, p: 0.5, collectedFees },
+        cascadeOutcome,
+        amount,
+        undefined,
+        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        workingBalanceByUserId,
+        undefined,
+        true
+      ),
+      answer,
+    }
+    applyMakersToWorkingState(
+      result.makers,
+      result.ordersToCancel,
+      workingUnfilledBetsByAnswer,
+      workingBalanceByUserId
+    )
+    otherResults.push(result)
+  }
+
+  return { directResult, directAmount, otherResults, otherAmounts }
+}
+
 function calculateCpmmMultiArbitrageBetsYes(
   initialAnswers: Answer[],
   initialAnswersToBuy: Answer[],
@@ -992,8 +1081,6 @@ export function calculateCpmmMultiArbitrageSellNo(
   const startTime = Date.now()
   const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
 
-  const { id, poolYes, poolNo } = answerToSell
-  const pool = { YES: poolYes, NO: poolNo }
   const answersWithoutAnswerToSell = answers.filter(
     (a) => a.id !== answerToSell.id
   )
@@ -1002,104 +1089,52 @@ export function calculateCpmmMultiArbitrageSellNo(
   // We buy some yes shares in the answer directly, and the rest is from converting No shares of all the other answers.
   // The proportion of each is dependent on what leaves the final probability sum at 1.
   // Which is what this binary search is discovering.
+  // The cascading legs (direct YES buy on answerToSell + NO buys on every
+  // other answer) share working maker state via
+  // computeArbitrageDirectAndCascadeFills so a single maker with limits
+  // on multiple of these answers isn't charged once per leg against
+  // their full starting balance.
   const yesShares = binarySearch(0, noShares, (yesShares) => {
     const noSharesInOtherAnswers = noShares - yesShares
-    const yesAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: 0.5, collectedFees },
-      yesShares,
-      'YES',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
-    const noAmounts = answersWithoutAnswerToSell.map(
-      ({ id, poolYes, poolNo }) =>
-        calculateAmountToBuySharesFixedP(
-          { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
-          noSharesInOtherAnswers,
-          'NO',
-          unfilledBetsByAnswer[id] ?? [],
-          balanceByUserId,
-          true
-        )
-    )
-
-    const yesResult = computeFills(
-      { pool, p: 0.5, collectedFees },
-      'YES',
-      yesAmount,
-      limitProb,
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
-    const noResults = answersWithoutAnswerToSell.map((answer, i) => {
-      const noAmount = noAmounts[i]
-      const pool = { YES: answer.poolYes, NO: answer.poolNo }
-      return {
-        ...computeFills(
-          { pool, p: 0.5, collectedFees },
-          'NO',
-          noAmount,
-          undefined,
-          unfilledBetsByAnswer[answer.id] ?? [],
-          balanceByUserId,
-          undefined,
-          true
-        ),
-        answer,
-      }
-    })
+    const { directResult, otherResults } =
+      computeArbitrageDirectAndCascadeFills(
+        answerToSell,
+        answersWithoutAnswerToSell,
+        yesShares,
+        'YES',
+        limitProb,
+        noSharesInOtherAnswers,
+        'NO',
+        unfilledBetsByAnswer,
+        balanceByUserId,
+        collectedFees
+      )
 
     const newPools = [
-      yesResult.cpmmState.pool,
-      ...noResults.map((r) => r.cpmmState.pool),
+      directResult.cpmmState.pool,
+      ...otherResults.map((r) => r.cpmmState.pool),
     ]
     const diff = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)) - 1
     return diff
   })
 
   const noSharesInOtherAnswers = noShares - yesShares
-  const yesAmount = calculateAmountToBuySharesFixedP(
-    { pool, p: 0.5, collectedFees },
+  const {
+    directResult: yesBetResult,
+    otherResults: noBetResults,
+    otherAmounts: noAmounts,
+  } = computeArbitrageDirectAndCascadeFills(
+    answerToSell,
+    answersWithoutAnswerToSell,
     yesShares,
     'YES',
-    unfilledBetsByAnswer[id] ?? [],
-    balanceByUserId
-  )
-  const noAmounts = answersWithoutAnswerToSell.map(({ id, poolYes, poolNo }) =>
-    calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
-      noSharesInOtherAnswers,
-      'NO',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId,
-      true
-    )
-  )
-  const yesBetResult = computeFills(
-    { pool, p: 0.5, collectedFees },
-    'YES',
-    yesAmount,
     limitProb,
-    unfilledBetsByAnswer[id] ?? [],
-    balanceByUserId
+    noSharesInOtherAnswers,
+    'NO',
+    unfilledBetsByAnswer,
+    balanceByUserId,
+    collectedFees
   )
-  const noBetResults = answersWithoutAnswerToSell.map((answer, i) => {
-    const noAmount = noAmounts[i]
-    const pool = { YES: answer.poolYes, NO: answer.poolNo }
-    return {
-      ...computeFills(
-        { pool, p: 0.5, collectedFees },
-        'NO',
-        noAmount,
-        undefined,
-        unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId,
-        undefined,
-        true
-      ),
-      answer,
-    }
-  })
 
   const redeemedMana = noSharesInOtherAnswers * (answers.length - 2)
   const netNoAmount = sum(noAmounts) - redeemedMana
@@ -1191,110 +1226,54 @@ export function calculateCpmmMultiArbitrageSellYes(
   const startTime = Date.now()
   const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
 
-  const { id, poolYes, poolNo } = answerToSell
-  const pool = { YES: poolYes, NO: poolNo }
   const answersWithoutAnswerToSell = answers.filter(
     (a) => a.id !== answerToSell.id
   )
 
+  // Same cascading-leg pattern as SellNo: direct NO buy on answerToSell
+  // plus YES buys on every other answer, sharing working maker state via
+  // computeArbitrageDirectAndCascadeFills.
   const noShares = binarySearch(0, yesShares, (noShares) => {
     const yesSharesInOtherAnswers = yesShares - noShares
-    const noAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: 0.5, collectedFees },
-      noShares,
-      'NO',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
-    const yesAmounts = answersWithoutAnswerToSell.map(
-      ({ id, poolYes, poolNo }) =>
-        calculateAmountToBuySharesFixedP(
-          { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
-          yesSharesInOtherAnswers,
-          'YES',
-          unfilledBetsByAnswer[id] ?? [],
-          balanceByUserId,
-          true
-        )
-    )
-
-    const noResult = computeFills(
-      { pool, p: 0.5, collectedFees },
-      'NO',
-      noAmount,
-      limitProb,
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
-    const yesResults = answersWithoutAnswerToSell.map((answer, i) => {
-      const yesAmount = yesAmounts[i]
-      const pool = { YES: answer.poolYes, NO: answer.poolNo }
-      return {
-        ...computeFills(
-          { pool, p: 0.5, collectedFees },
-          'YES',
-          yesAmount,
-          undefined,
-          unfilledBetsByAnswer[answer.id] ?? [],
-          balanceByUserId,
-          undefined,
-          true
-        ),
-        answer,
-      }
-    })
+    const { directResult, otherResults } =
+      computeArbitrageDirectAndCascadeFills(
+        answerToSell,
+        answersWithoutAnswerToSell,
+        noShares,
+        'NO',
+        limitProb,
+        yesSharesInOtherAnswers,
+        'YES',
+        unfilledBetsByAnswer,
+        balanceByUserId,
+        collectedFees
+      )
 
     const newPools = [
-      noResult.cpmmState.pool,
-      ...yesResults.map((r) => r.cpmmState.pool),
+      directResult.cpmmState.pool,
+      ...otherResults.map((r) => r.cpmmState.pool),
     ]
     const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
     return diff
   })
 
   const yesSharesInOtherAnswers = yesShares - noShares
-  const noAmount = calculateAmountToBuySharesFixedP(
-    { pool, p: 0.5, collectedFees },
+  const {
+    directResult: noBetResult,
+    otherResults: yesBetResults,
+    otherAmounts: yesAmounts,
+  } = computeArbitrageDirectAndCascadeFills(
+    answerToSell,
+    answersWithoutAnswerToSell,
     noShares,
     'NO',
-    unfilledBetsByAnswer[id] ?? [],
-    balanceByUserId
-  )
-  const yesAmounts = answersWithoutAnswerToSell.map(({ id, poolYes, poolNo }) =>
-    calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
-      yesSharesInOtherAnswers,
-      'YES',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId,
-      true
-    )
-  )
-  const noBetResult = computeFills(
-    { pool, p: 0.5, collectedFees },
-    'NO',
-    noAmount,
     limitProb,
-    unfilledBetsByAnswer[id] ?? [],
-    balanceByUserId
+    yesSharesInOtherAnswers,
+    'YES',
+    unfilledBetsByAnswer,
+    balanceByUserId,
+    collectedFees
   )
-  const yesBetResults = answersWithoutAnswerToSell.map((answer, i) => {
-    const yesAmount = yesAmounts[i]
-    const pool = { YES: answer.poolYes, NO: answer.poolNo }
-    return {
-      ...computeFills(
-        { pool, p: 0.5, collectedFees },
-        'YES',
-        yesAmount,
-        undefined,
-        unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId,
-        undefined,
-        true
-      ),
-      answer,
-    }
-  })
 
   const totalYesAmount = sum(yesAmounts)
 

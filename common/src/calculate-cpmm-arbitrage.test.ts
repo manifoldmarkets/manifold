@@ -7,6 +7,8 @@ import {
 } from './calculate-cpmm'
 import {
   calculateCpmmMultiArbitrageBet,
+  calculateCpmmMultiArbitrageSellNo,
+  calculateCpmmMultiArbitrageSellYes,
   calculateCpmmMultiArbitrageSellYesEqually,
   calculateCpmmMultiArbitrageYesBets,
 } from './calculate-cpmm-arbitrage'
@@ -690,6 +692,120 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       balanceByUserId,
       noFees
     )
+
+    const totalSpentByMaker = sumBy(
+      [
+        ...newBetResult.makers,
+        ...otherBetResults.flatMap((r) => r.makers),
+      ].filter((m) => m.bet.userId === 'underfundedMaker'),
+      (m) => m.amount
+    )
+    expect(totalSpentByMaker).toBeGreaterThan(0)
+    expect(totalSpentByMaker).toBeLessThanOrEqual(makerBalance + 1e-9)
+  })
+})
+
+describe('calculateCpmmMultiArbitrageSell', () => {
+  // Same helper used by the buy regression tests, redeclared locally.
+  const makeUnderfundedMakerLimit = (
+    id: string,
+    answer: Answer,
+    userId: string,
+    orderAmount: number,
+    limitProb: number,
+    outcome: 'YES' | 'NO'
+  ) => ({
+    id,
+    userId,
+    contractId: 'c1',
+    answerId: answer.id,
+    createdTime: Date.now(),
+    amount: 0,
+    loanAmount: 0,
+    outcome,
+    shares: 0,
+    probBefore: answer.prob,
+    probAfter: answer.prob,
+    fees: noFees,
+    isRedemption: false,
+    visibility: 'public' as const,
+    orderAmount,
+    limitProb,
+    isFilled: false,
+    isCancelled: false,
+    fills: [],
+  })
+
+  it('does not overcharge a single underfunded maker across cascading other-answer fills (sell NO)', async () => {
+    // Selling NO on a0 cascades into "buy NO" legs on every other answer.
+    // A maker with YES limits on multiple other answers used to be charged
+    // once per leg against their full starting balance.
+    const answers: Answer[] = getNumericAnswers(0, 100, 20) // 5 answers @ 0.20
+    const [a0, ...otherAnswers] = answers
+    const makerBalance = 5
+    const limitsOnOthers = otherAnswers.map((ans, i) =>
+      makeUnderfundedMakerLimit(
+        `limit${i}`,
+        ans,
+        'underfundedMaker',
+        100,
+        0.25,
+        'YES'
+      )
+    )
+    const balanceByUserId = { underfundedMaker: makerBalance }
+
+    const { newBetResult, otherBetResults } =
+      calculateCpmmMultiArbitrageSellNo(
+        answers,
+        a0,
+        100,
+        undefined,
+        limitsOnOthers,
+        balanceByUserId,
+        noFees
+      )
+
+    const totalSpentByMaker = sumBy(
+      [
+        ...newBetResult.makers,
+        ...otherBetResults.flatMap((r) => r.makers),
+      ].filter((m) => m.bet.userId === 'underfundedMaker'),
+      (m) => m.amount
+    )
+    expect(totalSpentByMaker).toBeGreaterThan(0)
+    expect(totalSpentByMaker).toBeLessThanOrEqual(makerBalance + 1e-9)
+  })
+
+  it('does not overcharge a single underfunded maker across cascading other-answer fills (sell YES)', async () => {
+    // Selling YES on a0 cascades into "buy YES" legs on every other answer.
+    // A maker with NO limits on multiple other answers used to be charged
+    // once per leg against their full starting balance.
+    const answers: Answer[] = getNumericAnswers(0, 100, 20) // 5 answers @ 0.20
+    const [a0, ...otherAnswers] = answers
+    const makerBalance = 5
+    const limitsOnOthers = otherAnswers.map((ans, i) =>
+      makeUnderfundedMakerLimit(
+        `limit${i}`,
+        ans,
+        'underfundedMaker',
+        100,
+        0.2,
+        'NO'
+      )
+    )
+    const balanceByUserId = { underfundedMaker: makerBalance }
+
+    const { newBetResult, otherBetResults } =
+      calculateCpmmMultiArbitrageSellYes(
+        answers,
+        a0,
+        100,
+        undefined,
+        limitsOnOthers,
+        balanceByUserId,
+        noFees
+      )
 
     const totalSpentByMaker = sumBy(
       [
