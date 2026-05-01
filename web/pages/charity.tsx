@@ -36,6 +36,7 @@ import { FaHeart } from 'react-icons/fa6'
 import {
   calculateTicketsFromMana,
   getCurrentGiveawayTicketPrice,
+  MAX_CHARITY_GIVEAWAY_PRIZE_DELTA_USD,
 } from 'common/charity-giveaway'
 
 function formatEntries(entries: number): string {
@@ -103,6 +104,10 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
   const [newCloseTime, setNewCloseTime] = useState('')
   const [newPrizeAmount, setNewPrizeAmount] = useState('1000')
   const [isCreatingGiveaway, setIsCreatingGiveaway] = useState(false)
+
+  const [showAdjustPrizeModal, setShowAdjustPrizeModal] = useState(false)
+  const [adjustPrizeAmount, setAdjustPrizeAmount] = useState('')
+  const [isAdjustingPrize, setIsAdjustingPrize] = useState(false)
 
   // Winner reveal state
   const [isSelectingWinner, setIsSelectingWinner] = useState(false)
@@ -242,6 +247,37 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
       toast.error(msg)
     } finally {
       setIsSelectingWinner(false)
+    }
+  }
+
+  const handleOpenAdjustPrize = () => {
+    if (!giveaway) return
+    setAdjustPrizeAmount(String(giveaway.prizeAmountUsd))
+    setShowAdjustPrizeModal(true)
+  }
+
+  const handleAdjustPrize = async () => {
+    if (!giveaway || isAdjustingPrize) return
+    const amount = Number(adjustPrizeAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error('Please enter a valid prize amount')
+      return
+    }
+    setIsAdjustingPrize(true)
+    try {
+      await api('admin-update-charity-giveaway-prize', {
+        giveawayNum: giveaway.giveawayNum,
+        prizeAmountUsd: amount,
+      })
+      toast.success('Prize amount updated')
+      setShowAdjustPrizeModal(false)
+      refresh()
+    } catch (e) {
+      const msg =
+        e instanceof APIError ? e.message : 'Failed to update prize amount'
+      toast.error(msg)
+    } finally {
+      setIsAdjustingPrize(false)
     }
   }
 
@@ -412,6 +448,15 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
                     }
                   }}
                 />
+              )}
+              {isAdmin && (
+                <Button
+                  color="gray-outline"
+                  size="sm"
+                  onClick={handleOpenAdjustPrize}
+                >
+                  Adjust prize
+                </Button>
               )}
               {isAdmin &&
                 isClosed &&
@@ -610,6 +655,17 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
           setNewPrizeAmount={setNewPrizeAmount}
           isCreatingGiveaway={isCreatingGiveaway}
           onCreate={handleCreateGiveaway}
+        />
+
+        <AdjustPrizeModal
+          open={showAdjustPrizeModal}
+          setOpen={setShowAdjustPrizeModal}
+          giveawayNum={giveaway.giveawayNum}
+          currentPrizeAmount={giveaway.prizeAmountUsd}
+          adjustPrizeAmount={adjustPrizeAmount}
+          setAdjustPrizeAmount={setAdjustPrizeAmount}
+          isAdjustingPrize={isAdjustingPrize}
+          onAdjust={handleAdjustPrize}
         />
       </Col>
     </Page>
@@ -1443,6 +1499,140 @@ function ProvablyFairBanner(props: {
         </Col>
       </Modal>
     </>
+  )
+}
+
+const ADJUST_PRIZE_CONFIRM_PHRASE = 'update prize'
+
+function AdjustPrizeModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  giveawayNum: number
+  currentPrizeAmount: number
+  adjustPrizeAmount: string
+  setAdjustPrizeAmount: (value: string) => void
+  isAdjustingPrize: boolean
+  onAdjust: () => void
+}) {
+  const {
+    open,
+    setOpen,
+    giveawayNum,
+    currentPrizeAmount,
+    adjustPrizeAmount,
+    setAdjustPrizeAmount,
+    isAdjustingPrize,
+    onAdjust,
+  } = props
+
+  const [confirmText, setConfirmText] = useState('')
+
+  useEffect(() => {
+    if (open) setConfirmText('')
+  }, [open])
+
+  const parsed = Number(adjustPrizeAmount)
+  const delta =
+    Number.isFinite(parsed) && parsed > 0 ? parsed - currentPrizeAmount : 0
+  const exceedsCap =
+    Math.abs(delta) > MAX_CHARITY_GIVEAWAY_PRIZE_DELTA_USD
+  const isAmountValid =
+    Number.isFinite(parsed) &&
+    parsed > 0 &&
+    parsed !== currentPrizeAmount &&
+    !exceedsCap
+  const isConfirmed = confirmText.trim() === ADJUST_PRIZE_CONFIRM_PHRASE
+
+  const adjustBy = (amount: number) => {
+    const next = (Number(adjustPrizeAmount) || 0) + amount
+    setAdjustPrizeAmount(String(Math.max(0, next)))
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen} size="md">
+      <Col className={clsx(MODAL_CLASS, 'gap-5')}>
+        <Col className="gap-1">
+          <h3 className="text-ink-900 text-lg font-semibold">
+            Adjust prize pool
+          </h3>
+          <p className="text-ink-500 text-sm">
+            Edit the prize amount for Giveaway #{giveawayNum}. Current:{' '}
+            <span className="text-ink-700 font-medium">
+              ${currentPrizeAmount.toLocaleString()}
+            </span>
+          </p>
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">
+            New prize amount (USD)
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={adjustPrizeAmount}
+            onChange={(e) => setAdjustPrizeAmount(e.target.value)}
+          />
+          <Row className="flex-wrap gap-1.5">
+            {[-100, -10, +10, +100, +1000].map((n) => (
+              <button
+                key={n}
+                onClick={() => adjustBy(n)}
+                className="text-ink-600 hover:bg-canvas-100 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+              >
+                {n > 0 ? `+$${n}` : `-$${Math.abs(n)}`}
+              </button>
+            ))}
+          </Row>
+          {delta !== 0 && (
+            <p
+              className={clsx(
+                'text-xs',
+                exceedsCap
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-ink-500'
+              )}
+            >
+              Change: {delta > 0 ? '+' : ''}${delta.toLocaleString()}
+              {exceedsCap &&
+                ` — exceeds the $${MAX_CHARITY_GIVEAWAY_PRIZE_DELTA_USD.toLocaleString()} per-adjustment cap. Make multiple smaller changes.`}
+            </p>
+          )}
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">
+            Type{' '}
+            <span className="bg-canvas-100 text-ink-900 rounded px-1.5 py-0.5 font-mono text-xs">
+              {ADJUST_PRIZE_CONFIRM_PHRASE}
+            </span>{' '}
+            to confirm
+          </label>
+          <Input
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={ADJUST_PRIZE_CONFIRM_PHRASE}
+            autoComplete="off"
+          />
+        </Col>
+
+        <Row className="justify-end gap-2">
+          <Button color="gray-outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="indigo"
+            loading={isAdjustingPrize}
+            disabled={isAdjustingPrize || !isAmountValid || !isConfirmed}
+            onClick={onAdjust}
+          >
+            Save
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
 

@@ -202,6 +202,7 @@ import { getCharityGiveawayList } from './get-charity-giveaway-list'
 import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
 import { createDaimoSession } from './create-daimo-session'
 import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
+import { adminUpdateCharityGiveawayPrize } from './admin-update-charity-giveaway-prize'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -525,6 +526,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
   'admin-create-sweepstakes': adminCreateSweepstakes,
   'admin-create-charity-giveaway': adminCreateCharityGiveaway,
+  'admin-update-charity-giveaway-prize': adminUpdateCharityGiveawayPrize,
   'admin-get-prize-claims': adminGetPrizeClaims,
   'admin-update-prize-payment': adminUpdatePrizePayment,
   'admin-get-mana-sales': adminGetManaSales,

@@ -3305,6 +3305,21 @@ export const API = (_apiTypeCheck = {
       giveawayNum: number
     },
   },
+  'admin-update-charity-giveaway-prize': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        giveawayNum: z.number(),
+        prizeAmountUsd: z.number().finite().positive(),
+      })
+      .strict(),
+    returns: {} as {
+      giveawayNum: number
+      prizeAmountUsd: number
+    },
+  },
   'buy-charity-giveaway-tickets': {
     method: 'POST',
     visibility: 'undocumented',
