@@ -2,7 +2,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
-import { getUser } from 'shared/utils'
+import { getUser, isProd } from 'shared/utils'
 import { getShopItem, isMerchItem, PRINTFUL_API_URL } from 'common/shop/items'
 import { requiresPostalCode } from 'common/shop/printful-address'
 import { getBenefit } from 'common/supporter-config'
@@ -13,6 +13,12 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   { itemId, variantId, shippingCost, shipping },
   auth
 ) => {
+  // Merch orders create real Printful drafts that staff have to clean up.
+  // Block outside prod so test users can't pollute the orders list.
+  if (!isProd()) {
+    throw new APIError(403, 'Merch ordering is disabled outside of production')
+  }
+
   const item = getShopItem(itemId)
   if (!item) {
     throw new APIError(404, 'Item not found')

@@ -1,6 +1,7 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SHOP_ITEMS, PRINTFUL_API_URL } from 'common/shop/items'
 import { requiresPostalCode } from 'common/shop/printful-address'
+import { isProd } from 'shared/utils'
 
 export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
   { variantId, address },
@@ -8,6 +9,12 @@ export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
 ) => {
   if (!auth) {
     throw new APIError(401, 'Must be logged in')
+  }
+
+  // Shipping rate lookups call Printful with our prod API key. Block outside
+  // prod so the dev project doesn't depend on the secret being populated.
+  if (!isProd()) {
+    throw new APIError(403, 'Merch shipping is disabled outside of production')
   }
 
   // Validate that the variantId belongs to a Manifold shop item

@@ -5,6 +5,7 @@ import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { PRINTFUL_API_URL, getShopItem } from 'common/shop/items'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { isProd } from 'shared/utils'
 import { Notification } from 'common/notification'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import {
@@ -93,7 +94,8 @@ export const cancelMerchOrder: APIHandler<'cancel-merch-order'> = async (
 
   // Best-effort Printful cancellation after the DB transaction commits.
   // If this fails, the mana refund still stands — admin can cancel manually in Printful.
-  if (printfulOrderId) {
+  // Skip outside prod so dev refunds never reach the real Printful API.
+  if (printfulOrderId && isProd()) {
     const printfulToken = process.env.PRINTFUL_API_TOKEN
     if (printfulToken) {
       try {
