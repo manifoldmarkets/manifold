@@ -35,8 +35,24 @@ jobs:
           node-version: 20
           cache: 'yarn'
           cache-dependency-path: 'yarn.lock'
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            common/node_modules
+            web/node_modules
+            backend/api/node_modules
+            backend/discord-bot/node_modules
+            backend/scheduler/node_modules
+            backend/scripts/node_modules
+            backend/shared/node_modules
+            client-common/node_modules
+          key: ${{ runner.os }}-node20-yarn1-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node20-yarn1-modules-
       - name: Install dependencies
-        run: mkdir -p "$(yarn cache dir)" && yarn install --prefer-offline --frozen-lockfile
+        run: mkdir -p "$(yarn cache dir)" && yarn install --prefer-offline --frozen-lockfile --check-files
       - name: Run Prettier on web client
         working-directory: web
         run: yarn format
