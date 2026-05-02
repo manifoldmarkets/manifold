@@ -42,7 +42,8 @@ export async function updateLeague(
   const results = await pg.multi(
     `select users.id from users
     join leagues on leagues.user_id = users.id
-    where leagues.season = $1;
+    where leagues.season = $1
+    and (users.data->>'bonusEligibility' = 'verified' or users.data->>'bonusEligibility' = 'grandfathered');
     select cb.data
     from contract_bets as cb
     where created_time > millis_to_ts($2)

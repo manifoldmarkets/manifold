@@ -18,7 +18,8 @@ import {
   getSeasonStartAndEnd,
 } from './supabase/leagues'
 import { bulkInsert } from './supabase/utils'
-import { log } from './utils'
+import { getUser, log } from './utils'
+import { canReceiveBonuses } from 'common/user'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
@@ -32,12 +33,26 @@ export async function generateNextSeason(
     return
   }
   const startDate = new Date(prevBoundaries.seasonStart)
-  // const startDate = new Date('2025-01-01')
   const rows = await pg.manyOrNone<league_user_info>(
     `select * from user_league_info
     where season = $1
     order by mana_earned desc`,
     [prevSeason]
+  )
+
+  // Filter out unverified users - they should not be sorted into leagues
+  const verifiedUserIds = new Set<string>()
+  for (const row of rows) {
+    const user = await getUser(row.user_id, pg)
+    if (user && canReceiveBonuses(user)) {
+      verifiedUserIds.add(row.user_id)
+    }
+  }
+  const verifiedRows = rows.filter((r) => verifiedUserIds.has(r.user_id))
+  log(
+    `Filtered ${
+      rows.length - verifiedRows.length
+    } unverified users from season rollover`
   )
 
   const activeUserIds = await pg.manyOrNone<{ user_id: string }>(
@@ -56,7 +71,7 @@ export async function generateNextSeason(
   )
   const activeUserIdsSet = new Set(activeUserIds.map((u) => u.user_id))
 
-  const usersByDivision = generateDivisions(rows, activeUserIdsSet)
+  const usersByDivision = generateDivisions(verifiedRows, activeUserIdsSet)
   log(`usersByDivision`, { usersByDivision })
 
   const userCohorts = generateCohorts(usersByDivision)
@@ -323,6 +338,7 @@ export const getUsersNotInLeague = async (
     where
       (leagues.user_id is null or leagues.season != $1)
       and cb.created_time > to_date('20230501', 'YYYYMMDD')
+      and (users.data->>'bonusEligibility' = 'verified' or users.data->>'bonusEligibility' = 'grandfathered')
     `,
     [season]
   )
@@ -347,6 +363,16 @@ export const addToLeagueIfNotInOne = async (
     log('User opted out of leagues', userId)
     return
   }
+
+  // Only add verified/grandfathered users to leagues
+  const user = await getUser(userId, pg)
+  if (!user || !canReceiveBonuses(user)) {
+    log(
+      `Skipping league assignment for unverified user ${userId} (bonusEligibility: ${user?.bonusEligibility})`
+    )
+    return
+  }
+
   log('Adding user to league', userId)
   const season = await getEffectiveCurrentSeason()
 
@@ -383,6 +409,15 @@ export const addNewUserToLeague = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
+  // Don't add unverified users to leagues - they'll be added when they place their first bet after being verified
+  const user = await getUser(userId, pg)
+  if (!user || !canReceiveBonuses(user)) {
+    log(
+      `Skipping league assignment for new unverified user ${userId} (bonusEligibility: ${user?.bonusEligibility})`
+    )
+    return
+  }
+
   const season = await getEffectiveCurrentSeason()
   const data = await addUserToLeague(pg, userId, season, 1)
   if (!data) return
