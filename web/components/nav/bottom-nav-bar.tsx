@@ -150,9 +150,11 @@ export function BottomNavBar() {
   const user = useUser()
 
   const { data: sweepstakesData } = useAPIGetter('get-sweepstakes', {})
-  const prizePoolLabel = formatPrizePoolLabel(
-    sweepstakesData?.sweepstakes?.prizes
-  )
+  const prizeCloseTime = sweepstakesData?.sweepstakes?.closeTime
+  const prizePoolLabel =
+    prizeCloseTime && prizeCloseTime > Date.now()
+      ? formatPrizePoolLabel(sweepstakesData?.sweepstakes?.prizes)
+      : undefined
 
   const isIframe = useIsIframe()
   if (isIframe) {
