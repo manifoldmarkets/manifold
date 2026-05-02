@@ -1148,8 +1148,15 @@ function TicketItemCard(props: {
           </Row>
 
           <div className="text-ink-700 text-xs leading-relaxed">
-            Full access to Manifest 2026, Friday through Sunday. 5 meals
-            included.
+            Full access to{' '}
+            <a
+              className="text-primary-700 hover:underline"
+              target="_blank"
+              href="https://manifest.is"
+            >
+              Manifest 2026
+            </a>
+            , Friday through Sunday. 5 meals included.
           </div>
 
           {/* Stock display */}
