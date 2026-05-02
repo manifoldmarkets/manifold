@@ -44,7 +44,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     isCurrentPage
       ? 'bg-ink-200 text-ink-900'
       : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700',
-    'group flex items-center rounded-md px-3 py-2 text-sm font-medium',
+    'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
     'focus-visible:bg-primary-100 outline-none'
   )
 
