@@ -61,8 +61,8 @@ function formatPrizePoolLabel(
 
 export const SPEND_MANA_ENABLED = true
 
-// Set to true to show a "$10k prize" badge on the Shop nav item (Prize Drawing #2)
-const SHOW_SHOP_MANIFEST_BADGE = true
+// Set to true to show a current event badge on the Shop nav item
+const SHOW_SHOP_EVENT_BADGE = true
 
 // Newest visibleSinceTime across all visible items. The sidebar NEW badge
 // fires when this exceeds the current user's lastShopVisitTime.
@@ -167,9 +167,11 @@ export default function Sidebar(props: {
   const showShopNewBadge = !!user && NEWEST_SHOP_ITEM_TIME > lastShopVisit
 
   const { data: sweepstakesData } = useAPIGetter('get-sweepstakes', {})
-  const prizePoolLabel = formatPrizePoolLabel(
-    sweepstakesData?.sweepstakes?.prizes
-  )
+  const prizeCloseTime = sweepstakesData?.sweepstakes?.closeTime
+  const prizePoolLabel =
+    prizeCloseTime && prizeCloseTime > Date.now()
+      ? formatPrizePoolLabel(sweepstakesData?.sweepstakes?.prizes)
+      : undefined
 
   const navOptions = isMobile
     ? getMobileNav(!!user, {
@@ -316,22 +318,23 @@ const getDesktopNav = (
         href: '/shop',
         icon: LuGem,
         children:
-          options.showShopNewBadge || SHOW_SHOP_MANIFEST_BADGE ? (
+          options.showShopNewBadge || SHOW_SHOP_EVENT_BADGE ? (
             <>
               Shop
-              {/* NEW takes priority over Manifest — Manifest reappears once
+              {/* NEW takes priority over Event — Event reappears once
                   the user has cleared the NEW badge by visiting /shop. */}
               {options.showShopNewBadge ? (
                 <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
                   NEW
                 </span>
+              ) : SHOW_SHOP_EVENT_BADGE && options.prizePoolLabel ? (
+                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
+                  Prize {options.prizePoolLabel}
+                </span>
               ) : (
-                SHOW_SHOP_MANIFEST_BADGE &&
-                options.prizePoolLabel && (
-                  <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                    Prize {options.prizePoolLabel}
-                  </span>
-                )
+                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
+                  Manifest
+                </span>
               )}
             </>
           ) : undefined,
