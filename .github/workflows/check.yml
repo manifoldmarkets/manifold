@@ -30,7 +30,8 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: 'yarn.lock'
       - name: Install dependencies
-        run: yarn install --prefer-offline --frozen-lockfile
+        # https://github.com/actions/setup-node/issues/1137#issuecomment-2508963254
+        run: mkdir -p "$(yarn cache dir)" && yarn install --prefer-offline --frozen-lockfile
       - name: Build common
         working-directory: common
         run: yarn build

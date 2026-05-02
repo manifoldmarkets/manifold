@@ -33,7 +33,7 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: 'yarn.lock'
       - name: Install dependencies
-        run: yarn install --prefer-offline --frozen-lockfile
+        run: mkdir -p "$(yarn cache dir)" && yarn install --prefer-offline --frozen-lockfile
       - name: Run lint script
         run: yarn lint
       - name: Commit any lint changes
