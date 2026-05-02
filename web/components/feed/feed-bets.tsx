@@ -11,7 +11,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BETTOR } from 'common/user'
 import {
-  formatMoney,
+  formatMoneyWithDecimals,
   formatOutcomeLabel,
   formatPercent,
   formatSweepies,
@@ -63,7 +63,7 @@ function BetTooltipContent(props: {
   contract: MarketContract
 }) {
   const { bet, isCashContract, contract } = props
-  const formatAmount = isCashContract ? formatSweepies : formatMoney
+  const formatAmount = isCashContract ? formatSweepies : formatMoneyWithDecimals
   const answerId =
     contract.mechanism === 'cpmm-multi-1' ? bet.answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, answerId)
