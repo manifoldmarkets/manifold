@@ -23,23 +23,22 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.FORMATTER_ACCESS_TOKEN }}
       - name: Install Node 20
-        uses: actions/setup-node@v4
-        env:
-          FORCE_COLOR: 0 # https://github.com/actions/setup-node/issues/317
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
       - name: Install dependencies
         run: yarn install --prefer-offline --frozen-lockfile
       - name: Run lint script
         run: yarn lint
       - name: Commit any lint changes
         if: always()
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: Auto-remove unused imports
           branch: ${{ github.head_ref }}
