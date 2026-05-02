@@ -34,6 +34,7 @@ import { Contract, contractPath } from 'common/contract'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserIcon, EyeIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
+import { SHOP_ITEMS } from 'common/src/shop/items'
 
 export const getStaticProps = async () => {
   try {
@@ -971,21 +972,9 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
     premium: 'text-amber-500',
   }
 
-  const itemDisplayNames: Record<string, string> = {
-    'supporter-basic': 'Plus Membership',
-    'supporter-plus': 'Pro Membership',
-    'supporter-premium': 'Premium Membership',
-    'streak-forgiveness': 'Streak Freeze',
-    'pampu-skin': 'PAMPU Skin',
-    'avatar-golden-border': 'Golden Glow',
-    'avatar-crown': 'Crown',
-    'avatar-graduation-cap': 'Graduation Cap',
-    'hovercard-glow': 'Profile Border',
-    'merch-aggc-tshirt': 'AGGC T-Shirt',
-    'merch-wordmark-tshirt': 'White Wordmark T-Shirt',
-    'merch-cap-white-logo': 'White Logo Cap',
-    'merch-cap-purple-logo': 'Purple Logo Cap',
-  }
+  const itemDisplayNames: Record<string, string> = Object.fromEntries(
+    SHOP_ITEMS.map((item) => [item.id, item.name])
+  )
 
   return (
     <Col>
@@ -1168,10 +1157,11 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
           <SalesTable
             title="Ticket Sales"
             items={ticketSales}
-            itemDisplayNames={{
-              'manifest-ticket': 'Early Bird Ticket',
-              'manifest-ticket-standard': 'Standard Ticket',
-            }}
+            itemDisplayNames={Object.fromEntries(
+              SHOP_ITEMS.filter((item) => item.category === 'ticket').map(
+                (item) => [item.id, item.name]
+              )
+            )}
           />
         </>
       )}
