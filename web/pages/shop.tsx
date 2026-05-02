@@ -1753,14 +1753,14 @@ function MerchItemCard(props: {
           grid-cell height — without that the inner mt-auto on the price/buy
           row has no extra space to consume and the button doesn't anchor to
           the bottom. */}
-      <div className="relative flex h-full flex-col">
+      <div className="group relative flex h-full flex-col pb-2">
         {isNew && <NewBadge variant="sticker" />}
         <Card
           className={clsx(
-            'group relative flex flex-1 flex-col gap-3 overflow-hidden p-4 transition-all duration-200',
+            'relative flex flex-1 flex-col gap-3 overflow-hidden p-4 transition-all duration-200',
             outOfStock || alreadyPurchased
               ? 'opacity-75'
-              : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30'
+              : 'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-indigo-200/50 group-hover:ring-2 group-hover:ring-indigo-500 dark:group-hover:shadow-indigo-900/30'
           )}
         >
           {outOfStock && (
@@ -3251,7 +3251,7 @@ function PrizeDrawingCard() {
       <GiveawayPromoCard
         href="/prize"
         gradientClassName="from-teal-400 via-cyan-400 to-blue-500"
-        hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+        hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
         icon={<FaGift className="h-5 w-5 text-teal-500" />}
         title="Prize Drawing"
         pill={ENDED_PILL}
@@ -3284,7 +3284,7 @@ function PrizeDrawingCard() {
     <GiveawayPromoCard
       href="/prize"
       gradientClassName="from-teal-400 via-cyan-400 to-blue-500"
-      hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+      hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
       icon={<FaGift className="h-5 w-5 text-teal-500" />}
       title="Prize Drawing"
       pill={{
@@ -5921,20 +5921,20 @@ function ShopItemCard(props: {
 
   return (
     <>
-      <div className="group flex pb-1">
+      <div className="group flex pb-2">
         <Card
           ref={cardRef}
           className={clsx(
-            'group relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
+            'relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
             justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
             !justPurchased &&
-              'hover:-translate-y-1 hover:shadow-xl hover:ring-2',
+              'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:ring-2',
             !justPurchased &&
               isPremiumItem &&
-              'hover:shadow-amber-200/50 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
+              'group-hover:shadow-amber-200/50 group-hover:ring-amber-500 dark:group-hover:shadow-amber-900/30',
             !justPurchased &&
               !isPremiumItem &&
-              'hover:shadow-indigo-200/50 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30',
+              'group-hover:shadow-indigo-200/50 group-hover:ring-indigo-500 dark:group-hover:shadow-indigo-900/30',
             isPremiumItem &&
               'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
           )}

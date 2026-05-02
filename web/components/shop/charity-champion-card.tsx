@@ -131,14 +131,14 @@ export function CharityChampionCard(props: {
   }
 
   return (
-    <div className="relative h-full">
+    <div className="group relative h-full pb-2">
       {/* NEW sticker — sibling of Card so it can overflow the card's clipping */}
       {isNew && <NewBadge variant="sticker" />}
       <Card
         className={clsx(
           'relative flex h-full flex-col gap-2 overflow-hidden p-4 transition-all duration-200',
           'dark:via-yellow-900/15 bg-gradient-to-br from-amber-50/50 via-yellow-50/30 to-orange-50/50 dark:from-amber-900/20 dark:to-orange-900/20',
-          'hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:ring-2 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
+          'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-amber-200/50 group-hover:ring-2 group-hover:ring-amber-500 dark:group-hover:shadow-amber-900/30',
           className
         )}
       >

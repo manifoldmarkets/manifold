@@ -21,7 +21,7 @@ export type GiveawayPromoCardProps = {
   href: string
   /** Outer gradient, e.g. 'from-teal-400 via-cyan-400 to-blue-500'. */
   gradientClassName: string
-  /** Hover-shadow classes, e.g. 'hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30'. */
+  /** Hover-shadow classes, e.g. 'group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30'. */
   hoverShadowClassName: string
   icon: ReactNode
   title: string
@@ -80,15 +80,15 @@ export function GiveawayPromoCard(props: GiveawayPromoCardProps) {
   } = props
 
   return (
-    <Link href={href} className={clsx('block h-full', className)}>
+    <Link href={href} className={clsx('group block h-full pb-2', className)}>
       <div
         className={clsx(
-          'group relative flex h-full flex-col overflow-hidden rounded-xl p-1 transition-all duration-200',
+          'relative flex h-full flex-col overflow-hidden rounded-xl p-1 transition-all duration-200',
           'bg-gradient-to-br',
           gradientClassName,
-          'hover:shadow-lg',
+          'group-hover:shadow-lg',
           hoverShadowClassName,
-          'hover:-translate-y-1'
+          'group-hover:-translate-y-1'
         )}
       >
         <div className="flex h-full flex-col rounded-lg bg-white p-4 dark:bg-gray-900">
