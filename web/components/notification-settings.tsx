@@ -17,6 +17,7 @@ import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import {
+  getDefaultNotificationPreferences,
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
@@ -605,5 +606,9 @@ export const getUsersSavedPreference = (
   key: notification_preference,
   privateUser: PrivateUser
 ) => {
-  return privateUser.notificationPreferences[key] ?? []
+  return (
+    privateUser.notificationPreferences[key] ??
+    getDefaultNotificationPreferences()[key] ??
+    []
+  )
 }
