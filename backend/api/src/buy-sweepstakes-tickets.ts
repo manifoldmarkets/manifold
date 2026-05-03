@@ -63,29 +63,38 @@ export const buySweepstakesTickets: APIHandler<
     // Calculate cost. If the caller provided a mana budget, compute the
     // number of entries using the latest ticket count so concurrent purchases
     // cannot make us spend more mana than the user confirmed in the UI.
+    // If both numTickets and maxManaSpent are provided, take the lesser
+    // ticket count (i.e. whichever constraint is tighter).
     const totalPrizeUsd = getTotalPrizePool(sweepstakes.prizes)
-    let manaSpent: number
+
     if (maxManaSpent) {
-      manaSpent = maxManaSpent
-      numTickets = calculateSweepstakesTicketsFromMana(
+      const ticketsFromMana = calculateSweepstakesTicketsFromMana(
         currentTickets,
         maxManaSpent,
         totalPrizeUsd
       )
-    } else {
-      if (!numTickets || numTickets <= 0) {
-        throw new APIError(400, 'Ticket quantity must be positive')
-      }
-      manaSpent = calculateSweepstakesTicketCost(
-        currentTickets,
-        numTickets,
-        totalPrizeUsd
+      // If both are provided, use the lesser ticket count
+      numTickets = numTickets
+        ? Math.min(numTickets, ticketsFromMana)
+        : ticketsFromMana
+    }
+
+    if (!numTickets || numTickets <= 0) {
+      throw new APIError(
+        400,
+        maxManaSpent
+          ? 'Insufficient mana for any entries at the current price'
+          : 'Ticket quantity must be positive'
       )
     }
 
-    if (numTickets <= 0) {
-      throw new APIError(400, 'Ticket quantity must be positive')
-    }
+    // Always recalculate manaSpent from the final numTickets so the user
+    // is charged the exact cost (never more than maxManaSpent).
+    const manaSpent = calculateSweepstakesTicketCost(
+      currentTickets,
+      numTickets,
+      totalPrizeUsd
+    )
 
     // Check user balance and eligibility
     const user = await getUser(auth.uid, tx)
