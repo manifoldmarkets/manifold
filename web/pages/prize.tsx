@@ -294,7 +294,7 @@ export default function SweepstakesPage({
     try {
       const result = await api('buy-sweepstakes-tickets', {
         sweepstakesNum: sweepstakes.sweepstakesNum,
-        numTickets,
+        maxManaSpent: manaAmount,
       })
       toast.success(
         `Gained ${formatEntries(result.numTickets)} entries for ${formatMoney(
@@ -1013,7 +1013,8 @@ function PurchaseForm(props: {
             <InfoTooltip
               text={`Current rate: ${formatMoneyWithDecimals(
                 currentPrice
-              )} per entry. Rates follow a bonding curve—earlier entries require less mana.`}
+              )} per entry. Rates follow a bonding curve—earlier entries require less mana.
+              Your mana spend is fixed; the final entry count is calculated at purchase time.`}
               size="sm"
             />
           </Row>
@@ -1064,7 +1065,8 @@ function PurchaseForm(props: {
           disabled={numTickets <= 0 || isSubmitting || disabled}
           className="w-full justify-center rounded-lg py-3 font-semibold"
         >
-          Get {formatEntries(numTickets)} entries for {formatMoney(manaAmount)}
+          Get up to {formatEntries(numTickets)} entries for{' '}
+          {formatMoney(manaAmount)}
         </Button>
       </Col>
     </div>
