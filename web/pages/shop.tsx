@@ -156,6 +156,7 @@ const ITEM_ORDER: Record<string, number> = {
 type SortOption =
   | 'default'
   | 'category'
+  | 'owned'
   | 'price-asc'
   | 'price-desc'
   | 'name-asc'
@@ -221,9 +222,10 @@ const hasVisibleItems = (
     return getTicketItems().some((item) => !item.hidden || showHidden)
   }
   if (filter === 'seasonal') {
+    // Only surface the Seasonal tab when there's at least one non-hidden
+    // seasonal item — owned/in-season hidden items don't pull the tab back.
     return allItems.some(
-      (item) =>
-        item.seasonalAvailability && (visibleItemIds.has(item.id) || showHidden)
+      (item) => item.seasonalAvailability && (!item.hidden || showHidden)
     )
   }
   const allowedSlots = FILTER_CONFIG[filter].slots
@@ -261,7 +263,11 @@ const getCategoryRank = (item: ShopItem): number => {
   return CATEGORY_PILL_ORDER.length // unknown / falls to the end
 }
 
-const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
+const sortItems = (
+  items: ShopItem[],
+  sort: SortOption,
+  ownedItemIds?: Set<string>
+): ShopItem[] => {
   const sorted = [...items]
   switch (sort) {
     case 'price-asc':
@@ -280,6 +286,22 @@ const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
         // Within a category, fall back to the default curated order
         return (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99)
       })
+    case 'owned':
+      // Show only items the user owns, excluding merch + tickets (those have
+      // no on/off toggle to manage). Sort by category for a tidy inventory.
+      return sorted
+        .filter(
+          (item) =>
+            item.category !== 'merch' &&
+            item.category !== 'ticket' &&
+            (ownedItemIds?.has(getEntitlementId(item)) ?? false)
+        )
+        .sort((a, b) => {
+          const ra = getCategoryRank(a)
+          const rb = getCategoryRank(b)
+          if (ra !== rb) return ra - rb
+          return (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99)
+        })
     case 'default':
     default:
       return sorted.sort(
@@ -661,7 +683,8 @@ export default function ShopPage() {
             ),
             filterOption
           ),
-          sortOption
+          sortOption,
+          ownedItemIds
         )
 
   // On the 'all' filter, pull NEW-to-user items out into a dedicated section
@@ -778,6 +801,7 @@ export default function ShopPage() {
             options={[
               { value: 'default', label: 'Default order' },
               { value: 'category', label: 'Category' },
+              { value: 'owned', label: 'Owned' },
               { value: 'price-asc', label: 'Price: Low to High' },
               { value: 'price-desc', label: 'Price: High to Low' },
               { value: 'name-asc', label: 'Name: A to Z' },
