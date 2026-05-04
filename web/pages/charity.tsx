@@ -633,12 +633,6 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
         {/* Confetti */}
         {showConfetti && <FullscreenConfetti />}
 
-        {/* Sales History */}
-        <SalesHistory
-          giveawayNum={giveaway.giveawayNum}
-          refreshKey={salesRefreshKey}
-        />
-
         {/* Charity Champion Trophy + Champion's Legacy hovercard residual */}
         {(() => {
           const legacyEntitlement = user?.entitlements?.find(
@@ -662,6 +656,12 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
             </div>
           )
         })()}
+
+        {/* Sales History */}
+        <SalesHistory
+          giveawayNum={giveaway.giveawayNum}
+          refreshKey={salesRefreshKey}
+        />
 
         {/* Provably Fair Banner */}
         {giveaway && (
