@@ -63,6 +63,11 @@ export function PrizesModal(props: {
                   </div>
                   <span className="text-ink-900 font-medium">
                     {divisionName}
+                    {div === 0 && (
+                      <span className="text-ink-500 ml-1 font-normal">
+                        (bot only)
+                      </span>
+                    )}
                   </span>
                 </Row>
 
