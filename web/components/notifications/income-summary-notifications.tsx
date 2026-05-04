@@ -36,7 +36,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { BetOutcomeLabel } from 'web/components/outcome-label'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { DIVISION_NAMES } from 'common/leagues'
+import { DIVISION_NAMES, SILICON_PRIZE_MIN_MANA_EARNED } from 'common/leagues'
 import { Linkify } from 'web/components/widgets/linkify'
 import {
   PARTNER_UNIQUE_TRADER_BONUS,
@@ -631,7 +631,8 @@ export function LeagueChangedNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { data } = notification
-  const { previousLeague, newLeague, bonusAmount } = data as LeagueChangeData
+  const { previousLeague, newLeague, bonusAmount, missedPrizeReason } =
+    data as LeagueChangeData
   const newlyAdded = previousLeague === undefined
   const promoted =
     previousLeague && previousLeague.division < newLeague.division
@@ -658,6 +659,13 @@ export function LeagueChangedNotification(props: {
             {previousLeague &&
               ` for placing Rank ${previousLeague.rank} this season`}
             .
+          </span>
+        ) : missedPrizeReason === 'silicon_min_mana_not_met' &&
+          previousLeague ? (
+          <span>
+            You placed Rank {previousLeague.rank} this season but didn't earn
+            the {formatMoney(SILICON_PRIZE_MIN_MANA_EARNED)} minimum required
+            for a Silicon prize.
           </span>
         ) : previousLeague ? (
           <span>You placed Rank {previousLeague.rank} this season.</span>
