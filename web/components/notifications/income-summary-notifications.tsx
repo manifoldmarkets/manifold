@@ -523,7 +523,7 @@ export function CharityChampionDethronedNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🏆'} />
       }
-      link="/shop"
+      link="/charity"
     >
       <span>
         <NotificationUserLink
@@ -557,10 +557,10 @@ export function CharityChampionEligibleNotification(props: {
           symbolBackgroundClass="bg-gradient-to-br from-amber-500 to-yellow-300"
         />
       }
-      link="/shop"
+      link="/charity"
     >
       <span>
-        You're the <span className="font-semibold">#1 ticket buyer</span>!{' '}
+        You're the <span className="font-semibold">#1 entry holder</span>!{' '}
         <PrimaryNotificationLink text="Claim the Charity Champion Trophy" />
       </span>
     </NotificationFrame>

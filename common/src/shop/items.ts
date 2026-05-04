@@ -799,7 +799,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'charity-champion-trophy',
     hidden: true,
     name: 'Charity Champion Trophy',
-    description: 'Exclusive trophy for the #1 ticket buyer in the charity raffle',
+    description: 'Exclusive trophy for the #1 entry holder in the charity giveaway',
     price: 0, // Cannot be purchased
     type: 'earned',
     limit: 'one-time',

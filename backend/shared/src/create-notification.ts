@@ -466,7 +466,7 @@ export const createCharityChampionEligibleNotification = async (
     sourceUserName: MANIFOLD_USER_NAME,
     sourceUserUsername: MANIFOLD_USER_USERNAME,
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: `You're the #1 ticket buyer with ${totalTickets} tickets! Claim the Charity Champion Trophy in the shop.`,
+    sourceText: `You're the #1 entry holder with ${totalTickets} entries! Claim the Charity Champion Trophy on the charity page.`,
     sourceTitle: 'Charity Champion Trophy',
   }
   const pg = createSupabaseDirectClient()

@@ -103,7 +103,6 @@ import {
   CharityGiveawayData,
   formatEntries,
 } from 'web/components/shop/charity-giveaway-card'
-import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
 import {
   ENDED_PILL,
   GiveawayPromoCard,
@@ -123,10 +122,8 @@ const isEntitlementOwned = (e: UserEntitlement) => {
 // Default item order (manual curation)
 const ITEM_ORDER: Record<string, number> = {
   'streak-forgiveness': 1,
-  // 1.5 / 1.6 keep the trophy + champion's legacy in default positions 3 & 4
-  // (after manifest ticket and streak-forgiveness). Other sorts move them
-  // naturally; the legacy lands in the 'hovercard' category pill via its slot.
-  'charity-champion-trophy': 1.5,
+  // 1.6 keeps the former-champion legacy in its default position
+  // (lands in the 'hovercard' category pill via its slot).
   'former-charity-champion': 1.6,
   'avatar-tinfoil-hat': 2,
   'avatar-golden-border': 3,
@@ -324,7 +321,7 @@ export default function ShopPage() {
   )
 
   // Fetch charity giveaway data once for both cards
-  const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
+  const { data: charityData } = useAPIGetter(
     'get-charity-giveaway',
     {
       userId: user?.id,
@@ -432,7 +429,6 @@ export default function ShopPage() {
         !SUPPORTER_ENTITLEMENT_IDS.includes(
           item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
         ) &&
-        item.id !== 'charity-champion-trophy' &&
         item.category !== 'merch' &&
         (!item.hidden ||
           ownedItemIds.has(getEntitlementId(item)) ||
@@ -688,25 +684,8 @@ export default function ShopPage() {
       (item) => (!item.hidden || showHidden) && isItemNewToUser(item)
     )
 
-  // Shared render so the NEW section + main grid handle items identically,
-  // including the charity-champion-trophy special case.
+  // Shared render so the NEW section + main grid handle items identically.
   const renderShopItem = (item: ShopItem) => {
-    if (item.id === 'charity-champion-trophy') {
-      return (
-        <CharityChampionCard
-          key={item.id}
-          data={charityGiveawayData}
-          isLoading={isCharityLoading}
-          user={user}
-          entitlements={effectiveEntitlements}
-          isNew={isItemNewToUser(item)}
-          onEntitlementsChange={(newEntitlements) => {
-            setLocalEntitlements(newEntitlements)
-            refreshCharityData()
-          }}
-        />
-      )
-    }
     const entitlementId = getEntitlementId(item)
     const entitlement = effectiveEntitlements.find(
       (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
@@ -4936,14 +4915,14 @@ function HovercardRoyalBorderPreview(props: { user: User | null | undefined }) {
   )
 }
 
-type HovercardBgType =
+export type HovercardBgType =
   | 'royalty'
   | 'mana-printer'
   | 'oracle'
   | 'trading-floor'
   | 'champions-legacy'
 
-function HovercardBackgroundPreview(props: {
+export function HovercardBackgroundPreview(props: {
   user: User | null | undefined
   background: HovercardBgType
 }) {
