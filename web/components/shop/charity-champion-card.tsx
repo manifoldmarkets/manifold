@@ -26,9 +26,6 @@ export function CharityChampionCard(props: {
   entitlements?: UserEntitlement[]
   isNew?: boolean
   onEntitlementsChange?: (entitlements: UserEntitlement[]) => void
-  // Hides the leaderboard + description blurb; suited for places that
-  // already surface entry rankings nearby (e.g. the charity page itself).
-  compact?: boolean
 }) {
   const {
     data,
@@ -38,7 +35,6 @@ export function CharityChampionCard(props: {
     entitlements,
     isNew,
     onEntitlementsChange,
-    compact = false,
   } = props
   const [claiming, setClaiming] = useState(false)
   const [toggling, setToggling] = useState(false)
@@ -218,7 +214,7 @@ export function CharityChampionCard(props: {
         </div>
 
         {/* Top buyers leaderboard */}
-        {!compact && topUsers && topUsers.length > 0 && (
+        {topUsers && topUsers.length > 0 && (
           <MiniLeaderboard
             topUsers={topUsers}
             yourEntry={yourEntry}
@@ -227,12 +223,9 @@ export function CharityChampionCard(props: {
         )}
 
         {/* Description */}
-        {!compact && (
-          <p className="text-ink-500 text-xs">
-            Reserved for the person with the most entries in the charity
-            giveaway.
-          </p>
-        )}
+        <p className="text-ink-500 text-xs">
+          Reserved for the person with the most entries in the charity giveaway.
+        </p>
 
         {/* Footer */}
         <Col className="mt-auto pt-1">

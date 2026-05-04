@@ -85,6 +85,7 @@ import {
 import { Card } from 'web/components/widgets/card'
 import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
@@ -103,6 +104,7 @@ import {
   CharityGiveawayData,
   formatEntries,
 } from 'web/components/shop/charity-giveaway-card'
+import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
 import {
   ENDED_PILL,
   GiveawayPromoCard,
@@ -717,6 +719,24 @@ export default function ShopPage() {
     const entitlement = effectiveEntitlements.find(
       (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
     )
+    // Trophy: owners see the rich CharityChampionCard (floating trophy
+    // decoration + leaderboard) so they can manage it from the shop too.
+    // Claiming/dethroning still happens on the charity page.
+    if (item.id === 'charity-champion-trophy' && entitlement) {
+      return (
+        <CharityChampionCard
+          key={item.id}
+          data={charityGiveawayData}
+          isLoading={isCharityLoading}
+          user={user}
+          entitlements={effectiveEntitlements}
+          isNew={isItemNewToUser(item)}
+          onEntitlementsChange={(newEntitlements) =>
+            setLocalEntitlements(newEntitlements)
+          }
+        />
+      )
+    }
     return (
       <ShopItemCard
         key={item.id}
@@ -6008,9 +6028,17 @@ function ShopItemCard(props: {
                 !(
                   item.seasonalAvailability && isSeasonalItemAvailable(item)
                 ) && (
-                  <div className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 sm:px-2 sm:text-xs">
-                    Hidden
-                  </div>
+                  <Tooltip
+                    text={
+                      owned
+                        ? 'This item is visible because you own it, but otherwise not currently available in the shop'
+                        : 'Hidden from the public shop'
+                    }
+                  >
+                    <div className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 sm:px-2 sm:text-xs">
+                      Hidden
+                    </div>
+                  </Tooltip>
                 )}
             </div>
           </div>

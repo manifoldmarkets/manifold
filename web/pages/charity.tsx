@@ -658,7 +658,6 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
                 user={user}
                 entitlements={user?.entitlements}
                 onEntitlementsChange={() => refresh()}
-                compact
               />
               {hasLegacy && (
                 <ChampionLegacyCard
