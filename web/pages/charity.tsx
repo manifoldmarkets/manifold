@@ -644,14 +644,8 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
           const legacyEntitlement = user?.entitlements?.find(
             (e) => e.entitlementId === FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID
           )
-          const hasLegacy = !!legacyEntitlement
           return (
-            <div
-              className={clsx(
-                'grid gap-3',
-                hasLegacy ? 'sm:grid-cols-2' : 'sm:grid-cols-1'
-              )}
-            >
+            <div className="grid gap-3 sm:grid-cols-2">
               <CharityChampionCard
                 data={data}
                 isLoading={!data}
@@ -659,13 +653,12 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
                 entitlements={user?.entitlements}
                 onEntitlementsChange={() => refresh()}
               />
-              {hasLegacy && (
-                <ChampionLegacyCard
-                  user={user}
-                  isEnabled={legacyEntitlement?.enabled ?? false}
-                  onChange={() => refresh()}
-                />
-              )}
+              <ChampionLegacyCard
+                user={user}
+                isOwned={!!legacyEntitlement}
+                isEnabled={legacyEntitlement?.enabled ?? false}
+                onChange={() => refresh()}
+              />
             </div>
           )
         })()}
@@ -708,10 +701,11 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
 
 function ChampionLegacyCard(props: {
   user: ReturnType<typeof useUser>
+  isOwned: boolean
   isEnabled: boolean
   onChange: () => void
 }) {
-  const { user, isEnabled, onChange } = props
+  const { user, isOwned, isEnabled, onChange } = props
   const [toggling, setToggling] = useState(false)
 
   const handleToggle = async () => {
@@ -736,29 +730,41 @@ function ChampionLegacyCard(props: {
   }
 
   return (
-    <Col className="bg-canvas-0 border-canvas-50 gap-2 rounded-xl border p-3 shadow-sm">
+    <Col
+      className={clsx(
+        'bg-canvas-0 border-canvas-50 gap-2 rounded-xl border p-3 shadow-sm',
+        !isOwned && 'opacity-80'
+      )}
+    >
       <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
         Champion's Legacy
       </span>
       <HovercardBackgroundPreview user={user} background="champions-legacy" />
       <p className="text-ink-500 text-xs">
-        Permanent hovercard background — yours from holding the trophy. Visible
-        in the shop once owned.
+        {isOwned
+          ? 'Permanent hovercard background — yours from holding the trophy. Visible in the shop once owned.'
+          : 'Permanent hovercard background — kept for life once you claim the trophy, even after being dethroned.'}
       </p>
       <Row className="items-center justify-center gap-2 pt-1">
-        <label className="relative inline-flex cursor-pointer items-center">
-          <input
-            type="checkbox"
-            checked={isEnabled}
-            onChange={handleToggle}
-            disabled={toggling}
-            className="peer sr-only"
-          />
-          <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-amber-500 peer-checked:after:translate-x-full dark:bg-gray-600" />
-          <span className="text-ink-700 ml-2 text-sm">
-            {isEnabled ? 'Enabled' : 'Disabled'}
+        {isOwned ? (
+          <label className="relative inline-flex cursor-pointer items-center">
+            <input
+              type="checkbox"
+              checked={isEnabled}
+              onChange={handleToggle}
+              disabled={toggling}
+              className="peer sr-only"
+            />
+            <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-amber-500 peer-checked:after:translate-x-full dark:bg-gray-600" />
+            <span className="text-ink-700 ml-2 text-sm">
+              {isEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+          </label>
+        ) : (
+          <span className="text-ink-400 text-xs italic">
+            Locked — claim the trophy to unlock
           </span>
-        </label>
+        )}
       </Row>
     </Col>
   )
