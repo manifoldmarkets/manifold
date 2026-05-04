@@ -15,6 +15,7 @@ import { Avatar } from '../widgets/avatar'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { TrophySvg } from './trophy-svg'
 import { NewBadge } from './new-badge'
+import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
 import { CharityGiveawayData } from './charity-giveaway-card'
 
@@ -26,6 +27,9 @@ export function CharityChampionCard(props: {
   entitlements?: UserEntitlement[]
   isNew?: boolean
   onEntitlementsChange?: (entitlements: UserEntitlement[]) => void
+  // Renders a "Hidden" pill in the corner so shop owners know the item
+  // is only visible to them. Off by default (e.g. on the charity page).
+  showHiddenBadge?: boolean
 }) {
   const {
     data,
@@ -35,6 +39,7 @@ export function CharityChampionCard(props: {
     entitlements,
     isNew,
     onEntitlementsChange,
+    showHiddenBadge = false,
   } = props
   const [claiming, setClaiming] = useState(false)
   const [toggling, setToggling] = useState(false)
@@ -151,6 +156,13 @@ export function CharityChampionCard(props: {
           <span className="text-lg font-semibold text-amber-700 dark:text-amber-400">
             Champion Trophy
           </span>
+          {showHiddenBadge && (
+            <Tooltip text="This item is only visible because you already own it">
+              <div className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 sm:px-2 sm:text-xs">
+                Hidden
+              </div>
+            </Tooltip>
+          )}
         </Row>
 
         {/* Current trophy holder section */}

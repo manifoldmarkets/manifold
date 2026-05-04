@@ -731,6 +731,7 @@ export default function ShopPage() {
           user={user}
           entitlements={effectiveEntitlements}
           isNew={isItemNewToUser(item)}
+          showHiddenBadge={item.hidden}
           onEntitlementsChange={(newEntitlements) =>
             setLocalEntitlements(newEntitlements)
           }
@@ -6031,7 +6032,7 @@ function ShopItemCard(props: {
                   <Tooltip
                     text={
                       owned
-                        ? 'This item is visible because you own it, but otherwise not currently available in the shop'
+                        ? 'This item is only visible because you already own it'
                         : 'Hidden from the public shop'
                     }
                   >
