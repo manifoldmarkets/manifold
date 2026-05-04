@@ -156,7 +156,6 @@ const ITEM_ORDER: Record<string, number> = {
 type SortOption =
   | 'default'
   | 'category'
-  | 'owned'
   | 'price-asc'
   | 'price-desc'
   | 'name-asc'
@@ -164,6 +163,7 @@ type SortOption =
 
 type FilterOption =
   | 'all'
+  | 'owned'
   | 'hats'
   | 'avatar'
   | 'hovercard'
@@ -178,6 +178,7 @@ const FILTER_CONFIG: Record<
   { label: string; slots: string[]; special?: boolean }
 > = {
   all: { label: 'All', slots: [] },
+  owned: { label: 'Owned', slots: [], special: true },
   hats: { label: 'Hats', slots: ['hat'] },
   avatar: { label: 'Avatar', slots: ['profile-border', 'profile-accessory'] },
   hovercard: {
@@ -191,12 +192,23 @@ const FILTER_CONFIG: Record<
   seasonal: { label: 'Seasonal', slots: [], special: true },
 }
 
-const filterItems = (items: ShopItem[], filter: FilterOption): ShopItem[] => {
+const filterItems = (
+  items: ShopItem[],
+  filter: FilterOption,
+  ownedItemIds?: Set<string>
+): ShopItem[] => {
   if (filter === 'all') return items
   if (filter === 'seasonal')
     return items.filter((item) => item.seasonalAvailability)
   if (filter === 'merch') return [] // merch handled by separate section
   if (filter === 'ticket') return [] // tickets handled by separate section
+  if (filter === 'owned') {
+    // Items the user actively manages — owned toggleable goods.
+    // Merch + tickets are excluded by the regular-grid filter upstream.
+    return items.filter((item) =>
+      ownedItemIds ? ownedItemIds.has(getEntitlementId(item)) : false
+    )
+  }
   const allowedSlots = FILTER_CONFIG[filter].slots
   return items.filter((item) => {
     // filterOverride takes precedence over slot-based categorization so that
@@ -212,9 +224,21 @@ const hasVisibleItems = (
   filter: FilterOption,
   allItems: ShopItem[],
   visibleItemIds: Set<string>,
-  showHidden: boolean
+  showHidden: boolean,
+  ownedItemIds?: Set<string>
 ): boolean => {
   if (filter === 'all') return true
+  if (filter === 'owned') {
+    // Tab only appears once the user owns at least one toggleable item
+    // (excluding merch + tickets, which aren't toggleable).
+    if (!ownedItemIds || ownedItemIds.size === 0) return false
+    return allItems.some(
+      (item) =>
+        item.category !== 'merch' &&
+        item.category !== 'ticket' &&
+        ownedItemIds.has(getEntitlementId(item))
+    )
+  }
   if (filter === 'merch') {
     return getMerchItems().some((item) => !item.hidden || showHidden)
   }
@@ -263,11 +287,7 @@ const getCategoryRank = (item: ShopItem): number => {
   return CATEGORY_PILL_ORDER.length // unknown / falls to the end
 }
 
-const sortItems = (
-  items: ShopItem[],
-  sort: SortOption,
-  ownedItemIds?: Set<string>
-): ShopItem[] => {
+const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
   const sorted = [...items]
   switch (sort) {
     case 'price-asc':
@@ -286,22 +306,6 @@ const sortItems = (
         // Within a category, fall back to the default curated order
         return (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99)
       })
-    case 'owned':
-      // Show only items the user owns, excluding merch + tickets (those have
-      // no on/off toggle to manage). Sort by category for a tidy inventory.
-      return sorted
-        .filter(
-          (item) =>
-            item.category !== 'merch' &&
-            item.category !== 'ticket' &&
-            (ownedItemIds?.has(getEntitlementId(item)) ?? false)
-        )
-        .sort((a, b) => {
-          const ra = getCategoryRank(a)
-          const rb = getCategoryRank(b)
-          if (ra !== rb) return ra - rb
-          return (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99)
-        })
     case 'default':
     default:
       return sorted.sort(
@@ -681,10 +685,10 @@ export default function ShopPage() {
                   ownedItemIds.has(getEntitlementId(item)) ||
                   (item.seasonalAvailability && isSeasonalItemAvailable(item)))
             ),
-            filterOption
+            filterOption,
+            ownedItemIds
           ),
-          sortOption,
-          ownedItemIds
+          sortOption
         )
 
   // On the 'all' filter, pull NEW-to-user items out into a dedicated section
@@ -801,7 +805,6 @@ export default function ShopPage() {
             options={[
               { value: 'default', label: 'Default order' },
               { value: 'category', label: 'Category' },
-              { value: 'owned', label: 'Owned' },
               { value: 'price-asc', label: 'Price: Low to High' },
               { value: 'price-desc', label: 'Price: High to Low' },
               { value: 'name-asc', label: 'Name: A to Z' },
@@ -819,12 +822,14 @@ export default function ShopPage() {
                 filter,
                 SHOP_ITEMS,
                 visibleShopItemIds,
-                showHidden
+                showHidden,
+                ownedItemIds
               )
             )
               return null
             const isSeasonal = filter === 'seasonal'
             const isMerch = filter === 'merch'
+            const isOwned = filter === 'owned'
             const isActive = filterOption === filter
             return (
               <button
@@ -836,12 +841,16 @@ export default function ShopPage() {
                     ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-sm'
                     : isActive && isMerch
                     ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white shadow-sm ring-1 ring-amber-300/60'
+                    : isActive && isOwned
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
                     : isActive
                     ? 'bg-primary-500 text-white'
                     : isSeasonal
                     ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 hover:from-pink-200 hover:to-rose-200 dark:from-pink-900/30 dark:to-rose-900/30 dark:text-pink-300'
                     : isMerch
                     ? 'bg-gradient-to-r from-amber-100 via-yellow-100 to-amber-200 text-amber-800 shadow-sm ring-1 ring-amber-300/50 hover:from-amber-200 hover:via-yellow-200 hover:to-amber-300 dark:from-amber-900/40 dark:via-yellow-900/30 dark:to-amber-900/50 dark:text-amber-200 dark:ring-amber-500/40'
+                    : isOwned
+                    ? 'bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 hover:from-emerald-200 hover:to-teal-200 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300'
                     : 'bg-canvas-50 text-ink-600 hover:bg-canvas-100'
                 )}
               >
