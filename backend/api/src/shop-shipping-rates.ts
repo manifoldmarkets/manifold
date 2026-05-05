@@ -51,6 +51,7 @@ export const shopShippingRates: APIHandler<'shop-shipping-rates'> = async (
         state_code: address.state || undefined,
         country_code: address.country,
         zip: address.zip || undefined,
+        tax_number: address.taxNumber || undefined,
       },
       items: [
         {

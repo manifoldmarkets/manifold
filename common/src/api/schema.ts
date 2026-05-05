@@ -3831,6 +3831,7 @@ export const API = (_apiTypeCheck = {
           state: z.string().max(100).optional(),
           zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
+          taxNumber: z.string().max(50).optional(),
         }),
       })
       .strict(),
@@ -3853,6 +3854,7 @@ export const API = (_apiTypeCheck = {
           state: z.string().max(100).optional(),
           zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
+          taxNumber: z.string().max(50).optional(),
         }),
       })
       .strict(),

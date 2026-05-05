@@ -82,6 +82,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
         state_code: shipping.state || undefined,
         country_code: shipping.country,
         zip: shipping.zip || undefined,
+        tax_number: shipping.taxNumber || undefined,
       },
       items: [{ external_variant_id: variantId, quantity: 1 }],
     }),
@@ -280,6 +281,7 @@ async function createPrintfulOrder(
       state?: string
       zip?: string
       country: string
+      taxNumber?: string
     }
     externalId: string
     confirm: boolean
@@ -302,6 +304,7 @@ async function createPrintfulOrder(
         state_code: params.shipping.state || undefined,
         country_code: params.shipping.country,
         zip: params.shipping.zip || undefined,
+        tax_number: params.shipping.taxNumber || undefined,
       },
       items: [
         {
