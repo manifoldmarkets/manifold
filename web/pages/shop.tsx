@@ -1006,6 +1006,43 @@ const COUNTRIES = [
   { code: 'SA', name: 'Saudi Arabia' },
 ].sort((a, b) => a.name.localeCompare(b.name))
 
+// Countries where the destination's customs authority requires a personal tax
+// ID on the parcel. Brazil rejects orders at Printful's API without it; Korea
+// rejects at customs (parcel returned/destroyed) — both surface to the user as
+// a failed delivery, so we collect upfront. Keep this list narrow to what's
+// actually enforced — adding non-mandatory countries just adds friction.
+const TAX_ID_COUNTRIES: Record<
+  string,
+  {
+    label: string
+    placeholder: string
+    helpText: string
+    validate: (s: string) => boolean
+    formatError: string
+  }
+> = {
+  BR: {
+    label: 'CPF or CNPJ',
+    placeholder: '000.000.000-00 or 00.000.000/0000-00',
+    helpText:
+      'Brazilian customs requires a CPF (individual, 11 digits) or CNPJ (company, 14 digits) on the shipping label.',
+    // Accept either punctuated or digits-only; CPF=11 digits, CNPJ=14 digits.
+    validate: (s) => {
+      const d = s.replace(/\D/g, '')
+      return d.length === 11 || d.length === 14
+    },
+    formatError: 'Enter a valid CPF (11 digits) or CNPJ (14 digits).',
+  },
+  KR: {
+    label: 'PCCC',
+    placeholder: 'P123456789012',
+    helpText:
+      'Korean customs requires a Personal Customs Clearance Code: the letter P followed by 12 digits.',
+    validate: (s) => /^P\d{12}$/i.test(s.trim()),
+    formatError: 'PCCC must be the letter P followed by 12 digits.',
+  },
+}
+
 type ShippingRate = {
   id: string
   name: string
@@ -1578,6 +1615,7 @@ function MerchItemCard(props: {
     state: '',
     zip: '',
     country: 'US',
+    taxNumber: '',
   })
   const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
   const [countdown, setCountdown] = useState(5)
@@ -1719,6 +1757,7 @@ function MerchItemCard(props: {
           state: shippingInfo.state || undefined,
           zip: shippingInfo.zip,
           country: shippingInfo.country,
+          taxNumber: shippingInfo.taxNumber || undefined,
         },
       })
       setShippingRates(result.rates)
@@ -1760,6 +1799,7 @@ function MerchItemCard(props: {
         state: '',
         zip: '',
         country: 'US',
+        taxNumber: '',
       })
       onPurchased?.()
     } catch (e: any) {
@@ -1771,10 +1811,15 @@ function MerchItemCard(props: {
   }
 
   const zipRequired = requiresPostalCode(shippingInfo.country)
+  const taxIdConfig = TAX_ID_COUNTRIES[shippingInfo.country]
+  const taxIdValid = taxIdConfig
+    ? taxIdConfig.validate(shippingInfo.taxNumber)
+    : true
   const canGetRates =
     shippingInfo.address1 &&
     shippingInfo.city &&
-    (!zipRequired || shippingInfo.zip)
+    (!zipRequired || shippingInfo.zip) &&
+    taxIdValid
 
   return (
     <>
@@ -2178,7 +2223,8 @@ function MerchItemCard(props: {
               />
               <input
                 type="text"
-                placeholder="State"
+                placeholder="State code"
+                title="Use the official short code (e.g. SP, NY, ON), not the full name."
                 value={shippingInfo.state}
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, state: e.target.value }))
@@ -2195,10 +2241,20 @@ function MerchItemCard(props: {
                 className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
               />
             </Row>
+            <p className="text-ink-500 -mt-1 text-xs">
+              Enter the official short state/region code (e.g. SP for São Paulo,
+              NY for New York), not the full name.
+            </p>
             <select
               value={shippingInfo.country}
               onChange={(e) => {
-                setShippingInfo((s) => ({ ...s, country: e.target.value }))
+                setShippingInfo((s) => ({
+                  ...s,
+                  country: e.target.value,
+                  // Clear tax ID — formats are country-specific, so a stale
+                  // value from a previously-selected country is never valid.
+                  taxNumber: '',
+                }))
                 setShippingRates(null)
                 setSelectedShipping(null)
               }}
@@ -2210,6 +2266,31 @@ function MerchItemCard(props: {
                 </option>
               ))}
             </select>
+            {taxIdConfig && (
+              <Col className="gap-1">
+                <input
+                  type="text"
+                  placeholder={taxIdConfig.placeholder}
+                  value={shippingInfo.taxNumber}
+                  onChange={(e) =>
+                    setShippingInfo((s) => ({
+                      ...s,
+                      taxNumber: e.target.value,
+                    }))
+                  }
+                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <p className="text-ink-500 text-xs">
+                  <span className="font-medium">{taxIdConfig.label}:</span>{' '}
+                  {taxIdConfig.helpText}
+                </p>
+                {shippingInfo.taxNumber.length > 0 && !taxIdValid && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {taxIdConfig.formatError}
+                  </p>
+                )}
+              </Col>
+            )}
           </Col>
 
           {!shippingRates && (
@@ -2284,7 +2365,7 @@ function MerchItemCard(props: {
             </Button>
             <Button
               color="indigo"
-              disabled={!shippingInfo.name || !selectedShipping}
+              disabled={!shippingInfo.name || !selectedShipping || !taxIdValid}
               onClick={() => {
                 setAcceptedTerms(false)
                 setShowConfirmOrderModal(true)
