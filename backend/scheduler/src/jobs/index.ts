@@ -188,7 +188,7 @@ export function createJobs() {
     ),
     createJob(
       'auto-generate-and-resolve-prize-drawings',
-      '0 30 12 * * *', // 12:30 PM PT daily
+      '0 0 13 * * *', // 1 PM PT daily
       autoGenerateAndResolvePrizeDrawings
     ),
     // // Achievement MV refreshes (nightly, staggered ~10 mins apart)
