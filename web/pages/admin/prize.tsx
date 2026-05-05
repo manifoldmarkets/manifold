@@ -43,6 +43,7 @@ export default function AdminPrizePage() {
 function PrizeClaimsTable() {
   const { data, refresh } = useAPIGetter('admin-get-prize-claims', {})
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [copiedClaimId, setCopiedClaimId] = useState<string | null>(null)
 
   const handleStatusChange = async (
     claimId: string | null,
@@ -60,12 +61,19 @@ function PrizeClaimsTable() {
         paymentStatus: newStatus,
       })
       toast.success(`Status updated to ${newStatus}`)
+      setCopiedClaimId((id) => (id === claimId ? null : id))
       refresh()
     } catch (e) {
       toast.error('Failed to update status')
     } finally {
       setUpdatingId(null)
     }
+  }
+
+  const handleCopyAddress = (claimId: string | null, address: string) => {
+    navigator.clipboard.writeText(address)
+    toast.success('Wallet address copied')
+    if (claimId) setCopiedClaimId(claimId)
   }
 
   if (data === undefined) {
@@ -82,9 +90,11 @@ function PrizeClaimsTable() {
     return acc
   }, {} as Record<number, typeof claims>)
 
-  // Generate CSV data for claims with wallet addresses
-  const claimsWithWallets = claims.filter((c) => c.walletAddress)
-  const csvContent = claimsWithWallets
+  // CSV: only awaiting claims with a wallet address
+  const csvClaims = claims.filter(
+    (c) => c.walletAddress && c.paymentStatus === 'awaiting'
+  )
+  const csvContent = csvClaims
     .map((c) => `${c.walletAddress},${c.prizeAmountUsdc}`)
     .join('\n')
 
@@ -159,10 +169,19 @@ function PrizeClaimsTable() {
                       </td>
                       <td className="px-4 py-3">
                         {claim.walletAddress ? (
-                          <code className="bg-canvas-50 rounded px-2 py-1 text-xs">
-                            {claim.walletAddress.slice(0, 6)}...
-                            {claim.walletAddress.slice(-4)}
-                          </code>
+                          <WalletAddressCell
+                            address={claim.walletAddress}
+                            copyable={
+                              claim.paymentStatus !== 'sent' &&
+                              claim.paymentStatus !== 'rejected'
+                            }
+                            onCopy={() =>
+                              handleCopyAddress(
+                                claim.id,
+                                claim.walletAddress as string
+                              )
+                            }
+                          />
                         ) : (
                           <span className="text-ink-400 text-sm italic">
                             Not submitted
@@ -170,14 +189,29 @@ function PrizeClaimsTable() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusSelector
-                          currentStatus={claim.paymentStatus}
-                          disabled={!claim.walletAddress || updatingId !== null}
-                          loading={updatingId === claim.id}
-                          onChange={(status) =>
-                            handleStatusChange(claim.id, status)
-                          }
-                        />
+                        <Row className="items-center gap-2">
+                          <StatusSelector
+                            currentStatus={claim.paymentStatus}
+                            disabled={
+                              !claim.walletAddress || updatingId !== null
+                            }
+                            loading={updatingId === claim.id}
+                            onChange={(status) =>
+                              handleStatusChange(claim.id, status)
+                            }
+                          />
+                          {copiedClaimId === claim.id &&
+                            claim.id &&
+                            claim.paymentStatus === 'awaiting' && (
+                              <MarkSentPrompt
+                                disabled={updatingId !== null}
+                                onMarkSent={() =>
+                                  handleStatusChange(claim.id, 'sent')
+                                }
+                                onDismiss={() => setCopiedClaimId(null)}
+                              />
+                            )}
+                        </Row>
                       </td>
                     </tr>
                   ))}
@@ -193,12 +227,12 @@ function PrizeClaimsTable() {
           CSV Export (Address, Amount)
         </h2>
         <p className="text-ink-500 text-sm">
-          Copy this CSV to process payments. Only includes winners who have
-          submitted their wallet address.
+          Copy this CSV to process payments. Only includes winners with status{' '}
+          <code>awaiting</code> who have submitted a wallet address.
         </p>
         <textarea
           readOnly
-          value={csvContent || 'No wallet addresses submitted yet'}
+          value={csvContent || 'No awaiting wallet addresses to pay out'}
           className="bg-canvas-50 border-canvas-200 text-ink-700 h-40 w-full rounded-lg border p-3 font-mono text-sm"
           onClick={(e) => (e.target as HTMLTextAreaElement).select()}
         />
@@ -217,6 +251,65 @@ function PrizeClaimsTable() {
         )}
       </Col>
     </Col>
+  )
+}
+
+function WalletAddressCell(props: {
+  address: string
+  copyable: boolean
+  onCopy: () => void
+}) {
+  const { address, copyable, onCopy } = props
+  const truncated = `${address.slice(0, 6)}...${address.slice(-4)}`
+
+  if (!copyable) {
+    return (
+      <code
+        className="bg-canvas-50 text-ink-500 rounded px-2 py-1 text-xs"
+        title={address}
+      >
+        {truncated}
+      </code>
+    )
+  }
+
+  return (
+    <button
+      onClick={onCopy}
+      title={`Click to copy: ${address}`}
+      className="bg-canvas-50 hover:bg-canvas-100 text-ink-700 cursor-pointer rounded px-2 py-1 font-mono text-xs transition-colors"
+    >
+      {truncated}
+    </button>
+  )
+}
+
+function MarkSentPrompt(props: {
+  disabled: boolean
+  onMarkSent: () => void
+  onDismiss: () => void
+}) {
+  const { disabled, onMarkSent, onDismiss } = props
+  return (
+    <Row className="items-center gap-1">
+      <span className="text-ink-600 text-xs">mark sent?</span>
+      <button
+        onClick={onMarkSent}
+        disabled={disabled}
+        title="Mark as sent"
+        className="flex h-6 w-6 items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50"
+      >
+        ✓
+      </button>
+      <button
+        onClick={onDismiss}
+        disabled={disabled}
+        title="Dismiss"
+        className="flex h-6 w-6 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+      >
+        ✕
+      </button>
+    </Row>
   )
 }
 

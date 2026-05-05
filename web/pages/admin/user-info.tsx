@@ -588,9 +588,7 @@ export default function AdminUserInfoPage() {
                   <div className="space-y-2">
                     <div className="mb-2 rounded border border-amber-200 bg-amber-50 p-2">
                       <p className="text-sm text-amber-800">
-                        Found {relatedUsers.length} account
-                        {relatedUsers.length !== 1 ? 's' : ''} with matching IP,
-                        device token, or managram history.
+                        {formatRelatedAccountsSummary(relatedUsers)}
                       </p>
                     </div>
                     {(showAllRelated
@@ -953,6 +951,42 @@ export default function AdminUserInfoPage() {
       )}
     </Page>
   )
+}
+
+type MatchReason = 'ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram'
+
+const MATCH_REASON_LABELS: Record<MatchReason, string> = {
+  ip: 'matching IP',
+  deviceToken: 'matching device token',
+  referrer: 'matching referrer',
+  referee: 'matching referee',
+  managram: 'matching managram history',
+}
+
+function formatRelatedAccountsSummary(
+  relatedUsers: Array<{ matchReasons: MatchReason[] }>
+) {
+  const counts: Record<MatchReason, number> = {
+    ip: 0,
+    deviceToken: 0,
+    referrer: 0,
+    referee: 0,
+    managram: 0,
+  }
+  for (const { matchReasons } of relatedUsers) {
+    for (const reason of matchReasons) counts[reason]++
+  }
+
+  const parts = (Object.keys(MATCH_REASON_LABELS) as MatchReason[])
+    .filter((reason) => counts[reason] > 0)
+    .map((reason) => `${counts[reason]} ${MATCH_REASON_LABELS[reason]}`)
+
+  if (parts.length === 0) {
+    return `Found ${relatedUsers.length} related account${
+      relatedUsers.length !== 1 ? 's' : ''
+    }.`
+  }
+  return `Found ${parts.join(', ')}.`
 }
 
 function BonusEligibilitySection({
