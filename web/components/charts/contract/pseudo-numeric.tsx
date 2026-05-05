@@ -74,11 +74,13 @@ export const PseudoNumericContractChart = (props: {
   })
   const isYZoomed = yMin !== min || yMax !== max
 
-  // clamp log scale to make sure zeroes go to the bottom
-  const baseYScale = isLogScale
+  // clamp log scale to make sure zeroes go to the bottom.
+  // Skip .nice() on log scale: it rounds to powers of 10 and would expand
+  // a zoomed range like [10, 14] back out to [10, 100].
+  const yScale = isLogScale
     ? scaleLog([Math.max(yMin, 1), yMax], [height, 0]).clamp(true)
     : scaleLinear([yMin, yMax], [height, 0])
-  const yScale = isYZoomed ? baseYScale.nice() : baseYScale
+  if (isYZoomed && !isLogScale) yScale.nice()
   return (
     <SingleValueHistoryChart
       w={width}
