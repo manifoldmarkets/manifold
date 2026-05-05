@@ -689,6 +689,7 @@ const NumberOverview = (props: {
                   zoomParams={zoomParams}
                   contract={contract}
                   showZoomer={true}
+                  zoomY
                 />
               </div>
             </>
@@ -765,6 +766,7 @@ const MultiNumericOverview = (props: {
             zoomParams={zoomParams}
             contract={contract}
             showZoomer={showZoomer}
+            zoomY
           />
         )}
       </SizedContainer>
@@ -1090,6 +1092,7 @@ const PseudoNumericOverview = (props: {
             zoomParams={zoomParams}
             contract={contract}
             showZoomer={showZoomer}
+            zoomY
           />
         )}
       </SizedContainer>

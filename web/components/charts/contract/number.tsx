@@ -4,9 +4,9 @@ import { scaleLinear, scaleTime } from 'd3-scale'
 import { CPMMNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
-  getDataPaddedYRange,
   getEndDate,
   getRightmostVisibleDate,
+  getVisibleNumericYRange,
   ZoomParams,
 } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
@@ -62,8 +62,10 @@ export const NumberContractChart = (props: {
   height: number
   zoomParams?: ZoomParams
   showZoomer?: boolean
+  zoomY?: boolean
 }) => {
-  const { contract, width, multiPoints, height, zoomParams, showZoomer } = props
+  const { contract, width, multiPoints, height, zoomParams, showZoomer, zoomY } =
+    props
   const { min, max } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
@@ -83,7 +85,13 @@ export const NumberContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  const [yMin, yMax] = getDataPaddedYRange(singlePointData, min, max)
+  const [yMin, yMax] = getVisibleNumericYRange({
+    data: singlePointData,
+    contractMin: min,
+    contractMax: max,
+    zoomY,
+    zoomParams,
+  })
   const yScale = scaleLinear([yMin, yMax], [height, 0]).nice()
   return (
     <SingleValueHistoryChart

@@ -6,9 +6,9 @@ import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
-  getDataPaddedYRange,
   getEndDate,
   getRightmostVisibleDate,
+  getVisibleNumericYRange,
   ZoomParams,
 } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
@@ -39,8 +39,9 @@ export const PseudoNumericContractChart = (props: {
   height: number
   zoomParams?: ZoomParams
   showZoomer?: boolean
+  zoomY?: boolean
 }) => {
-  const { contract, width, height, zoomParams, showZoomer } = props
+  const { contract, width, height, zoomParams, showZoomer, zoomY } = props
   const { min, max, isLogScale } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
@@ -64,7 +65,13 @@ export const PseudoNumericContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  const [yMin, yMax] = getDataPaddedYRange(data, min, max)
+  const [yMin, yMax] = getVisibleNumericYRange({
+    data,
+    contractMin: min,
+    contractMax: max,
+    zoomY,
+    zoomParams,
+  })
 
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale

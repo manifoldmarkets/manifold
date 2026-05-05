@@ -622,24 +622,48 @@ export const getRightmostVisibleDate = (
   }
 }
 
-// Compute a y-axis range that fits the data with some headroom on each side,
-// so small movements aren't squashed against the contract's full min/max.
-// Result is clamped to [contractMin, contractMax]. Falls back to the full
-// contract range if there's no data or the data is degenerate.
-export const getDataPaddedYRange = (
-  data: { y: number }[],
-  contractMin: number,
-  contractMax: number,
-  paddingFraction = 0.1
-): [number, number] => {
-  const contractRange = contractMax - contractMin
-  if (data.length === 0 || !Number.isFinite(contractRange)) {
+// Numeric analogue of binary.tsx's getVisibleYRange. Returns the full contract
+// range by default; when the user has zoomed the x-axis (e.g. by clicking 1D /
+// 1W), returns a padded y-range fit to the visible-window data, clamped to
+// [contractMin, contractMax]. Mirrors binary's "only auto-scale-Y when zoomed"
+// behavior so the default view of a numeric market is unchanged.
+export const getVisibleNumericYRange = (params: {
+  data: { x: number; y: number }[]
+  contractMin: number
+  contractMax: number
+  zoomY?: boolean
+  zoomParams?: ZoomParams
+  paddingFraction?: number
+}): [number, number] => {
+  const {
+    data,
+    contractMin,
+    contractMax,
+    zoomY,
+    zoomParams,
+    paddingFraction = 0.1,
+  } = params
+
+  if (!zoomY || !zoomParams?.xScale) return [contractMin, contractMax]
+
+  const [minXDate, maxXDate] = zoomParams.viewXScale.domain() ?? [null, null]
+  const [fullMin, fullMax] = zoomParams.xScale.domain()
+  if (
+    !minXDate ||
+    !maxXDate ||
+    (minXDate.getTime() === fullMin.getTime() &&
+      maxXDate.getTime() === fullMax.getTime())
+  ) {
     return [contractMin, contractMax]
   }
 
+  const minXMs = minXDate.getTime()
+  const maxXMs = maxXDate.getTime()
+
   let dataMin = Infinity
   let dataMax = -Infinity
-  for (const { y } of data) {
+  for (const { x, y } of data) {
+    if (x < minXMs || x > maxXMs) continue
     if (!Number.isFinite(y)) continue
     if (y < dataMin) dataMin = y
     if (y > dataMax) dataMax = y
@@ -648,10 +672,9 @@ export const getDataPaddedYRange = (
     return [contractMin, contractMax]
   }
 
-  // Flat data: pad with a small slice of the contract range so the line isn't
-  // pinned to one edge.
+  const contractRange = contractMax - contractMin
   if (dataMin === dataMax) {
-    const flatPad = contractRange * 0.05
+    const flatPad = Number.isFinite(contractRange) ? contractRange * 0.05 : 0
     return [
       Math.max(dataMin - flatPad, contractMin),
       Math.min(dataMax + flatPad, contractMax),
