@@ -123,6 +123,7 @@ export const CONTRACT_TYPES = [
   { label: 'Set', value: 'INDEPENDENT_MULTIPLE_CHOICE' },
   { label: 'Dependent MC', value: 'DEPENDENT_MULTIPLE_CHOICE' },
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
+  { label: 'Date', value: 'DATE' },
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
