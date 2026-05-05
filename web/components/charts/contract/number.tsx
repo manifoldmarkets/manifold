@@ -92,7 +92,9 @@ export const NumberContractChart = (props: {
     zoomY,
     zoomParams,
   })
-  const yScale = scaleLinear([yMin, yMax], [height, 0]).nice()
+  const isYZoomed = yMin !== min || yMax !== max
+  const yScale = scaleLinear([yMin, yMax], [height, 0])
+  if (isYZoomed) yScale.nice()
   return (
     <SingleValueHistoryChart
       w={width}

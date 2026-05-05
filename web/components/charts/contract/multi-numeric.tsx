@@ -135,10 +135,12 @@ export const MultiNumericContractChart = (props: {
     zoomY,
     zoomParams,
   })
+  const isYZoomed = minY !== answerMin || maxY !== answerMax
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  const yScale = scaleLinear([minY, maxY], [height, 0]).nice()
+  const yScale = scaleLinear([minY, maxY], [height, 0])
+  if (isYZoomed) yScale.nice()
   return (
     <SingleValueHistoryChart
       w={width}
