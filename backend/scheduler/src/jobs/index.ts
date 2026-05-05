@@ -20,6 +20,7 @@ import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { applyPendingClarifications } from './apply-pending-clarifications'
 import { autoAwardBounty } from './auto-award-bounty'
+import { autoGenerateAndResolvePrizeDrawings } from './auto-generate-and-resolve-prize-drawings'
 import { autobanUsers } from './autoban-users'
 import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
@@ -184,6 +185,11 @@ export function createJobs() {
       'clean-old-notifications',
       '0 30 2 * * *', // 230 AM daily
       cleanOldNotifications
+    ),
+    createJob(
+      'auto-generate-and-resolve-prize-drawings',
+      '0 0 13 * * *', // 1 PM PT daily
+      autoGenerateAndResolvePrizeDrawings
     ),
     // // Achievement MV refreshes (nightly, staggered ~10 mins apart)
     // createJob(
