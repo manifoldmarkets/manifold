@@ -622,6 +622,49 @@ export const getRightmostVisibleDate = (
   }
 }
 
+// Compute a y-axis range that fits the data with some headroom on each side,
+// so small movements aren't squashed against the contract's full min/max.
+// Result is clamped to [contractMin, contractMax]. Falls back to the full
+// contract range if there's no data or the data is degenerate.
+export const getDataPaddedYRange = (
+  data: { y: number }[],
+  contractMin: number,
+  contractMax: number,
+  paddingFraction = 0.1
+): [number, number] => {
+  const contractRange = contractMax - contractMin
+  if (data.length === 0 || !Number.isFinite(contractRange)) {
+    return [contractMin, contractMax]
+  }
+
+  let dataMin = Infinity
+  let dataMax = -Infinity
+  for (const { y } of data) {
+    if (!Number.isFinite(y)) continue
+    if (y < dataMin) dataMin = y
+    if (y > dataMax) dataMax = y
+  }
+  if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+    return [contractMin, contractMax]
+  }
+
+  // Flat data: pad with a small slice of the contract range so the line isn't
+  // pinned to one edge.
+  if (dataMin === dataMax) {
+    const flatPad = contractRange * 0.05
+    return [
+      Math.max(dataMin - flatPad, contractMin),
+      Math.min(dataMax + flatPad, contractMax),
+    ]
+  }
+
+  const padding = (dataMax - dataMin) * paddingFraction
+  return [
+    Math.max(dataMin - padding, contractMin),
+    Math.min(dataMax + padding, contractMax),
+  ]
+}
+
 export const formatPct = (n: number) => {
   return `${(n * 100).toFixed(0)}%`
 }

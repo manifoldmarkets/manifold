@@ -5,7 +5,12 @@ import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
+import {
+  getDataPaddedYRange,
+  getEndDate,
+  getRightmostVisibleDate,
+  ZoomParams,
+} from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip, SingleContractPoint } from './single-value'
 
@@ -59,10 +64,12 @@ export const PseudoNumericContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
+  const [yMin, yMax] = getDataPaddedYRange(data, min, max)
+
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
-    ? scaleLog([Math.max(min, 1), max], [height, 0]).clamp(true)
-    : scaleLinear([min, max], [height, 0])
+    ? scaleLog([Math.max(yMin, 1), yMax], [height, 0]).clamp(true).nice()
+    : scaleLinear([yMin, yMax], [height, 0]).nice()
   return (
     <SingleValueHistoryChart
       w={width}

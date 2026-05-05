@@ -3,7 +3,12 @@ import { keyBy, last, sum } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { CPMMNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
+import {
+  getDataPaddedYRange,
+  getEndDate,
+  getRightmostVisibleDate,
+  ZoomParams,
+} from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
 import { map, zip } from 'd3-array'
@@ -78,8 +83,8 @@ export const NumberContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  // clamp log scale to make sure zeroes go to the bottom
-  const yScale = scaleLinear([min, max], [height, 0])
+  const [yMin, yMax] = getDataPaddedYRange(singlePointData, min, max)
+  const yScale = scaleLinear([yMin, yMax], [height, 0]).nice()
   return (
     <SingleValueHistoryChart
       w={width}

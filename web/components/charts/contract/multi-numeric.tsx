@@ -1,9 +1,14 @@
 import { useMemo } from 'react'
-import { last, map, sum, zip, keyBy, max, min, sortBy } from 'lodash'
+import { last, map, sum, zip, keyBy, sortBy } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { MultiNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
+import {
+  getDataPaddedYRange,
+  getEndDate,
+  getRightmostVisibleDate,
+  ZoomParams,
+} from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
 
@@ -114,14 +119,15 @@ export const MultiNumericContractChart = (props: {
     [betPoints, end, endP, now]
   )
   const { min: answerMin, max: answerMax } = getMinMax(contract)
-  const allYs = singlePointData.map((p) => p.y)
-  const minY = min([...allYs, answerMin])!
-  const maxY = max([...allYs, answerMax])!
+  const [minY, maxY] = getDataPaddedYRange(
+    singlePointData,
+    answerMin,
+    answerMax
+  )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  // clamp log scale to make sure zeroes go to the bottom
-  const yScale = scaleLinear([minY, maxY], [height, 0])
+  const yScale = scaleLinear([minY, maxY], [height, 0]).nice()
   return (
     <SingleValueHistoryChart
       w={width}
