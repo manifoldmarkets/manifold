@@ -64,8 +64,15 @@ export const NumberContractChart = (props: {
   showZoomer?: boolean
   zoomY?: boolean
 }) => {
-  const { contract, width, multiPoints, height, zoomParams, showZoomer, zoomY } =
-    props
+  const {
+    contract,
+    width,
+    multiPoints,
+    height,
+    zoomParams,
+    showZoomer,
+    zoomY,
+  } = props
   const { min, max } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
