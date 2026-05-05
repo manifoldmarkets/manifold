@@ -848,6 +848,7 @@ const MultiDateOverview = (props: {
             zoomParams={zoomParams}
             contract={contract}
             showZoomer={showZoomer}
+            zoomY
           />
         )}
       </SizedContainer>
