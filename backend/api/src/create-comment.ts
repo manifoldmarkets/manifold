@@ -24,8 +24,8 @@ import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
-// For now, only supports creating a new top-level comment on a contract.
-// Replies, posts, chats are not supported yet.
+// Creates a new comment on a contract.
+// Posts and chats are not supported yet.
 export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction(
   'comment',
   async (props, auth) => {
@@ -80,6 +80,16 @@ export const createCommentOnContractInternal = async (
 
   const pg = createSupabaseDirectClient()
   const now = Date.now()
+
+  if (replyToCommentId) {
+    const repliedComment = await pg.oneOrNone(
+      `select comment_id from contract_comments where comment_id = $1 and contract_id = $2`,
+      [replyToCommentId, contractId]
+    )
+    if (!repliedComment) {
+      throw new APIError(404, 'Comment to reply to not found')
+    }
+  }
 
   const bet = replyToBetId
     ? await pg
