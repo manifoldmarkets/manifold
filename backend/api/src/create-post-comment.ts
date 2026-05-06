@@ -35,6 +35,16 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     const post = await getPost(pg, postId)
     if (!post) throw new APIError(404, 'Post not found')
 
+    if (replyToCommentId) {
+      const repliedComment = await pg.oneOrNone(
+        `select comment_id from old_post_comments where comment_id = $1 and post_id = $2`,
+        [replyToCommentId, postId]
+      )
+      if (!repliedComment) {
+        throw new APIError(404, 'Comment to reply to not found')
+      }
+    }
+
     // Check if commenter is blocked by post creator or has blocked post creator
     const privateUser = await getPrivateUser(auth.uid)
     if (!privateUser) throw new APIError(401, 'Private user data not found')

@@ -1405,7 +1405,7 @@ Parameters:
 
 ### `POST /v0/comment`
 
-Create a comment in the specified market. Only supports top-level comments for now.
+Create a comment in the specified market.
 
 Parameters:
 
@@ -1413,6 +1413,7 @@ Parameters:
 - `content`: The comment to post, formatted as [TipTap json](https://tiptap.dev/guide/output#option-1-json), OR
 - `html`: The comment to post, formatted as an HTML string, OR
 - `markdown`: The comment to post, formatted as a markdown string.
+- `replyToCommentId`: Optional. The ID of the comment you are replying to. Must be a valid comment ID in the same market.
 
 [Requires Auth](#authentication).
 
