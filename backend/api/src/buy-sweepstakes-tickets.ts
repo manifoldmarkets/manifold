@@ -90,11 +90,14 @@ export const buySweepstakesTickets: APIHandler<
 
     // Always recalculate manaSpent from the final numTickets so the user
     // is charged the exact cost (never more than maxManaSpent).
-    const manaSpent = calculateSweepstakesTicketCost(
+    let manaSpent = calculateSweepstakesTicketCost(
       currentTickets,
       numTickets,
       totalPrizeUsd
     )
+    if (maxManaSpent && manaSpent > maxManaSpent) {
+      manaSpent = maxManaSpent
+    }
 
     // Check user balance and eligibility
     const user = await getUser(auth.uid, tx)
