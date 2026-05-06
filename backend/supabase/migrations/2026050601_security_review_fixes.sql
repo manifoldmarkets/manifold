@@ -28,8 +28,8 @@ alter view public.user_league_info set (security_invoker = on);
 alter table public.stonk_images enable row level security;
 
 -- dashboard_follows: web reads only the current user's own follow status via
--- getUserFollowsDashboard; writes go through the backend's service-role
--- client (createSupabaseClient) which bypasses RLS.
+-- getUserFollowsDashboard; writes go through the backend's direct DB client
+-- which bypasses RLS.
 alter table public.dashboard_follows enable row level security;
 
 create policy "own read" on public.dashboard_follows for select

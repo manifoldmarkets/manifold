@@ -970,13 +970,6 @@ export type Database = {
             foreignKeyName: 'public_dashboard_groups_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'public_dashboard_groups_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
           }
@@ -1258,13 +1251,6 @@ export type Database = {
             foreignKeyName: 'group_contracts_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'group_contracts_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
           }
@@ -1287,13 +1273,6 @@ export type Database = {
           group_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: 'public_group_embeddings_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: true
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
           {
             foreignKeyName: 'public_group_embeddings_group_id_fkey'
             columns: ['group_id']
@@ -1321,22 +1300,8 @@ export type Database = {
             foreignKeyName: 'group_groups_bottom_id_fkey'
             columns: ['bottom_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'group_groups_bottom_id_fkey'
-            columns: ['bottom_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_groups_top_id_fkey'
-            columns: ['top_id']
-            isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
           },
           {
             foreignKeyName: 'group_groups_top_id_fkey'
@@ -1386,13 +1351,6 @@ export type Database = {
             foreignKeyName: 'public_group_invites_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'public_group_invites_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
           }
@@ -1418,13 +1376,6 @@ export type Database = {
           role?: string
         }
         Relationships: [
-          {
-            foreignKeyName: 'public_group_members_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
           {
             foreignKeyName: 'public_group_members_group_id_fkey'
             columns: ['group_id']
@@ -2319,13 +2270,6 @@ export type Database = {
           visibility?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: 'public_old_posts_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
           {
             foreignKeyName: 'public_old_posts_group_id_fkey'
             columns: ['group_id']
@@ -3939,38 +3883,6 @@ export type Database = {
       }
     }
     Views: {
-      final_pp_balances: {
-        Row: {
-          amount: number | null
-          user_id: string | null
-        }
-        Insert: {
-          amount?: number | null
-          user_id?: string | null
-        }
-        Update: {
-          amount?: number | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      group_role: {
-        Row: {
-          avatar_url: string | null
-          createdtime: number | null
-          creator_id: string | null
-          group_id: string | null
-          group_name: string | null
-          group_slug: string | null
-          member_id: string | null
-          name: string | null
-          privacy_status: string | null
-          role: string | null
-          total_members: number | null
-          username: string | null
-        }
-        Relationships: []
-      }
       mv_user_achievement_stats: {
         Row: {
           comments_percentile: number | null
