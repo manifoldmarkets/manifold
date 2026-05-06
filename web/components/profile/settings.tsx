@@ -119,13 +119,8 @@ export const AccountSettings = (props: {
             <Col>
               <Title>Are you sure?</Title>
               <div>
-                Updating your API key will break any existing applications
-                connected to your account, <b>including the Twitch bot</b>. You
-                will need to go to the{' '}
-                <Link href="/twitch" className="underline focus:outline-none">
-                  Twitch page
-                </Link>{' '}
-                to relink your account.
+                Updating your API key will break ALL existing applications
+                connected to your account!
               </div>
             </Col>
           </ConfirmationButton>
