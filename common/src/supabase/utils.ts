@@ -80,7 +80,11 @@ export function millisToTs(millis: number) {
   return new Date(millis).toISOString()
 }
 
-export function tsToMillis(ts: string) {
+export function tsToMillis(
+  ts: string | Date | null | undefined
+): number | undefined {
+  if (ts == null) return undefined
+  if (ts instanceof Date) return ts.getTime()
   return Date.parse(ts)
 }
 
