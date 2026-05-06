@@ -3467,9 +3467,13 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         sweepstakesNum: z.number(),
-        numTickets: z.number().positive(),
+        numTickets: z.number().positive().optional(),
+        maxManaSpent: z.number().positive().optional(),
       })
-      .strict(),
+      .strict()
+      .refine((props) => props.numTickets || props.maxManaSpent, {
+        message: 'Must provide numTickets or maxManaSpent',
+      }),
     returns: {} as {
       ticketId: string
       numTickets: number
