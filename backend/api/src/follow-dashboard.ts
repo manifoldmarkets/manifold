@@ -1,7 +1,6 @@
-import { getUserFollowsDashboard } from 'common/supabase/dashboard-follows'
-import { run } from 'common/supabase/utils'
-import { createSupabaseClient } from 'shared/supabase/init'
 import { z } from 'zod'
+
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { authEndpoint } from './helpers/endpoint'
 
 const schema = z
@@ -14,21 +13,31 @@ export const followdashboard = authEndpoint(async (req, auth) => {
   const { dashboardId } = schema.parse(req.body)
   const followerId = auth.uid
 
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  const isFollowing = await getUserFollowsDashboard(followerId, dashboardId, db)
+  const existingFollow = await pg.oneOrNone<{ dashboard_id: string }>(
+    `select dashboard_id
+     from dashboard_follows
+     where dashboard_id = $1 and follower_id = $2`,
+    [dashboardId, followerId]
+  )
 
-  const query = isFollowing
-    ? db
-        .from('dashboard_follows')
-        .delete()
-        .eq('dashboard_id', dashboardId)
-        .eq('follower_id', followerId)
-    : db
-        .from('dashboard_follows')
-        .upsert([{ dashboard_id: dashboardId, follower_id: followerId }])
+  const isFollowing = !!existingFollow
 
-  await run(query)
+  if (isFollowing) {
+    await pg.none(
+      `delete from dashboard_follows
+       where dashboard_id = $1 and follower_id = $2`,
+      [dashboardId, followerId]
+    )
+  } else {
+    await pg.none(
+      `insert into dashboard_follows (dashboard_id, follower_id)
+       values ($1, $2)
+       on conflict (dashboard_id, follower_id) do nothing`,
+      [dashboardId, followerId]
+    )
+  }
 
   return { isFollowing: !isFollowing }
 })

@@ -7,6 +7,16 @@ create table if not exists
     primary key (dashboard_id, follower_id)
   );
 
+-- Row Level Security
+alter table dashboard_follows enable row level security;
+
+-- Policies
+drop policy if exists "own read" on dashboard_follows;
+
+create policy "own read" on dashboard_follows for
+select
+  using ((firebase_uid () = follower_id));
+
 -- Indexes
 drop index if exists dashboard_follows_pkey;
 
