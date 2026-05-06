@@ -63,6 +63,8 @@ pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
 pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
 
 pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
+pgp.pg.types.setTypeParser(1114, (value) => value) // timestamp
+pgp.pg.types.setTypeParser(1184, (value) => value) // timestamptz
 export type SupabaseDirectClientTimeout = IDatabase<{}, IClient>
 export type SupabaseTransaction = ITask<{}>
 export type SupabaseDirectClient =
