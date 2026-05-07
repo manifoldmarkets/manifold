@@ -217,6 +217,19 @@ type ManaPurchase = {
         isFirstCryptoPurchase: boolean
         isBulkPurchase: boolean
       }
+    | {
+        mexasTxHash: string
+        payerAddress: string
+        tokenAddress: string
+        chainId: number
+        mexasAmount: number
+        type: 'mexas'
+        paidInCents: number
+        bonusAmount: number
+        bonusPct: number
+        isFirstCryptoPurchase: boolean
+        isBulkPurchase: boolean
+      }
 }
 
 // Convert a mana purchase txn to paid USD dollars with legacy safeguards.

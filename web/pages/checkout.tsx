@@ -1,19 +1,18 @@
 'use client'
-import { DaimoModal } from '@daimo/sdk/web'
 import clsx from 'clsx'
 
 import { isUserBanned } from 'common/ban-utils'
 import { canReceiveBonuses } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { DaimoProviders } from 'web/components/crypto/crypto-providers'
+import { PrivyWalletProviders } from 'web/components/crypto/privy-wallet-providers'
+import { MexasCheckoutButton } from 'web/components/crypto/mexas-checkout-button'
 import { SEO } from 'web/components/SEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Button } from 'web/components/buttons/button'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -21,7 +20,6 @@ import { PriceTile } from 'web/components/add-funds-modal'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 import { usePrices } from 'web/hooks/use-prices'
 import {
-  CurrencyDollarIcon,
   CheckCircleIcon,
   ArrowRightIcon,
   SparklesIcon,
@@ -35,19 +33,11 @@ import {
   CRYPTO_BULK_PURCHASE_BONUS_PCT,
   CRYPTO_BULK_THRESHOLD_DISPLAY,
   CRYPTO_FIRST_PURCHASE_BONUS_PCT,
-  CRYPTO_MANA_PER_DOLLAR,
 } from 'common/economy'
+import { MEXAS_MANA_PER_TOKEN, MEXAS_TOKEN } from 'common/crypto/mexas'
 import { formatMoney } from 'common/util/format'
-import { api } from 'web/lib/api/api'
 
-const MANA_TIERS_USD = [10, 25, 50, 100, 500, 1000, 2500]
-
-type SessionState =
-  | { status: 'idle' }
-  | { status: 'creating' }
-  | { status: 'ready'; sessionId: string; clientSecret: string }
-  | { status: 'completed' }
-  | { status: 'error'; message: string }
+const MEXAS_TIERS = [10, 25, 50, 100, 500, 1000, 2500]
 
 function ManaRewardsTable(props: { isFirstCryptoPurchase: boolean }) {
   const { isFirstCryptoPurchase } = props
@@ -74,10 +64,10 @@ function ManaRewardsTable(props: { isFirstCryptoPurchase: boolean }) {
             </tr>
           </thead>
           <tbody className="divide-ink-100 dark:divide-ink-200 divide-y">
-            {MANA_TIERS_USD.map((dollars) => {
-              const base = dollars * CRYPTO_MANA_PER_DOLLAR
+            {MEXAS_TIERS.map((mexas) => {
+              const base = mexas * MEXAS_MANA_PER_TOKEN
               const bulkBonus =
-                dollars >= CRYPTO_BULK_THRESHOLD_DISPLAY
+                mexas >= CRYPTO_BULK_THRESHOLD_DISPLAY
                   ? Math.floor(base * CRYPTO_BULK_PURCHASE_BONUS_PCT)
                   : 0
               const firstBonus = isFirstCryptoPurchase
@@ -85,17 +75,17 @@ function ManaRewardsTable(props: { isFirstCryptoPurchase: boolean }) {
                 : 0
               const bonus = bulkBonus + firstBonus
               const total = base + bonus
-              const isBulk = dollars >= CRYPTO_BULK_THRESHOLD_DISPLAY
+              const isBulk = mexas >= CRYPTO_BULK_THRESHOLD_DISPLAY
               return (
                 <tr
-                  key={dollars}
+                  key={mexas}
                   className={clsx(
                     isBulk &&
                       'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/30 dark:via-yellow-950/30 dark:to-amber-950/30'
                   )}
                 >
                   <td className="text-ink-800 px-3 py-2 font-medium">
-                    ${dollars.toLocaleString()}
+                    {mexas.toLocaleString()} {MEXAS_TOKEN.symbol}
                   </td>
                   <td
                     className={clsx(
@@ -133,8 +123,9 @@ function ManaRewardsTable(props: { isFirstCryptoPurchase: boolean }) {
         </table>
       </div>
       <p className="text-ink-500 text-xs">
-        $1 USDC = {formatMoney(CRYPTO_MANA_PER_DOLLAR)}. Purchases of $
-        {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ receive a{' '}
+        1 {MEXAS_TOKEN.symbol} = {formatMoney(MEXAS_MANA_PER_TOKEN)}. Purchases
+        of {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+{' '}
+        {MEXAS_TOKEN.symbol} receive a{' '}
         {Math.round(CRYPTO_BULK_PURCHASE_BONUS_PCT * 100)}% bulk bonus
         {isFirstCryptoPurchase
           ? ', which stacks with your first-purchase bonus.'
@@ -171,9 +162,7 @@ function CreditCardPurchaseGrid() {
 
 function CheckoutContent() {
   const user = useUser()
-  const [sessionState, setSessionState] = useState<SessionState>({
-    status: 'idle',
-  })
+  const [paymentCompleted, setPaymentCompleted] = useState(false)
   const [creditCardModalOpen, setCreditCardModalOpen] = useState(false)
   const [verificationModalOpen, setVerificationModalOpen] = useState(false)
 
@@ -195,37 +184,6 @@ function CheckoutContent() {
   const isBonusEligible = !!user && canReceiveBonuses(user)
   const canUseCreditCard = canPay && isBonusEligible
 
-  const handleBuyManaClick = async () => {
-    if (!canPay) return
-
-    setSessionState({ status: 'creating' })
-
-    try {
-      const result = await api('create-daimo-session', {})
-      setSessionState({
-        status: 'ready',
-        sessionId: result.sessionId,
-        clientSecret: result.clientSecret,
-      })
-    } catch (e) {
-      console.error('Failed to create Daimo session:', e)
-      setSessionState({
-        status: 'error',
-        message: 'Failed to start payment. Please try again.',
-      })
-    }
-  }
-
-  const handlePaymentCompleted = () => {
-    setSessionState({ status: 'completed' })
-  }
-
-  const handleModalClose = () => {
-    if (sessionState.status === 'ready') {
-      setSessionState({ status: 'idle' })
-    }
-  }
-
   return (
     <Col className="mx-auto w-full max-w-xl gap-4 px-4 py-6 sm:py-8">
       {/* Main Payment Card */}
@@ -237,15 +195,15 @@ function CheckoutContent() {
               Buy mana
             </h1>
             <Row className="items-center gap-1 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm dark:from-teal-600/80 dark:to-emerald-600/80">
-              <span>$1</span>
+              <span>1 {MEXAS_TOKEN.symbol}</span>
               <ArrowRightIcon className="h-3 w-3" />
-              <span>100 mana</span>
+              <span>{MEXAS_MANA_PER_TOKEN} mana</span>
             </Row>
           </Row>
         </div>
 
         {/* Payment Status States */}
-        {sessionState.status === 'completed' ? (
+        {paymentCompleted ? (
           <Col className="items-center p-6 text-center sm:p-8">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900/30">
               <CheckCircleIcon className="h-8 w-8 text-teal-600" />
@@ -263,22 +221,6 @@ function CheckoutContent() {
               </Button>
             </Link>
           </Col>
-        ) : sessionState.status === 'error' ? (
-          <Col className="items-center p-6 text-center sm:p-8">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-              <BanIcon className="h-8 w-8 text-red-600" />
-            </div>
-            <h2 className="text-ink-900 mb-2 text-lg font-semibold">
-              Payment Error
-            </h2>
-            <p className="text-ink-500 mb-4 text-sm">{sessionState.message}</p>
-            <Button
-              color="indigo"
-              onClick={() => setSessionState({ status: 'idle' })}
-            >
-              Try Again
-            </Button>
-          </Col>
         ) : (
           <Col className="gap-4 p-6 sm:p-8">
             {/* Mana Image */}
@@ -293,7 +235,8 @@ function CheckoutContent() {
             </div>
 
             <p className="text-ink-600 text-center text-sm">
-              Pay with USDC from any wallet or chain, or use a credit card
+              Pay with {MEXAS_TOKEN.name} on Arbitrum via Privy, or use a credit
+              card
             </p>
 
             {/* Payment Buttons */}
@@ -328,35 +271,10 @@ function CheckoutContent() {
                 </button>
               ) : (
                 <>
-                  <button
-                    onClick={handleBuyManaClick}
-                    disabled={
-                      sessionState.status === 'creating' ||
-                      sessionState.status === 'ready'
-                    }
-                    className={clsx(
-                      'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                      'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
-                      'px-8 py-4 text-lg font-semibold text-white shadow-lg',
-                      'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
-                      'active:scale-[0.98]',
-                      'disabled:cursor-not-allowed disabled:opacity-50'
-                    )}
-                  >
-                    <Row className="items-center justify-center gap-3">
-                      {sessionState.status === 'creating' ? (
-                        <>
-                          <LoadingIndicator size="sm" className="!text-white" />
-                          <span>Loading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                          <span>Buy with crypto</span>
-                        </>
-                      )}
-                    </Row>
-                  </button>
+                  <MexasCheckoutButton
+                    disabled={!canPay}
+                    onCompleted={() => setPaymentCompleted(true)}
+                  />
 
                   <Tooltip
                     text={
@@ -424,9 +342,9 @@ function CheckoutContent() {
                 </Row>
                 <p className="text-ink-600 mt-1 text-sm">
                   As a first-time crypto buyer, you'll receive a 10% bonus on
-                  your purchase — plus an additional 10% on orders of $
-                  {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more.
-                  Bonuses apply to crypto purchases only.
+                  your purchase — plus an additional 10% on orders of{' '}
+                  {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+{' '}
+                  {MEXAS_TOKEN.symbol}. Bonuses apply to crypto purchases only.
                 </p>
               </div>
             ) : (
@@ -434,15 +352,15 @@ function CheckoutContent() {
                 <Row className="items-center gap-2">
                   <GiftIcon className="h-5 w-5 text-purple-500" />
                   <span className="font-semibold text-purple-700 dark:text-purple-400">
-                    Crypto Bulk Bonus: 10% extra on $
-                    {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ crypto
-                    purchases
+                    Crypto Bulk Bonus: 10% extra on{' '}
+                    {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+{' '}
+                    {MEXAS_TOKEN.symbol} purchases
                   </span>
                 </Row>
                 <p className="text-ink-600 mt-1 text-sm">
-                  Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}{' '}
-                  USDC or more and receive a 10% bonus. Credit card purchases
-                  are not eligible for bonuses.
+                  Purchase {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+{' '}
+                  {MEXAS_TOKEN.symbol} and receive a 10% bonus. Credit card
+                  purchases are not eligible for bonuses.
                 </p>
               </div>
             )}
@@ -452,16 +370,6 @@ function CheckoutContent() {
           </Col>
         )}
       </div>
-
-      {/* Daimo Modal - rendered when session is ready */}
-      {sessionState.status === 'ready' && (
-        <DaimoModal
-          sessionId={sessionState.sessionId}
-          clientSecret={sessionState.clientSecret}
-          onPaymentCompleted={handlePaymentCompleted}
-          onClose={handleModalClose}
-        />
-      )}
 
       {/* Credit Card Purchase Modal */}
       <Modal
@@ -503,9 +411,9 @@ export default function CheckoutPage() {
         image="/buy-mana-graphics/100k.png"
       />
 
-      <DaimoProviders>
+      <PrivyWalletProviders>
         <CheckoutContent />
-      </DaimoProviders>
+      </PrivyWalletProviders>
     </Page>
   )
 }

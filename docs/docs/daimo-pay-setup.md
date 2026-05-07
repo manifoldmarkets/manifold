@@ -1,5 +1,8 @@
 # Daimo Pay Setup Guide
 
+> Legacy note: `/checkout` now uses the MEXAS Privy wallet rail in this fork.
+> Keep this guide only if you intend to re-enable Daimo Pay.
+
 This guide covers setting up Daimo Pay for crypto-to-mana purchases on Manifold using Daimo's session-based SDK.
 
 ## Overview

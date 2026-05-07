@@ -3291,6 +3291,27 @@ export const API = (_apiTypeCheck = {
       clientSecret: string
     },
   },
+  'record-mexas-purchase': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+        payerAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+        signature: z.string().regex(/^0x[a-fA-F0-9]+$/),
+      })
+      .strict(),
+    returns: {} as {
+      status: 'credited' | 'already-processed'
+      txHash: string
+      mexasAmount: number
+      manaAmount: number
+      bonusAmount: number
+      isFirstCryptoPurchase: boolean
+      isBulkPurchase: boolean
+    },
+  },
   'admin-create-charity-giveaway': {
     method: 'POST',
     visibility: 'undocumented',
