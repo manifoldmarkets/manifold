@@ -2307,9 +2307,7 @@ function MerchItemCard(props: {
             <Col className="gap-1">
               <input
                 type="email"
-                placeholder={
-                  emailRequired ? 'Email' : 'Email (optional)'
-                }
+                placeholder={emailRequired ? 'Email' : 'Email (optional)'}
                 value={shippingInfo.email}
                 maxLength={254}
                 onChange={(e) =>
