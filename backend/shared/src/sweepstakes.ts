@@ -7,17 +7,14 @@ import {
   MANIFOLD_USER_NAME,
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
-import { formatMoneyUSD } from 'common/util/format'
 import { nanoid } from 'common/util/random'
 import {
   getPrizeForRank,
   getOrdinalSuffix,
-  getTotalPrizePool,
   getTotalWinnerCount,
   type SweepstakesPrize,
 } from 'common/sweepstakes'
 import { type Notification, type PrizeWinnerData } from 'common/notification'
-import { createPrizeCampaignNotification } from 'shared/notifications/create-prize-campaign-notification'
 import {
   type SupabaseDirectClient,
   type SupabaseDirectClientTimeout,
@@ -83,25 +80,6 @@ export const createSweepstakes = async (
      VALUES ($1, $2, $3::jsonb, to_timestamp($4 / 1000.0))`,
     [sweepstakesNum, name, JSON.stringify(normalizedPrizes), closeTime]
   )
-
-  try {
-    const totalPrizeUsd = getTotalPrizePool(normalizedPrizes)
-    await createPrizeCampaignNotification(pg, {
-      reason: 'prize_drawings',
-      eventType: 'created',
-      sourceSlug: `prize/${sweepstakesNum}`,
-      title: 'New prize drawing',
-      body: `${formatMoneyUSD(totalPrizeUsd)} in total prizes.`,
-      data: {
-        eventType: 'created',
-        sweepstakesNum,
-        totalPrizeUsd,
-        closeTime,
-      },
-    })
-  } catch (err) {
-    log.error('Failed to send prize drawing notifications', { err })
-  }
 
   return { sweepstakesNum }
 }
