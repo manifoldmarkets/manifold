@@ -41,6 +41,7 @@ export type FormState = {
   // Poll-specific options
   pollType?: PollType // 'single' | 'multi-select' | 'ranked-choice'
   maxSelections?: number // For multi-select polls
+  boostMarket?: boolean // Whether to also boost the market on creation
 }
 
 export type ValidationErrors = {

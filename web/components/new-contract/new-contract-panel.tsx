@@ -2,7 +2,7 @@ import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { Contract, CreateableOutcomeType } from 'common/contract'
 import { MarketDraft } from 'common/drafts'
-import { getAnte } from 'common/economy'
+import { BOOST_COST_MANA, getAnte } from 'common/economy'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
@@ -40,6 +40,7 @@ import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { ActionBar } from './action-bar'
+import { BoostSection } from './boost-section'
 import { CloseTimeSection } from './close-time-section'
 import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
 import { MarketPreview, PreviewContractData } from './market-preview'
@@ -87,6 +88,7 @@ export function NewContractPanel(props: {
     unit: '',
     midpoints: [],
     includeSeeResults: true,
+    boostMarket: false,
   })
 
   // Initialize form state with defaults (from params if provided)
@@ -115,6 +117,7 @@ export function NewContractPanel(props: {
     unit: params?.unit || '',
     midpoints: params?.midpoints || [],
     includeSeeResults: true,
+    boostMarket: false,
   })
 
   const [formState, setFormState] = usePersistentLocalState<FormState>(
@@ -460,6 +463,9 @@ export function NewContractPanel(props: {
   // Helper: Get submit button text based on outcome type
   // Avoids duplication between mobile and desktop action bars
   const getSubmitButtonText = () => {
+    if (willBoost) {
+      return `Create + Boost for ${formatMoney(totalCost)}`
+    }
     return `Create for ${formatMoney(cost)}`
   }
 
@@ -727,11 +733,17 @@ export function NewContractPanel(props: {
     formState.liquidityTier
   )
 
+  // Boost is only available for publicly listed markets
+  const willBoost =
+    !!formState.boostMarket && formState.visibility === 'public'
+  const boostCost = willBoost ? BOOST_COST_MANA : 0
+  const totalCost = cost + boostCost
+
   // Add balance validation
-  const hasInsufficientBalance = cost > creator.balance
+  const hasInsufficientBalance = totalCost > creator.balance
   if (hasInsufficientBalance && !validation.errors.balance) {
     validation.errors.balance = `Insufficient balance. You need ${formatMoney(
-      cost
+      totalCost
     )} but only have ${formatMoney(creator.balance)}`
   }
 
@@ -939,6 +951,7 @@ export function NewContractPanel(props: {
         hasDescription: !!formState.description,
         numAnswers: formState.answers.length,
         liquidityTier: formState.liquidityTier,
+        boostMarket: willBoost,
       })
 
       // Call API to create market
@@ -947,6 +960,27 @@ export function NewContractPanel(props: {
       // Clear form state and editor autosave
       localStorage.removeItem('new-contract-form')
       localStorage.removeItem('text new-contract-description')
+
+      // If user opted to boost the new market, purchase a boost starting now.
+      // Failures here shouldn't block navigation to the newly-created market.
+      if (willBoost && result?.id) {
+        try {
+          await api('purchase-boost', {
+            contractId: result.id,
+            startTime: Date.now(),
+            method: 'mana',
+          })
+          toast.success(
+            `Market boosted! It will be featured on the homepage for 24 hours.`
+          )
+        } catch (boostError: any) {
+          console.error('Error purchasing boost:', boostError)
+          toast.error(
+            boostError?.message ||
+              'Market created but failed to purchase boost.'
+          )
+        }
+      }
 
       // Redirect to new market
       if (result && result.slug) {
@@ -1394,6 +1428,14 @@ export function NewContractPanel(props: {
           />
           <InfoTooltip text="Unlisted markets are only discoverable via a direct link" />
         </Row>
+
+        {/* Boost Toggle */}
+        <BoostSection
+          enabled={!!formState.boostMarket}
+          setEnabled={(value) => updateField('boostMarket', value)}
+          visibility={formState.visibility}
+          className="mx-4"
+        />
 
         {/* Desktop Action Bar - Floating below liquidity section */}
         <div className="hidden rounded-lg p-4 ring-1 ring-transparent lg:block">
