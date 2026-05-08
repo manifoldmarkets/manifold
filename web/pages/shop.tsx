@@ -1610,8 +1610,6 @@ function MerchItemCard(props: {
   const [selectedShipping, setSelectedShipping] = useState<ShippingRate | null>(
     null
   )
-  const privateUser = usePrivateUser()
-  const accountEmail = privateUser?.email ?? ''
   const [shippingInfo, setShippingInfo] = useState({
     name: '',
     address1: '',
@@ -1623,14 +1621,6 @@ function MerchItemCard(props: {
     taxNumber: '',
     email: '',
   })
-  // Prefill email from the logged-in user once their privateUser hydrates.
-  // Only fills when the field is still blank so we never clobber typing.
-  useEffect(() => {
-    if (accountEmail && !shippingInfo.email) {
-      setShippingInfo((s) => (s.email ? s : { ...s, email: accountEmail }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountEmail])
   const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
   const [countdown, setCountdown] = useState(5)
 
@@ -1814,7 +1804,7 @@ function MerchItemCard(props: {
         zip: '',
         country: 'US',
         taxNumber: '',
-        email: accountEmail,
+        email: '',
       })
       onPurchased?.()
     } catch (e: any) {
