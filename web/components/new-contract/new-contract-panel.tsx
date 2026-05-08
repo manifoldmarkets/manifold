@@ -733,8 +733,7 @@ export function NewContractPanel(props: {
   )
 
   // Boost is only available for publicly listed markets
-  const willBoost =
-    !!formState.boostMarket && formState.visibility === 'public'
+  const willBoost = !!formState.boostMarket && formState.visibility === 'public'
   const boostCost = willBoost ? BOOST_COST_MANA : 0
   const totalCost = cost + boostCost
 
