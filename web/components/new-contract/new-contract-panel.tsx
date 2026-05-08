@@ -740,11 +740,18 @@ export function NewContractPanel(props: {
 
   // Add balance validation
   const hasInsufficientBalance = totalCost > creator.balance
-  if (hasInsufficientBalance && !validation.errors.balance) {
-    validation.errors.balance = `Insufficient balance. You need ${formatMoney(
-      totalCost
-    )} but only have ${formatMoney(creator.balance)}`
+  const validationErrors = {
+    ...validation.errors,
+    ...(hasInsufficientBalance && !validation.errors.balance
+      ? {
+          balance: `Insufficient balance. You need ${formatMoney(
+            totalCost
+          )} but only have ${formatMoney(creator.balance)}`,
+        }
+      : {}),
   }
+  const isFormValid =
+    validation.isValid && Object.keys(validationErrors).length === 0
 
   // Handle type change
   const handleTypeChange = (
@@ -840,10 +847,10 @@ export function NewContractPanel(props: {
     if (isSubmitting) return
 
     // Check validation and show field-level errors if invalid
-    if (!validation.isValid) {
-      setFieldErrors(validation.errors)
+    if (!isFormValid) {
+      setFieldErrors(validationErrors)
 
-      const errorKeys = Object.keys(validation.errors)
+      const errorKeys = Object.keys(validationErrors)
       const isOnlyCloseDateError =
         errorKeys.length === 1 && errorKeys[0] === 'closeDate'
 
@@ -855,7 +862,7 @@ export function NewContractPanel(props: {
         setSubmitAttemptCount((prev) => prev + 1)
       }
 
-      scrollToFirstError(validation.errors)
+      scrollToFirstError(validationErrors)
       return
     }
 
@@ -1407,7 +1414,7 @@ export function NewContractPanel(props: {
         <ContextualEditorPanel
           formState={formState}
           onUpdate={updateField}
-          validationErrors={validation.errors}
+          validationErrors={validationErrors}
           balance={creator.balance}
           submitState={isSubmitting ? 'LOADING' : 'EDITING'}
           onGenerateAnswers={generateAnswers}
