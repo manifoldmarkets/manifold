@@ -4,7 +4,10 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser, isProd } from 'shared/utils'
 import { getShopItem, isMerchItem, PRINTFUL_API_URL } from 'common/shop/items'
-import { requiresPostalCode } from 'common/shop/printful-address'
+import {
+  requiresPostalCode,
+  requiresRecipientEmail,
+} from 'common/shop/printful-address'
 import { getBenefit } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -42,6 +45,13 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   // the case where the country actually requires one.
   if (requiresPostalCode(shipping.country) && !shipping.zip?.trim()) {
     throw new APIError(400, 'Postal code is required for this country')
+  }
+
+  // Per-country email enforcement — Brazilian customs notifies recipients
+  // by email about CPF/duty resolution. Schema keeps email optional so most
+  // checkouts skip it; this catches the case where it's actually required.
+  if (requiresRecipientEmail(shipping.country) && !shipping.email?.trim()) {
+    throw new APIError(400, 'Email is required for this country')
   }
 
   const printfulToken = process.env.PRINTFUL_API_TOKEN
@@ -282,6 +292,7 @@ async function createPrintfulOrder(
       zip?: string
       country: string
       taxNumber?: string
+      email?: string
     }
     externalId: string
     confirm: boolean
@@ -305,6 +316,7 @@ async function createPrintfulOrder(
         country_code: params.shipping.country,
         zip: params.shipping.zip || undefined,
         tax_number: params.shipping.taxNumber || undefined,
+        email: params.shipping.email || undefined,
       },
       items: [
         {

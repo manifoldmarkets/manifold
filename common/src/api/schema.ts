@@ -3836,6 +3836,7 @@ export const API = (_apiTypeCheck = {
           zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
           taxNumber: z.string().max(50).optional(),
+          email: z.string().email().max(254).optional(),
         }),
       })
       .strict(),

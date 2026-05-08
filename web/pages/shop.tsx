@@ -24,7 +24,10 @@ import {
   getTicketItems,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
-import { requiresPostalCode } from 'common/shop/printful-address'
+import {
+  requiresPostalCode,
+  requiresRecipientEmail,
+} from 'common/shop/printful-address'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import {
@@ -1616,6 +1619,7 @@ function MerchItemCard(props: {
     zip: '',
     country: 'US',
     taxNumber: '',
+    email: '',
   })
   const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
   const [countdown, setCountdown] = useState(5)
@@ -1800,6 +1804,7 @@ function MerchItemCard(props: {
         zip: '',
         country: 'US',
         taxNumber: '',
+        email: '',
       })
       onPurchased?.()
     } catch (e: any) {
@@ -1811,6 +1816,13 @@ function MerchItemCard(props: {
   }
 
   const zipRequired = requiresPostalCode(shippingInfo.country)
+  const emailRequired = requiresRecipientEmail(shippingInfo.country)
+  // Loose check: must contain an @ and a dot in the domain. Server-side
+  // schema does the strict RFC validation; this is just to gate the UI.
+  const emailLooksValid =
+    !shippingInfo.email || /^\S+@\S+\.\S+$/.test(shippingInfo.email.trim())
+  const emailFieldOk =
+    (!emailRequired || !!shippingInfo.email.trim()) && emailLooksValid
   const taxIdConfig = TAX_ID_COUNTRIES[shippingInfo.country]
   const taxIdValid = taxIdConfig
     ? taxIdConfig.validate(shippingInfo.taxNumber)
@@ -1819,7 +1831,8 @@ function MerchItemCard(props: {
     shippingInfo.address1 &&
     shippingInfo.city &&
     (!zipRequired || shippingInfo.zip) &&
-    taxIdValid
+    taxIdValid &&
+    emailFieldOk
 
   return (
     <>
@@ -2291,6 +2304,36 @@ function MerchItemCard(props: {
                 )}
               </Col>
             )}
+            <Col className="gap-1">
+              <input
+                type="email"
+                placeholder={
+                  emailRequired ? 'Email' : 'Email (optional)'
+                }
+                value={shippingInfo.email}
+                maxLength={254}
+                onChange={(e) =>
+                  setShippingInfo((s) => ({ ...s, email: e.target.value }))
+                }
+                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              {emailRequired ? (
+                <p className="text-ink-500 text-xs">
+                  Required: customs in this country emails the recipient about
+                  duties and documents needed to release the parcel.
+                </p>
+              ) : (
+                <p className="text-ink-500 text-xs">
+                  Optional. Forwarded to our fulfillment partner so the carrier
+                  can reach you about delivery issues.
+                </p>
+              )}
+              {shippingInfo.email.length > 0 && !emailLooksValid && (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  Enter a valid email address.
+                </p>
+              )}
+            </Col>
           </Col>
 
           {!shippingRates && (
@@ -2365,7 +2408,12 @@ function MerchItemCard(props: {
             </Button>
             <Button
               color="indigo"
-              disabled={!shippingInfo.name || !selectedShipping || !taxIdValid}
+              disabled={
+                !shippingInfo.name ||
+                !selectedShipping ||
+                !taxIdValid ||
+                !emailFieldOk
+              }
               onClick={() => {
                 setAcceptedTerms(false)
                 setShowConfirmOrderModal(true)
@@ -2416,6 +2464,12 @@ function MerchItemCard(props: {
                 {COUNTRIES.find((c) => c.code === shippingInfo.country)?.name}
               </span>
             </Row>
+            {shippingInfo.email && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Email:</span>
+                <span className="font-medium">{shippingInfo.email}</span>
+              </Row>
+            )}
             {selectedShipping && (
               <Row className="justify-between">
                 <span className="text-ink-500">Shipping method:</span>

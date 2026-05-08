@@ -24,3 +24,26 @@ const POSTAL_CODE_OPTIONAL_COUNTRIES = new Set<string>([
 // purchase/rates handlers.
 export const requiresPostalCode = (countryCode: string): boolean =>
   !POSTAL_CODE_OPTIONAL_COUNTRIES.has(countryCode.toUpperCase())
+
+// Countries where the destination's customs authority uses the recipient's
+// email to notify them about duties/documents needed to release the parcel.
+// Without an email, packages can be delayed, returned, or cancelled — so we
+// make the form field mandatory. Printful's API accepts orders without email
+// (the requirement is enforced downstream by customs/carriers), and the
+// public /countries endpoint doesn't expose per-field requirement flags, so
+// this list is curated from Printful's help center documentation.
+//
+// Canary Islands also require email per Printful, but they ship under
+// Spain's ES code; distinguishing them requires a state-code check
+// (GC/TF) which we don't currently do. Spanish customers can still type
+// an email — it's just not enforced by this list.
+const EMAIL_REQUIRED_COUNTRIES = new Set<string>([
+  'BR', // Brazil — Receita Federal emails recipient about CPF/import duties
+])
+
+// True when the given ISO-2 country code requires a recipient email for
+// customs notifications. The email is always forwarded to Printful when
+// supplied; this flag only controls whether the client form treats it as
+// mandatory.
+export const requiresRecipientEmail = (countryCode: string): boolean =>
+  EMAIL_REQUIRED_COUNTRIES.has(countryCode.toUpperCase())
