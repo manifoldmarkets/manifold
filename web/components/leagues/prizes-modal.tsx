@@ -23,8 +23,8 @@ export function PrizesModal(props: {
     6: '🎖️',
   }
   const divisions = sortBy(
-    Object.entries(DIVISION_NAMES).filter(([division]) => +division > 0),
-    ([division]) => division
+    Object.entries(DIVISION_NAMES),
+    ([division]) => +division
   )
 
   return (
@@ -44,7 +44,7 @@ export function PrizesModal(props: {
           {divisions.map(([divisionNum, divisionName]) => {
             const div = +divisionNum
             const style = DIVISION_STYLES[div] ?? DIVISION_STYLES[1]
-            const prizes = prizesByDivisionAndRank[div - 1] ?? []
+            const prizes = prizesByDivisionAndRank[div] ?? []
 
             return (
               <Col key={div} className="gap-3">
@@ -63,6 +63,11 @@ export function PrizesModal(props: {
                   </div>
                   <span className="text-ink-900 font-medium">
                     {divisionName}
+                    {div === 0 && (
+                      <span className="text-ink-500 ml-1 font-normal">
+                        (bot only)
+                      </span>
+                    )}
                   </span>
                 </Row>
 

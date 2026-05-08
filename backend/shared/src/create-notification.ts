@@ -674,6 +674,7 @@ export const createLeagueChangedNotifications = async (
       previousLeague: item.previousLeague,
       newLeague: item.newLeague,
       bonusAmount: item.bonusAmount,
+      missedPrizeReason: item.missedPrizeReason,
     }
 
     const notification: Notification = {

@@ -407,6 +407,7 @@ export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
   newLeague: { season: number; division: number; cohort: string }
   bonusAmount: number
+  missedPrizeReason?: 'silicon_min_mana_not_met'
 }
 
 export type BetFillData = {

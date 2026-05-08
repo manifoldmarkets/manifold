@@ -326,7 +326,10 @@ export const getCohortSize = (division: number) => {
   return 25
 }
 
+// Indexed by division number. Silicon (0) pays only the top 6;
+// payout further requires mana_earned >= 100 (see payout-leagues.ts).
 export const prizesByDivisionAndRank = [
+  [800, 400, 360, 320, 280, 240],
   [100, 50, 40, 30, 20, 10, 5],
   [200, 100, 90, 80, 70, 60, 50, 40],
   [400, 200, 180, 160, 140, 120, 100, 80, 60],
@@ -335,8 +338,10 @@ export const prizesByDivisionAndRank = [
   [6400, 3200, 1600, 1440, 1200, 1120, 960, 800, 640, 480],
 ]
 
+export const SILICON_PRIZE_MIN_MANA_EARNED = 100
+
 export const getLeaguePrize = (division: number, rank: number) => {
-  const divisionPrizes = prizesByDivisionAndRank[division - 1]
+  const divisionPrizes = prizesByDivisionAndRank[division]
   if (!divisionPrizes) return 0
   return divisionPrizes[rank - 1] || 0
 }
