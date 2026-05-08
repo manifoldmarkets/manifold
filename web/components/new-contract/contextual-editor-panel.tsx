@@ -1,6 +1,7 @@
 import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { CreateableOutcomeType, PollType } from 'common/contract'
+import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -68,6 +69,13 @@ export function ContextualEditorPanel(props: {
     addAnswersMode,
     formState.shouldAnswersSumToOne
   )
+  const marketCost = outcomeType
+    ? getAnte(
+        outcomeType as any,
+        numAnswersForCost > 0 ? numAnswersForCost : undefined,
+        liquidityTier
+      )
+    : 0
 
   return (
     <Col
@@ -106,6 +114,8 @@ export function ContextualEditorPanel(props: {
         enabled={!!formState.boostMarket}
         setEnabled={(value) => onUpdate('boostMarket', value)}
         visibility={formState.visibility}
+        marketCost={marketCost}
+        balance={balance ?? 0}
       />
     </Col>
   )

@@ -739,19 +739,26 @@ export function NewContractPanel(props: {
   const totalCost = cost + boostCost
 
   // Add balance validation
+  // Distinguish market-cost vs boost-cost insufficiency so the boost-only case
+  // doesn't trigger the panel-wide red ring (it surfaces inline in BoostSection).
+  const insufficientForMarket = cost > creator.balance
   const hasInsufficientBalance = totalCost > creator.balance
+  const insufficientForBoostOnly =
+    hasInsufficientBalance && !insufficientForMarket
   const validationErrors = {
     ...validation.errors,
-    ...(hasInsufficientBalance && !validation.errors.balance
+    ...(insufficientForMarket && !validation.errors.balance
       ? {
           balance: `Insufficient balance. You need ${formatMoney(
-            totalCost
+            cost
           )} but only have ${formatMoney(creator.balance)}`,
         }
       : {}),
   }
   const isFormValid =
-    validation.isValid && Object.keys(validationErrors).length === 0
+    validation.isValid &&
+    Object.keys(validationErrors).length === 0 &&
+    !hasInsufficientBalance
 
   // Handle type change
   const handleTypeChange = (
@@ -857,6 +864,12 @@ export function NewContractPanel(props: {
       // Auto-open close date modal only if it's the ONLY error (don't shake button)
       if (isOnlyCloseDateError) {
         setIsCloseDateModalOpen(true)
+      } else if (insufficientForBoostOnly && errorKeys.length === 0) {
+        // Boost-only balance issue: tell the user how to proceed.
+        toast.error(
+          'Not enough mana to boost. Switch to "No boost" to create without boosting, or top up.'
+        )
+        setSubmitAttemptCount((prev) => prev + 1)
       } else {
         // Increment submit attempt count (triggers shake animation) for other errors
         setSubmitAttemptCount((prev) => prev + 1)
