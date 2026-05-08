@@ -1,11 +1,13 @@
 import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { CreateableOutcomeType, PollType } from 'common/contract'
+import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { Input } from '../widgets/input'
+import { BoostSection } from './boost-section'
 import { CostSection } from './cost-section'
 import { getAnteAnswerCount } from './utils/get-ante-answer-count'
 
@@ -41,6 +43,7 @@ export type FormState = {
   // Poll-specific options
   pollType?: PollType // 'single' | 'multi-select' | 'ranked-choice'
   maxSelections?: number // For multi-select polls
+  boostMarket?: boolean // Whether to also boost the market on creation
 }
 
 export type ValidationErrors = {
@@ -66,6 +69,13 @@ export function ContextualEditorPanel(props: {
     addAnswersMode,
     formState.shouldAnswersSumToOne
   )
+  const marketCost = outcomeType
+    ? getAnte(
+        outcomeType as any,
+        numAnswersForCost > 0 ? numAnswersForCost : undefined,
+        liquidityTier
+      )
+    : 0
 
   return (
     <Col
@@ -99,6 +109,14 @@ export function ContextualEditorPanel(props: {
           )}
         </>
       )}
+
+      <BoostSection
+        enabled={!!formState.boostMarket}
+        setEnabled={(value) => onUpdate('boostMarket', value)}
+        visibility={formState.visibility}
+        marketCost={marketCost}
+        balance={balance ?? 0}
+      />
     </Col>
   )
 }
