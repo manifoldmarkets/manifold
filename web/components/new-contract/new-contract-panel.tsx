@@ -40,7 +40,6 @@ import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { ActionBar } from './action-bar'
-import { BoostSection } from './boost-section'
 import { CloseTimeSection } from './close-time-section'
 import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
 import { MarketPreview, PreviewContractData } from './market-preview'
@@ -1428,14 +1427,6 @@ export function NewContractPanel(props: {
           />
           <InfoTooltip text="Unlisted markets are only discoverable via a direct link" />
         </Row>
-
-        {/* Boost Toggle */}
-        <BoostSection
-          enabled={!!formState.boostMarket}
-          setEnabled={(value) => updateField('boostMarket', value)}
-          visibility={formState.visibility}
-          className="mx-4"
-        />
 
         {/* Desktop Action Bar - Floating below liquidity section */}
         <div className="hidden rounded-lg p-4 ring-1 ring-transparent lg:block">

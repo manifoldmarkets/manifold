@@ -6,6 +6,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { Input } from '../widgets/input'
+import { BoostSection } from './boost-section'
 import { CostSection } from './cost-section'
 import { getAnteAnswerCount } from './utils/get-ante-answer-count'
 
@@ -100,6 +101,12 @@ export function ContextualEditorPanel(props: {
           )}
         </>
       )}
+
+      <BoostSection
+        enabled={!!formState.boostMarket}
+        setEnabled={(value) => onUpdate('boostMarket', value)}
+        visibility={formState.visibility}
+      />
     </Col>
   )
 }
