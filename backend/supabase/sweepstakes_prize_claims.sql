@@ -8,9 +8,11 @@ create table if not exists
     user_id text not null references users (id),
     rank integer not null,
     prize_amount_usdc numeric not null,
-    wallet_address text not null,
+    -- Nullable: admins can mark users as 'opted_out' or 'rejected' before
+    -- they ever submit a wallet (e.g. winner forfeits to charity instead).
+    wallet_address text,
     payment_status text not null default 'awaiting' check (
-      payment_status in ('awaiting', 'sent', 'rejected')
+      payment_status in ('awaiting', 'sent', 'rejected', 'opted_out')
     ),
     payment_txn_hash text,
     created_time timestamptz not null default now(),

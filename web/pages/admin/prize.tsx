@@ -12,8 +12,9 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
+import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 
-type PaymentStatus = 'awaiting' | 'sent' | 'rejected'
+type PaymentStatus = 'awaiting' | 'sent' | 'rejected' | 'opted_out'
 
 export default function AdminPrizePage() {
   const user = useUser()
@@ -45,23 +46,36 @@ function PrizeClaimsTable() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [copiedClaimId, setCopiedClaimId] = useState<string | null>(null)
 
+  // Updating a row keyed by (sweepstakesNum + userId) instead of claimId
+  // when no claim exists yet — used as the busy-marker for the dropdown.
+  const rowKey = (sweepstakesNum: number, userId: string) =>
+    `${sweepstakesNum}:${userId}`
+
   const handleStatusChange = async (
-    claimId: string | null,
+    claim: {
+      id: string | null
+      sweepstakesNum: number
+      userId: string
+    },
     newStatus: PaymentStatus
   ) => {
-    if (!claimId) {
-      toast.error('User has not submitted their wallet address yet')
-      return
-    }
-
-    setUpdatingId(claimId)
+    const key = claim.id ?? rowKey(claim.sweepstakesNum, claim.userId)
+    setUpdatingId(key)
     try {
-      await api('admin-update-prize-payment', {
-        claimId,
-        paymentStatus: newStatus,
-      })
+      // Send claimId when we have one; otherwise let the server upsert by
+      // (sweepstakesNum, userId). The server validates the user actually won.
+      await api(
+        'admin-update-prize-payment',
+        claim.id
+          ? { claimId: claim.id, paymentStatus: newStatus }
+          : {
+              sweepstakesNum: claim.sweepstakesNum,
+              userId: claim.userId,
+              paymentStatus: newStatus,
+            }
+      )
       toast.success(`Status updated to ${newStatus}`)
-      setCopiedClaimId((id) => (id === claimId ? null : id))
+      setCopiedClaimId((id) => (id === claim.id ? null : id))
       refresh()
     } catch (e) {
       toast.error('Failed to update status')
@@ -74,6 +88,20 @@ function PrizeClaimsTable() {
     navigator.clipboard.writeText(address)
     toast.success('Wallet address copied')
     if (claimId) setCopiedClaimId(claimId)
+  }
+
+  const handleResetClaim = async (claimId: string) => {
+    setUpdatingId(claimId)
+    try {
+      await api('admin-delete-prize-claim', { claimId })
+      toast.success('Claim reset')
+      setCopiedClaimId((id) => (id === claimId ? null : id))
+      refresh()
+    } catch (e) {
+      toast.error('Failed to reset claim')
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
   if (data === undefined) {
@@ -171,10 +199,7 @@ function PrizeClaimsTable() {
                         {claim.walletAddress ? (
                           <WalletAddressCell
                             address={claim.walletAddress}
-                            copyable={
-                              claim.paymentStatus !== 'sent' &&
-                              claim.paymentStatus !== 'rejected'
-                            }
+                            copyable={claim.paymentStatus === 'awaiting'}
                             onCopy={() =>
                               handleCopyAddress(
                                 claim.id,
@@ -192,21 +217,34 @@ function PrizeClaimsTable() {
                         <Row className="items-center gap-2">
                           <StatusSelector
                             currentStatus={claim.paymentStatus}
-                            disabled={
-                              !claim.walletAddress || updatingId !== null
+                            disabled={updatingId !== null}
+                            loading={
+                              updatingId ===
+                              (claim.id ??
+                                rowKey(claim.sweepstakesNum, claim.userId))
                             }
-                            loading={updatingId === claim.id}
                             onChange={(status) =>
-                              handleStatusChange(claim.id, status)
+                              handleStatusChange(claim, status)
                             }
                           />
+                          {claim.id && (
+                            <ResetClaimButton
+                              hasWallet={!!claim.walletAddress}
+                              currentStatus={claim.paymentStatus}
+                              username={claim.username}
+                              disabled={updatingId !== null}
+                              onConfirm={() =>
+                                handleResetClaim(claim.id as string)
+                              }
+                            />
+                          )}
                           {copiedClaimId === claim.id &&
                             claim.id &&
                             claim.paymentStatus === 'awaiting' && (
                               <MarkSentPrompt
                                 disabled={updatingId !== null}
                                 onMarkSent={() =>
-                                  handleStatusChange(claim.id, 'sent')
+                                  handleStatusChange(claim, 'sent')
                                 }
                                 onDismiss={() => setCopiedClaimId(null)}
                               />
@@ -284,6 +322,78 @@ function WalletAddressCell(props: {
   )
 }
 
+// Wipes the claim row entirely. Used to recover from accidentally-set
+// statuses (e.g. opted_out) — after delete the user is back in the "no
+// claim" state and can submit a wallet again via the normal /prize flow.
+function ResetClaimButton(props: {
+  hasWallet: boolean
+  currentStatus: PaymentStatus | null
+  username: string
+  disabled: boolean
+  onConfirm: () => Promise<void> | void
+}) {
+  const { hasWallet, currentStatus, username, disabled, onConfirm } = props
+  const isTerminal =
+    currentStatus === 'sent' ||
+    currentStatus === 'rejected' ||
+    currentStatus === 'opted_out'
+
+  return (
+    <ConfirmationButton
+      openModalBtn={{
+        label: 'Reset',
+        color: 'gray-outline',
+        size: 'xs',
+        disabled,
+      }}
+      cancelBtn={{ label: 'Cancel' }}
+      submitBtn={{ label: 'Reset claim', color: 'red' }}
+      onSubmit={() => onConfirm()}
+    >
+      <Col className="gap-3">
+        <h3 className="text-lg font-semibold">Reset prize claim?</h3>
+        <p className="text-ink-700 text-sm">
+          This will <b>delete the prize claim row</b> for{' '}
+          <span className="font-mono">@{username}</span>
+          {currentStatus && (
+            <>
+              {' '}
+              (currently <b>{currentStatus}</b>)
+            </>
+          )}
+          . Use this to undo an accidentally-set status — for example, if
+          you marked someone <b>opted out</b> by mistake.
+        </p>
+        <ul className="text-ink-700 list-disc space-y-1 pl-5 text-sm">
+          <li>
+            Their{' '}
+            {hasWallet ? (
+              <>submitted wallet address will be erased</>
+            ) : (
+              <>row (with no wallet) will be erased</>
+            )}
+            .
+          </li>
+          <li>
+            They'll be returned to the "no claim" state and can submit a
+            wallet again on /prize.
+          </li>
+          {isTerminal && (
+            <li>
+              Existing <b>{currentStatus}</b> status — including any payment
+              transaction record — will be lost.
+            </li>
+          )}
+        </ul>
+        <p className="text-ink-500 text-xs">
+          This does not refund anything. If a payment was already sent
+          on-chain, deleting this row only removes the audit record.
+        </p>
+      </Col>
+    </ConfirmationButton>
+  )
+}
+
 function MarkSentPrompt(props: {
   disabled: boolean
   onMarkSent: () => void
@@ -313,6 +423,10 @@ function MarkSentPrompt(props: {
   )
 }
 
+// Sentinel used when no row exists yet (the user never submitted a wallet).
+// Renders as "—" but lets the admin pick a real status to upsert one.
+const UNSET = '__unset__'
+
 function StatusSelector(props: {
   currentStatus: PaymentStatus | null
   disabled: boolean
@@ -320,15 +434,16 @@ function StatusSelector(props: {
   onChange: (status: PaymentStatus) => void
 }) {
   const { currentStatus, disabled, loading, onChange } = props
-
-  if (!currentStatus) {
-    return <span className="text-ink-400 text-sm">—</span>
-  }
+  const value = currentStatus ?? UNSET
 
   return (
     <select
-      value={currentStatus}
-      onChange={(e) => onChange(e.target.value as PaymentStatus)}
+      value={value}
+      onChange={(e) => {
+        const v = e.target.value
+        if (v === UNSET) return
+        onChange(v as PaymentStatus)
+      }}
       disabled={disabled || loading}
       className={clsx(
         'min-w-[120px] rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
@@ -337,12 +452,20 @@ function StatusSelector(props: {
         currentStatus === 'sent' &&
           'border-green-200 bg-green-50 text-green-700',
         currentStatus === 'rejected' && 'border-red-200 bg-red-50 text-red-700',
+        currentStatus === 'opted_out' &&
+          'border-indigo-200 bg-indigo-50 text-indigo-700',
+        currentStatus === null &&
+          'border-ink-200 bg-canvas-50 text-ink-500',
         disabled && 'cursor-not-allowed opacity-50'
       )}
     >
+      {currentStatus === null && (
+        <option value={UNSET}>—</option>
+      )}
       <option value="awaiting">Awaiting</option>
       <option value="sent">Sent</option>
-      <option value="rejected">Rejected</option>
+      <option value="rejected">Rejected (ineligible)</option>
+      <option value="opted_out">Opted out (forfeited)</option>
     </select>
   )
 }

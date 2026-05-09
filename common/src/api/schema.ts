@@ -3572,8 +3572,10 @@ export const API = (_apiTypeCheck = {
         id: string
         rank: number
         prizeAmountUsdc: number
-        walletAddress: string
-        paymentStatus: 'awaiting' | 'sent' | 'rejected'
+        // Null when admin recorded an opted_out / rejected status before
+        // the user ever submitted a wallet.
+        walletAddress: string | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out'
         paymentTxnHash: string | null
         createdTime: number
       } | null
@@ -3599,7 +3601,7 @@ export const API = (_apiTypeCheck = {
         rank: number
         prizeAmountUsdc: number
         walletAddress: string | null
-        paymentStatus: 'awaiting' | 'sent' | 'rejected' | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out' | null
         paymentTxnHash: string | null
         createdTime: number | null
       }>
@@ -3609,13 +3611,35 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
+    // Identify the claim by either an existing claimId (user already
+    // submitted a wallet) or by (sweepstakesNum, userId) — the latter lets
+    // admins record opted_out/rejected decisions for winners who never
+    // submitted a wallet, by upserting a row with NULL wallet_address.
     props: z
       .object({
-        claimId: z.string(),
-        paymentStatus: z.enum(['awaiting', 'sent', 'rejected']),
+        claimId: z.string().optional(),
+        sweepstakesNum: z.number().int().optional(),
+        userId: z.string().optional(),
+        paymentStatus: z.enum([
+          'awaiting',
+          'sent',
+          'rejected',
+          'opted_out',
+        ]),
         paymentTxnHash: z.string().optional(),
       })
-      .strict(),
+      .strict()
+      .refine(
+        (v) => !!v.claimId || (v.sweepstakesNum !== undefined && !!v.userId),
+        { message: 'Provide either claimId or (sweepstakesNum, userId)' }
+      ),
+    returns: {} as { success: boolean },
+  },
+  'admin-delete-prize-claim': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ claimId: z.string() }).strict(),
     returns: {} as { success: boolean },
   },
   'admin-get-mana-sales': {
