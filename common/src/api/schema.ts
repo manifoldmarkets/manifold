@@ -3635,6 +3635,13 @@ export const API = (_apiTypeCheck = {
       ),
     returns: {} as { success: boolean },
   },
+  'admin-delete-prize-claim': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ claimId: z.string() }).strict(),
+    returns: {} as { success: boolean },
+  },
   'admin-get-mana-sales': {
     method: 'GET',
     visibility: 'undocumented',

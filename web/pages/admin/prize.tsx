@@ -12,6 +12,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
+import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 
 type PaymentStatus = 'awaiting' | 'sent' | 'rejected' | 'opted_out'
 
@@ -87,6 +88,20 @@ function PrizeClaimsTable() {
     navigator.clipboard.writeText(address)
     toast.success('Wallet address copied')
     if (claimId) setCopiedClaimId(claimId)
+  }
+
+  const handleResetClaim = async (claimId: string) => {
+    setUpdatingId(claimId)
+    try {
+      await api('admin-delete-prize-claim', { claimId })
+      toast.success('Claim reset')
+      setCopiedClaimId((id) => (id === claimId ? null : id))
+      refresh()
+    } catch (e) {
+      toast.error('Failed to reset claim')
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
   if (data === undefined) {
@@ -212,6 +227,17 @@ function PrizeClaimsTable() {
                               handleStatusChange(claim, status)
                             }
                           />
+                          {claim.id && (
+                            <ResetClaimButton
+                              hasWallet={!!claim.walletAddress}
+                              currentStatus={claim.paymentStatus}
+                              username={claim.username}
+                              disabled={updatingId !== null}
+                              onConfirm={() =>
+                                handleResetClaim(claim.id as string)
+                              }
+                            />
+                          )}
                           {copiedClaimId === claim.id &&
                             claim.id &&
                             claim.paymentStatus === 'awaiting' && (
@@ -293,6 +319,78 @@ function WalletAddressCell(props: {
     >
       {truncated}
     </button>
+  )
+}
+
+// Wipes the claim row entirely. Used to recover from accidentally-set
+// statuses (e.g. opted_out) — after delete the user is back in the "no
+// claim" state and can submit a wallet again via the normal /prize flow.
+function ResetClaimButton(props: {
+  hasWallet: boolean
+  currentStatus: PaymentStatus | null
+  username: string
+  disabled: boolean
+  onConfirm: () => Promise<void> | void
+}) {
+  const { hasWallet, currentStatus, username, disabled, onConfirm } = props
+  const isTerminal =
+    currentStatus === 'sent' ||
+    currentStatus === 'rejected' ||
+    currentStatus === 'opted_out'
+
+  return (
+    <ConfirmationButton
+      openModalBtn={{
+        label: 'Reset',
+        color: 'gray-outline',
+        size: 'xs',
+        disabled,
+      }}
+      cancelBtn={{ label: 'Cancel' }}
+      submitBtn={{ label: 'Reset claim', color: 'red' }}
+      onSubmit={() => onConfirm()}
+    >
+      <Col className="gap-3">
+        <h3 className="text-lg font-semibold">Reset prize claim?</h3>
+        <p className="text-ink-700 text-sm">
+          This will <b>delete the prize claim row</b> for{' '}
+          <span className="font-mono">@{username}</span>
+          {currentStatus && (
+            <>
+              {' '}
+              (currently <b>{currentStatus}</b>)
+            </>
+          )}
+          . Use this to undo an accidentally-set status — for example, if
+          you marked someone <b>opted out</b> by mistake.
+        </p>
+        <ul className="text-ink-700 list-disc space-y-1 pl-5 text-sm">
+          <li>
+            Their{' '}
+            {hasWallet ? (
+              <>submitted wallet address will be erased</>
+            ) : (
+              <>row (with no wallet) will be erased</>
+            )}
+            .
+          </li>
+          <li>
+            They'll be returned to the "no claim" state and can submit a
+            wallet again on /prize.
+          </li>
+          {isTerminal && (
+            <li>
+              Existing <b>{currentStatus}</b> status — including any payment
+              transaction record — will be lost.
+            </li>
+          )}
+        </ul>
+        <p className="text-ink-500 text-xs">
+          This does not refund anything. If a payment was already sent
+          on-chain, deleting this row only removes the audit record.
+        </p>
+      </Col>
+    </ConfirmationButton>
   )
 }
 
