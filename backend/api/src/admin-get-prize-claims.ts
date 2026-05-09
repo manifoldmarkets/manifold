@@ -35,7 +35,7 @@ export const adminGetPrizeClaims: APIHandler<'admin-get-prize-claims'> = async (
     rank: number
     prizeAmountUsdc: number
     walletAddress: string | null
-    paymentStatus: 'awaiting' | 'sent' | 'rejected' | null
+    paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out' | null
     paymentTxnHash: string | null
     createdTime: number | null
   }> = []
@@ -80,8 +80,8 @@ export const adminGetPrizeClaims: APIHandler<'admin-get-prize-claims'> = async (
       id: string
       user_id: string
       rank: number
-      wallet_address: string
-      payment_status: 'awaiting' | 'sent' | 'rejected'
+      wallet_address: string | null
+      payment_status: 'awaiting' | 'sent' | 'rejected' | 'opted_out'
       payment_txn_hash: string | null
       created_time: string
     }>(
