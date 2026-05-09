@@ -3572,8 +3572,10 @@ export const API = (_apiTypeCheck = {
         id: string
         rank: number
         prizeAmountUsdc: number
-        walletAddress: string
-        paymentStatus: 'awaiting' | 'sent' | 'rejected'
+        // Null when admin recorded an opted_out / rejected status before
+        // the user ever submitted a wallet.
+        walletAddress: string | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out'
         paymentTxnHash: string | null
         createdTime: number
       } | null

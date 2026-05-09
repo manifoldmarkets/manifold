@@ -1627,20 +1627,22 @@ function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
           </p>
         </div>
         <Col className="gap-4 p-5">
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
-            <Row className="items-center gap-2">
-              <span className="text-lg">✓</span>
-              <Col className="gap-1">
-                <span className="font-medium text-green-800 dark:text-green-300">
-                  Claim Submitted
-                </span>
-                <span className="text-sm text-green-700 dark:text-green-400">
-                  Wallet: {claim.walletAddress.slice(0, 6)}...
-                  {claim.walletAddress.slice(-4)}
-                </span>
-              </Col>
-            </Row>
-          </div>
+          {claim.walletAddress && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
+              <Row className="items-center gap-2">
+                <span className="text-lg">✓</span>
+                <Col className="gap-1">
+                  <span className="font-medium text-green-800 dark:text-green-300">
+                    Claim Submitted
+                  </span>
+                  <span className="text-sm text-green-700 dark:text-green-400">
+                    Wallet: {claim.walletAddress.slice(0, 6)}...
+                    {claim.walletAddress.slice(-4)}
+                  </span>
+                </Col>
+              </Row>
+            </div>
+          )}
 
           <Row className="items-center justify-between">
             <span className="text-ink-600 text-sm">Payment Status:</span>
@@ -1652,12 +1654,15 @@ function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
                 claim.paymentStatus === 'sent' &&
                   'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
                 claim.paymentStatus === 'rejected' &&
-                  'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                  'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+                claim.paymentStatus === 'opted_out' &&
+                  'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
               )}
             >
               {claim.paymentStatus === 'awaiting' && '⏳ Awaiting Payment'}
               {claim.paymentStatus === 'sent' && '✓ Payment Sent'}
               {claim.paymentStatus === 'rejected' && '✗ Rejected'}
+              {claim.paymentStatus === 'opted_out' && 'Opted out'}
             </span>
           </Row>
 
