@@ -361,8 +361,8 @@ function ResetClaimButton(props: {
               (currently <b>{currentStatus}</b>)
             </>
           )}
-          . Use this to undo an accidentally-set status — for example, if
-          you marked someone <b>opted out</b> by mistake.
+          . Use this to undo an accidentally-set status — for example, if you
+          marked someone <b>opted out</b> by mistake.
         </p>
         <ul className="text-ink-700 list-disc space-y-1 pl-5 text-sm">
           <li>
@@ -375,8 +375,8 @@ function ResetClaimButton(props: {
             .
           </li>
           <li>
-            They'll be returned to the "no claim" state and can submit a
-            wallet again on /prize.
+            They'll be returned to the "no claim" state and can submit a wallet
+            again on /prize.
           </li>
           {isTerminal && (
             <li>
@@ -386,8 +386,8 @@ function ResetClaimButton(props: {
           )}
         </ul>
         <p className="text-ink-500 text-xs">
-          This does not refund anything. If a payment was already sent
-          on-chain, deleting this row only removes the audit record.
+          This does not refund anything. If a payment was already sent on-chain,
+          deleting this row only removes the audit record.
         </p>
       </Col>
     </ConfirmationButton>
@@ -454,14 +454,11 @@ function StatusSelector(props: {
         currentStatus === 'rejected' && 'border-red-200 bg-red-50 text-red-700',
         currentStatus === 'opted_out' &&
           'border-indigo-200 bg-indigo-50 text-indigo-700',
-        currentStatus === null &&
-          'border-ink-200 bg-canvas-50 text-ink-500',
+        currentStatus === null && 'border-ink-200 bg-canvas-50 text-ink-500',
         disabled && 'cursor-not-allowed opacity-50'
       )}
     >
-      {currentStatus === null && (
-        <option value={UNSET}>—</option>
-      )}
+      {currentStatus === null && <option value={UNSET}>—</option>}
       <option value="awaiting">Awaiting</option>
       <option value="sent">Sent</option>
       <option value="rejected">Rejected (ineligible)</option>
