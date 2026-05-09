@@ -69,7 +69,7 @@ export const adminUpdatePrizePayment: APIHandler<
   // Upsert: if a row already exists for this user (e.g. they submitted a
   // wallet between the admin loading the page and clicking), just update
   // its status — leave wallet_address untouched.
-  const result = await pg.one<{ id: string }>(
+  await pg.none(
     `INSERT INTO sweepstakes_prize_claims
        (sweepstakes_num, user_id, rank, prize_amount_usdc,
         wallet_address, payment_status, payment_txn_hash)
@@ -78,8 +78,7 @@ export const adminUpdatePrizePayment: APIHandler<
        SET payment_status = EXCLUDED.payment_status,
            payment_txn_hash = COALESCE(EXCLUDED.payment_txn_hash,
                                        sweepstakes_prize_claims.payment_txn_hash),
-           updated_time = now()
-     RETURNING id`,
+           updated_time = now()`,
     [
       sweepstakesNum,
       userId,
