@@ -182,6 +182,16 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/sports/world-cup',
+        destination: '/sports/world-cup-2026',
+        permanent: false,
+      },
+      {
+        source: '/news/ms-official-wc2026',
+        destination: '/sports/world-cup-2026',
+        permanent: false,
+      },
+      {
         source: '/home/:newsSlug*',
         has: [
           {

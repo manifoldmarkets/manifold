@@ -4111,6 +4111,154 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { orders: ShopOrder[] },
   },
+
+  // ─── Sports Admin ────────────────────────────────────────────────────────────
+
+  'admin-sports-fixtures': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        dateFrom: z.string(),
+        dateTo: z.string(),
+        stage: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      fixtures: Array<{
+        id: number
+        homeTeam: { name: string; tla: string; crest: string }
+        awayTeam: { name: string; tla: string; crest: string }
+        homeFlag: string
+        awayFlag: string
+        utcDate: string
+        stageCode: string
+        stageLabel: string
+        group: string | null
+        status: string
+        closeTime: number
+        liquidityTier: number
+        existingMarketId: string | null
+        sportsEventId: string
+      }>
+    },
+  },
+
+  'admin-sports-create-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        matchIds: z.array(z.number()),
+        dryRun: z.boolean(),
+        customNote: z.string().optional(),
+        dashboardUrl: z.string().optional(),
+        liquidityTierOverrides: z.record(z.string(), z.number()).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      groupRestricted: boolean
+      communityGroupId: string
+      communityGroupCreated: boolean
+      communityDashboardId: string
+      communityDashboardCreated: boolean
+      results: Array<{
+        matchId: number
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        question: string
+        marketId: string | null
+        reason: string | null
+      }>
+    },
+  },
+
+  'admin-sports-community-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        contractId: z.string(),
+        action: z.enum(['add', 'remove']),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      dashboardId: string
+      action: 'add' | 'remove'
+      contractId: string
+    },
+  },
+
+  'admin-sports-init-community': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ competitionCode: z.string() }).strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      dashboardId: string
+      dashboardCreated: boolean
+    },
+  },
+
+  'admin-sports-markets': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        sportsLeague: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      markets: Array<{
+        id: string
+        question: string
+        stageLabel: string
+        closeTime: number
+        sportsStartTimestamp: string | null
+        resolution: string | null
+        resolvedAnswer: string | null
+        resolutionTime: number | null
+        sportsHomeScore: number | null
+        sportsAwayScore: number | null
+        volume: number
+        url: string
+        needsAttention: boolean
+        answers: Array<{ id: string; text: string; prob: number }>
+      }>
+    },
+  },
+
+  'admin-sports-resolve': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      resolved: number
+      skipped: number
+      errors: number
+      log: Array<{
+        question: string
+        result: string
+        status: 'resolved' | 'skipped' | 'error'
+      }>
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
