@@ -14,11 +14,15 @@ const schema = z
     dashboardId: z.string(),
     items: z.array(DashboardItemSchema),
     topics: z.array(z.string()),
+    displayMode: z.enum(['feed', 'compact']).optional(),
   })
   .strict()
 
 export const updatedashboard = authEndpoint(async (req, auth) => {
-  const { title, dashboardId, items, topics } = validate(schema, req.body)
+  const { title, dashboardId, items, topics, displayMode } = validate(
+    schema,
+    req.body
+  )
 
   log('updating dashboard')
 
@@ -30,11 +34,18 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
     const dashboard = txn.one(
       `update dashboards
       set items = $1,
-      title = $2
-      where id = $3
-      ${isMod ? '' : 'and creator_id = $4'}
+      title = $2,
+      display_mode = $3
+      where id = $4
+      ${isMod ? '' : 'and creator_id = $5'}
       returning *`,
-      [JSON.stringify(items), title, dashboardId, auth.uid]
+      [
+        JSON.stringify(items),
+        title,
+        displayMode ?? 'feed',
+        dashboardId,
+        auth.uid,
+      ]
     )
 
     updateDashboardGroups(dashboardId, topics, txn)
@@ -47,6 +58,7 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
     title,
     items,
     topics,
+    displayMode,
   })
 
   await revalidateStaticProps(`/news/${updatedDashboard.slug}`)

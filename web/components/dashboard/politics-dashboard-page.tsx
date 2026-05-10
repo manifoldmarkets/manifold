@@ -27,7 +27,10 @@ import { HeadlineTabs } from 'web/components/dashboard/header'
 import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 import clsx from 'clsx'
-import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
+import {
+  DashboardDisplayModeControl,
+  DashboardEndpoints,
+} from 'web/components/dashboard/dashboard-page'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 export function PoliticsDashboardPage(props: {
   initialDashboard: Dashboard
@@ -78,6 +81,9 @@ export function PoliticsDashboardPage(props: {
 
   const updateTopics = (newTopics: string[]) =>
     setDashboard({ ...dashboard, topics: newTopics })
+
+  const updateDisplayMode = (displayMode: Dashboard['displayMode']) =>
+    setDashboard({ ...dashboard, displayMode })
 
   const isCreator = dashboard.creatorId === user?.id
   const isOnlyMod =
@@ -191,6 +197,7 @@ export function PoliticsDashboardPage(props: {
                   title: dashboard.title,
                   items: dashboard.items,
                   topics: dashboard.topics,
+                  displayMode: dashboard.displayMode ?? 'feed',
                 }).then((data) => {
                   if (data?.updateDashboard) {
                     setDashboard(
@@ -226,7 +233,11 @@ export function PoliticsDashboardPage(props: {
           // </UserHovercard>
         )}
         {editMode && (
-          <div className="mb-4">
+          <div className="mb-4 flex flex-col gap-3">
+            <DashboardDisplayModeControl
+              displayMode={dashboard.displayMode ?? 'feed'}
+              setDisplayMode={updateDisplayMode}
+            />
             <AddItemCard
               items={dashboard.items}
               setItems={updateItems}
@@ -245,6 +256,7 @@ export function PoliticsDashboardPage(props: {
           setTopics={updateTopics}
           isEditing={editMode}
           hideTopicLinks={embeddedInParent}
+          displayMode={dashboard.displayMode ?? 'feed'}
         />
       </Col>
     </>

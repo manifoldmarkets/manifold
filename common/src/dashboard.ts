@@ -2,6 +2,7 @@ import { JSONContent } from '@tiptap/core'
 import { Row, convertSQLtoTS, tsToMillis } from './supabase/utils'
 
 export const MAX_DASHBOARD_TITLE_LENGTH = 40
+export type DashboardDisplayMode = 'feed' | 'compact'
 
 // corresponds to SQL
 export type BaseDashboard = {
@@ -15,6 +16,7 @@ export type BaseDashboard = {
   creatorName: string
   creatorAvatarUrl: string
   visibility: 'public' | 'deleted'
+  displayMode?: DashboardDisplayMode
 }
 
 export type Dashboard = BaseDashboard & {
@@ -47,5 +49,7 @@ export const convertDashboardSqltoTS = (
 ): BaseDashboard => {
   return convertSQLtoTS<'dashboards', Dashboard>(sqlDashboard, {
     created_time: tsToMillis,
+    display_mode: (mode) =>
+      mode === 'compact' || mode === 'feed' ? mode : undefined,
   })
 }

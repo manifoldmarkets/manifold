@@ -7,6 +7,7 @@ create table if not exists
     creator_id text not null,
     creator_name text not null,
     creator_username text not null,
+    display_mode text default 'feed'::text,
     id text primary key default random_alphanumeric (12) not null,
     importance_score numeric default 0 not null,
     items jsonb default '[]'::jsonb,

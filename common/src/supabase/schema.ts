@@ -983,6 +983,7 @@ export type Database = {
           creator_id: string
           creator_name: string
           creator_username: string
+          display_mode: string | null
           id: string
           importance_score: number
           items: Json | null
@@ -999,6 +1000,7 @@ export type Database = {
           creator_id: string
           creator_name: string
           creator_username: string
+          display_mode?: string | null
           id?: string
           importance_score?: number
           items?: Json | null
@@ -1015,6 +1017,7 @@ export type Database = {
           creator_id?: string
           creator_name?: string
           creator_username?: string
+          display_mode?: string | null
           id?: string
           importance_score?: number
           items?: Json | null

@@ -33,6 +33,7 @@ import clsx from 'clsx'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { referralQuery } from 'common/util/share'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { Select } from '../widgets/select'
 
 export type DashboardEndpoints = 'news' | 'politics' | 'ai'
 
@@ -87,6 +88,9 @@ export function DashboardPage(props: {
 
   const updateTopics = (newTopics: string[]) =>
     setDashboard({ ...dashboard, topics: newTopics })
+
+  const updateDisplayMode = (displayMode: Dashboard['displayMode']) =>
+    setDashboard({ ...dashboard, displayMode })
 
   const isCreator = dashboard.creatorId === user?.id
   const isOnlyMod =
@@ -203,6 +207,7 @@ export function DashboardPage(props: {
                   title: dashboard.title,
                   items: dashboard.items,
                   topics: dashboard.topics,
+                  displayMode: dashboard.displayMode ?? 'feed',
                 }).then((data) => {
                   if (data?.updateDashboard) {
                     setDashboard(
@@ -237,7 +242,11 @@ export function DashboardPage(props: {
           </UserHovercard>
         )}
         {editMode && (
-          <div className="mb-4">
+          <div className="mb-4 flex flex-col gap-3">
+            <DashboardDisplayModeControl
+              displayMode={dashboard.displayMode ?? 'feed'}
+              setDisplayMode={updateDisplayMode}
+            />
             <AddItemCard
               items={dashboard.items}
               setItems={updateItems}
@@ -256,8 +265,36 @@ export function DashboardPage(props: {
           setTopics={updateTopics}
           isEditing={editMode}
           hideTopicLinks={embeddedInParent}
+          displayMode={dashboard.displayMode ?? 'feed'}
         />
       </Col>
     </>
+  )
+}
+
+export function DashboardDisplayModeControl(props: {
+  displayMode: Dashboard['displayMode']
+  setDisplayMode: (displayMode: Dashboard['displayMode']) => void
+}) {
+  const { displayMode, setDisplayMode } = props
+  return (
+    <div className="border-ink-200 bg-canvas-0 flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="text-ink-900 text-sm font-semibold">Display</div>
+        <div className="text-ink-500 text-xs">
+          Compact trading view keeps full markets grouped for fast scanning.
+        </div>
+      </div>
+      <Select
+        className="h-9"
+        value={displayMode ?? 'feed'}
+        onChange={(e) =>
+          setDisplayMode(e.target.value as Dashboard['displayMode'])
+        }
+      >
+        <option value="feed">Feed</option>
+        <option value="compact">Compact trading</option>
+      </Select>
+    </div>
   )
 }

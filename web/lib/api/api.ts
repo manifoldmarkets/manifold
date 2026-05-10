@@ -174,6 +174,7 @@ export function createDashboard(params: {
   title: string
   items: DashboardItem[]
   topics: string[]
+  displayMode?: 'feed' | 'compact'
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
 }
@@ -205,6 +206,7 @@ export function updateDashboard(params: {
   dashboardId: string
   items: DashboardItem[]
   topics?: string[]
+  displayMode?: 'feed' | 'compact'
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }
