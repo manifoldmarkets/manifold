@@ -11,13 +11,6 @@ import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { referralQuery } from 'common/util/share'
-import {
-  GiftIcon,
-  ShareIcon,
-  UserAddIcon,
-  SparklesIcon,
-  LightBulbIcon,
-} from '@heroicons/react/outline'
 import { useEffect, useState } from 'react'
 import { getReferrals } from 'web/lib/supabase/referrals'
 import { DisplayUser } from 'common/api/user-types'
@@ -57,16 +50,13 @@ export default function ReferralsPage() {
 
       <Col className="mx-auto w-full max-w-xl gap-6">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#4f46e5]/70 via-[#5b4ee6]/50 to-[#6366f1]/40 p-6 text-white shadow-lg sm:p-8">
           {/* Background decorations */}
           <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
 
           <div className="relative">
             <Row className="mb-4 items-center gap-3">
-              <div className="rounded-xl bg-white/20 p-2.5 backdrop-blur-sm">
-                <GiftIcon className="h-6 w-6" />
-              </div>
               <h1 className="text-2xl font-bold sm:text-3xl">Refer a Friend</h1>
             </Row>
 
@@ -99,13 +89,12 @@ export default function ReferralsPage() {
         {/* Share Section */}
         <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
           <Row className="mb-4 items-center gap-2">
-            <ShareIcon className="text-primary-600 h-5 w-5" />
             <h2 className="text-lg font-semibold">Share your link</h2>
           </Row>
 
           <p className="text-ink-600 mb-4 text-sm">
             Copy your unique referral link or scan the QR code to share with
-            friends.
+            friends. Once they place their first trade, you both get rewarded!
           </p>
 
           <CopyLinkRow
@@ -120,48 +109,6 @@ export default function ReferralsPage() {
               <QRCode url={url} width={180} height={180} className="rounded" />
             </div>
           </div>
-        </div>
-
-        {/* How It Works Section */}
-        <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
-          <Row className="mb-5 items-center gap-2">
-            <SparklesIcon className="text-primary-600 h-5 w-5" />
-            <h2 className="text-lg font-semibold">How it works</h2>
-          </Row>
-
-          <div className="space-y-4">
-            <HowItWorksStep
-              number={1}
-              title="Share your link"
-              description="Send your unique referral link to friends via social media, email, or messaging."
-            />
-            <HowItWorksStep
-              number={2}
-              title="Friend signs up"
-              description="Your friend creates a Manifold account using your link."
-            />
-            <HowItWorksStep
-              number={3}
-              title="They place a trade"
-              description="Once they make their first prediction, you both get rewarded!"
-            />
-          </div>
-        </div>
-
-        {/* Pro Tip */}
-        <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-4">
-          <Row className="items-start gap-3">
-            <div className="bg-ink-100 dark:bg-ink-800 rounded-lg p-2">
-              <LightBulbIcon className="text-primary-600 h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-medium">Pro tip</h3>
-              <p className="text-ink-600 mt-1 text-sm">
-                You can also earn the referral bonus by sharing a link to any
-                question or group! Your referral code is automatically included.
-              </p>
-            </div>
-          </Row>
         </div>
 
         {/* Your Referrals Section */}
