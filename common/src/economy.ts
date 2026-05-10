@@ -1,4 +1,5 @@
 import { OutcomeType } from 'common/contract'
+import { ENV } from 'common/envs/constants'
 import {
   answerCostTiers,
   getTierIndexFromLiquidity,
@@ -38,7 +39,7 @@ export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 
 /* Mana bonuses */
-export const PRE_KYC_STARTING_BALANCE = 50
+export const PRE_KYC_STARTING_BALANCE = ENV === 'DEV' ? 10000 : 50
 export const STARTING_BALANCE = 1000
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10

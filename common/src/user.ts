@@ -1,4 +1,4 @@
-import { ENV_CONFIG } from './envs/constants'
+import { ENV, ENV_CONFIG } from './envs/constants'
 import { notification_preferences } from './user-notification-preferences'
 import { UserEntitlement } from './shop/types'
 import { DAY_MS, HOUR_MS } from './util/time'
@@ -209,9 +209,14 @@ export const isUserLikelySpammer = (
 export const humanish = (user: User) => user.verifiedPhone !== false
 
 // Check if user can receive site bonuses (verified via iDenfy or grandfathered)
-export const canReceiveBonuses = (user: User) =>
-  user.bonusEligibility === 'verified' ||
-  user.bonusEligibility === 'grandfathered'
+// On DEV, all non-bot users are treated as bonus-eligible so they don't need to verify.
+export const canReceiveBonuses = (user: User) => {
+  if (ENV === 'DEV' && !user.isBot) return true
+  return (
+    user.bonusEligibility === 'verified' ||
+    user.bonusEligibility === 'grandfathered'
+  )
+}
 
 // Users who can comment on markets: bonus-eligible (verified/grandfathered)
 // OR anyone who has purchased mana.
