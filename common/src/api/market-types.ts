@@ -383,6 +383,10 @@ export const createNumericSchema = z.object({
 export const createMultiSchema = z.object({
   outcomeType: z.enum(['MULTIPLE_CHOICE']),
   answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
+  answerProbabilities: z
+    .array(z.number().min(1).max(99))
+    .max(MAX_ANSWERS)
+    .optional(),
   answerShortTexts: z
     .array(z.string().trim().min(1))
     .max(MAX_ANSWERS)

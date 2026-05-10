@@ -22,6 +22,7 @@ export type FormState = {
   outcomeType: CreateableOutcomeType | null
   description?: JSONContent
   answers: string[]
+  answerProbabilities?: number[]
   closeDate?: string
   closeHoursMinutes?: string
   neverCloses: boolean

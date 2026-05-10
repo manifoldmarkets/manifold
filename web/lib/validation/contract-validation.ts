@@ -6,6 +6,7 @@ export type ContractFormState = {
   outcomeType: OutcomeType
   description?: JSONContent
   answers: string[]
+  answerProbabilities?: number[]
   closeDate?: string
   closeHoursMinutes?: string
   neverCloses: boolean

@@ -38,6 +38,7 @@ import { BOTTOM_NAV_BAR_HEIGHT } from '../nav/bottom-nav-bar'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { Input } from '../widgets/input'
 import ShortToggle from '../widgets/short-toggle'
 import { ActionBar } from './action-bar'
 import { CloseTimeSection } from './close-time-section'
@@ -71,6 +72,7 @@ export function NewContractPanel(props: {
     outcomeType: 'BINARY',
     description: undefined,
     answers: [],
+    answerProbabilities: [],
     closeDate: undefined,
     closeHoursMinutes: '23:59',
     neverCloses: false,
@@ -98,6 +100,7 @@ export function NewContractPanel(props: {
       ? JSON.parse(params.description)
       : undefined,
     answers: params?.answers || [],
+    answerProbabilities: params?.answerProbabilities || [],
     closeDate: params?.closeTime
       ? new Date(params.closeTime).toISOString().split('T')[0]
       : undefined,
@@ -915,6 +918,15 @@ export function NewContractPanel(props: {
         payload.initialProb = formState.probability || 50
       } else if (formState.outcomeType === 'MULTIPLE_CHOICE') {
         payload.answers = formState.answers.filter((a) => a.trim().length > 0)
+        if (formState.shouldAnswersSumToOne === false) {
+          payload.answerProbabilities = formState.answers
+            .map((answer, i) =>
+              answer.trim().length > 0
+                ? formState.answerProbabilities?.[i] ?? 50
+                : undefined
+            )
+            .filter((prob): prob is number => prob !== undefined)
+        }
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = formState.addAnswersMode
       } else if (formState.outcomeType === 'POLL') {
@@ -1020,7 +1032,10 @@ export function NewContractPanel(props: {
     outcomeType: formState.outcomeType as any,
     description: formState.description,
     probability: formState.probability,
-    answers: formState.answers.map((text) => ({ text })),
+    answers: formState.answers.map((text, i) => ({
+      text,
+      prob: formState.answerProbabilities?.[i],
+    })),
     closeTime: formState.closeDate
       ? (() => {
           const time = new Date(formState.closeDate + 'T23:59').getTime()
@@ -1127,6 +1142,53 @@ export function NewContractPanel(props: {
                 />
               </Col>
             </Row>
+            {formState.shouldAnswersSumToOne === false && (
+              <Col className="border-ink-200 gap-2 border-t pt-4">
+                <Row className="items-center gap-2">
+                  <span className="text-ink-900 text-sm font-semibold">
+                    Starting probability per answer
+                  </span>
+                  <InfoTooltip text="Optional. Independent answers each start as their own YES/NO market, so these probabilities do not need to add to 100%." />
+                </Row>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {formState.answers.map((answer, i) => {
+                    const label = answer.trim() || `Answer ${i + 1}`
+                    return (
+                      <label
+                        key={i}
+                        className="text-ink-700 flex items-center gap-2 text-sm"
+                      >
+                        <span className="line-clamp-1 min-w-0 flex-1">
+                          {label}
+                        </span>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={formState.answerProbabilities?.[i] ?? 50}
+                          onChange={(e) => {
+                            const value = Number(e.target.value)
+                            const answerProbabilities = [
+                              ...(formState.answerProbabilities ?? []),
+                            ]
+                            answerProbabilities[i] = Math.min(
+                              99,
+                              Math.max(1, value || 50)
+                            )
+                            updateField(
+                              'answerProbabilities',
+                              answerProbabilities
+                            )
+                          }}
+                          className="!h-9 !w-20 !px-2"
+                        />
+                        <span className="text-ink-500">%</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </Col>
+            )}
           </Col>
         )}
 

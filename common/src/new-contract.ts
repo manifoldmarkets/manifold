@@ -55,6 +55,7 @@ export function getNewContract(
     answers: string[]
     addAnswersMode?: add_answers_mode | undefined
     shouldAnswersSumToOne?: boolean | undefined
+    answerProbabilities?: number[] | undefined
     answerShortTexts?: string[]
     answerImageUrls?: string[]
 
@@ -95,6 +96,7 @@ export function getNewContract(
     answers,
     addAnswersMode,
     shouldAnswersSumToOne,
+    answerProbabilities,
     coverImageUrl,
     isAutoBounty,
     token,
@@ -126,6 +128,7 @@ export function getNewContract(
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
         ante,
+        answerProbabilities,
         answerShortTexts,
         answerImageUrls
       ),
@@ -290,6 +293,7 @@ const getMultipleChoiceProps = (
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
+  answerProbabilities?: number[],
   shortTexts?: string[],
   imageUrls?: string[]
 ) => {
@@ -310,6 +314,7 @@ const getMultipleChoiceProps = (
     answersWithOther,
     removeUndefinedProps({
       colors: isBinaryMulti ? VERSUS_COLORS : undefined,
+      probabilities: answerProbabilities,
       shortTexts,
       imageUrls,
     })
@@ -429,12 +434,13 @@ function createAnswers(
   answers: string[],
   options: {
     colors?: string[]
+    probabilities?: number[]
     shortTexts?: string[]
     imageUrls?: string[]
     midpoints?: number[]
   } = {}
 ) {
-  const { colors, shortTexts, imageUrls, midpoints } = options
+  const { colors, probabilities, shortTexts, imageUrls, midpoints } = options
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
@@ -474,10 +480,13 @@ function createAnswers(
       shortText: shortTexts?.[i],
       imageUrl: imageUrls?.[i],
 
-      poolYes,
-      poolNo,
-      prob,
-      totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
+      ...getAnswerCpmmProps(
+        shouldAnswersSumToOne,
+        poolYes,
+        poolNo,
+        prob,
+        probabilities?.[i]
+      ),
       subsidyPool: 0,
       isOther:
         shouldAnswersSumToOne &&
@@ -489,6 +498,36 @@ function createAnswers(
     })
     return answer
   })
+}
+
+function getAnswerCpmmProps(
+  shouldAnswersSumToOne: boolean,
+  poolYes: number,
+  poolNo: number,
+  prob: number,
+  probability?: number
+) {
+  if (shouldAnswersSumToOne || probability === undefined) {
+    return {
+      poolYes,
+      poolNo,
+      prob,
+      totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
+    }
+  }
+
+  const boundedProb = Math.min(Math.max(probability / 100, 0.01), 0.99)
+  const liquidity = getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo })
+  const oddsRatio = boundedProb / (1 - boundedProb)
+  const poolYesForProb = liquidity / Math.sqrt(oddsRatio)
+  const poolNoForProb = liquidity * Math.sqrt(oddsRatio)
+
+  return {
+    poolYes: poolYesForProb,
+    poolNo: poolNoForProb,
+    prob: boundedProb,
+    totalLiquidity: liquidity,
+  }
 }
 
 const getBountiedQuestionProps = (

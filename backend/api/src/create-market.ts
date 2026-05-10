@@ -60,11 +60,7 @@ import {
   addGroupToContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
-import {
-  htmlToRichText,
-  isProd,
-  log,
-} from 'shared/utils'
+import { htmlToRichText, isProd, log } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
@@ -134,6 +130,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     initialProb,
     isLogScale,
     answers,
+    answerProbabilities,
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
@@ -259,6 +256,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           max: max ?? 0,
           isLogScale: isLogScale ?? false,
           answers: answers ?? [],
+          answerProbabilities,
           answerShortTexts,
           answerImageUrls,
           addAnswersMode,
@@ -402,6 +400,7 @@ function validateMarketBody(body: Body) {
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
     answers: string[] | undefined,
+    answerProbabilities: number[] | undefined,
     answerShortTexts: string[] | undefined,
     answerImageUrls: string[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
@@ -501,6 +500,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({
       answers,
+      answerProbabilities,
       answerShortTexts,
       answerImageUrls,
       addAnswersMode,
@@ -509,6 +509,16 @@ function validateMarketBody(body: Body) {
     const hasOtherAnswer =
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
+    if (
+      !shouldAnswersSumToOne &&
+      answerProbabilities &&
+      answerProbabilities.length !== answers.length
+    ) {
+      throw new APIError(
+        400,
+        'Number of answer probabilities must match number of answers.'
+      )
+    }
     // Unfortunately this is a requirement because if we don't add an answer,
     // then the market creation cost will just be lost. If we just set totalLiquidity to 0,
     // then the answer costs will be calculated based on 0, which is not what we want.
@@ -533,11 +543,8 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'POLL') {
-    ;({ answers, voterVisibility, pollType, maxSelections } = validateMarketType(
-      outcomeType,
-      createPollSchema,
-      body
-    ))
+    ;({ answers, voterVisibility, pollType, maxSelections } =
+      validateMarketType(outcomeType, createPollSchema, body))
     // Validate maxSelections
     if (
       maxSelections !== undefined &&
@@ -569,6 +576,7 @@ function validateMarketBody(body: Body) {
     initialProb,
     isLogScale,
     answers,
+    answerProbabilities,
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,

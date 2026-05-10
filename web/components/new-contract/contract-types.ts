@@ -15,6 +15,7 @@ export type NewQuestionParams = {
   isLogScale?: boolean
   initValue?: number
   answers?: string[]
+  answerProbabilities?: number[]
   addAnswersMode?: add_answers_mode
   shouldAnswersSumToOne?: boolean
   precision?: number

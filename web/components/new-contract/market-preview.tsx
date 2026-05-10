@@ -359,14 +359,14 @@ export function MarketPreview(props: {
     const hasOther =
       mockContract.addAnswersMode !== 'DISABLED' && data.shouldAnswersSumToOne
 
-    // If shouldAnswersSumToOne is true, distribute equally (100/numAnswers)
-    // Otherwise show 50% for independent answers
+    // If shouldAnswersSumToOne is true, distribute equally (100/numAnswers).
+    // Otherwise each independent answer can carry its own starting probability.
     if (data.shouldAnswersSumToOne) {
       const totalAnswers = answers.length + (hasOther ? 1 : 0)
       const equalProb = 1 / totalAnswers
       mcProbs = answers.map(() => equalProb)
     } else {
-      mcProbs = answers.map(() => 0.5)
+      mcProbs = answers.map((answer) => (answer.prob ?? 50) / 100)
     }
 
     mockContract.answers = answers.map((a, i) => ({
