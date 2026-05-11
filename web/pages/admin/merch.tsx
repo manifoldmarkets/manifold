@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -127,23 +127,85 @@ function StockManagement() {
   )
 }
 
-type ViewMode = 'recent' | 'month' | '3-months' | '6-months' | 'year' | 'all'
+type ViewMode =
+  | 'recent'
+  | 'week'
+  | 'month'
+  | '3-months'
+  | '6-months'
+  | 'year'
+  | 'all'
 // Each view maps to a (dateRange, limit) pair sent to the backend. 'recent'
 // is the cheap default — newest 25, no date filter. Wider ranges raise the
 // limit to surface all qualifying orders (capped at 2000 by the schema).
 const VIEW_MODES: {
   value: ViewMode
   label: string
-  dateRange: 'all' | 'month' | '3-months' | '6-months' | 'year'
+  dateRange: 'all' | 'week' | 'month' | '3-months' | '6-months' | 'year'
   limit: number
 }[] = [
   { value: 'recent', label: 'Last 25', dateRange: 'all', limit: 25 },
+  { value: 'week', label: 'Last week', dateRange: 'week', limit: 2000 },
   { value: 'month', label: 'Last month', dateRange: 'month', limit: 2000 },
   { value: '3-months', label: 'Last 3 months', dateRange: '3-months', limit: 2000 },
   { value: '6-months', label: 'Last 6 months', dateRange: '6-months', limit: 2000 },
   { value: 'year', label: 'Last year', dateRange: 'year', limit: 2000 },
   { value: 'all', label: 'All time', dateRange: 'all', limit: 2000 },
 ]
+
+// Statuses excluded from stats. Mirrors REVENUE_STATUSES_SQL in
+// get-merch-orders.ts and the merchSales filter in get-shop-stats.ts.
+const REVENUE_EXCLUDED: ReadonlySet<ShopOrder['status']> = new Set([
+  'CANCELLED',
+  'REFUNDED',
+  'FAILED',
+] as const)
+
+type MerchStats = {
+  perItem: {
+    itemId: string
+    orderCount: number
+    totalMana: number
+    avgMana: number
+  }[]
+  overall: {
+    orderCount: number
+    totalMana: number
+    avgMana: number
+  }
+}
+
+function computeStats(orders: ShopOrder[]): MerchStats {
+  const revenue = orders.filter((o) => !REVENUE_EXCLUDED.has(o.status))
+
+  const byItem = new Map<string, number[]>()
+  for (const o of revenue) {
+    const arr = byItem.get(o.itemId)
+    if (arr) arr.push(o.priceMana)
+    else byItem.set(o.itemId, [o.priceMana])
+  }
+
+  const perItem = Array.from(byItem.entries())
+    .map(([itemId, prices]) => {
+      const totalMana = prices.reduce((s, p) => s + p, 0)
+      return {
+        itemId,
+        orderCount: prices.length,
+        totalMana,
+        avgMana: totalMana / prices.length,
+      }
+    })
+    .sort((a, b) => b.totalMana - a.totalMana)
+
+  const totalMana = revenue.reduce((s, o) => s + o.priceMana, 0)
+  const overall = {
+    orderCount: revenue.length,
+    totalMana,
+    avgMana: revenue.length === 0 ? 0 : totalMana / revenue.length,
+  }
+
+  return { perItem, overall }
+}
 
 function OrderManagement() {
   const [viewMode, setViewMode] = useState<ViewMode>('recent')
@@ -156,7 +218,11 @@ function OrderManagement() {
   })
   const orders = data?.orders ?? []
   const total = data?.total ?? 0
-  const stats = data?.stats
+  // Stats are computed from the visible orders, not the underlying
+  // date-filtered set, so 'Last 25' shows stats for those 25 (matches
+  // what's on screen) rather than all-time. For wider ranges the visible
+  // set IS the full window (up to the 2000 cap), so this is equivalent.
+  const stats = useMemo(() => computeStats(orders), [orders])
   const [cancelingId, setCancelingId] = useState<string | null>(null)
 
   const handleCancel = async (
@@ -208,7 +274,7 @@ function OrderManagement() {
         ))}
       </Row>
 
-      {stats && <OrderStats stats={stats} />}
+      <OrderStats stats={stats} />
 
       <Row className="items-center justify-between">
         <h2 className="text-lg font-semibold">Orders ({total})</h2>
