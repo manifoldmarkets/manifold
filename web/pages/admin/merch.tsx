@@ -87,9 +87,11 @@ function StockManagement() {
   }
 
   return (
-    <Col className="gap-4">
-      <h2 className="text-lg font-semibold">Stock Status</h2>
-      <div className="border-ink-200 rounded-lg border">
+    <details className="border-ink-200 rounded-lg border">
+      <summary className="cursor-pointer px-4 py-3 text-lg font-semibold">
+        Stock Status
+      </summary>
+      <div className="border-ink-200 border-t">
         {merchItems.map((item) => {
           const isOutOfStock = outOfStockSet.has(item.id)
           return (
@@ -123,7 +125,7 @@ function StockManagement() {
           )
         })}
       </div>
-    </Col>
+    </details>
   )
 }
 
@@ -147,8 +149,18 @@ const VIEW_MODES: {
   { value: 'recent', label: 'Last 25', dateRange: 'all', limit: 25 },
   { value: 'week', label: 'Last week', dateRange: 'week', limit: 2000 },
   { value: 'month', label: 'Last month', dateRange: 'month', limit: 2000 },
-  { value: '3-months', label: 'Last 3 months', dateRange: '3-months', limit: 2000 },
-  { value: '6-months', label: 'Last 6 months', dateRange: '6-months', limit: 2000 },
+  {
+    value: '3-months',
+    label: 'Last 3 months',
+    dateRange: '3-months',
+    limit: 2000,
+  },
+  {
+    value: '6-months',
+    label: 'Last 6 months',
+    dateRange: '6-months',
+    limit: 2000,
+  },
   { value: 'year', label: 'Last year', dateRange: 'year', limit: 2000 },
   { value: 'all', label: 'All time', dateRange: 'all', limit: 2000 },
 ]
@@ -335,71 +347,73 @@ function OrderStats(props: {
   const { perItem, overall } = props.stats
 
   return (
-    <Col className="border-ink-200 gap-3 rounded-lg border p-4">
-      <Row className="flex-wrap items-baseline gap-x-6 gap-y-1">
-        <h3 className="text-base font-semibold">Sales summary</h3>
+    <details className="border-ink-200 rounded-lg border">
+      <summary className="cursor-pointer px-4 py-3 text-base font-semibold">
+        Sales summary
+      </summary>
+      <Col className="border-ink-200 gap-3 border-t p-4">
         <span className="text-ink-500 text-xs">
           Excludes cancelled, refunded, and failed orders.
         </span>
-      </Row>
 
-      <Row className="flex-wrap gap-6">
-        <StatBlock
-          label="Orders"
-          value={overall.orderCount.toLocaleString()}
-        />
-        <StatBlock
-          label="Total mana"
-          value={formatMoney(overall.totalMana)}
-        />
-        <StatBlock
-          label="Average per order"
-          value={formatMoney(Math.round(overall.avgMana))}
-        />
-      </Row>
+        <Row className="flex-wrap gap-6">
+          <StatBlock
+            label="Orders"
+            value={overall.orderCount.toLocaleString()}
+          />
+          <StatBlock
+            label="Total mana"
+            value={formatMoney(overall.totalMana)}
+          />
+          <StatBlock
+            label="Average per order"
+            value={formatMoney(Math.round(overall.avgMana))}
+          />
+        </Row>
 
-      {perItem.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-ink-200 border-b text-left">
-                <th className="px-3 py-2">Item</th>
-                <th className="px-3 py-2 text-right">Orders</th>
-                <th className="px-3 py-2 text-right">Total mana</th>
-                <th className="px-3 py-2 text-right">Average mana</th>
-              </tr>
-            </thead>
-            <tbody>
-              {perItem.map((row) => {
-                const item = getShopItem(row.itemId)
-                return (
-                  <tr
-                    key={row.itemId}
-                    className="border-ink-200 border-b last:border-b-0"
-                  >
-                    <td className="px-3 py-2">
-                      {item?.name ?? row.itemId}
-                      <span className="text-ink-500 ml-2 text-xs">
-                        {row.itemId}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {row.orderCount.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatMoney(row.totalMana)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatMoney(Math.round(row.avgMana))}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Col>
+        {perItem.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-ink-200 border-b text-left">
+                  <th className="px-3 py-2">Item</th>
+                  <th className="px-3 py-2 text-right">Orders</th>
+                  <th className="px-3 py-2 text-right">Total mana</th>
+                  <th className="px-3 py-2 text-right">Average mana</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perItem.map((row) => {
+                  const item = getShopItem(row.itemId)
+                  return (
+                    <tr
+                      key={row.itemId}
+                      className="border-ink-200 border-b last:border-b-0"
+                    >
+                      <td className="px-3 py-2">
+                        {item?.name ?? row.itemId}
+                        <span className="text-ink-500 ml-2 text-xs">
+                          {row.itemId}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {row.orderCount.toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {formatMoney(row.totalMana)}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {formatMoney(Math.round(row.avgMana))}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Col>
+    </details>
   )
 }
 
