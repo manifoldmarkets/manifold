@@ -4,9 +4,17 @@ import { computeRebalance } from 'common/rebalance'
 import { ContractMetric } from 'common/contract-metric'
 import { MarketContract } from 'common/contract'
 import { noFees } from 'common/fees'
+import { MS_PER_DAY } from 'common/loans'
 import { EPSILON } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
+import { keyBy } from 'lodash'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import {
+  getLoanTrackingRows,
+  upsertLoanTrackingQuery,
+  LoanTrackingRow,
+} from 'shared/helpers/user-contract-loans'
 import {
   bulkUpdateContractMetricsQuery,
   bulkUpdateUserMetricsWithNewBetsOnly,
@@ -19,8 +27,11 @@ import {
   UserUpdate,
 } from 'shared/supabase/users'
 import { getContract, log } from 'shared/utils'
+import {
+  broadcastNewBets,
+  broadcastUpdatedMetrics,
+} from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
-import * as crypto from 'crypto'
 
 export const rebalancePosition: APIHandler<
   'market/:contractId/rebalance'
@@ -31,7 +42,10 @@ export const rebalancePosition: APIHandler<
 
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found.')
-  if (contract.mechanism !== 'cpmm-multi-1' || !contract.shouldAnswersSumToOne) {
+  if (
+    contract.mechanism !== 'cpmm-multi-1' ||
+    !contract.shouldAnswersSumToOne
+  ) {
     throw new APIError(
       400,
       'Rebalance is only supported on sum-to-one multi-choice markets.'
@@ -64,12 +78,15 @@ const rebalanceInTransaction = async (
       [contractId, userId]
     )
     const contractMetrics: ContractMetric[] = metricRows.map(
-      (r: { data: ContractMetric; loan: number | null; margin_loan: number | null }) =>
-        ({
-          ...r.data,
-          loan: r.loan ?? r.data.loan ?? 0,
-          marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
-        })
+      (r: {
+        data: ContractMetric
+        loan: number | null
+        margin_loan: number | null
+      }) => ({
+        ...r.data,
+        loan: r.loan ?? r.data.loan ?? 0,
+        marginLoan: r.margin_loan ?? r.data.marginLoan ?? 0,
+      })
     )
     const answers = answerRows.map(convertAnswer)
     if (answers.length < 2) {
@@ -115,10 +132,17 @@ const rebalanceInTransaction = async (
       }
     }
 
-    // Loan policy: "full repay on empty". For each answer whose final position
-    // is zero, pay off both free and margin loan on that answer. Loans on
-    // answers with a remaining YES position carry forward unchanged — mirrors
-    // sell-shares edge case (sell-all → full repay; partial → untouched).
+    const now = Date.now()
+
+    // Fetch loan tracking before we calculate repayments
+    const loanTracking = await getLoanTrackingRows(tx, userId, [contractId])
+    const trackingByKey = keyBy(
+      loanTracking,
+      (t) => `${t.contract_id}-${t.answer_id ?? ''}`
+    )
+    const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
+
+    // Loan policy: repay proportionally based on the fraction of shares redeemed.
     const loanByAnswer: Record<string, number> = {}
     for (const id of answerIds) {
       const m = metricByAnswer[id]
@@ -126,13 +150,46 @@ const rebalanceInTransaction = async (
         loanByAnswer[id] = 0
         continue
       }
-      const answerLoan = (m.loan ?? 0) + (m.marginLoan ?? 0)
-      loanByAnswer[id] = finalYesShares[id] === 0 ? answerLoan : 0
+
+      const ys = yesShares[id] ?? 0
+      const finalYes = finalYesShares[id]
+      const marginLoanBefore = m.marginLoan ?? 0
+      const answerLoan = (m.loan ?? 0) + marginLoanBefore
+
+      // Repay proportionally, matching sell-shares.ts
+      if (ys > 0 && finalYes < ys) {
+        loanByAnswer[id] = answerLoan * ((ys - finalYes) / ys)
+      } else {
+        loanByAnswer[id] = 0
+      }
+
+      // If we repaid any margin loan, update the tracking integral
+      if (loanByAnswer[id] > 0 && marginLoanBefore > 0) {
+        const marginLoanRatio = marginLoanBefore / answerLoan
+        const marginLoanRepaid = loanByAnswer[id] * marginLoanRatio
+
+        const trackingKey = `${contractId}-${id}`
+        const tracking = trackingByKey[trackingKey]
+
+        const lastUpdate = tracking?.last_loan_update_time ?? now
+        const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+        const finalIntegral =
+          (tracking?.loan_day_integral ?? 0) +
+          marginLoanBefore * daysSinceLastUpdate
+
+        const repaymentRatio = Math.min(1, marginLoanRepaid / marginLoanBefore)
+        const newIntegral = finalIntegral * (1 - repaymentRatio)
+
+        loanTrackingUpdates.push({
+          user_id: userId,
+          contract_id: contractId,
+          answer_id: id,
+          loan_day_integral: Math.max(0, newIntegral),
+          last_loan_update_time: now,
+        })
+      }
     }
-    const totalLoanPaid = Object.values(loanByAnswer).reduce(
-      (a, b) => a + b,
-      0
-    )
+    const totalLoanPaid = Object.values(loanByAnswer).reduce((a, b) => a + b, 0)
 
     // Loans only exist on MANA markets (claim-free-loan gates on this). If we
     // somehow see one on a CASH contract, something is very wrong — bail out.
@@ -143,8 +200,7 @@ const rebalanceInTransaction = async (
       )
     }
 
-    const now = Date.now()
-    const betGroupId = crypto.randomBytes(12).toString('hex')
+    const betGroupId = randomString(12)
     const answersById = Object.fromEntries(answers.map((a) => [a.id, a]))
     const bets: Bet[] = []
     for (const id of answerIds) {
@@ -153,8 +209,7 @@ const rebalanceInTransaction = async (
       // Pre-count how many bets this answer will emit so we can split
       // loanAmount evenly across them. calculateUserMetricsWithNewBetsOnly
       // groups loanAmount per (userId, answerId) so splitting here is fine.
-      const emits =
-        (noDelta[id] !== 0 ? 1 : 0) + (yesDelta[id] !== 0 ? 1 : 0)
+      const emits = (noDelta[id] !== 0 ? 1 : 0) + (yesDelta[id] !== 0 ? 1 : 0)
       const loanPerBet = emits > 0 ? -loanByAnswer[id] / emits : 0
       if (noDelta[id] !== 0) {
         bets.push(
@@ -209,7 +264,7 @@ const rebalanceInTransaction = async (
 
     // Loans are always mana-denominated; cash redemption credits whichever
     // token the contract is in.
-    const cashField = contract.token === 'CASH' ? 'cashBalance' : 'balance'
+    const _cashField = contract.token === 'CASH' ? 'cashBalance' : 'balance'
     const balanceUpdate: {
       id: string
       balance?: number
@@ -225,11 +280,16 @@ const rebalanceInTransaction = async (
     const insertBetsQuery = bulkInsertBetsQuery(bets)
     const metricsQuery = bulkUpdateContractMetricsQuery(updatedMetrics)
     const balanceQuery = bulkIncrementBalancesQuery([balanceUpdate])
+    const loanTrackingQuery =
+      loanTrackingUpdates.length > 0
+        ? upsertLoanTrackingQuery(loanTrackingUpdates)
+        : 'select 1 where false'
 
     const queryResults = await tx.multi(
       `${balanceQuery}; --0
        ${insertBetsQuery}; --1
-       ${metricsQuery}; --2`
+       ${metricsQuery}; --2
+       ${loanTrackingQuery}; --3`
     )
     const userUpdates = queryResults[0] as UserUpdate[]
 
@@ -247,6 +307,8 @@ const rebalanceInTransaction = async (
       }
     }
     broadcastUserUpdates(userUpdates)
+    broadcastUpdatedMetrics(updatedMetrics)
+    broadcastNewBets(contractId, contract.visibility, bets)
 
     log(
       `rebalance-position ${userId} on ${contractId}: redeemed ${minShares} shares for ${cashRedeemed} ${contract.token}, loan repaid ${totalLoanPaid}, ${bets.length} synthetic bets`
