@@ -39,7 +39,9 @@ export type Bet = {
 
   isApi?: boolean // true if bet was placed via API
 
-  isRedemption: boolean
+  isRedemption: boolean // true when automatically redeeming shares
+  isRebalance?: boolean // true when rebalancing sums-to-one cpmm shares
+
   /** @deprecated */
   challengeSlug?: string
 

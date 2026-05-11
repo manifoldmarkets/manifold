@@ -222,14 +222,22 @@ const getBetBalanceChanges = async (
 
     for (let i = 0; i < bets.length; i++) {
       const bet = bets[i]
-      const { isRedemption, outcome, createdTime, amount, shares } = bet
+      const {
+        isRedemption,
+        isRebalance,
+        outcome,
+        createdTime,
+        amount,
+        shares,
+      } = bet as any
       // Bets get their loan amount updated recently, we want to discard them
       if (bet.limitProb === undefined && bet.createdTime < after) continue
 
       const nextBetExists = i < bets.length - 1
       const nextBetIsRedemption = nextBetExists && bets[i + 1].isRedemption
-      if (isRedemption && nextBetIsRedemption) continue
-      if (isRedemption && amount === 0) continue
+      // Skip consecutive redemptions ONLY if they are not rebalance bets
+      if (isRedemption && !isRebalance && nextBetIsRedemption) continue
+      if (isRedemption && !isRebalance && amount === 0) continue
 
       const { question, visibility, creatorUsername, slug, token } = contract
       const balanceChangeProps = {
@@ -265,7 +273,10 @@ const getBetBalanceChanges = async (
           balanceChanges.push(balanceChange)
         }
       } else {
-        const changeToBalance = isRedemption ? Math.abs(shares) : -amount
+        // Rebalance bets have amount != 0 and represent the actual cash value.
+        // Redemption bets had amount == 0 and use Math.abs(shares).
+        const changeToBalance =
+          isRedemption && !isRebalance ? Math.abs(shares) : -amount
         const balanceChange = {
           ...balanceChangeProps,
           type: isRedemption

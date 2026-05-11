@@ -227,6 +227,7 @@ const rebalanceInTransaction = async (
             probAfter: p,
             fees: noFees,
             isRedemption: true,
+            isRebalance: true,
             visibility: contract.visibility,
             betGroupId,
           }) as Bet
@@ -248,6 +249,7 @@ const rebalanceInTransaction = async (
             probAfter: p,
             fees: noFees,
             isRedemption: true,
+            isRebalance: true,
             visibility: contract.visibility,
             betGroupId,
           }) as Bet
