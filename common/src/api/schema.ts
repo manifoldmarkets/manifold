@@ -4066,13 +4066,29 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z
       .object({
-        limit: z.coerce.number().int().min(1).max(200).default(50),
+        limit: z.coerce.number().int().min(1).max(2000).default(25),
         offset: z.coerce.number().int().min(0).default(0),
+        dateRange: z
+          .enum(['all', 'month', '3-months', '6-months', 'year'])
+          .default('all'),
       })
       .strict(),
     returns: {} as {
       orders: (ShopOrder & { username: string; displayName: string })[]
       total: number
+      stats: {
+        perItem: {
+          itemId: string
+          orderCount: number
+          totalMana: number
+          avgMana: number
+        }[]
+        overall: {
+          orderCount: number
+          totalMana: number
+          avgMana: number
+        }
+      }
     },
   },
   'get-merch-stock-status': {

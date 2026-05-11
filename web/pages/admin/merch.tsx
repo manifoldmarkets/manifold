@@ -127,15 +127,36 @@ function StockManagement() {
   )
 }
 
+type ViewMode = 'recent' | 'month' | '3-months' | '6-months' | 'year' | 'all'
+// Each view maps to a (dateRange, limit) pair sent to the backend. 'recent'
+// is the cheap default — newest 25, no date filter. Wider ranges raise the
+// limit to surface all qualifying orders (capped at 2000 by the schema).
+const VIEW_MODES: {
+  value: ViewMode
+  label: string
+  dateRange: 'all' | 'month' | '3-months' | '6-months' | 'year'
+  limit: number
+}[] = [
+  { value: 'recent', label: 'Last 25', dateRange: 'all', limit: 25 },
+  { value: 'month', label: 'Last month', dateRange: 'month', limit: 2000 },
+  { value: '3-months', label: 'Last 3 months', dateRange: '3-months', limit: 2000 },
+  { value: '6-months', label: 'Last 6 months', dateRange: '6-months', limit: 2000 },
+  { value: 'year', label: 'Last year', dateRange: 'year', limit: 2000 },
+  { value: 'all', label: 'All time', dateRange: 'all', limit: 2000 },
+]
+
 function OrderManagement() {
-  const [offset, setOffset] = useState(0)
-  const limit = 25
+  const [viewMode, setViewMode] = useState<ViewMode>('recent')
+  const mode = VIEW_MODES.find((m) => m.value === viewMode) ?? VIEW_MODES[0]
+
   const { data, refresh } = useAPIGetter('get-merch-orders', {
-    limit,
-    offset,
+    limit: mode.limit,
+    offset: 0,
+    dateRange: mode.dateRange,
   })
   const orders = data?.orders ?? []
   const total = data?.total ?? 0
+  const stats = data?.stats
   const [cancelingId, setCancelingId] = useState<string | null>(null)
 
   const handleCancel = async (
@@ -150,7 +171,7 @@ function OrderManagement() {
         `Cancel order for @${username}?\n\nItem: ${itemName}\nRefund: ${formatMoney(
           amount
         )}\nPrintful: ${
-          printfulOrderId ?? '\u2014'
+          printfulOrderId ?? '—'
         }\n\nThis will refund the full amount to the user and cancel the draft on Printful.`
       )
     )
@@ -173,34 +194,28 @@ function OrderManagement() {
 
   return (
     <Col className="gap-4">
+      <Row className="flex-wrap items-center gap-2">
+        <span className="text-ink-500 text-sm">View:</span>
+        {VIEW_MODES.map((opt) => (
+          <Button
+            key={opt.value}
+            size="xs"
+            color={viewMode === opt.value ? 'indigo' : 'gray-outline'}
+            onClick={() => setViewMode(opt.value)}
+          >
+            {opt.label}
+          </Button>
+        ))}
+      </Row>
+
+      {stats && <OrderStats stats={stats} />}
+
       <Row className="items-center justify-between">
         <h2 className="text-lg font-semibold">Orders ({total})</h2>
-        <Row className="gap-2">
-          <Button
-            size="xs"
-            color="gray-outline"
-            disabled={offset === 0}
-            onClick={() => setOffset(Math.max(0, offset - limit))}
-          >
-            Previous
-          </Button>
-          <span className="text-ink-500 self-center text-sm">
-            {total === 0
-              ? '0'
-              : `${offset + 1}\u2013${Math.min(
-                  offset + limit,
-                  total
-                )} of ${total}`}
-          </span>
-          <Button
-            size="xs"
-            color="gray-outline"
-            disabled={offset + limit >= total}
-            onClick={() => setOffset(offset + limit)}
-          >
-            Next
-          </Button>
-        </Row>
+        <span className="text-ink-500 self-center text-sm">
+          Showing {orders.length}
+          {orders.length >= mode.limit && ` (capped at ${mode.limit})`}
+        </span>
       </Row>
 
       {orders.length === 0 ? (
@@ -232,6 +247,103 @@ function OrderManagement() {
           </table>
         </div>
       )}
+    </Col>
+  )
+}
+
+function OrderStats(props: {
+  stats: {
+    perItem: {
+      itemId: string
+      orderCount: number
+      totalMana: number
+      avgMana: number
+    }[]
+    overall: {
+      orderCount: number
+      totalMana: number
+      avgMana: number
+    }
+  }
+}) {
+  const { perItem, overall } = props.stats
+
+  return (
+    <Col className="border-ink-200 gap-3 rounded-lg border p-4">
+      <Row className="flex-wrap items-baseline gap-x-6 gap-y-1">
+        <h3 className="text-base font-semibold">Sales summary</h3>
+        <span className="text-ink-500 text-xs">
+          Excludes cancelled, refunded, and failed orders.
+        </span>
+      </Row>
+
+      <Row className="flex-wrap gap-6">
+        <StatBlock
+          label="Orders"
+          value={overall.orderCount.toLocaleString()}
+        />
+        <StatBlock
+          label="Total mana"
+          value={formatMoney(overall.totalMana)}
+        />
+        <StatBlock
+          label="Average per order"
+          value={formatMoney(Math.round(overall.avgMana))}
+        />
+      </Row>
+
+      {perItem.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-ink-200 border-b text-left">
+                <th className="px-3 py-2">Item</th>
+                <th className="px-3 py-2 text-right">Orders</th>
+                <th className="px-3 py-2 text-right">Total mana</th>
+                <th className="px-3 py-2 text-right">Average mana</th>
+              </tr>
+            </thead>
+            <tbody>
+              {perItem.map((row) => {
+                const item = getShopItem(row.itemId)
+                return (
+                  <tr
+                    key={row.itemId}
+                    className="border-ink-200 border-b last:border-b-0"
+                  >
+                    <td className="px-3 py-2">
+                      {item?.name ?? row.itemId}
+                      <span className="text-ink-500 ml-2 text-xs">
+                        {row.itemId}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {row.orderCount.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {formatMoney(row.totalMana)}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {formatMoney(Math.round(row.avgMana))}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Col>
+  )
+}
+
+function StatBlock(props: { label: string; value: string }) {
+  return (
+    <Col className="gap-0.5">
+      <span className="text-ink-500 text-xs uppercase tracking-wide">
+        {props.label}
+      </span>
+      <span className="text-lg font-semibold">{props.value}</span>
     </Col>
   )
 }
@@ -302,11 +414,11 @@ function OrderRow(props: {
             cross-reference both without widening the table. */}
         <div>
           <span className="text-ink-500">Printful:</span>{' '}
-          {order.printfulOrderId ?? '\u2014'}
+          {order.printfulOrderId ?? '—'}
         </div>
         <div>
           <span className="text-ink-500">Manifold:</span>{' '}
-          {order.txnId ? `manifold-${order.txnId}` : '\u2014'}
+          {order.txnId ? `manifold-${order.txnId}` : '—'}
         </div>
       </td>
       <td className="px-3 py-2">
