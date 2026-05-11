@@ -502,6 +502,25 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // Apply share identities to collapse mixed YES/NO positions on a sum-to-one
+  // multi-choice market into all-YES (with at least one zero) and redeem the
+  // minimum across outcomes as cash. Pure accounting — no AMM, no fees.
+  'market/:contractId/rebalance': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      cashRedeemed: number
+      minShares: number
+      betCount: number
+      loanPaid: number
+    },
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+  },
   'get-user-limit-orders-with-contracts': {
     method: 'GET',
     visibility: 'undocumented',
