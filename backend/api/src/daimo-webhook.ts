@@ -332,6 +332,19 @@ const handleSessionSucceeded = async (event: DaimoWebhookEvent) => {
             }
           )
         }
+
+        // If we didn't end up claiming the offer, release the pending lock so
+        // the user can retry. (Successful claims flip status to 'redeemed',
+        // which makes the lock moot.)
+        if (!offerRedeemed) {
+          await tx.none(
+            `update personalized_mana_offers
+                set payment_pending_session_id = null,
+                    payment_pending_at = null
+              where id = $1 and status = 'active'`,
+            [offerId]
+          )
+        }
       }
 
       if (!offerRedeemed) {

@@ -78,22 +78,51 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
 
   const { offerId } = props
 
+  // Keep in sync with createcheckoutsession's PAYMENT_PENDING_LOCK_MINUTES.
+  const PAYMENT_PENDING_LOCK_MINUTES = 30
+
   if (offerId) {
-    const offer = await pg.oneOrNone<{
-      status: string
-      expires_at: string | null
-    }>(
-      `select status, expires_at
-         from personalized_mana_offers
-        where id = $1 and user_id = $2`,
-      [offerId, auth.uid]
+    // Atomically: verify the offer is redeemable + claim the cross-method
+    // pending lock if no other payment session is already in flight for this
+    // offer. Shared with createcheckoutsession so a user can't have one Stripe
+    // and one Daimo session running for the same offer simultaneously.
+    const claimed = await pg.oneOrNone<{ id: string }>(
+      `update personalized_mana_offers
+          set payment_pending_session_id = 'pending-' || gen_random_uuid()::text,
+              payment_pending_at = now()
+        where id = $1
+          and user_id = $2
+          and status = 'active'
+          and expires_at > now()
+          and (
+            payment_pending_at is null
+            or payment_pending_at < now() - ($3 || ' minutes')::interval
+          )
+       returning id`,
+      [offerId, auth.uid, String(PAYMENT_PENDING_LOCK_MINUTES)]
     )
-    if (
-      !offer ||
-      offer.status !== 'active' ||
-      !offer.expires_at ||
-      new Date(offer.expires_at).getTime() < Date.now()
-    ) {
+    if (!claimed) {
+      const existing = await pg.oneOrNone<{
+        status: string
+        expires_at: string | null
+        payment_pending_at: string | null
+      }>(
+        `select status, expires_at, payment_pending_at
+           from personalized_mana_offers
+          where id = $1 and user_id = $2`,
+        [offerId, auth.uid]
+      )
+      if (
+        existing &&
+        existing.payment_pending_at &&
+        new Date(existing.payment_pending_at).getTime() >
+          Date.now() - PAYMENT_PENDING_LOCK_MINUTES * 60 * 1000
+      ) {
+        throw new APIError(
+          409,
+          'A checkout for this offer is already in progress. Complete or close it first.'
+        )
+      }
       throw new APIError(400, 'Offer not redeemable')
     }
   }

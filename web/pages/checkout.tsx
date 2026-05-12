@@ -225,12 +225,17 @@ function CheckoutContent() {
         sessionId: result.sessionId,
         clientSecret: result.clientSecret,
       })
-    } catch (e) {
+    } catch (e: unknown) {
+      // 409 = another payment session is already in flight for this offer.
+      // Surface a specific message so the user understands what to do.
+      const message =
+        e instanceof Error && /already in progress/i.test(e.message)
+          ? 'You already have a checkout in progress for this offer. Complete or close it first.'
+          : 'Failed to start payment. Please try again.'
       console.error('Failed to create Daimo session:', e)
-      setSessionState({
-        status: 'error',
-        message: 'Failed to start payment. Please try again.',
-      })
+      setSessionState({ status: 'error', message })
+      // Refresh in case server state changed (e.g. offer just redeemed elsewhere).
+      offers.refresh()
     }
   }
 
@@ -263,8 +268,19 @@ function CheckoutContent() {
   }, [sessionState.status])
 
   const handleModalClose = () => {
-    if (sessionState.status === 'ready') {
+    const wasReady = sessionState.status === 'ready'
+    if (wasReady) {
       setSessionState({ status: 'idle' })
+    }
+    // If the user abandoned a personalized-offer session, release the pending
+    // lock server-side so they can immediately retry. The 30-minute TTL would
+    // catch it eventually, but this is instant.
+    if (wasReady && offers.nextRedeemableOfferId) {
+      api('release-personalized-mana-offer-lock', {
+        offerId: offers.nextRedeemableOfferId,
+      }).catch((e) =>
+        console.warn('Failed to release personalized offer lock:', e)
+      )
     }
     // Refresh on abandon too — the offer may have expired or been voided
     // while the modal was open.

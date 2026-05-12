@@ -3347,6 +3347,13 @@ export const API = (_apiTypeCheck = {
       priceUsdCrypto: number
     },
   },
+  'release-personalized-mana-offer-lock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ offerId: z.string() }).strict(),
+    returns: {} as { success: boolean },
+  },
   'admin-create-charity-giveaway': {
     method: 'POST',
     visibility: 'undocumented',

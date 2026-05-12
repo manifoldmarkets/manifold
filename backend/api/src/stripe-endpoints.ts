@@ -29,6 +29,16 @@ import {
   OFFER_MANA_AMOUNT,
   OFFER_PRICE_STRIPE,
 } from 'common/personalized-mana-offer'
+import { getOrCreateStripePromotionCodeForOffer } from './helpers/stripe-offer-promotion-code'
+
+// Multi-tab pending lock: if a payment session was started for this offer
+// less than this many minutes ago, reject new sessions across BOTH Stripe and
+// Daimo. Keep in sync with create-daimo-session.ts.
+const PAYMENT_PENDING_LOCK_MINUTES = 30
+// Stripe Checkout shows the offer as a 20%-off discount on a $50 base. The
+// $50 is the *display* price; the user actually pays $40 once the
+// promotion code applies. This makes the discount visible in Stripe's UI.
+const STRIPE_OFFER_BASE_PRICE_CENTS = 50 * 100
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -97,40 +107,97 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
   const stripe = initStripe()
 
   if (offerId) {
-    // Validate offer belongs to the user and is currently redeemable. We don't
-    // mark it redeemed yet — that happens atomically in the Stripe webhook so a
-    // never-completed checkout doesn't burn the user's offer.
     const pg = createSupabaseDirectClient()
+
+    // Atomically: verify the offer is redeemable + claim the cross-method
+    // pending lock if no other payment session is already in flight for this
+    // offer. The lock is shared with create-daimo-session so a user can't
+    // start a Stripe session for an offer that already has a Daimo session
+    // in flight (or vice versa).
     const offer = await pg.oneOrNone<{
       id: string
       status: string
       expires_at: string | null
+      payment_pending_at: string | null
     }>(
-      `select id, status, expires_at
-         from personalized_mana_offers
-        where id = $1 and user_id = $2`,
-      [offerId, userId]
+      `update personalized_mana_offers
+          set payment_pending_session_id = 'pending-' || gen_random_uuid()::text,
+              payment_pending_at = now()
+        where id = $1
+          and user_id = $2
+          and status = 'active'
+          and expires_at > now()
+          and (
+            payment_pending_at is null
+            or payment_pending_at < now() - ($3 || ' minutes')::interval
+          )
+       returning id, status, expires_at, payment_pending_at`,
+      [offerId, userId, String(PAYMENT_PENDING_LOCK_MINUTES)]
     )
-    if (
-      !offer ||
-      offer.status !== 'active' ||
-      !offer.expires_at ||
-      new Date(offer.expires_at).getTime() < Date.now()
-    ) {
+
+    if (!offer) {
+      // Either the offer doesn't exist, is no longer redeemable, or a recent
+      // payment session is already in flight. Tell the user clearly so the
+      // frontend can render a "checkout in progress" banner instead of a
+      // silent failure.
+      const existing = await pg.oneOrNone<{
+        status: string
+        expires_at: string | null
+        payment_pending_at: string | null
+      }>(
+        `select status, expires_at, payment_pending_at
+           from personalized_mana_offers
+          where id = $1 and user_id = $2`,
+        [offerId, userId]
+      )
+      if (
+        existing &&
+        existing.payment_pending_at &&
+        new Date(existing.payment_pending_at).getTime() >
+          Date.now() - PAYMENT_PENDING_LOCK_MINUTES * 60 * 1000
+      ) {
+        res
+          .status(409)
+          .send(
+            'A checkout for this offer is already in progress. Complete or close it first.'
+          )
+        return
+      }
       res.status(400).send('Offer not redeemable')
+      return
+    }
+
+    // Per-offer Stripe Promotion Code (max_redemptions=1) so Stripe enforces
+    // single-use at payment time. If the same user starts a second checkout
+    // session for this offer (e.g. by reloading) they share this code and
+    // Stripe rejects the second redemption attempt.
+    let promotionCodeId: string
+    try {
+      promotionCodeId = await getOrCreateStripePromotionCodeForOffer(offerId)
+    } catch (e: unknown) {
+      // Roll back the pending lock so the user can retry — the Stripe API
+      // call failed, which is on us, not them.
+      await pg.none(
+        `update personalized_mana_offers
+            set payment_pending_session_id = null,
+                payment_pending_at = null
+          where id = $1`,
+        [offerId]
+      )
+      console.error('Failed to create Stripe promotion code:', e)
+      res.status(500).send('Failed to start personalized offer checkout')
       return
     }
 
     // Cap Stripe Checkout TTL at offer + 1h. The SQL redemption grace runs
     // 2h past offer, leaving a 1h buffer for webhook latency between Stripe
-    // session expiry and SQL grace expiry. So when Stripe rejects payment
-    // at session expiry, the webhook still has plenty of headroom to land.
-    // Stripe constraints: min 30 min in the future, max 24 h.
+    // session expiry and SQL grace expiry. Stripe constraints: min 30 min,
+    // max 24 h.
     const STRIPE_MIN_FUTURE_MS = 31 * 60 * 1000
     const STRIPE_MAX_FUTURE_MS = 24 * 60 * 60 * 1000
     const STRIPE_SESSION_PAST_OFFER_MS = 60 * 60 * 1000
     const offerExpiryMs =
-      new Date(offer.expires_at).getTime() + STRIPE_SESSION_PAST_OFFER_MS
+      new Date(offer.expires_at!).getTime() + STRIPE_SESSION_PAST_OFFER_MS
     const stripeExpiresAt = Math.floor(
       Math.min(
         Math.max(offerExpiryMs, Date.now() + STRIPE_MIN_FUTURE_MS),
@@ -149,17 +216,20 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `Personalized mana sale — ${OFFER_MANA_AMOUNT.toLocaleString()} mana`,
+              name: `${OFFER_MANA_AMOUNT.toLocaleString()} mana — personalized sale`,
               description:
                 'Limited-time discounted mana bundle for merch customers.',
             },
-            unit_amount: OFFER_PRICE_STRIPE * 100,
+            // Display price is $50; the promotion code applies 20% off so the
+            // user pays $40. Stripe Checkout shows the discount in its UI.
+            unit_amount: STRIPE_OFFER_BASE_PRICE_CENTS,
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
       expires_at: stripeExpiresAt,
+      discounts: [{ promotion_code: promotionCodeId }],
       success_url: `${referrer}?purchaseSuccess=true`,
       cancel_url: `${referrer}?purchaseSuccess=false`,
     })
@@ -365,6 +435,18 @@ const issueMoneys = async (session: StripeSession) => {
               { offerId, userId, sessionId, intendedDeposit, actualDeposit: deposit }
             )
           }
+        }
+
+        // Release the pending lock if we didn't end up claiming any offer.
+        // (When we DO claim, status flips to 'redeemed' and the lock is moot.)
+        if (!offerClaimed) {
+          await tx.none(
+            `update personalized_mana_offers
+                set payment_pending_session_id = null,
+                    payment_pending_at = null
+              where id = $1 and status = 'active'`,
+            [offerId]
+          )
         }
       }
 
