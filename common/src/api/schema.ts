@@ -3307,10 +3307,44 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({}).strict(),
+    props: z
+      .object({
+        offerId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       sessionId: string
       clientSecret: string
+    },
+  },
+  'get-personalized-mana-offers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      pendingCount: number
+      activeCount: number
+      nextExpiresAt: number | null
+      nextRedeemableOfferId: string | null
+      manaAmount: number
+      priceUsdStripe: number
+      priceUsdCrypto: number
+    },
+  },
+  'activate-personalized-mana-offers': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      pendingCount: number
+      activeCount: number
+      nextExpiresAt: number | null
+      nextRedeemableOfferId: string | null
+      manaAmount: number
+      priceUsdStripe: number
+      priceUsdCrypto: number
     },
   },
   'admin-create-charity-giveaway': {
