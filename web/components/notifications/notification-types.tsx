@@ -1,4 +1,4 @@
-import { GiftIcon, StarIcon } from '@heroicons/react/solid'
+import { GiftIcon, SparklesIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { TRADED_TERM } from 'common/envs/constants'
 import {
@@ -212,6 +212,14 @@ export function NotificationItem(props: {
   } else if (reason === 'merch_order_update') {
     return (
       <MerchOrderNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'personalized_mana_offer') {
+    return (
+      <PersonalizedManaOfferNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -2357,6 +2365,30 @@ function CharityGiveawayCampaignNotification(props: {
           <b>{prizeAmount}</b> prize amount.
         </span>
       )}
+    </NotificationFrame>
+  )
+}
+
+function PersonalizedManaOfferNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<SparklesIcon className="h-8 w-8 text-amber-500" />}
+      link="/checkout"
+      subtitle={
+        <span className="text-ink-600 text-xs">
+          Limited-time discount on a mana bundle — tap to view.
+        </span>
+      }
+    >
+      <span>You have a personalised mana sale available!</span>
     </NotificationFrame>
   )
 }

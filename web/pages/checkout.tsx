@@ -11,7 +11,10 @@ import { SEO } from 'web/components/SEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
+import { PersonalizedOfferCard } from 'web/components/checkout/personalized-offer-card'
+import { checkoutURL } from 'web/lib/service/stripe'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Button } from 'web/components/buttons/button'
@@ -195,13 +198,28 @@ function CheckoutContent() {
   const isBonusEligible = !!user && canReceiveBonuses(user)
   const canUseCreditCard = canPay && isBonusEligible
 
-  const handleBuyManaClick = async () => {
+  const offers = usePersonalizedManaOffers()
+  const activatedRef = useRef(false)
+  useEffect(() => {
+    if (!user?.id || activatedRef.current) return
+    if (offers.pendingCount > 0) {
+      activatedRef.current = true
+      api('activate-personalized-mana-offers', {})
+        .then(() => offers.refresh())
+        .catch((e) => console.error('Offer activation failed:', e))
+    }
+  }, [user?.id, offers.pendingCount])
+
+  const handleBuyManaClick = async (offerId?: string) => {
     if (!canPay) return
 
     setSessionState({ status: 'creating' })
 
     try {
-      const result = await api('create-daimo-session', {})
+      const result = await api(
+        'create-daimo-session',
+        offerId ? { offerId } : {}
+      )
       setSessionState({
         status: 'ready',
         sessionId: result.sessionId,
@@ -216,18 +234,68 @@ function CheckoutContent() {
     }
   }
 
+  const handleOfferStripe = () => {
+    if (!user?.id || !offers.nextRedeemableOfferId) return
+    if (!canUseCreditCard) {
+      setVerificationModalOpen(true)
+      return
+    }
+    window.location.href = checkoutURL(
+      user.id,
+      offers.priceUsdStripe,
+      typeof window !== 'undefined' ? window.location.href : '',
+      offers.nextRedeemableOfferId
+    )
+  }
+
   const handlePaymentCompleted = () => {
     setSessionState({ status: 'completed' })
   }
+
+  // After a successful Daimo payment the webhook commits offer redemption
+  // server-side. A brief delay catches the typical webhook latency so the
+  // next render sees fresh offer state. useEffect cleanup cancels the
+  // timer if the user navigates away before it fires.
+  useEffect(() => {
+    if (sessionState.status !== 'completed') return
+    const t = setTimeout(() => offers.refresh(), 1500)
+    return () => clearTimeout(t)
+  }, [sessionState.status])
 
   const handleModalClose = () => {
     if (sessionState.status === 'ready') {
       setSessionState({ status: 'idle' })
     }
+    // Refresh on abandon too — the offer may have expired or been voided
+    // while the modal was open.
+    offers.refresh()
   }
 
   return (
     <Col className="mx-auto w-full max-w-xl gap-4 px-4 py-6 sm:py-8">
+      {/* Personalized mana sale card (from a recent merch purchase) */}
+      {offers.activeCount > 0 && (
+        <PersonalizedOfferCard
+          activeCount={offers.activeCount}
+          nextExpiresAt={offers.nextExpiresAt}
+          manaAmount={offers.manaAmount}
+          priceUsdStripe={offers.priceUsdStripe}
+          priceUsdCrypto={offers.priceUsdCrypto}
+          cryptoLoading={
+            sessionState.status === 'creating' ||
+            sessionState.status === 'ready'
+          }
+          cryptoDisabled={!canPay}
+          creditCardDisabled={!canPay}
+          onBuyWithCrypto={() =>
+            handleBuyManaClick(
+              offers.nextRedeemableOfferId ?? undefined
+            )
+          }
+          onBuyWithCreditCard={handleOfferStripe}
+        />
+      )}
+
       {/* Main Payment Card */}
       <div className="bg-canvas-0 overflow-hidden rounded-xl shadow-md">
         {/* Header */}
@@ -329,7 +397,7 @@ function CheckoutContent() {
               ) : (
                 <>
                   <button
-                    onClick={handleBuyManaClick}
+                    onClick={() => handleBuyManaClick()}
                     disabled={
                       sessionState.status === 'creating' ||
                       sessionState.status === 'ready'
