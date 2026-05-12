@@ -203,6 +203,8 @@ import { adminCreateSweepstakes } from './admin-create-sweepstakes'
 import { getCharityGiveawayList } from './get-charity-giveaway-list'
 import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
 import { createDaimoSession } from './create-daimo-session'
+import { getPersonalizedManaOffers } from './get-personalized-mana-offers'
+import { activatePersonalizedManaOffers } from './activate-personalized-mana-offers'
 import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
 import { adminUpdateCharityGiveawayPrize } from './admin-update-charity-giveaway-prize'
 import { createPost } from './create-post'
@@ -515,6 +517,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-charity-giveaway-list': getCharityGiveawayList,
   'get-crypto-purchase-status': getCryptoPurchaseStatus,
   'create-daimo-session': createDaimoSession,
+  'get-personalized-mana-offers': getPersonalizedManaOffers,
+  'activate-personalized-mana-offers': activatePersonalizedManaOffers,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
