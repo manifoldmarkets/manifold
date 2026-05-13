@@ -63,7 +63,7 @@ export const SORTS = [
   { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'High %', value: 'prob-descending' },
   { label: 'Low %', value: 'prob-ascending' },
-  { label: 'Mid 50%', value: 'prob-50' },
+  { label: 'Mid %', value: 'prob-50' },
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
