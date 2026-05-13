@@ -1744,6 +1744,8 @@ export const API = (_apiTypeCheck = {
       .object({
         before: z.coerce.number().optional(),
         after: z.coerce.number().default(0),
+        limit: z.coerce.number().gte(0).lte(1000).default(100),
+        offset: z.coerce.number().gte(0).default(0),
         userId: z.string(),
       })
       .strict(),
@@ -3639,12 +3641,7 @@ export const API = (_apiTypeCheck = {
         claimId: z.string().optional(),
         sweepstakesNum: z.number().int().optional(),
         userId: z.string().optional(),
-        paymentStatus: z.enum([
-          'awaiting',
-          'sent',
-          'rejected',
-          'opted_out',
-        ]),
+        paymentStatus: z.enum(['awaiting', 'sent', 'rejected', 'opted_out']),
         paymentTxnHash: z.string().optional(),
       })
       .strict()
