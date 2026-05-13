@@ -16,7 +16,10 @@ const bodySchema = z
     contractId: z.string().max(MAX_ANSWER_LENGTH),
     answerId: z.string().max(MAX_ANSWER_LENGTH),
     text: z.string().min(1).max(MAX_ANSWER_LENGTH).optional(),
-    color: z.string().length(7).startsWith('#').optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .optional(),
   })
   .strict()
 
@@ -28,8 +31,7 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   // Check for bans
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
-  if (user.userDeleted)
-    throw new APIError(403, 'Your account has been deleted')
+  if (user.userDeleted) throw new APIError(403, 'Your account has been deleted')
   const userBans = await getActiveUserBans(auth.uid)
   if (isUserBanned(userBans, 'marketControl') || user.isBannedFromPosting)
     throw new APIError(403, 'You are banned from editing answers')

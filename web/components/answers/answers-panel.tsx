@@ -347,7 +347,35 @@ export const EditAnswerModal = (props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [text, setText] = useState(answer.text)
+  const [customHex, setCustomHex] = useState(color)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => setCustomHex(color), [color])
+
+  const saveColor = async (rawColor: string, close?: () => void) => {
+    const normalizedColor = rawColor.trim().startsWith('#')
+      ? rawColor.trim()
+      : `#${rawColor.trim()}`
+
+    if (!/^#[0-9a-fA-F]{6}$/.test(normalizedColor)) {
+      setError('Enter a valid 6-digit hex color, like #11b981.')
+      return
+    }
+
+    try {
+      await editAnswerCpmm({
+        answerId: answer.id,
+        contractId: contract.id,
+        color: normalizedColor,
+      })
+      setError(null)
+      close?.()
+    } catch (error) {
+      console.error(error)
+      setError('Error saving color')
+    }
+  }
+
   const editAnswer = async () => {
     if (isSubmitting) return
     setIsSubmitting(true)
@@ -400,22 +428,34 @@ export const EditAnswerModal = (props: {
             />
           )}
           dropdownMenuContent={(close) => (
-            <CirclePicker
-              className="w-[240px] py-2"
-              onChange={async (change) => {
-                try {
-                  await editAnswerCpmm({
-                    answerId: answer.id,
-                    contractId: contract.id,
-                    color: change.hex,
-                  })
-                } catch (error) {
-                  console.error(error)
-                } finally {
-                  close()
-                }
-              }}
-            />
+            <Col className="gap-2 p-2">
+              <CirclePicker
+                className="w-[240px]"
+                onChange={(change) => saveColor(change.hex, close)}
+              />
+              <Row className="border-ink-200 items-center gap-2 border-t pt-2">
+                <Input
+                  value={customHex}
+                  onChange={(e) => setCustomHex(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      saveColor(customHex, close)
+                    }
+                  }}
+                  placeholder="#RRGGBB"
+                  className="!h-8 !px-2 font-mono text-xs"
+                  maxLength={7}
+                />
+                <Button
+                  size="2xs"
+                  color="gray-outline"
+                  onClick={() => saveColor(customHex, close)}
+                >
+                  Apply
+                </Button>
+              </Row>
+            </Col>
           )}
         />
 
