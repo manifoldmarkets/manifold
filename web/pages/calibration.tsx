@@ -370,7 +370,7 @@ function MethodologyStep(props: { number: number; children: React.ReactNode }) {
   )
 }
 
-function BrierScoreBadge(props: { score: number }) {
+export function BrierScoreBadge(props: { score: number }) {
   const displayScore = Math.round(props.score * 1e5) / 1e5
 
   return (
@@ -420,7 +420,7 @@ function CaseStudyCard(props: {
   )
 }
 
-function CalibrationChart(props: {
+export function CalibrationChart(props: {
   points: { x: number; y: number }[]
   width: number
   height: number
@@ -503,12 +503,12 @@ function CalibrationChart(props: {
 
       {/* Confidence band around diagonal */}
       <path
-        d={`M ${xScale(0)} ${yScale(0.05)} 
-            L ${xScale(0.95)} ${yScale(1)} 
-            L ${xScale(1)} ${yScale(1)} 
-            L ${xScale(1)} ${yScale(0.95)} 
-            L ${xScale(0.05)} ${yScale(0)} 
-            L ${xScale(0)} ${yScale(0)} 
+        d={`M ${xScale(0)} ${yScale(0.05)}
+            L ${xScale(0.95)} ${yScale(1)}
+            L ${xScale(1)} ${yScale(1)}
+            L ${xScale(1)} ${yScale(0.95)}
+            L ${xScale(0.05)} ${yScale(0)}
+            L ${xScale(0)} ${yScale(0)}
             Z`}
         className="fill-primary-100/50 dark:fill-primary-900/30"
       />
