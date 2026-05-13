@@ -1023,7 +1023,9 @@ export function NewContractPanel(props: {
     answers: formState.answers.map((text) => ({ text })),
     closeTime: formState.closeDate
       ? (() => {
-          const time = new Date(formState.closeDate + 'T23:59').getTime()
+          const time = new Date(
+            formState.closeDate + 'T' + (formState.closeHoursMinutes || '23:59')
+          ).getTime()
           return isNaN(time) ? undefined : time
         })()
       : undefined,
