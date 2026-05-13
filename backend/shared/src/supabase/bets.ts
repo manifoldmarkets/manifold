@@ -50,6 +50,7 @@ export const getBetsWithFilter = async (
     count,
     points,
     minAmount,
+    excludeApi,
   } = options
 
   const conditions = buildArray(
@@ -89,6 +90,9 @@ export const getBetsWithFilter = async (
 
     !includeZeroShareRedemptions &&
       where(`(shares != 0 or is_redemption = false or loan_amount != 0)`),
+
+    excludeApi &&
+      where(`coalesce((contract_bets.data->>'isApi')::boolean, false) = false`),
 
     minAmount !== undefined &&
       where(`abs((contract_bets.data->>'amount')::numeric) >= ${minAmount}`, {

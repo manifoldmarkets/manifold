@@ -583,6 +583,7 @@ export const API = (_apiTypeCheck = {
         // undocumented fields. idk what a good api interface would be
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
+        excludeApi: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
         count: coerceBoolean.optional(),
         points: coerceBoolean.optional(),
