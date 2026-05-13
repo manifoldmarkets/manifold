@@ -82,12 +82,20 @@ export const createCommentOnContractInternal = async (
   const now = Date.now()
 
   if (replyToCommentId) {
-    const repliedComment = await pg.oneOrNone(
-      `select comment_id from contract_comments where comment_id = $1 and contract_id = $2`,
+    const repliedComment = await pg.oneOrNone<{
+      comment_id: string
+      reply_to_comment_id: string | null
+    }>(
+      `select comment_id, data->>'replyToCommentId' as reply_to_comment_id
+       from contract_comments
+       where comment_id = $1 and contract_id = $2`,
       [replyToCommentId, contractId]
     )
     if (!repliedComment) {
       throw new APIError(404, 'Comment to reply to not found')
+    }
+    if (repliedComment.reply_to_comment_id) {
+      throw new APIError(400, 'Can only reply to top-level comments')
     }
   }
 
