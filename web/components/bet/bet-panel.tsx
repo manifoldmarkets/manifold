@@ -65,7 +65,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { sliderColors } from '../widgets/slider'
+import { SliderColor } from '../widgets/slider'
 import { Tooltip } from '../widgets/tooltip'
 import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
@@ -91,11 +91,11 @@ type BuyPanelProps = {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
   }
   children?: React.ReactNode
