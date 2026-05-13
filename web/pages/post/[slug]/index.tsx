@@ -217,7 +217,7 @@ export default function PostPage(props: {
         {!editing && (
           <Col>
             <Row>
-              <BackButton className="!p-0" />
+              <BackButton />
             </Row>
             <Col className="border-canvas-50 pt-4">
               <Row className=" items-center justify-between gap-1 text-2xl font-bold">
