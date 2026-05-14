@@ -36,12 +36,20 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     if (!post) throw new APIError(404, 'Post not found')
 
     if (replyToCommentId) {
-      const repliedComment = await pg.oneOrNone(
-        `select comment_id from old_post_comments where comment_id = $1 and post_id = $2`,
+      const repliedComment = await pg.oneOrNone<{
+        comment_id: string
+        reply_to_comment_id: string | null
+      }>(
+        `select comment_id, data->>'replyToCommentId' as reply_to_comment_id
+         from old_post_comments
+         where comment_id = $1 and post_id = $2`,
         [replyToCommentId, postId]
       )
       if (!repliedComment) {
         throw new APIError(404, 'Comment to reply to not found')
+      }
+      if (repliedComment.reply_to_comment_id) {
+        throw new APIError(400, 'Can only reply to top-level comments')
       }
     }
 
