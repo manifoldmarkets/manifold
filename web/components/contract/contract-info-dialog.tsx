@@ -1,4 +1,4 @@
-import { formatTime } from 'client-common/lib/time'
+import { formatTimeWithTimezone } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
@@ -144,7 +144,7 @@ export const Stats = (props: {
 
         <tr>
           <td>Question created</td>
-          <td>{formatTime(createdTime)}</td>
+          <td>{formatTimeWithTimezone(createdTime)}</td>
         </tr>
 
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
@@ -187,7 +187,7 @@ export const Stats = (props: {
                   dayjs(contract.createdTime).add(dayjs.duration(900, 'year'))
                 )
                   ? 'Never'
-                  : formatTime(closeTime)}
+                  : formatTimeWithTimezone(closeTime)}
               </td>
             </tr>
           )}
@@ -195,7 +195,7 @@ export const Stats = (props: {
         {resolutionTime && isBettingContract && (
           <tr>
             <td>Question resolved</td>
-            <td>{formatTime(resolutionTime)}</td>
+            <td>{formatTimeWithTimezone(resolutionTime)}</td>
           </tr>
         )}
 
@@ -627,13 +627,15 @@ function AdminHomePageScoreAdjustmentRows(props: {
               {hasActiveAdjustment ? (
                 <span>
                   {contract.homePageScoreAdjustment?.toFixed(3)}
-                  {hasValidExpiry ? ` until ${formatTime(expiresAt)}` : ''}
+                  {hasValidExpiry
+                    ? ` until ${formatTimeWithTimezone(expiresAt)}`
+                    : ''}
                 </span>
               ) : contract.homePageScoreAdjustment !== undefined ? (
                 <span>
                   {contract.homePageScoreAdjustment.toFixed(3)}
                   {hasValidExpiry
-                    ? ` (expired ${formatTime(expiresAt)})`
+                    ? ` (expired ${formatTimeWithTimezone(expiresAt)})`
                     : ' (expired)'}
                 </span>
               ) : (
