@@ -1,8 +1,7 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { SparklesIcon } from '@heroicons/react/solid'
-import { FaCreditCard } from 'react-icons/fa6'
 import { CurrencyDollarIcon } from '@heroicons/react/solid'
+import { FaCreditCard } from 'react-icons/fa6'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -51,96 +50,122 @@ export function PersonalizedOfferCard(props: {
   }, [nextExpiresAt])
 
   const remaining = nextExpiresAt != null ? nextExpiresAt - now : 0
-
-  // Hide once the visible timer hits zero. New sessions can't be created past
-  // expires_at (createcheckoutsession / create-daimo-session both validate
-  // strictly), so hiding here keeps the UI honest. EXCEPTION: if a payment
-  // session is mid-flight (cryptoLoading), keep the card mounted so the user
-  // still sees their loading state / result. The backend's 1-hour redemption
-  // grace will still honor an in-flight session even past expires_at.
   if (activeCount === 0) return null
   if (remaining <= 0 && !cryptoLoading) return null
 
+  // Standard rate anchor for the savings callout: 100 mana / $1 USD.
+  const baseUsd = Math.round(manaAmount / 100)
+  const cryptoSavingsPct = Math.round(((baseUsd - priceUsdCrypto) / baseUsd) * 100)
+  const stripeSavingsPct = Math.round(((baseUsd - priceUsdStripe) / baseUsd) * 100)
+
   return (
-    <div className="relative overflow-hidden rounded-xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-5 shadow-sm dark:border-amber-700/60 dark:from-amber-950/40 dark:via-yellow-950/40 dark:to-orange-950/40">
-      <Row className="items-center justify-between gap-2">
-        <Row className="items-center gap-2">
-          <SparklesIcon className="h-5 w-5 text-amber-500" />
-          <span className="text-base font-bold text-amber-700 dark:text-amber-300">
-            Your personalised mana sale
-          </span>
+    <div className="animate-offer-card-in overflow-hidden rounded-xl border-2 border-orange-400 bg-canvas-0 shadow-lg ring-2 ring-amber-200/60 dark:border-orange-500 dark:ring-amber-800/40">
+      {/* Header strip — high-contrast, draws the eye. On mobile: discount
+          headline on top, count + timer centered below. On sm+: side-by-side. */}
+      <div className="flex flex-col items-center gap-0.5 bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 text-white sm:flex-row sm:justify-between sm:gap-2">
+        <Row className="items-center gap-1.5 text-sm font-bold uppercase tracking-wide sm:gap-2 sm:text-base sm:tracking-wider">
+          <span>Up to {cryptoSavingsPct}% off mana</span>
         </Row>
-        <span className="rounded-full bg-amber-600 px-2 py-0.5 text-xs font-bold text-white shadow-sm">
-          {activeCount} Available
-        </span>
-      </Row>
-
-      <Col className="mt-3 gap-1">
-        <Row className="items-baseline gap-2">
-          <span className="text-2xl font-extrabold text-amber-700 dark:text-amber-200">
-            {formatMoney(manaAmount)}
-          </span>
-          <span className="text-ink-600 text-sm">
-            for ${priceUsdCrypto} (crypto) or ${priceUsdStripe} (card)
-          </span>
+        <Row className="items-center gap-1.5 text-sm font-bold uppercase tracking-wide sm:gap-2 sm:text-base sm:tracking-wider">
+          {activeCount > 1 && (
+            <>
+              <span>{activeCount} left</span>
+              <span className="text-amber-100/80">·</span>
+            </>
+          )}
+          <span className="tabular-nums">{formatHmsRemaining(remaining)}</span>
         </Row>
-        <p className="text-ink-600 text-xs">
-          Thanks for your merch order! This discount expires in{' '}
-          <span className="font-mono font-semibold text-amber-700 dark:text-amber-300">
-            {formatHmsRemaining(remaining)}
-          </span>
-          .
-        </p>
-      </Col>
+      </div>
 
-      <Col className="mt-4 gap-2">
-        <button
-          onClick={onBuyWithCrypto}
-          disabled={cryptoDisabled || cryptoLoading}
-          className={clsx(
-            'group relative w-full overflow-hidden rounded-lg border-2 border-transparent',
-            'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
-            'px-6 py-3 text-base font-semibold text-white shadow',
-            'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-lg hover:shadow-indigo-500/25',
-            'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
-          )}
-        >
-          <Row className="items-center justify-center gap-2">
-            {cryptoLoading ? (
-              <>
-                <LoadingIndicator size="sm" className="!text-white" />
-                <span>Loading...</span>
-              </>
-            ) : (
-              <>
-                <CurrencyDollarIcon className="h-5 w-5" />
-                <span>
-                  Claim with crypto — ${priceUsdCrypto}
-                </span>
-              </>
-            )}
-          </Row>
-        </button>
-
-        <button
-          onClick={onBuyWithCreditCard}
-          disabled={creditCardDisabled}
-          className={clsx(
-            'group relative w-full overflow-hidden rounded-lg border-2',
-            'px-6 py-3 text-base font-semibold shadow-sm transition-all',
-            'active:scale-[0.98]',
-            creditCardDisabled
-              ? 'border-ink-300 bg-canvas-50 text-ink-500 cursor-not-allowed dark:bg-canvas-100'
-              : 'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
-          )}
-        >
-          <Row className="items-center justify-center gap-2">
-            <FaCreditCard className="h-4 w-4" />
-            <span>
-              Claim with card — ${priceUsdStripe}
+      {/* Body */}
+      <Col className="gap-4 p-5">
+        <Col className="items-center gap-1">
+          <Row className="items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-orange-700 dark:text-amber-300 sm:text-4xl">
+              {formatMoney(manaAmount)}
             </span>
+            <span className="text-ink-500 text-sm">mana</span>
           </Row>
-        </button>
+        </Col>
+
+        <Col className="mx-auto mt-1 w-full max-w-sm gap-3">
+          <button
+            onClick={onBuyWithCrypto}
+            disabled={cryptoDisabled || cryptoLoading}
+            className={clsx(
+              'group relative w-full rounded-xl border-2 border-transparent',
+              'flex min-h-[60px] items-center justify-center',
+              'bg-gradient-to-r from-orange-500 to-amber-500',
+              'px-4 py-4 text-base font-semibold text-white shadow-lg sm:px-8 sm:text-lg',
+              'transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/30 hover:brightness-110',
+              'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
+            )}
+          >
+            <span className="pointer-events-none absolute -top-3 -right-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
+              −{cryptoSavingsPct}%
+            </span>
+            <Row className="items-center justify-center gap-2">
+              {cryptoLoading ? (
+                <>
+                  <LoadingIndicator size="sm" className="!text-white" />
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <CurrencyDollarIcon className="h-6 w-6 shrink-0" />
+                  <span>
+                    Claim with crypto{' '}
+                    <span className="whitespace-nowrap">
+                      <span className="text-xl font-bold opacity-60 line-through">
+                        ${baseUsd}
+                      </span>{' '}
+                      <span className="text-xl font-bold">${priceUsdCrypto}</span>
+                    </span>
+                  </span>
+                </>
+              )}
+            </Row>
+          </button>
+
+          <button
+            onClick={onBuyWithCreditCard}
+            disabled={creditCardDisabled}
+            className={clsx(
+              'group relative w-full rounded-xl border-2',
+              'flex min-h-[60px] items-center justify-center',
+              'px-4 py-4 text-base font-semibold shadow-sm transition-all sm:px-8 sm:text-lg',
+              'active:scale-[0.98]',
+              creditCardDisabled
+                ? 'border-ink-300 bg-canvas-50 text-ink-500 cursor-not-allowed dark:bg-canvas-100'
+                : 'bg-canvas-0 border-orange-500 text-orange-700 hover:bg-orange-50 dark:border-amber-400 dark:text-amber-300 dark:hover:bg-amber-950/30'
+            )}
+          >
+            <span className="pointer-events-none absolute -top-3 -right-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
+              −{stripeSavingsPct}%
+            </span>
+            <Row className="items-center justify-center gap-2">
+              <FaCreditCard className="h-5 w-5 shrink-0" />
+              <span>
+                {/* Invisible padding matches "crypto" (6 chars) vs "card" (4
+                    chars) so this label takes the same width as the other
+                    button's, forcing them to wrap to a second line at the
+                    same viewport width instead of one wrapping alone. */}
+                <span className="invisible">m</span>Claim with card{' '}
+                <span className="whitespace-nowrap">
+                  <span className="text-xl font-bold opacity-60 line-through">
+                    ${baseUsd}
+                  </span>{' '}
+                  <span className="text-xl font-bold">${priceUsdStripe}</span>
+                </span>
+              </span>
+            </Row>
+          </button>
+        </Col>
+
+        <p className="text-ink-500 mt-1 text-center text-xs">
+          This mana offer is personal to you, and will expire when time runs
+          out.
+        </p>
       </Col>
     </div>
   )

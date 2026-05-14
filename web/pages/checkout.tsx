@@ -245,12 +245,19 @@ function CheckoutContent() {
       setVerificationModalOpen(true)
       return
     }
-    window.location.href = checkoutURL(
+    // /createcheckoutsession is POST-only on the backend; navigate via a
+    // programmatic form submission (matches AddFundsModal's pattern).
+    const action = checkoutURL(
       user.id,
       offers.priceUsdStripe,
       typeof window !== 'undefined' ? window.location.href : '',
       offers.nextRedeemableOfferId
     )
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = action
+    document.body.appendChild(form)
+    form.submit()
   }
 
   const handlePaymentCompleted = () => {
