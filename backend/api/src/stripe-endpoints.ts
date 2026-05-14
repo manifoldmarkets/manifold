@@ -35,10 +35,21 @@ import { getOrCreateStripePromotionCodeForOffer } from './helpers/stripe-offer-p
 // less than this many minutes ago, reject new sessions across BOTH Stripe and
 // Daimo. Keep in sync with create-daimo-session.ts.
 const PAYMENT_PENDING_LOCK_MINUTES = 30
-// Stripe Checkout shows the offer as a 20%-off discount on a $50 base. The
-// $50 is the *display* price; the user actually pays $40 once the
-// promotion code applies. This makes the discount visible in Stripe's UI.
-const STRIPE_OFFER_BASE_PRICE_CENTS = 50 * 100
+
+// Stripe Price ID for the "20% off 5K mana" personalized-offer SKU ($50
+// base). The Coupon referenced by STRIPE_20_OFF_5K_COUPON_ID must be
+// restricted to the matching Stripe Product (`applies_to.products`) so the
+// per-offer promotion codes can't cross-apply to standard mana tier purchases.
+const OFFER_STRIPE_PRICE_ID = () => {
+  const id = process.env.STRIPE_20_OFF_5K_PRICE_ID
+  if (!id) {
+    throw new Error(
+      'STRIPE_20_OFF_5K_PRICE_ID not configured — create a $50 Price on the ' +
+        'personalized-mana-sale Product in Stripe Dashboard and set this env var.'
+    )
+  }
+  return id
+}
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -213,17 +224,11 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
       },
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `${OFFER_MANA_AMOUNT.toLocaleString()} mana — personalized sale`,
-              description:
-                'Limited-time discounted mana bundle for merch customers.',
-            },
-            // Display price is $50; the promotion code applies 20% off so the
-            // user pays $40. Stripe Checkout shows the discount in its UI.
-            unit_amount: STRIPE_OFFER_BASE_PRICE_CENTS,
-          },
+          // Pre-configured $50 Stripe Product/Price for the personalized-sale
+          // SKU. The Coupon attached via the promotion code below applies a
+          // 20% discount, and Stripe restricts the Coupon to this Product so
+          // the code can't be cross-applied to standard mana tier purchases.
+          price: OFFER_STRIPE_PRICE_ID(),
           quantity: 1,
         },
       ],

@@ -9,14 +9,17 @@ const initStripe = () =>
   })
 
 // Parent Coupon configured in Stripe Dashboard, applied via Promotion Code per
-// offer. The coupon is 20% off (so a $50 base line item nets to $40). Stripe
-// requires the coupon to exist before promotion codes can reference it.
+// offer. The coupon is 20% off (so a $50 base line item nets to $40) and is
+// restricted to the $50 personalized-offer Product so it can't cross-apply
+// to standard mana tier purchases. Stripe requires the coupon to exist before
+// promotion codes can reference it.
 const OFFER_COUPON_ID = () => {
-  const id = process.env.STRIPE_OFFER_COUPON_ID
+  const id = process.env.STRIPE_20_OFF_5K_COUPON_ID
   if (!id) {
     throw new Error(
-      'STRIPE_OFFER_COUPON_ID not configured — create a 20%-off Coupon in ' +
-        'the Stripe Dashboard and set this env var.'
+      'STRIPE_20_OFF_5K_COUPON_ID not configured — create a 20%-off Coupon ' +
+        'in the Stripe Dashboard, restrict it to the offer Product, and set ' +
+        'this env var.'
     )
   }
   return id
