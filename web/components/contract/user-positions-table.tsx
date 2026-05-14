@@ -43,7 +43,7 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { MoneyDisplay } from '../bet/money-display'
-import { getPseudonym } from '../charts/contract/choice'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Select } from '../widgets/select'
 
@@ -483,6 +483,10 @@ const BinaryUserPositionsTable = memo(
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
     const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+    const otherBinaryMCAnswer =
+      isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
+        ? contract.answers.find((a) => a.id !== mainBinaryMCAnswer?.id)
+        : undefined
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
       return outcome === 'YES' ? (
         <span>
@@ -576,9 +580,14 @@ const BinaryUserPositionsTable = memo(
                       key={position.userId + outcome}
                       position={position}
                       colorClassName={
-                        isBinaryMulti(contract)
-                          ? 'text-indigo-500'
-                          : 'text-teal-500'
+                        sortBy === 'profit' || !isBinaryMulti(contract)
+                          ? 'text-teal-500'
+                          : undefined
+                      }
+                      color={
+                        sortBy === 'shares' && isBinaryMulti(contract)
+                          ? getAnswerColor(mainBinaryMCAnswer)
+                          : undefined
                       }
                       currentUser={currentUser}
                       followedUsers={followedUsers}
@@ -629,9 +638,14 @@ const BinaryUserPositionsTable = memo(
                       key={position.userId + outcome}
                       position={position}
                       colorClassName={
-                        isBinaryMulti(contract)
-                          ? 'text-amber-600'
-                          : 'text-scarlet-600'
+                        sortBy === 'profit' || !isBinaryMulti(contract)
+                          ? 'text-scarlet-600'
+                          : undefined
+                      }
+                      color={
+                        sortBy === 'shares' && isBinaryMulti(contract)
+                          ? getAnswerColor(otherBinaryMCAnswer)
+                          : undefined
                       }
                       currentUser={currentUser}
                       followedUsers={followedUsers}
@@ -683,7 +697,8 @@ const PositionRow = memo(function PositionRow(props: {
   invested: number
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
-  colorClassName: string
+  colorClassName?: string
+  color?: string
   isCashContract: boolean
   setGraphUser?: (user: DisplayUser | undefined) => void
   setHideGraph?: (hide: boolean) => void
@@ -691,6 +706,7 @@ const PositionRow = memo(function PositionRow(props: {
   const {
     position,
     colorClassName,
+    color,
     currentUser,
     followedUsers,
     numberToShow,
@@ -772,7 +788,10 @@ const PositionRow = memo(function PositionRow(props: {
           </Row>
         </div>
         <Col>
-          <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>
+          <span
+            className={clsx(colorClassName, 'shrink-0', 'text-right')}
+            style={color ? { color } : undefined}
+          >
             {numberToShow}
           </span>
           {invested > -99999999 && invested < 9999999999 && (
