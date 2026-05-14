@@ -14,7 +14,7 @@ import { getContractsDirect } from 'shared/supabase/contracts'
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
-  const { userId, before, after } = props
+  const { userId, before, after, limit, offset } = props
   const [betBalanceChanges, txnBalanceChanges, liquidityChanges] =
     await Promise.all([
       getBetBalanceChanges(before, after, userId),
@@ -26,7 +26,7 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
     (change) => change.createdTime,
     'desc'
   )
-  return allChanges
+  return allChanges.slice(offset, offset + limit)
 }
 
 const getTxnBalanceChanges = async (
