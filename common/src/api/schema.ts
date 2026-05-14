@@ -3422,6 +3422,8 @@ export const API = (_apiTypeCheck = {
         totalManaSpent: number
       }[]
       totalTickets: number
+      totalManaSpent?: number
+      participantCount?: number
       winners?: {
         rank: number
         label: string

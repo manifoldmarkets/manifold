@@ -76,9 +76,13 @@ export const getSweepstakesServerSideProps: GetServerSideProps<
 
   try {
     const fields = 'status,message,countryCode,region'
+    // Set a timeout here to prevent a slow API response from stalling the page load during SSR
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 1500)
     const response = await fetch(
-      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`
-    )
+      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`,
+      { signal: controller.signal }
+    ).finally(() => clearTimeout(timeout))
     const geo: GeoLocationResult = await response.json()
     const { allowed } = checkSweepstakesGeofence(geo)
 
@@ -165,7 +169,8 @@ export default function SweepstakesPage({
   const meetsInvestmentRequirement = data?.meetsInvestmentRequirement ?? true
   const userTotalManaInvested = data?.userTotalManaInvested ?? 0
   const minManaInvested = data?.minManaInvested ?? 1000
-  const totalManaSpent = userStats.reduce((sum, s) => sum + s.totalManaSpent, 0)
+  const totalManaSpent = data?.totalManaSpent ?? 0
+  const participantCount = data?.participantCount ?? userStats.length
 
   // Calculate time remaining
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -542,6 +547,7 @@ export default function SweepstakesPage({
             totalTickets={totalTickets}
             hoveredUserId={hoveredUserId}
             onHoverUser={setHoveredUserId}
+            participantCount={participantCount}
             myEntries={
               user
                 ? userStats.find((s) => s.userId === user.id)?.totalTickets
@@ -1108,10 +1114,17 @@ function UserDistributionChart(props: {
   totalTickets: number
   hoveredUserId: string | null
   onHoverUser: (userId: string | null) => void
+  participantCount: number
   myEntries?: number
 }) {
-  const { userStats, totalTickets, hoveredUserId, onHoverUser, myEntries } =
-    props
+  const {
+    userStats,
+    totalTickets,
+    hoveredUserId,
+    onHoverUser,
+    participantCount,
+    myEntries,
+  } = props
 
   if (userStats.length === 0) {
     return (
@@ -1236,9 +1249,9 @@ function UserDistributionChart(props: {
                 />
               )
             })}
-            {segments.length > 8 && (
+            {participantCount > 8 && (
               <div className="text-ink-400 px-3 py-1 text-xs">
-                +{userStats.length - 8} more
+                +{participantCount - 8} more
               </div>
             )}
           </Col>
