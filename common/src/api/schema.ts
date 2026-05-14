@@ -3419,6 +3419,8 @@ export const API = (_apiTypeCheck = {
         totalManaSpent: number
       }[]
       totalTickets: number
+      totalManaSpent?: number
+      participantCount?: number
       winners?: {
         rank: number
         label: string
@@ -3639,12 +3641,7 @@ export const API = (_apiTypeCheck = {
         claimId: z.string().optional(),
         sweepstakesNum: z.number().int().optional(),
         userId: z.string().optional(),
-        paymentStatus: z.enum([
-          'awaiting',
-          'sent',
-          'rejected',
-          'opted_out',
-        ]),
+        paymentStatus: z.enum(['awaiting', 'sent', 'rejected', 'opted_out']),
         paymentTxnHash: z.string().optional(),
       })
       .strict()
