@@ -76,9 +76,13 @@ export const getSweepstakesServerSideProps: GetServerSideProps<
 
   try {
     const fields = 'status,message,countryCode,region'
+    // Set a timeout here to prevent a slow API response from stalling the page load during SSR
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 1500)
     const response = await fetch(
-      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`
-    )
+      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`,
+      { signal: controller.signal }
+    ).finally(() => clearTimeout(timeout))
     const geo: GeoLocationResult = await response.json()
     const { allowed } = checkSweepstakesGeofence(geo)
 
