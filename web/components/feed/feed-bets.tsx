@@ -42,7 +42,7 @@ import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
 import { ShareBetModal } from '../bet/share-bet'
-import { getPseudonym } from '../charts/contract/choice'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DisplayContext } from 'common/shop/display-config'
@@ -56,6 +56,42 @@ const getAnswerFromContract = (contract: Contract, answerId?: string) =>
   contract.mechanism === 'cpmm-multi-1' && answerId && 'answers' in contract
     ? contract.answers?.find((answer) => answer.id === answerId)
     : undefined
+
+const getBinaryMCAnswerForBet = (
+  contract: Contract,
+  answerId: string | undefined,
+  outcome: string
+) => {
+  if (!isBinaryMulti(contract) || contract.mechanism !== 'cpmm-multi-1') {
+    return undefined
+  }
+
+  const answer =
+    getAnswerFromContract(contract, answerId) ?? contract.answers[0]
+  if (outcome === 'YES') return answer
+
+  return contract.answers.find((a) => a.id !== answer.id)
+}
+
+const getBinaryMCPseudonymForBet = (
+  contract: Contract,
+  answerId: string | undefined,
+  outcome: string
+):
+  | {
+      YES: { pseudonymName: string; pseudonymColor: string }
+      NO: { pseudonymName: string; pseudonymColor: string }
+    }
+  | undefined => {
+  const answer = getBinaryMCAnswerForBet(contract, answerId, outcome)
+  if (!answer) return getPseudonym(contract)
+
+  const pseudonym = {
+    pseudonymName: answer.text,
+    pseudonymColor: getAnswerColor(answer),
+  }
+  return { YES: pseudonym, NO: pseudonym }
+}
 
 function BetTooltipContent(props: {
   bet: Bet
@@ -142,7 +178,11 @@ function BetTooltipContent(props: {
           Order: {isOrderSale ? 'Sell ' : ''}
           {formatAmount(Math.abs(bet.orderAmount))}{' '}
           <OutcomeLabel
-            pseudonym={getPseudonym(contract)}
+            pseudonym={getBinaryMCPseudonymForBet(
+              contract,
+              answerId,
+              bet.outcome
+            )}
             outcome={bet.outcome}
             answer={answer}
             contract={contract}
@@ -292,7 +332,7 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
         </>
       )}
       <OutcomeLabel
-        pseudonym={getPseudonym(contract)}
+        pseudonym={getBinaryMCPseudonymForBet(contract, answerId, outcome)}
         outcome={outcome}
         answer={answer}
         contract={contract}
@@ -315,11 +355,11 @@ function BetDetailsText(props: { bet: Bet; contract: Contract }) {
 
   const probBefore = getProb(bet.probBefore)
   const probAfter = getProb(bet.probAfter)
-  const limitProb =
-    bet.limitProb === undefined || !isBinaryMulti(contract)
-      ? bet.limitProb
-      : getBinaryMCProb(bet.limitProb, outcome)
-  const hadPoolMatch = bet.fills?.length ?? false
+  const limitProb = bet.limitProb
+  const hadPoolMatch =
+    (bet.limitProb === undefined ||
+      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
+    false
 
   const fromProb = hadPoolMatch
     ? getFormattedMappedValue(contract, probBefore)
@@ -701,10 +741,7 @@ export function BetStatusText(props: {
 
   const probBefore = getProb(bet.probBefore)
   const probAfter = getProb(bet.probAfter)
-  const limitProb =
-    bet.limitProb === undefined || !isBinaryMulti(contract)
-      ? bet.limitProb
-      : getBinaryMCProb(bet.limitProb, outcome)
+  const limitProb = bet.limitProb
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
   const money = (
@@ -719,7 +756,10 @@ export function BetStatusText(props: {
     ) : null
   const anyFilled = limitOrderStatus.hasAnyFill
 
-  const hadPoolMatch = bet.fills?.length ?? false
+  const hadPoolMatch =
+    (bet.limitProb === undefined ||
+      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
+    false
 
   const fromProb = hadPoolMatch
     ? getFormattedMappedValue(contract, probBefore)
@@ -767,7 +807,7 @@ export function BetStatusText(props: {
             <>placed order for {orderAmount}</>
           )}{' '}
           <OutcomeLabel
-            pseudonym={getPseudonym(contract)}
+            pseudonym={getBinaryMCPseudonymForBet(contract, answerId, outcome)}
             outcome={outcome}
             answer={answer}
             contract={contract}
@@ -784,7 +824,7 @@ export function BetStatusText(props: {
           {orderAmount ? '/' : ''}
           {orderAmount}{' '}
           <OutcomeLabel
-            pseudonym={getPseudonym(contract)}
+            pseudonym={getBinaryMCPseudonymForBet(contract, answerId, outcome)}
             outcome={outcome}
             answer={answer}
             contract={contract}
@@ -810,6 +850,11 @@ function BetActions(props: {
   const user = useUser()
   const [isSharing, setIsSharing] = useState(false)
   const bettor = useDisplayUserById(bet.userId)
+  const shareAnswer = isBinaryMulti(contract)
+    ? getBinaryMCAnswerForBet(contract, bet.answerId, bet.outcome)?.text
+    : contract.mechanism === 'cpmm-multi-1'
+    ? contract.answers?.find((a) => a.id === bet.answerId)?.text
+    : undefined
 
   return (
     <Row className="shrink-0 items-center gap-0.5 sm:gap-1">
@@ -906,6 +951,11 @@ function BetActionsWithGraph(props: {
   } = props
   const currentUser = useUser()
   const [isSharing, setIsSharing] = useState(false)
+  const shareAnswer = isBinaryMulti(contract)
+    ? getBinaryMCAnswerForBet(contract, bet.answerId, bet.outcome)?.text
+    : contract.mechanism === 'cpmm-multi-1'
+    ? contract.answers?.find((a) => a.id === bet.answerId)?.text
+    : undefined
 
   const handleGraphTrades = () => {
     if (!bettor) return
