@@ -764,10 +764,13 @@ export function NewContractPanel(props: {
     newType: CreateableOutcomeType,
     shouldSumToOne: boolean
   ) => {
+    const defaultShouldAnswersSumToOne =
+      newType === 'DATE' ? false : shouldSumToOne
+
     setFormState((prev) => ({
       ...prev,
       outcomeType: newType,
-      shouldAnswersSumToOne: shouldSumToOne,
+      shouldAnswersSumToOne: defaultShouldAnswersSumToOne,
       // Clear all market-specific data for discussion posts
       answers:
         newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
