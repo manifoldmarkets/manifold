@@ -21,6 +21,7 @@ export function BinaryMultiAnswersPanel(props: {
 }) {
   const { feedReason, contract } = props
   const answers = contract.answers
+  const user = useUser()
 
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
@@ -52,7 +53,9 @@ export function BinaryMultiAnswersPanel(props: {
               setOutcome={setOutcome}
               key={answer.id}
               answer={answer}
+              contract={contract}
               color={getAnswerColor(answer)}
+              canEdit={!!canEditAnswer(answer, contract, user)}
             />
           ))}
         </div>
@@ -71,22 +74,25 @@ export function BinaryMultiAnswersPanel(props: {
 
 const BetButton = (props: {
   answer: Answer
+  contract: CPMMMultiContract
   outcome: 'YES' | 'NO'
   setOutcome: (outcome: 'YES' | 'NO') => void
   color?: string
   size?: SizeType
+  canEdit?: boolean
 }) => {
-  const { answer, size, outcome, setOutcome, color } = props
+  const { answer, contract, size, outcome, setOutcome, color, canEdit } = props
+  const [editing, setEditing] = useState(false)
 
   return (
-    <>
+    <div className="group relative flex flex-1">
       <Button
         size={size ?? 'xl'}
         color="none"
         aria-label={`Bet ${outcome} on ${answer.text}`}
         aria-haspopup="dialog"
         style={{ backgroundColor: color }}
-        className={'flex flex-1 items-center justify-between gap-1 text-white'}
+        className={'flex w-full items-center justify-between gap-1 text-white'}
         onClick={() => {
           // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
@@ -98,7 +104,27 @@ const BetButton = (props: {
         </span>
         <span className={'text-xl'}>{formatPercent(answer.prob)}</span>
       </Button>
-    </>
+      {canEdit && (
+        <button
+          className="bg-canvas-0/80 hover:bg-canvas-0 absolute right-1 top-1 rounded p-1 opacity-80 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+          aria-label={`Edit answer ${answer.text}`}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setEditing(true)
+          }}
+        >
+          <PencilIcon className="text-primary-700 h-4 w-4" />
+        </button>
+      )}
+      <EditAnswerModal
+        open={editing}
+        setOpen={setEditing}
+        contract={contract}
+        answer={answer}
+        color={color ?? getAnswerColor(answer)}
+      />
+    </div>
   )
 }
 
@@ -117,6 +143,8 @@ function BinaryMultiChoiceBetPanel(props: {
   const canEdit = canEditAnswer(answer, contract, user)
   const mainAnswer = getMainBinaryMCAnswer(contract)!
   const otherAnswer = contract.answers.find((a) => a.id !== mainAnswer.id)!
+  const mainAnswerColor = getAnswerColor(mainAnswer) as `#${string}`
+  const otherAnswerColor = getAnswerColor(otherAnswer) as `#${string}`
   return (
     <BuyPanelBody
       contract={contract}
@@ -128,11 +156,11 @@ function BinaryMultiChoiceBetPanel(props: {
       pseudonym={{
         YES: {
           pseudonymName: mainAnswer.text,
-          pseudonymColor: 'azure',
+          pseudonymColor: mainAnswerColor,
         },
         NO: {
           pseudonymName: otherAnswer.text,
-          pseudonymColor: 'sienna',
+          pseudonymColor: otherAnswerColor,
         },
       }}
       outcome={outcome}
