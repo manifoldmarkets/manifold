@@ -7,7 +7,7 @@ import {
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { canReceiveBonuses, User } from 'common/user'
+import { User } from 'common/user'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
@@ -41,7 +41,10 @@ import {
   ReferralTxn,
   UniqueBettorBonusTxn,
 } from 'common/txn'
-import { getBenefit } from 'common/supporter-config'
+import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+} from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { Answer } from 'common/answer'
@@ -232,12 +235,6 @@ const payReferralBetBonus = async (referredUser: User) => {
 
   const referrer = await getUser(referrerId)
   if (!referrer) return
-  if (!canReceiveBonuses(referrer)) {
-    log(
-      `Skipped referral first-bet bonus for referrer ${referrerId} - not eligible for bonuses`
-    )
-    return
-  }
 
   // SERIALIZABLE isolation + retry: protects the dedupe SELECT against
   // concurrent first-bet calls (e.g. two tabs, parallel API requests) that
@@ -256,9 +253,25 @@ const payReferralBetBonus = async (referredUser: User) => {
     )
     if (existing) return null
 
+    // Referral multiplier comes from effective tier: unverified referrers
+    // get 0 (anti-farming — verifying is the proof-of-human gate), verified
+    // gets 1x, subscribers higher.
     const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
-    const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
+    const referrerTier = resolveEffectiveTier({
+      entitlements,
+      bonusEligibility: referrer.bonusEligibility,
+    })
+    const referralMultiplier = getEffectiveBonusMultiplier(
+      referrerTier,
+      'referral'
+    )
     const amount = Math.floor(REFERRAL_BET_BONUS * referralMultiplier)
+    if (amount <= 0) {
+      log(
+        `Skipped referral first-bet bonus for referrer ${referrerId} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
+      )
+      return null
+    }
 
     const bonusTxn: Omit<ReferralTxn, 'id' | 'createdTime' | 'fromId'> = {
       fromType: 'BANK',
@@ -272,8 +285,9 @@ const payReferralBetBonus = async (referredUser: User) => {
         referredUserId: referredUser.id,
         referredContractId: referredUser.referredByContractId,
         bonusType: 'first_bet',
-        supporterBonus: referralMultiplier > 1,
+        effectiveTier: referrerTier,
         referralMultiplier,
+        supporterBonus: referralMultiplier > 1,
       },
     }
     await runTxnFromBank(tx, bonusTxn)
@@ -366,8 +380,30 @@ const payBettingStreak = async (
   const pg = createSupabaseDirectClient()
   const result = await pg.tx(async (tx) => {
     const newBettingStreak = (oldUser.currentBettingStreak ?? 0) + 1
-    // Only pay betting streak bonus if user can receive bonuses (verified or grandfathered)
-    if (!canReceiveBonuses(oldUser)) {
+
+    // Fetch user's supporter entitlements for bonus multiplier
+    const entitlements = await getActiveSupporterEntitlements(tx, oldUser.id)
+
+    // Effective tier (verification + subscription) drives the streak multiplier.
+    // Unverified users get 0.2x — the existing 5×streak / 25 cap naturally
+    // becomes 1, 2, 3, 4, 5 / capped at 5 mana per day.
+    const effectiveTier = resolveEffectiveTier({
+      entitlements,
+      bonusEligibility: oldUser.bonusEligibility,
+    })
+    const streakMultiplier = getEffectiveBonusMultiplier(
+      effectiveTier,
+      'streak'
+    )
+
+    // Send them the bonus times their streak, with effective-tier multiplier
+    const baseBonus = Math.min(
+      BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
+      BETTING_STREAK_BONUS_MAX
+    )
+    const bonusAmount = Math.floor(baseBonus * streakMultiplier)
+
+    if (bonusAmount <= 0) {
       return {
         bonusAmount: 0,
         sweepsBonusAmount: 0,
@@ -377,24 +413,12 @@ const payBettingStreak = async (
       }
     }
 
-    // Fetch user's supporter entitlements for bonus multiplier
-    const entitlements = await getActiveSupporterEntitlements(tx, oldUser.id)
-
-    // Get tier-specific quest multiplier (1x for non-supporters)
-    const questMultiplier = getBenefit(entitlements, 'questMultiplier')
-
-    // Send them the bonus times their streak, with supporter multiplier
-    const baseBonus = Math.min(
-      BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
-      BETTING_STREAK_BONUS_MAX
-    )
-    const bonusAmount = Math.floor(baseBonus * questMultiplier)
-
     const bonusTxnDetails = {
       currentBettingStreak: newBettingStreak,
       contractId: contract.id,
-      supporterBonus: questMultiplier > 1,
-      questMultiplier,
+      effectiveTier,
+      streakMultiplier,
+      supporterBonus: streakMultiplier > 1,
     }
 
     const bonusTxn: Omit<

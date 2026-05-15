@@ -240,12 +240,13 @@ export const validateComment = async (
 
   if (!contract) throw new APIError(404, 'Contract not found')
 
-  // Allow market creators to comment on their own markets; everyone else
-  // must be bonus-eligible or have purchased mana.
+  // Market creators can always comment on their own markets. Everyone else
+  // must pass canCommentOnMarket, which unlocks after 7 days, KYC verification,
+  // any mana purchase, or any active subscription.
   if (!canCommentOnMarket(you) && contract.creatorId !== you.id) {
     throw new APIError(
       403,
-      'Please verify your identity or purchase mana to comment on other users\' markets.'
+      'Commenting on other users\' markets unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock immediately.'
     )
   }
   if (contract.token !== 'MANA') {

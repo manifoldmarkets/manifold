@@ -473,9 +473,11 @@ export const getUniqueBettorBonusQuery = (
     // Require the contract creator to also be the answer creator for real-money bonus.
     creatorId === contract.creatorId
 
-  // Check if both bettor and creator can receive bonuses (verified or grandfathered)
-  // If creator is not provided, we skip the creator eligibility check (backwards compat)
-  const bettorCanReceiveBonuses = canReceiveBonuses(bettor)
+  // The unique-trader bonus is paid to the MARKET CREATOR for attracting a new
+  // bettor. The creator must be verified to receive bonuses; the bettor does
+  // not (an unverified user betting still counts as a unique trader from the
+  // creator's perspective — bonuses for the bettor are gated separately).
+  // If creator is not provided, we skip the creator eligibility check (backwards compat).
   const creatorCanReceiveBonuses = creator ? canReceiveBonuses(creator) : true
 
   if (
@@ -485,7 +487,6 @@ export const getUniqueBettorBonusQuery = (
     isRedemption ||
     isUnfilledLimitOrder ||
     isApi ||
-    !bettorCanReceiveBonuses ||
     !creatorCanReceiveBonuses
   )
     return {

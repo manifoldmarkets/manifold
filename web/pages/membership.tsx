@@ -266,7 +266,18 @@ export default function SupporterPage() {
         )}
 
         {/* Benefits Comparison Table with Column Highlight */}
-        <BenefitsTable currentTier={currentTier} activeTier={activeTier} />
+        <BenefitsTable
+          currentTier={currentTier}
+          activeTier={activeTier}
+          effectiveTier={
+            user && !isSupporter
+              ? user.bonusEligibility === 'verified' ||
+                user.bonusEligibility === 'grandfathered'
+                ? 'verified'
+                : 'unverified'
+              : undefined
+          }
+        />
 
         {/* Monthly Value Breakdown */}
         <MonthlyValueBreakdown

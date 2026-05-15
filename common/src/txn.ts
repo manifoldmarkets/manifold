@@ -157,6 +157,11 @@ type BettingStreakBonus = {
   data: {
     currentBettingStreak?: number
     contractId?: string
+    // Effective tier at time of award + multiplier applied. Used by notifications
+    // to render the upsell line when the recipient is unverified.
+    effectiveTier?: string
+    streakMultiplier?: number
+    supporterBonus?: boolean
   }
 }
 
@@ -459,6 +464,10 @@ type QuestReward = {
   data: {
     questType: QuestType
     questCount: number
+    // See BettingStreakBonus.data for usage of these fields.
+    effectiveTier?: string
+    questMultiplier?: number
+    supporterBonus?: boolean
   }
 }
 

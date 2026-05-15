@@ -242,6 +242,104 @@ export function getTierInfo(tier: SupporterTier) {
 // All tiers in order (for iteration)
 export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 
+// ============================================
+// EFFECTIVE TIER (verification + subscription combined)
+// ============================================
+//
+// A user's effective tier determines which bonus multipliers they receive.
+// Subscribers always get their subscription tier regardless of verification.
+// Verification (KYC) is required only for the prize drawing — not for receiving bonuses.
+//
+// Tier ladder (low → high): unverified < verified < basic (Plus) < plus (Pro) < premium
+
+export type EffectiveTier =
+  | 'unverified'
+  | 'verified'
+  | SupporterTier // 'basic' | 'plus' | 'premium'
+
+export const EFFECTIVE_TIER_ORDER: EffectiveTier[] = [
+  'unverified',
+  'verified',
+  'basic',
+  'plus',
+  'premium',
+]
+
+// Bonus multipliers for quest/streak/referral rewards by effective tier.
+// Subscriber rows MUST match SUPPORTER_BENEFITS above (they read through here too).
+export const EFFECTIVE_TIER_BONUS_MULTIPLIERS: Record<
+  EffectiveTier,
+  {
+    questMultiplier: number
+    streakMultiplier: number
+    referralMultiplier: number
+  }
+> = {
+  unverified: {
+    questMultiplier: 0.2,
+    streakMultiplier: 0.2,
+    // Unverified users can't receive referral bonuses (anti-farming).
+    // Verifying or subscribing unlocks referrals.
+    referralMultiplier: 0,
+  },
+  verified: {
+    questMultiplier: 1,
+    streakMultiplier: 1,
+    referralMultiplier: 1,
+  },
+  basic: {
+    questMultiplier: SUPPORTER_BENEFITS.basic.questMultiplier,
+    streakMultiplier: SUPPORTER_BENEFITS.basic.questMultiplier,
+    referralMultiplier: SUPPORTER_BENEFITS.basic.referralMultiplier,
+  },
+  plus: {
+    questMultiplier: SUPPORTER_BENEFITS.plus.questMultiplier,
+    streakMultiplier: SUPPORTER_BENEFITS.plus.questMultiplier,
+    referralMultiplier: SUPPORTER_BENEFITS.plus.referralMultiplier,
+  },
+  premium: {
+    questMultiplier: SUPPORTER_BENEFITS.premium.questMultiplier,
+    streakMultiplier: SUPPORTER_BENEFITS.premium.questMultiplier,
+    referralMultiplier: SUPPORTER_BENEFITS.premium.referralMultiplier,
+  },
+}
+
+// Resolve a user's effective tier from their subscription + verification state.
+// Pure: callers pass in the bits we need so this file doesn't need to import User.
+export function resolveEffectiveTier(args: {
+  entitlements: UserEntitlement[] | undefined
+  bonusEligibility: 'verified' | 'grandfathered' | 'ineligible' | undefined
+}): EffectiveTier {
+  const subTier = getUserSupporterTier(args.entitlements)
+  if (subTier) return subTier
+  if (
+    args.bonusEligibility === 'verified' ||
+    args.bonusEligibility === 'grandfathered'
+  ) {
+    return 'verified'
+  }
+  return 'unverified'
+}
+
+export function getEffectiveBonusMultiplier(
+  tier: EffectiveTier,
+  kind: 'quest' | 'streak' | 'referral'
+): number {
+  const m = EFFECTIVE_TIER_BONUS_MULTIPLIERS[tier]
+  if (kind === 'quest') return m.questMultiplier
+  if (kind === 'streak') return m.streakMultiplier
+  return m.referralMultiplier
+}
+
+// Display labels for the membership page tier column headers and inline upsells.
+export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
+  unverified: 'Unverified',
+  verified: 'Verified',
+  basic: SUPPORTER_TIERS.basic.name, // 'Plus'
+  plus: SUPPORTER_TIERS.plus.name, // 'Pro'
+  premium: SUPPORTER_TIERS.premium.name, // 'Premium'
+}
+
 // Get max streak freezes for a user based on their tier
 // Non-supporters: 1, Plus: 2, Pro: 3, Premium: 5
 export function getMaxStreakFreezes(
@@ -293,6 +391,7 @@ export const BENEFIT_DEFINITIONS = [
     getValueForTier: (tier: SupporterTier) =>
       `${SUPPORTER_BENEFITS[tier].questMultiplier}x`,
     baseValue: '1x',
+    unverifiedValue: `${EFFECTIVE_TIER_BONUS_MULTIPLIERS.unverified.questMultiplier}x`,
   },
   {
     id: 'referrals',
@@ -302,6 +401,7 @@ export const BENEFIT_DEFINITIONS = [
     getValueForTier: (tier: SupporterTier) =>
       `${SUPPORTER_BENEFITS[tier].referralMultiplier}x`,
     baseValue: '1x',
+    unverifiedValue: '—',
   },
   {
     id: 'shop',

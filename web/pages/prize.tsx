@@ -468,14 +468,21 @@ export default function SweepstakesPage({
           </div>
         )}
 
-        {/* Verification Required Banner */}
+        {/* KYC Required Banner. KYC is a regulatory requirement for prize
+            drawings — a subscription does NOT unlock entry. */}
         {!isLocationRestricted && needsVerification && (
           <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
             <Row className="items-center justify-between gap-4">
-              <p className="text-indigo-800 dark:text-indigo-300">
-                You must verify your identity to participate in the prize
-                drawing.
-              </p>
+              <Col className="gap-1">
+                <p className="font-semibold text-indigo-900 dark:text-indigo-200">
+                  KYC identity verification is required to participate in prize
+                  drawings.
+                </p>
+                <p className="text-sm text-indigo-800 dark:text-indigo-300">
+                  This is a regulatory requirement and applies even to active
+                  subscribers. Verifying takes a few minutes.
+                </p>
+              </Col>
               <Button
                 color="indigo"
                 size="sm"
