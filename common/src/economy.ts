@@ -46,7 +46,10 @@ export const PHONE_VERIFICATION_BONUS = 1000
 
 export const REFERRAL_AMOUNT = 1_000
 
-const uniqueBettorBonusAmounts = [3, 10, 15, 20]
+const TRADER_BONUS_PROMO_MULTIPLIER = 2
+const uniqueBettorBonusAmounts = [3, 10, 15, 20].map(
+  (n) => n * TRADER_BONUS_PROMO_MULTIPLIER
+)
 export const getUniqueBettorBonusAmount = (
   liquidity: number,
   numAnswers: number
