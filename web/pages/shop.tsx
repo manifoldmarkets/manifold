@@ -1783,11 +1783,15 @@ function MerchItemCard(props: {
     setPurchasing(true)
     try {
       const shippingMana = Math.round(parseFloat(selectedShipping.rate) * 100)
+      const { email, ...restShipping } = shippingInfo
+      const shippingPayload = email.trim()
+        ? { ...restShipping, email: email.trim() }
+        : restShipping
       const result = await api('shop-purchase-merch', {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
         shippingCost: shippingMana,
-        shipping: shippingInfo,
+        shipping: shippingPayload,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
       setShowConfirmOrderModal(false)
