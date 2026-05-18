@@ -7,12 +7,16 @@ create table if not exists
     user_id text not null,
     created_time timestamp with time zone default now() not null,
     usdc_amount numeric(20, 6),
-    mana_amount integer
+    mana_amount integer,
+    offer_id text
   );
 
 -- Foreign Keys
 alter table crypto_payment_intents
 add constraint crypto_payment_intents_user_id_fkey foreign key (user_id) references users (id);
+
+alter table crypto_payment_intents
+add constraint crypto_payment_intents_offer_id_fkey foreign key (offer_id) references personalized_mana_offers (id);
 
 -- Row Level Security
 alter table crypto_payment_intents enable row level security;
