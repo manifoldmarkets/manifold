@@ -1,6 +1,9 @@
 import { runScript } from 'run-script'
 import { createPersonalizedManaOfferNotification } from 'shared/notifications/create-personalized-mana-offer-notification'
-import { getShopItem } from 'common/shop/items'
+import {
+  OFFER_MANA_AMOUNT,
+  OFFER_MAX_DISCOUNT_PCT,
+} from 'common/personalized-mana-offer'
 
 const dryRun = process.argv.includes('--dry-run')
 
@@ -12,9 +15,8 @@ runScript(async ({ pg }) => {
   const eligibleOrders = await pg.manyOrNone<{
     id: string
     user_id: string
-    item_id: string
   }>(
-    `select o.id, o.user_id, o.item_id
+    `select o.id, o.user_id
        from shop_orders o
       where o.status = 'SHIPPED'
         and not exists (
@@ -50,13 +52,12 @@ runScript(async ({ pg }) => {
     if (!row) continue
 
     createdOffers++
-    const item = getShopItem(order.item_id)
     try {
-      await createPersonalizedManaOfferNotification(
-        order.user_id,
-        row.id,
-        item?.name ?? order.item_id
-      )
+      await createPersonalizedManaOfferNotification(order.user_id, row.id, {
+        reasonPhrase: 'buying some merch recently',
+        manaAmount: OFFER_MANA_AMOUNT,
+        maxDiscountPct: OFFER_MAX_DISCOUNT_PCT,
+      })
       notificationsSent++
     } catch (e) {
       console.warn(

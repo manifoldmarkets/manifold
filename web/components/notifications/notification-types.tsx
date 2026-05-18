@@ -2388,7 +2388,7 @@ function PersonalizedManaOfferNotification(props: {
         </span>
       }
     >
-      <span>You have a personalised mana sale available!</span>
+      <span>{notification.sourceText}</span>
     </NotificationFrame>
   )
 }

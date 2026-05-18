@@ -14,6 +14,10 @@ import {
 import { nanoid } from 'common/util/random'
 import { formatMoney } from 'common/util/format'
 import { createPersonalizedManaOfferNotification } from 'shared/notifications/create-personalized-mana-offer-notification'
+import {
+  OFFER_MANA_AMOUNT,
+  OFFER_MAX_DISCOUNT_PCT,
+} from 'common/personalized-mana-offer'
 
 // Printful webhook event types we care about
 // See: https://developers.printful.com/docs/#tag/Webhook-API
@@ -343,11 +347,11 @@ async function notifyShipped(
 
   if (offerRow) {
     try {
-      await createPersonalizedManaOfferNotification(
-        order.user_id,
-        offerRow.id,
-        itemName
-      )
+      await createPersonalizedManaOfferNotification(order.user_id, offerRow.id, {
+        reasonPhrase: 'buying some merch recently',
+        manaAmount: OFFER_MANA_AMOUNT,
+        maxDiscountPct: OFFER_MAX_DISCOUNT_PCT,
+      })
     } catch (e: unknown) {
       console.warn(
         `Personalized mana offer notification failed for ${offerRow.id} (offer row exists; will not retry):`,
