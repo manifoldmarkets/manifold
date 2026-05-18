@@ -4,7 +4,10 @@ import { getActiveUserBans } from 'api/helpers/rate-limit'
 import { getPrivateUser, getUser, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { track } from 'shared/analytics'
-import { OFFER_PRICE_CRYPTO } from 'common/personalized-mana-offer'
+import {
+  OFFER_PRICE_CRYPTO,
+  PAYMENT_PENDING_LOCK_MINUTES,
+} from 'common/personalized-mana-offer'
 
 const DAIMO_API_URL = 'https://api.daimo.com/v1/sessions'
 
@@ -77,9 +80,6 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
   }
 
   const { offerId } = props
-
-  // Keep in sync with createcheckoutsession's PAYMENT_PENDING_LOCK_MINUTES.
-  const PAYMENT_PENDING_LOCK_MINUTES = 30
 
   if (offerId) {
     // Atomically: verify the offer is redeemable + claim the cross-method

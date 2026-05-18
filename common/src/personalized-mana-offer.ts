@@ -11,6 +11,13 @@ export const OFFER_MAX_DISCOUNT_PCT = Math.round(
     100
 )
 
+// Cross-method lock window. When a Stripe or Daimo session is opened for an
+// offer, we mark the offer pending for this many minutes; further session
+// attempts (any payment method) are rejected with a 409 until the lock
+// expires or the session resolves. Prevents the "I accidentally paid full
+// price on a second tab" failure mode.
+export const PAYMENT_PENDING_LOCK_MINUTES = 30
+
 export type PersonalizedManaOfferStatus =
   | 'pending'
   | 'active'

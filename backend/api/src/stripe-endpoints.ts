@@ -28,13 +28,9 @@ import { boostPostImmediately } from './purchase-boost'
 import {
   OFFER_MANA_AMOUNT,
   OFFER_PRICE_STRIPE,
+  PAYMENT_PENDING_LOCK_MINUTES,
 } from 'common/personalized-mana-offer'
 import { getOrCreateStripePromotionCodeForOffer } from './helpers/stripe-offer-promotion-code'
-
-// Multi-tab pending lock: if a payment session was started for this offer
-// less than this many minutes ago, reject new sessions across BOTH Stripe and
-// Daimo. Keep in sync with create-daimo-session.ts.
-const PAYMENT_PENDING_LOCK_MINUTES = 30
 
 // Stripe Price ID for the "20% off 5K mana" personalized-offer SKU ($50
 // base). The Coupon referenced by STRIPE_20_OFF_5K_COUPON_ID must be
