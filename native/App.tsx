@@ -179,14 +179,16 @@ const App = () => {
       // Webview is ready — deliver immediately via message bridge
       communicateWithWebview('notification', notification)
       setEndpointWithNativeQuery(destination)
-    } else {
-      // Cold start: webview isn't ready yet. Stash the notification so we can
-      // deliver it once the web app signals 'startedListening'. We intentionally
-      // do NOT call setEndpointWithNativeQuery here because on Android the
-      // WebView ignores rapid source prop changes during its initial mount,
-      // causing the notification URL to be silently dropped.
+    } else if (Platform.OS === 'android') {
+      // Android cold start: WebView ignores rapid source prop changes during
+      // initial mount, so the destination URL gets silently dropped. Queue and
+      // deliver via message bridge once the web app signals 'startedListening'.
       log('Queuing notification for delivery after webview is ready')
       pendingNotification.current = { notification, destination }
+    } else {
+      // iOS cold start: source prop changes are honored during mount, so the
+      // original behavior works without the handshake delay.
+      setEndpointWithNativeQuery(destination)
     }
   }
 
