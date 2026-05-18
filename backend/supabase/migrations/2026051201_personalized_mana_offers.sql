@@ -1,11 +1,11 @@
 -- Personalized mana sale offers granted to users after merch purchases ship.
 -- Each merch order grants one offer (uniqueness enforced by index on shop_order_id).
 -- Offers are 'pending' until the user first views /checkout, at which point all
--- of that user's pending offers flip to 'active' with a shared 72h expiry.
+-- of that user's pending offers flip to 'active' with a shared 24h expiry.
 
 create table if not exists
   personalized_mana_offers (
-    id uuid primary key default gen_random_uuid(),
+    id text primary key default random_alphanumeric (12) not null,
     user_id text not null references users (id),
     shop_order_id uuid not null references shop_orders (id),
     source text not null default 'merch_shipped',
@@ -41,4 +41,4 @@ alter table personalized_mana_offers enable row level security;
 -- Link redeemed crypto payments back to the offer they consumed (so the webhook
 -- can attribute the discounted rate and bookkeeping is preserved).
 alter table crypto_payment_intents
-add column if not exists offer_id uuid references personalized_mana_offers (id);
+add column if not exists offer_id text references personalized_mana_offers (id);
