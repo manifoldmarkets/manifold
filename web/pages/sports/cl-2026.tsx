@@ -9,7 +9,6 @@ export default function ChampionsLeagueDashboard() {
       trackPageView="champions league dashboard"
       competitionCode="CL"
       communityDashboardSlug="ms-community-cl-2026"
-      officialGroupSlug="ms-official-cl-2026"
     />
   )
 }

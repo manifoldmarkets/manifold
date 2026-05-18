@@ -9,7 +9,7 @@ import {
   computeCloseTime,
   stageLiquidityForMatch,
   matchSportsEventId,
-} from 'shared/world-cup-markets'
+} from 'shared/sports-markets'
 
 export const adminSportsFixtures: APIHandler<'admin-sports-fixtures'> = async (
   props,

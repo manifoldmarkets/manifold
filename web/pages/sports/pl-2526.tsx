@@ -9,7 +9,6 @@ export default function PremierLeagueDashboard() {
       trackPageView="premier league dashboard"
       competitionCode="PL"
       communityDashboardSlug="ms-community-pl-2526"
-      officialGroupSlug="ms-official-pl-2526"
     />
   )
 }

@@ -3,7 +3,7 @@ import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import {
   TOURNAMENT_CONFIGS,
   resolveTournamentMarkets,
-} from 'shared/world-cup-markets'
+} from 'shared/sports-markets'
 
 export const adminSportsResolve: APIHandler<'admin-sports-resolve'> = async (
   props,

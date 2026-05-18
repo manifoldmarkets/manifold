@@ -15,12 +15,13 @@ import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
+import { ENV_CONFIG } from 'common/envs/constants'
 import clsx from 'clsx'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type Fixture = APIResponse<'admin-sports-fixtures'>['fixtures'][number]
-type Market = APIResponse<'admin-sports-markets'>['markets'][number]
+type Market = APIResponse<'sports-markets'>['markets'][number]
 type CreateResult =
   APIResponse<'admin-sports-create-markets'>['results'][number]
 type ResolveLogEntry = APIResponse<'admin-sports-resolve'>['log'][number]
@@ -46,7 +47,7 @@ const TOURNAMENTS: TournamentMeta[] = [
     startDate: '2026-06-11',
     endDate: '2026-07-19',
     defaultGroupSlug: 'ms-official-wc2026',
-    defaultDashboardUrl: 'manifold.markets/sports/world-cup-2026',
+    defaultDashboardUrl: `${ENV_CONFIG.domain}/sports/world-cup-2026`,
     defaultStageTiers: {
       GROUP_STAGE: 1000,
       ROUND_OF_16: 10000,
@@ -64,7 +65,7 @@ const TOURNAMENTS: TournamentMeta[] = [
     startDate: '2025-09-17',
     endDate: '2026-05-30',
     defaultGroupSlug: 'ms-official-cl-2026',
-    defaultDashboardUrl: 'manifold.markets/sports/cl-2026',
+    defaultDashboardUrl: `${ENV_CONFIG.domain}/sports/cl-2026`,
     defaultStageTiers: {
       LEAGUE_PHASE: 1000,
       ROUND_OF_16: 10000,
@@ -81,7 +82,7 @@ const TOURNAMENTS: TournamentMeta[] = [
     startDate: '2025-08-16',
     endDate: '2026-05-24',
     defaultGroupSlug: 'ms-official-pl-2526',
-    defaultDashboardUrl: 'manifold.markets/sports/pl-2526',
+    defaultDashboardUrl: `${ENV_CONFIG.domain}/sports/pl-2526`,
     defaultStageTiers: {
       REGULAR_SEASON: 1000,
       FINAL: 10000,
@@ -293,7 +294,7 @@ export default function SportsAdminPage() {
   async function fetchMarkets() {
     setMarketsLoading(true)
     try {
-      const data = await api('admin-sports-markets', {
+      const data = await api('sports-markets', {
         sportsLeague: tournament.sportsLeague,
       })
       setMarkets(data.markets)
@@ -433,7 +434,7 @@ export default function SportsAdminPage() {
     customNote || '[Your custom tournament note will appear here]',
     'This market resolves automatically after the match concludes based on official results.',
     sampleDashboardHref ? `[Visit the ${tournament.name} Dashboard](${sampleDashboardHref})` : '',
-    'Created and managed by [@ManifoldSports](https://manifold.markets/ManifoldSports)',
+    `Created and managed by [@ManifoldSports](https://${ENV_CONFIG.domain}/ManifoldSports)`,
   ]
     .filter((l) => l !== undefined && l !== '')
     .join('\n\n\n')
@@ -910,7 +911,6 @@ export default function SportsAdminPage() {
                   <thead>
                     <tr>
                       <th>Market</th>
-                      <th>Stage</th>
                       <th>Close (UTC)</th>
                       <th>Status</th>
                       <th>Resolved to</th>
@@ -938,7 +938,6 @@ export default function SportsAdminPage() {
                             </span>
                           )}
                         </td>
-                        <td className="text-xs">{m.stageLabel}</td>
                         <td className="text-xs">
                           {new Date(m.closeTime).toLocaleString('en-GB', {
                             day: '2-digit',
@@ -993,7 +992,7 @@ export default function SportsAdminPage() {
                     <LoadingIndicator size="sm" /> Resolving…
                   </Row>
                 ) : (
-                  'Force resolve now'
+                  'Run resolver now'
                 )}
               </Button>
               <span className="text-ink-400 text-xs">
@@ -1172,7 +1171,7 @@ export default function SportsAdminPage() {
                       <tr key={m.id}>
                         <td>
                           <a
-                            href={`https://manifold.markets/${m.slug}`}
+                            href={`https://${ENV_CONFIG.domain}/${m.slug}`}
                             target="_blank"
                             rel="noreferrer"
                             className="text-primary-600 hover:underline"

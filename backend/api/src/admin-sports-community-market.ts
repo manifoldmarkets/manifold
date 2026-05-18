@@ -1,7 +1,8 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { TOURNAMENT_CONFIGS, ensureCommunityAssets } from 'shared/world-cup-markets'
+import { TOURNAMENT_CONFIGS, ensureCommunityAssets } from 'shared/sports-markets'
+import { convertContract } from 'common/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { getUser } from 'shared/utils'
 import { ENV } from 'common/envs/constants'
@@ -83,7 +84,6 @@ export const adminSportsCommunityMarket: APIHandler<
         [contract.id]
       )
       if (contractRow) {
-        const { convertContract } = await import('common/supabase/contracts')
         const fullContract = convertContract(contractRow)
         await addGroupToContract(pg, fullContract, group)
       }

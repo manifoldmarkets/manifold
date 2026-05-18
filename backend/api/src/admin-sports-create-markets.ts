@@ -14,7 +14,7 @@ import {
   matchSportsEventId,
   StageLiquidityTiers,
   LiquidityTierValue,
-} from 'shared/world-cup-markets'
+} from 'shared/sports-markets'
 import { createMarketHelper } from './create-market'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { AuthedUser } from './helpers/endpoint'
@@ -47,7 +47,7 @@ export const adminSportsCreateMarkets: APIHandler<
   if (creatorId.startsWith('TODO_')) {
     throw new APIError(
       500,
-      'ManifoldSports user ID not configured. Set it in world-cup-markets.ts.'
+      'ManifoldSports user ID not configured. Set it in sports-markets.ts.'
     )
   }
 
@@ -185,7 +185,7 @@ export const adminSportsCreateMarkets: APIHandler<
           answerShortTexts: params.answerShortTexts,
           answerImageUrls: params.answerImageUrls,
           visibility: 'public',
-          liquidityTier: params.liquidityTier as LiquidityTierValue,
+          liquidityTier: params.liquidityTier,
           addAnswersMode: 'DISABLED',
           shouldAnswersSumToOne: true,
           sportsStartTimestamp: params.sportsStartTimestamp,

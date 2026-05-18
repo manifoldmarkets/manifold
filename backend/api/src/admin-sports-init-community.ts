@@ -1,7 +1,7 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { TOURNAMENT_CONFIGS, ensureCommunityAssets } from 'shared/world-cup-markets'
+import { TOURNAMENT_CONFIGS, ensureCommunityAssets } from 'shared/sports-markets'
 import { getUser } from 'shared/utils'
 import { ENV } from 'common/envs/constants'
 

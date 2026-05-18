@@ -9,7 +9,6 @@ export default function WorldCupDashboard() {
       trackPageView="world cup dashboard"
       competitionCode="WC"
       communityDashboardSlug="ms-community-wc2026"
-      officialGroupSlug="ms-official-wc2026"
     />
   )
 }

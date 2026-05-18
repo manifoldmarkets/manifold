@@ -2,7 +2,7 @@ import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ENV_CONFIG } from 'common/envs/constants'
 
-export const adminSportsMarkets: APIHandler<'admin-sports-markets'> = async (
+export const sportsMarkets: APIHandler<'sports-markets'> = async (
   props
 ) => {
 
@@ -26,7 +26,6 @@ export const adminSportsMarkets: APIHandler<'admin-sports-markets'> = async (
     const closeTime: number = parseInt(d.closeTime ?? '0', 10)
     const resolution: string | null = d.resolution ?? null
 
-    // Determine the resolved answer text if available
     let resolvedAnswer: string | null = null
     if (resolution && d.answers) {
       const answers: Array<{ id: string; text: string }> = d.answers
@@ -36,8 +35,6 @@ export const adminSportsMarkets: APIHandler<'admin-sports-markets'> = async (
 
     const needsAttention =
       !resolution && closeTime > 0 && now - closeTime > attentionThresholdMs
-
-    const stageLabelStr = (d.sportsStageLabel as string) ?? ''
 
     const answers: Array<{ id: string; text: string; prob: number }> =
       (d.answers ?? []).map((a: { id: string; text: string; prob?: number }) => ({
@@ -49,7 +46,6 @@ export const adminSportsMarkets: APIHandler<'admin-sports-markets'> = async (
     return {
       id: d.id as string,
       question: d.question as string,
-      stageLabel: stageLabelStr,
       closeTime,
       sportsStartTimestamp: (d.sportsStartTimestamp as string) ?? null,
       resolution,

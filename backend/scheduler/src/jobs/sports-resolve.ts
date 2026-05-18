@@ -1,5 +1,5 @@
 import { log } from 'shared/monitoring/log'
-import { TOURNAMENT_CONFIGS, resolveTournamentMarkets } from 'shared/world-cup-markets'
+import { TOURNAMENT_CONFIGS, resolveTournamentMarkets } from 'shared/sports-markets'
 import { ENV } from 'common/envs/constants'
 
 export async function resolveSportsMarkets() {
@@ -16,8 +16,7 @@ export async function resolveSportsMarkets() {
         : config.manifoldSportsUserId.prod
 
     if (creatorId.startsWith('TODO_')) {
-      log.warn(`[sports-resolve] ${config.footballDataCode}: manifoldSportsUserId not configured — skipping`)
-      continue
+      throw new Error(`[sports-resolve] ${config.footballDataCode}: manifoldSportsUserId not configured`)
     }
 
     try {

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
@@ -50,25 +52,12 @@ import {
 } from 'web/components/search'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import clsx from 'clsx'
+import { APIResponse, APIParams } from 'common/api/schema'
+import toast from 'react-hot-toast'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ApiMarket = {
-  id: string
-  question: string
-  stageLabel: string
-  closeTime: number
-  sportsStartTimestamp: string | null
-  resolution: string | null
-  resolvedAnswer: string | null
-  resolutionTime: number | null
-  sportsHomeScore: number | null
-  sportsAwayScore: number | null
-  volume: number
-  url: string
-  needsAttention: boolean
-  answers: Array<{ id: string; text: string; prob: number }>
-}
+type ApiMarket = APIResponse<'sports-markets'>['markets'][number]
 
 type DateSection = { label: string; matches: SportsMatch[] }
 type SortKey = 'manual' | 'date' | 'volume' | 'title'
@@ -77,11 +66,6 @@ type SortKey = 'manual' | 'date' | 'volume' | 'title'
 
 const POLL_MS = 30_000
 const RECENT_THRESHOLD_MS = 12 * 60 * 60 * 1000
-
-function formatVolume(v: number): string {
-  if (v >= 1000) return (v / 1000).toFixed(1) + 'k'
-  return String(v)
-}
 
 function formatTime(isoOrMs: string | number): string {
   const d = new Date(isoOrMs)
@@ -152,7 +136,7 @@ function toSportsMatch(m: ApiMarket): SportsMatch | null {
       m.sportsHomeScore != null && m.sportsAwayScore != null
         ? { home: m.sportsHomeScore, away: m.sportsAwayScore }
         : undefined,
-    volume: formatVolume(m.volume),
+    volume: shortFormatNumber(m.volume),
     status: resolved ? 'resolved' : 'upcoming',
     winner,
     marketUrl: m.url,
@@ -228,16 +212,16 @@ function AddMarketModal({
       try {
         const data = await api('search-markets-full', {
           term: params[QUERY_KEY],
-          filter: params[FILTER_KEY],
-          sort: params[SORT_KEY],
-          contractType: params[CONTRACT_TYPE_KEY],
+          filter: params[FILTER_KEY] as APIParams<'search-markets-full'>['filter'],
+          sort: params[SORT_KEY] as APIParams<'search-markets-full'>['sort'],
+          contractType: params[CONTRACT_TYPE_KEY] as APIParams<'search-markets-full'>['contractType'],
           offset: 0,
           limit: 20,
-          forYou: params[FOR_YOU_KEY],
+          forYou: (params[FOR_YOU_KEY] ?? '0') as '1' | '0',
           token: 'MANA',
-          hasBets: params[HAS_BETS_KEY],
+          hasBets: params[HAS_BETS_KEY] as '1' | '0' | undefined,
           liquidity: params[LIQUIDITY_KEY] ? parseInt(params[LIQUIDITY_KEY]) : undefined,
-        } as any)
+        })
         setResults((data as Contract[]) ?? [])
       } catch {
         setResults([])
@@ -296,7 +280,7 @@ function AddMarketModal({
               <Row
                 key={contract.id}
                 className={clsx(
-                  'items-center gap-3 rounded-lg px-2 py-2 transition-colors',
+                  'min-w-0 items-center gap-3 rounded-lg px-2 py-2 transition-colors',
                   already ? 'opacity-50' : 'hover:bg-canvas-50 cursor-pointer'
                 )}
                 onClick={() => !already && !adding && handleAdd(contract)}
@@ -447,7 +431,7 @@ function CommunityMarketCard({ contract }: { contract: Contract }) {
                 <span className={clsx('text-4xl font-bold', meta.accentText)}>
                   {binaryProb}%
                 </span>
-                <span className="text-ink-400 text-[13px]">chance · yes</span>
+                <span className="text-ink-400 text-[13px]">chance of yes</span>
               </>
             )}
           </Col>
@@ -560,7 +544,7 @@ function CommunityMarketCard({ contract }: { contract: Contract }) {
       </div>
 
       {/* Footer — always at bottom */}
-      <Row className="border-canvas-100 items-center gap-0.5 border-t px-3 py-1.5">
+      <Row className="border-ink-100 items-center gap-0.5 border-t px-4 py-1.5">
         <TradesButton contract={contract} size="sm" />
         {hasLiquidity && (
           <Button disabled size="2xs" color="gray-white">
@@ -675,6 +659,8 @@ function CommunityTab({
     return t !== null && now - t >= RECENT_THRESHOLD_MS
   })
 
+  useEffect(() => { onCountChange?.(open.length) }, [open.length])
+
   const sortedOpen = sortContracts(open, questionSlugs, sort)
   const existingSlugs = new Set(questionSlugs)
 
@@ -693,12 +679,17 @@ function CommunityTab({
   }
 
   async function handleAdd(contractId: string) {
-    await api('admin-sports-community-market', {
-      competitionCode,
-      contractId,
-      action: 'add',
-    })
-    await fetchDashboard()
+    try {
+      await api('admin-sports-community-market', {
+        competitionCode,
+        contractId,
+        action: 'add',
+      })
+      await fetchDashboard()
+      toast.success('Market added to community tab')
+    } catch (e) {
+      toast.error('Failed to add market')
+    }
   }
 
   async function handleRemove(contract: Contract) {
@@ -909,7 +900,6 @@ export function SportsDashboardPage({
   trackPageView,
   communityDashboardSlug,
   competitionCode,
-  officialGroupSlug: _officialGroupSlug,
 }: {
   sportsLeague: string
   title: string
@@ -917,31 +907,28 @@ export function SportsDashboardPage({
   trackPageView: string
   communityDashboardSlug?: string
   competitionCode?: string
-  officialGroupSlug?: string
 }) {
+  const router = useRouter()
   const [markets, setMarkets] = useState<SportsMatch[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pastVisible, setPastVisible] = useState(false)
-  const [activeTab, setActiveTab] = useState<'official' | 'community'>('official')
+  const [activeTab, setActiveTab] = useState<'official' | 'community'>(
+    router.query.tab === 'community' ? 'community' : 'official'
+  )
   const [communityCount, setCommunityCount] = useState<number | undefined>(undefined)
 
-  useEffect(() => {
-    if (!communityDashboardSlug) return
-    api('get-dashboard-from-slug', { dashboardSlug: communityDashboardSlug } as any)
-      .then((d: any) => {
-        const count = (d?.items ?? []).filter((i: any) => i.type === 'question').length
-        setCommunityCount(count)
-      })
-      .catch(() => setCommunityCount(0))
-  }, [communityDashboardSlug])
+  function handleTabChange(tab: 'official' | 'community') {
+    setActiveTab(tab)
+    router.replace({ query: { ...router.query, tab } }, undefined, { shallow: true })
+  }
 
   const isAdmin = useAdmin() || useDev()
 
   async function fetchMarkets() {
     try {
-      const data = await api('admin-sports-markets', { sportsLeague })
-      const mapped = (data.markets as ApiMarket[]).flatMap((m) => {
+      const data = await api('sports-markets', { sportsLeague })
+      const mapped = data.markets.flatMap((m) => {
         const s = toSportsMatch(m)
         return s ? [s] : []
       })
@@ -979,6 +966,25 @@ export function SportsDashboardPage({
 
   return (
     <Page trackPageView={trackPageView}>
+      <style>{`
+        :root {
+          --sports-team-a: #1A7A9A;
+          --sports-team-a-vibrant: #0A8FAD;
+          --sports-team-b: #8B3A52;
+          --sports-team-b-vibrant: #C4436E;
+          --sports-draw: #6B7A8E;
+          --sports-draw-vibrant: #7A8CA0;
+        }
+        .dark {
+          --sports-team-a-vibrant: #25C4E8;
+          --sports-team-b-vibrant: #E85A8A;
+          --sports-draw: #7A8A9E;
+          --sports-draw-vibrant: #A8AABF;
+        }
+      `}</style>
+      <Head>
+        <title>{title} | Manifold</title>
+      </Head>
       <Col className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6">
 
         <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-10 -mt-6 items-center justify-between border-b pt-6 pb-5">
@@ -990,14 +996,14 @@ export function SportsDashboardPage({
             <SportsDashboardTabButton
               active={activeTab === 'official'}
               count={upcoming.length}
-              onClick={() => setActiveTab('official')}
+              onClick={() => handleTabChange('official')}
             >
               Official
             </SportsDashboardTabButton>
             <SportsDashboardTabButton
               active={activeTab === 'community'}
               count={communityCount}
-              onClick={() => setActiveTab('community')}
+              onClick={() => handleTabChange('community')}
             >
               Community
             </SportsDashboardTabButton>

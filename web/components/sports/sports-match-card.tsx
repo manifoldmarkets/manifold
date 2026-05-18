@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 
 export type MatchOutcome = 'teamA' | 'teamB' | 'draw'
 
@@ -37,112 +35,6 @@ export type SportsMatch = {
   winner?: MatchOutcome
   marketUrl?: string
   finalScore?: { home: number; away: number }
-}
-
-function MockBetPanel({
-  match,
-  initialOutcome,
-  onClose,
-}: {
-  match: SportsMatch
-  initialOutcome: MatchOutcome
-  onClose: () => void
-}) {
-  const [selected, setSelected] = useState<MatchOutcome>(
-    initialOutcome === 'draw' && match.hasDraw === false ? 'teamA' : initialOutcome
-  )
-  const [amount, setAmount] = useState(10)
-
-  const outcomes: { key: MatchOutcome; label: string; prob: number; color: string }[] = [
-    { key: 'teamA', label: `${match.teamA.flag} ${match.teamA.name}`.trim(), prob: match.teamA.prob, color: SPORTS_COLORS.teamA },
-    ...(match.hasDraw !== false ? [{ key: 'draw' as MatchOutcome, label: 'Draw', prob: match.draw.prob, color: SPORTS_COLORS.draw }] : []),
-    { key: 'teamB', label: `${match.teamB.flag} ${match.teamB.name}`.trim(), prob: match.teamB.prob, color: SPORTS_COLORS.teamB },
-  ]
-
-  const current = outcomes.find((o) => o.key === selected)!
-  const payout = Math.round(amount * (100 / Math.max(current.prob, 1)))
-
-  return (
-    <Modal open setOpen={(open) => { if (!open) onClose() }} size="sm">
-      <Col className={clsx(MODAL_CLASS, 'w-full gap-5')}>
-
-        {/* Match label */}
-        <p className="text-ink-1000 text-center text-base font-semibold">
-          {match.teamA.name} vs {match.teamB.name}
-        </p>
-
-        {/* Outcome toggle */}
-        <Row className="bg-canvas-100 items-stretch rounded-lg">
-          {outcomes.map((o) => (
-            <Row key={o.key} className="flex-1 items-stretch">
-              <button
-                onClick={() => setSelected(o.key)}
-                className={clsx(
-                  'flex-1 rounded-lg px-2 py-2.5 text-xs font-medium transition-colors',
-                  selected === o.key ? 'text-white' : 'text-ink-500 hover:text-ink-700'
-                )}
-                style={selected === o.key ? { backgroundColor: o.color } : undefined}
-              >
-                {o.label}
-              </button>
-            </Row>
-          ))}
-        </Row>
-
-        {/* Amount */}
-        <Col className="gap-2">
-          <label className="text-ink-700 text-xs font-medium">Bet amount</label>
-          <Row className="border-ink-300 bg-canvas-50 focus-within:border-primary-500 w-40 items-center rounded-md border px-3 py-2 transition-colors">
-            <span className="text-ink-500 mr-1 font-mana text-sm">Ṁ</span>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 0))}
-              className="text-ink-1000 w-full bg-transparent text-sm outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-              min="1"
-            />
-          </Row>
-        </Col>
-
-        {/* Stats */}
-        <Col className="bg-canvas-50 gap-1.5 rounded-md p-3">
-          <Row className="justify-between gap-4">
-            <span className="text-ink-500 text-xs">To win</span>
-            <span className="text-ink-1000 text-xs font-medium">
-              Ṁ{payout.toLocaleString()}
-            </span>
-          </Row>
-          <Row className="justify-between gap-4">
-            <span className="text-ink-500 text-xs">New probability</span>
-            <span className="text-ink-1000 text-xs font-medium">
-              ~{Math.min(current.prob + 1, 99)}%
-            </span>
-          </Row>
-        </Col>
-
-        {/* CTA + Cancel */}
-        <Row className="gap-2">
-          <button
-            onClick={onClose}
-            className="border-ink-300 text-ink-600 hover:bg-canvas-50 shrink-0 rounded-md border px-3 py-3 text-sm transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onClose}
-            className="text-ink-1000 hover:bg-ink-100/10 min-w-0 flex-1 rounded-md border-2 px-3 py-3 text-sm font-semibold transition-colors"
-            style={{ borderColor: current.color }}
-          >
-            Buy {current.label} to win Ṁ{payout.toLocaleString()}
-          </button>
-        </Row>
-
-        <p className="text-ink-400 text-center text-xs">
-          Prototype — betting not yet connected
-        </p>
-      </Col>
-    </Modal>
-  )
 }
 
 function OutcomeRow({
@@ -253,8 +145,9 @@ function OutcomeRow({
 }
 
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
-  const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const resolved = match.status === 'resolved'
+  const now = Date.now()
+  const isLive = !resolved && match.closeTimeMs <= now && now - match.closeTimeMs < 2.5 * 60 * 60 * 1000
   const homeScore = resolved ? match.finalScore?.home : undefined
   const awayScore = resolved ? match.finalScore?.away : undefined
   const winnerColor = resolved ? vibrantForOutcome(match.winner) : undefined
@@ -269,13 +162,13 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
       >
         <Row className="justify-between">
           <span className="text-ink-500 text-[11px]">
-            {resolved ? match.closeDateLabel : `Closes ${match.closeTime}`}
+            {resolved ? match.closeDateLabel : `Kickoff ${match.closeTime}`}
           </span>
           <span
-            className="text-[11px]"
-            style={{ color: winnerColor ?? '#6B7280' }}
+            className="text-[11px] font-medium"
+            style={{ color: isLive ? '#16a34a' : winnerColor ?? '#6B7280' }}
           >
-            {resolved ? 'Final' : 'Upcoming'}
+            {resolved ? 'Final' : isLive ? '● Live' : 'Upcoming'}
           </span>
         </Row>
 
@@ -290,7 +183,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.teamA}
             winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
-            onClick={() => setBetOutcome('teamA')}
+            onClick={match.marketUrl ? () => window.open(match.marketUrl, '_blank') : undefined}
           />
           <OutcomeRow
             flag={match.teamB.flag}
@@ -301,7 +194,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.teamB}
             winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
-            onClick={() => setBetOutcome('teamB')}
+            onClick={match.marketUrl ? () => window.open(match.marketUrl, '_blank') : undefined}
           />
           {(match.hasDraw ?? true) && (
             <OutcomeRow
@@ -312,41 +205,24 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               resolved={resolved}
               teamColor={SPORTS_COLORS.draw}
               winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-              onClick={() => setBetOutcome('draw')}
+              onClick={match.marketUrl ? () => window.open(match.marketUrl, '_blank') : undefined}
             />
           )}
         </Col>
 
         <Row className="border-ink-200 justify-between border-t pt-2">
           <span className="text-ink-500 text-[11px]">Ṁ {match.volume} vol</span>
-          {resolved ? (
-            <span className="text-[11px]" style={{ color: winnerColor }}>
-              ✓{' '}
-              {match.winner === 'teamA'
-                ? match.teamA.name
-                : match.winner === 'teamB'
-                ? match.teamB.name
-                : 'Draw'}
-            </span>
-          ) : (
-            <a
-              href={match.marketUrl ?? '#'}
-              className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              View market →
-            </a>
-          )}
+          <a
+            href={match.marketUrl ?? '#'}
+            className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
+            onClick={(e) => e.stopPropagation()}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View market →
+          </a>
         </Row>
       </div>
-
-      {betOutcome && (
-        <MockBetPanel
-          match={match}
-          initialOutcome={betOutcome}
-          onClose={() => setBetOutcome(null)}
-        />
-      )}
     </>
   )
 }
@@ -360,7 +236,12 @@ export function PastMatchCard({ match }: { match: SportsMatch }) {
       : 'Draw'
 
   return (
-    <div className="bg-canvas-0 border-ink-200 flex items-center justify-between rounded-lg border px-3.5 py-2.5 opacity-60">
+    <a
+      href={match.marketUrl ?? '#'}
+      target="_blank"
+      rel="noreferrer"
+      className="bg-canvas-0 border-ink-200 hover:border-ink-300 flex items-center justify-between rounded-lg border px-3.5 py-2.5 opacity-60 transition-colors"
+    >
       <Col className="gap-0.5">
         <span className="text-ink-900 text-sm">
           {match.teamA.name} vs {match.teamB.name}
@@ -369,8 +250,8 @@ export function PastMatchCard({ match }: { match: SportsMatch }) {
           {match.closeDateLabel} · ✓ {winnerName}
         </span>
       </Col>
-      <span className="text-ink-500 text-[11px]">Resolved</span>
-    </div>
+      <span className="text-ink-500 text-[11px]">View →</span>
+    </a>
   )
 }
 

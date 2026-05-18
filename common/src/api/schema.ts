@@ -4210,7 +4210,7 @@ export const API = (_apiTypeCheck = {
     },
   },
 
-  'admin-sports-markets': {
+  'sports-markets': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
@@ -4223,7 +4223,6 @@ export const API = (_apiTypeCheck = {
       markets: Array<{
         id: string
         question: string
-        stageLabel: string
         closeTime: number
         sportsStartTimestamp: string | null
         resolution: string | null

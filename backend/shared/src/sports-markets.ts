@@ -485,7 +485,15 @@ export function buildDescription(
     : `*Resolves to the winning team or draw (90 min regulation)*`
 
   const parts = [matchLine, resolveLine]
-  if (opts.customNote?.trim()) parts.push(opts.customNote.trim())
+  if (opts.customNote?.trim()) {
+    const substituted = opts.customNote.trim()
+      .replace(/{team1}/g, homeTeam.name)
+      .replace(/{team2}/g, awayTeam.name)
+      .replace(/{kickoff}/g, dateStr)
+      .replace(/{stage}/g, stageName)
+      .replace(/{dashboard_url}/g, opts.dashboardUrl ?? '')
+    parts.push(substituted)
+  }
   parts.push(RESOLUTION_NOTE)
   if (opts.dashboardUrl) {
     let href = opts.dashboardUrl.trim()
@@ -523,19 +531,6 @@ async function fdFetch<T>(path: string, apiKey: string): Promise<T> {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-export async function fetchScheduledMatches(
-  config: TournamentConfig,
-  apiKey: string,
-  dateFrom: string,
-  dateTo: string
-): Promise<FDMatch[]> {
-  const data = await fdFetch<{ matches: FDMatch[] }>(
-    `/v4/competitions/${config.footballDataCode}/matches?status=SCHEDULED&dateFrom=${dateFrom}&dateTo=${dateTo}`,
-    apiKey
-  )
-  return data.matches ?? []
 }
 
 export async function fetchAllCompetitionMatches(
@@ -800,7 +795,7 @@ export async function resolveTournamentMarkets(
       const awayScore = match.score.fullTime.away
       if (homeScore !== null && awayScore !== null) {
         await pg.none(
-          `update contracts set data = data || $1 where id = $2`,
+          `update contracts set data = data || $1::jsonb where id = $2`,
           [JSON.stringify({ sportsHomeScore: homeScore, sportsAwayScore: awayScore }), market.id]
         )
       }
