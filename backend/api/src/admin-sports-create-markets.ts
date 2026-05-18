@@ -13,7 +13,6 @@ import {
   fetchAllCompetitionMatches,
   matchSportsEventId,
   StageLiquidityTiers,
-  LiquidityTierValue,
 } from 'shared/sports-markets'
 import { createMarketHelper } from './create-market'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
