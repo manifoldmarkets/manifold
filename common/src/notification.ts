@@ -375,8 +375,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   },
   personalized_mana_offer: {
     simple: 'Personalized mana sales',
-    detailed:
-      'Flash discounts on mana purchases offered after merch shipments',
+    detailed: 'Time-limited personalized discounts on mana purchases',
   },
   market_movements: {
     simple: 'Market movements',
