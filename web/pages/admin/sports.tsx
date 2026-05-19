@@ -16,6 +16,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { TOURNAMENT_CONFIGS, TournamentConfig } from 'common/sports'
 import clsx from 'clsx'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -26,86 +27,7 @@ type CreateResult =
   APIResponse<'admin-sports-create-markets'>['results'][number]
 type ResolveLogEntry = APIResponse<'admin-sports-resolve'>['log'][number]
 
-interface TournamentMeta {
-  code: string
-  name: string
-  shortLabel: string
-  sportsLeague: string
-  startDate: string
-  endDate: string
-  defaultGroupSlug: string
-  defaultDashboardUrl: string
-  defaultStageTiers: Record<string, number>
-}
-
-const TOURNAMENTS: TournamentMeta[] = [
-  {
-    code: 'WC',
-    name: 'FIFA World Cup 2026',
-    shortLabel: "World Cup '26",
-    sportsLeague: 'FIFA World Cup',
-    startDate: '2026-06-11',
-    endDate: '2026-07-19',
-    defaultGroupSlug: 'ms-official-wc2026',
-    defaultDashboardUrl: `${ENV_CONFIG.domain}/sports/world-cup-2026`,
-    defaultStageTiers: {
-      GROUP_STAGE: 1000,
-      ROUND_OF_16: 10000,
-      QUARTER_FINALS: 10000,
-      SEMI_FINALS: 10000,
-      THIRD_PLACE: 10000,
-      FINAL: 10000,
-    },
-  },
-  {
-    code: 'CL',
-    name: 'UEFA Champions League 2025/26',
-    shortLabel: "UCL '26",
-    sportsLeague: 'UEFA Champions League',
-    startDate: '2025-09-17',
-    endDate: '2026-05-30',
-    defaultGroupSlug: 'ms-official-cl-2026',
-    defaultDashboardUrl: `${ENV_CONFIG.domain}/sports/cl-2026`,
-    defaultStageTiers: {
-      LEAGUE_PHASE: 1000,
-      ROUND_OF_16: 10000,
-      QUARTER_FINALS: 10000,
-      SEMI_FINALS: 10000,
-      FINAL: 10000,
-    },
-  },
-  {
-    code: 'PL',
-    name: 'Premier League 2025/26',
-    shortLabel: "PL '26",
-    sportsLeague: 'Premier League',
-    startDate: '2025-08-16',
-    endDate: '2026-05-24',
-    defaultGroupSlug: 'ms-official-pl-2526',
-    defaultDashboardUrl: `${ENV_CONFIG.domain}/sports/pl-2526`,
-    defaultStageTiers: {
-      REGULAR_SEASON: 1000,
-      FINAL: 10000,
-    },
-  },
-  ...(process.env.NEXT_PUBLIC_FIREBASE_ENV === 'DEV'
-    ? [
-        {
-          code: 'TEST',
-          name: 'Test Tournament [DEV ONLY]',
-          shortLabel: "Test '26",
-          sportsLeague: 'Test Tournament',
-          startDate: '2026-05-07',
-          endDate: '2026-05-07',
-          defaultGroupSlug: 'ms-official-test-2026',
-          defaultDashboardUrl: '/sports/test-2026',
-          defaultStageTiers: {
-            GROUP_STAGE: 1000,
-          },
-        } as TournamentMeta,
-      ]
-    : []),
-]
+const TOURNAMENTS = Object.values(TOURNAMENT_CONFIGS)
 
 const STAGE_LABELS: Record<string, string> = {
   REGULAR_SEASON: 'Regular Season',
@@ -162,15 +84,17 @@ export default function SportsAdminPage() {
   useRedirectIfSignedOut()
   const isAdmin = useAdmin() || useDev()
 
-  const [tournament, setTournament] = useState<TournamentMeta>(TOURNAMENTS[0])
+  const [tournament, setTournament] = useState<TournamentConfig>(TOURNAMENTS[0])
 
   // Tournament settings (persist to localStorage)
-  const settingsKey = `sports_settings_${tournament.code}`
-  const [groupSlug, setGroupSlug] = useState(tournament.defaultGroupSlug)
-  const [dashboardUrl, setDashboardUrl] = useState(tournament.defaultDashboardUrl)
+  const settingsKey = `sports_settings_${tournament.footballDataCode}`
+  const [groupSlug, setGroupSlug] = useState(tournament.officialGroupSlug)
+  const [dashboardUrl, setDashboardUrl] = useState(
+    `${ENV_CONFIG.domain}${tournament.dashboardPath}`
+  )
   const [customNote, setCustomNote] = useState('')
   const [stageTiers, setStageTiers] = useState<Record<string, number>>(
-    tournament.defaultStageTiers
+    tournament.stageLiquidityTiers as Record<string, number>
   )
 
   useEffect(() => {
@@ -237,7 +161,7 @@ export default function SportsAdminPage() {
   // Load all group markets once; filter client-side to support substring/hyphen matching
   useEffect(() => {
     if (!isAdmin) return
-    const slug = communityGroupMode ? tournament.defaultGroupSlug : null
+    const slug = communityGroupMode ? tournament.officialGroupSlug : null
     if (!slug) { setCommunityAllMarkets([]); return }
     let cancelled = false
     setCommunitySearch('')
@@ -252,7 +176,7 @@ export default function SportsAdminPage() {
       .catch(() => { if (!cancelled) setCommunityAllMarkets([]) })
       .finally(() => { if (!cancelled) setCommunitySearching(false) })
     return () => { cancelled = true }
-  }, [tournament.defaultGroupSlug, communityGroupMode, isAdmin])
+  }, [tournament.officialGroupSlug, communityGroupMode, isAdmin])
 
   // Resolution state
   const [resolveLog, setResolveLog] = useState<ResolveLogEntry[]>([])
@@ -271,7 +195,7 @@ export default function SportsAdminPage() {
     setDryRunReviewed(false)
     try {
       const data = await api('admin-sports-fixtures', {
-        competitionCode: tournament.code,
+        competitionCode: tournament.footballDataCode,
         dateFrom,
         dateTo,
         stage: stageFilter === 'ALL' ? undefined : stageFilter,
@@ -308,7 +232,7 @@ export default function SportsAdminPage() {
     setCreateResults([])
     try {
       const data = await api('admin-sports-create-markets', {
-        competitionCode: tournament.code,
+        competitionCode: tournament.footballDataCode,
         matchIds: [...selectedIds],
         dryRun,
         customNote: customNote || undefined,
@@ -338,7 +262,7 @@ export default function SportsAdminPage() {
     setResolving(true)
     try {
       const data = await api('admin-sports-resolve', {
-        competitionCode: tournament.code,
+        competitionCode: tournament.footballDataCode,
       })
       setResolveLog(data.log)
       setLastResolved(new Date().toLocaleString())
@@ -364,7 +288,7 @@ export default function SportsAdminPage() {
     setCommunityAdding(contractId)
     try {
       await api('admin-sports-community-market', {
-        competitionCode: tournament.code,
+        competitionCode: tournament.footballDataCode,
         contractId,
         action: 'add',
       })
@@ -380,7 +304,7 @@ export default function SportsAdminPage() {
     if (!confirm('Remove this market from the community tab?')) return
     try {
       await api('admin-sports-community-market', {
-        competitionCode: tournament.code,
+        competitionCode: tournament.footballDataCode,
         contractId,
         action: 'remove',
       })
@@ -394,7 +318,7 @@ export default function SportsAdminPage() {
     setCommunityIniting(true)
     try {
       const result = await api('admin-sports-init-community', {
-        competitionCode: tournament.code,
+        competitionCode: tournament.footballDataCode,
       })
       setCommunityInitStatus(result)
     } catch (e: unknown) {
@@ -415,7 +339,7 @@ export default function SportsAdminPage() {
 
   // Description preview — uses tournament-specific sample teams
   const sampleTeams =
-    tournament.code === 'CL'
+    tournament.footballDataCode === 'CL'
       ? { home: 'Arsenal FC', away: 'Club Atlético de Madrid', stage: 'SF', date: 'Tue, 05 May 2026 19:00:00 UTC' }
       : { home: 'Brazil', away: 'Argentina', stage: 'Group E', date: 'Thu, 02 Jul 2026 19:00:00 UTC' }
   const sampleDashboardHref = dashboardUrl
@@ -452,14 +376,14 @@ export default function SportsAdminPage() {
               <label className="text-ink-600 text-xs font-medium">Tournament</label>
               <div className="relative">
               <select
-                value={tournament.code}
+                value={tournament.footballDataCode}
                 onChange={(e) => {
-                  const t = TOURNAMENTS.find((t) => t.code === e.target.value)
+                  const t = TOURNAMENTS.find((t) => t.footballDataCode === e.target.value)
                   if (t) {
                     setTournament(t)
-                    setGroupSlug(t.defaultGroupSlug)
-                    setDashboardUrl(t.defaultDashboardUrl)
-                    setStageTiers(t.defaultStageTiers)
+                    setGroupSlug(t.officialGroupSlug)
+                    setDashboardUrl(`${ENV_CONFIG.domain}${t.dashboardPath}`)
+                    setStageTiers(t.stageLiquidityTiers as Record<string, number>)
                     setCustomNote('')
                     setFixtures([])
                     setMarkets([])
@@ -469,7 +393,7 @@ export default function SportsAdminPage() {
                 className="border-ink-300 bg-canvas-0 text-ink-900 w-full appearance-none rounded border px-3 py-2 pr-8 text-sm"
               >
                 {TOURNAMENTS.map((t) => (
-                  <option key={t.code} value={t.code}>
+                  <option key={t.footballDataCode} value={t.footballDataCode}>
                     {t.name}
                   </option>
                 ))}
@@ -481,7 +405,7 @@ export default function SportsAdminPage() {
               <span>
                 {tournament.startDate} → {tournament.endDate}
               </span>
-              <span className="font-mono">{tournament.code}</span>
+              <span className="font-mono">{tournament.footballDataCode}</span>
             </Col>
           </Row>
         </Section>
@@ -1109,7 +1033,7 @@ export default function SportsAdminPage() {
               <p className="text-ink-500 text-sm">
                 Search for any market and add it to the community tab of the{' '}
                 <strong>{tournament.name}</strong> dashboard. Markets are also tagged
-                with <code className="bg-ink-100 rounded px-1 text-xs">{tournament.defaultGroupSlug.replace('ms-official', 'ms-community')}</code>.
+                with <code className="bg-ink-100 rounded px-1 text-xs">{tournament.communityGroupSlug}</code>.
               </p>
               <Col className="gap-1">
                 <Button
