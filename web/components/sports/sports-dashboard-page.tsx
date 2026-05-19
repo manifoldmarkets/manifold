@@ -14,7 +14,7 @@ import {
 } from 'web/components/sports/sports-match-card'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { api, updateDashboard } from 'web/lib/api/api'
-import { useAdmin, useDev } from 'web/hooks/use-admin'
+import { useAdminOrMod, useDev } from 'web/hooks/use-admin'
 import { getContracts, getAnswersForContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useUser } from 'web/hooks/use-user'
@@ -709,7 +709,7 @@ export function SportsDashboardPage({
     router.replace({ query: { ...router.query, tab } }, undefined, { shallow: true })
   }
 
-  const isAdmin = useAdmin() || useDev()
+  const isAdmin = useAdminOrMod() || useDev()
 
   async function fetchMarkets() {
     try {
