@@ -634,6 +634,7 @@ export function OrderBookPanel(props: {
     | MultiContract
   answer?: Answer
   showTitle?: boolean
+  compact?: boolean
   pseudonym?: {
     YES: {
       pseudonymName: string
@@ -646,7 +647,7 @@ export function OrderBookPanel(props: {
   }
   onOrderClick?: (data: OrderClickData) => void
 }) {
-  const { contract, answer, showTitle, pseudonym, onOrderClick } = props
+  const { contract, answer, showTitle, compact, pseudonym, onOrderClick } = props
   const limitBets = props.limitBets.filter(
     (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
   )
@@ -667,12 +668,17 @@ export function OrderBookPanel(props: {
 
   if (limitBets.length === 0) return <></>
 
+  // In compact mode, only show sides that have orders
+  const showYes = !compact || yesBets.length > 0
+  const showNo = !compact || noBets.length > 0
+  const cols = showYes && showNo ? 2 : 1
+
   return (
     <Col className="text-ink-900 bg-canvas-0 border-ink-200 overflow-hidden border-y">
       {/* Header */}
-      <div className="border-ink-200 border-b px-5 py-4">
+      <div className={clsx('border-ink-200 border-b', compact ? 'px-3 py-2' : 'px-5 py-4')}>
         <Row className="items-center gap-2">
-          <h2 className="text-lg font-semibold">Order Book</h2>
+          <h2 className={clsx('font-semibold', compact ? 'text-sm' : 'text-lg')}>Order Book</h2>
           <InfoTooltip
             text="Active limit orders from traders waiting to buy at specific prices"
             className="text-ink-400"
@@ -684,25 +690,36 @@ export function OrderBookPanel(props: {
       </div>
 
       {/* Order Tables */}
-      <div className="border-ink-200 divide-ink-200 grid grid-cols-2 divide-x">
-        <div className="bg-canvas-0 p-4">
-          <OrderBookSide
-            limitBets={yesBets}
-            contract={contract}
-            side="YES"
-            pseudonym={pseudonym}
-            onOrderClick={onOrderClick}
-          />
-        </div>
-        <div className="bg-canvas-0 p-4">
-          <OrderBookSide
-            limitBets={noBets}
-            contract={contract}
-            side="NO"
-            pseudonym={pseudonym}
-            onOrderClick={onOrderClick}
-          />
-        </div>
+      <div
+        className={clsx(
+          'border-ink-200 divide-ink-200 grid divide-x',
+          cols === 2 ? 'grid-cols-2' : 'grid-cols-1'
+        )}
+      >
+        {showYes && (
+          <div className={clsx('bg-canvas-0', compact ? 'p-2' : 'p-4')}>
+            <OrderBookSide
+              limitBets={yesBets}
+              contract={contract}
+              side="YES"
+              compact={compact}
+              pseudonym={pseudonym}
+              onOrderClick={onOrderClick}
+            />
+          </div>
+        )}
+        {showNo && (
+          <div className={clsx('bg-canvas-0', compact ? 'p-2' : 'p-4')}>
+            <OrderBookSide
+              limitBets={noBets}
+              contract={contract}
+              side="NO"
+              compact={compact}
+              pseudonym={pseudonym}
+              onOrderClick={onOrderClick}
+            />
+          </div>
+        )}
       </div>
 
       {/* Depth Chart */}
@@ -739,13 +756,15 @@ function OrderBookSide(props: {
     | CPMMMultiContract
     | MultiContract
   side: 'YES' | 'NO'
+  sideLabel?: string
+  compact?: boolean
   pseudonym?: {
     YES: { pseudonymName: string; pseudonymColor: string }
     NO: { pseudonymName: string; pseudonymColor: string }
   }
   onOrderClick?: (data: OrderClickData) => void
 }) {
-  const { contract, side, pseudonym, onOrderClick } = props
+  const { contract, side, sideLabel, compact, pseudonym, onOrderClick } = props
   const limitBets = props.limitBets.filter(
     (b) => !b.expiresAt || b.expiresAt > Date.now()
   )
@@ -760,7 +779,11 @@ function OrderBookSide(props: {
     <div>
       <Row className="mb-3 items-center gap-1.5">
         <span className="text-ink-500 text-sm font-medium">Buy</span>
-        {isBinaryMC || !!pseudonym ? (
+        {sideLabel ? (
+          <span className={clsx('text-sm font-semibold', sideColor)}>
+            {sideLabel}
+          </span>
+        ) : isBinaryMC || !!pseudonym ? (
           <OutcomeLabel
             contract={contract}
             outcome={side}
@@ -786,6 +809,7 @@ function OrderBookSide(props: {
               bets={bets}
               onOrderClick={onOrderClick}
               sideBgHover={sideBgHover}
+              compact={compact}
             />
           ))}
         </div>
@@ -805,8 +829,9 @@ function OrderBookRow(props: {
   bets: LimitBet[]
   onOrderClick?: (data: OrderClickData) => void
   sideBgHover: string
+  compact?: boolean
 }) {
-  const { contract, limitProb, bets, onOrderClick, sideBgHover } = props
+  const { contract, limitProb, bets, onOrderClick, sideBgHover, compact } = props
   const { outcome } = bets[0]
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
@@ -847,38 +872,37 @@ function OrderBookRow(props: {
     <div>
       <Row
         className={clsx(
-          'items-center justify-between rounded-lg px-2 py-1.5 transition-colors',
+          'items-center rounded-lg px-2 py-1.5 transition-colors',
+          compact ? 'gap-2' : 'justify-between',
           isClickable && sideBgHover,
           isClickable && 'cursor-pointer'
         )}
         onClick={isClickable ? handleOrderClick : undefined}
       >
-        <Row className="items-center gap-2">
-          <span className="text-ink-600 w-10 text-sm font-medium">
-            {isPseudoNumeric
-              ? getFormattedMappedValue(contract, limitProb)
-              : isBinaryMC
-              ? formatPercent(getBinaryMCProb(limitProb, outcome))
-              : formatPercent(limitProb)}
-          </span>
-          <div
-            onClick={(e) => {
-              e.stopPropagation()
-              setExpanded((c) => !c)
-            }}
-            className="cursor-pointer"
-          >
-            <MultipleOrSingleAvatars
-              className="!items-end"
-              avatars={largest}
-              total={userSums.length}
-              size="xs"
-              spacing={0.3}
-              startLeft={0.6}
-            />
-          </div>
-        </Row>
-        <span className="text-ink-900 text-sm font-semibold">
+        <span className="text-ink-600 w-10 flex-shrink-0 text-sm font-medium">
+          {isPseudoNumeric
+            ? getFormattedMappedValue(contract, limitProb)
+            : isBinaryMC
+            ? formatPercent(getBinaryMCProb(limitProb, outcome))
+            : formatPercent(limitProb)}
+        </span>
+        <div
+          onClick={(e) => {
+            e.stopPropagation()
+            setExpanded((c) => !c)
+          }}
+          className="cursor-pointer"
+        >
+          <MultipleOrSingleAvatars
+            className="!items-end"
+            avatars={largest}
+            total={userSums.length}
+            size="xs"
+            spacing={0.3}
+            startLeft={0.6}
+          />
+        </div>
+        <span className={clsx('text-ink-900 text-sm font-semibold', !compact && 'ml-auto')}>
           <MoneyDisplay
             amount={total}
             numberType="short"

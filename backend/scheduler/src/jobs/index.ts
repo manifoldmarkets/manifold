@@ -57,6 +57,8 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { resolveSportsMarkets } from './sports-resolve'
+import { createUpcomingSportsMarkets } from './sports-create-markets'
 
 export function createJobs() {
   return [
@@ -325,6 +327,18 @@ export function createJobs() {
       'downsample-portfolio-history',
       '0 50 4 * * *', // every day at 4:50am
       downsamplePortfolioHistory
+    ),
+    // All football-data.org tournaments: check for finished matches and auto-resolve every 15 minutes
+    createJob(
+      'sports-resolve',
+      '0 */15 * * * *', // every 15 minutes
+      resolveSportsMarkets
+    ),
+    // Create markets for upcoming matches in the next 7 days (runs daily at 7 AM UTC)
+    createJob(
+      'sports-create-markets',
+      '0 0 7 * * *', // 7 AM UTC daily
+      createUpcomingSportsMarkets
     ),
   ]
 }
