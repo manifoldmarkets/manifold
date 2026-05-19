@@ -30,6 +30,7 @@ import { createJob } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
+import { expirePersonalizedManaOffers } from './expire-personalized-mana-offers'
 import {
   refreshAchAccountAge,
   refreshAchComments,
@@ -175,6 +176,17 @@ export function createJobs() {
       'check-subscription-expiry',
       '0 0 10 * * *', // 10 AM UTC daily (2 AM PT) - warns users 2-3 days before expiry
       checkSubscriptionExpiry
+    ),
+    createJob(
+      'expire-personalized-mana-offers',
+      // Hourly. Interval is not load-bearing for correctness — the redemption
+      // path in stripe-endpoints.ts and daimo-webhook.ts accepts a 5-minute
+      // grace past expires_at and the cron itself only flips rows that are
+      // ALREADY past that grace window. Changing this to a finer cadence is
+      // fine; just don't widen the redemption-side grace above the cron lag
+      // or accidentally-expired offers will redeem at the offer rate again.
+      '0 17 * * * *',
+      expirePersonalizedManaOffers
     ),
     createJob(
       'send-unseen-notifications',

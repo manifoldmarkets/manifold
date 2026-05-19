@@ -95,6 +95,7 @@ export type notification_source_types =
   | 'prize_winner'
   | 'charity_champion'
   | 'merch_order_update'
+  | 'personalized_mana_offer'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -371,6 +372,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   merch_order_update: {
     simple: 'Merch order updates',
     detailed: 'Updates when your merch order ships or is canceled',
+  },
+  personalized_mana_offer: {
+    simple: 'Personalized mana sales',
+    detailed: 'Time-limited personalized discounts on mana purchases',
   },
   market_movements: {
     simple: 'Market movements',

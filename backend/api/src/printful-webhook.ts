@@ -13,6 +13,11 @@ import {
 } from 'common/user'
 import { nanoid } from 'common/util/random'
 import { formatMoney } from 'common/util/format'
+import { createPersonalizedManaOfferNotification } from 'shared/notifications/create-personalized-mana-offer-notification'
+import {
+  OFFER_MANA_AMOUNT,
+  OFFER_MAX_DISCOUNT_PCT,
+} from 'common/personalized-mana-offer'
 
 // Printful webhook event types we care about
 // See: https://developers.printful.com/docs/#tag/Webhook-API
@@ -222,6 +227,10 @@ async function refundOrder(
            WHERE id = $1`,
           [order.id, printfulStatus]
         )
+        // Note: we deliberately do NOT touch any associated personalized mana
+        // offer on refund. Post-ship cancellations are vanishingly rare, and
+        // it's worse UX to pull an offer that a user has already seen than to
+        // eat the loss in the exceptional case where this fires.
         console.warn(`Webhook auto-refund: ${amount} mana to ${order.user_id} (${eventType})`)
         didRefund = true
       }),
@@ -311,4 +320,43 @@ async function notifyShipped(
   }
 
   await insertNotificationToSupabase(notification, pg)
+
+  // Grant a personalized mana sale offer (one per shipped order). Unique index
+  // on shop_order_id makes the insert idempotent across duplicate Printful
+  // deliveries: a duplicate returns NULL from oneOrNone, NOT an exception.
+  // The try/catch is only for real failures (DB outage, FK violations, etc.).
+  let offerRow: { id: string } | null = null
+  try {
+    offerRow = await pg.oneOrNone<{ id: string }>(
+      `insert into personalized_mana_offers (user_id, shop_order_id, source, status)
+       values ($1, $2, 'merch_shipped', 'pending')
+       on conflict (shop_order_id) do nothing
+       returning id`,
+      [order.user_id, order.id]
+    )
+  } catch (e: unknown) {
+    // Real DB failure — surface as error so it's monitorable. The shipping
+    // notification has already been sent so the user gets the core message;
+    // the offer can be backfilled later via the backfill script.
+    console.error(
+      `Personalized mana offer INSERT failed for shop_order ${order.id}:`,
+      e
+    )
+    return
+  }
+
+  if (offerRow) {
+    try {
+      await createPersonalizedManaOfferNotification(order.user_id, offerRow.id, {
+        reasonPhrase: 'buying some merch recently',
+        manaAmount: OFFER_MANA_AMOUNT,
+        maxDiscountPct: OFFER_MAX_DISCOUNT_PCT,
+      })
+    } catch (e: unknown) {
+      console.warn(
+        `Personalized mana offer notification failed for ${offerRow.id} (offer row exists; will not retry):`,
+        e
+      )
+    }
+  }
 }

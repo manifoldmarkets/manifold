@@ -50,6 +50,7 @@ import {
 import { DisplayUser, FullUser } from './user-types'
 
 import { ContractMetric } from 'common/contract-metric'
+import { PersonalizedManaOfferSummary } from 'common/personalized-mana-offer'
 import {
   CheckoutSession,
   GIDXDocument,
@@ -3307,11 +3308,46 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({}).strict(),
+    props: z
+      .object({
+        offerId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       sessionId: string
       clientSecret: string
     },
+  },
+  'get-personalized-mana-offers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'activate-personalized-mana-offers': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'release-personalized-mana-offer-lock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ offerId: z.string() }).strict(),
+    returns: {} as { success: boolean },
+  },
+  'dismiss-personalized-mana-offer': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    // Global dismiss: applies to all active offers for the calling user.
+    // dismissed=false un-dismisses them (used by the "show hidden offer(s)"
+    // chip on /checkout).
+    props: z.object({ dismissed: z.boolean() }).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
   },
   'admin-create-charity-giveaway': {
     method: 'POST',

@@ -98,6 +98,7 @@ const mobilePushEnabled: Array<notification_preference> = [
   'prize_drawings',
   'charity_giveaways',
   'all_comments_on_followed_posts',
+  'personalized_mana_offer',
   // TODO: add these
   // 'contract_from_followed_user',
   // 'probability_updates_on_watched_markets',
@@ -163,7 +164,11 @@ const bonuses: NotificationSectionData = {
 }
 const otherBalances: NotificationSectionData = {
   label: 'Other',
-  subscriptionTypes: ['loan_income', 'limit_order_fills'],
+  subscriptionTypes: [
+    'loan_income',
+    'limit_order_fills',
+    'personalized_mana_offer',
+  ],
 }
 const userInteractions: NotificationSectionData = {
   label: 'Users',
