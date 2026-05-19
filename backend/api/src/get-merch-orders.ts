@@ -3,7 +3,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 import { convertShopOrder } from 'common/shop/types'
 
-// Map dateRange prop -> Postgres interval. 'all' returns null (no filter).
+// Map dateRange prop -> Postgres interval string ('1 week', '3 months', ...).
+// 'all' returns null which the SQL treats as "no date filter".
 const dateRangeToInterval = (
   dateRange: 'all' | 'week' | 'month' | '3-months' | '6-months' | 'year'
 ): string | null => {
@@ -33,30 +34,30 @@ export const getMerchOrders: APIHandler<'get-merch-orders'> = async (
 
   const pg = createSupabaseDirectClient()
 
+  // Passed as a bind parameter and cast to `interval` server-side. When
+  // dateRange = 'all' the interval is null, so the cast is null and the
+  // `IS NULL` arm of the OR short-circuits the date filter without
+  // branching the query string. No user-supplied SQL anywhere in the path.
   const interval = dateRangeToInterval(dateRange)
-  // The `interval` value comes from a fixed enum mapping — no user-supplied
-  // SQL ever reaches this string, so interpolation is safe.
-  const dateClause = interval
-    ? `and so.created_time >= now() - interval '${interval}'`
-    : ''
-  const dateClauseNoPrefix = interval
-    ? `and created_time >= now() - interval '${interval}'`
-    : ''
 
   const [orders, countResult] = await Promise.all([
     pg.manyOrNone(
       `SELECT so.*, u.username, u.name as display_name
-       FROM shop_orders so
-       JOIN users u ON u.id = so.user_id
-       WHERE so.item_id LIKE 'merch-%'
-       ${dateClause}
-       ORDER BY so.created_time DESC
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
+         FROM shop_orders so
+         JOIN users u ON u.id = so.user_id
+        WHERE so.item_id LIKE 'merch-%'
+          AND ($3::interval IS NULL
+               OR so.created_time >= now() - $3::interval)
+        ORDER BY so.created_time DESC
+        LIMIT $1 OFFSET $2`,
+      [limit, offset, interval]
     ),
     pg.one(
       `SELECT count(*)::int as total FROM shop_orders
-       WHERE item_id LIKE 'merch-%' ${dateClauseNoPrefix}`
+        WHERE item_id LIKE 'merch-%'
+          AND ($1::interval IS NULL
+               OR created_time >= now() - $1::interval)`,
+      [interval]
     ),
   ])
 
