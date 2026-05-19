@@ -65,11 +65,15 @@ export function PersonalizedOfferCard(props: {
 
   // Standard rate anchor for the savings callout: 100 mana / $1 USD.
   const baseUsd = Math.round(manaAmount / 100)
-  const cryptoSavingsPct = Math.round(((baseUsd - priceUsdCrypto) / baseUsd) * 100)
-  const stripeSavingsPct = Math.round(((baseUsd - priceUsdStripe) / baseUsd) * 100)
+  const cryptoSavingsPct = Math.round(
+    ((baseUsd - priceUsdCrypto) / baseUsd) * 100
+  )
+  const stripeSavingsPct = Math.round(
+    ((baseUsd - priceUsdStripe) / baseUsd) * 100
+  )
 
   return (
-    <div className="animate-offer-card-in relative overflow-hidden rounded-xl border-2 border-orange-400 bg-canvas-0 shadow-lg ring-2 ring-amber-200/60 dark:border-orange-500 dark:ring-amber-800/40">
+    <div className="animate-offer-card-in bg-canvas-0 relative overflow-hidden rounded-xl border-2 border-orange-400 shadow-lg ring-2 ring-amber-200/60 dark:border-orange-500 dark:ring-amber-800/40">
       {/* Header strip — the entire strip is the dismiss button so the
           clickable surface matches the HiddenOfferChip when collapsed. Falls
           back to a non-interactive div in the override path (notification
@@ -93,7 +97,9 @@ export function PersonalizedOfferCard(props: {
                 <span className="text-amber-100/80">·</span>
               </>
             )}
-            <span className="tabular-nums">{formatHmsRemaining(remaining)}</span>
+            <span className="tabular-nums">
+              {formatHmsRemaining(remaining)}
+            </span>
             <XIcon className="h-4 w-4 opacity-80" aria-hidden="true" />
           </Row>
         </button>
@@ -109,7 +115,9 @@ export function PersonalizedOfferCard(props: {
                 <span className="text-amber-100/80">·</span>
               </>
             )}
-            <span className="tabular-nums">{formatHmsRemaining(remaining)}</span>
+            <span className="tabular-nums">
+              {formatHmsRemaining(remaining)}
+            </span>
           </Row>
         </div>
       )}
@@ -150,7 +158,7 @@ export function PersonalizedOfferCard(props: {
               'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
             )}
           >
-            <span className="pointer-events-none absolute -top-3 -right-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
+            <span className="pointer-events-none absolute -right-3 -top-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
               −{cryptoSavingsPct}%
             </span>
             <Row className="items-center justify-center gap-2">
@@ -165,10 +173,12 @@ export function PersonalizedOfferCard(props: {
                   <span>
                     Claim with crypto{' '}
                     <span className="whitespace-nowrap">
-                      <span className="text-xl font-bold opacity-60 line-through">
+                      <span className="text-xl font-bold line-through opacity-60">
                         ${baseUsd}
                       </span>{' '}
-                      <span className="text-xl font-bold">${priceUsdCrypto}</span>
+                      <span className="text-xl font-bold">
+                        ${priceUsdCrypto}
+                      </span>
                     </span>
                   </span>
                 </>
@@ -185,11 +195,11 @@ export function PersonalizedOfferCard(props: {
               'px-4 py-4 text-base font-semibold shadow-sm transition-all sm:px-8 sm:text-lg',
               'active:scale-[0.98]',
               creditCardDisabled
-                ? 'border-ink-300 bg-canvas-50 text-ink-500 cursor-not-allowed dark:bg-canvas-100'
+                ? 'border-ink-300 bg-canvas-50 text-ink-500 dark:bg-canvas-100 cursor-not-allowed'
                 : 'bg-canvas-0 border-orange-500 text-orange-700 hover:bg-orange-50 dark:border-amber-400 dark:text-amber-300 dark:hover:bg-amber-950/30'
             )}
           >
-            <span className="pointer-events-none absolute -top-3 -right-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
+            <span className="pointer-events-none absolute -right-3 -top-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
               −{stripeSavingsPct}%
             </span>
             <Row className="items-center justify-center gap-2">
@@ -201,7 +211,7 @@ export function PersonalizedOfferCard(props: {
                     same viewport width instead of one wrapping alone. */}
                 <span className="invisible">m</span>Claim with card{' '}
                 <span className="whitespace-nowrap">
-                  <span className="text-xl font-bold opacity-60 line-through">
+                  <span className="text-xl font-bold line-through opacity-60">
                     ${baseUsd}
                   </span>{' '}
                   <span className="text-xl font-bold">${priceUsdStripe}</span>

@@ -66,9 +66,7 @@ export function HiddenOfferChip(props: {
         <Row className="items-center gap-2">
           <SparklesIcon className="h-4 w-4 shrink-0 text-amber-500" />
           <span className="text-sm font-semibold text-orange-700 dark:text-amber-300">
-            {count === 1
-              ? '1 offer hidden'
-              : `${count} offers hidden`}
+            {count === 1 ? '1 offer hidden' : `${count} offers hidden`}
             <span className="text-ink-600 ml-1.5 font-normal tabular-nums">
               · {formatRemaining(remaining)}
             </span>

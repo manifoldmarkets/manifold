@@ -79,7 +79,9 @@ export function AddFundsOfferBadge(props: {
   return (
     <span
       className={positionClasses}
-      title={`${activeCount} mana sale offer${activeCount === 1 ? '' : 's'} available`}
+      title={`${activeCount} mana sale offer${
+        activeCount === 1 ? '' : 's'
+      } available`}
     >
       <span
         className={clsx(

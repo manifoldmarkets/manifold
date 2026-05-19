@@ -343,9 +343,7 @@ function CheckoutContent() {
   // out entirely, naturally hiding the offer UI).
   const showOfferCard = effectiveActiveCount > 0
   const showHiddenChip =
-    !showOfferCard &&
-    offers.dismissedCount > 0 &&
-    offers.activeCount === 0
+    !showOfferCard && offers.dismissedCount > 0 && offers.activeCount === 0
 
   return (
     <Col className="mx-auto w-full max-w-xl gap-4 px-4 py-6 sm:py-8">
@@ -427,9 +425,11 @@ function CheckoutContent() {
                   isOverrideOnly
                     ? undefined
                     : () => {
-                        offers.setDismissed(true).catch((e) =>
-                          console.error('Failed to dismiss offer:', e)
-                        )
+                        offers
+                          .setDismissed(true)
+                          .catch((e) =>
+                            console.error('Failed to dismiss offer:', e)
+                          )
                       }
                 }
                 dismissDisabled={offers.dismissPending}
@@ -440,9 +440,11 @@ function CheckoutContent() {
                 expiresAt={offers.dismissedNextExpiresAt}
                 disabled={offers.dismissPending}
                 onClick={() => {
-                  offers.setDismissed(false).catch((e) =>
-                    console.error('Failed to un-dismiss offer:', e)
-                  )
+                  offers
+                    .setDismissed(false)
+                    .catch((e) =>
+                      console.error('Failed to un-dismiss offer:', e)
+                    )
                 }}
               />
             ) : null}
@@ -470,101 +472,104 @@ function CheckoutContent() {
 
                 {/* Payment Buttons */}
                 <Col className="mx-auto w-full max-w-sm gap-3">
-              {!user?.id ? (
-                <button
-                  disabled
-                  className={clsx(
-                    'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                    'cursor-not-allowed bg-gray-400',
-                    'px-8 py-4 text-lg font-semibold text-white shadow-lg'
-                  )}
-                >
-                  <Row className="items-center justify-center gap-3">
-                    <BanIcon className="h-6 w-6" />
-                    <span>Loading account…</span>
-                  </Row>
-                </button>
-              ) : isPurchaseBanned ? (
-                <button
-                  disabled
-                  className={clsx(
-                    'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                    'cursor-not-allowed bg-gray-400',
-                    'px-8 py-4 text-lg font-semibold text-white shadow-lg'
-                  )}
-                >
-                  <Row className="items-center justify-center gap-3">
-                    <BanIcon className="h-6 w-6" />
-                    <span>Purchases Disabled</span>
-                  </Row>
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={() => handleBuyManaClick()}
-                    disabled={
-                      sessionState.status === 'creating' ||
-                      sessionState.status === 'ready'
-                    }
-                    className={clsx(
-                      'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                      'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
-                      'px-8 py-4 text-lg font-semibold text-white shadow-lg',
-                      'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
-                      'active:scale-[0.98]',
-                      'disabled:cursor-not-allowed disabled:opacity-50'
-                    )}
-                  >
-                    <Row className="items-center justify-center gap-3">
-                      {sessionState.status === 'creating' ? (
-                        <>
-                          <LoadingIndicator size="sm" className="!text-white" />
-                          <span>Loading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                          <span>Buy with crypto</span>
-                        </>
-                      )}
-                    </Row>
-                  </button>
-
-                  <Tooltip
-                    text={
-                      canUseCreditCard
-                        ? null
-                        : 'Verify your identity to enable credit card purchases.'
-                    }
-                    placement="bottom"
-                    className="block w-full"
-                  >
+                  {!user?.id ? (
                     <button
-                      onClick={() => {
-                        if (canUseCreditCard) {
-                          setCreditCardModalOpen(true)
-                        } else {
-                          setVerificationModalOpen(true)
-                        }
-                      }}
+                      disabled
                       className={clsx(
-                        'group relative w-full overflow-hidden rounded-xl border-2',
-                        'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
-                        'active:scale-[0.98]',
-                        canUseCreditCard
-                          ? 'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
-                          : 'border-ink-300 bg-canvas-50 text-ink-500 dark:bg-canvas-100'
+                        'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
+                        'cursor-not-allowed bg-gray-400',
+                        'px-8 py-4 text-lg font-semibold text-white shadow-lg'
                       )}
                     >
                       <Row className="items-center justify-center gap-3">
-                        <FaCreditCard className="h-5 w-5 transition-transform group-hover:scale-110" />
-                        <span>Buy with credit card</span>
+                        <BanIcon className="h-6 w-6" />
+                        <span>Loading account…</span>
                       </Row>
                     </button>
-                  </Tooltip>
-                </>
-              )}
-            </Col>
+                  ) : isPurchaseBanned ? (
+                    <button
+                      disabled
+                      className={clsx(
+                        'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
+                        'cursor-not-allowed bg-gray-400',
+                        'px-8 py-4 text-lg font-semibold text-white shadow-lg'
+                      )}
+                    >
+                      <Row className="items-center justify-center gap-3">
+                        <BanIcon className="h-6 w-6" />
+                        <span>Purchases Disabled</span>
+                      </Row>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleBuyManaClick()}
+                        disabled={
+                          sessionState.status === 'creating' ||
+                          sessionState.status === 'ready'
+                        }
+                        className={clsx(
+                          'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
+                          'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
+                          'px-8 py-4 text-lg font-semibold text-white shadow-lg',
+                          'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
+                          'active:scale-[0.98]',
+                          'disabled:cursor-not-allowed disabled:opacity-50'
+                        )}
+                      >
+                        <Row className="items-center justify-center gap-3">
+                          {sessionState.status === 'creating' ? (
+                            <>
+                              <LoadingIndicator
+                                size="sm"
+                                className="!text-white"
+                              />
+                              <span>Loading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                              <span>Buy with crypto</span>
+                            </>
+                          )}
+                        </Row>
+                      </button>
+
+                      <Tooltip
+                        text={
+                          canUseCreditCard
+                            ? null
+                            : 'Verify your identity to enable credit card purchases.'
+                        }
+                        placement="bottom"
+                        className="block w-full"
+                      >
+                        <button
+                          onClick={() => {
+                            if (canUseCreditCard) {
+                              setCreditCardModalOpen(true)
+                            } else {
+                              setVerificationModalOpen(true)
+                            }
+                          }}
+                          className={clsx(
+                            'group relative w-full overflow-hidden rounded-xl border-2',
+                            'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
+                            'active:scale-[0.98]',
+                            canUseCreditCard
+                              ? 'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
+                              : 'border-ink-300 bg-canvas-50 text-ink-500 dark:bg-canvas-100'
+                          )}
+                        >
+                          <Row className="items-center justify-center gap-3">
+                            <FaCreditCard className="h-5 w-5 transition-transform group-hover:scale-110" />
+                            <span>Buy with credit card</span>
+                          </Row>
+                        </button>
+                      </Tooltip>
+                    </>
+                  )}
+                </Col>
               </>
             )}
 
@@ -593,40 +598,42 @@ function CheckoutContent() {
               <>
                 {/* Promotional Banner */}
                 {isFirstCryptoPurchase ? (
-              <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 dark:border-amber-700/50 dark:from-amber-950/30 dark:to-yellow-950/30">
-                <Row className="items-center gap-2">
-                  <SparklesIcon className="h-5 w-5 text-amber-500" />
-                  <span className="font-semibold text-amber-700 dark:text-amber-400">
-                    First Crypto Purchase Bonus: Get up to 20% extra mana!
-                  </span>
-                </Row>
-                <p className="text-ink-600 mt-1 text-sm">
-                  As a first-time crypto buyer, you'll receive a 10% bonus on
-                  your purchase — plus an additional 10% on orders of $
-                  {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more.
-                  Bonuses apply to crypto purchases only.
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 dark:border-purple-700/50 dark:from-purple-950/30 dark:to-indigo-950/30">
-                <Row className="items-center gap-2">
-                  <GiftIcon className="h-5 w-5 text-purple-500" />
-                  <span className="font-semibold text-purple-700 dark:text-purple-400">
-                    Crypto Bulk Bonus: 10% extra on $
-                    {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ crypto
-                    purchases
-                  </span>
-                </Row>
-                <p className="text-ink-600 mt-1 text-sm">
-                  Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}{' '}
-                  USDC or more and receive a 10% bonus. Credit card purchases
-                  are not eligible for bonuses.
-                </p>
-              </div>
-            )}
+                  <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 dark:border-amber-700/50 dark:from-amber-950/30 dark:to-yellow-950/30">
+                    <Row className="items-center gap-2">
+                      <SparklesIcon className="h-5 w-5 text-amber-500" />
+                      <span className="font-semibold text-amber-700 dark:text-amber-400">
+                        First Crypto Purchase Bonus: Get up to 20% extra mana!
+                      </span>
+                    </Row>
+                    <p className="text-ink-600 mt-1 text-sm">
+                      As a first-time crypto buyer, you'll receive a 10% bonus
+                      on your purchase — plus an additional 10% on orders of $
+                      {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more.
+                      Bonuses apply to crypto purchases only.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 dark:border-purple-700/50 dark:from-purple-950/30 dark:to-indigo-950/30">
+                    <Row className="items-center gap-2">
+                      <GiftIcon className="h-5 w-5 text-purple-500" />
+                      <span className="font-semibold text-purple-700 dark:text-purple-400">
+                        Crypto Bulk Bonus: 10% extra on $
+                        {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ crypto
+                        purchases
+                      </span>
+                    </Row>
+                    <p className="text-ink-600 mt-1 text-sm">
+                      Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}{' '}
+                      USDC or more and receive a 10% bonus. Credit card
+                      purchases are not eligible for bonuses.
+                    </p>
+                  </div>
+                )}
 
                 {/* Mana rewards table */}
-                <ManaRewardsTable isFirstCryptoPurchase={isFirstCryptoPurchase} />
+                <ManaRewardsTable
+                  isFirstCryptoPurchase={isFirstCryptoPurchase}
+                />
               </>
             )}
           </Col>
