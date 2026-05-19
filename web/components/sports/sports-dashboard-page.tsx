@@ -83,6 +83,28 @@ function todayDateLabel(): string {
   return formatDateLabel(Date.now())
 }
 
+function CommunityEmptyState() {
+  return (
+    <Col className="items-center gap-4 py-20">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        strokeWidth=".6"
+        stroke="currentColor"
+        className="text-ink-200 h-16 w-16"
+      >
+        <path
+          d="M5.24854 17.0952L18.7175 6.80301L14.3444 20M5.24854 17.0952L9.79649 18.5476M5.24854 17.0952L4.27398 6.52755M14.3444 20L9.79649 18.5476M14.3444 20L22 12.638L16.3935 13.8147M9.79649 18.5476L12.3953 15.0668M4.27398 6.52755L10.0714 13.389M4.27398 6.52755L2 9.0818L4.47389 8.85643M12.9451 11.1603L10.971 5L8.65369 11.6611"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <p className="text-ink-300 text-sm">No markets yet</p>
+    </Col>
+  )
+}
+
 function parseAnswerText(text: string): { flag: string; name: string } {
   const chars = [...text.trim()]
   if (
@@ -133,6 +155,10 @@ function toSportsMatch(m: ApiMarket): SportsMatch | null {
     status: resolved ? 'resolved' : 'upcoming',
     winner,
     marketUrl: m.url,
+    contractId: m.id,
+    teamAAnswerId: m.answers[0].id,
+    teamBAnswerId: m.answers[1].id,
+    drawAnswerId: drawAnswer?.id,
   }
 }
 
@@ -447,11 +473,7 @@ function CommunityTab({
   if (dashboard === undefined) return <LoadingIndicator />
 
   if (dashboard === null && !isAdmin) {
-    return (
-      <Col className="items-center gap-3 py-16">
-        <p className="text-ink-400 text-sm">No community markets yet.</p>
-      </Col>
-    )
+    return <CommunityEmptyState />
   }
 
   const sortLabels: { key: SortKey; label: string }[] = [
@@ -511,9 +533,7 @@ function CommunityTab({
 
       {/* Open markets */}
       {dashboard !== null && sortedOpen.length === 0 && recentResolved.length === 0 && pastResolved.length === 0 && (
-        <Col className="items-center gap-2 py-12">
-          <p className="text-ink-400 text-sm">No community markets yet.</p>
-        </Col>
+        <CommunityEmptyState />
       )}
 
       {dashboard !== null && (
@@ -593,7 +613,17 @@ function CommunityTab({
               </Row>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {recentResolved.map((contract) => (
-                  <CommunityMarketCard key={contract.id} contract={contract} />
+                  <div key={contract.id} className="relative flex flex-col">
+                    {isAdmin && editMode && (
+                      <button
+                        onClick={() => handleRemove(contract)}
+                        className="absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600 hover:bg-red-100 hover:text-red-600 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    <CommunityMarketCard contract={contract} />
+                  </div>
                 ))}
               </div>
             </Col>
@@ -607,13 +637,23 @@ function CommunityTab({
                   onClick={() => setPastVisible((v) => !v)}
                   className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
                 >
-                  {pastVisible ? 'hide' : 'show'}
+                  {pastVisible ? 'hide' : `show (${pastResolved.length})`}
                 </button>
               </Row>
               {pastVisible && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {pastResolved.map((contract) => (
-                    <CommunityMarketCard key={contract.id} contract={contract} />
+                    <div key={contract.id} className="relative flex flex-col">
+                      {isAdmin && editMode && (
+                        <button
+                          onClick={() => handleRemove(contract)}
+                          className="absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600 hover:bg-red-100 hover:text-red-600 transition-colors"
+                        >
+                          ✕
+                        </button>
+                      )}
+                      <CommunityMarketCard contract={contract} />
+                    </div>
                   ))}
                 </div>
               )}
@@ -655,10 +695,14 @@ export function SportsDashboardPage({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pastVisible, setPastVisible] = useState(false)
-  const [activeTab, setActiveTab] = useState<'official' | 'community'>(
-    router.query.tab === 'community' ? 'community' : 'official'
-  )
+  const [activeTab, setActiveTab] = useState<'official' | 'community'>('official')
   const [communityCount, setCommunityCount] = useState<number | undefined>(undefined)
+
+  useEffect(() => {
+    if (router.isReady) {
+      setActiveTab(router.query.tab === 'community' ? 'community' : 'official')
+    }
+  }, [router.isReady, router.query.tab])
 
   function handleTabChange(tab: 'official' | 'community') {
     setActiveTab(tab)

@@ -201,6 +201,7 @@ import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
 import { sportsMarkets } from './sports-markets'
 import { adminSportsResolve } from './admin-sports-resolve'
+import { sportsLiveScores } from './sports-live-scores'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
 import { getSweepstakesList } from './get-sweepstakes-list'
@@ -544,6 +545,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-create-markets': adminSportsCreateMarkets,
   'sports-markets': sportsMarkets,
   'admin-sports-resolve': adminSportsResolve,
+  'sports-live-scores': sportsLiveScores,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,
   'get-predictle-percentile': getPredictlePercentile,

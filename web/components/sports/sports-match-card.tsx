@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { SportsBetPanel } from './sports-bet-panel'
 
 export type MatchOutcome = 'teamA' | 'teamB' | 'draw'
 
@@ -35,7 +37,20 @@ export type SportsMatch = {
   winner?: MatchOutcome
   marketUrl?: string
   finalScore?: { home: number; away: number }
+  liveScore?: { home: number; away: number; minute: string }
+  contractId?: string
+  teamAAnswerId?: string
+  teamBAnswerId?: string
+  drawAnswerId?: string
 }
+
+/* STASHED: MatchBetPanel (replaced by SportsBetPanel in sports-bet-panel.tsx)
+function MatchBetPanel({ match, initialOutcome, onClose }) {
+  const [selected, setSelected] = useState<MatchOutcome>(...)
+  const [amount, setAmount] = useState(10)
+  ...outcome toggle, amount input, stats, cancel + buy button (mock, not wired to API)
+}
+*/
 
 function OutcomeRow({
   flag,
@@ -128,23 +143,19 @@ function OutcomeRow({
           </span>
         )
       ) : (
-        <div className="flex flex-col items-end gap-1">
-          <div className="bg-ink-200 h-0.5 w-14 rounded-full">
-            <div className={clsx('h-0.5 rounded-full', barColor)} style={{ width: `${prob}%` }} />
-          </div>
-          <span
-            className="text-xs font-medium"
-            style={isWinner && winnerColor ? { color: winnerColor } : undefined}
-          >
-            {prob}%
-          </span>
-        </div>
+        <span
+          className="text-xs font-medium"
+          style={isWinner && winnerColor ? { color: winnerColor } : undefined}
+        >
+          {prob}%
+        </span>
       )}
     </div>
   )
 }
 
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
+  const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const resolved = match.status === 'resolved'
   const now = Date.now()
   const isLive = !resolved && match.closeTimeMs <= now && now - match.closeTimeMs < 2.5 * 60 * 60 * 1000
@@ -161,15 +172,29 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         )}
       >
         <Row className="justify-between">
-          <span className="text-ink-500 text-[11px]">
-            {resolved ? match.closeDateLabel : `Kickoff ${match.closeTime}`}
-          </span>
-          <span
-            className="text-[11px] font-medium"
-            style={{ color: isLive ? '#16a34a' : winnerColor ?? '#6B7280' }}
-          >
-            {resolved ? 'Final' : isLive ? '● Live' : 'Upcoming'}
-          </span>
+          {isLive ? (
+            <span className="text-[11px] font-medium" style={{ color: '#16a34a' }}>
+              {match.liveScore
+                ? `● Live  ${match.liveScore.minute === 'HT' ? 'HT' : `${match.liveScore.minute}'`}`
+                : '● Live'}
+            </span>
+          ) : (
+            <span className="text-ink-500 text-[11px]">
+              {resolved ? match.closeDateLabel : `Kickoff ${match.closeTime}`}
+            </span>
+          )}
+          {isLive && match.liveScore ? (
+            <span className="text-[11px] font-semibold tabular-nums" style={{ color: '#16a34a' }}>
+              {match.liveScore.home} – {match.liveScore.away}
+            </span>
+          ) : (
+            <span
+              className="text-[11px] font-medium"
+              style={{ color: winnerColor ?? '#6B7280' }}
+            >
+              {resolved ? 'Final' : 'Upcoming'}
+            </span>
+          )}
         </Row>
 
         <Col className="gap-1">
@@ -183,7 +208,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.teamA}
             winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
-            onClick={match.marketUrl ? () => window.open(match.marketUrl, '_blank') : undefined}
+            onClick={() => setBetOutcome('teamA')}
           />
           <OutcomeRow
             flag={match.teamB.flag}
@@ -194,7 +219,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.teamB}
             winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
-            onClick={match.marketUrl ? () => window.open(match.marketUrl, '_blank') : undefined}
+            onClick={() => setBetOutcome('teamB')}
           />
           {(match.hasDraw ?? true) && (
             <OutcomeRow
@@ -205,7 +230,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               resolved={resolved}
               teamColor={SPORTS_COLORS.draw}
               winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-              onClick={match.marketUrl ? () => window.open(match.marketUrl, '_blank') : undefined}
+              onClick={() => setBetOutcome('draw')}
             />
           )}
         </Col>
@@ -223,6 +248,14 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           </a>
         </Row>
       </div>
+
+      {betOutcome && (
+        <SportsBetPanel
+          match={match}
+          initialOutcome={betOutcome}
+          onClose={() => setBetOutcome(null)}
+        />
+      )}
     </>
   )
 }

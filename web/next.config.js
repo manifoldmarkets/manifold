@@ -177,11 +177,6 @@ module.exports = {
         permanent: true,
       },
       {
-        source: '/dashboard/:slug',
-        destination: '/news/:slug',
-        permanent: true,
-      },
-      {
         source: '/sports/world-cup',
         destination: '/sports/world-cup-2026',
         permanent: false,

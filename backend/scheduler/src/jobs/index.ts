@@ -57,6 +57,7 @@ import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { resolveSportsMarkets } from './sports-resolve'
+import { createUpcomingSportsMarkets } from './sports-create-markets'
 
 export function createJobs() {
   return [
@@ -320,6 +321,12 @@ export function createJobs() {
       'sports-resolve',
       '0 */15 * * * *', // every 15 minutes
       resolveSportsMarkets
+    ),
+    // Create markets for upcoming matches in the next 7 days (runs daily at 7 AM UTC)
+    createJob(
+      'sports-create-markets',
+      '0 0 7 * * *', // 7 AM UTC daily
+      createUpcomingSportsMarkets
     ),
   ]
 }

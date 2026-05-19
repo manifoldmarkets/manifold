@@ -2,13 +2,22 @@ import { ENV } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
 import {
   createSupabaseDirectClient,
+  pgp,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { anythingToRichText } from 'shared/tiptap'
-import { convertContract } from 'common/supabase/contracts'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { CPMMMultiContract } from 'common/contract'
-import { insert, bulkInsert } from 'shared/supabase/utils'
+import { insert, bulkInsert, bulkInsertQuery } from 'shared/supabase/utils'
+import { answerToRow } from 'shared/supabase/answers'
+import { generateAntes } from 'shared/create-contract-helpers'
+import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { getNewContract } from 'common/new-contract'
+import { getAnte } from 'common/economy'
+import { slugify } from 'common/util/slugify'
+import { randomString } from 'common/util/random'
 import {
   LiquidityTierValue,
   StageLiquidityTiers,
@@ -664,4 +673,187 @@ export async function resolveTournamentMarkets(
   }
 
   return { resolved, skipped, errors, log }
+}
+
+// ─── Market creation ───────────────────────────────────────────────────────────
+
+export interface CreateLogEntry {
+  question: string
+  result: string
+  status: 'created' | 'skipped' | 'error' | 'dry-run'
+}
+
+function isoDateStr(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+export async function createTournamentMarkets(
+  config: TournamentConfig,
+  apiKey: string,
+  opts: { daysAhead?: number; dryRun?: boolean; dashboardUrl?: string } = {}
+): Promise<{ created: number; skipped: number; errors: number; log: CreateLogEntry[] }> {
+  const { daysAhead = 7, dryRun = false, dashboardUrl } = opts
+  const pg = createSupabaseDirectClient()
+  const log: CreateLogEntry[] = []
+
+  const creatorId =
+    ENV === 'DEV'
+      ? config.manifoldSportsUserId.dev
+      : config.manifoldSportsUserId.prod
+
+  if (creatorId.startsWith('TODO_')) {
+    throw new Error(`[sports-create] ${config.footballDataCode}: manifoldSportsUserId not configured`)
+  }
+
+  const creatorUser = await getUser(creatorId)
+  if (!creatorUser) throw new Error(`ManifoldSports user ${creatorId} not found`)
+
+  const groupResult = await ensureOfficialGroup(config, creatorId, pg)
+
+  const dateFrom = isoDateStr(new Date())
+  const dateTo = isoDateStr(new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000))
+
+  await sleep(500)
+  const matches = await fetchAllCompetitionMatches(config, apiKey, {
+    status: 'SCHEDULED',
+    dateFrom,
+    dateTo,
+  })
+
+  let created = 0
+  let skipped = 0
+  let errors = 0
+
+  for (const match of matches) {
+    const { homeTeam, awayTeam } = match
+    const matchLabel = `${homeTeam.name || '?'} vs ${awayTeam.name || '?'}`
+
+    if (!homeTeam.name || !awayTeam.name) {
+      skipped++
+      log.push({ question: matchLabel, result: 'Teams not yet determined', status: 'skipped' })
+      continue
+    }
+
+    const eventId = sportsEventId(match)
+
+    const existing = await pg.oneOrNone<{ id: string }>(
+      `select id from contracts where data->>'sportsEventId' = $1 and token = 'MANA' limit 1`,
+      [eventId]
+    )
+    if (existing) {
+      skipped++
+      log.push({ question: matchLabel, result: 'Market already exists', status: 'skipped' })
+      continue
+    }
+
+    const params = buildMarketParams(match, config, groupResult.id, { dashboardUrl })
+
+    if (dryRun) {
+      created++
+      log.push({ question: params.question, result: 'Would create', status: 'dry-run' })
+      continue
+    }
+
+    try {
+      const ante = getAnte('MULTIPLE_CHOICE', params.answers.length, params.liquidityTier)
+      const proposedSlug = slugify(params.question)
+      const slugExists = await pg.oneOrNone<{ id: string }>(
+        `select id from contracts where slug = $1 limit 1`,
+        [proposedSlug]
+      )
+      const slug = slugExists ? `${proposedSlug}-${randomString(4)}` : proposedSlug
+
+      const description =
+        anythingToRichText({ markdown: params.descriptionMarkdown }) ??
+        anythingToRichText({ raw: '' })!
+
+      const contract = getNewContract({
+        id: randomString(),
+        slug,
+        creator: creatorUser,
+        question: params.question,
+        outcomeType: 'MULTIPLE_CHOICE',
+        description,
+        initialProb: 50,
+        ante,
+        closeTime: params.closeTime,
+        visibility: 'public',
+        isTwitchContract: undefined,
+        token: 'MANA',
+        takerAPIOrdersDisabled: undefined,
+        siblingContractId: undefined,
+        coverImageUrl: undefined,
+        min: 0,
+        max: 0,
+        isLogScale: false,
+        answers: params.answers,
+        addAnswersMode: 'DISABLED',
+        shouldAnswersSumToOne: true,
+        answerShortTexts: params.answerShortTexts,
+        answerImageUrls: params.answerImageUrls.length > 0 ? params.answerImageUrls : undefined,
+        sportsStartTimestamp: params.sportsStartTimestamp,
+        sportsEventId: params.sportsEventId,
+        sportsLeague: params.sportsLeague,
+        unit: undefined,
+        midpoints: undefined,
+        timezone: undefined,
+        voterVisibility: undefined,
+        pollType: undefined,
+        maxSelections: undefined,
+      }) as CPMMMultiContract
+
+      const providerId = creatorId
+
+      const { token, ...contractData } = contract as any
+
+      const insertAnswersQuery = bulkInsertQuery(
+        'answers',
+        contract.answers.map(answerToRow),
+        true
+      )
+      const contractQuery = pgp.as.format(
+        `insert into contracts (id, data, token) values ($1, $2::jsonb, $3)`,
+        [contract.id, JSON.stringify(contractData), token ?? 'MANA']
+      )
+
+      const result = await pg.tx(async (tx) => {
+        const rows = await tx.multi(`${contractQuery}; ${insertAnswersQuery};`)
+        if (rows[1]?.length > 0) {
+          contract.answers = rows[1].map(convertAnswer)
+        }
+        await runTxnOutsideBetQueue(tx, {
+          fromId: providerId,
+          fromType: 'USER',
+          toId: contract.id,
+          toType: 'CONTRACT',
+          amount: ante,
+          token: 'M$',
+          category: 'CREATE_CONTRACT_ANTE',
+        })
+        await generateAntes(tx, providerId, contract, ante, ante)
+        return contract
+      })
+
+      await Promise.allSettled(
+        params.groupIds.map((gId) =>
+          pg.oneOrNone<{ id: string; slug: string }>(
+            `select id, slug from groups where id = $1 limit 1`,
+            [gId]
+          ).then((g) => (g ? addGroupToContract(pg, result, g) : null))
+        )
+      )
+
+      created++
+      log.push({ question: params.question, result: result.id, status: 'created' })
+    } catch (e) {
+      errors++
+      log.push({
+        question: params.question ?? matchLabel,
+        result: e instanceof Error ? e.message : String(e),
+        status: 'error',
+      })
+    }
+  }
+
+  return { created, skipped, errors, log }
 }
