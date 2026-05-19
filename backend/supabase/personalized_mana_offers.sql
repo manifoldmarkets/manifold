@@ -3,6 +3,7 @@ create table if not exists
   personalized_mana_offers (
     activated_at timestamp with time zone,
     created_at timestamp with time zone default now() not null,
+    dismissed_at timestamp with time zone,
     expires_at timestamp with time zone,
     id text primary key default random_alphanumeric (12) not null,
     mana_amount integer default 5000 not null,

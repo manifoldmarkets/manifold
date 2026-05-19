@@ -1,6 +1,7 @@
 'use client'
 import { DaimoModal } from '@daimo/sdk/web'
 import clsx from 'clsx'
+import { useRouter } from 'next/router'
 
 import { isUserBanned } from 'common/ban-utils'
 import { canReceiveBonuses } from 'common/user'
@@ -14,6 +15,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useEffect, useRef, useState } from 'react'
 import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
 import { PersonalizedOfferCard } from 'web/components/checkout/personalized-offer-card'
+import { HiddenOfferChip } from 'web/components/checkout/hidden-offer-chip'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -48,7 +50,15 @@ const MANA_TIERS_USD = [10, 25, 50, 100, 500, 1000, 2500]
 type SessionState =
   | { status: 'idle' }
   | { status: 'creating' }
-  | { status: 'ready'; sessionId: string; clientSecret: string }
+  | {
+      status: 'ready'
+      sessionId: string
+      clientSecret: string
+      // Captured at session creation so the lock release on close uses the
+      // exact offer the lock was taken on — not the live effectiveOfferId,
+      // which can flip to null if the user dismisses during payment.
+      offerId: string | null
+    }
   | { status: 'completed' }
   | { status: 'error'; message: string }
 
@@ -199,6 +209,15 @@ function CheckoutContent() {
   const canUseCreditCard = canPay && isBonusEligible
 
   const offers = usePersonalizedManaOffers()
+  const router = useRouter()
+  // ?showOffer=1 is set by the personalized-offer notification deep link.
+  // When the user has only dismissed offers, this temporarily forces the
+  // card to render so they can still redeem from the notification. Does
+  // NOT mutate dismiss state — if they dismiss again or refresh without
+  // the param, the chip-only view returns.
+  const overrideShowOffer =
+    router.query.showOffer === '1' && offers.dismissedCount > 0
+
   const activatedRef = useRef(false)
   useEffect(() => {
     if (!user?.id || activatedRef.current) return
@@ -209,6 +228,22 @@ function CheckoutContent() {
         .catch((e) => console.error('Offer activation failed:', e))
     }
   }, [user?.id, offers.pendingCount])
+
+  // Two ways the card can be visible: (1) the user has non-dismissed active
+  // offers, (2) override path from the notification when they only have
+  // dismissed-but-active offers. In the override-only case we render the
+  // card using the dismissed bucket's data and hide the X (dismissing again
+  // would just bounce them since the URL still says showOffer=1).
+  const isOverrideOnly = offers.activeCount === 0 && overrideShowOffer
+  const effectiveActiveCount = isOverrideOnly
+    ? offers.dismissedCount
+    : offers.activeCount
+  const effectiveNextExpiresAt = isOverrideOnly
+    ? offers.dismissedNextExpiresAt
+    : offers.nextExpiresAt
+  const effectiveOfferId = isOverrideOnly
+    ? offers.dismissedNextRedeemableOfferId
+    : offers.nextRedeemableOfferId
 
   const handleBuyManaClick = async (offerId?: string) => {
     if (!canPay) return
@@ -224,6 +259,7 @@ function CheckoutContent() {
         status: 'ready',
         sessionId: result.sessionId,
         clientSecret: result.clientSecret,
+        offerId: offerId ?? null,
       })
     } catch (e: unknown) {
       // 409 = another payment session is already in flight for this offer.
@@ -240,7 +276,7 @@ function CheckoutContent() {
   }
 
   const handleOfferStripe = () => {
-    if (!user?.id || !offers.nextRedeemableOfferId) return
+    if (!user?.id || !effectiveOfferId) return
     if (!canUseCreditCard) {
       setVerificationModalOpen(true)
       return
@@ -251,7 +287,7 @@ function CheckoutContent() {
       user.id,
       offers.priceUsdStripe,
       typeof window !== 'undefined' ? window.location.href : '',
-      offers.nextRedeemableOfferId
+      effectiveOfferId
     )
     const form = document.createElement('form')
     form.method = 'POST'
@@ -276,15 +312,22 @@ function CheckoutContent() {
 
   const handleModalClose = () => {
     const wasReady = sessionState.status === 'ready'
+    // Capture the session's offerId BEFORE clearing state — handleModalClose
+    // is called when the Daimo modal closes (abandoned or completed), and
+    // by the time the release fires the user may have dismissed, so
+    // effectiveOfferId could be null. The session-captured value is the
+    // exact lock that was taken.
+    const sessionOfferId =
+      sessionState.status === 'ready' ? sessionState.offerId : null
     if (wasReady) {
       setSessionState({ status: 'idle' })
     }
     // If the user abandoned a personalized-offer session, release the pending
     // lock server-side so they can immediately retry. The 30-minute TTL would
     // catch it eventually, but this is instant.
-    if (wasReady && offers.nextRedeemableOfferId) {
+    if (wasReady && sessionOfferId) {
       api('release-personalized-mana-offer-lock', {
-        offerId: offers.nextRedeemableOfferId,
+        offerId: sessionOfferId,
       }).catch((e) =>
         console.warn('Failed to release personalized offer lock:', e)
       )
@@ -294,31 +337,18 @@ function CheckoutContent() {
     offers.refresh()
   }
 
+  // The offer card and hidden-offer chip nest INSIDE the standard Buy mana
+  // card body, above the mana image. They're only meaningful when we're
+  // showing the normal payment state (success / error states swap the body
+  // out entirely, naturally hiding the offer UI).
+  const showOfferCard = effectiveActiveCount > 0
+  const showHiddenChip =
+    !showOfferCard &&
+    offers.dismissedCount > 0 &&
+    offers.activeCount === 0
+
   return (
     <Col className="mx-auto w-full max-w-xl gap-4 px-4 py-6 sm:py-8">
-      {/* Personalized mana sale card (from a recent merch purchase) */}
-      {offers.activeCount > 0 && (
-        <PersonalizedOfferCard
-          activeCount={offers.activeCount}
-          nextExpiresAt={offers.nextExpiresAt}
-          manaAmount={offers.manaAmount}
-          priceUsdStripe={offers.priceUsdStripe}
-          priceUsdCrypto={offers.priceUsdCrypto}
-          cryptoLoading={
-            sessionState.status === 'creating' ||
-            sessionState.status === 'ready'
-          }
-          cryptoDisabled={!canPay}
-          creditCardDisabled={!canPay}
-          onBuyWithCrypto={() =>
-            handleBuyManaClick(
-              offers.nextRedeemableOfferId ?? undefined
-            )
-          }
-          onBuyWithCreditCard={handleOfferStripe}
-        />
-      )}
-
       {/* Main Payment Card */}
       <div className="bg-canvas-0 overflow-hidden rounded-xl shadow-md">
         {/* Header */}
@@ -372,23 +402,74 @@ function CheckoutContent() {
           </Col>
         ) : (
           <Col className="gap-4 p-6 sm:p-8">
-            {/* Mana Image */}
-            <div className="flex justify-center">
-              <Image
-                src="/buy-mana-graphics/100k.png"
-                alt="Mana coins"
-                width={140}
-                height={140}
-                className="object-contain"
+            {/* Personalized mana sale — nests at the top of the buy area so
+                the standard Buy mana shell stays the visual anchor; offer is
+                a section ON the screen, not a replacement FOR it. Hidden
+                chip takes its place when dismissed. */}
+            {showOfferCard ? (
+              <PersonalizedOfferCard
+                activeCount={effectiveActiveCount}
+                nextExpiresAt={effectiveNextExpiresAt}
+                manaAmount={offers.manaAmount}
+                priceUsdStripe={offers.priceUsdStripe}
+                priceUsdCrypto={offers.priceUsdCrypto}
+                cryptoLoading={
+                  sessionState.status === 'creating' ||
+                  sessionState.status === 'ready'
+                }
+                cryptoDisabled={!canPay}
+                creditCardDisabled={!canPay}
+                onBuyWithCrypto={() =>
+                  handleBuyManaClick(effectiveOfferId ?? undefined)
+                }
+                onBuyWithCreditCard={handleOfferStripe}
+                onDismiss={
+                  isOverrideOnly
+                    ? undefined
+                    : () => {
+                        offers.setDismissed(true).catch((e) =>
+                          console.error('Failed to dismiss offer:', e)
+                        )
+                      }
+                }
+                dismissDisabled={offers.dismissPending}
               />
-            </div>
+            ) : showHiddenChip ? (
+              <HiddenOfferChip
+                count={offers.dismissedCount}
+                expiresAt={offers.dismissedNextExpiresAt}
+                disabled={offers.dismissPending}
+                onClick={() => {
+                  offers.setDismissed(false).catch((e) =>
+                    console.error('Failed to un-dismiss offer:', e)
+                  )
+                }}
+              />
+            ) : null}
 
-            <p className="text-ink-600 text-center text-sm">
-              Pay with USDC from any wallet or chain, or use a credit card
-            </p>
+            {/* When the personalized offer is showing, hide the standard
+                mana image, intro text, and big payment buttons — those are
+                duplicative of what's inside the offer block. Disclaimer
+                still renders below. */}
+            {!showOfferCard && (
+              <>
+                {/* Mana Image */}
+                <div className="flex justify-center">
+                  <Image
+                    src="/buy-mana-graphics/100k.png"
+                    alt="Mana coins"
+                    width={140}
+                    height={140}
+                    className="object-contain"
+                  />
+                </div>
 
-            {/* Payment Buttons */}
-            <Col className="mx-auto w-full max-w-sm gap-3">
+                <p className="text-ink-600 text-center text-sm">
+                  Pay with USDC from any wallet or chain, or use a credit card
+                </p>
+
+                {/* Payment Buttons */}
+                <Col className="mx-auto w-full max-w-sm gap-3">
               {!user?.id ? (
                 <button
                   disabled
@@ -484,6 +565,8 @@ function CheckoutContent() {
                 </>
               )}
             </Col>
+              </>
+            )}
 
             {/* Legal disclaimer */}
             <div className="text-ink-600 rounded-lg bg-amber-50/50 p-4 text-sm dark:bg-amber-950/20">
@@ -504,8 +587,12 @@ function CheckoutContent() {
               </p>
             </div>
 
-            {/* Promotional Banner */}
-            {isFirstCryptoPurchase ? (
+            {/* Hide the bonus banner + rewards table when the personalized
+                offer is showing — keeps the offer block as the focal point. */}
+            {!showOfferCard && (
+              <>
+                {/* Promotional Banner */}
+                {isFirstCryptoPurchase ? (
               <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 dark:border-amber-700/50 dark:from-amber-950/30 dark:to-yellow-950/30">
                 <Row className="items-center gap-2">
                   <SparklesIcon className="h-5 w-5 text-amber-500" />
@@ -538,8 +625,10 @@ function CheckoutContent() {
               </div>
             )}
 
-            {/* Mana rewards table */}
-            <ManaRewardsTable isFirstCryptoPurchase={isFirstCryptoPurchase} />
+                {/* Mana rewards table */}
+                <ManaRewardsTable isFirstCryptoPurchase={isFirstCryptoPurchase} />
+              </>
+            )}
           </Col>
         )}
       </div>

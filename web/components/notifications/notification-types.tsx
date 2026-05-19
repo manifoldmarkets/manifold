@@ -2381,7 +2381,10 @@ function PersonalizedManaOfferNotification(props: {
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       icon={<SparklesIcon className="h-8 w-8 text-amber-500" />}
-      link="/checkout"
+      // ?showOffer=1 forces the offer card to render even if the user has
+      // previously dismissed it — clicking the notification is an explicit
+      // request to view the offer.
+      link="/checkout?showOffer=1"
       subtitle={
         <span className="text-ink-600 text-xs">
           Limited-time discount on a mana bundle — tap to view.

@@ -57,7 +57,7 @@ export const createPersonalizedManaOfferNotification = async (
     sourceUserUsername: MANIFOLD_USER_USERNAME,
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
     sourceText,
-    sourceSlug: '/checkout',
+    sourceSlug: '/checkout?showOffer=1',
     data: {
       offerId,
       reasonPhrase: context.reasonPhrase,
