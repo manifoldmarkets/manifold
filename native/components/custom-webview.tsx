@@ -1,14 +1,8 @@
 import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
 import { log } from 'components/logger'
 import { Splash } from 'components/splash'
-import { RefObject, useState } from 'react'
-import {
-  Platform,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native'
+import { RefObject } from 'react'
+import { Platform, StyleSheet, View } from 'react-native'
 import WebView, { WebViewProps } from 'react-native-webview'
 import {
   WebViewErrorEvent,
@@ -46,95 +40,39 @@ export const CustomWebview = (props: {
     display,
   } = props
 
-  const [refreshing, setRefreshing] = useState(false)
-  const [refresherEnabled, setEnableRefresher] = useState(true)
-  //Code to get scroll position
-  const handleScroll = (event: any) => {
-    const yOffset = Number(event.nativeEvent.contentOffset.y)
-    if (yOffset === 0) {
-      // Top of the page
-      setEnableRefresher(true)
-    } else if (refresherEnabled) {
-      setEnableRefresher(false)
-    }
-  }
-
   return (
     <View
       style={display ? styles.rootVisible : styles.rootHidden}
       pointerEvents={display ? 'auto' : 'none'}
     >
-      {Platform.OS === 'android' ? (
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={[styles.container, { position: 'relative' }]}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              enabled={refresherEnabled}
-              onRefresh={() => {
-                webview.current?.reload()
-                setRefreshing(true)
-              }}
-            />
+      <View style={[styles.container, { position: 'relative' }]}>
+        <WebView
+          {...sharedWebViewProps}
+          style={styles.webView}
+          // Disable pull-to-refresh on Android to prevent unintended page reloads when scrolling
+          pullToRefreshEnabled={isIOS}
+          onLoadEnd={() => {
+            console.log('WebView onLoadEnd for url:', urlToLoad)
+            setHasLoadedWebView(true)
+          }}
+          source={{ uri: urlToLoad }}
+          ref={webview}
+          onError={(e) => handleWebviewError(e, resetWebView)}
+          renderError={(e) => handleRenderError(e)}
+          onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
+          onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
+          onContentProcessDidTerminate={(e) =>
+            handleWebviewKilled(e, resetWebView)
           }
-        >
-          <WebView
-            {...sharedWebViewProps}
-            style={styles.webView}
-            onLoadEnd={() => {
-              console.log('WebView onLoadEnd for url:', urlToLoad)
-              setHasLoadedWebView(true)
-              setRefreshing(false)
-            }}
-            source={{ uri: urlToLoad }}
-            ref={webview}
-            onError={(e) => handleWebviewError(e, resetWebView)}
-            renderError={(e) => handleRenderError(e)}
-            onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
-            onContentProcessDidTerminate={(e) =>
-              handleWebviewKilled(e, resetWebView)
+          onMessage={async (m) => {
+            try {
+              await handleMessageFromWebview(m)
+            } catch (e) {
+              console.log('Error in handleMessageFromWebview', e)
             }
-            onScroll={handleScroll}
-            onMessage={async (m) => {
-              try {
-                await handleMessageFromWebview(m)
-              } catch (e) {
-                console.log('Error in handleMessageFromWebview', e)
-              }
-            }}
-          />
-        </ScrollView>
-      ) : (
-        <View style={[styles.container, { position: 'relative' }]}>
-          <WebView
-            {...sharedWebViewProps}
-            style={styles.webView}
-            onLoadEnd={() => {
-              console.log('WebView onLoadEnd for url:', urlToLoad)
-              setHasLoadedWebView(true)
-              setRefreshing(false)
-            }}
-            source={{ uri: urlToLoad }}
-            ref={webview}
-            onError={(e) => handleWebviewError(e, resetWebView)}
-            renderError={(e) => handleRenderError(e)}
-            onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
-            onContentProcessDidTerminate={(e) =>
-              handleWebviewKilled(e, resetWebView)
-            }
-            onMessage={async (m) => {
-              try {
-                await handleMessageFromWebview(m)
-              } catch (e) {
-                console.log('Error in handleMessageFromWebview', e)
-              }
-            }}
-          />
-        </View>
-      )}
+          }}
+        />
+      </View>
     </View>
   )
 }
@@ -171,7 +109,6 @@ const sharedWebViewProps: WebViewProps = {
   allowsInlineMediaPlayback: true,
   showsHorizontalScrollIndicator: false,
   showsVerticalScrollIndicator: false,
-  pullToRefreshEnabled: true,
   overScrollMode: 'never',
   decelerationRate: 0.998,
   allowsBackForwardNavigationGestures: true,
