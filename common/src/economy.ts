@@ -44,7 +44,12 @@ export const STARTING_BALANCE = 1000
 export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000
 
-export const REFERRAL_AMOUNT = 1_000
+// Referral payout is split: M250 when the referred user places their first bet,
+// M1000 when they complete identity verification.
+export const REFERRAL_BET_BONUS = 250
+export const REFERRAL_VERIFY_BONUS = 1000
+// Total a referrer can earn per referred user across both events.
+export const REFERRAL_AMOUNT = REFERRAL_BET_BONUS + REFERRAL_VERIFY_BONUS
 
 const TRADER_BONUS_PROMO_MULTIPLIER = 2
 const uniqueBettorBonusAmounts = [3, 10, 15, 20].map(

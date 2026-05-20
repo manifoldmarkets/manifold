@@ -5,7 +5,8 @@ import { updateUser } from 'shared/supabase/users'
 import { getUser, log, getContractSupabase } from 'shared/utils'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { STARTING_BALANCE, REFERRAL_AMOUNT } from 'common/economy'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { STARTING_BALANCE, REFERRAL_VERIFY_BONUS } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
 import { canReceiveBonuses } from 'common/user'
 import { createReferralNotification } from 'shared/create-notification'
@@ -281,7 +282,12 @@ export const idenfyCallback = async (req: Request, res: Response) => {
         ? await getContractSupabase(user.referredByContractId)
         : undefined
       
-      const { referralBonusAmount } = await pg.tx(async (tx) => {
+      // SERIALIZABLE isolation + retry: protects the signup-bonus and
+      // referral-verify dedupe SELECTs against concurrent iDenfy webhook
+      // retries (timeouts trigger retries, and the same scanRef can arrive
+      // multiple times). Without this, two concurrent callbacks could both
+      // miss the dedup and double-pay.
+      const { referralBonusAmount } = await runTransactionWithRetries(async (tx) => {
         // Update bonus eligibility
         await updateUser(tx, userId, { bonusEligibility: 'verified' })
         
@@ -309,19 +315,24 @@ export const idenfyCallback = async (req: Request, res: Response) => {
           log(`Paid signup bonus of ${STARTING_BALANCE} to user ${userId} after identity verification`)
         }
         
-        // Pay referral bonus if:
-        // 1. User was referred by someone
+        // Pay the verify portion of the referral bonus if:
+        // 1. User was referred by someone (not themselves)
         // 2. Referrer can receive bonuses (verified or grandfathered)
-        // 3. Referral bonus hasn't already been paid for this user
-        if (referrerId && referrer && canReceiveBonuses(referrer)) {
-          // Check if referral bonus was already paid
+        // 3. Verify bonus hasn't already been paid for this user
+        // The first-bet portion is paid separately in on-create-bet.ts.
+        if (referrerId === userId) {
+          log(`Skipped referral verify bonus - self-referral for ${userId}`)
+        } else if (referrerId && referrer && canReceiveBonuses(referrer)) {
+          // Legacy single-payment REFERRAL txns (data.bonusType IS NULL) already
+          // covered the full bonus, so they block the new verify payout too.
           const existingReferralTxn = await tx.oneOrNone(
             `SELECT 1 FROM txns WHERE to_id = $1
              AND category = 'REFERRAL'
-             AND data->>'referredUserId' = $2`,
+             AND data->'data'->>'referredUserId' = $2
+             AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' = 'verify')`,
             [referrer.id, userId]
           )
-          
+
           if (!existingReferralTxn) {
             // Fetch referrer's supporter entitlements for bonus multiplier
             const supporterEntitlementRows = await tx.manyOrNone(
@@ -332,14 +343,14 @@ export const idenfyCallback = async (req: Request, res: Response) => {
                AND (expires_time IS NULL OR expires_time > NOW())`,
               [referrer.id, SUPPORTER_ENTITLEMENT_IDS]
             )
-            
+
             // Convert to UserEntitlement format for getBenefit
             const entitlements = supporterEntitlementRows.map(convertEntitlement)
-            
+
             // Get tier-specific referral multiplier (1x for non-supporters)
             const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
-            const referralAmount = Math.floor(REFERRAL_AMOUNT * referralMultiplier)
-            
+            const referralAmount = Math.floor(REFERRAL_VERIFY_BONUS * referralMultiplier)
+
             const txnData = {
               fromType: 'BANK',
               toId: referrer.id,
@@ -347,23 +358,24 @@ export const idenfyCallback = async (req: Request, res: Response) => {
               amount: referralAmount,
               token: 'M$',
               category: 'REFERRAL',
-              description: `Referred new user id: ${userId} for ${referralAmount}`,
+              description: `Referral verify bonus for new user ${userId}: ${referralAmount}`,
               data: removeUndefinedProps({
                 referredUserId: userId,
                 referredContractId: referredByContract?.id,
+                bonusType: 'verify',
                 supporterBonus: referralMultiplier > 1,
                 referralMultiplier,
               }),
             } as const
-            
+
             await runTxnFromBank(tx, txnData)
-            log(`Paid referral bonus of ${referralAmount} to referrer ${referrer.id} for verified user ${userId}`)
+            log(`Paid referral verify bonus of ${referralAmount} to referrer ${referrer.id} for verified user ${userId}`)
             return { referralBonusAmount: referralAmount }
           }
         } else if (referrer && !canReceiveBonuses(referrer)) {
-          log(`Skipped referral bonus for referrer ${referrer.id} - not eligible for bonuses`)
+          log(`Skipped referral verify bonus for referrer ${referrer.id} - not eligible for bonuses`)
         }
-        
+
         return { referralBonusAmount: null }
       })
       
@@ -373,7 +385,8 @@ export const idenfyCallback = async (req: Request, res: Response) => {
           referrer.id,
           user,
           referralBonusAmount.toString(),
-          referredByContract ?? undefined
+          referredByContract ?? undefined,
+          'verify'
         )
       }
     }

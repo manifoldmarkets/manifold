@@ -2,6 +2,7 @@ import {
   log,
   revalidateContractStaticProps,
   getContract,
+  getUser,
   getUsers,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
@@ -16,11 +17,13 @@ import {
   createFollowSuggestionNotification,
   createLimitBetCanceledNotification,
   createNewBettorNotification,
+  createReferralNotification,
 } from 'shared/create-notification'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
@@ -29,10 +32,15 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
   MAX_TRADERS_FOR_BIG_BONUS,
+  REFERRAL_BET_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
-import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
+import {
+  BettingStreakBonusTxn,
+  ReferralTxn,
+  UniqueBettorBonusTxn,
+} from 'common/txn'
 import { getBenefit } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -190,6 +198,9 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
         contract,
         pg
       )),
+    !originalBettor.lastBetTime &&
+      originalBettor.referredByUserId &&
+      (await payReferralBetBonus(originalBettor)),
     streakIncremented &&
       (await payBettingStreak(originalBettor, earliestBet, contract)),
     replyBet &&
@@ -206,6 +217,81 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
       ),
     addToLeagueIfNotInOne(pg, originalBettor.id),
   ])
+}
+
+// Pays the referrer the first-bet portion (REFERRAL_BET_BONUS) when the
+// referred user places their very first bet. The remaining verify portion
+// is paid in idenfy/callback.ts when the user completes ID verification.
+const payReferralBetBonus = async (referredUser: User) => {
+  const referrerId = referredUser.referredByUserId
+  if (!referrerId) return
+  if (referrerId === referredUser.id) {
+    log(`Skipped referral first-bet bonus - self-referral for ${referredUser.id}`)
+    return
+  }
+
+  const referrer = await getUser(referrerId)
+  if (!referrer) return
+  if (!canReceiveBonuses(referrer)) {
+    log(
+      `Skipped referral first-bet bonus for referrer ${referrerId} - not eligible for bonuses`
+    )
+    return
+  }
+
+  // SERIALIZABLE isolation + retry: protects the dedupe SELECT against
+  // concurrent first-bet calls (e.g. two tabs, parallel API requests) that
+  // would otherwise both miss the dedup and double-pay. Matches the pattern
+  // used in refer-user.ts and runTransactionWithRetries.
+  const result = await runTransactionWithRetries(async (tx) => {
+    // Dedupe against any prior REFERRAL payout for this referred user:
+    // - legacy single-payment txns (no bonusType) covered the full bonus
+    // - explicit 'first_bet' txns from this code path
+    const existing = await tx.oneOrNone(
+      `SELECT 1 FROM txns WHERE to_id = $1
+       AND category = 'REFERRAL'
+       AND data->'data'->>'referredUserId' = $2
+       AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' = 'first_bet')`,
+      [referrer.id, referredUser.id]
+    )
+    if (existing) return null
+
+    const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
+    const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
+    const amount = Math.floor(REFERRAL_BET_BONUS * referralMultiplier)
+
+    const bonusTxn: Omit<ReferralTxn, 'id' | 'createdTime' | 'fromId'> = {
+      fromType: 'BANK',
+      toId: referrer.id,
+      toType: 'USER',
+      amount,
+      token: 'M$',
+      category: 'REFERRAL',
+      description: `Referral first-bet bonus for new user ${referredUser.id}: ${amount}`,
+      data: {
+        referredUserId: referredUser.id,
+        referredContractId: referredUser.referredByContractId,
+        bonusType: 'first_bet',
+        supporterBonus: referralMultiplier > 1,
+        referralMultiplier,
+      },
+    }
+    await runTxnFromBank(tx, bonusTxn)
+    log(
+      `Paid referral first-bet bonus of ${amount} to ${referrer.id} for ${referredUser.id}`
+    )
+    return amount
+  })
+
+  if (result) {
+    await createReferralNotification(
+      referrer.id,
+      referredUser,
+      result.toString(),
+      undefined,
+      'first_bet'
+    )
+  }
 }
 
 const debounceRevalidateContractStaticProps = (contract: Contract) => {
