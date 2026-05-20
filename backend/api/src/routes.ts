@@ -263,6 +263,7 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
+import { getReferralEarnings } from './get-referral-earnings'
 import { cancelMerchOrder } from './cancel-merch-order'
 import { getMerchOrders } from './get-merch-orders'
 import { getMerchStockStatus } from './get-merch-stock-status'
@@ -490,6 +491,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-concise-title': generateConciseTitle,
   'get-close-date': getCloseDateEndpoint,
   'refer-user': referUser,
+  'get-referral-earnings': getReferralEarnings,
   'create-post-comment': createPostComment,
   'create-post': createPost,
   'update-post': updatePost,

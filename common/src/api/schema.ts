@@ -2901,6 +2901,26 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'get-referral-earnings': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      total: number
+      byReferredUserId: Record<
+        string,
+        {
+          amount: number
+          maxMultiplier: number
+          // Which bonus types this referrer has been paid for this referred
+          // user. 'first_bet'/'verify' are the new split; 'legacy' means a
+          // pre-split single-payment txn exists (treated as fully paid).
+          bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
+        }
+      >
+    },
+  },
 
   'save-market-draft': {
     method: 'POST',

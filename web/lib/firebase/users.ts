@@ -1,10 +1,5 @@
 import { Contract } from 'common/contract'
-import {
-  canReceiveBonuses,
-  MINUTES_ALLOWED_TO_REFER,
-  PrivateUser,
-  User,
-} from 'common/user'
+import { MINUTES_ALLOWED_TO_REFER, PrivateUser, User } from 'common/user'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
@@ -143,8 +138,11 @@ export const isContractBlocked = (
 }
 
 export const canSetReferrer = (user: User) => {
+  // Attribution must happen at signup so the referrer can be paid later when
+  // the referred user bets or verifies. Don't gate on bonus eligibility here:
+  // brand-new users haven't completed iDenfy yet, but we still want to record
+  // who referred them. The bonus payout itself is gated separately.
   if (user.referredByUserId) return false
-  if (!canReceiveBonuses(user)) return false
   const now = dayjs().utc()
   const userCreatedTime = dayjs(user.createdTime)
   return now.diff(userCreatedTime, 'minute') < MINUTES_ALLOWED_TO_REFER
