@@ -149,11 +149,18 @@ export default function SupporterPage() {
         />
       )}
 
-      <Col className="mx-auto max-w-3xl gap-6">
+      <Col className="mx-auto w-full min-w-0 max-w-3xl gap-6">
         {/* Self-hides for verified/grandfathered/ineligible users.
-            Non-dismissible: /membership is a high-intent page where the
-            verify prompt is the whole point — no reason to hide it. */}
-        {user && <VerifyPhoneNumberBanner user={user} dismissible={false} />}
+            Non-dismissible + compact: /membership is a high-intent page
+            where the verify prompt is the whole point — always visible but
+            shouldn't dominate vertical space above the tier comparison. */}
+        {user && (
+          <VerifyPhoneNumberBanner
+            user={user}
+            dismissible={false}
+            compact
+          />
+        )}
 
         {/* Hero Section */}
         <div className="border-ink-200 bg-canvas-0 rounded-xl border p-4">

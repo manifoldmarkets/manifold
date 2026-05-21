@@ -152,7 +152,7 @@ export function BenefitsTable({
                 <>
                   <th
                     className={clsx(
-                      'p-2 text-center text-sm font-medium transition-all duration-200 sm:p-3',
+                      'px-1 py-2 text-center text-xs font-medium transition-all duration-200 sm:p-3 sm:text-sm',
                       isUnverifiedUser &&
                         'border-ink-300 rounded-t-lg border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2',
                       !isUnverifiedUser && 'border-ink-200 border-b'
@@ -162,7 +162,7 @@ export function BenefitsTable({
                   </th>
                   <th
                     className={clsx(
-                      'p-2 text-center text-sm font-medium transition-all duration-200 sm:p-3',
+                      'px-1 py-2 text-center text-xs font-medium transition-all duration-200 sm:p-3 sm:text-sm',
                       isVerifiedUser &&
                         'border-ink-300 rounded-t-lg border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2',
                       !isVerifiedUser && 'border-ink-200 border-b'
@@ -266,7 +266,7 @@ export function BenefitsTable({
                     <>
                       <td
                         className={clsx(
-                          'text-ink-400 p-2 text-center text-sm font-semibold transition-all duration-200 sm:p-3',
+                          'text-ink-400 px-1 py-2 text-center text-xs font-semibold transition-all duration-200 sm:p-3 sm:text-sm',
                           isUnverifiedUser &&
                             'border-ink-300 border-l border-r sm:border-l-2 sm:border-r-2',
                           isUnverifiedUser &&
@@ -281,7 +281,7 @@ export function BenefitsTable({
                       </td>
                       <td
                         className={clsx(
-                          'text-ink-400 p-2 text-center text-sm font-semibold transition-all duration-200 sm:p-3',
+                          'text-ink-400 px-1 py-2 text-center text-xs font-semibold transition-all duration-200 sm:p-3 sm:text-sm',
                           isVerifiedUser &&
                             'border-ink-300 border-l border-r sm:border-l-2 sm:border-r-2',
                           isVerifiedUser &&
