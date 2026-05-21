@@ -90,7 +90,7 @@ export const SUPPORTER_BENEFITS: Record<
     questMultiplier: 1.5,
     referralMultiplier: 1,
     shopDiscount: 0,
-    maxStreakFreezes: 2, // +1 over non-supporter
+    maxStreakFreezes: 5,
     badgeAnimation: false,
     freeLoanRate: 0.01, // 1% (same as free users)
     marginLoanAccess: true,
@@ -100,7 +100,7 @@ export const SUPPORTER_BENEFITS: Record<
     questMultiplier: 2,
     referralMultiplier: 1.5,
     shopDiscount: 0.05,
-    maxStreakFreezes: 3, // +2 over non-supporter
+    maxStreakFreezes: 10,
     badgeAnimation: false,
     freeLoanRate: 0.02, // 2%
     marginLoanAccess: true,
@@ -110,7 +110,7 @@ export const SUPPORTER_BENEFITS: Record<
     questMultiplier: 3,
     referralMultiplier: 2,
     shopDiscount: 0.1,
-    maxStreakFreezes: 10, // +9 over non-supporter
+    maxStreakFreezes: 25,
     badgeAnimation: true,
     freeLoanRate: 0.03, // 3%
     marginLoanAccess: true,
@@ -154,7 +154,9 @@ export function getUserSupporterTier(
 }
 
 // Get specific benefit value for user
-export function getBenefit<K extends keyof (typeof SUPPORTER_BENEFITS)['basic']>(
+export function getBenefit<
+  K extends keyof (typeof SUPPORTER_BENEFITS)['basic']
+>(
   entitlements: UserEntitlement[] | undefined,
   benefit: K,
   defaultValue?: (typeof SUPPORTER_BENEFITS)['basic'][K]
@@ -243,7 +245,6 @@ export function getTierInfo(tier: SupporterTier) {
 export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 
 // Get max streak freezes for a user based on their tier
-// Non-supporters: 1, Plus: 2, Pro: 3, Premium: 5
 export function getMaxStreakFreezes(
   entitlements: UserEntitlement[] | undefined
 ): number {
