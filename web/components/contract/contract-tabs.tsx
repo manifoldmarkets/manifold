@@ -2,13 +2,14 @@ import { useState } from 'react'
 
 import { Answer } from 'common/answer'
 import { DisplayUser } from 'common/api/user-types'
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { BinaryContract, Contract } from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { maybePluralize, shortFormatNumber } from 'common/util/format'
 import { BetsTabContent } from 'web/components/contract/bets-tab-content'
 import { CommentsTabContent } from 'web/components/contract/comments-tab-content'
+import { OpenOrdersTabContent } from 'web/components/contract/open-orders-tab-content'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { track } from 'web/lib/service/analytics'
@@ -32,6 +33,8 @@ export function ContractTabs(props: {
   totalComments: number
   setGraphUser?: (user: DisplayUser | undefined) => void
   setHideGraph?: (hide: boolean) => void
+  unfilledBets: LimitBet[]
+  totalOpenOrders: number
 }) {
   const {
     staticContract,
@@ -47,6 +50,8 @@ export function ContractTabs(props: {
     pinnedComments,
     setGraphUser,
     setHideGraph,
+    unfilledBets,
+    totalOpenOrders,
   } = props
 
   const highlightedCommentId = useHashInUrlPageRouter('')
@@ -66,6 +71,10 @@ export function ContractTabs(props: {
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
     maybePluralize('Holder', totalPositions)
 
+  const openOrdersTitle =
+    (totalOpenOrders > 0 ? `${shortFormatNumber(totalOpenOrders)} ` : '') +
+    maybePluralize('Open Order', totalOpenOrders)
+
   return (
     <ControlledTabs
       labelClassName="!text-base"
@@ -81,6 +90,8 @@ export function ContractTabs(props: {
               ? 'trades'
               : title === positionsTitle
               ? 'positions'
+              : title === openOrdersTitle
+              ? 'open-orders'
               : 'contract'
           } tab`
         )
@@ -118,6 +129,15 @@ export function ContractTabs(props: {
               />
             ),
           },
+        totalOpenOrders > 0 && {
+          title: openOrdersTitle,
+          content: (
+            <OpenOrdersTabContent
+              contract={liveContract}
+              unfilledBets={unfilledBets}
+            />
+          ),
+        },
         totalBets > 0 && {
           title: tradesTitle,
           content: (

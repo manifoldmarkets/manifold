@@ -1,5 +1,5 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
-import { useContractBets } from 'client-common/hooks/use-bets'
+import { useContractBets, useUnfilledBets } from 'client-common/hooks/use-bets'
 import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
@@ -139,6 +139,19 @@ export function ContractPageContent(props: ContractParams) {
     pointsString: pointsString,
     multiPointsString: multiPointsString,
   })
+
+  const unfilledBets =
+    useUnfilledBets(
+      liveContract.id,
+      (params) => api('bets', params),
+      useIsPageVisible
+    ) ?? []
+  const totalOpenOrders = unfilledBets.filter(
+    (b) =>
+      !b.isFilled &&
+      !b.isCancelled &&
+      (!b.expiresAt || b.expiresAt > Date.now())
+  ).length
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } =
     liveContract
@@ -549,6 +562,8 @@ export function ContractPageContent(props: ContractParams) {
                 totalComments={totalComments}
                 setGraphUser={setGraphUser}
                 setHideGraph={setHideGraph}
+                unfilledBets={unfilledBets}
+                totalOpenOrders={totalOpenOrders}
               />
             </div>
             {showExplainerPanel && (
