@@ -18,7 +18,7 @@ export function CreatorBannedFromBettingInfo(props: {
   useEffect(() => {
     // Fetch the creator's metrics for all answers + summary
     db.from('user_contract_metrics')
-      .select('data, margin_loan, loan')
+      .select('data, loan')
       .eq('contract_id', contract.id)
       .eq('user_id', creatorId)
       .then(({ data }) => {
@@ -26,7 +26,7 @@ export function CreatorBannedFromBettingInfo(props: {
           const metrics = data.map((doc) => ({
             ...(doc.data as ContractMetric),
             loan: doc.loan ?? (doc.data as any).loan ?? 0,
-            marginLoan: doc.margin_loan ?? (doc.data as any).marginLoan ?? 0,
+            marginLoan: (doc.data as any).marginLoan ?? 0,
           })) as ContractMetric[]
           setCreatorMetrics(metrics)
         }
