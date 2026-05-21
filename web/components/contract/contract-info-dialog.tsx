@@ -460,7 +460,7 @@ export const Stats = (props: {
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              🚫 Creator self-ban{' '}
+              🚫 Disable creator betting{' '}
               <InfoTooltip
                 text={
                   'Prevent the creator from placing bets on this market. This cannot be undone except by a moderator or admin.'
@@ -469,7 +469,9 @@ export const Stats = (props: {
             </td>
             <td>
               <CheckOrSwitch
-                canToggle={isMod || isCreator}
+                canToggle={
+                  isMod || (isCreator && !contract.creatorBannedFromBetting)
+                }
                 on={contract.creatorBannedFromBetting === true}
                 setOn={(on) => {
                   if (on) {
