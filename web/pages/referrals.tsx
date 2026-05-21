@@ -278,8 +278,14 @@ function ReferralsDisabledBanner({ isDenied }: { isDenied: boolean }) {
               <Link href="/membership" className="font-semibold underline">
                 Manifold Plus
               </Link>{' '}
-              to unlock referral rewards, or contact support if you think this
-              is a mistake.
+              to unlock referral rewards, or email{' '}
+              <a
+                href="mailto:info@manifold.markets"
+                className="font-semibold underline"
+              >
+                info@manifold.markets
+              </a>{' '}
+              if you think this is a mistake.
             </span>
           </Col>
         </Row>

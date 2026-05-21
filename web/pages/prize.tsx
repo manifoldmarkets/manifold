@@ -590,7 +590,7 @@ export default function SweepstakesPage({
             open={showVerificationModal}
             setOpen={setShowVerificationModal}
             user={user}
-            action="receive bonuses"
+            action="enter prize drawings"
           />
         )}
 

@@ -316,7 +316,8 @@ function VerifyToCommentPrompt(props: {
     }
   }
 
-  // Denied (failed KYC) — verification path is closed, surface that explicitly.
+  // Denied (failed KYC) — verification path is closed, surface that explicitly
+  // and point to support so the user has a path forward.
   if (user.bonusEligibility === 'ineligible') {
     return (
       <Col
@@ -325,11 +326,18 @@ function VerifyToCommentPrompt(props: {
           'border-scarlet-300 bg-scarlet-50 mb-2 w-full rounded-lg border p-3'
         )}
       >
-        <Row className="items-center gap-2">
-          <ShieldCheckIcon className="text-scarlet-500 h-5 w-5 shrink-0" />
+        <Row className="items-start gap-2">
+          <ShieldCheckIcon className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
           <span className="text-ink-700 flex-1 text-sm">
             Identity verification was unsuccessful, so commenting on other
-            users' markets is unavailable.
+            users' markets is unavailable. Email{' '}
+            <a
+              href="mailto:info@manifold.markets"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              info@manifold.markets
+            </a>{' '}
+            if you think this is a mistake.
           </span>
         </Row>
       </Col>

@@ -7,6 +7,7 @@ import {
 } from 'common/supporter-config'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { TierBadge } from './tier-badge'
 
 /**
@@ -158,7 +159,13 @@ export function BenefitsTable({
                       !isUnverifiedUser && 'border-ink-200 border-b'
                     )}
                   >
-                    <span className="text-ink-500">Unverified</span>
+                    <Row className="items-center justify-center gap-0.5">
+                      <span className="text-ink-500">Unverified</span>
+                      <InfoTooltip
+                        size="sm"
+                        text="Unverified users receive ~20% of normal bonuses. Referral bonuses are unavailable (require verification). Verify or subscribe to unlock the full amounts."
+                      />
+                    </Row>
                   </th>
                   <th
                     className={clsx(
