@@ -481,6 +481,8 @@ export function ContractPageContent(props: ContractParams) {
                 creatorId={props.contract.creatorId}
                 isSweeps={isCashContract}
                 description={description}
+                creatorBannedFromBetting={liveContract.creatorBannedFromBetting}
+                contract={liveContract}
               />
             )}
             {props.contract.isRanked !== false && (
