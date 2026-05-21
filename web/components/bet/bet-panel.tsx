@@ -120,6 +120,10 @@ export function BuyPanel(
   } = props
 
   const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
   const customYesText = getCustomYesButtonText(user?.entitlements)
   const customNoText = getCustomNoButtonText(user?.entitlements)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -158,7 +162,13 @@ export function BuyPanel(
   }
   return (
     <Col>
-      {!isPanelBodyVisible && (
+      {isCreatorBanned ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+          <span className="font-medium">Betting disabled:</span> You have
+          blocked yourself from betting on this market. Contact a moderator if
+          you need this reversed.
+        </div>
+      ) : !isPanelBodyVisible ? (
         <Col>
           <Row className={clsx('mb-2 w-full items-center gap-2')}>
             <YesNoSelector
@@ -187,8 +197,7 @@ export function BuyPanel(
             />
           </Row>
         </Col>
-      )}
-      {isPanelBodyVisible && (
+      ) : isPanelBodyVisible && !isCreatorBanned ? (
         <BuyPanelBody
           {...props}
           className={clsx('-mx-2 sm:mx-0', className)}
@@ -209,7 +218,7 @@ export function BuyPanel(
         >
           {children}
         </BuyPanelBody>
-      )}
+      ) : null}
     </Col>
   )
 }
@@ -238,6 +247,10 @@ export const BuyPanelBody = (
   } = props
 
   const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
   const customYesText = getCustomYesButtonText(user?.entitlements)
   const customNoText = getCustomNoButtonText(user?.entitlements)
   const privateUser = usePrivateUser()
@@ -584,6 +597,7 @@ export const BuyPanelBody = (
     outcome === undefined ||
     error === 'Insufficient balance' ||
     showLocationMonitor ||
+    isCreatorBanned ||
     (isCashContract && verificationStatus !== 'success')
 
   const limits =
