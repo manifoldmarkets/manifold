@@ -274,16 +274,14 @@ export const Avatar = memo(
           <FireItemDecoration size={size} animate={animateFireItem} />
         )}
         {/* Solid border ring — extracted from the avatar image so wings can
-            sit on top of it (but still behind the avatar photo itself). */}
-        {(isUserFresh ||
-          hasGoldenBorder ||
-          hasBadAura ||
-          hasManaAura ||
-          hasBlackHole) && (
+            sit on top of it (but still behind the avatar photo itself).
+            isUserFresh's ring is applied directly to the image/icon below so
+            it tracks the avatar even when a margin class (e.g. mt-0.5) is
+            passed in via className and offsets the image inside the wrapper. */}
+        {(hasGoldenBorder || hasBadAura || hasManaAura || hasBlackHole) && (
           <div
             className={clsx(
               'pointer-events-none absolute inset-0 rounded-full',
-              isUserFresh && 'ring-1 ring-green-500',
               hasGoldenBorder && 'ring-2 ring-amber-400',
               hasBadAura && 'ring-2 ring-red-500',
               hasManaAura && 'ring-2 ring-violet-400',
@@ -323,6 +321,7 @@ export const Avatar = memo(
               'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
               `w-${s} h-${s}`,
               !noLink && 'cursor-pointer',
+              isUserFresh && 'ring-1 ring-green-500',
               className
             )}
             style={{
@@ -343,6 +342,7 @@ export const Avatar = memo(
           <UserCircleIcon
             className={clsx(
               `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
+              isUserFresh && 'ring-1 ring-green-500',
               className
             )}
             style={{ position: 'relative', zIndex: 0 }}
