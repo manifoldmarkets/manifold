@@ -51,8 +51,14 @@ export const BalanceChangeTable = (props: { user: User }) => {
   const [before, setBefore] = useState<number | undefined>(undefined)
   const [after, setAfter] = useState<number | undefined>(undefined)
   const [showDateFilters, setShowDateFilters] = useState(false)
-  const pageOffset = page * BALANCE_CHANGES_PER_PAGE
-  const pageLimit = BALANCE_CHANGES_PER_PAGE + 1
+
+  const [query, setQuery] = useState('')
+
+  // When a text query is active, fetch all results (no pagination) so the
+  // client-side filter sees everything, not just the current page.
+  const isSearching = query.trim().length > 0
+  const pageOffset = isSearching ? 0 : page * BALANCE_CHANGES_PER_PAGE
+  const pageLimit = isSearching ? 1000 : BALANCE_CHANGES_PER_PAGE + 1
 
   const { data: allBalanceChanges, loading } = useAPIGetter(
     'get-balance-changes',
@@ -70,7 +76,7 @@ export const BalanceChangeTable = (props: { user: User }) => {
   )
   const { data: previousBalanceChangesData } = useAPIGetter(
     'get-balance-changes',
-    page === 0
+    page === 0 || isSearching
       ? undefined
       : {
           userId: user.id,
@@ -82,10 +88,8 @@ export const BalanceChangeTable = (props: { user: User }) => {
     `balance-changes-${user.id}-previous-${pageOffset}-${before ?? 'none'}-${
       after ?? 'none'
     }`,
-    page > 0
+    page > 0 && !isSearching
   )
-
-  const [query, setQuery] = useState('')
 
   useEffect(() => {
     setPage(0)
@@ -95,12 +99,11 @@ export const BalanceChangeTable = (props: { user: User }) => {
   })
   const [showCashoutModal, setShowCashoutModal] = useState(false)
   const previousBalanceChanges = previousBalanceChangesData ?? []
-  const currentPageBalanceChanges = (allBalanceChanges ?? []).slice(
-    0,
-    BALANCE_CHANGES_PER_PAGE
-  )
+  const currentPageBalanceChanges = isSearching
+    ? allBalanceChanges ?? []
+    : (allBalanceChanges ?? []).slice(0, BALANCE_CHANGES_PER_PAGE)
   const hasNextPage =
-    (allBalanceChanges?.length ?? 0) > BALANCE_CHANGES_PER_PAGE
+    !isSearching && (allBalanceChanges?.length ?? 0) > BALANCE_CHANGES_PER_PAGE
   const balanceChanges = currentPageBalanceChanges.filter((change) => {
     const { type } = change
     const contractQuestion =
@@ -232,9 +235,13 @@ export const BalanceChangeTable = (props: { user: User }) => {
 
       <span className="text-ink-700 text-sm">
         {balanceChanges.length > 0
-          ? `Showing ${page * BALANCE_CHANGES_PER_PAGE + 1}–${
-              page * BALANCE_CHANGES_PER_PAGE + balanceChanges.length
-            }`
+          ? isSearching
+            ? `Showing ${balanceChanges.length} result${
+                balanceChanges.length === 1 ? '' : 's'
+              }`
+            : `Showing ${page * BALANCE_CHANGES_PER_PAGE + 1}–${
+                page * BALANCE_CHANGES_PER_PAGE + balanceChanges.length
+              }`
           : loading
           ? 'Loading balance changes…'
           : 'No balance changes found'}
