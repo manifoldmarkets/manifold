@@ -55,6 +55,12 @@ export const rebalancePosition: APIHandler<
   if (contract.closeTime && Date.now() > contract.closeTime) {
     throw new APIError(403, 'Trading is closed.')
   }
+  if (contract.creatorBannedFromBetting && userId === contract.creatorId) {
+    throw new APIError(
+      403,
+      'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
+    )
+  }
 
   const { result } = await betsQueue.enqueueFn(
     () => rebalanceInTransaction(pg, userId, contract as MarketContract),

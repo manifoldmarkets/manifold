@@ -36,6 +36,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       display,
       homePageScoreAdjustment,
       homePageScoreAdjustmentDays,
+      creatorBannedFromBetting,
 
       description: raw,
       descriptionHtml: html,
@@ -86,6 +87,32 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       }
     }
 
+    if (creatorBannedFromBetting !== undefined) {
+      // Only the creator or a mod/admin can set this flag
+      if (
+        contract.creatorId !== auth.uid &&
+        !isAdminId(auth.uid) &&
+        !isModId(auth.uid)
+      ) {
+        throw new APIError(
+          403,
+          'Only the creator or a moderator can set the creator betting ban'
+        )
+      }
+      // Only a mod/admin can unset it
+      if (
+        !creatorBannedFromBetting &&
+        contract.creatorId === auth.uid &&
+        !isAdminId(auth.uid) &&
+        !isModId(auth.uid)
+      ) {
+        throw new APIError(
+          403,
+          'Only a moderator or admin can reverse the creator betting ban'
+        )
+      }
+    }
+
     if (contract.isResolved && closeTime !== undefined) {
       throw new APIError(403, 'Cannot update closeTime for resolved contracts')
     }
@@ -112,6 +139,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       sort,
       description,
       display,
+      creatorBannedFromBetting,
       lastUpdatedTime: Date.now(),
     })
     await updateContract(pg, contractId, {
@@ -135,6 +163,33 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       })
     }
 
+    // Cancel creator's open limit orders when banning from betting
+    if (creatorBannedFromBetting === true) {
+      const { convertBet } = await import('common/supabase/bets')
+      const { cancelLimitOrdersQuery } = await import('shared/supabase/bets')
+      const { broadcastOrders } = await import('shared/websockets/helpers')
+      const creatorLimitOrders = await pg.map(
+        `select * from contract_bets
+         where contract_id = $1
+           and user_id = $2
+           and not is_filled
+           and not is_cancelled
+           and (expires_at is null or expires_at > now())`,
+        [contractId, contract.creatorId],
+        convertBet
+      )
+      if (creatorLimitOrders.length > 0) {
+        const { query, bets } = cancelLimitOrdersQuery(
+          creatorLimitOrders as any[]
+        )
+        await pg.none(query)
+        broadcastOrders(bets)
+        log(
+          `Cancelled ${creatorLimitOrders.length} limit orders for creator ${contract.creatorId} on contract ${contractId}`
+        )
+      }
+    }
+
     log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
     return {
@@ -150,7 +205,8 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
           description,
           isUpdatingHomePageScoreAdjustment,
           homePageScoreAdjustment,
-          homePageScoreAdjustmentExpiresAt ?? undefined
+          homePageScoreAdjustmentExpiresAt ?? undefined,
+          creatorBannedFromBetting
         ),
     }
   })
@@ -166,7 +222,8 @@ export const updateMarketContinuation = async (
   description: JSONContent | undefined,
   isUpdatingHomePageScoreAdjustment: boolean,
   homePageScoreAdjustment: number | null | undefined,
-  homePageScoreAdjustmentExpiresAt: number | undefined
+  homePageScoreAdjustmentExpiresAt: number | undefined,
+  creatorBannedFromBetting: boolean | undefined
 ) => {
   log(`Revalidating contract ${contract.id}.`)
   await revalidateContractStaticProps(contract)
@@ -194,7 +251,13 @@ export const updateMarketContinuation = async (
       })
     )
   }
-  if (question || closeTime || visibility || description) {
+  if (
+    question ||
+    closeTime ||
+    visibility ||
+    description ||
+    creatorBannedFromBetting !== undefined
+  ) {
     await recordContractEdit(
       contract,
       userId,
@@ -203,6 +266,7 @@ export const updateMarketContinuation = async (
         closeTime && 'closeTime',
         visibility && 'visibility',
         description && 'description',
+        creatorBannedFromBetting !== undefined && 'creatorBannedFromBetting',
       ])
     )
   }
