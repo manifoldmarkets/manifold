@@ -4936,9 +4936,11 @@ function StreakFreezePreview(props: {
   // Max is only a purchase cap, not an accumulation cap
   const maxPurchasable = getMaxStreakFreezes(allEntitlements)
   const isAtPurchaseMax = currentFreezes >= maxPurchasable
+  const currentTier = getUserSupporterTier(allEntitlements)
+  const canUpgradeTier = currentTier !== 'premium'
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
       <Row className="flex-wrap items-center justify-center gap-x-2 gap-y-1">
         <span className="text-ink-600 text-xs sm:text-sm">Your freezes:</span>
         <Row className="items-center gap-1.5">
@@ -4958,6 +4960,17 @@ function StreakFreezePreview(props: {
           )}
         </Row>
       </Row>
+      {isAtPurchaseMax && canUpgradeTier && (
+        <div className="text-center text-xs text-indigo-600 dark:text-indigo-400">
+          <Link
+            href="/membership"
+            className="underline hover:text-indigo-800 dark:hover:text-indigo-300"
+          >
+            Upgrade your membership
+          </Link>{' '}
+          to hold more freezes
+        </div>
+      )}
     </div>
   )
 }
