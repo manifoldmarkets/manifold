@@ -2,7 +2,7 @@ import { DailyChart } from 'web/components/charts/stats'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { Tabs } from 'web/components/layout/tabs'
+import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
@@ -1254,12 +1254,13 @@ export function CustomAnalytics(props: {
 
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
-      <Tabs
+      <QueryUncontrolledTabs
         className="mb-4"
         defaultIndex={0}
         tabs={[
           {
             title: 'Activity',
+            queryString: 'activity',
             content: (
               <ActivityTab
                 stats={localStats}
@@ -1271,6 +1272,7 @@ export function CustomAnalytics(props: {
           },
           {
             title: 'Mana Supply',
+            queryString: 'mana-supply',
             content: (
               <ManaSupplyTab
                 manaSupplyOverTime={manaSupplyOverTime}
@@ -1282,10 +1284,12 @@ export function CustomAnalytics(props: {
           },
           {
             title: 'Mana Sales',
+            queryString: 'mana-sales',
             content: <ManaSalesTab stats={localStats} />,
           },
           {
             title: 'Purchases',
+            queryString: 'purchases',
             content: <PurchasesTab shopStats={shopStats} />,
           },
         ]}
