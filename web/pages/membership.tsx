@@ -150,8 +150,10 @@ export default function SupporterPage() {
       )}
 
       <Col className="mx-auto max-w-3xl gap-6">
-        {/* Self-hides for verified/grandfathered/ineligible users. */}
-        {user && <VerifyPhoneNumberBanner user={user} />}
+        {/* Self-hides for verified/grandfathered/ineligible users.
+            Non-dismissible: /membership is a high-intent page where the
+            verify prompt is the whole point — no reason to hide it. */}
+        {user && <VerifyPhoneNumberBanner user={user} dismissible={false} />}
 
         {/* Hero Section */}
         <div className="border-ink-200 bg-canvas-0 rounded-xl border p-4">
