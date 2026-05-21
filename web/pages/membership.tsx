@@ -40,6 +40,7 @@ import {
   PurchaseConfirmation,
   TIER_ITEMS,
 } from 'web/components/shop/supporter'
+import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
 import Custom404 from 'web/pages/404'
 
@@ -149,6 +150,9 @@ export default function SupporterPage() {
       )}
 
       <Col className="mx-auto max-w-3xl gap-6">
+        {/* Self-hides for verified/grandfathered/ineligible users. */}
+        {user && <VerifyPhoneNumberBanner user={user} />}
+
         {/* Hero Section */}
         <div className="border-ink-200 bg-canvas-0 rounded-xl border p-4">
           <Row className="items-center justify-between gap-4">
@@ -524,10 +528,10 @@ function MonthlyValueBreakdown({
     <div className="bg-canvas-0 border-ink-200 rounded-xl border px-3 py-3 sm:p-4">
       <Row className="mb-2 flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold sm:text-base">Monthly Value</h3>
-        {/* Two pill groups: free tiers + subscriber tiers. On desktop they sit
-            side-by-side. On mobile they wrap so the unverified/verified row
-            stays on top and the subscriber row sits underneath. */}
-        <Row className="flex-wrap justify-end gap-1">
+        {/* Two pill groups: free tiers + subscriber tiers. On mobile they
+            stack vertically (unverified/verified on top, subscribers below).
+            On desktop (sm+) they sit side-by-side as one row. */}
+        <div className="flex flex-col items-end gap-1 sm:flex-row">
           <Row className="bg-ink-100 dark:bg-ink-800 gap-0.5 rounded-full p-0.5">
             {(['unverified', 'verified'] as EffectiveTier[]).map((tier) => (
               <button
@@ -556,7 +560,7 @@ function MonthlyValueBreakdown({
               </button>
             ))}
           </Row>
-        </Row>
+        </div>
       </Row>
       <p className="text-ink-500 mb-2 text-xs">
         {comparatorTier === 'unverified'
