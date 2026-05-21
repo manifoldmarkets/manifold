@@ -524,19 +524,38 @@ function MonthlyValueBreakdown({
     <div className="bg-canvas-0 border-ink-200 rounded-xl border px-3 py-3 sm:p-4">
       <Row className="mb-2 flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold sm:text-base">Monthly Value</h3>
-        <Row className="bg-ink-100 dark:bg-ink-800 flex-wrap gap-0.5 rounded-full p-0.5">
-          {EFFECTIVE_TIER_ORDER.map((tier) => (
-            <button
-              key={tier}
-              onClick={() => handleTierClick(tier)}
-              className={clsx(
-                'rounded-full px-2 py-1 text-[11px] font-semibold transition-all sm:px-2.5 sm:text-xs',
-                tierButtonClass(tier)
-              )}
-            >
-              {EFFECTIVE_TIER_LABELS[tier]}
-            </button>
-          ))}
+        {/* Two pill groups: free tiers + subscriber tiers. On desktop they sit
+            side-by-side. On mobile they wrap so the unverified/verified row
+            stays on top and the subscriber row sits underneath. */}
+        <Row className="flex-wrap justify-end gap-1">
+          <Row className="bg-ink-100 dark:bg-ink-800 gap-0.5 rounded-full p-0.5">
+            {(['unverified', 'verified'] as EffectiveTier[]).map((tier) => (
+              <button
+                key={tier}
+                onClick={() => handleTierClick(tier)}
+                className={clsx(
+                  'rounded-full px-2 py-1 text-[11px] font-semibold transition-all sm:px-2.5 sm:text-xs',
+                  tierButtonClass(tier)
+                )}
+              >
+                {EFFECTIVE_TIER_LABELS[tier]}
+              </button>
+            ))}
+          </Row>
+          <Row className="bg-ink-100 dark:bg-ink-800 gap-0.5 rounded-full p-0.5">
+            {(['basic', 'plus', 'premium'] as EffectiveTier[]).map((tier) => (
+              <button
+                key={tier}
+                onClick={() => handleTierClick(tier)}
+                className={clsx(
+                  'rounded-full px-2 py-1 text-[11px] font-semibold transition-all sm:px-2.5 sm:text-xs',
+                  tierButtonClass(tier)
+                )}
+              >
+                {EFFECTIVE_TIER_LABELS[tier]}
+              </button>
+            ))}
+          </Row>
         </Row>
       </Row>
       <p className="text-ink-500 mb-2 text-xs">
