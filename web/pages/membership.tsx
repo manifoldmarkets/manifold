@@ -11,9 +11,14 @@ import {
   SUPPORTER_TIERS,
   SUPPORTER_BENEFITS,
   SupporterTier,
+  EffectiveTier,
+  EFFECTIVE_TIER_ORDER,
+  EFFECTIVE_TIER_LABELS,
+  EFFECTIVE_TIER_BONUS_MULTIPLIERS,
   getUserSupporterTier,
   getSupporterEntitlement,
 } from 'common/supporter-config'
+import { getEffectiveTier } from 'common/user'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -284,6 +289,7 @@ export default function SupporterPage() {
           selectedTier={selectedTier}
           onSelectTier={setSelectedTier}
           userNetWorth={userNetWorth}
+          userEffectiveTier={user ? getEffectiveTier(user) : undefined}
         />
       </Col>
 
@@ -422,72 +428,123 @@ function BenefitRow({ icon, label }: { icon: string; label: string }) {
   )
 }
 
-// Monthly value breakdown showing cost vs benefit for each tier
+// Subscriber-tier shorthand used as default subscriber comparison target.
+const SUBSCRIBER_TIERS = new Set<EffectiveTier>(['basic', 'plus', 'premium'])
+
+// Baseline monthly mana a fully-engaged verified user earns from quests/streak.
+// Used to derive deltas for unverified (negative) and subscriber tiers (positive).
+const VERIFIED_BASELINE_STREAK = 750
+const VERIFIED_BASELINE_SHARES = 150
+const VERIFIED_BASELINE_MARKETS = 400
+const VERIFIED_BASELINE_TOTAL =
+  VERIFIED_BASELINE_STREAK + VERIFIED_BASELINE_SHARES + VERIFIED_BASELINE_MARKETS
+
+// Monthly value breakdown: cost vs benefit per tier, including the unverified
+// "opportunity cost" framing and the verified free-baseline framing.
 function MonthlyValueBreakdown({
   selectedTier,
   onSelectTier,
   userNetWorth,
+  userEffectiveTier,
 }: {
   selectedTier: SupporterTier
   onSelectTier: (tier: SupporterTier) => void
   userNetWorth?: number
+  userEffectiveTier?: EffectiveTier
 }) {
   const [referralsPerMonth, setReferralsPerMonth] = useState(0)
+  // Comparator tier defaults to the user's actual tier so the page opens to
+  // "this is what you're getting today." Independent from the purchase
+  // selector (which only deals with buyable subscriber tiers).
+  const [comparatorTier, setComparatorTier] = useState<EffectiveTier>(
+    userEffectiveTier ?? selectedTier
+  )
 
-  const tierConfig = SUPPORTER_TIERS[selectedTier]
-  const benefits = SUPPORTER_BENEFITS[selectedTier]
-  const mult = benefits.questMultiplier
-  const cost = tierConfig.price
+  const isSubscriberTier = SUBSCRIBER_TIERS.has(comparatorTier)
+  const multipliers = EFFECTIVE_TIER_BONUS_MULTIPLIERS[comparatorTier]
+  const mult = multipliers.questMultiplier
+  const refMult = multipliers.referralMultiplier
+  const cost = isSubscriberTier
+    ? SUPPORTER_TIERS[comparatorTier as SupporterTier].price
+    : 0
 
-  // Base monthly rewards: streak 750 + sharing 150 + markets 400 = 1300
-  const streakWithMult = Math.round(750 * mult)
-  const sharesWithMult = Math.round(150 * mult)
-  const marketsWithMult = Math.round(400 * mult)
-  const bonusMana = streakWithMult + sharesWithMult + marketsWithMult - 1300
+  // Per-category mana with this tier's multiplier applied.
+  const streakWithMult = Math.round(VERIFIED_BASELINE_STREAK * mult)
+  const sharesWithMult = Math.round(VERIFIED_BASELINE_SHARES * mult)
+  const marketsWithMult = Math.round(VERIFIED_BASELINE_MARKETS * mult)
+  const totalQuestMana = streakWithMult + sharesWithMult + marketsWithMult
 
-  // Referral bonus (extra from multiplier only)
-  const refMult = benefits.referralMultiplier
-  const referralWithMult = Math.round(
+  // Delta vs the verified baseline (1x). Negative for unverified, positive
+  // for subscribers, zero for verified.
+  const bonusMana = totalQuestMana - VERIFIED_BASELINE_TOTAL
+
+  // Referral mana at this tier (0 for unverified — anti-farming).
+  const referralAtTier = Math.round(
     REFERRAL_AMOUNT * referralsPerMonth * refMult
   )
+  // Delta vs verified referral payout.
   const referralBonus = Math.round(
     REFERRAL_AMOUNT * referralsPerMonth * (refMult - 1)
   )
 
-  const netFromQuests = bonusMana + referralBonus - cost
+  const netVsVerified = bonusMana + referralBonus - cost
 
-  // Leverage
-  const extraLeverageMultiple =
-    benefits.maxLoanNetWorthPercent - MAX_LOAN_NET_WORTH_PERCENT
-  const hasLeverage = benefits.marginLoanAccess
+  // Leverage (subscriber tiers only — non-subs report SUPPORTER_BENEFITS defaults).
+  const subBenefits = isSubscriberTier
+    ? SUPPORTER_BENEFITS[comparatorTier as SupporterTier]
+    : null
+  const extraLeverageMultiple = subBenefits
+    ? subBenefits.maxLoanNetWorthPercent - MAX_LOAN_NET_WORTH_PERCENT
+    : 0
   const netWorth = userNetWorth && userNetWorth > 0 ? userNetWorth : 10000
   const extraCapital = Math.round(netWorth * extraLeverageMultiple)
   const breakEvenPercent =
-    extraCapital > 0 ? (Math.max(0, -netFromQuests) / extraCapital) * 100 : 0
+    extraCapital > 0 ? (Math.max(0, -netVsVerified) / extraCapital) * 100 : 0
+
+  // Clicking a subscriber tier in the comparator also syncs the purchase
+  // selector above, so the BenefitsTable highlights match.
+  const handleTierClick = (tier: EffectiveTier) => {
+    setComparatorTier(tier)
+    if (SUBSCRIBER_TIERS.has(tier)) onSelectTier(tier as SupporterTier)
+  }
+
+  const tierButtonClass = (tier: EffectiveTier) => {
+    const isActive = comparatorTier === tier
+    if (!isActive) return 'text-ink-500 hover:text-ink-700'
+    if (SUBSCRIBER_TIERS.has(tier)) {
+      const t = SUPPORTER_TIERS[tier as SupporterTier]
+      return `${t.bgColor} ${t.textColor} shadow-sm`
+    }
+    if (tier === 'unverified')
+      return 'bg-ink-200 text-ink-700 dark:bg-ink-700 dark:text-ink-100 shadow-sm'
+    return 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 shadow-sm'
+  }
 
   return (
     <div className="bg-canvas-0 border-ink-200 rounded-xl border px-3 py-3 sm:p-4">
-      <Row className="mb-2 flex-wrap items-center justify-between gap-1">
+      <Row className="mb-2 flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold sm:text-base">Monthly Value</h3>
-        <Row className="bg-ink-100 gap-0.5 rounded-full p-0.5">
-          {(['basic', 'plus', 'premium'] as const).map((tier) => (
+        <Row className="bg-ink-100 dark:bg-ink-800 flex-wrap gap-0.5 rounded-full p-0.5">
+          {EFFECTIVE_TIER_ORDER.map((tier) => (
             <button
               key={tier}
-              onClick={() => onSelectTier(tier)}
+              onClick={() => handleTierClick(tier)}
               className={clsx(
-                'rounded-full px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:text-sm',
-                selectedTier === tier
-                  ? `${SUPPORTER_TIERS[tier].bgColor} ${SUPPORTER_TIERS[tier].textColor} shadow-sm`
-                  : 'text-ink-500 hover:text-ink-700'
+                'rounded-full px-2 py-1 text-[11px] font-semibold transition-all sm:px-2.5 sm:text-xs',
+                tierButtonClass(tier)
               )}
             >
-              {SUPPORTER_TIERS[tier].name}
+              {EFFECTIVE_TIER_LABELS[tier]}
             </button>
           ))}
         </Row>
       </Row>
       <p className="text-ink-500 mb-2 text-xs">
-        {mult}x rewards if you predict daily, share, create questions
+        {comparatorTier === 'unverified'
+          ? `0.2x rewards — every bonus comes through reduced`
+          : comparatorTier === 'verified'
+          ? `1x rewards — full free-tier earnings`
+          : `${mult}x rewards if you predict daily, share, create questions`}
       </p>
 
       <Col className="gap-1 text-xs sm:text-sm">
@@ -511,7 +568,7 @@ function MonthlyValueBreakdown({
                 onClick={() =>
                   setReferralsPerMonth(Math.max(0, referralsPerMonth - 1))
                 }
-                className="bg-ink-100 hover:bg-ink-200 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
+                className="bg-ink-100 hover:bg-ink-200 dark:bg-ink-700 dark:hover:bg-ink-600 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
               >
                 −
               </button>
@@ -520,40 +577,79 @@ function MonthlyValueBreakdown({
               </span>
               <button
                 onClick={() => setReferralsPerMonth(referralsPerMonth + 1)}
-                className="bg-ink-100 hover:bg-ink-200 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
+                className="bg-ink-100 hover:bg-ink-200 dark:bg-ink-700 dark:hover:bg-ink-600 h-4 w-4 rounded text-xs font-bold sm:h-5 sm:w-5"
               >
                 +
               </button>
             </Row>
           </Row>
           <span className="font-medium tabular-nums">
-            {referralsPerMonth > 0 ? referralWithMult.toLocaleString() : '—'}
+            {referralsPerMonth > 0 && refMult > 0
+              ? referralAtTier.toLocaleString()
+              : '—'}
           </span>
         </Row>
 
         <div className="border-ink-200 my-1.5 border-t" />
 
-        <Row className="justify-between">
-          <span className="text-ink-600">Extra from {mult}x</span>
-          <span className="font-medium text-teal-600">
-            +{(bonusMana + referralBonus).toLocaleString()}
-          </span>
-        </Row>
-        <Row className="justify-between">
-          <span className="text-ink-600">Cost</span>
-          <span className="text-scarlet-500 font-medium">
-            −{cost.toLocaleString()}
-          </span>
-        </Row>
-        <Row className="justify-between font-semibold">
-          <span>Net</span>
-          <span
-            className={netFromQuests >= 0 ? 'text-teal-600' : 'text-ink-600'}
-          >
-            {netFromQuests >= 0 ? '+' : ''}
-            {netFromQuests.toLocaleString()}/mo
-          </span>
-        </Row>
+        {comparatorTier === 'verified' ? (
+          // Verified: total earnings + free, no delta math
+          <>
+            <Row className="justify-between">
+              <span className="text-ink-600">Total earned</span>
+              <span className="font-medium tabular-nums">
+                {(totalQuestMana + referralAtTier).toLocaleString()}
+              </span>
+            </Row>
+            <Row className="justify-between font-semibold">
+              <span>Cost</span>
+              <span className="text-teal-600">Free</span>
+            </Row>
+          </>
+        ) : comparatorTier === 'unverified' ? (
+          // Unverified: opportunity cost vs verified baseline
+          <>
+            <Row className="justify-between">
+              <span className="text-ink-600">Earning at 0.2x</span>
+              <span className="font-medium tabular-nums">
+                {(totalQuestMana + referralAtTier).toLocaleString()}
+              </span>
+            </Row>
+            <Row className="justify-between font-semibold">
+              <span>Missing vs verified</span>
+              <span className="text-scarlet-500 tabular-nums">
+                {Math.abs(bonusMana + referralBonus).toLocaleString()}/mo
+              </span>
+            </Row>
+          </>
+        ) : (
+          // Subscriber tier: extra over verified, cost, net
+          <>
+            <Row className="justify-between">
+              <span className="text-ink-600">Extra from {mult}x</span>
+              <span className="font-medium text-teal-600">
+                +{(bonusMana + referralBonus).toLocaleString()}
+              </span>
+            </Row>
+            <Row className="justify-between">
+              <span className="text-ink-600">Cost</span>
+              <span className="text-scarlet-500 font-medium">
+                −{cost.toLocaleString()}
+              </span>
+            </Row>
+            <Row className="justify-between font-semibold">
+              <span>Net</span>
+              <span
+                className={
+                  netVsVerified >= 0 ? 'text-teal-600' : 'text-ink-600'
+                }
+              >
+                {netVsVerified >= 0 ? '+' : ''}
+                {netVsVerified.toLocaleString()}/mo
+              </span>
+            </Row>
+          </>
+        )}
 
         {extraLeverageMultiple > 0 && (
           <>
@@ -567,7 +663,7 @@ function MonthlyValueBreakdown({
                 {shortFormatNumber(netWorth)} × {extraLeverageMultiple}x
               </span>
             </Row>
-            {netFromQuests < 0 && (
+            {netVsVerified < 0 && (
               <Row className="justify-between text-xs">
                 <span className="text-ink-600">Break-even</span>
                 <span className="font-medium text-amber-600">
@@ -579,7 +675,15 @@ function MonthlyValueBreakdown({
         )}
       </Col>
 
-      {netFromQuests >= 0 ? (
+      {comparatorTier === 'unverified' ? (
+        <div className="mt-2 rounded bg-primary-100 px-2 py-1 text-center text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 sm:text-sm">
+          Verify (free) or subscribe to unlock the full bonus pipeline
+        </div>
+      ) : comparatorTier === 'verified' ? (
+        <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 sm:text-sm">
+          ✓ Full free-tier earnings — Plus adds 50%, Pro doubles, Premium triples
+        </div>
+      ) : netVsVerified >= 0 ? (
         <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 sm:text-sm">
           ✓ Pays for itself
           {extraLeverageMultiple > 0 && ' — extra leverage is profit!'}
@@ -590,13 +694,15 @@ function MonthlyValueBreakdown({
         </div>
       ) : null}
 
-      <p className="text-ink-400 mt-2 text-xs">
-        + free loans,{' '}
-        {benefits.shopDiscount > 0
-          ? `${Math.round(benefits.shopDiscount * 100)}% off shop items, `
-          : ''}
-        badge
-      </p>
+      {subBenefits && (
+        <p className="text-ink-400 mt-2 text-xs">
+          + free loans,{' '}
+          {subBenefits.shopDiscount > 0
+            ? `${Math.round(subBenefits.shopDiscount * 100)}% off shop items, `
+            : ''}
+          badge
+        </p>
+      )}
     </div>
   )
 }
