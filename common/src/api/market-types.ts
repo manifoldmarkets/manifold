@@ -495,6 +495,7 @@ export const updateMarketProps = z
     display: z.enum(['clock', 'default']).optional(),
     homePageScoreAdjustment: z.number().gte(-1).lte(1).nullable().optional(),
     homePageScoreAdjustmentDays: z.number().int().positive().optional(),
+    creatorBannedFromBetting: z.boolean().optional(),
   })
   .strict()
 

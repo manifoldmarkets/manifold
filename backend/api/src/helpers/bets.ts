@@ -20,7 +20,15 @@ import { UniqueBettorBonusTxn } from 'common/txn'
 import { canReceiveBonuses, User, UserBan } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
-import { groupBy, mapValues, orderBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
+import {
+  groupBy,
+  mapValues,
+  orderBy,
+  sortBy,
+  sumBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 import { log } from 'shared/monitoring/log'
 import {
@@ -83,7 +91,7 @@ export const fetchContractBetDataAndValidate = async (
     select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
-    select data, margin_loan, loan from user_contract_metrics ucm where 
+    select data, margin_loan, loan from user_contract_metrics ucm where
       contract_id = $2 and user_id = $1
       and (
         -- Get metrics for selected answers
@@ -91,7 +99,7 @@ export const fetchContractBetDataAndValidate = async (
         or
         -- Get null answer metrics
         ucm.answer_id is null
-      ); 
+      );
     -- Limit orderers' contract metrics
     with matching_user_answer_pairs as (
       select distinct b.user_id, b.answer_id
@@ -202,6 +210,16 @@ export const fetchContractBetDataAndValidate = async (
   }
   if (contract.outcomeType === 'STONK' && isApi) {
     throw new APIError(403, 'API users cannot bet on STONK contracts.')
+  }
+  if (
+    contract.creatorBannedFromBetting &&
+    uid === contract.creatorId &&
+    !isAdminTrade
+  ) {
+    throw new APIError(
+      403,
+      'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
+    )
   }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
