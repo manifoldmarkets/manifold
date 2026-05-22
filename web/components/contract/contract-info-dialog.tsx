@@ -470,13 +470,15 @@ export const Stats = (props: {
             <td>
               <CheckOrSwitch
                 canToggle={
-                  isMod || (isCreator && !contract.creatorBannedFromBetting)
+                  isAdmin ||
+                  (isMod && !isCreator) ||
+                  (isCreator && !contract.creatorBannedFromBetting)
                 }
                 on={contract.creatorBannedFromBetting === true}
                 setOn={(on) => {
                   if (on) {
                     onRequestCreatorBan?.()
-                  } else if (isMod) {
+                  } else if ((isMod && !isCreator) || isAdmin) {
                     toast.promise(
                       updateMarket({
                         contractId: contract.id,
