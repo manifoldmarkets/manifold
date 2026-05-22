@@ -149,24 +149,12 @@ export default function SupporterPage() {
         />
       )}
 
-      <Col className="mx-auto w-full min-w-0 max-w-3xl gap-6">
-        {/* Self-hides for verified/grandfathered/ineligible users.
-            Non-dismissible + compact: /membership is a high-intent page
-            where the verify prompt is the whole point — always visible but
-            shouldn't dominate vertical space above the tier comparison. */}
-        {user && (
-          <VerifyPhoneNumberBanner
-            user={user}
-            dismissible={false}
-            compact
-          />
-        )}
-
+      <Col className="mx-auto w-full min-w-0 max-w-3xl gap-6 overflow-x-hidden">
         {/* Hero Section */}
-        <div className="border-ink-200 bg-canvas-0 rounded-xl border p-4">
-          <Row className="items-center justify-between gap-4">
+        <div className="border-ink-200 bg-canvas-0 min-w-0 rounded-xl border p-4">
+          <Row className="min-w-0 items-center justify-between gap-4">
             {/* Left: Avatar + Name + Badge (changes on hover/select) */}
-            <Row className="items-center gap-3">
+            <Row className="min-w-0 flex-1 items-center gap-3">
               <Avatar
                 username={user?.username}
                 avatarUrl={user?.avatarUrl}
@@ -175,9 +163,9 @@ export default function SupporterPage() {
                 entitlements={user?.entitlements}
                 displayContext="shop"
               />
-              <Col className="gap-0.5">
-                <Row className="items-center gap-2">
-                  <span className="text-lg font-bold">
+              <Col className="min-w-0 flex-1 gap-0.5">
+                <Row className="min-w-0 items-center gap-2">
+                  <span className="text-lg font-bold truncate">
                     {user?.name ?? 'You'}
                   </span>
                   {/* Show hovered tier star, or current tier star */}
@@ -280,6 +268,18 @@ export default function SupporterPage() {
             entitlements={user?.entitlements}
             currentExpiresTime={currentEntitlement?.expiresTime}
             isAutoRenewing={isAutoRenewing}
+          />
+        )}
+
+        {/* Self-hides for verified/grandfathered/ineligible users.
+            Non-dismissible + compact: positioned between subscribe button and
+            benefits comparison so the verify path stays in view as a free
+            alternative to the paid tiers above. */}
+        {user && (
+          <VerifyPhoneNumberBanner
+            user={user}
+            dismissible={false}
+            compact
           />
         )}
 
