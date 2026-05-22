@@ -163,7 +163,7 @@ export function BuyPanel(
   return (
     <Col>
       {isCreatorBanned ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
           <span className="font-medium">Betting disabled:</span> You have
           blocked yourself from betting on this market. Contact a moderator if
           you need this reversed.
