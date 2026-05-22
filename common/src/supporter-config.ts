@@ -284,8 +284,12 @@ export const EFFECTIVE_TIER_BONUS_MULTIPLIERS: Record<
     // Unverified users can't receive referral bonuses (anti-farming).
     // Verifying or subscribing unlocks referrals.
     referralMultiplier: 0,
-    // Unverified creators get a reduced unique-trader bonus instead of zero.
-    uniqueTraderMultiplier: 0.2,
+    // Unverified creators get half the unique-trader bonus instead of zero.
+    // 0.5 (vs 0.2 for quest/streak) because the unique-trader bonus is the
+    // creator's payoff for attracting *real* unique users — those users
+    // already passed bot/API/redemption gates, so the abuse vector is
+    // narrower than self-driven streak/quest farming.
+    uniqueTraderMultiplier: 0.5,
   },
   verified: {
     questMultiplier: 1,
