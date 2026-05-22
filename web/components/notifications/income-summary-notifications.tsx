@@ -57,6 +57,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
+  const user = useUser()
   const myData = (notification.data ?? {}) as UniqueBettorData
   const relatedNotifications =
     myData && 'relatedNotifications' in myData
@@ -77,12 +78,27 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
+  const isUnverified = user && getEffectiveTier(user) === 'unverified'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={
+        isUnverified ? (
+          <span>
+            Reduced because your account is unverified.{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              Verify or subscribe
+            </a>{' '}
+            to earn the full unique-trader bonus.
+          </span>
+        ) : undefined
+      }
       icon={
         <MultipleAvatarIcons
           notification={notification}

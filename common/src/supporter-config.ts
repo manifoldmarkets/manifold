@@ -265,14 +265,17 @@ export const EFFECTIVE_TIER_ORDER: EffectiveTier[] = [
   'premium',
 ]
 
-// Bonus multipliers for quest/streak/referral rewards by effective tier.
-// Subscriber rows MUST match SUPPORTER_BENEFITS above (they read through here too).
+// Bonus multipliers for quest/streak/referral/unique-trader rewards by
+// effective tier. Subscriber rows for quest/referral MUST match
+// SUPPORTER_BENEFITS above. Unique-trader does NOT scale with subscription
+// per product decision — it's the same for verified/grandfathered/all subs.
 export const EFFECTIVE_TIER_BONUS_MULTIPLIERS: Record<
   EffectiveTier,
   {
     questMultiplier: number
     streakMultiplier: number
     referralMultiplier: number
+    uniqueTraderMultiplier: number
   }
 > = {
   unverified: {
@@ -281,26 +284,32 @@ export const EFFECTIVE_TIER_BONUS_MULTIPLIERS: Record<
     // Unverified users can't receive referral bonuses (anti-farming).
     // Verifying or subscribing unlocks referrals.
     referralMultiplier: 0,
+    // Unverified creators get a reduced unique-trader bonus instead of zero.
+    uniqueTraderMultiplier: 0.2,
   },
   verified: {
     questMultiplier: 1,
     streakMultiplier: 1,
     referralMultiplier: 1,
+    uniqueTraderMultiplier: 1,
   },
   basic: {
     questMultiplier: SUPPORTER_BENEFITS.basic.questMultiplier,
     streakMultiplier: SUPPORTER_BENEFITS.basic.questMultiplier,
     referralMultiplier: SUPPORTER_BENEFITS.basic.referralMultiplier,
+    uniqueTraderMultiplier: 1,
   },
   plus: {
     questMultiplier: SUPPORTER_BENEFITS.plus.questMultiplier,
     streakMultiplier: SUPPORTER_BENEFITS.plus.questMultiplier,
     referralMultiplier: SUPPORTER_BENEFITS.plus.referralMultiplier,
+    uniqueTraderMultiplier: 1,
   },
   premium: {
     questMultiplier: SUPPORTER_BENEFITS.premium.questMultiplier,
     streakMultiplier: SUPPORTER_BENEFITS.premium.questMultiplier,
     referralMultiplier: SUPPORTER_BENEFITS.premium.referralMultiplier,
+    uniqueTraderMultiplier: 1,
   },
 }
 
@@ -323,11 +332,12 @@ export function resolveEffectiveTier(args: {
 
 export function getEffectiveBonusMultiplier(
   tier: EffectiveTier,
-  kind: 'quest' | 'streak' | 'referral'
+  kind: 'quest' | 'streak' | 'referral' | 'uniqueTrader'
 ): number {
   const m = EFFECTIVE_TIER_BONUS_MULTIPLIERS[tier]
   if (kind === 'quest') return m.questMultiplier
   if (kind === 'streak') return m.streakMultiplier
+  if (kind === 'uniqueTrader') return m.uniqueTraderMultiplier
   return m.referralMultiplier
 }
 

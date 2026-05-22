@@ -147,6 +147,11 @@ type UniqueBettorBonus = {
     // Old unique bettor bonus txns stored all unique bettor ids
     uniqueBettorIds?: string[]
     isPartner: boolean
+    // Creator's effective tier at award time + multiplier applied. Used by
+    // the income notification to render the upsell line when the creator is
+    // unverified (and the amount is therefore reduced).
+    effectiveTier?: string
+    uniqueTraderMultiplier?: number
   }
 }
 

@@ -17,7 +17,11 @@ import { convertBet } from 'common/supabase/bets'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { convertUser } from 'common/supabase/users'
 import { UniqueBettorBonusTxn } from 'common/txn'
-import { canReceiveBonuses, User, UserBan } from 'common/user'
+import { User, UserBan } from 'common/user'
+import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+} from 'common/supporter-config'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { groupBy, mapValues, orderBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
@@ -473,21 +477,13 @@ export const getUniqueBettorBonusQuery = (
     // Require the contract creator to also be the answer creator for real-money bonus.
     creatorId === contract.creatorId
 
-  // The unique-trader bonus is paid to the MARKET CREATOR for attracting a new
-  // bettor. The creator must be verified to receive bonuses; the bettor does
-  // not (an unverified user betting still counts as a unique trader from the
-  // creator's perspective — bonuses for the bettor are gated separately).
-  // If creator is not provided, we skip the creator eligibility check (backwards compat).
-  const creatorCanReceiveBonuses = creator ? canReceiveBonuses(creator) : true
-
   if (
     isCreator ||
     isBot ||
     isUnlisted ||
     isRedemption ||
     isUnfilledLimitOrder ||
-    isApi ||
-    !creatorCanReceiveBonuses
+    isApi
   )
     return {
       balanceUpdate: undefined,
@@ -495,16 +491,41 @@ export const getUniqueBettorBonusQuery = (
     }
 
   // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
-  const bonusAmount = getUniqueBettorBonusAmount(
+  const baseBonusAmount = getUniqueBettorBonusAmount(
     contract.totalLiquidity,
     'answers' in contract ? contract.answers.length : 0
   )
+
+  // Scale by creator's effective tier. Unverified creators get a reduced
+  // amount (0.2x) instead of zero; verified and all subscribers get the
+  // full base amount. If creator wasn't passed in, assume verified for
+  // backwards compatibility.
+  const creatorTier = creator
+    ? resolveEffectiveTier({
+        entitlements: creator.entitlements,
+        bonusEligibility: creator.bonusEligibility,
+      })
+    : 'verified'
+  const uniqueTraderMultiplier = getEffectiveBonusMultiplier(
+    creatorTier,
+    'uniqueTrader'
+  )
+  const bonusAmount = Math.floor(baseBonusAmount * uniqueTraderMultiplier)
+
+  if (bonusAmount <= 0) {
+    return {
+      balanceUpdate: undefined,
+      txnQuery: 'select 1 where false',
+    }
+  }
 
   const bonusTxnData = removeUndefinedProps({
     contractId: contract.id,
     uniqueNewBettorId: bettor.id,
     answerId,
     isPartner,
+    effectiveTier: creatorTier,
+    uniqueTraderMultiplier,
   })
 
   const bonusTxn: Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'> = {
