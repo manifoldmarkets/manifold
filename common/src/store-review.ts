@@ -5,7 +5,9 @@ import { DAY_MS, HOUR_MS } from './util/time'
 // matches Apple's behavior on iOS.
 export const STORE_REVIEW_COOLDOWN_MS = 180 * DAY_MS
 
-export const STREAK_MILESTONES = [3, 5, 7, 14, 30, 60, 100] as const
+export const STREAK_MILESTONES = [
+  14, 30, 60, 100, 200, 365, 700, 1000,
+] as const
 
 // Threshold for the contract-page "you just won" trigger. Any positive M$25
 // profit on a market resolved within the last 48 hours counts as a fresh win.
