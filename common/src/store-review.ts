@@ -9,9 +9,12 @@ export const STREAK_MILESTONES = [
   14, 30, 60, 100, 200, 365, 700, 1000,
 ] as const
 
-// Threshold for the contract-page "you just won" trigger. Any positive M$25
-// profit on a market resolved within the last 48 hours counts as a fresh win.
-export const WIN_BET_MIN_PROFIT = 25
+// Threshold for the contract-page "you just won" trigger. M$1000 profit on a
+// market resolved within the last 48 hours counts as a fresh win. Set high to
+// avoid a launch-day flood of prompts on Apple's review API — the 180d cooldown
+// already self-limits per user, but we'd rather not generate a spike in rating
+// velocity. Easy to lower later.
+export const WIN_BET_MIN_PROFIT = 1000
 export const WIN_BET_RECENT_RESOLUTION_MS = 48 * HOUR_MS
 
 // Suppress nudges within this window after we showed the user a push-permission
