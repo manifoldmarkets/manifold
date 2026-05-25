@@ -9,11 +9,7 @@ import { postMessageToNative } from 'web/lib/native/post-message'
 import { track } from 'web/lib/service/analytics'
 import { useNativeInfo } from 'web/components/native-message-provider'
 
-type BlockedBy =
-  | 'not-native'
-  | 'opt-out'
-  | 'cooldown'
-  | 'push-modal-recent'
+type BlockedBy = 'not-native' | 'opt-out' | 'cooldown' | 'push-modal-recent'
 
 // Module-level guard so two trigger sites (e.g. bet-panel + contract-page)
 // firing within the same second can't both burn an Apple silent-cap slot
