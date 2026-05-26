@@ -17,12 +17,13 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         <p className="mt-3 text-lg text-ink-400">
           Creators are held to a higher standard than general users. The platform has game-like incentives and we want you to have fun with them, but not by exploiting loopholes or technicalities on your own markets. If your resolution criteria become unclear due to new events, update them.
         </p>
+        <p className="mt-2 text-sm italic text-ink-400">Looking for tips on running great markets? See our creator guide. (coming soon)</p>
 
         <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="market-states" className="text-xl font-semibold text-ink-900">Market states</h2>
-          <p className="mt-3 text-ink-700">Every market has three independently toggleable states: Ranked, Subsidized, and Unlisted. Admins and moderators can change any of these.</p>
+          <p className="mt-3 text-ink-700">Every market has two independently toggleable states: Ranked and Unlisted. Admins and moderators can change either of these.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
@@ -34,7 +35,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
             <li>It's self-referential</li>
             <li>It's about the results of Leagues</li>
             <li>It resolves to something purely random or gambling-like (e.g. "will this coin flip be heads?")</li>
-            <li>Resolution criteria can only be known by the creator or their immediate friends (e.g. "will I eat pizza tonight?")</li>
+            <li>Resolution criteria can only be known by the creator or their immediate friends (e.g. "will I eat pizza tonight?") — unless the creator opts not to trade, provides no insider advantage to friends, and outlines concrete verifiable evidence at market creation</li>
             <li>It isn't predicting anything</li>
             <li>It can never be resolved or could only ever resolve one way</li>
           </ul>
@@ -43,18 +44,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="subsidized" className="text-xl font-semibold text-ink-900">Subsidized</h2>
-          <p className="mt-3 text-ink-700">Creators receive 5 mana per unique trader for the first 50 traders, then 1 mana up to a cap of 10,000. Markets also receive a 20 mana liquidity subsidy from the house for the first 50 traders, then 5 mana to the same cap.</p>
-          <p className="mt-3 text-ink-700">A market may be unsubsidized if:</p>
-          <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
-            <li>It's unlisted — unlisted markets are never subsidized by default</li>
-            <li>It's self-referential</li>
-            <li>It resolves to something purely random or gambling-like</li>
-            <li>It's spam or extremely low quality (e.g. "will the sun explode tomorrow?")</li>
-            <li>It can never be resolved or could only ever resolve one way</li>
-            <li>It's an exact or near-exact duplicate of an existing market</li>
-            <li>It falls under the unlisting criteria below but isn't severe enough to act on</li>
-          </ul>
-          <p className="mt-3 text-sm text-ink-600">Note: unsubsidization may be applied after some initial bonuses have already been received and is not retroactive. Markets that technically qualify but seem genuinely valuable may still be left subsidized.</p>
+          <p className="mt-3 text-sm italic text-ink-500">(Placeholder — confirm current status with Genzy before publishing. Either update with correct mana figures, note it's temporarily suspended, or remove this section entirely.)</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
@@ -93,10 +83,11 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="personal-markets" className="text-xl font-semibold text-ink-900">Personal markets</h2>
           <p className="mt-3 text-ink-700">Personal goal markets are a use case we actively want to support.</p>
+          <p className="mt-3 text-ink-700">Personal markets follow the same ranking rules as any other market. They are not automatically unranked — a well-run personal market that doesn't fall under the unranking criteria above should be ranked normally.</p>
+          <p className="mt-3 text-ink-700">The exception is when the creator is participating in the market themselves, which creates an inherent insider advantage. In those cases the market will typically be unranked. This can be avoided if the creator opts not to trade, provides no insider advantage to others, and outlines concrete verifiable evidence at market creation.</p>
           <p className="mt-3 text-ink-700">Creators of personal markets have the right to resolve N/A at any time. We strongly encourage stating this upfront in your market description — something like "I reserve the right to resolve this N/A at any point" helps set expectations for traders.</p>
-          <p className="mt-3 text-ink-700">A few things to know:</p>
+          <p className="mt-3 text-ink-700">A few other things to know:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Most personal goal markets will be unranked since the creator is participating and they're easier to manipulate — traders can still profit normally.</li>
             <li>Some personal markets involve others or private matters that make clean resolution genuinely difficult. N/A is always available in those cases.</li>
             <li>Manifold can't force a creator to resolve a market if they leave the platform or go inactive.</li>
           </ul>

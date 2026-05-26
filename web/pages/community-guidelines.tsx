@@ -68,6 +68,7 @@ export default function CommunityGuidelinesPage() {
           Manifold keeps moderation minimal and trusts you to act in good faith. These guidelines protect the quality of the platform,
           not micromanage it.
         </p>
+        <p className="mt-1 text-sm text-ink-400">Last updated: March 2026</p>
 
         <GuidelinesSearch />
 

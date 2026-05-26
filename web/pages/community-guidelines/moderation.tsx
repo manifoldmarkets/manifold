@@ -15,7 +15,7 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <p className="mt-3 text-lg text-ink-400">
-          Manifold Mods are community members who help keep markets accurate, resolve disputes, and maintain a healthy environment. This page explains who they are, what they can do, and how to escalate if something goes wrong.
+          Manifold Mods are community members who help keep markets accurate, resolve disputes, and maintain a healthy environment. This page explains who they are, what they can do, and how to get their help.
         </p>
 
         <GuidelinesSearch />
@@ -38,7 +38,7 @@ export default function CommunityGuidelinesModerationPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="who-mods-are" className="text-xl font-semibold text-ink-900">Who Mods are</h2>
-          <p className="mt-3 text-ink-700">Mods are active Manifold users selected by the community manager. New Mods are considered when needed. Candidates are expected to be open-minded, fair, active on the platform, and willing to engage with Discord's #mod-help channel and @mods site tag.</p>
+          <p className="mt-3 text-ink-700">Mods are active Manifold users selected by the community manager. New Mods are considered when needed. Candidates are expected to be open-minded, fair, active on the platform, and willing to engage with Discord's #mod-help channel and the @mods site tag.</p>
           <p className="mt-3 text-ink-700">Mod status isn't permanent — it can be removed and reinstated. Reasons include inactivity, conduct issues, or simply not wanting to do the work anymore. This isn't a mark against anyone; it's just how the role works.</p>
         </div>
 
@@ -48,7 +48,7 @@ export default function CommunityGuidelinesModerationPage() {
             <li>Issue warnings via mod alerts — anonymous dismissible banners sent directly to a user</li>
             <li>Apply restrictions: posting, market control, or trading bans of varying lengths</li>
             <li>Hide or delete comments that violate comment guidelines</li>
-            <li>Unlist, unrank, or unsubsidize markets</li>
+            <li>Unlist or unrank markets</li>
             <li>Edit market titles and descriptions when criteria need clarification</li>
             <li>Resolve or unresolve markets in specific circumstances</li>
             <li>Change market closing dates</li>
@@ -58,15 +58,32 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="how-to-request-mod-help" className="text-xl font-semibold text-ink-900">How to request mod help</h2>
+          <p className="mt-3 text-ink-700">If you need a Mod to resolve a market, post a comment on the market with your desired resolution and a source or reasoning. This helps Mods act quickly and accurately.</p>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
+            <li>If the creator has been active on the site within the last month, ping them first and wait at least 24 hours for a response before requesting mod intervention.</li>
+            <li>If the creator has been inactive for more than a month, you can request mod help directly without waiting.</li>
+            <li>Use the @mods tag on the market itself to flag it for the mod queue.</li>
+          </ul>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="how-market-resolution-works" className="text-xl font-semibold text-ink-900">How market resolution works</h2>
-          <p className="mt-3 text-ink-700">Mods can resolve markets on behalf of inactive creators when resolution criteria are unambiguous. For actively disputed resolutions, the process is:</p>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-ink-700">
+          <p className="mt-3 text-ink-700">The process depends on how clear-cut the resolution is.</p>
+          <p className="mt-4 text-ink-700 italic">For unambiguous resolutions (e.g. a sports result with a clear outcome):</p>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
+            <li>A Mod reviews the market and resolves it based on the stated criteria and available evidence.</li>
+            <li>Mods may resolve even if they hold a position in the market, provided the outcome is clearly unambiguous.</li>
+          </ul>
+          <p className="mt-4 text-ink-700 italic">For ambiguous or disputed resolutions:</p>
+          <ol className="mt-2 list-decimal space-y-2 pl-5 text-ink-700">
             <li>A Mod who holds no position in the market takes ownership</li>
             <li>They post a comment explaining the proposed criteria</li>
             <li>The creator has 48 hours to respond and reclaim ownership</li>
-            <li>If no response, the mod runs the market from that point</li>
+            <li>If no response, the Mod runs the market from that point</li>
           </ol>
           <p className="mt-3 text-ink-700">Mods can also correct blatantly wrong resolutions. If a resolution is defensible even if imperfect, they'll comment suggestions but leave the final call to the creator.</p>
+          <p className="mt-3 text-ink-700">N/A is a last resort — used only when resolution genuinely cannot be determined after Mods have tried to support clarification. It is not a default response to ambiguity.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">

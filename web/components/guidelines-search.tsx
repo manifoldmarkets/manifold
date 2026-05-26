@@ -95,7 +95,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Running a Market',
     section: 'Market states',
-    text: 'ranked subsidized unlisted toggleable states admins moderators',
+    text: 'ranked unlisted two states admins moderators',
     href: '/community-guidelines/running-a-market#market-states',
   },
   {
@@ -107,7 +107,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Running a Market',
     section: 'Subsidized',
-    text: 'subsidized mana unique trader 50 traders cap 10000 liquidity subsidy house unsubsidized unlisted self-referential random gambling spam low quality duplicate',
+    text: 'subsidized liquidity subsidy unsubsidized',
     href: '/community-guidelines/running-a-market#subsidized',
   },
   {
@@ -253,13 +253,19 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Moderation',
     section: 'Actions Mods can take',
-    text: 'warnings mod alerts anonymous banners restrictions posting market control trading bans hide delete comments unlist unrank unsubsidize edit titles descriptions resolve unresolve closing dates pin comments permanent bans admins',
+    text: 'warnings mod alerts anonymous banners restrictions posting market control trading bans hide delete comments unlist unrank edit titles descriptions resolve unresolve closing dates pin comments permanent bans admins',
     href: '/community-guidelines/moderation#actions-mods-can-take',
   },
   {
     page: 'Moderation',
+    section: 'How to request mod help',
+    text: 'request mod help resolve market comment source reasoning active inactive month ping wait 24 hours mods tag flag queue',
+    href: '/community-guidelines/moderation#how-to-request-mod-help',
+  },
+  {
+    page: 'Moderation',
     section: 'How market resolution works',
-    text: 'inactive creators unambiguous disputed ownership comment proposed criteria 48 hours respond reclaim blatantly wrong defensible',
+    text: 'unambiguous disputed ownership comment proposed criteria 48 hours respond reclaim blatantly wrong defensible n/a last resort ambiguity',
     href: '/community-guidelines/moderation#how-market-resolution-works',
   },
   {
