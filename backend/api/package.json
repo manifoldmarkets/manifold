@@ -28,7 +28,7 @@
     "@giphy/js-fetch-api": "5.0.0",
     "@google-cloud/monitoring": "4.0.0",
     "@google-cloud/secret-manager": "4.2.1",
-    "@google/generative-ai": "0.22.0",
+    "@google/genai": "2.6.0",
     "@mendable/firecrawl-js": "1.8.5",
     "@modelcontextprotocol/sdk": "1.17.1",
     "@supabase/supabase-js": "2.38.5",

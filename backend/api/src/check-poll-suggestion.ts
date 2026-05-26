@@ -13,38 +13,53 @@ export const checkPollSuggestion: APIHandler<'check-poll-suggestion'> =
 
       log('checkPollSuggestion:', { question, answersString })
 
-      const prompt = `You are an expert at determining whether a question is objective (has a verifiable factual answer) or subjective (based on opinions, preferences, or personal judgment).
+      const prompt = `You are classifying whether a prediction market question should instead be a poll.
 
 Today is ${new Date().toISOString()}.
 
 Question: "${question}"
 ${answersString ? `Possible answers: ${answersString}` : ''}
 
-Analyze this question and determine:
-1. Is this question OBJECTIVE (can be verified with facts, has a definite answer that will be known in the future) or SUBJECTIVE (based on opinions, preferences, or personal judgment)?
+THE TEST — apply this single rule:
+- OBJECTIVE: the answer becomes known through observation, counting, measurement, or a public record. A neutral third party could look at the outcome and agree on the answer. The question is OBJECTIVE even if:
+  * It is about a single person, including the asker themselves ("How many presents will I get for Christmas?", "Will I run a marathon this year?", "How much will I weigh on Jan 1?")
+  * Only the asker can observe the outcome ("Will I quit my job in 2026?")
+  * The outcome depends on the asker's choices or luck — choices and outcomes are still facts
+  * It is hard to predict, uncertain, or unusual
+  * The resolution requires the creator to self-report — self-reporting is a resolution mechanism, not subjectivity
 
-Examples of OBJECTIVE questions (should be prediction markets):
-- "Will Biden win the 2024 election?" - factually verifiable outcome
-- "Will SpaceX launch Starship by 2025?" - factually verifiable event
-- "Will the S&P 500 close above 5000 on Dec 31?" - measurable outcome
-- "Which team will win the Super Bowl?" - factually verifiable
-- "When will GPT-5 be released?" - factually verifiable date
+- SUBJECTIVE: answering it requires the respondent's opinion, taste, values, or aesthetic judgment. There is no outcome to observe — different people give different valid answers because they value different things.
 
-Examples of SUBJECTIVE questions (should be polls):
-- "What is the best programming language?" - opinion-based
-- "Who is the greatest basketball player of all time?" - subjective judgment
-- "What's your favorite movie?" - personal preference
-- "Is pineapple good on pizza?" - matter of taste
-- "What do you think about AI art?" - personal opinion
-- "Which political party has better policies?" - value judgment
-- "Is remote work better than office work?" - depends on personal circumstances
+OBJECTIVE examples (NOT polls — these are valid prediction markets):
+- "Will Biden win the 2024 election?"
+- "How many presents will I get for Christmas?" — countable outcome, even though personal
+- "Will I get a girlfriend in 2026?" — observable outcome, even though personal
+- "How many books will I read this year?" — countable outcome
+- "Will it snow in NYC on Christmas Day?"
+- "What will the S&P 500 close at on Dec 31?"
+- "Will SpaceX launch Starship by 2026?"
 
-Return ONLY a JSON object with:
-- "isSubjective": boolean (true if the question is subjective/opinion-based, false if objective/factual)
-- "confidence": number between 0 and 1 (how confident you are in this classification)
-- "reason": string (brief explanation, max 100 characters)
+SUBJECTIVE examples (polls):
+- "What is the best programming language?" — pure opinion
+- "Is pineapple good on pizza?" — pure taste
+- "What's your favorite movie?" — pure preference
+- "Should the US adopt UBI?" — value judgment, no observable resolution
+- "Who is the greatest basketball player of all time?" — opinion, no objective metric
+- "What do you think about AI art?" — explicitly asks for opinion
 
-Only suggest a poll (isSubjective: true) when you're reasonably confident the question is asking for opinions or preferences rather than predictions about future events.`
+DO NOT classify a question as subjective merely because:
+- It is about the asker's personal life
+- It is hard to verify externally
+- It depends on someone's choices
+- The asker is the only person who knows the outcome
+- It uses words like "I", "my", "will I"
+
+Return ONLY a JSON object:
+- "isSubjective": boolean
+- "confidence": number 0-1
+- "reason": string (max 100 chars, must reference the TEST above, not "personal" or "hard to verify")
+
+Default to isSubjective: false when uncertain — a wrongly-suggested poll is worse than missing one.`
 
       try {
         const result = await promptAI<{
