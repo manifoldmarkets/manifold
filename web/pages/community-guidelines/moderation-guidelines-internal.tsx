@@ -1,8 +1,8 @@
+import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ShieldCheckIcon } from '@heroicons/react/outline'
-import Link from 'next/link'
 
 export default function ModerationGuidelinesInternalPage() {
   return (

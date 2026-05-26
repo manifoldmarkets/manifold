@@ -22,7 +22,7 @@ const SECTIONS = [
   },
   {
     title: 'Running a Market',
-    description: "What's banned, ranked vs unranked, subsidies, creator expectations, personal markets.",
+    description: "What's banned, ranked vs unranked, creator expectations, personal markets.",
     icon: CollectionIcon,
     href: '/community-guidelines/running-a-market',
   },
@@ -64,7 +64,7 @@ export default function CommunityGuidelinesPage() {
       <SEO title="Community Guidelines" description="Manifold community guidelines to keep the market fair and fun." />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <h1 className="text-4xl font-bold text-primary-500">Community Guidelines</h1>
-        <p className="mt-3 text-lg text-slate-400">
+        <p className="mt-3 text-lg text-ink-400">
           Manifold keeps moderation minimal and trusts you to act in good faith. These guidelines protect the quality of the platform,
           not micromanage it.
         </p>
@@ -85,38 +85,19 @@ export default function CommunityGuidelinesPage() {
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
-          {SECTIONS.map((item) => {
-            const cardBody = (
-              <>
-                <div className="flex items-center gap-2">
-                  <item.icon className="h-5 w-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-ink-900">{item.title}</h3>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-ink-700">{item.description}</p>
-              </>
-            )
-
-            if (item.href) {
-              return (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="block rounded-xl border-2 border-ink-200 bg-canvas-0 p-5 shadow-sm transition hover:border-primary-300"
-                >
-                  {cardBody}
-                </Link>
-              )
-            }
-
-            return (
-              <div
-                key={item.title}
-                className="rounded-xl border-2 border-ink-200 bg-canvas-0 p-5 shadow-sm transition hover:border-primary-300"
-              >
-                {cardBody}
+          {SECTIONS.map((item) => (
+            <Link
+              key={item.title}
+              href={item.href}
+              className="block rounded-xl border-2 border-ink-200 bg-canvas-0 p-5 shadow-sm transition hover:border-primary-300"
+            >
+              <div className="flex items-center gap-2">
+                <item.icon className="h-5 w-5 text-primary-500" />
+                <h3 className="text-lg font-semibold text-ink-900">{item.title}</h3>
               </div>
-            )
-          })}
+              <p className="mt-2 text-sm leading-6 text-ink-700">{item.description}</p>
+            </Link>
+          ))}
         </div>
 
         <div className="mt-8 rounded-xl border-2 border-ink-200 bg-canvas-50 p-5">
@@ -126,7 +107,7 @@ export default function CommunityGuidelinesPage() {
             You may face consequences for behaviour that goes against the general expectation even if it's not explicitly listed.
           </p>
           <p className="mt-6 text-sm text-ink-700">
-            Questions or need to report something? Reach us on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>. For moderation questions, see the Mod guidelines page.
+            Questions or need to report something? Reach us on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>. For moderation questions, see the <Link className="text-primary-500 underline" href="/community-guidelines/moderation">Moderation</Link> page.
           </p>
         </div>
       </Col>
