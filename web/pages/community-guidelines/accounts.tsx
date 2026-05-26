@@ -24,7 +24,7 @@ export default function CommunityGuidelinesAccountsPage() {
           <h2 id="general-account-rules" className="text-xl font-semibold text-ink-900">General account rules</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Impersonating another person, group, or organization may result in your username being changed.</li>
-            <li>Usernames that violate our <a className="text-primary-500 underline" href="/community-guidelines/comment-guidelines">comment guidelines</a> will be changed.</li>
+            <li>Usernames that violate our <a className="text-primary-500 underline" href="/community-guidelines/comment-guidelines">Comment Guidelines</a> will be changed.</li>
             <li>NSFW profile pictures showing nudity or extreme violence will be replaced with a default image until you update it.</li>
             <li>Ban evasion will not be tolerated.</li>
             <li>Creating alts primarily to harvest bonuses, subsidies, or manipulate markets is not allowed.</li>
