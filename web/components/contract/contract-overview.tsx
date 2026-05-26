@@ -182,7 +182,9 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as MultiPoints}
             showResolver={showResolver}
+            showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
+            setShowUnresolver={setShowUnresolver}
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
           />
@@ -193,7 +195,9 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as MultiPoints}
             showResolver={showResolver}
+            showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
+            setShowUnresolver={setShowUnresolver}
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
           />
@@ -724,16 +728,20 @@ const MultiNumericOverview = (props: {
   points: MultiPoints
   contract: MultiNumericContract
   showResolver: boolean
+  showUnresolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
+  setShowUnresolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer) => void
 }) => {
   const {
     points,
     contract,
     showResolver,
+    showUnresolver,
     resolutionRating,
     setShowResolver,
+    setShowUnresolver,
     onAnswerCommentClick,
   } = props
 
@@ -770,7 +778,13 @@ const MultiNumericOverview = (props: {
           />
         )}
       </SizedContainer>
-      {!contract.shouldAnswersSumToOne ? (
+      {!contract.shouldAnswersSumToOne && showUnresolver ? (
+        <IndependentAnswersUnresolvePanel
+          contract={contract}
+          onClose={() => setShowUnresolver(false)}
+          show={showUnresolver}
+        />
+      ) : !contract.shouldAnswersSumToOne ? (
         <IndependentAnswersResolvePanel
           show={showResolver}
           contract={contract}
@@ -784,7 +798,7 @@ const MultiNumericOverview = (props: {
           />
         </GradientContainer>
       ) : null}
-      {!showResolver && (
+      {!showResolver && !showUnresolver && (
         <>
           {resolutionRating}
           <AnswersPanel
@@ -806,16 +820,20 @@ const MultiDateOverview = (props: {
   points: MultiPoints
   contract: MultiDateContract
   showResolver: boolean
+  showUnresolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
+  setShowUnresolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer) => void
 }) => {
   const {
     points,
     contract,
     showResolver,
+    showUnresolver,
     resolutionRating,
     setShowResolver,
+    setShowUnresolver,
     onAnswerCommentClick,
   } = props
 
@@ -852,7 +870,13 @@ const MultiDateOverview = (props: {
           />
         )}
       </SizedContainer>
-      {!contract.shouldAnswersSumToOne ? (
+      {!contract.shouldAnswersSumToOne && showUnresolver ? (
+        <IndependentAnswersUnresolvePanel
+          contract={contract}
+          onClose={() => setShowUnresolver(false)}
+          show={showUnresolver}
+        />
+      ) : !contract.shouldAnswersSumToOne ? (
         <IndependentAnswersResolvePanel
           show={showResolver}
           contract={contract}
@@ -866,7 +890,7 @@ const MultiDateOverview = (props: {
           />
         </GradientContainer>
       ) : null}
-      {!showResolver && (
+      {!showResolver && !showUnresolver && (
         <>
           {resolutionRating}
           <AnswersPanel
