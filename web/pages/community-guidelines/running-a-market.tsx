@@ -44,7 +44,18 @@ export default function CommunityGuidelinesRunningAMarketPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="subsidized" className="text-xl font-semibold text-ink-900">Subsidized</h2>
-          <p className="mt-3 text-sm italic text-ink-500">(Placeholder — confirm current status with Genzy before publishing. Either update with correct mana figures, note it's temporarily suspended, or remove this section entirely.)</p>
+          <p className="mt-3 text-ink-700">Creators receive 5 mana per unique trader for the first 50 traders, then 1 mana up to a cap of 10,000. Markets also receive a 20 mana liquidity subsidy from the house for the first 50 traders, then 5 mana to the same cap.</p>
+          <p className="mt-3 text-ink-700">A market may be unsubsidized if:</p>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
+            <li>It's unlisted — unlisted markets are never subsidized by default</li>
+            <li>It's self-referential</li>
+            <li>It resolves to something purely random or gambling-like</li>
+            <li>It's spam or extremely low quality (e.g. "will the sun explode tomorrow?")</li>
+            <li>It can never be resolved or could only ever resolve one way</li>
+            <li>It's an exact or near-exact duplicate of an existing market</li>
+            <li>It falls under the unlisting criteria below but isn't severe enough to act on</li>
+          </ul>
+          <p className="mt-3 text-sm text-ink-600">Note: unsubsidization may be applied after some initial bonuses have already been received and is not retroactive. Markets that technically qualify but seem genuinely valuable may still be left subsidized.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">

@@ -107,7 +107,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Running a Market',
     section: 'Subsidized',
-    text: 'subsidized liquidity subsidy unsubsidized',
+    text: 'subsidized mana unique trader 50 traders cap 10000 liquidity subsidy house unsubsidized unlisted self-referential random gambling spam low quality duplicate',
     href: '/community-guidelines/running-a-market#subsidized',
   },
   {
