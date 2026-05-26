@@ -24,7 +24,6 @@ const LinkComponent = (props: { href: string; children: ReactNode }) => {
   )
 }
 
-
 export const DisplayLink = TiptapLink.extend({
   renderHTML({ HTMLAttributes }) {
     HTMLAttributes.href = safeHref(HTMLAttributes.href)
@@ -65,7 +64,11 @@ const safeHref = (href: string | undefined | null): string => {
   return '#'
 }
 
-const INTERNAL_HOSTS = new Set(['manifold.markets', 'manifold.love', 'localhost'])
+const INTERNAL_HOSTS = new Set([
+  'manifold.markets',
+  'manifold.love',
+  'localhost',
+])
 
 const isInternal = (href: string) => {
   if (isLocalPath(href)) return true

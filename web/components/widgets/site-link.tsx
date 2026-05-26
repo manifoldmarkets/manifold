@@ -17,7 +17,7 @@ export const LinkFavicon = (props: { href: string }) => {
       height={16}
       loading="lazy"
       decoding="async"
-      className="mr-1 my-0 inline-block h-[1em] w-[1em] align-text-bottom"
+      className="my-0 mr-1 inline-block h-[1em] w-[1em] align-text-bottom"
       onError={(e) => {
         ;(e.currentTarget as HTMLImageElement).style.display = 'none'
       }}
