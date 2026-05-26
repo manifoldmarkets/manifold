@@ -64,7 +64,7 @@ export default function CommunityGuidelinesPage() {
       <SEO title="Community Guidelines" description="Manifold community guidelines to keep the market fair and fun." />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <h1 className="text-4xl font-bold text-primary-500">Community Guidelines</h1>
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Manifold keeps moderation minimal and trusts you to act in good faith. These guidelines protect the quality of the platform,
           not micromanage it.
         </p>

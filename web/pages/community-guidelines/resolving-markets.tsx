@@ -14,7 +14,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
           <h1 className="text-4xl font-bold">Resolving Markets</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Market creators are responsible for resolving their markets correctly and promptly once resolution criteria are met.
         </p>
 
@@ -43,7 +43,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="abandoned-markets" className="text-xl font-semibold text-ink-1000">Abandoned markets</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>If you've been inactive and your market has unambiguous resolution criteria, a moderator may resolve it on your behalf. See the <a className="text-primary-500 underline" href="/community-guidelines/moderation">Mod guidelines</a> for the exact process.</li>
+            <li>If you've been inactive and your market has unambiguous resolution criteria, a moderator may resolve it on your behalf. See the <a className="text-primary-500 underline" href="/community-guidelines/moderation">Mod Guidelines</a> for the exact process.</li>
           </ul>
         </div>
       </Col>

@@ -14,7 +14,7 @@ export default function CommunityGuidelinesPlatformConductPage() {
           <h1 className="text-4xl font-bold">Platform Conduct</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Rules that apply across the platform and don't fit neatly into other sections.
         </p>
 

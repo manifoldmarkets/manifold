@@ -14,7 +14,7 @@ export default function CommunityGuidelinesModerationPage() {
           <h1 className="text-4xl font-bold">Moderation</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Manifold Mods are community members who help keep markets accurate, resolve disputes, and maintain a healthy environment. This page explains who they are, what they can do, and how to get their help.
         </p>
 

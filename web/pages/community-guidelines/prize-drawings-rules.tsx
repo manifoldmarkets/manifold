@@ -15,7 +15,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
           <h1 className="text-4xl font-bold">Prize Drawing Rules</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Official rules governing <Link href="/prize" className="text-primary-500 underline">Manifold Prize Drawings</Link>, operated by Manifold Markets, Inc.
         </p>
 

@@ -14,7 +14,7 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
           <h1 className="text-4xl font-bold">Comment Guidelines</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Manifold supports open discussion. The following types of comments may be hidden, deleted, or result in a ban.
         </p>
 

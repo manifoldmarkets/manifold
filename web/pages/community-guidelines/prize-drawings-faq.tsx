@@ -15,7 +15,7 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
           <h1 className="text-4xl font-bold">Prize Drawing FAQ</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Manifold runs periodic prize drawings where you can win real money (paid in USDC) just by being an active predictor on the platform.
         </p>
 

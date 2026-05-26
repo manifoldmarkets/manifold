@@ -14,7 +14,7 @@ export default function CommunityGuidelinesAccountsPage() {
           <h1 className="text-4xl font-bold">Accounts & Market Manipulation</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Account rules, alts, impersonation, market manipulation, insider trading.
         </p>
 

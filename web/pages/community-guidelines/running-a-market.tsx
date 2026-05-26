@@ -14,7 +14,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
           <h1 className="text-4xl font-bold">Running a Market</h1>
         </div>
 
-        <p className="mt-3 text-lg text-ink-400">
+        <p className="mt-3 text-lg text-ink-600">
           Creators are held to a higher standard than general users. The platform has game-like incentives and we want you to have fun with them, but not by exploiting loopholes or technicalities on your own markets. If your resolution criteria become unclear due to new events, update them.
         </p>
         <p className="mt-2 text-sm italic text-ink-400">Looking for tips on running great markets? See our creator guide. (coming soon)</p>
