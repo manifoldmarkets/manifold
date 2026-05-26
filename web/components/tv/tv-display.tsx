@@ -11,7 +11,6 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { Linkify } from 'web/components/widgets/linkify'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import {
   BinaryBetPanel,
@@ -100,7 +99,7 @@ export function TVDisplay(props: {
                   target="_blank"
                   className="hover:underline"
                 >
-                  <Linkify text={contract.question} />
+                  {contract.question}
                 </Link>
               </Row>
               {isBinary && (

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { updateMarket } from 'web/lib/api/api'
 import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
-import { Linkify } from '../widgets/linkify'
 
 export const EditableQuestionTitle = (props: {
   contract: Contract
@@ -61,7 +60,7 @@ export const EditableQuestionTitle = (props: {
     </div>
   ) : (
     <div className="group text-xl font-medium sm:text-2xl">
-      <Linkify text={contract.question} />
+      {contract.question}
       {canEdit && (
         <button
           type="button"
