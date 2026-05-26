@@ -27,7 +27,7 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="what-mods-do" className="text-xl font-semibold text-ink-900">What Mods do</h2>
+          <h2 id="what-mods-do" className="text-xl font-semibold text-ink-1000">What Mods do</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Ensure markets are resolved promptly and accurately</li>
             <li>Clarify ambiguous markets when creators are unresponsive</li>
@@ -37,13 +37,13 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="who-mods-are" className="text-xl font-semibold text-ink-900">Who Mods are</h2>
+          <h2 id="who-mods-are" className="text-xl font-semibold text-ink-1000">Who Mods are</h2>
           <p className="mt-3 text-ink-700">Mods are active Manifold users selected by the community manager. New Mods are considered when needed. Candidates are expected to be open-minded, fair, active on the platform, and willing to engage with Discord's #mod-help channel and the @mods site tag.</p>
           <p className="mt-3 text-ink-700">Mod status isn't permanent — it can be removed and reinstated. Reasons include inactivity, conduct issues, or simply not wanting to do the work anymore. This isn't a mark against anyone; it's just how the role works.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="actions-mods-can-take" className="text-xl font-semibold text-ink-900">Actions Mods can take</h2>
+          <h2 id="actions-mods-can-take" className="text-xl font-semibold text-ink-1000">Actions Mods can take</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Issue warnings via mod alerts — anonymous dismissible banners sent directly to a user</li>
             <li>Apply restrictions: posting, market control, or trading bans of varying lengths</li>
@@ -58,7 +58,7 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="how-to-request-mod-help" className="text-xl font-semibold text-ink-900">How to request mod help</h2>
+          <h2 id="how-to-request-mod-help" className="text-xl font-semibold text-ink-1000">How to request mod help</h2>
           <p className="mt-3 text-ink-700">If you need a Mod to resolve a market, post a comment on the market with your desired resolution and a source or reasoning. This helps Mods act quickly and accurately.</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>If the creator has been active on the site within the last month, ping them first and wait at least 24 hours for a response before requesting mod intervention.</li>
@@ -68,7 +68,7 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="how-market-resolution-works" className="text-xl font-semibold text-ink-900">How market resolution works</h2>
+          <h2 id="how-market-resolution-works" className="text-xl font-semibold text-ink-1000">How market resolution works</h2>
           <p className="mt-3 text-ink-700">The process depends on how clear-cut the resolution is.</p>
           <p className="mt-4 text-ink-700 italic">For unambiguous resolutions (e.g. a sports result with a clear outcome):</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
@@ -87,7 +87,7 @@ export default function CommunityGuidelinesModerationPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="if-you-think-a-mod-decision-was-wrong" className="text-xl font-semibold text-ink-900">If you think a Mod decision was wrong</h2>
+          <h2 id="if-you-think-a-mod-decision-was-wrong" className="text-xl font-semibold text-ink-1000">If you think a Mod decision was wrong</h2>
           <p className="mt-3 text-ink-700">
             Reach out on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>. For large markets or situations getting significant blowback, tag <a className="text-primary-500 underline" href="https://manifold.markets/shankypanky" target="_blank" rel="noreferrer">@shankypanky</a> directly to loop her in.
           </p>

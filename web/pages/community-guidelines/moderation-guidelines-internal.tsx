@@ -25,7 +25,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="role-expectations" className="text-xl font-semibold text-ink-900">Role expectations</h2>
+          <h2 id="role-expectations" className="text-xl font-semibold text-ink-1000">Role expectations</h2>
           <p className="mt-3 text-ink-700">Mods are expected to:</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Be welcoming and fair — a lot of moderation is nuanced and will upset someone. Own your mistakes openly.</li>
@@ -43,19 +43,19 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="how-new-mods-are-chosen" className="text-xl font-semibold text-ink-900">How new mods are chosen</h2>
+          <h2 id="how-new-mods-are-chosen" className="text-xl font-semibold text-ink-1000">How new mods are chosen</h2>
           <p className="mt-3 text-ink-700">Once a month during the mod call, the team reviews whether new mods are needed and discusses candidates. Candidates should exceed the expectations above.</p>
           <p className="mt-3 text-ink-700">A casual poll goes out to existing mods to vouch or raise concerns. The community manager makes the final decision and sends the onboarding form to selected users.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="ban-types" className="text-xl font-semibold text-ink-900">Ban types</h2>
+          <h2 id="ban-types" className="text-xl font-semibold text-ink-1000">Ban types</h2>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-sm text-ink-700">
               <thead>
                 <tr className="border-b border-ink-200">
-                  <th className="pb-2 pr-6 text-left font-semibold text-ink-900">Ban type</th>
-                  <th className="pb-2 text-left font-semibold text-ink-900">What it blocks</th>
+                  <th className="pb-2 pr-6 text-left font-semibold text-ink-1000">Ban type</th>
+                  <th className="pb-2 text-left font-semibold text-ink-1000">What it blocks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100">
@@ -84,7 +84,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="ban-guidelines" className="text-xl font-semibold text-ink-900">Ban guidelines</h2>
+          <h2 id="ban-guidelines" className="text-xl font-semibold text-ink-1000">Ban guidelines</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Always include a reason — the user sees it as a banner and it stays on record for future mods. Be information-dense and impersonal.</li>
             <li>Consider the user's warning and ban history. Repeat offenders get treated more harshly.</li>
@@ -95,7 +95,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="mod-alerts" className="text-xl font-semibold text-ink-900">Mod alerts</h2>
+          <h2 id="mod-alerts" className="text-xl font-semibold text-ink-1000">Mod alerts</h2>
           <p className="mt-3 text-ink-700">Mod alerts send an anonymous dismissible banner to a user. Use them to deliver warnings, keep a record, and make sure the user sees it without attaching your name to it.</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Keep alerts information-dense and impersonal — they're a record as much as a message.</li>
@@ -105,7 +105,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="market-intervention-thresholds" className="text-xl font-semibold text-ink-900">Market intervention thresholds</h2>
+          <h2 id="market-intervention-thresholds" className="text-xl font-semibold text-ink-1000">Market intervention thresholds</h2>
           <p className="mt-3 text-ink-700">You can initiate a mod takeover of a market when all of the following are true:</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Over 40 traders</li>
@@ -115,7 +115,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="the-takeover-process" className="text-xl font-semibold text-ink-900">The takeover process</h2>
+          <h2 id="the-takeover-process" className="text-xl font-semibold text-ink-1000">The takeover process</h2>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-ink-700">
             <li>A mod who holds no significant position in the market is delegated as new market owner. They commit to not buying shares to stay impartial.</li>
             <li>Delegated mod comments and edits the description explaining what's happening and the proposed new criteria.</li>
@@ -126,7 +126,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="resolving-abandoned-markets" className="text-xl font-semibold text-ink-900">Resolving abandoned markets</h2>
+          <h2 id="resolving-abandoned-markets" className="text-xl font-semibold text-ink-1000">Resolving abandoned markets</h2>
           <p className="mt-3 text-ink-700">When is it okay to resolve another creator's market?</p>
           <p className="mt-3 text-ink-700 font-medium">Assuming resolution is obvious:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
@@ -145,7 +145,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="handling-fraudulent-or-disputed-resolutions" className="text-xl font-semibold text-ink-900">Handling fraudulent or disputed resolutions</h2>
+          <h2 id="handling-fraudulent-or-disputed-resolutions" className="text-xl font-semibold text-ink-1000">Handling fraudulent or disputed resolutions</h2>
           <p className="mt-3 text-ink-700">You can unresolve and correct a market when:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
             <li>The creator asks you to because they made a mistake</li>
@@ -160,7 +160,7 @@ export default function ModerationGuidelinesInternalPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="when-to-escalate" className="text-xl font-semibold text-ink-900">When to escalate to the community manager</h2>
+          <h2 id="when-to-escalate" className="text-xl font-semibold text-ink-1000">When to escalate to the community manager</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Market is large (over 80 traders) and needs creator input — ask the community manager to email them directly.</li>
             <li>You've issued a correction or warning for a questionable resolution, especially if the creator benefited — always loop in the community manager.</li>

@@ -22,12 +22,12 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="market-states" className="text-xl font-semibold text-ink-900">Market states</h2>
+          <h2 id="market-states" className="text-xl font-semibold text-ink-1000">Market states</h2>
           <p className="mt-3 text-ink-700">Every market has two independently toggleable states: Ranked and Unlisted. Admins and moderators can change either of these.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="ranked" className="text-xl font-semibold text-ink-900">Ranked</h2>
+          <h2 id="ranked" className="text-xl font-semibold text-ink-1000">Ranked</h2>
           <p className="mt-3 text-ink-700">All markets are ranked by default, meaning they count toward leagues.</p>
           <p className="mt-3 text-ink-700">A market may be set to unranked if:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
@@ -43,7 +43,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="subsidized" className="text-xl font-semibold text-ink-900">Subsidized</h2>
+          <h2 id="subsidized" className="text-xl font-semibold text-ink-1000">Subsidized</h2>
           <p className="mt-3 text-ink-700">Creators receive 5 mana per unique trader for the first 50 traders, then 1 mana up to a cap of 10,000. Markets also receive a 20 mana liquidity subsidy from the house for the first 50 traders, then 5 mana to the same cap.</p>
           <p className="mt-3 text-ink-700">A market may be unsubsidized if:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
@@ -59,7 +59,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="unlisted-na-deleted" className="text-xl font-semibold text-ink-900">Markets that may be unlisted, N/A'd, or deleted</h2>
+          <h2 id="unlisted-na-deleted" className="text-xl font-semibold text-ink-1000">Markets that may be unlisted, N/A'd, or deleted</h2>
           <p className="mt-3 text-ink-700">We default to unlisting — this makes a market only accessible via direct URL. Depending on severity, markets may be N/A'd or deleted instead.</p>
           <p className="mt-3 text-ink-700">The following may trigger action:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
@@ -87,12 +87,12 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="third-party-platforms" className="text-xl font-semibold text-ink-900">A note on third-party platforms</h2>
+          <h2 id="third-party-platforms" className="text-xl font-semibold text-ink-1000">A note on third-party platforms</h2>
           <p className="mt-3 text-ink-700">Copying Metaculus tournament questions while the community prediction is hidden violates their terms of service and undermines their tournaments. Don't do it. General questions inspired by external forecasting topics are fine — for example, "will Twitter have a data breach?" is allowed.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="personal-markets" className="text-xl font-semibold text-ink-900">Personal markets</h2>
+          <h2 id="personal-markets" className="text-xl font-semibold text-ink-1000">Personal markets</h2>
           <p className="mt-3 text-ink-700">Personal goal markets are a use case we actively want to support.</p>
           <p className="mt-3 text-ink-700">Personal markets follow the same ranking rules as any other market. They are not automatically unranked — a well-run personal market that doesn't fall under the unranking criteria above should be ranked normally.</p>
           <p className="mt-3 text-ink-700">The exception is when the creator is participating in the market themselves, which creates an inherent insider advantage. In those cases the market will typically be unranked. This can be avoided if the creator opts not to trade, provides no insider advantage to others, and outlines concrete verifiable evidence at market creation.</p>

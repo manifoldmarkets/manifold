@@ -73,7 +73,7 @@ export default function CommunityGuidelinesPage() {
         <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-5 shadow-sm">
-          <h2 id="short-version" className="text-xl font-semibold text-ink-900">Short Version</h2>
+          <h2 id="short-version" className="text-xl font-semibold text-ink-1000">Short Version</h2>
           <ul className="mt-3 space-y-2 text-sm text-ink-700">
             {GUIDELINES.map((line) => (
               <li key={line} className="flex items-start gap-2">
@@ -93,7 +93,7 @@ export default function CommunityGuidelinesPage() {
             >
               <div className="flex items-center gap-2">
                 <item.icon className="h-5 w-5 text-primary-500" />
-                <h3 className="text-lg font-semibold text-ink-900">{item.title}</h3>
+                <h3 className="text-lg font-semibold text-ink-1000">{item.title}</h3>
               </div>
               <p className="mt-2 text-sm leading-6 text-ink-700">{item.description}</p>
             </Link>
@@ -101,7 +101,7 @@ export default function CommunityGuidelinesPage() {
         </div>
 
         <div className="mt-8 rounded-xl border-2 border-ink-200 bg-canvas-50 p-5">
-          <h2 className="text-lg font-semibold text-ink-900">Note</h2>
+          <h2 className="text-lg font-semibold text-ink-1000">Note</h2>
           <p className="mt-2 text-sm text-ink-700">
             These are guidelines, not rules. They don't cover every situation and aren't ironclad. Good participation means understanding the spirit of these norms, not just the letter.
             You may face consequences for behaviour that goes against the general expectation even if it's not explicitly listed.

@@ -21,7 +21,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
         <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="creator-resolution" className="text-xl font-semibold text-ink-900">Creator resolution</h2>
+          <h2 id="creator-resolution" className="text-xl font-semibold text-ink-1000">Creator resolution</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Resolve your market as soon as criteria are met — don't leave it sitting.</li>
             <li>You have 10 minutes to un-resolve and re-resolve if you made a mistake. Don't abuse this window — doing so may result in a fine or ban.</li>
@@ -30,7 +30,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="when-manifold-can-override" className="text-xl font-semibold text-ink-900">When Manifold can override you</h2>
+          <h2 id="when-manifold-can-override" className="text-xl font-semibold text-ink-1000">When Manifold can override you</h2>
           <p className="mt-3 text-ink-700">Creators typically have final say, but not always:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
             <li>Manifold or mods may resolve your market if unambiguous criteria have been met and you're unresponsive.</li>
@@ -41,7 +41,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="abandoned-markets" className="text-xl font-semibold text-ink-900">Abandoned markets</h2>
+          <h2 id="abandoned-markets" className="text-xl font-semibold text-ink-1000">Abandoned markets</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>If you've been inactive and your market has unambiguous resolution criteria, a moderator may resolve it on your behalf. See the <a className="text-primary-500 underline" href="/community-guidelines/moderation">Mod guidelines</a> for the exact process.</li>
           </ul>

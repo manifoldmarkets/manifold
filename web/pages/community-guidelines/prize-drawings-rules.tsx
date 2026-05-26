@@ -22,12 +22,12 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
         <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="sponsor" className="text-xl font-semibold text-ink-900">Sponsor</h2>
+          <h2 id="sponsor" className="text-xl font-semibold text-ink-1000">Sponsor</h2>
           <p className="mt-3 text-ink-700">Manifold Markets, Inc., 425 Divisadero St, San Francisco, CA 94117.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="eligibility" className="text-xl font-semibold text-ink-900">Eligibility</h2>
+          <h2 id="eligibility" className="text-xl font-semibold text-ink-1000">Eligibility</h2>
           <p className="mt-3 text-ink-700">To participate you must:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
             <li>Be at least 18 years old and the age of majority in your jurisdiction</li>
@@ -38,7 +38,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="entry-methods" className="text-xl font-semibold text-ink-900">Entry methods</h2>
+          <h2 id="entry-methods" className="text-xl font-semibold text-ink-1000">Entry methods</h2>
           <p className="mt-3 text-ink-700">There are two ways to earn entries:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
             <li><strong>Free entry</strong> — available to all eligible participants at no cost</li>
@@ -48,7 +48,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="prizes" className="text-xl font-semibold text-ink-900">Prizes</h2>
+          <h2 id="prizes" className="text-xl font-semibold text-ink-1000">Prizes</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Winners receive USDC (a stablecoin) sent to their cryptocurrency wallet</li>
             <li>Winners are responsible for providing a valid wallet address, any blockchain fees, and tax compliance</li>
@@ -57,7 +57,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="winner-requirements" className="text-xl font-semibold text-ink-900">Winner requirements</h2>
+          <h2 id="winner-requirements" className="text-xl font-semibold text-ink-1000">Winner requirements</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Winners must provide a valid wallet address within 5 calendar days of notification</li>
             <li>Identity verification and tax documentation may be required</li>
@@ -66,7 +66,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="prohibited-conduct" className="text-xl font-semibold text-ink-900">Prohibited conduct</h2>
+          <h2 id="prohibited-conduct" className="text-xl font-semibold text-ink-1000">Prohibited conduct</h2>
           <p className="mt-3 text-ink-700">The following will result in disqualification:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
             <li>Multiple accounts or bonus harvesting</li>
@@ -79,7 +79,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="liability" className="text-xl font-semibold text-ink-900">Liability</h2>
+          <h2 id="liability" className="text-xl font-semibold text-ink-1000">Liability</h2>
           <p className="mt-3 text-ink-700">Manifold's liability is limited to the prize value or $100, whichever is less. Disputes are resolved through binding arbitration in San Francisco. See the full rules for complete terms.</p>
         </div>
       </Col>

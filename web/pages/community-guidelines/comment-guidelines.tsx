@@ -21,13 +21,13 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
         <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="comment-hiding" className="text-xl font-semibold text-ink-900">How comment hiding works</h2>
+          <h2 id="comment-hiding" className="text-xl font-semibold text-ink-1000">How comment hiding works</h2>
           <p className="mt-3 text-ink-700">Market creators can hide any comment on their own market at their discretion. Hidden comments remain publicly accessible behind a "comment hidden" message — they aren't deleted.</p>
           <p className="mt-3 text-ink-700">Moderators and admins can also hide or delete comments that violate these guidelines.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="whats-not-allowed" className="text-xl font-semibold text-ink-900">What's not allowed</h2>
+          <h2 id="whats-not-allowed" className="text-xl font-semibold text-ink-1000">What's not allowed</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Spam</li>
             <li>Hateful or discriminatory content directed at a person, group, or user</li>
@@ -40,7 +40,7 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="what-can-get-you-banned" className="text-xl font-semibold text-ink-900">What can get you banned</h2>
+          <h2 id="what-can-get-you-banned" className="text-xl font-semibold text-ink-1000">What can get you banned</h2>
           <p className="mt-3 text-ink-700">Any of the above can result in a restriction or ban depending on severity and history. Repeated violations are treated more harshly than first offenses.</p>
         </div>
       </Col>
