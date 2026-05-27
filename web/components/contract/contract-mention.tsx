@@ -43,7 +43,6 @@ export function ContractMention(props: {
         aria-hidden="true"
         className="mr-1 inline h-[1em] w-[1em] align-text-bottom"
       />
-
       <span
         className={clsx(
           'break-anywhere group-hover/mention:text-primary-500 group-focus/mention:text-primary-500 text-primary-800  mr-0.5 whitespace-normal font-medium transition-colors',
