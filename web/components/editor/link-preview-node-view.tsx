@@ -10,6 +10,18 @@ import {
   replaceManifoldUrlWithMention,
   replaceUrlWithTitleLink,
 } from 'web/components/editor/insert-manifold-mention'
+import { isFaviconAllowed } from 'common/favicon-allowlist'
+
+// Title-replacement is only safe when we recognise the destination host —
+// otherwise an attacker could host a page with a misleading `<title>` and the
+// inline visible text would diverge from the actual link href.
+const isHostTrustedForTitleSwap = (url: string) => {
+  try {
+    return isFaviconAllowed(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
 
 const linkPreviewDismissed: { [key: string]: boolean } = {}
 export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
@@ -91,8 +103,10 @@ export const insertLinkPreviews = async (
             : null
           if (!preview) return
 
-          // 1) Replace the raw URL inline with the page title as a hyperlink.
-          if (preview.title) {
+          // 1) Replace the raw URL inline with the page title as a hyperlink —
+          // but only for allowlisted hosts, so a hostile site can't pick its
+          // own visible link text (link-text/href phishing).
+          if (preview.title && isHostTrustedForTitleSwap(link)) {
             replaceUrlWithTitleLink(editor, link, preview.title)
           }
           // Mark URL as processed so undoing doesn't re-trigger replacement.

@@ -9,13 +9,17 @@ const isManifoldHost = (hostname: string) =>
   hostname.endsWith('.manifold.markets') ||
   hostname.endsWith('.manifold.love')
 
+const SLUG_REGEX = /^[a-z0-9-]+$/i
+
 export const matchManifoldMarketUrl = (url: string) => {
   try {
     const u = new URL(url.trim())
     if (!isManifoldHost(u.hostname)) return null
     const parts = u.pathname.split('/').filter(Boolean)
     if (parts.length < 2) return null
-    return { username: parts[0], slug: parts[1] }
+    const slug = parts[1]
+    if (!SLUG_REGEX.test(slug)) return null
+    return { username: parts[0], slug }
   } catch {
     return null
   }
