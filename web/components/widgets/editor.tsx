@@ -167,12 +167,7 @@ export function useTextEditor(props: {
 
   const addPreviewIfLinkPresent = useEvent(async () => {
     if (!editor) return
-    const content = editor.getJSON()
-    const containsLinkPreview = content.content?.some(
-      (node) => node.type === 'linkPreview'
-    )
-    if (containsLinkPreview) return
-    const links = findLinksInContent(content)
+    const links = findLinksInContent(editor.getJSON())
     if (fetchingLinks.current) return
     fetchingLinks.current = true
     await insertLinkPreviews(editor, links, key)
