@@ -307,7 +307,7 @@ export function GuidelinesSearch() {
   }, [])
 
   return (
-    <div ref={containerRef} className="relative mt-6 w-full max-w-lg">
+    <div ref={containerRef} className="relative mt-6 w-full">
       <div className="flex items-center gap-2 rounded-xl border-2 border-ink-200 bg-canvas-0 px-4 py-2.5 focus-within:border-primary-400">
         <SearchIcon className="h-4 w-4 shrink-0 text-ink-400" />
         <input
