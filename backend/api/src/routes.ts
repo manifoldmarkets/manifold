@@ -199,6 +199,7 @@ import { adminGetManaSales } from './admin-get-mana-sales'
 import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
 import { getSweepstakesList } from './get-sweepstakes-list'
+import { adminAnnouncePrizeDrawing } from './admin-announce-prize-drawing'
 import { adminCreateSweepstakes } from './admin-create-sweepstakes'
 import { getCharityGiveawayList } from './get-charity-giveaway-list'
 import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
@@ -538,6 +539,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-sweepstakes-prize': claimSweepstakesPrize,
   'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
   'admin-create-sweepstakes': adminCreateSweepstakes,
+  'admin-announce-prize-drawing': adminAnnouncePrizeDrawing,
   'admin-create-charity-giveaway': adminCreateCharityGiveaway,
   'admin-update-charity-giveaway-prize': adminUpdateCharityGiveawayPrize,
   'admin-get-prize-claims': adminGetPrizeClaims,
