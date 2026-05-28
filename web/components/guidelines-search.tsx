@@ -328,13 +328,24 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   },
 ]
 
+const STOPWORDS = new Set([
+  'a', 'an', 'the', 'i', 'me', 'my', 'we', 'you', 'your',
+  'is', 'are', 'was', 'were', 'be', 'been', 'do', 'does', 'did',
+  'of', 'to', 'for', 'in', 'on', 'and', 'or', 'but', 'so',
+  'if', 'then', 'than', 'as', 'at', 'by', 'with',
+])
+
 export function GuidelinesSearch() {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const words = query
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w && !STOPWORDS.has(w))
 
   const results =
     words.length === 0
