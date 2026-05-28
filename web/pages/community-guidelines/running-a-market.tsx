@@ -33,7 +33,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="ranked" className="text-xl font-semibold text-ink-1000">Ranked</h2>
-          <p className="mt-3 text-ink-700">All markets are ranked by default, meaning they count toward leagues.</p>
+          <p className="mt-3 text-ink-700">All markets are ranked by default, meaning they count toward <Link href="/community-guidelines/leagues" className="text-primary-500 underline">leagues</Link>.</p>
           <p className="mt-3 text-ink-700">A market may be set to unranked if:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
             <li>It's unlisted — unlisted markets are always unranked, regardless of the toggle</li>

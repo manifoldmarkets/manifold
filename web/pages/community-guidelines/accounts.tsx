@@ -40,7 +40,7 @@ export default function CommunityGuidelinesAccountsPage() {
           <h2 id="alt-accounts" className="text-xl font-semibold text-ink-1000">Alt accounts</h2>
           <p className="mt-3 text-ink-700">Multiple accounts are allowed under specific conditions:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
-            <li>You must tag @mods or request from a Mod or Admin to label your bot, and you must include your handle to the bio of the bot.</li>
+            <li>For automated accounts, see the <a className="text-primary-500 underline" href="/community-guidelines/bots">Bots</a> page — you can self-mark your account as a bot in profile settings rather than tagging mods.</li>
             <li>One pseudonymous account is permitted for predictions you don't want tied to your main identity — it must not benefit your main account or deceive others.</li>
             <li>Any other alts must clearly indicate in the name or bio which account they're associated with, and must not benefit your main account in any way.</li>
           </ul>
