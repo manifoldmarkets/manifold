@@ -20,7 +20,7 @@ import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { applyPendingClarifications } from './apply-pending-clarifications'
 import { autoAwardBounty } from './auto-award-bounty'
-// Auto-cycle disabled while we rework prize drawings — resolve/restart manually.
+// Autoresolve temporarily disabled — uncomment to continue with $100/day.
 // import { autoGenerateAndResolvePrizeDrawings } from './auto-generate-and-resolve-prize-drawings'
 import { autobanUsers } from './autoban-users'
 import { autoLeaguesCycle } from './auto-leagues-cycle'
@@ -199,7 +199,7 @@ export function createJobs() {
       '0 30 2 * * *', // 230 AM daily
       cleanOldNotifications
     ),
-    // Auto-cycle disabled while we rework prize drawings — resolve/restart manually.
+    // Autoresolve temporarily disabled — uncomment to continue with $100/day.
     // createJob(
     //   'auto-generate-and-resolve-prize-drawings',
     //   '0 0 13 * * *', // 1 PM PT daily
