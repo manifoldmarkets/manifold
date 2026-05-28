@@ -2312,7 +2312,7 @@ function PrizeDrawingCampaignNotification(props: {
     >
       {data.eventType === 'created' ? (
         <span>
-          New prize drawing with <b>{prizeAmount}</b>
+          New prize drawing is live: <b>{prizeAmount}</b>
           {data.winnerCount === 1
             ? ' to one winner.'
             : data.winnerCount && data.winnerCount > 1
