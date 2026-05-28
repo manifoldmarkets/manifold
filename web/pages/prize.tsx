@@ -852,9 +852,12 @@ function PastDrawingLabel(props: {
 
   const priceClass = clsx(
     'shrink-0 tabular-nums',
-    tier === 'jackpot' && 'text-sm font-semibold text-amber-700 dark:text-amber-300',
-    tier === 'major' && 'text-sm font-semibold text-amber-700 dark:text-amber-300',
-    tier === 'minor' && 'text-xs font-medium text-amber-700/80 dark:text-amber-400',
+    tier === 'jackpot' &&
+      'text-sm font-semibold text-amber-700 dark:text-amber-300',
+    tier === 'major' &&
+      'text-sm font-semibold text-amber-700 dark:text-amber-300',
+    tier === 'minor' &&
+      'text-xs font-medium text-amber-700/80 dark:text-amber-400',
     tier === 'standard' && 'text-xs text-ink-400'
   )
 
