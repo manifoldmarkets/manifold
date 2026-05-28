@@ -46,7 +46,7 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="prizes" className="text-xl font-semibold text-ink-1000">What are the prizes?</h2>
           <p className="mt-3 text-ink-700">Prizes are paid in USDC, a stablecoin pegged to the US dollar. In drawings with multiple prizes, each person can only win one.</p>
-          <p className="mt-3 text-ink-700">Winners have 5 days to reply with a crypto wallet address. If no address is provided within the claim period, the prize is forfeited — Manifold may select an alternate winner or donate the amount to charity.</p>
+          <p className="mt-3 text-ink-700">Winners have 5 calendar days to reply with a crypto wallet address. If no address is provided within the claim period, Manifold may forfeit the prize and either select an alternate winner or donate the amount to charity.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
