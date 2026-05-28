@@ -335,6 +335,9 @@ const STOPWORDS = new Set([
   'if', 'then', 'than', 'as', 'at', 'by', 'with',
   'what', 'when', 'where', 'why', 'how', 'who',
   'can', 'should', 'would', 'could', 'will',
+  'get', 'got', 'gets', 'getting',
+  'happen', 'happens', 'happened',
+  'have', 'has', 'had',
 ])
 
 export function GuidelinesSearch() {
