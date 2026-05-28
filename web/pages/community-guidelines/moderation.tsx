@@ -1,6 +1,7 @@
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
+import Link from 'next/link'
 import { ShieldCheckIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 
@@ -84,6 +85,12 @@ export default function CommunityGuidelinesModerationPage() {
           </ol>
           <p className="mt-3 text-ink-700">Mods can also correct blatantly wrong resolutions. If a resolution is defensible even if imperfect, they'll comment suggestions but leave the final call to the creator.</p>
           <p className="mt-3 text-ink-700">N/A is a last resort — used only when resolution genuinely cannot be determined after Mods have tried to support clarification. It is not a default response to ambiguity.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-50 p-5">
+          <p className="text-sm text-ink-700">
+            Curious about the playbook mods actually follow — thresholds, escalation, ban guidance? See the <Link href="/community-guidelines/moderation-guidelines-internal" className="text-primary-500 underline">Mod Guidelines</Link>.
+          </p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">

@@ -6,23 +6,17 @@ import { ShieldCheckIcon } from '@heroicons/react/outline'
 
 export default function ModerationGuidelinesInternalPage() {
   return (
-    <Page trackPageView="moderation guidelines internal page" className="!col-span-7">
-      <SEO title="Moderation Guidelines (Internal)" description="Internal moderation guidelines for Manifold mods." />
+    <Page trackPageView="moderation guidelines page" className="!col-span-7">
+      <SEO title="Moderation Guidelines" description="How Manifold mods are expected to act, decide, and escalate." />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
         <div className="flex items-center gap-2 text-primary-500">
           <ShieldCheckIcon className="h-6 w-6" />
           <h1 className="text-4xl font-bold">Moderation Guidelines</h1>
         </div>
 
-        <div className="mt-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-800">
-            This page is for mods only. The public-facing version of this information lives on the{' '}
-            <Link href="/community-guidelines/moderation" className="underline">
-              Moderation
-            </Link>{' '}
-            page.
-          </p>
-        </div>
+        <p className="mt-3 text-lg text-ink-600">
+          How Manifold mods are expected to act, decide, and escalate. Published so the community can see the same playbook the mods follow. For user-facing moderation info — what mods do, how to request help, how to appeal — see the <Link href="/community-guidelines/moderation" className="text-primary-500 underline">Moderation</Link> page.
+        </p>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="role-expectations" className="text-xl font-semibold text-ink-1000">Role expectations</h2>
