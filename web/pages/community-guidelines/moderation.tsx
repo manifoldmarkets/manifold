@@ -4,6 +4,7 @@ import { SEO } from 'web/components/SEO'
 import Link from 'next/link'
 import { ChevronLeftIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
 
 export default function CommunityGuidelinesModerationPage() {
   return (
@@ -102,6 +103,8 @@ export default function CommunityGuidelinesModerationPage() {
             Reach out on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>. For large markets or situations getting significant blowback, tag <a className="text-primary-500 underline" href="https://manifold.markets/shankypanky" target="_blank" rel="noreferrer">@shankypanky</a> directly to loop her in.
           </p>
         </div>
+
+        <SectionNav currentHref="/community-guidelines/moderation" />
       </Col>
     </Page>
   )

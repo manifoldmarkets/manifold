@@ -3,6 +3,7 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ChevronLeftIcon, GiftIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
 import Link from 'next/link'
 
 export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
@@ -86,6 +87,8 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
             For the complete legal terms, see the <Link href="/community-guidelines/prize-drawings-rules" className="text-primary-500 underline">Prize Drawing Rules</Link>.
           </p>
         </div>
+
+        <SectionNav currentHref="/community-guidelines/prize-drawings-faq" />
       </Col>
     </Page>
   )

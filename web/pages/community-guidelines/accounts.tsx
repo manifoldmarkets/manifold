@@ -4,6 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ChevronLeftIcon, LightningBoltIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
 
 export default function CommunityGuidelinesAccountsPage() {
   return (
@@ -62,6 +63,8 @@ export default function CommunityGuidelinesAccountsPage() {
           <h2 id="insider-trading" className="text-xl font-semibold text-ink-1000">Insider trading</h2>
           <p className="mt-3 text-ink-700">Manifold actually encourages trading on private information — this is how markets get more accurate. As long as you didn't have a prior duty to keep that information private (to your employer, to the person who told you, or via a public commitment made on the market), you're welcome to trade on it. Caveat emptor.</p>
         </div>
+
+        <SectionNav currentHref="/community-guidelines/accounts" />
       </Col>
     </Page>
   )

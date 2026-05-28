@@ -4,6 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ChevronLeftIcon, UsersIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
 
 export default function CommunityGuidelinesPlatformConductPage() {
   return (
@@ -52,6 +53,8 @@ export default function CommunityGuidelinesPlatformConductPage() {
             If you believe a rule has been broken or want to flag something to the team, reach out on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>.
           </p>
         </div>
+
+        <SectionNav currentHref="/community-guidelines/platform-conduct" />
       </Col>
     </Page>
   )

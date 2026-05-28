@@ -4,6 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { CheckCircleIcon, ChevronLeftIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
 
 export default function CommunityGuidelinesResolvingMarketsPage() {
   return (
@@ -50,6 +51,8 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
             <li>If you've been inactive and your market has unambiguous resolution criteria, a moderator may resolve it on your behalf. See the <a className="text-primary-500 underline" href="/community-guidelines/moderation">Mod Guidelines</a> for the exact process.</li>
           </ul>
         </div>
+
+        <SectionNav currentHref="/community-guidelines/resolving-markets" />
       </Col>
     </Page>
   )

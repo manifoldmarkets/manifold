@@ -4,6 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ChevronLeftIcon, CollectionIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
 
 export default function CommunityGuidelinesRunningAMarketPage() {
   return (
@@ -106,6 +107,8 @@ export default function CommunityGuidelinesRunningAMarketPage() {
             <li>Manifold can't force a creator to resolve a market if they leave the platform or go inactive.</li>
           </ul>
         </div>
+
+        <SectionNav currentHref="/community-guidelines/running-a-market" />
       </Col>
     </Page>
   )

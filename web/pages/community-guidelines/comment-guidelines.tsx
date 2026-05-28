@@ -4,6 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ChatAlt2Icon, ChevronLeftIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
 
 export default function CommunityGuidelinesCommentGuidelinesPage() {
   return (
@@ -47,6 +48,8 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
           <h2 id="what-can-get-you-banned" className="text-xl font-semibold text-ink-1000">What can get you banned</h2>
           <p className="mt-3 text-ink-700">Any of the above can result in a restriction or ban depending on severity and history. Repeated violations are treated more harshly than first offenses.</p>
         </div>
+
+        <SectionNav currentHref="/community-guidelines/comment-guidelines" />
       </Col>
     </Page>
   )
