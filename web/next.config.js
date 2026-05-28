@@ -64,6 +64,16 @@ module.exports = {
   async redirects() {
     return [
       {
+        source: '/community-guidelines/prize-faq',
+        destination: '/community-guidelines/prize-drawings-faq',
+        permanent: true,
+      },
+      {
+        source: '/community-guidelines/prize-rules',
+        destination: '/community-guidelines/prize-drawings-rules',
+        permanent: true,
+      },
+      {
         source: '/supporter',
         destination: '/membership',
         permanent: true,
