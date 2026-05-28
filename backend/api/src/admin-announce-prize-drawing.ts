@@ -84,6 +84,7 @@ export const adminAnnouncePrizeDrawing: APIHandler<
         sweepstakesNum,
         totalPrizeUsd,
         closeTime,
+        winnerCount,
       },
     })
   } catch (err) {
