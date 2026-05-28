@@ -7,12 +7,20 @@ export const GUIDELINE_SECTIONS = [
     href: '/community-guidelines/accounts',
   },
   {
+    title: 'Bots',
+    href: '/community-guidelines/bots',
+  },
+  {
     title: 'Running a Market',
     href: '/community-guidelines/running-a-market',
   },
   {
     title: 'Resolving Markets',
     href: '/community-guidelines/resolving-markets',
+  },
+  {
+    title: 'Leagues',
+    href: '/community-guidelines/leagues',
   },
   {
     title: 'Comment Guidelines',

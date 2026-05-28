@@ -45,6 +45,32 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
     href: '/community-guidelines/accounts#insider-trading',
   },
 
+  // Bots
+  {
+    page: 'Bots',
+    section: 'Marking an account as a bot',
+    text: 'mark account bot profile settings cog account settings api key permanent moderator automated trading bot api script',
+    href: '/community-guidelines/bots#marking-an-account-as-a-bot',
+  },
+  {
+    page: 'Bots',
+    section: 'What changes when you become a bot',
+    text: 'bot badge silicon division leagues unique trader bonuses importance score bettor bonuses excluded',
+    href: '/community-guidelines/bots#what-changes-when-you-become-a-bot',
+  },
+  {
+    page: 'Bots',
+    section: 'Separate your human and bot accounts',
+    text: 'separate primary account bot account dedicated automated trading reduction removal bonus eligibility alts',
+    href: '/community-guidelines/bots#separate-your-human-and-bot-accounts',
+  },
+  {
+    page: 'Bots',
+    section: 'Verification and prizes',
+    text: 'bot accounts no identity verification kyc silicon league prize convert send main account prize drawings',
+    href: '/community-guidelines/bots#verification-and-prizes',
+  },
+
   // Resolving Markets
   {
     page: 'Resolving Markets',
@@ -63,6 +89,32 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
     section: 'Abandoned markets',
     text: 'inactive unambiguous resolution criteria moderator resolve mod guidelines',
     href: '/community-guidelines/resolving-markets#abandoned-markets',
+  },
+
+  // Leagues
+  {
+    page: 'Leagues',
+    section: 'What counts toward your score',
+    text: 'profit ranked markets unranked own markets 1 hour delay self-trade fills stripped profit calculation',
+    href: '/community-guidelines/leagues#what-counts',
+  },
+  {
+    page: 'Leagues',
+    section: 'Divisions and movement',
+    text: 'seven divisions silicon bronze silver gold platinum diamond masters promotion demotion season cohort',
+    href: '/community-guidelines/leagues#divisions',
+  },
+  {
+    page: 'Leagues',
+    section: 'Prizes',
+    text: 'prizes season end divisions ranks identity verification kyc silicon bots 100 mana one prize per season',
+    href: '/community-guidelines/leagues#prizes',
+  },
+  {
+    page: 'Leagues',
+    section: 'What gets your prize pulled',
+    text: 'prize withheld reduced recalled manipulating markets misresolving refunding counterparties coordinating trades alts bots forfeiture',
+    href: '/community-guidelines/leagues#prize-forfeiture',
   },
 
   // Platform Conduct

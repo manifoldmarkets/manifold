@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { LightningBoltIcon, UsersIcon, ShieldCheckIcon, CheckCircleIcon, CollectionIcon, ChatAlt2Icon, GiftIcon } from '@heroicons/react/outline'
+import { LightningBoltIcon, UsersIcon, ShieldCheckIcon, CheckCircleIcon, CollectionIcon, ChatAlt2Icon, GiftIcon, ChipIcon, ChartBarIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 const GUIDELINES = [
@@ -21,6 +21,12 @@ const SECTIONS = [
     href: '/community-guidelines/accounts',
   },
   {
+    title: 'Bots',
+    description: 'How to mark an account as a bot, what changes, and rules for automated traders.',
+    icon: ChipIcon,
+    href: '/community-guidelines/bots',
+  },
+  {
     title: 'Running a Market',
     description: "What's banned, ranked vs unranked, creator expectations, personal markets.",
     icon: CollectionIcon,
@@ -31,6 +37,12 @@ const SECTIONS = [
     description: 'Creator resolution, mod intervention, abandoned markets.',
     icon: CheckCircleIcon,
     href: '/community-guidelines/resolving-markets',
+  },
+  {
+    title: 'Leagues',
+    description: 'Scoring, divisions, prizes, and what can get your league prize pulled.',
+    icon: ChartBarIcon,
+    href: '/community-guidelines/leagues',
   },
   {
     title: 'Comment Guidelines',
