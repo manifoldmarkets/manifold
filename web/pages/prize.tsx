@@ -828,9 +828,12 @@ function AnnouncePrizeDrawingSection(props: {
 // visually so people scrolling history can spot the big ones at a glance.
 function PastDrawingLabel(props: {
   sweepstakesNum: number
-  totalPrizeUsd: number
+  totalPrizeUsd: number | undefined
 }) {
-  const { sweepstakesNum, totalPrizeUsd } = props
+  const { sweepstakesNum } = props
+  // Old API responses (pre-totalPrizeUsd) and the type-narrowing both need a
+  // default so the dropdown never crashes if the field hasn't shipped yet.
+  const totalPrizeUsd = props.totalPrizeUsd ?? 0
   const tier =
     totalPrizeUsd >= 10000
       ? 'gold-block'
@@ -853,14 +856,16 @@ function PastDrawingLabel(props: {
       )}
     >
       <span>Drawing #{sweepstakesNum}</span>
-      <span
-        className={clsx(
-          'shrink-0 text-xs',
-          tier === 'default' && 'text-ink-500'
-        )}
-      >
-        ${totalPrizeUsd.toLocaleString()}
-      </span>
+      {totalPrizeUsd > 0 && (
+        <span
+          className={clsx(
+            'shrink-0 text-xs',
+            tier === 'default' && 'text-ink-500'
+          )}
+        >
+          ${totalPrizeUsd.toLocaleString()}
+        </span>
+      )}
     </span>
   )
 }
