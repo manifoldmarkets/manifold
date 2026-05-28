@@ -814,11 +814,7 @@ function AnnouncePrizeDrawingSection(props: {
           </Button>
         </div>
       ) : (
-        <Button
-          color="indigo"
-          size="sm"
-          onClick={() => setConfirming(true)}
-        >
+        <Button color="indigo" size="sm" onClick={() => setConfirming(true)}>
           Send announcement
         </Button>
       )}
@@ -850,7 +846,7 @@ function PastDrawingLabel(props: {
       className={clsx(
         'flex w-full items-center justify-between gap-3',
         tier === 'gold-block' &&
-          '-my-0.5 -mx-1 rounded-md bg-amber-200 px-2 py-0.5 font-bold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+          '-mx-1 -my-0.5 rounded-md bg-amber-200 px-2 py-0.5 font-bold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
         tier === 'gold-text' &&
           'font-semibold text-amber-700 dark:text-amber-400',
         tier === 'amber-text' &&

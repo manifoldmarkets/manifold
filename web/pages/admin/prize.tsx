@@ -122,7 +122,7 @@ function PrizeClaimsTable() {
   // A drawing is "paid out" once every claim row has a terminal status
   // (sent / rejected / opted_out) and there are no rows still awaiting payout
   // or missing a status. Mid-flight drawings stay visible regardless of toggle.
-  const isDrawingPaidOut = (claims: typeof groupedClaims[number]) =>
+  const isDrawingPaidOut = (claims: (typeof groupedClaims)[number]) =>
     claims.every(
       (c) =>
         c.paymentStatus === 'sent' ||
@@ -169,135 +169,134 @@ function PrizeClaimsTable() {
         </button>
       </Row>
 
-      {visibleGroups
-        .map(([sweepstakesNum, sweepClaims]) => (
-          <Col key={sweepstakesNum} className="gap-4">
-            <h2 className="text-ink-700 text-lg font-semibold">
-              Drawing #{sweepstakesNum}
-            </h2>
+      {visibleGroups.map(([sweepstakesNum, sweepClaims]) => (
+        <Col key={sweepstakesNum} className="gap-4">
+          <h2 className="text-ink-700 text-lg font-semibold">
+            Drawing #{sweepstakesNum}
+          </h2>
 
-            <div className="bg-canvas-0 overflow-x-auto rounded-lg border">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-canvas-50 border-b">
-                    <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
-                      Rank
-                    </th>
-                    <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
-                      User
-                    </th>
-                    <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
-                      Prize
-                    </th>
-                    <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
-                      Wallet
-                    </th>
-                    <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sweepClaims.map((claim) => (
-                    <tr
-                      key={`${claim.sweepstakesNum}-${claim.userId}`}
-                      className="border-b last:border-b-0"
-                    >
-                      <td className="px-4 py-3">
-                        <span
-                          className={clsx(
-                            'inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold',
-                            claim.rank === 1 && 'bg-amber-100 text-amber-700',
-                            claim.rank === 2 && 'bg-gray-100 text-gray-600',
-                            claim.rank === 3 && 'bg-orange-100 text-orange-700',
-                            claim.rank > 3 && 'bg-canvas-50 text-ink-500'
-                          )}
-                        >
-                          {claim.rank}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Row className="items-center gap-2">
-                          <Avatar
-                            username={claim.username}
-                            avatarUrl={claim.avatarUrl}
-                            size="sm"
-                          />
-                          <UserLink
-                            user={{
-                              id: claim.userId,
-                              username: claim.username,
-                              name: claim.name,
-                            }}
-                          />
-                        </Row>
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        ${claim.prizeAmountUsdc}
-                      </td>
-                      <td className="px-4 py-3">
-                        {claim.walletAddress ? (
-                          <WalletAddressCell
-                            address={claim.walletAddress}
-                            copyable={claim.paymentStatus === 'awaiting'}
-                            onCopy={() =>
-                              handleCopyAddress(
-                                claim.id,
-                                claim.walletAddress as string
-                              )
-                            }
-                          />
-                        ) : (
-                          <span className="text-ink-400 text-sm italic">
-                            Not submitted
-                          </span>
+          <div className="bg-canvas-0 overflow-x-auto rounded-lg border">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-canvas-50 border-b">
+                  <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
+                    Rank
+                  </th>
+                  <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
+                    User
+                  </th>
+                  <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
+                    Prize
+                  </th>
+                  <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
+                    Wallet
+                  </th>
+                  <th className="text-ink-600 px-4 py-3 text-left text-sm font-medium">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sweepClaims.map((claim) => (
+                  <tr
+                    key={`${claim.sweepstakesNum}-${claim.userId}`}
+                    className="border-b last:border-b-0"
+                  >
+                    <td className="px-4 py-3">
+                      <span
+                        className={clsx(
+                          'inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold',
+                          claim.rank === 1 && 'bg-amber-100 text-amber-700',
+                          claim.rank === 2 && 'bg-gray-100 text-gray-600',
+                          claim.rank === 3 && 'bg-orange-100 text-orange-700',
+                          claim.rank > 3 && 'bg-canvas-50 text-ink-500'
                         )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Row className="items-center gap-2">
-                          <StatusSelector
+                      >
+                        {claim.rank}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Row className="items-center gap-2">
+                        <Avatar
+                          username={claim.username}
+                          avatarUrl={claim.avatarUrl}
+                          size="sm"
+                        />
+                        <UserLink
+                          user={{
+                            id: claim.userId,
+                            username: claim.username,
+                            name: claim.name,
+                          }}
+                        />
+                      </Row>
+                    </td>
+                    <td className="px-4 py-3 font-medium">
+                      ${claim.prizeAmountUsdc}
+                    </td>
+                    <td className="px-4 py-3">
+                      {claim.walletAddress ? (
+                        <WalletAddressCell
+                          address={claim.walletAddress}
+                          copyable={claim.paymentStatus === 'awaiting'}
+                          onCopy={() =>
+                            handleCopyAddress(
+                              claim.id,
+                              claim.walletAddress as string
+                            )
+                          }
+                        />
+                      ) : (
+                        <span className="text-ink-400 text-sm italic">
+                          Not submitted
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Row className="items-center gap-2">
+                        <StatusSelector
+                          currentStatus={claim.paymentStatus}
+                          disabled={updatingId !== null}
+                          loading={
+                            updatingId ===
+                            (claim.id ??
+                              rowKey(claim.sweepstakesNum, claim.userId))
+                          }
+                          onChange={(status) =>
+                            handleStatusChange(claim, status)
+                          }
+                        />
+                        {claim.id && (
+                          <ResetClaimButton
+                            hasWallet={!!claim.walletAddress}
                             currentStatus={claim.paymentStatus}
+                            username={claim.username}
                             disabled={updatingId !== null}
-                            loading={
-                              updatingId ===
-                              (claim.id ??
-                                rowKey(claim.sweepstakesNum, claim.userId))
-                            }
-                            onChange={(status) =>
-                              handleStatusChange(claim, status)
+                            onConfirm={() =>
+                              handleResetClaim(claim.id as string)
                             }
                           />
-                          {claim.id && (
-                            <ResetClaimButton
-                              hasWallet={!!claim.walletAddress}
-                              currentStatus={claim.paymentStatus}
-                              username={claim.username}
+                        )}
+                        {copiedClaimId === claim.id &&
+                          claim.id &&
+                          claim.paymentStatus === 'awaiting' && (
+                            <MarkSentPrompt
                               disabled={updatingId !== null}
-                              onConfirm={() =>
-                                handleResetClaim(claim.id as string)
+                              onMarkSent={() =>
+                                handleStatusChange(claim, 'sent')
                               }
+                              onDismiss={() => setCopiedClaimId(null)}
                             />
                           )}
-                          {copiedClaimId === claim.id &&
-                            claim.id &&
-                            claim.paymentStatus === 'awaiting' && (
-                              <MarkSentPrompt
-                                disabled={updatingId !== null}
-                                onMarkSent={() =>
-                                  handleStatusChange(claim, 'sent')
-                                }
-                                onDismiss={() => setCopiedClaimId(null)}
-                              />
-                            )}
-                        </Row>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Col>
-        ))}
+                      </Row>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Col>
+      ))}
 
       {/* CSV Export Section */}
       <Col className="gap-3">
