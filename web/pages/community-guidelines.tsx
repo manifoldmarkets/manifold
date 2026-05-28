@@ -68,11 +68,11 @@ export default function CommunityGuidelinesPage() {
           Manifold keeps moderation minimal and trusts you to act in good faith. These guidelines protect the quality of the platform,
           not micromanage it.
         </p>
-        <p className="mt-1 text-sm text-ink-400">Last updated: May 2026</p>
+        <p className="mt-1 text-sm text-ink-600">Last updated: May 2026</p>
 
         <GuidelinesSearch />
 
-        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-5 shadow-sm">
+        <div className="mt-6 rounded-xl border-2 border-ink-200 border-l-4 border-l-primary-500 bg-canvas-0 p-5 shadow-sm">
           <h2 id="short-version" className="text-xl font-semibold text-ink-1000">Short Version</h2>
           <ul className="mt-3 space-y-2 text-sm text-ink-700">
             {GUIDELINES.map((line) => (
