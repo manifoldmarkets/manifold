@@ -18,7 +18,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAnswer } from 'web/hooks/use-answers'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -292,7 +292,11 @@ function VerifyToCommentPrompt(props: { className?: string }) {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
     } finally {
       setLoading(false)
     }

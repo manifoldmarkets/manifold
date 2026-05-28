@@ -8,7 +8,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
@@ -47,7 +47,11 @@ export const VerifyPhoneNumberBanner = (props: {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
     } finally {
       setLoading(false)
     }
