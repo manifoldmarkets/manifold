@@ -49,7 +49,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Bots',
     section: 'Marking an account as a bot',
-    text: 'mark account bot profile settings cog account settings api key permanent moderator automated trading bot api script',
+    text: 'mark account bot profile settings cog account settings api key permanent moderator automated trading bot api script how to make a bot',
     href: '/community-guidelines/bots#marking-an-account-as-a-bot',
   },
   {
@@ -113,7 +113,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Leagues',
     section: 'What gets your prize pulled',
-    text: 'prize withheld reduced recalled manipulating markets misresolving refunding counterparties coordinating trades alts bots forfeiture',
+    text: 'prize withheld reduced recalled manipulating manipulate manipulation cheating cheat misresolving refunding refund counterparties counterparty wash trading collusion coordinating trades alts bots forfeiture',
     href: '/community-guidelines/leagues#prize-forfeiture',
   },
 
@@ -299,7 +299,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Moderation',
     section: 'Who Mods are',
-    text: 'active manifold users community manager open-minded fair discord mod-help mods site tag status removed reinstated inactivity conduct',
+    text: 'active manifold users community manager open-minded fair discord mod-help mods site tag status removed reinstated inactivity conduct become candidate apply join new mods selected how to become a mod',
     href: '/community-guidelines/moderation#who-mods-are',
   },
   {
