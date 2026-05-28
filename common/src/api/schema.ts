@@ -3472,6 +3472,7 @@ export const API = (_apiTypeCheck = {
         closeTime: number
         winningTicketIds: string[] | null
         createdTime: number
+        announcementSent: boolean
       }
       userStats: {
         userId: string
@@ -3516,6 +3517,7 @@ export const API = (_apiTypeCheck = {
         closeTime: number
         createdTime: number
         hasWinners: boolean
+        totalPrizeUsd: number
       }>
     },
   },
@@ -3539,6 +3541,30 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as {
       sweepstakesNum: number
+    },
+  },
+  'admin-announce-prize-drawing': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        // When true, returns the title + body that *would* be sent
+        // without actually firing notifications or flipping the
+        // announcement_sent flag. Used by the admin UI for the preview.
+        dryRun: z.boolean().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      sweepstakesNum: number
+      title: string
+      body: string
+      totalPrizeUsd: number
+      winnerCount: number
+      closeTime: number
+      alreadySent: boolean
+      sent: boolean
     },
   },
   'buy-sweepstakes-tickets': {

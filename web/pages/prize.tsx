@@ -42,6 +42,7 @@ import {
   getCurrentSweepstakesTicketPrice,
   getRankLabel,
   getTotalPrizePool,
+  getTotalWinnerCount,
   SweepstakesPrize,
 } from 'common/sweepstakes'
 import {
@@ -422,9 +423,17 @@ export default function SweepstakesPage({
                 <SelectDropdown
                   aria-label="Select prize drawing"
                   value={sweepstakes.sweepstakesNum}
+                  renderButtonLabel={(opt) =>
+                    opt ? `Drawing #${opt.value}` : 'Select drawing'
+                  }
                   options={sweepstakesList.map((s) => ({
                     value: s.sweepstakesNum,
-                    label: `Drawing #${s.sweepstakesNum}`,
+                    label: (
+                      <PastDrawingLabel
+                        sweepstakesNum={s.sweepstakesNum}
+                        totalPrizeUsd={s.totalPrizeUsd}
+                      />
+                    ),
                   }))}
                   onChange={(nextNum) => {
                     if (
@@ -685,6 +694,10 @@ export default function SweepstakesPage({
           />
         )}
 
+        {isAdmin && sweepstakes && (
+          <AnnouncePrizeDrawingSection sweepstakes={sweepstakes} />
+        )}
+
         <CreateSweepstakesModal
           open={showCreateSweepstakesModal}
           setOpen={setShowCreateSweepstakesModal}
@@ -697,6 +710,165 @@ export default function SweepstakesPage({
         />
       </Col>
     </Page>
+  )
+}
+
+// Admin-only "announce drawing to subscribers" section. Shows a live preview
+// of the notification, then a confirm-to-send button. Once-only enforcement
+// is server-side (sweepstakes.announcement_sent flag); this UI just disables
+// the button when announcementSent is already true.
+function AnnouncePrizeDrawingSection(props: {
+  sweepstakes: {
+    sweepstakesNum: number
+    prizes: SweepstakesPrize[]
+    closeTime: number
+    announcementSent: boolean
+  }
+}) {
+  const { sweepstakes } = props
+  const totalPrize = getTotalPrizePool(sweepstakes.prizes)
+  const winnerCount = getTotalWinnerCount(sweepstakes.prizes)
+
+  const title = 'New prize drawing is live'
+  const audience =
+    winnerCount === 1 ? 'to one winner' : `across ${winnerCount} winners`
+  const body = `$${totalPrize.toLocaleString()} ${audience}.`
+
+  const [sent, setSent] = useState(sweepstakes.announcementSent)
+  const [sending, setSending] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+
+  const onSend = async () => {
+    setSending(true)
+    try {
+      await api('admin-announce-prize-drawing', {
+        sweepstakesNum: sweepstakes.sweepstakesNum,
+      })
+      setSent(true)
+      setConfirming(false)
+      toast.success('Announcement sent')
+    } catch (err) {
+      toast.error(
+        err instanceof APIError ? err.message : 'Failed to send announcement'
+      )
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 dark:border-indigo-800 dark:bg-indigo-950/20">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-ink-900 text-sm font-semibold uppercase tracking-wide">
+          Admin · Announce to subscribers
+        </h3>
+        <span className="text-ink-500 text-xs">
+          Only users opted in to <code>prize_drawings</code> notifications will
+          receive this.
+        </span>
+      </div>
+
+      {/* Notification preview — mimics how it'll render in users' inboxes */}
+      <div className="bg-canvas-0 border-ink-200 mb-3 rounded-md border p-3 shadow-sm">
+        <div className="text-ink-400 mb-1 text-xs">PREVIEW</div>
+        <div className="flex gap-3">
+          <div className="bg-primary-100 text-primary-700 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+            M
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-ink-900 text-sm font-medium">{title}</div>
+            <div className="text-ink-700 mt-0.5 text-sm">{body}</div>
+            <div className="text-ink-400 mt-1 text-xs">
+              from Manifold Markets
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {sent ? (
+        <div className="text-ink-600 flex items-center gap-2 text-sm">
+          <span className="text-green-600">✓</span>
+          Announcement already sent for Drawing #{sweepstakes.sweepstakesNum}
+        </div>
+      ) : confirming ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-ink-700 text-sm">
+            Send to all eligible users now?
+          </span>
+          <Button
+            color="indigo"
+            size="sm"
+            loading={sending}
+            disabled={sending}
+            onClick={onSend}
+          >
+            Yes, send
+          </Button>
+          <Button
+            color="gray-outline"
+            size="sm"
+            disabled={sending}
+            onClick={() => setConfirming(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <Button
+          color="indigo"
+          size="sm"
+          onClick={() => setConfirming(true)}
+        >
+          Send announcement
+        </Button>
+      )}
+    </div>
+  )
+}
+
+// Tiered styling for past-drawings dropdown options. Larger prizes pop
+// visually so people scrolling history can spot the big ones at a glance.
+function PastDrawingLabel(props: {
+  sweepstakesNum: number
+  totalPrizeUsd: number | undefined
+}) {
+  const { sweepstakesNum } = props
+  // Old API responses (pre-totalPrizeUsd) and the type-narrowing both need a
+  // default so the dropdown never crashes if the field hasn't shipped yet.
+  const totalPrizeUsd = props.totalPrizeUsd ?? 0
+  const tier =
+    totalPrizeUsd >= 10000
+      ? 'gold-block'
+      : totalPrizeUsd >= 1000
+      ? 'gold-text'
+      : totalPrizeUsd >= 500
+      ? 'amber-text'
+      : 'default'
+
+  return (
+    <span
+      className={clsx(
+        'flex w-full items-center justify-between gap-3',
+        tier === 'gold-block' &&
+          '-my-0.5 -mx-1 rounded-md bg-amber-200 px-2 py-0.5 font-bold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+        tier === 'gold-text' &&
+          'font-semibold text-amber-700 dark:text-amber-400',
+        tier === 'amber-text' &&
+          'font-medium text-amber-600 dark:text-amber-400'
+      )}
+    >
+      <span>Drawing #{sweepstakesNum}</span>
+      {totalPrizeUsd > 0 && (
+        <span
+          className={clsx(
+            'shrink-0 text-xs',
+            tier === 'default' && 'text-ink-500'
+          )}
+        >
+          ${totalPrizeUsd.toLocaleString()}
+        </span>
+      )}
+    </span>
   )
 }
 

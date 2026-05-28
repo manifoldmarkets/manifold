@@ -503,6 +503,10 @@ export type PrizeDrawingNotificationData = {
   sweepstakesNum: number
   totalPrizeUsd: number
   closeTime: number
+  // Optional for backward compat — older 'created' notifications didn't
+  // include this. The in-app renderer falls back to a generic format
+  // when missing so historical notifications still render.
+  winnerCount?: number
 }
 
 export type CharityGiveawayNotificationData = {
