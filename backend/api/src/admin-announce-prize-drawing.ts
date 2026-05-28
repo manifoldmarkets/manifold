@@ -43,7 +43,7 @@ export const adminAnnouncePrizeDrawing: APIHandler<
   const prizeText = `$${totalPrizeUsd.toLocaleString()}`
   const audienceText =
     winnerCount === 1 ? 'to one winner' : `across ${winnerCount} winners`
-  const body_text = `Drawing #${sweepstakesNum} is live — ${prizeText} ${audienceText}.`
+  const body_text = `New prize drawing with ${prizeText} ${audienceText}.`
 
   const previewPayload = {
     sweepstakesNum,
