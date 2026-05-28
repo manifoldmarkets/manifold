@@ -2,9 +2,32 @@ import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { ChartBarIcon, ChevronLeftIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { ChartBarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/outline'
+import { DIVISION_NAMES } from 'common/leagues'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 import { SectionNav } from 'web/components/guidelines-sections'
+import { DIVISION_STYLES } from 'web/components/leagues/division-badge'
+
+const DIVISION_ICONS: Record<number, string> = {
+  0: '🤖',
+  1: '🥉',
+  2: '🥈',
+  3: '🥇',
+  4: '💿',
+  5: '💎',
+  6: '🎖️',
+}
+
+const DIVISION_MOVEMENT: { name: string; demote: string; promote: string }[] = [
+  { name: 'Silicon', demote: '—', promote: 'Bots only — stays in Silicon' },
+  { name: 'Bronze', demote: 'No demotion', promote: '10 promote (top 2 skip a division)' },
+  { name: 'Silver', demote: '5 demote', promote: '7 promote (top 1 skips a division)' },
+  { name: 'Gold', demote: '6 demote', promote: '6 promote' },
+  { name: 'Platinum', demote: '10 demote', promote: '5 promote' },
+  { name: 'Diamond', demote: '10 demote', promote: '2 promote' },
+  { name: 'Masters', demote: '~60% demote', promote: 'Top division — nowhere higher to go' },
+]
 
 export default function CommunityGuidelinesLeaguesPage() {
   return (
@@ -33,9 +56,59 @@ export default function CommunityGuidelinesLeaguesPage() {
           </ul>
         </div>
 
-        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+        <div className="mt-6 rounded-xl border-2 border-ink-200 border-l-4 border-l-primary-500 bg-canvas-0 p-6 shadow-sm">
           <h2 id="divisions" className="text-xl font-semibold text-ink-1000">Divisions and movement</h2>
-          <p className="mt-3 text-ink-700">There are seven divisions, in order: <span id="silicon" className="font-medium">Silicon</span> (bots only), Bronze, Silver, Gold, Platinum, Diamond, and Masters. At the end of each season the top finishers promote up a division and the bottom finishers demote down, with the exact numbers varying by division. Masters auto-demotes around 60% of its cohort each season to keep competition fresh.</p>
+          <p className="mt-3 text-ink-700">Seven divisions, from <span id="silicon" className="font-medium">Silicon</span> (bots only) at the bottom to Masters at the top. New human accounts start in Bronze. At the end of each season your final rank in your division decides whether you promote up, stay put, or demote down.</p>
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            {[0, 1, 2, 3, 4, 5, 6].map((d, i) => {
+              const style = DIVISION_STYLES[d]
+              return (
+                <div key={d} className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={clsx(
+                        'flex h-12 w-12 items-center justify-center rounded-lg border text-xl shadow-sm',
+                        style.bg,
+                        style.border
+                      )}
+                    >
+                      {DIVISION_ICONS[d]}
+                    </div>
+                    <span className={clsx('text-xs font-medium', style.text)}>
+                      {DIVISION_NAMES[d]}
+                    </span>
+                  </div>
+                  {i < 6 && (
+                    <ChevronRightIcon className="hidden h-4 w-4 shrink-0 text-ink-400 sm:block" />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full text-sm text-ink-700">
+              <thead>
+                <tr className="border-b border-ink-200">
+                  <th className="pb-2 pr-4 text-left font-semibold text-ink-1000">Division</th>
+                  <th className="pb-2 pr-4 text-left font-semibold text-ink-1000">Demotion</th>
+                  <th className="pb-2 text-left font-semibold text-ink-1000">Promotion</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-100">
+                {DIVISION_MOVEMENT.map((row) => (
+                  <tr key={row.name}>
+                    <td className="py-2 pr-4 font-medium">{row.name}</td>
+                    <td className="py-2 pr-4">{row.demote}</td>
+                    <td className="py-2">{row.promote}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-4 text-ink-700"><span className="font-medium">Double promotion</span> means skipping a division entirely — a stellar run in Bronze can land you in Gold next season. <span className="font-medium">Masters auto-demotes around 60%</span> of its cohort each month so the top division stays competitive even though there's no higher rung to promote into.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
