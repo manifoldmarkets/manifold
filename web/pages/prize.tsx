@@ -422,9 +422,17 @@ export default function SweepstakesPage({
                 <SelectDropdown
                   aria-label="Select prize drawing"
                   value={sweepstakes.sweepstakesNum}
+                  renderButtonLabel={(opt) =>
+                    opt ? `Drawing #${opt.value}` : 'Select drawing'
+                  }
                   options={sweepstakesList.map((s) => ({
                     value: s.sweepstakesNum,
-                    label: `Drawing #${s.sweepstakesNum}`,
+                    label: (
+                      <PastDrawingLabel
+                        sweepstakesNum={s.sweepstakesNum}
+                        totalPrizeUsd={s.totalPrizeUsd}
+                      />
+                    ),
                   }))}
                   onChange={(nextNum) => {
                     if (
@@ -697,6 +705,47 @@ export default function SweepstakesPage({
         />
       </Col>
     </Page>
+  )
+}
+
+// Tiered styling for past-drawings dropdown options. Larger prizes pop
+// visually so people scrolling history can spot the big ones at a glance.
+function PastDrawingLabel(props: {
+  sweepstakesNum: number
+  totalPrizeUsd: number
+}) {
+  const { sweepstakesNum, totalPrizeUsd } = props
+  const tier =
+    totalPrizeUsd >= 10000
+      ? 'gold-block'
+      : totalPrizeUsd >= 1000
+      ? 'gold-text'
+      : totalPrizeUsd >= 500
+      ? 'amber-text'
+      : 'default'
+
+  return (
+    <span
+      className={clsx(
+        'flex w-full items-center justify-between gap-3',
+        tier === 'gold-block' &&
+          '-my-0.5 -mx-1 rounded-md bg-amber-200 px-2 py-0.5 font-bold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+        tier === 'gold-text' &&
+          'font-semibold text-amber-700 dark:text-amber-400',
+        tier === 'amber-text' &&
+          'font-medium text-amber-600 dark:text-amber-400'
+      )}
+    >
+      <span>Drawing #{sweepstakesNum}</span>
+      <span
+        className={clsx(
+          'shrink-0 text-xs',
+          tier === 'default' && 'text-ink-500'
+        )}
+      >
+        ${totalPrizeUsd.toLocaleString()}
+      </span>
+    </span>
   )
 }
 
