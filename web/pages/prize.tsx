@@ -434,6 +434,13 @@ export default function SweepstakesPage({
                         totalPrizeUsd={s.totalPrizeUsd}
                       />
                     ),
+                    // Big-prize rows get a row-level gold tint so the bg
+                    // fills the entire option width (the inner truncate
+                    // span would otherwise clip a label-level background).
+                    buttonClassName:
+                      s.totalPrizeUsd && s.totalPrizeUsd >= 10000
+                        ? 'bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20'
+                        : undefined,
                   }))}
                   onChange={(nextNum) => {
                     if (
@@ -845,24 +852,18 @@ function PastDrawingLabel(props: {
 
   const priceClass = clsx(
     'shrink-0 tabular-nums',
-    tier === 'jackpot' && 'text-base font-bold text-amber-700 dark:text-amber-300',
+    tier === 'jackpot' && 'text-sm font-semibold text-amber-700 dark:text-amber-300',
     tier === 'major' && 'text-sm font-semibold text-amber-700 dark:text-amber-300',
     tier === 'minor' && 'text-xs font-medium text-amber-700/80 dark:text-amber-400',
     tier === 'standard' && 'text-xs text-ink-400'
   )
 
   return (
-    <span
-      className={clsx(
-        'flex w-full items-center justify-between gap-3',
-        tier === 'jackpot' &&
-          '-mx-1.5 -my-1 rounded-md border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/60 py-1 pl-2 pr-2 shadow-sm dark:border-amber-700 dark:from-amber-950/40 dark:to-amber-900/30'
-      )}
-    >
+    <span className="flex w-full items-center justify-between gap-3">
       <span
         className={clsx(
           'flex items-center gap-1.5',
-          tier === 'jackpot' && 'font-semibold text-amber-900 dark:text-amber-100'
+          tier === 'jackpot' && 'text-amber-900 dark:text-amber-100'
         )}
       >
         {tier === 'jackpot' && (
