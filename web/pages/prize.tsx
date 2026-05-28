@@ -730,7 +730,9 @@ function AnnouncePrizeDrawingSection(props: {
   const winnerCount = getTotalWinnerCount(sweepstakes.prizes)
 
   const title = 'New prize drawing live'
-  const body = `Drawing #${sweepstakes.sweepstakesNum}: $${totalPrize.toLocaleString()} across ${winnerCount} ${winnerCount === 1 ? 'winner' : 'winners'}. Enter before the drawing closes.`
+  const audience =
+    winnerCount === 1 ? 'to one winner' : `across ${winnerCount} winners`
+  const body = `Drawing #${sweepstakes.sweepstakesNum} is live — $${totalPrize.toLocaleString()} ${audience}.`
 
   const [sent, setSent] = useState(sweepstakes.announcementSent)
   const [sending, setSending] = useState(false)
