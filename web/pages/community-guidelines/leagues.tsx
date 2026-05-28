@@ -30,7 +30,6 @@ export default function CommunityGuidelinesLeaguesPage() {
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Only profit on <Link href="/community-guidelines/running-a-market#ranked" className="text-primary-500 underline">ranked markets</Link> counts. If you're unsure whether a market will be ranked, check the criteria there.</li>
             <li>Bets on your own markets count only after a 1-hour delay — this prevents creators from pump-and-dumping fresh markets for league points.</li>
-            <li>Self-trade fills (you matching your own limit orders) are stripped from profit calculations.</li>
           </ul>
         </div>
 

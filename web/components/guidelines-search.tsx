@@ -95,7 +95,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Leagues',
     section: 'What counts toward your score',
-    text: 'profit ranked markets unranked own markets 1 hour delay self-trade fills stripped profit calculation',
+    text: 'profit ranked markets unranked own markets 1 hour delay creator pump and dump',
     href: '/community-guidelines/leagues#what-counts',
   },
   {
