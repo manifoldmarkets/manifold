@@ -2,7 +2,7 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import Link from 'next/link'
-import { ShieldCheckIcon } from '@heroicons/react/outline'
+import { ChevronLeftIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 export default function CommunityGuidelinesModerationPage() {
@@ -10,6 +10,9 @@ export default function CommunityGuidelinesModerationPage() {
     <Page trackPageView="community guidelines moderation page" className="!col-span-7">
       <SEO title="Community Guidelines — Moderation" description="Community moderation policies and procedures." />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
+        <Link href="/community-guidelines" className="mb-3 inline-flex items-center gap-1 text-sm text-ink-500 hover:text-primary-500">
+          <ChevronLeftIcon className="h-4 w-4" /> Community Guidelines
+        </Link>
         <div className="flex items-center gap-2 text-primary-500">
           <ShieldCheckIcon className="h-6 w-6" />
           <h1 className="text-4xl font-bold">Moderation</h1>

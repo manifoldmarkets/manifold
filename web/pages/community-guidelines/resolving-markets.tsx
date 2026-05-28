@@ -1,7 +1,8 @@
+import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { CheckCircleIcon } from '@heroicons/react/outline'
+import { CheckCircleIcon, ChevronLeftIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 export default function CommunityGuidelinesResolvingMarketsPage() {
@@ -9,6 +10,9 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
     <Page trackPageView="community guidelines resolving markets page" className="!col-span-7">
       <SEO title="Community Guidelines — Resolving Markets" description="Guidelines for resolving markets correctly and promptly on Manifold." />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
+        <Link href="/community-guidelines" className="mb-3 inline-flex items-center gap-1 text-sm text-ink-500 hover:text-primary-500">
+          <ChevronLeftIcon className="h-4 w-4" /> Community Guidelines
+        </Link>
         <div className="flex items-center gap-2 text-primary-500">
           <CheckCircleIcon className="h-6 w-6" />
           <h1 className="text-4xl font-bold">Resolving Markets</h1>

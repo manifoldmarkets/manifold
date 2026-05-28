@@ -1,7 +1,7 @@
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { GiftIcon } from '@heroicons/react/outline'
+import { ChevronLeftIcon, GiftIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 import Link from 'next/link'
 
@@ -10,6 +10,9 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
     <Page trackPageView="community guidelines prize drawings page" className="!col-span-7">
       <SEO title="Community Guidelines — Prize Drawing Rules" description="Official rules for Manifold Prize Drawings." />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
+        <Link href="/community-guidelines" className="mb-3 inline-flex items-center gap-1 text-sm text-ink-500 hover:text-primary-500">
+          <ChevronLeftIcon className="h-4 w-4" /> Community Guidelines
+        </Link>
         <div className="flex items-center gap-2 text-primary-500">
           <GiftIcon className="h-6 w-6" />
           <h1 className="text-4xl font-bold">Prize Drawing Rules</h1>

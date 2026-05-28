@@ -1,7 +1,8 @@
+import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { LightningBoltIcon } from '@heroicons/react/outline'
+import { ChevronLeftIcon, LightningBoltIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 export default function CommunityGuidelinesAccountsPage() {
@@ -9,6 +10,9 @@ export default function CommunityGuidelinesAccountsPage() {
     <Page trackPageView="community guidelines accounts page" className="!col-span-7">
       <SEO title="Community Guidelines — Accounts & Market Manipulation" description="Account rules, alts, impersonation, market manipulation, and insider trading." />
       <Col className="mx-auto w-full max-w-5xl px-4 py-8">
+        <Link href="/community-guidelines" className="mb-3 inline-flex items-center gap-1 text-sm text-ink-500 hover:text-primary-500">
+          <ChevronLeftIcon className="h-4 w-4" /> Community Guidelines
+        </Link>
         <div className="flex items-center gap-2 text-primary-500">
           <LightningBoltIcon className="h-6 w-6" />
           <h1 className="text-4xl font-bold">Accounts & Market Manipulation</h1>
