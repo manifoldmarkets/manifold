@@ -73,14 +73,13 @@ export default function CommunityGuidelinesRunningAMarketPage() {
             <li>Low-quality non-predictive markets</li>
             <li>Markets designed to harvest or redistribute Manifold bonuses</li>
             <li>Markets designed to defraud users — these will typically be N/A'd retroactively rather than unlisted</li>
-            <li>Markets that could incentivize mass trading or commenting at a scale that creates significant server costs</li>
+            <li>Markets that incentivize indiscriminate trading, commenting, or posting — including any pattern that creates significant server costs</li>
             <li>Content revealing or incentivizing leaking of users' private information (doxxing)</li>
             <li>Content that is illegal under US law or incentivizes criminal acts</li>
             <li>Sexual content involving minors</li>
             <li>Sexual exploitation, blackmail, or non-consensual intimate content</li>
             <li>Spam</li>
             <li>Media depicting self-harm or suicide</li>
-            <li>Markets that incentivize indiscriminate trading, commenting, or posting</li>
             <li>Markets designed to exploit the Manifold codebase or abuse bugs</li>
             <li>Markets that incentivize violating another platform's terms of service</li>
           </ul>
