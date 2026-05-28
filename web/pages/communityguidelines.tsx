@@ -8,7 +8,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return {
     redirect: {
       destination: '/community-guidelines',
-      permanent: false,
+      permanent: true,
     },
   }
 }
