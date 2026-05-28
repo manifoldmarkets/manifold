@@ -32,7 +32,7 @@ export default function CommunityGuidelinesPrizeDrawingsPage() {
           <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
             <li>Be at least 18 years old and the age of majority in your jurisdiction</li>
             <li>Have a valid Manifold account in good standing</li>
-            <li>Not be a resident of a restricted territory (certain U.S. states, Canadian provinces, and countries — see full rules for details)</li>
+            <li>Not be a resident of a restricted territory (certain U.S. states, Canadian provinces, and countries — see the <a href="https://docs.manifold.markets/prize-rules" target="_blank" rel="noreferrer" className="text-primary-500 underline">official rules</a> for the complete list)</li>
             <li>Not be an employee or family member of Manifold, or previously banned from the platform</li>
           </ul>
         </div>
