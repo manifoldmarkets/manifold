@@ -191,13 +191,13 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Comment Guidelines',
     section: "What's not allowed",
-    text: 'spam hateful discriminatory content harassment doxxing private information illegal us law automated bot comments low-effort repetitive reported mod alert posting ban promoting own markets traffic',
+    text: 'spam hateful discriminatory content harassment doxxing private information illegal us law automated bot comments low-effort repetitive reported mod alert posting ban banned promoting own markets traffic',
     href: '/community-guidelines/comment-guidelines#whats-not-allowed',
   },
   {
     page: 'Comment Guidelines',
     section: 'What can get you banned',
-    text: 'restriction ban severity history repeated violations offenses',
+    text: 'restriction ban banned severity history repeated violations offenses spam harassment doxxing',
     href: '/community-guidelines/comment-guidelines#what-can-get-you-banned',
   },
 
