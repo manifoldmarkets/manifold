@@ -55,7 +55,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Bots',
     section: 'What changes when you become a bot',
-    text: 'bot badge silicon division leagues unique trader bonuses importance score bettor bonuses excluded',
+    text: 'bot badge silicon division leagues unique trader bonuses importance score bettor bonuses excluded count counts toward',
     href: '/community-guidelines/bots#what-changes-when-you-become-a-bot',
   },
   {
@@ -299,7 +299,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Moderation',
     section: 'Who Mods are',
-    text: 'active manifold users community manager open-minded fair discord mod-help mods site tag status removed reinstated inactivity conduct become candidate apply join new mods selected how to become a mod',
+    text: 'active manifold users community manager moderator open-minded fair discord mod-help mods site tag status removed reinstated inactivity conduct become candidate apply join new mods selected how to become a mod',
     href: '/community-guidelines/moderation#who-mods-are',
   },
   {
@@ -333,6 +333,8 @@ const STOPWORDS = new Set([
   'is', 'are', 'was', 'were', 'be', 'been', 'do', 'does', 'did',
   'of', 'to', 'for', 'in', 'on', 'and', 'or', 'but', 'so',
   'if', 'then', 'than', 'as', 'at', 'by', 'with',
+  'what', 'when', 'where', 'why', 'how', 'who',
+  'can', 'should', 'would', 'could', 'will',
 ])
 
 export function GuidelinesSearch() {
