@@ -325,7 +325,7 @@ export function GuidelinesSearch() {
               setQuery('')
             }
           }}
-          className="w-full bg-transparent text-sm text-ink-900 placeholder-ink-400 outline-none"
+          className="w-full border-0 bg-transparent p-0 text-sm text-ink-900 placeholder-ink-400 outline-none focus:ring-0"
         />
         {query && (
           <button
