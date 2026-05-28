@@ -3,6 +3,7 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { ChevronLeftIcon, ShieldCheckIcon } from '@heroicons/react/outline'
+import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 export default function ModerationGuidelinesInternalPage() {
   return (
@@ -20,6 +21,8 @@ export default function ModerationGuidelinesInternalPage() {
         <p className="mt-3 text-lg text-ink-600">
           How Manifold mods are expected to act, decide, and escalate. Published so the community can see the same playbook the mods follow. For user-facing moderation info — what mods do, how to request help, how to appeal — see the <Link href="/community-guidelines/moderation" className="text-primary-500 underline">Moderation</Link> page.
         </p>
+
+        <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="role-expectations" className="text-xl font-semibold text-ink-1000">Role expectations</h2>
