@@ -824,6 +824,8 @@ function AnnouncePrizeDrawingSection(props: {
 
 // Tiered styling for past-drawings dropdown options. Larger prizes pop
 // visually so people scrolling history can spot the big ones at a glance.
+// The aesthetic is restrained — most rows look default; the jackpot tier
+// earns a subtle gold-tinted border + a sparkle, not a highlighter band.
 function PastDrawingLabel(props: {
   sweepstakesNum: number
   totalPrizeUsd: number | undefined
@@ -834,35 +836,44 @@ function PastDrawingLabel(props: {
   const totalPrizeUsd = props.totalPrizeUsd ?? 0
   const tier =
     totalPrizeUsd >= 10000
-      ? 'gold-block'
+      ? 'jackpot'
       : totalPrizeUsd >= 1000
-      ? 'gold-text'
+      ? 'major'
       : totalPrizeUsd >= 500
-      ? 'amber-text'
-      : 'default'
+      ? 'minor'
+      : 'standard'
+
+  const priceClass = clsx(
+    'shrink-0 tabular-nums',
+    tier === 'jackpot' && 'text-base font-bold text-amber-700 dark:text-amber-300',
+    tier === 'major' && 'text-sm font-semibold text-amber-700 dark:text-amber-300',
+    tier === 'minor' && 'text-xs font-medium text-amber-700/80 dark:text-amber-400',
+    tier === 'standard' && 'text-xs text-ink-400'
+  )
 
   return (
     <span
       className={clsx(
         'flex w-full items-center justify-between gap-3',
-        tier === 'gold-block' &&
-          '-mx-1 -my-0.5 rounded-md bg-amber-200 px-2 py-0.5 font-bold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
-        tier === 'gold-text' &&
-          'font-semibold text-amber-700 dark:text-amber-400',
-        tier === 'amber-text' &&
-          'font-medium text-amber-600 dark:text-amber-400'
+        tier === 'jackpot' &&
+          '-mx-1.5 -my-1 rounded-md border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/60 py-1 pl-2 pr-2 shadow-sm dark:border-amber-700 dark:from-amber-950/40 dark:to-amber-900/30'
       )}
     >
-      <span>Drawing #{sweepstakesNum}</span>
+      <span
+        className={clsx(
+          'flex items-center gap-1.5',
+          tier === 'jackpot' && 'font-semibold text-amber-900 dark:text-amber-100'
+        )}
+      >
+        {tier === 'jackpot' && (
+          <span aria-hidden className="text-amber-500 dark:text-amber-300">
+            ✦
+          </span>
+        )}
+        Drawing #{sweepstakesNum}
+      </span>
       {totalPrizeUsd > 0 && (
-        <span
-          className={clsx(
-            'shrink-0 text-xs',
-            tier === 'default' && 'text-ink-500'
-          )}
-        >
-          ${totalPrizeUsd.toLocaleString()}
-        </span>
+        <span className={priceClass}>${totalPrizeUsd.toLocaleString()}</span>
       )}
     </span>
   )
