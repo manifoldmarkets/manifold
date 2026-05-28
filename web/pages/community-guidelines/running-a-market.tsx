@@ -22,7 +22,7 @@ export default function CommunityGuidelinesRunningAMarketPage() {
         <p className="mt-3 text-lg text-ink-600">
           Creators are held to a higher standard than general users. The platform has game-like incentives and we want you to have fun with them, but not by exploiting loopholes or technicalities on your own markets. If your resolution criteria become unclear due to new events, update them.
         </p>
-        <p className="mt-2 text-sm italic text-ink-400">Looking for tips on running great markets? See our creator guide. (coming soon)</p>
+        <p className="mt-2 text-sm italic text-ink-600">Looking for tips on running great markets? See the <Link href="/community-guidelines/creator-guide" className="text-primary-500 underline">Creator Guide</Link>.</p>
 
         <GuidelinesSearch />
 
