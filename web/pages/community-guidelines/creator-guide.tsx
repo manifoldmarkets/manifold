@@ -19,7 +19,7 @@ export default function CommunityGuidelinesCreatorGuidePage() {
         </div>
 
         <p className="mt-3 text-lg text-ink-600">
-          Tips for running great markets. None of this is enforced — these are practices that tend to produce active, fair, and well-resolved markets.
+          Tips for running great markets — practices that tend to produce active, fair, and well-resolved markets.
         </p>
 
         <GuidelinesSearch />
@@ -60,7 +60,7 @@ export default function CommunityGuidelinesCreatorGuidePage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="when-in-doubt-na" className="text-xl font-semibold text-ink-1000">When in doubt, N/A</h2>
+          <h2 id="when-all-else-fails-na" className="text-xl font-semibold text-ink-1000">When all else fails, N/A</h2>
           <p className="mt-3 text-ink-700">N/A returns mana to traders at their cost basis and isn't a black mark. It's the right move when:</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>The outcome is genuinely unknowable.</li>
