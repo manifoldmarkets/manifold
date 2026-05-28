@@ -51,14 +51,14 @@ export default function CommunityGuidelinesLeaguesPage() {
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="what-counts" className="text-xl font-semibold text-ink-1000">What counts toward your score</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Only profit on <Link href="/community-guidelines/running-a-market#ranked" className="text-primary-500 underline">ranked markets</Link> counts. You can often tell if a market is ranked by seeing if it has the "Unranked" topic tag. To be certain, go to options → "See info" on a market page and it will display the ranked status.</li>
+            <li>Only profit on <Link href="/community-guidelines/running-a-market#ranked" className="text-primary-500 underline">Ranked Markets</Link> counts. You can often tell if a market is ranked by seeing if it has the "Unranked" topic tag. To be certain, click the three dots menu (…) on a market page and select "see info" to view the ranked status.</li>
             <li>Bets on your own markets count only after a 1-hour delay — this prevents creators from pump-and-dumping fresh markets for league points.</li>
           </ul>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 border-l-4 border-l-primary-500 bg-canvas-0 p-6 shadow-sm">
           <h2 id="divisions" className="text-xl font-semibold text-ink-1000">Divisions and movement</h2>
-          <p className="mt-3 text-ink-700">Seven divisions, from <span id="silicon" className="font-medium">Silicon</span> (bots only) at the bottom to Masters at the top. New human accounts start in Bronze. At the end of each season your final rank in your division decides whether you promote up, stay put, or demote down.</p>
+          <p className="mt-3 text-ink-700">Six promotable divisions ranging from Bronze to Masters. The <span id="silicon" className="font-medium">Silicon</span> division is for bots only. New human accounts start in Bronze. At the end of each season your final rank in your division decides whether you promote up, stay put, or demote down for next month.</p>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             {[0, 1, 2, 3, 4, 5, 6].map((d, i) => {
@@ -79,7 +79,7 @@ export default function CommunityGuidelinesLeaguesPage() {
                       {DIVISION_NAMES[d]}
                     </span>
                   </div>
-                  {i < 6 && (
+                  {i > 0 && i < 6 && (
                     <ChevronRightIcon className="hidden h-4 w-4 shrink-0 text-ink-400 sm:block" />
                   )}
                 </div>
@@ -114,7 +114,7 @@ export default function CommunityGuidelinesLeaguesPage() {
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="prizes" className="text-xl font-semibold text-ink-1000">Prizes</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Each division pays prizes to its top ranks at season end. The exact amounts are shown in the prizes modal on the <Link href="/leagues" className="text-primary-500 underline">Leagues page</Link>.</li>
+            <li>Each group in each division pays prizes to its top ranks at season end. The exact amounts are shown in the prizes modal on the <Link href="/leagues" className="text-primary-500 underline">Leagues</Link> page.</li>
             <li>Receiving a prize requires identity verification (KYC). Bots in the Silicon division are exempt but must have earned at least 100 mana to qualify.</li>
             <li>Each user receives at most one prize per season.</li>
           </ul>
@@ -126,8 +126,8 @@ export default function CommunityGuidelinesLeaguesPage() {
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Manipulating markets, misresolving, or otherwise breaking the <Link href="/community-guidelines" className="text-primary-500 underline">Community Guidelines</Link> specifically to gain a leagues advantage.</li>
             <li>Refunding counterparties to extract a leagues result — for example, two users trading M100k on opposite sides of a 50/50 market, and the winner refunding the loser after collecting their league prize. Markets used this way may be unranked retroactively, and the prize may be recalled.</li>
-            <li>Coordinating trades across accounts or with friends to inflate your score (see <Link href="/community-guidelines/accounts#market-manipulation" className="text-primary-500 underline">Market manipulation</Link>).</li>
-            <li>Any violation of the rules on <Link href="/community-guidelines/accounts" className="text-primary-500 underline">alts</Link> or <Link href="/community-guidelines/bots" className="text-primary-500 underline">bot accounts</Link> applied to league play.</li>
+            <li>Coordinating trades across accounts or with friends to inflate your score (see <Link href="/community-guidelines/accounts#market-manipulation" className="text-primary-500 underline">Market Manipulation</Link>).</li>
+            <li>Any violation of the rules on <Link href="/community-guidelines/accounts" className="text-primary-500 underline">Alts</Link> or <Link href="/community-guidelines/bots" className="text-primary-500 underline">Bot Accounts</Link> applied to league play.</li>
           </ul>
         </div>
 

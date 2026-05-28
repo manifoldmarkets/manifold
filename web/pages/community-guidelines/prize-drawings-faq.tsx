@@ -44,7 +44,7 @@ export default function CommunityGuidelinesPrizeDrawingsFAQPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="restricted-locations" className="text-xl font-semibold text-ink-1000">Restricted locations</h2>
-          <p className="mt-3 text-ink-700">Several US states, Ontario (Canada), and a number of countries including Australia, Germany, the Netherlands, Russia, and others are not eligible to participate. See the <a href="https://docs.manifold.markets/prize-rules" target="_blank" rel="noreferrer" className="text-primary-500 underline">official rules</a> for the complete list.</p>
+          <p className="mt-3 text-ink-700">Several US states, Ontario (Canada), and a number of countries including Australia, Germany, the Netherlands, Russia, and others are not eligible to participate. See the <a href="https://docs.manifold.markets/prize-rules" target="_blank" rel="noreferrer" className="text-primary-500 underline">Official Rules</a> for the complete list.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">

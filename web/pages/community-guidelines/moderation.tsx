@@ -93,7 +93,7 @@ export default function CommunityGuidelinesModerationPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-50 p-5">
           <p className="text-sm text-ink-700">
-            Curious about the playbook mods actually follow — thresholds, escalation, ban guidance? See the <Link href="/community-guidelines/moderation-guidelines-internal" className="text-primary-500 underline">Mod Guidelines</Link>.
+            Curious about the playbook Mods actually follow — thresholds, escalation, ban guidance? See the <Link href="/community-guidelines/moderation-guidelines-internal" className="text-primary-500 underline">Mod Guidelines</Link>.
           </p>
         </div>
 

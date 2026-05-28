@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { LightningBoltIcon, UsersIcon, ShieldCheckIcon, CheckCircleIcon, CollectionIcon, ChatAlt2Icon, GiftIcon, ChipIcon, ChartBarIcon } from '@heroicons/react/outline'
+import { LightningBoltIcon, UsersIcon, ShieldCheckIcon, CheckCircleIcon, ScaleIcon, ChatAlt2Icon, GiftIcon, ChipIcon, ChartBarIcon, DocumentTextIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 
 const GUIDELINES = [
@@ -15,21 +15,21 @@ const GUIDELINES = [
 
 const SECTIONS = [
   {
+    title: 'Platform Conduct',
+    description: 'Mana sales, DM spam, review conduct, and other platform-wide rules.',
+    icon: UsersIcon,
+    href: '/community-guidelines/platform-conduct',
+  },
+  {
     title: 'Accounts & Market Manipulation',
     description: 'Account rules, alts, impersonation, market manipulation, insider trading.',
     icon: LightningBoltIcon,
     href: '/community-guidelines/accounts',
   },
   {
-    title: 'Bots',
-    description: 'How to mark an account as a bot, what changes, and rules for automated traders.',
-    icon: ChipIcon,
-    href: '/community-guidelines/bots',
-  },
-  {
     title: 'Running a Market',
     description: "What's banned, ranked vs unranked, creator expectations, personal markets.",
-    icon: CollectionIcon,
+    icon: ScaleIcon,
     href: '/community-guidelines/running-a-market',
   },
   {
@@ -39,10 +39,10 @@ const SECTIONS = [
     href: '/community-guidelines/resolving-markets',
   },
   {
-    title: 'Leagues',
-    description: 'Scoring, divisions, prizes, and what can get your league prize pulled.',
-    icon: ChartBarIcon,
-    href: '/community-guidelines/leagues',
+    title: 'Market Policies',
+    description: 'Market states, ranking, subsidization, unlisting criteria, and personal markets.',
+    icon: DocumentTextIcon,
+    href: '/community-guidelines/market-policies',
   },
   {
     title: 'Comment Guidelines',
@@ -51,10 +51,16 @@ const SECTIONS = [
     href: '/community-guidelines/comment-guidelines',
   },
   {
-    title: 'Platform Conduct',
-    description: 'Mana sales, DM spam, review conduct, and other platform-wide rules.',
-    icon: UsersIcon,
-    href: '/community-guidelines/platform-conduct',
+    title: 'Leagues',
+    description: 'Scoring, divisions, prizes, and what can get your league prize pulled.',
+    icon: ChartBarIcon,
+    href: '/community-guidelines/leagues',
+  },
+  {
+    title: 'Bots',
+    description: 'How to mark an account as a bot, what changes, and rules for automated traders.',
+    icon: ChipIcon,
+    href: '/community-guidelines/bots',
   },
   {
     title: 'Moderation',

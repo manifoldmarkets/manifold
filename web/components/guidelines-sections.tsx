@@ -3,12 +3,12 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/outline'
 
 export const GUIDELINE_SECTIONS = [
   {
-    title: 'Accounts & Market Manipulation',
-    href: '/community-guidelines/accounts',
+    title: 'Platform Conduct',
+    href: '/community-guidelines/platform-conduct',
   },
   {
-    title: 'Bots',
-    href: '/community-guidelines/bots',
+    title: 'Accounts & Market Manipulation',
+    href: '/community-guidelines/accounts',
   },
   {
     title: 'Running a Market',
@@ -19,16 +19,20 @@ export const GUIDELINE_SECTIONS = [
     href: '/community-guidelines/resolving-markets',
   },
   {
-    title: 'Leagues',
-    href: '/community-guidelines/leagues',
+    title: 'Market Policies',
+    href: '/community-guidelines/market-policies',
   },
   {
     title: 'Comment Guidelines',
     href: '/community-guidelines/comment-guidelines',
   },
   {
-    title: 'Platform Conduct',
-    href: '/community-guidelines/platform-conduct',
+    title: 'Leagues',
+    href: '/community-guidelines/leagues',
+  },
+  {
+    title: 'Bots',
+    href: '/community-guidelines/bots',
   },
   {
     title: 'Moderation',

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { ChevronLeftIcon, ChipIcon } from '@heroicons/react/outline'
+import { ChevronLeftIcon, ChipIcon, CogIcon } from '@heroicons/react/outline'
 import { GuidelinesSearch } from 'web/components/guidelines-search'
 import { SectionNav } from 'web/components/guidelines-sections'
 
@@ -27,8 +27,9 @@ export default function CommunityGuidelinesBotsPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="marking-an-account-as-a-bot" className="text-xl font-semibold text-ink-1000">Marking an account as a bot</h2>
-          <p className="mt-3 text-ink-700">Open your profile, click the settings cog, scroll to <span className="font-medium">Account settings</span> — the same page that shows your API key — and use the "Mark account as bot" toggle.</p>
-          <p className="mt-3 text-ink-700">This action is <span className="font-medium">permanent</span>: once you mark yourself as a bot, only a moderator can reverse it. Only do this if your account is operated by an automated system (a trading bot, an API script, etc.), not a human.</p>
+          <p className="mt-3 text-ink-700">Open your profile, click the settings cog <CogIcon className="mb-0.5 inline h-4 w-4" />, scroll to <span className="font-medium">Account Settings</span> — the same page that shows your API key — and use the "mark account as bot" toggle.</p>
+          <p className="mt-3 text-ink-700"><span className="font-bold">This action is permanent:</span> once you mark yourself as a bot, only a Moderator can reverse it. Only do this if your account is operated by an automated system (a trading bot, an API script, etc.), not a human.</p>
+          <p className="mt-3 text-ink-700">In the bot account's bio, include the username of your human account so Mods and traders know who to contact if needed. If the bot is your only account, say that.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
@@ -45,7 +46,7 @@ export default function CommunityGuidelinesBotsPage() {
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="separate-your-human-and-bot-accounts" className="text-xl font-semibold text-ink-1000">Separate your human and bot accounts</h2>
           <p className="mt-3 text-ink-700">We strongly encourage running automated trading from a dedicated bot account, not your primary one. If you run a bot on your primary account, the account may be treated as a bot — including reduction or removal of bonus eligibility.</p>
-          <p className="mt-3 text-ink-700">See also <Link href="/community-guidelines/accounts#alt-accounts" className="text-primary-500 underline">Alt accounts</Link> for the rules on running multiple accounts in general.</p>
+          <p className="mt-3 text-ink-700">See also <Link href="/community-guidelines/accounts#alt-accounts" className="text-primary-500 underline">Alt Accounts</Link> for the rules on running multiple accounts in general.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">

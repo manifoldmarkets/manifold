@@ -25,12 +25,49 @@ export default function CommunityGuidelinesCreatorGuidePage() {
         <GuidelinesSearch />
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="market-types" className="text-xl font-semibold text-ink-1000">Market types</h2>
+          <p className="mt-3 text-ink-700">Manifold has six question types. Pick the one that fits your question most naturally — the right type makes resolution cleaner and trading more meaningful.</p>
+          <ul className="mt-3 space-y-4 text-ink-700">
+            <li>
+              <span className="font-semibold">Yes/No</span>
+              <p className="mt-0.5">The standard binary market. Resolves YES, NO, or N/A. Best for questions with a clear true-or-false outcome.</p>
+              <p className="mt-0.5 text-sm italic text-ink-500">e.g. "Will X happen before [date]?"</p>
+            </li>
+            <li>
+              <span className="font-semibold">Multiple Choice</span>
+              <p className="mt-0.5">Several options, resolves to one (or splits between several). Good for elections, award nominees, or any question with a defined answer set.</p>
+              <p className="mt-0.5 text-sm italic text-ink-500">e.g. "Who will win the [award]?"</p>
+            </li>
+            <li>
+              <span className="font-semibold">Set</span>
+              <p className="mt-0.5">A group of independent Yes/No questions bundled under one title. Useful when the sub-questions share context but resolve separately.</p>
+              <p className="mt-0.5 text-sm italic text-ink-500">e.g. "Will each of these teams make the playoffs?"</p>
+            </li>
+            <li>
+              <span className="font-semibold">Numeric</span>
+              <p className="mt-0.5">Traders bet on a number within a range. Good for quantities, percentages, or scores.</p>
+              <p className="mt-0.5 text-sm italic text-ink-500">e.g. "How many units will X sell in Q4?"</p>
+            </li>
+            <li>
+              <span className="font-semibold">Date</span>
+              <p className="mt-0.5">Traders bet on when something will happen. Works best when the event is certain but the timing isn't.</p>
+              <p className="mt-0.5 text-sm italic text-ink-500">e.g. "When will X be officially announced?"</p>
+            </li>
+            <li>
+              <span className="font-semibold">Poll</span>
+              <p className="mt-0.5">Non-predictive voting with no resolution. Doesn't count toward Leagues or bonuses. Good for gauging opinion rather than forecasting an outcome.</p>
+              <p className="mt-0.5 text-sm italic text-ink-500">e.g. "Which of these features do you want most?"</p>
+            </li>
+          </ul>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="pick-a-clean-question" className="text-xl font-semibold text-ink-1000">Pick a clean question</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>Falsifiable: there should be a clear way to know YES vs NO when the time comes.</li>
-            <li>Specific: "Will an AI model score over 90% on benchmark X by date Y?" beats "Will AI get smarter this year?"</li>
-            <li>Time-boxed: a deadline avoids markets that drift forever.</li>
-            <li>Has a real outcome you care about — markets get more interesting when the creator is paying attention.</li>
+            <li><span className="font-semibold">Falsifiable:</span> there should be a clear way to know YES vs NO when the time comes.</li>
+            <li><span className="font-semibold">Specific:</span> "Will an AI model score over 90% on benchmark X by date Y?" beats "Will AI get smarter this year?"</li>
+            <li><span className="font-semibold">Time-boxed:</span> a deadline avoids markets that drift forever.</li>
+            <li><span className="font-semibold">Has a real outcome you care about</span> — markets get more interesting when the creator is paying attention.</li>
           </ul>
         </div>
 
@@ -67,12 +104,12 @@ export default function CommunityGuidelinesCreatorGuidePage() {
             <li>An event was cancelled or the criteria are no longer achievable.</li>
             <li>You realized the question was ambiguous and there's no fair way to call it.</li>
           </ul>
-          <p className="mt-3 text-ink-700">N/A is a release valve. Use it without guilt when needed — but don't reach for it just to dodge a hard call.</p>
+          <p className="mt-3 text-ink-700">Before reaching for N/A, it's worth checking in with Mods — sometimes they can help you find a resolution path you hadn't considered. N/A is a release valve for when that genuinely doesn't exist. Use it without guilt when needed, but don't reach for it just to dodge a hard call.</p>
         </div>
 
         <div className="mt-8 rounded-xl border-2 border-ink-200 bg-canvas-50 p-5">
           <p className="text-sm text-ink-700">
-            For the rules around what you can and can't do as a creator (vs. these tips), see <Link href="/community-guidelines/running-a-market" className="text-primary-500 underline">Running a Market</Link>.
+            For the rules around what you can and can't do as a creator (vs. these tips), see <Link href="/community-guidelines/running-a-market" className="text-primary-500 underline">Running a Market</Link> and <Link href="/community-guidelines/market-policies" className="text-primary-500 underline">Market Policies</Link>.
           </p>
         </div>
       </Col>
