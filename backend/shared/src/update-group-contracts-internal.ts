@@ -18,10 +18,15 @@ export async function addGroupToContract(
   group: { id: string; slug: string },
   userId?: string
 ) {
-  await pg.none(
-    `insert into group_contracts (contract_id, group_id) values ($1, $2)`,
+  // RETURNING 1 lets us skip the slug append on duplicates —
+  // FieldVal.arrayConcat would otherwise double-append.
+  const inserted = await pg.oneOrNone(
+    `insert into group_contracts (contract_id, group_id) values ($1, $2)
+     on conflict (contract_id, group_id) do nothing
+     returning 1`,
     [contract.id, group.id]
   )
+  if (!inserted) return
   await updateContract(pg, contract.id, {
     groupSlugs: FieldVal.arrayConcat(group.slug),
     lastUpdatedTime: Date.now(),
