@@ -244,7 +244,14 @@ export default function Leagues(props: LeaguesProps) {
             </Link>
           </Row>
           <p className="text-ink-500 text-sm">
-            Compete monthly for prizes based on your trading profit.
+            Compete monthly for prizes based on your trading profit.{' '}
+            <Link
+              href="/community-guidelines/leagues"
+              className="text-primary-500 hover:underline"
+            >
+              See rules
+            </Link>
+            .
           </p>
         </Col>
 

@@ -1,0 +1,58 @@
+import Link from 'next/link'
+import { Page } from 'web/components/layout/page'
+import { Col } from 'web/components/layout/col'
+import { SEO } from 'web/components/SEO'
+import { ChevronLeftIcon, ScaleIcon } from '@heroicons/react/outline'
+import { GuidelinesSearch } from 'web/components/guidelines-search'
+import { SectionNav } from 'web/components/guidelines-sections'
+
+export default function CommunityGuidelinesRunningAMarketPage() {
+  return (
+    <Page trackPageView="community guidelines running a market page" className="!col-span-7">
+      <SEO title="Community Guidelines — Running a Market" description="Guidelines for creating and managing markets on Manifold." />
+      <Col className="mx-auto w-full max-w-5xl px-4 py-8">
+        <Link href="/community-guidelines" className="mb-3 inline-flex items-center gap-1 text-sm text-ink-500 hover:text-primary-500">
+          <ChevronLeftIcon className="h-4 w-4" /> Community Guidelines
+        </Link>
+        <div className="flex items-center gap-2 text-primary-500">
+          <ScaleIcon className="h-6 w-6" />
+          <h1 className="text-4xl font-bold">Running a Market</h1>
+        </div>
+
+        <p className="mt-3 text-lg text-ink-600">
+          Creators are held to a higher standard than general users. The platform has game-like incentives and we want you to have fun with them, but not by exploiting loopholes or technicalities on your own markets.
+        </p>
+        <p className="mt-2 text-sm italic text-ink-600">Looking for tips on running great markets? See the <Link href="/community-guidelines/creator-guide" className="text-primary-500 underline">Creator Guide</Link>.</p>
+
+        <GuidelinesSearch />
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="keep-your-criteria-clear" className="text-xl font-semibold text-ink-1000">Keep your criteria clear and current</h2>
+          <p className="mt-3 text-ink-700">You're responsible for maintaining resolution criteria that traders can rely on. Write them clearly before anyone bets, and if events change and your original criteria no longer make sense, update the description and post a comment so traders are aware. Vague or shifting criteria are the most common source of disputes on the platform.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="trade-in-good-faith" className="text-xl font-semibold text-ink-1000">Trade in good faith</h2>
+          <p className="mt-3 text-ink-700">Don't trade on insider knowledge in your own market, exploit ambiguity in your own resolution criteria, or use loopholes for personal gain. Traders are trusting you to call it straight. The fact that you created the market doesn't give you an advantage over the people betting on it.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="be-reachable" className="text-xl font-semibold text-ink-1000">Be reachable</h2>
+          <p className="mt-3 text-ink-700">If traders are asking questions in the comments, respond. If your market is being disputed, engage. An unresponsive creator is one of the most common reasons mods have to step in. You don't have to be glued to your market, but you should be checking in.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="resolve-promptly-and-honestly" className="text-xl font-semibold text-ink-1000">Resolve promptly and honestly</h2>
+          <p className="mt-3 text-ink-700">Once your criteria are met, resolve. Don't sit on it — unresolved markets lock up traders' mana and erode trust in the platform. If you're unsure about the outcome, check with Mods before resolving, not after. See the <Link href="/community-guidelines/resolving-markets" className="text-primary-500 underline">Resolving Markets</Link> page for detail on the resolution process and when mods can step in.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="youre-not-on-your-own" className="text-xl font-semibold text-ink-1000">You're not on your own</h2>
+          <p className="mt-3 text-ink-700">If you're unsure how to resolve a market, your criteria have become unclear, or a dispute is getting out of hand — Mods are here to help. Reach out before you make a call you're not confident in, not after. See the <Link href="/community-guidelines/moderation" className="text-primary-500 underline">Moderation</Link> page for how to get mod support and what they can do.</p>
+        </div>
+
+        <SectionNav currentHref="/community-guidelines/running-a-market" />
+      </Col>
+    </Page>
+  )
+}
