@@ -77,6 +77,7 @@ export default function CommunityGuidelinesCreatorGuidePage() {
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Name the source you'll use (e.g. "official results from organization X").</li>
             <li>Cover the edge cases you can think of — event cancelled, source unavailable, ambiguous outcome.</li>
+            <li>Avoid the word "by" with dates — it's ambiguous. Use "before [date]" if you mean before that day begins, or "before the end of [date]" if you mean by 11:59pm on that day.</li>
             <li>If you have to update criteria mid-market because new events happened, do it in the description and post a comment so traders see the change.</li>
           </ul>
         </div>
@@ -97,14 +98,9 @@ export default function CommunityGuidelinesCreatorGuidePage() {
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="when-all-else-fails-na" className="text-xl font-semibold text-ink-1000">When all else fails, N/A</h2>
-          <p className="mt-3 text-ink-700">N/A returns mana to traders at their cost basis and isn't a black mark. It's the right move when:</p>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
-            <li>The outcome is genuinely unknowable.</li>
-            <li>An event was cancelled or the criteria are no longer achievable.</li>
-            <li>You realized the question was ambiguous and there's no fair way to call it.</li>
-          </ul>
-          <p className="mt-3 text-ink-700">Before reaching for N/A, it's worth checking in with Mods — sometimes they can help you find a resolution path you hadn't considered. N/A is a release valve for when that genuinely doesn't exist. Use it without guilt when needed, but don't reach for it just to dodge a hard call.</p>
+          <h2 id="trader-bonuses" className="text-xl font-semibold text-ink-1000">Trader bonuses</h2>
+          <p className="mt-3 text-ink-700">You can offset market creation costs by earning unique trader bonuses.</p>
+          <p className="mt-3 text-ink-700">Every time a new unique trader bets on your market, you earn a mana bonus. The amount scales with your market's liquidity — more liquidity in the pool means more earned per trader. These bonuses count toward your <Link href="/community-guidelines/leagues" className="text-primary-500 underline">Leagues</Link> score alongside your trading profit.</p>
         </div>
 
         <div className="mt-8 rounded-xl border-2 border-ink-200 bg-canvas-50 p-5">

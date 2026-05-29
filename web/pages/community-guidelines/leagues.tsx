@@ -52,7 +52,8 @@ export default function CommunityGuidelinesLeaguesPage() {
           <h2 id="what-counts" className="text-xl font-semibold text-ink-1000">What counts toward your score</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Only profit on <Link href="/community-guidelines/market-policies#ranked" className="text-primary-500 underline">Ranked Markets</Link> counts. You can often tell if a market is ranked by seeing if it has the "Unranked" topic tag. To be certain, click the three dots menu (…) on a market page and select "see info" to view the ranked status.</li>
-            <li>Bets on your own markets count only after a 1-hour delay — this prevents creators from pump-and-dumping fresh markets for league points.</li>
+            <li>Unique trader bonuses earned on ranked markets you've created also count toward your score.</li>
+            <li>Bets on your own markets within the first hour of creation don't count toward your league score — this prevents creators from pump-and-dumping fresh markets for league points.</li>
           </ul>
         </div>
 

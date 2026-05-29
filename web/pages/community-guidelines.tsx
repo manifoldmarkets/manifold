@@ -9,7 +9,7 @@ const GUIDELINES = [
   'Be excellent to each other.',
   "Don't exploit bonuses, bugs, or loopholes — especially on your own markets.",
   'Resolve honestly and promptly.',
-  'Report security issues privately to a dev.',
+  'Report bugs in #bugs on Discord. Report security issues or exploits privately to info@manifold.markets — don\'t act on them first.',
   'These are guidelines, not a contract. Act in good faith, not just within the letter of the rules.',
 ]
 

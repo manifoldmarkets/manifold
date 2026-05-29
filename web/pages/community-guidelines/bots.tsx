@@ -36,7 +36,7 @@ export default function CommunityGuidelinesBotsPage() {
           <h2 id="what-changes-when-you-become-a-bot" className="text-xl font-semibold text-ink-1000">What changes when you become a bot</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>A "Bot" badge appears next to your name everywhere on the site.</li>
-            <li>You're moved into the <Link href="/community-guidelines/leagues#silicon" className="text-primary-500 underline">Silicon</Link> division for leagues and compete only against other bots.</li>
+            <li>You'll be placed in the <Link href="/community-guidelines/leagues#silicon" className="text-primary-500 underline">Silicon</Link> division at the start of the next season and compete only against other bots.</li>
             <li>Your bets don't count toward unique trader bonuses for market creators.</li>
             <li>You're excluded from importance score calculations, so your activity doesn't push markets up the homepage.</li>
             <li>You can't earn bettor bonuses for other users.</li>
@@ -51,8 +51,13 @@ export default function CommunityGuidelinesBotsPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="verification-and-prizes" className="text-xl font-semibold text-ink-1000">Verification and prizes</h2>
-          <p className="mt-3 text-ink-700">Bot accounts don't need to complete identity verification. If your bot wins a Silicon league prize or earns mana you'd like to convert, send it to your verified main account and participate in <Link href="/community-guidelines/prize-drawings-faq" className="text-primary-500 underline">Prize Drawings</Link> from there.</p>
-          <p className="mt-3 text-sm text-ink-600">This is the one sanctioned exception to the rule that <Link href="/community-guidelines/accounts#alt-accounts" className="text-primary-500 underline">alts must not benefit your main account</Link>. The rule against funneling targets bonus harvesting (signup bonuses, daily streaks, unique trader bonuses), not transferring a bot's legitimately-earned mana for prize redemption.</p>
+          <p className="mt-3 text-ink-700">Bot accounts don't need to complete identity verification. If your bot wins a Silicon league prize or earns mana you'd like to use, send it to your <a href="#verification-and-prizes" className="text-primary-500 underline">Verified</a> main account via Managram and participate in <Link href="/community-guidelines/prize-drawings-faq" className="text-primary-500 underline">Prize Drawings</Link> from there.</p>
+        </div>
+
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="transferring-mana" className="text-xl font-semibold text-ink-1000">Transferring mana to/from bot accounts</h2>
+          <p className="mt-3 text-ink-700">You can send profit/balance to/from your main account, but you cannot exploit bonuses or manipulate markets or intentionally trade against yourself to launder profit.</p>
+          <p className="mt-3 text-ink-700">This is the one sanctioned exception to the rule that <Link href="/community-guidelines/accounts#alt-accounts" className="text-primary-500 underline">alts must not benefit your main account</Link>. The rule against funneling targets bonus harvesting (signup bonuses, daily streaks, unique trader bonuses), not transferring a bot's legitimately-earned mana for trading, prize drawings, or charity giveaways.</p>
         </div>
 
         <SectionNav currentHref="/community-guidelines/bots" />

@@ -33,17 +33,18 @@ export default function CommunityGuidelinesRunningAMarketPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="trade-in-good-faith" className="text-xl font-semibold text-ink-1000">Trade in good faith</h2>
-          <p className="mt-3 text-ink-700">Don't trade on insider knowledge in your own market, exploit ambiguity in your own resolution criteria, or use loopholes for personal gain. Traders are trusting you to call it straight. The fact that you created the market doesn't give you an advantage over the people betting on it.</p>
+          <p className="mt-3 text-ink-700">Don't exploit ambiguity in your own resolution criteria or use loopholes for personal gain. Traders are trusting you to call it straight. The fact that you created the market doesn't give you an advantage over the people betting on it.</p>
+          <p className="mt-3 text-ink-700">If you want to make that commitment public, you can permanently block yourself from trading on your own market. The option is in the market info card — once set, it's visible to all traders and can only be undone by a Moderator or admin. Traders can and do request this before placing bets on markets where creator bias is a concern.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="be-reachable" className="text-xl font-semibold text-ink-1000">Be reachable</h2>
-          <p className="mt-3 text-ink-700">If traders are asking questions in the comments, respond. If your market is being disputed, engage. An unresponsive creator is one of the most common reasons mods have to step in. You don't have to be glued to your market, but you should be checking in.</p>
+          <p className="mt-3 text-ink-700">If traders are asking questions in the comments, respond. If your market is being disputed, engage. An unresponsive creator is one of the most common reasons Mods have to step in. You don't have to be glued to your market, but you should be checking in.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="resolve-promptly-and-honestly" className="text-xl font-semibold text-ink-1000">Resolve promptly and honestly</h2>
-          <p className="mt-3 text-ink-700">Once your criteria are met, resolve. Don't sit on it — unresolved markets lock up traders' mana and erode trust in the platform. If you're unsure about the outcome, check with Mods before resolving, not after. See the <Link href="/community-guidelines/resolving-markets" className="text-primary-500 underline">Resolving Markets</Link> page for detail on the resolution process and when mods can step in.</p>
+          <p className="mt-3 text-ink-700">Once your criteria are met, resolve. Don't sit on it — unresolved markets lock up traders' mana and erode trust in the platform. If you're unsure about the outcome, check with Mods before resolving, not after. See the <Link href="/community-guidelines/resolving-markets" className="text-primary-500 underline">Resolving Markets</Link> page for detail on the resolution process and when Mods can step in.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">

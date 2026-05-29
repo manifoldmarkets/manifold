@@ -54,6 +54,11 @@ export default function CommunityGuidelinesPlatformConductPage() {
           </p>
         </div>
 
+        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
+          <h2 id="reporting-bugs-and-exploits" className="text-xl font-semibold text-ink-1000">Reporting bugs and exploits</h2>
+          <p className="mt-3 text-ink-700">Found a bug or a potential exploit? Please report it before acting on it. For general bugs, use the <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">#bugs channel on Discord</a>. For security issues or exploits, email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a> directly rather than posting publicly.</p>
+        </div>
+
         <SectionNav currentHref="/community-guidelines/platform-conduct" />
       </Col>
     </Page>

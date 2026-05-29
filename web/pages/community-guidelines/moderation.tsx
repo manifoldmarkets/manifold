@@ -64,11 +64,11 @@ export default function CommunityGuidelinesModerationPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="how-to-request-mod-help" className="text-xl font-semibold text-ink-1000">How to request mod help</h2>
-          <p className="mt-3 text-ink-700">If you need a Mod to resolve a market, post a comment on the market with your desired resolution and a source or reasoning. This helps Mods act quickly and accurately.</p>
+          <p className="mt-3 text-ink-700">The easiest way to reach Mods is to post a comment on the relevant market and tag <span className="font-medium">@mods</span> — this sends an alert to all active Mods and adds the market to the mod queue. Include your desired resolution and a source or reasoning to help Mods act quickly and accurately.</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>If the creator has been active on the site within the last month, ping them first and wait at least 24 hours for a response before requesting mod intervention.</li>
             <li>If the creator has been inactive for more than a month, you can request mod help directly without waiting.</li>
-            <li>Use the @mods tag on the market itself to flag it for the mod queue.</li>
+            <li>Post a comment on the market tagging @mods to flag it for the mod queue.</li>
           </ul>
         </div>
 

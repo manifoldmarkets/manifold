@@ -30,7 +30,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink-700">
             <li>Resolve your market as soon as criteria are met — don't leave it sitting.</li>
             <li>You have 10 minutes to un-resolve and re-resolve if you made a mistake. Don't abuse this window — doing so may result in a fine or ban.</li>
-            <li>If you made a mistake, tag @mods or an admin to request a re-resolution.</li>
+            <li>If you made a mistake, post a comment on the market tagging @mods to request a re-resolution.</li>
           </ul>
         </div>
 
@@ -41,7 +41,7 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
             <li>Manifold or Mods may resolve your market if unambiguous criteria have been met and you're unresponsive.</li>
             <li>For resolutions that are more ambiguous or disputed amongst traders, creators cede decision making to Mods if they hold a position on the outcome. A Mod or Mods who does not hold a position will review.</li>
             <li>Manifold reserves the right to re-resolve any market resolved fraudulently — including markets created before this policy.</li>
-            <li>If resolution is genuinely ambiguous, we recommend resolving N/A, especially if the ambiguity is the creator's fault. Please check with Mods first for support in this decision.</li>
+            <li>If resolution is genuinely ambiguous or the outcome is proving contentious, Mods are here to help. In the comments, tag @mods for support in finding the best solution.</li>
           </ul>
         </div>
 
