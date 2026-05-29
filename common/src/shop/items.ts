@@ -951,7 +951,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'ticket',
     slot: 'unique',
-    maxStock: 20,
+    maxStock: 0,
   },
 ]
 
