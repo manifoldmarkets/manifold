@@ -28,11 +28,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import {
-  FaClock,
-  FaCircleExclamation,
-  FaGift,
-} from 'react-icons/fa6'
+import { FaClock, FaCircleExclamation, FaGift } from 'react-icons/fa6'
 import { useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi'
 import { isAddress } from 'viem'
 import {
@@ -105,7 +101,9 @@ export default function SweepstakesPage() {
   // /prize/1 to /prize/2 leaves #1's payload mounted (stats, winners,
   // purchase form) until #2 resolves, which is a real mis-purchase risk
   // when the user clicks Buy in that window.
-  const sweepstakesCacheKey = `get-sweepstakes-${validSweepstakesNum ?? 'active'}`
+  const sweepstakesCacheKey = `get-sweepstakes-${
+    validSweepstakesNum ?? 'active'
+  }`
   // Gate the fetch on router.isReady so a direct nav to /prize/N doesn't
   // first fire `get-sweepstakes` with `{}` (active drawing) and then again
   // with the real sweepstakesNum once query hydrates. `isReady` is true
@@ -367,8 +365,8 @@ export default function SweepstakesPage() {
               </h1>
             </Row>
             <p className="text-ink-600 text-lg leading-relaxed">
-              Enter the drawing for a chance to win USDC prizes! Winners
-              receive real crypto payouts. No purchase necessary.
+              Enter the drawing for a chance to win USDC prizes! Winners receive
+              real crypto payouts. No purchase necessary.
             </p>
           </Col>
           <PrizePageSkeleton />
@@ -971,7 +969,10 @@ function PastDrawingLabel(props: {
 // Small inline icon that signals per-drawing user state. Priority order
 // when multiple drawings collide for the dropdown trigger is
 // 'action-needed' > 'pending' > 'paid'.
-function UserStatusIcon(props: { status: EffectiveUserStatus; large?: boolean }) {
+function UserStatusIcon(props: {
+  status: EffectiveUserStatus
+  large?: boolean
+}) {
   const { status, large } = props
   const size = large ? 'h-4 w-4' : 'h-3.5 w-3.5'
   if (status === 'action-needed') {
@@ -994,7 +995,7 @@ function UserStatusIcon(props: { status: EffectiveUserStatus; large?: boolean })
     return (
       <FaGift
         aria-label="Prize received"
-        className={clsx(size, 'text-teal-500 shrink-0')}
+        className={clsx(size, 'shrink-0 text-teal-500')}
       />
     )
   }
@@ -1003,9 +1004,7 @@ function UserStatusIcon(props: { status: EffectiveUserStatus; large?: boolean })
 
 // Highest-priority status across all drawings — used by the trigger icon
 // and the page banner.
-function getWorstStatus(
-  statuses: EffectiveUserStatus[]
-): EffectiveUserStatus {
+function getWorstStatus(statuses: EffectiveUserStatus[]): EffectiveUserStatus {
   if (statuses.includes('action-needed')) return 'action-needed'
   if (statuses.includes('pending')) return 'pending'
   if (statuses.includes('paid')) return 'paid'
@@ -1030,7 +1029,7 @@ function UnclaimedPrizesBanner(props: {
     const d = drawings[0]
     const isCurrent = d.sweepstakesNum === currentSweepstakesNum
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-scarlet-200 bg-scarlet-50 p-4 dark:border-scarlet-800 dark:bg-scarlet-950/30">
+      <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 flex items-center gap-3 rounded-lg border p-4">
         <FaCircleExclamation className="text-scarlet-500 h-5 w-5 shrink-0" />
         <div className="text-scarlet-800 dark:text-scarlet-200 flex-1 text-sm">
           You won Drawing #{d.sweepstakesNum} and still need to {verbB}.
@@ -1048,7 +1047,7 @@ function UnclaimedPrizesBanner(props: {
   }
 
   return (
-    <div className="rounded-lg border border-scarlet-200 bg-scarlet-50 p-4 dark:border-scarlet-800 dark:bg-scarlet-950/30">
+    <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 rounded-lg border p-4">
       <div className="flex items-start gap-3">
         <FaCircleExclamation className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
         <div className="flex-1">
@@ -1065,7 +1064,7 @@ function UnclaimedPrizesBanner(props: {
               <li key={d.sweepstakesNum}>
                 <button
                   onClick={() => onGoToDrawing(d.sweepstakesNum)}
-                  className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 rounded-md border border-scarlet-300 bg-canvas-0/50 px-2 py-0.5 text-xs font-medium dark:border-scarlet-700 dark:bg-canvas-0/10"
+                  className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 border-scarlet-300 bg-canvas-0/50 dark:border-scarlet-700 dark:bg-canvas-0/10 rounded-md border px-2 py-0.5 text-xs font-medium"
                 >
                   Drawing #{d.sweepstakesNum} →
                 </button>
@@ -1665,8 +1664,14 @@ function UserLegendItem(props: {
   onHover: () => void
   onLeave: () => void
 }) {
-  const { user: userData, color, percentage, isHovered, onHover, onLeave } =
-    props
+  const {
+    user: userData,
+    color,
+    percentage,
+    isHovered,
+    onHover,
+    onLeave,
+  } = props
 
   return (
     <Row

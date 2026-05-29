@@ -435,4 +435,3 @@ export const PrizeDrawing2Banner = () => {
   )
 }
 */
-
