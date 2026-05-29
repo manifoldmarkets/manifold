@@ -55,6 +55,7 @@ import {
 } from 'common/sweepstakes-geofencing'
 import { getBestClientIp } from 'common/client-ip'
 import { canReceiveBonuses } from 'common/user'
+import { DisplayUser } from 'common/api/user-types'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
 interface SweepstakesPageProps {
@@ -1549,6 +1550,18 @@ function UserDistributionChart(props: {
     color: COLORS[i % COLORS.length],
   }))
 
+  // Batch-fetch the top-8 legend users in a single request instead of one
+  // per row. Avoids the N+1 that previously made the chart take seconds to
+  // populate on cold cache. We only fetch for the rows we actually render.
+  const legendUserIds = segments.slice(0, 8).map((s) => s.userId)
+  const { data: legendUsersData } = useAPIGetter('users/by-id', {
+    ids: legendUserIds,
+  })
+  const userById = useMemo(
+    () => new Map((legendUsersData ?? []).map((u) => [u.id, u])),
+    [legendUsersData]
+  )
+
   const radius = 15
   const circumference = 2 * Math.PI * radius
 
@@ -1644,7 +1657,7 @@ function UserDistributionChart(props: {
               return (
                 <UserLegendItem
                   key={index}
-                  userId={segment.userId}
+                  user={userById.get(segment.userId)}
                   color={segment.color}
                   percentage={percentage}
                   isHovered={isHovered}
@@ -1666,15 +1679,15 @@ function UserDistributionChart(props: {
 }
 
 function UserLegendItem(props: {
-  userId: string
+  user: DisplayUser | undefined
   color: string
   percentage: string
   isHovered: boolean
   onHover: () => void
   onLeave: () => void
 }) {
-  const { userId, color, percentage, isHovered, onHover, onLeave } = props
-  const { data: userData } = useAPIGetter('user/by-id/:id', { id: userId })
+  const { user: userData, color, percentage, isHovered, onHover, onLeave } =
+    props
 
   return (
     <Row
