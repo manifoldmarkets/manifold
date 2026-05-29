@@ -1552,11 +1552,17 @@ function UserDistributionChart(props: {
 
   // Batch-fetch the top-8 legend users in a single request instead of one
   // per row. Avoids the N+1 that previously made the chart take seconds to
-  // populate on cold cache. We only fetch for the rows we actually render.
+  // populate on cold cache. We only fetch for the rows we actually render,
+  // and skip the call entirely when there are no users (empty arrays 400
+  // on the server because the query string can't be parsed).
   const legendUserIds = segments.slice(0, 8).map((s) => s.userId)
-  const { data: legendUsersData } = useAPIGetter('users/by-id', {
-    ids: legendUserIds,
-  })
+  const { data: legendUsersData } = useAPIGetter(
+    'users/by-id',
+    { ids: legendUserIds },
+    undefined,
+    undefined,
+    legendUserIds.length > 0
+  )
   const userById = useMemo(
     () => new Map((legendUsersData ?? []).map((u) => [u.id, u])),
     [legendUsersData]
@@ -1812,14 +1818,19 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
   // Batch-fetch the (deduplicated) sale user ids in one request rather than
   // one per row. With limit: 50 above, the previous N+1 fired up to 50
   // separate user/by-id calls per /prize load — the dominant N+1 on the
-  // page in production.
+  // page in production. Skip when empty so we don't fire ?ids=[] (which
+  // 400s on the server).
   const saleUserIds = useMemo(
     () => Array.from(new Set(sales.map((s) => s.userId))),
     [sales]
   )
-  const { data: saleUsersData } = useAPIGetter('users/by-id', {
-    ids: saleUserIds,
-  })
+  const { data: saleUsersData } = useAPIGetter(
+    'users/by-id',
+    { ids: saleUserIds },
+    undefined,
+    undefined,
+    saleUserIds.length > 0
+  )
   const saleUserById = useMemo(
     () => new Map((saleUsersData ?? []).map((u) => [u.id, u])),
     [saleUsersData]
