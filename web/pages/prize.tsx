@@ -1809,6 +1809,22 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
 
   const sales = data?.sales ?? []
 
+  // Batch-fetch the (deduplicated) sale user ids in one request rather than
+  // one per row. With limit: 50 above, the previous N+1 fired up to 50
+  // separate user/by-id calls per /prize load — the dominant N+1 on the
+  // page in production.
+  const saleUserIds = useMemo(
+    () => Array.from(new Set(sales.map((s) => s.userId))),
+    [sales]
+  )
+  const { data: saleUsersData } = useAPIGetter('users/by-id', {
+    ids: saleUserIds,
+  })
+  const saleUserById = useMemo(
+    () => new Map((saleUsersData ?? []).map((u) => [u.id, u])),
+    [saleUsersData]
+  )
+
   if (sales.length === 0) {
     return null
   }
@@ -1840,7 +1856,11 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
           </thead>
           <tbody className="divide-canvas-50 divide-y">
             {sales.map((sale) => (
-              <SaleRow key={sale.id} sale={sale} />
+              <SaleRow
+                key={sale.id}
+                sale={sale}
+                user={saleUserById.get(sale.userId)}
+              />
             ))}
           </tbody>
         </table>
@@ -1858,9 +1878,9 @@ function SaleRow(props: {
     isFree: boolean
     createdTime: number
   }
+  user: DisplayUser | undefined
 }) {
-  const { sale } = props
-  const { data: userData } = useAPIGetter('user/by-id/:id', { id: sale.userId })
+  const { sale, user: userData } = props
 
   return (
     <tr className="hover:bg-canvas-50 transition-colors">
