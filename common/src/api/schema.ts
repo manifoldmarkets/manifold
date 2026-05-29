@@ -3509,6 +3509,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    // Wait for Firebase auth to settle before firing — the per-drawing
+    // userStatus icons depend on auth.uid, and without preferAuth the
+    // first call races auth-loading and comes back with everything null,
+    // which then gets cached for the rest of the session.
+    preferAuth: true,
     props: z.object({}).strict(),
     returns: {} as {
       sweepstakes: Array<{
@@ -3518,6 +3523,9 @@ export const API = (_apiTypeCheck = {
         createdTime: number
         hasWinners: boolean
         totalPrizeUsd: number
+        // Per-user claim status for surfacing icons. Null when no relevant
+        // state (unauthenticated, didn't win, or rejected/opted_out).
+        userStatus: 'paid' | 'pending' | 'action-needed' | null
       }>
     },
   },
@@ -3542,6 +3550,16 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       sweepstakesNum: number
     },
+  },
+  'check-sweepstakes-geo': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Don't cache — the user's IP can change between visits (VPN toggle,
+    // mobile network handoff) and an incorrect cached "allowed" would let
+    // a restricted user see the buy UI.
+    props: z.object({}).strict(),
+    returns: {} as { allowed: boolean },
   },
   'admin-announce-prize-drawing': {
     method: 'POST',
