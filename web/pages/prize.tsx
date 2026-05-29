@@ -106,11 +106,17 @@ export default function SweepstakesPage() {
   // purchase form) until #2 resolves, which is a real mis-purchase risk
   // when the user clicks Buy in that window.
   const sweepstakesCacheKey = `get-sweepstakes-${validSweepstakesNum ?? 'active'}`
+  // Gate the fetch on router.isReady so a direct nav to /prize/N doesn't
+  // first fire `get-sweepstakes` with `{}` (active drawing) and then again
+  // with the real sweepstakesNum once query hydrates. `isReady` is true
+  // on first render for paths without dynamic params (so /prize fires
+  // immediately).
   const { data, refresh } = useAPIGetter(
     'get-sweepstakes',
     validSweepstakesNum ? { sweepstakesNum: validSweepstakesNum } : {},
     undefined,
-    sweepstakesCacheKey
+    sweepstakesCacheKey,
+    router.isReady
   )
   const { data: sweepstakesListData } = useAPIGetter('get-sweepstakes-list', {})
   // Client-side geo check (replaces the old SSR call to pro.ip-api.com that
