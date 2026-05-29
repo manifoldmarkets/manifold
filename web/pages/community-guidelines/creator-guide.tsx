@@ -82,10 +82,6 @@ export default function CommunityGuidelinesCreatorGuidePage() {
           </ul>
         </div>
 
-        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
-          <h2 id="pick-a-reasonable-close-date" className="text-xl font-semibold text-ink-1000">Pick a reasonable close date</h2>
-          <p className="mt-3 text-ink-700">Close shortly before the outcome is known, not after. Closing too early kills late-information trading; closing too late lets people pile in once the answer is obvious.</p>
-        </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="engage-with-comments" className="text-xl font-semibold text-ink-1000">Engage with comments</h2>
