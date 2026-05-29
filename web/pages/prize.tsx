@@ -372,10 +372,32 @@ export default function SweepstakesPage({
   }
 
   if (data === undefined) {
+    // Render the page shell immediately — header, intro, and skeleton
+    // placeholders for the heavier sections. This avoids a 20-second
+    // blank-page feeling while the slower API calls (get-sweepstakes
+    // SUM-on-user_contract_metrics, etc.) complete in the background.
     return (
       <Page trackPageView={'prize-drawing'}>
-        <Col className="items-center justify-center py-20">
-          <LoadingIndicator />
+        <SEO
+          title="Manifold Prize Drawing"
+          description="Win real USDC in Manifold's prize drawing. No purchase necessary."
+          url="/prize"
+          image="/prize-drawing-og.png"
+        />
+        <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
+          <Col className="gap-4">
+            <Row className="items-center gap-3">
+              <FaGift className="h-8 w-8 text-teal-500" />
+              <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
+                Manifold Prize Drawing
+              </h1>
+            </Row>
+            <p className="text-ink-600 text-lg leading-relaxed">
+              Enter the drawing for a chance to win USDC prizes! Winners
+              receive real crypto payouts. No purchase necessary.
+            </p>
+          </Col>
+          <PrizePageSkeleton />
         </Col>
       </Page>
     )
@@ -886,6 +908,29 @@ function AnnouncePrizeDrawingSection(props: {
         </Button>
       )}
     </div>
+  )
+}
+
+// Placeholder shown while the heavy /prize data loads. Mimics the layout of
+// the real page (totals card, stats row, chart, activity table) so the page
+// doesn't jump around when data arrives. Animate-pulse gives the "loading"
+// affordance without needing per-section spinners.
+function PrizePageSkeleton() {
+  return (
+    <Col className="gap-6">
+      {/* Total Prizes card */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-20 w-full animate-pulse rounded-lg" />
+      {/* Time Left / Total Entries / Mana Spent stat row */}
+      <Row className="gap-4">
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+      </Row>
+      {/* Entry Distribution chart */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-56 w-full animate-pulse rounded-lg" />
+      {/* Recent Activity */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-40 w-full animate-pulse rounded-lg" />
+    </Col>
   )
 }
 
