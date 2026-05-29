@@ -3509,6 +3509,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    // Wait for Firebase auth to settle before firing — the per-drawing
+    // userStatus icons depend on auth.uid, and without preferAuth the
+    // first call races auth-loading and comes back with everything null,
+    // which then gets cached for the rest of the session.
+    preferAuth: true,
     props: z.object({}).strict(),
     returns: {} as {
       sweepstakes: Array<{
