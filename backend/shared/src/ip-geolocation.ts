@@ -31,7 +31,10 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationResult> {
     const fields = 'status,message,countryCode,region'
     const url = `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`
 
-    const response = await fetch(url)
+    // Bound the upstream call so a degraded pro.ip-api.com can't tie up an
+    // API socket waiting for a TCP timeout. Fail-open behavior lives in the
+    // catch below — a timeout aborts here and falls through to "allow".
+    const response = await fetch(url, { signal: AbortSignal.timeout(2000) })
     const result: GeoLocationResult = await response.json()
 
     if (result.status === 'fail') {

@@ -100,9 +100,17 @@ export default function SweepstakesPage() {
   const validSweepstakesNum = Number.isFinite(sweepstakesNum)
     ? sweepstakesNum
     : undefined
+  // Scope the cache per drawing — useAPIGetter keys React state by
+  // `overrideKey ?? path`, not by props. Without this, switching from
+  // /prize/1 to /prize/2 leaves #1's payload mounted (stats, winners,
+  // purchase form) until #2 resolves, which is a real mis-purchase risk
+  // when the user clicks Buy in that window.
+  const sweepstakesCacheKey = `get-sweepstakes-${validSweepstakesNum ?? 'active'}`
   const { data, refresh } = useAPIGetter(
     'get-sweepstakes',
-    validSweepstakesNum ? { sweepstakesNum: validSweepstakesNum } : {}
+    validSweepstakesNum ? { sweepstakesNum: validSweepstakesNum } : {},
+    undefined,
+    sweepstakesCacheKey
   )
   const { data: sweepstakesListData } = useAPIGetter('get-sweepstakes-list', {})
   // Client-side geo check (replaces the old SSR call to pro.ip-api.com that
