@@ -49,9 +49,12 @@ export default function CommunityGuidelinesPlatformConductPage() {
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="reporting-and-feedback" className="text-xl font-semibold text-ink-1000">Reporting & feedback</h2>
-          <p className="mt-3 text-ink-700">
-            If you believe a rule has been broken or want to flag something to the team, reach out on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or email <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>.
-          </p>
+          <p className="mt-3 text-ink-700">If you believe a rule has been broken, you can report directly on the site using the three dots menu (…):</p>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-ink-700">
+            <li>To report a user, use the three dots menu on a comment they've left, or on their profile page.</li>
+            <li>To report a market, use the three dots menu on the market page.</li>
+          </ul>
+          <p className="mt-3 text-ink-700">You can also reach the team on <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> or by emailing <a className="text-primary-500 underline" href="mailto:info@manifold.markets">info@manifold.markets</a>.</p>
         </div>
 
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">

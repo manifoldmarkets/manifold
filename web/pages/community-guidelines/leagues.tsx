@@ -132,12 +132,6 @@ export default function CommunityGuidelinesLeaguesPage() {
           </ul>
         </div>
 
-        <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-50 p-5">
-          <p className="text-sm text-ink-700">
-            Leagues are meant to reward being good at predicting, not at extracting. If you're not sure whether a strategy crosses the line, ask in <a className="text-primary-500 underline" href="https://discord.gg/2sHu6z9WMQ" target="_blank" rel="noreferrer">Discord</a> before running it.
-          </p>
-        </div>
-
         <SectionNav currentHref="/community-guidelines/leagues" />
       </Col>
     </Page>

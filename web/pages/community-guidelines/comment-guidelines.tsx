@@ -47,6 +47,7 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
         <div className="mt-6 rounded-xl border-2 border-ink-200 bg-canvas-0 p-6">
           <h2 id="what-can-get-you-banned" className="text-xl font-semibold text-ink-1000">What can get you banned</h2>
           <p className="mt-3 text-ink-700">Any of the above can result in a restriction or ban depending on severity and history. Repeated violations are treated more harshly than first offenses.</p>
+          <p className="mt-3 text-ink-700">To report a comment or user, use the three dots menu (…) on the comment or their profile. See <a href="/community-guidelines/platform-conduct#reporting-and-feedback" className="text-primary-500 underline">Reporting & feedback</a> for full details.</p>
         </div>
 
         <SectionNav currentHref="/community-guidelines/comment-guidelines" />
