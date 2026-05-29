@@ -283,6 +283,12 @@ export const FAVICON_ALLOWED_HOSTS = new Set<string>([
   'pgatour.com',
   'europeantour.com',
 
+  // ===== Sports tournaments =====
+  'ausopen.com',
+  'rolandgarros.com',
+  'wimbledon.com',
+  'usopen.org',
+
   // ===== Sports media =====
   'espn.com',
   'theathletic.com',
