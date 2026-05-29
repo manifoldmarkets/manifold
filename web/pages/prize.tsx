@@ -4,7 +4,6 @@ import {
   formatMoneyWithDecimals,
 } from 'common/util/format'
 import { sortBy } from 'lodash'
-import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -49,69 +48,16 @@ import {
   getTotalWinnerCount,
   SweepstakesPrize,
 } from 'common/sweepstakes'
-import {
-  checkSweepstakesGeofence,
-  GeoLocationResult,
-} from 'common/sweepstakes-geofencing'
-import { getBestClientIp } from 'common/client-ip'
 import { canReceiveBonuses } from 'common/user'
 import { DisplayUser } from 'common/api/user-types'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
-interface SweepstakesPageProps {
-  isLocationRestricted: boolean
-  sweepstakesNum?: number
-}
-
-export const getSweepstakesServerSideProps: GetServerSideProps<
-  SweepstakesPageProps
-> = async (context) => {
-  const ip = getBestClientIp(context.req.headers, [
-    context.req.socket.remoteAddress,
-  ])
-
-  const apiKey = process.env.IP_API_PRO_KEY
-  if (!apiKey) {
-    // Allow access if API key not configured (backend will validate on purchase)
-    return {
-      props: {
-        isLocationRestricted: false,
-      },
-    }
-  }
-
-  try {
-    const fields = 'status,message,countryCode,region'
-    // Set a timeout here to prevent a slow API response from stalling the page load during SSR
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 1500)
-    const response = await fetch(
-      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`,
-      { signal: controller.signal }
-    ).finally(() => clearTimeout(timeout))
-    const geo: GeoLocationResult = await response.json()
-    const { allowed } = checkSweepstakesGeofence(geo)
-
-    return {
-      props: {
-        isLocationRestricted: !allowed,
-      },
-    }
-  } catch (error) {
-    // On error, allow access (backend will validate on purchase)
-    return {
-      props: {
-        isLocationRestricted: false,
-      },
-    }
-  }
-}
-
-export const getServerSideProps: GetServerSideProps<
-  SweepstakesPageProps
-> = async (context) => {
-  return getSweepstakesServerSideProps(context)
-}
+// /prize used to run `getServerSideProps` that called pro.ip-api.com to gate
+// a banner for restricted regions. That blocked every Link-driven nav until
+// the external API returned — which could hang for 10+s when ip-api was
+// degraded. The page is now fully static-shell + client-side data fetching,
+// and the geo check moved to a `/check-sweepstakes-geo` API call that runs
+// after mount. Purchase paths still validate geo server-side.
 
 // Format entries with appropriate precision
 function formatEntries(entries: number): string {
@@ -140,18 +86,31 @@ const COLORS = [
   '#d946ef', // fuchsia
 ]
 
-export default function SweepstakesPage({
-  isLocationRestricted,
-  sweepstakesNum,
-}: SweepstakesPageProps) {
+export default function SweepstakesPage() {
   const user = useUser()
   const isAdmin = useAdmin()
   const router = useRouter()
+  // sweepstakesNum used to come from getServerSideProps; now read directly
+  // from the URL on the client so the page no longer needs SSR for params.
+  const sweepstakesNumRaw = router.query.sweepstakesNum
+  const sweepstakesNum =
+    typeof sweepstakesNumRaw === 'string'
+      ? Number(sweepstakesNumRaw)
+      : undefined
+  const validSweepstakesNum = Number.isFinite(sweepstakesNum)
+    ? sweepstakesNum
+    : undefined
   const { data, refresh } = useAPIGetter(
     'get-sweepstakes',
-    sweepstakesNum ? { sweepstakesNum } : {}
+    validSweepstakesNum ? { sweepstakesNum: validSweepstakesNum } : {}
   )
   const { data: sweepstakesListData } = useAPIGetter('get-sweepstakes-list', {})
+  // Client-side geo check (replaces the old SSR call to pro.ip-api.com that
+  // could hang nav for 10+s). Defaults to "not restricted" until the check
+  // completes, so the page loads instantly and the banner just appears late
+  // for restricted users.
+  const { data: geoData } = useAPIGetter('check-sweepstakes-geo', {})
+  const isLocationRestricted = geoData ? !geoData.allowed : false
 
   const [manaAmount, setManaAmount] = useState<number>(100)
   const [isSubmitting, setIsSubmitting] = useState(false)

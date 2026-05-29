@@ -3546,6 +3546,16 @@ export const API = (_apiTypeCheck = {
       sweepstakesNum: number
     },
   },
+  'check-sweepstakes-geo': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Don't cache — the user's IP can change between visits (VPN toggle,
+    // mobile network handoff) and an incorrect cached "allowed" would let
+    // a restricted user see the buy UI.
+    props: z.object({}).strict(),
+    returns: {} as { allowed: boolean },
+  },
   'admin-announce-prize-drawing': {
     method: 'POST',
     visibility: 'undocumented',
