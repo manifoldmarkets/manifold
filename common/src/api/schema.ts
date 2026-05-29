@@ -3518,6 +3518,9 @@ export const API = (_apiTypeCheck = {
         createdTime: number
         hasWinners: boolean
         totalPrizeUsd: number
+        // Per-user claim status for surfacing icons. Null when no relevant
+        // state (unauthenticated, didn't win, or rejected/opted_out).
+        userStatus: 'paid' | 'pending' | 'action-needed' | null
       }>
     },
   },

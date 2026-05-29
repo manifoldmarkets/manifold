@@ -29,7 +29,11 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import { FaGift } from 'react-icons/fa6'
+import {
+  FaClock,
+  FaCircleExclamation,
+  FaGift,
+} from 'react-icons/fa6'
 import { useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi'
 import { isAddress } from 'viem'
 import {
@@ -160,6 +164,27 @@ export default function SweepstakesPage({
   // Check if user needs to verify before participating
   const needsVerification = user && !canReceiveBonuses(user)
   const isAdminIneligible = !!user && isAdmin
+
+  // Promote server-side 'pending' to 'action-needed' if the user can't
+  // currently complete a payout (unverified). Then pick the worst across
+  // all drawings for the trigger icon, and the list of action-needed
+  // drawings for the page banner.
+  const effectiveStatusByDrawing = (sweepstakesListData?.sweepstakes ?? []).map(
+    (s) => {
+      const raw = s.userStatus ?? null
+      const bumped =
+        raw === 'pending' && needsVerification
+          ? ('action-needed' as const)
+          : raw
+      return { sweepstakesNum: s.sweepstakesNum, status: bumped }
+    }
+  )
+  const triggerStatus = getWorstStatus(
+    effectiveStatusByDrawing.map((e) => e.status)
+  )
+  const actionNeededDrawings = effectiveStatusByDrawing.filter(
+    (e) => e.status === 'action-needed'
+  )
 
   const sweepstakes = data ? data.sweepstakes : undefined
   const userStats = data ? data.userStats : []
@@ -426,22 +451,37 @@ export default function SweepstakesPage({
                   renderButtonLabel={(opt) =>
                     opt ? `Drawing #${opt.value}` : 'Select drawing'
                   }
-                  options={sweepstakesList.map((s) => ({
-                    value: s.sweepstakesNum,
-                    label: (
-                      <PastDrawingLabel
-                        sweepstakesNum={s.sweepstakesNum}
-                        totalPrizeUsd={s.totalPrizeUsd}
-                      />
-                    ),
-                    // Big-prize rows get a row-level gold tint so the bg
-                    // fills the entire option width (the inner truncate
-                    // span would otherwise clip a label-level background).
-                    buttonClassName:
-                      s.totalPrizeUsd && s.totalPrizeUsd >= 10000
-                        ? 'bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20'
-                        : undefined,
-                  }))}
+                  buttonPrefix={
+                    triggerStatus ? (
+                      <UserStatusIcon status={triggerStatus} large />
+                    ) : undefined
+                  }
+                  options={sweepstakesList.map((s) => {
+                    // The server returns 'pending' for "wallet submitted,
+                    // payment in flight". If the user isn't verified, that's
+                    // still blocking — bump it to action-needed.
+                    const effectiveStatus: EffectiveUserStatus =
+                      s.userStatus === 'pending' && needsVerification
+                        ? 'action-needed'
+                        : s.userStatus ?? null
+                    return {
+                      value: s.sweepstakesNum,
+                      label: (
+                        <PastDrawingLabel
+                          sweepstakesNum={s.sweepstakesNum}
+                          totalPrizeUsd={s.totalPrizeUsd}
+                          userStatus={effectiveStatus}
+                        />
+                      ),
+                      // Big-prize rows get a row-level gold tint so the bg
+                      // fills the entire option width (the inner truncate
+                      // span would otherwise clip a label-level background).
+                      buttonClassName:
+                        s.totalPrizeUsd && s.totalPrizeUsd >= 10000
+                          ? 'bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20'
+                          : undefined,
+                    }
+                  })}
                   onChange={(nextNum) => {
                     if (
                       activeSweepstakes &&
@@ -482,6 +522,26 @@ export default function SweepstakesPage({
               This prize drawing is not available in your region.
             </p>
           </div>
+        )}
+
+        {/* Unclaimed-prize banner. Surfaces drawings where the user won but
+            hasn't completed the steps to receive their prize. */}
+        {actionNeededDrawings.length > 0 && (
+          <UnclaimedPrizesBanner
+            drawings={actionNeededDrawings}
+            currentSweepstakesNum={sweepstakes?.sweepstakesNum}
+            needsVerification={!!needsVerification}
+            onGoToDrawing={(num) => {
+              if (
+                activeSweepstakes &&
+                num === activeSweepstakes.sweepstakesNum
+              ) {
+                router.push('/prize')
+              } else {
+                router.push(`/prize/${num}`)
+              }
+            }}
+          />
         )}
 
         {/* Verification Required Banner */}
@@ -829,6 +889,10 @@ function AnnouncePrizeDrawingSection(props: {
   )
 }
 
+// User-facing claim states. 'action-needed' covers both "haven't submitted
+// wallet yet" and "haven't completed KYC", because both block the prize.
+type EffectiveUserStatus = 'paid' | 'pending' | 'action-needed' | null
+
 // Tiered styling for past-drawings dropdown options. Larger prizes pop
 // visually so people scrolling history can spot the big ones at a glance.
 // The aesthetic is restrained — most rows look default; the jackpot tier
@@ -836,8 +900,9 @@ function AnnouncePrizeDrawingSection(props: {
 function PastDrawingLabel(props: {
   sweepstakesNum: number
   totalPrizeUsd: number | undefined
+  userStatus?: EffectiveUserStatus
 }) {
-  const { sweepstakesNum } = props
+  const { sweepstakesNum, userStatus } = props
   // Old API responses (pre-totalPrizeUsd) and the type-narrowing both need a
   // default so the dropdown never crashes if the field hasn't shipped yet.
   const totalPrizeUsd = props.totalPrizeUsd ?? 0
@@ -869,7 +934,8 @@ function PastDrawingLabel(props: {
           tier === 'jackpot' && 'text-amber-900 dark:text-amber-100'
         )}
       >
-        {tier === 'jackpot' && (
+        {userStatus && <UserStatusIcon status={userStatus} />}
+        {tier === 'jackpot' && !userStatus && (
           <span aria-hidden className="text-amber-500 dark:text-amber-300">
             ✦
           </span>
@@ -880,6 +946,116 @@ function PastDrawingLabel(props: {
         <span className={priceClass}>${totalPrizeUsd.toLocaleString()}</span>
       )}
     </span>
+  )
+}
+
+// Small inline icon that signals per-drawing user state. Priority order
+// when multiple drawings collide for the dropdown trigger is
+// 'action-needed' > 'pending' > 'paid'.
+function UserStatusIcon(props: { status: EffectiveUserStatus; large?: boolean }) {
+  const { status, large } = props
+  const size = large ? 'h-4 w-4' : 'h-3.5 w-3.5'
+  if (status === 'action-needed') {
+    return (
+      <FaCircleExclamation
+        aria-label="Action needed"
+        className={clsx(size, 'text-scarlet-500 shrink-0')}
+      />
+    )
+  }
+  if (status === 'pending') {
+    return (
+      <FaClock
+        aria-label="Payment pending"
+        className={clsx(size, 'text-ink-400 shrink-0')}
+      />
+    )
+  }
+  if (status === 'paid') {
+    return (
+      <FaGift
+        aria-label="Prize received"
+        className={clsx(size, 'text-teal-500 shrink-0')}
+      />
+    )
+  }
+  return null
+}
+
+// Highest-priority status across all drawings — used by the trigger icon
+// and the page banner.
+function getWorstStatus(
+  statuses: EffectiveUserStatus[]
+): EffectiveUserStatus {
+  if (statuses.includes('action-needed')) return 'action-needed'
+  if (statuses.includes('pending')) return 'pending'
+  if (statuses.includes('paid')) return 'paid'
+  return null
+}
+
+// Top-of-page nudge for users who have won drawings but still need to act
+// (submit wallet, verify identity, etc.). Renders a single line when one
+// drawing is unclaimed; a click-list when multiple.
+function UnclaimedPrizesBanner(props: {
+  drawings: { sweepstakesNum: number }[]
+  currentSweepstakesNum: number | undefined
+  needsVerification: boolean
+  onGoToDrawing: (num: number) => void
+}) {
+  const { drawings, currentSweepstakesNum, needsVerification, onGoToDrawing } =
+    props
+
+  const verbB = needsVerification ? 'verify to claim' : 'claim'
+
+  if (drawings.length === 1) {
+    const d = drawings[0]
+    const isCurrent = d.sweepstakesNum === currentSweepstakesNum
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-scarlet-200 bg-scarlet-50 p-4 dark:border-scarlet-800 dark:bg-scarlet-950/30">
+        <FaCircleExclamation className="text-scarlet-500 h-5 w-5 shrink-0" />
+        <div className="text-scarlet-800 dark:text-scarlet-200 flex-1 text-sm">
+          You won Drawing #{d.sweepstakesNum} and still need to {verbB}.
+        </div>
+        {!isCurrent && (
+          <button
+            onClick={() => onGoToDrawing(d.sweepstakesNum)}
+            className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 shrink-0 text-sm font-medium underline"
+          >
+            Go to drawing →
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-scarlet-200 bg-scarlet-50 p-4 dark:border-scarlet-800 dark:bg-scarlet-950/30">
+      <div className="flex items-start gap-3">
+        <FaCircleExclamation className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
+        <div className="flex-1">
+          <div className="text-scarlet-800 dark:text-scarlet-200 text-sm font-medium">
+            You have {drawings.length} unclaimed prizes
+          </div>
+          <div className="text-scarlet-700 dark:text-scarlet-300 mt-1 text-sm">
+            {needsVerification
+              ? 'Verify your identity to receive your USDC, then submit your wallet on each drawing.'
+              : 'Submit your wallet address on each drawing to claim.'}
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {drawings.map((d) => (
+              <li key={d.sweepstakesNum}>
+                <button
+                  onClick={() => onGoToDrawing(d.sweepstakesNum)}
+                  className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 rounded-md border border-scarlet-300 bg-canvas-0/50 px-2 py-0.5 text-xs font-medium dark:border-scarlet-700 dark:bg-canvas-0/10"
+                >
+                  Drawing #{d.sweepstakesNum} →
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
   )
 }
 
