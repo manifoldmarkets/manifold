@@ -143,42 +143,43 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
     href: '/community-guidelines/platform-conduct#reporting-and-feedback',
   },
 
-  // Running a Market
+  // Market Policies (these sections used to live on Running a Market —
+  // links and labels updated when the content moved.)
   {
-    page: 'Running a Market',
+    page: 'Market Policies',
     section: 'Market states',
     text: 'ranked unlisted two states admins moderators',
-    href: '/community-guidelines/running-a-market#market-states',
+    href: '/community-guidelines/market-policies#market-states',
   },
   {
-    page: 'Running a Market',
+    page: 'Market Policies',
     section: 'Ranked',
     text: 'ranked default leagues unranked unlisted self-referential random gambling coin flip personal creator friends predict never resolved',
-    href: '/community-guidelines/running-a-market#ranked',
+    href: '/community-guidelines/market-policies#ranked',
   },
   {
-    page: 'Running a Market',
+    page: 'Market Policies',
     section: 'Subsidized',
     text: 'subsidized mana unique trader 50 traders cap 10000 liquidity subsidy house unsubsidized unlisted self-referential random gambling spam low quality duplicate',
-    href: '/community-guidelines/running-a-market#subsidized',
+    href: '/community-guidelines/market-policies#subsidized',
   },
   {
-    page: 'Running a Market',
+    page: 'Market Policies',
     section: "Markets that may be unlisted, N/A'd, or deleted",
     text: "unlisted direct url n/a deleted abandoned vague criteria sexually graphic violence terrorism abuse hateful race gender sex disability spoilers random gambling self-referential low quality harvest bonuses defraud server costs doxxing illegal us law minors sexual exploitation blackmail spam self-harm suicide exploit codebase bugs third party terms of service",
-    href: '/community-guidelines/running-a-market#unlisted-na-deleted',
+    href: '/community-guidelines/market-policies#unlisted-na-deleted',
   },
   {
-    page: 'Running a Market',
+    page: 'Market Policies',
     section: 'A note on third-party platforms',
     text: 'metaculus tournament questions community prediction hidden terms of service external forecasting topics twitter data breach',
-    href: '/community-guidelines/running-a-market#third-party-platforms',
+    href: '/community-guidelines/market-policies#third-party-platforms',
   },
   {
-    page: 'Running a Market',
+    page: 'Market Policies',
     section: 'Personal markets',
     text: 'personal goal markets n/a resolve upfront description reserve right unranked creator participating private matters inactive',
-    href: '/community-guidelines/running-a-market#personal-markets',
+    href: '/community-guidelines/market-policies#personal-markets',
   },
 
   // Comment Guidelines
