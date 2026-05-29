@@ -166,7 +166,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Market Policies',
     section: "Markets that may be unlisted, N/A'd, or deleted",
-    text: "unlisted direct url n/a deleted abandoned vague criteria sexually graphic violence terrorism abuse hateful race gender sex disability spoilers random gambling self-referential low quality harvest bonuses defraud server costs doxxing illegal us law minors sexual exploitation blackmail spam self-harm suicide exploit codebase bugs third party terms of service",
+    text: 'unlisted direct url n/a deleted abandoned vague criteria sexually graphic violence terrorism abuse hateful race gender sex disability spoilers random gambling self-referential low quality harvest bonuses defraud server costs doxxing illegal us law minors sexual exploitation blackmail spam self-harm suicide exploit codebase bugs third party terms of service',
     href: '/community-guidelines/market-policies#unlisted-na-deleted',
   },
   {
@@ -330,15 +330,61 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
 ]
 
 const STOPWORDS = new Set([
-  'a', 'an', 'the', 'i', 'me', 'my', 'we', 'you', 'your',
-  'is', 'are', 'was', 'were', 'be', 'been', 'do', 'does', 'did',
-  'of', 'to', 'for', 'in', 'on', 'and', 'or', 'but', 'so',
-  'if', 'then', 'than', 'as', 'at', 'by', 'with',
-  'what', 'when', 'where', 'why', 'how', 'who',
-  'can', 'should', 'would', 'could', 'will',
-  'get', 'got', 'gets', 'getting',
-  'happen', 'happens', 'happened',
-  'have', 'has', 'had',
+  'a',
+  'an',
+  'the',
+  'i',
+  'me',
+  'my',
+  'we',
+  'you',
+  'your',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'do',
+  'does',
+  'did',
+  'of',
+  'to',
+  'for',
+  'in',
+  'on',
+  'and',
+  'or',
+  'but',
+  'so',
+  'if',
+  'then',
+  'than',
+  'as',
+  'at',
+  'by',
+  'with',
+  'what',
+  'when',
+  'where',
+  'why',
+  'how',
+  'who',
+  'can',
+  'should',
+  'would',
+  'could',
+  'will',
+  'get',
+  'got',
+  'gets',
+  'getting',
+  'happen',
+  'happens',
+  'happened',
+  'have',
+  'has',
+  'had',
 ])
 
 export function GuidelinesSearch() {
@@ -377,8 +423,8 @@ export function GuidelinesSearch() {
 
   return (
     <div ref={containerRef} className="relative mt-6 w-full">
-      <div className="flex items-center gap-2 rounded-xl border-2 border-ink-200 bg-canvas-0 px-4 py-2.5 focus-within:border-primary-400">
-        <SearchIcon className="h-4 w-4 shrink-0 text-ink-400" />
+      <div className="border-ink-200 bg-canvas-0 focus-within:border-primary-400 flex items-center gap-2 rounded-xl border-2 px-4 py-2.5">
+        <SearchIcon className="text-ink-400 h-4 w-4 shrink-0" />
         <input
           type="text"
           placeholder="Search guidelines..."
@@ -394,7 +440,7 @@ export function GuidelinesSearch() {
               setQuery('')
             }
           }}
-          className="w-full border-0 bg-transparent p-0 text-sm text-ink-900 placeholder-ink-400 outline-none focus:ring-0"
+          className="text-ink-900 placeholder-ink-400 w-full border-0 bg-transparent p-0 text-sm outline-none focus:ring-0"
         />
         {query && (
           <button
@@ -410,7 +456,7 @@ export function GuidelinesSearch() {
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border-2 border-ink-200 bg-canvas-0 shadow-lg">
+        <div className="border-ink-200 bg-canvas-0 absolute z-50 mt-1 w-full rounded-xl border-2 shadow-lg">
           {results.map((result, i) => (
             <button
               key={i}
@@ -419,10 +465,10 @@ export function GuidelinesSearch() {
                 setOpen(false)
                 setQuery('')
               }}
-              className="flex w-full flex-col px-4 py-3 text-left hover:bg-canvas-50 first:rounded-t-xl last:rounded-b-xl"
+              className="hover:bg-canvas-50 flex w-full flex-col px-4 py-3 text-left first:rounded-t-xl last:rounded-b-xl"
             >
-              <span className="text-xs text-primary-500">{result.page}</span>
-              <span className="text-sm font-medium text-ink-900">
+              <span className="text-primary-500 text-xs">{result.page}</span>
+              <span className="text-ink-900 text-sm font-medium">
                 {result.section}
               </span>
             </button>
@@ -431,8 +477,8 @@ export function GuidelinesSearch() {
       )}
 
       {open && words.length > 0 && results.length === 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border-2 border-ink-200 bg-canvas-0 px-4 py-3 shadow-lg">
-          <p className="text-sm text-ink-500">No results found.</p>
+        <div className="border-ink-200 bg-canvas-0 absolute z-50 mt-1 w-full rounded-xl border-2 px-4 py-3 shadow-lg">
+          <p className="text-ink-500 text-sm">No results found.</p>
         </div>
       )}
     </div>

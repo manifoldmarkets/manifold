@@ -48,19 +48,22 @@ export function SectionNav({ currentHref }: { currentHref: string }) {
   const i = GUIDELINE_SECTIONS.findIndex((s) => s.href === currentHref)
   if (i === -1) return null
   const prev = i > 0 ? GUIDELINE_SECTIONS[i - 1] : null
-  const next = i < GUIDELINE_SECTIONS.length - 1 ? GUIDELINE_SECTIONS[i + 1] : null
+  const next =
+    i < GUIDELINE_SECTIONS.length - 1 ? GUIDELINE_SECTIONS[i + 1] : null
 
   return (
     <div className="mt-10 grid gap-3 sm:grid-cols-2">
       {prev ? (
         <Link
           href={prev.href}
-          className="group flex items-center gap-3 rounded-xl border-2 border-ink-200 bg-canvas-0 p-4 transition hover:border-primary-300"
+          className="border-ink-200 bg-canvas-0 hover:border-primary-300 group flex items-center gap-3 rounded-xl border-2 p-4 transition"
         >
-          <ChevronLeftIcon className="h-5 w-5 shrink-0 text-ink-400 group-hover:text-primary-500" />
+          <ChevronLeftIcon className="text-ink-400 group-hover:text-primary-500 h-5 w-5 shrink-0" />
           <div className="min-w-0">
-            <div className="text-xs text-ink-500">Previous</div>
-            <div className="truncate text-sm font-medium text-ink-1000">{prev.title}</div>
+            <div className="text-ink-500 text-xs">Previous</div>
+            <div className="text-ink-1000 truncate text-sm font-medium">
+              {prev.title}
+            </div>
           </div>
         </Link>
       ) : (
@@ -69,13 +72,15 @@ export function SectionNav({ currentHref }: { currentHref: string }) {
       {next ? (
         <Link
           href={next.href}
-          className="group flex items-center justify-end gap-3 rounded-xl border-2 border-ink-200 bg-canvas-0 p-4 text-right transition hover:border-primary-300"
+          className="border-ink-200 bg-canvas-0 hover:border-primary-300 group flex items-center justify-end gap-3 rounded-xl border-2 p-4 text-right transition"
         >
           <div className="min-w-0">
-            <div className="text-xs text-ink-500">Next</div>
-            <div className="truncate text-sm font-medium text-ink-1000">{next.title}</div>
+            <div className="text-ink-500 text-xs">Next</div>
+            <div className="text-ink-1000 truncate text-sm font-medium">
+              {next.title}
+            </div>
           </div>
-          <ChevronRightIcon className="h-5 w-5 shrink-0 text-ink-400 group-hover:text-primary-500" />
+          <ChevronRightIcon className="text-ink-400 group-hover:text-primary-500 h-5 w-5 shrink-0" />
         </Link>
       ) : (
         <div className="hidden sm:block" />
