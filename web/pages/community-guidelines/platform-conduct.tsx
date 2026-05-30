@@ -84,8 +84,20 @@ export default function CommunityGuidelinesPlatformConductPage() {
             Reporting & feedback
           </h2>
           <p className="text-ink-700 mt-3">
-            If you believe a rule has been broken or want to flag something to
-            the team, reach out on{' '}
+            If you believe a rule has been broken, you can report directly on
+            the site using the three dots menu (…):
+          </p>
+          <ul className="text-ink-700 mt-2 list-disc space-y-2 pl-5">
+            <li>
+              To report a user, use the three dots menu on a comment they've
+              left, or on their profile page.
+            </li>
+            <li>
+              To report a market, use the three dots menu on the market page.
+            </li>
+          </ul>
+          <p className="text-ink-700 mt-3">
+            You can also reach the team on{' '}
             <a
               className="text-primary-500 underline"
               href="https://discord.gg/2sHu6z9WMQ"
@@ -94,7 +106,7 @@ export default function CommunityGuidelinesPlatformConductPage() {
             >
               Discord
             </a>{' '}
-            or email{' '}
+            or by emailing{' '}
             <a
               className="text-primary-500 underline"
               href="mailto:info@manifold.markets"
@@ -102,6 +114,35 @@ export default function CommunityGuidelinesPlatformConductPage() {
               info@manifold.markets
             </a>
             .
+          </p>
+        </div>
+
+        <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
+          <h2
+            id="reporting-bugs-and-exploits"
+            className="text-ink-1000 text-xl font-semibold"
+          >
+            Reporting bugs and exploits
+          </h2>
+          <p className="text-ink-700 mt-3">
+            Found a bug or a potential exploit? Please report it before acting
+            on it. For general bugs, use the{' '}
+            <a
+              className="text-primary-500 underline"
+              href="https://discord.gg/2sHu6z9WMQ"
+              target="_blank"
+              rel="noreferrer"
+            >
+              #bugs channel on Discord
+            </a>
+            . For security issues or exploits, email{' '}
+            <a
+              className="text-primary-500 underline"
+              href="mailto:info@manifold.markets"
+            >
+              info@manifold.markets
+            </a>{' '}
+            directly rather than posting publicly.
           </p>
         </div>
 

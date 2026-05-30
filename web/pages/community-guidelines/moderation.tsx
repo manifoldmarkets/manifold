@@ -115,9 +115,11 @@ export default function CommunityGuidelinesModerationPage() {
             How to request mod help
           </h2>
           <p className="text-ink-700 mt-3">
-            If you need a Mod to resolve a market, post a comment on the market
-            with your desired resolution and a source or reasoning. This helps
-            Mods act quickly and accurately.
+            The easiest way to reach Mods is to post a comment on the relevant
+            market and tag <span className="font-medium">@mods</span> — this
+            sends an alert to all active Mods and adds the market to the mod
+            queue. Include your desired resolution and a source or reasoning to
+            help Mods act quickly and accurately.
           </p>
           <ul className="text-ink-700 mt-3 list-disc space-y-2 pl-5">
             <li>
@@ -130,7 +132,7 @@ export default function CommunityGuidelinesModerationPage() {
               request mod help directly without waiting.
             </li>
             <li>
-              Use the @mods tag on the market itself to flag it for the mod
+              Post a comment on the market tagging @mods to flag it for the mod
               queue.
             </li>
           </ul>

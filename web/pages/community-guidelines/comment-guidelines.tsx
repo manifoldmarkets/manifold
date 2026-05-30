@@ -105,6 +105,17 @@ export default function CommunityGuidelinesCommentGuidelinesPage() {
             severity and history. Repeated violations are treated more harshly
             than first offenses.
           </p>
+          <p className="text-ink-700 mt-3">
+            To report a comment or user, use the three dots menu (…) on the
+            comment or their profile. See{' '}
+            <a
+              href="/community-guidelines/platform-conduct#reporting-and-feedback"
+              className="text-primary-500 underline"
+            >
+              Reporting & feedback
+            </a>{' '}
+            for full details.
+          </p>
         </div>
 
         <SectionNav currentHref="/community-guidelines/comment-guidelines" />
