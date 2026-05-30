@@ -163,25 +163,16 @@ export default function CommunityGuidelinesCreatorGuidePage() {
               unavailable, ambiguous outcome.
             </li>
             <li>
+              Avoid the word "by" with dates — it's ambiguous. Use "before
+              [date]" if you mean before that day begins, or "before the end of
+              [date]" if you mean by 11:59pm on that day.
+            </li>
+            <li>
               If you have to update criteria mid-market because new events
               happened, do it in the description and post a comment so traders
               see the change.
             </li>
           </ul>
-        </div>
-
-        <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
-          <h2
-            id="pick-a-reasonable-close-date"
-            className="text-ink-1000 text-xl font-semibold"
-          >
-            Pick a reasonable close date
-          </h2>
-          <p className="text-ink-700 mt-3">
-            Close shortly before the outcome is known, not after. Closing too
-            early kills late-information trading; closing too late lets people
-            pile in once the answer is obvious.
-          </p>
         </div>
 
         <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
@@ -221,31 +212,27 @@ export default function CommunityGuidelinesCreatorGuidePage() {
 
         <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
           <h2
-            id="when-all-else-fails-na"
+            id="trader-bonuses"
             className="text-ink-1000 text-xl font-semibold"
           >
-            When all else fails, N/A
+            Trader bonuses
           </h2>
           <p className="text-ink-700 mt-3">
-            N/A returns mana to traders at their cost basis and isn't a black
-            mark. It's the right move when:
+            You can offset market creation costs by earning unique trader
+            bonuses.
           </p>
-          <ul className="text-ink-700 mt-3 list-disc space-y-2 pl-5">
-            <li>The outcome is genuinely unknowable.</li>
-            <li>
-              An event was cancelled or the criteria are no longer achievable.
-            </li>
-            <li>
-              You realized the question was ambiguous and there's no fair way to
-              call it.
-            </li>
-          </ul>
           <p className="text-ink-700 mt-3">
-            Before reaching for N/A, it's worth checking in with Mods —
-            sometimes they can help you find a resolution path you hadn't
-            considered. N/A is a release valve for when that genuinely doesn't
-            exist. Use it without guilt when needed, but don't reach for it just
-            to dodge a hard call.
+            Every time a new unique trader bets on your market, you earn a mana
+            bonus. The amount scales with your market's liquidity — more
+            liquidity in the pool means more earned per trader. These bonuses
+            count toward your{' '}
+            <Link
+              href="/community-guidelines/leagues"
+              className="text-primary-500 underline"
+            >
+              Leagues
+            </Link>{' '}
+            score alongside your trading profit.
           </p>
         </div>
 

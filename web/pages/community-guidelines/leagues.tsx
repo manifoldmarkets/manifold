@@ -94,9 +94,13 @@ export default function CommunityGuidelinesLeaguesPage() {
               status.
             </li>
             <li>
-              Bets on your own markets count only after a 1-hour delay — this
-              prevents creators from pump-and-dumping fresh markets for league
-              points.
+              Unique trader bonuses earned on ranked markets you've created also
+              count toward your score.
+            </li>
+            <li>
+              Bets on your own markets within the first hour of creation don't
+              count toward your league score — this prevents creators from
+              pump-and-dumping fresh markets for league points.
             </li>
           </ul>
         </div>
@@ -259,23 +263,6 @@ export default function CommunityGuidelinesLeaguesPage() {
               applied to league play.
             </li>
           </ul>
-        </div>
-
-        <div className="border-ink-200 bg-canvas-50 mt-6 rounded-xl border-2 p-5">
-          <p className="text-ink-700 text-sm">
-            Leagues are meant to reward being good at predicting, not at
-            extracting. If you're not sure whether a strategy crosses the line,
-            ask in{' '}
-            <a
-              className="text-primary-500 underline"
-              href="https://discord.gg/2sHu6z9WMQ"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Discord
-            </a>{' '}
-            before running it.
-          </p>
         </div>
 
         <SectionNav currentHref="/community-guidelines/leagues" />

@@ -75,14 +75,15 @@ export default function CommunityGuidelinesBotsPage() {
               A "Bot" badge appears next to your name everywhere on the site.
             </li>
             <li>
-              You're moved into the{' '}
+              You'll be placed in the{' '}
               <Link
                 href="/community-guidelines/leagues#silicon"
                 className="text-primary-500 underline"
               >
                 Silicon
               </Link>{' '}
-              division for leagues and compete only against other bots.
+              division at the start of the next season and compete only against
+              other bots.
             </li>
             <li>
               Your bets don't count toward unique trader bonuses for market
@@ -130,8 +131,15 @@ export default function CommunityGuidelinesBotsPage() {
           </h2>
           <p className="text-ink-700 mt-3">
             Bot accounts don't need to complete identity verification. If your
-            bot wins a Silicon league prize or earns mana you'd like to convert,
-            send it to your verified main account and participate in{' '}
+            bot wins a Silicon league prize or earns mana you'd like to use,
+            send it to your{' '}
+            <a
+              href="#verification-and-prizes"
+              className="text-primary-500 underline"
+            >
+              Verified
+            </a>{' '}
+            main account via Managram and participate in{' '}
             <Link
               href="/community-guidelines/prize-drawings-faq"
               className="text-primary-500 underline"
@@ -140,7 +148,21 @@ export default function CommunityGuidelinesBotsPage() {
             </Link>{' '}
             from there.
           </p>
-          <p className="text-ink-600 mt-3 text-sm">
+        </div>
+
+        <div className="border-ink-200 bg-canvas-0 mt-6 rounded-xl border-2 p-6">
+          <h2
+            id="transferring-mana"
+            className="text-ink-1000 text-xl font-semibold"
+          >
+            Transferring mana to/from bot accounts
+          </h2>
+          <p className="text-ink-700 mt-3">
+            You can send profit/balance to/from your main account, but you
+            cannot exploit bonuses or manipulate markets or intentionally trade
+            against yourself to launder profit.
+          </p>
+          <p className="text-ink-700 mt-3">
             This is the one sanctioned exception to the rule that{' '}
             <Link
               href="/community-guidelines/accounts#alt-accounts"
@@ -150,7 +172,8 @@ export default function CommunityGuidelinesBotsPage() {
             </Link>
             . The rule against funneling targets bonus harvesting (signup
             bonuses, daily streaks, unique trader bonuses), not transferring a
-            bot's legitimately-earned mana for prize redemption.
+            bot's legitimately-earned mana for trading, prize drawings, or
+            charity giveaways.
           </p>
         </div>
 

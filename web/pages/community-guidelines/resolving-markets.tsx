@@ -53,8 +53,8 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
               or ban.
             </li>
             <li>
-              If you made a mistake, tag @mods or an admin to request a
-              re-resolution.
+              If you made a mistake, post a comment on the market tagging @mods
+              to request a re-resolution.
             </li>
           </ul>
         </div>
@@ -85,9 +85,9 @@ export default function CommunityGuidelinesResolvingMarketsPage() {
               fraudulently — including markets created before this policy.
             </li>
             <li>
-              If resolution is genuinely ambiguous, we recommend resolving N/A,
-              especially if the ambiguity is the creator's fault. Please check
-              with Mods first for support in this decision.
+              If resolution is genuinely ambiguous or the outcome is proving
+              contentious, Mods are here to help. In the comments, tag @mods for
+              support in finding the best solution.
             </li>
           </ul>
         </div>
