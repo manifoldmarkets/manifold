@@ -265,18 +265,32 @@ export const EFFECTIVE_TIER_ORDER: EffectiveTier[] = [
   'premium',
 ]
 
+type BonusMultipliers = {
+  questMultiplier: number
+  streakMultiplier: number
+  referralMultiplier: number
+  uniqueTraderMultiplier: number
+}
+
+// Derive a subscriber tier's bonus multipliers from the central benefits
+// config so quest/referral values can't drift out of sync with SUPPORTER_BENEFITS.
+// Streak reuses the quest multiplier; unique-trader does NOT scale with
+// subscription (same for verified/grandfathered/all subs) per product decision.
+function subscriberBonusMultipliers(tier: SupporterTier): BonusMultipliers {
+  const benefits = SUPPORTER_BENEFITS[tier]
+  return {
+    questMultiplier: benefits.questMultiplier,
+    streakMultiplier: benefits.questMultiplier,
+    referralMultiplier: benefits.referralMultiplier,
+    uniqueTraderMultiplier: 1,
+  }
+}
+
 // Bonus multipliers for quest/streak/referral/unique-trader rewards by
-// effective tier. Subscriber rows for quest/referral MUST match
-// SUPPORTER_BENEFITS above. Unique-trader does NOT scale with subscription
-// per product decision — it's the same for verified/grandfathered/all subs.
+// effective tier.
 export const EFFECTIVE_TIER_BONUS_MULTIPLIERS: Record<
   EffectiveTier,
-  {
-    questMultiplier: number
-    streakMultiplier: number
-    referralMultiplier: number
-    uniqueTraderMultiplier: number
-  }
+  BonusMultipliers
 > = {
   unverified: {
     questMultiplier: 0.2,
@@ -297,24 +311,9 @@ export const EFFECTIVE_TIER_BONUS_MULTIPLIERS: Record<
     referralMultiplier: 1,
     uniqueTraderMultiplier: 1,
   },
-  basic: {
-    questMultiplier: SUPPORTER_BENEFITS.basic.questMultiplier,
-    streakMultiplier: SUPPORTER_BENEFITS.basic.questMultiplier,
-    referralMultiplier: SUPPORTER_BENEFITS.basic.referralMultiplier,
-    uniqueTraderMultiplier: 1,
-  },
-  plus: {
-    questMultiplier: SUPPORTER_BENEFITS.plus.questMultiplier,
-    streakMultiplier: SUPPORTER_BENEFITS.plus.questMultiplier,
-    referralMultiplier: SUPPORTER_BENEFITS.plus.referralMultiplier,
-    uniqueTraderMultiplier: 1,
-  },
-  premium: {
-    questMultiplier: SUPPORTER_BENEFITS.premium.questMultiplier,
-    streakMultiplier: SUPPORTER_BENEFITS.premium.questMultiplier,
-    referralMultiplier: SUPPORTER_BENEFITS.premium.referralMultiplier,
-    uniqueTraderMultiplier: 1,
-  },
+  basic: subscriberBonusMultipliers('basic'),
+  plus: subscriberBonusMultipliers('plus'),
+  premium: subscriberBonusMultipliers('premium'),
 }
 
 // Resolve a user's effective tier from their subscription + verification state.
