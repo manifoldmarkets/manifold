@@ -13,7 +13,6 @@ import { createReferralNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
 import {
   getBenefit,
-  roundTierBonus,
   SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
@@ -353,9 +352,7 @@ export const idenfyCallback = async (req: Request, res: Response) => {
 
             // Get tier-specific referral multiplier (1x for non-supporters)
             const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
-            const referralAmount = roundTierBonus(
-              REFERRAL_VERIFY_BONUS * referralMultiplier
-            )
+            const referralAmount = Math.floor(REFERRAL_VERIFY_BONUS * referralMultiplier)
 
             const txnData = {
               fromType: 'BANK',

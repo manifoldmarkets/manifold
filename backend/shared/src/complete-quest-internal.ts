@@ -18,7 +18,6 @@ import { log } from 'shared/utils'
 import {
   getEffectiveBonusMultiplier,
   resolveEffectiveTier,
-  roundTierBonus,
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
@@ -180,7 +179,7 @@ const awardQuestBonus = async (
     })
     const questMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
     const baseReward = QUEST_DETAILS[questType].rewardAmount
-    const rewardAmount = roundTierBonus(baseReward * questMultiplier)
+    const rewardAmount = Math.floor(baseReward * questMultiplier)
 
     const bonusTxnData = {
       questType,
