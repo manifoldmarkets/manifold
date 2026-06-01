@@ -122,7 +122,7 @@ type TierBenefits = {
 // Perks shared by every non-subscriber; subscriber tiers override these.
 const NON_SUBSCRIBER_PERKS = {
   shopDiscount: 0,
-  maxStreakFreezes: 1, // Non-supporters can only store 1
+  maxStreakFreezes: 1, // unverified baseline (verified overrides to 2 below)
   badgeAnimation: false,
   freeLoanRate: 0.01, // 1%
   marginLoanAccess: false,
@@ -151,6 +151,7 @@ export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
     streakMultiplier: 1,
     referralMultiplier: 1,
     uniqueTraderMultiplier: 1,
+    maxStreakFreezes: 2, // verified stores one more than unverified (1)
   },
   basic: {
     questMultiplier: 1.5,
@@ -158,7 +159,7 @@ export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
     referralMultiplier: 1,
     uniqueTraderMultiplier: 1, // unique-trader doesn't scale with subscription
     shopDiscount: 0,
-    maxStreakFreezes: 2, // +1 over non-supporter
+    maxStreakFreezes: 3, // Plus
     badgeAnimation: false,
     freeLoanRate: 0.01, // 1% (same as free users)
     marginLoanAccess: true,
@@ -170,7 +171,7 @@ export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
     referralMultiplier: 1.5,
     uniqueTraderMultiplier: 1,
     shopDiscount: 0.05,
-    maxStreakFreezes: 3, // +2 over non-supporter
+    maxStreakFreezes: 5, // Pro
     badgeAnimation: false,
     freeLoanRate: 0.02, // 2%
     marginLoanAccess: true,
@@ -182,7 +183,7 @@ export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
     referralMultiplier: 2,
     uniqueTraderMultiplier: 1,
     shopDiscount: 0.1,
-    maxStreakFreezes: 10, // +9 over non-supporter
+    maxStreakFreezes: 10, // Premium
     badgeAnimation: true,
     freeLoanRate: 0.03, // 3%
     marginLoanAccess: true,
@@ -358,12 +359,16 @@ export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
   premium: SUPPORTER_TIERS.premium.name, // 'Premium'
 }
 
-// Get max streak freezes for a user based on their tier
-// Non-supporters: 1, Plus: 2, Pro: 3, Premium: 5
+// Get max streak freezes for a user based on their effective tier.
+// Unverified: 1, Verified: 2, Plus: 3, Pro: 5, Premium: 10.
+// Pass bonusEligibility so the unverified/verified split is honored — without
+// it, non-subscribers default to the unverified (lowest) cap.
 export function getMaxStreakFreezes(
-  entitlements: UserEntitlement[] | undefined
+  entitlements: UserEntitlement[] | undefined,
+  bonusEligibility?: 'verified' | 'grandfathered' | 'ineligible'
 ): number {
-  return getBenefit(entitlements, 'maxStreakFreezes')
+  const tier = resolveEffectiveTier({ entitlements, bonusEligibility })
+  return TIER_BENEFITS[tier].maxStreakFreezes
 }
 
 // Get free loan rate for a user based on their tier
@@ -439,7 +444,8 @@ export const BENEFIT_DEFINITIONS = [
     description: 'How many streak freezes you can hold',
     getValueForTier: (tier: SupporterTier) =>
       `${SUPPORTER_BENEFITS[tier].maxStreakFreezes}`,
-    baseValue: '1',
+    baseValue: `${TIER_BENEFITS.verified.maxStreakFreezes}`,
+    unverifiedValue: `${TIER_BENEFITS.unverified.maxStreakFreezes}`,
   },
   {
     id: 'freeLoan',
