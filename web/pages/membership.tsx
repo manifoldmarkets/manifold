@@ -14,7 +14,7 @@ import {
   EffectiveTier,
   EFFECTIVE_TIER_ORDER,
   EFFECTIVE_TIER_LABELS,
-  EFFECTIVE_TIER_BONUS_MULTIPLIERS,
+  TIER_BENEFITS,
   getUserSupporterTier,
   getSupporterEntitlement,
 } from 'common/supporter-config'
@@ -474,7 +474,7 @@ function MonthlyValueBreakdown({
   )
 
   const isSubscriberTier = SUBSCRIBER_TIERS.has(comparatorTier)
-  const multipliers = EFFECTIVE_TIER_BONUS_MULTIPLIERS[comparatorTier]
+  const multipliers = TIER_BENEFITS[comparatorTier]
   const mult = multipliers.questMultiplier
   const refMult = multipliers.referralMultiplier
   const cost = isSubscriberTier

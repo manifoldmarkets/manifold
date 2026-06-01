@@ -5,7 +5,7 @@ import { ShieldCheckIcon } from '@heroicons/react/solid'
 
 import { formatMoney } from 'common/util/format'
 import {
-  EFFECTIVE_TIER_BONUS_MULTIPLIERS,
+  TIER_BENEFITS,
   EFFECTIVE_TIER_LABELS,
   EffectiveTier,
 } from 'common/supporter-config'
@@ -18,9 +18,8 @@ import { useUser } from 'web/hooks/use-user'
 // when their effective tier is reducing the amount. Shows "+X (verified users
 // get +Y)" with verify/subscribe CTAs. Renders nothing for verified+ tiers.
 //
-// Use the `kind` prop to pull the right multiplier off
-// EFFECTIVE_TIER_BONUS_MULTIPLIERS — keeps the comparison honest if multipliers
-// are ever tuned.
+// Use the `kind` prop to pull the right multiplier off TIER_BENEFITS — keeps
+// the comparison honest if multipliers are ever tuned.
 export function ReducedBonusNotice(props: {
   tier: EffectiveTier
   kind: 'quest' | 'streak' | 'referral'
@@ -36,17 +35,17 @@ export function ReducedBonusNotice(props: {
 
   const verifiedMultiplier =
     kind === 'quest'
-      ? EFFECTIVE_TIER_BONUS_MULTIPLIERS.verified.questMultiplier
+      ? TIER_BENEFITS.verified.questMultiplier
       : kind === 'streak'
-      ? EFFECTIVE_TIER_BONUS_MULTIPLIERS.verified.streakMultiplier
-      : EFFECTIVE_TIER_BONUS_MULTIPLIERS.verified.referralMultiplier
+      ? TIER_BENEFITS.verified.streakMultiplier
+      : TIER_BENEFITS.verified.referralMultiplier
 
   const unverifiedMultiplier =
     kind === 'quest'
-      ? EFFECTIVE_TIER_BONUS_MULTIPLIERS.unverified.questMultiplier
+      ? TIER_BENEFITS.unverified.questMultiplier
       : kind === 'streak'
-      ? EFFECTIVE_TIER_BONUS_MULTIPLIERS.unverified.streakMultiplier
-      : EFFECTIVE_TIER_BONUS_MULTIPLIERS.unverified.referralMultiplier
+      ? TIER_BENEFITS.unverified.streakMultiplier
+      : TIER_BENEFITS.unverified.referralMultiplier
 
   // Back out the base from the earned amount, then project forward to verified.
   // If multipliers are 0 (referral), fall back to a static message.
