@@ -446,7 +446,9 @@ function useCountdown(targetMs: number): string {
   const remaining = Math.max(0, targetMs - now)
   if (remaining <= 0) return 'a moment'
   const days = Math.floor(remaining / (24 * 60 * 60 * 1000))
-  const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
+  const hours = Math.floor(
+    (remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
+  )
   const mins = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
   const secs = Math.floor((remaining % (60 * 1000)) / 1000)
   if (days > 0) return `${days}d ${hours}h`

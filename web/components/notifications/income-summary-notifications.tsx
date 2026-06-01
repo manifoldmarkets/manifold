@@ -389,7 +389,9 @@ export function BettingStreakBonusIncomeNotification(props: {
             per streak day.
           </span>
         ) : (
-          noBonus && <span>Come back and predict again tomorrow for a bonus!</span>
+          noBonus && (
+            <span>Come back and predict again tomorrow for a bonus!</span>
+          )
         )
       }
       icon={

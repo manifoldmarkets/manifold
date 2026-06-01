@@ -4938,7 +4938,10 @@ function StreakFreezePreview(props: {
   // Include local bonus for optimistic display
   const currentFreezes = (user?.streakForgiveness ?? 0) + localBonus
   // Max is only a purchase cap, not an accumulation cap
-  const maxPurchasable = getMaxStreakFreezes(allEntitlements, user?.bonusEligibility)
+  const maxPurchasable = getMaxStreakFreezes(
+    allEntitlements,
+    user?.bonusEligibility
+  )
   const isAtPurchaseMax = currentFreezes >= maxPurchasable
 
   return (

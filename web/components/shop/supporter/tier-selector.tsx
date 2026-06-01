@@ -116,7 +116,10 @@ export function TierSelector({
             </div>
 
             <span
-              className={clsx('text-sm font-bold sm:text-base', tierConfig.textColor)}
+              className={clsx(
+                'text-sm font-bold sm:text-base',
+                tierConfig.textColor
+              )}
             >
               {tierConfig.name}
             </span>

@@ -330,9 +330,7 @@ function ReferralsReducedBanner({ isDenied }: { isDenied: boolean }) {
               </Button>
             </Link>
           </Row>
-          {error && (
-            <span className="text-scarlet-500 text-xs">{error}</span>
-          )}
+          {error && <span className="text-scarlet-500 text-xs">{error}</span>}
         </Col>
       </Row>
     </div>

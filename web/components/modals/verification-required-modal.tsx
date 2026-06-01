@@ -150,8 +150,8 @@ function DeniedContent({
         Not Eligible
       </div>
       <div className="text-ink-600 text-center">
-        A previous verification attempt was unsuccessful, so you can't{' '}
-        {action} on this account.
+        A previous verification attempt was unsuccessful, so you can't {action}{' '}
+        on this account.
       </div>
       <div className="text-ink-500 mt-2 text-center text-sm">
         If you believe this is a mistake, email{' '}

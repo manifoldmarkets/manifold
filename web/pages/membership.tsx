@@ -165,7 +165,7 @@ export default function SupporterPage() {
               />
               <Col className="min-w-0 flex-1 gap-0.5">
                 <Row className="min-w-0 items-center gap-2">
-                  <span className="text-lg font-bold truncate">
+                  <span className="truncate text-lg font-bold">
                     {user?.name ?? 'You'}
                   </span>
                   {/* Show hovered tier star, or current tier star */}
@@ -276,11 +276,7 @@ export default function SupporterPage() {
             benefits comparison so the verify path stays in view as a free
             alternative to the paid tiers above. */}
         {user && (
-          <VerifyPhoneNumberBanner
-            user={user}
-            dismissible={false}
-            compact
-          />
+          <VerifyPhoneNumberBanner user={user} dismissible={false} compact />
         )}
 
         {/* Benefits Comparison Table with Column Highlight */}
@@ -450,7 +446,9 @@ const VERIFIED_BASELINE_STREAK = 750
 const VERIFIED_BASELINE_SHARES = 150
 const VERIFIED_BASELINE_MARKETS = 400
 const VERIFIED_BASELINE_TOTAL =
-  VERIFIED_BASELINE_STREAK + VERIFIED_BASELINE_SHARES + VERIFIED_BASELINE_MARKETS
+  VERIFIED_BASELINE_STREAK +
+  VERIFIED_BASELINE_SHARES +
+  VERIFIED_BASELINE_MARKETS
 
 // Monthly value breakdown: cost vs benefit per tier, including the unverified
 // "opportunity cost" framing and the verified free-baseline framing.
@@ -708,12 +706,13 @@ function MonthlyValueBreakdown({
       </Col>
 
       {comparatorTier === 'unverified' ? (
-        <div className="mt-2 rounded bg-primary-100 px-2 py-1 text-center text-xs font-medium text-primary-700 dark:bg-primary-900/60 dark:text-primary-100 sm:text-sm">
+        <div className="bg-primary-100 text-primary-700 dark:bg-primary-900/60 dark:text-primary-100 mt-2 rounded px-2 py-1 text-center text-xs font-medium sm:text-sm">
           Verify (free) or subscribe to unlock the full bonus pipeline
         </div>
       ) : comparatorTier === 'verified' ? (
         <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/60 dark:text-teal-100 sm:text-sm">
-          ✓ Full free-tier earnings — Plus adds 50%, Pro doubles, Premium triples
+          ✓ Full free-tier earnings — Plus adds 50%, Pro doubles, Premium
+          triples
         </div>
       ) : netVsVerified >= 0 ? (
         <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/60 dark:text-teal-100 sm:text-sm">
