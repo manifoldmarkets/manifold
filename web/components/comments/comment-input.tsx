@@ -24,6 +24,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAnswer } from 'web/hooks/use-answers'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { useIsClient } from 'web/hooks/use-is-client'
 import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
@@ -428,11 +429,17 @@ function VerifyToCommentPrompt(props: {
 }
 
 function useCountdown(targetMs: number): string {
-  const [now, setNow] = useState(() => Date.now())
+  const isClient = useIsClient()
+  const [now, setNow] = useState(targetMs)
   useEffect(() => {
+    setNow(Date.now())
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
+  // Date.now() differs between the server render and the first client render,
+  // so reading it during hydration trips a mismatch. Render a stable
+  // placeholder until mounted, then swap in the live countdown.
+  if (!isClient) return 'a moment'
   const remaining = Math.max(0, targetMs - now)
   if (remaining <= 0) return 'a moment'
   const days = Math.floor(remaining / (24 * 60 * 60 * 1000))
