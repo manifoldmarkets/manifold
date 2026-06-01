@@ -523,13 +523,13 @@ function MonthlyValueBreakdown({
 
   const tierButtonClass = (tier: EffectiveTier) => {
     const isActive = comparatorTier === tier
-    if (!isActive) return 'text-ink-500 hover:text-ink-700'
+    if (!isActive) return 'text-ink-600 hover:text-ink-900'
     if (SUBSCRIBER_TIERS.has(tier)) {
       const t = SUPPORTER_TIERS[tier as SupporterTier]
       return `${t.bgColor} ${t.textColor} shadow-sm`
     }
     if (tier === 'unverified')
-      return 'bg-ink-200 text-ink-700 dark:bg-ink-700 dark:text-ink-100 shadow-sm'
+      return 'bg-ink-200 text-ink-700 dark:bg-ink-400 dark:text-ink-1000 shadow-sm'
     return 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 shadow-sm'
   }
 
@@ -541,7 +541,7 @@ function MonthlyValueBreakdown({
             stack vertically (unverified/verified on top, subscribers below).
             On desktop (sm+) they sit side-by-side as one row. */}
         <div className="flex flex-col items-end gap-1 sm:flex-row">
-          <Row className="bg-ink-100 dark:bg-ink-800 gap-0.5 rounded-full p-0.5">
+          <Row className="bg-ink-100 dark:bg-ink-200 gap-0.5 rounded-full p-0.5">
             {(['unverified', 'verified'] as EffectiveTier[]).map((tier) => (
               <button
                 key={tier}
@@ -555,7 +555,7 @@ function MonthlyValueBreakdown({
               </button>
             ))}
           </Row>
-          <Row className="bg-ink-100 dark:bg-ink-800 gap-0.5 rounded-full p-0.5">
+          <Row className="bg-ink-100 dark:bg-ink-200 gap-0.5 rounded-full p-0.5">
             {(['basic', 'plus', 'premium'] as EffectiveTier[]).map((tier) => (
               <button
                 key={tier}
@@ -708,20 +708,20 @@ function MonthlyValueBreakdown({
       </Col>
 
       {comparatorTier === 'unverified' ? (
-        <div className="mt-2 rounded bg-primary-100 px-2 py-1 text-center text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 sm:text-sm">
+        <div className="mt-2 rounded bg-primary-100 px-2 py-1 text-center text-xs font-medium text-primary-700 dark:bg-primary-900/60 dark:text-primary-100 sm:text-sm">
           Verify (free) or subscribe to unlock the full bonus pipeline
         </div>
       ) : comparatorTier === 'verified' ? (
-        <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 sm:text-sm">
+        <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/60 dark:text-teal-100 sm:text-sm">
           ✓ Full free-tier earnings — Plus adds 50%, Pro doubles, Premium triples
         </div>
       ) : netVsVerified >= 0 ? (
-        <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 sm:text-sm">
+        <div className="mt-2 rounded bg-teal-100 px-2 py-1 text-center text-xs font-medium text-teal-700 dark:bg-teal-900/60 dark:text-teal-100 sm:text-sm">
           ✓ Pays for itself
           {extraLeverageMultiple > 0 && ' — extra leverage is profit!'}
         </div>
       ) : extraLeverageMultiple > 0 ? (
-        <div className="mt-2 rounded bg-amber-100 px-2 py-1 text-center text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 sm:text-sm">
+        <div className="mt-2 rounded bg-amber-100 px-2 py-1 text-center text-xs font-medium text-amber-700 dark:bg-amber-900/60 dark:text-amber-100 sm:text-sm">
           📈 {breakEvenPercent.toFixed(1)}%/mo return to break even
         </div>
       ) : null}
