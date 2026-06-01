@@ -3,7 +3,6 @@ import { Editor } from '@tiptap/react'
 import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { APIError } from 'common/api/utils'
 import { Bet } from 'common/bet'
 import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
 import { Contract } from 'common/contract'
@@ -25,7 +24,7 @@ import { useAnswer } from 'web/hooks/use-answers'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -311,7 +310,11 @@ function VerifyToCommentPrompt(props: {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
     } finally {
       setLoading(false)
     }

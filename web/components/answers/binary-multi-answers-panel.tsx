@@ -82,7 +82,20 @@ const BetButton = (props: {
   canEdit?: boolean
 }) => {
   const { answer, contract, size, outcome, setOutcome, color, canEdit } = props
+  const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
   const [editing, setEditing] = useState(false)
+
+  if (isCreatorBanned) {
+    return (
+      <div className="flex flex-1 items-center justify-center rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+        <span className="font-medium">Betting disabled</span>
+      </div>
+    )
+  }
 
   return (
     <div className="group relative flex flex-1">

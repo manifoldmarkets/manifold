@@ -40,6 +40,12 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
     if (isResolved) throw new APIError(403, 'Market is resolved.')
+    if (contract.creatorBannedFromBetting && uid === contract.creatorId) {
+      throw new APIError(
+        403,
+        'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
+      )
+    }
     if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
       throw new APIError(400, 'Contract type/mechanism not supported')
 

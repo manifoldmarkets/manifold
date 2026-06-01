@@ -115,6 +115,7 @@ import {
 } from 'web/components/shop/giveaway-promo-card'
 import { NewBadge } from 'web/components/shop/new-badge'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
 
@@ -1554,6 +1555,7 @@ function MerchItemCard(props: {
     isNew,
     onPurchased,
   } = props
+  const tryOfferReview = useStoreReviewNudge('shop-order')
   const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
   const discountedPrice =
     shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
@@ -1811,6 +1813,8 @@ function MerchItemCard(props: {
         email: '',
       })
       onPurchased?.()
+      // Let the success toast land before the OS modal pops over it.
+      setTimeout(tryOfferReview, 3000)
     } catch (e: any) {
       toast.error(e.message || 'Failed to place order')
       setShowConfirmOrderModal(false)

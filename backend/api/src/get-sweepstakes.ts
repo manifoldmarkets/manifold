@@ -27,6 +27,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     winning_ticket_ids: string[] | null
     nonce: string | null
     created_time: string
+    announcement_sent: boolean
   }>(
     sweepstakesNum
       ? `SELECT * FROM sweepstakes WHERE sweepstakes_num = $1`
@@ -195,6 +196,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
       closeTime: tsToMillis(sweepstakes.close_time),
       winningTicketIds: sweepstakes.winning_ticket_ids,
       createdTime: tsToMillis(sweepstakes.created_time),
+      announcementSent: sweepstakes.announcement_sent,
     },
     userStats: userStats.map((s) => ({
       userId: s.user_id,

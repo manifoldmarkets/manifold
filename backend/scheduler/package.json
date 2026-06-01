@@ -21,7 +21,7 @@
     "@anthropic-ai/sdk": "0.60.0",
     "@google-cloud/monitoring": "4.0.0",
     "@google-cloud/secret-manager": "4.2.1",
-    "@google/generative-ai": "0.24.0",
+    "@google/genai": "2.6.0",
     "@stdlib/math-base-special-betaincinv": "0.2.1",
     "@supabase/supabase-js": "2.38.5",
     "@tiptap/core": "2.0.0-beta.204",

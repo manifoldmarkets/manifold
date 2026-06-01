@@ -386,6 +386,11 @@ export const PrizeDrawingBanner = () => {
   )
 }
 
+// Disabled while we run bigger non-daily prize drawings. Keep around so we
+// can re-enable / fork into a new campaign banner without re-writing the
+// gradient + copy each time. To re-enable: uncomment and re-import in
+// web/pages/home/index.tsx alongside <DowntimeBanner />.
+/*
 export const DailyPrizeDrawingBanner = () => {
   const [showBanner, hideBanner] = useBanner('daily-prize-drawing-100')
   if (!showBanner) return null
@@ -413,7 +418,7 @@ export const PrizeDrawing2Banner = () => {
   if (!showBanner) return null
   return (
     <Banner
-      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-indigo-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-indigo-900/50"
+      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-indigo-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-emerald-900/50"
       link="/prize/2"
       target="_self"
       setShowBanner={hideBanner}
@@ -429,3 +434,4 @@ export const PrizeDrawing2Banner = () => {
     </Banner>
   )
 }
+*/

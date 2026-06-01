@@ -15,6 +15,10 @@ export type SelectDropdownOption<T extends string | number> = {
   value: T
   label: ReactNode
   disabled?: boolean
+  // Optional extra classes applied to the row's button — useful when you
+  // want a row's accent/background to fill the whole row width instead
+  // of being clipped by the inner truncate span around `label`.
+  buttonClassName?: string
 }
 
 type AnchorProps = NonNullable<MenuItemsProps['anchor']>
@@ -120,7 +124,10 @@ export function SelectDropdown<T extends string | number>(props: {
                         'flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm',
                         'data-[focus]:bg-ink-100 data-[focus]:text-ink-900',
                         'disabled:cursor-not-allowed disabled:opacity-50',
-                        isSelected ? 'text-ink-900 font-medium' : 'text-ink-700'
+                        isSelected
+                          ? 'text-ink-900 font-medium'
+                          : 'text-ink-700',
+                        opt.buttonClassName
                       )}
                     >
                       <CheckIcon

@@ -165,6 +165,8 @@ export type PrivateUser = {
   paymentInfo?: string
   // Timestamp of the last time the user was prompted for an app review or successfully reviewed.
   lastAppReviewTime?: number
+  // If true, suppress all in-app store-review prompts.
+  optOutAppReviewPrompts?: boolean
 
   /** @deprecated */
   kycFlags?: string[]

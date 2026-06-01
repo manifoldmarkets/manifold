@@ -92,6 +92,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   coverImageUrl?: string
   isRanked?: boolean
 
+  creatorBannedFromBetting?: boolean
+
   gptCommentSummary?: string
 
   token: ContractToken

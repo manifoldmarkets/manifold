@@ -83,7 +83,7 @@ You can find all available quests by navigating to your profile page and clickin
 
 There are loads of different ways you can use our markets to answer your questions. Most of our users tend to interact with a whole mixture of markets.
 
-Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not comply with the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not comply with the [Community Guidelines](https://manifold.markets/community-guidelines).
 
 Here are some of the top use cases for our markets, with corresponding examples.
 
@@ -178,7 +178,7 @@ Whoever created the market gets to resolve it! Manifold puts trust in its users 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
 - Market creators who are known to be reputable will earn followers, positive reviews, and more activity on their questions.
-- Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+- Check out the [resolution section in the community guidelines](https://manifold.markets/community-guidelines/resolving-markets).
 
 ### How should I resolve a market?
 
@@ -385,7 +385,7 @@ Be warned that when deleting an account your markets and comments are not delete
 
 ### Does Manifold have a content moderation policy or account rules?
 
-For moderation policies and rules, please see our [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+For moderation policies and rules, please see our [Community Guidelines](https://manifold.markets/community-guidelines/moderation).
 
 ### How do I report misconduct on Manifold Markets?
 
@@ -394,7 +394,7 @@ To get the fastest possible response, all user reports should include:
 1. What happened?
 2. When did it happen?
 3. Where on the site did it occur?
-4. How does it violate the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400)?
+4. How does it violate the [Community Guidelines](https://manifold.markets/community-guidelines)?
 5. Potential causes (if known)
 6. Evidence of 1-5, submitted to DavidChee/SirSalty via [Discord](https://discord.com/invite/eHQBNBqXuh) or [email](mailto:info@manifold.markets).
 
@@ -422,7 +422,7 @@ You can make predictions on everything on Manifold Markets - from sports scores,
 
 ### How does Manifold Markets ensure fair play?
 
-Manifold Markets believes users should have autonomy over their own markets as much as possible, and tries to keep moderation to a minimum and empower users with tools to control the content that they want to see. Manifold Markets ensures fair play through its [community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400); content moderation; bug abuse detection; auditing user activity; and careful game design.
+Manifold Markets believes users should have autonomy over their own markets as much as possible, and tries to keep moderation to a minimum and empower users with tools to control the content that they want to see. Manifold Markets ensures fair play through its [community guidelines](https://manifold.markets/community-guidelines); content moderation; bug abuse detection; auditing user activity; and careful game design.
 
 ### Can you play Manifold Markets for free?
 

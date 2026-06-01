@@ -11,26 +11,34 @@ export const getUserBans: APIHandler<'get-user-bans'> = async (
   const isMod = isModId(auth.uid) || isAdminId(auth.uid)
   const isSelf = auth.uid === userId
 
-  // Users can fetch their own bans, mods can fetch anyone's bans
-  if (!isSelf && !isMod) {
-    // Non-mods can only fetch their own bans
-    return { bans: [] }
-  }
-
   const bans = await pg.manyOrNone<UserBan>(
     `SELECT * FROM user_bans WHERE user_id = $1 ORDER BY created_at DESC`,
     [userId]
   )
 
-  // For self-viewing, sanitize sensitive data (hide who banned them)
-  if (isSelf && !isMod) {
-    const sanitizedBans = bans.map(ban => ({
+  if (isMod) {
+    return { bans }
+  }
+
+  if (isSelf) {
+    // Self-viewing: hide mod identity but keep reasons and own alert dismissals
+    const sanitizedBans = bans.map((ban) => ({
       ...ban,
-      created_by: null, // Hide mod identity
-      ended_by: ban.ended_by === auth.uid ? auth.uid : null, // Show if user dismissed their own alert
+      created_by: null,
+      ended_by: ban.ended_by === auth.uid ? auth.uid : null,
     }))
     return { bans: sanitizedBans }
   }
 
-  return { bans }
+  // Public viewers: expose only what the Restricted badge needs to render.
+  // Drop modAlerts (internal-only) and strip reasons + mod identities.
+  const publicBans = bans
+    .filter((ban) => ban.ban_type !== 'modAlert')
+    .map((ban) => ({
+      ...ban,
+      reason: null,
+      created_by: null,
+      ended_by: null,
+    }))
+  return { bans: publicBans }
 }
