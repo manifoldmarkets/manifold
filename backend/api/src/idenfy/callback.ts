@@ -8,11 +8,11 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { STARTING_BALANCE, REFERRAL_VERIFY_BONUS } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
-import { canReceiveBonuses } from 'common/user'
 import { createReferralNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
 import {
-  getBenefit,
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
   roundTierBonus,
   SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
@@ -319,14 +319,13 @@ export const idenfyCallback = async (req: Request, res: Response) => {
           log(`Paid signup bonus of ${STARTING_BALANCE} to user ${userId} after identity verification`)
         }
         
-        // Pay the verify portion of the referral bonus if:
-        // 1. User was referred by someone (not themselves)
-        // 2. Referrer can receive bonuses (verified or grandfathered)
-        // 3. Verify bonus hasn't already been paid for this user
-        // The first-bet portion is paid separately in on-create-bet.ts.
+        // Pay the verify portion of the referral bonus, scaled by the
+        // referrer's effective tier (unverified 0.2x, verified 1x, subscribers
+        // higher) — matching the first-bet portion in on-create-bet.ts. Skipped
+        // only for self-referrals or if already paid for this referred user.
         if (referrerId === userId) {
           log(`Skipped referral verify bonus - self-referral for ${userId}`)
-        } else if (referrerId && referrer && canReceiveBonuses(referrer)) {
+        } else if (referrerId && referrer) {
           // Legacy single-payment REFERRAL txns (data.bonusType IS NULL) already
           // covered the full bonus, so they block the new verify payout too.
           const existingReferralTxn = await tx.oneOrNone(
@@ -338,7 +337,8 @@ export const idenfyCallback = async (req: Request, res: Response) => {
           )
 
           if (!existingReferralTxn) {
-            // Fetch referrer's supporter entitlements for bonus multiplier
+            // Resolve the referrer's effective tier (subscription + verification)
+            // to scale the bonus, consistent with the first-bet portion.
             const supporterEntitlementRows = await tx.manyOrNone(
               `SELECT user_id, entitlement_id, granted_time, expires_time, enabled FROM user_entitlements
                WHERE user_id = $1
@@ -347,39 +347,47 @@ export const idenfyCallback = async (req: Request, res: Response) => {
                AND (expires_time IS NULL OR expires_time > NOW())`,
               [referrer.id, SUPPORTER_ENTITLEMENT_IDS]
             )
-
-            // Convert to UserEntitlement format for getBenefit
             const entitlements = supporterEntitlementRows.map(convertEntitlement)
-
-            // Get tier-specific referral multiplier (1x for non-supporters)
-            const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
+            const referrerTier = resolveEffectiveTier({
+              entitlements,
+              bonusEligibility: referrer.bonusEligibility,
+            })
+            const referralMultiplier = getEffectiveBonusMultiplier(
+              referrerTier,
+              'referral'
+            )
             const referralAmount = roundTierBonus(
               REFERRAL_VERIFY_BONUS * referralMultiplier
             )
 
-            const txnData = {
-              fromType: 'BANK',
-              toId: referrer.id,
-              toType: 'USER',
-              amount: referralAmount,
-              token: 'M$',
-              category: 'REFERRAL',
-              description: `Referral verify bonus for new user ${userId}: ${referralAmount}`,
-              data: removeUndefinedProps({
-                referredUserId: userId,
-                referredContractId: referredByContract?.id,
-                bonusType: 'verify',
-                supporterBonus: referralMultiplier > 1,
-                referralMultiplier,
-              }),
-            } as const
+            if (referralAmount <= 0) {
+              log(
+                `Skipped referral verify bonus for referrer ${referrer.id} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
+              )
+            } else {
+              const txnData = {
+                fromType: 'BANK',
+                toId: referrer.id,
+                toType: 'USER',
+                amount: referralAmount,
+                token: 'M$',
+                category: 'REFERRAL',
+                description: `Referral verify bonus for new user ${userId}: ${referralAmount}`,
+                data: removeUndefinedProps({
+                  referredUserId: userId,
+                  referredContractId: referredByContract?.id,
+                  bonusType: 'verify',
+                  effectiveTier: referrerTier,
+                  supporterBonus: referralMultiplier > 1,
+                  referralMultiplier,
+                }),
+              } as const
 
-            await runTxnFromBank(tx, txnData)
-            log(`Paid referral verify bonus of ${referralAmount} to referrer ${referrer.id} for verified user ${userId}`)
-            return { referralBonusAmount: referralAmount }
+              await runTxnFromBank(tx, txnData)
+              log(`Paid referral verify bonus of ${referralAmount} to referrer ${referrer.id} for verified user ${userId}`)
+              return { referralBonusAmount: referralAmount }
+            }
           }
-        } else if (referrer && !canReceiveBonuses(referrer)) {
-          log(`Skipped referral verify bonus for referrer ${referrer.id} - not eligible for bonuses`)
         }
 
         return { referralBonusAmount: null }

@@ -255,8 +255,7 @@ const payReferralBetBonus = async (referredUser: User) => {
     if (existing) return null
 
     // Referral multiplier comes from effective tier: unverified referrers
-    // get 0 (anti-farming — verifying is the proof-of-human gate), verified
-    // gets 1x, subscribers higher.
+    // get a reduced 0.2x, verified gets 1x, subscribers higher.
     const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
     const referrerTier = resolveEffectiveTier({
       entitlements,

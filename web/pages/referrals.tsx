@@ -71,11 +71,11 @@ export default function ReferralsPage() {
     }
   > = earnings?.byReferredUserId ?? {}
 
-  // Referral bonuses require the *referrer* to be verified (or subscribed) —
-  // unverified users currently earn 0 mana from referrals (anti-farming).
-  // Surface this prominently so they understand why their earnings are zero.
+  // Unverified users earn a reduced 0.2x referral bonus (not zero). Surface a
+  // banner so they know their earnings are reduced and how to unlock the full
+  // amount (verify or subscribe).
   const tier = user ? getEffectiveTier(user) : 'verified'
-  const referralsDisabled = tier === 'unverified'
+  const referralsReduced = tier === 'unverified'
   const isDeniedKyc = user?.bonusEligibility === 'ineligible'
 
   return (
@@ -133,7 +133,7 @@ export default function ReferralsPage() {
           </div>
         </div>
 
-        {referralsDisabled && <ReferralsDisabledBanner isDenied={isDeniedKyc} />}
+        {referralsReduced && <ReferralsReducedBanner isDenied={isDeniedKyc} />}
 
         {/* Share Section */}
         <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
@@ -244,7 +244,7 @@ export default function ReferralsPage() {
   )
 }
 
-function ReferralsDisabledBanner({ isDenied }: { isDenied: boolean }) {
+function ReferralsReducedBanner({ isDenied }: { isDenied: boolean }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -270,15 +270,15 @@ function ReferralsDisabledBanner({ isDenied }: { isDenied: boolean }) {
           <ShieldExclamationIcon className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
           <Col className="gap-1">
             <span className="text-scarlet-800 dark:text-scarlet-200 font-semibold">
-              Referral bonuses unavailable
+              Your referral bonuses are reduced
             </span>
             <span className="text-scarlet-700 dark:text-scarlet-300 text-sm">
-              Identity verification was unsuccessful, so you can't earn
-              referral bonuses on this account. You can still subscribe to{' '}
+              Identity verification was unsuccessful, so you earn a reduced 0.2x
+              referral bonus. Subscribe to{' '}
               <Link href="/membership" className="font-semibold underline">
                 Manifold Plus
               </Link>{' '}
-              to unlock referral rewards, or email{' '}
+              to earn the full amount, or email{' '}
               <a
                 href="mailto:info@manifold.markets"
                 className="font-semibold underline"
@@ -300,16 +300,16 @@ function ReferralsDisabledBanner({ isDenied }: { isDenied: boolean }) {
         <Col className="flex-1 gap-2">
           <Col className="gap-1">
             <span className="text-primary-800 dark:text-primary-200 font-semibold">
-              Your referral link works, but bonuses are locked
+              Your referral bonuses are reduced
             </span>
             <span className="text-primary-700 dark:text-primary-300 text-sm">
-              You won't earn the {formatMoney(REFERRAL_BET_BONUS)} +{' '}
-              {formatMoney(REFERRAL_VERIFY_BONUS)} per friend until you verify
-              your identity or subscribe to{' '}
+              You earn a reduced 0.2x referral bonus right now. Verify your
+              identity or subscribe to{' '}
               <Link href="/membership" className="font-semibold underline">
                 Manifold Plus
-              </Link>
-              .
+              </Link>{' '}
+              to earn the full {formatMoney(REFERRAL_BET_BONUS)} +{' '}
+              {formatMoney(REFERRAL_VERIFY_BONUS)} per friend.
             </span>
           </Col>
           <Row className="gap-2">

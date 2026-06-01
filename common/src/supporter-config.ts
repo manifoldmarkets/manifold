@@ -134,9 +134,10 @@ export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
     ...NON_SUBSCRIBER_PERKS,
     questMultiplier: 0.2,
     streakMultiplier: 0.2,
-    // Unverified users can't receive referral bonuses (anti-farming).
-    // Verifying or subscribing unlocks referrals.
-    referralMultiplier: 0,
+    // Unverified users earn a reduced 0.2x referral bonus (matching quest/
+    // streak) rather than zero — a genuine referral still rewards them.
+    // Verifying or subscribing unlocks the full amount.
+    referralMultiplier: 0.2,
     // Unverified creators get half the unique-trader bonus instead of zero.
     // 0.5 (vs 0.2 for quest/streak) because the unique-trader bonus is the
     // creator's payoff for attracting *real* unique users — those users
@@ -418,7 +419,7 @@ export const BENEFIT_DEFINITIONS = [
     getValueForTier: (tier: SupporterTier) =>
       `${SUPPORTER_BENEFITS[tier].referralMultiplier}x`,
     baseValue: '1x',
-    unverifiedValue: '—',
+    unverifiedValue: `${TIER_BENEFITS.unverified.referralMultiplier}x`,
   },
   {
     id: 'shop',
