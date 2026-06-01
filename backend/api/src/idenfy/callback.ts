@@ -11,7 +11,11 @@ import { SignupBonusTxn } from 'common/txn'
 import { canReceiveBonuses } from 'common/user'
 import { createReferralNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
-import { getBenefit, SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
+import {
+  getBenefit,
+  roundTierBonus,
+  SUPPORTER_ENTITLEMENT_IDS,
+} from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
 
 // iDenfy webhook callback payload structure (comprehensive type based on their schema)
@@ -349,7 +353,9 @@ export const idenfyCallback = async (req: Request, res: Response) => {
 
             // Get tier-specific referral multiplier (1x for non-supporters)
             const referralMultiplier = getBenefit(entitlements, 'referralMultiplier')
-            const referralAmount = Math.floor(REFERRAL_VERIFY_BONUS * referralMultiplier)
+            const referralAmount = roundTierBonus(
+              REFERRAL_VERIFY_BONUS * referralMultiplier
+            )
 
             const txnData = {
               fromType: 'BANK',

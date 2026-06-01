@@ -345,6 +345,14 @@ export function getEffectiveBonusMultiplier(
   return m.referralMultiplier
 }
 
+// Round a tier-scaled bonus to the nearest 0.01 mana. Multipliers can be
+// fractional (e.g. 0.2x, 0.5x, 1.5x), so flooring would silently round small
+// bonuses down to zero (e.g. a future M$3 base × 0.2 = M$0.6 → floor 0). Use
+// this everywhere a bonus is multiplied by an effective-tier multiplier.
+export function roundTierBonus(amount: number): number {
+  return Math.round(amount * 100) / 100
+}
+
 // Display labels for the membership page tier column headers and inline upsells.
 export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
   unverified: 'Unverified',

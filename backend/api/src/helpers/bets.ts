@@ -21,6 +21,7 @@ import { User, UserBan } from 'common/user'
 import {
   getEffectiveBonusMultiplier,
   resolveEffectiveTier,
+  roundTierBonus,
 } from 'common/supporter-config'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
@@ -510,7 +511,7 @@ export const getUniqueBettorBonusQuery = (
     creatorTier,
     'uniqueTrader'
   )
-  const bonusAmount = Math.floor(baseBonusAmount * uniqueTraderMultiplier)
+  const bonusAmount = roundTierBonus(baseBonusAmount * uniqueTraderMultiplier)
 
   if (bonusAmount <= 0) {
     return {

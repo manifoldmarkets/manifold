@@ -44,6 +44,7 @@ import {
 import {
   getEffectiveBonusMultiplier,
   resolveEffectiveTier,
+  roundTierBonus,
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -265,7 +266,7 @@ const payReferralBetBonus = async (referredUser: User) => {
       referrerTier,
       'referral'
     )
-    const amount = Math.floor(REFERRAL_BET_BONUS * referralMultiplier)
+    const amount = roundTierBonus(REFERRAL_BET_BONUS * referralMultiplier)
     if (amount <= 0) {
       log(
         `Skipped referral first-bet bonus for referrer ${referrerId} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
@@ -401,7 +402,7 @@ const payBettingStreak = async (
       BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
       BETTING_STREAK_BONUS_MAX
     )
-    const bonusAmount = Math.floor(baseBonus * streakMultiplier)
+    const bonusAmount = roundTierBonus(baseBonus * streakMultiplier)
 
     if (bonusAmount <= 0) {
       return {
