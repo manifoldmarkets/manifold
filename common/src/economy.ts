@@ -38,8 +38,11 @@ export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 
 /* Mana bonuses */
-export const PRE_KYC_STARTING_BALANCE = 50
-export const STARTING_BALANCE = 1000
+// Unverified users now get a usable starting balance so they can participate.
+// On KYC verification they receive STARTING_BALANCE as a top-up — the total
+// mana a fully-verified new user receives is PRE_KYC_STARTING_BALANCE + STARTING_BALANCE.
+export const PRE_KYC_STARTING_BALANCE = 500
+export const STARTING_BALANCE = 500
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000

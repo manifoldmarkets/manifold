@@ -1,5 +1,5 @@
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { getBenefit } from 'common/supporter-config'
+import { getEffectiveBonusMultiplier } from 'common/supporter-config'
 import {
   BettingStreakData,
   getSourceUrl,
@@ -46,7 +46,7 @@ import {
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
-import { canReceiveBonuses } from 'common/user'
+import { getEffectiveTier } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
@@ -60,6 +60,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
+  const user = useUser()
   const myData = (notification.data ?? {}) as UniqueBettorData
   const relatedNotifications =
     myData && 'relatedNotifications' in myData
@@ -80,12 +81,27 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
+  const isUnverified = user && getEffectiveTier(user) === 'unverified'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={
+        isUnverified ? (
+          <span>
+            Reduced because your account is unverified.{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              Verify or subscribe
+            </a>{' '}
+            to earn the full unique-trader bonus.
+          </span>
+        ) : undefined
+      }
       icon={
         <MultipleAvatarIcons
           notification={notification}
@@ -258,12 +274,35 @@ export function QuestIncomeNotification(props: {
   const { questType } = data as QuestRewardTxn['data']
   const user = useUser()
   const [open, setOpen] = useState(false)
+  // The bonus award embeds effectiveTier in the txn data — use it if present,
+  // otherwise fall back to the current user's tier (notifications can outlive
+  // tier transitions).
+  const txnTier = (data as { effectiveTier?: string } | undefined)
+    ?.effectiveTier
+  const userTier = user ? getEffectiveTier(user) : undefined
+  const isUnverified =
+    txnTier === 'unverified' ||
+    (txnTier === undefined && userTier === 'unverified')
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={
+        isUnverified ? (
+          <span>
+            This bonus is reduced because your account is unverified.{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              Verify or subscribe
+            </a>{' '}
+            to earn the full amount.
+          </span>
+        ) : undefined
+      }
       icon={
         <NotificationIcon
           symbol={'🧭'}
@@ -318,9 +357,12 @@ export function BettingStreakBonusIncomeNotification(props: {
     }
   }
 
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(user?.entitlements, 'questMultiplier')
-  const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
+  // Streak multiplier driven by effective tier (verification + subscription).
+  const effectiveTier = user ? getEffectiveTier(user) : 'verified'
+  const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
+  const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
+  const verifiedMaxBonus = BETTING_STREAK_BONUS_MAX
+  const isUnverified = effectiveTier === 'unverified'
 
   return (
     <NotificationFrame
@@ -329,18 +371,25 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        noBonus && user && !canReceiveBonuses(user) ? (
+        isUnverified ? (
           <span>
-            Verify your identity to get up to{' '}
-            <TokenNumber amount={maxBonus} className={'font-bold'} isInline />{' '}
-            per streak day!
+            This bonus is reduced because your account is unverified.{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              Verify or subscribe
+            </a>{' '}
+            to earn up to{' '}
+            <TokenNumber
+              amount={verifiedMaxBonus}
+              className={'font-bold'}
+              isInline
+            />{' '}
+            per streak day.
           </span>
         ) : (
-          noBonus &&
-          user &&
-          canReceiveBonuses(user) && (
-            <span>Come back and predict again tomorrow for a bonus!</span>
-          )
+          noBonus && <span>Come back and predict again tomorrow for a bonus!</span>
         )
       }
       icon={
@@ -377,7 +426,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         open={open}
         setOpen={setOpen}
         currentStreak={user?.currentBettingStreak ?? 0}
-        questMultiplier={questMultiplier}
+        questMultiplier={streakMultiplier}
       />
     </NotificationFrame>
   )

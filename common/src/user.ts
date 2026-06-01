@@ -2,6 +2,11 @@ import { ENV_CONFIG } from './envs/constants'
 import { notification_preferences } from './user-notification-preferences'
 import { UserEntitlement } from './shop/types'
 import { DAY_MS, HOUR_MS } from './util/time'
+import {
+  EffectiveTier,
+  isSupporter,
+  resolveEffectiveTier,
+} from './supporter-config'
 
 // New normalized user_bans table schema
 // modAlert is stored in user_bans for audit history but doesn't block any actions
@@ -210,15 +215,37 @@ export const isUserLikelySpammer = (
  */
 export const humanish = (user: User) => user.verifiedPhone !== false
 
-// Check if user can receive site bonuses (verified via iDenfy or grandfathered)
+// Check if user is verified (KYC via iDenfy or grandfathered).
+// Required for the prize drawing. Other bonuses are gated by effective tier,
+// not by this check — unverified users still receive reduced bonuses.
 export const canReceiveBonuses = (user: User) =>
   user.bonusEligibility === 'verified' ||
   user.bonusEligibility === 'grandfathered'
 
-// Users who can comment on markets: bonus-eligible (verified/grandfathered)
-// OR anyone who has purchased mana.
-export const canCommentOnMarket = (user: User) =>
-  canReceiveBonuses(user) || user.purchasedMana === true
+// Resolve a user's effective tier (unverified | verified | basic | plus | premium).
+// Subscribers always get their subscription tier regardless of KYC status.
+export const getEffectiveTier = (user: User): EffectiveTier =>
+  resolveEffectiveTier({
+    entitlements: user.entitlements,
+    bonusEligibility: user.bonusEligibility,
+  })
+
+// New-user commenting gate: how long after signup before unverified, non-purchaser,
+// non-subscriber users can comment on other people's markets.
+export const NEW_USER_COMMENT_GATE_MS = 7 * DAY_MS
+
+// Users who can comment on others' markets. Pass-through for:
+//   - verified/grandfathered users
+//   - users who have ever purchased mana
+//   - active subscribers (Plus/Pro/Premium)
+//   - accounts ≥ NEW_USER_COMMENT_GATE_MS old
+// Market creators commenting on their own markets bypass this check (handled at call site).
+export const canCommentOnMarket = (user: User) => {
+  if (canReceiveBonuses(user)) return true
+  if (user.purchasedMana === true) return true
+  if (isSupporter(user.entitlements)) return true
+  return Date.now() - user.createdTime >= NEW_USER_COMMENT_GATE_MS
+}
 
 // expires: sep 26th, ~530pm PT
 const LIMITED_TIME_DEAL_END = 1727311753233 + DAY_MS

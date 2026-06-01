@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import clsx from 'clsx'
 import { ShieldCheckIcon, XIcon } from '@heroicons/react/solid'
 
 import { canReceiveBonuses, User } from 'common/user'
@@ -14,7 +15,15 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export const VerifyPhoneNumberBanner = (props: {
   user: User | null | undefined
+  // When false, the X dismiss button is hidden and the global dismiss
+  // cooldown is ignored — use this on high-intent surfaces (e.g. /membership,
+  // /prize) where the verify prompt should always be visible.
+  dismissible?: boolean
+  // Tighter padding, smaller text and icon — for surfaces where the banner
+  // sits alongside other content and shouldn't dominate vertical space.
+  compact?: boolean
 }) => {
+  const { dismissible = true, compact = false } = props
   const user = useUser() ?? props.user
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,9 +43,11 @@ export const VerifyPhoneNumberBanner = (props: {
   )
     return null
 
-  const hoursSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60)
-  const cooldownHours = Math.min(dismissCount * 2, 24)
-  if (dismissedAt > 0 && hoursSinceDismiss < cooldownHours) return null
+  if (dismissible) {
+    const hoursSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60)
+    const cooldownHours = Math.min(dismissCount * 2, 24)
+    if (dismissedAt > 0 && hoursSinceDismiss < cooldownHours) return null
+  }
 
   const handleVerify = async () => {
     setLoading(true)
@@ -64,27 +75,54 @@ export const VerifyPhoneNumberBanner = (props: {
   }
 
   return (
-    <Col className="from-primary-100 to-primary-50 border-primary-300 relative rounded-lg border bg-gradient-to-r p-4">
-      <button
-        onClick={handleDismiss}
-        className="text-primary-400 hover:text-primary-600 absolute right-1 top-1 p-1 opacity-30 transition-opacity hover:opacity-60"
-        aria-label="Dismiss"
-      >
-        <XIcon className="h-3.5 w-3.5" />
-      </button>
-      <Row className="items-center gap-3">
-        <ShieldCheckIcon className="text-primary-600 hidden h-10 w-10 shrink-0 sm:block" />
+    <Col
+      className={clsx(
+        'from-primary-100 to-primary-50 border-primary-300 relative rounded-lg border bg-gradient-to-r',
+        compact ? 'p-3' : 'p-4'
+      )}
+    >
+      {dismissible && (
+        <button
+          onClick={handleDismiss}
+          className="text-primary-400 hover:text-primary-600 absolute right-1 top-1 p-1 opacity-30 transition-opacity hover:opacity-60"
+          aria-label="Dismiss"
+        >
+          <XIcon className="h-3.5 w-3.5" />
+        </button>
+      )}
+      <Row className={clsx('items-center', compact ? 'gap-2' : 'gap-3')}>
+        <ShieldCheckIcon
+          className={clsx(
+            'text-primary-600 hidden shrink-0 sm:block',
+            compact ? 'h-7 w-7' : 'h-10 w-10'
+          )}
+        />
         <Col className="flex-1 gap-1">
-          <div className="text-ink-900 text-lg font-semibold">
+          <div
+            className={clsx(
+              'text-ink-900 font-semibold',
+              compact ? 'text-sm sm:text-base' : 'text-lg'
+            )}
+          >
             Verify your identity to get {formatMoney(STARTING_BALANCE, 'MANA')}
           </div>
-          <div className="text-ink-600 text-sm">
+          <div
+            className={clsx(
+              'text-ink-600',
+              compact ? 'text-xs sm:text-sm' : 'text-sm'
+            )}
+          >
             Complete a quick identity check (~2 min) to unlock your full
             starting bonus.
           </div>
           {error && <div className="text-scarlet-500 text-sm">{error}</div>}
         </Col>
-        <Button onClick={handleVerify} loading={loading} className="shrink-0">
+        <Button
+          onClick={handleVerify}
+          loading={loading}
+          size={compact ? 'xs' : undefined}
+          className="shrink-0"
+        >
           Verify now
         </Button>
       </Row>

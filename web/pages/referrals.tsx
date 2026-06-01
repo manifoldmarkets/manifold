@@ -21,8 +21,10 @@ import {
   UserAddIcon,
   SparklesIcon,
   LightBulbIcon,
+  ShieldExclamationIcon,
 } from '@heroicons/react/outline'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { getReferrals } from 'web/lib/supabase/referrals'
 import { DisplayUser } from 'common/api/user-types'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -30,6 +32,10 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { getEffectiveTier } from 'common/user'
+import { Button } from 'web/components/buttons/button'
+import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -64,6 +70,13 @@ export default function ReferralsPage() {
       bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
     }
   > = earnings?.byReferredUserId ?? {}
+
+  // Unverified users earn a reduced 0.2x referral bonus (not zero). Surface a
+  // banner so they know their earnings are reduced and how to unlock the full
+  // amount (verify or subscribe).
+  const tier = user ? getEffectiveTier(user) : 'verified'
+  const referralsReduced = tier === 'unverified'
+  const isDeniedKyc = user?.bonusEligibility === 'ineligible'
 
   return (
     <Page trackPageView={'referrals'} className="p-3">
@@ -119,6 +132,8 @@ export default function ReferralsPage() {
             </Row>
           </div>
         </div>
+
+        {referralsReduced && <ReferralsReducedBanner isDenied={isDeniedKyc} />}
 
         {/* Share Section */}
         <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
@@ -226,6 +241,101 @@ export default function ReferralsPage() {
         </div>
       </Col>
     </Page>
+  )
+}
+
+function ReferralsReducedBanner({ isDenied }: { isDenied: boolean }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleVerify = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      track('referrals page: verify clicked')
+      const response = await api('create-idenfy-session', {})
+      window.location.href = response.redirectUrl
+    } catch (e) {
+      console.error('Failed to start verification:', e)
+      setError('Failed to start verification. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  // Failed-KYC users can't re-verify through this surface; skip the verify CTA.
+  if (isDenied) {
+    return (
+      <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 rounded-xl border p-4">
+        <Row className="items-start gap-3">
+          <ShieldExclamationIcon className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
+          <Col className="gap-1">
+            <span className="text-scarlet-800 dark:text-scarlet-200 font-semibold">
+              Your referral bonuses are reduced
+            </span>
+            <span className="text-scarlet-700 dark:text-scarlet-300 text-sm">
+              Identity verification was unsuccessful, so you earn a reduced 0.2x
+              referral bonus. Subscribe to{' '}
+              <Link href="/membership" className="font-semibold underline">
+                Manifold Plus
+              </Link>{' '}
+              to earn the full amount, or email{' '}
+              <a
+                href="mailto:info@manifold.markets"
+                className="font-semibold underline"
+              >
+                info@manifold.markets
+              </a>{' '}
+              if you think this is a mistake.
+            </span>
+          </Col>
+        </Row>
+      </div>
+    )
+  }
+
+  return (
+    <div className="border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950/30 rounded-xl border p-4">
+      <Row className="items-start gap-3">
+        <ShieldExclamationIcon className="text-primary-500 mt-0.5 h-5 w-5 shrink-0" />
+        <Col className="flex-1 gap-2">
+          <Col className="gap-1">
+            <span className="text-primary-800 dark:text-primary-200 font-semibold">
+              Your referral bonuses are reduced
+            </span>
+            <span className="text-primary-700 dark:text-primary-300 text-sm">
+              You earn a reduced 0.2x referral bonus right now. Verify your
+              identity or subscribe to{' '}
+              <Link href="/membership" className="font-semibold underline">
+                Manifold Plus
+              </Link>{' '}
+              to earn the full {formatMoney(REFERRAL_BET_BONUS)} +{' '}
+              {formatMoney(REFERRAL_VERIFY_BONUS)} per friend.
+            </span>
+          </Col>
+          <Row className="gap-2">
+            <Button
+              size="sm"
+              onClick={handleVerify}
+              loading={loading}
+              disabled={loading}
+            >
+              Verify identity
+            </Button>
+            <Link
+              href="/membership"
+              onClick={() => track('referrals page: subscribe clicked')}
+            >
+              <Button size="sm" color="gray-outline">
+                See membership
+              </Button>
+            </Link>
+          </Row>
+          {error && (
+            <span className="text-scarlet-500 text-xs">{error}</span>
+          )}
+        </Col>
+      </Row>
+    </div>
   )
 }
 

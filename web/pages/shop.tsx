@@ -4938,7 +4938,7 @@ function StreakFreezePreview(props: {
   // Include local bonus for optimistic display
   const currentFreezes = (user?.streakForgiveness ?? 0) + localBonus
   // Max is only a purchase cap, not an accumulation cap
-  const maxPurchasable = getMaxStreakFreezes(allEntitlements)
+  const maxPurchasable = getMaxStreakFreezes(allEntitlements, user?.bonusEligibility)
   const isAtPurchaseMax = currentFreezes >= maxPurchasable
 
   return (
@@ -5999,7 +5999,7 @@ function ShopItemCard(props: {
     item.id === 'streak-forgiveness' &&
     user &&
     (user.streakForgiveness ?? 0) + localStreakBonus >=
-      getMaxStreakFreezes(allEntitlements)
+      getMaxStreakFreezes(allEntitlements, user.bonusEligibility)
 
   // Check if seasonal item is currently unavailable
   const isSeasonalUnavailable =
