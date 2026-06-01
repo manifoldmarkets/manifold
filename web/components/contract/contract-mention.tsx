@@ -8,6 +8,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { track } from 'web/lib/service/analytics'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
+import { LogoIcon } from '../icons/logo-icon'
 
 export function ContractMention(props: {
   contract: Contract
@@ -37,11 +38,9 @@ export function ContractMention(props: {
       }}
       // target={getIsNative() ? '_self' : '_blank'}
     >
-      <img
-        src="/logo.svg"
-        alt=""
-        aria-hidden="true"
-        className="mr-1 inline h-[1em] w-[1em] align-text-bottom"
+      <LogoIcon
+        aria-hidden
+        className="mr-1 inline h-[1em] w-[1em] align-text-bottom stroke-indigo-700 dark:stroke-white"
       />
       <span
         className={clsx(
