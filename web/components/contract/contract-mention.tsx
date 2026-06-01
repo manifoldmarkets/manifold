@@ -40,7 +40,7 @@ export function ContractMention(props: {
     >
       <LogoIcon
         aria-hidden
-        className="mr-1 inline h-[1em] w-[1em] align-text-bottom stroke-indigo-700 dark:stroke-white"
+        className="mr-1 inline h-[1em] w-[1em] stroke-indigo-700 align-text-bottom dark:stroke-white"
       />
       <span
         className={clsx(
