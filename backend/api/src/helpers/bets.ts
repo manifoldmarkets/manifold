@@ -516,7 +516,7 @@ export const getUniqueBettorBonusQuery = (
   )
 
   // Scale by creator's effective tier. Unverified creators get a reduced
-  // amount (0.2x) instead of zero; verified and all subscribers get the
+  // amount (0.5x) instead of zero; verified and all subscribers get the
   // full base amount. If creator wasn't passed in, assume verified for
   // backwards compatibility.
   const creatorTier = creator
