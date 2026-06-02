@@ -44,7 +44,7 @@ import {
   getTotalWinnerCount,
   SweepstakesPrize,
 } from 'common/sweepstakes'
-import { canReceiveBonuses } from 'common/user'
+import { canEnterPrizeDrawings } from 'common/user'
 import { DisplayUser } from 'common/api/user-types'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
@@ -134,7 +134,7 @@ export default function SweepstakesPage() {
   const [showPrizeModal, setShowPrizeModal] = useState(false)
 
   // Check if user needs to verify before participating
-  const needsVerification = user && !canReceiveBonuses(user)
+  const needsVerification = user && !canEnterPrizeDrawings(user)
   const isAdminIneligible = !!user && isAdmin
 
   // Promote server-side 'pending' to 'action-needed' if the user can't

@@ -501,6 +501,12 @@ export default function AdminUserInfoPage() {
                 onUpdate={(newUser) => setSelectedUser(newUser)}
               />
 
+              {/* Prize Eligibility */}
+              <PrizeEligibilitySection
+                user={selectedUser}
+                onUpdate={(newUser) => setSelectedUser(newUser)}
+              />
+
               {/* Email Status */}
               <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
                 <h3 className="font-semibold">Email Status</h3>
@@ -1149,6 +1155,165 @@ function BonusEligibilitySection({
             <strong>Require Verification / Not Set:</strong> User must complete
             iDenfy verification to receive bonuses. Use this to end a user's
             grandfathered status.
+          </li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function PrizeEligibilitySection({
+  user,
+  onUpdate,
+}: {
+  user: FullUser
+  onUpdate: (user: FullUser) => void
+}) {
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [selectedEligibility, setSelectedEligibility] = useState<
+    'eligible' | 'ineligible' | null | undefined
+  >(user.prizeEligibility)
+
+  const eligibilityOptions = [
+    {
+      value: 'eligible' as const,
+      label: 'Eligible',
+      description: 'May enter prize drawings',
+      color: 'text-green-600',
+    },
+    {
+      value: 'ineligible' as const,
+      label: 'Ineligible',
+      description: 'Barred from prize drawings',
+      color: 'text-red-600',
+    },
+    {
+      value: null,
+      label: 'Follow Bonus Eligibility',
+      description: 'Default - prize access derives from bonus eligibility',
+      color: 'text-orange-600',
+    },
+  ] as const
+
+  const currentEligibility = eligibilityOptions.find(
+    (o) => o.value === (user.prizeEligibility ?? null)
+  )
+
+  const handleUpdate = async () => {
+    if (selectedEligibility === undefined) return
+    if ((selectedEligibility ?? null) === (user.prizeEligibility ?? null))
+      return
+
+    setIsUpdating(true)
+    try {
+      await api('admin-set-prize-eligibility', {
+        userId: user.id,
+        prizeEligibility: selectedEligibility,
+      })
+      toast.success(
+        selectedEligibility === null
+          ? 'Cleared prize override - follows bonus eligibility'
+          : `Prize eligibility updated to '${selectedEligibility}'`
+      )
+      onUpdate({
+        ...user,
+        prizeEligibility: selectedEligibility ?? undefined,
+      })
+    } catch (error) {
+      toast.error(
+        'Failed to update: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
+      <h3 className="font-semibold">Prize Drawing Eligibility</h3>
+      <div className="space-y-2">
+        <div>
+          <span className="text-ink-600 text-sm">Current Status: </span>
+          <span
+            className={`font-medium ${
+              currentEligibility?.color ?? 'text-orange-600'
+            }`}
+          >
+            {currentEligibility?.label ?? 'Follow Bonus Eligibility'}
+          </span>
+          {currentEligibility && (
+            <span className="text-ink-500 ml-2 text-sm">
+              - {currentEligibility.description}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <label className="text-ink-700 block text-sm font-medium">
+            Change Eligibility:
+          </label>
+          <Row className="flex-wrap gap-2">
+            {eligibilityOptions.map((option) => (
+              <button
+                key={String(option.value)}
+                onClick={() => setSelectedEligibility(option.value)}
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  selectedEligibility === option.value
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-ink-200 hover:border-ink-300 bg-canvas-0'
+                }`}
+              >
+                <span className={option.color}>{option.label}</span>
+              </button>
+            ))}
+          </Row>
+        </div>
+
+        {selectedEligibility !== undefined &&
+          (selectedEligibility ?? null) !== (user.prizeEligibility ?? null) && (
+            <Row className="mt-3 gap-2">
+              <Button
+                onClick={handleUpdate}
+                loading={isUpdating}
+                disabled={isUpdating}
+                color="indigo"
+                size="sm"
+              >
+                Update Eligibility
+              </Button>
+              <Button
+                onClick={() => setSelectedEligibility(user.prizeEligibility)}
+                disabled={isUpdating}
+                color="gray-outline"
+                size="sm"
+              >
+                Cancel
+              </Button>
+            </Row>
+          )}
+      </div>
+
+      <div className="mt-3 rounded border border-blue-200 bg-blue-50 p-3">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> Prize eligibility controls whether the user can
+          enter prize drawings (cash raffles). It is independent of bonus
+          eligibility, so a user can be eligible for bonuses but not prizes, or
+          vice versa.
+        </p>
+        <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
+          <li>
+            <strong>Eligible:</strong> User may enter prize drawings regardless
+            of bonus eligibility
+          </li>
+          <li>
+            <strong>Ineligible:</strong> User is barred from prize drawings even
+            if bonus-eligible
+          </li>
+          <li>
+            <strong>Follow Bonus Eligibility / Not Set:</strong> Prize access
+            derives from bonus eligibility (the default). Use the explicit
+            options above to decouple the two.
           </li>
         </ul>
       </div>

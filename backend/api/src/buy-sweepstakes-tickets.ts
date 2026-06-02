@@ -11,7 +11,7 @@ import {
 } from 'common/sweepstakes'
 import { getIp } from 'shared/analytics'
 import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
-import { canReceiveBonuses } from 'common/user'
+import { canEnterPrizeDrawings } from 'common/user'
 import { isAdminId } from 'common/envs/constants'
 
 export const buySweepstakesTickets: APIHandler<
@@ -107,7 +107,7 @@ export const buySweepstakesTickets: APIHandler<
     if (isAdminId(user.id)) {
       throw new APIError(403, 'Admins cannot participate in the sweepstakes')
     }
-    if (!canReceiveBonuses(user)) {
+    if (!canEnterPrizeDrawings(user)) {
       throw new APIError(
         403,
         'You must verify your identity to participate in the sweepstakes'

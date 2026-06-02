@@ -10,7 +10,12 @@ import {
 
 // New normalized user_bans table schema
 // modAlert is stored in user_bans for audit history but doesn't block any actions
-export type BanType = 'posting' | 'marketControl' | 'trading' | 'purchase' | 'modAlert'
+export type BanType =
+  | 'posting'
+  | 'marketControl'
+  | 'trading'
+  | 'purchase'
+  | 'modAlert'
 
 export type UserBan = {
   id: number
@@ -113,7 +118,7 @@ export type User = {
   // When false, user cannot change their @username
   // Automatically set to false when any ban is applied (unless mod opts out)
   // Must be manually re-enabled by a mod
-  canChangeUsername?: boolean  // undefined = allowed, false = restricted
+  canChangeUsername?: boolean // undefined = allowed, false = restricted
 
   userDeleted?: boolean
   optOutBetWarnings?: boolean
@@ -123,11 +128,21 @@ export type User = {
   purchasedMana?: boolean
   verifiedPhone?: boolean
 
-  // Bonus eligibility for receiving site bonuses and participating in cash raffles
+  // Bonus eligibility for receiving site bonuses (signup, referral, quests,
+  // leagues, streaks, loans, etc.)
   // 'verified' = passed identity verification (iDenfy)
   // 'grandfathered' = existing user before cash raffles launched
   // 'ineligible' = not eligible for bonuses
   bonusEligibility?: 'verified' | 'grandfathered' | 'ineligible'
+
+  // Prize-drawing (cash raffle) eligibility — independent of bonusEligibility so
+  // a user can be eligible for one but not the other (e.g. eligible for bonuses
+  // but barred from prize drawings, or vice versa).
+  // 'eligible' = may enter prize drawings
+  // 'ineligible' = barred from prize drawings
+  // undefined = derive from bonus eligibility (default; preserves prior behavior
+  //   where entering a drawing required verification)
+  prizeEligibility?: 'eligible' | 'ineligible'
 
   // Entitlements - digital goods owned by this user (from user_entitlements table)
   entitlements?: UserEntitlement[]
@@ -221,6 +236,17 @@ export const humanish = (user: User) => user.verifiedPhone !== false
 export const canReceiveBonuses = (user: User) =>
   user.bonusEligibility === 'verified' ||
   user.bonusEligibility === 'grandfathered'
+
+// Check if user can enter prize drawings (cash raffles). Independent of bonus
+// eligibility: an explicit prizeEligibility overrides, otherwise it derives from
+// bonus eligibility so existing users keep their current behavior until an admin
+// toggles the prize axis.
+export const canEnterPrizeDrawings = (user: User) =>
+  user.prizeEligibility === 'eligible'
+    ? true
+    : user.prizeEligibility === 'ineligible'
+    ? false
+    : canReceiveBonuses(user)
 
 // Resolve a user's effective tier (unverified | verified | basic | plus | premium).
 // Subscribers always get their subscription tier regardless of KYC status.
