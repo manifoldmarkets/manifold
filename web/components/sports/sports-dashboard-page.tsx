@@ -45,8 +45,10 @@ import {
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 import { APIParams } from 'common/api/schema'
 import { SportsMarket } from 'common/sports'
+import { formatJustTime } from 'client-common/lib/time'
 import toast from 'react-hot-toast'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -59,22 +61,12 @@ type SortKey = 'manual' | 'date' | 'volume' | 'title'
 const RECENT_THRESHOLD_MS = 12 * 60 * 60 * 1000
 
 function formatTime(isoOrMs: string | number): string {
-  const d = new Date(isoOrMs)
-  return (
-    d.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: 'UTC',
-    }) + ' UTC'
-  )
+  const t = typeof isoOrMs === 'number' ? isoOrMs : new Date(isoOrMs).getTime()
+  return formatJustTime(t)
 }
 
 function formatDateLabel(isoOrMs: string | number): string {
-  return new Date(isoOrMs).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
+  return dayjs(isoOrMs).format('MMM D')
 }
 
 function todayDateLabel(): string {
@@ -363,7 +355,7 @@ function CommunityTab({
   const [items, setItems] = useState<DashboardItem[]>([])
   const [sort, setSort] = useState<SortKey>('manual')
   const [showAdd, setShowAdd] = useState(false)
-  const [pastVisible, setPastVisible] = useState(false)
+  const [pastVisible, setPastVisible] = useState(true)
   const [editMode, setEditMode] = useState(false)
 
   async function fetchDashboard() {
@@ -460,12 +452,25 @@ function CommunityTab({
 
   async function handleRemove(contract: Contract) {
     if (!dashboard) return
-    await api('admin-sports-community-market', {
-      competitionCode,
-      contractId: contract.id,
-      action: 'remove',
-    })
-    await fetchDashboard()
+    // Optimistic: drop the item from local state immediately so the card
+    // disappears even while the request and re-fetch are in flight. Revert
+    // on error.
+    const prevItems = items
+    setItems((cur) =>
+      cur.filter((i) => !(i.type === 'question' && i.slug === contract.slug))
+    )
+    try {
+      await api('admin-sports-community-market', {
+        competitionCode,
+        contractId: contract.id,
+        action: 'remove',
+      })
+      await fetchDashboard()
+      toast.success('Market removed from community tab')
+    } catch (e) {
+      setItems(prevItems)
+      toast.error('Failed to remove market')
+    }
   }
 
   if (dashboard === undefined) return <LoadingIndicator />
@@ -557,23 +562,26 @@ function CommunityTab({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               className={clsx(
-                                'relative flex flex-col',
+                                'flex flex-col gap-1.5',
                                 snapshot.isDragging && 'opacity-80 shadow-lg'
                               )}
                             >
-                              <div
-                                {...provided.dragHandleProps}
-                                className="text-ink-300 hover:text-ink-500 absolute top-2 left-2 z-10 cursor-grab text-lg leading-none select-none"
-                                title="Drag to reorder"
-                              >
-                                ⠿
-                              </div>
-                              <button
-                                onClick={() => handleRemove(contract)}
-                                className="absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600 hover:bg-red-100 hover:text-red-600 transition-colors"
-                              >
-                                ✕
-                              </button>
+                              <Row className="items-center justify-between px-1">
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="text-ink-400 hover:text-ink-700 cursor-grab text-lg leading-none select-none"
+                                  title="Drag to reorder"
+                                >
+                                  ⠿
+                                </div>
+                                <button
+                                  onClick={() => handleRemove(contract)}
+                                  className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                                  title="Remove from community tab"
+                                >
+                                  ✕
+                                </button>
+                              </Row>
                               <CommunityMarketCard contract={contract} />
                             </div>
                           )}
@@ -587,14 +595,17 @@ function CommunityTab({
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {sortedOpen.map((contract) => (
-                  <div key={contract.id} className="relative flex flex-col">
+                  <div key={contract.id} className="flex flex-col gap-1.5">
                     {isAdmin && editMode && (
-                      <button
-                        onClick={() => handleRemove(contract)}
-                        className="absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600 hover:bg-red-100 hover:text-red-600 transition-colors"
-                      >
-                        ✕
-                      </button>
+                      <Row className="items-center justify-end px-1">
+                        <button
+                          onClick={() => handleRemove(contract)}
+                          className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                          title="Remove from community tab"
+                        >
+                          ✕
+                        </button>
+                      </Row>
                     )}
                     <CommunityMarketCard contract={contract} />
                   </div>
@@ -611,14 +622,17 @@ function CommunityTab({
               </Row>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {recentResolved.map((contract) => (
-                  <div key={contract.id} className="relative flex flex-col">
+                  <div key={contract.id} className="flex flex-col gap-1.5">
                     {isAdmin && editMode && (
-                      <button
-                        onClick={() => handleRemove(contract)}
-                        className="absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600 hover:bg-red-100 hover:text-red-600 transition-colors"
-                      >
-                        ✕
-                      </button>
+                      <Row className="items-center justify-end px-1">
+                        <button
+                          onClick={() => handleRemove(contract)}
+                          className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                          title="Remove from community tab"
+                        >
+                          ✕
+                        </button>
+                      </Row>
                     )}
                     <CommunityMarketCard contract={contract} />
                   </div>
@@ -641,14 +655,17 @@ function CommunityTab({
               {pastVisible && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {pastResolved.map((contract) => (
-                    <div key={contract.id} className="relative flex flex-col">
+                    <div key={contract.id} className="flex flex-col gap-1.5">
                       {isAdmin && editMode && (
-                        <button
-                          onClick={() => handleRemove(contract)}
-                          className="absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600 hover:bg-red-100 hover:text-red-600 transition-colors"
-                        >
-                          ✕
-                        </button>
+                        <Row className="items-center justify-end px-1">
+                          <button
+                            onClick={() => handleRemove(contract)}
+                            className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                            title="Remove from community tab"
+                          >
+                            ✕
+                          </button>
+                        </Row>
                       )}
                       <CommunityMarketCard contract={contract} />
                     </div>
@@ -692,7 +709,7 @@ export function SportsDashboardPage({
   const [markets, setMarkets] = useState<SportsMatch[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pastVisible, setPastVisible] = useState(false)
+  const [pastVisible, setPastVisible] = useState(true)
   const [activeTab, setActiveTab] = useState<'official' | 'community'>('official')
   const [communityCount, setCommunityCount] = useState<number | undefined>(undefined)
 
@@ -728,6 +745,24 @@ export function SportsDashboardPage({
   useEffect(() => {
     fetchMarkets()
   }, [])
+
+  // Fetch community-tab market count on mount so the badge is correct before
+  // the user clicks into the tab. CommunityTab will re-fetch on mount and
+  // overwrite via onCountChange — that's intentional and cheap.
+  useEffect(() => {
+    if (!communityDashboardSlug) return
+    let cancelled = false
+    api('get-dashboard-from-slug', { dashboardSlug: communityDashboardSlug })
+      .then((d) => {
+        if (cancelled) return
+        const items = (d as Dashboard).items ?? []
+        setCommunityCount(items.filter((i) => i.type === 'question').length)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [communityDashboardSlug])
 
   const now = Date.now()
   const upcoming = markets.filter((m) => m.status === 'upcoming')
