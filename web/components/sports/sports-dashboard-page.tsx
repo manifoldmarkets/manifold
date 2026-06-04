@@ -417,7 +417,9 @@ function CommunityTab({
     return t !== null && now - t >= RECENT_THRESHOLD_MS
   })
 
-  useEffect(() => { onCountChange?.(open.length) }, [open.length])
+  // Report total items in this tab (open + resolved), matching the parent's
+  // mount-time prefetch so the badge doesn't jump when the tab is first opened.
+  useEffect(() => { onCountChange?.(contracts.length) }, [contracts.length])
 
   const sortedOpen = sortContracts(open, questionSlugs, sort)
   const existingSlugs = new Set(questionSlugs)

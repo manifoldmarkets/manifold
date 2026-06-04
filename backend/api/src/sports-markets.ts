@@ -1,6 +1,5 @@
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { SportsMarket } from 'common/sports'
 
 export const sportsMarkets: APIHandler<'sports-markets'> = async (
@@ -55,7 +54,7 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
       sportsHomeScore: d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
       sportsAwayScore: d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
       volume: d.volume ?? 0,
-      url: `https://${ENV_CONFIG.domain}/${d.creatorUsername}/${d.slug}`,
+      url: `/${d.creatorUsername}/${d.slug}`,
       needsAttention,
       answers,
     }

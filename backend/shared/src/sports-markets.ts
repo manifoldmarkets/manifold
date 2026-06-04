@@ -368,7 +368,7 @@ export function buildDescription(
     }
     parts.push(`[Visit the ${config.name} Dashboard](${href})`)
   }
-  parts.push('Created and managed by [@ManifoldSports](https://manifold.markets/ManifoldSports)')
+  parts.push('Created and managed by [@ManifoldSports](/ManifoldSports)')
 
   return parts.join('\n\n\n')
 }
