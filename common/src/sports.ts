@@ -38,6 +38,29 @@ export interface TournamentConfig {
   stageLiquidityTiers: StageLiquidityTiers
 }
 
+// ─── API response types ──────────────────────────────────────────────────────
+
+/**
+ * Shape returned by the `sports-markets` API endpoint and consumed by the
+ * sports dashboard page. Kept in sync between backend (`sports-markets.ts`
+ * handler) and frontend (`sports-dashboard-page.tsx`).
+ */
+export interface SportsMarket {
+  id: string
+  question: string
+  closeTime: number
+  sportsStartTimestamp: string | null
+  resolution: string | null
+  resolvedAnswer: string | null
+  resolutionTime: number | null
+  sportsHomeScore: number | null
+  sportsAwayScore: number | null
+  volume: number
+  url: string
+  needsAttention: boolean
+  answers: Array<{ id: string; text: string; prob: number }>
+}
+
 // ─── User IDs ─────────────────────────────────────────────────────────────────
 
 const MANIFOLD_SPORTS_USER_ID_PROD = 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports

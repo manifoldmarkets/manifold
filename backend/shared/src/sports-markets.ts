@@ -1,3 +1,4 @@
+import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
 import {
@@ -8,7 +9,12 @@ import {
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { anythingToRichText } from 'shared/tiptap'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { CPMMMultiContract } from 'common/contract'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import {
+  Contract,
+  CPMMMultiContract,
+  nativeContractColumnsArray,
+} from 'common/contract'
 import { insert, bulkInsert, bulkInsertQuery } from 'shared/supabase/utils'
 import { answerToRow } from 'shared/supabase/answers'
 import { generateAntes } from 'shared/create-contract-helpers'
@@ -392,11 +398,11 @@ export async function fetchAllCompetitionMatches(
   apiKey: string,
   opts: { dateFrom?: string; dateTo?: string; status?: string } = {}
 ): Promise<FDMatch[]> {
-  let path = `/v4/competitions/${config.footballDataCode}/matches`
+  let path = `/v4/competitions/${encodeURIComponent(config.footballDataCode)}/matches`
   const params: string[] = []
-  if (opts.status) params.push(`status=${opts.status}`)
-  if (opts.dateFrom) params.push(`dateFrom=${opts.dateFrom}`)
-  if (opts.dateTo) params.push(`dateTo=${opts.dateTo}`)
+  if (opts.status) params.push(`status=${encodeURIComponent(opts.status)}`)
+  if (opts.dateFrom) params.push(`dateFrom=${encodeURIComponent(opts.dateFrom)}`)
+  if (opts.dateTo) params.push(`dateTo=${encodeURIComponent(opts.dateTo)}`)
   if (params.length) path += '?' + params.join('&')
 
   const data = await fdFetch<{ matches: FDMatch[] }>(path, apiKey)
@@ -414,7 +420,10 @@ export async function fetchSingleMatch(
   matchId: number,
   apiKey: string
 ): Promise<FDMatch> {
-  const data = await fdFetch<{ match: FDMatch }>(`/v4/matches/${matchId}`, apiKey)
+  const data = await fdFetch<{ match: FDMatch }>(
+    `/v4/matches/${encodeURIComponent(String(matchId))}`,
+    apiKey
+  )
   return data.match
 }
 
@@ -786,7 +795,19 @@ export async function createTournamentMarkets(
 
       const providerId = creatorId
 
-      const { token, ...contractData } = contract as any
+      // Insert with all native columns set (creator_id, slug, outcome_type,
+      // mechanism, importance_score, freshness_score, etc.) — mirrors
+      // createMarketHelper in api/create-market.ts so feed ranking, search,
+      // and other systems that read native columns work correctly.
+      const nativeColumns = nativeContractColumnsArray.filter((c) => c !== 'data')
+      const nativeValues = nativeColumns.map((column) => {
+        const camelKey = camelCase(column) as keyof Contract
+        return camelKey in contract ? contract[camelKey] : null
+      })
+      const nativeKeys = nativeColumns.map(camelCase)
+      const contractDataToInsert = Object.fromEntries(
+        Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
+      )
 
       const insertAnswersQuery = bulkInsertQuery(
         'answers',
@@ -794,8 +815,9 @@ export async function createTournamentMarkets(
         true
       )
       const contractQuery = pgp.as.format(
-        `insert into contracts (id, data, token) values ($1, $2::jsonb, $3)`,
-        [contract.id, JSON.stringify(contractData), token ?? 'MANA']
+        `insert into contracts (id, data, ${nativeColumns.join(',')})
+         values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`).join(',')})`,
+        [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
       )
 
       const result = await pg.tx(async (tx) => {
@@ -824,6 +846,10 @@ export async function createTournamentMarkets(
           ).then((g) => (g ? addGroupToContract(pg, result, g) : null))
         )
       )
+
+      // Generate feed embeddings so the market shows up in personalized feeds
+      // and the related-markets cache. Non-fatal if it fails.
+      await generateContractEmbeddings(result, pg).catch(() => undefined)
 
       created++
       log.push({ question: params.question, result: result.id, status: 'created' })

@@ -34,6 +34,7 @@ import {
 } from 'common/portfolio-metrics'
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
+import { SportsMarket } from 'common/sports'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -4220,21 +4221,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as {
-      markets: Array<{
-        id: string
-        question: string
-        closeTime: number
-        sportsStartTimestamp: string | null
-        resolution: string | null
-        resolvedAnswer: string | null
-        resolutionTime: number | null
-        sportsHomeScore: number | null
-        sportsAwayScore: number | null
-        volume: number
-        url: string
-        needsAttention: boolean
-        answers: Array<{ id: string; text: string; prob: number }>
-      }>
+      markets: SportsMarket[]
     },
   },
 

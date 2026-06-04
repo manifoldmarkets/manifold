@@ -45,12 +45,11 @@ import {
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import clsx from 'clsx'
-import { APIResponse, APIParams } from 'common/api/schema'
+import { APIParams } from 'common/api/schema'
+import { SportsMarket } from 'common/sports'
 import toast from 'react-hot-toast'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type ApiMarket = APIResponse<'sports-markets'>['markets'][number]
 
 type DateSection = { label: string; matches: SportsMatch[] }
 type SortKey = 'manual' | 'date' | 'volume' | 'title'
@@ -118,7 +117,7 @@ function parseAnswerText(text: string): { flag: string; name: string } {
   return { flag: '', name: text.trim() }
 }
 
-function toSportsMatch(m: ApiMarket): SportsMatch | null {
+function toSportsMatch(m: SportsMarket): SportsMatch | null {
   if (!m.answers || m.answers.length < 2) return null
 
   const a0 = parseAnswerText(m.answers[0].text)

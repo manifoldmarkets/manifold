@@ -1,6 +1,7 @@
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { SportsMarket } from 'common/sports'
 
 export const sportsMarkets: APIHandler<'sports-markets'> = async (
   props
@@ -21,7 +22,7 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
   const now = Date.now()
   const attentionThresholdMs = 3 * 60 * 60 * 1000 // 3 hours
 
-  const markets = rows.map((r) => {
+  const markets: SportsMarket[] = rows.map((r) => {
     const d = r.data
     const closeTime: number = parseInt(d.closeTime ?? '0', 10)
     const resolution: string | null = d.resolution ?? null
