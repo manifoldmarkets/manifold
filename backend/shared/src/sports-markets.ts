@@ -38,13 +38,6 @@ export {
   TEST_TOURNAMENT_2026,
 }
 
-export interface LiveMatchScore {
-  sportsEventId: string
-  homeScore: number | null
-  awayScore: number | null
-  status: 'IN_PLAY' | 'PAUSED' | 'HALF_TIME' | string
-}
-
 // football-data.org v4 match shape (subset used here)
 export interface FDMatch {
   id: number
@@ -423,17 +416,6 @@ export async function fetchSingleMatch(
 ): Promise<FDMatch> {
   const data = await fdFetch<{ match: FDMatch }>(`/v4/matches/${matchId}`, apiKey)
   return data.match
-}
-
-export async function fetchInPlayMatches(
-  config: TournamentConfig,
-  apiKey: string
-): Promise<FDMatch[]> {
-  const data = await fdFetch<{ matches: FDMatch[] }>(
-    `/v4/competitions/${config.footballDataCode}/matches?status=IN_PLAY`,
-    apiKey
-  )
-  return data.matches ?? []
 }
 
 // ─── Market creation ──────────────────────────────────────────────────────────

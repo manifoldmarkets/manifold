@@ -43,7 +43,7 @@ import {
   HAS_BETS_KEY,
 } from 'web/components/search'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { DashboardMarketCard } from 'web/components/dashboard/dashboard-market-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import clsx from 'clsx'
 import { APIResponse, APIParams } from 'common/api/schema'
 import toast from 'react-hot-toast'
@@ -57,7 +57,6 @@ type SortKey = 'manual' | 'date' | 'volume' | 'title'
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-const POLL_MS = 30_000
 const RECENT_THRESHOLD_MS = 12 * 60 * 60 * 1000
 
 function formatTime(isoOrMs: string | number): string {
@@ -345,7 +344,7 @@ function AddMarketModal({
 }
 
 function CommunityMarketCard({ contract }: { contract: Contract }) {
-  return <DashboardMarketCard contract={contract} />
+  return <FeedContractCard contract={contract} />
 }
 
 // ─── Community Tab ────────────────────────────────────────────────────────────
@@ -729,8 +728,6 @@ export function SportsDashboardPage({
 
   useEffect(() => {
     fetchMarkets()
-    const interval = setInterval(fetchMarkets, POLL_MS)
-    return () => clearInterval(interval)
   }, [])
 
   const now = Date.now()

@@ -4258,21 +4258,6 @@ export const API = (_apiTypeCheck = {
       }>
     },
   },
-  'sports-live-scores': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: false,
-    props: z.object({ tag: z.string() }).strict(),
-    returns: {} as {
-      scores: Array<{
-        sportsEventId: string
-        homeScore: number | null
-        awayScore: number | null
-        status: string
-      }>
-      updatedAt: number | null
-    },
-  },
 } as const)
 
 export type APIPath = keyof typeof API

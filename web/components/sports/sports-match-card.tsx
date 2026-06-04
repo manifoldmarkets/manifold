@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { SportsBetPanel } from './sports-bet-panel'
 
 export type MatchOutcome = 'teamA' | 'teamB' | 'draw'
 
@@ -37,20 +37,11 @@ export type SportsMatch = {
   winner?: MatchOutcome
   marketUrl?: string
   finalScore?: { home: number; away: number }
-  liveScore?: { home: number; away: number; minute: string }
   contractId?: string
   teamAAnswerId?: string
   teamBAnswerId?: string
   drawAnswerId?: string
 }
-
-/* STASHED: MatchBetPanel (replaced by SportsBetPanel in sports-bet-panel.tsx)
-function MatchBetPanel({ match, initialOutcome, onClose }) {
-  const [selected, setSelected] = useState<MatchOutcome>(...)
-  const [amount, setAmount] = useState(10)
-  ...outcome toggle, amount input, stats, cancel + buy button (mock, not wired to API)
-}
-*/
 
 function OutcomeRow({
   flag,
@@ -155,108 +146,89 @@ function OutcomeRow({
 }
 
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
-  const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
+  const router = useRouter()
   const resolved = match.status === 'resolved'
   const now = Date.now()
   const isLive = !resolved && match.closeTimeMs <= now && now - match.closeTimeMs < 2.5 * 60 * 60 * 1000
   const homeScore = resolved ? match.finalScore?.home : undefined
   const awayScore = resolved ? match.finalScore?.away : undefined
   const winnerColor = resolved ? vibrantForOutcome(match.winner) : undefined
+  const marketHref = match.marketUrl ?? '#'
 
   return (
-    <>
-      <div
-        className={clsx(
-          'bg-canvas-50 border-ink-200 flex flex-col gap-2.5 rounded-xl border p-[18px] transition-colors',
-          resolved ? 'opacity-70' : 'hover:border-ink-300'
-        )}
-      >
-        <Row className="justify-between">
-          {isLive ? (
-            <span className="text-[11px] font-medium" style={{ color: '#16a34a' }}>
-              {match.liveScore
-                ? `● Live  ${match.liveScore.minute === 'HT' ? 'HT' : `${match.liveScore.minute}'`}`
-                : '● Live'}
-            </span>
-          ) : (
-            <span className="text-ink-500 text-[11px]">
-              {resolved ? match.closeDateLabel : `Kickoff ${match.closeTime}`}
-            </span>
-          )}
-          {isLive && match.liveScore ? (
-            <span className="text-[11px] font-semibold tabular-nums" style={{ color: '#16a34a' }}>
-              {match.liveScore.home} – {match.liveScore.away}
-            </span>
-          ) : (
-            <span
-              className="text-[11px] font-medium"
-              style={{ color: winnerColor ?? '#6B7280' }}
-            >
-              {resolved ? 'Final' : 'Upcoming'}
-            </span>
-          )}
-        </Row>
-
-        <Col className="gap-1">
-          <OutcomeRow
-            flag={match.teamA.flag}
-            name={match.teamA.name}
-            prob={match.teamA.prob}
-            score={homeScore}
-            isWinner={resolved && match.winner === 'teamA'}
-            isFirstTeam
-            resolved={resolved}
-            teamColor={SPORTS_COLORS.teamA}
-            winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
-            onClick={() => setBetOutcome('teamA')}
-          />
-          <OutcomeRow
-            flag={match.teamB.flag}
-            name={match.teamB.name}
-            prob={match.teamB.prob}
-            score={awayScore}
-            isWinner={resolved && match.winner === 'teamB'}
-            resolved={resolved}
-            teamColor={SPORTS_COLORS.teamB}
-            winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
-            onClick={() => setBetOutcome('teamB')}
-          />
-          {(match.hasDraw ?? true) && (
-            <OutcomeRow
-              name="Draw"
-              prob={match.draw.prob}
-              isWinner={resolved && match.winner === 'draw'}
-              isDraw
-              resolved={resolved}
-              teamColor={SPORTS_COLORS.draw}
-              winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-              onClick={() => setBetOutcome('draw')}
-            />
-          )}
-        </Col>
-
-        <Row className="border-ink-200 justify-between border-t pt-2">
-          <span className="text-ink-500 text-[11px]">Ṁ {match.volume} vol</span>
-          <a
-            href={match.marketUrl ?? '#'}
-            className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
-            onClick={(e) => e.stopPropagation()}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View market →
-          </a>
-        </Row>
-      </div>
-
-      {betOutcome && (
-        <SportsBetPanel
-          match={match}
-          initialOutcome={betOutcome}
-          onClose={() => setBetOutcome(null)}
-        />
+    <div
+      className={clsx(
+        'bg-canvas-50 border-ink-200 flex flex-col gap-2.5 rounded-xl border p-[18px] transition-colors',
+        resolved ? 'opacity-70' : 'hover:border-ink-300'
       )}
-    </>
+    >
+      <Row className="justify-between">
+        {isLive ? (
+          <span className="text-[11px] font-medium" style={{ color: '#16a34a' }}>
+            ● Live
+          </span>
+        ) : (
+          <span className="text-ink-500 text-[11px]">
+            {resolved ? match.closeDateLabel : `Kickoff ${match.closeTime}`}
+          </span>
+        )}
+        <span
+          className="text-[11px] font-medium"
+          style={{ color: winnerColor ?? '#6B7280' }}
+        >
+          {resolved ? 'Final' : isLive ? 'In progress' : 'Upcoming'}
+        </span>
+      </Row>
+
+      <Col className="gap-1">
+        <OutcomeRow
+          flag={match.teamA.flag}
+          name={match.teamA.name}
+          prob={match.teamA.prob}
+          score={homeScore}
+          isWinner={resolved && match.winner === 'teamA'}
+          isFirstTeam
+          resolved={resolved}
+          teamColor={SPORTS_COLORS.teamA}
+          winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
+          onClick={() => router.push(marketHref)}
+        />
+        <OutcomeRow
+          flag={match.teamB.flag}
+          name={match.teamB.name}
+          prob={match.teamB.prob}
+          score={awayScore}
+          isWinner={resolved && match.winner === 'teamB'}
+          resolved={resolved}
+          teamColor={SPORTS_COLORS.teamB}
+          winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
+          onClick={() => router.push(marketHref)}
+        />
+        {(match.hasDraw ?? true) && (
+          <OutcomeRow
+            name="Draw"
+            prob={match.draw.prob}
+            isWinner={resolved && match.winner === 'draw'}
+            isDraw
+            resolved={resolved}
+            teamColor={SPORTS_COLORS.draw}
+            winnerColor={match.winner === 'draw' ? winnerColor : undefined}
+            onClick={() => router.push(marketHref)}
+          />
+        )}
+      </Col>
+
+      <Row className="border-ink-200 justify-between border-t pt-2">
+        <span className="text-ink-500 text-[11px]">Ṁ {match.volume} vol</span>
+        <Link
+          href={marketHref}
+          className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          View market →
+        </Link>
+      </Row>
+    </div>
   )
 }
 
@@ -269,10 +241,8 @@ export function PastMatchCard({ match }: { match: SportsMatch }) {
       : 'Draw'
 
   return (
-    <a
+    <Link
       href={match.marketUrl ?? '#'}
-      target="_blank"
-      rel="noreferrer"
       className="bg-canvas-0 border-ink-200 hover:border-ink-300 flex items-center justify-between rounded-lg border px-3.5 py-2.5 opacity-60 transition-colors"
     >
       <Col className="gap-0.5">
@@ -284,7 +254,7 @@ export function PastMatchCard({ match }: { match: SportsMatch }) {
         </span>
       </Col>
       <span className="text-ink-500 text-[11px]">View →</span>
-    </a>
+    </Link>
   )
 }
 

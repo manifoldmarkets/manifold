@@ -167,7 +167,5 @@ export const TEST_TOURNAMENT_2026: TournamentConfig = {
 
 export const TOURNAMENT_CONFIGS: Record<string, TournamentConfig> = {
   WC: WORLD_CUP_2026,
-  CL: CHAMPIONS_LEAGUE_2026,
-  PL: PREMIER_LEAGUE_2526,
   ...(ENV === 'DEV' ? { TEST: TEST_TOURNAMENT_2026 } : {}),
 }
