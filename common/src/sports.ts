@@ -38,6 +38,44 @@ export interface TournamentConfig {
   stageLiquidityTiers: StageLiquidityTiers
 }
 
+// ─── Resolution helpers ──────────────────────────────────────────────────────
+
+/**
+ * Pick the answer that should resolve YES for a finished match.
+ *
+ * football-data.org reports the winner as 'HOME_TEAM', 'AWAY_TEAM', or 'DRAW'.
+ * Our markets carry answers either as bare names ("Brazil", "Draw") in
+ * club tournaments (CL/PL, useTeamNames: true) or as flag-prefixed names
+ * ("🇧🇷 Brazil", "Draw") in international tournaments (WC). This helper
+ * resolves the winner to the correct answer id by matching the team name
+ * either exactly or as a trailing suffix after a space.
+ *
+ * Returns null when:
+ * - the match has no winner recorded (drawn knockout, abandoned, awarded), or
+ * - no answer text matches the winning team (data anomaly worth alerting on).
+ */
+export function pickSportsWinningAnswer(
+  match: {
+    homeTeamName: string
+    awayTeamName: string
+    winner: 'HOME_TEAM' | 'AWAY_TEAM' | 'DRAW' | null | undefined
+  },
+  answers: ReadonlyArray<{ id: string; text: string }>
+): { id: string; text: string } | null {
+  if (!match.winner) return null
+  const winningText =
+    match.winner === 'HOME_TEAM'
+      ? match.homeTeamName
+      : match.winner === 'AWAY_TEAM'
+      ? match.awayTeamName
+      : 'Draw'
+  return (
+    answers.find(
+      (a) => a.text === winningText || a.text.endsWith(` ${winningText}`)
+    ) ?? null
+  )
+}
+
 // ─── API response types ──────────────────────────────────────────────────────
 
 /**

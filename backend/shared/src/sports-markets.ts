@@ -33,6 +33,7 @@ import {
   CHAMPIONS_LEAGUE_2026,
   PREMIER_LEAGUE_2526,
   TEST_TOURNAMENT_2026,
+  pickSportsWinningAnswer,
 } from 'common/sports'
 
 export type { LiquidityTierValue, StageLiquidityTiers, TournamentConfig }
@@ -595,18 +596,22 @@ export async function resolveTournamentMarkets(
       continue
     }
 
-    const winningText =
-      winner === 'HOME_TEAM'
-        ? match.homeTeam.name
-        : winner === 'AWAY_TEAM'
-        ? match.awayTeam.name
-        : 'Draw'
-
-    const winningAnswer = market.answers.find(
-      (a) => a.text === winningText || a.text.endsWith(` ${winningText}`)
+    const winningAnswer = pickSportsWinningAnswer(
+      {
+        homeTeamName: match.homeTeam.name,
+        awayTeamName: match.awayTeam.name,
+        winner,
+      },
+      market.answers
     )
     if (!winningAnswer) {
       errors++
+      const winningText =
+        winner === 'HOME_TEAM'
+          ? match.homeTeam.name
+          : winner === 'AWAY_TEAM'
+          ? match.awayTeam.name
+          : 'Draw'
       log.push({
         question: market.question,
         result: `No answer matching "${winningText}"`,
@@ -619,7 +624,7 @@ export async function resolveTournamentMarkets(
       resolved++
       log.push({
         question: market.question,
-        result: `Would resolve → ${winningText}`,
+        result: `Would resolve → ${winningAnswer.text}`,
         status: 'resolved',
       })
       continue
@@ -652,7 +657,7 @@ export async function resolveTournamentMarkets(
         )
       }
       resolved++
-      log.push({ question: market.question, result: winningText, status: 'resolved' })
+      log.push({ question: market.question, result: winningAnswer.text, status: 'resolved' })
     } catch (e) {
       errors++
       log.push({
