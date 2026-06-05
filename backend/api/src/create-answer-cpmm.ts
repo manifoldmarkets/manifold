@@ -16,7 +16,7 @@ import { convertBet } from 'common/supabase/bets'
 import { getAnswerCostFromLiquidity } from 'common/tier'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
-import { floatingEqual } from 'common/util/math'
+import { EPSILON, floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { groupBy, partition, sumBy, uniq } from 'lodash'
@@ -390,13 +390,45 @@ async function createAnswerAndSumAnswersToOne(
 
     allOrdersToCancel.push(...ordersToCancel)
   }
-  const { bulkUpdateLimitOrdersQuery } = await updateMakers(
+  const {
+    betsToInsert: makerRedemptionBetsToInsert,
+    updatedMetrics: makerRedemptionAndFillUpdatedMetrics,
+    balanceUpdates: makerRedemptionAndFillBalanceUpdates,
+    bulkUpdateLimitOrdersQuery,
+  } = await updateMakers(
     makerIDsByTakerBetId,
     contract,
     allUpdatedMetrics,
     pgTrans
   )
-  await pgTrans.none(bulkUpdateLimitOrdersQuery)
+
+  const makerRedemptionBetsQuery = bulkInsertBetsQuery(
+    makerRedemptionBetsToInsert
+  )
+  const makerMetricsQuery = bulkUpdateContractMetricsQuery(
+    makerRedemptionAndFillUpdatedMetrics
+  )
+  const makerBalanceUpdatesQuery = bulkIncrementBalancesQuery(
+    makerRedemptionAndFillBalanceUpdates
+  )
+
+  const makerUpdateResults = await pgTrans.multi(`
+    ${makerRedemptionBetsQuery}; --0
+    ${makerMetricsQuery}; --1
+    ${makerBalanceUpdatesQuery}; --2
+    ${bulkUpdateLimitOrdersQuery}; --3
+  `)
+
+  const makerUserUpdates = makerUpdateResults[2] as UserUpdate[]
+  for (const userUpdate of makerUserUpdates) {
+    if (
+      userUpdate.balance < -EPSILON &&
+      userUpdate.balance < balanceByUserId[userUpdate.id]
+    ) {
+      throw new APIError(403, 'Maker has insufficient balance.')
+    }
+  }
+
   log('inserting new answer')
   await insertAnswer(pgTrans, newAnswer)
   log('updating index and liquidity of Other')
