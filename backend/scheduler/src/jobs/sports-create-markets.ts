@@ -23,6 +23,7 @@ export async function createUpcomingSportsMarkets() {
     try {
       const { created, skipped, errors } = await createTournamentMarkets(config, apiKey, {
         daysAhead: 7,
+        dashboardUrl: config.dashboardPath,
       })
       log(`[sports-create] ${config.footballDataCode}: created=${created} skipped=${skipped} errors=${errors}`)
     } catch (e) {
