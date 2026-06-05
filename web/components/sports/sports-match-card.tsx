@@ -163,20 +163,18 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
       )}
     >
       <Row className="justify-between">
-        {isLive ? (
-          <span className="text-[11px] font-medium" style={{ color: '#16a34a' }}>
-            ● Live
-          </span>
-        ) : (
-          <span className="text-ink-500 text-[11px]">
-            {resolved ? match.closeDateLabel : `Kickoff ${match.closeTime}`}
-          </span>
-        )}
+        <span className="text-ink-500 text-[11px]">
+          {resolved
+            ? match.closeDateLabel
+            : isLive
+            ? `Kicked off ${match.closeTime}`
+            : `Kickoff ${match.closeTime}`}
+        </span>
         <span
           className="text-[11px] font-medium"
           style={{ color: winnerColor ?? '#6B7280' }}
         >
-          {resolved ? 'Final' : isLive ? 'In progress' : 'Upcoming'}
+          {resolved ? 'Final' : isLive ? 'Awaiting result' : 'Upcoming'}
         </span>
       </Row>
 
