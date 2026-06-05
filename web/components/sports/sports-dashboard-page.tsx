@@ -909,7 +909,16 @@ export function SportsDashboardPage({
             )}
 
             {!loading && markets.length === 0 && !error && (
-              <p className="text-ink-400 text-sm">No markets found.</p>
+              <Col className="items-center gap-2 py-16 text-center">
+                <span className="text-3xl">{emoji}</span>
+                <p className="text-ink-700 text-sm font-medium">
+                  No markets yet
+                </p>
+                <p className="text-ink-400 text-xs max-w-xs">
+                  Markets are created automatically a few days before each
+                  match. Check back soon.
+                </p>
+              </Col>
             )}
           </>
         )}
