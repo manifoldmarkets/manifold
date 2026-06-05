@@ -45,6 +45,20 @@ export const resolveMarketMain: APIHandler<
     throw new APIError(403, 'Your account has been deleted')
   if (creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
 
+  // Perps have a dedicated resolution path: close all positions at oracle
+  // price, refund residual pool to the creator, and mark the contract
+  // resolved. Bypass the CPMM/multi resolution helper entirely.
+  if (outcomeType === 'PERP') {
+    if (contract.isResolved)
+      throw new APIError(403, 'Contract already resolved')
+    const { resolvePerp } = await import('shared/perps/engine')
+    await resolvePerp(contractId, auth.uid)
+    return {
+      result: { message: 'success' },
+      continue: async () => {},
+    }
+  }
+
   if (
     isProd() &&
     contract.token === 'CASH' &&

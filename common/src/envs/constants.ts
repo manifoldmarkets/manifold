@@ -34,6 +34,19 @@ export const TRADED_TERM = 'bet'
 export const TRADING_TERM = 'betting'
 export const TRADER_TERM = 'trader'
 
+// Master switch for perpetual futures (ManiPerp). When false, admin UI,
+// create-perp API, place-perp-trade API, close-perp-position API, the
+// `update-perps` scheduler job, and the market-page PERP branch are all
+// disabled. See backend/shared/src/perps/README.md for full removal steps.
+export const PERPS_ENABLED = true
+
+// Testing-only escape hatch: bypass the "oracle price too old" check in the
+// perp engine's open/close paths. Intended for local dev where the update-
+// perps job isn't running and the cached oraclePriceTime drifts past the
+// contract's maxOraclePriceAgeMs. MUST be false in prod — a stale feed lets
+// traders cherry-pick a favorable cached price.
+export const PERPS_SKIP_ORACLE_FRESHNESS = true
+
 export const ENV_CONFIG = CONFIGS[ENV]
 
 export function isAdminId(id: string) {

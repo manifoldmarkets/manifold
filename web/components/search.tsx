@@ -130,6 +130,7 @@ export const CONTRACT_TYPES = [
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
+  { label: 'Perp', value: 'PERP' },
   { label: 'Posts', value: 'POSTS' },
 ] as const
 
@@ -1036,7 +1037,10 @@ export const useSearchResults = (props: {
               term: query,
               filter,
               sort,
-              contractType,
+              // search-markets-full / recent-markets don't include 'PERP' in
+              // their contractType union (perps are admin-only and excluded
+              // from the default search surface), so fall back to 'ALL'.
+              contractType: contractType === 'PERP' ? 'ALL' : contractType,
               ...(() => {
                 const useCursor =
                   !freshQuery && sort === 'newest' && !!state.contracts?.length

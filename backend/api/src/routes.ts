@@ -70,6 +70,18 @@ import { createAnswerCPMM } from './create-answer-cpmm'
 import { createComment } from './create-comment'
 import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
+import { createPerp } from './create-perp'
+import { placePerpTrade } from './place-perp-trade'
+import { closePerpPosition } from './close-perp-position'
+import {
+  getOraclePrice,
+  getOraclePriceSeries,
+} from './get-oracle-price'
+import { getKnownOracleFeeds } from './get-known-oracle-feeds'
+import { internalWriteOraclePrice } from './internal-write-oracle-price'
+import { getPerpPositions } from './get-perp-positions'
+import { getPerpFundingEvents } from './get-perp-funding-events'
+import { getPerpEvents } from './get-perp-events'
 import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
 import { dismissmodalert } from './dismiss-mod-alert'
@@ -417,6 +429,16 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
   unresolve: unresolve,
+  'create-perp': createPerp,
+  'place-perp-trade': placePerpTrade,
+  'close-perp-position': closePerpPosition,
+  'get-oracle-price': getOraclePrice,
+  'get-oracle-price-series': getOraclePriceSeries,
+  'get-known-oracle-feeds': getKnownOracleFeeds,
+  'internal-write-oracle-price': internalWriteOraclePrice,
+  'get-perp-positions': getPerpPositions,
+  'get-perp-funding-events': getPerpFundingEvents,
+  'get-perp-events': getPerpEvents,
   'get-followed-groups': getFollowedGroups,
   'get-watched-markets': getWatchedMarkets,
   'unique-bet-group-count': getUniqueBetGroupCount,

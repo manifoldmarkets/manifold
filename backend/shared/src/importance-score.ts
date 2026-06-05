@@ -373,6 +373,13 @@ export const computeContractScores = (
     const todayProb = clamp(prob, 0.01, 0.99)
     logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
+  } else if (contract.mechanism === 'perp' && !wasCreatedToday) {
+    // Use pool imbalance (|funding rate|) as a cheap proxy for price activity
+    // — avoids a second DB hit in score-contracts. Scaled to log-odds so it
+    // composes with the same dailyScore formula as cpmm-1.
+    const fundingMagnitude = Math.abs((contract as any).fundingRate ?? 0)
+    logOddsChange = Math.min(fundingMagnitude * 4, 4)
+    dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
   }
 
   if (isResolved && resolutionTime) {

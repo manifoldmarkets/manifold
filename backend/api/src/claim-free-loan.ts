@@ -11,6 +11,7 @@ import {
   isMarketEligibleForLoan,
   getMidnightPacific,
 } from 'common/loans'
+import { Contract } from 'common/contract'
 import { Txn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
@@ -117,6 +118,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     if (!contract) return false
     if (contract.token !== 'MANA') return false
     if (contract.isResolved) return false
+    if ((contract as Contract).mechanism === 'perp') return false // perps excluded from loans
     if ((m.payout ?? 0) <= 0 && (m.invested ?? 0) <= 0) return false
 
     // Check market eligibility

@@ -1,0 +1,235 @@
+import clsx from 'clsx'
+import { useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { PerpContract } from 'common/contract'
+import { getUserFacingPnl } from 'common/perps/pnl'
+import { PerpPosition } from 'common/perps/position'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { formatMoney } from 'common/util/format'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { api } from 'web/lib/api/api'
+import { useUser } from 'web/hooks/use-user'
+
+type Position = {
+  userId: string
+  direction: 'long' | 'short'
+  size: number
+  costBasis: number
+  originalCostBasis: number
+  entryPrice: number
+  leverage: number
+  liquidationPrice: number
+}
+
+export const PerpPositionPanel = (props: { contract: PerpContract }) => {
+  const { contract } = props
+  const user = useUser()
+  const [positions, setPositions] = useState<Position[]>([])
+  const [closing, setClosing] = useState<'long' | 'short' | null>(null)
+  const [refresh, setRefresh] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setPositions([])
+      return
+    }
+    let cancelled = false
+    api('get-perp-positions', {
+      contractId: contract.id,
+      userId: user.id,
+    }).then((p) => {
+      if (!cancelled) setPositions(p)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [contract.id, user?.id, refresh])
+
+  if (!user) return null
+  if (!positions.length) return null
+
+  const close = async (direction: 'long' | 'short') => {
+    setClosing(direction)
+    try {
+      const res = await api('close-perp-position', {
+        contractId: contract.id,
+        direction,
+      })
+      toast.success(
+        `Closed ${direction} — payout ${formatMoney(
+          res.payout
+        )} (PnL ${formatMoney(res.pnl)})`
+      )
+      setRefresh((r) => r + 1)
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Close failed')
+    } finally {
+      setClosing(null)
+    }
+  }
+
+  return (
+    <Col className="gap-3">
+      {positions.map((p) => (
+        <PositionCard
+          key={p.direction}
+          position={p}
+          contract={contract}
+          onClose={() => close(p.direction)}
+          closing={closing === p.direction}
+          anyClosing={closing !== null}
+        />
+      ))}
+    </Col>
+  )
+}
+
+const PositionCard = (props: {
+  position: Position
+  contract: PerpContract
+  onClose: () => void
+  closing: boolean
+  anyClosing: boolean
+}) => {
+  const { position: p, contract, onClose, closing, anyClosing } = props
+  const markPrice = Number(contract.oraclePrice)
+  const priceDecimals = inferPriceDecimals([
+    markPrice,
+    p.entryPrice,
+    p.liquidationPrice,
+  ])
+
+  const pnl = getUserFacingPnl(
+    {
+      ...p,
+      openedTime: 0,
+      updatedTime: 0,
+      contractId: contract.id,
+    } as PerpPosition,
+    markPrice
+  )
+  const pnlPct =
+    p.originalCostBasis > 0 ? (pnl / p.originalCostBasis) * 100 : 0
+
+  const isLong = p.direction === 'long'
+  const accentBar = isLong ? 'bg-teal-500' : 'bg-red-500'
+  const accentText = isLong ? 'text-teal-600' : 'text-red-600'
+  const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-red-600'
+
+  // Distance to liquidation as a percentage of mark — useful risk signal.
+  const distToLiq = isLong
+    ? (markPrice - p.liquidationPrice) / markPrice
+    : (p.liquidationPrice - markPrice) / markPrice
+  const liqDangerClass =
+    distToLiq < 0.05
+      ? 'text-red-600'
+      : distToLiq < 0.15
+      ? 'text-amber-600'
+      : 'text-ink-900'
+
+  return (
+    <Col
+      className={clsx(
+        'border-ink-200 bg-canvas-0 relative overflow-hidden rounded-lg border'
+      )}
+    >
+      <div className={clsx('absolute inset-y-0 left-0 w-1', accentBar)} />
+      <Col className="gap-3 p-4 pl-5">
+        {/* Header: side + leverage badge, then PnL */}
+        <Row className="items-start justify-between gap-2">
+          <Col className="gap-0.5">
+            <Row className="items-center gap-2">
+              <span className={clsx('font-semibold capitalize', accentText)}>
+                {p.direction} {formatLeverage(p.leverage)}×
+              </span>
+            </Row>
+            <div className="text-ink-900 text-2xl font-bold tabular-nums">
+              {formatMoney(p.size)}
+              <span className="text-ink-400 ml-1.5 text-sm font-normal">
+                notional
+              </span>
+            </div>
+            <div className="text-ink-500 text-xs">
+              {formatMoney(p.originalCostBasis)} margin
+            </div>
+          </Col>
+          <Col className="items-end">
+            <div className="text-ink-400 text-xs">Unrealized PnL</div>
+            <div className={clsx('text-xl font-bold tabular-nums', pnlColor)}>
+              {pnl >= 0 ? '+' : ''}
+              {formatMoney(pnl)}
+            </div>
+            <div className={clsx('text-xs tabular-nums', pnlColor)}>
+              {pnl >= 0 ? '+' : ''}
+              {pnlPct.toFixed(2)}%
+            </div>
+          </Col>
+        </Row>
+
+        {/* Price stats grid */}
+        <div className="border-ink-200 grid grid-cols-3 gap-2 border-t pt-3 text-sm">
+          <PriceStat
+            label="Entry"
+            value={formatPrice(p.entryPrice, priceDecimals)}
+          />
+          <PriceStat
+            label="Mark"
+            value={formatPrice(markPrice, priceDecimals)}
+          />
+          <PriceStat
+            label="Liquidation"
+            value={formatPrice(p.liquidationPrice, priceDecimals)}
+            valueClass={liqDangerClass}
+            sublabel={
+              distToLiq > 0
+                ? `${(distToLiq * 100).toFixed(1)}% away`
+                : 'at risk'
+            }
+          />
+        </div>
+
+        <Button
+          color="gray-outline"
+          onClick={onClose}
+          loading={closing}
+          disabled={anyClosing}
+          size="md"
+          className="w-full"
+        >
+          Close position @ {formatPrice(markPrice, priceDecimals)}
+        </Button>
+      </Col>
+    </Col>
+  )
+}
+
+// Drop trailing zeros so whole leverages render as "100×" not "100.00×",
+// but fractional ones keep one decimal of precision (e.g. "1.5×").
+const formatLeverage = (leverage: number) => {
+  const rounded = Math.round(leverage * 10) / 10
+  return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)
+}
+
+const PriceStat = (props: {
+  label: string
+  value: string
+  valueClass?: string
+  sublabel?: string
+}) => (
+  <Col className="gap-0.5">
+    <div className="text-ink-500 text-xs">{props.label}</div>
+    <div
+      className={clsx(
+        'text-ink-900 font-mono font-semibold tabular-nums',
+        props.valueClass
+      )}
+    >
+      {props.value}
+    </div>
+    {props.sublabel && (
+      <div className="text-ink-400 text-xs">{props.sublabel}</div>
+    )}
+  </Col>
+)

@@ -10,6 +10,7 @@ import {
   getMidnightPacific,
   MS_PER_DAY,
 } from 'common/loans'
+import { Contract } from 'common/contract'
 import { MarginLoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
@@ -174,6 +175,8 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     if (!contract || contract.isResolved || contract.token !== 'MANA') {
       return false
     }
+    // Perps are inherently leveraged — exclude from the loans system.
+    if ((contract as Contract).mechanism === 'perp') return false
     // Apply market eligibility criteria for new loans
     return isMarketEligibleForLoan({
       visibility: contract.visibility,

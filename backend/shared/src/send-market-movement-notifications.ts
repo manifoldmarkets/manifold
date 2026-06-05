@@ -35,10 +35,13 @@ export async function sendMarketMovementNotifications(debug = false) {
   const nowStart = now - nowPeriodHoursAgoStart * HOUR_MS
   const nowEnd = now
   // const where = `where c.id = ANY(ARRAY[${TEST_CONTRACT_IDS}])`
+  // Perps use oracle-driven price movements which get their own notification
+  // path (update-perps + notifications/perps.ts); exclude from this job.
   const where = `
   where c.last_bet_time > now() - interval '${nowPeriodHoursAgoStart} hours'
   and c.resolution_time is null
-  and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'`
+  and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'
+  and coalesce(c.data->>'mechanism', '') <> 'perp'`
   const results = await pg.multi(
     `
     select ${contractColumnsToSelect} from contracts c ${where};
