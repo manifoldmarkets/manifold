@@ -23,7 +23,10 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
 
   const markets: SportsMarket[] = rows.map((r) => {
     const d = r.data
-    const closeTime: number = parseInt(d.closeTime ?? '0', 10)
+    // closeTime / resolutionTime are stored as numbers in contract.data, not
+    // strings — Number() preserves precision and avoids the string-coercion hop.
+    const closeTimeRaw = Number(d.closeTime ?? 0)
+    const closeTime: number = Number.isFinite(closeTimeRaw) ? closeTimeRaw : 0
     const resolution: string | null = d.resolution ?? null
 
     let resolvedAnswer: string | null = null
@@ -50,7 +53,10 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
       sportsStartTimestamp: (d.sportsStartTimestamp as string) ?? null,
       resolution,
       resolvedAnswer,
-      resolutionTime: d.resolutionTime ? parseInt(d.resolutionTime, 10) : null,
+      resolutionTime:
+        d.resolutionTime != null && Number.isFinite(Number(d.resolutionTime))
+          ? Number(d.resolutionTime)
+          : null,
       sportsHomeScore: d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
       sportsAwayScore: d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
       volume: d.volume ?? 0,

@@ -16,7 +16,8 @@ export async function resolveSportsMarkets() {
         : config.manifoldSportsUserId.prod
 
     if (creatorId.startsWith('TODO_')) {
-      throw new Error(`[sports-resolve] ${config.footballDataCode}: manifoldSportsUserId not configured`)
+      log.warn(`[sports-resolve] ${config.footballDataCode}: manifoldSportsUserId not configured — skipping`)
+      continue
     }
 
     try {
