@@ -115,14 +115,20 @@ export const selectSweepstakesWinners = async (
       throw new SweepstakesError(400, 'Winners have already been selected')
     }
 
+    // voided_at IS NULL excludes tickets that an admin refunded out of the
+    // pool (via admin-set-prize-eligibility with voidOutstandingTickets).
+    // The downstream canEnterPrizeDrawings filter still runs in JS so
+    // ineligible holders whose tickets weren't actively voided are also
+    // dropped — both gates compose.
     const tickets = await tx.manyOrNone<{
       id: string
       user_id: string
       num_tickets: string
     }>(
-      `SELECT id, user_id, num_tickets 
-       FROM sweepstakes_tickets 
-       WHERE sweepstakes_num = $1 
+      `SELECT id, user_id, num_tickets
+       FROM sweepstakes_tickets
+       WHERE sweepstakes_num = $1
+         AND voided_at IS NULL
        ORDER BY created_time ASC`,
       [sweepstakesNum]
     )

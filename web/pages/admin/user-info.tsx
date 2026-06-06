@@ -1202,6 +1202,8 @@ function PrizeEligibilitySection({
   const [selectedEligibility, setSelectedEligibility] = useState<
     'eligible' | 'ineligible' | null | undefined
   >(user.prizeEligibility)
+  const [voidTickets, setVoidTickets] = useState(false)
+  const [reason, setReason] = useState('')
 
   const eligibilityOptions = [
     {
@@ -1233,21 +1235,33 @@ function PrizeEligibilitySection({
     if ((selectedEligibility ?? null) === (user.prizeEligibility ?? null))
       return
 
+    const trimmedReason = reason.trim()
+    const shouldVoid =
+      voidTickets && selectedEligibility === 'ineligible'
+
     setIsUpdating(true)
     try {
-      await api('admin-set-prize-eligibility', {
+      const res = await api('admin-set-prize-eligibility', {
         userId: user.id,
         prizeEligibility: selectedEligibility,
+        ...(shouldVoid ? { voidOutstandingTickets: true } : {}),
+        ...(trimmedReason ? { reason: trimmedReason } : {}),
       })
+      const refundMsg =
+        res.voidedTicketCount > 0
+          ? ` Voided ${res.voidedTicketCount} ticket(s), refunded ${res.refundedManaTotal} mana.`
+          : ''
       toast.success(
-        selectedEligibility === null
+        (selectedEligibility === null
           ? 'Cleared prize override - follows bonus eligibility'
-          : `Prize eligibility updated to '${selectedEligibility}'`
+          : `Prize eligibility updated to '${selectedEligibility}'`) + refundMsg
       )
       onUpdate({
         ...user,
         prizeEligibility: selectedEligibility ?? undefined,
       })
+      setVoidTickets(false)
+      setReason('')
     } catch (error) {
       toast.error(
         'Failed to update: ' +
@@ -1299,6 +1313,37 @@ function PrizeEligibilitySection({
           </Row>
         </div>
 
+        {selectedEligibility === 'ineligible' && (
+          <div className="mt-2 space-y-2">
+            <div>
+              <label className="text-ink-700 mb-1 block text-sm font-medium">
+                Reason (optional, stamped onto voided ticket rows):
+              </label>
+              <input
+                type="text"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="e.g. under-18 (iDenfy ID-UA18)"
+                maxLength={500}
+                className="border-ink-200 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+            <label className="text-ink-700 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={voidTickets}
+                onChange={(e) => setVoidTickets(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                Void this user's outstanding tickets and refund the mana they
+                paid. Recommended for under-18 / wrongly-charged cases — they
+                bought entries they can't win.
+              </span>
+            </label>
+          </div>
+        )}
+
         {selectedEligibility !== undefined &&
           (selectedEligibility ?? null) !== (user.prizeEligibility ?? null) && (
             <Row className="mt-3 gap-2">
@@ -1312,7 +1357,11 @@ function PrizeEligibilitySection({
                 Update Eligibility
               </Button>
               <Button
-                onClick={() => setSelectedEligibility(user.prizeEligibility)}
+                onClick={() => {
+                  setSelectedEligibility(user.prizeEligibility)
+                  setVoidTickets(false)
+                  setReason('')
+                }}
                 disabled={isUpdating}
                 color="gray-outline"
                 size="sm"

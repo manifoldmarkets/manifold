@@ -69,6 +69,7 @@ type AnyTxnType =
   | ContractBoostPurchase
   | CharityGiveawayTicket
   | SweepstakesTicket
+  | SweepstakesTicketRefund
   | ShopPurchase
   | ShopRefund
   | MembershipPayment
@@ -712,6 +713,22 @@ type SweepstakesTicket = {
   }
 }
 
+// Bank-to-user reversal of a SWEEPSTAKES_TICKET when an admin voids the
+// ticket (e.g. flagging the buyer prize-ineligible with voidOutstandingTickets).
+// Refunds the mana the user paid, not USD — the prize pool is paid out in
+// USDC but entries are bought with mana, and mana is what got debited.
+type SweepstakesTicketRefund = {
+  category: 'SWEEPSTAKES_TICKET_REFUND'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    sweepstakesNum: number
+    ticketId: string
+    voidedReason: string
+  }
+}
+
 type ShopPurchase = {
   category: 'SHOP_PURCHASE'
   fromType: 'USER'
@@ -801,6 +818,7 @@ export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
 export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
 export type SweepstakesTicketTxn = Txn & SweepstakesTicket
+export type SweepstakesTicketRefundTxn = Txn & SweepstakesTicketRefund
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type MembershipPaymentTxn = Txn & MembershipPayment
 export type PreKycBonusTxn = Txn & PreKycBonus

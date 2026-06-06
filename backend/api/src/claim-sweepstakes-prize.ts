@@ -52,13 +52,15 @@ export const claimSweepstakesPrize: APIHandler<
       )
     }
 
-    // Check if user is a winner and get their rank
+    // Check if user is a winner and get their rank. voided_at IS NULL closes
+    // the race where a winning ticket is admin-voided after winners are
+    // selected but before the user submits this claim.
     const winningTicket = await tx.oneOrNone<{
       id: string
       user_id: string
     }>(
       `SELECT id, user_id FROM sweepstakes_tickets
-         WHERE id = ANY($1) AND user_id = $2`,
+         WHERE id = ANY($1) AND user_id = $2 AND voided_at IS NULL`,
       [sweepstakes.winning_ticket_ids, auth.uid]
     )
 
