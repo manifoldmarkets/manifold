@@ -35,6 +35,10 @@ export const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  'ws/bet_broadcasts_coalesced': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'http/request_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
