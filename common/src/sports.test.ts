@@ -1,4 +1,13 @@
-import { pickSportsWinningAnswer } from './sports'
+import {
+  pickSportsWinningAnswer,
+  buildMarketParams,
+  buildDescription,
+  stageLabel,
+  computeCloseTime,
+  flagEmoji,
+  FDMatch,
+  TournamentConfig,
+} from './sports'
 
 describe('pickSportsWinningAnswer', () => {
   // Knockout match — answers carry bare team names, no Draw answer.
@@ -173,5 +182,175 @@ describe('pickSportsWinningAnswer', () => {
       []
     )
     expect(result).toBeNull()
+  })
+})
+
+// ─── Market-shape builders ──────────────────────────────────────────────────────
+// These lock the exact shape of every auto-created sports market (question,
+// answers, tiers, groups, close time). The cron and the admin "Create markets"
+// button both feed buildMarketParams' output into getNewContract, so this is the
+// parity surface for what a created market looks like.
+
+function makeMatch(overrides: Partial<FDMatch> = {}): FDMatch {
+  return {
+    id: 537,
+    utcDate: '2026-06-15T19:00:00Z',
+    status: 'SCHEDULED',
+    matchday: 1,
+    stage: 'GROUP_STAGE',
+    group: 'GROUP_A',
+    homeTeam: {
+      id: 1, name: 'Brazil', shortName: 'Brazil', tla: 'BRA',
+      crest: 'https://x/bra.png', area: { code: 'BRA' },
+    },
+    awayTeam: {
+      id: 2, name: 'Argentina', shortName: 'Argentina', tla: 'ARG',
+      crest: 'https://x/arg.png', area: { code: 'ARG' },
+    },
+    score: {
+      winner: null, duration: 'REGULAR',
+      fullTime: { home: null, away: null }, halfTime: { home: null, away: null },
+    },
+    ...overrides,
+  }
+}
+
+// additionalGroupIds empty for both envs → groupIds are deterministic regardless
+// of the ENV the test runs under.
+function makeConfig(overrides: Partial<TournamentConfig> = {}): TournamentConfig {
+  return {
+    name: 'Test Tournament 2026',
+    shortLabel: "Test '26",
+    footballDataCode: 'TEST',
+    sportsLeague: 'Test League',
+    startDate: '2026-06-01',
+    endDate: '2026-07-01',
+    hasGroupStageDraws: true,
+    officialGroupSlug: 'off',
+    officialGroupName: 'Off',
+    communityGroupSlug: 'comm',
+    communityDashboardSlug: 'comm-dash',
+    dashboardPath: '/sports/test',
+    additionalGroupIds: { dev: [], prod: [] },
+    manifoldSportsUserId: { dev: 'd', prod: 'p' },
+    closeTimeOffsetMs: 2.5 * 60 * 60 * 1000,
+    stageLiquidityTiers: { GROUP_STAGE: 1_000, ROUND_OF_16: 10_000, FINAL: 10_000 },
+    ...overrides,
+  }
+}
+
+const BR = flagEmoji('BR')
+const AR = flagEmoji('AR')
+
+describe('flagEmoji', () => {
+  it('maps a 2-letter ISO code to two regional-indicator codepoints', () => {
+    expect(flagEmoji('BR')).toBe(String.fromCodePoint(0x1f1e7, 0x1f1f7))
+    expect([...flagEmoji('BR')]).toHaveLength(2)
+  })
+  it('is case-insensitive', () => {
+    expect(flagEmoji('br')).toBe(flagEmoji('BR'))
+  })
+  it('returns empty string for invalid input', () => {
+    expect(flagEmoji('X')).toBe('')
+    expect(flagEmoji('USA')).toBe('')
+    expect(flagEmoji('')).toBe('')
+  })
+})
+
+describe('stageLabel', () => {
+  it('formats group stage from the group code', () => {
+    expect(stageLabel(makeMatch({ stage: 'GROUP_STAGE', group: 'GROUP_C' }))).toBe('Group C')
+  })
+  it('abbreviates knockout stages', () => {
+    expect(stageLabel(makeMatch({ stage: 'ROUND_OF_16' }))).toBe('R16')
+    expect(stageLabel(makeMatch({ stage: 'FINAL' }))).toBe('Final')
+  })
+  it('uses matchday for regular season / league phase', () => {
+    expect(stageLabel(makeMatch({ stage: 'REGULAR_SEASON', matchday: 5 }))).toBe('MD 5')
+    expect(stageLabel(makeMatch({ stage: 'LEAGUE_PHASE', matchday: 8 }))).toBe('MD 8')
+  })
+})
+
+describe('computeCloseTime', () => {
+  it('is kickoff plus the configured offset', () => {
+    const match = makeMatch({ utcDate: '2026-06-15T19:00:00Z' })
+    expect(computeCloseTime(match, makeConfig())).toBe(
+      new Date('2026-06-15T19:00:00Z').getTime() + 2.5 * 60 * 60 * 1000
+    )
+  })
+})
+
+describe('buildMarketParams', () => {
+  it('builds an international group market (flag + TLA, with Draw, no crests)', () => {
+    const params = buildMarketParams(makeMatch(), makeConfig(), 'grp-official')
+    expect(params.question).toBe(`${BR}BRA vs ${AR}ARG [Test '26]`)
+    expect(params.answers).toEqual([`${BR} Brazil`, `${AR} Argentina`, 'Draw'])
+    expect(params.answerShortTexts).toEqual([`${BR}BRA`, `${AR}ARG`, 'Draw'])
+    // group stage → no advancing team → crests omitted
+    expect(params.answerImageUrls).toEqual([])
+    expect(params.sportsEventId).toBe('fd-537')
+    expect(params.sportsLeague).toBe('Test League')
+    expect(params.liquidityTier).toBe(1_000)
+    expect(params.groupIds).toEqual(['grp-official'])
+    expect(params.closeTime).toBe(
+      new Date('2026-06-15T19:00:00Z').getTime() + 2.5 * 60 * 60 * 1000
+    )
+  })
+
+  it('builds an international knockout market (no Draw, crests as images, knockout tier)', () => {
+    const params = buildMarketParams(
+      makeMatch({ stage: 'ROUND_OF_16', group: null }),
+      makeConfig(),
+      'g'
+    )
+    expect(params.answers).toEqual([`${BR} Brazil`, `${AR} Argentina`])
+    expect(params.answerShortTexts).toEqual([`${BR}BRA`, `${AR}ARG`])
+    expect(params.answerImageUrls).toEqual(['https://x/bra.png', 'https://x/arg.png'])
+    expect(params.liquidityTier).toBe(10_000)
+  })
+
+  it('builds a club market with bare names (useTeamNames) — shortName in question/shortTexts', () => {
+    const config = makeConfig({ useTeamNames: true })
+    const match = makeMatch({
+      homeTeam: { id: 1, name: 'Arsenal FC', shortName: 'Arsenal', tla: 'ARS', crest: '', area: { code: 'ENG' } },
+      awayTeam: { id: 2, name: 'Chelsea FC', shortName: 'Chelsea', tla: 'CHE', crest: '', area: { code: 'ENG' } },
+    })
+    const params = buildMarketParams(match, config, 'g')
+    expect(params.question).toBe("Arsenal vs Chelsea [Test '26]")
+    expect(params.answers).toEqual(['Arsenal FC', 'Chelsea FC', 'Draw'])
+    expect(params.answerShortTexts).toEqual(['Arsenal', 'Chelsea', 'Draw'])
+  })
+
+  it('omits images on a knockout when any crest is missing', () => {
+    const match = makeMatch({
+      stage: 'FINAL',
+      group: null,
+      homeTeam: { id: 1, name: 'Brazil', shortName: 'Brazil', tla: 'BRA', crest: '', area: { code: 'BRA' } },
+    })
+    expect(buildMarketParams(match, makeConfig(), 'g').answerImageUrls).toEqual([])
+  })
+})
+
+describe('buildDescription', () => {
+  it('uses the draw-eligible resolve line for group stage and extracts the dashboard path', () => {
+    const desc = buildDescription(makeMatch({ stage: 'GROUP_STAGE' }), makeConfig(), {
+      dashboardUrl: 'https://manifold.markets/sports/test?ref=x',
+    })
+    expect(desc).toContain('Brazil vs Argentina')
+    expect(desc).toContain('Resolves to the winning team or draw')
+    // absolute URL reduced to a path so the link works on any origin
+    expect(desc).toContain('[Visit the Test Tournament 2026 Dashboard](/sports/test?ref=x)')
+  })
+
+  it('uses the advancing-team resolve line for knockout stages', () => {
+    const desc = buildDescription(makeMatch({ stage: 'FINAL', group: null }), makeConfig())
+    expect(desc).toContain('Resolves to the advancing team')
+  })
+
+  it('substitutes custom-note tokens', () => {
+    const desc = buildDescription(makeMatch(), makeConfig(), {
+      customNote: '{team1} vs {team2} — {stage}',
+    })
+    expect(desc).toContain('Brazil vs Argentina — Group A')
   })
 })

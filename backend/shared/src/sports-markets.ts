@@ -20,6 +20,12 @@ import { answerToRow } from 'shared/supabase/answers'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
+import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { parseMentions, richTextToString } from 'common/util/parse'
+import { User } from 'common/user'
+import { JSONContent } from '@tiptap/core'
 import { getNewContract } from 'common/new-contract'
 import { getAnte } from 'common/economy'
 import { slugify } from 'common/util/slugify'
@@ -34,56 +40,42 @@ import {
   PREMIER_LEAGUE_2526,
   TEST_TOURNAMENT_2026,
   pickSportsWinningAnswer,
+  FDMatch,
+  MarketCreateParams,
+  sportsEventId,
+  buildMarketParams,
+  buildDescription,
+  stageLabel,
+  stageLiquidityForMatch,
+  computeCloseTime,
+  teamFlagFromArea,
+  flagEmoji,
 } from 'common/sports'
 
-export type { LiquidityTierValue, StageLiquidityTiers, TournamentConfig }
+// Pure config + market-shape builders now live in common/sports.ts (testable
+// without the backend); re-exported here so existing `shared/sports-markets`
+// importers (admin handlers, etc.) keep working unchanged.
+export type {
+  LiquidityTierValue,
+  StageLiquidityTiers,
+  TournamentConfig,
+  FDMatch,
+  MarketCreateParams,
+}
 export {
   TOURNAMENT_CONFIGS,
   WORLD_CUP_2026,
   CHAMPIONS_LEAGUE_2026,
   PREMIER_LEAGUE_2526,
   TEST_TOURNAMENT_2026,
-}
-
-// football-data.org v4 match shape (subset used here)
-export interface FDMatch {
-  id: number
-  utcDate: string
-  status:
-    | 'SCHEDULED'
-    | 'TIMED'
-    | 'IN_PLAY'
-    | 'PAUSED'
-    | 'FINISHED'
-    | 'SUSPENDED'
-    | 'POSTPONED'
-    | 'CANCELLED'
-    | 'AWARDED'
-  matchday: number | null
-  stage: string
-  group: string | null
-  homeTeam: {
-    id: number
-    name: string
-    shortName: string
-    tla: string
-    crest: string
-    area?: { code: string }
-  }
-  awayTeam: {
-    id: number
-    name: string
-    shortName: string
-    tla: string
-    crest: string
-    area?: { code: string }
-  }
-  score: {
-    winner: 'HOME_TEAM' | 'AWAY_TEAM' | 'DRAW' | null
-    duration: 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT'
-    fullTime: { home: number | null; away: number | null }
-    halfTime: { home: number | null; away: number | null }
-  }
+  buildMarketParams,
+  buildDescription,
+  stageLabel,
+  stageLiquidityForMatch,
+  computeCloseTime,
+  teamFlagFromArea,
+  flagEmoji,
+  sportsEventId as matchSportsEventId,
 }
 
 export interface ResolveLogEntry {
@@ -234,154 +226,72 @@ export async function ensureCommunityAssets(
   return { groupId, groupCreated, dashboardId, dashboardCreated }
 }
 
-// ─── Flag / display helpers ───────────────────────────────────────────────────
-
-// Maps football-data.org area codes / TLAs that differ from ISO 3166-1 alpha-2
-const FD_CODE_TO_ISO2: Record<string, string> = {
-  // UK nations
-  ENG: 'GB', SCO: 'GB', WAL: 'GB', NIR: 'GB',
-  // TLA → ISO2 for all 48 WC 2026 teams + common extras
-  MEX: 'MX', USA: 'US', CAN: 'CA', BRA: 'BR', ARG: 'AR', FRA: 'FR',
-  ESP: 'ES', GER: 'DE', POR: 'PT', NED: 'NL', BEL: 'BE', ITA: 'IT',
-  URU: 'UY', COL: 'CO', CHI: 'CL', ECU: 'EC', PER: 'PE', VEN: 'VE',
-  PAR: 'PY', BOL: 'BO', JAM: 'JM', PAN: 'PA', CRC: 'CR', HON: 'HN',
-  SLV: 'SV', GTM: 'GT', CUB: 'CU', TRI: 'TT', HAI: 'HT',
-  MAR: 'MA', SEN: 'SN', NGA: 'NG', CMR: 'CM', CIV: 'CI', GHA: 'GH',
-  EGY: 'EG', TUN: 'TN', ALG: 'DZ', MLI: 'ML', RSA: 'ZA', COD: 'CD',
-  JPN: 'JP', KOR: 'KR', AUS: 'AU', IRN: 'IR', SAU: 'SA', QAT: 'QA',
-  UAE: 'AE', IDN: 'ID', UZB: 'UZ', CHN: 'CN', IND: 'IN', THA: 'TH',
-  KSA: 'SA', KUW: 'KW', IRQ: 'IQ', JOR: 'JO', LBN: 'LB', SYR: 'SY',
-  CRO: 'HR', SRB: 'RS', SVK: 'SK', SVN: 'SI', HUN: 'HU', ROU: 'RO',
-  GRE: 'GR', TUR: 'TR', UKR: 'UA', POL: 'PL', CZE: 'CZ', AUT: 'AT',
-  SWE: 'SE', NOR: 'NO', DEN: 'DK', SUI: 'CH', SCT: 'GB', FIN: 'FI',
-  BIH: 'BA', MKD: 'MK', ALB: 'AL', ISL: 'IS', IRL: 'IE',
-  CPV: 'CV', CUR: 'CW',
-}
-
-export function flagEmoji(iso2: string): string {
-  if (!iso2 || iso2.length !== 2) return ''
-  return [...iso2.toUpperCase()]
-    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-    .join('')
-}
-
-export function teamFlagFromArea(areaCode: string): string {
-  const iso2 = FD_CODE_TO_ISO2[areaCode] ?? areaCode
-  return flagEmoji(iso2)
-}
-
-function teamFlag(team: FDMatch['homeTeam']): string {
-  return teamFlagFromArea(team.area?.code ?? team.tla ?? '')
-}
-
-export function stageLabel(match: FDMatch): string {
-  switch (match.stage) {
-    case 'REGULAR_SEASON':
-      return match.matchday != null ? `MD ${match.matchday}` : 'Regular Season'
-    case 'GROUP_STAGE':
-      return (match.group ?? 'Group Stage').replace(/^GROUP_/, 'Group ')
-    case 'LEAGUE_PHASE':
-      return match.matchday != null ? `MD ${match.matchday}` : 'League Phase'
-    case 'ROUND_OF_16':
-      return 'R16'
-    case 'QUARTER_FINALS':
-      return 'QF'
-    case 'SEMI_FINALS':
-      return 'SF'
-    case 'THIRD_PLACE':
-      return 'Third Place'
-    case 'FINAL':
-      return 'Final'
-    default:
-      return match.stage
-  }
-}
-
-export function stageLiquidityForMatch(
-  match: FDMatch,
-  config: TournamentConfig,
-  overrides?: Partial<StageLiquidityTiers>
-): LiquidityTierValue {
-  const tiers = { ...config.stageLiquidityTiers, ...overrides }
-  return (
-    (tiers as Record<string, LiquidityTierValue | undefined>)[match.stage] ??
-    tiers.LEAGUE_PHASE ??
-    tiers.GROUP_STAGE ??
-    1_000
-  )
-}
-
-export function computeCloseTime(match: FDMatch, config: TournamentConfig): number {
-  return new Date(match.utcDate).getTime() + config.closeTimeOffsetMs
-}
-
-function isKnockoutStage(stage: string): boolean {
-  return ['ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'].includes(stage)
-}
-
-function sportsEventId(match: FDMatch): string {
-  return `fd-${match.id}`
-}
-
-export { sportsEventId as matchSportsEventId }
-
-// ─── Description builder ─────────────────────────────────────────────────────
-
-const RESOLUTION_NOTE =
-  'This market resolves automatically after the match concludes based on official results.'
-
-export function buildDescription(
-  match: FDMatch,
-  config: TournamentConfig,
-  opts: { customNote?: string; dashboardUrl?: string } = {}
-): string {
-  const { homeTeam, awayTeam, utcDate, stage } = match
-  const knockout = isKnockoutStage(stage)
-  const dateStr = new Date(utcDate).toUTCString().replace(' GMT', ' UTC')
-  const stageName = stageLabel(match)
-
-  const matchLine = `**${homeTeam.name} vs ${awayTeam.name} · ${stageName} · Kickoff ${dateStr}**`
-  const resolveLine = knockout
-    ? `*Resolves to the advancing team*`
-    : `*Resolves to the winning team or draw (90 min regulation)*`
-
-  const parts = [matchLine, resolveLine]
-  if (opts.customNote?.trim()) {
-    const substituted = opts.customNote.trim()
-      .replace(/{team1}/g, homeTeam.name)
-      .replace(/{team2}/g, awayTeam.name)
-      .replace(/{kickoff}/g, dateStr)
-      .replace(/{stage}/g, stageName)
-      .replace(/{dashboard_url}/g, opts.dashboardUrl ?? '')
-    parts.push(substituted)
-  }
-  parts.push(RESOLUTION_NOTE)
-  if (opts.dashboardUrl) {
-    let href = opts.dashboardUrl.trim()
-    try {
-      // Extract just the path so the link works on both localhost and prod
-      const u = new URL(
-        href.startsWith('/') || href.startsWith('http') ? href : `https://${href}`
-      )
-      href = u.pathname + u.search + u.hash
-    } catch {
-      if (!href.startsWith('/')) href = `/${href}`
-    }
-    parts.push(`[Visit the ${config.name} Dashboard](${href})`)
-  }
-  parts.push('Created and managed by [@ManifoldSports](/ManifoldSports)')
-
-  return parts.join('\n\n\n')
-}
-
 // ─── Football-data.org API ────────────────────────────────────────────────────
+
+// football-data.org communicates its rate limit through response headers, not a
+// fixed quota — per their explicit guidance to API clients, we read those headers
+// after every call and self-throttle so we never trip the limiter. State is
+// module-level so the budget is shared across every fdFetch in the process: the
+// create/resolve jobs and any future live poller all draw from the same counter.
+let fdRequestsAvailable: number | null = null
+let fdResetSeconds: number | null = null
+
+// Reads a numeric header, tolerating football-data's spelling variants across
+// API versions (e.g. X-Requests-Available vs X-RequestsAvailable). Header lookup
+// is case-insensitive but hyphen-sensitive, so we try each known form.
+function fdNumericHeader(headers: Headers, names: string[]): number | null {
+  for (const name of names) {
+    const raw = headers.get(name)
+    if (raw !== null && raw !== '') {
+      const n = Number(raw)
+      if (Number.isFinite(n)) return n
+    }
+  }
+  return null
+}
+
+function recordFdThrottle(headers: Headers) {
+  fdRequestsAvailable = fdNumericHeader(headers, [
+    'X-Requests-Available',
+    'X-RequestsAvailable',
+    'X-Requests-Available-Minute',
+  ])
+  fdResetSeconds = fdNumericHeader(headers, [
+    'X-RequestCounter-Reset',
+    'X-RequestCounterReset',
+  ])
+}
 
 async function fdFetch<T>(path: string, apiKey: string): Promise<T> {
   // Read at call time so FOOTBALL_DATA_BASE_URL can be set after module load (e.g. test scripts)
   const base = process.env.FOOTBALL_DATA_BASE_URL ?? 'https://api.football-data.org'
-  const res = await fetch(`${base}${path}`, {
-    headers: { 'X-Auth-Token': apiKey, connection: 'close' },
-  })
+
+  // Proactive throttle: if the previous response reported the budget is spent,
+  // wait for the counter to reset before issuing another request.
+  if (fdRequestsAvailable !== null && fdRequestsAvailable <= 0) {
+    await sleep(((fdResetSeconds ?? 60) + 1) * 1000)
+    fdRequestsAvailable = null
+    fdResetSeconds = null
+  }
+
+  const doFetch = () =>
+    fetch(`${base}${path}`, {
+      headers: { 'X-Auth-Token': apiKey, connection: 'close' },
+    })
+
+  let res = await doFetch()
+  recordFdThrottle(res.headers)
+
+  // Reactive throttle: a 429 means we got ahead of the limiter anyway — wait the
+  // advertised window (Retry-After, else the reset counter) and retry once.
+  if (res.status === 429) {
+    const waitSeconds =
+      fdNumericHeader(res.headers, ['Retry-After']) ?? fdResetSeconds ?? 60
+    await sleep((waitSeconds + 1) * 1000)
+    res = await doFetch()
+    recordFdThrottle(res.headers)
+  }
+
   if (!res.ok) {
     throw new Error(
       `football-data.org ${path} → ${res.status} ${res.statusText}`
@@ -426,87 +336,6 @@ export async function fetchSingleMatch(
     apiKey
   )
   return data.match
-}
-
-// ─── Market creation ──────────────────────────────────────────────────────────
-
-export interface MarketCreateParams {
-  question: string
-  descriptionMarkdown: string
-  answers: string[]
-  answerShortTexts: string[]
-  answerImageUrls: string[]
-  closeTime: number
-  sportsStartTimestamp: string
-  sportsEventId: string
-  sportsLeague: string
-  groupIds: string[]
-  liquidityTier: LiquidityTierValue
-}
-
-export function buildMarketParams(
-  match: FDMatch,
-  config: TournamentConfig,
-  officialGroupId: string,
-  opts: {
-    customNote?: string
-    dashboardUrl?: string
-    liquidityTierOverrides?: Partial<StageLiquidityTiers>
-  } = {}
-): MarketCreateParams {
-  const home = match.homeTeam
-  const away = match.awayTeam
-  const knockout = isKnockoutStage(match.stage)
-  const stage = stageLabel(match)
-
-  let question: string
-  let answers: string[]
-  let answerShortTexts: string[]
-
-  if (config.useTeamNames) {
-    // Club tournaments (e.g. CL): use shortName, no flag emoji
-    const homeName = home.shortName || home.name
-    const awayName = away.shortName || away.name
-    question = `${homeName} vs ${awayName} [${config.shortLabel}]`
-    answers = knockout
-      ? [home.name, away.name]
-      : [home.name, away.name, 'Draw']
-    answerShortTexts = knockout
-      ? [homeName, awayName]
-      : [homeName, awayName, 'Draw']
-  } else {
-    // International tournaments (e.g. WC): use flag + TLA
-    const homeFlag = teamFlag(home)
-    const awayFlag = teamFlag(away)
-    question = `${homeFlag}${home.tla} vs ${awayFlag}${away.tla} [${config.shortLabel}]`
-    answers = knockout
-      ? [`${homeFlag} ${home.name}`, `${awayFlag} ${away.name}`]
-      : [`${homeFlag} ${home.name}`, `${awayFlag} ${away.name}`, 'Draw']
-    answerShortTexts = knockout
-      ? [`${homeFlag}${home.tla}`, `${awayFlag}${away.tla}`]
-      : [`${homeFlag}${home.tla}`, `${awayFlag}${away.tla}`, 'Draw']
-  }
-
-  const crests = [home.crest, away.crest]
-  const answerImageUrls =
-    knockout && crests.every((u) => u && u.length > 0) ? crests : []
-
-  const additionalIds =
-    ENV === 'DEV' ? config.additionalGroupIds.dev : config.additionalGroupIds.prod
-
-  return {
-    question,
-    descriptionMarkdown: buildDescription(match, config, opts),
-    answers,
-    answerShortTexts,
-    answerImageUrls,
-    closeTime: computeCloseTime(match, config),
-    sportsStartTimestamp: match.utcDate,
-    sportsEventId: sportsEventId(match),
-    sportsLeague: config.sportsLeague,
-    groupIds: [officialGroupId, ...additionalIds],
-    liquidityTier: stageLiquidityForMatch(match, config, opts.liquidityTierOverrides),
-  }
 }
 
 // ─── Resolution ───────────────────────────────────────────────────────────────
@@ -683,10 +512,78 @@ function isoDateStr(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
+/**
+ * Post-creation side-effects, mirroring api/helpers/on-create-market.ts for the
+ * cron path. onCreateMarket itself can't be imported here (it lives in
+ * backend/api, which the scheduler can't depend on), so we replicate the steps
+ * that matter for an auto-created sports market using shared-layer primitives.
+ *
+ * Deliberate deviations from onCreateMarket:
+ * - `notifyFollowers` defaults to false. A faithful mirror would notify every
+ *   follower of @ManifoldSports on every market — but the daily cron creates up
+ *   to ~64 at once, which would storm followers. The admin "Create markets"
+ *   button (which routes through createMarketHelper) still notifies, so a human
+ *   batch is deliberate while the cron batch is silent.
+ * - The non-predictive / unranked-group check is skipped: sports markets are
+ *   always predictive, so isContractNonPredictive would never fire.
+ */
+export async function runSportsMarketPostCreate(
+  pg: SupabaseDirectClient,
+  contract: CPMMMultiContract,
+  creator: User,
+  opts: { notifyFollowers?: boolean } = {}
+): Promise<void> {
+  const eventId = contract.id + '-on-create'
+
+  // Quest progress — a no-op for the bot account, kept for parity.
+  await completeCalculatedQuestFromTrigger(
+    creator,
+    'MARKETS_CREATED',
+    eventId,
+    contract.id
+  )
+
+  // Creator follows its own market so resolution updates reach it (replicates
+  // followContractInternal, which lives in backend/api).
+  await pg.none(
+    `insert into contract_follows (contract_id, follow_id)
+     values ($1, $2)
+     on conflict (contract_id, follow_id) do nothing`,
+    [contract.id, creator.id]
+  )
+
+  if (opts.notifyFollowers) {
+    const desc = contract.description as JSONContent
+    await createNewContractNotification(
+      creator,
+      contract,
+      eventId,
+      richTextToString(desc),
+      parseMentions(desc)
+    )
+  }
+
+  // Refresh group embeddings for discoverability (public markets only) — the
+  // markets were already tagged into their groups by the caller.
+  if (contract.visibility === 'public') {
+    const groupIds = await pg.map(
+      `select group_id from group_contracts where contract_id = $1`,
+      [contract.id],
+      (r) => r.group_id as string
+    )
+    await Promise.all(groupIds.map((gId) => upsertGroupEmbedding(pg, gId)))
+  }
+}
+
 export async function createTournamentMarkets(
   config: TournamentConfig,
   apiKey: string,
-  opts: { daysAhead?: number; dryRun?: boolean; dashboardUrl?: string } = {}
+  opts: {
+    daysAhead?: number
+    dryRun?: boolean
+    dashboardUrl?: string
+    notifyFollowers?: boolean
+  } = {}
 ): Promise<{ created: number; skipped: number; errors: number; log: CreateLogEntry[] }> {
   const { daysAhead = 7, dryRun = false, dashboardUrl } = opts
   const pg = createSupabaseDirectClient()
@@ -855,6 +752,14 @@ export async function createTournamentMarkets(
       // Generate feed embeddings so the market shows up in personalized feeds
       // and the related-markets cache. Non-fatal if it fails.
       await generateContractEmbeddings(result, pg).catch(() => undefined)
+
+      // Mirror the canonical create-market side-effects (follow, quest, group
+      // embeddings; follower notifications stay off for the batch cron). The
+      // market already exists at this point, so these are best-effort and
+      // non-fatal — same treatment as the embeddings call above.
+      await runSportsMarketPostCreate(pg, result, creatorUser, {
+        notifyFollowers: opts.notifyFollowers ?? false,
+      }).catch(() => undefined)
 
       created++
       log.push({ question: params.question, result: result.id, status: 'created' })

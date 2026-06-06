@@ -230,3 +230,266 @@ export const TOURNAMENT_CONFIGS: Record<string, TournamentConfig> = {
   WC: WORLD_CUP_2026,
   ...(ENV === 'DEV' ? { TEST: TEST_TOURNAMENT_2026 } : {}),
 }
+
+// ─── football-data.org match shape ─────────────────────────────────────────────
+
+// football-data.org v4 match shape (subset used here)
+export interface FDMatch {
+  id: number
+  utcDate: string
+  status:
+    | 'SCHEDULED'
+    | 'TIMED'
+    | 'IN_PLAY'
+    | 'PAUSED'
+    | 'FINISHED'
+    | 'SUSPENDED'
+    | 'POSTPONED'
+    | 'CANCELLED'
+    | 'AWARDED'
+  matchday: number | null
+  stage: string
+  group: string | null
+  homeTeam: {
+    id: number
+    name: string
+    shortName: string
+    tla: string
+    crest: string
+    area?: { code: string }
+  }
+  awayTeam: {
+    id: number
+    name: string
+    shortName: string
+    tla: string
+    crest: string
+    area?: { code: string }
+  }
+  score: {
+    winner: 'HOME_TEAM' | 'AWAY_TEAM' | 'DRAW' | null
+    duration: 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT'
+    fullTime: { home: number | null; away: number | null }
+    halfTime: { home: number | null; away: number | null }
+  }
+}
+
+// ─── Flag / display helpers ───────────────────────────────────────────────────
+
+// Maps football-data.org area codes / TLAs that differ from ISO 3166-1 alpha-2
+const FD_CODE_TO_ISO2: Record<string, string> = {
+  // UK nations
+  ENG: 'GB', SCO: 'GB', WAL: 'GB', NIR: 'GB',
+  // TLA → ISO2 for all 48 WC 2026 teams + common extras
+  MEX: 'MX', USA: 'US', CAN: 'CA', BRA: 'BR', ARG: 'AR', FRA: 'FR',
+  ESP: 'ES', GER: 'DE', POR: 'PT', NED: 'NL', BEL: 'BE', ITA: 'IT',
+  URU: 'UY', COL: 'CO', CHI: 'CL', ECU: 'EC', PER: 'PE', VEN: 'VE',
+  PAR: 'PY', BOL: 'BO', JAM: 'JM', PAN: 'PA', CRC: 'CR', HON: 'HN',
+  SLV: 'SV', GTM: 'GT', CUB: 'CU', TRI: 'TT', HAI: 'HT',
+  MAR: 'MA', SEN: 'SN', NGA: 'NG', CMR: 'CM', CIV: 'CI', GHA: 'GH',
+  EGY: 'EG', TUN: 'TN', ALG: 'DZ', MLI: 'ML', RSA: 'ZA', COD: 'CD',
+  JPN: 'JP', KOR: 'KR', AUS: 'AU', IRN: 'IR', SAU: 'SA', QAT: 'QA',
+  UAE: 'AE', IDN: 'ID', UZB: 'UZ', CHN: 'CN', IND: 'IN', THA: 'TH',
+  KSA: 'SA', KUW: 'KW', IRQ: 'IQ', JOR: 'JO', LBN: 'LB', SYR: 'SY',
+  CRO: 'HR', SRB: 'RS', SVK: 'SK', SVN: 'SI', HUN: 'HU', ROU: 'RO',
+  GRE: 'GR', TUR: 'TR', UKR: 'UA', POL: 'PL', CZE: 'CZ', AUT: 'AT',
+  SWE: 'SE', NOR: 'NO', DEN: 'DK', SUI: 'CH', SCT: 'GB', FIN: 'FI',
+  BIH: 'BA', MKD: 'MK', ALB: 'AL', ISL: 'IS', IRL: 'IE',
+  CPV: 'CV', CUR: 'CW',
+}
+
+export function flagEmoji(iso2: string): string {
+  if (!iso2 || iso2.length !== 2) return ''
+  return [...iso2.toUpperCase()]
+    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+    .join('')
+}
+
+export function teamFlagFromArea(areaCode: string): string {
+  const iso2 = FD_CODE_TO_ISO2[areaCode] ?? areaCode
+  return flagEmoji(iso2)
+}
+
+function teamFlag(team: FDMatch['homeTeam']): string {
+  return teamFlagFromArea(team.area?.code ?? team.tla ?? '')
+}
+
+export function stageLabel(match: FDMatch): string {
+  switch (match.stage) {
+    case 'REGULAR_SEASON':
+      return match.matchday != null ? `MD ${match.matchday}` : 'Regular Season'
+    case 'GROUP_STAGE':
+      return (match.group ?? 'Group Stage').replace(/^GROUP_/, 'Group ')
+    case 'LEAGUE_PHASE':
+      return match.matchday != null ? `MD ${match.matchday}` : 'League Phase'
+    case 'ROUND_OF_16':
+      return 'R16'
+    case 'QUARTER_FINALS':
+      return 'QF'
+    case 'SEMI_FINALS':
+      return 'SF'
+    case 'THIRD_PLACE':
+      return 'Third Place'
+    case 'FINAL':
+      return 'Final'
+    default:
+      return match.stage
+  }
+}
+
+export function stageLiquidityForMatch(
+  match: FDMatch,
+  config: TournamentConfig,
+  overrides?: Partial<StageLiquidityTiers>
+): LiquidityTierValue {
+  const tiers = { ...config.stageLiquidityTiers, ...overrides }
+  return (
+    (tiers as Record<string, LiquidityTierValue | undefined>)[match.stage] ??
+    tiers.LEAGUE_PHASE ??
+    tiers.GROUP_STAGE ??
+    1_000
+  )
+}
+
+export function computeCloseTime(match: FDMatch, config: TournamentConfig): number {
+  return new Date(match.utcDate).getTime() + config.closeTimeOffsetMs
+}
+
+function isKnockoutStage(stage: string): boolean {
+  return ['ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'].includes(stage)
+}
+
+export function sportsEventId(match: FDMatch): string {
+  return `fd-${match.id}`
+}
+
+export { sportsEventId as matchSportsEventId }
+
+// ─── Description builder ─────────────────────────────────────────────────────
+
+const RESOLUTION_NOTE =
+  'This market resolves automatically after the match concludes based on official results.'
+
+export function buildDescription(
+  match: FDMatch,
+  config: TournamentConfig,
+  opts: { customNote?: string; dashboardUrl?: string } = {}
+): string {
+  const { homeTeam, awayTeam, utcDate, stage } = match
+  const knockout = isKnockoutStage(stage)
+  const dateStr = new Date(utcDate).toUTCString().replace(' GMT', ' UTC')
+  const stageName = stageLabel(match)
+
+  const matchLine = `**${homeTeam.name} vs ${awayTeam.name} · ${stageName} · Kickoff ${dateStr}**`
+  const resolveLine = knockout
+    ? `*Resolves to the advancing team*`
+    : `*Resolves to the winning team or draw (90 min regulation)*`
+
+  const parts = [matchLine, resolveLine]
+  if (opts.customNote?.trim()) {
+    const substituted = opts.customNote.trim()
+      .replace(/{team1}/g, homeTeam.name)
+      .replace(/{team2}/g, awayTeam.name)
+      .replace(/{kickoff}/g, dateStr)
+      .replace(/{stage}/g, stageName)
+      .replace(/{dashboard_url}/g, opts.dashboardUrl ?? '')
+    parts.push(substituted)
+  }
+  parts.push(RESOLUTION_NOTE)
+  if (opts.dashboardUrl) {
+    let href = opts.dashboardUrl.trim()
+    try {
+      // Extract just the path so the link works on both localhost and prod
+      const u = new URL(
+        href.startsWith('/') || href.startsWith('http') ? href : `https://${href}`
+      )
+      href = u.pathname + u.search + u.hash
+    } catch {
+      if (!href.startsWith('/')) href = `/${href}`
+    }
+    parts.push(`[Visit the ${config.name} Dashboard](${href})`)
+  }
+  parts.push('Created and managed by [@ManifoldSports](/ManifoldSports)')
+
+  return parts.join('\n\n\n')
+}
+
+// ─── Market params builder ─────────────────────────────────────────────────────
+
+export interface MarketCreateParams {
+  question: string
+  descriptionMarkdown: string
+  answers: string[]
+  answerShortTexts: string[]
+  answerImageUrls: string[]
+  closeTime: number
+  sportsStartTimestamp: string
+  sportsEventId: string
+  sportsLeague: string
+  groupIds: string[]
+  liquidityTier: LiquidityTierValue
+}
+
+export function buildMarketParams(
+  match: FDMatch,
+  config: TournamentConfig,
+  officialGroupId: string,
+  opts: {
+    customNote?: string
+    dashboardUrl?: string
+    liquidityTierOverrides?: Partial<StageLiquidityTiers>
+  } = {}
+): MarketCreateParams {
+  const home = match.homeTeam
+  const away = match.awayTeam
+  const knockout = isKnockoutStage(match.stage)
+
+  let question: string
+  let answers: string[]
+  let answerShortTexts: string[]
+
+  if (config.useTeamNames) {
+    // Club tournaments (e.g. CL): use shortName, no flag emoji
+    const homeName = home.shortName || home.name
+    const awayName = away.shortName || away.name
+    question = `${homeName} vs ${awayName} [${config.shortLabel}]`
+    answers = knockout
+      ? [home.name, away.name]
+      : [home.name, away.name, 'Draw']
+    answerShortTexts = knockout
+      ? [homeName, awayName]
+      : [homeName, awayName, 'Draw']
+  } else {
+    // International tournaments (e.g. WC): use flag + TLA
+    const homeFlag = teamFlag(home)
+    const awayFlag = teamFlag(away)
+    question = `${homeFlag}${home.tla} vs ${awayFlag}${away.tla} [${config.shortLabel}]`
+    answers = knockout
+      ? [`${homeFlag} ${home.name}`, `${awayFlag} ${away.name}`]
+      : [`${homeFlag} ${home.name}`, `${awayFlag} ${away.name}`, 'Draw']
+    answerShortTexts = knockout
+      ? [`${homeFlag}${home.tla}`, `${awayFlag}${away.tla}`]
+      : [`${homeFlag}${home.tla}`, `${awayFlag}${away.tla}`, 'Draw']
+  }
+
+  const crests = [home.crest, away.crest]
+  const answerImageUrls =
+    knockout && crests.every((u) => u && u.length > 0) ? crests : []
+
+  const additionalIds =
+    ENV === 'DEV' ? config.additionalGroupIds.dev : config.additionalGroupIds.prod
+
+  return {
+    question,
+    descriptionMarkdown: buildDescription(match, config, opts),
+    answers,
+    answerShortTexts,
+    answerImageUrls,
+    closeTime: computeCloseTime(match, config),
+    sportsStartTimestamp: match.utcDate,
+    sportsEventId: sportsEventId(match),
+    sportsLeague: config.sportsLeague,
+    groupIds: [officialGroupId, ...additionalIds],
+    liquidityTier: stageLiquidityForMatch(match, config, opts.liquidityTierOverrides),
+  }
+}
