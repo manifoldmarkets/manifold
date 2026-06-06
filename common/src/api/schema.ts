@@ -51,6 +51,7 @@ import {
 import { DisplayUser, FullUser } from './user-types'
 
 import { ContractMetric } from 'common/contract-metric'
+import { PersonalizedManaOfferSummary } from 'common/personalized-mana-offer'
 import {
   CheckoutSession,
   GIDXDocument,
@@ -503,6 +504,25 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // Apply share identities to collapse mixed YES/NO positions on a sum-to-one
+  // multi-choice market into all-YES (with at least one zero) and redeem the
+  // minimum across outcomes as cash. Pure accounting — no AMM, no fees.
+  'market/:contractId/rebalance': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      cashRedeemed: number
+      minShares: number
+      betCount: number
+      loanPaid: number
+    },
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+  },
   'get-user-limit-orders-with-contracts': {
     method: 'GET',
     visibility: 'undocumented',
@@ -565,6 +585,7 @@ export const API = (_apiTypeCheck = {
         // undocumented fields. idk what a good api interface would be
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
+        excludeApi: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
         count: coerceBoolean.optional(),
         points: coerceBoolean.optional(),
@@ -1245,6 +1266,7 @@ export const API = (_apiTypeCheck = {
         installedAppPlatforms: z.array(z.string()).optional(),
         paymentInfo: z.string().optional(),
         lastAppReviewTime: z.number().optional(),
+        optOutAppReviewPrompts: z.boolean().optional(),
       })
       .strict(),
   },
@@ -1726,6 +1748,8 @@ export const API = (_apiTypeCheck = {
       .object({
         before: z.coerce.number().optional(),
         after: z.coerce.number().default(0),
+        limit: z.coerce.number().gte(0).lte(1000).default(100),
+        offset: z.coerce.number().gte(0).default(0),
         userId: z.string(),
       })
       .strict(),
@@ -2879,6 +2903,26 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'get-referral-earnings': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      total: number
+      byReferredUserId: Record<
+        string,
+        {
+          amount: number
+          maxMultiplier: number
+          // Which bonus types this referrer has been paid for this referred
+          // user. 'first_bet'/'verify' are the new split; 'legacy' means a
+          // pre-split single-payment txn exists (treated as fully paid).
+          bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
+        }
+      >
+    },
+  },
 
   'save-market-draft': {
     method: 'POST',
@@ -3286,11 +3330,46 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({}).strict(),
+    props: z
+      .object({
+        offerId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       sessionId: string
       clientSecret: string
     },
+  },
+  'get-personalized-mana-offers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'activate-personalized-mana-offers': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'release-personalized-mana-offer-lock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ offerId: z.string() }).strict(),
+    returns: {} as { success: boolean },
+  },
+  'dismiss-personalized-mana-offer': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    // Global dismiss: applies to all active offers for the calling user.
+    // dismissed=false un-dismisses them (used by the "show hidden offer(s)"
+    // chip on /checkout).
+    props: z.object({ dismissed: z.boolean() }).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
   },
   'admin-create-charity-giveaway': {
     method: 'POST',
@@ -3394,6 +3473,7 @@ export const API = (_apiTypeCheck = {
         closeTime: number
         winningTicketIds: string[] | null
         createdTime: number
+        announcementSent: boolean
       }
       userStats: {
         userId: string
@@ -3401,6 +3481,8 @@ export const API = (_apiTypeCheck = {
         totalManaSpent: number
       }[]
       totalTickets: number
+      totalManaSpent?: number
+      participantCount?: number
       winners?: {
         rank: number
         label: string
@@ -3428,6 +3510,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    // Wait for Firebase auth to settle before firing — the per-drawing
+    // userStatus icons depend on auth.uid, and without preferAuth the
+    // first call races auth-loading and comes back with everything null,
+    // which then gets cached for the rest of the session.
+    preferAuth: true,
     props: z.object({}).strict(),
     returns: {} as {
       sweepstakes: Array<{
@@ -3436,6 +3523,10 @@ export const API = (_apiTypeCheck = {
         closeTime: number
         createdTime: number
         hasWinners: boolean
+        totalPrizeUsd: number
+        // Per-user claim status for surfacing icons. Null when no relevant
+        // state (unauthenticated, didn't win, or rejected/opted_out).
+        userStatus: 'paid' | 'pending' | 'action-needed' | null
       }>
     },
   },
@@ -3459,6 +3550,40 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as {
       sweepstakesNum: number
+    },
+  },
+  'check-sweepstakes-geo': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Don't cache — the user's IP can change between visits (VPN toggle,
+    // mobile network handoff) and an incorrect cached "allowed" would let
+    // a restricted user see the buy UI.
+    props: z.object({}).strict(),
+    returns: {} as { allowed: boolean },
+  },
+  'admin-announce-prize-drawing': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        // When true, returns the title + body that *would* be sent
+        // without actually firing notifications or flipping the
+        // announcement_sent flag. Used by the admin UI for the preview.
+        dryRun: z.boolean().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      sweepstakesNum: number
+      title: string
+      body: string
+      totalPrizeUsd: number
+      winnerCount: number
+      closeTime: number
+      alreadySent: boolean
+      sent: boolean
     },
   },
   'buy-sweepstakes-tickets': {
@@ -3621,12 +3746,7 @@ export const API = (_apiTypeCheck = {
         claimId: z.string().optional(),
         sweepstakesNum: z.number().int().optional(),
         userId: z.string().optional(),
-        paymentStatus: z.enum([
-          'awaiting',
-          'sent',
-          'rejected',
-          'opted_out',
-        ]),
+        paymentStatus: z.enum(['awaiting', 'sent', 'rejected', 'opted_out']),
         paymentTxnHash: z.string().optional(),
       })
       .strict()
@@ -4067,8 +4187,11 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z
       .object({
-        limit: z.coerce.number().int().min(1).max(200).default(50),
+        limit: z.coerce.number().int().min(1).max(2000).default(25),
         offset: z.coerce.number().int().min(0).default(0),
+        dateRange: z
+          .enum(['all', 'week', 'month', '3-months', '6-months', 'year'])
+          .default('all'),
       })
       .strict(),
     returns: {} as {

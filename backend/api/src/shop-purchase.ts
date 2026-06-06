@@ -243,7 +243,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     // Check streak freeze purchase cap based on supporter tier
     if (itemId === 'streak-forgiveness') {
       const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
-      const maxFreezes = getMaxStreakFreezes(entitlements)
+      const maxFreezes = getMaxStreakFreezes(entitlements, user.bonusEligibility)
 
       // Get current streak freeze count
       const currentFreezes = user.streakForgiveness ?? 0

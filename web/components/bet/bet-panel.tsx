@@ -30,6 +30,7 @@ import {
 import { CandidateBet } from 'common/new-bet'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
+import { STREAK_MILESTONES } from 'common/store-review'
 import {
   getCustomYesButtonText,
   getCustomNoButtonText,
@@ -52,6 +53,7 @@ import { useFocus } from 'web/hooks/use-focus'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -65,7 +67,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { sliderColors } from '../widgets/slider'
+import { SliderColor } from '../widgets/slider'
 import { Tooltip } from '../widgets/tooltip'
 import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
@@ -91,11 +93,11 @@ type BuyPanelProps = {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
   }
   children?: React.ReactNode
@@ -120,6 +122,10 @@ export function BuyPanel(
   } = props
 
   const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
   const customYesText = getCustomYesButtonText(user?.entitlements)
   const customNoText = getCustomNoButtonText(user?.entitlements)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -158,7 +164,13 @@ export function BuyPanel(
   }
   return (
     <Col>
-      {!isPanelBodyVisible && (
+      {isCreatorBanned ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          <span className="font-medium">Betting disabled:</span> You have
+          blocked yourself from betting on this market. Contact a moderator if
+          you need this reversed.
+        </div>
+      ) : !isPanelBodyVisible ? (
         <Col>
           <Row className={clsx('mb-2 w-full items-center gap-2')}>
             <YesNoSelector
@@ -187,8 +199,7 @@ export function BuyPanel(
             />
           </Row>
         </Col>
-      )}
-      {isPanelBodyVisible && (
+      ) : isPanelBodyVisible && !isCreatorBanned ? (
         <BuyPanelBody
           {...props}
           className={clsx('-mx-2 sm:mx-0', className)}
@@ -209,7 +220,7 @@ export function BuyPanel(
         >
           {children}
         </BuyPanelBody>
-      )}
+      ) : null}
     </Col>
   )
 }
@@ -238,9 +249,24 @@ export const BuyPanelBody = (
   } = props
 
   const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
   const customYesText = getCustomYesButtonText(user?.entitlements)
   const customNoText = getCustomNoButtonText(user?.entitlements)
   const privateUser = usePrivateUser()
+  const tryOfferReview = useStoreReviewNudge('streak-milestone')
+  const reviewNudgeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+  useEffect(() => {
+    return () => {
+      if (reviewNudgeTimeoutRef.current) {
+        clearTimeout(reviewNudgeTimeoutRef.current)
+      }
+    }
+  }, [])
   const liquidityTier =
     'answers' in contract
       ? getTierIndexFromLiquidityAndAnswers(
@@ -535,6 +561,25 @@ export const BuyPanelBody = (
             boosted: contract.boosted,
           })
         )
+        // The server may have just incremented the streak; the user object
+        // will reflect the new value within a beat. Defer past WAIT_TO_DISMISS
+        // so the bet-success modal isn't fighting the OS review modal.
+        if (
+          (STREAK_MILESTONES as readonly number[]).includes(
+            (user.currentBettingStreak ?? 0) + 1
+          ) ||
+          (STREAK_MILESTONES as readonly number[]).includes(
+            user.currentBettingStreak ?? 0
+          )
+        ) {
+          if (reviewNudgeTimeoutRef.current) {
+            clearTimeout(reviewNudgeTimeoutRef.current)
+          }
+          reviewNudgeTimeoutRef.current = setTimeout(
+            tryOfferReview,
+            WAIT_TO_DISMISS + 500
+          )
+        }
       } else {
         if (!toastId) {
           console.error('No toastId')
@@ -584,6 +629,7 @@ export const BuyPanelBody = (
     outcome === undefined ||
     error === 'Insufficient balance' ||
     showLocationMonitor ||
+    isCreatorBanned ||
     (isCashContract && verificationStatus !== 'success')
 
   const limits =

@@ -38,15 +38,26 @@ export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 
 /* Mana bonuses */
-export const PRE_KYC_STARTING_BALANCE = 50
-export const STARTING_BALANCE = 1000
+// Unverified users now get a usable starting balance so they can participate.
+// On KYC verification they receive STARTING_BALANCE as a top-up — the total
+// mana a fully-verified new user receives is PRE_KYC_STARTING_BALANCE + STARTING_BALANCE.
+export const PRE_KYC_STARTING_BALANCE = 500
+export const STARTING_BALANCE = 500
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000
 
-export const REFERRAL_AMOUNT = 1_000
+// Referral payout is split: M250 when the referred user places their first bet,
+// M1000 when they complete identity verification.
+export const REFERRAL_BET_BONUS = 250
+export const REFERRAL_VERIFY_BONUS = 1000
+// Total a referrer can earn per referred user across both events.
+export const REFERRAL_AMOUNT = REFERRAL_BET_BONUS + REFERRAL_VERIFY_BONUS
 
-const uniqueBettorBonusAmounts = [3, 10, 15, 20]
+const TRADER_BONUS_PROMO_MULTIPLIER = 2
+const uniqueBettorBonusAmounts = [3, 10, 15, 20].map(
+  (n) => n * TRADER_BONUS_PROMO_MULTIPLIER
+)
 export const getUniqueBettorBonusAmount = (
   liquidity: number,
   numAnswers: number

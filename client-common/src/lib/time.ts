@@ -13,7 +13,26 @@ const FORMATTER = new Intl.DateTimeFormat('default', {
   timeStyle: 'medium',
 })
 
+const FORMATTER_WITH_TIMEZONE = new Intl.DateTimeFormat('default', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+  timeZoneName: 'short',
+})
+
 export const formatTime = FORMATTER.format
+export const formatTimeWithTimezone = FORMATTER_WITH_TIMEZONE.format
+
+export function getLocalTimezoneShort() {
+  return new Intl.DateTimeFormat('default', {
+    timeZoneName: 'short',
+  })
+    .formatToParts(new Date())
+    .find((part) => part.type === 'timeZoneName')?.value
+}
 
 export function formatJustDateShort(time: number) {
   return dayjs(time).format('MMM D, YYYY')

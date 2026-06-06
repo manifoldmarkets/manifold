@@ -61,6 +61,10 @@ import {
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
 import {
+  AUTO_TAG_API_MARKET_CREATIONS,
+  getNicheTopicMatchesForContract,
+} from 'shared/helpers/topic-matching'
+import {
   htmlToRichText,
   isProd,
   log,
@@ -112,10 +116,43 @@ export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
           market.answers.forEach(broadcastNewAnswer)
         }
         await onCreateMarket(market, embedding)
+        await maybeAutoTagApiMarket(pg, market, groupIds)
       },
     }
   }
 )
+
+// API counterpart to the web UI's getSimilarGroupsToContract suggester,
+// for markets created without groupIds. Off by default — see flag.
+async function maybeAutoTagApiMarket(
+  pg: SupabaseDirectClient,
+  market: Contract,
+  groupIdsProvided: string[] | null | undefined
+) {
+  if (!AUTO_TAG_API_MARKET_CREATIONS) return
+  if (groupIdsProvided && groupIdsProvided.length > 0) return
+  if (market.visibility !== 'public') return
+  if (market.outcomeType === 'STONK' || market.outcomeType === 'POLL') return
+
+  try {
+    const matches = await getNicheTopicMatchesForContract(pg, market.id)
+    for (const match of matches) {
+      await addGroupToContract(pg, market, {
+        id: match.id,
+        slug: match.slug,
+      })
+    }
+    if (matches.length > 0) {
+      log(
+        `Auto-tagged API market ${market.id} with: ${matches
+          .map((m) => m.slug)
+          .join(', ')}`
+      )
+    }
+  } catch (err) {
+    log.error('Auto-tag failed for market ' + market.id, { err })
+  }
+}
 
 export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const {

@@ -1,5 +1,5 @@
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { getBenefit } from 'common/supporter-config'
+import { getEffectiveBonusMultiplier } from 'common/supporter-config'
 import {
   BettingStreakData,
   getSourceUrl,
@@ -11,10 +11,13 @@ import {
   UniqueBettorData,
 } from 'common/notification'
 import { formatMoney, maybePluralize } from 'common/util/format'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
+import { STREAK_MILESTONES } from 'common/store-review'
+import { DAY_MS } from 'common/util/time'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useUser } from 'web/hooks/use-user'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
 import { LoansModal } from '../profile/loans-modal'
@@ -43,7 +46,7 @@ import {
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
-import { canReceiveBonuses } from 'common/user'
+import { getEffectiveTier } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
@@ -57,6 +60,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
+  const user = useUser()
   const myData = (notification.data ?? {}) as UniqueBettorData
   const relatedNotifications =
     myData && 'relatedNotifications' in myData
@@ -77,12 +81,27 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
+  const isUnverified = user && getEffectiveTier(user) === 'unverified'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={
+        isUnverified ? (
+          <span>
+            Reduced because your account is unverified.{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              Verify or subscribe
+            </a>{' '}
+            to earn the full unique-trader bonus.
+          </span>
+        ) : undefined
+      }
       icon={
         <MultipleAvatarIcons
           notification={notification}
@@ -255,12 +274,35 @@ export function QuestIncomeNotification(props: {
   const { questType } = data as QuestRewardTxn['data']
   const user = useUser()
   const [open, setOpen] = useState(false)
+  // The bonus award embeds effectiveTier in the txn data — use it if present,
+  // otherwise fall back to the current user's tier (notifications can outlive
+  // tier transitions).
+  const txnTier = (data as { effectiveTier?: string } | undefined)
+    ?.effectiveTier
+  const userTier = user ? getEffectiveTier(user) : undefined
+  const isUnverified =
+    txnTier === 'unverified' ||
+    (txnTier === undefined && userTier === 'unverified')
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={
+        isUnverified ? (
+          <span>
+            This bonus is reduced because your account is unverified.{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              Verify or subscribe
+            </a>{' '}
+            to earn the full amount.
+          </span>
+        ) : undefined
+      }
       icon={
         <NotificationIcon
           symbol={'🧭'}
@@ -288,9 +330,10 @@ export function BettingStreakBonusIncomeNotification(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
-  const { sourceText } = notification
+  const { sourceText, createdTime } = notification
   const [open, setOpen] = useState(false)
   const user = useUser()
+  const tryOfferReview = useStoreReviewNudge('streak-bonus-modal')
   const {
     streak: streakInDays,
     cashAmount,
@@ -298,9 +341,28 @@ export function BettingStreakBonusIncomeNotification(props: {
   } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
 
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(user?.entitlements, 'questMultiplier')
-  const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
+  const handleOpen = () => {
+    setOpen(true)
+    // Only nudge on a fresh milestone — clicking a year-old streak-7 notification
+    // should not arm the prompt.
+    const isFresh = Date.now() - createdTime < DAY_MS
+    if (
+      isFresh &&
+      !noBonus &&
+      streakInDays &&
+      (STREAK_MILESTONES as readonly number[]).includes(streakInDays)
+    ) {
+      // Let the celebration modal land before the OS review prompt overlays it.
+      setTimeout(tryOfferReview, 2500)
+    }
+  }
+
+  // Streak multiplier driven by effective tier (verification + subscription).
+  const effectiveTier = user ? getEffectiveTier(user) : 'verified'
+  const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
+  const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
+  const verifiedMaxBonus = BETTING_STREAK_BONUS_MAX
+  const isUnverified = effectiveTier === 'unverified'
 
   return (
     <NotificationFrame
@@ -309,16 +371,25 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        noBonus && user && !canReceiveBonuses(user) ? (
+        isUnverified ? (
           <span>
-            Verify your identity to get up to{' '}
-            <TokenNumber amount={maxBonus} className={'font-bold'} isInline />{' '}
-            per streak day!
+            This bonus is reduced because your account is unverified.{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              Verify or subscribe
+            </a>{' '}
+            to earn up to{' '}
+            <TokenNumber
+              amount={verifiedMaxBonus}
+              className={'font-bold'}
+              isInline
+            />{' '}
+            per streak day.
           </span>
         ) : (
-          noBonus &&
-          user &&
-          canReceiveBonuses(user) && (
+          noBonus && (
             <span>Come back and predict again tomorrow for a bonus!</span>
           )
         )
@@ -331,7 +402,7 @@ export function BettingStreakBonusIncomeNotification(props: {
           }
         />
       }
-      onClick={() => setOpen(true)}
+      onClick={handleOpen}
     >
       {noBonus ? (
         <span className="line-clamp-3">
@@ -357,7 +428,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         open={open}
         setOpen={setOpen}
         currentStreak={user?.currentBettingStreak ?? 0}
-        questMultiplier={questMultiplier}
+        questMultiplier={streakMultiplier}
       />
     </NotificationFrame>
   )
@@ -582,8 +653,20 @@ export function ReferralNotification(props: {
     sourceUserUsername,
     sourceText,
     data,
+    createdTime,
   } = notification
   const user = useUser()
+  const tryOfferReview = useStoreReviewNudge('referral-bonus')
+
+  // Fire once on mount when the user is viewing a fresh referral bonus.
+  // Multiple fresh referrals rendering at once are de-duped by the hook's
+  // module-level localLastFireTime + cooldown; stale referrals (>1d old) skip.
+  const isFresh = Date.now() - createdTime < DAY_MS
+  useEffect(() => {
+    if (!isFresh) return
+    const t = setTimeout(tryOfferReview, 1500)
+    return () => clearTimeout(t)
+  }, [isFresh, tryOfferReview])
   const isYourMarket = sourceContractCreatorUsername === user?.username
   // Use data.manaAmount if available, fall back to sourceText for old notifications
   const referralData = data as ReferralData | undefined

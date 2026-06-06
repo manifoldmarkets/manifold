@@ -6,6 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import clsx from 'clsx'
 import { Input } from 'web/components/widgets/input'
+import { getLocalTimezoneShort } from 'client-common/lib/time'
 
 export const CloseTimeSection = (props: {
   closeDate: string | undefined
@@ -42,6 +43,7 @@ export const CloseTimeSection = (props: {
     setCloseDate(newCloseDate)
   }
 
+  const timezone = getLocalTimezoneShort()
   const NEVER = 'Never'
   if (outcomeType == 'POLL') {
     closeDateMap['Never'] = NEVER
@@ -57,7 +59,7 @@ export const CloseTimeSection = (props: {
           text={
             outcomeType == 'POLL'
               ? 'Voting on this poll will be halted and resolve to the most voted option'
-              : 'Trading will be halted after this time (local timezone).'
+              : `Trading will be halted at this time, you will then be able to resolve the market or extend the close date.`
           }
         />
       </label>
@@ -90,32 +92,39 @@ export const CloseTimeSection = (props: {
         />
       </Row>
       {!neverCloses && (
-        <Row className="mt-4 gap-2">
-          <Input
-            type={'date'}
-            className="dark:date-range-input-white"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => {
-              setCloseDate(e.target.value)
-              if (!closeHoursMinutes) {
-                setCloseHoursMinutes(initTime)
-              }
-            }}
-            min={dayjs().format('YYYY-MM-DD')}
-            max="9999-12-31"
-            disabled={submitState === 'LOADING'}
-            value={closeDate}
-          />
-          {/*<Input*/}
-          {/*  type={'time'}*/}
-          {/* className="dark:date-range-input-white"*/}
-          {/*  onClick={(e) => e.stopPropagation()}*/}
-          {/*  onChange={(e) => setCloseHoursMinutes(e.target.value)}*/}
-          {/*  min={'00:00'}*/}
-          {/*  disabled={isSubmitting}*/}
-          {/*  value={closeHoursMinutes}*/}
-          {/*/>*/}
-        </Row>
+        <Col className="mt-4 gap-2">
+          <Row className="flex-wrap items-center gap-2">
+            <Input
+              type={'date'}
+              className="dark:date-range-input-white"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                setCloseDate(e.target.value)
+                if (!closeHoursMinutes) {
+                  setCloseHoursMinutes(initTime)
+                }
+              }}
+              min={dayjs().format('YYYY-MM-DD')}
+              max="9999-12-31"
+              disabled={submitState === 'LOADING'}
+              value={closeDate}
+            />
+            <Input
+              type={'time'}
+              className="dark:date-range-input-white"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setCloseHoursMinutes(e.target.value)}
+              min={'00:00'}
+              disabled={submitState === 'LOADING'}
+              value={closeHoursMinutes}
+            />
+          </Row>
+          {timezone && (
+            <span className="text-ink-500 px-1 text-xs">
+              Times are shown in your local timezone ({timezone}).
+            </span>
+          )}
+        </Col>
       )}
     </Col>
   )

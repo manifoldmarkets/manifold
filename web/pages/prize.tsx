@@ -4,7 +4,6 @@ import {
   formatMoneyWithDecimals,
 } from 'common/util/format'
 import { sortBy } from 'lodash'
-import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -29,7 +28,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import { FaGift } from 'react-icons/fa6'
+import { FaClock, FaCircleExclamation, FaGift } from 'react-icons/fa6'
 import { useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi'
 import { isAddress } from 'viem'
 import {
@@ -42,66 +41,19 @@ import {
   getCurrentSweepstakesTicketPrice,
   getRankLabel,
   getTotalPrizePool,
+  getTotalWinnerCount,
   SweepstakesPrize,
 } from 'common/sweepstakes'
-import {
-  checkSweepstakesGeofence,
-  GeoLocationResult,
-} from 'common/sweepstakes-geofencing'
-import { getBestClientIp } from 'common/client-ip'
 import { canReceiveBonuses } from 'common/user'
+import { DisplayUser } from 'common/api/user-types'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
-interface SweepstakesPageProps {
-  isLocationRestricted: boolean
-  sweepstakesNum?: number
-}
-
-export const getSweepstakesServerSideProps: GetServerSideProps<
-  SweepstakesPageProps
-> = async (context) => {
-  const ip = getBestClientIp(context.req.headers, [
-    context.req.socket.remoteAddress,
-  ])
-
-  const apiKey = process.env.IP_API_PRO_KEY
-  if (!apiKey) {
-    // Allow access if API key not configured (backend will validate on purchase)
-    return {
-      props: {
-        isLocationRestricted: false,
-      },
-    }
-  }
-
-  try {
-    const fields = 'status,message,countryCode,region'
-    const response = await fetch(
-      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`
-    )
-    const geo: GeoLocationResult = await response.json()
-    const { allowed } = checkSweepstakesGeofence(geo)
-
-    return {
-      props: {
-        isLocationRestricted: !allowed,
-      },
-    }
-  } catch (error) {
-    // On error, allow access (backend will validate on purchase)
-    return {
-      props: {
-        isLocationRestricted: false,
-      },
-    }
-  }
-}
-
-export const getServerSideProps: GetServerSideProps<
-  SweepstakesPageProps
-> = async (context) => {
-  return getSweepstakesServerSideProps(context)
-}
+// /prize used to run `getServerSideProps` that called pro.ip-api.com to gate
+// a banner for restricted regions. That blocked every Link-driven nav until
+// the external API returned — which could hang for 10+s when ip-api was
+// degraded. The page is now fully static-shell + client-side data fetching,
+// and the geo check moved to a `/check-sweepstakes-geo` API call that runs
+// after mount. Purchase paths still validate geo server-side.
 
 // Format entries with appropriate precision
 function formatEntries(entries: number): string {
@@ -130,18 +82,47 @@ const COLORS = [
   '#d946ef', // fuchsia
 ]
 
-export default function SweepstakesPage({
-  isLocationRestricted,
-  sweepstakesNum,
-}: SweepstakesPageProps) {
+export default function SweepstakesPage() {
   const user = useUser()
   const isAdmin = useAdmin()
   const router = useRouter()
+  // sweepstakesNum used to come from getServerSideProps; now read directly
+  // from the URL on the client so the page no longer needs SSR for params.
+  const sweepstakesNumRaw = router.query.sweepstakesNum
+  const sweepstakesNum =
+    typeof sweepstakesNumRaw === 'string'
+      ? Number(sweepstakesNumRaw)
+      : undefined
+  const validSweepstakesNum = Number.isFinite(sweepstakesNum)
+    ? sweepstakesNum
+    : undefined
+  // Scope the cache per drawing — useAPIGetter keys React state by
+  // `overrideKey ?? path`, not by props. Without this, switching from
+  // /prize/1 to /prize/2 leaves #1's payload mounted (stats, winners,
+  // purchase form) until #2 resolves, which is a real mis-purchase risk
+  // when the user clicks Buy in that window.
+  const sweepstakesCacheKey = `get-sweepstakes-${
+    validSweepstakesNum ?? 'active'
+  }`
+  // Gate the fetch on router.isReady so a direct nav to /prize/N doesn't
+  // first fire `get-sweepstakes` with `{}` (active drawing) and then again
+  // with the real sweepstakesNum once query hydrates. `isReady` is true
+  // on first render for paths without dynamic params (so /prize fires
+  // immediately).
   const { data, refresh } = useAPIGetter(
     'get-sweepstakes',
-    sweepstakesNum ? { sweepstakesNum } : {}
+    validSweepstakesNum ? { sweepstakesNum: validSweepstakesNum } : {},
+    undefined,
+    sweepstakesCacheKey,
+    router.isReady
   )
   const { data: sweepstakesListData } = useAPIGetter('get-sweepstakes-list', {})
+  // Client-side geo check (replaces the old SSR call to pro.ip-api.com that
+  // could hang nav for 10+s). Defaults to "not restricted" until the check
+  // completes, so the page loads instantly and the banner just appears late
+  // for restricted users.
+  const { data: geoData } = useAPIGetter('check-sweepstakes-geo', {})
+  const isLocationRestricted = geoData ? !geoData.allowed : false
 
   const [manaAmount, setManaAmount] = useState<number>(100)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -156,6 +137,27 @@ export default function SweepstakesPage({
   const needsVerification = user && !canReceiveBonuses(user)
   const isAdminIneligible = !!user && isAdmin
 
+  // Promote server-side 'pending' to 'action-needed' if the user can't
+  // currently complete a payout (unverified). Then pick the worst across
+  // all drawings for the trigger icon, and the list of action-needed
+  // drawings for the page banner.
+  const effectiveStatusByDrawing = (sweepstakesListData?.sweepstakes ?? []).map(
+    (s) => {
+      const raw = s.userStatus ?? null
+      const bumped =
+        raw === 'pending' && needsVerification
+          ? ('action-needed' as const)
+          : raw
+      return { sweepstakesNum: s.sweepstakesNum, status: bumped }
+    }
+  )
+  const triggerStatus = getWorstStatus(
+    effectiveStatusByDrawing.map((e) => e.status)
+  )
+  const actionNeededDrawings = effectiveStatusByDrawing.filter(
+    (e) => e.status === 'action-needed'
+  )
+
   const sweepstakes = data ? data.sweepstakes : undefined
   const userStats = data ? data.userStats : []
   const totalTickets = data ? data.totalTickets : 0
@@ -165,7 +167,8 @@ export default function SweepstakesPage({
   const meetsInvestmentRequirement = data?.meetsInvestmentRequirement ?? true
   const userTotalManaInvested = data?.userTotalManaInvested ?? 0
   const minManaInvested = data?.minManaInvested ?? 1000
-  const totalManaSpent = userStats.reduce((sum, s) => sum + s.totalManaSpent, 0)
+  const totalManaSpent = data?.totalManaSpent ?? 0
+  const participantCount = data?.participantCount ?? userStats.length
 
   // Calculate time remaining
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -341,10 +344,32 @@ export default function SweepstakesPage({
   }
 
   if (data === undefined) {
+    // Render the page shell immediately — header, intro, and skeleton
+    // placeholders for the heavier sections. This avoids a 20-second
+    // blank-page feeling while the slower API calls (get-sweepstakes
+    // SUM-on-user_contract_metrics, etc.) complete in the background.
     return (
       <Page trackPageView={'prize-drawing'}>
-        <Col className="items-center justify-center py-20">
-          <LoadingIndicator />
+        <SEO
+          title="Manifold Prize Drawing"
+          description="Win real USDC in Manifold's prize drawing. No purchase necessary."
+          url="/prize"
+          image="/prize-drawing-og.png"
+        />
+        <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
+          <Col className="gap-4">
+            <Row className="items-center gap-3">
+              <FaGift className="h-8 w-8 text-teal-500" />
+              <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
+                Manifold Prize Drawing
+              </h1>
+            </Row>
+            <p className="text-ink-600 text-lg leading-relaxed">
+              Enter the drawing for a chance to win USDC prizes! Winners receive
+              real crypto payouts. No purchase necessary.
+            </p>
+          </Col>
+          <PrizePageSkeleton />
         </Col>
       </Page>
     )
@@ -417,10 +442,40 @@ export default function SweepstakesPage({
                 <SelectDropdown
                   aria-label="Select prize drawing"
                   value={sweepstakes.sweepstakesNum}
-                  options={sweepstakesList.map((s) => ({
-                    value: s.sweepstakesNum,
-                    label: `Drawing #${s.sweepstakesNum}`,
-                  }))}
+                  renderButtonLabel={(opt) =>
+                    opt ? `Drawing #${opt.value}` : 'Select drawing'
+                  }
+                  buttonPrefix={
+                    triggerStatus ? (
+                      <UserStatusIcon status={triggerStatus} large />
+                    ) : undefined
+                  }
+                  options={sweepstakesList.map((s) => {
+                    // The server returns 'pending' for "wallet submitted,
+                    // payment in flight". If the user isn't verified, that's
+                    // still blocking — bump it to action-needed.
+                    const effectiveStatus: EffectiveUserStatus =
+                      s.userStatus === 'pending' && needsVerification
+                        ? 'action-needed'
+                        : s.userStatus ?? null
+                    return {
+                      value: s.sweepstakesNum,
+                      label: (
+                        <PastDrawingLabel
+                          sweepstakesNum={s.sweepstakesNum}
+                          totalPrizeUsd={s.totalPrizeUsd}
+                          userStatus={effectiveStatus}
+                        />
+                      ),
+                      // Big-prize rows get a row-level gold tint so the bg
+                      // fills the entire option width (the inner truncate
+                      // span would otherwise clip a label-level background).
+                      buttonClassName:
+                        s.totalPrizeUsd && s.totalPrizeUsd >= 10000
+                          ? 'bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20'
+                          : undefined,
+                    }
+                  })}
                   onChange={(nextNum) => {
                     if (
                       activeSweepstakes &&
@@ -463,14 +518,41 @@ export default function SweepstakesPage({
           </div>
         )}
 
-        {/* Verification Required Banner */}
+        {/* Unclaimed-prize banner. Surfaces drawings where the user won but
+            hasn't completed the steps to receive their prize. */}
+        {actionNeededDrawings.length > 0 && (
+          <UnclaimedPrizesBanner
+            drawings={actionNeededDrawings}
+            currentSweepstakesNum={sweepstakes?.sweepstakesNum}
+            needsVerification={!!needsVerification}
+            onGoToDrawing={(num) => {
+              if (
+                activeSweepstakes &&
+                num === activeSweepstakes.sweepstakesNum
+              ) {
+                router.push('/prize')
+              } else {
+                router.push(`/prize/${num}`)
+              }
+            }}
+          />
+        )}
+
+        {/* KYC Required Banner. KYC is a regulatory requirement for prize
+            drawings — a subscription does NOT unlock entry. */}
         {!isLocationRestricted && needsVerification && (
           <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
             <Row className="items-center justify-between gap-4">
-              <p className="text-indigo-800 dark:text-indigo-300">
-                You must verify your identity to participate in the prize
-                drawing.
-              </p>
+              <Col className="gap-1">
+                <p className="font-semibold text-indigo-900 dark:text-indigo-200">
+                  KYC identity verification is required to participate in prize
+                  drawings.
+                </p>
+                <p className="text-sm text-indigo-800 dark:text-indigo-300">
+                  This is a regulatory requirement and applies even to active
+                  subscribers. Verifying takes a few minutes.
+                </p>
+              </Col>
               <Button
                 color="indigo"
                 size="sm"
@@ -542,6 +624,7 @@ export default function SweepstakesPage({
             totalTickets={totalTickets}
             hoveredUserId={hoveredUserId}
             onHoverUser={setHoveredUserId}
+            participantCount={participantCount}
             myEntries={
               user
                 ? userStats.find((s) => s.userId === user.id)?.totalTickets
@@ -577,7 +660,7 @@ export default function SweepstakesPage({
             open={showVerificationModal}
             setOpen={setShowVerificationModal}
             user={user}
-            action="receive bonuses"
+            action="enter prize drawings"
           />
         )}
 
@@ -679,6 +762,10 @@ export default function SweepstakesPage({
           />
         )}
 
+        {isAdmin && sweepstakes && (
+          <AnnouncePrizeDrawingSection sweepstakes={sweepstakes} />
+        )}
+
         <CreateSweepstakesModal
           open={showCreateSweepstakesModal}
           setOpen={setShowCreateSweepstakesModal}
@@ -691,6 +778,309 @@ export default function SweepstakesPage({
         />
       </Col>
     </Page>
+  )
+}
+
+// Admin-only "announce drawing to subscribers" section. Shows a live preview
+// of the notification, then a confirm-to-send button. Once-only enforcement
+// is server-side (sweepstakes.announcement_sent flag); this UI just disables
+// the button when announcementSent is already true.
+function AnnouncePrizeDrawingSection(props: {
+  sweepstakes: {
+    sweepstakesNum: number
+    prizes: SweepstakesPrize[]
+    closeTime: number
+    announcementSent: boolean
+  }
+}) {
+  const { sweepstakes } = props
+  const totalPrize = getTotalPrizePool(sweepstakes.prizes)
+  const winnerCount = getTotalWinnerCount(sweepstakes.prizes)
+
+  const title = 'New prize drawing is live'
+  const audience =
+    winnerCount === 1 ? 'to one winner' : `across ${winnerCount} winners`
+  const body = `$${totalPrize.toLocaleString()} ${audience}.`
+
+  const [sent, setSent] = useState(sweepstakes.announcementSent)
+  const [sending, setSending] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+
+  const onSend = async () => {
+    setSending(true)
+    try {
+      await api('admin-announce-prize-drawing', {
+        sweepstakesNum: sweepstakes.sweepstakesNum,
+      })
+      setSent(true)
+      setConfirming(false)
+      toast.success('Announcement sent')
+    } catch (err) {
+      toast.error(
+        err instanceof APIError ? err.message : 'Failed to send announcement'
+      )
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 dark:border-indigo-800 dark:bg-indigo-950/20">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-ink-900 text-sm font-semibold uppercase tracking-wide">
+          Admin · Announce to subscribers
+        </h3>
+        <span className="text-ink-500 text-xs">
+          Only users opted in to <code>prize_drawings</code> notifications will
+          receive this.
+        </span>
+      </div>
+
+      {/* Notification preview — mimics how it'll render in users' inboxes */}
+      <div className="bg-canvas-0 border-ink-200 mb-3 rounded-md border p-3 shadow-sm">
+        <div className="text-ink-400 mb-1 text-xs">PREVIEW</div>
+        <div className="flex gap-3">
+          <div className="bg-primary-100 text-primary-700 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+            M
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-ink-900 text-sm font-medium">{title}</div>
+            <div className="text-ink-700 mt-0.5 text-sm">{body}</div>
+            <div className="text-ink-400 mt-1 text-xs">
+              from Manifold Markets
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {sent ? (
+        <div className="text-ink-600 flex items-center gap-2 text-sm">
+          <span className="text-green-600">✓</span>
+          Announcement already sent for Drawing #{sweepstakes.sweepstakesNum}
+        </div>
+      ) : confirming ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-ink-700 text-sm">
+            Send to all eligible users now?
+          </span>
+          <Button
+            color="indigo"
+            size="sm"
+            loading={sending}
+            disabled={sending}
+            onClick={onSend}
+          >
+            Yes, send
+          </Button>
+          <Button
+            color="gray-outline"
+            size="sm"
+            disabled={sending}
+            onClick={() => setConfirming(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <Button color="indigo" size="sm" onClick={() => setConfirming(true)}>
+          Send announcement
+        </Button>
+      )}
+    </div>
+  )
+}
+
+// Placeholder shown while the heavy /prize data loads. Mimics the layout of
+// the real page (totals card, stats row, chart, activity table) so the page
+// doesn't jump around when data arrives. Animate-pulse gives the "loading"
+// affordance without needing per-section spinners.
+function PrizePageSkeleton() {
+  return (
+    <Col className="gap-6">
+      {/* Total Prizes card */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-20 w-full animate-pulse rounded-lg" />
+      {/* Time Left / Total Entries / Mana Spent stat row */}
+      <Row className="gap-4">
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+      </Row>
+      {/* Entry Distribution chart */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-56 w-full animate-pulse rounded-lg" />
+      {/* Recent Activity */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-40 w-full animate-pulse rounded-lg" />
+    </Col>
+  )
+}
+
+// User-facing claim states. 'action-needed' covers both "haven't submitted
+// wallet yet" and "haven't completed KYC", because both block the prize.
+type EffectiveUserStatus = 'paid' | 'pending' | 'action-needed' | null
+
+// Tiered styling for past-drawings dropdown options. Larger prizes pop
+// visually so people scrolling history can spot the big ones at a glance.
+// The aesthetic is restrained — most rows look default; the jackpot tier
+// earns a subtle gold-tinted border + a sparkle, not a highlighter band.
+function PastDrawingLabel(props: {
+  sweepstakesNum: number
+  totalPrizeUsd: number | undefined
+  userStatus?: EffectiveUserStatus
+}) {
+  const { sweepstakesNum, userStatus } = props
+  // Old API responses (pre-totalPrizeUsd) and the type-narrowing both need a
+  // default so the dropdown never crashes if the field hasn't shipped yet.
+  const totalPrizeUsd = props.totalPrizeUsd ?? 0
+  const tier =
+    totalPrizeUsd >= 10000
+      ? 'jackpot'
+      : totalPrizeUsd >= 1000
+      ? 'major'
+      : totalPrizeUsd >= 500
+      ? 'minor'
+      : 'standard'
+
+  const priceClass = clsx(
+    'shrink-0 tabular-nums',
+    tier === 'jackpot' &&
+      'text-sm font-semibold text-amber-700 dark:text-amber-300',
+    tier === 'major' &&
+      'text-sm font-semibold text-amber-700 dark:text-amber-300',
+    tier === 'minor' &&
+      'text-xs font-medium text-amber-700/80 dark:text-amber-400',
+    tier === 'standard' && 'text-xs text-ink-400'
+  )
+
+  return (
+    <span className="flex w-full items-center justify-between gap-3">
+      <span
+        className={clsx(
+          'flex items-center gap-1.5',
+          tier === 'jackpot' && 'text-amber-900 dark:text-amber-100'
+        )}
+      >
+        {userStatus && <UserStatusIcon status={userStatus} />}
+        {tier === 'jackpot' && !userStatus && (
+          <span aria-hidden className="text-amber-500 dark:text-amber-300">
+            ✦
+          </span>
+        )}
+        Drawing #{sweepstakesNum}
+      </span>
+      {totalPrizeUsd > 0 && (
+        <span className={priceClass}>${totalPrizeUsd.toLocaleString()}</span>
+      )}
+    </span>
+  )
+}
+
+// Small inline icon that signals per-drawing user state. Priority order
+// when multiple drawings collide for the dropdown trigger is
+// 'action-needed' > 'pending' > 'paid'.
+function UserStatusIcon(props: {
+  status: EffectiveUserStatus
+  large?: boolean
+}) {
+  const { status, large } = props
+  const size = large ? 'h-4 w-4' : 'h-3.5 w-3.5'
+  if (status === 'action-needed') {
+    return (
+      <FaCircleExclamation
+        aria-label="Action needed"
+        className={clsx(size, 'text-scarlet-500 shrink-0')}
+      />
+    )
+  }
+  if (status === 'pending') {
+    return (
+      <FaClock
+        aria-label="Payment pending"
+        className={clsx(size, 'text-ink-400 shrink-0')}
+      />
+    )
+  }
+  if (status === 'paid') {
+    return (
+      <FaGift
+        aria-label="Prize received"
+        className={clsx(size, 'shrink-0 text-teal-500')}
+      />
+    )
+  }
+  return null
+}
+
+// Highest-priority status across all drawings — used by the trigger icon
+// and the page banner.
+function getWorstStatus(statuses: EffectiveUserStatus[]): EffectiveUserStatus {
+  if (statuses.includes('action-needed')) return 'action-needed'
+  if (statuses.includes('pending')) return 'pending'
+  if (statuses.includes('paid')) return 'paid'
+  return null
+}
+
+// Top-of-page nudge for users who have won drawings but still need to act
+// (submit wallet, verify identity, etc.). Renders a single line when one
+// drawing is unclaimed; a click-list when multiple.
+function UnclaimedPrizesBanner(props: {
+  drawings: { sweepstakesNum: number }[]
+  currentSweepstakesNum: number | undefined
+  needsVerification: boolean
+  onGoToDrawing: (num: number) => void
+}) {
+  const { drawings, currentSweepstakesNum, needsVerification, onGoToDrawing } =
+    props
+
+  const verbB = needsVerification ? 'verify to claim' : 'claim'
+
+  if (drawings.length === 1) {
+    const d = drawings[0]
+    const isCurrent = d.sweepstakesNum === currentSweepstakesNum
+    return (
+      <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 flex items-center gap-3 rounded-lg border p-4">
+        <FaCircleExclamation className="text-scarlet-500 h-5 w-5 shrink-0" />
+        <div className="text-scarlet-800 dark:text-scarlet-200 flex-1 text-sm">
+          You won Drawing #{d.sweepstakesNum} and still need to {verbB}.
+        </div>
+        {!isCurrent && (
+          <button
+            onClick={() => onGoToDrawing(d.sweepstakesNum)}
+            className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 shrink-0 text-sm font-medium underline"
+          >
+            Go to drawing →
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 rounded-lg border p-4">
+      <div className="flex items-start gap-3">
+        <FaCircleExclamation className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
+        <div className="flex-1">
+          <div className="text-scarlet-800 dark:text-scarlet-200 text-sm font-medium">
+            You have {drawings.length} unclaimed prizes
+          </div>
+          <div className="text-scarlet-700 dark:text-scarlet-300 mt-1 text-sm">
+            {needsVerification
+              ? 'Verify your identity to receive your USDC, then submit your wallet on each drawing.'
+              : 'Submit your wallet address on each drawing to claim.'}
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {drawings.map((d) => (
+              <li key={d.sweepstakesNum}>
+                <button
+                  onClick={() => onGoToDrawing(d.sweepstakesNum)}
+                  className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 border-scarlet-300 bg-canvas-0/50 dark:border-scarlet-700 dark:bg-canvas-0/10 rounded-md border px-2 py-0.5 text-xs font-medium"
+                >
+                  Drawing #{d.sweepstakesNum} →
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -1108,10 +1498,17 @@ function UserDistributionChart(props: {
   totalTickets: number
   hoveredUserId: string | null
   onHoverUser: (userId: string | null) => void
+  participantCount: number
   myEntries?: number
 }) {
-  const { userStats, totalTickets, hoveredUserId, onHoverUser, myEntries } =
-    props
+  const {
+    userStats,
+    totalTickets,
+    hoveredUserId,
+    onHoverUser,
+    participantCount,
+    myEntries,
+  } = props
 
   if (userStats.length === 0) {
     return (
@@ -1131,6 +1528,24 @@ function UserDistributionChart(props: {
     value: stat.totalTickets,
     color: COLORS[i % COLORS.length],
   }))
+
+  // Batch-fetch the top-8 legend users in a single request instead of one
+  // per row. Avoids the N+1 that previously made the chart take seconds to
+  // populate on cold cache. We only fetch for the rows we actually render,
+  // and skip the call entirely when there are no users (empty arrays 400
+  // on the server because the query string can't be parsed).
+  const legendUserIds = segments.slice(0, 8).map((s) => s.userId)
+  const { data: legendUsersData } = useAPIGetter(
+    'users/by-id',
+    { ids: legendUserIds },
+    undefined,
+    undefined,
+    legendUserIds.length > 0
+  )
+  const userById = useMemo(
+    () => new Map((legendUsersData ?? []).map((u) => [u.id, u])),
+    [legendUsersData]
+  )
 
   const radius = 15
   const circumference = 2 * Math.PI * radius
@@ -1227,7 +1642,7 @@ function UserDistributionChart(props: {
               return (
                 <UserLegendItem
                   key={index}
-                  userId={segment.userId}
+                  user={userById.get(segment.userId)}
                   color={segment.color}
                   percentage={percentage}
                   isHovered={isHovered}
@@ -1236,9 +1651,9 @@ function UserDistributionChart(props: {
                 />
               )
             })}
-            {segments.length > 8 && (
+            {participantCount > 8 && (
               <div className="text-ink-400 px-3 py-1 text-xs">
-                +{userStats.length - 8} more
+                +{participantCount - 8} more
               </div>
             )}
           </Col>
@@ -1249,15 +1664,21 @@ function UserDistributionChart(props: {
 }
 
 function UserLegendItem(props: {
-  userId: string
+  user: DisplayUser | undefined
   color: string
   percentage: string
   isHovered: boolean
   onHover: () => void
   onLeave: () => void
 }) {
-  const { userId, color, percentage, isHovered, onHover, onLeave } = props
-  const { data: userData } = useAPIGetter('user/by-id/:id', { id: userId })
+  const {
+    user: userData,
+    color,
+    percentage,
+    isHovered,
+    onHover,
+    onLeave,
+  } = props
 
   return (
     <Row
@@ -1379,6 +1800,27 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
 
   const sales = data?.sales ?? []
 
+  // Batch-fetch the (deduplicated) sale user ids in one request rather than
+  // one per row. With limit: 50 above, the previous N+1 fired up to 50
+  // separate user/by-id calls per /prize load — the dominant N+1 on the
+  // page in production. Skip when empty so we don't fire ?ids=[] (which
+  // 400s on the server).
+  const saleUserIds = useMemo(
+    () => Array.from(new Set(sales.map((s) => s.userId))),
+    [sales]
+  )
+  const { data: saleUsersData } = useAPIGetter(
+    'users/by-id',
+    { ids: saleUserIds },
+    undefined,
+    undefined,
+    saleUserIds.length > 0
+  )
+  const saleUserById = useMemo(
+    () => new Map((saleUsersData ?? []).map((u) => [u.id, u])),
+    [saleUsersData]
+  )
+
   if (sales.length === 0) {
     return null
   }
@@ -1410,7 +1852,11 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
           </thead>
           <tbody className="divide-canvas-50 divide-y">
             {sales.map((sale) => (
-              <SaleRow key={sale.id} sale={sale} />
+              <SaleRow
+                key={sale.id}
+                sale={sale}
+                user={saleUserById.get(sale.userId)}
+              />
             ))}
           </tbody>
         </table>
@@ -1428,9 +1874,9 @@ function SaleRow(props: {
     isFree: boolean
     createdTime: number
   }
+  user: DisplayUser | undefined
 }) {
-  const { sale } = props
-  const { data: userData } = useAPIGetter('user/by-id/:id', { id: sale.userId })
+  const { sale, user: userData } = props
 
   return (
     <tr className="hover:bg-canvas-50 transition-colors">

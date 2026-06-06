@@ -63,6 +63,7 @@ export const SORTS = [
   { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'High %', value: 'prob-descending' },
   { label: 'Low %', value: 'prob-ascending' },
+  { label: 'Mid %', value: 'prob-50' },
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
@@ -78,12 +79,13 @@ export const predictionMarketSorts = new Set([
   'most-popular',
   'prob-descending',
   'prob-ascending',
+  'prob-50',
   'freshness-score',
 ])
 
 export const bountySorts = new Set(['bounty-amount'])
 
-const probSorts = new Set(['prob-descending', 'prob-ascending'])
+const probSorts = new Set(['prob-descending', 'prob-ascending', 'prob-50'])
 
 export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
@@ -112,6 +114,7 @@ export const FILTERS = [
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
   { label: 'Recently changed', value: 'news' },
+  { label: 'Uncertain', value: 'uncertain' },
 ] as const
 
 export type Filter = (typeof FILTERS)[number]['value']

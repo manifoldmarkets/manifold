@@ -1,6 +1,7 @@
 'use client'
 import { DaimoModal } from '@daimo/sdk/web'
 import clsx from 'clsx'
+import { useRouter } from 'next/router'
 
 import { isUserBanned } from 'common/ban-utils'
 import { canReceiveBonuses } from 'common/user'
@@ -11,7 +12,11 @@ import { SEO } from 'web/components/SEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
+import { PersonalizedOfferCard } from 'web/components/checkout/personalized-offer-card'
+import { HiddenOfferChip } from 'web/components/checkout/hidden-offer-chip'
+import { checkoutURL } from 'web/lib/service/stripe'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Button } from 'web/components/buttons/button'
@@ -45,7 +50,15 @@ const MANA_TIERS_USD = [10, 25, 50, 100, 500, 1000, 2500]
 type SessionState =
   | { status: 'idle' }
   | { status: 'creating' }
-  | { status: 'ready'; sessionId: string; clientSecret: string }
+  | {
+      status: 'ready'
+      sessionId: string
+      clientSecret: string
+      // Captured at session creation so the lock release on close uses the
+      // exact offer the lock was taken on — not the live effectiveOfferId,
+      // which can flip to null if the user dismisses during payment.
+      offerId: string | null
+    }
   | { status: 'completed' }
   | { status: 'error'; message: string }
 
@@ -195,36 +208,142 @@ function CheckoutContent() {
   const isBonusEligible = !!user && canReceiveBonuses(user)
   const canUseCreditCard = canPay && isBonusEligible
 
-  const handleBuyManaClick = async () => {
+  const offers = usePersonalizedManaOffers()
+  const router = useRouter()
+  // ?showOffer=1 is set by the personalized-offer notification deep link.
+  // When the user has only dismissed offers, this temporarily forces the
+  // card to render so they can still redeem from the notification. Does
+  // NOT mutate dismiss state — if they dismiss again or refresh without
+  // the param, the chip-only view returns.
+  const overrideShowOffer =
+    router.query.showOffer === '1' && offers.dismissedCount > 0
+
+  const activatedRef = useRef(false)
+  useEffect(() => {
+    if (!user?.id || activatedRef.current) return
+    if (offers.pendingCount > 0) {
+      activatedRef.current = true
+      api('activate-personalized-mana-offers', {})
+        .then(() => offers.refresh())
+        .catch((e) => console.error('Offer activation failed:', e))
+    }
+  }, [user?.id, offers.pendingCount])
+
+  // Two ways the card can be visible: (1) the user has non-dismissed active
+  // offers, (2) override path from the notification when they only have
+  // dismissed-but-active offers. In the override-only case we render the
+  // card using the dismissed bucket's data and hide the X (dismissing again
+  // would just bounce them since the URL still says showOffer=1).
+  const isOverrideOnly = offers.activeCount === 0 && overrideShowOffer
+  const effectiveActiveCount = isOverrideOnly
+    ? offers.dismissedCount
+    : offers.activeCount
+  const effectiveNextExpiresAt = isOverrideOnly
+    ? offers.dismissedNextExpiresAt
+    : offers.nextExpiresAt
+  const effectiveOfferId = isOverrideOnly
+    ? offers.dismissedNextRedeemableOfferId
+    : offers.nextRedeemableOfferId
+
+  const handleBuyManaClick = async (offerId?: string) => {
     if (!canPay) return
 
     setSessionState({ status: 'creating' })
 
     try {
-      const result = await api('create-daimo-session', {})
+      const result = await api(
+        'create-daimo-session',
+        offerId ? { offerId } : {}
+      )
       setSessionState({
         status: 'ready',
         sessionId: result.sessionId,
         clientSecret: result.clientSecret,
+        offerId: offerId ?? null,
       })
-    } catch (e) {
+    } catch (e: unknown) {
+      // 409 = another payment session is already in flight for this offer.
+      // Surface a specific message so the user understands what to do.
+      const message =
+        e instanceof Error && /already in progress/i.test(e.message)
+          ? 'You already have a checkout in progress for this offer. Complete or close it first.'
+          : 'Failed to start payment. Please try again.'
       console.error('Failed to create Daimo session:', e)
-      setSessionState({
-        status: 'error',
-        message: 'Failed to start payment. Please try again.',
-      })
+      setSessionState({ status: 'error', message })
+      // Refresh in case server state changed (e.g. offer just redeemed elsewhere).
+      offers.refresh()
     }
+  }
+
+  const handleOfferStripe = () => {
+    if (!user?.id || !effectiveOfferId) return
+    if (!canUseCreditCard) {
+      setVerificationModalOpen(true)
+      return
+    }
+    // /createcheckoutsession is POST-only on the backend; navigate via a
+    // programmatic form submission (matches AddFundsModal's pattern).
+    const action = checkoutURL(
+      user.id,
+      offers.priceUsdStripe,
+      typeof window !== 'undefined' ? window.location.href : '',
+      effectiveOfferId
+    )
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = action
+    document.body.appendChild(form)
+    form.submit()
   }
 
   const handlePaymentCompleted = () => {
     setSessionState({ status: 'completed' })
   }
 
+  // After a successful Daimo payment the webhook commits offer redemption
+  // server-side. A brief delay catches the typical webhook latency so the
+  // next render sees fresh offer state. useEffect cleanup cancels the
+  // timer if the user navigates away before it fires.
+  useEffect(() => {
+    if (sessionState.status !== 'completed') return
+    const t = setTimeout(() => offers.refresh(), 1500)
+    return () => clearTimeout(t)
+  }, [sessionState.status])
+
   const handleModalClose = () => {
-    if (sessionState.status === 'ready') {
+    const wasReady = sessionState.status === 'ready'
+    // Capture the session's offerId BEFORE clearing state — handleModalClose
+    // is called when the Daimo modal closes (abandoned or completed), and
+    // by the time the release fires the user may have dismissed, so
+    // effectiveOfferId could be null. The session-captured value is the
+    // exact lock that was taken.
+    const sessionOfferId =
+      sessionState.status === 'ready' ? sessionState.offerId : null
+    if (wasReady) {
       setSessionState({ status: 'idle' })
     }
+    // If the user abandoned a personalized-offer session, release the pending
+    // lock server-side so they can immediately retry. The 30-minute TTL would
+    // catch it eventually, but this is instant.
+    if (wasReady && sessionOfferId) {
+      api('release-personalized-mana-offer-lock', {
+        offerId: sessionOfferId,
+      }).catch((e) =>
+        console.warn('Failed to release personalized offer lock:', e)
+      )
+    }
+    // Refresh on abandon too — the offer may have expired or been voided
+    // while the modal was open.
+    offers.refresh()
   }
+
+  // The offer card and hidden-offer chip nest INSIDE the standard Buy mana
+  // card body, above the mana image. They're only meaningful when we're
+  // showing the normal payment state (success / error states swap the body
+  // out entirely, naturally hiding the offer UI).
+  const showOfferCard = effectiveActiveCount > 0
+  const showHiddenChip =
+    !showOfferCard && offers.dismissedCount > 0 && offers.activeCount === 0
 
   return (
     <Col className="mx-auto w-full max-w-xl gap-4 px-4 py-6 sm:py-8">
@@ -281,118 +400,178 @@ function CheckoutContent() {
           </Col>
         ) : (
           <Col className="gap-4 p-6 sm:p-8">
-            {/* Mana Image */}
-            <div className="flex justify-center">
-              <Image
-                src="/buy-mana-graphics/100k.png"
-                alt="Mana coins"
-                width={140}
-                height={140}
-                className="object-contain"
+            {/* Personalized mana sale — nests at the top of the buy area so
+                the standard Buy mana shell stays the visual anchor; offer is
+                a section ON the screen, not a replacement FOR it. Hidden
+                chip takes its place when dismissed. */}
+            {showOfferCard ? (
+              <PersonalizedOfferCard
+                activeCount={effectiveActiveCount}
+                nextExpiresAt={effectiveNextExpiresAt}
+                manaAmount={offers.manaAmount}
+                priceUsdStripe={offers.priceUsdStripe}
+                priceUsdCrypto={offers.priceUsdCrypto}
+                cryptoLoading={
+                  sessionState.status === 'creating' ||
+                  sessionState.status === 'ready'
+                }
+                cryptoDisabled={!canPay}
+                creditCardDisabled={!canPay}
+                onBuyWithCrypto={() =>
+                  handleBuyManaClick(effectiveOfferId ?? undefined)
+                }
+                onBuyWithCreditCard={handleOfferStripe}
+                onDismiss={
+                  isOverrideOnly
+                    ? undefined
+                    : () => {
+                        offers
+                          .setDismissed(true)
+                          .catch((e) =>
+                            console.error('Failed to dismiss offer:', e)
+                          )
+                      }
+                }
+                dismissDisabled={offers.dismissPending}
               />
-            </div>
+            ) : showHiddenChip ? (
+              <HiddenOfferChip
+                count={offers.dismissedCount}
+                expiresAt={offers.dismissedNextExpiresAt}
+                disabled={offers.dismissPending}
+                onClick={() => {
+                  offers
+                    .setDismissed(false)
+                    .catch((e) =>
+                      console.error('Failed to un-dismiss offer:', e)
+                    )
+                }}
+              />
+            ) : null}
 
-            <p className="text-ink-600 text-center text-sm">
-              Pay with USDC from any wallet or chain, or use a credit card
-            </p>
+            {/* When the personalized offer is showing, hide the standard
+                mana image, intro text, and big payment buttons — those are
+                duplicative of what's inside the offer block. Disclaimer
+                still renders below. */}
+            {!showOfferCard && (
+              <>
+                {/* Mana Image */}
+                <div className="flex justify-center">
+                  <Image
+                    src="/buy-mana-graphics/100k.png"
+                    alt="Mana coins"
+                    width={140}
+                    height={140}
+                    className="object-contain"
+                  />
+                </div>
 
-            {/* Payment Buttons */}
-            <Col className="mx-auto w-full max-w-sm gap-3">
-              {!user?.id ? (
-                <button
-                  disabled
-                  className={clsx(
-                    'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                    'cursor-not-allowed bg-gray-400',
-                    'px-8 py-4 text-lg font-semibold text-white shadow-lg'
-                  )}
-                >
-                  <Row className="items-center justify-center gap-3">
-                    <BanIcon className="h-6 w-6" />
-                    <span>Loading account…</span>
-                  </Row>
-                </button>
-              ) : isPurchaseBanned ? (
-                <button
-                  disabled
-                  className={clsx(
-                    'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                    'cursor-not-allowed bg-gray-400',
-                    'px-8 py-4 text-lg font-semibold text-white shadow-lg'
-                  )}
-                >
-                  <Row className="items-center justify-center gap-3">
-                    <BanIcon className="h-6 w-6" />
-                    <span>Purchases Disabled</span>
-                  </Row>
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={handleBuyManaClick}
-                    disabled={
-                      sessionState.status === 'creating' ||
-                      sessionState.status === 'ready'
-                    }
-                    className={clsx(
-                      'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
-                      'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
-                      'px-8 py-4 text-lg font-semibold text-white shadow-lg',
-                      'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
-                      'active:scale-[0.98]',
-                      'disabled:cursor-not-allowed disabled:opacity-50'
-                    )}
-                  >
-                    <Row className="items-center justify-center gap-3">
-                      {sessionState.status === 'creating' ? (
-                        <>
-                          <LoadingIndicator size="sm" className="!text-white" />
-                          <span>Loading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                          <span>Buy with crypto</span>
-                        </>
-                      )}
-                    </Row>
-                  </button>
+                <p className="text-ink-600 text-center text-sm">
+                  Pay with USDC from any wallet or chain, or use a credit card
+                </p>
 
-                  <Tooltip
-                    text={
-                      canUseCreditCard
-                        ? null
-                        : 'Verify your identity to enable credit card purchases.'
-                    }
-                    placement="bottom"
-                    className="block w-full"
-                  >
+                {/* Payment Buttons */}
+                <Col className="mx-auto w-full max-w-sm gap-3">
+                  {!user?.id ? (
                     <button
-                      onClick={() => {
-                        if (canUseCreditCard) {
-                          setCreditCardModalOpen(true)
-                        } else {
-                          setVerificationModalOpen(true)
-                        }
-                      }}
+                      disabled
                       className={clsx(
-                        'group relative w-full overflow-hidden rounded-xl border-2',
-                        'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
-                        'active:scale-[0.98]',
-                        canUseCreditCard
-                          ? 'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
-                          : 'border-ink-300 bg-canvas-50 text-ink-500 dark:bg-canvas-100'
+                        'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
+                        'cursor-not-allowed bg-gray-400',
+                        'px-8 py-4 text-lg font-semibold text-white shadow-lg'
                       )}
                     >
                       <Row className="items-center justify-center gap-3">
-                        <FaCreditCard className="h-5 w-5 transition-transform group-hover:scale-110" />
-                        <span>Buy with credit card</span>
+                        <BanIcon className="h-6 w-6" />
+                        <span>Loading account…</span>
                       </Row>
                     </button>
-                  </Tooltip>
-                </>
-              )}
-            </Col>
+                  ) : isPurchaseBanned ? (
+                    <button
+                      disabled
+                      className={clsx(
+                        'relative w-full overflow-hidden rounded-xl border-2 border-transparent',
+                        'cursor-not-allowed bg-gray-400',
+                        'px-8 py-4 text-lg font-semibold text-white shadow-lg'
+                      )}
+                    >
+                      <Row className="items-center justify-center gap-3">
+                        <BanIcon className="h-6 w-6" />
+                        <span>Purchases Disabled</span>
+                      </Row>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleBuyManaClick()}
+                        disabled={
+                          sessionState.status === 'creating' ||
+                          sessionState.status === 'ready'
+                        }
+                        className={clsx(
+                          'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
+                          'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
+                          'px-8 py-4 text-lg font-semibold text-white shadow-lg',
+                          'transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-indigo-500/25',
+                          'active:scale-[0.98]',
+                          'disabled:cursor-not-allowed disabled:opacity-50'
+                        )}
+                      >
+                        <Row className="items-center justify-center gap-3">
+                          {sessionState.status === 'creating' ? (
+                            <>
+                              <LoadingIndicator
+                                size="sm"
+                                className="!text-white"
+                              />
+                              <span>Loading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                              <span>Buy with crypto</span>
+                            </>
+                          )}
+                        </Row>
+                      </button>
+
+                      <Tooltip
+                        text={
+                          canUseCreditCard
+                            ? null
+                            : 'Verify your identity to enable credit card purchases.'
+                        }
+                        placement="bottom"
+                        className="block w-full"
+                      >
+                        <button
+                          onClick={() => {
+                            if (canUseCreditCard) {
+                              setCreditCardModalOpen(true)
+                            } else {
+                              setVerificationModalOpen(true)
+                            }
+                          }}
+                          className={clsx(
+                            'group relative w-full overflow-hidden rounded-xl border-2',
+                            'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
+                            'active:scale-[0.98]',
+                            canUseCreditCard
+                              ? 'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
+                              : 'border-ink-300 bg-canvas-50 text-ink-500 dark:bg-canvas-100'
+                          )}
+                        >
+                          <Row className="items-center justify-center gap-3">
+                            <FaCreditCard className="h-5 w-5 transition-transform group-hover:scale-110" />
+                            <span>Buy with credit card</span>
+                          </Row>
+                        </button>
+                      </Tooltip>
+                    </>
+                  )}
+                </Col>
+              </>
+            )}
 
             {/* Legal disclaimer */}
             <div className="text-ink-600 rounded-lg bg-amber-50/50 p-4 text-sm dark:bg-amber-950/20">
@@ -413,42 +592,50 @@ function CheckoutContent() {
               </p>
             </div>
 
-            {/* Promotional Banner */}
-            {isFirstCryptoPurchase ? (
-              <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 dark:border-amber-700/50 dark:from-amber-950/30 dark:to-yellow-950/30">
-                <Row className="items-center gap-2">
-                  <SparklesIcon className="h-5 w-5 text-amber-500" />
-                  <span className="font-semibold text-amber-700 dark:text-amber-400">
-                    First Crypto Purchase Bonus: Get up to 20% extra mana!
-                  </span>
-                </Row>
-                <p className="text-ink-600 mt-1 text-sm">
-                  As a first-time crypto buyer, you'll receive a 10% bonus on
-                  your purchase — plus an additional 10% on orders of $
-                  {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more.
-                  Bonuses apply to crypto purchases only.
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 dark:border-purple-700/50 dark:from-purple-950/30 dark:to-indigo-950/30">
-                <Row className="items-center gap-2">
-                  <GiftIcon className="h-5 w-5 text-purple-500" />
-                  <span className="font-semibold text-purple-700 dark:text-purple-400">
-                    Crypto Bulk Bonus: 10% extra on $
-                    {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ crypto
-                    purchases
-                  </span>
-                </Row>
-                <p className="text-ink-600 mt-1 text-sm">
-                  Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}{' '}
-                  USDC or more and receive a 10% bonus. Credit card purchases
-                  are not eligible for bonuses.
-                </p>
-              </div>
-            )}
+            {/* Hide the bonus banner + rewards table when the personalized
+                offer is showing — keeps the offer block as the focal point. */}
+            {!showOfferCard && (
+              <>
+                {/* Promotional Banner */}
+                {isFirstCryptoPurchase ? (
+                  <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 dark:border-amber-700/50 dark:from-amber-950/30 dark:to-yellow-950/30">
+                    <Row className="items-center gap-2">
+                      <SparklesIcon className="h-5 w-5 text-amber-500" />
+                      <span className="font-semibold text-amber-700 dark:text-amber-400">
+                        First Crypto Purchase Bonus: Get up to 20% extra mana!
+                      </span>
+                    </Row>
+                    <p className="text-ink-600 mt-1 text-sm">
+                      As a first-time crypto buyer, you'll receive a 10% bonus
+                      on your purchase — plus an additional 10% on orders of $
+                      {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()} or more.
+                      Bonuses apply to crypto purchases only.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 dark:border-purple-700/50 dark:from-purple-950/30 dark:to-indigo-950/30">
+                    <Row className="items-center gap-2">
+                      <GiftIcon className="h-5 w-5 text-purple-500" />
+                      <span className="font-semibold text-purple-700 dark:text-purple-400">
+                        Crypto Bulk Bonus: 10% extra on $
+                        {CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}+ crypto
+                        purchases
+                      </span>
+                    </Row>
+                    <p className="text-ink-600 mt-1 text-sm">
+                      Purchase ${CRYPTO_BULK_THRESHOLD_DISPLAY.toLocaleString()}{' '}
+                      USDC or more and receive a 10% bonus. Credit card
+                      purchases are not eligible for bonuses.
+                    </p>
+                  </div>
+                )}
 
-            {/* Mana rewards table */}
-            <ManaRewardsTable isFirstCryptoPurchase={isFirstCryptoPurchase} />
+                {/* Mana rewards table */}
+                <ManaRewardsTable
+                  isFirstCryptoPurchase={isFirstCryptoPurchase}
+                />
+              </>
+            )}
           </Col>
         )}
       </div>

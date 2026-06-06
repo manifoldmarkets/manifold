@@ -30,6 +30,7 @@ import {
 } from 'web/lib/validation/contract-validation'
 import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
 import { Button } from '../buttons/button'
+import { BackButton } from '../contract/back-button'
 import { ExpandSection } from '../explainer-panel'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -764,10 +765,13 @@ export function NewContractPanel(props: {
     newType: CreateableOutcomeType,
     shouldSumToOne: boolean
   ) => {
+    const defaultShouldAnswersSumToOne =
+      newType === 'DATE' ? false : shouldSumToOne
+
     setFormState((prev) => ({
       ...prev,
       outcomeType: newType,
-      shouldAnswersSumToOne: shouldSumToOne,
+      shouldAnswersSumToOne: defaultShouldAnswersSumToOne,
       // Clear all market-specific data for discussion posts
       answers:
         newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
@@ -1023,7 +1027,9 @@ export function NewContractPanel(props: {
     answers: formState.answers.map((text) => ({ text })),
     closeTime: formState.closeDate
       ? (() => {
-          const time = new Date(formState.closeDate + 'T23:59').getTime()
+          const time = new Date(
+            formState.closeDate + 'T' + (formState.closeHoursMinutes || '23:59')
+          ).getTime()
           return isNaN(time) ? undefined : time
         })()
       : undefined,
@@ -1046,12 +1052,7 @@ export function NewContractPanel(props: {
       {/* Header */}
       <Row className="bg-canvas-0 border-ink-200 items-center justify-between border-b px-4 py-3 shadow-sm">
         <Row className="items-center gap-3">
-          <button
-            onClick={() => Router.back()}
-            className="text-ink-600 hover:text-ink-800 transition-colors lg:hidden"
-          >
-            ←
-          </button>
+          <BackButton className="lg:hidden" />
           <h1 className="text-ink-900 text-xl font-semibold">
             Create a market
           </h1>

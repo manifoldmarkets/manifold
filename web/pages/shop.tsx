@@ -115,6 +115,7 @@ import {
 } from 'web/components/shop/giveaway-promo-card'
 import { NewBadge } from 'web/components/shop/new-badge'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
 
@@ -1554,6 +1555,7 @@ function MerchItemCard(props: {
     isNew,
     onPurchased,
   } = props
+  const tryOfferReview = useStoreReviewNudge('shop-order')
   const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
   const discountedPrice =
     shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
@@ -1783,11 +1785,15 @@ function MerchItemCard(props: {
     setPurchasing(true)
     try {
       const shippingMana = Math.round(parseFloat(selectedShipping.rate) * 100)
+      const { email, ...restShipping } = shippingInfo
+      const shippingPayload = email.trim()
+        ? { ...restShipping, email: email.trim() }
+        : restShipping
       const result = await api('shop-purchase-merch', {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
         shippingCost: shippingMana,
-        shipping: shippingInfo,
+        shipping: shippingPayload,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
       setShowConfirmOrderModal(false)
@@ -1807,6 +1813,8 @@ function MerchItemCard(props: {
         email: '',
       })
       onPurchased?.()
+      // Let the success toast land before the OS modal pops over it.
+      setTimeout(tryOfferReview, 3000)
     } catch (e: any) {
       toast.error(e.message || 'Failed to place order')
       setShowConfirmOrderModal(false)
@@ -4930,7 +4938,10 @@ function StreakFreezePreview(props: {
   // Include local bonus for optimistic display
   const currentFreezes = (user?.streakForgiveness ?? 0) + localBonus
   // Max is only a purchase cap, not an accumulation cap
-  const maxPurchasable = getMaxStreakFreezes(allEntitlements)
+  const maxPurchasable = getMaxStreakFreezes(
+    allEntitlements,
+    user?.bonusEligibility
+  )
   const isAtPurchaseMax = currentFreezes >= maxPurchasable
 
   return (
@@ -5991,7 +6002,7 @@ function ShopItemCard(props: {
     item.id === 'streak-forgiveness' &&
     user &&
     (user.streakForgiveness ?? 0) + localStreakBonus >=
-      getMaxStreakFreezes(allEntitlements)
+      getMaxStreakFreezes(allEntitlements, user.bonusEligibility)
 
   // Check if seasonal item is currently unavailable
   const isSeasonalUnavailable =

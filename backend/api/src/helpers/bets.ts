@@ -17,10 +17,23 @@ import { convertBet } from 'common/supabase/bets'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { convertUser } from 'common/supabase/users'
 import { UniqueBettorBonusTxn } from 'common/txn'
-import { canReceiveBonuses, User, UserBan } from 'common/user'
+import { User, UserBan } from 'common/user'
+import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+  roundTierBonus,
+} from 'common/supporter-config'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
-import { groupBy, mapValues, orderBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
+import {
+  groupBy,
+  mapValues,
+  orderBy,
+  sortBy,
+  sumBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 import { log } from 'shared/monitoring/log'
 import {
@@ -83,7 +96,7 @@ export const fetchContractBetDataAndValidate = async (
     select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
-    select data, margin_loan, loan from user_contract_metrics ucm where 
+    select data, margin_loan, loan from user_contract_metrics ucm where
       contract_id = $2 and user_id = $1
       and (
         -- Get metrics for selected answers
@@ -91,7 +104,7 @@ export const fetchContractBetDataAndValidate = async (
         or
         -- Get null answer metrics
         ucm.answer_id is null
-      ); 
+      );
     -- Limit orderers' contract metrics
     with matching_user_answer_pairs as (
       select distinct b.user_id, b.answer_id
@@ -202,6 +215,16 @@ export const fetchContractBetDataAndValidate = async (
   }
   if (contract.outcomeType === 'STONK' && isApi) {
     throw new APIError(403, 'API users cannot bet on STONK contracts.')
+  }
+  if (
+    contract.creatorBannedFromBetting &&
+    uid === contract.creatorId &&
+    !isAdminTrade
+  ) {
+    throw new APIError(
+      403,
+      'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
+    )
   }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
@@ -473,20 +496,13 @@ export const getUniqueBettorBonusQuery = (
     // Require the contract creator to also be the answer creator for real-money bonus.
     creatorId === contract.creatorId
 
-  // Check if both bettor and creator can receive bonuses (verified or grandfathered)
-  // If creator is not provided, we skip the creator eligibility check (backwards compat)
-  const bettorCanReceiveBonuses = canReceiveBonuses(bettor)
-  const creatorCanReceiveBonuses = creator ? canReceiveBonuses(creator) : true
-
   if (
     isCreator ||
     isBot ||
     isUnlisted ||
     isRedemption ||
     isUnfilledLimitOrder ||
-    isApi ||
-    !bettorCanReceiveBonuses ||
-    !creatorCanReceiveBonuses
+    isApi
   )
     return {
       balanceUpdate: undefined,
@@ -494,16 +510,41 @@ export const getUniqueBettorBonusQuery = (
     }
 
   // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
-  const bonusAmount = getUniqueBettorBonusAmount(
+  const baseBonusAmount = getUniqueBettorBonusAmount(
     contract.totalLiquidity,
     'answers' in contract ? contract.answers.length : 0
   )
+
+  // Scale by creator's effective tier. Unverified creators get a reduced
+  // amount (0.5x) instead of zero; verified and all subscribers get the
+  // full base amount. If creator wasn't passed in, assume verified for
+  // backwards compatibility.
+  const creatorTier = creator
+    ? resolveEffectiveTier({
+        entitlements: creator.entitlements,
+        bonusEligibility: creator.bonusEligibility,
+      })
+    : 'verified'
+  const uniqueTraderMultiplier = getEffectiveBonusMultiplier(
+    creatorTier,
+    'uniqueTrader'
+  )
+  const bonusAmount = roundTierBonus(baseBonusAmount * uniqueTraderMultiplier)
+
+  if (bonusAmount <= 0) {
+    return {
+      balanceUpdate: undefined,
+      txnQuery: 'select 1 where false',
+    }
+  }
 
   const bonusTxnData = removeUndefinedProps({
     contractId: contract.id,
     uniqueNewBettorId: bettor.id,
     answerId,
     isPartner,
+    effectiveTier: creatorTier,
+    uniqueTraderMultiplier,
   })
 
   const bonusTxn: Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'> = {

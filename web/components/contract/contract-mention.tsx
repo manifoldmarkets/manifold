@@ -8,6 +8,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { track } from 'web/lib/service/analytics'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
+import { LogoIcon } from '../icons/logo-icon'
 
 export function ContractMention(props: {
   contract: Contract
@@ -37,6 +38,10 @@ export function ContractMention(props: {
       }}
       // target={getIsNative() ? '_self' : '_blank'}
     >
+      <LogoIcon
+        aria-hidden
+        className="mr-1 inline h-[1em] w-[1em] stroke-indigo-700 align-text-bottom dark:stroke-white"
+      />
       <span
         className={clsx(
           'break-anywhere group-hover/mention:text-primary-500 group-focus/mention:text-primary-500 text-primary-800  mr-0.5 whitespace-normal font-medium transition-colors',

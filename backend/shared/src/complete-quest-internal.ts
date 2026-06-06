@@ -1,4 +1,4 @@
-import { canReceiveBonuses, User } from 'common/user'
+import { User } from 'common/user'
 import { QUEST_DETAILS, QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -15,7 +15,11 @@ import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs } from 'common/supabase/utils'
 import { log } from 'shared/utils'
-import { getBenefit } from 'common/supporter-config'
+import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+  roundTierBonus,
+} from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
 dayjs.extend(utc)
@@ -97,14 +101,15 @@ const completeQuestInternal = async (
     startOfDay,
     requiredCount: questDetails.requiredCount,
   })
-  // If they have created the required amounts, send them a quest txn reward
-  // Only pay quest reward if user can receive bonuses (verified or grandfathered)
+  // If they have created the required amounts, send them a quest txn reward.
+  // All users receive a quest bonus, but the amount scales with their effective
+  // tier (unverified = 0.2x, verified = 1x, subscribers higher).
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
-    if (!canReceiveBonuses(user)) {
-      log(`Skipped quest bonus for user ${user.id} - not eligible for bonuses`)
+    const resp = await awardQuestBonus(user, questType, count)
+    if (resp.bonusAmount <= 0) {
+      log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
       return { count }
     }
-    const resp = await awardQuestBonus(user, questType, count)
 
     await createQuestPayoutNotification(
       user,
@@ -166,16 +171,23 @@ const awardQuestBonus = async (
     // Fetch user's supporter entitlements for bonus multiplier
     const entitlements = await getActiveSupporterEntitlements(tx, user.id)
 
-    // Get tier-specific quest multiplier (1x for non-supporters)
-    const questMultiplier = getBenefit(entitlements, 'questMultiplier')
+    // Resolve effective tier (verification + subscription) and apply its multiplier.
+    // Unverified users still receive bonuses — at 0.2x — so they have something
+    // to lose by not verifying.
+    const effectiveTier = resolveEffectiveTier({
+      entitlements,
+      bonusEligibility: user.bonusEligibility,
+    })
+    const questMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
     const baseReward = QUEST_DETAILS[questType].rewardAmount
-    const rewardAmount = Math.floor(baseReward * questMultiplier)
+    const rewardAmount = roundTierBonus(baseReward * questMultiplier)
 
     const bonusTxnData = {
       questType,
       questCount: newCount,
-      supporterBonus: questMultiplier > 1,
+      effectiveTier,
       questMultiplier,
+      supporterBonus: questMultiplier > 1,
     }
 
     const bonusTxn: Omit<QuestRewardTxn, 'fromId' | 'id' | 'createdTime'> = {

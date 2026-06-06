@@ -2,6 +2,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "composite": true,
+    "skipLibCheck": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitReturns": true,

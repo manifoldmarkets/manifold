@@ -95,6 +95,7 @@ export type notification_source_types =
   | 'prize_winner'
   | 'charity_champion'
   | 'merch_order_update'
+  | 'personalized_mana_offer'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -372,6 +373,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Merch order updates',
     detailed: 'Updates when your merch order ships or is canceled',
   },
+  personalized_mana_offer: {
+    simple: 'Personalized mana sales',
+    detailed: 'Time-limited personalized discounts on mana purchases',
+  },
   market_movements: {
     simple: 'Market movements',
     detailed:
@@ -498,6 +503,10 @@ export type PrizeDrawingNotificationData = {
   sweepstakesNum: number
   totalPrizeUsd: number
   closeTime: number
+  // Optional for backward compat — older 'created' notifications didn't
+  // include this. The in-app renderer falls back to a generic format
+  // when missing so historical notifications still render.
+  winnerCount?: number
 }
 
 export type CharityGiveawayNotificationData = {

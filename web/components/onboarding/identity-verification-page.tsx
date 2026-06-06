@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
 import { canReceiveBonuses, User } from 'common/user'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -56,7 +56,11 @@ export function IdentityVerificationPage(props: {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
       track('identity verification: error', {
         error: e instanceof Error ? e.message : 'Unknown error',
       })

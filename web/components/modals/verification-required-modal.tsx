@@ -5,7 +5,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 
@@ -13,11 +13,14 @@ type VerificationRequiredModalProps = {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
-  // What the user is trying to do (for messaging)
+  // What the user is trying to do (for messaging). Defaults to
+  // 'earn full bonuses' — under the unverified-tier model, unverified
+  // users already receive reduced bonuses, so the verify CTA is about
+  // unlocking the full amount, not enabling bonuses at all.
   action?:
     | 'claim free loan'
-    | 'earn quest rewards'
-    | 'receive bonuses'
+    | 'earn full bonuses'
+    | 'enter prize drawings'
     | 'buy mana with a credit card'
 }
 
@@ -25,7 +28,7 @@ export function VerificationRequiredModal({
   open,
   setOpen,
   user,
-  action = 'receive bonuses',
+  action = 'earn full bonuses',
 }: VerificationRequiredModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +47,11 @@ export function VerificationRequiredModal({
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
       track('bonus verification: error', {
         action,
         error: e instanceof Error ? e.message : 'Unknown error',
@@ -143,11 +150,18 @@ function DeniedContent({
         Not Eligible
       </div>
       <div className="text-ink-600 text-center">
-        Unfortunately, you are not eligible to {action}. This may be due to a
-        previous verification attempt that was unsuccessful.
+        A previous verification attempt was unsuccessful, so you can't {action}{' '}
+        on this account.
       </div>
       <div className="text-ink-500 mt-2 text-center text-sm">
-        If you believe this is an error, please contact support.
+        If you believe this is a mistake, email{' '}
+        <a
+          href="mailto:info@manifold.markets"
+          className="text-primary-700 font-semibold hover:underline"
+        >
+          info@manifold.markets
+        </a>{' '}
+        and our team can re-enable verification for you.
       </div>
       <Button onClick={onClose} color="gray" className="mt-4 w-full">
         Close

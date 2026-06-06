@@ -20,7 +20,8 @@ import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { applyPendingClarifications } from './apply-pending-clarifications'
 import { autoAwardBounty } from './auto-award-bounty'
-import { autoGenerateAndResolvePrizeDrawings } from './auto-generate-and-resolve-prize-drawings'
+// Autoresolve temporarily disabled — uncomment to continue with $100/day.
+// import { autoGenerateAndResolvePrizeDrawings } from './auto-generate-and-resolve-prize-drawings'
 import { autobanUsers } from './autoban-users'
 import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
@@ -30,6 +31,7 @@ import { createJob } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
+import { expirePersonalizedManaOffers } from './expire-personalized-mana-offers'
 import {
   refreshAchAccountAge,
   refreshAchComments,
@@ -179,6 +181,17 @@ export function createJobs() {
       checkSubscriptionExpiry
     ),
     createJob(
+      'expire-personalized-mana-offers',
+      // Hourly. Interval is not load-bearing for correctness — the redemption
+      // path in stripe-endpoints.ts and daimo-webhook.ts accepts a 5-minute
+      // grace past expires_at and the cron itself only flips rows that are
+      // ALREADY past that grace window. Changing this to a finer cadence is
+      // fine; just don't widen the redemption-side grace above the cron lag
+      // or accidentally-expired offers will redeem at the offer rate again.
+      '0 17 * * * *',
+      expirePersonalizedManaOffers
+    ),
+    createJob(
       'send-unseen-notifications',
       '0 0 13 * * *', // 1 PM daily
       sendUnseenMarketMovementNotifications
@@ -188,11 +201,12 @@ export function createJobs() {
       '0 30 2 * * *', // 230 AM daily
       cleanOldNotifications
     ),
-    createJob(
-      'auto-generate-and-resolve-prize-drawings',
-      '0 0 13 * * *', // 1 PM PT daily
-      autoGenerateAndResolvePrizeDrawings
-    ),
+    // Autoresolve temporarily disabled — uncomment to continue with $100/day.
+    // createJob(
+    //   'auto-generate-and-resolve-prize-drawings',
+    //   '0 0 13 * * *', // 1 PM PT daily
+    //   autoGenerateAndResolvePrizeDrawings
+    // ),
     // // Achievement MV refreshes (nightly, staggered ~10 mins apart)
     // createJob(
     //   'update-ach-trades',

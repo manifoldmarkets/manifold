@@ -37,7 +37,7 @@ import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilitySlider } from '../widgets/probability-input'
-import { sliderColors } from '../widgets/slider'
+import { SliderColor } from '../widgets/slider'
 import { MoneyDisplay } from './money-display'
 import { ShareBetModal } from './share-bet'
 
@@ -66,11 +66,11 @@ export default function LimitOrderPanel(props: {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
   }
   initialProb?: number

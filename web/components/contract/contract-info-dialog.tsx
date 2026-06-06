@@ -1,4 +1,4 @@
-import { formatTime } from 'client-common/lib/time'
+import { formatTimeWithTimezone } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
@@ -25,6 +25,8 @@ import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import { Col } from '../layout/col'
+import { Button } from '../buttons/button'
 import SuperBanControl from '../SuperBanControl'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { InfoBox } from '../widgets/info-box'
@@ -37,8 +39,9 @@ import { ContractHistoryButton } from './contract-edit-history-button'
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
+  onRequestCreatorBan?: () => void
 }) => {
-  const { contract, user } = props
+  const { contract, user, onRequestCreatorBan } = props
   const { creatorId } = contract
   const shouldAnswersSumToOne =
     contract.mechanism === 'cpmm-multi-1'
@@ -144,7 +147,7 @@ export const Stats = (props: {
 
         <tr>
           <td>Question created</td>
-          <td>{formatTime(createdTime)}</td>
+          <td>{formatTimeWithTimezone(createdTime)}</td>
         </tr>
 
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
@@ -187,7 +190,7 @@ export const Stats = (props: {
                   dayjs(contract.createdTime).add(dayjs.duration(900, 'year'))
                 )
                   ? 'Never'
-                  : formatTime(closeTime)}
+                  : formatTimeWithTimezone(closeTime)}
               </td>
             </tr>
           )}
@@ -195,7 +198,7 @@ export const Stats = (props: {
         {resolutionTime && isBettingContract && (
           <tr>
             <td>Question resolved</td>
-            <td>{formatTime(resolutionTime)}</td>
+            <td>{formatTimeWithTimezone(resolutionTime)}</td>
           </tr>
         )}
 
@@ -454,6 +457,46 @@ export const Stats = (props: {
           </tr>
         )}
 
+        {!hideAdvanced && isBettingContract && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              🚫 Disable creator betting{' '}
+              <InfoTooltip
+                text={
+                  'Prevent the creator from placing bets on this market. This cannot be undone except by a moderator or admin.'
+                }
+              />
+            </td>
+            <td>
+              <CheckOrSwitch
+                canToggle={
+                  isAdmin ||
+                  (isMod && !isCreator) ||
+                  (isCreator && !contract.creatorBannedFromBetting)
+                }
+                on={contract.creatorBannedFromBetting === true}
+                setOn={(on) => {
+                  if (on) {
+                    onRequestCreatorBan?.()
+                  } else if ((isMod && !isCreator) || isAdmin) {
+                    toast.promise(
+                      updateMarket({
+                        contractId: contract.id,
+                        creatorBannedFromBetting: false,
+                      }),
+                      {
+                        loading: 'Reversing creator betting ban...',
+                        success: 'Creator can now bet on this market.',
+                        error: 'Error reversing ban. Try again?',
+                      }
+                    )
+                  }
+                }}
+              />
+            </td>
+          </tr>
+        )}
+
         {!hideAdvanced && contract.outcomeType === 'DATE' && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
@@ -627,13 +670,15 @@ function AdminHomePageScoreAdjustmentRows(props: {
               {hasActiveAdjustment ? (
                 <span>
                   {contract.homePageScoreAdjustment?.toFixed(3)}
-                  {hasValidExpiry ? ` until ${formatTime(expiresAt)}` : ''}
+                  {hasValidExpiry
+                    ? ` until ${formatTimeWithTimezone(expiresAt)}`
+                    : ''}
                 </span>
               ) : contract.homePageScoreAdjustment !== undefined ? (
                 <span>
                   {contract.homePageScoreAdjustment.toFixed(3)}
                   {hasValidExpiry
-                    ? ` (expired ${formatTime(expiresAt)})`
+                    ? ` (expired ${formatTimeWithTimezone(expiresAt)})`
                     : ' (expired)'}
                 </span>
               ) : (
@@ -737,6 +782,7 @@ export function ContractInfoDialog(props: {
   const { contract, user, open, setOpen } = props
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
+  const [showCreatorBanConfirm, setShowCreatorBanConfirm] = useState(false)
 
   return (
     <Modal
@@ -744,7 +790,11 @@ export function ContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <Stats contract={contract} user={user} />
+      <Stats
+        contract={contract}
+        user={user}
+        onRequestCreatorBan={() => setShowCreatorBanConfirm(true)}
+      />
 
       {!!user && (
         <Row className="flex-wrap gap-2">
@@ -758,6 +808,51 @@ export function ContractInfoDialog(props: {
       {(isAdmin || isTrusted) && (
         <SuperBanControl userId={contract.creatorId} />
       )}
+
+      <Modal
+        open={showCreatorBanConfirm}
+        setOpen={setShowCreatorBanConfirm}
+        className="bg-canvas-0 rounded-lg"
+      >
+        <Col className="gap-4 p-6">
+          <h3 className="text-ink-1000 text-lg font-semibold">
+            Block yourself from betting?
+          </h3>
+          <p className="text-ink-700 text-sm">
+            You are about to block yourself from betting on this market. This
+            action <strong>cannot be undone</strong> except by a moderator or
+            admin. Your existing limit orders will be cancelled and you will not
+            be able to buy or sell any shares.
+          </p>
+          <Row className="justify-end gap-2">
+            <Button
+              color="gray"
+              onClick={() => setShowCreatorBanConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              onClick={() => {
+                setShowCreatorBanConfirm(false)
+                toast.promise(
+                  updateMarket({
+                    contractId: contract.id,
+                    creatorBannedFromBetting: true,
+                  }),
+                  {
+                    loading: 'Blocking creator from betting...',
+                    success: 'You are now blocked from betting on this market.',
+                    error: 'Error setting ban. Try again?',
+                  }
+                )
+              }}
+            >
+              Confirm
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
     </Modal>
   )
 }

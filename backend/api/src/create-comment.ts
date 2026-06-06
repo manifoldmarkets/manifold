@@ -82,12 +82,20 @@ export const createCommentOnContractInternal = async (
   const now = Date.now()
 
   if (replyToCommentId) {
-    const repliedComment = await pg.oneOrNone(
-      `select comment_id from contract_comments where comment_id = $1 and contract_id = $2`,
+    const repliedComment = await pg.oneOrNone<{
+      comment_id: string
+      reply_to_comment_id: string | null
+    }>(
+      `select comment_id, data->>'replyToCommentId' as reply_to_comment_id
+       from contract_comments
+       where comment_id = $1 and contract_id = $2`,
       [replyToCommentId, contractId]
     )
     if (!repliedComment) {
       throw new APIError(404, 'Comment to reply to not found')
+    }
+    if (repliedComment.reply_to_comment_id) {
+      throw new APIError(400, 'Can only reply to top-level comments')
     }
   }
 
@@ -232,12 +240,13 @@ export const validateComment = async (
 
   if (!contract) throw new APIError(404, 'Contract not found')
 
-  // Allow market creators to comment on their own markets; everyone else
-  // must be bonus-eligible or have purchased mana.
+  // Market creators can always comment on their own markets. Everyone else
+  // must pass canCommentOnMarket, which unlocks after 7 days, KYC verification,
+  // any mana purchase, or any active subscription.
   if (!canCommentOnMarket(you) && contract.creatorId !== you.id) {
     throw new APIError(
       403,
-      'Please verify your identity or purchase mana to comment on other users\' markets.'
+      'Commenting on other users\' markets unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock immediately.'
     )
   }
   if (contract.token !== 'MANA') {

@@ -90,6 +90,7 @@ export const PseudoNumericContractChart = (props: {
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={data}
+      yTickFormat={formatLargeNumber}
       Tooltip={(props) => (
         <SingleContractChartTooltip
           ttProps={props}

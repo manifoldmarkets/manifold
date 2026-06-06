@@ -1,9 +1,10 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 import { APIError } from 'common/api/utils'
 import { log } from 'shared/utils'
 
 export const models = {
-  flash: 'gemini-3.1-flash-lite-preview' as const,
+  flashLite: 'gemini-3.1-flash-lite' as const,
+  flash: 'gemini-3.5-flash' as const,
   pro: 'gemini-3.1-pro-preview' as const,
 }
 
@@ -46,34 +47,27 @@ export const promptGemini = async (
     throw new APIError(500, 'Missing GEMINI_API_KEY')
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey)
+  const ai = new GoogleGenAI({ apiKey })
 
-  // Configure model with optional Google Search grounding and thinking level
-  const modelConfig: any = { model }
+  const config: Record<string, any> = {}
+  if (system) {
+    config.systemInstruction = system
+  }
   if (webSearch) {
-    modelConfig.tools = [{ googleSearch: {} }]
+    config.tools = [{ googleSearch: {} }]
   }
-
-  // Configure thinking level for Gemini 3 models
-  // Note: 'minimal' and 'medium' are only supported by Gemini 3 Flash
   if (thinkingLevel) {
-    modelConfig.generationConfig = {
-      ...modelConfig.generationConfig,
-      thinkingConfig: {
-        thinkingLevel: thinkingLevel,
-      },
-    }
+    config.thinkingConfig = { thinkingLevel }
   }
-
-  const geminiModel = genAI.getGenerativeModel(modelConfig)
 
   try {
-    // Combine system prompt and user prompt if system is provided
-    const fullPrompt = system ? `${system}\n\n${prompt}` : prompt
+    const result = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      ...(Object.keys(config).length > 0 ? { config } : {}),
+    })
 
-    const result = await geminiModel.generateContent(fullPrompt)
-    const response = result.response.text()
-
+    const response = result.text ?? ''
     log('Gemini returned message:', response)
     return response
   } catch (error: any) {

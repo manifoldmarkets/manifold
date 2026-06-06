@@ -15,7 +15,7 @@ import { Title } from '../widgets/title'
 import { canReceiveBonuses, PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { DeleteYourselfButton } from './delete-yourself'
 import { capitalize } from 'lodash'
@@ -155,7 +155,11 @@ function IdentityVerificationSetting() {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
     } finally {
       setLoading(false)
     }

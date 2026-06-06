@@ -7,6 +7,7 @@ import {
 } from 'common/supporter-config'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { TierBadge } from './tier-badge'
 
 /**
@@ -23,12 +24,20 @@ export function BenefitsTable({
   currentTier,
   activeTier,
   showFreeColumn = true,
+  effectiveTier,
 }: {
   currentTier: SupporterTier | null
   activeTier: SupporterTier | null
   showFreeColumn?: boolean
+  // When provided, the free column splits into Unverified / Verified and the
+  // user's current effective tier (one of those two) is highlighted.
+  // Falls back to the legacy single "Free" column if undefined.
+  effectiveTier?: 'unverified' | 'verified'
 }) {
   const isFreeUser = currentTier === null
+  const isUnverifiedUser = isFreeUser && effectiveTier === 'unverified'
+  const isVerifiedUser = isFreeUser && effectiveTier === 'verified'
+  const splitFreeColumn = showFreeColumn && effectiveTier !== undefined
 
   return (
     <div className="bg-canvas-0 border-ink-200 rounded-xl border">
@@ -40,8 +49,8 @@ export function BenefitsTable({
               <th className="p-4 text-left">
                 <h2 className="text-lg font-semibold">Benefits Comparison</h2>
               </th>
-              {/* Free column header - CURRENT badge */}
-              {showFreeColumn && (
+              {/* Free column header(s) - CURRENT badge */}
+              {showFreeColumn && !splitFreeColumn && (
                 <th className="px-2 pb-0 pt-2 align-bottom sm:px-4">
                   {isFreeUser && (
                     <div
@@ -57,6 +66,40 @@ export function BenefitsTable({
                     </div>
                   )}
                 </th>
+              )}
+              {splitFreeColumn && (
+                <>
+                  <th className="px-2 pb-0 pt-2 align-bottom sm:px-4">
+                    {isUnverifiedUser && (
+                      <div
+                        className={clsx(
+                          'mx-auto w-fit rounded-t-md px-1.5 py-0.5 text-[8px] font-bold',
+                          'sm:px-2 sm:text-[10px]',
+                          'border-l border-r border-t',
+                          'sm:border-l-2 sm:border-r-2 sm:border-t-2',
+                          'border-ink-300 bg-ink-100 text-ink-600 dark:bg-ink-700 dark:text-ink-300'
+                        )}
+                      >
+                        CURRENT
+                      </div>
+                    )}
+                  </th>
+                  <th className="px-2 pb-0 pt-2 align-bottom sm:px-4">
+                    {isVerifiedUser && (
+                      <div
+                        className={clsx(
+                          'mx-auto w-fit rounded-t-md px-1.5 py-0.5 text-[8px] font-bold',
+                          'sm:px-2 sm:text-[10px]',
+                          'border-l border-r border-t',
+                          'sm:border-l-2 sm:border-r-2 sm:border-t-2',
+                          'border-ink-300 bg-ink-100 text-ink-600 dark:bg-ink-700 dark:text-ink-300'
+                        )}
+                      >
+                        CURRENT
+                      </div>
+                    )}
+                  </th>
+                </>
               )}
               {TIER_ORDER.map((tier) => {
                 const isCurrentTier = currentTier === tier
@@ -93,8 +136,8 @@ export function BenefitsTable({
               <th className="text-ink-600 border-ink-200 border-b p-2 text-left text-sm font-medium sm:p-3">
                 Benefit
               </th>
-              {/* Free column header */}
-              {showFreeColumn && (
+              {/* Free column header(s) */}
+              {showFreeColumn && !splitFreeColumn && (
                 <th
                   className={clsx(
                     'p-2 text-center text-sm font-medium transition-all duration-200 sm:p-3',
@@ -105,6 +148,36 @@ export function BenefitsTable({
                 >
                   <span className="text-ink-500">Free</span>
                 </th>
+              )}
+              {splitFreeColumn && (
+                <>
+                  <th
+                    className={clsx(
+                      'px-1 py-2 text-center text-xs font-medium transition-all duration-200 sm:p-3 sm:text-sm',
+                      isUnverifiedUser &&
+                        'border-ink-300 rounded-t-lg border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2',
+                      !isUnverifiedUser && 'border-ink-200 border-b'
+                    )}
+                  >
+                    <Row className="items-center justify-center gap-0.5">
+                      <span className="text-ink-500">Unverified</span>
+                      <InfoTooltip
+                        size="sm"
+                        text="Unverified users receive ~20% of normal bonuses. Referral bonuses are unavailable (require verification). Verify or subscribe to unlock the full amounts."
+                      />
+                    </Row>
+                  </th>
+                  <th
+                    className={clsx(
+                      'px-1 py-2 text-center text-xs font-medium transition-all duration-200 sm:p-3 sm:text-sm',
+                      isVerifiedUser &&
+                        'border-ink-300 rounded-t-lg border-l border-r border-t sm:border-l-2 sm:border-r-2 sm:border-t-2',
+                      !isVerifiedUser && 'border-ink-200 border-b'
+                    )}
+                  >
+                    <span className="text-ink-500">Verified</span>
+                  </th>
+                </>
               )}
               {TIER_ORDER.map((tier) => {
                 const isCurrentTier = currentTier === tier
@@ -181,8 +254,8 @@ export function BenefitsTable({
                       </Col>
                     </Row>
                   </td>
-                  {/* Free column value */}
-                  {showFreeColumn && (
+                  {/* Free column value(s) */}
+                  {showFreeColumn && !splitFreeColumn && (
                     <td
                       className={clsx(
                         'text-ink-400 p-2 text-center text-sm font-semibold transition-all duration-200 sm:p-3',
@@ -195,6 +268,37 @@ export function BenefitsTable({
                     >
                       {benefit.baseValue}
                     </td>
+                  )}
+                  {splitFreeColumn && (
+                    <>
+                      <td
+                        className={clsx(
+                          'text-ink-400 px-1 py-2 text-center text-xs font-semibold transition-all duration-200 sm:p-3 sm:text-sm',
+                          isUnverifiedUser &&
+                            'border-ink-300 border-l border-r sm:border-l-2 sm:border-r-2',
+                          isUnverifiedUser &&
+                            isLastRow &&
+                            'rounded-b-lg border-b sm:border-b-2'
+                        )}
+                      >
+                        {('unverifiedValue' in benefit
+                          ? (benefit as { unverifiedValue?: string })
+                              .unverifiedValue
+                          : undefined) ?? benefit.baseValue}
+                      </td>
+                      <td
+                        className={clsx(
+                          'text-ink-400 px-1 py-2 text-center text-xs font-semibold transition-all duration-200 sm:p-3 sm:text-sm',
+                          isVerifiedUser &&
+                            'border-ink-300 border-l border-r sm:border-l-2 sm:border-r-2',
+                          isVerifiedUser &&
+                            isLastRow &&
+                            'rounded-b-lg border-b sm:border-b-2'
+                        )}
+                      >
+                        {benefit.baseValue}
+                      </td>
+                    </>
                   )}
                   {TIER_ORDER.map((tier) => {
                     const isCurrentTier = currentTier === tier

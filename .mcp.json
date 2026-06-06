@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "postgres-dev": {
+      "command": "node",
+      "args": ["./scripts/mcp-postgres.js", "dev-mantic-markets", "mcp-postgres-conn"]
+    },
+    "postgres-prod": {
+      "command": "node",
+      "args": ["./scripts/mcp-postgres.js", "mantic-markets", "mcp-postgres-conn"]
+    }
+  }
+}

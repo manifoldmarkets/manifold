@@ -15,7 +15,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
 import { LiveRegion } from './live-region'
-import { sliderColors } from './slider'
+import { SliderColor } from './slider'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { buildArray } from 'common/util/array'
 
@@ -161,7 +161,7 @@ export function BuyAmountInput(props: {
   quickButtonAmountSize?: 'large' | 'small'
   disableQuickButtons?: boolean
   token?: InputTokenType
-  sliderColor?: keyof typeof sliderColors
+  sliderColor?: SliderColor
   fieldLabel?: string
 }) {
   const {

@@ -147,6 +147,11 @@ type UniqueBettorBonus = {
     // Old unique bettor bonus txns stored all unique bettor ids
     uniqueBettorIds?: string[]
     isPartner: boolean
+    // Creator's effective tier at award time + multiplier applied. Used by
+    // the income notification to render the upsell line when the creator is
+    // unverified (and the amount is therefore reduced).
+    effectiveTier?: string
+    uniqueTraderMultiplier?: number
   }
 }
 
@@ -157,6 +162,11 @@ type BettingStreakBonus = {
   data: {
     currentBettingStreak?: number
     contractId?: string
+    // Effective tier at time of award + multiplier applied. Used by notifications
+    // to render the upsell line when the recipient is unverified.
+    effectiveTier?: string
+    streakMultiplier?: number
+    supporterBonus?: boolean
   }
 }
 
@@ -459,6 +469,10 @@ type QuestReward = {
   data: {
     questType: QuestType
     questCount: number
+    // See BettingStreakBonus.data for usage of these fields.
+    effectiveTier?: string
+    questMultiplier?: number
+    supporterBonus?: boolean
   }
 }
 

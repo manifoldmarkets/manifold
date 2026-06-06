@@ -256,7 +256,11 @@ export const selectSweepstakesWinners = async (
           sourceUserUsername: MANIFOLD_USER_USERNAME,
           sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
           sourceText: `$${winner.prizeUsdc}`,
-          sourceSlug: '/prize',
+          // Deep-link to the specific drawing the user won. Falling back to
+          // `/prize` (the active drawing) is wrong once a new drawing starts —
+          // winners would land on a drawing they didn't win and have to use
+          // the dropdown to navigate back to claim.
+          sourceSlug: `/prize/${sweepstakesNum}`,
           sourceTitle: `You won ${winner.label} place ($${winner.prizeUsdc} USDC) in the Prize Drawing!`,
           data,
         }

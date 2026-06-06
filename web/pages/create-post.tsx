@@ -214,7 +214,11 @@ function VerifyToCreatePost() {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
     } finally {
       setLoading(false)
     }

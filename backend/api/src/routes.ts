@@ -155,6 +155,7 @@ import {
 } from './search-contracts'
 import { searchGroups, searchMyGroups } from './search-groups'
 import { searchUsers } from './search-users'
+import { rebalancePosition } from './rebalance-position'
 import { sellShares } from './sell-shares'
 import { setnews } from './set-news'
 import { superBanUser } from './super-ban-user'
@@ -204,10 +205,16 @@ import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
 import { getSweepstakesList } from './get-sweepstakes-list'
+import { adminAnnouncePrizeDrawing } from './admin-announce-prize-drawing'
+import { checkSweepstakesGeo } from './check-sweepstakes-geo'
 import { adminCreateSweepstakes } from './admin-create-sweepstakes'
 import { getCharityGiveawayList } from './get-charity-giveaway-list'
 import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
 import { createDaimoSession } from './create-daimo-session'
+import { getPersonalizedManaOffers } from './get-personalized-mana-offers'
+import { activatePersonalizedManaOffers } from './activate-personalized-mana-offers'
+import { releasePersonalizedManaOfferLock } from './release-personalized-mana-offer-lock'
+import { dismissPersonalizedManaOffer } from './dismiss-personalized-mana-offer'
 import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
 import { adminUpdateCharityGiveawayPrize } from './admin-update-charity-giveaway-prize'
 import { createPost } from './create-post'
@@ -264,6 +271,7 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
+import { getReferralEarnings } from './get-referral-earnings'
 import { cancelMerchOrder } from './cancel-merch-order'
 import { getMerchOrders } from './get-merch-orders'
 import { getMerchStockStatus } from './get-merch-stock-status'
@@ -298,6 +306,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
+  'market/:contractId/rebalance': rebalancePosition,
   bets: getBets,
   'bet-points': getBetPointsBetween,
   'get-bettors-from-bet-ids': getBettorsFromBetIds,
@@ -490,6 +499,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-concise-title': generateConciseTitle,
   'get-close-date': getCloseDateEndpoint,
   'refer-user': referUser,
+  'get-referral-earnings': getReferralEarnings,
   'create-post-comment': createPostComment,
   'create-post': createPost,
   'update-post': updatePost,
@@ -519,6 +529,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-charity-giveaway-list': getCharityGiveawayList,
   'get-crypto-purchase-status': getCryptoPurchaseStatus,
   'create-daimo-session': createDaimoSession,
+  'get-personalized-mana-offers': getPersonalizedManaOffers,
+  'activate-personalized-mana-offers': activatePersonalizedManaOffers,
+  'release-personalized-mana-offer-lock': releasePersonalizedManaOfferLock,
+  'dismiss-personalized-mana-offer': dismissPersonalizedManaOffer,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
@@ -532,6 +546,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-sweepstakes-prize': claimSweepstakesPrize,
   'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
   'admin-create-sweepstakes': adminCreateSweepstakes,
+  'admin-announce-prize-drawing': adminAnnouncePrizeDrawing,
+  'check-sweepstakes-geo': checkSweepstakesGeo,
   'admin-create-charity-giveaway': adminCreateCharityGiveaway,
   'admin-update-charity-giveaway-prize': adminUpdateCharityGiveawayPrize,
   'admin-get-prize-claims': adminGetPrizeClaims,
