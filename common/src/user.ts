@@ -133,7 +133,21 @@ export type User = {
   // 'verified' = passed identity verification (iDenfy)
   // 'grandfathered' = existing user before cash raffles launched
   // 'ineligible' = not eligible for bonuses
-  bonusEligibility?: 'verified' | 'grandfathered' | 'ineligible'
+  // 'requires_verification' = admin/system has flagged this user; they must
+  //   complete identity verification before bonuses unlock (e.g. suspected
+  //   alt, suspicious signup, manual review). Distinct from undefined so the
+  //   UI can show different messaging and the system can audit forced flags.
+  bonusEligibility?:
+    | 'verified'
+    | 'grandfathered'
+    | 'ineligible'
+    | 'requires_verification'
+
+  // Free-text note set when an admin (or iDenfy) flags this user — e.g.
+  // "suspected alt of @other-user", "iDenfy: underage", "manual review
+  // requested". Surfaced in admin UI for audit/context only; never shown
+  // to the user themselves.
+  verificationFlagReason?: string
 
   // Prize-drawing (cash raffle) eligibility — independent of bonusEligibility so
   // a user can be eligible for one but not the other (e.g. eligible for bonuses

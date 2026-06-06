@@ -180,6 +180,7 @@ import { adminIpBanUser } from './admin-ip-ban-user'
 import { adminRecoverUser } from './admin-recover-user'
 import { adminSetBonusEligibility } from './admin-set-bonus-eligibility'
 import { adminSetPrizeEligibility } from './admin-set-prize-eligibility'
+import { adminFlagForVerification } from './admin-flag-for-verification'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
@@ -294,6 +295,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-ip-ban-user': adminIpBanUser,
   'admin-set-bonus-eligibility': adminSetBonusEligibility,
   'admin-set-prize-eligibility': adminSetPrizeEligibility,
+  'admin-flag-for-verification': adminFlagForVerification,
   'admin-get-related-users': adminGetRelatedUsers,
   'admin-search-users-by-email': adminSearchUsersByEmail,
   'anonymize-user': anonymizeUser,

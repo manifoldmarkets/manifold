@@ -52,9 +52,12 @@ function NewUsersTable() {
 
   const users = data.users
 
+  // Narrowed to the values admin-set-bonus-eligibility accepts. The
+  // 'requires_verification' state is set via admin-flag-for-verification
+  // (separate endpoint with a reason input) and isn't selectable here.
   const handleEligibilityChange = async (
     userId: string,
-    value: User['bonusEligibility'] | ''
+    value: 'verified' | 'grandfathered' | 'ineligible' | ''
   ) => {
     setUpdatingId(userId)
     try {
@@ -187,11 +190,19 @@ function NewUsersTable() {
               </td>
               <td className="px-4 py-3">
                 <select
-                  value={u.bonusEligibility ?? ''}
+                  value={
+                    u.bonusEligibility === 'requires_verification'
+                      ? ''
+                      : u.bonusEligibility ?? ''
+                  }
                   onChange={(e) =>
                     handleEligibilityChange(
                       u.id,
-                      e.target.value as User['bonusEligibility'] | ''
+                      e.target.value as
+                        | 'verified'
+                        | 'grandfathered'
+                        | 'ineligible'
+                        | ''
                     )
                   }
                   disabled={updatingId === u.id}

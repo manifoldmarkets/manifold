@@ -35,6 +35,11 @@ export function VerificationRequiredModal({
 
   // Check if user has been explicitly denied (ineligible)
   const isDenied = user.bonusEligibility === 'ineligible'
+  // User has been actively flagged for required verification (suspected alt,
+  // suspicious signup, manual review). Distinct from the default unverified
+  // state — show different copy so they understand this is a system action,
+  // not just a missing-step prompt.
+  const isFlagged = user.bonusEligibility === 'requires_verification'
 
   const handleVerify = async () => {
     setLoading(true)
@@ -62,7 +67,7 @@ export function VerificationRequiredModal({
   }
 
   const handleClose = () => {
-    track('bonus verification: dismissed', { action, isDenied })
+    track('bonus verification: dismissed', { action, isDenied, isFlagged })
     setOpen(false)
   }
 
@@ -78,6 +83,7 @@ export function VerificationRequiredModal({
             loading={loading}
             error={error}
             action={action}
+            isFlagged={isFlagged}
           />
         )}
       </Col>
@@ -91,22 +97,25 @@ function VerifyContent({
   loading,
   error,
   action,
+  isFlagged = false,
 }: {
   onClose: () => void
   onVerify: () => void
   loading: boolean
   error: string | null
   action: string
+  isFlagged?: boolean
 }) {
   return (
     <>
       <ShieldCheckIcon className="text-primary-500 mx-auto h-16 w-16" />
       <div className="text-primary-700 text-center text-2xl font-semibold">
-        Verification Required
+        {isFlagged ? 'Verification Needed' : 'Verification Required'}
       </div>
       <div className="text-ink-600 text-center">
-        To {action}, please verify your identity. This helps us ensure fair play
-        and prevents fraud.
+        {isFlagged
+          ? `Your account has been flagged for review. To ${action}, please complete identity verification. If verification succeeds, your bonus eligibility will be reinstated.`
+          : `To ${action}, please verify your identity. This helps us ensure fair play and prevents fraud.`}
       </div>
       <div className="text-ink-500 mt-2 text-center text-sm">
         Verification takes about 2 minutes and requires a valid ID.

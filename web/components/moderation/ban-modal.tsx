@@ -1063,9 +1063,17 @@ function BanHistoryRecord({
 function BonusEligibilityControl({ user }: { user: User }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  // 'requires_verification' is set via the dedicated flag endpoint on the
+  // user-info page; this control sticks to admin-set-bonus-eligibility's
+  // narrower enum. Normalize the initial value to undefined when flagged so
+  // the local state type matches.
+  const initialEligibility =
+    user.bonusEligibility === 'requires_verification'
+      ? undefined
+      : user.bonusEligibility
   const [selectedEligibility, setSelectedEligibility] = useState<
     'verified' | 'grandfathered' | 'ineligible' | null | undefined
-  >(user.bonusEligibility)
+  >(initialEligibility)
 
   const eligibilityOptions = [
     { value: 'verified' as const, label: 'Verified', color: 'text-green-600' },

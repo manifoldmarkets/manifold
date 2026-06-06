@@ -318,7 +318,16 @@ export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 // Pure: callers pass in the bits we need so this file doesn't need to import User.
 export function resolveEffectiveTier(args: {
   entitlements: UserEntitlement[] | undefined
-  bonusEligibility: 'verified' | 'grandfathered' | 'ineligible' | undefined
+  // Accepts the full User.bonusEligibility union. 'requires_verification'
+  // behaves identically to 'ineligible'/undefined for tier purposes —
+  // user hasn't completed identity verification, so they fall into the
+  // 'unverified' tier (unless they have a subscription).
+  bonusEligibility:
+    | 'verified'
+    | 'grandfathered'
+    | 'ineligible'
+    | 'requires_verification'
+    | undefined
 }): EffectiveTier {
   const subTier = getUserSupporterTier(args.entitlements)
   if (subTier) return subTier
@@ -365,7 +374,11 @@ export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
 // it, non-subscribers default to the unverified (lowest) cap.
 export function getMaxStreakFreezes(
   entitlements: UserEntitlement[] | undefined,
-  bonusEligibility?: 'verified' | 'grandfathered' | 'ineligible'
+  bonusEligibility?:
+    | 'verified'
+    | 'grandfathered'
+    | 'ineligible'
+    | 'requires_verification'
 ): number {
   const tier = resolveEffectiveTier({ entitlements, bonusEligibility })
   return TIER_BENEFITS[tier].maxStreakFreezes

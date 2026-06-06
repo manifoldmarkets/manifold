@@ -194,6 +194,24 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'admin-flag-for-verification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        // true = flag (bonusEligibility = 'requires_verification' + reason).
+        // false = clear (revert both fields to undefined).
+        flag: z.boolean(),
+        // Optional free-text note shown to other admins in the user-info
+        // page. Examples: "suspected alt of @other-user", "fraud signal from
+        // signup_blocklist", "manual review requested after dispute".
+        reason: z.string().max(500).optional(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
   'admin-search-users-by-email': {
     method: 'GET',
     visibility: 'undocumented',
@@ -3835,7 +3853,12 @@ export const API = (_apiTypeCheck = {
         referredByUserId: string | null
         referredByUsername: string | null
         referredByName: string | null
-        bonusEligibility: 'verified' | 'grandfathered' | 'ineligible' | null
+        bonusEligibility:
+          | 'verified'
+          | 'grandfathered'
+          | 'ineligible'
+          | 'requires_verification'
+          | null
         purchasedMana: boolean
         email: string | null
         ipAddress: string | null
