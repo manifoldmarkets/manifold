@@ -818,7 +818,6 @@ export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
 export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
 export type SweepstakesTicketTxn = Txn & SweepstakesTicket
-export type SweepstakesTicketRefundTxn = Txn & SweepstakesTicketRefund
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type MembershipPaymentTxn = Txn & MembershipPayment
 export type PreKycBonusTxn = Txn & PreKycBonus

@@ -100,6 +100,16 @@ describe('canEnterPrizeDrawings — fallback to bonus eligibility', () => {
   it('falls back to canReceiveBonuses for undefined bonus state', () => {
     expect(canEnterPrizeDrawings(u({}))).toBe(false)
   })
+
+  it('falls back to false for requires_verification bonus state', () => {
+    // A user flagged via admin-flag-for-verification gets
+    // bonusEligibility='requires_verification', and prizeEligibility is
+    // typically left unset. The fallback must block them — flagged users
+    // shouldn't be able to enter prize drawings while their flag is open.
+    expect(
+      canEnterPrizeDrawings(u({ bonusEligibility: 'requires_verification' }))
+    ).toBe(false)
+  })
 })
 
 describe('decoupling invariant — both axes independently togglable', () => {

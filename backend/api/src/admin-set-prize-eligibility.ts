@@ -55,13 +55,16 @@ export const adminSetPrizeEligibility: APIHandler<
     if (!voidOutstandingTickets || prizeEligibility !== 'ineligible') return
 
     // Find unresolved tickets for this user — drawings where winners haven't
-    // been picked yet. We deliberately exclude rows already voided (idempotent
-    // when this endpoint is called twice) and lock with FOR UPDATE so the
-    // refund txn is consistent with the void stamp.
+    // been picked yet. We don't void tickets in already-resolved drawings:
+    // those are sunk costs, and the claim-time eligibility guard handles the
+    // case where the user was a winner there.
     //
-    // We don't void tickets in already-resolved drawings: those are sunk
-    // costs, and the claim-time eligibility guard handles the case where the
-    // user was a winner there.
+    // Concurrency: FOR UPDATE OF t blocks any concurrent invocation of this
+    // endpoint at the same SELECT — the second caller waits until the first
+    // commits. After the first commits, the rows it touched have voided_at
+    // stamped, so the second caller's WHERE voided_at IS NULL excludes them
+    // and only any unprocessed rows remain. Net: a ticket is voided + refunded
+    // at most once, even under concurrent admin clicks. No SERIALIZABLE needed.
     const tickets = await tx.manyOrNone<{
       id: string
       sweepstakes_num: number
