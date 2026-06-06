@@ -8,6 +8,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { STARTING_BALANCE, REFERRAL_VERIFY_BONUS } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
+import { isUnderageDenial } from 'common/idenfy-helpers'
 import { createReferralNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
 import {
@@ -292,8 +293,15 @@ export const idenfyCallback = async (req: Request, res: Response) => {
       // multiple times). Without this, two concurrent callbacks could both
       // miss the dedup and double-pay.
       const { referralBonusAmount } = await runTransactionWithRetries(async (tx) => {
-        // Update bonus eligibility
-        await updateUser(tx, userId, { bonusEligibility: 'verified' })
+        // Update bonus eligibility and pin prize eligibility. Pinning
+        // 'eligible' (rather than leaving it unset to fall back through
+        // canReceiveBonuses) means an admin who later flags the user
+        // bonus-ineligible doesn't accidentally also cut prize access —
+        // the two axes stay decoupled once iDenfy has approved.
+        await updateUser(tx, userId, {
+          bonusEligibility: 'verified',
+          prizeEligibility: 'eligible',
+        })
         
         // Pay signup bonus if not already paid
         const existingSignupTxn = await tx.oneOrNone(
@@ -406,12 +414,60 @@ export const idenfyCallback = async (req: Request, res: Response) => {
     }
   }
 
-  // Mark user as ineligible if denied or suspected (but don't overwrite grandfathered status)
+  // Handle denial / suspicion. Two sub-cases:
+  //   (a) Underage denial — user has a valid ID but is under 18. The
+  //       motivating case for the prize/bonus split: keep them
+  //       bonus-eligible (they're a real person, mana bonuses are a play
+  //       currency) but explicitly mark prizeEligibility = 'ineligible'
+  //       so the prize-drawing fallback (which would otherwise derive
+  //       from bonus eligibility) is overridden.
+  //   (b) Generic denial / suspicion — block bonuses. prizeEligibility
+  //       falls back to that automatically; setting it explicitly here
+  //       is belt-and-suspenders.
   if (internalStatus === 'denied' || internalStatus === 'suspected') {
     const user = await getUser(userId)
-    if (user && user.bonusEligibility !== 'grandfathered') {
-      await updateUser(pg, userId, { bonusEligibility: 'ineligible' })
-      log(`Set bonusEligibility to 'ineligible' for user ${userId} (status: ${internalStatus})`)
+    if (user) {
+      const isUnderage = isUnderageDenial(payload)
+
+      if (isUnderage) {
+        // Under-18: don't touch bonusEligibility (preserve verified /
+        // grandfathered / undefined; the user can still earn mana bonuses).
+        // Pin prizeEligibility = 'ineligible' so canEnterPrizeDrawings
+        // can't fall back to "true" via bonus state. If the user has no
+        // bonus state yet, set 'verified' — iDenfy did confirm their ID,
+        // just not their age threshold.
+        const bonusUpdate =
+          user.bonusEligibility === undefined
+            ? { bonusEligibility: 'verified' as const }
+            : {}
+        await updateUser(pg, userId, {
+          ...bonusUpdate,
+          prizeEligibility: 'ineligible',
+        })
+        log(
+          `User ${userId} flagged underage via iDenfy — prizes blocked, mana bonuses preserved`
+        )
+      } else {
+        // Generic denial: block bonuses (preserves grandfathered, the
+        // pre-existing exception). prizeEligibility derives from
+        // canReceiveBonuses via the fallback when unset, so setting it
+        // explicitly here is redundant but defensive — if a future change
+        // alters the fallback, prize access remains correctly blocked.
+        const update: Record<string, unknown> = {
+          prizeEligibility: 'ineligible',
+        }
+        if (user.bonusEligibility !== 'grandfathered') {
+          update.bonusEligibility = 'ineligible'
+        }
+        await updateUser(pg, userId, update as any)
+        log(
+          `User ${userId} iDenfy ${internalStatus} — prizes blocked${
+            user.bonusEligibility !== 'grandfathered'
+              ? ', bonuses blocked'
+              : ', grandfathered bonus status preserved'
+          }`
+        )
+      }
     }
   }
 
