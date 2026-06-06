@@ -1,6 +1,8 @@
 import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { SweepstakesPrize, getPrizeForRank } from 'common/sweepstakes'
+import { getUser } from 'shared/utils'
+import { canEnterPrizeDrawings } from 'common/user'
 
 export const claimSweepstakesPrize: APIHandler<
   'claim-sweepstakes-prize'
@@ -32,12 +34,30 @@ export const claimSweepstakesPrize: APIHandler<
       throw new APIError(400, 'Winners have not been selected yet')
     }
 
+    // Defense-in-depth eligibility re-check at claim time. The draw-time void
+    // in selectSweepstakesWinners (sweepstakes.ts) is the primary gate, but it
+    // only runs once when winning_ticket_ids is written. If a user is flagged
+    // ineligible between the draw and the claim (e.g. iDenfy denial arrives
+    // after winners are selected), this guard prevents payout. Closes the
+    // claim-after-flag window — without it, draw-time eligibility is frozen
+    // at the moment the winners list is computed.
+    const user = await getUser(auth.uid)
+    if (!user) {
+      throw new APIError(404, 'User not found')
+    }
+    if (!canEnterPrizeDrawings(user)) {
+      throw new APIError(
+        403,
+        'You are not currently eligible to claim a prize. Please contact support if you believe this is in error.'
+      )
+    }
+
     // Check if user is a winner and get their rank
     const winningTicket = await tx.oneOrNone<{
       id: string
       user_id: string
     }>(
-      `SELECT id, user_id FROM sweepstakes_tickets 
+      `SELECT id, user_id FROM sweepstakes_tickets
          WHERE id = ANY($1) AND user_id = $2`,
       [sweepstakes.winning_ticket_ids, auth.uid]
     )
