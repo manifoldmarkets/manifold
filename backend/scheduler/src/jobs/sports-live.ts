@@ -13,9 +13,14 @@ export async function pollSportsLiveScores() {
 
   for (const config of Object.values(TOURNAMENT_CONFIGS)) {
     try {
-      const { updated, polled } = await pollAndStoreLiveScores(config, apiKey)
+      const { updated, resolved, polled } = await pollAndStoreLiveScores(
+        config,
+        apiKey
+      )
       if (polled) {
-        log(`[sports-live] ${config.footballDataCode}: updated=${updated}`)
+        log(
+          `[sports-live] ${config.footballDataCode}: updated=${updated} resolved=${resolved}`
+        )
       }
     } catch (e) {
       log.error(

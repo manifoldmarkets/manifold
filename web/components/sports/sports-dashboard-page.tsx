@@ -110,8 +110,9 @@ function parseAnswerText(text: string): { flag: string; name: string } {
 
 // football-data live statuses (no HALF_TIME exists — the break is PAUSED).
 const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
-// Poller runs ~every 2 min; treat live data older than this as stale so a match
-// that has actually ended (or a stalled poller) stops showing as live.
+// Poller runs ~every 10s and pushes a FINISHED status when a match ends; this
+// staleness floor is just a backstop for the initial render so a match that
+// ended while nobody was watching doesn't show as live.
 const LIVE_STALE_MS = 10 * 60 * 1000
 
 function liveScoreFromMarket(

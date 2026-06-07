@@ -416,9 +416,13 @@ async function getUnresolvedSportsMarkets(
   })
 }
 
-export async function resolveTournamentMarkets(
+// Resolve unresolved markets against an already-fetched set of terminal
+// (FINISHED/AWARDED) matches. Shared by the 15-min backstop cron and the 10s
+// live poller, so a finished match resolves within ~10s of full time off the
+// same frequent pull instead of waiting up to 15 min.
+export async function resolveTournamentMarketsForMatches(
   config: TournamentConfig,
-  apiKey: string,
+  terminalMatches: FDMatch[],
   opts: { dryRun?: boolean } = {}
 ): Promise<{
   resolved: number
@@ -443,15 +447,7 @@ export async function resolveTournamentMarkets(
   if (unresolvedMarkets.length === 0)
     return { resolved: 0, skipped: 0, errors: 0, log }
 
-  await sleep(1000)
-  // One unfiltered fetch, then keep terminal matches. Includes AWARDED
-  // (forfeit/walkover) — those carry a winner but aren't status=FINISHED, so a
-  // FINISHED-only fetch would leave them open forever ("needs attention").
-  const allMatches = await fetchAllCompetitionMatches(config, apiKey)
-  const finishedMatches = allMatches.filter(
-    (m) => m.status === 'FINISHED' || m.status === 'AWARDED'
-  )
-  const finishedById = new Map(finishedMatches.map((m) => [sportsEventId(m), m]))
+  const finishedById = new Map(terminalMatches.map((m) => [sportsEventId(m), m]))
 
   let resolved = 0
   let skipped = 0
@@ -558,6 +554,27 @@ export async function resolveTournamentMarkets(
   }
 
   return { resolved, skipped, errors, log }
+}
+
+// Backstop cron path: fetch all matches, keep the terminal ones, resolve. We
+// fetch unfiltered (not status=FINISHED) because AWARDED walkovers carry a winner
+// but aren't FINISHED. The 10s live poller resolves most matches first; this is
+// the safety net for anything it missed (e.g. finished outside an active window).
+export async function resolveTournamentMarkets(
+  config: TournamentConfig,
+  apiKey: string,
+  opts: { dryRun?: boolean } = {}
+): Promise<{
+  resolved: number
+  skipped: number
+  errors: number
+  log: ResolveLogEntry[]
+}> {
+  const allMatches = await fetchAllCompetitionMatches(config, apiKey)
+  const terminal = allMatches.filter(
+    (m) => m.status === 'FINISHED' || m.status === 'AWARDED'
+  )
+  return resolveTournamentMarketsForMatches(config, terminal, opts)
 }
 
 // ─── Market creation ───────────────────────────────────────────────────────────
@@ -867,51 +884,91 @@ export async function hasMatchInActiveWindow(
   return Number(row?.count ?? 0) > 0
 }
 
-// Fetch in-play matches and write current scores into the matching official
-// markets' contract.data. Returns how many markets were updated. No-op outside
-// active windows. Only touches unresolved MANA markets keyed by sportsEventId,
-// so community markets (which carry no sportsEventId) are never affected.
+// One pull per tick during a tournament's active window that does everything:
+// pushes live scores for in-progress matches over the websocket, clears the live
+// banner for finished ones, and resolves them in the same pass (resolution lands
+// within ~10s of full time, vs. up to 15 min on the backstop cron). No-op outside
+// active windows. Only touches unresolved MANA markets keyed by sportsEventId, so
+// community markets (which carry no sportsEventId) are never affected.
 export async function pollAndStoreLiveScores(
   config: TournamentConfig,
   apiKey: string
-): Promise<{ updated: number; polled: boolean }> {
+): Promise<{ updated: number; resolved: number; polled: boolean }> {
   const pg = createSupabaseDirectClient()
-  if (!(await hasMatchInActiveWindow(config, pg))) return { updated: 0, polled: false }
+  if (!(await hasMatchInActiveWindow(config, pg)))
+    return { updated: 0, resolved: 0, polled: false }
 
-  const matches = await fetchInPlayMatches(config, apiKey)
+  // Fetch a tight date window rather than only status=IN_PLAY, so the same pull
+  // also sees PAUSED (half-time) and the FINISHED transition it needs for
+  // live-clearing + resolution. Still one football-data call.
+  const dayMs = 24 * 60 * 60 * 1000
+  const matches = await fetchAllCompetitionMatches(config, apiKey, {
+    dateFrom: isoDateStr(new Date(Date.now() - dayMs)),
+    dateTo: isoDateStr(new Date(Date.now() + dayMs)),
+  })
   const updatedTime = Date.now()
   let updated = 0
+
   for (const m of matches) {
+    const status = m.status
+    const isLive = status === 'IN_PLAY' || status === 'PAUSED'
+    const isTerminal = status === 'FINISHED' || status === 'AWARDED'
+    if (!isLive && !isTerminal) continue
+
     const patch = {
       sportsHomeScore: m.score.fullTime.home,
       sportsAwayScore: m.score.fullTime.away,
-      sportsLiveStatus: m.status,
-      // football-data reports the half-time break as status PAUSED (there is no
-      // HALF_TIME status and no minute='HT' value); surface it as "HT".
-      sportsLiveMinute:
-        m.status === 'PAUSED'
+      sportsLiveStatus: status,
+      // half-time break is reported as PAUSED (no HALF_TIME status); show "HT".
+      sportsLiveMinute: isLive
+        ? status === 'PAUSED'
           ? 'HT'
           : m.minute != null
           ? String(m.minute)
-          : null,
+          : null
+        : null,
       sportsLiveUpdatedTime: updatedTime,
     }
-    const rows = await pg.manyOrNone<{ id: string }>(
-      `update contracts set data = data || $1::jsonb
-       where data->>'sportsEventId' = $2
-         and data->>'sportsLeague' = $3
-         and token = 'MANA'
-         and resolution is null
-       returning id`,
-      [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
-    )
-    updated += rows.length
-    // Push the new score to every open dashboard over the websocket — in-memory
-    // fan-out, so any number of viewers costs nothing extra (vs. each client
-    // polling the endpoint).
-    for (const row of rows) {
-      broadcastSportsLiveScore(row.id, patch)
+
+    if (isLive) {
+      const rows = await pg.manyOrNone<{ id: string }>(
+        `update contracts set data = data || $1::jsonb
+         where data->>'sportsEventId' = $2
+           and data->>'sportsLeague' = $3
+           and token = 'MANA'
+           and resolution is null
+         returning id`,
+        [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
+      )
+      updated += rows.length
+      // In-memory fan-out to every open dashboard — viewer-count-independent.
+      for (const row of rows) broadcastSportsLiveScore(row.id, patch)
+    } else {
+      // Terminal: tell dashboards the match is over (status is not live) so they
+      // clear the live banner immediately; resolution + the final score follow
+      // from the resolve pass below + the next dashboard refetch.
+      const rows = await pg.manyOrNone<{ id: string }>(
+        `select id from contracts
+         where data->>'sportsEventId' = $1
+           and data->>'sportsLeague' = $2
+           and token = 'MANA'
+           and resolution is null`,
+        [sportsEventId(m), config.sportsLeague]
+      )
+      for (const row of rows) broadcastSportsLiveScore(row.id, patch)
     }
   }
-  return { updated, polled: true }
+
+  // Resolve finished/awarded matches in the same pass (within ~10s of FT). The
+  // 15-min sports-resolve cron remains a backstop for anything missed here.
+  const terminal = matches.filter(
+    (m) => m.status === 'FINISHED' || m.status === 'AWARDED'
+  )
+  let resolved = 0
+  if (terminal.length > 0) {
+    const r = await resolveTournamentMarketsForMatches(config, terminal)
+    resolved = r.resolved
+  }
+
+  return { updated, resolved, polled: true }
 }
