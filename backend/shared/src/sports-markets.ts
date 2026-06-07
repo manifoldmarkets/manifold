@@ -20,6 +20,7 @@ import { answerToRow } from 'shared/supabase/answers'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { broadcastSportsLiveScore } from 'shared/websockets/helpers'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
@@ -891,6 +892,12 @@ export async function pollAndStoreLiveScores(
       [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
     )
     updated += rows.length
+    // Push the new score to every open dashboard over the websocket — in-memory
+    // fan-out, so any number of viewers costs nothing extra (vs. each client
+    // polling the endpoint).
+    for (const row of rows) {
+      broadcastSportsLiveScore(row.id, patch)
+    }
   }
   return { updated, polled: true }
 }

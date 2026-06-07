@@ -343,11 +343,14 @@ export function createJobs() {
       '0 0 7 * * *', // 7 AM UTC daily
       createUpcomingSportsMarkets
     ),
-    // Poll in-play scores every 2 minutes — no-op (no API call) outside a
-    // tournament's active match window, so it's cheap when nothing is live.
+    // Poll in-play scores every 10s and broadcast them over websockets. No-op
+    // (no football-data call, just a cheap DB count) outside a tournament's
+    // active match window. During a window it's ~6 calls/min per tournament,
+    // well under the 20/min football-data budget; the throttled client backs
+    // off if a burst ever approaches the limit.
     createJob(
       'sports-live',
-      '0 */2 * * * *', // every 2 minutes
+      '*/10 * * * * *', // every 10 seconds
       pollSportsLiveScores
     ),
   ]
