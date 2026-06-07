@@ -871,7 +871,14 @@ export async function pollAndStoreLiveScores(
       sportsHomeScore: m.score.fullTime.home,
       sportsAwayScore: m.score.fullTime.away,
       sportsLiveStatus: m.status,
-      sportsLiveMinute: m.minute != null ? String(m.minute) : null,
+      // football-data reports the half-time break as status PAUSED (there is no
+      // HALF_TIME status and no minute='HT' value); surface it as "HT".
+      sportsLiveMinute:
+        m.status === 'PAUSED'
+          ? 'HT'
+          : m.minute != null
+          ? String(m.minute)
+          : null,
       sportsLiveUpdatedTime: updatedTime,
     }
     const rows = await pg.manyOrNone<{ id: string }>(
