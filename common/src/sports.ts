@@ -485,6 +485,8 @@ export function buildMarketParams(
     customNote?: string
     dashboardUrl?: string
     liquidityTierOverrides?: Partial<StageLiquidityTiers>
+    /** Extra group ids to tag on top of the official + configured groups. */
+    extraGroupIds?: string[]
   } = {}
 ): MarketCreateParams {
   const home = match.homeTeam
@@ -536,7 +538,7 @@ export function buildMarketParams(
     sportsStartTimestamp: match.utcDate,
     sportsEventId: sportsEventId(match),
     sportsLeague: config.sportsLeague,
-    groupIds: [officialGroupId, ...additionalIds],
+    groupIds: [officialGroupId, ...additionalIds, ...(opts.extraGroupIds ?? [])],
     liquidityTier: stageLiquidityForMatch(match, config, opts.liquidityTierOverrides),
   }
 }
