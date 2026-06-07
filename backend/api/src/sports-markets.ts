@@ -1,6 +1,7 @@
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { SportsMarket } from 'common/sports'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const sportsMarkets: APIHandler<'sports-markets'> = async (
   props
@@ -70,7 +71,11 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
           ? Number(d.sportsLiveUpdatedTime)
           : null,
       volume: d.volume ?? 0,
-      url: `/${d.creatorUsername}/${d.slug}`,
+      // Full URL incl. hostname, consistent with the raw markets API. The
+      // frontend builds its own in-app path from creatorUsername + slug.
+      url: `https://${ENV_CONFIG.domain}/${d.creatorUsername}/${d.slug}`,
+      creatorUsername: d.creatorUsername as string,
+      slug: d.slug as string,
       needsAttention,
       answers,
     }

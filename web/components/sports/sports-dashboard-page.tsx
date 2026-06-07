@@ -176,7 +176,9 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
     volume: shortFormatNumber(m.volume),
     status: resolved ? 'resolved' : 'upcoming',
     winner,
-    marketUrl: m.url,
+    // Build the in-app path from username + slug (not m.url, which is the full
+    // absolute URL) so SPA navigation + preview deployments work.
+    marketUrl: `/${m.creatorUsername}/${m.slug}`,
     contractId: m.id,
     teamAAnswerId: m.answers[0].id,
     teamBAnswerId: m.answers[1].id,

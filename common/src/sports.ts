@@ -106,7 +106,12 @@ export interface SportsMarket {
   sportsLiveMinute: string | null
   sportsLiveUpdatedTime: number | null
   volume: number
+  // Full URL incl. hostname, consistent with the raw markets API. The frontend
+  // builds its own in-app navigation path from creatorUsername + slug (so SPA
+  // nav and preview deployments work) rather than navigating to this absolute URL.
   url: string
+  creatorUsername: string
+  slug: string
   needsAttention: boolean
   answers: Array<{ id: string; text: string; prob: number }>
 }
