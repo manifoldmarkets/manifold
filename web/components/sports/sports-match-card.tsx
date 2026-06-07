@@ -1,21 +1,11 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { flagEmojiToCode } from 'common/sports'
-import { CPMMMultiContract } from 'common/contract'
-import { Answer } from 'common/answer'
-import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
-import {
-  Modal,
-  MODAL_CLASS,
-  SCROLLABLE_MODAL_CLASS,
-} from 'web/components/layout/modal'
-import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
+import { SportsBetPanel } from './sports-bet-panel'
 
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
@@ -63,6 +53,7 @@ function vibrantForOutcome(
 
 export type SportsMatch = {
   id: string
+  question?: string
   teamA: { name: string; flag: string; prob: number }
   teamB: { name: string; flag: string; prob: number }
   draw: { prob: number }
@@ -200,7 +191,6 @@ function OutcomeRow({
 }
 
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
-  const router = useRouter()
   const resolved = match.status === 'resolved'
   const now = Date.now()
   // Live state is data-driven (a fresh in-play score), not a fixed time window —
@@ -255,16 +245,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
       ? 'Final · AET'
       : 'Final'
 
-  // Clicking an outcome jumps straight to the per-answer bet panel (Manifold's
-  // standard AnswerCpmmBetPanel) defaulting to YES on the clicked team — no
-  // intermediate answer-picker. The dashboard only holds the lightweight
-  // SportsMarket, so we fetch the full contract + answers on demand and locate
-  // the clicked answer; fall back to the market page if anything goes wrong.
-  const [betState, setBetState] = useState<{
-    contract: CPMMMultiContract
-    answer: Answer
-  } | null>(null)
-  const [betLoading, setBetLoading] = useState(false)
+  const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
 
   // Live odds: subscribe to this market's answer updates so probabilities move
   // in real time as people bet — no polling, no per-viewer DB load (in-memory
@@ -307,44 +288,6 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
     },
   })
 
-  const answerIdForOutcome = (o: MatchOutcome) =>
-    o === 'teamA'
-      ? match.teamAAnswerId
-      : o === 'teamB'
-      ? match.teamBAnswerId
-      : match.drawAnswerId
-
-  async function openBet(outcome: MatchOutcome) {
-    if (betLoading) return
-    const answerId = answerIdForOutcome(outcome)
-    if (!match.contractId || !answerId) {
-      router.push(marketHref)
-      return
-    }
-    setBetLoading(true)
-    try {
-      const c = await getContract(db, match.contractId)
-      if (!c || c.mechanism !== 'cpmm-multi-1') {
-        router.push(marketHref)
-        return
-      }
-      const answersByContract = await getAnswersForContracts(db, [c.id])
-      const answers: Answer[] =
-        answersByContract[c.id] ?? (c as any).answers ?? []
-      ;(c as any).answers = answers
-      const answer = answers.find((a) => a.id === answerId)
-      if (!answer) {
-        router.push(marketHref)
-        return
-      }
-      setBetState({ contract: c as CPMMMultiContract, answer })
-    } catch {
-      router.push(marketHref)
-    } finally {
-      setBetLoading(false)
-    }
-  }
-
   return (
     <>
       <div
@@ -353,6 +296,16 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           resolved ? 'opacity-70' : 'hover:border-ink-300'
         )}
       >
+        {/* Market title — links to the market page */}
+        {match.question && (
+          <Link
+            href={marketHref}
+            className="text-ink-700 hover:text-primary-600 line-clamp-2 text-[13px] font-medium leading-snug transition-colors"
+          >
+            {match.question}
+          </Link>
+        )}
+
         <Row className="justify-between">
           {isLive ? (
             <span
@@ -382,7 +335,6 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               {live.home} – {live.away}
             </span>
           ) : isLive ? (
-            // Live but no score yet (e.g. just kicked off) — don't fabricate "0–0".
             <span
               className="text-[11px] font-medium"
               style={{ color: LIVE_COLOR }}
@@ -414,7 +366,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.teamA}
             winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
-            onClick={() => openBet('teamA')}
+            onClick={!resolved ? () => setBetOutcome('teamA') : undefined}
           />
           <OutcomeRow
             flag={match.teamB.flag}
@@ -425,7 +377,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.teamB}
             winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
-            onClick={() => openBet('teamB')}
+            onClick={!resolved ? () => setBetOutcome('teamB') : undefined}
           />
           {(match.hasDraw ?? true) && (
             <OutcomeRow
@@ -436,7 +388,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               resolved={resolved}
               teamColor={SPORTS_COLORS.draw}
               winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-              onClick={() => openBet('draw')}
+              onClick={!resolved ? () => setBetOutcome('draw') : undefined}
             />
           )}
         </Col>
@@ -446,28 +398,18 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           <Link
             href={marketHref}
             className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
-            onClick={(e) => e.stopPropagation()}
           >
             View market →
           </Link>
         </Row>
       </div>
-      {betState && (
-        <Modal
-          open
-          setOpen={(o) => {
-            if (!o) setBetState(null)
-          }}
-          className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
-        >
-          <AnswerCpmmBetPanel
-            answer={betState.answer}
-            contract={betState.contract}
-            outcome="YES"
-            closePanel={() => setBetState(null)}
-            alwaysShowOutcomeSwitcher
-          />
-        </Modal>
+
+      {betOutcome && (
+        <SportsBetPanel
+          match={{ ...match, teamA: { ...match.teamA, prob: probs.teamA }, teamB: { ...match.teamB, prob: probs.teamB }, draw: { prob: probs.draw } }}
+          initialOutcome={betOutcome}
+          onClose={() => setBetOutcome(null)}
+        />
       )}
     </>
   )

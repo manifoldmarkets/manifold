@@ -156,6 +156,7 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
 
   return {
     id: m.id,
+    question: m.question,
     teamA: {
       name: a0.name,
       flag: a0.flag,
