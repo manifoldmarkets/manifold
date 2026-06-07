@@ -97,12 +97,11 @@ function CommunityEmptyState() {
 
 function parseAnswerText(text: string): { flag: string; name: string } {
   const chars = [...text.trim()]
-  if (
-    chars[0] &&
-    chars[1] &&
-    chars[0].codePointAt(0)! >= 0x1f1e6 &&
-    chars[1].codePointAt(0)! >= 0x1f1e6
-  ) {
+  const isRegionalIndicator = (c?: string) => {
+    const cp = c?.codePointAt(0)
+    return cp !== undefined && cp >= 0x1f1e6 && cp <= 0x1f1ff
+  }
+  if (isRegionalIndicator(chars[0]) && isRegionalIndicator(chars[1])) {
     const flag = chars[0] + chars[1]
     return { flag, name: text.trim().slice(flag.length).trim() }
   }
