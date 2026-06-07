@@ -508,13 +508,26 @@ export async function resolveTournamentMarkets(
         outcome: winningAnswer.id,
         resolutions: { [winningAnswer.id]: 100 },
       })
-      // Store final score in contract data for dashboard display
+      // Store final score (+ how it was decided) for dashboard display. fullTime
+      // is the post-ET aggregate; for a shootout we also store the penalty score
+      // so the card can show e.g. "1–1 · 4–2 pens" instead of a bare 1–1 next to
+      // the advancing team.
       const homeScore = match.score.fullTime.home
       const awayScore = match.score.fullTime.away
       if (homeScore !== null && awayScore !== null) {
+        const scorePatch: Record<string, unknown> = {
+          sportsHomeScore: homeScore,
+          sportsAwayScore: awayScore,
+          sportsScoreDuration: match.score.duration,
+        }
+        const pens = match.score.penalties
+        if (pens && pens.home != null && pens.away != null) {
+          scorePatch.sportsPenHome = pens.home
+          scorePatch.sportsPenAway = pens.away
+        }
         await pg.none(
           `update contracts set data = data || $1::jsonb where id = $2`,
-          [JSON.stringify({ sportsHomeScore: homeScore, sportsAwayScore: awayScore }), market.id]
+          [JSON.stringify(scorePatch), market.id]
         )
       }
       resolved++

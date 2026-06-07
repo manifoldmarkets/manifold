@@ -69,7 +69,12 @@ export type SportsMatch = {
   status: 'upcoming' | 'resolved'
   winner?: MatchOutcome
   marketUrl?: string
-  finalScore?: { home: number; away: number }
+  finalScore?: {
+    home: number
+    away: number
+    duration?: string
+    pens?: { home: number; away: number }
+  }
   liveScore?: { home: number | null; away: number | null; minute: string | null }
   contractId?: string
   teamAAnswerId?: string
@@ -194,6 +199,17 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const marketHref = match.marketUrl ?? '#'
   const LIVE_COLOR = '#16a34a'
 
+  // Annotate how a knockout was decided so the fullTime score (which can be a
+  // draw) doesn't read as contradicting the advancing team.
+  const finalLabel =
+    match.finalScore?.duration === 'PENALTY_SHOOTOUT'
+      ? match.finalScore.pens
+        ? `Final · ${match.finalScore.pens.home}–${match.finalScore.pens.away} pens`
+        : 'Final · pens'
+      : match.finalScore?.duration === 'EXTRA_TIME'
+      ? 'Final · AET'
+      : 'Final'
+
   // Clicking an outcome jumps straight to the per-answer bet panel (Manifold's
   // standard AnswerCpmmBetPanel) defaulting to YES on the clicked team — no
   // intermediate answer-picker. The dashboard only holds the lightweight
@@ -281,7 +297,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             className="text-[11px] font-medium"
             style={{ color: winnerColor ?? '#6B7280' }}
           >
-            {resolved ? 'Final' : pastKickoff ? 'Awaiting result' : 'Upcoming'}
+            {resolved ? finalLabel : pastKickoff ? 'Awaiting result' : 'Upcoming'}
           </span>
         )}
       </Row>

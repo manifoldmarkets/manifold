@@ -93,6 +93,12 @@ export interface SportsMarket {
   resolutionTime: number | null
   sportsHomeScore: number | null
   sportsAwayScore: number | null
+  // How the match was decided ('REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT')
+  // and the shootout result, so the final score isn't shown contradicting the
+  // winner (e.g. a 1–1 fullTime next to the team that advanced on penalties).
+  sportsScoreDuration: string | null
+  sportsPenHome: number | null
+  sportsPenAway: number | null
   // Live-score fields, written by the sports-live poller while a match is in
   // play. sportsLiveStatus is the football-data status (IN_PLAY/PAUSED/…);
   // sportsLiveUpdatedTime lets the client treat stale live data as "not live".
@@ -283,6 +289,10 @@ export interface FDMatch {
     duration: 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT'
     fullTime: { home: number | null; away: number | null }
     halfTime: { home: number | null; away: number | null }
+    // Present on knockout matches decided beyond 90'. fullTime is the post-ET
+    // aggregate; penalties carries the shootout result separately.
+    extraTime?: { home: number | null; away: number | null }
+    penalties?: { home: number | null; away: number | null }
   }
 }
 

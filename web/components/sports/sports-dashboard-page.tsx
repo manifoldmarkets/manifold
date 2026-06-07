@@ -160,8 +160,16 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
     closeTimeMs,
     resolutionTime: m.resolutionTime ?? null,
     finalScore:
-      m.sportsHomeScore != null && m.sportsAwayScore != null
-        ? { home: m.sportsHomeScore, away: m.sportsAwayScore }
+      resolved && m.sportsHomeScore != null && m.sportsAwayScore != null
+        ? {
+            home: m.sportsHomeScore,
+            away: m.sportsAwayScore,
+            duration: m.sportsScoreDuration ?? undefined,
+            pens:
+              m.sportsPenHome != null && m.sportsPenAway != null
+                ? { home: m.sportsPenHome, away: m.sportsPenAway }
+                : undefined,
+          }
         : undefined,
     liveScore: liveScoreFromMarket(m),
     volume: shortFormatNumber(m.volume),
