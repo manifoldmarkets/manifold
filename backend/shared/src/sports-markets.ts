@@ -239,7 +239,7 @@ let fdResetSeconds: number | null = null
 
 // All football-data calls run one-at-a-time through this promise chain. The
 // throttle state above is module-global, and the scheduler runs sports-live
-// (every 2 min), sports-resolve, and sports-create in the same process — without
+// (every 10s), sports-resolve, and sports-create in the same process — without
 // serialization two overlapping jobs could both pass the "budget spent" gate
 // before either sleeps, under-throttling into a real 429/ban.
 let fdQueue: Promise<unknown> = Promise.resolve()
@@ -297,6 +297,9 @@ async function fdFetchInner<T>(path: string, apiKey: string): Promise<T> {
   const doFetch = () =>
     fetch(`${base}${path}`, {
       headers: { 'X-Auth-Token': apiKey, connection: 'close' },
+      // Cap each request so a hung football-data connection can't stall the
+      // shared serialized queue (and thereby every sports job) indefinitely.
+      signal: AbortSignal.timeout(15_000),
     })
 
   let res = await doFetch()
