@@ -13,7 +13,7 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { NoSEO } from 'web/components/NoSEO'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { api } from 'web/lib/api/api'
+import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { TOURNAMENT_CONFIGS, TournamentConfig } from 'common/sports'
@@ -97,6 +97,11 @@ export default function SportsAdminPage() {
   const [stageTiers, setStageTiers] = useState<Record<string, number>>(
     tournament.stageLiquidityTiers as Record<string, number>
   )
+  // Extra topic-group slugs every created market gets tagged with, on top of the
+  // tournament's configured groups. Added manually or via the AI suggester.
+  const [extraTags, setExtraTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
+  const [suggesting, setSuggesting] = useState(false)
 
   useEffect(() => {
     try {
@@ -107,6 +112,7 @@ export default function SportsAdminPage() {
         if (s.dashboardUrl) setDashboardUrl(s.dashboardUrl)
         if (s.customNote !== undefined) setCustomNote(s.customNote)
         if (s.stageTiers) setStageTiers(s.stageTiers)
+        if (Array.isArray(s.extraTags)) setExtraTags(s.extraTags)
       }
     } catch {}
   }, [settingsKey])
@@ -114,9 +120,36 @@ export default function SportsAdminPage() {
   function saveSettings() {
     localStorage.setItem(
       settingsKey,
-      JSON.stringify({ groupSlug, dashboardUrl, customNote, stageTiers })
+      JSON.stringify({ groupSlug, dashboardUrl, customNote, stageTiers, extraTags })
     )
     alert('Settings saved.')
+  }
+
+  function addTag(slug: string) {
+    const s = slug.trim().toLowerCase().replace(/\s+/g, '-')
+    if (s && !extraTags.includes(s)) setExtraTags((t) => [...t, s])
+  }
+
+  async function suggestTags() {
+    setSuggesting(true)
+    try {
+      // Reuse Manifold's topic suggester (embedding similarity) on a
+      // representative match question for this tournament.
+      const sample = `${sampleTeams.home} vs ${sampleTeams.away} [${tournament.shortLabel}]`
+      const res = (await getSimilarGroupsToContract({ question: sample })) as {
+        groups?: Array<{ slug: string }>
+      }
+      const slugs = (res.groups ?? []).map((g) => g.slug)
+      if (slugs.length === 0) {
+        alert('No topic suggestions found.')
+      } else {
+        setExtraTags((t) => Array.from(new Set([...t, ...slugs])))
+      }
+    } catch (e) {
+      alert(`Suggestion failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
+    } finally {
+      setSuggesting(false)
+    }
   }
 
   // Fixtures state
@@ -254,6 +287,7 @@ export default function SportsAdminPage() {
         customNote: customNote || undefined,
         dashboardUrl: dashboardUrl || undefined,
         liquidityTierOverrides: stageTiers,
+        extraGroupSlugs: extraTags.length > 0 ? extraTags : undefined,
       })
       setCreateResults(data.results)
       setGroupStatus({
@@ -412,6 +446,28 @@ export default function SportsAdminPage() {
       <div className="mx-auto max-w-5xl px-4 pb-16">
         <Title>Sports Admin</Title>
 
+        <div className="border-ink-200 bg-ink-50 text-ink-600 mb-6 rounded-lg border p-4 text-sm">
+          <p className="text-ink-800 mb-1 font-medium">How this works</p>
+          <ul className="ml-4 list-disc space-y-1">
+            <li>
+              Markets are created <strong>automatically</strong> by the
+              7&nbsp;AM&nbsp;UTC <code>sports-create-markets</code> cron (7-day
+              lookahead), owned by <strong>@ManifoldSports</strong>. Use this
+              panel to <strong>preview</strong> (dry-run), create on demand, or
+              customize tags / tiers / the description.
+            </li>
+            <li>
+              Odds and live scores update in real time on the dashboard; matches{' '}
+              <strong>auto-resolve ~10s after full time</strong> (15-min backstop).
+            </li>
+            <li>
+              Each market is tagged into the official group + any extra topics you
+              set below, with all native columns populated (feed ranking, search,
+              personalized feeds all work).
+            </li>
+          </ul>
+        </div>
+
         {/* ── 1. Tournament Selector ── */}
         <Section title="1. Tournament" defaultOpen>
           <Row className="flex-wrap items-end gap-4">
@@ -434,6 +490,7 @@ export default function SportsAdminPage() {
                         t.stageLiquidityTiers as Record<string, number>
                       )
                       setCustomNote('')
+                      setExtraTags([])
                       setFixtures([])
                       setMarkets([])
                       setCreateResults([])
@@ -546,6 +603,77 @@ export default function SportsAdminPage() {
               <pre className="bg-ink-50 border-ink-200 text-ink-600 whitespace-pre-wrap rounded border p-3 text-xs leading-relaxed">
                 {sampleDesc}
               </pre>
+            </Col>
+
+            {/* Extra topic tags */}
+            <Col className="gap-1.5">
+              <label className="text-ink-700 text-sm font-medium">
+                Extra topic tags
+              </label>
+              <p className="text-ink-400 text-xs">
+                Markets are always tagged with the official group{' '}
+                <code className="bg-ink-100 rounded px-1 text-xs">
+                  {tournament.officialGroupSlug}
+                </code>
+                . Add extra topic slugs here (e.g.{' '}
+                <code className="bg-ink-100 rounded px-1 text-xs">soccer</code>) to
+                surface them in those feeds too. Unknown slugs are ignored.
+              </p>
+              <Row className="flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTag(tagInput)
+                      setTagInput('')
+                    }
+                  }}
+                  placeholder="add a topic slug…"
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 font-mono text-sm"
+                />
+                <Button
+                  size="sm"
+                  color="gray-outline"
+                  onClick={() => {
+                    addTag(tagInput)
+                    setTagInput('')
+                  }}
+                >
+                  Add
+                </Button>
+                <Button
+                  size="sm"
+                  color="indigo"
+                  onClick={suggestTags}
+                  disabled={suggesting}
+                >
+                  {suggesting ? 'Suggesting…' : '✨ Suggest with AI'}
+                </Button>
+              </Row>
+              {extraTags.length > 0 && (
+                <Row className="flex-wrap gap-1.5">
+                  {extraTags.map((slug) => (
+                    <span
+                      key={slug}
+                      className="bg-ink-100 text-ink-700 flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-xs"
+                    >
+                      {slug}
+                      <button
+                        onClick={() =>
+                          setExtraTags((t) => t.filter((x) => x !== slug))
+                        }
+                        className="text-ink-400 hover:text-red-600 font-bold leading-none"
+                        title="Remove tag"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </Row>
+              )}
             </Col>
 
             {/* Liquidity tiers per stage */}
@@ -956,12 +1084,19 @@ export default function SportsAdminPage() {
                 <span className="font-medium">{lastResolved ?? 'Never'}</span>
               </Col>
               <Col className="gap-0.5">
-                <span className="text-ink-500 text-xs">Scheduler job</span>
+                <span className="text-ink-500 text-xs">Auto-resolution</span>
                 <span className="font-medium">
-                  sports-resolve · every 15 min
+                  ~10s after full time (live poller) · 15-min backstop cron
                 </span>
               </Col>
             </Row>
+
+            <span className="text-ink-400 text-xs">
+              Markets resolve automatically: the live poller resolves a match
+              within ~10s of the final whistle, and the <code>sports-resolve</code>{' '}
+              cron sweeps every 15 min as a backstop. Use the button below only to
+              force a sweep now.
+            </span>
 
             <Row className="items-center gap-3">
               <Button color="indigo" onClick={runResolve} disabled={resolving}>
