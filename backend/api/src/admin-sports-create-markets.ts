@@ -12,10 +12,13 @@ import {
   ensureCommunityAssets,
   fetchAllCompetitionMatches,
   matchSportsEventId,
+  runSportsMarketPostCreate,
   StageLiquidityTiers,
 } from 'shared/sports-markets'
 import { createMarketHelper } from './create-market'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { CPMMMultiContract } from 'common/contract'
 import { AuthedUser } from './helpers/endpoint'
 
 export const adminSportsCreateMarkets: APIHandler<
@@ -204,6 +207,18 @@ export const adminSportsCreateMarkets: APIHandler<
           ).then((g) => g ? addGroupToContract(pg, contract, g) : null)
         )
       )
+
+      // Match the cron path's post-create side-effects so admin- and
+      // cron-created markets are identical (createMarketHelper alone skips
+      // these — they normally live in the full createMarket handler's
+      // onCreateMarket). Non-fatal.
+      await generateContractEmbeddings(contract, pg).catch(() => undefined)
+      await runSportsMarketPostCreate(
+        pg,
+        contract as CPMMMultiContract,
+        creatorUser!,
+        { notifyFollowers: false }
+      ).catch(() => undefined)
 
       results.push({
         matchId,

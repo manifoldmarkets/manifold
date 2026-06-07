@@ -552,10 +552,10 @@ function isoDateStr(date: Date): string {
  *
  * Deliberate deviations from onCreateMarket:
  * - `notifyFollowers` defaults to false. A faithful mirror would notify every
- *   follower of @ManifoldSports on every market — but the daily cron creates up
- *   to ~64 at once, which would storm followers. The admin "Create markets"
- *   button (which routes through createMarketHelper) still notifies, so a human
- *   batch is deliberate while the cron batch is silent.
+ *   follower of @ManifoldSports on every market — but creation always happens in
+ *   batches (the daily cron, or an admin selecting many fixtures), which would
+ *   storm followers. Both the cron and the admin create path call this with
+ *   notifyFollowers:false; pass true per-call if a notification is ever wanted.
  * - The non-predictive / unranked-group check is skipped: sports markets are
  *   always predictive, so isContractNonPredictive would never fire.
  */
