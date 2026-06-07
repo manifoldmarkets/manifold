@@ -117,9 +117,12 @@ const LIVE_STALE_MS = 10 * 60 * 1000
 
 function liveScoreFromMarket(
   m: SportsMarket
-): { home: number | null; away: number | null; minute: string | null } | undefined {
+):
+  | { home: number | null; away: number | null; minute: string | null }
+  | undefined {
   if (m.resolution) return undefined
-  if (!m.sportsLiveStatus || !LIVE_STATUSES.has(m.sportsLiveStatus)) return undefined
+  if (!m.sportsLiveStatus || !LIVE_STATUSES.has(m.sportsLiveStatus))
+    return undefined
   if (
     m.sportsLiveUpdatedTime == null ||
     Date.now() - m.sportsLiveUpdatedTime > LIVE_STALE_MS
@@ -148,12 +151,21 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
   }
 
   const kickoff = m.sportsStartTimestamp ?? m.closeTime
-  const closeTimeMs = typeof kickoff === 'number' ? kickoff : new Date(kickoff).getTime()
+  const closeTimeMs =
+    typeof kickoff === 'number' ? kickoff : new Date(kickoff).getTime()
 
   return {
     id: m.id,
-    teamA: { name: a0.name, flag: a0.flag, prob: Math.round(m.answers[0].prob * 100) },
-    teamB: { name: a1.name, flag: a1.flag, prob: Math.round(m.answers[1].prob * 100) },
+    teamA: {
+      name: a0.name,
+      flag: a0.flag,
+      prob: Math.round(m.answers[0].prob * 100),
+    },
+    teamB: {
+      name: a1.name,
+      flag: a1.flag,
+      prob: Math.round(m.answers[1].prob * 100),
+    },
     draw: { prob: drawAnswer ? Math.round(drawAnswer.prob * 100) : 0 },
     hasDraw: !!drawAnswer,
     closeTime: formatTime(kickoff),
@@ -192,7 +204,10 @@ function groupByDate(matches: SportsMatch[]): DateSection[] {
     if (!map.has(m.closeDateLabel)) map.set(m.closeDateLabel, [])
     map.get(m.closeDateLabel)!.push(m)
   }
-  return Array.from(map.entries()).map(([label, ms]) => ({ label, matches: ms }))
+  return Array.from(map.entries()).map(([label, ms]) => ({
+    label,
+    matches: ms,
+  }))
 }
 
 function sortContracts(
@@ -206,9 +221,12 @@ function sortContracts(
       .filter((c): c is Contract => !!c)
   }
   const sorted = [...contracts]
-  if (sort === 'date') sorted.sort((a, b) => (a.closeTime ?? 0) - (b.closeTime ?? 0))
-  else if (sort === 'volume') sorted.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
-  else if (sort === 'title') sorted.sort((a, b) => a.question.localeCompare(b.question))
+  if (sort === 'date')
+    sorted.sort((a, b) => (a.closeTime ?? 0) - (b.closeTime ?? 0))
+  else if (sort === 'volume')
+    sorted.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
+  else if (sort === 'title')
+    sorted.sort((a, b) => a.question.localeCompare(b.question))
   return sorted
 }
 
@@ -256,15 +274,21 @@ function AddMarketModal({
       try {
         const data = await api('search-markets-full', {
           term: params[QUERY_KEY],
-          filter: params[FILTER_KEY] as APIParams<'search-markets-full'>['filter'],
+          filter: params[
+            FILTER_KEY
+          ] as APIParams<'search-markets-full'>['filter'],
           sort: params[SORT_KEY] as APIParams<'search-markets-full'>['sort'],
-          contractType: params[CONTRACT_TYPE_KEY] as APIParams<'search-markets-full'>['contractType'],
+          contractType: params[
+            CONTRACT_TYPE_KEY
+          ] as APIParams<'search-markets-full'>['contractType'],
           offset: 0,
           limit: 20,
           forYou: (params[FOR_YOU_KEY] ?? '0') as '1' | '0',
           token: 'MANA',
           hasBets: params[HAS_BETS_KEY] as '1' | '0' | undefined,
-          liquidity: params[LIQUIDITY_KEY] ? parseInt(params[LIQUIDITY_KEY]) : undefined,
+          liquidity: params[LIQUIDITY_KEY]
+            ? parseInt(params[LIQUIDITY_KEY])
+            : undefined,
         })
         // Guard against out-of-order resolutions / unmount overwriting newer state.
         if (active) setResults((data as Contract[]) ?? [])
@@ -291,7 +315,9 @@ function AddMarketModal({
   // Client-side substring filter to catch hyphen/partial misses
   const query = params[QUERY_KEY]
   const displayed = query.trim()
-    ? results.filter((m) => m.question.toLowerCase().includes(query.toLowerCase()))
+    ? results.filter((m) =>
+        m.question.toLowerCase().includes(query.toLowerCase())
+      )
     : results
 
   async function handleAdd(contract: Contract) {
@@ -304,9 +330,17 @@ function AddMarketModal({
   }
 
   return (
-    <Modal open setOpen={(o) => { if (!o) onClose() }} size="md">
+    <Modal
+      open
+      setOpen={(o) => {
+        if (!o) onClose()
+      }}
+      size="md"
+    >
       <Col className={clsx(MODAL_CLASS, 'gap-3')}>
-        <p className="text-ink-1000 text-base font-semibold">Add market to community tab</p>
+        <p className="text-ink-1000 text-base font-semibold">
+          Add market to community tab
+        </p>
 
         <SearchInput
           value={params[QUERY_KEY]}
@@ -323,50 +357,58 @@ function AddMarketModal({
         />
 
         <Col className="max-h-80 gap-0.5 overflow-y-auto">
-          {displayed.length > 0 ? displayed.map((contract) => {
-            const already = existingSlugs.has(contract.slug)
-            return (
-              <Row
-                key={contract.id}
-                className={clsx(
-                  'min-w-0 items-center gap-3 rounded-lg px-2 py-2 transition-colors',
-                  already ? 'opacity-50' : 'hover:bg-canvas-50 cursor-pointer'
-                )}
-                onClick={() => !already && !adding && handleAdd(contract)}
-              >
-                <img
-                  src={contract.creatorAvatarUrl ?? '/default-avatar.png'}
-                  alt=""
-                  className="h-7 w-7 shrink-0 rounded-full object-cover"
-                />
-                <span className="text-ink-900 min-w-0 flex-1 truncate text-sm">
-                  {contract.question}
-                </span>
-                <ContractStatusLabel contract={contract} className="shrink-0 text-sm" />
-                <span
-                  className={clsx(
-                    'shrink-0 rounded px-2 py-0.5 text-xs font-medium',
-                    already
-                      ? 'text-ink-400'
-                      : adding === contract.id
-                      ? 'text-ink-400'
-                      : 'text-indigo-500 hover:text-indigo-700'
-                  )}
-                >
-                  {adding === contract.id ? '…' : already ? 'Added' : 'Add'}
-                </span>
-              </Row>
-            )
-          }) : (
-            !searching && (
-              <p className="text-ink-400 py-2 text-sm">
-                {query.trim() ? 'No markets found.' : 'Loading…'}
-              </p>
-            )
-          )}
+          {displayed.length > 0
+            ? displayed.map((contract) => {
+                const already = existingSlugs.has(contract.slug)
+                return (
+                  <Row
+                    key={contract.id}
+                    className={clsx(
+                      'min-w-0 items-center gap-3 rounded-lg px-2 py-2 transition-colors',
+                      already
+                        ? 'opacity-50'
+                        : 'hover:bg-canvas-50 cursor-pointer'
+                    )}
+                    onClick={() => !already && !adding && handleAdd(contract)}
+                  >
+                    <img
+                      src={contract.creatorAvatarUrl ?? '/default-avatar.png'}
+                      alt=""
+                      className="h-7 w-7 shrink-0 rounded-full object-cover"
+                    />
+                    <span className="text-ink-900 min-w-0 flex-1 truncate text-sm">
+                      {contract.question}
+                    </span>
+                    <ContractStatusLabel
+                      contract={contract}
+                      className="shrink-0 text-sm"
+                    />
+                    <span
+                      className={clsx(
+                        'shrink-0 rounded px-2 py-0.5 text-xs font-medium',
+                        already
+                          ? 'text-ink-400'
+                          : adding === contract.id
+                          ? 'text-ink-400'
+                          : 'text-indigo-500 hover:text-indigo-700'
+                      )}
+                    >
+                      {adding === contract.id ? '…' : already ? 'Added' : 'Add'}
+                    </span>
+                  </Row>
+                )
+              })
+            : !searching && (
+                <p className="text-ink-400 py-2 text-sm">
+                  {query.trim() ? 'No markets found.' : 'Loading…'}
+                </p>
+              )}
         </Col>
 
-        <button onClick={onClose} className="text-ink-500 hover:text-ink-700 self-end text-sm">
+        <button
+          onClick={onClose}
+          className="text-ink-500 hover:text-ink-700 self-end text-sm"
+        >
           Done
         </button>
       </Col>
@@ -391,7 +433,9 @@ function CommunityTab({
   isAdmin: boolean
   onCountChange?: (n: number) => void
 }) {
-  const [dashboard, setDashboard] = useState<Dashboard | null | undefined>(undefined)
+  const [dashboard, setDashboard] = useState<Dashboard | null | undefined>(
+    undefined
+  )
   const [items, setItems] = useState<DashboardItem[]>([])
   const [sort, setSort] = useState<SortKey>('manual')
   const [showAdd, setShowAdd] = useState(false)
@@ -400,7 +444,9 @@ function CommunityTab({
 
   async function fetchDashboard() {
     try {
-      const d = await api('get-dashboard-from-slug', { dashboardSlug: communityDashboardSlug })
+      const d = await api('get-dashboard-from-slug', {
+        dashboardSlug: communityDashboardSlug,
+      })
       setDashboard(d as Dashboard)
       const dashItems = (d as Dashboard).items ?? []
       setItems(dashItems)
@@ -410,16 +456,23 @@ function CommunityTab({
     }
   }
 
-  useEffect(() => { fetchDashboard() }, [communityDashboardSlug])
+  useEffect(() => {
+    fetchDashboard()
+  }, [communityDashboardSlug])
 
   const questionSlugs = items
-    .filter((i): i is { type: 'question'; slug: string } => i.type === 'question')
+    .filter(
+      (i): i is { type: 'question'; slug: string } => i.type === 'question'
+    )
     .map((i) => i.slug)
 
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffect(() => {
-    if (questionSlugs.length === 0) { setContracts([]); return }
+    if (questionSlugs.length === 0) {
+      setContracts([])
+      return
+    }
     let cancelled = false
     getContracts(db, questionSlugs, 'slug').then(async (fetched) => {
       const ids = fetched.map((c) => c.id)
@@ -428,21 +481,26 @@ function CommunityTab({
         // Merge answers for all cpmm-multi-1 markets (MC, NUMBER, MULTI_NUMERIC, DATE)
         // regardless of whether 'answers' is already in the data blob
         if ((c as any).mechanism === 'cpmm-multi-1') {
-          ;(c as any).answers = answersByContractId[c.id] ?? (c as any).answers ?? []
+          ;(c as any).answers =
+            answersByContractId[c.id] ?? (c as any).answers ?? []
         }
       }
       // Ignore a stale fetch that resolves after a newer slug set (rapid
       // reorder/add/remove) or after unmount.
       if (!cancelled) setContracts(fetched)
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [questionSlugs.join(',')])
 
   // Returns resolution timestamp, or null if still open.
   // For cpmm-multi-1 sports markets, waits until all answers are resolved.
   function contractResolvedAt(c: Contract): number | null {
     if (c.resolution && c.resolutionTime) return c.resolutionTime
-    const answers = (c as any).answers as Array<{ resolution?: string; resolutionTime?: number }> | undefined
+    const answers = (c as any).answers as
+      | Array<{ resolution?: string; resolutionTime?: number }>
+      | undefined
     if (answers && answers.length > 0 && answers.every((a) => a.resolution)) {
       const latest = Math.max(...answers.map((a) => a.resolutionTime ?? 0))
       return latest || c.closeTime || null
@@ -463,7 +521,9 @@ function CommunityTab({
 
   // Report total items in this tab (open + resolved), matching the parent's
   // mount-time prefetch so the badge doesn't jump when the tab is first opened.
-  useEffect(() => { onCountChange?.(contracts.length) }, [contracts.length])
+  useEffect(() => {
+    onCountChange?.(contracts.length)
+  }, [contracts.length])
 
   const sortedOpen = sortContracts(open, questionSlugs, sort)
   // Apply the same sort to the resolved sections so the toggle isn't silently
@@ -576,7 +636,7 @@ function CommunityTab({
             </button>
             <button
               onClick={() => setShowAdd(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 rounded-md px-3 py-1.5 text-xs font-medium text-white transition-colors"
+              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
             >
               + Add market
             </button>
@@ -587,19 +647,21 @@ function CommunityTab({
       {/* Not initialized hint for admins */}
       {dashboard === null && isAdmin && (
         <p className="text-ink-400 text-xs">
-          No community dashboard yet — adding the first market will create it automatically.
+          No community dashboard yet — adding the first market will create it
+          automatically.
         </p>
       )}
 
       {/* Open markets */}
-      {dashboard !== null && sortedOpen.length === 0 && recentResolved.length === 0 && pastResolved.length === 0 && (
-        <CommunityEmptyState />
-      )}
+      {dashboard !== null &&
+        sortedOpen.length === 0 &&
+        recentResolved.length === 0 &&
+        pastResolved.length === 0 && <CommunityEmptyState />}
 
       {dashboard !== null && (
         <>
-          {sortedOpen.length > 0 && (
-            sort === 'manual' && isAdmin && editMode ? (
+          {sortedOpen.length > 0 &&
+            (sort === 'manual' && isAdmin && editMode ? (
               <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="community">
                   {(provided) => (
@@ -626,14 +688,14 @@ function CommunityTab({
                               <Row className="items-center justify-between px-1">
                                 <div
                                   {...provided.dragHandleProps}
-                                  className="text-ink-400 hover:text-ink-700 cursor-grab text-lg leading-none select-none"
+                                  className="text-ink-400 hover:text-ink-700 cursor-grab select-none text-lg leading-none"
                                   title="Drag to reorder"
                                 >
                                   ⠿
                                 </div>
                                 <button
                                   onClick={() => handleRemove(contract)}
-                                  className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                                  className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
                                   title="Remove from community tab"
                                 >
                                   ✕
@@ -657,7 +719,7 @@ function CommunityTab({
                       <Row className="items-center justify-end px-1">
                         <button
                           onClick={() => handleRemove(contract)}
-                          className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                          className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
                           title="Remove from community tab"
                         >
                           ✕
@@ -668,14 +730,17 @@ function CommunityTab({
                   </div>
                 ))}
               </div>
-            )
-          )}
+            ))}
 
           {recentResolved.length > 0 && (
             <Col className="gap-3">
               <Row className="items-center gap-2.5">
-                <span className="text-ink-1000 text-base font-medium">Recent</span>
-                <span className="text-ink-500 text-xs">{recentResolved.length} resolved</span>
+                <span className="text-ink-1000 text-base font-medium">
+                  Recent
+                </span>
+                <span className="text-ink-500 text-xs">
+                  {recentResolved.length} resolved
+                </span>
               </Row>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {sortedRecent.map((contract) => (
@@ -684,7 +749,7 @@ function CommunityTab({
                       <Row className="items-center justify-end px-1">
                         <button
                           onClick={() => handleRemove(contract)}
-                          className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                          className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
                           title="Remove from community tab"
                         >
                           ✕
@@ -717,7 +782,7 @@ function CommunityTab({
                         <Row className="items-center justify-end px-1">
                           <button
                             onClick={() => handleRemove(contract)}
-                            className="bg-ink-100 text-ink-600 hover:bg-red-100 hover:text-red-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors"
+                            className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
                             title="Remove from community tab"
                           >
                             ✕
@@ -767,8 +832,12 @@ export function SportsDashboardPage({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pastVisible, setPastVisible] = useState(true)
-  const [activeTab, setActiveTab] = useState<'official' | 'community'>('official')
-  const [communityCount, setCommunityCount] = useState<number | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState<'official' | 'community'>(
+    'official'
+  )
+  const [communityCount, setCommunityCount] = useState<number | undefined>(
+    undefined
+  )
 
   useEffect(() => {
     if (router.isReady) {
@@ -778,7 +847,9 @@ export function SportsDashboardPage({
 
   function handleTabChange(tab: 'official' | 'community') {
     setActiveTab(tab)
-    router.replace({ query: { ...router.query, tab } }, undefined, { shallow: true })
+    router.replace({ query: { ...router.query, tab } }, undefined, {
+      shallow: true,
+    })
   }
 
   const isAdmin = useAdminOrMod() || useDev()
@@ -880,11 +951,12 @@ export function SportsDashboardPage({
         <title>{title} | Manifold</title>
       </Head>
       <Col className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6">
-
-        <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-10 -mt-6 items-center justify-between border-b pt-6 pb-5">
+        <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-10 -mt-6 items-center justify-between border-b pb-5 pt-6">
           <Row className="items-center gap-3">
             <span className="text-2xl">{emoji}</span>
-            <h1 className="text-ink-1000 text-xl font-medium tracking-tight">{title}</h1>
+            <h1 className="text-ink-1000 text-xl font-medium tracking-tight">
+              {title}
+            </h1>
           </Row>
           <Row className="items-center gap-2">
             <SportsDashboardTabButton
@@ -914,7 +986,9 @@ export function SportsDashboardPage({
             />
           ) : (
             <Col className="items-center gap-3 py-16">
-              <span className="text-ink-400 text-sm">Community markets coming soon</span>
+              <span className="text-ink-400 text-sm">
+                Community markets coming soon
+              </span>
             </Col>
           )
         ) : (
@@ -934,7 +1008,10 @@ export function SportsDashboardPage({
                 </Row>
                 <div
                   className="grid gap-3"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}
+                  style={{
+                    gridTemplateColumns:
+                      'repeat(auto-fill, minmax(320px, 1fr))',
+                  }}
                 >
                   {matches.map((match) => (
                     <SportsMatchCard key={match.id} match={match} />
@@ -946,14 +1023,19 @@ export function SportsDashboardPage({
             {recentResolved.length > 0 && (
               <Col className="gap-3">
                 <Row className="items-center gap-2.5">
-                  <span className="text-ink-1000 text-base font-medium">Recent</span>
+                  <span className="text-ink-1000 text-base font-medium">
+                    Recent
+                  </span>
                   <span className="text-ink-500 text-xs">
                     {recentResolved.length} resolved
                   </span>
                 </Row>
                 <div
                   className="grid gap-3"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}
+                  style={{
+                    gridTemplateColumns:
+                      'repeat(auto-fill, minmax(320px, 1fr))',
+                  }}
                 >
                   {recentResolved.map((match) => (
                     <SportsMatchCard key={match.id} match={match} />
@@ -965,7 +1047,9 @@ export function SportsDashboardPage({
             {pastResolved.length > 0 && (
               <Col className="border-ink-200 gap-3 border-t pt-6">
                 <Row className="items-center gap-2.5">
-                  <span className="text-ink-500 text-sm font-medium">Past games</span>
+                  <span className="text-ink-500 text-sm font-medium">
+                    Past games
+                  </span>
                   <button
                     onClick={() => setPastVisible((v) => !v)}
                     className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
@@ -989,7 +1073,7 @@ export function SportsDashboardPage({
                 <p className="text-ink-700 text-sm font-medium">
                   No markets yet
                 </p>
-                <p className="text-ink-400 text-xs max-w-xs">
+                <p className="text-ink-400 max-w-xs text-xs">
                   Markets are created automatically a few days before each
                   match. Check back soon.
                 </p>
@@ -997,7 +1081,6 @@ export function SportsDashboardPage({
             )}
           </>
         )}
-
       </Col>
     </Page>
   )

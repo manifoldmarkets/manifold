@@ -52,7 +52,9 @@ export const SPORTS_COLORS = {
   drawVibrant: 'var(--sports-draw-vibrant)',
 } as const
 
-function vibrantForOutcome(outcome: MatchOutcome | undefined): string | undefined {
+function vibrantForOutcome(
+  outcome: MatchOutcome | undefined
+): string | undefined {
   if (outcome === 'teamA') return SPORTS_COLORS.teamAVibrant
   if (outcome === 'teamB') return SPORTS_COLORS.teamBVibrant
   if (outcome === 'draw') return SPORTS_COLORS.drawVibrant
@@ -79,7 +81,11 @@ export type SportsMatch = {
     duration?: string
     pens?: { home: number; away: number }
   }
-  liveScore?: { home: number | null; away: number | null; minute: string | null }
+  liveScore?: {
+    home: number | null
+    away: number | null
+    minute: string | null
+  }
   contractId?: string
   teamAAnswerId?: string
   teamBAnswerId?: string
@@ -128,14 +134,19 @@ function OutcomeRow({
         !resolved && !isWinner && 'hover:bg-canvas-100'
       )}
       style={{
-        borderColor: isWinner && winnerColor ? winnerColor : teamColor ?? undefined,
-        backgroundColor: isWinner && winnerColor ? `${winnerColor}1F` : undefined,
+        borderColor:
+          isWinner && winnerColor ? winnerColor : teamColor ?? undefined,
+        backgroundColor:
+          isWinner && winnerColor ? `${winnerColor}1F` : undefined,
       }}
     >
       {isDraw ? (
         <div className="border-ink-300 bg-canvas-100 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border">
           <span
-            className={clsx('text-[8px] font-bold leading-none', !isWinner && 'text-ink-500')}
+            className={clsx(
+              'text-[8px] font-bold leading-none',
+              !isWinner && 'text-ink-500'
+            )}
             style={isWinner && winnerColor ? { color: winnerColor } : undefined}
           >
             –
@@ -336,101 +347,111 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
 
   return (
     <>
-    <div
-      className={clsx(
-        'bg-canvas-50 border-ink-200 flex flex-col gap-2.5 rounded-xl border p-[18px] transition-colors',
-        resolved ? 'opacity-70' : 'hover:border-ink-300'
-      )}
-    >
-      <Row className="justify-between">
-        {isLive ? (
-          <span className="text-[11px] font-medium" style={{ color: LIVE_COLOR }}>
-            {`● Live${
-              live?.minute
-                ? `  ${live.minute === 'HT' ? 'HT' : `${live.minute}'`}`
-                : ''
-            }`}
-          </span>
-        ) : (
-          <span className="text-ink-500 text-[11px]">
-            {resolved
-              ? match.closeDateLabel
-              : pastKickoff
-              ? `Kicked off ${match.closeTime}`
-              : `Kickoff ${match.closeTime}`}
-          </span>
+      <div
+        className={clsx(
+          'bg-canvas-50 border-ink-200 flex flex-col gap-2.5 rounded-xl border p-[18px] transition-colors',
+          resolved ? 'opacity-70' : 'hover:border-ink-300'
         )}
-        {isLive && live && live.home != null && live.away != null ? (
-          <span
-            className="text-[11px] font-semibold tabular-nums"
-            style={{ color: LIVE_COLOR }}
-          >
-            {live.home} – {live.away}
-          </span>
-        ) : isLive ? (
-          // Live but no score yet (e.g. just kicked off) — don't fabricate "0–0".
-          <span className="text-[11px] font-medium" style={{ color: LIVE_COLOR }}>
-            In progress
-          </span>
-        ) : (
-          <span
-            className="text-[11px] font-medium"
-            style={{ color: winnerColor ?? '#6B7280' }}
-          >
-            {resolved ? finalLabel : pastKickoff ? 'Awaiting result' : 'Upcoming'}
-          </span>
-        )}
-      </Row>
+      >
+        <Row className="justify-between">
+          {isLive ? (
+            <span
+              className="text-[11px] font-medium"
+              style={{ color: LIVE_COLOR }}
+            >
+              {`● Live${
+                live?.minute
+                  ? `  ${live.minute === 'HT' ? 'HT' : `${live.minute}'`}`
+                  : ''
+              }`}
+            </span>
+          ) : (
+            <span className="text-ink-500 text-[11px]">
+              {resolved
+                ? match.closeDateLabel
+                : pastKickoff
+                ? `Kicked off ${match.closeTime}`
+                : `Kickoff ${match.closeTime}`}
+            </span>
+          )}
+          {isLive && live && live.home != null && live.away != null ? (
+            <span
+              className="text-[11px] font-semibold tabular-nums"
+              style={{ color: LIVE_COLOR }}
+            >
+              {live.home} – {live.away}
+            </span>
+          ) : isLive ? (
+            // Live but no score yet (e.g. just kicked off) — don't fabricate "0–0".
+            <span
+              className="text-[11px] font-medium"
+              style={{ color: LIVE_COLOR }}
+            >
+              In progress
+            </span>
+          ) : (
+            <span
+              className="text-[11px] font-medium"
+              style={{ color: winnerColor ?? '#6B7280' }}
+            >
+              {resolved
+                ? finalLabel
+                : pastKickoff
+                ? 'Awaiting result'
+                : 'Upcoming'}
+            </span>
+          )}
+        </Row>
 
-      <Col className="gap-1">
-        <OutcomeRow
-          flag={match.teamA.flag}
-          name={match.teamA.name}
-          prob={probs.teamA}
-          score={homeScore}
-          isWinner={resolved && match.winner === 'teamA'}
-          isFirstTeam
-          resolved={resolved}
-          teamColor={SPORTS_COLORS.teamA}
-          winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
-          onClick={() => openBet('teamA')}
-        />
-        <OutcomeRow
-          flag={match.teamB.flag}
-          name={match.teamB.name}
-          prob={probs.teamB}
-          score={awayScore}
-          isWinner={resolved && match.winner === 'teamB'}
-          resolved={resolved}
-          teamColor={SPORTS_COLORS.teamB}
-          winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
-          onClick={() => openBet('teamB')}
-        />
-        {(match.hasDraw ?? true) && (
+        <Col className="gap-1">
           <OutcomeRow
-            name="Draw"
-            prob={probs.draw}
-            isWinner={resolved && match.winner === 'draw'}
-            isDraw
+            flag={match.teamA.flag}
+            name={match.teamA.name}
+            prob={probs.teamA}
+            score={homeScore}
+            isWinner={resolved && match.winner === 'teamA'}
+            isFirstTeam
             resolved={resolved}
-            teamColor={SPORTS_COLORS.draw}
-            winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-            onClick={() => openBet('draw')}
+            teamColor={SPORTS_COLORS.teamA}
+            winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
+            onClick={() => openBet('teamA')}
           />
-        )}
-      </Col>
+          <OutcomeRow
+            flag={match.teamB.flag}
+            name={match.teamB.name}
+            prob={probs.teamB}
+            score={awayScore}
+            isWinner={resolved && match.winner === 'teamB'}
+            resolved={resolved}
+            teamColor={SPORTS_COLORS.teamB}
+            winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
+            onClick={() => openBet('teamB')}
+          />
+          {(match.hasDraw ?? true) && (
+            <OutcomeRow
+              name="Draw"
+              prob={probs.draw}
+              isWinner={resolved && match.winner === 'draw'}
+              isDraw
+              resolved={resolved}
+              teamColor={SPORTS_COLORS.draw}
+              winnerColor={match.winner === 'draw' ? winnerColor : undefined}
+              onClick={() => openBet('draw')}
+            />
+          )}
+        </Col>
 
-      <Row className="border-ink-200 justify-between border-t pt-2">
-        <span className="text-ink-500 text-[11px]">Ṁ {match.volume} vol</span>
-        <Link
-          href={marketHref}
-          className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          View market →
-        </Link>
-      </Row>
-    </div>
+        <Row className="border-ink-200 justify-between border-t pt-2">
+          <span className="text-ink-500 text-[11px]">Ṁ {match.volume} vol</span>
+          <Link
+            href={marketHref}
+            className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            View market →
+          </Link>
+        </Row>
+      </div>
       {betState && (
         <Modal
           open
@@ -504,7 +525,9 @@ export function SportsDashboardTabButton({
         <span
           className={clsx(
             'rounded-full px-1.5 py-0.5 text-xs font-semibold',
-            active ? 'bg-primary-100 text-primary-600' : 'bg-ink-100 text-ink-500'
+            active
+              ? 'bg-primary-100 text-primary-600'
+              : 'bg-ink-100 text-ink-500'
           )}
         >
           {count}

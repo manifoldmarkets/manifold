@@ -163,20 +163,33 @@ export default function SportsAdminPage() {
   useEffect(() => {
     if (!isAdmin) return
     const slug = communityGroupMode ? tournament.officialGroupSlug : null
-    if (!slug) { setCommunityAllMarkets([]); return }
+    if (!slug) {
+      setCommunityAllMarkets([])
+      return
+    }
     let cancelled = false
     setCommunitySearch('')
     setCommunitySearching(true)
-    ;(api('search-markets', {
-      topicSlug: slug,
-      limit: 200,
-      filter: 'all',
-      sort: 'newest',
-    } as any) as Promise<any[]>)
-      .then((data) => { if (!cancelled) setCommunityAllMarkets(data ?? []) })
-      .catch(() => { if (!cancelled) setCommunityAllMarkets([]) })
-      .finally(() => { if (!cancelled) setCommunitySearching(false) })
-    return () => { cancelled = true }
+    ;(
+      api('search-markets', {
+        topicSlug: slug,
+        limit: 200,
+        filter: 'all',
+        sort: 'newest',
+      } as any) as Promise<any[]>
+    )
+      .then((data) => {
+        if (!cancelled) setCommunityAllMarkets(data ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setCommunityAllMarkets([])
+      })
+      .finally(() => {
+        if (!cancelled) setCommunitySearching(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [tournament.officialGroupSlug, communityGroupMode, isAdmin])
 
   // Resolution state
@@ -210,7 +223,9 @@ export default function SportsAdminPage() {
         )
       )
     } catch (e: unknown) {
-      setFixturesError(e instanceof Error ? e.message : 'Failed to fetch fixtures')
+      setFixturesError(
+        e instanceof Error ? e.message : 'Failed to fetch fixtures'
+      )
     } finally {
       setFixturesLoading(false)
     }
@@ -269,7 +284,9 @@ export default function SportsAdminPage() {
       setLastResolved(new Date().toLocaleString())
       await fetchMarkets()
     } catch (e: unknown) {
-      alert(`Resolution error: ${e instanceof Error ? e.message : 'Unknown error'}`)
+      alert(
+        `Resolution error: ${e instanceof Error ? e.message : 'Unknown error'}`
+      )
     } finally {
       setResolving(false)
     }
@@ -348,15 +365,31 @@ export default function SportsAdminPage() {
   // Description preview — uses tournament-specific sample teams
   const sampleTeams =
     tournament.footballDataCode === 'CL'
-      ? { home: 'Arsenal FC', away: 'Club Atlético de Madrid', stage: 'SF', date: 'Tue, 05 May 2026 19:00:00 UTC' }
-      : { home: 'Brazil', away: 'Argentina', stage: 'Group E', date: 'Thu, 02 Jul 2026 19:00:00 UTC' }
+      ? {
+          home: 'Arsenal FC',
+          away: 'Club Atlético de Madrid',
+          stage: 'SF',
+          date: 'Tue, 05 May 2026 19:00:00 UTC',
+        }
+      : {
+          home: 'Brazil',
+          away: 'Argentina',
+          stage: 'Group E',
+          date: 'Thu, 02 Jul 2026 19:00:00 UTC',
+        }
   const sampleDashboardHref = dashboardUrl
     ? (() => {
         try {
-          const u = new URL(dashboardUrl.startsWith('/') || dashboardUrl.startsWith('http') ? dashboardUrl : `https://${dashboardUrl}`)
+          const u = new URL(
+            dashboardUrl.startsWith('/') || dashboardUrl.startsWith('http')
+              ? dashboardUrl
+              : `https://${dashboardUrl}`
+          )
           return u.pathname + u.search + u.hash
         } catch {
-          return dashboardUrl.startsWith('/') ? dashboardUrl : `/${dashboardUrl}`
+          return dashboardUrl.startsWith('/')
+            ? dashboardUrl
+            : `/${dashboardUrl}`
         }
       })()
     : null
@@ -365,7 +398,9 @@ export default function SportsAdminPage() {
     `*Resolves to the winning team or draw (90 min regulation).*`,
     customNote || '[Your custom tournament note will appear here]',
     'This market resolves automatically after the match concludes based on official results.',
-    sampleDashboardHref ? `[Visit the ${tournament.name} Dashboard](${sampleDashboardHref})` : '',
+    sampleDashboardHref
+      ? `[Visit the ${tournament.name} Dashboard](${sampleDashboardHref})`
+      : '',
     `Created and managed by [@ManifoldSports](https://${ENV_CONFIG.domain}/ManifoldSports)`,
   ]
     .filter((l) => l !== undefined && l !== '')
@@ -381,32 +416,38 @@ export default function SportsAdminPage() {
         <Section title="1. Tournament" defaultOpen>
           <Row className="flex-wrap items-end gap-4">
             <Col className="gap-1">
-              <label className="text-ink-600 text-xs font-medium">Tournament</label>
+              <label className="text-ink-600 text-xs font-medium">
+                Tournament
+              </label>
               <div className="relative">
-              <select
-                value={tournament.footballDataCode}
-                onChange={(e) => {
-                  const t = TOURNAMENTS.find((t) => t.footballDataCode === e.target.value)
-                  if (t) {
-                    setTournament(t)
-                    setGroupSlug(t.officialGroupSlug)
-                    setDashboardUrl(`${ENV_CONFIG.domain}${t.dashboardPath}`)
-                    setStageTiers(t.stageLiquidityTiers as Record<string, number>)
-                    setCustomNote('')
-                    setFixtures([])
-                    setMarkets([])
-                    setCreateResults([])
-                  }
-                }}
-                className="border-ink-300 bg-canvas-0 text-ink-900 w-full appearance-none rounded border px-3 py-2 pr-8 text-sm"
-              >
-                {TOURNAMENTS.map((t) => (
-                  <option key={t.footballDataCode} value={t.footballDataCode}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDownIcon className="text-ink-400 pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2" />
+                <select
+                  value={tournament.footballDataCode}
+                  onChange={(e) => {
+                    const t = TOURNAMENTS.find(
+                      (t) => t.footballDataCode === e.target.value
+                    )
+                    if (t) {
+                      setTournament(t)
+                      setGroupSlug(t.officialGroupSlug)
+                      setDashboardUrl(`${ENV_CONFIG.domain}${t.dashboardPath}`)
+                      setStageTiers(
+                        t.stageLiquidityTiers as Record<string, number>
+                      )
+                      setCustomNote('')
+                      setFixtures([])
+                      setMarkets([])
+                      setCreateResults([])
+                    }
+                  }}
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-full appearance-none rounded border px-3 py-2 pr-8 text-sm"
+                >
+                  {TOURNAMENTS.map((t) => (
+                    <option key={t.footballDataCode} value={t.footballDataCode}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="text-ink-400 pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2" />
               </div>
             </Col>
             <Col className="text-ink-500 gap-0.5 text-xs">
@@ -436,15 +477,17 @@ export default function SportsAdminPage() {
                 />
               </Row>
               <p className="text-ink-400 text-xs">
-                Convention: <code>ms-official-[tournament]-[year]</code>.
-                Group is auto-created as curated (admin-restricted) on first
-                creation run.
+                Convention: <code>ms-official-[tournament]-[year]</code>. Group
+                is auto-created as curated (admin-restricted) on first creation
+                run.
               </p>
               {groupStatus && (
                 <span
                   className={clsx(
                     'mt-1 text-xs font-medium',
-                    groupStatus.restricted ? 'text-green-600' : 'text-yellow-600'
+                    groupStatus.restricted
+                      ? 'text-green-600'
+                      : 'text-yellow-600'
                   )}
                 >
                   {groupStatus.created
@@ -593,10 +636,14 @@ export default function SportsAdminPage() {
                   }}
                 />
                 {dryRun && (
-                  <span className="text-blue-600 text-xs font-medium">ON</span>
+                  <span className="text-xs font-medium text-blue-600">ON</span>
                 )}
               </Row>
-              <Button size="sm" onClick={fetchFixtures} disabled={fixturesLoading}>
+              <Button
+                size="sm"
+                onClick={fetchFixtures}
+                disabled={fixturesLoading}
+              >
                 {fixturesLoading ? 'Fetching…' : 'Fetch games'}
               </Button>
             </Row>
@@ -710,7 +757,9 @@ export default function SportsAdminPage() {
                             ) : f.status === 'POSTPONED' ? (
                               <span className="text-yellow-600">postponed</span>
                             ) : (
-                              <span className="text-green-600">will create</span>
+                              <span className="text-green-600">
+                                will create
+                              </span>
                             )}
                           </td>
                         </tr>
@@ -821,7 +870,9 @@ export default function SportsAdminPage() {
             </Row>
 
             {alertMarkets.length > 0 && (
-              <AlertBox title={`${alertMarkets.length} market(s) need attention`}>
+              <AlertBox
+                title={`${alertMarkets.length} market(s) need attention`}
+              >
                 Past close time and unresolved — check the Alerts section below.
               </AlertBox>
             )}
@@ -862,7 +913,7 @@ export default function SportsAdminPage() {
                             {m.question}
                           </a>
                           {m.needsAttention && (
-                            <span className="ml-2 text-xs text-red-600 font-medium">
+                            <span className="ml-2 text-xs font-medium text-red-600">
                               ⚠ overdue
                             </span>
                           )}
@@ -884,9 +935,7 @@ export default function SportsAdminPage() {
                           )}
                         </td>
                         <td className="text-xs">{m.resolvedAnswer ?? '—'}</td>
-                        <td className="text-xs">
-                          {m.volume.toLocaleString()}
-                        </td>
+                        <td className="text-xs">{m.volume.toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -901,21 +950,21 @@ export default function SportsAdminPage() {
           <Col className="gap-4">
             <Row className="flex-wrap items-center gap-4 text-sm">
               <Col className="gap-0.5">
-                <span className="text-ink-500 text-xs">Last manual resolve</span>
+                <span className="text-ink-500 text-xs">
+                  Last manual resolve
+                </span>
                 <span className="font-medium">{lastResolved ?? 'Never'}</span>
               </Col>
               <Col className="gap-0.5">
                 <span className="text-ink-500 text-xs">Scheduler job</span>
-                <span className="font-medium">sports-resolve · every 15 min</span>
+                <span className="font-medium">
+                  sports-resolve · every 15 min
+                </span>
               </Col>
             </Row>
 
             <Row className="items-center gap-3">
-              <Button
-                color="indigo"
-                onClick={runResolve}
-                disabled={resolving}
-              >
+              <Button color="indigo" onClick={runResolve} disabled={resolving}>
                 {resolving ? (
                   <Row className="gap-2">
                     <LoadingIndicator size="sm" /> Resolving…
@@ -965,21 +1014,29 @@ export default function SportsAdminPage() {
         </Section>
 
         {/* ── 6. Alerts ── */}
-        <Section title={`6. Alerts${alertMarkets.length > 0 ? ` (${alertMarkets.filter((m) => !handledAlerts.has(m.id)).length} active)` : ''}`}>
+        <Section
+          title={`6. Alerts${
+            alertMarkets.length > 0
+              ? ` (${
+                  alertMarkets.filter((m) => !handledAlerts.has(m.id)).length
+                } active)`
+              : ''
+          }`}
+        >
           <Col className="gap-3">
             {alertMarkets.filter((m) => !handledAlerts.has(m.id)).length ===
             0 ? (
-              <p className="text-green-600 text-sm">✅ No active alerts.</p>
+              <p className="text-sm text-green-600">✅ No active alerts.</p>
             ) : (
               alertMarkets
                 .filter((m) => !handledAlerts.has(m.id))
                 .map((m) => (
                   <Row
                     key={m.id}
-                    className="border-red-200 bg-red-50 items-start justify-between rounded border p-3"
+                    className="items-start justify-between rounded border border-red-200 bg-red-50 p-3"
                   >
                     <Col className="gap-1">
-                      <span className="text-red-700 text-sm font-medium">
+                      <span className="text-sm font-medium text-red-700">
                         ⚠ Unresolved past close time
                       </span>
                       <a
@@ -1037,8 +1094,12 @@ export default function SportsAdminPage() {
             <Row className="flex-wrap items-start justify-between gap-3">
               <p className="text-ink-500 text-sm">
                 Search for any market and add it to the community tab of the{' '}
-                <strong>{tournament.name}</strong> dashboard. Markets are also tagged
-                with <code className="bg-ink-100 rounded px-1 text-xs">{tournament.communityGroupSlug}</code>.
+                <strong>{tournament.name}</strong> dashboard. Markets are also
+                tagged with{' '}
+                <code className="bg-ink-100 rounded px-1 text-xs">
+                  {tournament.communityGroupSlug}
+                </code>
+                .
               </p>
               <Col className="gap-1">
                 <Button
@@ -1047,11 +1108,17 @@ export default function SportsAdminPage() {
                   onClick={initCommunity}
                   disabled={communityIniting}
                 >
-                  {communityIniting ? 'Setting up…' : 'Set up community group + dashboard'}
+                  {communityIniting
+                    ? 'Setting up…'
+                    : 'Set up community group + dashboard'}
                 </Button>
                 {communityInitStatus && (
-                  <span className="text-green-600 text-xs">
-                    ✅ {communityInitStatus.groupCreated ? 'Group created' : 'Group already existed'} · ID {communityInitStatus.groupId.slice(0, 8)}…
+                  <span className="text-xs text-green-600">
+                    ✅{' '}
+                    {communityInitStatus.groupCreated
+                      ? 'Group created'
+                      : 'Group already existed'}{' '}
+                    · ID {communityInitStatus.groupId.slice(0, 8)}…
                   </span>
                 )}
               </Col>
@@ -1060,13 +1127,19 @@ export default function SportsAdminPage() {
             <Row className="flex-wrap items-center gap-4">
               <Col className="gap-1">
                 <label className="text-ink-600 text-xs">
-                  {communityGroupMode ? 'Filter within group' : 'Search all markets'}
+                  {communityGroupMode
+                    ? 'Filter within group'
+                    : 'Search all markets'}
                 </label>
                 <input
                   type="text"
                   value={communitySearch}
                   onChange={(e) => onCommunitySearch(e.target.value)}
-                  placeholder={communityGroupMode ? 'Filter by title…' : 'Search by question…'}
+                  placeholder={
+                    communityGroupMode
+                      ? 'Filter by title…'
+                      : 'Search by question…'
+                  }
                   className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 text-sm"
                 />
               </Col>
@@ -1078,11 +1151,16 @@ export default function SportsAdminPage() {
                   onChange={(e) => setCommunityGroupMode(e.target.checked)}
                   className="cursor-pointer"
                 />
-                <label htmlFor="community-group-mode" className="text-ink-600 cursor-pointer text-xs">
+                <label
+                  htmlFor="community-group-mode"
+                  className="text-ink-600 cursor-pointer text-xs"
+                >
                   Within {tournament.shortLabel} group only
                 </label>
               </Row>
-              {communitySearching && <LoadingIndicator size="sm" className="self-end pb-2" />}
+              {communitySearching && (
+                <LoadingIndicator size="sm" className="self-end pb-2" />
+              )}
             </Row>
 
             {communityResults.length > 0 && (
@@ -1108,7 +1186,9 @@ export default function SportsAdminPage() {
                             {m.question}
                           </a>
                         </td>
-                        <td className="text-ink-500 text-xs">{m.outcomeType}</td>
+                        <td className="text-ink-500 text-xs">
+                          {m.outcomeType}
+                        </td>
                         <td>
                           <Row className="gap-2">
                             <Button
@@ -1135,9 +1215,11 @@ export default function SportsAdminPage() {
               </div>
             )}
 
-            {!communitySearching && communityResults.length === 0 && (communitySearch || communityGroupMode) && (
-              <p className="text-ink-400 text-sm">No markets found.</p>
-            )}
+            {!communitySearching &&
+              communityResults.length === 0 &&
+              (communitySearch || communityGroupMode) && (
+                <p className="text-ink-400 text-sm">No markets found.</p>
+              )}
           </Col>
         </Section>
       </div>

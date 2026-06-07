@@ -150,7 +150,9 @@ const shouldIgnoreUserPage = async (
     const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
     hasBet = bet.length > 0
   } catch {}
-  return user.userDeleted || isUserLikelySpammer(user, hasBet, hasCreatedQuestion)
+  return (
+    user.userDeleted || isUserLikelySpammer(user, hasBet, hasCreatedQuestion)
+  )
 }
 
 export const DeletedUser = () => {
