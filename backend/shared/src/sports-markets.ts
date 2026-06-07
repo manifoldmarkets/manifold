@@ -237,6 +237,12 @@ export async function ensureCommunityAssets(
 let fdRequestsAvailable: number | null = null
 let fdResetSeconds: number | null = null
 
+// Hard floor on spacing between football-data calls: 3.5s ⇒ ≤ ~17/min, safely
+// under the 20/min budget no matter how many tournaments are active at once
+// (the header-based throttle above still handles precise pacing on top of this).
+const FD_MIN_GAP_MS = 3500
+let fdLastCallMs = 0
+
 // All football-data calls run one-at-a-time through this promise chain. The
 // throttle state above is module-global, and the scheduler runs sports-live
 // (every 10s), sports-resolve, and sports-create in the same process — without
@@ -293,6 +299,11 @@ async function fdFetchInner<T>(path: string, apiKey: string): Promise<T> {
     fdRequestsAvailable = null
     fdResetSeconds = null
   }
+
+  // Enforce the minimum gap since the last call (calls are already serialized).
+  const sinceLast = Date.now() - fdLastCallMs
+  if (sinceLast < FD_MIN_GAP_MS) await sleep(FD_MIN_GAP_MS - sinceLast)
+  fdLastCallMs = Date.now()
 
   const doFetch = () =>
     fetch(`${base}${path}`, {
