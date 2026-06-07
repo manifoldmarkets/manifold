@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { flagEmojiToCode } from 'common/sports'
 import { CPMMMultiContract } from 'common/contract'
 import { Answer } from 'common/answer'
@@ -224,6 +225,47 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   } | null>(null)
   const [betLoading, setBetLoading] = useState(false)
 
+  // Live odds: subscribe to this market's answer updates so probabilities move
+  // in real time as people bet — no polling, no per-viewer DB load (in-memory
+  // websocket fan-out). Odds tend to front-run the (polled) score, so this is
+  // the fast signal during a match.
+  const [probs, setProbs] = useState({
+    teamA: match.teamA.prob,
+    teamB: match.teamB.prob,
+    draw: match.draw.prob,
+  })
+  useEffect(() => {
+    setProbs({
+      teamA: match.teamA.prob,
+      teamB: match.teamB.prob,
+      draw: match.draw.prob,
+    })
+  }, [match.teamA.prob, match.teamB.prob, match.draw.prob])
+
+  useApiSubscription({
+    topics: match.contractId
+      ? [`contract/${match.contractId}/updated-answers`]
+      : [],
+    enabled: !resolved && !!match.contractId,
+    onBroadcast: ({ data }) => {
+      const updates = (data.answers ?? []) as Array<{
+        id: string
+        prob?: number
+      }>
+      setProbs((prev) => {
+        const next = { ...prev }
+        for (const u of updates) {
+          if (u.prob == null) continue
+          const pct = Math.round(u.prob * 100)
+          if (u.id === match.teamAAnswerId) next.teamA = pct
+          else if (u.id === match.teamBAnswerId) next.teamB = pct
+          else if (u.id === match.drawAnswerId) next.draw = pct
+        }
+        return next
+      })
+    },
+  })
+
   const answerIdForOutcome = (o: MatchOutcome) =>
     o === 'teamA'
       ? match.teamAAnswerId
@@ -314,7 +356,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         <OutcomeRow
           flag={match.teamA.flag}
           name={match.teamA.name}
-          prob={match.teamA.prob}
+          prob={probs.teamA}
           score={homeScore}
           isWinner={resolved && match.winner === 'teamA'}
           isFirstTeam
@@ -326,7 +368,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         <OutcomeRow
           flag={match.teamB.flag}
           name={match.teamB.name}
-          prob={match.teamB.prob}
+          prob={probs.teamB}
           score={awayScore}
           isWinner={resolved && match.winner === 'teamB'}
           resolved={resolved}
@@ -337,7 +379,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         {(match.hasDraw ?? true) && (
           <OutcomeRow
             name="Draw"
-            prob={match.draw.prob}
+            prob={probs.draw}
             isWinner={resolved && match.winner === 'draw'}
             isDraw
             resolved={resolved}
