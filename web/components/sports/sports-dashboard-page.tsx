@@ -818,20 +818,23 @@ export function SportsDashboardPage({
     }
   }, [communityDashboardSlug])
 
-  // While a match is live or kicking off soon, lightly re-poll our own endpoint
-  // (not football-data) so live scores update without a manual refresh. Idle
-  // otherwise, and pauses when the tab is hidden.
+  // Live odds and live scores now arrive over websockets (per-card
+  // subscriptions), so we no longer poll the endpoint for those. This is just a
+  // low-frequency safety refetch to pick up state transitions the live feed
+  // doesn't push to this list view — a market resolving, or a newly-created
+  // market appearing — while any match is live or within ~4h of kickoff. Idle
+  // otherwise and paused when the tab is hidden.
   const hasActiveMatch = markets.some(
     (m) =>
       !!m.liveScore ||
       (m.status === 'upcoming' &&
-        Math.abs(m.closeTimeMs - Date.now()) < 3 * 60 * 60 * 1000)
+        Math.abs(m.closeTimeMs - Date.now()) < 4 * 60 * 60 * 1000)
   )
   useEffect(() => {
     if (!hasActiveMatch) return
     const id = setInterval(() => {
       if (typeof document !== 'undefined' && !document.hidden) fetchMarkets()
-    }, 60_000)
+    }, 120_000)
     return () => clearInterval(id)
   }, [hasActiveMatch])
 

@@ -192,9 +192,39 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const router = useRouter()
   const resolved = match.status === 'resolved'
   const now = Date.now()
-  // Live state is data-driven (a fresh in-play score from the poller), not a
-  // fixed time window — so a long match never falsely reverts to "Upcoming".
-  const live = !resolved ? match.liveScore : undefined
+  // Live state is data-driven (a fresh in-play score), not a fixed time window —
+  // so a long match never falsely reverts to "Upcoming". Seeded from the initial
+  // fetch, then updated live over the websocket below.
+  const [liveScore, setLiveScore] = useState(match.liveScore)
+  useEffect(() => {
+    setLiveScore(match.liveScore)
+  }, [
+    match.liveScore?.home,
+    match.liveScore?.away,
+    match.liveScore?.minute,
+    match.id,
+  ])
+
+  useApiSubscription({
+    topics: match.contractId
+      ? [`contract/${match.contractId}/sports-live`]
+      : [],
+    enabled: !resolved && !!match.contractId,
+    onBroadcast: ({ data }) => {
+      const status = data.sportsLiveStatus as string | undefined
+      if (status === 'IN_PLAY' || status === 'PAUSED') {
+        setLiveScore({
+          home: (data.sportsHomeScore as number | null) ?? null,
+          away: (data.sportsAwayScore as number | null) ?? null,
+          minute: (data.sportsLiveMinute as string | null) ?? null,
+        })
+      } else {
+        setLiveScore(undefined)
+      }
+    },
+  })
+
+  const live = !resolved ? liveScore : undefined
   const isLive = !!live
   const pastKickoff = !resolved && match.closeTimeMs <= now
   const homeScore = resolved ? match.finalScore?.home : undefined
