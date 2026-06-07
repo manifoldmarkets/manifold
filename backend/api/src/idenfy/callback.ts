@@ -430,22 +430,20 @@ export const idenfyCallback = async (req: Request, res: Response) => {
       const isUnderage = isUnderageDenial(payload)
 
       if (isUnderage) {
-        // Under-18: don't touch bonusEligibility (preserve verified /
-        // grandfathered / undefined; the user can still earn mana bonuses).
-        // Pin prizeEligibility = 'ineligible' so canEnterPrizeDrawings
-        // can't fall back to "true" via bonus state. If the user has no
-        // bonus state yet, set 'verified' — iDenfy did confirm their ID,
-        // just not their age threshold.
-        const bonusUpdate =
-          user.bonusEligibility === undefined
-            ? { bonusEligibility: 'verified' as const }
-            : {}
+        // Under-18: only block prize access. Leave bonusEligibility entirely
+        // untouched — this preserves the original problem we set out to
+        // solve (a grandfathered/verified user later discovered to be a
+        // minor keeps their mana bonuses) without the side effect of
+        // upgrading a brand-new user from 'undefined' to 'verified' just
+        // because they failed the age gate. A new under-18 user stays at
+        // 'undefined' (no bonuses, can retry verification at 18); an
+        // existing bonus-eligible user keeps their access; a flagged
+        // 'requires_verification' user stays flagged for admin review.
         await updateUser(pg, userId, {
-          ...bonusUpdate,
           prizeEligibility: 'ineligible',
         })
         log(
-          `User ${userId} flagged underage via iDenfy — prizes blocked, mana bonuses preserved`
+          `User ${userId} flagged underage via iDenfy — prizes blocked, bonusEligibility unchanged (${user.bonusEligibility ?? 'undefined'})`
         )
       } else {
         // Generic denial: block bonuses (preserves grandfathered, the
