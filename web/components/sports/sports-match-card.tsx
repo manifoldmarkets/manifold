@@ -6,9 +6,15 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { flagEmojiToCode } from 'common/sports'
 import { CPMMMultiContract } from 'common/contract'
+import { Answer } from 'common/answer'
 import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { MultiBetDialog } from 'web/components/bet/bet-dialog'
+import {
+  Modal,
+  MODAL_CLASS,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
+import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
@@ -188,16 +194,28 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const marketHref = match.marketUrl ?? '#'
   const LIVE_COLOR = '#16a34a'
 
-  // Clicking an outcome opens Manifold's standard multi-choice bet modal for
-  // this market. The dashboard only holds the lightweight SportsMarket, so we
-  // fetch the full contract + answers on demand; fall back to the market page
-  // if anything goes wrong.
-  const [betContract, setBetContract] = useState<CPMMMultiContract | null>(null)
+  // Clicking an outcome jumps straight to the per-answer bet panel (Manifold's
+  // standard AnswerCpmmBetPanel) defaulting to YES on the clicked team — no
+  // intermediate answer-picker. The dashboard only holds the lightweight
+  // SportsMarket, so we fetch the full contract + answers on demand and locate
+  // the clicked answer; fall back to the market page if anything goes wrong.
+  const [betState, setBetState] = useState<{
+    contract: CPMMMultiContract
+    answer: Answer
+  } | null>(null)
   const [betLoading, setBetLoading] = useState(false)
 
-  async function openBet() {
+  const answerIdForOutcome = (o: MatchOutcome) =>
+    o === 'teamA'
+      ? match.teamAAnswerId
+      : o === 'teamB'
+      ? match.teamBAnswerId
+      : match.drawAnswerId
+
+  async function openBet(outcome: MatchOutcome) {
     if (betLoading) return
-    if (!match.contractId) {
+    const answerId = answerIdForOutcome(outcome)
+    if (!match.contractId || !answerId) {
       router.push(marketHref)
       return
     }
@@ -209,9 +227,15 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         return
       }
       const answersByContract = await getAnswersForContracts(db, [c.id])
-      ;(c as any).answers =
+      const answers: Answer[] =
         answersByContract[c.id] ?? (c as any).answers ?? []
-      setBetContract(c as CPMMMultiContract)
+      ;(c as any).answers = answers
+      const answer = answers.find((a) => a.id === answerId)
+      if (!answer) {
+        router.push(marketHref)
+        return
+      }
+      setBetState({ contract: c as CPMMMultiContract, answer })
     } catch {
       router.push(marketHref)
     } finally {
@@ -273,7 +297,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           resolved={resolved}
           teamColor={SPORTS_COLORS.teamA}
           winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
-          onClick={openBet}
+          onClick={() => openBet('teamA')}
         />
         <OutcomeRow
           flag={match.teamB.flag}
@@ -284,7 +308,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           resolved={resolved}
           teamColor={SPORTS_COLORS.teamB}
           winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
-          onClick={openBet}
+          onClick={() => openBet('teamB')}
         />
         {(match.hasDraw ?? true) && (
           <OutcomeRow
@@ -295,7 +319,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.draw}
             winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-            onClick={openBet}
+            onClick={() => openBet('draw')}
           />
         )}
       </Col>
@@ -311,14 +335,22 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         </Link>
       </Row>
     </div>
-      {betContract && (
-        <MultiBetDialog
-          contract={betContract}
-          open={!!betContract}
+      {betState && (
+        <Modal
+          open
           setOpen={(o) => {
-            if (!o) setBetContract(null)
+            if (!o) setBetState(null)
           }}
-        />
+          className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
+        >
+          <AnswerCpmmBetPanel
+            answer={betState.answer}
+            contract={betState.contract}
+            outcome="YES"
+            closePanel={() => setBetState(null)}
+            alwaysShowOutcomeSwitcher
+          />
+        </Modal>
       )}
     </>
   )
