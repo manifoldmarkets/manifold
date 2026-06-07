@@ -1,9 +1,14 @@
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { flagEmojiToCode } from 'common/sports'
+import { CPMMMultiContract } from 'common/contract'
+import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
+import { MultiBetDialog } from 'web/components/bet/bet-dialog'
 
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
@@ -183,7 +188,39 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const marketHref = match.marketUrl ?? '#'
   const LIVE_COLOR = '#16a34a'
 
+  // Clicking an outcome opens Manifold's standard multi-choice bet modal for
+  // this market. The dashboard only holds the lightweight SportsMarket, so we
+  // fetch the full contract + answers on demand; fall back to the market page
+  // if anything goes wrong.
+  const [betContract, setBetContract] = useState<CPMMMultiContract | null>(null)
+  const [betLoading, setBetLoading] = useState(false)
+
+  async function openBet() {
+    if (betLoading) return
+    if (!match.contractId) {
+      router.push(marketHref)
+      return
+    }
+    setBetLoading(true)
+    try {
+      const c = await getContract(db, match.contractId)
+      if (!c || c.mechanism !== 'cpmm-multi-1') {
+        router.push(marketHref)
+        return
+      }
+      const answersByContract = await getAnswersForContracts(db, [c.id])
+      ;(c as any).answers =
+        answersByContract[c.id] ?? (c as any).answers ?? []
+      setBetContract(c as CPMMMultiContract)
+    } catch {
+      router.push(marketHref)
+    } finally {
+      setBetLoading(false)
+    }
+  }
+
   return (
+    <>
     <div
       className={clsx(
         'bg-canvas-50 border-ink-200 flex flex-col gap-2.5 rounded-xl border p-[18px] transition-colors',
@@ -236,7 +273,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           resolved={resolved}
           teamColor={SPORTS_COLORS.teamA}
           winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
-          onClick={() => router.push(marketHref)}
+          onClick={openBet}
         />
         <OutcomeRow
           flag={match.teamB.flag}
@@ -247,7 +284,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           resolved={resolved}
           teamColor={SPORTS_COLORS.teamB}
           winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
-          onClick={() => router.push(marketHref)}
+          onClick={openBet}
         />
         {(match.hasDraw ?? true) && (
           <OutcomeRow
@@ -258,7 +295,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             resolved={resolved}
             teamColor={SPORTS_COLORS.draw}
             winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-            onClick={() => router.push(marketHref)}
+            onClick={openBet}
           />
         )}
       </Col>
@@ -274,6 +311,16 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         </Link>
       </Row>
     </div>
+      {betContract && (
+        <MultiBetDialog
+          contract={betContract}
+          open={!!betContract}
+          setOpen={(o) => {
+            if (!o) setBetContract(null)
+          }}
+        />
+      )}
+    </>
   )
 }
 
