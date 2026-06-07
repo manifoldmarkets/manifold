@@ -285,12 +285,17 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               : `Kickoff ${match.closeTime}`}
           </span>
         )}
-        {isLive && live ? (
+        {isLive && live && live.home != null && live.away != null ? (
           <span
             className="text-[11px] font-semibold tabular-nums"
             style={{ color: LIVE_COLOR }}
           >
-            {live.home ?? 0} – {live.away ?? 0}
+            {live.home} – {live.away}
+          </span>
+        ) : isLive ? (
+          // Live but no score yet (e.g. just kicked off) — don't fabricate "0–0".
+          <span className="text-[11px] font-medium" style={{ color: LIVE_COLOR }}>
+            In progress
           </span>
         ) : (
           <span
