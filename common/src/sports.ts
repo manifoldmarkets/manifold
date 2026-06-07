@@ -318,6 +318,13 @@ const FD_CODE_TO_ISO2: Record<string, string> = {
   SWE: 'SE', NOR: 'NO', DEN: 'DK', SUI: 'CH', SCT: 'GB', FIN: 'FI',
   BIH: 'BA', MKD: 'MK', ALB: 'AL', ISL: 'IS', IRL: 'IE',
   CPV: 'CV', CUR: 'CW',
+  // ISO 3166-1 alpha-3 / FIFA variants — football-data returns the SAME team
+  // under different code schemes across matches (e.g. Uruguay as URU or URY,
+  // Curaçao as CUR or CUW), so map both forms to the right flag.
+  URY: 'UY', CUW: 'CW', DEU: 'DE', NLD: 'NL', PRT: 'PT', CHE: 'CH',
+  HRV: 'HR', DNK: 'DK', DZA: 'DZ', GRC: 'GR', PRY: 'PY', HND: 'HN',
+  CHL: 'CL', CRI: 'CR', BGR: 'BG', ZAF: 'ZA', ARE: 'AE', KWT: 'KW',
+  TTO: 'TT', HTI: 'HT', NZL: 'NZ', PHL: 'PH',
 }
 
 export function flagEmoji(iso2: string): string {
