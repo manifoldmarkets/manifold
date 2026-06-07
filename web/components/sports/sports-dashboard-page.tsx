@@ -109,6 +109,28 @@ function parseAnswerText(text: string): { flag: string; name: string } {
   return { flag: '', name: text.trim() }
 }
 
+const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED', 'HALF_TIME'])
+// Poller runs ~every 2 min; treat live data older than this as stale so a match
+// that has actually ended (or a stalled poller) stops showing as live.
+const LIVE_STALE_MS = 10 * 60 * 1000
+
+function liveScoreFromMarket(
+  m: SportsMarket
+): { home: number | null; away: number | null; minute: string | null } | undefined {
+  if (m.resolution) return undefined
+  if (!m.sportsLiveStatus || !LIVE_STATUSES.has(m.sportsLiveStatus)) return undefined
+  if (
+    m.sportsLiveUpdatedTime == null ||
+    Date.now() - m.sportsLiveUpdatedTime > LIVE_STALE_MS
+  )
+    return undefined
+  return {
+    home: m.sportsHomeScore,
+    away: m.sportsAwayScore,
+    minute: m.sportsLiveMinute,
+  }
+}
+
 function toSportsMatch(m: SportsMarket): SportsMatch | null {
   if (!m.answers || m.answers.length < 2) return null
 
@@ -141,6 +163,7 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
       m.sportsHomeScore != null && m.sportsAwayScore != null
         ? { home: m.sportsHomeScore, away: m.sportsAwayScore }
         : undefined,
+    liveScore: liveScoreFromMarket(m),
     volume: shortFormatNumber(m.volume),
     status: resolved ? 'resolved' : 'upcoming',
     winner,
@@ -765,6 +788,23 @@ export function SportsDashboardPage({
       cancelled = true
     }
   }, [communityDashboardSlug])
+
+  // While a match is live or kicking off soon, lightly re-poll our own endpoint
+  // (not football-data) so live scores update without a manual refresh. Idle
+  // otherwise, and pauses when the tab is hidden.
+  const hasActiveMatch = markets.some(
+    (m) =>
+      !!m.liveScore ||
+      (m.status === 'upcoming' &&
+        Math.abs(m.closeTimeMs - Date.now()) < 3 * 60 * 60 * 1000)
+  )
+  useEffect(() => {
+    if (!hasActiveMatch) return
+    const id = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) fetchMarkets()
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [hasActiveMatch])
 
   const now = Date.now()
   const upcoming = markets.filter((m) => m.status === 'upcoming')

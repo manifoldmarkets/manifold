@@ -37,6 +37,7 @@ export type SportsMatch = {
   winner?: MatchOutcome
   marketUrl?: string
   finalScore?: { home: number; away: number }
+  liveScore?: { home: number | null; away: number | null; minute: string | null }
   contractId?: string
   teamAAnswerId?: string
   teamBAnswerId?: string
@@ -149,11 +150,16 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const router = useRouter()
   const resolved = match.status === 'resolved'
   const now = Date.now()
-  const isLive = !resolved && match.closeTimeMs <= now && now - match.closeTimeMs < 2.5 * 60 * 60 * 1000
+  // Live state is data-driven (a fresh in-play score from the poller), not a
+  // fixed time window — so a long match never falsely reverts to "Upcoming".
+  const live = !resolved ? match.liveScore : undefined
+  const isLive = !!live
+  const pastKickoff = !resolved && match.closeTimeMs <= now
   const homeScore = resolved ? match.finalScore?.home : undefined
   const awayScore = resolved ? match.finalScore?.away : undefined
   const winnerColor = resolved ? vibrantForOutcome(match.winner) : undefined
   const marketHref = match.marketUrl ?? '#'
+  const LIVE_COLOR = '#16a34a'
 
   return (
     <div
@@ -163,19 +169,38 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
       )}
     >
       <Row className="justify-between">
-        <span className="text-ink-500 text-[11px]">
-          {resolved
-            ? match.closeDateLabel
-            : isLive
-            ? `Kicked off ${match.closeTime}`
-            : `Kickoff ${match.closeTime}`}
-        </span>
-        <span
-          className="text-[11px] font-medium"
-          style={{ color: winnerColor ?? '#6B7280' }}
-        >
-          {resolved ? 'Final' : isLive ? 'Awaiting result' : 'Upcoming'}
-        </span>
+        {isLive ? (
+          <span className="text-[11px] font-medium" style={{ color: LIVE_COLOR }}>
+            {`● Live${
+              live?.minute
+                ? `  ${live.minute === 'HT' ? 'HT' : `${live.minute}'`}`
+                : ''
+            }`}
+          </span>
+        ) : (
+          <span className="text-ink-500 text-[11px]">
+            {resolved
+              ? match.closeDateLabel
+              : pastKickoff
+              ? `Kicked off ${match.closeTime}`
+              : `Kickoff ${match.closeTime}`}
+          </span>
+        )}
+        {isLive && live ? (
+          <span
+            className="text-[11px] font-semibold tabular-nums"
+            style={{ color: LIVE_COLOR }}
+          >
+            {live.home ?? 0} – {live.away ?? 0}
+          </span>
+        ) : (
+          <span
+            className="text-[11px] font-medium"
+            style={{ color: winnerColor ?? '#6B7280' }}
+          >
+            {resolved ? 'Final' : pastKickoff ? 'Awaiting result' : 'Upcoming'}
+          </span>
+        )}
       </Row>
 
       <Col className="gap-1">

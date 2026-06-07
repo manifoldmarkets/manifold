@@ -338,6 +338,13 @@ export async function fetchSingleMatch(
   return data.match
 }
 
+export async function fetchInPlayMatches(
+  config: TournamentConfig,
+  apiKey: string
+): Promise<FDMatch[]> {
+  return fetchAllCompetitionMatches(config, apiKey, { status: 'IN_PLAY' })
+}
+
 // ─── Resolution ───────────────────────────────────────────────────────────────
 
 interface UnresolvedSportsMarket {
@@ -774,4 +781,68 @@ export async function createTournamentMarkets(
   }
 
   return { created, skipped, errors, log }
+}
+
+// ─── Live scores ────────────────────────────────────────────────────────────────
+
+export interface LiveMatchScore {
+  sportsEventId: string
+  homeScore: number | null
+  awayScore: number | null
+  status: string
+  minute: string | null
+}
+
+const LIVE_ACTIVE_WINDOW_MS = 3 * 60 * 60 * 1000 // only poll within ±3h of a match
+
+// True if this tournament has any unresolved market whose close time is within
+// the active window of now — i.e. a match is plausibly in play. Lets the poller
+// skip the football-data call entirely outside match windows to conserve quota.
+export async function hasMatchInActiveWindow(
+  config: TournamentConfig,
+  pg: SupabaseDirectClient
+): Promise<boolean> {
+  const now = Date.now()
+  const row = await pg.oneOrNone<{ count: string }>(
+    `select count(*) as count from contracts
+     where data->>'sportsLeague' = $1
+       and token = 'MANA'
+       and resolution is null
+       and (data->>'closeTime')::bigint between $2 and $3`,
+    [config.sportsLeague, now - LIVE_ACTIVE_WINDOW_MS, now + LIVE_ACTIVE_WINDOW_MS]
+  )
+  return Number(row?.count ?? 0) > 0
+}
+
+// Fetch in-play matches and write current scores into the matching official
+// markets' contract.data. Returns how many markets were updated. No-op outside
+// active windows. Only touches unresolved MANA markets keyed by sportsEventId,
+// so community markets (which carry no sportsEventId) are never affected.
+export async function pollAndStoreLiveScores(
+  config: TournamentConfig,
+  apiKey: string
+): Promise<{ updated: number; polled: boolean }> {
+  const pg = createSupabaseDirectClient()
+  if (!(await hasMatchInActiveWindow(config, pg))) return { updated: 0, polled: false }
+
+  const matches = await fetchInPlayMatches(config, apiKey)
+  const updatedTime = Date.now()
+  let updated = 0
+  for (const m of matches) {
+    const patch = {
+      sportsHomeScore: m.score.fullTime.home,
+      sportsAwayScore: m.score.fullTime.away,
+      sportsLiveStatus: m.status,
+      sportsLiveMinute: m.minute != null ? String(m.minute) : null,
+      sportsLiveUpdatedTime: updatedTime,
+    }
+    const rows = await pg.manyOrNone<{ id: string }>(
+      `update contracts set data = data || $1::jsonb
+       where data->>'sportsEventId' = $2 and token = 'MANA' and resolution is null
+       returning id`,
+      [JSON.stringify(patch), sportsEventId(m)]
+    )
+    updated += rows.length
+  }
+  return { updated, polled: true }
 }

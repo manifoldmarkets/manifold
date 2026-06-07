@@ -60,6 +60,7 @@ import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
+import { pollSportsLiveScores } from './sports-live'
 
 export function createJobs() {
   return [
@@ -341,6 +342,13 @@ export function createJobs() {
       'sports-create-markets',
       '0 0 7 * * *', // 7 AM UTC daily
       createUpcomingSportsMarkets
+    ),
+    // Poll in-play scores every 2 minutes — no-op (no API call) outside a
+    // tournament's active match window, so it's cheap when nothing is live.
+    createJob(
+      'sports-live',
+      '0 */2 * * * *', // every 2 minutes
+      pollSportsLiveScores
     ),
   ]
 }

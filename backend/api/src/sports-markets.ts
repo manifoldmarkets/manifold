@@ -59,6 +59,13 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
           : null,
       sportsHomeScore: d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
       sportsAwayScore: d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
+      sportsLiveStatus: (d.sportsLiveStatus as string) ?? null,
+      sportsLiveMinute: (d.sportsLiveMinute as string) ?? null,
+      sportsLiveUpdatedTime:
+        d.sportsLiveUpdatedTime != null &&
+        Number.isFinite(Number(d.sportsLiveUpdatedTime))
+          ? Number(d.sportsLiveUpdatedTime)
+          : null,
       volume: d.volume ?? 0,
       url: `/${d.creatorUsername}/${d.slug}`,
       needsAttention,

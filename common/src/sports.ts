@@ -93,6 +93,12 @@ export interface SportsMarket {
   resolutionTime: number | null
   sportsHomeScore: number | null
   sportsAwayScore: number | null
+  // Live-score fields, written by the sports-live poller while a match is in
+  // play. sportsLiveStatus is the football-data status (IN_PLAY/PAUSED/…);
+  // sportsLiveUpdatedTime lets the client treat stale live data as "not live".
+  sportsLiveStatus: string | null
+  sportsLiveMinute: string | null
+  sportsLiveUpdatedTime: number | null
   volume: number
   url: string
   needsAttention: boolean
@@ -253,6 +259,9 @@ export interface FDMatch {
   matchday: number | null
   stage: string
   group: string | null
+  // Live elapsed minute during IN_PLAY (football-data provides it on the single-
+  // match endpoint; may be absent in the competition list — read defensively).
+  minute?: number | string | null
   homeTeam: {
     id: number
     name: string
