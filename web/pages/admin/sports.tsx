@@ -329,6 +329,13 @@ export default function SportsAdminPage() {
     }
   }
 
+  // New, creatable fixtures — same predicate as the initial auto-select, so
+  // "Select all" can't pick up POSTPONED/non-scheduled rows the user is shown
+  // as greyed-out.
+  const selectableFixtures = fixtures.filter(
+    (f) => !f.existingMarketId && f.status === 'SCHEDULED'
+  )
+
   const filteredMarkets =
     marketFilter === 'ALL'
       ? markets
@@ -605,27 +612,20 @@ export default function SportsAdminPage() {
                   <input
                     type="checkbox"
                     checked={
-                      fixtures
-                        .filter((f) => !f.existingMarketId)
-                        .every((f) => selectedIds.has(f.id))
+                      selectableFixtures.length > 0 &&
+                      selectableFixtures.every((f) => selectedIds.has(f.id))
                     }
                     onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedIds(
-                          new Set(
-                            fixtures
-                              .filter((f) => !f.existingMarketId)
-                              .map((f) => f.id)
-                          )
-                        )
-                      } else {
-                        setSelectedIds(new Set())
-                      }
+                      setSelectedIds(
+                        e.target.checked
+                          ? new Set(selectableFixtures.map((f) => f.id))
+                          : new Set()
+                      )
                     }}
                   />
                   <span className="text-ink-600">
                     Select all ({selectedIds.size} selected /{' '}
-                    {fixtures.filter((f) => !f.existingMarketId).length} new)
+                    {selectableFixtures.length} new)
                   </span>
                 </Row>
 
