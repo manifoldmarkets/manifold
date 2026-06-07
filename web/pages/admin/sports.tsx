@@ -138,10 +138,19 @@ export default function SportsAdminPage() {
       const sample = `${sampleTeams.home} vs ${sampleTeams.away} [${tournament.shortLabel}]`
       const res = (await getSimilarGroupsToContract({ question: sample })) as {
         groups?: Array<{ slug: string }>
+        error?: string
+      }
+      if (res.error) {
+        alert(`Suggester error: ${res.error}`)
+        return
       }
       const slugs = (res.groups ?? []).map((g) => g.slug)
       if (slugs.length === 0) {
-        alert('No topic suggestions found.')
+        alert(
+          'No matching topics found. The suggester ranks by topic activity ' +
+            '(importance score), which is ~0 on dev, so it generally only ' +
+            'returns results on prod. Add tags manually here for now.'
+        )
       } else {
         setExtraTags((t) => Array.from(new Set([...t, ...slugs])))
       }
