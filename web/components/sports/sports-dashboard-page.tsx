@@ -246,6 +246,7 @@ function AddMarketModal({
   }
 
   useEffect(() => {
+    let active = true
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
@@ -262,13 +263,18 @@ function AddMarketModal({
           hasBets: params[HAS_BETS_KEY] as '1' | '0' | undefined,
           liquidity: params[LIQUIDITY_KEY] ? parseInt(params[LIQUIDITY_KEY]) : undefined,
         })
-        setResults((data as Contract[]) ?? [])
+        // Guard against out-of-order resolutions / unmount overwriting newer state.
+        if (active) setResults((data as Contract[]) ?? [])
       } catch {
-        setResults([])
+        if (active) setResults([])
       } finally {
-        setSearching(false)
+        if (active) setSearching(false)
       }
     }, 200)
+    return () => {
+      active = false
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [
     params[QUERY_KEY],
     params[FILTER_KEY],
@@ -411,6 +417,7 @@ function CommunityTab({
 
   useEffect(() => {
     if (questionSlugs.length === 0) { setContracts([]); return }
+    let cancelled = false
     getContracts(db, questionSlugs, 'slug').then(async (fetched) => {
       const ids = fetched.map((c) => c.id)
       const answersByContractId = await getAnswersForContracts(db, ids)
@@ -421,8 +428,11 @@ function CommunityTab({
           ;(c as any).answers = answersByContractId[c.id] ?? (c as any).answers ?? []
         }
       }
-      setContracts(fetched)
+      // Ignore a stale fetch that resolves after a newer slug set (rapid
+      // reorder/add/remove) or after unmount.
+      if (!cancelled) setContracts(fetched)
     })
+    return () => { cancelled = true }
   }, [questionSlugs.join(',')])
 
   // Returns resolution timestamp, or null if still open.
@@ -461,16 +471,23 @@ function CommunityTab({
 
   async function onDragEnd(result: DropResult) {
     if (!result.destination || !dashboard) return
+    const prevItems = items
     const newItems = [...items]
     const [removed] = newItems.splice(result.source.index, 1)
     newItems.splice(result.destination.index, 0, removed)
     setItems(newItems)
-    await updateDashboard({
-      dashboardId: dashboard.id,
-      title: dashboard.title,
-      items: newItems,
-      topics: dashboard.topics ?? [],
-    })
+    try {
+      await updateDashboard({
+        dashboardId: dashboard.id,
+        title: dashboard.title,
+        items: newItems,
+        topics: dashboard.topics ?? [],
+      })
+    } catch {
+      // Revert the optimistic reorder if the save failed (matches handleRemove).
+      setItems(prevItems)
+      toast.error('Failed to save new order')
+    }
   }
 
   async function handleAdd(contractId: string) {
