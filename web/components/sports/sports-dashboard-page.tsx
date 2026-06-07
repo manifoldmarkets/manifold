@@ -454,6 +454,10 @@ function CommunityTab({
   useEffect(() => { onCountChange?.(contracts.length) }, [contracts.length])
 
   const sortedOpen = sortContracts(open, questionSlugs, sort)
+  // Apply the same sort to the resolved sections so the toggle isn't silently
+  // open-markets-only.
+  const sortedRecent = sortContracts(recentResolved, questionSlugs, sort)
+  const sortedPast = sortContracts(pastResolved, questionSlugs, sort)
   const existingSlugs = new Set(questionSlugs)
 
   async function onDragEnd(result: DropResult) {
@@ -655,7 +659,7 @@ function CommunityTab({
                 <span className="text-ink-500 text-xs">{recentResolved.length} resolved</span>
               </Row>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {recentResolved.map((contract) => (
+                {sortedRecent.map((contract) => (
                   <div key={contract.id} className="flex flex-col gap-1.5">
                     {isAdmin && editMode && (
                       <Row className="items-center justify-end px-1">
@@ -688,7 +692,7 @@ function CommunityTab({
               </Row>
               {pastVisible && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {pastResolved.map((contract) => (
+                  {sortedPast.map((contract) => (
                     <div key={contract.id} className="flex flex-col gap-1.5">
                       {isAdmin && editMode && (
                         <Row className="items-center justify-end px-1">
