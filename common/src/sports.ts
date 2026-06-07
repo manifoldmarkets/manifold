@@ -101,8 +101,11 @@ export interface SportsMarket {
 
 // ─── User IDs ─────────────────────────────────────────────────────────────────
 
-const MANIFOLD_SPORTS_USER_ID_PROD = 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports
-const MANIFOLD_SPORTS_USER_ID_DEV = 'lu01Fs2BVnTQgFMMpS1qhYst9fs2' // @teststef
+// The market creator is always @ManifoldSports, hardcoded per env — never the
+// admin who triggers creation. Any admin can run the create flow on their side;
+// the markets are always owned by @ManifoldSports.
+const MANIFOLD_SPORTS_USER_ID_PROD = 'NnVY8olowYMYQGr346dfmHXBSpx2' // @ManifoldSports (prod)
+const MANIFOLD_SPORTS_USER_ID_DEV = 't3R3HV2QFTRGnJxtxhzdesA4stw1' // @ManifoldSports / sports@manifold.markets (dev)
 
 // ─── Tournament configs ───────────────────────────────────────────────────────
 
