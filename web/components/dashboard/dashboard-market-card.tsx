@@ -1,87 +1,64 @@
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import {
+  BinaryContract,
   CPMMContract,
+  CPMMMultiContract,
   Contract,
   PseudoNumericContract,
 } from 'common/contract'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 import { PollOption } from 'common/poll-option'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { shortFormatNumber } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
-import { getAnswerColor } from 'web/components/charts/contract/choice'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { FeedBinaryChart } from 'web/components/feed/feed-chart'
+import { BetButton } from 'web/components/bet/feed-bet-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { ReactButton } from 'web/components/contract/react-button'
-import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { useUser } from 'web/hooks/use-user'
 
 type MarketMeta = {
   label: string
-  badgeBg: string
-  badgeText: string
-  accentText: string
+  badgeClass: string
 }
 
 function marketMeta(outcomeType: string): MarketMeta {
   switch (outcomeType) {
     case 'BINARY':
-      return {
-        label: 'Binary',
-        badgeBg: 'bg-indigo-100 dark:bg-indigo-900/40',
-        badgeText: 'text-indigo-700 dark:text-indigo-300',
-        accentText: 'text-indigo-500 dark:text-indigo-400',
-      }
+      return { label: 'Yes/No', badgeClass: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300' }
     case 'MULTIPLE_CHOICE':
-      return {
-        label: 'Multiple choice',
-        badgeBg: 'bg-violet-100 dark:bg-violet-900/40',
-        badgeText: 'text-violet-700 dark:text-violet-300',
-        accentText: 'text-violet-600 dark:text-violet-400',
-      }
+      return { label: 'Multiple choice', badgeClass: 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' }
     case 'PSEUDO_NUMERIC':
     case 'NUMBER':
     case 'MULTI_NUMERIC':
     case 'DATE':
-      return {
-        label: 'Numeric',
-        badgeBg: 'bg-blue-100 dark:bg-blue-900/40',
-        badgeText: 'text-blue-700 dark:text-blue-300',
-        accentText: 'text-blue-600 dark:text-blue-400',
-      }
+      return { label: 'Numeric', badgeClass: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300' }
     case 'POLL':
-      return {
-        label: 'Poll',
-        badgeBg: 'bg-teal-100 dark:bg-teal-900/40',
-        badgeText: 'text-teal-700 dark:text-teal-300',
-        accentText: 'text-teal-600 dark:text-teal-400',
-      }
+      return { label: 'Poll', badgeClass: 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-300' }
     case 'BOUNTIED_QUESTION':
-      return {
-        label: 'Bounty',
-        badgeBg: 'bg-amber-100 dark:bg-amber-900/40',
-        badgeText: 'text-amber-700 dark:text-amber-300',
-        accentText: 'text-amber-600 dark:text-amber-400',
-      }
+      return { label: 'Bounty', badgeClass: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300' }
     case 'STONK':
-      return {
-        label: 'Stock',
-        badgeBg: 'bg-orange-100 dark:bg-orange-900/40',
-        badgeText: 'text-orange-700 dark:text-orange-300',
-        accentText: 'text-orange-600 dark:text-orange-400',
-      }
+      return { label: 'Stock', badgeClass: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300' }
     default:
-      return {
-        label: 'Market',
-        badgeBg: 'bg-gray-100 dark:bg-gray-800',
-        badgeText: 'text-gray-600 dark:text-gray-400',
-        accentText: 'text-gray-500 dark:text-gray-400',
-      }
+      return { label: 'Market', badgeClass: 'bg-ink-100 text-ink-500' }
   }
+}
+
+function statusLabel(contract: Contract): string {
+  if (contract.resolution) return 'Resolved'
+  const closeTime = contract.closeTime
+  if (!closeTime) return 'Open'
+  const diff = closeTime - Date.now()
+  if (diff < 0) return 'Closed'
+  const days = Math.floor(diff / 86400000)
+  if (days === 0) return 'Closes today'
+  if (days === 1) return 'Closes tomorrow'
+  if (days < 7) return `Closes in ${days}d`
+  return `Closes ${new Date(closeTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
 }
 
 export function DashboardMarketCard({
@@ -103,227 +80,127 @@ export function DashboardMarketCard({
   const isPoll = contract.outcomeType === 'POLL'
 
   const cpmmContract = isBinary ? (contract as CPMMContract) : null
+  const binaryContract = isBinary ? (contract as BinaryContract) : null
+  const multiContract = (isMulti || isNumericBuckets) ? (contract as CPMMMultiContract) : null
   const pseudoContract = isPseudoNumeric
     ? (contract as CPMMContract & PseudoNumericContract)
     : null
-  const answers = (isMulti || isNumericBuckets)
-    ? ((contract as { answers?: Answer[] }).answers ?? [])
-    : []
   const pollOptions = isPoll
     ? (contract as { options?: PollOption[] }).options
     : undefined
 
   const binaryProb = cpmmContract ? Math.round(cpmmContract.prob * 100) : null
-
-  const nonOtherAnswers = answers.filter((a) => !a.isOther)
-  const otherAnswer = answers.find((a) => a.isOther)
-  const topThree = [...nonOtherAnswers].sort((a, b) => b.prob - a.prob).slice(0, 3)
-
+  const resolved = !!contract.resolution
+  const liquidity = 'totalLiquidity' in contract ? (contract as CPMMContract).totalLiquidity ?? 0 : 0
   const contractUrl = `/${contract.creatorUsername}/${contract.slug}`
-  const hasLiquidity = 'totalLiquidity' in contract
 
   return (
-    <div className="bg-canvas-50 border-canvas-100 relative flex h-full flex-col overflow-hidden rounded-xl border">
-      {/* Header: creator + market type badge */}
-      <Row className="items-center justify-between gap-2 px-4 pt-4 pb-2">
-        <a
-          href={`/${contract.creatorUsername}`}
-          className="flex min-w-0 items-center gap-2 hover:opacity-70"
-        >
-          <img
-            src={contract.creatorAvatarUrl ?? '/default-avatar.png'}
-            alt=""
-            className="h-6 w-6 shrink-0 rounded-full object-cover"
-          />
-          <span className="text-ink-500 truncate text-[13px]">
-            @{contract.creatorUsername}
-          </span>
-        </a>
-        <span
-          className={clsx(
-            'shrink-0 rounded px-2 py-0.5 text-xs font-semibold',
-            meta.badgeBg,
-            meta.badgeText
-          )}
-        >
+    <div
+      className={clsx(
+        'bg-canvas-50 border-ink-200 flex h-[340px] flex-col rounded-xl border transition-colors',
+        resolved ? 'opacity-70' : 'hover:border-ink-300'
+      )}
+    >
+      {/* Top row: status + type badge */}
+      <Row className="items-center justify-between gap-2 px-5 pt-6">
+        <span className="text-ink-400 text-[11px]">{statusLabel(contract)}</span>
+        <span className={clsx('rounded px-1.5 py-0.5 text-[11px] font-medium', meta.badgeClass)}>
           {meta.label}
         </span>
       </Row>
 
       {/* Question title */}
-      <a href={contractUrl} className="px-4 pb-2 pt-0.5 hover:opacity-80">
-        <p className="text-ink-900 line-clamp-2 text-[15px] font-semibold leading-snug">
+      <a href={contractUrl} className="px-5 pt-2.5 hover:opacity-80">
+        <p className="text-ink-900 line-clamp-2 text-base font-semibold leading-snug">
           {contract.question}
         </p>
       </a>
 
-      {/* Market-type-specific content */}
-      <div className="min-h-0 flex-1 overflow-hidden px-4 pb-3 pt-1">
-        {isBinary && cpmmContract && (
-          <Col className="gap-1 py-1">
-            {contract.resolution && contract.resolution !== 'CANCEL' ? (
-              <>
-                <span
-                  className={clsx(
-                    'text-3xl font-bold',
-                    contract.resolution === 'YES'
-                      ? 'text-teal-500'
-                      : 'text-rose-500'
-                  )}
-                >
-                  {contract.resolution} ✓
-                </span>
-                <span className="text-ink-400 text-[13px]">resolved</span>
-              </>
-            ) : (
-              <>
-                <span className={clsx('text-4xl font-bold', meta.accentText)}>
-                  {binaryProb}%
-                </span>
-                <span className="text-ink-400 text-[13px]">chance of yes</span>
-              </>
-            )}
-          </Col>
+      {/* Market-type content */}
+      <div className="min-h-0 flex-1 overflow-hidden px-5 pt-5 pb-2">
+        {isBinary && cpmmContract && binaryContract && (
+          resolved ? (
+            <span className={clsx(
+              'text-2xl font-bold',
+              contract.resolution === 'YES' ? 'text-teal-500' : contract.resolution === 'NO' ? 'text-rose-500' : 'text-ink-400'
+            )}>
+              {contract.resolution === 'CANCEL' ? 'N/A' : contract.resolution} ✓
+            </span>
+          ) : (
+            <Col className="h-full gap-0">
+              <Row className="items-center justify-between pb-2">
+                <Row className="items-baseline gap-1.5">
+                  <span className="text-ink-900 text-2xl font-bold leading-[2rem]">{binaryProb}%</span>
+                  <span className="text-ink-400 text-[11px]">chance</span>
+                </Row>
+                <div className="-mt-3">
+                  <BetButton
+                    contract={binaryContract!}
+                    user={user}
+                    labels={{ yes: 'Yes', no: 'No' }}
+                  />
+                </div>
+              </Row>
+              <FeedBinaryChart
+                contract={binaryContract}
+                className="h-[120px] w-full"
+                startDate={contract.createdTime}
+              />
+            </Col>
+          )
         )}
 
-        {isMulti && topThree.length > 0 && (
-          <Col className="gap-2 py-1">
-            {topThree.map((a) => {
-              const pct = Math.round(a.prob * 100)
-              const isWinner = a.resolution === 'YES'
-              const barColor = getAnswerColor(a)
-              return (
-                <Row key={a.id} className="items-center gap-3">
-                  <span className="text-ink-700 w-2/5 shrink-0 truncate text-[13px] leading-tight">
-                    {a.text}
-                  </span>
-                  <div
-                    className="bg-ink-200 flex-1 overflow-hidden rounded-full"
-                    style={{ height: '8px' }}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${pct}%`, backgroundColor: barColor }}
-                    />
-                  </div>
-                  <span
-                    className={clsx(
-                      'w-8 shrink-0 text-right text-[13px] font-medium',
-                      isWinner ? 'text-teal-500' : 'text-ink-500'
-                    )}
-                  >
-                    {isWinner ? '✓' : `${pct}%`}
-                  </span>
-                </Row>
-              )
-            })}
-            {(() => {
-              const moreCount =
-                Math.max(0, nonOtherAnswers.length - 3) + (otherAnswer ? 1 : 0)
-              return moreCount > 0 ? (
-                <a
-                  href={contractUrl}
-                  className="text-ink-400 hover:text-ink-600 text-[13px] transition-colors"
-                >
-                  +{moreCount} more →
-                </a>
-              ) : null
-            })()}
-          </Col>
+        {multiContract && (
+          <SimpleAnswerBars
+            contract={multiContract}
+            maxAnswers={3}
+          />
         )}
 
         {isPseudoNumeric && pseudoContract && (() => {
-          const prob =
-            pseudoContract.pool && pseudoContract.p != null
-              ? getCpmmProbability(pseudoContract.pool, pseudoContract.p)
-              : pseudoContract.prob
-          const hasRange = prob !== undefined && pseudoContract.min !== undefined
+          const prob = pseudoContract.pool && pseudoContract.p != null
+            ? getCpmmProbability(pseudoContract.pool, pseudoContract.p)
+            : pseudoContract.prob
           const resolveProb = contract.resolutionProbability ?? prob
           return (
-            <Col className="gap-1 py-1">
-              {contract.resolution ? (
-                <>
-                  <span className="text-ink-900 text-3xl font-bold">
-                    {hasRange && resolveProb !== undefined
-                      ? formatNumericProbability(resolveProb, pseudoContract)
-                      : contract.resolution}
-                  </span>
-                  <span className="text-ink-400 text-[13px]">resolved</span>
-                </>
-              ) : (
-                <span className="text-ink-900 text-4xl font-bold">
-                  {hasRange && prob !== undefined
-                    ? formatNumericProbability(prob, pseudoContract)
-                    : prob !== undefined
-                    ? `${Math.round(prob * 100)}%`
-                    : '—'}
-                </span>
-              )}
-            </Col>
-          )
-        })()}
-
-        {isNumericBuckets && (() => {
-          const topAnswer =
-            nonOtherAnswers.length > 0
-              ? [...nonOtherAnswers].sort((a, b) => b.prob - a.prob)[0]
-              : null
-          if (!topAnswer) return null
-          const pct = Math.round(topAnswer.prob * 100)
-          const isResolved =
-            !!contract.resolution || topAnswer.resolution === 'YES'
-          return (
-            <Col className="gap-1 py-1">
-              <span
-                className={clsx('text-2xl font-bold leading-tight', meta.accentText)}
-              >
-                {topAnswer.text}
+            <Row className="items-baseline gap-1.5">
+              <span className="text-ink-900 text-2xl font-bold">
+                {contract.resolution
+                  ? formatNumericProbability(resolveProb!, pseudoContract)
+                  : prob !== undefined ? formatNumericProbability(prob, pseudoContract) : '—'}
               </span>
-              <span className="text-ink-400 text-[13px]">
-                {isResolved ? 'resolved' : `${pct}% chance`}
-              </span>
-            </Col>
+              {contract.resolution && <span className="text-ink-400 text-[11px]">resolved</span>}
+            </Row>
           )
         })()}
 
         {isPoll && pollOptions && pollOptions.length > 0 && (
-          <Col className="gap-1.5 py-1">
-            {pollOptions.slice(0, 3).map((o) => (
+          <Col className="gap-1.5">
+            {pollOptions.slice(0, 5).map((o) => (
               <Row key={o.id} className="items-center gap-2">
                 <div className="bg-ink-300 h-1.5 w-1.5 shrink-0 rounded-full" />
-                <span className="text-ink-600 truncate text-[13px] leading-tight">
-                  {o.text}
-                </span>
+                <span className="text-ink-600 truncate text-sm leading-tight">{o.text}</span>
               </Row>
             ))}
-            {pollOptions.length > 3 && (
-              <a
-                href={contractUrl}
-                className="text-ink-400 hover:text-ink-600 text-[13px] transition-colors"
-              >
-                +{pollOptions.length - 3} more →
+            {pollOptions.length > 5 && (
+              <a href={contractUrl} className="text-ink-400 hover:text-ink-600 text-[11px] transition-colors">
+                +{pollOptions.length - 5} more →
               </a>
             )}
           </Col>
         )}
       </div>
 
-      {/* Footer: engagement buttons */}
-      <Row className="border-ink-100 items-center gap-0.5 border-t px-4 py-1.5">
+      {/* Footer */}
+      <Row className="border-ink-200 items-center border-t px-5 py-1.5 gap-3">
         <TradesButton contract={contract} size="sm" />
-        {hasLiquidity && (
-          <Button disabled size="2xs" color="gray-white">
-            <Tooltip text="Total liquidity" placement="top" noTap>
-              <Row className="text-ink-500 items-center gap-1">
-                <TbDroplet className="h-5 w-5 stroke-2" />
-                <span className="text-ink-600 text-[13px]">
-                  {shortFormatNumber(
-                    (contract as CPMMContract).totalLiquidity
-                  )}
-                </span>
-              </Row>
-            </Tooltip>
-          </Button>
+        {liquidity > 0 && (
+          <Row className="text-ink-500 items-center gap-1">
+            <TbDroplet className="h-4 w-4 stroke-2" />
+            <span className="text-ink-600 text-[13px]">
+              {shortFormatNumber(liquidity)}
+            </span>
+          </Row>
         )}
         <RepostButton
           playContract={contract}
@@ -342,6 +219,12 @@ export function DashboardMarketCard({
           contractId={contract.id}
           heartClassName="stroke-ink-500"
         />
+        <a
+          href={contractUrl}
+          className="text-ink-400 hover:text-ink-600 ml-auto text-[11px] transition-colors"
+        >
+          View market →
+        </a>
       </Row>
     </div>
   )
