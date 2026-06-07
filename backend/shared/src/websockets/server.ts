@@ -3,6 +3,7 @@ import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
 import { isError } from 'lodash'
 import { LOCAL_DEV, log, metrics } from 'shared/utils'
 import { Switchboard } from './switchboard'
+import { BRIDGE_ROLE, publishToBridge } from './broadcast-bridge'
 import {
   BroadcastPayload,
   ClientMessage,
@@ -105,7 +106,21 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
   }
 }
 
+// Routes a broadcast. In the write process (publish role) it emits one event to
+// the fan-out tier over the bridge instead of doing the sends here; 'both' does
+// both, for a gap-free cutover. Otherwise (local) it does the real per-socket
+// sends in this process.
 export function broadcastMulti(topics: string[], data: BroadcastPayload) {
+  if (BRIDGE_ROLE === 'publish' || BRIDGE_ROLE === 'both') {
+    publishToBridge(topics, data)
+    if (BRIDGE_ROLE === 'publish') return
+  }
+  localBroadcastMulti(topics, data)
+}
+
+// Owns the actual socket sends — runs wherever the connections live (the monolith
+// today, or the dedicated fan-out process).
+export function localBroadcastMulti(topics: string[], data: BroadcastPayload) {
   // ian: Don't await this: we don't need to hear back from all the clients and can take a dozen ms
   const sendToSubscribers = (topic: string, msg: any) => {
     const json = JSON.stringify(msg)

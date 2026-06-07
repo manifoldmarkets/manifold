@@ -8,6 +8,13 @@ pathMatchers:
   - name: matcher-1
     defaultService: global/backendServices/api-lb-service
     routeRules:
+      # WebSocket connections go to the dedicated fan-out tier, not the write
+      # instance. (Requires the api-lb-fanout-service backend to exist.) Lower
+      # priority number = evaluated first.
+      - priority: 0
+        service: global/backendServices/api-lb-fanout-service
+        matchRules:
+          - pathTemplateMatch: /ws
       - priority: 1
         routeAction:
           weightedBackendServices:
