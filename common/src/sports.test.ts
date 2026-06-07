@@ -5,6 +5,7 @@ import {
   stageLabel,
   computeCloseTime,
   flagEmoji,
+  flagEmojiToCode,
   FDMatch,
   TournamentConfig,
 } from './sports'
@@ -254,6 +255,24 @@ describe('flagEmoji', () => {
     expect(flagEmoji('X')).toBe('')
     expect(flagEmoji('USA')).toBe('')
     expect(flagEmoji('')).toBe('')
+  })
+})
+
+describe('flagEmojiToCode', () => {
+  it('reverses a flag emoji to its lowercase ISO2 code', () => {
+    expect(flagEmojiToCode(flagEmoji('KR'))).toBe('kr')
+    expect(flagEmojiToCode(flagEmoji('BR'))).toBe('br')
+    expect(flagEmojiToCode('🇯🇵')).toBe('jp')
+  })
+  it('round-trips with flagEmoji', () => {
+    for (const code of ['us', 'gb', 'ar', 'ma', 'jp']) {
+      expect(flagEmojiToCode(flagEmoji(code))).toBe(code)
+    }
+  })
+  it('returns empty string for non-flag input', () => {
+    expect(flagEmojiToCode('')).toBe('')
+    expect(flagEmojiToCode('KR')).toBe('') // plain letters, not the emoji
+    expect(flagEmojiToCode('⚽')).toBe('')
   })
 })
 

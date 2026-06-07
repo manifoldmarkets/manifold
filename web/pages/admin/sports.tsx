@@ -17,6 +17,7 @@ import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { TOURNAMENT_CONFIGS, TournamentConfig } from 'common/sports'
+import { Flag } from 'web/components/sports/sports-match-card'
 import clsx from 'clsx'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -668,12 +669,16 @@ export default function SportsAdminPage() {
                             />
                           </td>
                           <td>
-                            <span className="mr-1">{f.homeFlag}</span>
-                            {f.homeTeam.name}
+                            <span className="inline-flex items-center gap-1">
+                              <Flag emoji={f.homeFlag} />
+                              {f.homeTeam.name}
+                            </span>
                           </td>
                           <td>
-                            <span className="mr-1">{f.awayFlag}</span>
-                            {f.awayTeam.name}
+                            <span className="inline-flex items-center gap-1">
+                              <Flag emoji={f.awayFlag} />
+                              {f.awayTeam.name}
+                            </span>
                           </td>
                           <td className="text-xs">
                             {new Date(f.utcDate).toLocaleString('en-GB', {

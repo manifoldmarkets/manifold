@@ -322,6 +322,19 @@ export function teamFlagFromArea(areaCode: string): string {
   return flagEmoji(iso2)
 }
 
+// Reverse of flagEmoji: turns a regional-indicator flag emoji back into its
+// lowercase ISO 3166-1 alpha-2 code (e.g. "🇰🇷" → "kr"), or '' if not a flag.
+// Lets the UI render a cross-platform flag IMAGE instead of relying on the OS to
+// draw the emoji — Windows/Chrome render flag emoji as the bare letters ("KR").
+export function flagEmojiToCode(flag: string): string {
+  const cps = [...flag].map((c) => c.codePointAt(0) ?? 0)
+  if (cps.length !== 2) return ''
+  const A = 0x1f1e6
+  const Z = 0x1f1ff
+  if (cps.some((cp) => cp < A || cp > Z)) return ''
+  return cps.map((cp) => String.fromCharCode(cp - A + 97)).join('')
+}
+
 function teamFlag(team: FDMatch['homeTeam']): string {
   return teamFlagFromArea(team.area?.code ?? team.tla ?? '')
 }

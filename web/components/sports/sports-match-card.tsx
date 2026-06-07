@@ -3,6 +3,28 @@ import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { flagEmojiToCode } from 'common/sports'
+
+// Renders a country flag as an image (works on every platform) rather than the
+// regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
+// Falls back to the emoji for inputs we can't map (e.g. club tournaments, which
+// pass no flag).
+export function Flag({ emoji }: { emoji?: string }) {
+  const code = emoji ? flagEmojiToCode(emoji) : ''
+  if (!code)
+    return emoji ? (
+      <span className="flex-shrink-0 text-base leading-none">{emoji}</span>
+    ) : null
+  return (
+    <img
+      src={`https://flagcdn.com/${code}.svg`}
+      alt={code.toUpperCase()}
+      title={code.toUpperCase()}
+      className="border-ink-200 h-3.5 w-5 flex-shrink-0 rounded-[2px] border object-cover"
+      loading="lazy"
+    />
+  )
+}
 
 export type MatchOutcome = 'teamA' | 'teamB' | 'draw'
 
@@ -100,7 +122,7 @@ function OutcomeRow({
           </span>
         </div>
       ) : (
-        <span className="flex-shrink-0 text-base leading-none">{flag}</span>
+        <Flag emoji={flag} />
       )}
 
       <span
