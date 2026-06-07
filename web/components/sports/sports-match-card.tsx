@@ -22,7 +22,9 @@ import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 // pass no flag).
 export function Flag({ emoji }: { emoji?: string }) {
   const code = emoji ? flagEmojiToCode(emoji) : ''
-  if (!code)
+  const [failed, setFailed] = useState(false)
+  // No mappable code, or the image failed to load → fall back to the emoji.
+  if (!code || failed)
     return emoji ? (
       <span className="flex-shrink-0 text-base leading-none">{emoji}</span>
     ) : null
@@ -31,6 +33,7 @@ export function Flag({ emoji }: { emoji?: string }) {
       src={`https://flagcdn.com/${code}.svg`}
       alt={code.toUpperCase()}
       title={code.toUpperCase()}
+      onError={() => setFailed(true)}
       className="border-ink-200 h-3.5 w-5 flex-shrink-0 rounded-[2px] border object-cover"
       loading="lazy"
     />
