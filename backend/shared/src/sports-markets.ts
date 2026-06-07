@@ -236,6 +236,21 @@ export async function ensureCommunityAssets(
 let fdRequestsAvailable: number | null = null
 let fdResetSeconds: number | null = null
 
+// All football-data calls run one-at-a-time through this promise chain. The
+// throttle state above is module-global, and the scheduler runs sports-live
+// (every 2 min), sports-resolve, and sports-create in the same process — without
+// serialization two overlapping jobs could both pass the "budget spent" gate
+// before either sleeps, under-throttling into a real 429/ban.
+let fdQueue: Promise<unknown> = Promise.resolve()
+function fdSerialize<T>(fn: () => Promise<T>): Promise<T> {
+  const run = fdQueue.then(fn, fn)
+  fdQueue = run.then(
+    () => undefined,
+    () => undefined
+  )
+  return run
+}
+
 // Reads a numeric header, tolerating football-data's spelling variants across
 // API versions (e.g. X-Requests-Available vs X-RequestsAvailable). Header lookup
 // is case-insensitive but hyphen-sensitive, so we try each known form.
@@ -262,7 +277,11 @@ function recordFdThrottle(headers: Headers) {
   ])
 }
 
-async function fdFetch<T>(path: string, apiKey: string): Promise<T> {
+function fdFetch<T>(path: string, apiKey: string): Promise<T> {
+  return fdSerialize(() => fdFetchInner<T>(path, apiKey))
+}
+
+async function fdFetchInner<T>(path: string, apiKey: string): Promise<T> {
   // Read at call time so FOOTBALL_DATA_BASE_URL can be set after module load (e.g. test scripts)
   const base = process.env.FOOTBALL_DATA_BASE_URL ?? 'https://api.football-data.org'
 
