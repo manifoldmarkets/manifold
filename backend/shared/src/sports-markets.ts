@@ -863,9 +863,12 @@ export async function pollAndStoreLiveScores(
     }
     const rows = await pg.manyOrNone<{ id: string }>(
       `update contracts set data = data || $1::jsonb
-       where data->>'sportsEventId' = $2 and token = 'MANA' and resolution is null
+       where data->>'sportsEventId' = $2
+         and data->>'sportsLeague' = $3
+         and token = 'MANA'
+         and resolution is null
        returning id`,
-      [JSON.stringify(patch), sportsEventId(m)]
+      [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
     )
     updated += rows.length
   }
