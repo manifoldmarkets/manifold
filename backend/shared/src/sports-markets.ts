@@ -429,7 +429,13 @@ export async function resolveTournamentMarkets(
     return { resolved: 0, skipped: 0, errors: 0, log }
 
   await sleep(1000)
-  const finishedMatches = await fetchFinishedMatches(config, apiKey)
+  // One unfiltered fetch, then keep terminal matches. Includes AWARDED
+  // (forfeit/walkover) — those carry a winner but aren't status=FINISHED, so a
+  // FINISHED-only fetch would leave them open forever ("needs attention").
+  const allMatches = await fetchAllCompetitionMatches(config, apiKey)
+  const finishedMatches = allMatches.filter(
+    (m) => m.status === 'FINISHED' || m.status === 'AWARDED'
+  )
   const finishedById = new Map(finishedMatches.map((m) => [sportsEventId(m), m]))
 
   let resolved = 0
