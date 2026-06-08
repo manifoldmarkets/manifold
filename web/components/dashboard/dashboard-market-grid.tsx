@@ -18,6 +18,7 @@ import { Content, TextEditor, useTextEditor } from 'web/components/widgets/edito
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { Button } from 'web/components/buttons/button'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -26,6 +27,7 @@ import type { DropResult } from '@hello-pangea/dnd'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RESOLVED_COLLAPSE_COUNT = 3
+const POLLS_VISIBLE_COUNT = 3
 const DESCRIPTION_MAX = 280
 const resolvedColumns = [traderColumn, liquidityColumn, probColumn]
 
@@ -72,6 +74,7 @@ export function DashboardMarketGrid({
   const [pollsExpanded, setPollsExpanded] = useState(
     initialContracts.some((c) => c.outcomeType === 'POLL')
   )
+  const [pollsShowMore, setPollsShowMore] = useState(false)
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
   const [descriptionContent, setDescriptionContent] = useState<JSONContent | undefined>(undefined)
 
@@ -259,11 +262,18 @@ export function DashboardMarketGrid({
             {pollsExpanded && (
               polls.length > 0 ? (
                 <Col className="divide-ink-100 divide-y">
-                  {polls.map((contract) => (
+                  {(pollsShowMore ? polls : polls.slice(0, POLLS_VISIBLE_COUNT)).map((contract) => (
                     <div key={contract.id} className="px-4">
                       <ContractRow contract={contract} columns={resolvedColumns} />
                     </div>
                   ))}
+                  {polls.length > POLLS_VISIBLE_COUNT && (
+                    <Row className="border-ink-100 border-t px-4 py-2">
+                      <Button color="gray" size="sm" onClick={() => setPollsShowMore((v) => !v)}>
+                        {pollsShowMore ? 'Show less' : 'Show more'}
+                      </Button>
+                    </Row>
+                  )}
                 </Col>
               ) : (
                 <p className="text-ink-400 px-4 py-3 text-sm">
