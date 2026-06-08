@@ -1270,11 +1270,13 @@ function PrizeEligibilitySection({
       })
       const refundMsg =
         res.voidedTicketCount > 0
-          ? ` Voided ${res.voidedTicketCount} ticket(s), refunded ${res.refundedManaTotal} mana.`
+          ? ` Voided ${res.voidedTicketCount} ${
+              res.voidedTicketCount === 1 ? 'entry' : 'entries'
+            }, refunded ${res.refundedManaTotal} mana.`
           : ''
       toast.success(
         (selectedEligibility === null
-          ? 'Cleared prize override - follows bonus eligibility'
+          ? 'Cleared prize override - follows identity verification'
           : `Prize eligibility updated to '${selectedEligibility}'`) + refundMsg
       )
       onUpdate({
@@ -1338,7 +1340,7 @@ function PrizeEligibilitySection({
           <div className="mt-2 space-y-2">
             <div>
               <label className="text-ink-700 mb-1 block text-sm font-medium">
-                Reason (optional, stamped onto voided ticket rows):
+                Reason (optional, stamped onto voided entry rows):
               </label>
               <input
                 type="text"
@@ -1357,7 +1359,7 @@ function PrizeEligibilitySection({
                 className="mt-0.5"
               />
               <span>
-                Void this user's outstanding tickets and refund the mana they
+                Void this user's outstanding entries and refund the mana they
                 paid. Recommended for under-18 / wrongly-charged cases — they
                 bought entries they can't win.
               </span>
