@@ -131,7 +131,13 @@ export default function SportsAdminPage() {
   function saveSettings() {
     localStorage.setItem(
       settingsKey,
-      JSON.stringify({ groupSlug, dashboardUrl, customNote, stageTiers, extraTags })
+      JSON.stringify({
+        groupSlug,
+        dashboardUrl,
+        customNote,
+        stageTiers,
+        extraTags,
+      })
     )
     alert('Settings saved.')
   }
@@ -187,7 +193,9 @@ export default function SportsAdminPage() {
         setExtraTags(merged.slice(0, maxExtraTags))
       }
     } catch (e) {
-      alert(`Suggestion failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
+      alert(
+        `Suggestion failed: ${e instanceof Error ? e.message : 'Unknown error'}`
+      )
     } finally {
       setSuggesting(false)
     }
@@ -267,7 +275,9 @@ export default function SportsAdminPage() {
         // are strictly fixtures shown on the official dashboard and must never be
         // added to a community dashboard. What's left is community-eligible.
         if (!cancelled)
-          setCommunityAllMarkets((data ?? []).filter((m: any) => !m.sportsEventId))
+          setCommunityAllMarkets(
+            (data ?? []).filter((m: any) => !m.sportsEventId)
+          )
       })
       .catch(() => {
         if (!cancelled) setCommunityAllMarkets([])
@@ -513,12 +523,13 @@ export default function SportsAdminPage() {
             </li>
             <li>
               Odds and live scores update in real time on the dashboard; matches{' '}
-              <strong>auto-resolve ~10s after full time</strong> (15-min backstop).
+              <strong>auto-resolve ~10s after full time</strong> (15-min
+              backstop).
             </li>
             <li>
-              Each market is tagged into the official group + any extra topics you
-              set below, with all native columns populated (feed ranking, search,
-              personalized feeds all work).
+              Each market is tagged into the official group + any extra topics
+              you set below, with all native columns populated (feed ranking,
+              search, personalized feeds all work).
             </li>
           </ul>
         </div>
@@ -671,11 +682,11 @@ export default function SportsAdminPage() {
                   {tournament.officialGroupSlug}
                 </code>
                 . Add extra topic slugs here (e.g.{' '}
-                <code className="bg-ink-100 rounded px-1 text-xs">soccer</code>) to
-                surface them in those feeds too. Unknown slugs are ignored.
+                <code className="bg-ink-100 rounded px-1 text-xs">soccer</code>)
+                to surface them in those feeds too. Unknown slugs are ignored.
                 Markets allow {MAX_GROUPS_PER_MARKET} topics total, and{' '}
-                {baseGroupCount} are used by the official/configured groups, so up
-                to <strong>{maxExtraTags}</strong> extra tag(s) fit.
+                {baseGroupCount} are used by the official/configured groups, so
+                up to <strong>{maxExtraTags}</strong> extra tag(s) fit.
               </p>
               <Row className="flex-wrap items-center gap-2">
                 <input
@@ -724,7 +735,7 @@ export default function SportsAdminPage() {
                         onClick={() =>
                           setExtraTags((t) => t.filter((x) => x !== slug))
                         }
-                        className="text-ink-400 hover:text-red-600 font-bold leading-none"
+                        className="text-ink-400 font-bold leading-none hover:text-red-600"
                         title="Remove tag"
                       >
                         ×
@@ -1156,9 +1167,9 @@ export default function SportsAdminPage() {
 
             <span className="text-ink-400 text-xs">
               Markets resolve automatically: the live poller resolves a match
-              within ~10s of the final whistle, and the <code>sports-resolve</code>{' '}
-              cron sweeps every 15 min as a backstop. Use the button below only to
-              force a sweep now.
+              within ~10s of the final whistle, and the{' '}
+              <code>sports-resolve</code> cron sweeps every 15 min as a
+              backstop. Use the button below only to force a sweep now.
             </span>
 
             <Row className="items-center gap-3">
@@ -1336,9 +1347,7 @@ export default function SportsAdminPage() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
-                        setCommunityTopicSlug(
-                          slugify(communityTopicDraft)
-                        )
+                        setCommunityTopicSlug(slugify(communityTopicDraft))
                       }
                     }}
                     placeholder="e.g. soccer, world-cup-predictions…"
@@ -1430,8 +1439,8 @@ export default function SportsAdminPage() {
 
             {!communitySearching && !communityTopicSlug && (
               <p className="text-ink-400 text-sm">
-                Enter a topic slug above and hit Browse to find community markets
-                to add.
+                Enter a topic slug above and hit Browse to find community
+                markets to add.
               </p>
             )}
             {!communitySearching &&
