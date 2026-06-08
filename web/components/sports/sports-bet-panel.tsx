@@ -81,6 +81,7 @@ export function SportsBetPanel({
     'limit-order-expiration'
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [betSide, setBetSide] = useState<'YES' | 'NO'>('YES')
 
   const outcomes: {
     key: MatchOutcome
@@ -127,7 +128,7 @@ export function SportsBetPanel({
   const betResult =
     contract && answerToBuy && betAmount > 0
       ? getLimitBetReturns(
-          'YES',
+          betSide,
           betAmount,
           unfilledBets,
           balanceByUserId,
@@ -180,7 +181,7 @@ export function SportsBetPanel({
       await api('bet', {
         contractId: match.contractId,
         answerId: current.answerId,
-        outcome: 'YES',
+        outcome: betSide,
         amount: betAmount,
         ...(betMode === 'limit'
           ? { limitProb: limitProb / 100, ...(expiresMillisAfter ? { expiresMillisAfter } : {}) }
@@ -188,10 +189,9 @@ export function SportsBetPanel({
       })
       toast.success(
         betMode === 'limit'
-          ? `Limit order placed: Ṁ${betAmount} on ${current.label} at ${limitProb}%`
-          : `Bet placed: Ṁ${betAmount} on ${current.label}`
+          ? `Limit order placed: Ṁ${betAmount} ${betSide} on ${current.label} at ${limitProb}%`
+          : `Bet placed: Ṁ${betAmount} ${betSide} on ${current.label}`
       )
-      onClose()
     } catch (e: any) {
       toast.error(e?.message ?? 'Failed to place bet')
     } finally {
@@ -212,7 +212,7 @@ export function SportsBetPanel({
     <Modal open setOpen={(open) => { if (!open) onClose() }} size="md">
       <Col className="w-full overflow-hidden rounded-xl bg-canvas-0 text-ink-1000">
 
-        <Col className="border-ink-100 items-center border-b px-6 pb-4 pt-5 text-center">
+        <Col className="items-center px-6 pb-4 pt-5 text-center">
           {match.marketUrl ? (
             <a
               href={match.marketUrl}
@@ -243,25 +243,62 @@ export function SportsBetPanel({
           ) : (
             <span className="text-ink-500 mt-0.5 text-sm">{match.closeDateLabel} · Kickoff {match.closeTime}</span>
           )}
+
+        </Col>
+
+        <Col className="border-b border-ink-100 w-full items-center px-6 py-4">
+          <Col className="w-full gap-2">
+            <Row className="bg-canvas-100 w-full items-stretch rounded-lg">
+              {outcomes.map((o) => (
+                <button
+                  key={o.key}
+                  onClick={() => { setSelected(o.key); setLimitProbClamped(o.prob); setBetSide('YES') }}
+                  className={clsx(
+                    'min-w-0 flex-1 truncate rounded-lg px-2 py-2.5 text-sm font-medium transition-colors',
+                    selected === o.key ? 'text-white' : 'text-ink-500 hover:text-ink-700'
+                  )}
+                  style={selected === o.key ? { backgroundColor: o.color } : undefined}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </Row>
+            <Row className="w-full">
+              {outcomes.map((o) => (
+                <div key={o.key} className="min-w-0 flex-1">
+                  {selected === o.key && (
+                    <Row className="gap-1 px-1">
+                      <button
+                        onClick={() => setBetSide('YES')}
+                        className={clsx(
+                          'flex-1 rounded border py-1 text-xs font-medium transition-colors',
+                          betSide === 'YES'
+                            ? 'border-teal-500 text-teal-500'
+                            : 'border-ink-300 text-ink-400'
+                        )}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setBetSide('NO')}
+                        className={clsx(
+                          'flex-1 rounded border py-1 text-xs font-medium transition-colors',
+                          betSide === 'NO'
+                            ? 'border-scarlet-600 text-scarlet-600'
+                            : 'border-ink-300 text-ink-400'
+                        )}
+                      >
+                        No
+                      </button>
+                    </Row>
+                  )}
+                </div>
+              ))}
+            </Row>
+          </Col>
         </Col>
 
         <Col className="gap-5 px-6 pb-6 pt-5">
-
-          <Row className="bg-canvas-100 items-stretch rounded-lg">
-            {outcomes.map((o) => (
-              <button
-                key={o.key}
-                onClick={() => { setSelected(o.key); setLimitProbClamped(o.prob) }}
-                className={clsx(
-                  'min-w-0 flex-1 truncate rounded-lg px-2 py-2.5 text-sm font-medium transition-colors',
-                  selected === o.key ? 'text-white' : 'text-ink-500 hover:text-ink-700'
-                )}
-                style={selected === o.key ? { backgroundColor: o.color } : undefined}
-              >
-                {o.label}
-              </button>
-            ))}
-          </Row>
 
           <Row className="items-center justify-between">
             <span className="text-ink-600 text-sm">Bet amount</span>
@@ -359,9 +396,11 @@ export function SportsBetPanel({
                     <span className="text-ink-1000 text-base font-semibold">
                       {betResult ? `${probAfterPct}%` : '—'}
                     </span>
-                    {betResult && (
-                      <span className="text-ink-400 text-sm">
-                        ↑{Math.max(0, probAfterPct - probBeforePct)}%
+                    {betResult && probAfterPct !== probBeforePct && (
+                      <span className={clsx('text-sm', probAfterPct > probBeforePct ? 'text-teal-500' : 'text-scarlet-500')}>
+                        {probAfterPct > probBeforePct
+                          ? `↑${probAfterPct - probBeforePct}%`
+                          : `↓${probBeforePct - probAfterPct}%`}
                       </span>
                     )}
                   </Row>
@@ -383,7 +422,7 @@ export function SportsBetPanel({
                 {filledNow !== undefined && totalOrder !== undefined && (
                   <Row className="items-baseline justify-between">
                     <span className="text-ink-600 text-sm">
-                      <span className="text-yes-500 font-medium">YES</span> filled now
+                      <span className={clsx('font-medium', betSide === 'YES' ? 'text-yes-500' : 'text-scarlet-600')}>{betSide}</span> filled now
                     </span>
                     <span className="text-ink-1000 text-sm font-medium">
                       Ṁ{filledNow.toLocaleString()} of Ṁ{totalOrder.toLocaleString()}
@@ -436,9 +475,9 @@ export function SportsBetPanel({
               : user
               ? betMode === 'quick'
                 ? payout !== undefined
-                  ? `Buy ${current.label} to win Ṁ${payout.toLocaleString()}`
-                  : `Buy ${current.label}`
-                : `Buy ${current.label} · Ṁ${betAmount} at ${limitProb}%`
+                  ? `Buy ${current.label} ${betSide} to win Ṁ${payout.toLocaleString()}`
+                  : `Buy ${current.label} ${betSide}`
+                : `Buy ${current.label} ${betSide} · Ṁ${betAmount} at ${limitProb}%`
               : 'Sign in to bet'}
           </button>
 
