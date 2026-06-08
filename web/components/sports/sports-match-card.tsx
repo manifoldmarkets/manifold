@@ -300,7 +300,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         {match.question && (
           <Link
             href={marketHref}
-            className="text-ink-700 hover:text-primary-600 line-clamp-2 text-[13px] font-medium leading-snug transition-colors"
+            className="text-ink-700 hover:text-primary-600 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors"
           >
             {match.question}
           </Link>
