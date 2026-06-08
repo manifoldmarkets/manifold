@@ -199,7 +199,11 @@ export default function SportsAdminPage() {
   >([])
   const [communitySearching, setCommunitySearching] = useState(false)
   const [communityAdding, setCommunityAdding] = useState<string | null>(null)
-  const [communityGroupMode, setCommunityGroupMode] = useState(true)
+  // A topic (slug) the admin browses to find community markets to add. We never
+  // default to the official match group — ms-official markets are strictly the
+  // fixtures, which live on the official dashboard and are excluded here.
+  const [communityTopicDraft, setCommunityTopicDraft] = useState('')
+  const [communityTopicSlug, setCommunityTopicSlug] = useState('')
   const [communityInitStatus, setCommunityInitStatus] = useState<{
     groupId: string
     groupCreated: boolean
@@ -207,10 +211,10 @@ export default function SportsAdminPage() {
   } | null>(null)
   const [communityIniting, setCommunityIniting] = useState(false)
 
-  // Load all group markets once; filter client-side to support substring/hyphen matching
+  // Load the chosen topic's markets; filter client-side for substring matching.
   useEffect(() => {
     if (!isAdmin) return
-    const slug = communityGroupMode ? tournament.officialGroupSlug : null
+    const slug = communityTopicSlug.trim()
     if (!slug) {
       setCommunityAllMarkets([])
       return
@@ -227,8 +231,9 @@ export default function SportsAdminPage() {
       } as any) as Promise<any[]>
     )
       .then((data) => {
-        // Exclude the auto-created match markets (they carry sportsEventId) so
-        // the list only shows community-eligible markets, not the fixtures.
+        // Exclude the official match markets (they carry sportsEventId): those
+        // are strictly fixtures shown on the official dashboard and must never be
+        // added to a community dashboard. What's left is community-eligible.
         if (!cancelled)
           setCommunityAllMarkets((data ?? []).filter((m: any) => !m.sportsEventId))
       })
@@ -241,7 +246,7 @@ export default function SportsAdminPage() {
     return () => {
       cancelled = true
     }
-  }, [tournament.officialGroupSlug, communityGroupMode, isAdmin])
+  }, [communityTopicSlug, isAdmin])
 
   // Resolution state
   const [resolveLog, setResolveLog] = useState<ResolveLogEntry[]>([])
@@ -1250,13 +1255,14 @@ export default function SportsAdminPage() {
           <Col className="gap-4">
             <Row className="flex-wrap items-start justify-between gap-3">
               <p className="text-ink-500 text-sm">
-                Search for any market and add it to the community tab of the{' '}
-                <strong>{tournament.name}</strong> dashboard. Markets are also
-                tagged with{' '}
+                Browse a topic to find community markets to add to the{' '}
+                <strong>{tournament.name}</strong> community dashboard (and tag
+                with{' '}
                 <code className="bg-ink-100 rounded px-1 text-xs">
                   {tournament.communityGroupSlug}
                 </code>
-                .
+                ). The official match markets are excluded — they live only on
+                the official dashboard and are never added here.
               </p>
               <Col className="gap-1">
                 <Button
@@ -1281,40 +1287,54 @@ export default function SportsAdminPage() {
               </Col>
             </Row>
 
-            <Row className="flex-wrap items-center gap-4">
+            <Row className="flex-wrap items-end gap-4">
               <Col className="gap-1">
                 <label className="text-ink-600 text-xs">
-                  {communityGroupMode
-                    ? 'Filter within group'
-                    : 'Search all markets'}
+                  Browse a topic (slug) for community markets
                 </label>
-                <input
-                  type="text"
-                  value={communitySearch}
-                  onChange={(e) => onCommunitySearch(e.target.value)}
-                  placeholder={
-                    communityGroupMode
-                      ? 'Filter by title…'
-                      : 'Search by question…'
-                  }
-                  className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 text-sm"
-                />
+                <Row className="gap-2">
+                  <input
+                    type="text"
+                    value={communityTopicDraft}
+                    onChange={(e) => setCommunityTopicDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        setCommunityTopicSlug(
+                          communityTopicDraft.trim().toLowerCase()
+                        )
+                      }
+                    }}
+                    placeholder="e.g. soccer, world-cup-predictions…"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    color="gray-outline"
+                    onClick={() =>
+                      setCommunityTopicSlug(
+                        communityTopicDraft.trim().toLowerCase()
+                      )
+                    }
+                  >
+                    Browse
+                  </Button>
+                </Row>
               </Col>
-              <Row className="items-center gap-2 self-end pb-1.5">
-                <input
-                  type="checkbox"
-                  id="community-group-mode"
-                  checked={communityGroupMode}
-                  onChange={(e) => setCommunityGroupMode(e.target.checked)}
-                  className="cursor-pointer"
-                />
-                <label
-                  htmlFor="community-group-mode"
-                  className="text-ink-600 cursor-pointer text-xs"
-                >
-                  Within {tournament.shortLabel} group only
-                </label>
-              </Row>
+              {communityTopicSlug && (
+                <Col className="gap-1">
+                  <label className="text-ink-600 text-xs">
+                    Filter results by title
+                  </label>
+                  <input
+                    type="text"
+                    value={communitySearch}
+                    onChange={(e) => onCommunitySearch(e.target.value)}
+                    placeholder="Filter by title…"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 text-sm"
+                  />
+                </Col>
+              )}
               {communitySearching && (
                 <LoadingIndicator size="sm" className="self-end pb-2" />
               )}
@@ -1372,10 +1392,19 @@ export default function SportsAdminPage() {
               </div>
             )}
 
+            {!communitySearching && !communityTopicSlug && (
+              <p className="text-ink-400 text-sm">
+                Enter a topic slug above and hit Browse to find community markets
+                to add.
+              </p>
+            )}
             {!communitySearching &&
-              communityResults.length === 0 &&
-              (communitySearch || communityGroupMode) && (
-                <p className="text-ink-400 text-sm">No markets found.</p>
+              communityTopicSlug &&
+              communityResults.length === 0 && (
+                <p className="text-ink-400 text-sm">
+                  No community markets found in “{communityTopicSlug}” (official
+                  match markets are excluded).
+                </p>
               )}
           </Col>
         </Section>
