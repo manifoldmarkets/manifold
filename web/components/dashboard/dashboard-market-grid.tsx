@@ -2,22 +2,7 @@ import clsx from 'clsx'
 import { Extension, JSONContent } from '@tiptap/core'
 import { useEffect, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
-import { APIParams } from 'common/api/schema'
-import {
-  SearchParams,
-  QUERY_KEY,
-  SORT_KEY,
-  FILTER_KEY,
-  CONTRACT_TYPE_KEY,
-  SEARCH_TYPE_KEY,
-  PRIZE_MARKET_KEY,
-  FOR_YOU_KEY,
-  TOPIC_FILTER_KEY,
-  SWEEPIES_KEY,
-  GROUP_IDS_KEY,
-  LIQUIDITY_KEY,
-  HAS_BETS_KEY,
-} from 'web/components/search'
+import { SortKey, sortContracts } from 'web/lib/sort-contracts'
 import { DashboardMarketCard } from 'web/components/dashboard/dashboard-market-card'
 import { ContractRow } from 'web/components/contract/contracts-table'
 import {
@@ -25,196 +10,22 @@ import {
   liquidityColumn,
   probColumn,
 } from 'web/components/contract/contract-table-col-formats'
-import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { SearchInput } from 'web/components/search/search-input'
-import { ContractFilters } from 'web/components/search/contract-filters'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { SelectMarkets } from 'web/components/contract-select-modal'
 import { Content, TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { api } from 'web/lib/api/api'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type SortKey = 'manual' | 'date' | 'volume' | 'title' | 'newest' | 'oldest'
-
-function sortContracts(
-  contracts: Contract[],
-  slugOrder: string[],
-  sort: SortKey
-): Contract[] {
-  if (sort === 'manual') {
-    return slugOrder
-      .map((slug) => contracts.find((c) => c.slug === slug))
-      .filter((c): c is Contract => !!c)
-  }
-  const sorted = [...contracts]
-  if (sort === 'date') sorted.sort((a, b) => (a.closeTime ?? 0) - (b.closeTime ?? 0))
-  else if (sort === 'volume') sorted.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
-  else if (sort === 'title') sorted.sort((a, b) => a.question.localeCompare(b.question))
-  else if (sort === 'newest') sorted.sort((a, b) => (b.createdTime ?? 0) - (a.createdTime ?? 0))
-  else if (sort === 'oldest') sorted.sort((a, b) => (a.createdTime ?? 0) - (b.createdTime ?? 0))
-  return sorted
-}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RESOLVED_COLLAPSE_COUNT = 3
 const DESCRIPTION_MAX = 280
 const resolvedColumns = [traderColumn, liquidityColumn, probColumn]
-
-const DEFAULT_SEARCH_PARAMS: SearchParams = {
-  [QUERY_KEY]: '',
-  [SORT_KEY]: 'score',
-  [FILTER_KEY]: 'all',
-  [CONTRACT_TYPE_KEY]: 'ALL',
-  [SEARCH_TYPE_KEY]: undefined,
-  [PRIZE_MARKET_KEY]: '0',
-  [FOR_YOU_KEY]: '0',
-  [TOPIC_FILTER_KEY]: '',
-  [SWEEPIES_KEY]: '0',
-  [GROUP_IDS_KEY]: '',
-  [LIQUIDITY_KEY]: '',
-  [HAS_BETS_KEY]: '0',
-}
-
-// ─── Add Market Modal ─────────────────────────────────────────────────────────
-
-function AddMarketModal({
-  existingSlugs,
-  onAdd,
-  onClose,
-  pollsOnly = false,
-}: {
-  existingSlugs: Set<string>
-  onAdd: (contract: Contract) => void
-  onClose: () => void
-  pollsOnly?: boolean
-}) {
-  const [params, setParams] = useState<SearchParams>({
-    ...DEFAULT_SEARCH_PARAMS,
-    ...(pollsOnly ? { [CONTRACT_TYPE_KEY]: 'POLL' } : {}),
-  })
-  const [results, setResults] = useState<Contract[]>([])
-  const [searching, setSearching] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function updateParams(changes: Partial<SearchParams>) {
-    setParams((prev) => ({ ...prev, ...changes }))
-  }
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const data = await api('search-markets-full', {
-          term: params[QUERY_KEY],
-          filter: params[FILTER_KEY] as APIParams<'search-markets-full'>['filter'],
-          sort: params[SORT_KEY] as APIParams<'search-markets-full'>['sort'],
-          contractType: params[CONTRACT_TYPE_KEY] as APIParams<'search-markets-full'>['contractType'],
-          offset: 0,
-          limit: 20,
-          forYou: (params[FOR_YOU_KEY] ?? '0') as '1' | '0',
-          token: 'MANA',
-        })
-        setResults((data as Contract[]) ?? [])
-      } catch {
-        setResults([])
-      } finally {
-        setSearching(false)
-      }
-    }, 200)
-  }, [
-    params[QUERY_KEY],
-    params[FILTER_KEY],
-    params[SORT_KEY],
-    params[CONTRACT_TYPE_KEY],
-    params[FOR_YOU_KEY],
-  ])
-
-  const query = params[QUERY_KEY]
-  const displayed = query.trim()
-    ? results.filter((m) => m.question.toLowerCase().includes(query.toLowerCase()))
-    : results
-
-  return (
-    <Modal open setOpen={(o) => { if (!o) onClose() }} size="md">
-      <Col className={clsx(MODAL_CLASS, 'gap-3')}>
-        <p className="text-ink-1000 text-base font-semibold">
-          {pollsOnly ? 'Add poll to dashboard' : 'Add market to dashboard'}
-        </p>
-
-        <SearchInput
-          value={params[QUERY_KEY]}
-          setValue={(q) => updateParams({ [QUERY_KEY]: q })}
-          placeholder="Search questions"
-          autoFocus
-          loading={searching}
-        />
-
-        {!pollsOnly && (
-          <ContractFilters params={params} updateParams={updateParams} hideSweepsToggle />
-        )}
-
-        <Col className="max-h-80 gap-0.5 overflow-y-auto">
-          {displayed.length > 0 ? displayed.map((contract) => {
-            const already = existingSlugs.has(contract.slug)
-            return (
-              <Row
-                key={contract.id}
-                className={clsx(
-                  'min-w-0 items-center gap-3 rounded-lg px-2 py-2 transition-colors',
-                  already ? 'opacity-50' : 'hover:bg-canvas-50 cursor-pointer'
-                )}
-                onClick={() => !already && onAdd(contract)}
-              >
-                <img
-                  src={contract.creatorAvatarUrl ?? '/default-avatar.png'}
-                  alt=""
-                  className="h-7 w-7 shrink-0 rounded-full object-cover"
-                />
-                <span className="text-ink-900 min-w-0 flex-1 truncate text-sm">
-                  {contract.question}
-                </span>
-                <ContractStatusLabel contract={contract} className="shrink-0 text-sm" />
-                <span className={clsx('shrink-0 text-xs font-medium', already ? 'text-ink-400' : 'text-indigo-500 hover:text-indigo-700')}>
-                  {already ? 'Added' : 'Add'}
-                </span>
-              </Row>
-            )
-          }) : (
-            !searching && (
-              <p className="text-ink-400 py-2 text-sm">
-                {query.trim() ? (pollsOnly ? 'No polls found.' : 'No markets found.') : 'Loading…'}
-              </p>
-            )
-          )}
-        </Col>
-
-        {pollsOnly && (
-          <a
-            href={`/create?params=${encodeURIComponent(JSON.stringify({ outcomeType: 'POLL' }))}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-ink-400 hover:text-primary-500 self-start text-sm transition-colors"
-          >
-            Don't see what you need? Create a poll →
-          </a>
-        )}
-
-        <button onClick={onClose} className="text-ink-500 hover:text-ink-700 self-end text-sm">
-          Done
-        </button>
-      </Col>
-    </Modal>
-  )
-}
 
 // ─── Dashboard Market Grid ────────────────────────────────────────────────────
 
@@ -321,8 +132,6 @@ export function DashboardMarketGrid({
     .sort((a, b) => (b.resolutionTime ?? 0) - (a.resolutionTime ?? 0))
   const visibleResolved = resolvedExpanded ? resolved : resolved.slice(0, RESOLVED_COLLAPSE_COUNT)
   const hiddenCount = resolved.length - RESOLVED_COLLAPSE_COUNT
-  const existingSlugs = new Set(contracts.map((c) => c.slug))
-
   const sortOptions: { key: SortKey; label: string }[] = [
     { key: 'date', label: 'Close date' },
     { key: 'volume', label: 'Volume' },
@@ -547,19 +356,32 @@ export function DashboardMarketGrid({
       </Col>
 
       {showAdd && (
-        <AddMarketModal
-          existingSlugs={existingSlugs}
-          onAdd={handleAdd}
-          onClose={() => setShowAdd(false)}
-        />
+        <Modal open setOpen={(o) => { if (!o) setShowAdd(false) }} size="md">
+          <Col className={clsx(MODAL_CLASS, 'gap-3')}>
+            <p className="text-ink-1000 text-base font-semibold">Add market to dashboard</p>
+            <SelectMarkets
+              submitLabel={(len) => `Add ${len} market${len !== 1 ? 's' : ''}`}
+              onSubmit={(selected) => {
+                selected.forEach(handleAdd)
+                setShowAdd(false)
+              }}
+            />
+          </Col>
+        </Modal>
       )}
       {showAddPoll && (
-        <AddMarketModal
-          existingSlugs={existingSlugs}
-          onAdd={handleAdd}
-          onClose={() => setShowAddPoll(false)}
-          pollsOnly
-        />
+        <Modal open setOpen={(o) => { if (!o) setShowAddPoll(false) }} size="md">
+          <Col className={clsx(MODAL_CLASS, 'gap-3')}>
+            <p className="text-ink-1000 text-base font-semibold">Add poll to dashboard</p>
+            <SelectMarkets
+              submitLabel={(len) => `Add ${len} poll${len !== 1 ? 's' : ''}`}
+              onSubmit={(selected) => {
+                selected.forEach(handleAdd)
+                setShowAddPoll(false)
+              }}
+            />
+          </Col>
+        </Modal>
       )}
     </Col>
   )
