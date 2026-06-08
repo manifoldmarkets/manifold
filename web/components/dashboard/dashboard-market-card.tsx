@@ -48,17 +48,10 @@ function marketMeta(outcomeType: string): MarketMeta {
   }
 }
 
-function statusLabel(contract: Contract): string {
+function statusLabel(contract: Contract): string | null {
   if (contract.resolution) return 'Resolved'
-  const closeTime = contract.closeTime
-  if (!closeTime) return 'Open'
-  const diff = closeTime - Date.now()
-  if (diff < 0) return 'Closed'
-  const days = Math.floor(diff / 86400000)
-  if (days === 0) return 'Closes today'
-  if (days === 1) return 'Closes tomorrow'
-  if (days < 7) return `Closes in ${days}d`
-  return `Closes ${new Date(closeTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+  if (contract.closeTime && contract.closeTime < Date.now()) return 'Closed'
+  return null
 }
 
 export function DashboardMarketCard({
@@ -103,7 +96,9 @@ export function DashboardMarketCard({
     >
       {/* Top row: status + type badge */}
       <Row className="items-center justify-between gap-2 px-5 pt-6">
-        <span className="text-ink-400 text-[11px]">{statusLabel(contract)}</span>
+        {statusLabel(contract) && (
+          <span className="text-ink-400 text-[11px]">{statusLabel(contract)}</span>
+        )}
         <span className={clsx('rounded px-1.5 py-0.5 text-[11px] font-medium', meta.badgeClass)}>
           {meta.label}
         </span>
