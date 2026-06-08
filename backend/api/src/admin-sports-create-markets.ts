@@ -36,6 +36,7 @@ export const adminSportsCreateMarkets: APIHandler<
     customNote,
     dashboardUrl,
     liquidityTierOverrides,
+    extraGroupSlugs,
   } = props
 
   const config = TOURNAMENT_CONFIGS[competitionCode]
@@ -115,6 +116,17 @@ export const adminSportsCreateMarkets: APIHandler<
       )
     : undefined
 
+  // Resolve any extra topic slugs to group ids once; unknown slugs are ignored.
+  // These tag every created market on top of the tournament's configured groups.
+  const extraGroupIds =
+    extraGroupSlugs && extraGroupSlugs.length > 0
+      ? await pg.map(
+          `select id from groups where slug = any($1)`,
+          [extraGroupSlugs],
+          (r) => r.id as string
+        )
+      : []
+
   const results: Array<{
     matchId: number
     status: 'created' | 'skipped' | 'dry-run' | 'error'
@@ -162,6 +174,7 @@ export const adminSportsCreateMarkets: APIHandler<
     const params = buildMarketParams(match, config, groupResult.id, {
       customNote,
       dashboardUrl,
+      extraGroupIds,
       liquidityTierOverrides: safeOverrides as Partial<StageLiquidityTiers>,
     })
 

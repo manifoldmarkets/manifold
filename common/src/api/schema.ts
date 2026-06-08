@@ -4282,6 +4282,9 @@ export const API = (_apiTypeCheck = {
         customNote: z.string().optional(),
         dashboardUrl: z.string().optional(),
         liquidityTierOverrides: z.record(z.string(), z.number()).optional(),
+        // Extra topic/group slugs to tag every created market with, on top of
+        // the tournament's configured groups. Unknown slugs are ignored.
+        extraGroupSlugs: z.array(z.string()).optional(),
       })
       .strict(),
     returns: {} as {

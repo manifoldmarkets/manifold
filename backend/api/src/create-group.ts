@@ -5,6 +5,7 @@ import {
 } from 'common/group'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
+import { isAdminId } from 'common/envs/constants'
 import { log, getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
@@ -29,6 +30,16 @@ export const creategroup = authEndpoint(async (req, auth) => {
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
+
+  // Reserve the official Manifold Sports topic namespace. These groups are
+  // created server-side (ensureOfficialGroup), never through this endpoint, so
+  // only admins are allowed to create anything under the prefix here.
+  if (/^ms-official(-|$)/.test(slugify(name)) && !isAdminId(auth.uid)) {
+    throw new APIError(
+      403,
+      'Topics starting with "ms-official" are reserved for official Manifold Sports topics.'
+    )
+  }
 
   const pg = createSupabaseDirectClient()
 

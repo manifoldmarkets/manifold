@@ -1,5 +1,7 @@
 import { ENV } from 'common/envs/constants'
 import { liquidityTiers } from 'common/tier'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import { uniq } from 'lodash'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -221,34 +223,8 @@ export const PREMIER_LEAGUE_2526: TournamentConfig = {
   },
 }
 
-// Dev-only test tournament
-export const TEST_TOURNAMENT_2026: TournamentConfig = {
-  name: 'Test Tournament [DEV]',
-  shortLabel: "Test '26",
-  footballDataCode: 'TEST',
-  sportsLeague: 'Test Tournament',
-  startDate: '2026-05-07',
-  endDate: '2026-05-07',
-  hasGroupStageDraws: true,
-  officialGroupSlug: 'ms-official-test-2026',
-  officialGroupName: 'MS Official: Test Tournament 2026',
-  communityGroupSlug: 'ms-community-test-2026',
-  communityDashboardSlug: 'ms-community-test-2026',
-  dashboardPath: '/sports/test-2026',
-  additionalGroupIds: { dev: [], prod: [] },
-  manifoldSportsUserId: {
-    dev: MANIFOLD_SPORTS_USER_ID_DEV,
-    prod: MANIFOLD_SPORTS_USER_ID_DEV,
-  },
-  closeTimeOffsetMs: 2.5 * 60 * 60 * 1000,
-  stageLiquidityTiers: {
-    GROUP_STAGE: 1_000,
-  },
-}
-
 export const TOURNAMENT_CONFIGS: Record<string, TournamentConfig> = {
   WC: WORLD_CUP_2026,
-  ...(ENV === 'DEV' ? { TEST: TEST_TOURNAMENT_2026 } : {}),
 }
 
 // ─── football-data.org match shape ─────────────────────────────────────────────
@@ -485,6 +461,8 @@ export function buildMarketParams(
     customNote?: string
     dashboardUrl?: string
     liquidityTierOverrides?: Partial<StageLiquidityTiers>
+    /** Extra group ids to tag on top of the official + configured groups. */
+    extraGroupIds?: string[]
   } = {}
 ): MarketCreateParams {
   const home = match.homeTeam
@@ -536,7 +514,14 @@ export function buildMarketParams(
     sportsStartTimestamp: match.utcDate,
     sportsEventId: sportsEventId(match),
     sportsLeague: config.sportsLeague,
-    groupIds: [officialGroupId, ...additionalIds],
+    // Dedup (extra tags may repeat a configured group, e.g. "soccer") and cap at
+    // the per-market topic limit — createMarketHelper rejects >MAX_GROUPS_PER_MARKET.
+    // Official + configured groups come first so they survive truncation.
+    groupIds: uniq([
+      officialGroupId,
+      ...additionalIds,
+      ...(opts.extraGroupIds ?? []),
+    ]).slice(0, MAX_GROUPS_PER_MARKET),
     liquidityTier: stageLiquidityForMatch(match, config, opts.liquidityTierOverrides),
   }
 }

@@ -9,6 +9,7 @@ import {
   FDMatch,
   TournamentConfig,
 } from './sports'
+import { MAX_GROUPS_PER_MARKET } from './group'
 
 describe('pickSportsWinningAnswer', () => {
   // Knockout match — answers carry bare team names, no Draw answer.
@@ -347,6 +348,33 @@ describe('buildMarketParams', () => {
       homeTeam: { id: 1, name: 'Brazil', shortName: 'Brazil', tla: 'BRA', crest: '', area: { code: 'BRA' } },
     })
     expect(buildMarketParams(match, makeConfig(), 'g').answerImageUrls).toEqual([])
+  })
+
+  it('appends extraGroupIds to groupIds', () => {
+    const config = makeConfig({ additionalGroupIds: { dev: ['add-1'], prod: ['add-1'] } })
+    const params = buildMarketParams(makeMatch(), config, 'grp-official', {
+      extraGroupIds: ['extra-1', 'extra-2'],
+    })
+    expect(params.groupIds).toEqual(['grp-official', 'add-1', 'extra-1', 'extra-2'])
+  })
+
+  it('dedups extra group ids that repeat a configured group', () => {
+    const config = makeConfig({ additionalGroupIds: { dev: ['soccer-id'], prod: ['soccer-id'] } })
+    const params = buildMarketParams(makeMatch(), config, 'grp-official', {
+      extraGroupIds: ['soccer-id', 'extra-1'],
+    })
+    expect(params.groupIds).toEqual(['grp-official', 'soccer-id', 'extra-1'])
+  })
+
+  it('caps groupIds at MAX_GROUPS_PER_MARKET, keeping official + configured first', () => {
+    const config = makeConfig({
+      additionalGroupIds: { dev: ['a', 'b'], prod: ['a', 'b'] },
+    })
+    const params = buildMarketParams(makeMatch(), config, 'grp-official', {
+      extraGroupIds: ['e1', 'e2', 'e3', 'e4'],
+    })
+    expect(params.groupIds).toHaveLength(MAX_GROUPS_PER_MARKET)
+    expect(params.groupIds).toEqual(['grp-official', 'a', 'b', 'e1', 'e2'])
   })
 })
 
