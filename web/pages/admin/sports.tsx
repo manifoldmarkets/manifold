@@ -932,6 +932,10 @@ export default function SportsAdminPage() {
                     </span>
                   )}
                 </Row>
+                <span className="text-ink-500 text-xs">
+                  Markets are created and published as{' '}
+                  <strong>@ManifoldSports</strong>.
+                </span>
 
                 {/* Creation log */}
                 {createResults.length > 0 && (
