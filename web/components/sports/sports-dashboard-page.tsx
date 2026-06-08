@@ -51,10 +51,11 @@ import { SportsMarket } from 'common/sports'
 import { formatJustTime } from 'client-common/lib/time'
 import toast from 'react-hot-toast'
 
+import { SortKey, sortContracts } from 'web/lib/sort-contracts'
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type DateSection = { label: string; matches: SportsMatch[] }
-type SortKey = 'manual' | 'date' | 'volume' | 'title'
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -211,25 +212,6 @@ function groupByDate(matches: SportsMatch[]): DateSection[] {
   }))
 }
 
-function sortContracts(
-  contracts: Contract[],
-  slugOrder: string[],
-  sort: SortKey
-): Contract[] {
-  if (sort === 'manual') {
-    return slugOrder
-      .map((slug) => contracts.find((c) => c.slug === slug))
-      .filter((c): c is Contract => !!c)
-  }
-  const sorted = [...contracts]
-  if (sort === 'date')
-    sorted.sort((a, b) => (a.closeTime ?? 0) - (b.closeTime ?? 0))
-  else if (sort === 'volume')
-    sorted.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
-  else if (sort === 'title')
-    sorted.sort((a, b) => a.question.localeCompare(b.question))
-  return sorted
-}
 
 // ─── Add Market Modal ─────────────────────────────────────────────────────────
 
