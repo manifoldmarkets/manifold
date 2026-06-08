@@ -44,7 +44,7 @@ import {
   HAS_BETS_KEY,
 } from 'web/components/search'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { DashboardMarketCard } from 'web/components/dashboard/dashboard-market-card'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { APIParams } from 'common/api/schema'
@@ -402,9 +402,6 @@ function AddMarketModal({
   )
 }
 
-function CommunityMarketCard({ contract }: { contract: Contract }) {
-  return <FeedContractCard contract={contract} />
-}
 
 // ─── Community Tab ────────────────────────────────────────────────────────────
 
@@ -687,7 +684,7 @@ function CommunityTab({
                                   ✕
                                 </button>
                               </Row>
-                              <CommunityMarketCard contract={contract} />
+                              <DashboardMarketCard contract={contract} />
                             </div>
                           )}
                         </Draggable>
@@ -712,7 +709,7 @@ function CommunityTab({
                         </button>
                       </Row>
                     )}
-                    <CommunityMarketCard contract={contract} />
+                    <DashboardMarketCard contract={contract} />
                   </div>
                 ))}
               </div>
@@ -742,7 +739,7 @@ function CommunityTab({
                         </button>
                       </Row>
                     )}
-                    <CommunityMarketCard contract={contract} />
+                    <DashboardMarketCard contract={contract} />
                   </div>
                 ))}
               </div>
@@ -775,7 +772,7 @@ function CommunityTab({
                           </button>
                         </Row>
                       )}
-                      <CommunityMarketCard contract={contract} />
+                      <DashboardMarketCard contract={contract} />
                     </div>
                   ))}
                 </div>
