@@ -295,7 +295,7 @@ export const idenfyCallback = async (req: Request, res: Response) => {
       const { referralBonusAmount } = await runTransactionWithRetries(async (tx) => {
         // Update bonus eligibility and pin prize eligibility. Pinning
         // 'eligible' (rather than leaving it unset to fall back through
-        // canReceiveBonuses) means an admin who later flags the user
+        // isIdentityVerified) means an admin who later flags the user
         // bonus-ineligible doesn't accidentally also cut prize access —
         // the two axes stay decoupled once iDenfy has approved.
         await updateUser(tx, userId, {
@@ -420,10 +420,12 @@ export const idenfyCallback = async (req: Request, res: Response) => {
   //       bonus-eligible (they're a real person, mana bonuses are a play
   //       currency) but explicitly mark prizeEligibility = 'ineligible'
   //       so the prize-drawing fallback (which would otherwise derive
-  //       from bonus eligibility) is overridden.
-  //   (b) Generic denial / suspicion — block bonuses. prizeEligibility
-  //       falls back to that automatically; setting it explicitly here
-  //       is belt-and-suspenders.
+  //       from identity verification) is overridden.
+  //   (b) Generic denial / suspicion — block bonuses AND explicitly pin
+  //       prizeEligibility = 'ineligible'. The pin is required, not just
+  //       belt-and-suspenders: a 'grandfathered' user (whom we keep
+  //       grandfathered) is identity-verified for the prize fallback, so
+  //       without the pin they'd still pass canEnterPrizeDrawings.
   if (internalStatus === 'denied' || internalStatus === 'suspected') {
     const user = await getUser(userId)
     if (user) {
@@ -447,10 +449,12 @@ export const idenfyCallback = async (req: Request, res: Response) => {
         )
       } else {
         // Generic denial: block bonuses (preserves grandfathered, the
-        // pre-existing exception). prizeEligibility derives from
-        // canReceiveBonuses via the fallback when unset, so setting it
-        // explicitly here is redundant but defensive — if a future change
-        // alters the fallback, prize access remains correctly blocked.
+        // pre-existing exception). Pinning prizeEligibility='ineligible' is
+        // LOAD-BEARING, not just defensive: when prizeEligibility is unset,
+        // canEnterPrizeDrawings falls back to isIdentityVerified, which is true
+        // for a 'grandfathered' user — and we deliberately keep them
+        // grandfathered below. Without the explicit pin, a grandfathered user
+        // who failed KYC would still pass the prize fallback.
         const update: Record<string, unknown> = {
           prizeEligibility: 'ineligible',
         }

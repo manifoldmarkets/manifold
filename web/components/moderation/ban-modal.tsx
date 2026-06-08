@@ -1144,12 +1144,20 @@ function BonusEligibilityControl({ user }: { user: User }) {
                 ? 'bg-green-100 text-green-800'
                 : user.bonusEligibility === 'grandfathered'
                 ? 'bg-blue-100 text-blue-800'
+                : user.bonusEligibility === 'eligible'
+                ? 'bg-teal-100 text-teal-800'
                 : user.bonusEligibility === 'ineligible'
                 ? 'bg-red-100 text-red-800'
-                : 'bg-orange-100 text-orange-800'
+                : user.bonusEligibility === 'requires_verification'
+                ? 'bg-orange-100 text-orange-800'
+                : 'bg-gray-100 text-gray-700'
             }`}
           >
-            {currentEligibility?.label ?? 'Not Set'}
+            {user.bonusEligibility === 'eligible'
+              ? 'Eligible (bonuses only)'
+              : user.bonusEligibility === 'requires_verification'
+              ? 'Requires Verification'
+              : currentEligibility?.label ?? 'Not Set'}
           </span>
         </Row>
         {isExpanded ? (

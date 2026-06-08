@@ -41,6 +41,7 @@ export default function AdminUserInfoPage() {
     firebaseEmail?: string
     initialDeviceToken?: string
     initialIpAddress?: string
+    verificationFlagReason?: string
   } | null>(null)
   const [manualEmail, setManualEmail] = useState('')
   const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(false)
@@ -162,6 +163,18 @@ export default function AdminUserInfoPage() {
       setShowAllRelated(false)
     }
   }, [selectedUser])
+
+  // verificationFlagReason is stripped from the public User response, so
+  // re-hydrate it onto selectedUser from the admin-gated get-user-info result.
+  // Keyed on userInfo (not selectedUser) + value-guarded so it doesn't loop.
+  useEffect(() => {
+    if (!userInfo || !selectedUser) return
+    const reason = userInfo.verificationFlagReason
+    if ((selectedUser.verificationFlagReason ?? undefined) !== (reason ?? undefined)) {
+      setSelectedUser({ ...selectedUser, verificationFlagReason: reason })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo])
 
   const selectUser = (user: DisplayUser) => {
     setSelectedUser(user as FullUser)
@@ -1227,8 +1240,9 @@ function PrizeEligibilitySection({
     },
     {
       value: null,
-      label: 'Follow Bonus Eligibility',
-      description: 'Default - prize access derives from bonus eligibility',
+      label: 'Follow Identity Verification',
+      description:
+        'Default - prize access derives from KYC identity verification (verified/grandfathered only). Bonus-only "eligible" purchasers do NOT get prize access.',
       color: 'text-orange-600',
     },
   ] as const
@@ -1396,9 +1410,11 @@ function PrizeEligibilitySection({
             if bonus-eligible
           </li>
           <li>
-            <strong>Follow Bonus Eligibility / Not Set:</strong> Prize access
-            derives from bonus eligibility (the default). Use the explicit
-            options above to decouple the two.
+            <strong>Follow Identity Verification / Not Set:</strong> Prize
+            access derives from KYC identity verification (verified/grandfathered
+            only) — the default. Bonus-only &quot;eligible&quot; purchasers stay
+            gated until they complete KYC. Use the explicit options above to
+            decouple the two.
           </li>
         </ul>
       </div>
@@ -1436,6 +1452,8 @@ function FlagForVerificationSection({
         verificationFlagReason: trimmed || undefined,
       })
       setReason('')
+      // Prior eligibility is snapshotted server-side; clearing the flag will
+      // restore it (see handleClear).
     } catch (error) {
       toast.error(
         'Failed to flag: ' +
@@ -1449,11 +1467,19 @@ function FlagForVerificationSection({
   const handleClear = async () => {
     setIsUpdating(true)
     try {
-      await api('admin-flag-for-verification', { userId: user.id, flag: false })
-      toast.success('Cleared verification flag')
+      const res = await api('admin-flag-for-verification', {
+        userId: user.id,
+        flag: false,
+      })
+      toast.success(
+        res.bonusEligibility
+          ? `Cleared flag — restored bonus eligibility to '${res.bonusEligibility}'`
+          : 'Cleared verification flag'
+      )
       onUpdate({
         ...user,
-        bonusEligibility: undefined,
+        // Server restores the pre-flag eligibility if one was snapshotted.
+        bonusEligibility: res.bonusEligibility,
         verificationFlagReason: undefined,
       })
       setReason('')

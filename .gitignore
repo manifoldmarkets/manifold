@@ -10,3 +10,5 @@ mantic-markets-firebase-adminsdk*.json
 
 .env
 .env.local
+# Claude Code transient scheduler lock
+.claude/scheduled_tasks.lock

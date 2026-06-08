@@ -35,13 +35,15 @@ export const adminSetPrizeEligibility: APIHandler<
 
   await pg.tx(async (tx) => {
     if (prizeEligibility === null) {
-      // Clear the override - prize eligibility falls back to bonus eligibility
-      // (canEnterPrizeDrawings derives from canReceiveBonuses when unset)
+      // Clear the override - prize eligibility falls back to identity
+      // verification (canEnterPrizeDrawings derives from isIdentityVerified,
+      // i.e. verified/grandfathered, when unset — NOT canReceiveBonuses, so
+      // bonus-only 'eligible' purchasers stay gated)
       await updateUser(tx, userId, {
         prizeEligibility: FieldVal.delete() as any,
       })
       log(
-        `Admin ${auth.uid} cleared prizeEligibility for user ${userId} (follows bonus eligibility)`
+        `Admin ${auth.uid} cleared prizeEligibility for user ${userId} (follows identity verification)`
       )
     } else {
       await updateUser(tx, userId, { prizeEligibility })

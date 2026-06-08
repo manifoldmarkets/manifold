@@ -200,4 +200,40 @@ describe('decoupling invariant — both axes independently togglable', () => {
     expect(canReceiveBonuses(prizeOnly)).toBe(false)
     expect(canEnterPrizeDrawings(prizeOnly)).toBe(true)
   })
+
+  it('flagged user with an admin-pinned prize grant keeps prize access but loses bonuses', () => {
+    // requires_verification (suspected alt) blocks bonuses, but an explicit
+    // prizeEligibility='eligible' override still wins for the prize axis —
+    // proving the flag doesn't bleed across axes.
+    const flaggedButPrizePinned = u({
+      bonusEligibility: 'requires_verification',
+      prizeEligibility: 'eligible',
+    })
+    expect(canReceiveBonuses(flaggedButPrizePinned)).toBe(false)
+    expect(canEnterPrizeDrawings(flaggedButPrizePinned)).toBe(true)
+  })
+})
+
+describe('getEffectiveTier — bonusEligibility maps to the right tier', () => {
+  it("'eligible' (purchaser) earns at the verified tier", () => {
+    expect(getEffectiveTier(u({ bonusEligibility: 'eligible' }))).toBe(
+      'verified'
+    )
+  })
+  it("'requires_verification' (flagged) falls to the unverified tier", () => {
+    // Brief invariant: flagged users earn nothing beyond the unverified floor
+    // until they complete KYC.
+    expect(
+      getEffectiveTier(u({ bonusEligibility: 'requires_verification' }))
+    ).toBe('unverified')
+  })
+  it('undefined (new user) is unverified; verified/grandfathered are verified', () => {
+    expect(getEffectiveTier(u({}))).toBe('unverified')
+    expect(getEffectiveTier(u({ bonusEligibility: 'verified' }))).toBe(
+      'verified'
+    )
+    expect(getEffectiveTier(u({ bonusEligibility: 'grandfathered' }))).toBe(
+      'verified'
+    )
+  })
 })

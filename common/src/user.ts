@@ -156,12 +156,19 @@ export type User = {
   // to the user themselves.
   verificationFlagReason?: string
 
+  // Snapshot of the restorable bonusEligibility a user had immediately before
+  // an admin flagged them 'requires_verification'. Lets clearing the flag
+  // restore prior KYC ('verified'/'grandfathered') or purchase/admin-granted
+  // ('eligible') status instead of silently dropping them to undefined. Only
+  // set while a flag is active; cleared when the flag is cleared.
+  previousBonusEligibility?: 'verified' | 'grandfathered' | 'eligible'
+
   // Prize-drawing (cash raffle) eligibility — independent of bonusEligibility so
   // a user can be eligible for one but not the other (e.g. eligible for bonuses
   // but barred from prize drawings, or vice versa).
   // 'eligible' = may enter prize drawings
   // 'ineligible' = barred from prize drawings
-  // undefined = derive from bonus eligibility (default; preserves prior behavior
+  // undefined = derive from identity verification (default; preserves prior behavior
   //   where entering a drawing required verification)
   prizeEligibility?: 'eligible' | 'ineligible'
 

@@ -15,7 +15,11 @@ export function broadcastUpdatedPrivateUser(userId: string) {
 }
 
 export function broadcastUpdatedUser(user: Partial<User> & { id: string }) {
-  broadcast(`user/${user.id}`, { user })
+  // Never broadcast verificationFlagReason: the user's own browser subscribes to
+  // user/{id}, and the flag reason is an admin-only audit note. Strip it before
+  // it goes over the wire (it's also stripped from the public REST response).
+  const { verificationFlagReason: _adminOnly, ...safe } = user
+  broadcast(`user/${user.id}`, { user: safe })
 }
 
 export function broadcastNewBets(

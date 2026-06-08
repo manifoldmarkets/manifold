@@ -152,12 +152,23 @@ export const selectSweepstakesWinners = async (
     const eligibleTickets = tickets.filter((t) =>
       eligibleUserIds.has(t.user_id)
     )
-    const voidedTickets = tickets.length - eligibleTickets.length
-    if (voidedTickets > 0) {
+    const excludedTicketCount = tickets.length - eligibleTickets.length
+    if (excludedTicketCount > 0) {
       log(
-        `Sweepstakes ${sweepstakesNum}: voided ${voidedTickets} ticket row(s) from ${
+        `Sweepstakes ${sweepstakesNum}: excluded ${excludedTicketCount} ticket row(s) from ${
           ticketHolders.length - eligibleUserIds.size
         } ineligible user(s); they cannot win.`
+      )
+    }
+
+    // If every remaining ticket holder is prize-ineligible, fail loudly rather
+    // than proceeding: an empty winner set would write winning_ticket_ids = []
+    // (the "already drawn" guard only treats a NON-empty array as drawn), so the
+    // draw would silently become re-runnable. Throw so nothing is written.
+    if (eligibleTickets.length === 0) {
+      throw new SweepstakesError(
+        400,
+        'No eligible ticket holders remain for this drawing'
       )
     }
 

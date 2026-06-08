@@ -156,6 +156,9 @@ export const API = (_apiTypeCheck = {
       firebaseEmail?: string
       initialDeviceToken?: string
       initialIpAddress?: string
+      // Admin-only audit note for flagged users — served only through this
+      // admin-gated endpoint, never the public User surface.
+      verificationFlagReason?: string
     },
   },
   'admin-delete-user': {
@@ -216,7 +219,8 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string(),
         // true = flag (bonusEligibility = 'requires_verification' + reason).
-        // false = clear (revert both fields to undefined).
+        // false = clear (restore prior bonus state if one was snapshotted,
+        // else revert to undefined; clears the reason either way).
         flag: z.boolean(),
         // Optional free-text note shown to other admins in the user-info
         // page. Examples: "suspected alt of @other-user", "fraud signal from
@@ -224,7 +228,17 @@ export const API = (_apiTypeCheck = {
         reason: z.string().max(500).optional(),
       })
       .strict(),
-    returns: {} as { success: boolean },
+    // bonusEligibility = the resulting state ('requires_verification' on flag;
+    // the restored prior value or undefined on clear) so the UI can update
+    // optimistically without guessing.
+    returns: {} as {
+      success: boolean
+      bonusEligibility?:
+        | 'verified'
+        | 'grandfathered'
+        | 'eligible'
+        | 'requires_verification'
+    },
   },
   'admin-search-users-by-email': {
     method: 'GET',

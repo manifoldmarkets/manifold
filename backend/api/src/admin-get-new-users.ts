@@ -27,6 +27,7 @@ export const adminGetNewUsers: APIHandler<'admin-get-new-users'> = async (
     bonus_eligibility:
       | 'verified'
       | 'grandfathered'
+      | 'eligible'
       | 'ineligible'
       | 'requires_verification'
       | null

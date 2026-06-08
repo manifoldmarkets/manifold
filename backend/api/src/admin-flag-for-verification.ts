@@ -46,19 +46,39 @@ export const adminFlagForVerification: APIHandler<
     if (reason !== undefined) {
       update.verificationFlagReason = reason
     }
+    // Snapshot a restorable prior state so clearing the flag later doesn't
+    // silently destroy KYC ('verified'/'grandfathered') or purchase/admin-
+    // granted ('eligible') eligibility. Only stash genuinely-restorable values,
+    // and don't clobber an existing snapshot when re-flagging an already-flagged
+    // user (current bonusEligibility would be 'requires_verification').
+    if (
+      user.bonusEligibility === 'verified' ||
+      user.bonusEligibility === 'grandfathered' ||
+      user.bonusEligibility === 'eligible'
+    ) {
+      update.previousBonusEligibility = user.bonusEligibility
+    }
     await updateUser(pg, userId, update as any)
     log(
       `Admin ${auth.uid} flagged user ${userId} for verification${
         reason ? ` (reason: ${reason})` : ''
       }`
     )
+    return { success: true, bonusEligibility: 'requires_verification' as const }
   } else {
+    // Restore the pre-flag eligibility if we stashed one; otherwise revert to
+    // undefined (the prior behavior for users who had no restorable state).
+    const restored = user.previousBonusEligibility
     await updateUser(pg, userId, {
-      bonusEligibility: FieldVal.delete() as any,
+      bonusEligibility: (restored ?? FieldVal.delete()) as any,
+      previousBonusEligibility: FieldVal.delete() as any,
       verificationFlagReason: FieldVal.delete() as any,
     })
-    log(`Admin ${auth.uid} cleared verification flag for user ${userId}`)
+    log(
+      `Admin ${auth.uid} cleared verification flag for user ${userId}${
+        restored ? ` (restored bonusEligibility: ${restored})` : ''
+      }`
+    )
+    return { success: true, bonusEligibility: restored }
   }
-
-  return { success: true }
 }

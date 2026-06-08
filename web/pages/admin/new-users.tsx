@@ -57,7 +57,7 @@ function NewUsersTable() {
   // (separate endpoint with a reason input) and isn't selectable here.
   const handleEligibilityChange = async (
     userId: string,
-    value: 'verified' | 'grandfathered' | 'ineligible' | ''
+    value: 'verified' | 'grandfathered' | 'eligible' | 'ineligible' | ''
   ) => {
     setUpdatingId(userId)
     try {
@@ -201,6 +201,7 @@ function NewUsersTable() {
                       e.target.value as
                         | 'verified'
                         | 'grandfathered'
+                        | 'eligible'
                         | 'ineligible'
                         | ''
                     )
@@ -212,16 +213,25 @@ function NewUsersTable() {
                       'border-green-200 bg-green-50 text-green-700',
                     u.bonusEligibility === 'grandfathered' &&
                       'border-indigo-200 bg-indigo-50 text-indigo-700',
+                    u.bonusEligibility === 'eligible' &&
+                      'border-teal-200 bg-teal-50 text-teal-700',
                     u.bonusEligibility === 'ineligible' &&
                       'border-gray-200 bg-gray-50 text-gray-600',
+                    u.bonusEligibility === 'requires_verification' &&
+                      'border-orange-200 bg-orange-50 text-orange-700',
                     !u.bonusEligibility &&
                       'border-canvas-200 bg-canvas-50 text-ink-500',
                     updatingId === u.id && 'cursor-not-allowed opacity-60'
                   )}
                 >
-                  <option value="">Unset</option>
+                  <option value="">
+                    {u.bonusEligibility === 'requires_verification'
+                      ? 'Requires verification (flagged)'
+                      : 'Unset'}
+                  </option>
                   <option value="verified">Verified</option>
                   <option value="grandfathered">Grandfathered</option>
+                  <option value="eligible">Eligible (bonuses only)</option>
                   <option value="ineligible">Ineligible</option>
                 </select>
               </td>

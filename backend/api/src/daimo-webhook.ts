@@ -7,7 +7,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from 'common/api/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updateUser } from 'shared/supabase/users'
+import { recordManaPurchase } from 'shared/supabase/users'
 import {
   CRYPTO_MANA_PER_DOLLAR,
   CRYPTO_FIRST_PURCHASE_BONUS_PCT,
@@ -423,26 +423,9 @@ const handleSessionSucceeded = async (event: DaimoWebhookEvent) => {
 
       await runTxnInBetQueue(tx, manaPurchaseTxn)
 
-      // A completed purchase unlocks bonus eligibility (matches the Stripe
-      // rail). Only promote from an unset state: never override an explicit
-      // block ('ineligible' / 'requires_verification') and never downgrade an
-      // identity-verified user ('verified' / 'grandfathered'). prizeEligibility
-      // is left untouched — cash raffles still require KYC — and the one-time
-      // signup/referral bonus stays on the iDenfy path so verifying keeps its
-      // incentive.
-      const eligibilityRow = await tx.oneOrNone<{
-        bonusEligibility: string | null
-      }>(
-        `select data->>'bonusEligibility' as "bonusEligibility"
-           from users where id = $1`,
-        [userId]
-      )
-      await updateUser(tx, userId, {
-        purchasedMana: true,
-        ...(eligibilityRow?.bonusEligibility
-          ? {}
-          : { bonusEligibility: 'eligible' as const }),
-      })
+      // Mark the purchaser and unlock bonus eligibility (matches the Stripe
+      // rail). See recordManaPurchase for the monotonic promotion rule.
+      await recordManaPurchase(tx, userId)
     })
     success = true
   } catch (e) {

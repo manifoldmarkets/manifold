@@ -21,10 +21,17 @@ export type FullUser = User & {
 
 /**
  * Convert user to API response format.
+ *
+ * Strips verificationFlagReason — it's an admin-only audit note (e.g.
+ * "suspected alt of @x") that must never reach the public User surface. The
+ * user/:username and user/by-id/:id endpoints are unauthenticated, so it's
+ * stripped here centrally for every FullUser consumer. Admins read it via the
+ * admin-gated get-user-info endpoint instead.
  */
 export function toUserAPIResponse(user: User): FullUser {
+  const { verificationFlagReason: _adminOnly, ...rest } = user
   return {
-    ...user,
+    ...rest,
     url: `https://${ENV_CONFIG.domain}/${user.username}`,
     isBot: user.isBot ?? BOT_USERNAMES.includes(user.username),
     isAdmin: ENV_CONFIG.adminIds.includes(user.id),
