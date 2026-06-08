@@ -17,10 +17,7 @@ type VerificationRequiredModalProps = {
   // 'earn full bonuses' — under the unverified-tier model, unverified
   // users already receive reduced bonuses, so the verify CTA is about
   // unlocking the full amount, not enabling bonuses at all.
-  action?:
-    | 'claim free loan'
-    | 'earn full bonuses'
-    | 'enter prize drawings'
+  action?: 'claim free loan' | 'earn full bonuses' | 'enter prize drawings'
 }
 
 export function VerificationRequiredModal({
