@@ -130,8 +130,14 @@ export type User = {
 
   // Bonus eligibility for receiving site bonuses (signup, referral, quests,
   // leagues, streaks, loans, etc.)
-  // 'verified' = passed identity verification (iDenfy)
-  // 'grandfathered' = existing user before cash raffles launched
+  // 'verified' = passed identity verification (iDenfy); also unlocks prizes
+  // 'grandfathered' = existing user before cash raffles launched; also prizes
+  // 'eligible' = bonus-eligible WITHOUT identity verification — set when a user
+  //   makes a mana purchase (any rail) or is hand-granted by an admin ("people
+  //   we know"). Earns bonuses at the verified tier, but does NOT unlock prize
+  //   drawings: those still require KYC (see isIdentityVerified /
+  //   canEnterPrizeDrawings). The one-time signup/referral bonus stays on the
+  //   verification path so verifying keeps its incentive.
   // 'ineligible' = not eligible for bonuses
   // 'requires_verification' = admin/system has flagged this user; they must
   //   complete identity verification before bonuses unlock (e.g. suspected
@@ -140,6 +146,7 @@ export type User = {
   bonusEligibility?:
     | 'verified'
     | 'grandfathered'
+    | 'eligible'
     | 'ineligible'
     | 'requires_verification'
 
@@ -244,23 +251,33 @@ export const isUserLikelySpammer = (
  */
 export const humanish = (user: User) => user.verifiedPhone !== false
 
-// Check if user is verified (KYC via iDenfy or grandfathered).
-// Required for the prize drawing. Other bonuses are gated by effective tier,
-// not by this check — unverified users still receive reduced bonuses.
-export const canReceiveBonuses = (user: User) =>
+// Identity-verified (KYC via iDenfy) or grandfathered. This is the
+// prize-worthy set: only these users may enter cash raffles. Kept separate from
+// canReceiveBonuses so the bonus axis can be broadened (purchasers, hand-granted
+// users) WITHOUT leaking prize access through the canEnterPrizeDrawings fallback.
+export const isIdentityVerified = (user: User) =>
   user.bonusEligibility === 'verified' ||
   user.bonusEligibility === 'grandfathered'
 
+// Check if user can receive site bonuses (signup, referral, quests, leagues,
+// streaks, loans) and earn at the verified effective tier. True for the
+// identity-verified set PLUS 'eligible' users (unlocked by a purchase or an
+// admin grant). Does NOT imply prize-drawing eligibility — see
+// canEnterPrizeDrawings.
+export const canReceiveBonuses = (user: User) =>
+  isIdentityVerified(user) || user.bonusEligibility === 'eligible'
+
 // Check if user can enter prize drawings (cash raffles). Independent of bonus
 // eligibility: an explicit prizeEligibility overrides, otherwise it derives from
-// bonus eligibility so existing users keep their current behavior until an admin
-// toggles the prize axis.
+// IDENTITY VERIFICATION (not canReceiveBonuses) so existing verified users keep
+// their access while purchasers/hand-granted ('eligible') users stay gated until
+// they complete KYC.
 export const canEnterPrizeDrawings = (user: User) =>
   user.prizeEligibility === 'eligible'
     ? true
     : user.prizeEligibility === 'ineligible'
     ? false
-    : canReceiveBonuses(user)
+    : isIdentityVerified(user)
 
 // Resolve a user's effective tier (unverified | verified | basic | plus | premium).
 // Subscribers always get their subscription tier regardless of KYC status.

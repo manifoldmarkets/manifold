@@ -321,10 +321,13 @@ export function resolveEffectiveTier(args: {
   // Accepts the full User.bonusEligibility union. 'requires_verification'
   // behaves identically to 'ineligible'/undefined for tier purposes —
   // user hasn't completed identity verification, so they fall into the
-  // 'unverified' tier (unless they have a subscription).
+  // 'unverified' tier (unless they have a subscription). 'eligible'
+  // (purchaser / admin-granted) earns at the 'verified' tier alongside
+  // verified/grandfathered.
   bonusEligibility:
     | 'verified'
     | 'grandfathered'
+    | 'eligible'
     | 'ineligible'
     | 'requires_verification'
     | undefined
@@ -333,7 +336,8 @@ export function resolveEffectiveTier(args: {
   if (subTier) return subTier
   if (
     args.bonusEligibility === 'verified' ||
-    args.bonusEligibility === 'grandfathered'
+    args.bonusEligibility === 'grandfathered' ||
+    args.bonusEligibility === 'eligible'
   ) {
     return 'verified'
   }
@@ -377,6 +381,7 @@ export function getMaxStreakFreezes(
   bonusEligibility?:
     | 'verified'
     | 'grandfathered'
+    | 'eligible'
     | 'ineligible'
     | 'requires_verification'
 ): number {

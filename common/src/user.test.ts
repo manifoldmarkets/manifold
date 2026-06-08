@@ -1,6 +1,8 @@
 import {
   canReceiveBonuses,
   canEnterPrizeDrawings,
+  isIdentityVerified,
+  getEffectiveTier,
   type User,
 } from './user'
 
@@ -34,8 +36,65 @@ describe('canReceiveBonuses', () => {
   it('false for ineligible', () => {
     expect(canReceiveBonuses(u({ bonusEligibility: 'ineligible' }))).toBe(false)
   })
+  it('true for eligible (purchaser / admin-granted, no KYC)', () => {
+    expect(canReceiveBonuses(u({ bonusEligibility: 'eligible' }))).toBe(true)
+  })
+  it('false for requires_verification (flagged alt)', () => {
+    expect(
+      canReceiveBonuses(u({ bonusEligibility: 'requires_verification' }))
+    ).toBe(false)
+  })
   it('false for undefined (new/unverified users)', () => {
     expect(canReceiveBonuses(u({}))).toBe(false)
+  })
+})
+
+describe('isIdentityVerified — the prize-worthy (KYC) set', () => {
+  it('true only for verified and grandfathered', () => {
+    expect(isIdentityVerified(u({ bonusEligibility: 'verified' }))).toBe(true)
+    expect(isIdentityVerified(u({ bonusEligibility: 'grandfathered' }))).toBe(
+      true
+    )
+  })
+  it('false for eligible — a purchase/grant is NOT identity verification', () => {
+    expect(isIdentityVerified(u({ bonusEligibility: 'eligible' }))).toBe(false)
+  })
+  it('false for ineligible / requires_verification / undefined', () => {
+    expect(isIdentityVerified(u({ bonusEligibility: 'ineligible' }))).toBe(false)
+    expect(
+      isIdentityVerified(u({ bonusEligibility: 'requires_verification' }))
+    ).toBe(false)
+    expect(isIdentityVerified(u({}))).toBe(false)
+  })
+})
+
+describe("'eligible' (purchaser / admin-granted) — bonuses without prizes", () => {
+  // The whole point of the separate 'eligible' value: a user who bought mana
+  // (or was hand-granted) earns bonuses at the verified tier, but must still
+  // complete KYC before entering cash raffles. This is the no-prize-leak
+  // guarantee — without repointing canEnterPrizeDrawings' fallback at
+  // isIdentityVerified, the broadened canReceiveBonuses would leak prize access.
+  it('gets bonuses', () => {
+    expect(canReceiveBonuses(u({ bonusEligibility: 'eligible' }))).toBe(true)
+  })
+  it('does NOT get prize access when prizeEligibility is unset (no leak)', () => {
+    expect(canEnterPrizeDrawings(u({ bonusEligibility: 'eligible' }))).toBe(
+      false
+    )
+  })
+  it('earns at the verified effective tier', () => {
+    expect(getEffectiveTier(u({ bonusEligibility: 'eligible' }))).toBe(
+      'verified'
+    )
+  })
+  it('CAN enter drawings once an admin explicitly grants prize eligibility', () => {
+    // e.g. they later complete KYC and an admin pins prizeEligibility, or the
+    // operator decides to grant prize access directly. Explicit override wins.
+    expect(
+      canEnterPrizeDrawings(
+        u({ bonusEligibility: 'eligible', prizeEligibility: 'eligible' })
+      )
+    ).toBe(true)
   })
 })
 
@@ -75,29 +134,36 @@ describe('canEnterPrizeDrawings — explicit overrides', () => {
   })
 })
 
-describe('canEnterPrizeDrawings — fallback to bonus eligibility', () => {
-  // When prizeEligibility is unset, fall back to canReceiveBonuses. This is
-  // the back-compat path that means no backfill is required at deploy time —
-  // existing users behave the same until an admin sets the prize axis.
-  it('falls back to canReceiveBonuses for verified users', () => {
+describe('canEnterPrizeDrawings — fallback to identity verification', () => {
+  // When prizeEligibility is unset, fall back to isIdentityVerified (NOT the
+  // broadened canReceiveBonuses). This is the back-compat path — existing
+  // verified/grandfathered users keep prize access with no backfill — while
+  // ensuring purchaser/granted ('eligible') users don't leak into prizes.
+  it('falls back to true for verified users', () => {
     expect(
       canEnterPrizeDrawings(u({ bonusEligibility: 'verified' }))
     ).toBe(true)
   })
 
-  it('falls back to canReceiveBonuses for grandfathered users', () => {
+  it('falls back to true for grandfathered users', () => {
     expect(
       canEnterPrizeDrawings(u({ bonusEligibility: 'grandfathered' }))
     ).toBe(true)
   })
 
-  it('falls back to canReceiveBonuses for ineligible users', () => {
+  it('falls back to false for eligible users (purchaser, not KYC)', () => {
+    expect(canEnterPrizeDrawings(u({ bonusEligibility: 'eligible' }))).toBe(
+      false
+    )
+  })
+
+  it('falls back to false for ineligible users', () => {
     expect(
       canEnterPrizeDrawings(u({ bonusEligibility: 'ineligible' }))
     ).toBe(false)
   })
 
-  it('falls back to canReceiveBonuses for undefined bonus state', () => {
+  it('falls back to false for undefined bonus state', () => {
     expect(canEnterPrizeDrawings(u({}))).toBe(false)
   })
 

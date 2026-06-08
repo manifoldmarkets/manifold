@@ -176,7 +176,7 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string(),
         bonusEligibility: z
-          .enum(['verified', 'grandfathered', 'ineligible'])
+          .enum(['verified', 'grandfathered', 'eligible', 'ineligible'])
           .nullable(),
       })
       .strict(),
@@ -3869,6 +3869,7 @@ export const API = (_apiTypeCheck = {
         bonusEligibility:
           | 'verified'
           | 'grandfathered'
+          | 'eligible'
           | 'ineligible'
           | 'requires_verification'
           | null

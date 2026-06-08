@@ -1072,7 +1072,7 @@ function BonusEligibilityControl({ user }: { user: User }) {
       ? undefined
       : user.bonusEligibility
   const [selectedEligibility, setSelectedEligibility] = useState<
-    'verified' | 'grandfathered' | 'ineligible' | null | undefined
+    'verified' | 'grandfathered' | 'eligible' | 'ineligible' | null | undefined
   >(initialEligibility)
 
   const eligibilityOptions = [
@@ -1081,6 +1081,11 @@ function BonusEligibilityControl({ user }: { user: User }) {
       value: 'grandfathered' as const,
       label: 'Grandfathered',
       color: 'text-blue-600',
+    },
+    {
+      value: 'eligible' as const,
+      label: 'Eligible (bonuses only)',
+      color: 'text-teal-600',
     },
     {
       value: 'ineligible' as const,

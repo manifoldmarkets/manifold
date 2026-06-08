@@ -46,7 +46,8 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     )
     const newPrivateUser = convertPrivateUser(updatedRow)
     if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
-      // Only pay push notification bonus if user can receive bonuses (verified or grandfathered)
+      // Only pay push notification bonus if user can receive bonuses
+      // (identity-verified, grandfathered, or purchase/admin-'eligible')
       if (canReceiveBonuses(user)) {
         const txn = await payUserPushNotificationsBonus(
           auth.uid,

@@ -1017,7 +1017,7 @@ function BonusEligibilitySection({
       ? undefined
       : user.bonusEligibility
   const [selectedEligibility, setSelectedEligibility] = useState<
-    'verified' | 'grandfathered' | 'ineligible' | null | undefined
+    'verified' | 'grandfathered' | 'eligible' | 'ineligible' | null | undefined
   >(initialEligibility)
 
   const eligibilityOptions = [
@@ -1032,6 +1032,13 @@ function BonusEligibilitySection({
       label: 'Grandfathered',
       description: 'Active user before KYC requirement',
       color: 'text-blue-600',
+    },
+    {
+      value: 'eligible' as const,
+      label: 'Eligible (bonuses only)',
+      description:
+        'Gets bonuses without KYC (purchaser or hand-granted). Does NOT unlock prize drawings.',
+      color: 'text-teal-600',
     },
     {
       value: 'ineligible' as const,

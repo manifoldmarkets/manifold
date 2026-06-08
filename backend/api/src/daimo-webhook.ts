@@ -422,8 +422,26 @@ const handleSessionSucceeded = async (event: DaimoWebhookEvent) => {
       } as const
 
       await runTxnInBetQueue(tx, manaPurchaseTxn)
+
+      // A completed purchase unlocks bonus eligibility (matches the Stripe
+      // rail). Only promote from an unset state: never override an explicit
+      // block ('ineligible' / 'requires_verification') and never downgrade an
+      // identity-verified user ('verified' / 'grandfathered'). prizeEligibility
+      // is left untouched — cash raffles still require KYC — and the one-time
+      // signup/referral bonus stays on the iDenfy path so verifying keeps its
+      // incentive.
+      const eligibilityRow = await tx.oneOrNone<{
+        bonusEligibility: string | null
+      }>(
+        `select data->>'bonusEligibility' as "bonusEligibility"
+           from users where id = $1`,
+        [userId]
+      )
       await updateUser(tx, userId, {
         purchasedMana: true,
+        ...(eligibilityRow?.bonusEligibility
+          ? {}
+          : { bonusEligibility: 'eligible' as const }),
       })
     })
     success = true

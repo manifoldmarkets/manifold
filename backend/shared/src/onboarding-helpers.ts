@@ -189,9 +189,10 @@ const processUserForBonus = async (
     return undefined
   }
 
-  // Only send bonus to users who can receive bonuses (verified or grandfathered)
+  // Only send bonus to users who can receive bonuses (identity-verified,
+  // grandfathered, or purchase/admin-'eligible')
   if (!canReceiveBonuses(user)) {
-    log(`User ${user.id} not eligible for next day bonus - not verified`)
+    log(`User ${user.id} not eligible for next day bonus`)
     return undefined
   }
 

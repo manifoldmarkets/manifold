@@ -2,7 +2,7 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { ShieldCheckIcon, XIcon } from '@heroicons/react/solid'
 
-import { canReceiveBonuses, User } from 'common/user'
+import { isIdentityVerified, User } from 'common/user'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -36,9 +36,12 @@ export const VerifyPhoneNumberBanner = (props: {
     'verify-banner-dismissed-at'
   )
 
+  // Gate on identity verification, not canReceiveBonuses: bonus-'eligible'
+  // purchasers haven't done KYC, so the M500 verify offer is still genuine for
+  // them and nudges them toward the prize-drawing-enabling identity check.
   if (
     !user ||
-    canReceiveBonuses(user) ||
+    isIdentityVerified(user) ||
     user.bonusEligibility === 'ineligible'
   )
     return null
