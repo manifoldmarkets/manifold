@@ -21,7 +21,6 @@ type VerificationRequiredModalProps = {
     | 'claim free loan'
     | 'earn full bonuses'
     | 'enter prize drawings'
-    | 'buy mana with a credit card'
 }
 
 export function VerificationRequiredModal({

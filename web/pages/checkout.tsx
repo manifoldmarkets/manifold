@@ -4,7 +4,6 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 
 import { isUserBanned } from 'common/ban-utils'
-import { canReceiveBonuses } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { DaimoProviders } from 'web/components/crypto/crypto-providers'
@@ -21,9 +20,7 @@ import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Button } from 'web/components/buttons/button'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { PriceTile } from 'web/components/add-funds-modal'
-import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 import { usePrices } from 'web/hooks/use-prices'
 import {
   CurrencyDollarIcon,
@@ -188,7 +185,6 @@ function CheckoutContent() {
     status: 'idle',
   })
   const [creditCardModalOpen, setCreditCardModalOpen] = useState(false)
-  const [verificationModalOpen, setVerificationModalOpen] = useState(false)
 
   // Check if user has made a crypto purchase before
   const { data: cryptoStatus } = useAPIGetter('get-crypto-purchase-status', {})
@@ -205,8 +201,6 @@ function CheckoutContent() {
     ? isUserBanned(userBansData.bans as any, 'purchase')
     : false
   const canPay = !!user?.id && !isPurchaseBanned
-  const isBonusEligible = !!user && canReceiveBonuses(user)
-  const canUseCreditCard = canPay && isBonusEligible
 
   const offers = usePersonalizedManaOffers()
   const router = useRouter()
@@ -276,11 +270,7 @@ function CheckoutContent() {
   }
 
   const handleOfferStripe = () => {
-    if (!user?.id || !effectiveOfferId) return
-    if (!canUseCreditCard) {
-      setVerificationModalOpen(true)
-      return
-    }
+    if (!user?.id || !effectiveOfferId || !canPay) return
     // /createcheckoutsession is POST-only on the backend; navigate via a
     // programmatic form submission (matches AddFundsModal's pattern).
     const action = checkoutURL(
@@ -535,38 +525,20 @@ function CheckoutContent() {
                         </Row>
                       </button>
 
-                      <Tooltip
-                        text={
-                          canUseCreditCard
-                            ? null
-                            : 'Verify your identity to enable credit card purchases.'
-                        }
-                        placement="bottom"
-                        className="block w-full"
+                      <button
+                        onClick={() => setCreditCardModalOpen(true)}
+                        className={clsx(
+                          'group relative w-full overflow-hidden rounded-xl border-2',
+                          'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
+                          'active:scale-[0.98]',
+                          'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
+                        )}
                       >
-                        <button
-                          onClick={() => {
-                            if (canUseCreditCard) {
-                              setCreditCardModalOpen(true)
-                            } else {
-                              setVerificationModalOpen(true)
-                            }
-                          }}
-                          className={clsx(
-                            'group relative w-full overflow-hidden rounded-xl border-2',
-                            'px-8 py-4 text-lg font-semibold shadow-sm transition-all duration-200',
-                            'active:scale-[0.98]',
-                            canUseCreditCard
-                              ? 'bg-canvas-0 border-indigo-600 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-300 dark:hover:bg-indigo-950/30'
-                              : 'border-ink-300 bg-canvas-50 text-ink-500 dark:bg-canvas-100'
-                          )}
-                        >
-                          <Row className="items-center justify-center gap-3">
-                            <FaCreditCard className="h-5 w-5 transition-transform group-hover:scale-110" />
-                            <span>Buy with credit card</span>
-                          </Row>
-                        </button>
-                      </Tooltip>
+                        <Row className="items-center justify-center gap-3">
+                          <FaCreditCard className="h-5 w-5 transition-transform group-hover:scale-110" />
+                          <span>Buy with credit card</span>
+                        </Row>
+                      </button>
                     </>
                   )}
                 </Col>
@@ -664,16 +636,6 @@ function CheckoutContent() {
           <CreditCardPurchaseGrid />
         </Col>
       </Modal>
-
-      {/* Verification Required Modal */}
-      {user && verificationModalOpen && (
-        <VerificationRequiredModal
-          open={verificationModalOpen}
-          setOpen={setVerificationModalOpen}
-          user={user}
-          action="buy mana with a credit card"
-        />
-      )}
     </Col>
   )
 }
