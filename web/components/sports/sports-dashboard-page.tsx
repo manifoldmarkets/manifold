@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { JSONContent } from '@tiptap/core'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { Col } from 'web/components/layout/col'
@@ -20,7 +21,7 @@ import { db } from 'web/lib/supabase/db'
 import { useUser } from 'web/hooks/use-user'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
-import { Dashboard, DashboardItem } from 'common/dashboard'
+import { Dashboard, DashboardItem, DashboardTextItem } from 'common/dashboard'
 import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
 import { Button } from 'web/components/buttons/button'
@@ -51,10 +52,13 @@ import { SportsMarket } from 'common/sports'
 import { formatJustTime } from 'client-common/lib/time'
 import toast from 'react-hot-toast'
 
+import { SortKey, sortContracts } from 'web/lib/sort-contracts'
+import { Content, TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { JSONEmpty } from 'web/components/contract/contract-description'
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type DateSection = { label: string; matches: SportsMatch[] }
-type SortKey = 'manual' | 'date' | 'volume' | 'title'
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -156,6 +160,7 @@ function toSportsMatch(m: SportsMarket): SportsMatch | null {
 
   return {
     id: m.id,
+    question: m.question,
     teamA: {
       name: a0.name,
       flag: a0.flag,
@@ -210,25 +215,6 @@ function groupByDate(matches: SportsMatch[]): DateSection[] {
   }))
 }
 
-function sortContracts(
-  contracts: Contract[],
-  slugOrder: string[],
-  sort: SortKey
-): Contract[] {
-  if (sort === 'manual') {
-    return slugOrder
-      .map((slug) => contracts.find((c) => c.slug === slug))
-      .filter((c): c is Contract => !!c)
-  }
-  const sorted = [...contracts]
-  if (sort === 'date')
-    sorted.sort((a, b) => (a.closeTime ?? 0) - (b.closeTime ?? 0))
-  else if (sort === 'volume')
-    sorted.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
-  else if (sort === 'title')
-    sorted.sort((a, b) => a.question.localeCompare(b.question))
-  return sorted
-}
 
 // ─── Add Market Modal ─────────────────────────────────────────────────────────
 
@@ -810,6 +796,60 @@ function CommunityTab({
   )
 }
 
+// ─── Official description editor ─────────────────────────────────────────────
+
+function OfficialDescEditor({
+  initialContent,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  initialContent: JSONContent | undefined
+  onSave: (content: JSONContent) => void
+  onCancel: () => void
+  saving: boolean
+}) {
+  const editor = useTextEditor({
+    size: 'sm',
+    placeholder: 'Add a description for this tournament…',
+    defaultValue: initialContent,
+    autofocus: true,
+  })
+
+  return (
+    <Col className="gap-2">
+      <TextEditor editor={editor} simple />
+      <Row className="justify-end gap-2">
+        <button
+          onClick={onCancel}
+          className="text-ink-500 hover:text-ink-700 text-xs transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => { if (editor) onSave(editor.getJSON()) }}
+          disabled={saving || !editor}
+          className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </Row>
+    </Col>
+  )
+}
+
+// ─── Official description ─────────────────────────────────────────────────────
+// Stored as a DashboardTextItem with this ID inside the community dashboard.
+// CommunityTab never renders it (it only processes type === 'question' items).
+const OFFICIAL_DESC_ITEM_ID = '__official_description__'
+
+function descFromDashboard(d: Dashboard): JSONContent | undefined {
+  const item = d.items.find(
+    (i): i is DashboardTextItem => i.type === 'text' && i.id === OFFICIAL_DESC_ITEM_ID
+  )
+  return item?.content as JSONContent | undefined
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function SportsDashboardPage({
@@ -838,6 +878,9 @@ export function SportsDashboardPage({
   const [communityCount, setCommunityCount] = useState<number | undefined>(
     undefined
   )
+  const [descDashboard, setDescDashboard] = useState<Dashboard | null>(null)
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [savingDesc, setSavingDesc] = useState(false)
 
   useEffect(() => {
     if (router.isReady) {
@@ -883,8 +926,10 @@ export function SportsDashboardPage({
     api('get-dashboard-from-slug', { dashboardSlug: communityDashboardSlug })
       .then((d) => {
         if (cancelled) return
-        const items = (d as Dashboard).items ?? []
+        const dashboard = d as Dashboard
+        const items = dashboard.items ?? []
         setCommunityCount(items.filter((i) => i.type === 'question').length)
+        setDescDashboard(dashboard)
       })
       .catch(() => undefined)
     return () => {
@@ -928,6 +973,40 @@ export function SportsDashboardPage({
   const today = todayDateLabel()
 
   const hasCommunity = !!communityDashboardSlug && !!competitionCode
+
+  const officialDescription = useMemo(
+    () => (descDashboard ? descFromDashboard(descDashboard) : ''),
+    [descDashboard]
+  )
+
+  async function handleSaveDesc(content: JSONContent) {
+    if (!descDashboard) return
+    setSavingDesc(true)
+    try {
+      const otherItems = descDashboard.items.filter(
+        (i) => !(i.type === 'text' && (i as DashboardTextItem).id === OFFICIAL_DESC_ITEM_ID)
+      )
+      const newItems: DashboardItem[] = [
+        ...otherItems,
+        ...(JSONEmpty(content)
+          ? []
+          : [{ type: 'text' as const, id: OFFICIAL_DESC_ITEM_ID, content } as DashboardTextItem]),
+      ]
+      await updateDashboard({
+        dashboardId: descDashboard.id,
+        title: descDashboard.title,
+        items: newItems,
+        topics: descDashboard.topics ?? [],
+      })
+      setDescDashboard({ ...descDashboard, items: newItems })
+      setEditingDesc(false)
+      toast.success('Description saved')
+    } catch {
+      toast.error('Failed to save description')
+    } finally {
+      setSavingDesc(false)
+    }
+  }
 
   return (
     <Page trackPageView={trackPageView}>
@@ -993,6 +1072,36 @@ export function SportsDashboardPage({
           )
         ) : (
           <>
+            {/* Official description — visible to all, editable by admins */}
+            {((!!officialDescription && !JSONEmpty(officialDescription)) || (isAdmin && descDashboard)) && (
+              <Col className="-mt-4 gap-2">
+                {!editingDesc ? (
+                  <Row className="items-start gap-3">
+                    {officialDescription && !JSONEmpty(officialDescription) && (
+                      <div className="flex-1">
+                        <Content content={officialDescription} size="sm" />
+                      </div>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => setEditingDesc(true)}
+                        className="text-ink-400 hover:text-ink-600 shrink-0 text-xs transition-colors"
+                      >
+                        {officialDescription && !JSONEmpty(officialDescription) ? 'edit' : '+ add description'}
+                      </button>
+                    )}
+                  </Row>
+                ) : (
+                  <OfficialDescEditor
+                    initialContent={officialDescription as JSONContent | undefined}
+                    onSave={handleSaveDesc}
+                    onCancel={() => setEditingDesc(false)}
+                    saving={savingDesc}
+                  />
+                )}
+              </Col>
+            )}
+
             {loading && <LoadingIndicator />}
             {error && <p className="text-sm text-red-500">{error}</p>}
 
