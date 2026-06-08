@@ -13,9 +13,11 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { NoSEO } from 'web/components/NoSEO'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { api } from 'web/lib/api/api'
+import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import { slugify } from 'common/util/slugify'
 import { TOURNAMENT_CONFIGS, TournamentConfig } from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
 import clsx from 'clsx'
@@ -89,6 +91,15 @@ export default function SportsAdminPage() {
 
   // Tournament settings (persist to localStorage)
   const settingsKey = `sports_settings_${tournament.footballDataCode}`
+  // How many extra tags actually fit: markets allow MAX_GROUPS_PER_MARKET topics
+  // total, and the official + configured groups already consume some slots.
+  const baseGroupCount =
+    1 +
+    (ENV === 'DEV'
+      ? tournament.additionalGroupIds.dev
+      : tournament.additionalGroupIds.prod
+    ).length
+  const maxExtraTags = Math.max(0, MAX_GROUPS_PER_MARKET - baseGroupCount)
   const [groupSlug, setGroupSlug] = useState(tournament.officialGroupSlug)
   const [dashboardUrl, setDashboardUrl] = useState(
     `${ENV_CONFIG.domain}${tournament.dashboardPath}`
@@ -97,6 +108,11 @@ export default function SportsAdminPage() {
   const [stageTiers, setStageTiers] = useState<Record<string, number>>(
     tournament.stageLiquidityTiers as Record<string, number>
   )
+  // Extra topic-group slugs every created market gets tagged with, on top of the
+  // tournament's configured groups. Added manually or via the AI suggester.
+  const [extraTags, setExtraTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
+  const [suggesting, setSuggesting] = useState(false)
 
   useEffect(() => {
     try {
@@ -107,6 +123,7 @@ export default function SportsAdminPage() {
         if (s.dashboardUrl) setDashboardUrl(s.dashboardUrl)
         if (s.customNote !== undefined) setCustomNote(s.customNote)
         if (s.stageTiers) setStageTiers(s.stageTiers)
+        if (Array.isArray(s.extraTags)) setExtraTags(s.extraTags)
       }
     } catch {}
   }, [settingsKey])
@@ -114,9 +131,74 @@ export default function SportsAdminPage() {
   function saveSettings() {
     localStorage.setItem(
       settingsKey,
-      JSON.stringify({ groupSlug, dashboardUrl, customNote, stageTiers })
+      JSON.stringify({
+        groupSlug,
+        dashboardUrl,
+        customNote,
+        stageTiers,
+        extraTags,
+      })
     )
     alert('Settings saved.')
+  }
+
+  function addTag(slug: string) {
+    const s = slugify(slug)
+    if (!s || extraTags.includes(s)) return
+    if (extraTags.length >= maxExtraTags) {
+      alert(
+        `Only ${maxExtraTags} extra tag(s) fit — markets allow ${MAX_GROUPS_PER_MARKET} ` +
+          `topics total and ${baseGroupCount} are used by the official/configured groups.`
+      )
+      return
+    }
+    setExtraTags((t) => [...t, s])
+  }
+
+  async function suggestTags() {
+    setSuggesting(true)
+    try {
+      // Reuse Manifold's topic suggester (embedding similarity) on a
+      // representative match question for this tournament.
+      const sample = `${sampleTeams.home} vs ${sampleTeams.away} [${tournament.shortLabel}]`
+      const res = (await getSimilarGroupsToContract({ question: sample })) as {
+        groups?: Array<{ slug: string }>
+        error?: string
+      }
+      if (res.error) {
+        alert(`Suggester error: ${res.error}`)
+        return
+      }
+      // Drop any suggestion that's already the official group, then merge/dedup
+      // and cap to the slots that fit (the rest of the topic budget is reserved
+      // for the official + configured groups).
+      const slugs = (res.groups ?? [])
+        .map((g) => g.slug)
+        .filter((s) => s !== tournament.officialGroupSlug)
+      if (slugs.length === 0) {
+        alert(
+          'No matching topics found. The suggester ranks by topic activity ' +
+            '(importance score), which is ~0 on dev, so it generally only ' +
+            'returns results on prod. Add tags manually here for now.'
+        )
+      } else {
+        const merged = Array.from(new Set([...extraTags, ...slugs]))
+        if (merged.length > maxExtraTags) {
+          alert(
+            `Added the first ${maxExtraTags} tag(s) that fit (markets allow ` +
+              `${MAX_GROUPS_PER_MARKET} topics; ${baseGroupCount} already used). ` +
+              `Some suggestions were dropped.`
+          )
+        }
+        setExtraTags(merged.slice(0, maxExtraTags))
+      }
+    } catch (e) {
+      alert(
+        `Suggestion failed: ${e instanceof Error ? e.message : 'Unknown error'}`
+      )
+    } finally {
+      setSuggesting(false)
+    }
   }
 
   // Fixtures state
@@ -147,11 +229,21 @@ export default function SportsAdminPage() {
   // Community markets state
   const [communitySearch, setCommunitySearch] = useState('')
   const [communityAllMarkets, setCommunityAllMarkets] = useState<
-    Array<{ id: string; question: string; slug: string; outcomeType: string }>
+    Array<{
+      id: string
+      question: string
+      slug: string
+      outcomeType: string
+      sportsEventId?: string
+    }>
   >([])
   const [communitySearching, setCommunitySearching] = useState(false)
   const [communityAdding, setCommunityAdding] = useState<string | null>(null)
-  const [communityGroupMode, setCommunityGroupMode] = useState(true)
+  // A topic (slug) the admin browses to find community markets to add. We never
+  // default to the official match group — ms-official markets are strictly the
+  // fixtures, which live on the official dashboard and are excluded here.
+  const [communityTopicDraft, setCommunityTopicDraft] = useState('')
+  const [communityTopicSlug, setCommunityTopicSlug] = useState('')
   const [communityInitStatus, setCommunityInitStatus] = useState<{
     groupId: string
     groupCreated: boolean
@@ -159,10 +251,10 @@ export default function SportsAdminPage() {
   } | null>(null)
   const [communityIniting, setCommunityIniting] = useState(false)
 
-  // Load all group markets once; filter client-side to support substring/hyphen matching
+  // Load the chosen topic's markets; filter client-side for substring matching.
   useEffect(() => {
     if (!isAdmin) return
-    const slug = communityGroupMode ? tournament.officialGroupSlug : null
+    const slug = communityTopicSlug.trim()
     if (!slug) {
       setCommunityAllMarkets([])
       return
@@ -179,7 +271,13 @@ export default function SportsAdminPage() {
       } as any) as Promise<any[]>
     )
       .then((data) => {
-        if (!cancelled) setCommunityAllMarkets(data ?? [])
+        // Exclude the official match markets (they carry sportsEventId): those
+        // are strictly fixtures shown on the official dashboard and must never be
+        // added to a community dashboard. What's left is community-eligible.
+        if (!cancelled)
+          setCommunityAllMarkets(
+            (data ?? []).filter((m: any) => !m.sportsEventId)
+          )
       })
       .catch(() => {
         if (!cancelled) setCommunityAllMarkets([])
@@ -190,7 +288,7 @@ export default function SportsAdminPage() {
     return () => {
       cancelled = true
     }
-  }, [tournament.officialGroupSlug, communityGroupMode, isAdmin])
+  }, [communityTopicSlug, isAdmin])
 
   // Resolution state
   const [resolveLog, setResolveLog] = useState<ResolveLogEntry[]>([])
@@ -254,6 +352,7 @@ export default function SportsAdminPage() {
         customNote: customNote || undefined,
         dashboardUrl: dashboardUrl || undefined,
         liquidityTierOverrides: stageTiers,
+        extraGroupSlugs: extraTags.length > 0 ? extraTags : undefined,
       })
       setCreateResults(data.results)
       setGroupStatus({
@@ -412,6 +511,29 @@ export default function SportsAdminPage() {
       <div className="mx-auto max-w-5xl px-4 pb-16">
         <Title>Sports Admin</Title>
 
+        <div className="border-ink-200 bg-ink-50 text-ink-600 mb-6 rounded-lg border p-4 text-sm">
+          <p className="text-ink-800 mb-1 font-medium">How this works</p>
+          <ul className="ml-4 list-disc space-y-1">
+            <li>
+              Markets are created <strong>automatically</strong> by the
+              7&nbsp;AM&nbsp;UTC <code>sports-create-markets</code> cron (7-day
+              lookahead), owned by <strong>@ManifoldSports</strong>. Use this
+              panel to <strong>preview</strong> (dry-run), create on demand, or
+              customize tags / tiers / the description.
+            </li>
+            <li>
+              Odds and live scores update in real time on the dashboard; matches{' '}
+              <strong>auto-resolve ~10s after full time</strong> (15-min
+              backstop).
+            </li>
+            <li>
+              Each market is tagged into the official group + any extra topics
+              you set below, with all native columns populated (feed ranking,
+              search, personalized feeds all work).
+            </li>
+          </ul>
+        </div>
+
         {/* ── 1. Tournament Selector ── */}
         <Section title="1. Tournament" defaultOpen>
           <Row className="flex-wrap items-end gap-4">
@@ -434,6 +556,7 @@ export default function SportsAdminPage() {
                         t.stageLiquidityTiers as Record<string, number>
                       )
                       setCustomNote('')
+                      setExtraTags([])
                       setFixtures([])
                       setMarkets([])
                       setCreateResults([])
@@ -546,6 +669,81 @@ export default function SportsAdminPage() {
               <pre className="bg-ink-50 border-ink-200 text-ink-600 whitespace-pre-wrap rounded border p-3 text-xs leading-relaxed">
                 {sampleDesc}
               </pre>
+            </Col>
+
+            {/* Extra topic tags */}
+            <Col className="gap-1.5">
+              <label className="text-ink-700 text-sm font-medium">
+                Extra topic tags ({extraTags.length}/{maxExtraTags})
+              </label>
+              <p className="text-ink-400 text-xs">
+                Markets are always tagged with the official group{' '}
+                <code className="bg-ink-100 rounded px-1 text-xs">
+                  {tournament.officialGroupSlug}
+                </code>
+                . Add extra topic slugs here (e.g.{' '}
+                <code className="bg-ink-100 rounded px-1 text-xs">soccer</code>)
+                to surface them in those feeds too. Unknown slugs are ignored.
+                Markets allow {MAX_GROUPS_PER_MARKET} topics total, and{' '}
+                {baseGroupCount} are used by the official/configured groups, so
+                up to <strong>{maxExtraTags}</strong> extra tag(s) fit.
+              </p>
+              <Row className="flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTag(tagInput)
+                      setTagInput('')
+                    }
+                  }}
+                  placeholder="add a topic slug…"
+                  className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 font-mono text-sm"
+                />
+                <Button
+                  size="sm"
+                  color="gray-outline"
+                  disabled={extraTags.length >= maxExtraTags}
+                  onClick={() => {
+                    addTag(tagInput)
+                    setTagInput('')
+                  }}
+                >
+                  Add
+                </Button>
+                <Button
+                  size="sm"
+                  color="indigo"
+                  onClick={suggestTags}
+                  disabled={suggesting || extraTags.length >= maxExtraTags}
+                >
+                  {suggesting ? 'Suggesting…' : '✨ Suggest with AI'}
+                </Button>
+              </Row>
+              {extraTags.length > 0 && (
+                <Row className="flex-wrap gap-1.5">
+                  {extraTags.map((slug) => (
+                    <span
+                      key={slug}
+                      className="bg-ink-100 text-ink-700 flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-xs"
+                    >
+                      {slug}
+                      <button
+                        onClick={() =>
+                          setExtraTags((t) => t.filter((x) => x !== slug))
+                        }
+                        className="text-ink-400 font-bold leading-none hover:text-red-600"
+                        title="Remove tag"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </Row>
+              )}
             </Col>
 
             {/* Liquidity tiers per stage */}
@@ -795,6 +993,10 @@ export default function SportsAdminPage() {
                     </span>
                   )}
                 </Row>
+                <span className="text-ink-500 text-xs">
+                  Markets are created and published as{' '}
+                  <strong>@ManifoldSports</strong>.
+                </span>
 
                 {/* Creation log */}
                 {createResults.length > 0 && (
@@ -956,12 +1158,19 @@ export default function SportsAdminPage() {
                 <span className="font-medium">{lastResolved ?? 'Never'}</span>
               </Col>
               <Col className="gap-0.5">
-                <span className="text-ink-500 text-xs">Scheduler job</span>
+                <span className="text-ink-500 text-xs">Auto-resolution</span>
                 <span className="font-medium">
-                  sports-resolve · every 15 min
+                  ~10s after full time (live poller) · 15-min backstop cron
                 </span>
               </Col>
             </Row>
+
+            <span className="text-ink-400 text-xs">
+              Markets resolve automatically: the live poller resolves a match
+              within ~10s of the final whistle, and the{' '}
+              <code>sports-resolve</code> cron sweeps every 15 min as a
+              backstop. Use the button below only to force a sweep now.
+            </span>
 
             <Row className="items-center gap-3">
               <Button color="indigo" onClick={runResolve} disabled={resolving}>
@@ -1093,13 +1302,14 @@ export default function SportsAdminPage() {
           <Col className="gap-4">
             <Row className="flex-wrap items-start justify-between gap-3">
               <p className="text-ink-500 text-sm">
-                Search for any market and add it to the community tab of the{' '}
-                <strong>{tournament.name}</strong> dashboard. Markets are also
-                tagged with{' '}
+                Browse a topic to find community markets to add to the{' '}
+                <strong>{tournament.name}</strong> community dashboard (and tag
+                with{' '}
                 <code className="bg-ink-100 rounded px-1 text-xs">
                   {tournament.communityGroupSlug}
                 </code>
-                .
+                ). The official match markets are excluded — they live only on
+                the official dashboard and are never added here.
               </p>
               <Col className="gap-1">
                 <Button
@@ -1124,40 +1334,52 @@ export default function SportsAdminPage() {
               </Col>
             </Row>
 
-            <Row className="flex-wrap items-center gap-4">
+            <Row className="flex-wrap items-end gap-4">
               <Col className="gap-1">
                 <label className="text-ink-600 text-xs">
-                  {communityGroupMode
-                    ? 'Filter within group'
-                    : 'Search all markets'}
+                  Browse a topic (slug) for community markets
                 </label>
-                <input
-                  type="text"
-                  value={communitySearch}
-                  onChange={(e) => onCommunitySearch(e.target.value)}
-                  placeholder={
-                    communityGroupMode
-                      ? 'Filter by title…'
-                      : 'Search by question…'
-                  }
-                  className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 text-sm"
-                />
+                <Row className="gap-2">
+                  <input
+                    type="text"
+                    value={communityTopicDraft}
+                    onChange={(e) => setCommunityTopicDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        setCommunityTopicSlug(slugify(communityTopicDraft))
+                      }
+                    }}
+                    placeholder="e.g. soccer, world-cup-predictions…"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    color="gray-outline"
+                    onClick={() =>
+                      setCommunityTopicSlug(
+                        communityTopicDraft.trim().toLowerCase()
+                      )
+                    }
+                  >
+                    Browse
+                  </Button>
+                </Row>
               </Col>
-              <Row className="items-center gap-2 self-end pb-1.5">
-                <input
-                  type="checkbox"
-                  id="community-group-mode"
-                  checked={communityGroupMode}
-                  onChange={(e) => setCommunityGroupMode(e.target.checked)}
-                  className="cursor-pointer"
-                />
-                <label
-                  htmlFor="community-group-mode"
-                  className="text-ink-600 cursor-pointer text-xs"
-                >
-                  Within {tournament.shortLabel} group only
-                </label>
-              </Row>
+              {communityTopicSlug && (
+                <Col className="gap-1">
+                  <label className="text-ink-600 text-xs">
+                    Filter results by title
+                  </label>
+                  <input
+                    type="text"
+                    value={communitySearch}
+                    onChange={(e) => onCommunitySearch(e.target.value)}
+                    placeholder="Filter by title…"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-56 rounded border px-3 py-1.5 text-sm"
+                  />
+                </Col>
+              )}
               {communitySearching && (
                 <LoadingIndicator size="sm" className="self-end pb-2" />
               )}
@@ -1215,10 +1437,19 @@ export default function SportsAdminPage() {
               </div>
             )}
 
+            {!communitySearching && !communityTopicSlug && (
+              <p className="text-ink-400 text-sm">
+                Enter a topic slug above and hit Browse to find community
+                markets to add.
+              </p>
+            )}
             {!communitySearching &&
-              communityResults.length === 0 &&
-              (communitySearch || communityGroupMode) && (
-                <p className="text-ink-400 text-sm">No markets found.</p>
+              communityTopicSlug &&
+              communityResults.length === 0 && (
+                <p className="text-ink-400 text-sm">
+                  No community markets found in “{communityTopicSlug}” (official
+                  match markets are excluded).
+                </p>
               )}
           </Col>
         </Section>

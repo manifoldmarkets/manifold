@@ -137,6 +137,7 @@ export function toLiteMarket(
   const { includeLiteAnswers } = props
 
   const { p, totalLiquidity } = contract as any
+  const { sportsStartTimestamp, sportsEventId, sportsLeague } = contract as any
 
   const probability =
     outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC'
@@ -193,6 +194,11 @@ export function toLiteMarket(
     token,
     siblingContractId,
     answers,
+
+    // Sports market props (only present on sports markets).
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
 
     // Manifold love props.
     loverUserId1,
