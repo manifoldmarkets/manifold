@@ -41,5 +41,7 @@ export const DEV_CONFIG: EnvConfig = {
     '2cO953kN1sTBpfbhPVnTjRNqLJh2', // Sinclair
     'TabB6gJMYEUfaNWNS8i84PvMi2r2', // Genzy (Tod)
     'GQxeHBpah7dPuQ9fHvFIlcJzJ6T2', // wasabipesto
+    'lu01Fs2BVnTQgFMMpS1qhYst9fs2', // teststef (local dev)
+    't3R3HV2QFTRGnJxtxhzdesA4stw1', // ManifoldSports (sports@manifold.markets)
   ],
 }

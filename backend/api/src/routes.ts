@@ -200,6 +200,12 @@ import { adminDeletePrizeClaim } from './admin-delete-prize-claim'
 import { adminGetManaSales } from './admin-get-mana-sales'
 import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
+import { adminSportsFixtures } from './admin-sports-fixtures'
+import { adminSportsCreateMarkets } from './admin-sports-create-markets'
+import { sportsMarkets } from './sports-markets'
+import { adminSportsResolve } from './admin-sports-resolve'
+import { adminSportsCommunityMarket } from './admin-sports-community-market'
+import { adminSportsInitCommunity } from './admin-sports-init-community'
 import { getSweepstakesList } from './get-sweepstakes-list'
 import { adminAnnouncePrizeDrawing } from './admin-announce-prize-drawing'
 import { checkSweepstakesGeo } from './check-sweepstakes-geo'
@@ -554,6 +560,12 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-get-mana-sales': adminGetManaSales,
   'admin-get-top-whale-users': adminGetTopWhaleUsers,
   'admin-get-new-users': adminGetNewUsers,
+  'admin-sports-fixtures': adminSportsFixtures,
+  'admin-sports-create-markets': adminSportsCreateMarkets,
+  'sports-markets': sportsMarkets,
+  'admin-sports-resolve': adminSportsResolve,
+  'admin-sports-community-market': adminSportsCommunityMarket,
+  'admin-sports-init-community': adminSportsInitCommunity,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'get-shop-stats': getShopStats,

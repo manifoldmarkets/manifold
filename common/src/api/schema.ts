@@ -34,6 +34,7 @@ import {
 } from 'common/portfolio-metrics'
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
+import { SportsMarket } from 'common/sports'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -4282,6 +4283,142 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { orders: ShopOrder[] },
+  },
+
+  // ─── Sports Admin ────────────────────────────────────────────────────────────
+
+  'admin-sports-fixtures': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        dateFrom: z.string(),
+        dateTo: z.string(),
+        stage: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      fixtures: Array<{
+        id: number
+        homeTeam: { name: string; tla: string; crest: string }
+        awayTeam: { name: string; tla: string; crest: string }
+        homeFlag: string
+        awayFlag: string
+        utcDate: string
+        stageCode: string
+        stageLabel: string
+        group: string | null
+        status: string
+        closeTime: number
+        liquidityTier: number
+        existingMarketId: string | null
+        sportsEventId: string
+      }>
+    },
+  },
+
+  'admin-sports-create-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        matchIds: z.array(z.number()),
+        dryRun: z.boolean(),
+        customNote: z.string().optional(),
+        dashboardUrl: z.string().optional(),
+        liquidityTierOverrides: z.record(z.string(), z.number()).optional(),
+        // Extra topic/group slugs to tag every created market with, on top of
+        // the tournament's configured groups. Unknown slugs are ignored.
+        extraGroupSlugs: z.array(z.string()).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      groupRestricted: boolean
+      communityGroupId: string
+      communityGroupCreated: boolean
+      communityDashboardId: string
+      communityDashboardCreated: boolean
+      results: Array<{
+        matchId: number
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        question: string
+        marketId: string | null
+        reason: string | null
+      }>
+    },
+  },
+
+  'admin-sports-community-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        contractId: z.string(),
+        action: z.enum(['add', 'remove']),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      dashboardId: string
+      action: 'add' | 'remove'
+      contractId: string
+    },
+  },
+
+  'admin-sports-init-community': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ competitionCode: z.string() }).strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      dashboardId: string
+      dashboardCreated: boolean
+    },
+  },
+
+  'sports-markets': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        sportsLeague: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      markets: SportsMarket[]
+    },
+  },
+
+  'admin-sports-resolve': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      resolved: number
+      skipped: number
+      errors: number
+      log: Array<{
+        question: string
+        result: string
+        status: 'resolved' | 'skipped' | 'error'
+      }>
+    },
   },
 } as const)
 

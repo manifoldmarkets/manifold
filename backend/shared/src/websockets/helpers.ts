@@ -114,6 +114,22 @@ export function broadcastUpdatedContract(
   broadcastMulti(topics, payload)
 }
 
+// Live sports score for a market, pushed by the sports-live poller. Its own
+// topic (the score fields live in contract.data, not on Contract) so only the
+// sports dashboard subscribes and the generic contract/global topics stay quiet.
+export function broadcastSportsLiveScore(
+  contractId: string,
+  score: {
+    sportsHomeScore: number | null
+    sportsAwayScore: number | null
+    sportsLiveStatus: string
+    sportsLiveMinute: string | null
+    sportsLiveUpdatedTime: number
+  }
+) {
+  broadcast(`contract/${contractId}/sports-live`, score)
+}
+
 export function broadcastNewAnswer(answer: Answer) {
   const payload = { answer }
   const topics = [`contract/${answer.contractId}/new-answer`]

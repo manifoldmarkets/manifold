@@ -38,6 +38,7 @@ export const secrets = (
     'PERPLEXITY_API_KEY',
     'FIRECRAWL_API_KEY',
     'SPORTSDB_KEY',
+    'FOOTBALL_DATA_API_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
     'IDENFY_API_KEY',
