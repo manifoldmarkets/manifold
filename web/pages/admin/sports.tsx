@@ -189,7 +189,13 @@ export default function SportsAdminPage() {
   // Community markets state
   const [communitySearch, setCommunitySearch] = useState('')
   const [communityAllMarkets, setCommunityAllMarkets] = useState<
-    Array<{ id: string; question: string; slug: string; outcomeType: string }>
+    Array<{
+      id: string
+      question: string
+      slug: string
+      outcomeType: string
+      sportsEventId?: string
+    }>
   >([])
   const [communitySearching, setCommunitySearching] = useState(false)
   const [communityAdding, setCommunityAdding] = useState<string | null>(null)
@@ -221,7 +227,10 @@ export default function SportsAdminPage() {
       } as any) as Promise<any[]>
     )
       .then((data) => {
-        if (!cancelled) setCommunityAllMarkets(data ?? [])
+        // Exclude the auto-created match markets (they carry sportsEventId) so
+        // the list only shows community-eligible markets, not the fixtures.
+        if (!cancelled)
+          setCommunityAllMarkets((data ?? []).filter((m: any) => !m.sportsEventId))
       })
       .catch(() => {
         if (!cancelled) setCommunityAllMarkets([])
