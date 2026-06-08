@@ -1,10 +1,12 @@
 import clsx from 'clsx'
+import Link from 'next/link'
 import {
   BinaryContract,
   CPMMContract,
   CPMMMultiContract,
   Contract,
   PseudoNumericContract,
+  contractPath,
 } from 'common/contract'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { PollOption } from 'common/poll-option'
@@ -20,6 +22,7 @@ import { ReactButton } from 'web/components/contract/react-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
+import { useLiveContract } from 'web/hooks/use-contract'
 
 type MarketMeta = {
   label: string
@@ -55,12 +58,13 @@ function statusLabel(contract: Contract): string | null {
 }
 
 export function DashboardMarketCard({
-  contract,
+  contract: initialContract,
   trackingLocation = 'dashboard',
 }: {
   contract: Contract
   trackingLocation?: string
 }) {
+  const contract = useLiveContract(initialContract)
   const user = useUser()
   const meta = marketMeta(contract.outcomeType)
   const isBinary = contract.outcomeType === 'BINARY'
@@ -85,7 +89,8 @@ export function DashboardMarketCard({
   const binaryProb = cpmmContract ? Math.round(cpmmContract.prob * 100) : null
   const resolved = !!contract.resolution
   const liquidity = 'totalLiquidity' in contract ? (contract as CPMMContract).totalLiquidity ?? 0 : 0
-  const contractUrl = `/${contract.creatorUsername}/${contract.slug}`
+  const status = statusLabel(contract)
+  const contractUrl = contractPath(contract)
 
   return (
     <div
@@ -96,8 +101,8 @@ export function DashboardMarketCard({
     >
       {/* Top row: status + type badge */}
       <Row className="items-center justify-between gap-2 px-5 pt-6">
-        {statusLabel(contract) && (
-          <span className="text-ink-400 text-[11px]">{statusLabel(contract)}</span>
+        {status && (
+          <span className="text-ink-400 text-[11px]">{status}</span>
         )}
         <span className={clsx('rounded px-1.5 py-0.5 text-[11px] font-medium', meta.badgeClass)}>
           {meta.label}
@@ -105,11 +110,11 @@ export function DashboardMarketCard({
       </Row>
 
       {/* Question title */}
-      <a href={contractUrl} className="px-5 pt-2.5 hover:opacity-80">
+      <Link href={contractUrl} className="px-5 pt-2.5 hover:opacity-80">
         <p className="text-ink-900 line-clamp-2 text-base font-semibold leading-snug">
           {contract.question}
         </p>
-      </a>
+      </Link>
 
       {/* Market-type content */}
       <div className="min-h-0 flex-1 overflow-hidden px-5 pt-5 pb-2">
@@ -178,9 +183,9 @@ export function DashboardMarketCard({
               </Row>
             ))}
             {pollOptions.length > 5 && (
-              <a href={contractUrl} className="text-ink-400 hover:text-ink-600 text-[11px] transition-colors">
+              <Link href={contractUrl} className="text-ink-400 hover:text-ink-600 text-[11px] transition-colors">
                 +{pollOptions.length - 5} more →
-              </a>
+              </Link>
             )}
           </Col>
         )}
@@ -214,12 +219,12 @@ export function DashboardMarketCard({
           contractId={contract.id}
           heartClassName="stroke-ink-500"
         />
-        <a
+        <Link
           href={contractUrl}
           className="text-ink-400 hover:text-ink-600 ml-auto text-[11px] transition-colors"
         >
           View market →
-        </a>
+        </Link>
       </Row>
     </div>
   )

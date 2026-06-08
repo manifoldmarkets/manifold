@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { Extension, JSONContent } from '@tiptap/core'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { SortKey, sortContracts } from 'web/lib/sort-contracts'
 import { DashboardMarketCard } from 'web/components/dashboard/dashboard-market-card'
@@ -69,7 +69,7 @@ export function DashboardMarketGrid({
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
   const [descriptionContent, setDescriptionContent] = useState<JSONContent | undefined>(undefined)
 
-  const maxLinesExtension = Extension.create({
+  const maxLinesExtension = useMemo(() => Extension.create({
     name: 'maxLines',
     addKeyboardShortcuts() {
       const blockIfAtMax = ({ editor }: { editor: any }) => {
@@ -86,7 +86,7 @@ export function DashboardMarketGrid({
       }
       return { Enter: blockIfAtMax, 'Shift-Enter': blockIfAtMax }
     },
-  })
+  }), [])
 
   const descEditor = useTextEditor({
     size: 'sm',
