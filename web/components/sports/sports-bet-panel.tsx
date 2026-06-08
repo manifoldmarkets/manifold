@@ -150,6 +150,8 @@ export function SportsBetPanel({
   const probBeforePct = betResult ? Math.round(betResult.prob * 100) : current.prob
   const probAfterPct = betResult ? Math.round(betResult.probAfter * 100) : current.prob
   const calcError = betResult?.calculationError
+  const filledNow = betResult ? Math.round(betResult.amount) : undefined
+  const totalOrder = betResult ? Math.round(betResult.orderAmount) : undefined
 
   // Don't let the user try to bet on a market that's already resolved or past
   // its trading window — the server would reject it; surface it up front.
@@ -205,9 +207,13 @@ export function SportsBetPanel({
   }
 
   const isLive = match.liveScore != null
-  const liveMinute = isLive
+  const liveMinute = isLive && match.liveScore!.minute != null
     ? match.liveScore!.minute === 'HT' ? 'HT' : `${match.liveScore!.minute}'`
     : null
+  const hasLiveScore =
+    isLive &&
+    match.liveScore!.home != null &&
+    match.liveScore!.away != null
 
   return (
     <Modal open setOpen={(open) => { if (!open) onClose() }} size="md">
@@ -231,16 +237,18 @@ export function SportsBetPanel({
           {isLive && match.liveScore ? (
             <>
               <span className="mt-1 text-sm font-medium" style={{ color: '#16a34a' }}>
-                ● {liveMinute}
+                ● {liveMinute ?? 'Live'}
               </span>
-              <Row className="mt-1 items-center gap-3">
-                <span className="text-ink-1000 text-lg font-bold tabular-nums">{match.liveScore.home}</span>
-                <span className="text-ink-400 text-base">—</span>
-                <span className="text-ink-1000 text-lg font-bold tabular-nums">{match.liveScore.away}</span>
-              </Row>
+              {hasLiveScore && (
+                <Row className="mt-1 items-center gap-3">
+                  <span className="text-ink-1000 text-lg font-bold tabular-nums">{match.liveScore.home}</span>
+                  <span className="text-ink-400 text-base">—</span>
+                  <span className="text-ink-1000 text-lg font-bold tabular-nums">{match.liveScore.away}</span>
+                </Row>
+              )}
             </>
           ) : (
-            <span className="text-ink-500 mt-0.5 text-sm">Kickoff {match.closeTime}</span>
+            <span className="text-ink-500 mt-0.5 text-sm">{match.closeDateLabel} · Kickoff {match.closeTime}</span>
           )}
         </Col>
 
@@ -296,7 +304,10 @@ export function SportsBetPanel({
           {betMode === 'limit' && (
             <>
               <Col className="gap-1">
-                <span className="text-ink-600 text-sm">Probability (%)</span>
+                <Row className="items-baseline justify-between">
+                  <span className="text-ink-600 text-sm">Probability (%)</span>
+                  <span className="text-ink-600 text-xs">Current: {probBeforePct}%</span>
+                </Row>
                 <label className="relative w-full">
                   <Input
                     type="number"
@@ -375,17 +386,29 @@ export function SportsBetPanel({
                 </Row>
               </>
             ) : (
-              <Row className="items-baseline justify-between">
-                <span className="text-ink-600 text-sm">Max payout</span>
-                <Row className="items-baseline gap-1.5">
-                  <span className="text-ink-1000 text-base font-semibold">
-                    {payout !== undefined ? `Ṁ${payout.toLocaleString()}` : '—'}
-                  </span>
-                  {returnPct !== undefined && (
-                    <span className="text-teal-500 text-sm">+{returnPct}%</span>
-                  )}
+              <>
+                {filledNow !== undefined && totalOrder !== undefined && (
+                  <Row className="items-baseline justify-between">
+                    <span className="text-ink-600 text-sm">
+                      <span className="text-yes-500 font-medium">YES</span> filled now
+                    </span>
+                    <span className="text-ink-1000 text-sm font-medium">
+                      Ṁ{filledNow.toLocaleString()} of Ṁ{totalOrder.toLocaleString()}
+                    </span>
+                  </Row>
+                )}
+                <Row className="items-baseline justify-between">
+                  <span className="text-ink-600 text-sm">Max payout</span>
+                  <Row className="items-baseline gap-1.5">
+                    <span className="text-ink-1000 text-base font-semibold">
+                      {payout !== undefined ? `Ṁ${payout.toLocaleString()}` : '—'}
+                    </span>
+                    {returnPct !== undefined && (
+                      <span className="text-teal-500 text-sm">+{returnPct}%</span>
+                    )}
+                  </Row>
                 </Row>
-              </Row>
+              </>
             )}
             {calcError && (
               <span className="text-red-500 text-sm">{calcError}</span>

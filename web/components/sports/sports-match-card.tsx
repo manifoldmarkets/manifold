@@ -406,7 +406,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
 
       {betOutcome && (
         <SportsBetPanel
-          match={{ ...match, teamA: { ...match.teamA, prob: probs.teamA }, teamB: { ...match.teamB, prob: probs.teamB }, draw: { prob: probs.draw } }}
+          match={{ ...match, teamA: { ...match.teamA, prob: probs.teamA }, teamB: { ...match.teamB, prob: probs.teamB }, draw: { prob: probs.draw }, liveScore }}
           initialOutcome={betOutcome}
           onClose={() => setBetOutcome(null)}
         />
