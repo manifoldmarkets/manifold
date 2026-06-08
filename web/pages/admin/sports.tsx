@@ -15,7 +15,9 @@ import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import { slugify } from 'common/util/slugify'
 import { TOURNAMENT_CONFIGS, TournamentConfig } from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
 import clsx from 'clsx'
@@ -89,6 +91,15 @@ export default function SportsAdminPage() {
 
   // Tournament settings (persist to localStorage)
   const settingsKey = `sports_settings_${tournament.footballDataCode}`
+  // How many extra tags actually fit: markets allow MAX_GROUPS_PER_MARKET topics
+  // total, and the official + configured groups already consume some slots.
+  const baseGroupCount =
+    1 +
+    (ENV === 'DEV'
+      ? tournament.additionalGroupIds.dev
+      : tournament.additionalGroupIds.prod
+    ).length
+  const maxExtraTags = Math.max(0, MAX_GROUPS_PER_MARKET - baseGroupCount)
   const [groupSlug, setGroupSlug] = useState(tournament.officialGroupSlug)
   const [dashboardUrl, setDashboardUrl] = useState(
     `${ENV_CONFIG.domain}${tournament.dashboardPath}`
@@ -126,8 +137,16 @@ export default function SportsAdminPage() {
   }
 
   function addTag(slug: string) {
-    const s = slug.trim().toLowerCase().replace(/\s+/g, '-')
-    if (s && !extraTags.includes(s)) setExtraTags((t) => [...t, s])
+    const s = slugify(slug)
+    if (!s || extraTags.includes(s)) return
+    if (extraTags.length >= maxExtraTags) {
+      alert(
+        `Only ${maxExtraTags} extra tag(s) fit — markets allow ${MAX_GROUPS_PER_MARKET} ` +
+          `topics total and ${baseGroupCount} are used by the official/configured groups.`
+      )
+      return
+    }
+    setExtraTags((t) => [...t, s])
   }
 
   async function suggestTags() {
@@ -144,7 +163,12 @@ export default function SportsAdminPage() {
         alert(`Suggester error: ${res.error}`)
         return
       }
-      const slugs = (res.groups ?? []).map((g) => g.slug)
+      // Drop any suggestion that's already the official group, then merge/dedup
+      // and cap to the slots that fit (the rest of the topic budget is reserved
+      // for the official + configured groups).
+      const slugs = (res.groups ?? [])
+        .map((g) => g.slug)
+        .filter((s) => s !== tournament.officialGroupSlug)
       if (slugs.length === 0) {
         alert(
           'No matching topics found. The suggester ranks by topic activity ' +
@@ -152,7 +176,15 @@ export default function SportsAdminPage() {
             'returns results on prod. Add tags manually here for now.'
         )
       } else {
-        setExtraTags((t) => Array.from(new Set([...t, ...slugs])))
+        const merged = Array.from(new Set([...extraTags, ...slugs]))
+        if (merged.length > maxExtraTags) {
+          alert(
+            `Added the first ${maxExtraTags} tag(s) that fit (markets allow ` +
+              `${MAX_GROUPS_PER_MARKET} topics; ${baseGroupCount} already used). ` +
+              `Some suggestions were dropped.`
+          )
+        }
+        setExtraTags(merged.slice(0, maxExtraTags))
       }
     } catch (e) {
       alert(`Suggestion failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
@@ -631,7 +663,7 @@ export default function SportsAdminPage() {
             {/* Extra topic tags */}
             <Col className="gap-1.5">
               <label className="text-ink-700 text-sm font-medium">
-                Extra topic tags
+                Extra topic tags ({extraTags.length}/{maxExtraTags})
               </label>
               <p className="text-ink-400 text-xs">
                 Markets are always tagged with the official group{' '}
@@ -641,6 +673,9 @@ export default function SportsAdminPage() {
                 . Add extra topic slugs here (e.g.{' '}
                 <code className="bg-ink-100 rounded px-1 text-xs">soccer</code>) to
                 surface them in those feeds too. Unknown slugs are ignored.
+                Markets allow {MAX_GROUPS_PER_MARKET} topics total, and{' '}
+                {baseGroupCount} are used by the official/configured groups, so up
+                to <strong>{maxExtraTags}</strong> extra tag(s) fit.
               </p>
               <Row className="flex-wrap items-center gap-2">
                 <input
@@ -660,6 +695,7 @@ export default function SportsAdminPage() {
                 <Button
                   size="sm"
                   color="gray-outline"
+                  disabled={extraTags.length >= maxExtraTags}
                   onClick={() => {
                     addTag(tagInput)
                     setTagInput('')
@@ -671,7 +707,7 @@ export default function SportsAdminPage() {
                   size="sm"
                   color="indigo"
                   onClick={suggestTags}
-                  disabled={suggesting}
+                  disabled={suggesting || extraTags.length >= maxExtraTags}
                 >
                   {suggesting ? 'Suggesting…' : '✨ Suggest with AI'}
                 </Button>
@@ -1301,7 +1337,7 @@ export default function SportsAdminPage() {
                       if (e.key === 'Enter') {
                         e.preventDefault()
                         setCommunityTopicSlug(
-                          communityTopicDraft.trim().toLowerCase()
+                          slugify(communityTopicDraft)
                         )
                       }
                     }}

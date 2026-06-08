@@ -1,5 +1,7 @@
 import { ENV } from 'common/envs/constants'
 import { liquidityTiers } from 'common/tier'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import { uniq } from 'lodash'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -512,7 +514,14 @@ export function buildMarketParams(
     sportsStartTimestamp: match.utcDate,
     sportsEventId: sportsEventId(match),
     sportsLeague: config.sportsLeague,
-    groupIds: [officialGroupId, ...additionalIds, ...(opts.extraGroupIds ?? [])],
+    // Dedup (extra tags may repeat a configured group, e.g. "soccer") and cap at
+    // the per-market topic limit — createMarketHelper rejects >MAX_GROUPS_PER_MARKET.
+    // Official + configured groups come first so they survive truncation.
+    groupIds: uniq([
+      officialGroupId,
+      ...additionalIds,
+      ...(opts.extraGroupIds ?? []),
+    ]).slice(0, MAX_GROUPS_PER_MARKET),
     liquidityTier: stageLiquidityForMatch(match, config, opts.liquidityTierOverrides),
   }
 }
