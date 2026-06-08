@@ -13,7 +13,7 @@ import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
 import { formatMoney } from 'common/util/format'
-import { DAY_MS, HOUR_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
+import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
 import { CPMMMultiContract } from 'common/contract'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
@@ -24,14 +24,7 @@ import { OrderBookPanel } from 'web/components/bet/order-book'
 import { getLimitBetReturns } from 'client-common/lib/bet'
 import { SportsMatch, MatchOutcome, SPORTS_COLORS } from './sports-match-card'
 
-const expirationOptions = [
-  { label: 'Never expires', value: 0 },
-  { label: 'Expires immediately', value: 1 },
-  { label: 'Expires in 1 hour', value: HOUR_MS },
-  { label: 'Expires in 1 day', value: DAY_MS },
-  { label: 'Expires in 1 week', value: WEEK_MS },
-  { label: 'Expires in 1 month', value: MONTH_MS },
-]
+const expirationOptions = EXPIRATION_OPTIONS.filter((o) => o.value !== -1)
 
 export function SportsBetPanel({
   match,
