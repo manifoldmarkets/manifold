@@ -34,7 +34,7 @@ export const creategroup = authEndpoint(async (req, auth) => {
   // Reserve the official Manifold Sports topic namespace. These groups are
   // created server-side (ensureOfficialGroup), never through this endpoint, so
   // only admins are allowed to create anything under the prefix here.
-  if (slugify(name).startsWith('ms-official') && !isAdminId(auth.uid)) {
+  if (/^ms-official(-|$)/.test(slugify(name)) && !isAdminId(auth.uid)) {
     throw new APIError(
       403,
       'Topics starting with "ms-official" are reserved for official Manifold Sports topics.'
