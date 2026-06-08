@@ -11,7 +11,9 @@ import {
   probColumn,
 } from 'web/components/contract/contract-table-col-formats'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { SelectMarkets } from 'web/components/contract-select-modal'
+import { DashboardAddContract } from 'web/components/dashboard/dashboard-add-contract'
+import { getContracts } from 'common/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
 import { Content, TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { Col } from 'web/components/layout/col'
@@ -64,8 +66,12 @@ export function DashboardMarketGrid({
   const [editMode, setEditMode] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [showAddPoll, setShowAddPoll] = useState(false)
-  const [showPollsSection, setShowPollsSection] = useState(false)
-  const [pollsExpanded, setPollsExpanded] = useState(false)
+  const [showPollsSection, setShowPollsSection] = useState(
+    initialContracts.some((c) => c.outcomeType === 'POLL')
+  )
+  const [pollsExpanded, setPollsExpanded] = useState(
+    initialContracts.some((c) => c.outcomeType === 'POLL')
+  )
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
   const [descriptionContent, setDescriptionContent] = useState<JSONContent | undefined>(undefined)
 
@@ -107,6 +113,10 @@ export function DashboardMarketGrid({
     if (contracts.find((c) => c.id === contract.id)) return
     setContracts((prev) => [...prev, contract])
     setSlugOrder((prev) => [...prev, contract.slug])
+    if (contract.outcomeType === 'POLL') {
+      setShowPollsSection(true)
+      setPollsExpanded(true)
+    }
   }
 
   function handleRemove(contract: Contract) {
@@ -356,13 +366,12 @@ export function DashboardMarketGrid({
       </Col>
 
       {showAdd && (
-        <Modal open setOpen={(o) => { if (!o) setShowAdd(false) }} size="md">
-          <Col className={clsx(MODAL_CLASS, 'gap-3')}>
-            <p className="text-ink-1000 text-base font-semibold">Add market to dashboard</p>
-            <SelectMarkets
-              submitLabel={(len) => `Add ${len} market${len !== 1 ? 's' : ''}`}
-              onSubmit={(selected) => {
-                selected.forEach(handleAdd)
+        <Modal open setOpen={(o) => { if (!o) setShowAdd(false) }} size="lg">
+          <Col className={clsx(MODAL_CLASS, 'flex h-[70vh] flex-col !items-stretch')}>
+            <DashboardAddContract
+              addQuestions={async (qs) => {
+                const fetched = await getContracts(db, qs.map((q) => q.slug), 'slug')
+                fetched.forEach(handleAdd)
                 setShowAdd(false)
               }}
             />
@@ -370,13 +379,12 @@ export function DashboardMarketGrid({
         </Modal>
       )}
       {showAddPoll && (
-        <Modal open setOpen={(o) => { if (!o) setShowAddPoll(false) }} size="md">
-          <Col className={clsx(MODAL_CLASS, 'gap-3')}>
-            <p className="text-ink-1000 text-base font-semibold">Add poll to dashboard</p>
-            <SelectMarkets
-              submitLabel={(len) => `Add ${len} poll${len !== 1 ? 's' : ''}`}
-              onSubmit={(selected) => {
-                selected.forEach(handleAdd)
+        <Modal open setOpen={(o) => { if (!o) setShowAddPoll(false) }} size="lg">
+          <Col className={clsx(MODAL_CLASS, 'flex h-[70vh] flex-col !items-stretch')}>
+            <DashboardAddContract
+              addQuestions={async (qs) => {
+                const fetched = await getContracts(db, qs.map((q) => q.slug), 'slug')
+                fetched.forEach(handleAdd)
                 setShowAddPoll(false)
               }}
             />
