@@ -21,6 +21,7 @@ import { Input } from 'web/components/widgets/input'
 import { ProbabilitySlider } from 'web/components/widgets/probability-input'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { OrderBookPanel } from 'web/components/bet/order-book'
+import { getLimitBetReturns } from 'client-common/lib/bet'
 import { SportsMatch, MatchOutcome, SPORTS_COLORS } from './sports-match-card'
 
 const expirationOptions = [
@@ -46,32 +47,39 @@ export function SportsBetPanel({
 
   useEffect(() => {
     if (!match.contractId) return
-    getContract(db, match.contractId).then(async (c) => {
-      if (!c || c.mechanism !== 'cpmm-multi-1') return
-      const answerMap = await getAnswersForContracts(db, [c.id])
-      const multi = c as CPMMMultiContract
-      multi.answers = answerMap[c.id] ?? multi.answers ?? []
-      setContract(multi)
-    })
+    let cancelled = false
+    getContract(db, match.contractId)
+      .then(async (c) => {
+        if (cancelled || !c || c.mechanism !== 'cpmm-multi-1') return
+        const answerMap = await getAnswersForContracts(db, [c.id])
+        if (cancelled) return
+        const multi = c as CPMMMultiContract
+        setContract({ ...multi, answers: answerMap[c.id] ?? multi.answers ?? [] })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
   }, [match.contractId])
 
-  const { unfilledBets } = useUnfilledBetsAndBalanceByUserId(
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     match.contractId ?? '',
     (params) => api('bets', params),
     (params) => api('users/by-id/balance', params),
     useIsPageVisible
   )
 
-  const [selected, setSelected] = useState<MatchOutcome>(
+  // The draw outcome isn't selectable on no-draw markets, so correct it up front.
+  const initialSelected: MatchOutcome =
     initialOutcome === 'draw' && match.hasDraw === false ? 'teamA' : initialOutcome
-  )
+  const [selected, setSelected] = useState<MatchOutcome>(initialSelected)
   const [betMode, setBetMode] = useState<'quick' | 'limit'>('quick')
   const [amount, setAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
-    initialOutcome === 'teamA'
+    initialSelected === 'teamA'
       ? match.teamA.prob
-      : initialOutcome === 'teamB'
+      : initialSelected === 'teamB'
       ? match.teamB.prob
       : match.draw.prob
   )
@@ -115,19 +123,40 @@ export function SportsBetPanel({
     },
   ]
 
-  const current = outcomes.find((o) => o.key === selected)!
+  const current = outcomes.find((o) => o.key === selected) ?? outcomes[0]
   const betAmount = amount ?? 0
-
-  const quickPayout = Math.round(betAmount * (100 / Math.max(current.prob, 1)))
-  const quickReturnPct = betAmount > 0 ? (((quickPayout - betAmount) / betAmount) * 100).toFixed(1) : '0'
-  const probAfterQuick = Math.min(current.prob + 1, 99)
-
   const limitProb = limitProbInt ?? current.prob
-  const limitMaxPayout = betAmount > 0 && limitProb > 0 ? Math.round((betAmount * 100) / limitProb) : 0
-  const limitReturnPct =
-    betAmount > 0 && limitProb > 0
-      ? (((limitMaxPayout - betAmount) / betAmount) * 100).toFixed(1)
-      : '0'
+
+  // Real CPMM preview — slippage- and arbitrage-aware, the same helper the
+  // standard bet panels use. Requires the loaded contract + selected answer;
+  // until then (or with no amount) we show placeholders instead of fake numbers.
+  const answerToBuy = contract?.answers.find((a) => a.id === current.answerId)
+  const betResult =
+    contract && answerToBuy && betAmount > 0
+      ? getLimitBetReturns(
+          'YES',
+          betAmount,
+          unfilledBets,
+          balanceByUserId,
+          contract,
+          { answers: contract.answers, answerToBuy },
+          betMode === 'limit' ? limitProb / 100 : undefined,
+          false
+        )
+      : undefined
+
+  const payout = betResult ? Math.round(betResult.currentPayout) : undefined
+  const returnPct = betResult ? (betResult.currentReturn * 100).toFixed(1) : undefined
+  const probBeforePct = betResult ? Math.round(betResult.prob * 100) : current.prob
+  const probAfterPct = betResult ? Math.round(betResult.probAfter * 100) : current.prob
+  const calcError = betResult?.calculationError
+
+  // Don't let the user try to bet on a market that's already resolved or past
+  // its trading window — the server would reject it; surface it up front.
+  const tradingClosed =
+    !!contract &&
+    (contract.isResolved ||
+      (!!contract.closeTime && contract.closeTime < Date.now()))
 
   const setLimitProbClamped = (val: number | undefined) =>
     setLimitProbInt(val === undefined ? undefined : Math.min(99, Math.max(1, Math.round(val))))
@@ -323,15 +352,25 @@ export function SportsBetPanel({
                 <Row className="items-baseline justify-between">
                   <span className="text-ink-600 text-sm">New probability</span>
                   <Row className="items-baseline gap-1.5">
-                    <span className="text-ink-1000 text-base font-semibold">{probAfterQuick}%</span>
-                    <span className="text-ink-400 text-sm">↑{probAfterQuick - current.prob}%</span>
+                    <span className="text-ink-1000 text-base font-semibold">
+                      {betResult ? `${probAfterPct}%` : '—'}
+                    </span>
+                    {betResult && (
+                      <span className="text-ink-400 text-sm">
+                        ↑{Math.max(0, probAfterPct - probBeforePct)}%
+                      </span>
+                    )}
                   </Row>
                 </Row>
                 <Row className="items-baseline justify-between">
                   <span className="text-ink-600 text-sm">To win</span>
                   <Row className="items-baseline gap-1.5">
-                    <span className="text-ink-1000 text-base font-semibold">Ṁ{quickPayout.toLocaleString()}</span>
-                    <span className="text-teal-500 text-sm">+{quickReturnPct}%</span>
+                    <span className="text-ink-1000 text-base font-semibold">
+                      {payout !== undefined ? `Ṁ${payout.toLocaleString()}` : '—'}
+                    </span>
+                    {returnPct !== undefined && (
+                      <span className="text-teal-500 text-sm">+{returnPct}%</span>
+                    )}
                   </Row>
                 </Row>
               </>
@@ -339,10 +378,17 @@ export function SportsBetPanel({
               <Row className="items-baseline justify-between">
                 <span className="text-ink-600 text-sm">Max payout</span>
                 <Row className="items-baseline gap-1.5">
-                  <span className="text-ink-1000 text-base font-semibold">Ṁ{limitMaxPayout.toLocaleString()}</span>
-                  <span className="text-teal-500 text-sm">+{limitReturnPct}%</span>
+                  <span className="text-ink-1000 text-base font-semibold">
+                    {payout !== undefined ? `Ṁ${payout.toLocaleString()}` : '—'}
+                  </span>
+                  {returnPct !== undefined && (
+                    <span className="text-teal-500 text-sm">+{returnPct}%</span>
+                  )}
                 </Row>
               </Row>
+            )}
+            {calcError && (
+              <span className="text-red-500 text-sm">{calcError}</span>
             )}
           </Col>
 
@@ -357,15 +403,26 @@ export function SportsBetPanel({
 
           <button
             onClick={handleBet}
-            disabled={isSubmitting || !betAmount || betAmount < 1 || !!error}
+            disabled={
+              isSubmitting ||
+              !betAmount ||
+              betAmount < 1 ||
+              !!error ||
+              !!calcError ||
+              tradingClosed
+            }
             className="w-full rounded-lg py-3 text-base font-semibold text-white transition-opacity disabled:opacity-50"
             style={{ backgroundColor: current.color }}
           >
-            {isSubmitting
+            {tradingClosed
+              ? 'Trading closed'
+              : isSubmitting
               ? 'Placing bet…'
               : user
               ? betMode === 'quick'
-                ? `Buy ${current.label} to win Ṁ${quickPayout.toLocaleString()}`
+                ? payout !== undefined
+                  ? `Buy ${current.label} to win Ṁ${payout.toLocaleString()}`
+                  : `Buy ${current.label}`
                 : `Buy ${current.label} · Ṁ${betAmount} at ${limitProb}%`
               : 'Sign in to bet'}
           </button>

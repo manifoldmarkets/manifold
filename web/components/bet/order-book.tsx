@@ -691,7 +691,12 @@ export function OrderBookPanel(props: {
       </div>
 
       {/* Order Tables */}
-      <div className="border-ink-200 divide-ink-200 grid grid-cols-2 divide-x">
+      <div
+        className={clsx(
+          'border-ink-200 divide-ink-200 grid divide-x',
+          showYes !== showNo ? 'grid-cols-1' : 'grid-cols-2'
+        )}
+      >
         {showYes && (
           <div className={clsx('bg-canvas-0', compact ? 'p-2' : 'p-4')}>
             <OrderBookSide
