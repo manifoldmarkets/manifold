@@ -413,7 +413,6 @@ export function SportsBetPanel({
               contract={contract}
               limitBets={unfilledBets.filter((b) => b.answerId === current.answerId)}
               answer={contract.answers.find((a) => a.id === current.answerId)}
-              compact
             />
           )}
 

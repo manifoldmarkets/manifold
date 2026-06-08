@@ -469,9 +469,8 @@ export function OrderBookPanel(props: {
     }
   }
   onOrderClick?: (data: OrderClickData) => void
-  compact?: boolean
 }) {
-  const { contract, answer, showTitle, pseudonym, onOrderClick, compact } = props
+  const { contract, answer, showTitle, pseudonym, onOrderClick } = props
   const limitBets = props.limitBets.filter(
     (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
   )
@@ -490,24 +489,18 @@ export function OrderBookPanel(props: {
   const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  // In compact mode, hide sides with no orders
-  const showYes = !compact || yesBets.length > 0
-  const showNo = !compact || noBets.length > 0
-
   if (limitBets.length === 0) return <></>
 
   return (
     <Col className="text-ink-900 bg-canvas-0 border-ink-200 overflow-hidden border-y">
       {/* Header */}
-      <div className={clsx('border-ink-200 border-b', compact ? 'px-3 py-2' : 'px-5 py-4')}>
+      <div className="border-ink-200 border-b px-5 py-4">
         <Row className="items-center gap-2">
-          <h2 className={clsx('font-semibold', compact ? 'text-sm' : 'text-lg')}>Order Book</h2>
-          {!compact && (
-            <InfoTooltip
-              text="Active limit orders from traders waiting to buy at specific prices"
-              className="text-ink-400"
-            />
-          )}
+          <h2 className="text-lg font-semibold">Order Book</h2>
+          <InfoTooltip
+            text="Active limit orders from traders waiting to buy at specific prices"
+            className="text-ink-400"
+          />
         </Row>
         {showTitle && isCPMMMulti && answer && (
           <p className="text-ink-600 mt-1 text-sm">{answer.text}</p>
@@ -515,34 +508,25 @@ export function OrderBookPanel(props: {
       </div>
 
       {/* Order Tables */}
-      <div
-        className={clsx(
-          'border-ink-200 divide-ink-200 grid divide-x',
-          showYes !== showNo ? 'grid-cols-1' : 'grid-cols-2'
-        )}
-      >
-        {showYes && (
-          <div className={clsx('bg-canvas-0', compact ? 'p-2' : 'p-4')}>
-            <OrderBookSide
-              limitBets={yesBets}
-              contract={contract}
-              side="YES"
-              pseudonym={pseudonym}
-              onOrderClick={onOrderClick}
-            />
-          </div>
-        )}
-        {showNo && (
-          <div className={clsx('bg-canvas-0', compact ? 'p-2' : 'p-4')}>
-            <OrderBookSide
-              limitBets={noBets}
-              contract={contract}
-              side="NO"
-              pseudonym={pseudonym}
-              onOrderClick={onOrderClick}
-            />
-          </div>
-        )}
+      <div className="border-ink-200 divide-ink-200 grid grid-cols-2 divide-x">
+        <div className="bg-canvas-0 p-4">
+          <OrderBookSide
+            limitBets={yesBets}
+            contract={contract}
+            side="YES"
+            pseudonym={pseudonym}
+            onOrderClick={onOrderClick}
+          />
+        </div>
+        <div className="bg-canvas-0 p-4">
+          <OrderBookSide
+            limitBets={noBets}
+            contract={contract}
+            side="NO"
+            pseudonym={pseudonym}
+            onOrderClick={onOrderClick}
+          />
+        </div>
       </div>
 
       {/* Depth Chart */}
