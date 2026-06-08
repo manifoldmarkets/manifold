@@ -53,7 +53,11 @@ import { formatJustTime } from 'client-common/lib/time'
 import toast from 'react-hot-toast'
 
 import { SortKey, sortContracts } from 'web/lib/sort-contracts'
-import { Content, TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import {
+  Content,
+  TextEditor,
+  useTextEditor,
+} from 'web/components/widgets/editor'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -214,7 +218,6 @@ function groupByDate(matches: SportsMatch[]): DateSection[] {
     matches: ms,
   }))
 }
-
 
 // ─── Add Market Modal ─────────────────────────────────────────────────────────
 
@@ -827,7 +830,9 @@ function OfficialDescEditor({
           Cancel
         </button>
         <button
-          onClick={() => { if (editor) onSave(editor.getJSON()) }}
+          onClick={() => {
+            if (editor) onSave(editor.getJSON())
+          }}
           disabled={saving || !editor}
           className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
@@ -845,7 +850,8 @@ const OFFICIAL_DESC_ITEM_ID = '__official_description__'
 
 function descFromDashboard(d: Dashboard): JSONContent | undefined {
   const item = d.items.find(
-    (i): i is DashboardTextItem => i.type === 'text' && i.id === OFFICIAL_DESC_ITEM_ID
+    (i): i is DashboardTextItem =>
+      i.type === 'text' && i.id === OFFICIAL_DESC_ITEM_ID
   )
   return item?.content as JSONContent | undefined
 }
@@ -984,13 +990,23 @@ export function SportsDashboardPage({
     setSavingDesc(true)
     try {
       const otherItems = descDashboard.items.filter(
-        (i) => !(i.type === 'text' && (i as DashboardTextItem).id === OFFICIAL_DESC_ITEM_ID)
+        (i) =>
+          !(
+            i.type === 'text' &&
+            (i as DashboardTextItem).id === OFFICIAL_DESC_ITEM_ID
+          )
       )
       const newItems: DashboardItem[] = [
         ...otherItems,
         ...(JSONEmpty(content)
           ? []
-          : [{ type: 'text' as const, id: OFFICIAL_DESC_ITEM_ID, content } as DashboardTextItem]),
+          : [
+              {
+                type: 'text' as const,
+                id: OFFICIAL_DESC_ITEM_ID,
+                content,
+              } as DashboardTextItem,
+            ]),
       ]
       await updateDashboard({
         dashboardId: descDashboard.id,
@@ -1073,7 +1089,8 @@ export function SportsDashboardPage({
         ) : (
           <>
             {/* Official description — visible to all, editable by admins */}
-            {((!!officialDescription && !JSONEmpty(officialDescription)) || (isAdmin && descDashboard)) && (
+            {((!!officialDescription && !JSONEmpty(officialDescription)) ||
+              (isAdmin && descDashboard)) && (
               <Col className="-mt-4 gap-2">
                 {!editingDesc ? (
                   <Row className="items-start gap-3">
@@ -1087,13 +1104,17 @@ export function SportsDashboardPage({
                         onClick={() => setEditingDesc(true)}
                         className="text-ink-400 hover:text-ink-600 shrink-0 text-xs transition-colors"
                       >
-                        {officialDescription && !JSONEmpty(officialDescription) ? 'edit' : '+ add description'}
+                        {officialDescription && !JSONEmpty(officialDescription)
+                          ? 'edit'
+                          : '+ add description'}
                       </button>
                     )}
                   </Row>
                 ) : (
                   <OfficialDescEditor
-                    initialContent={officialDescription as JSONContent | undefined}
+                    initialContent={
+                      officialDescription as JSONContent | undefined
+                    }
                     onSave={handleSaveDesc}
                     onCancel={() => setEditingDesc(false)}
                     saving={savingDesc}
