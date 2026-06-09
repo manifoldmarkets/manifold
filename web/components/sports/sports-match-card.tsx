@@ -232,7 +232,9 @@ function OutcomeRow({
 
 function useMyMatchMetrics(contractId: string | undefined) {
   const user = useUser()
-  const [metrics, setMetrics] = useState<ContractMetric[] | undefined>(undefined)
+  const [metrics, setMetrics] = useState<ContractMetric[] | undefined>(
+    undefined
+  )
 
   useEffect(() => {
     if (!user?.id || !contractId) {
@@ -320,30 +322,70 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const winnerColor = resolved ? vibrantForOutcome(match.winner) : undefined
   const marketHref = match.marketUrl ?? '#'
   const myLimitBets = (allLimitBets ?? []).filter((b) => b.userId === user?.id)
-  const teamAPos = !resolved && myMetrics?.find((m) => m.answerId === match.teamAAnswerId && m.hasShares)
-  const teamBPos = !resolved && myMetrics?.find((m) => m.answerId === match.teamBAnswerId && m.hasShares)
-  const drawPos = !resolved && myMetrics?.find((m) => m.answerId === match.drawAnswerId && m.hasShares)
+  const teamAPos =
+    !resolved &&
+    myMetrics?.find((m) => m.answerId === match.teamAAnswerId && m.hasShares)
+  const teamBPos =
+    !resolved &&
+    myMetrics?.find((m) => m.answerId === match.teamBAnswerId && m.hasShares)
+  const drawPos =
+    !resolved &&
+    myMetrics?.find((m) => m.answerId === match.drawAnswerId && m.hasShares)
   const positions: PositionsData['positions'] = [
-    ...(teamAPos ? [{ name: match.teamA.name, color: SPORTS_COLORS.teamA, amount: teamAPos.invested, profit: teamAPos.profit }] : []),
-    ...(teamBPos ? [{ name: match.teamB.name, color: SPORTS_COLORS.teamB, amount: teamBPos.invested, profit: teamBPos.profit }] : []),
-    ...(drawPos ? [{ name: 'Draw', color: SPORTS_COLORS.draw, amount: drawPos.invested, profit: drawPos.profit }] : []),
+    ...(teamAPos
+      ? [
+          {
+            name: match.teamA.name,
+            color: SPORTS_COLORS.teamA,
+            amount: teamAPos.invested,
+            profit: teamAPos.profit,
+          },
+        ]
+      : []),
+    ...(teamBPos
+      ? [
+          {
+            name: match.teamB.name,
+            color: SPORTS_COLORS.teamB,
+            amount: teamBPos.invested,
+            profit: teamBPos.profit,
+          },
+        ]
+      : []),
+    ...(drawPos
+      ? [
+          {
+            name: 'Draw',
+            color: SPORTS_COLORS.draw,
+            amount: drawPos.invested,
+            profit: drawPos.profit,
+          },
+        ]
+      : []),
   ]
-  const limitOrders: PositionsData['limitOrders'] = !resolved && user
-    ? myLimitBets
-        .filter((b) => !!b.answerId)
-        .map((b) => {
-          const name =
-            b.answerId === match.teamAAnswerId
-              ? match.teamA.name
-              : b.answerId === match.teamBAnswerId
-              ? match.teamB.name
-              : b.answerId === match.drawAnswerId
-              ? 'Draw'
+  const limitOrders: PositionsData['limitOrders'] =
+    !resolved && user
+      ? myLimitBets
+          .filter((b) => !!b.answerId)
+          .map((b) => {
+            const name =
+              b.answerId === match.teamAAnswerId
+                ? match.teamA.name
+                : b.answerId === match.teamBAnswerId
+                ? match.teamB.name
+                : b.answerId === match.drawAnswerId
+                ? 'Draw'
+                : null
+            return name
+              ? {
+                  name,
+                  prob: Math.round(b.limitProb * 100),
+                  amount: b.orderAmount - b.amount,
+                }
               : null
-          return name ? { name, prob: Math.round(b.limitProb * 100), amount: b.orderAmount - b.amount } : null
-        })
-        .filter((o): o is NonNullable<typeof o> => o !== null)
-    : []
+          })
+          .filter((o): o is NonNullable<typeof o> => o !== null)
+      : []
   const userData: PositionsData = { positions, limitOrders }
   const hasPositions = userData.positions.length > 0
   const hasOrders = userData.limitOrders.length > 0
@@ -483,7 +525,9 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             teamColor={SPORTS_COLORS.teamA}
             winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
             onClick={!resolved ? () => setBetOutcome('teamA') : undefined}
-            hasPosition={userData.positions.some((p) => p.name === match.teamA.name)}
+            hasPosition={userData.positions.some(
+              (p) => p.name === match.teamA.name
+            )}
           />
           <OutcomeRow
             flag={match.teamB.flag}
@@ -495,7 +539,9 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             teamColor={SPORTS_COLORS.teamB}
             winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
             onClick={!resolved ? () => setBetOutcome('teamB') : undefined}
-            hasPosition={userData.positions.some((p) => p.name === match.teamB.name)}
+            hasPosition={userData.positions.some(
+              (p) => p.name === match.teamB.name
+            )}
           />
           {(match.hasDraw ?? true) && (
             <OutcomeRow
@@ -529,8 +575,12 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
                 href={marketHref}
                 className="text-ink-500 hover:text-ink-700 flex items-center gap-1.5 text-[11px] transition-colors"
               >
-                {hasPositions && <span className="bg-ink-400 h-2 w-2 rounded-full" />}
-                {hasOrders && <span className="border-ink-600 h-2 w-2 rounded-full border" />}
+                {hasPositions && (
+                  <span className="bg-ink-400 h-2 w-2 rounded-full" />
+                )}
+                {hasOrders && (
+                  <span className="border-ink-600 h-2 w-2 rounded-full border" />
+                )}
                 <span>Positions</span>
               </Link>
             </Tooltip>
