@@ -120,7 +120,7 @@ function OutcomeRow({
     <div
       onClick={!resolved ? onClick : undefined}
       className={clsx(
-        'relative overflow-hidden flex items-center gap-2 rounded-lg border-2 px-2 py-1.5 transition-colors',
+        'flex items-center gap-2 rounded-lg border-2 px-2 py-1.5 transition-colors',
         !resolved && 'cursor-pointer',
         !resolved && !isWinner && 'hover:bg-canvas-100'
       )}
@@ -131,15 +131,6 @@ function OutcomeRow({
           isWinner && winnerColor ? `${winnerColor}1F` : undefined,
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-y-0 left-0 transition-[width] duration-500"
-        style={{
-          width: `${prob}%`,
-          backgroundColor: isWinner && winnerColor ? winnerColor : teamColor,
-          opacity: 0.5,
-        }}
-      />
-      <div className="relative z-10 flex w-full items-center gap-2">
       {isDraw ? (
         <div className="border-ink-300 bg-canvas-100 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border">
           <span
@@ -195,7 +186,6 @@ function OutcomeRow({
           {prob}%
         </span>
       )}
-      </div>
     </div>
   )
 }
@@ -310,7 +300,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         {match.question && (
           <Link
             href={marketHref}
-            className="text-ink-900 hover:text-primary-600 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors"
+            className="text-ink-700 hover:text-primary-600 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors"
           >
             {match.question}
           </Link>
