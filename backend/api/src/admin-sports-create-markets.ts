@@ -90,8 +90,8 @@ export const adminSportsCreateMarkets: APIHandler<
         pg
       )
 
-  // Step 2: fetch scheduled matches (status=SCHEDULED populates team names correctly)
-  const allMatches = await fetchAllCompetitionMatches(config, apiKey, { status: 'SCHEDULED' })
+  // Step 2: fetch upcoming matches (SCHEDULED = unconfirmed time, TIMED = confirmed kickoff)
+  const allMatches = await fetchAllCompetitionMatches(config, apiKey)
   const matchById = new Map(allMatches.map((m) => [m.id, m]))
 
   // Step 3: build auth for createMarketHelper (only uid matters)
