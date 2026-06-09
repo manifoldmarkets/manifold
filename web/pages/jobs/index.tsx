@@ -1,90 +1,208 @@
-import Link from 'next/link'
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { JOBS, Job } from 'web/lib/jobs-data'
 
-function RemoteBadge({ remote }: { remote: Job['remote'] }) {
-  const label =
-    remote === 'remote-first'
-      ? 'Remote-first'
-      : remote === 'remote'
-      ? 'Remote'
-      : remote === 'hybrid'
-      ? 'Hybrid'
-      : remote === 'on-site'
-      ? 'On-site'
-      : 'Flexible'
+// All job data lives here. To add, edit, or remove a listing, change this array
+// and open a PR — there is intentionally no database or employer-facing editor.
+// Employers email us to list a role or tell us when one is filled.
+type Job = {
+  title: string
+  location: string
+  comp: string
+  stage: string
+  reportsTo?: string
+  blurb: string
+  intro: string
+  whatYoullDo: string[]
+  whatWereLookingFor: string[]
+  contactEmail: string
+}
+
+const JOBS: Job[] = [
+  {
+    title: 'Backend Engineer',
+    location: 'Remote-first',
+    comp: 'Base + equity',
+    stage: 'Pre-launch',
+    blurb:
+      'Build the high-performance backend infra that turns onchain contracts into a real trading platform.',
+    intro:
+      'Build high performance exchange infra. Most of your work is backend: the ' +
+      'services, pipelines, and infrastructure that turn onchain contracts into a ' +
+      "real trading platform, but you'll reach across the stack wherever the product " +
+      'needs you.',
+    whatYoullDo: [
+      'Build and operate the backend services behind the exchange: APIs, market data, order/position state, and the systems that sit between the protocol and the UI',
+      'Own key exchange infrastructure: data pipelines from oracles and price feeds, indexing onchain events, monitoring, and deploys',
+      'Take on the broad platform tasks a small team generates — internal tooling, integrations, performance, and reliability',
+      'Help set engineering practices and own features end to end, from design through production',
+    ],
+    whatWereLookingFor: [
+      'A strong generalist engineer with solid backend chops — building reliable services and data systems in production',
+      'Comfortable across the stack and happy to context-switch; you reach for the right tool rather than the familiar one',
+      "Some Solidity or EVM exposure is a real plus — enough to read contracts and contribute, even if it isn't your core",
+      'Bonus: experience with trading systems, real-time data, or crypto infra',
+    ],
+    contactEmail: 'dev@mnx.fi',
+  },
+  {
+    title: 'Head of Growth',
+    location: 'Remote-first',
+    comp: 'Base + equity',
+    stage: 'Pre-launch',
+    reportsTo: 'Founders',
+    blurb:
+      'Own the MNX narrative end to end — a 0→1 brand and growth seat reporting directly to the founders.',
+    intro:
+      'Early stage growth is storytelling. You own the MNX narrative end to end. ' +
+      "You'll speak fluently to AI enthusiasts, crypto-natives, and institutional " +
+      'trading desks alike, build the community around our markets. This is a 0→1 ' +
+      'brand and growth seat reporting directly to the founders.',
+    whatYoullDo: [
+      'Own messaging, brand voice, and the public narrative across X, long-form writing, podcasts, and press',
+      'Manage contractors to produce high quality content',
+      'Coordinate ecosystem partnerships',
+      'Design the acquisition and activation funnel: who we reach, how they land, and what gets them placing real size',
+      "Set up the analytics to know what's actually working, and kill what isn't",
+    ],
+    whatWereLookingFor: [
+      'A high agency generalist with excellent communication skills',
+      "Experience building an audience, whether that's for a company, event, or personal brand",
+      'Fluency in some subset of finance, AI, and crypto',
+      'Comfort with ambiguity and operating in a fast-pace startup environment',
+      'Bonus: existing audience or relationships across crypto-trading and AI communities',
+    ],
+    contactEmail: 'growth@mnx.fi',
+  },
+  {
+    title: 'Quantitative Trader',
+    location: 'Remote-first',
+    comp: 'Performance-based',
+    stage: 'Pre-launch',
+    blurb:
+      'Run the liquidity vault and make markets across novel, illiquid instruments — high-ownership and performance-based.',
+    intro:
+      "As part of the trading team, you'll help run the liquidity vault and make " +
+      'markets across our full market catalog, from private-lab valuations, H100 ' +
+      "prices, equity perps, etc. You'll set quotes, manage inventory and funding, " +
+      'and keep the book deep enough for serious size. Much of this is novel and ' +
+      "illiquid; you'll be pricing instruments that have never had a market before. " +
+      'This is a high-ownership seat at the center of how the exchange actually ' +
+      'trades with a heavily performance-based comp structure.',
+    whatYoullDo: [
+      'Manage the protocol liquidity vault',
+      'Make markets across the catalog: quote, hedge, and manage funding rates on perps and event markets',
+      'Build pricing and risk models for thin, novel underlyings where no clean reference market exists',
+      'Own risk: position limits, exposure, liquidations, and the behavior of the book under stress',
+      'Partner with engineering on vault mechanics, oracle inputs, and settlement; with growth on which markets to list next',
+    ],
+    whatWereLookingFor: [
+      'Market-making or quant-trading experience: crypto perps, TradFi derivatives, or both',
+      'Comfort pricing illiquid and unusual instruments, and sizing risk under genuine uncertainty',
+      'Sharp risk discipline and a calm hand when markets move',
+      'Bonus: onchain trading experience, automated MM systems, or a research background in derivatives pricing',
+    ],
+    contactEmail: 'gamma@mnx.fi',
+  },
+]
+
+function MetaField({ label, value }: { label: string; value: string }) {
   return (
-    <span className="text-ink-500 font-mono text-xs uppercase tracking-wider">{label}</span>
+    <div className="flex flex-row items-baseline gap-3 sm:flex-col sm:items-start sm:gap-0">
+      <span className="text-ink-400 w-20 shrink-0 font-mono text-[10px] uppercase tracking-widest sm:w-auto">
+        {label}
+      </span>
+      <span className="text-ink-700 text-sm font-medium">{value}</span>
+    </div>
   )
 }
 
 function JobCard({ job }: { job: Job }) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <Link href={`/jobs/${job.slug}`} className="group block">
-      <div className="border-ink-200 bg-canvas-0 hover:border-primary-400 rounded-lg border p-6 transition-colors">
-        <Row className="mb-3 items-start justify-between gap-4">
-          <Col className="gap-0.5">
-            <span className="text-ink-500 font-mono text-xs uppercase tracking-wider">
-              {job.company}
-            </span>
-            <h2 className="text-ink-1000 text-xl font-semibold">{job.title}</h2>
-          </Col>
-          <Row className="shrink-0 items-center gap-2">
-            <span className="text-ink-500 font-mono text-xs uppercase tracking-wider">
-              Full-time
-            </span>
-            <span className="text-ink-300">·</span>
-            <RemoteBadge remote={job.remote} />
-          </Row>
-        </Row>
+    <div className="border-ink-200 bg-canvas-0 rounded-lg border overflow-hidden transition-shadow hover:shadow-sm">
+      {/* Card header — always visible */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full px-6 py-5 text-left"
+        aria-expanded={open}
+      >
+        <Col className="gap-2">
+          <h2 className="text-ink-1000 text-lg font-bold sm:text-xl md:text-2xl">
+            {job.title}
+          </h2>
+          <p className="text-ink-600 text-sm leading-relaxed">{job.blurb}</p>
 
-        <p className="text-ink-600 mb-4 text-sm leading-relaxed">{job.companyTagline}</p>
+          {/* Compact vertical stack on mobile; horizontal spread on desktop.
+              Toggle drops below on mobile, inline bottom-right on sm+. */}
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-8">
+              <MetaField label="Location" value={job.location} />
+              <MetaField label="Comp" value={job.comp} />
+              <MetaField label="Stage" value={job.stage} />
+              {job.reportsTo && <MetaField label="Reports to" value={job.reportsTo} />}
+            </div>
 
-        <Row className="mb-4 flex-wrap gap-1.5">
-          {job.tags.map((tag) => (
-            <span
-              key={tag}
-              className="border-ink-200 text-ink-600 rounded-full border px-2.5 py-0.5 font-mono text-xs"
-            >
-              {tag}
-            </span>
-          ))}
-        </Row>
-
-        <Row className="items-center gap-6">
-          <Col className="gap-0">
-            <span className="text-ink-400 font-mono text-xs uppercase tracking-wider">Comp</span>
-            <span className="text-ink-700 text-sm font-medium">{job.comp}</span>
-          </Col>
-          <Col className="gap-0">
-            <span className="text-ink-400 font-mono text-xs uppercase tracking-wider">Stage</span>
-            <span className="text-ink-700 text-sm font-medium">{job.stage}</span>
-          </Col>
-          {job.reportsTo && (
-            <Col className="gap-0">
-              <span className="text-ink-400 font-mono text-xs uppercase tracking-wider">
-                Reports to
-              </span>
-              <span className="text-ink-700 text-sm font-medium">{job.reportsTo}</span>
-            </Col>
-          )}
-          {job.stack && (
-            <Col className="gap-0">
-              <span className="text-ink-400 font-mono text-xs uppercase tracking-wider">Stack</span>
-              <span className="text-ink-700 text-sm font-medium">{job.stack}</span>
-            </Col>
-          )}
-          <div className="ml-auto">
-            <span className="text-primary-600 group-hover:text-primary-700 font-mono text-sm">
-              View role →
+            <span className="text-primary-600 shrink-0 self-end font-mono text-sm font-medium">
+              {open ? 'Hide ↑' : 'Show role ↓'}
             </span>
           </div>
-        </Row>
-      </div>
-    </Link>
+        </Col>
+      </button>
+
+      {/* Expandable body */}
+      {open && (
+        <div className="border-ink-100 border-t px-6 pb-6 pt-5">
+          <p className="text-ink-700 mb-6 text-sm leading-relaxed">{job.intro}</p>
+
+          <div className="mb-5">
+            <span className="text-ink-400 mb-3 block font-mono text-xs uppercase tracking-widest">
+              What you'll do
+            </span>
+            <ul className="flex flex-col gap-2">
+              {job.whatYoullDo.map((item, i) => (
+                <li key={i} className="flex gap-2.5 text-sm text-ink-700 leading-relaxed">
+                  <span className="text-ink-300 shrink-0 mt-0.5">·</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mb-6">
+            <span className="text-ink-400 mb-3 block font-mono text-xs uppercase tracking-widest">
+              What we're looking for
+            </span>
+            <ul className="flex flex-col gap-2">
+              {job.whatWereLookingFor.map((item, i) => (
+                <li key={i} className="flex gap-2.5 text-sm text-ink-700 leading-relaxed">
+                  <span className="text-ink-300 shrink-0 mt-0.5">·</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <Row className="items-center justify-between">
+            <button
+              onClick={() => setOpen(false)}
+              className="text-primary-600 font-mono text-sm font-medium"
+            >
+              Hide ↑
+            </button>
+            <a
+              href={`mailto:${job.contactEmail}`}
+              className="bg-primary-600 hover:bg-primary-700 rounded-md px-5 py-2 font-mono text-sm text-white transition-colors"
+            >
+              Apply →
+            </a>
+          </Row>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -92,35 +210,36 @@ export default function JobsPage() {
   return (
     <Page trackPageView="/jobs" className="!col-span-7">
       <SEO
-        title="Manifold Jobs"
-        description="Jobs in trading, AI, and fintech — curated for people who think in probabilities."
+        title="Job Board"
+        description="Curated jobs by employers who value forecasting."
         url="/jobs"
       />
       <Col className="mx-auto w-full max-w-3xl gap-8 p-4 py-8">
         <Col className="gap-2">
-          <Row className="items-center gap-2">
-            <span className="bg-primary-500 h-2 w-2 rounded-full" />
-            <span className="text-primary-600 font-mono text-sm font-medium uppercase tracking-widest">
-              Manifold Jobs
-            </span>
-          </Row>
           <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
-            Roles worth thinking about
+            Job Board
           </h1>
           <p className="text-ink-500 max-w-xl text-base leading-relaxed">
-            Curated jobs in trading, AI, and fintech — for people who think in probabilities.
-            Every listing includes honest trade-offs, not just requirements.
+            Curated jobs by employers who value forecasting
           </p>
         </Col>
 
         <Col className="gap-3">
-          <Row className="items-center justify-between">
-            <span className="text-ink-400 font-mono text-xs uppercase tracking-wider">
+          <Col className="gap-1">
+            <h2 className="text-ink-1000 text-xl font-semibold">
+              MNX - The AI Exchange
+            </h2>
+            <p className="text-ink-500 text-sm leading-relaxed">
+              MNX is building the financial architecture for the AI era. We are a
+              small, highly talented, and maximally AI-pilled team based in San
+              Francisco.
+            </p>
+            <span className="text-ink-400 mt-1 font-mono text-xs uppercase tracking-wider">
               {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
             </span>
-          </Row>
+          </Col>
           {JOBS.map((job) => (
-            <JobCard key={job.slug} job={job} />
+            <JobCard key={job.title} job={job} />
           ))}
         </Col>
 
