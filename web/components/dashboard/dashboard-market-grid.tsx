@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Extension, JSONContent } from '@tiptap/core'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Contract } from 'common/contract'
 import { SortKey, sortContracts } from 'web/lib/sort-contracts'
 import { DashboardMarketCard } from 'web/components/dashboard/dashboard-market-card'
@@ -71,7 +72,7 @@ export function DashboardMarketGrid({
   const [showPollsSection, setShowPollsSection] = useState(
     initialContracts.some((c) => c.outcomeType === 'POLL')
   )
-  const [pollsExpanded, setPollsExpanded] = useState(false)
+  const [pollsExpanded, setPollsExpanded] = usePersistentLocalState(false, 'dashboard-polls-expanded')
   const [pollsShowMore, setPollsShowMore] = useState(false)
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
   const [descriptionContent, setDescriptionContent] = useState<JSONContent | undefined>(undefined)

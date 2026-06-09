@@ -125,7 +125,12 @@ export function DashboardMarketCard({
           </Row>
         </UserHovercard>
         {status && (
-          <span className="text-ink-400 shrink-0 text-[11px]">{status}</span>
+          <span className={clsx(
+            'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium text-white',
+            status === 'Resolved' ? 'bg-ink-400' : 'bg-amber-500'
+          )}>
+            {status}
+          </span>
         )}
         <span className={clsx('shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium', meta.badgeClass)}>
           {meta.label}

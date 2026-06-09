@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { JSONContent } from '@tiptap/core'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -223,7 +224,7 @@ function CommunityTab({
   const [showAdd, setShowAdd] = useState(false)
   const [pastVisible, setPastVisible] = useState(true)
   const [editMode, setEditMode] = useState(false)
-  const [pollsExpanded, setPollsExpanded] = useState(false)
+  const [pollsExpanded, setPollsExpanded] = usePersistentLocalState(false, 'sports-polls-expanded')
 
   async function fetchDashboard() {
     try {
