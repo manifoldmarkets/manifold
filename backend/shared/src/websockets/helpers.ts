@@ -8,6 +8,10 @@ import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { User } from 'common/user'
 import { groupBy } from 'lodash'
 import { broadcast, broadcastMulti } from './server'
+import {
+  COALESCE_BET_BROADCASTS,
+  coalesceBetsToTopics,
+} from './broadcast-coalescer'
 
 export function broadcastUpdatedPrivateUser(userId: string) {
   // don't send private user info because it's private and anyone can listen
@@ -23,11 +27,18 @@ export function broadcastNewBets(
   visibility: Visibility,
   bets: Bet[]
 ) {
-  const payload = { bets }
-  broadcastMulti([`contract/${contractId}/new-bet`], payload)
+  if (COALESCE_BET_BROADCASTS) {
+    coalesceBetsToTopics([`contract/${contractId}/new-bet`], bets)
+    if (visibility === 'public') {
+      coalesceBetsToTopics(['global', 'global/new-bet'], bets)
+    }
+  } else {
+    const payload = { bets }
+    broadcastMulti([`contract/${contractId}/new-bet`], payload)
 
-  if (visibility === 'public') {
-    broadcastMulti(['global', 'global/new-bet'], payload)
+    if (visibility === 'public') {
+      broadcastMulti(['global', 'global/new-bet'], payload)
+    }
   }
 
   const newOrders = bets.filter((b) => b.limitProb && !b.isFilled) as LimitBet[]
