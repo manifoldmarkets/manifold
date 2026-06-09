@@ -169,6 +169,8 @@ export default function SweepstakesPage() {
   const minManaInvested = data?.minManaInvested ?? 1000
   const totalManaSpent = data?.totalManaSpent ?? 0
   const participantCount = data?.participantCount ?? userStats.length
+  const userVoidedTickets = data?.userVoidedTickets ?? 0
+  const userVoidedManaRefunded = data?.userVoidedManaRefunded ?? 0
 
   // Calculate time remaining
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -561,6 +563,26 @@ export default function SweepstakesPage() {
                 Verify Now
               </Button>
             </Row>
+          </div>
+        )}
+
+        {/* Admin voided this user's entries (and refunded their mana). Explain
+            the dropped entry count rather than silently removing them. */}
+        {userVoidedTickets > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="font-semibold text-amber-900 dark:text-amber-200">
+              {Math.round(userVoidedTickets).toLocaleString()} of your entries
+              in this drawing were voided.
+            </p>
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              {userVoidedManaRefunded > 0 && (
+                <>
+                  {formatMoney(userVoidedManaRefunded)} was refunded to your
+                  balance.{' '}
+                </>
+              )}
+              These entries are null and void and can&apos;t win.
+            </p>
           </div>
         )}
 

@@ -3561,6 +3561,10 @@ export const API = (_apiTypeCheck = {
       userTotalManaInvested?: number
       meetsInvestmentRequirement?: boolean
       minManaInvested?: number
+      // Set when an admin voided this user's entries in this drawing (and
+      // refunded their mana). Lets the page explain the dropped entry count.
+      userVoidedTickets?: number
+      userVoidedManaRefunded?: number
     },
   },
   'get-sweepstakes-list': {
