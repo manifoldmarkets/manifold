@@ -34,6 +34,10 @@ import {
   PositionsHovercard,
   PositionsData,
 } from 'web/components/contract/positions-hovercard'
+import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useUnfilledBets } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 type MarketMeta = {
   label: string
@@ -92,67 +96,6 @@ function statusLabel(contract: Contract): string | null {
   return null
 }
 
-// ── DEV MOCK: cycles cards through position states ────────────────────────────
-function getMockUserData(contractId: string, outcomeType: string): PositionsData {
-  const hash = contractId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
-    switch (hash % 4) {
-      case 0: return { positions: [], limitOrders: [] }
-      case 1: return {
-        positions: [{ name: 'Yes', amount: 200, profit: 45 }],
-        limitOrders: [],
-      }
-      case 2: return {
-        positions: [{ name: 'No', amount: 150, profit: -20 }],
-        limitOrders: [{ name: 'Yes', prob: 40, amount: 100 }],
-      }
-      default: return {
-        positions: [{ name: 'Yes', amount: 300, profit: 67 }],
-        limitOrders: [{ name: 'No', prob: 60, amount: 200 }],
-      }
-    }
-  }
-  if (outcomeType === 'MULTIPLE_CHOICE') {
-    switch (hash % 4) {
-      case 0: return { positions: [], limitOrders: [] }
-      case 1: return {
-        positions: [{ name: 'Answer 1', amount: 150, profit: 23 }],
-        limitOrders: [],
-      }
-      case 2: return {
-        positions: [
-          { name: 'Answer 1', amount: 150, profit: 23 },
-          { name: 'Answer 2', amount: 80, profit: -12 },
-        ],
-        limitOrders: [],
-      }
-      default: return {
-        positions: [{ name: 'Answer 1', amount: 150, profit: 23 }],
-        limitOrders: [{ name: 'Answer 2', prob: 35, amount: 100 }],
-      }
-    }
-  }
-  if (
-    outcomeType === 'NUMBER' ||
-    outcomeType === 'MULTI_NUMERIC' ||
-    outcomeType === 'DATE'
-  ) {
-    switch (hash % 2) {
-      case 0: return {
-        positions: [],
-        limitOrders: [],
-        numericSummary: { total: 350, buckets: 8, profit: 67 },
-      }
-      default: return {
-        positions: [],
-        limitOrders: [],
-        numericSummary: { total: 120, buckets: 3, profit: -22, orders: { total: 200, count: 2 } },
-      }
-    }
-  }
-  return { positions: [], limitOrders: [] }
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function DashboardMarketCard({
   contract: initialContract,
@@ -163,6 +106,13 @@ export function DashboardMarketCard({
 }) {
   const contract = useLiveContract(initialContract)
   const user = useUser()
+  const allMetrics = useAllSavedContractMetrics(contract)
+  const allLimitBets = useUnfilledBets(
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible,
+    { enabled: !contract.resolution && !!user }
+  )
   const creator = useDisplayUserById(contract.creatorId)
   const meta = marketMeta(contract.outcomeType)
   const isBinary = contract.outcomeType === 'BINARY'
@@ -192,9 +142,53 @@ export function DashboardMarketCard({
   const status = statusLabel(contract)
   const contractUrl = contractPath(contract)
 
-  const userData = resolved
-    ? { positions: [], limitOrders: [] }
-    : getMockUserData(contract.id, contract.outcomeType)
+  const myLimitBets = (allLimitBets ?? []).filter((b) => b.userId === user?.id)
+  let positions: PositionsData['positions'] = []
+  let limitOrders: PositionsData['limitOrders'] = []
+  let numericSummary: PositionsData['numericSummary']
+  if (!resolved && user && allMetrics) {
+    if (isBinary || isPseudoNumeric) {
+      const m = allMetrics.find((m) => m.answerId === null)
+      if (m?.hasShares) {
+        positions = [{ name: m.maxSharesOutcome === 'NO' ? 'No' : 'Yes', amount: m.invested, profit: m.profit }]
+      }
+      limitOrders = myLimitBets
+        .filter((b) => b.answerId == null)
+        .map((b) => ({ name: b.outcome === 'NO' ? 'No' : 'Yes', prob: Math.round(b.limitProb * 100), amount: b.orderAmount - b.amount }))
+    } else if (isMulti) {
+      positions = allMetrics
+        .filter((m) => m.answerId !== null && m.hasShares)
+        .map((m) => ({
+          name: multiContract?.answers.find((a) => a.id === m.answerId)?.text ?? 'Answer',
+          amount: m.invested,
+          profit: m.profit,
+        }))
+      limitOrders = myLimitBets
+        .filter((b) => b.answerId != null)
+        .map((b) => ({
+          name: multiContract?.answers.find((a) => a.id === b.answerId)?.text ?? 'Answer',
+          prob: Math.round(b.limitProb * 100),
+          amount: b.orderAmount - b.amount,
+        }))
+    } else if (isNumericBuckets) {
+      const bucketMetrics = allMetrics.filter((m) => m.answerId !== null && m.hasShares)
+      const numericOrders = myLimitBets.filter((b) => b.answerId != null)
+      if (bucketMetrics.length > 0 || numericOrders.length > 0) {
+        numericSummary = {
+          total: bucketMetrics.reduce((sum, m) => sum + m.invested, 0),
+          buckets: bucketMetrics.length,
+          profit: bucketMetrics.reduce((sum, m) => sum + m.profit, 0),
+          ...(numericOrders.length > 0 && {
+            orders: {
+              total: numericOrders.reduce((sum, b) => sum + b.orderAmount - b.amount, 0),
+              count: numericOrders.length,
+            },
+          }),
+        }
+      }
+    }
+  }
+  const userData: PositionsData = { positions, limitOrders, numericSummary }
   const hasPositions = userData.positions.length > 0 || !!userData.numericSummary
   const hasOrders = userData.limitOrders.length > 0 || !!userData.numericSummary?.orders
   const hasAny = hasPositions || hasOrders
