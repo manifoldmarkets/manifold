@@ -82,7 +82,7 @@ export function ReducedBonusNotice(props: {
       >
         <ShieldCheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         <span className="flex-1">
-          Bonus not received — your account has been flagged for verification.{' '}
+          Your account is flagged for verification, so new bonuses are paused.{' '}
           <button
             type="button"
             onClick={handleVerify}
@@ -91,7 +91,7 @@ export function ReducedBonusNotice(props: {
           >
             Verify your identity
           </button>{' '}
-          to restore your bonuses, or email{' '}
+          to restore them, or email{' '}
           <a
             href="mailto:info@manifold.markets"
             className="font-semibold text-amber-800 hover:underline dark:text-amber-200"

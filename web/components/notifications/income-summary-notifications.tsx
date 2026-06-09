@@ -57,16 +57,20 @@ import { BettingStreakProgressModal } from '../profile/first-streak-modal'
 // earn ZERO bonuses until they verify, so the messaging must say so rather than
 // nudge them toward a bonus they won't receive.
 function FlaggedBonusSubtitle() {
+  // Forward-looking wording on purpose: this renders on the current user's whole
+  // bonus-notification history (it keys off their live effective tier), so it
+  // must NOT claim a past bonus "wasn't received" — only that new bonuses are
+  // paused while the account is flagged.
   return (
     <span>
-      Bonus not received — your account is flagged for verification.{' '}
+      Your account is flagged for verification, so new bonuses are paused.{' '}
       <a
         href="/membership"
         className="text-primary-700 font-semibold hover:underline"
       >
         Verify your identity
       </a>{' '}
-      to earn bonuses.
+      to restore them.
     </span>
   )
 }
