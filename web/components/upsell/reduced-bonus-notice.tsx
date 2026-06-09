@@ -30,8 +30,11 @@ export function ReducedBonusNotice(props: {
   const [loading, setLoading] = useState(false)
   const user = useUser()
   const isDenied = user?.bonusEligibility === 'ineligible'
+  const isFlagged = user?.bonusEligibility === 'requires_verification'
 
-  if (tier !== 'unverified') return null
+  // 'restricted' = admin-flagged (earns zero); 'unverified' = reduced. Render
+  // for both; verified+ tiers get nothing.
+  if (tier !== 'unverified' && tier !== 'restricted') return null
 
   const verifiedMultiplier =
     kind === 'quest'
@@ -64,6 +67,41 @@ export function ReducedBonusNotice(props: {
       console.error('Failed to start verification:', e)
       setLoading(false)
     }
+  }
+
+  // Admin-flagged users earn ZERO bonuses until they complete verification —
+  // distinct from the reduced-bonus (unverified) case. Make the flag visible
+  // and route them straight to verification.
+  if (isFlagged) {
+    return (
+      <Row
+        className={clsx(
+          className,
+          'items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200'
+        )}
+      >
+        <ShieldCheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        <span className="flex-1">
+          Bonus not received — your account has been flagged for verification.{' '}
+          <button
+            type="button"
+            onClick={handleVerify}
+            disabled={loading}
+            className="font-semibold text-amber-800 hover:underline disabled:opacity-50 dark:text-amber-200"
+          >
+            Verify your identity
+          </button>{' '}
+          to restore your bonuses, or email{' '}
+          <a
+            href="mailto:info@manifold.markets"
+            className="font-semibold text-amber-800 hover:underline dark:text-amber-200"
+          >
+            info@manifold.markets
+          </a>{' '}
+          if you think this is a mistake.
+        </span>
+      </Row>
+    )
   }
 
   // Failed-KYC users can't re-verify through the standard flow — point them
