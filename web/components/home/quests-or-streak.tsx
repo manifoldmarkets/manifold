@@ -145,7 +145,8 @@ export function QuestsModal(props: {
             max={1}
             className={'mb-1 w-1/2'}
           />
-          {effectiveTier === 'unverified' && (
+          {(effectiveTier === 'unverified' ||
+            effectiveTier === 'restricted') && (
             <ReducedBonusNotice
               tier={effectiveTier}
               kind="quest"
