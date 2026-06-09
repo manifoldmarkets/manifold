@@ -223,7 +223,7 @@ function CommunityTab({
   const [showAdd, setShowAdd] = useState(false)
   const [pastVisible, setPastVisible] = useState(true)
   const [editMode, setEditMode] = useState(false)
-  const [pollsExpanded, setPollsExpanded] = useState(true)
+  const [pollsExpanded, setPollsExpanded] = useState(false)
 
   async function fetchDashboard() {
     try {
@@ -447,9 +447,9 @@ function CommunityTab({
         <Col className="border-ink-200 rounded-xl border">
           <Row className="border-ink-200 items-center justify-between border-b px-4 py-3">
             <Row className="items-center gap-2">
-              <span className="text-ink-500 text-sm font-medium">Polls</span>
+              <span className="text-ink-700 text-sm font-bold">Polls</span>
               {!pollsExpanded && (
-                <span className="text-ink-400 text-xs">{polls.length}</span>
+                <span className="text-ink-400 text-xs">({polls.length})</span>
               )}
             </Row>
             <button
