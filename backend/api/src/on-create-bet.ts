@@ -410,6 +410,7 @@ const payBettingStreak = async (
         newBettingStreak,
         txn: { id: bet.id },
         sweepsTxn: null,
+        effectiveTier,
       }
     }
 
@@ -436,7 +437,7 @@ const payBettingStreak = async (
 
     const txn = await runTxnFromBank(tx, bonusTxn)
 
-    return { txn, bonusAmount, newBettingStreak }
+    return { txn, bonusAmount, newBettingStreak, effectiveTier }
   })
 
   await createBettingStreakBonusNotification(
@@ -445,7 +446,8 @@ const payBettingStreak = async (
     bet,
     contract,
     result.bonusAmount,
-    result.newBettingStreak
+    result.newBettingStreak,
+    result.effectiveTier
   )
 }
 

@@ -484,7 +484,8 @@ export const createBettingStreakBonusNotification = async (
   bet: Bet,
   contract: Contract,
   amount: number,
-  streak: number
+  streak: number,
+  effectiveTier?: string
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
@@ -517,6 +518,7 @@ export const createBettingStreakBonusNotification = async (
       streak: streak,
       bonusAmount: amount,
       cashAmount: 0,
+      effectiveTier,
     } as BettingStreakData,
   }
   const pg = createSupabaseDirectClient()
@@ -780,6 +782,8 @@ export const createNewBettorNotification = async (
         totalAmountBet: sumBy(bets, 'amount'),
         token: contract.token,
         bonusAmount: txn.amount,
+        effectiveTier: (txn.data as { effectiveTier?: string } | undefined)
+          ?.effectiveTier,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
