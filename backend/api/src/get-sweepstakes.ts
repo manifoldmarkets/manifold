@@ -152,7 +152,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
   // If an admin voided this user's entries (and refunded their mana), surface a
   // summary so the page can tell them — otherwise their entry count silently
   // drops with no explanation.
-  let userVoidedTickets: number | undefined
+  let userVoidedEntries: number | undefined
   let userVoidedManaRefunded: number | undefined
 
   if (auth) {
@@ -205,7 +205,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     )
     const voidedTickets = parseFloat(voided?.voided_tickets ?? '0')
     if (voidedTickets > 0) {
-      userVoidedTickets = voidedTickets
+      userVoidedEntries = voidedTickets
       userVoidedManaRefunded = parseFloat(voided?.voided_mana ?? '0')
     }
   }
@@ -240,7 +240,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     userTotalManaInvested,
     meetsInvestmentRequirement,
     minManaInvested: SWEEPSTAKES_MIN_MANA_INVESTED,
-    userVoidedTickets,
+    userVoidedEntries,
     userVoidedManaRefunded,
   }
 }

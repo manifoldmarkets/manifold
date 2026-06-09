@@ -13,7 +13,7 @@ export const adminSetPrizeEligibility: APIHandler<
   const {
     userId,
     prizeEligibility,
-    voidOutstandingTickets = false,
+    voidOutstandingEntries = false,
     reason,
   } = body
 
@@ -30,7 +30,7 @@ export const adminSetPrizeEligibility: APIHandler<
     throw new APIError(404, 'User not found')
   }
 
-  let voidedTicketCount = 0
+  let voidedEntryCount = 0
   let refundedManaTotal = 0
 
   await pg.tx(async (tx) => {
@@ -54,7 +54,7 @@ export const adminSetPrizeEligibility: APIHandler<
 
     // Refund + void only makes sense when blocking prize access. We don't
     // void on 'eligible' or 'clear' — those are restoration paths.
-    if (!voidOutstandingTickets || prizeEligibility !== 'ineligible') return
+    if (!voidOutstandingEntries || prizeEligibility !== 'ineligible') return
 
     // Find unresolved tickets for this user — drawings where winners haven't
     // been picked yet. We don't void tickets in already-resolved drawings:
@@ -95,7 +95,7 @@ export const adminSetPrizeEligibility: APIHandler<
           WHERE id = $2`,
         [voidReason, ticket.id]
       )
-      voidedTicketCount++
+      voidedEntryCount++
 
       const manaSpent = parseFloat(ticket.mana_spent)
       // Free tickets (is_free / mana_spent = 0) get voided for audit but
@@ -107,11 +107,11 @@ export const adminSetPrizeEligibility: APIHandler<
           toType: 'USER',
           amount: manaSpent,
           token: 'M$',
-          category: 'SWEEPSTAKES_TICKET_REFUND',
-          description: `Refund for voided sweepstakes ticket ${ticket.id}`,
+          category: 'SWEEPSTAKES_ENTRIES_VOIDED',
+          description: `Refund for voided sweepstakes entry ${ticket.id}`,
           data: {
             sweepstakesNum: ticket.sweepstakes_num,
-            ticketId: ticket.id,
+            entryId: ticket.id,
             voidedReason: voidReason,
           },
         })
@@ -119,12 +119,12 @@ export const adminSetPrizeEligibility: APIHandler<
       }
     }
 
-    if (voidedTicketCount > 0) {
+    if (voidedEntryCount > 0) {
       log(
-        `Voided ${voidedTicketCount} outstanding ticket(s) and refunded ${refundedManaTotal} mana for user ${userId}`
+        `Voided ${voidedEntryCount} outstanding entries and refunded ${refundedManaTotal} mana for user ${userId}`
       )
     }
   })
 
-  return { success: true, voidedTicketCount, refundedManaTotal }
+  return { success: true, voidedEntryCount, refundedManaTotal }
 }

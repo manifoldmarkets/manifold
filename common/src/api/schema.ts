@@ -195,11 +195,11 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
         prizeEligibility: z.enum(['eligible', 'ineligible']).nullable(),
         // When true AND prizeEligibility is 'ineligible', void the user's
-        // outstanding tickets in unresolved drawings and refund the mana
+        // outstanding entries in unresolved drawings and refund the mana
         // they paid. Use for under-18 cases where the buyer is owed their
         // money back, or confirmed fraud where the pool should be cleaned.
-        voidOutstandingTickets: z.boolean().optional(),
-        // Optional free-text reason stamped onto each voided ticket row
+        voidOutstandingEntries: z.boolean().optional(),
+        // Optional free-text reason stamped onto each voided entry row
         // (sweepstakes_tickets.voided_reason) for audit. Surfaced in admin
         // UI only.
         reason: z.string().max(500).optional(),
@@ -207,7 +207,7 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as {
       success: boolean
-      voidedTicketCount: number
+      voidedEntryCount: number
       refundedManaTotal: number
     },
   },
@@ -3563,7 +3563,7 @@ export const API = (_apiTypeCheck = {
       minManaInvested?: number
       // Set when an admin voided this user's entries in this drawing (and
       // refunded their mana). Lets the page explain the dropped entry count.
-      userVoidedTickets?: number
+      userVoidedEntries?: number
       userVoidedManaRefunded?: number
     },
   },

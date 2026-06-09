@@ -69,7 +69,7 @@ type AnyTxnType =
   | ContractBoostPurchase
   | CharityGiveawayTicket
   | SweepstakesTicket
-  | SweepstakesTicketRefund
+  | SweepstakesEntriesVoided
   | ShopPurchase
   | ShopRefund
   | MembershipPayment
@@ -713,18 +713,19 @@ type SweepstakesTicket = {
   }
 }
 
-// Bank-to-user reversal of a SWEEPSTAKES_TICKET when an admin voids the
-// ticket (e.g. flagging the buyer prize-ineligible with voidOutstandingTickets).
-// Refunds the mana the user paid, not USD — the prize pool is paid out in
-// USDC but entries are bought with mana, and mana is what got debited.
-type SweepstakesTicketRefund = {
-  category: 'SWEEPSTAKES_TICKET_REFUND'
+// Bank-to-user reversal that refunds a voided sweepstakes entry — issued when
+// an admin voids a user's outstanding entries (e.g. flagging the buyer
+// prize-ineligible with voidOutstandingEntries). Refunds the mana the user
+// paid, not USD — the prize pool is paid out in USDC, but entries are bought
+// with mana, and mana is what got debited.
+type SweepstakesEntriesVoided = {
+  category: 'SWEEPSTAKES_ENTRIES_VOIDED'
   fromType: 'BANK'
   toType: 'USER'
   token: 'M$'
   data: {
     sweepstakesNum: number
-    ticketId: string
+    entryId: string
     voidedReason: string
   }
 }

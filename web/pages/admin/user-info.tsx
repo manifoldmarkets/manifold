@@ -1222,7 +1222,7 @@ function PrizeEligibilitySection({
   const [selectedEligibility, setSelectedEligibility] = useState<
     'eligible' | 'ineligible' | null | undefined
   >(user.prizeEligibility)
-  const [voidTickets, setVoidTickets] = useState(false)
+  const [voidEntries, setVoidEntries] = useState(false)
   const [reason, setReason] = useState('')
 
   const eligibilityOptions = [
@@ -1258,20 +1258,20 @@ function PrizeEligibilitySection({
 
     const trimmedReason = reason.trim()
     const shouldVoid =
-      voidTickets && selectedEligibility === 'ineligible'
+      voidEntries && selectedEligibility === 'ineligible'
 
     setIsUpdating(true)
     try {
       const res = await api('admin-set-prize-eligibility', {
         userId: user.id,
         prizeEligibility: selectedEligibility,
-        ...(shouldVoid ? { voidOutstandingTickets: true } : {}),
+        ...(shouldVoid ? { voidOutstandingEntries: true } : {}),
         ...(trimmedReason ? { reason: trimmedReason } : {}),
       })
       const refundMsg =
-        res.voidedTicketCount > 0
-          ? ` Voided ${res.voidedTicketCount} ${
-              res.voidedTicketCount === 1 ? 'entry' : 'entries'
+        res.voidedEntryCount > 0
+          ? ` Voided ${res.voidedEntryCount} ${
+              res.voidedEntryCount === 1 ? 'entry' : 'entries'
             }, refunded ${res.refundedManaTotal} mana.`
           : ''
       toast.success(
@@ -1283,7 +1283,7 @@ function PrizeEligibilitySection({
         ...user,
         prizeEligibility: selectedEligibility ?? undefined,
       })
-      setVoidTickets(false)
+      setVoidEntries(false)
       setReason('')
     } catch (error) {
       toast.error(
@@ -1354,8 +1354,8 @@ function PrizeEligibilitySection({
             <label className="text-ink-700 flex items-start gap-2 text-sm">
               <input
                 type="checkbox"
-                checked={voidTickets}
-                onChange={(e) => setVoidTickets(e.target.checked)}
+                checked={voidEntries}
+                onChange={(e) => setVoidEntries(e.target.checked)}
                 className="mt-0.5"
               />
               <span>
@@ -1382,7 +1382,7 @@ function PrizeEligibilitySection({
               <Button
                 onClick={() => {
                   setSelectedEligibility(user.prizeEligibility)
-                  setVoidTickets(false)
+                  setVoidEntries(false)
                   setReason('')
                 }}
                 disabled={isUpdating}

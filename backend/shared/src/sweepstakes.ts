@@ -115,8 +115,8 @@ export const selectSweepstakesWinners = async (
       throw new SweepstakesError(400, 'Winners have already been selected')
     }
 
-    // voided_at IS NULL excludes tickets that an admin refunded out of the
-    // pool (via admin-set-prize-eligibility with voidOutstandingTickets).
+    // voided_at IS NULL excludes entries that an admin refunded out of the
+    // pool (via admin-set-prize-eligibility with voidOutstandingEntries).
     // The downstream canEnterPrizeDrawings filter still runs in JS so
     // ineligible holders whose tickets weren't actively voided are also
     // dropped — both gates compose.
