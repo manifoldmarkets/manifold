@@ -168,8 +168,18 @@ export function ReducedBonusNotice(props: {
           className="text-primary-700 font-semibold hover:underline disabled:opacity-50"
         >
           Verify
-        </button>{' '}
-        or{' '}
+        </button>
+        ,{' '}
+        <Link
+          href="/checkout"
+          className="text-primary-700 font-semibold hover:underline"
+          onClick={() =>
+            track('reduced bonus notice: buy mana clicked', { kind })
+          }
+        >
+          buy mana
+        </Link>
+        , or{' '}
         <Link
           href="/membership"
           className="text-primary-700 font-semibold hover:underline"

@@ -1,5 +1,8 @@
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { getEffectiveBonusMultiplier } from 'common/supporter-config'
+import {
+  getEffectiveBonusMultiplier,
+  EffectiveTier,
+} from 'common/supporter-config'
 import {
   BettingStreakData,
   getSourceUrl,
@@ -104,9 +107,17 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
-  const uniqueTier = user ? getEffectiveTier(user) : undefined
-  const isUnverified = uniqueTier === 'unverified'
-  const isFlagged = uniqueTier === 'restricted'
+  // Use the creator's tier at award time (embedded in the txn/notification) so
+  // the "reduced" label is historically accurate; fall back to current tier for
+  // notifications created before effectiveTier was recorded.
+  const txnTier = (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  const userTier = user ? getEffectiveTier(user) : undefined
+  const isUnverified =
+    txnTier === 'unverified' ||
+    (txnTier === undefined && userTier === 'unverified')
+  const isFlagged =
+    txnTier === 'restricted' ||
+    (txnTier === undefined && userTier === 'restricted')
   return (
     <NotificationFrame
       notification={notification}
@@ -123,7 +134,21 @@ export function UniqueBettorBonusIncomeNotification(props: {
               href="/membership"
               className="text-primary-700 font-semibold hover:underline"
             >
-              Verify or subscribe
+              Verify
+            </a>
+            ,{' '}
+            <a
+              href="/checkout"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              buy mana
+            </a>
+            , or{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              subscribe
             </a>{' '}
             to earn the full unique-trader bonus.
           </span>
@@ -329,7 +354,21 @@ export function QuestIncomeNotification(props: {
               href="/membership"
               className="text-primary-700 font-semibold hover:underline"
             >
-              Verify or subscribe
+              Verify
+            </a>
+            ,{' '}
+            <a
+              href="/checkout"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              buy mana
+            </a>
+            , or{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              subscribe
             </a>{' '}
             to earn the full amount.
           </span>
@@ -370,6 +409,7 @@ export function BettingStreakBonusIncomeNotification(props: {
     streak: streakInDays,
     cashAmount,
     bonusAmount,
+    effectiveTier: txnTier,
   } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
 
@@ -390,7 +430,11 @@ export function BettingStreakBonusIncomeNotification(props: {
   }
 
   // Streak multiplier driven by effective tier (verification + subscription).
-  const effectiveTier = user ? getEffectiveTier(user) : 'verified'
+  // Prefer the tier embedded at award time so the "reduced" label and amounts
+  // reflect history; fall back to current tier for older notifications.
+  const effectiveTier: EffectiveTier =
+    (txnTier as EffectiveTier | undefined) ??
+    (user ? getEffectiveTier(user) : 'verified')
   const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
   const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
   const verifiedMaxBonus = BETTING_STREAK_BONUS_MAX
@@ -413,7 +457,21 @@ export function BettingStreakBonusIncomeNotification(props: {
               href="/membership"
               className="text-primary-700 font-semibold hover:underline"
             >
-              Verify or subscribe
+              Verify
+            </a>
+            ,{' '}
+            <a
+              href="/checkout"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              buy mana
+            </a>
+            , or{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              subscribe
             </a>{' '}
             to earn up to{' '}
             <TokenNumber
