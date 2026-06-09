@@ -5,6 +5,7 @@ import {
   getEffectiveTier,
   type User,
 } from './user'
+import { getEffectiveBonusMultiplier } from './supporter-config'
 
 // Build a minimal User shape — only the fields these helpers read.
 const u = (overrides: Partial<User>): User =>
@@ -220,12 +221,17 @@ describe('getEffectiveTier — bonusEligibility maps to the right tier', () => {
       'verified'
     )
   })
-  it("'requires_verification' (flagged) falls to the unverified tier", () => {
-    // Brief invariant: flagged users earn nothing beyond the unverified floor
-    // until they complete KYC.
+  it("'requires_verification' (flagged) maps to the restricted tier (ZERO bonuses)", () => {
+    // A flagged/suspected-alt account earns nothing until they verify —
+    // distinct from a brand-new 'unverified' user, who still earns 0.2x.
     expect(
       getEffectiveTier(u({ bonusEligibility: 'requires_verification' }))
-    ).toBe('unverified')
+    ).toBe('restricted')
+  })
+  it("'ineligible' (KYC-failed) stays unverified (reduced 0.2x, not zero)", () => {
+    expect(getEffectiveTier(u({ bonusEligibility: 'ineligible' }))).toBe(
+      'unverified'
+    )
   })
   it('undefined (new user) is unverified; verified/grandfathered are verified', () => {
     expect(getEffectiveTier(u({}))).toBe('unverified')
@@ -235,5 +241,13 @@ describe('getEffectiveTier — bonusEligibility maps to the right tier', () => {
     expect(getEffectiveTier(u({ bonusEligibility: 'grandfathered' }))).toBe(
       'verified'
     )
+  })
+})
+
+describe('restricted tier (flagged) earns zero bonuses', () => {
+  it('all bonus multipliers are 0', () => {
+    for (const kind of ['quest', 'streak', 'referral', 'uniqueTrader'] as const) {
+      expect(getEffectiveBonusMultiplier('restricted', kind)).toBe(0)
+    }
   })
 })

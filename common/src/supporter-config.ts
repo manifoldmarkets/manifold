@@ -81,11 +81,13 @@ export const SUPPORTER_ENTITLEMENT_IDS = [
 // Tier ladder (low → high): unverified < verified < basic (Plus) < plus (Pro) < premium
 
 export type EffectiveTier =
+  | 'restricted' // admin-flagged (requires_verification): earns NO bonuses
   | 'unverified'
   | 'verified'
   | SupporterTier // 'basic' | 'plus' | 'premium'
 
 export const EFFECTIVE_TIER_ORDER: EffectiveTier[] = [
+  'restricted',
   'unverified',
   'verified',
   'basic',
@@ -130,6 +132,17 @@ const NON_SUBSCRIBER_PERKS = {
 }
 
 export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
+  // Admin-flagged users (bonusEligibility = 'requires_verification'): earn
+  // ZERO bonuses across the board until they complete identity verification.
+  // Distinct from 'unverified' (brand-new users), who still earn a reduced
+  // 0.2x — a flagged/suspected-alt account should earn nothing, not a fraction.
+  restricted: {
+    ...NON_SUBSCRIBER_PERKS,
+    questMultiplier: 0,
+    streakMultiplier: 0,
+    referralMultiplier: 0,
+    uniqueTraderMultiplier: 0,
+  },
   unverified: {
     ...NON_SUBSCRIBER_PERKS,
     questMultiplier: 0.2,
@@ -318,12 +331,12 @@ export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 // Pure: callers pass in the bits we need so this file doesn't need to import User.
 export function resolveEffectiveTier(args: {
   entitlements: UserEntitlement[] | undefined
-  // Accepts the full User.bonusEligibility union. 'requires_verification'
-  // behaves identically to 'ineligible'/undefined for tier purposes —
-  // user hasn't completed identity verification, so they fall into the
-  // 'unverified' tier (unless they have a subscription). 'eligible'
-  // (purchaser / admin-granted) earns at the 'verified' tier alongside
-  // verified/grandfathered.
+  // Accepts the full User.bonusEligibility union (unless they have a
+  // subscription, which always wins). 'eligible' (purchaser / admin-granted)
+  // earns at the 'verified' tier alongside verified/grandfathered.
+  // 'requires_verification' (admin-flagged) maps to the 'restricted' tier and
+  // earns ZERO bonuses. 'ineligible' (KYC-failed) and undefined (brand-new)
+  // both fall to 'unverified' (reduced 0.2x).
   bonusEligibility:
     | 'verified'
     | 'grandfathered'
@@ -340,6 +353,11 @@ export function resolveEffectiveTier(args: {
     args.bonusEligibility === 'eligible'
   ) {
     return 'verified'
+  }
+  // Admin-flagged (suspected alt / manual review): earns NO bonuses until they
+  // verify. 'ineligible' (KYC-failed) deliberately stays 'unverified' (0.2x).
+  if (args.bonusEligibility === 'requires_verification') {
+    return 'restricted'
   }
   return 'unverified'
 }
@@ -365,6 +383,7 @@ export function roundTierBonus(amount: number): number {
 
 // Display labels for the membership page tier column headers and inline upsells.
 export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
+  restricted: 'Flagged',
   unverified: 'Unverified',
   verified: 'Verified',
   basic: SUPPORTER_TIERS.basic.name, // 'Plus'
