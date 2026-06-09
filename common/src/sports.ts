@@ -374,8 +374,15 @@ export function stageLiquidityForMatch(
   )
 }
 
+// Knockout matches can run up to ~170 min (90' + halftime + 30' ET + ET break +
+// ~30' penalties). Use 3.5 h so betting stays open through the final whistle.
+const KNOCKOUT_CLOSE_OFFSET_MS = 3.5 * 60 * 60 * 1000
+
 export function computeCloseTime(match: FDMatch, config: TournamentConfig): number {
-  return new Date(match.utcDate).getTime() + config.closeTimeOffsetMs
+  const offsetMs = isKnockoutStage(match.stage)
+    ? Math.max(config.closeTimeOffsetMs, KNOCKOUT_CLOSE_OFFSET_MS)
+    : config.closeTimeOffsetMs
+  return new Date(match.utcDate).getTime() + offsetMs
 }
 
 function isKnockoutStage(stage: string): boolean {
