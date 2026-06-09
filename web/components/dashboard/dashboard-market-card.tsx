@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import Link from 'next/link'
+import Router from 'next/router'
 import {
   BinaryContract,
   CPMMContract,
@@ -29,6 +29,11 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from 'web/components/user/user-hovercard'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import {
+  PositionsHovercard,
+  PositionsData,
+} from 'web/components/contract/positions-hovercard'
 
 type MarketMeta = {
   label: string
@@ -87,6 +92,68 @@ function statusLabel(contract: Contract): string | null {
   return null
 }
 
+// ── DEV MOCK: cycles cards through position states ────────────────────────────
+function getMockUserData(contractId: string, outcomeType: string): PositionsData {
+  const hash = contractId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
+    switch (hash % 4) {
+      case 0: return { positions: [], limitOrders: [] }
+      case 1: return {
+        positions: [{ name: 'Yes', amount: 200, profit: 45 }],
+        limitOrders: [],
+      }
+      case 2: return {
+        positions: [{ name: 'No', amount: 150, profit: -20 }],
+        limitOrders: [{ name: 'Yes', prob: 40, amount: 100 }],
+      }
+      default: return {
+        positions: [{ name: 'Yes', amount: 300, profit: 67 }],
+        limitOrders: [{ name: 'No', prob: 60, amount: 200 }],
+      }
+    }
+  }
+  if (outcomeType === 'MULTIPLE_CHOICE') {
+    switch (hash % 4) {
+      case 0: return { positions: [], limitOrders: [] }
+      case 1: return {
+        positions: [{ name: 'Answer 1', amount: 150, profit: 23 }],
+        limitOrders: [],
+      }
+      case 2: return {
+        positions: [
+          { name: 'Answer 1', amount: 150, profit: 23 },
+          { name: 'Answer 2', amount: 80, profit: -12 },
+        ],
+        limitOrders: [],
+      }
+      default: return {
+        positions: [{ name: 'Answer 1', amount: 150, profit: 23 }],
+        limitOrders: [{ name: 'Answer 2', prob: 35, amount: 100 }],
+      }
+    }
+  }
+  if (
+    outcomeType === 'NUMBER' ||
+    outcomeType === 'MULTI_NUMERIC' ||
+    outcomeType === 'DATE'
+  ) {
+    switch (hash % 2) {
+      case 0: return {
+        positions: [],
+        limitOrders: [],
+        numericSummary: { total: 350, buckets: 8, profit: 67 },
+      }
+      default: return {
+        positions: [],
+        limitOrders: [],
+        numericSummary: { total: 120, buckets: 3, profit: -22, orders: { total: 200, count: 2 } },
+      }
+    }
+  }
+  return { positions: [], limitOrders: [] }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function DashboardMarketCard({
   contract: initialContract,
   trackingLocation = 'dashboard',
@@ -125,12 +192,25 @@ export function DashboardMarketCard({
   const status = statusLabel(contract)
   const contractUrl = contractPath(contract)
 
+  const userData = resolved
+    ? { positions: [], limitOrders: [] }
+    : getMockUserData(contract.id, contract.outcomeType)
+  const hasPositions = userData.positions.length > 0 || !!userData.numericSummary
+  const hasOrders = userData.limitOrders.length > 0 || !!userData.numericSummary?.orders
+  const hasAny = hasPositions || hasOrders
+
   return (
-    <div className="bg-canvas-50 border-ink-200 hover:border-ink-300 flex h-[340px] flex-col rounded-xl border transition-colors">
+    <div
+      className="bg-canvas-50 border-ink-200 hover:border-primary-300 flex h-[340px] cursor-pointer flex-col rounded-xl border transition-colors"
+      onClick={() => Router.push(contractUrl)}
+    >
       {/* Creator row + type badge */}
       <Row className="items-center gap-2 px-5 pt-5">
         <UserHovercard userId={contract.creatorId} className="min-w-0 flex-1">
-          <Row className="text-ink-500 items-center gap-1.5">
+          <Row
+            className="text-ink-500 items-center gap-1.5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Avatar
               size="xs"
               avatarUrl={creator?.avatarUrl ?? contract.creatorAvatarUrl}
@@ -168,11 +248,11 @@ export function DashboardMarketCard({
       </Row>
 
       {/* Question title */}
-      <Link href={contractUrl} className="px-5 pt-3 hover:opacity-80">
+      <div className="px-5 pt-3">
         <p className="text-ink-900 line-clamp-2 text-lg font-semibold leading-snug">
           {contract.question}
         </p>
-      </Link>
+      </div>
 
       {/* Market-type content */}
       <div className="min-h-0 flex-1 overflow-hidden px-5 pb-2 pt-4">
@@ -193,7 +273,7 @@ export function DashboardMarketCard({
                     </span>
                     <span className="text-ink-400 text-[11px]">chance</span>
                   </Row>
-                  <div className="-mt-3">
+                  <div className="-mt-3" onClick={(e) => e.stopPropagation()}>
                     <BetButton
                       contract={binaryContract}
                       user={user}
@@ -218,7 +298,9 @@ export function DashboardMarketCard({
         )}
 
         {multiContract && (
-          <SimpleAnswerBars contract={multiContract} maxAnswers={3} />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SimpleAnswerBars contract={multiContract} maxAnswers={3} />
+          </div>
         )}
 
         {isNumericBuckets && (
@@ -264,51 +346,61 @@ export function DashboardMarketCard({
               </Row>
             ))}
             {pollOptions.length > 5 && (
-              <Link
-                href={contractUrl}
-                className="text-ink-400 hover:text-ink-600 text-[11px] transition-colors"
-              >
-                +{pollOptions.length - 5} more →
-              </Link>
+              <span className="text-ink-400 text-[11px]">
+                +{pollOptions.length - 5} more
+              </span>
             )}
           </Col>
         )}
       </div>
 
       {/* Footer */}
-      <Row className="border-ink-200 items-center gap-3 border-t px-5 py-1.5">
-        <TradesButton contract={contract} size="sm" />
-        {liquidity > 0 && (
-          <Row className="text-ink-500 items-center gap-1">
-            <TbDroplet className="h-4 w-4 stroke-2" />
-            <span className="text-ink-600 text-[13px]">
-              {shortFormatNumber(liquidity)}
-            </span>
-          </Row>
+      <Row
+        className="border-ink-200 items-center justify-between border-t px-5 py-1.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Row className="items-center gap-3">
+          <TradesButton contract={contract} size="sm" />
+          {liquidity > 0 && (
+            <Row className="text-ink-500 items-center gap-1">
+              <TbDroplet className="h-4 w-4 stroke-2" />
+              <span className="text-ink-600 text-[13px]">
+                {shortFormatNumber(liquidity)}
+              </span>
+            </Row>
+          )}
+          <RepostButton
+            playContract={contract}
+            size="2xs"
+            iconClassName="text-ink-500"
+          />
+          <ReactButton
+            contentId={contract.id}
+            contentCreatorId={contract.creatorId}
+            user={user}
+            contentType="contract"
+            contentText={contract.question}
+            size="2xs"
+            trackingLocation={trackingLocation}
+            placement="top"
+            contractId={contract.id}
+            heartClassName="stroke-ink-500"
+          />
+        </Row>
+        {hasAny && (
+          <Tooltip
+            text={<PositionsHovercard {...userData} />}
+            placement="top-end"
+            hasSafePolygon
+            tooltipClassName="!bg-canvas-20 border-ink-200 border shadow-lg !text-left !max-w-none !px-3 !py-2.5 !rounded-lg"
+          >
+            <div className="border-ink-400 text-ink-500 hover:border-ink-600 hover:text-ink-700 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] transition-colors">
+              {hasPositions && <span className="bg-ink-400 h-1.5 w-1.5 rounded-full" />}
+              {hasOrders && <span className="border-ink-500 h-1.5 w-1.5 rounded-full border" />}
+              <span>Positions</span>
+            </div>
+          </Tooltip>
         )}
-        <RepostButton
-          playContract={contract}
-          size="2xs"
-          iconClassName="text-ink-500"
-        />
-        <ReactButton
-          contentId={contract.id}
-          contentCreatorId={contract.creatorId}
-          user={user}
-          contentType="contract"
-          contentText={contract.question}
-          size="2xs"
-          trackingLocation={trackingLocation}
-          placement="top"
-          contractId={contract.id}
-          heartClassName="stroke-ink-500"
-        />
-        <Link
-          href={contractUrl}
-          className="text-ink-400 hover:text-ink-600 ml-auto text-[11px] transition-colors"
-        >
-          View market →
-        </Link>
       </Row>
     </div>
   )
