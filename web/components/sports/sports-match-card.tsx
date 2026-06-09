@@ -7,6 +7,10 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { flagEmojiToCode } from 'common/sports'
 import { SportsBetPanel } from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import {
+  PositionsHovercard,
+  PositionsData,
+} from 'web/components/contract/positions-hovercard'
 
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
@@ -221,11 +225,7 @@ function OutcomeRow({
 }
 
 // ── DEV MOCK: cycles cards through position states for visual preview ──────────
-type MockPosition = { name: string; color: string; amount: number; profit: number }
-type MockOrder = { name: string; prob: number; amount: number }
-type MockUserData = { positions: MockPosition[]; limitOrders: MockOrder[] }
-
-function getMockUserData(matchId: string, match: SportsMatch): MockUserData {
+function getMockUserData(matchId: string, match: SportsMatch): PositionsData {
   const hash = matchId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
   const teamAName = match.teamA.name
   const teamBName = match.teamB.name
@@ -269,66 +269,6 @@ function getMockUserData(matchId: string, match: SportsMatch): MockUserData {
       ],
     }
   }
-}
-
-const MAX_SHOWN = 4
-
-function PositionsHoverContent({ positions, limitOrders }: MockUserData) {
-  const shownPositions = positions.slice(0, MAX_SHOWN)
-  const extraPositions = positions.length - shownPositions.length
-  const shownOrders = limitOrders.slice(0, MAX_SHOWN)
-  const extraOrders = limitOrders.length - shownOrders.length
-
-  return (
-    <div className="min-w-[220px] text-left">
-      {positions.length > 0 && (
-        <>
-          <Row className="mb-2 items-center gap-1.5">
-            <span className="bg-ink-300 h-2.5 w-2.5 flex-shrink-0 rounded-full" />
-            <p className="text-ink-300 text-xs font-bold uppercase tracking-wider">
-              Positions
-            </p>
-          </Row>
-          {shownPositions.map((p) => (
-            <Row key={p.name} className="mb-1 items-center justify-between gap-4">
-              <Row className="min-w-0 items-center gap-1.5">
-                <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: p.color }} />
-                <span className="min-w-0 truncate text-sm">{p.name}</span>
-              </Row>
-              <Row className="flex-shrink-0 items-center gap-1.5 text-sm font-semibold">
-                <span>Ṁ{p.amount}</span>
-                <span className={p.profit >= 0 ? 'text-green-600' : 'text-red-500'}>
-                  {p.profit >= 0 ? '+' : ''}Ṁ{p.profit}
-                </span>
-              </Row>
-            </Row>
-          ))}
-          {extraPositions > 0 && (
-            <p className="text-ink-400 mt-0.5 text-[11px]">+{extraPositions} more — view market</p>
-          )}
-        </>
-      )}
-      {limitOrders.length > 0 && (
-        <div className={positions.length > 0 ? 'mt-3' : ''}>
-          <Row className="mb-2 items-center gap-1.5">
-            <span className="border-ink-300 h-2.5 w-2.5 flex-shrink-0 rounded-full border" />
-            <p className="text-ink-300 text-xs font-bold uppercase tracking-wider">
-              Limit Orders
-            </p>
-          </Row>
-          {shownOrders.map((o, i) => (
-            <Row key={i} className="mb-0.5 items-center gap-1 text-sm text-ink-400">
-              <span className="min-w-0 truncate">{o.name}</span>
-              <span className="flex-shrink-0">at {o.prob}% — Ṁ{o.amount}</span>
-            </Row>
-          ))}
-          {extraOrders > 0 && (
-            <p className="text-ink-400 mt-0.5 text-[11px]">+{extraOrders} more — view market</p>
-          )}
-        </div>
-      )}
-    </div>
-  )
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -548,7 +488,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             <Tooltip
               text={
                 <Link href={marketHref} className="block">
-                  <PositionsHoverContent {...userData} />
+                  <PositionsHovercard {...userData} />
                 </Link>
               }
               placement="top"
