@@ -12,7 +12,10 @@ import { PollOption } from 'common/poll-option'
 import { shortFormatNumber } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { FeedBinaryChart, FeedNumericChart } from 'web/components/feed/feed-chart'
+import {
+  FeedBinaryChart,
+  FeedNumericChart,
+} from 'web/components/feed/feed-chart'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { TradesButton } from 'web/components/contract/trades-button'
@@ -35,20 +38,44 @@ type MarketMeta = {
 function marketMeta(outcomeType: string): MarketMeta {
   switch (outcomeType) {
     case 'BINARY':
-      return { label: 'Yes/No', badgeClass: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300' }
+      return {
+        label: 'Yes/No',
+        badgeClass:
+          'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',
+      }
     case 'MULTIPLE_CHOICE':
-      return { label: 'Multiple choice', badgeClass: 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' }
+      return {
+        label: 'Multiple choice',
+        badgeClass:
+          'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300',
+      }
     case 'PSEUDO_NUMERIC':
     case 'NUMBER':
     case 'MULTI_NUMERIC':
     case 'DATE':
-      return { label: 'Numeric', badgeClass: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300' }
+      return {
+        label: 'Numeric',
+        badgeClass:
+          'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
+      }
     case 'POLL':
-      return { label: 'Poll', badgeClass: 'bg-teal-100 text-teal-700 dark:bg-teal-700 dark:text-teal-100' }
+      return {
+        label: 'Poll',
+        badgeClass:
+          'bg-teal-100 text-teal-700 dark:bg-teal-700 dark:text-teal-100',
+      }
     case 'BOUNTIED_QUESTION':
-      return { label: 'Bounty', badgeClass: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300' }
+      return {
+        label: 'Bounty',
+        badgeClass:
+          'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300',
+      }
     case 'STONK':
-      return { label: 'Stock', badgeClass: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300' }
+      return {
+        label: 'Stock',
+        badgeClass:
+          'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300',
+      }
     default:
       return { label: 'Market', badgeClass: 'bg-ink-100 text-ink-500' }
   }
@@ -91,14 +118,15 @@ export function DashboardMarketCard({
 
   const binaryProb = cpmmContract ? Math.round(cpmmContract.prob * 100) : null
   const resolved = !!contract.resolution
-  const liquidity = 'totalLiquidity' in contract ? (contract as CPMMContract).totalLiquidity ?? 0 : 0
+  const liquidity =
+    'totalLiquidity' in contract
+      ? (contract as CPMMContract).totalLiquidity ?? 0
+      : 0
   const status = statusLabel(contract)
   const contractUrl = contractPath(contract)
 
   return (
-    <div
-      className="bg-canvas-50 border-ink-200 hover:border-ink-300 flex h-[340px] flex-col rounded-xl border transition-colors"
-    >
+    <div className="bg-canvas-50 border-ink-200 hover:border-ink-300 flex h-[340px] flex-col rounded-xl border transition-colors">
       {/* Creator row + type badge */}
       <Row className="items-center gap-2 px-5 pt-5">
         <UserHovercard userId={contract.creatorId} className="min-w-0 flex-1">
@@ -129,7 +157,12 @@ export function DashboardMarketCard({
             {status}
           </span>
         )}
-        <span className={clsx('shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium', meta.badgeClass)}>
+        <span
+          className={clsx(
+            'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium',
+            meta.badgeClass
+          )}
+        >
           {meta.label}
         </span>
       </Row>
@@ -142,17 +175,22 @@ export function DashboardMarketCard({
       </Link>
 
       {/* Market-type content */}
-      <div className="min-h-0 flex-1 overflow-hidden px-5 pt-4 pb-2">
+      <div className="min-h-0 flex-1 overflow-hidden px-5 pb-2 pt-4">
         {isBinary && cpmmContract && binaryContract && (
           <Col className="h-full gap-0">
             {contract.uniqueBettorCount === 0 && <div className="flex-1" />}
             <Row className="items-center justify-between pb-2">
               {resolved ? (
-                <ContractStatusLabel contract={contract} className="text-2xl font-bold" />
+                <ContractStatusLabel
+                  contract={contract}
+                  className="text-2xl font-bold"
+                />
               ) : (
                 <>
                   <Row className="items-baseline gap-1.5">
-                    <span className="text-ink-900 text-2xl font-bold leading-[2rem]">{binaryProb}%</span>
+                    <span className="text-ink-900 text-2xl font-bold leading-[2rem]">
+                      {binaryProb}%
+                    </span>
                     <span className="text-ink-400 text-[11px]">chance</span>
                   </Row>
                   <div className="-mt-3">
@@ -180,15 +218,14 @@ export function DashboardMarketCard({
         )}
 
         {multiContract && (
-          <SimpleAnswerBars
-            contract={multiContract}
-            maxAnswers={3}
-          />
+          <SimpleAnswerBars contract={multiContract} maxAnswers={3} />
         )}
 
         {isNumericBuckets && (
           <Col className="h-full gap-0">
-            {!(isMultiNumericChart && contract.uniqueBettorCount > 0) && <div className="flex-1" />}
+            {!(isMultiNumericChart && contract.uniqueBettorCount > 0) && (
+              <div className="flex-1" />
+            )}
             <Row className="items-baseline gap-1.5 pb-2">
               <ContractStatusLabel
                 contract={contract}
@@ -201,7 +238,7 @@ export function DashboardMarketCard({
             {isMultiNumericChart && contract.uniqueBettorCount > 0 ? (
               <FeedNumericChart
                 contract={contract as MultiNumericContract}
-                className="flex-1 min-h-0"
+                className="min-h-0 flex-1"
               />
             ) : (
               <div className="flex-[3]" />
@@ -210,7 +247,10 @@ export function DashboardMarketCard({
         )}
 
         {isPseudoNumeric && (
-          <ContractStatusLabel contract={contract} className="text-ink-900 text-2xl font-bold" />
+          <ContractStatusLabel
+            contract={contract}
+            className="text-ink-900 text-2xl font-bold"
+          />
         )}
 
         {isPoll && pollOptions && pollOptions.length > 0 && (
@@ -218,11 +258,16 @@ export function DashboardMarketCard({
             {pollOptions.slice(0, 5).map((o) => (
               <Row key={o.id} className="items-center gap-2">
                 <div className="bg-ink-300 h-1.5 w-1.5 shrink-0 rounded-full" />
-                <span className="text-ink-600 truncate text-sm leading-tight">{o.text}</span>
+                <span className="text-ink-600 truncate text-sm leading-tight">
+                  {o.text}
+                </span>
               </Row>
             ))}
             {pollOptions.length > 5 && (
-              <Link href={contractUrl} className="text-ink-400 hover:text-ink-600 text-[11px] transition-colors">
+              <Link
+                href={contractUrl}
+                className="text-ink-400 hover:text-ink-600 text-[11px] transition-colors"
+              >
                 +{pollOptions.length - 5} more →
               </Link>
             )}
@@ -231,7 +276,7 @@ export function DashboardMarketCard({
       </div>
 
       {/* Footer */}
-      <Row className="border-ink-200 items-center border-t px-5 py-1.5 gap-3">
+      <Row className="border-ink-200 items-center gap-3 border-t px-5 py-1.5">
         <TradesButton contract={contract} size="sm" />
         {liquidity > 0 && (
           <Row className="text-ink-500 items-center gap-1">

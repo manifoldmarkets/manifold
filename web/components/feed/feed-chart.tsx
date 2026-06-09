@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { BinaryContract, MultiNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  MultiDateContract,
+  MultiNumericContract,
+} from 'common/contract'
 import { MultiPoints } from 'common/chart'
 import { useEffect, useState } from 'react'
 import { DAY_MS } from 'common/util/time'
@@ -75,7 +79,7 @@ export function FeedBinaryChart(props: {
 }
 
 export function FeedNumericChart(props: {
-  contract: MultiNumericContract
+  contract: MultiNumericContract | MultiDateContract
   className?: string
 }) {
   const { contract, className } = props
@@ -90,7 +94,10 @@ export function FeedNumericChart(props: {
         if (points.length > 0) {
           setMultiPoints(
             mapValues(
-              groupBy(points.filter((p) => p.answerId), 'answerId'),
+              groupBy(
+                points.filter((p) => p.answerId),
+                'answerId'
+              ),
               (pts) => pts.map((p) => ({ x: p.x, y: p.y }))
             )
           )
@@ -106,7 +113,7 @@ export function FeedNumericChart(props: {
       <SizedContainer className={clsx('w-full pb-3 pr-10', className)}>
         {(w, h) => (
           <MultiNumericContractChart
-            contract={contract}
+            contract={contract as MultiNumericContract}
             multiPoints={multiPoints}
             width={w}
             height={h}

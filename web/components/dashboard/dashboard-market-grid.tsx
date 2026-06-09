@@ -15,7 +15,11 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { DashboardAddContract } from 'web/components/dashboard/dashboard-add-contract'
 import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { Content, TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import {
+  Content,
+  TextEditor,
+  useTextEditor,
+} from 'web/components/widgets/editor'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -72,29 +76,38 @@ export function DashboardMarketGrid({
   const [showPollsSection, setShowPollsSection] = useState(
     initialContracts.some((c) => c.outcomeType === 'POLL')
   )
-  const [pollsExpanded, setPollsExpanded] = usePersistentLocalState(false, 'dashboard-polls-expanded')
+  const [pollsExpanded, setPollsExpanded] = usePersistentLocalState(
+    false,
+    'dashboard-polls-expanded'
+  )
   const [pollsShowMore, setPollsShowMore] = useState(false)
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
-  const [descriptionContent, setDescriptionContent] = useState<JSONContent | undefined>(undefined)
+  const [descriptionContent, setDescriptionContent] = useState<
+    JSONContent | undefined
+  >(undefined)
 
-  const maxLinesExtension = useMemo(() => Extension.create({
-    name: 'maxLines',
-    addKeyboardShortcuts() {
-      const blockIfAtMax = ({ editor }: { editor: any }) => {
-        let lineCount = 0
-        editor.state.doc.forEach((node: any) => {
-          if (node.type.name === 'paragraph') {
-            lineCount++
-            node.forEach((child: any) => {
-              if (child.type.name === 'hardBreak') lineCount++
+  const maxLinesExtension = useMemo(
+    () =>
+      Extension.create({
+        name: 'maxLines',
+        addKeyboardShortcuts() {
+          const blockIfAtMax = ({ editor }: { editor: any }) => {
+            let lineCount = 0
+            editor.state.doc.forEach((node: any) => {
+              if (node.type.name === 'paragraph') {
+                lineCount++
+                node.forEach((child: any) => {
+                  if (child.type.name === 'hardBreak') lineCount++
+                })
+              }
             })
+            return lineCount >= 3
           }
-        })
-        return lineCount >= 3
-      }
-      return { Enter: blockIfAtMax, 'Shift-Enter': blockIfAtMax }
-    },
-  }), [])
+          return { Enter: blockIfAtMax, 'Shift-Enter': blockIfAtMax }
+        },
+      }),
+    []
+  )
 
   const descEditor = useTextEditor({
     size: 'sm',
@@ -134,7 +147,9 @@ export function DashboardMarketGrid({
     setSlugOrder(newOrder)
   }
 
-  const polls = contracts.filter((c) => c.outcomeType === 'POLL' && !c.resolution)
+  const polls = contracts.filter(
+    (c) => c.outcomeType === 'POLL' && !c.resolution
+  )
   const activeRaw = contracts.filter(
     (c) => !c.resolution && !(showPollsSection && c.outcomeType === 'POLL')
   )
@@ -142,7 +157,9 @@ export function DashboardMarketGrid({
   const resolved = contracts
     .filter((c) => !!c.resolution)
     .sort((a, b) => (b.resolutionTime ?? 0) - (a.resolutionTime ?? 0))
-  const visibleResolved = resolvedExpanded ? resolved : resolved.slice(0, RESOLVED_COLLAPSE_COUNT)
+  const visibleResolved = resolvedExpanded
+    ? resolved
+    : resolved.slice(0, RESOLVED_COLLAPSE_COUNT)
   const hiddenCount = resolved.length - RESOLVED_COLLAPSE_COUNT
   const sortOptions: { key: SortKey; label: string }[] = [
     { key: 'date', label: 'Close date' },
@@ -160,7 +177,10 @@ export function DashboardMarketGrid({
         {creatorUsername && (
           <p className="text-ink-400 mt-0.5 text-xs">
             dashboard by{' '}
-            <a href={`/${creatorUsername}`} className="hover:text-ink-600 transition-colors">
+            <a
+              href={`/${creatorUsername}`}
+              className="hover:text-ink-600 transition-colors"
+            >
               @{creatorUsername}
             </a>
           </p>
@@ -170,10 +190,16 @@ export function DashboardMarketGrid({
             <div className="max-h-[5em] overflow-y-auto">
               <TextEditor editor={descEditor} simple hideToolbar />
             </div>
-            <span className="text-ink-400 self-end text-xs">{charCount}/{DESCRIPTION_MAX}</span>
+            <span className="text-ink-400 self-end text-xs">
+              {charCount}/{DESCRIPTION_MAX}
+            </span>
           </Col>
         ) : descriptionContent && !JSONEmpty(descriptionContent) ? (
-          <Content content={descriptionContent} size="sm" className="line-clamp-3 text-ink-600" />
+          <Content
+            content={descriptionContent}
+            size="sm"
+            className="text-ink-600 line-clamp-3"
+          />
         ) : (
           <div className="mt-1 h-[1.625em]" />
         )}
@@ -190,7 +216,9 @@ export function DashboardMarketGrid({
                 className="bg-canvas-50 border-ink-300 text-ink-700 hover:bg-canvas-100 cursor-pointer appearance-none rounded-full border py-1.5 pl-3.5 pr-8 text-sm font-medium transition-colors focus:outline-none"
               >
                 {sortOptions.map(({ key, label }) => (
-                  <option key={key} value={key}>{label}</option>
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
                 ))}
               </select>
               <ChevronDownIcon className="text-ink-500 pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
@@ -219,11 +247,13 @@ export function DashboardMarketGrid({
                     onClick={() => setShowPollsSection((v) => !v)}
                     className="border-ink-300 text-ink-600 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs font-medium transition-colors"
                   >
-                    {showPollsSection ? 'Hide polls section' : '+ Polls section'}
+                    {showPollsSection
+                      ? 'Hide polls section'
+                      : '+ Polls section'}
                   </button>
                   <button
                     onClick={() => setShowAdd(true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 rounded-md px-3 py-1.5 text-xs font-medium text-white transition-colors"
+                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
                   >
                     + Add market
                   </button>
@@ -237,12 +267,14 @@ export function DashboardMarketGrid({
         {showPollsSection && (
           <Col className="border-ink-200 rounded-xl border">
             <Row className="border-ink-200 items-center justify-between border-b px-4 py-3">
-              <span className="text-ink-700 text-sm font-bold">Polls ({polls.length})</span>
+              <span className="text-ink-700 text-sm font-bold">
+                Polls ({polls.length})
+              </span>
               <Row className="items-center gap-2">
                 {editMode && (
                   <button
                     onClick={() => setShowAddPoll(true)}
-                    className="text-indigo-500 hover:text-indigo-700 text-xs font-medium transition-colors"
+                    className="text-xs font-medium text-indigo-500 transition-colors hover:text-indigo-700"
                   >
                     + Add poll
                   </button>
@@ -251,24 +283,35 @@ export function DashboardMarketGrid({
                   onClick={() => setPollsExpanded((e) => !e)}
                   className="text-ink-400 hover:text-ink-600 transition-colors"
                 >
-                  {pollsExpanded
-                    ? <ChevronUpIcon className="h-4 w-4" />
-                    : <ChevronDownIcon className="h-4 w-4" />
-                  }
+                  {pollsExpanded ? (
+                    <ChevronUpIcon className="h-4 w-4" />
+                  ) : (
+                    <ChevronDownIcon className="h-4 w-4" />
+                  )}
                 </button>
               </Row>
             </Row>
-            {pollsExpanded && (
-              polls.length > 0 ? (
+            {pollsExpanded &&
+              (polls.length > 0 ? (
                 <Col className="divide-ink-100 divide-y">
-                  {(pollsShowMore ? polls : polls.slice(0, POLLS_VISIBLE_COUNT)).map((contract) => (
+                  {(pollsShowMore
+                    ? polls
+                    : polls.slice(0, POLLS_VISIBLE_COUNT)
+                  ).map((contract) => (
                     <div key={contract.id} className="px-4">
-                      <ContractRow contract={contract} columns={resolvedColumns} />
+                      <ContractRow
+                        contract={contract}
+                        columns={resolvedColumns}
+                      />
                     </div>
                   ))}
                   {polls.length > POLLS_VISIBLE_COUNT && (
                     <Row className="border-ink-100 border-t px-4 py-2">
-                      <Button color="gray" size="sm" onClick={() => setPollsShowMore((v) => !v)}>
+                      <Button
+                        color="gray"
+                        size="sm"
+                        onClick={() => setPollsShowMore((v) => !v)}
+                      >
                         {pollsShowMore ? 'Show less' : 'Show more'}
                       </Button>
                     </Row>
@@ -278,8 +321,7 @@ export function DashboardMarketGrid({
                 <p className="text-ink-400 px-4 py-3 text-sm">
                   No polls yet.{editMode && ' Click + Add poll to add one.'}
                 </p>
-              )
-            )}
+              ))}
           </Col>
         )}
 
@@ -294,7 +336,11 @@ export function DashboardMarketGrid({
                   className="grid grid-cols-1 gap-3 sm:grid-cols-2"
                 >
                   {active.map((contract, index) => (
-                    <Draggable key={contract.id} draggableId={contract.id} index={index}>
+                    <Draggable
+                      key={contract.id}
+                      draggableId={contract.id}
+                      index={index}
+                    >
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
@@ -306,18 +352,21 @@ export function DashboardMarketGrid({
                         >
                           <div
                             {...provided.dragHandleProps}
-                            className="absolute -top-2 -left-2 z-10 flex cursor-grab items-center rounded border border-ink-400 bg-canvas-50 px-1.5 py-1 text-ink-500 hover:border-ink-600 hover:text-ink-700 select-none"
+                            className="border-ink-400 bg-canvas-50 text-ink-500 hover:border-ink-600 hover:text-ink-700 absolute -left-2 -top-2 z-10 flex cursor-grab select-none items-center rounded border px-1.5 py-1"
                             title="Drag to reorder"
                           >
                             <span className="text-[15px] leading-none">⠿</span>
                           </div>
                           <button
                             onClick={() => handleRemove(contract)}
-                            className="text-ink-400 hover:text-ink-600 absolute -top-2 -right-2 z-10 transition-colors"
+                            className="text-ink-400 hover:text-ink-600 absolute -right-2 -top-2 z-10 transition-colors"
                           >
                             <XCircleIcon className="h-5 w-5" />
                           </button>
-                          <DashboardMarketCard contract={contract} trackingLocation={trackingLocation} />
+                          <DashboardMarketCard
+                            contract={contract}
+                            trackingLocation={trackingLocation}
+                          />
                         </div>
                       )}
                     </Draggable>
@@ -334,12 +383,15 @@ export function DashboardMarketGrid({
                 {editMode && (
                   <button
                     onClick={() => handleRemove(contract)}
-                    className="text-ink-400 hover:text-ink-600 absolute -top-2 -right-2 z-10 transition-colors"
+                    className="text-ink-400 hover:text-ink-600 absolute -right-2 -top-2 z-10 transition-colors"
                   >
                     <XCircleIcon className="h-5 w-5" />
                   </button>
                 )}
-                <DashboardMarketCard contract={contract} trackingLocation={trackingLocation} />
+                <DashboardMarketCard
+                  contract={contract}
+                  trackingLocation={trackingLocation}
+                />
               </div>
             ))}
           </div>
@@ -349,7 +401,9 @@ export function DashboardMarketGrid({
         {resolved.length > 0 && (
           <Col className="border-ink-200 mt-6 rounded-xl border">
             <div className="border-ink-200 border-b px-4 py-3">
-              <span className="text-ink-500 text-sm font-medium">Resolved ({resolved.length})</span>
+              <span className="text-ink-500 text-sm font-medium">
+                Resolved ({resolved.length})
+              </span>
             </div>
             <Col className="divide-ink-100 divide-y">
               {visibleResolved.map((contract) => (
@@ -364,9 +418,14 @@ export function DashboardMarketGrid({
                 className="border-ink-200 text-ink-500 hover:text-ink-700 hover:bg-canvas-100 flex w-full items-center justify-center gap-1 border-t py-2.5 text-sm transition-colors"
               >
                 {resolvedExpanded ? (
-                  <><ChevronUpIcon className="h-4 w-4" /> Show less</>
+                  <>
+                    <ChevronUpIcon className="h-4 w-4" /> Show less
+                  </>
                 ) : (
-                  <><ChevronDownIcon className="h-4 w-4" /> Show {hiddenCount} more</>
+                  <>
+                    <ChevronDownIcon className="h-4 w-4" /> Show {hiddenCount}{' '}
+                    more
+                  </>
                 )}
               </button>
             )}
@@ -375,11 +434,26 @@ export function DashboardMarketGrid({
       </Col>
 
       {showAdd && (
-        <Modal open setOpen={(o) => { if (!o) setShowAdd(false) }} size="lg">
-          <Col className={clsx(MODAL_CLASS, 'flex h-[70vh] flex-col !items-stretch')}>
+        <Modal
+          open
+          setOpen={(o) => {
+            if (!o) setShowAdd(false)
+          }}
+          size="lg"
+        >
+          <Col
+            className={clsx(
+              MODAL_CLASS,
+              'flex h-[70vh] flex-col !items-stretch'
+            )}
+          >
             <DashboardAddContract
               addQuestions={async (qs) => {
-                const fetched = await getContracts(db, qs.map((q) => q.slug), 'slug')
+                const fetched = await getContracts(
+                  db,
+                  qs.map((q) => q.slug),
+                  'slug'
+                )
                 fetched.forEach(handleAdd)
                 setShowAdd(false)
               }}
@@ -388,11 +462,26 @@ export function DashboardMarketGrid({
         </Modal>
       )}
       {showAddPoll && (
-        <Modal open setOpen={(o) => { if (!o) setShowAddPoll(false) }} size="lg">
-          <Col className={clsx(MODAL_CLASS, 'flex h-[70vh] flex-col !items-stretch')}>
+        <Modal
+          open
+          setOpen={(o) => {
+            if (!o) setShowAddPoll(false)
+          }}
+          size="lg"
+        >
+          <Col
+            className={clsx(
+              MODAL_CLASS,
+              'flex h-[70vh] flex-col !items-stretch'
+            )}
+          >
             <DashboardAddContract
               addQuestions={async (qs) => {
-                const fetched = await getContracts(db, qs.map((q) => q.slug), 'slug')
+                const fetched = await getContracts(
+                  db,
+                  qs.map((q) => q.slug),
+                  'slug'
+                )
                 fetched.forEach(handleAdd)
                 setShowAddPoll(false)
               }}

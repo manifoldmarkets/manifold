@@ -27,7 +27,11 @@ import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
 import { shortFormatNumber } from 'common/util/format'
 import { ContractRow } from 'web/components/contract/contracts-table'
-import { traderColumn, liquidityColumn, probColumn } from 'web/components/contract/contract-table-col-formats'
+import {
+  traderColumn,
+  liquidityColumn,
+  probColumn,
+} from 'web/components/contract/contract-table-col-formats'
 import { DashboardMarketCard } from 'web/components/dashboard/dashboard-market-card'
 import { DashboardAddContract } from 'web/components/dashboard/dashboard-add-contract'
 import clsx from 'clsx'
@@ -37,7 +41,11 @@ import { formatJustTime } from 'client-common/lib/time'
 import toast from 'react-hot-toast'
 
 import { SortKey, sortContracts } from 'web/lib/sort-contracts'
-import { Content, TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import {
+  Content,
+  TextEditor,
+  useTextEditor,
+} from 'web/components/widgets/editor'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
@@ -201,8 +209,6 @@ function groupByDate(matches: SportsMatch[]): DateSection[] {
   }))
 }
 
-
-
 // ─── Community Tab ────────────────────────────────────────────────────────────
 
 function CommunityTab({
@@ -224,7 +230,10 @@ function CommunityTab({
   const [showAdd, setShowAdd] = useState(false)
   const [pastVisible, setPastVisible] = useState(true)
   const [editMode, setEditMode] = useState(false)
-  const [pollsExpanded, setPollsExpanded] = usePersistentLocalState(false, 'sports-polls-expanded')
+  const [pollsExpanded, setPollsExpanded] = usePersistentLocalState(
+    false,
+    'sports-polls-expanded'
+  )
 
   async function fetchDashboard() {
     try {
@@ -294,14 +303,20 @@ function CommunityTab({
 
   const now = Date.now()
   const polls = contracts.filter((c) => c.outcomeType === 'POLL')
-  const open = contracts.filter((c) => contractResolvedAt(c) === null && c.outcomeType !== 'POLL')
+  const open = contracts.filter(
+    (c) => contractResolvedAt(c) === null && c.outcomeType !== 'POLL'
+  )
   const recentResolved = contracts.filter((c) => {
     const t = contractResolvedAt(c)
-    return t !== null && now - t < RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
+    return (
+      t !== null && now - t < RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
+    )
   })
   const pastResolved = contracts.filter((c) => {
     const t = contractResolvedAt(c)
-    return t !== null && now - t >= RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
+    return (
+      t !== null && now - t >= RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
+    )
   })
 
   // Report total items in this tab (open + resolved), matching the parent's
@@ -457,10 +472,11 @@ function CommunityTab({
               onClick={() => setPollsExpanded((e) => !e)}
               className="text-ink-400 hover:text-ink-600 transition-colors"
             >
-              {pollsExpanded
-                ? <ChevronUpIcon className="h-4 w-4" />
-                : <ChevronDownIcon className="h-4 w-4" />
-              }
+              {pollsExpanded ? (
+                <ChevronUpIcon className="h-4 w-4" />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4" />
+              )}
             </button>
           </Row>
           {pollsExpanded && (
@@ -476,7 +492,10 @@ function CommunityTab({
                       <XCircleIcon className="h-5 w-5" />
                     </button>
                   )}
-                  <ContractRow contract={contract} columns={[traderColumn, liquidityColumn, probColumn]} />
+                  <ContractRow
+                    contract={contract}
+                    columns={[traderColumn, liquidityColumn, probColumn]}
+                  />
                 </div>
               ))}
             </Col>
@@ -513,14 +532,16 @@ function CommunityTab({
                             >
                               <div
                                 {...provided.dragHandleProps}
-                                className="absolute -top-2 -left-2 z-10 flex cursor-grab items-center rounded border border-ink-400 bg-canvas-50 px-1.5 py-1 text-ink-500 hover:border-ink-600 hover:text-ink-700 select-none"
+                                className="border-ink-400 bg-canvas-50 text-ink-500 hover:border-ink-600 hover:text-ink-700 absolute -left-2 -top-2 z-10 flex cursor-grab select-none items-center rounded border px-1.5 py-1"
                                 title="Drag to reorder"
                               >
-                                <span className="text-[15px] leading-none">⠿</span>
+                                <span className="text-[15px] leading-none">
+                                  ⠿
+                                </span>
                               </div>
                               <button
                                 onClick={() => handleRemove(contract)}
-                                className="text-ink-500 hover:text-ink-700 absolute -top-2 -right-2 z-10 transition-colors"
+                                className="text-ink-500 hover:text-ink-700 absolute -right-2 -top-2 z-10 transition-colors"
                                 title="Remove from community tab"
                               >
                                 <XCircleIcon className="h-5 w-5" />
@@ -618,11 +639,26 @@ function CommunityTab({
       )}
 
       {showAdd && (
-        <Modal open setOpen={(o) => { if (!o) setShowAdd(false) }} size="lg">
-          <Col className={clsx(MODAL_CLASS, 'flex h-[70vh] flex-col !items-stretch')}>
+        <Modal
+          open
+          setOpen={(o) => {
+            if (!o) setShowAdd(false)
+          }}
+          size="lg"
+        >
+          <Col
+            className={clsx(
+              MODAL_CLASS,
+              'flex h-[70vh] flex-col !items-stretch'
+            )}
+          >
             <DashboardAddContract
               addQuestions={async (qs) => {
-                const fetched = await getContracts(db, qs.map((q) => q.slug), 'slug')
+                const fetched = await getContracts(
+                  db,
+                  qs.map((q) => q.slug),
+                  'slug'
+                )
                 for (const contract of fetched) {
                   await handleAdd(contract.id)
                 }
@@ -667,7 +703,9 @@ function OfficialDescEditor({
           Cancel
         </button>
         <button
-          onClick={() => { if (editor) onSave(editor.getJSON()) }}
+          onClick={() => {
+            if (editor) onSave(editor.getJSON())
+          }}
           disabled={saving || !editor}
           className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
@@ -685,7 +723,8 @@ const OFFICIAL_DESC_ITEM_ID = '__official_description__'
 
 function descFromDashboard(d: Dashboard): JSONContent | undefined {
   const item = d.items.find(
-    (i): i is DashboardTextItem => i.type === 'text' && i.id === OFFICIAL_DESC_ITEM_ID
+    (i): i is DashboardTextItem =>
+      i.type === 'text' && i.id === OFFICIAL_DESC_ITEM_ID
   )
   return item?.content as JSONContent | undefined
 }
@@ -824,13 +863,23 @@ export function SportsDashboardPage({
     setSavingDesc(true)
     try {
       const otherItems = descDashboard.items.filter(
-        (i) => !(i.type === 'text' && (i as DashboardTextItem).id === OFFICIAL_DESC_ITEM_ID)
+        (i) =>
+          !(
+            i.type === 'text' &&
+            (i as DashboardTextItem).id === OFFICIAL_DESC_ITEM_ID
+          )
       )
       const newItems: DashboardItem[] = [
         ...otherItems,
         ...(JSONEmpty(content)
           ? []
-          : [{ type: 'text' as const, id: OFFICIAL_DESC_ITEM_ID, content } as DashboardTextItem]),
+          : [
+              {
+                type: 'text' as const,
+                id: OFFICIAL_DESC_ITEM_ID,
+                content,
+              } as DashboardTextItem,
+            ]),
       ]
       await updateDashboard({
         dashboardId: descDashboard.id,
@@ -913,7 +962,8 @@ export function SportsDashboardPage({
         ) : (
           <>
             {/* Official description — visible to all, editable by admins */}
-            {((!!officialDescription && !JSONEmpty(officialDescription)) || (isAdmin && descDashboard)) && (
+            {((!!officialDescription && !JSONEmpty(officialDescription)) ||
+              (isAdmin && descDashboard)) && (
               <Col className="-mt-4 gap-2">
                 {!editingDesc ? (
                   <Row className="items-start gap-3">
@@ -927,13 +977,17 @@ export function SportsDashboardPage({
                         onClick={() => setEditingDesc(true)}
                         className="text-ink-400 hover:text-ink-600 shrink-0 text-xs transition-colors"
                       >
-                        {officialDescription && !JSONEmpty(officialDescription) ? 'edit' : '+ add description'}
+                        {officialDescription && !JSONEmpty(officialDescription)
+                          ? 'edit'
+                          : '+ add description'}
                       </button>
                     )}
                   </Row>
                 ) : (
                   <OfficialDescEditor
-                    initialContent={officialDescription as JSONContent | undefined}
+                    initialContent={
+                      officialDescription as JSONContent | undefined
+                    }
                     onSave={handleSaveDesc}
                     onCancel={() => setEditingDesc(false)}
                     saving={savingDesc}
