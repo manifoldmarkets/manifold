@@ -327,11 +327,36 @@ function CheckoutContent() {
     offers.refresh()
   }
 
+  // Ticking clock for the offer countdown. Keyed on the offer's expiry so it
+  // stays inert when there's no offer. This is the single source of truth for
+  // "now" — passed down to the card too — so the gate below and the card's own
+  // render decision read the same clock and can never disagree (which is what
+  // produced the blank "active but expired" dead zone).
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!effectiveNextExpiresAt) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [effectiveNextExpiresAt])
+
+  const cryptoLoading =
+    sessionState.status === 'creating' || sessionState.status === 'ready'
+
   // The offer card and hidden-offer chip nest INSIDE the standard Buy mana
   // card body, above the mana image. They're only meaningful when we're
   // showing the normal payment state (success / error states swap the body
   // out entirely, naturally hiding the offer UI).
-  const showOfferCard = effectiveActiveCount > 0
+  //
+  // Gate on the card's exact render predicate (incl. the `: 0` null-expiry
+  // mapping): active AND (not expired OR a payment is in flight). The
+  // cryptoLoading exception keeps an in-flight session visible through the
+  // backend's redemption grace window, exactly as the card does — without it
+  // an expired-but-active offer hides the standard buy UI while the card
+  // renders nothing, leaving the page blank.
+  const offerRemaining =
+    effectiveNextExpiresAt != null ? effectiveNextExpiresAt - now : 0
+  const showOfferCard =
+    effectiveActiveCount > 0 && (offerRemaining > 0 || cryptoLoading)
   const showHiddenChip =
     !showOfferCard && offers.dismissedCount > 0 && offers.activeCount === 0
 
@@ -396,15 +421,13 @@ function CheckoutContent() {
                 chip takes its place when dismissed. */}
             {showOfferCard ? (
               <PersonalizedOfferCard
+                now={now}
                 activeCount={effectiveActiveCount}
                 nextExpiresAt={effectiveNextExpiresAt}
                 manaAmount={offers.manaAmount}
                 priceUsdStripe={offers.priceUsdStripe}
                 priceUsdCrypto={offers.priceUsdCrypto}
-                cryptoLoading={
-                  sessionState.status === 'creating' ||
-                  sessionState.status === 'ready'
-                }
+                cryptoLoading={cryptoLoading}
                 cryptoDisabled={!canPay}
                 creditCardDisabled={!canPay}
                 onBuyWithCrypto={() =>
@@ -494,10 +517,7 @@ function CheckoutContent() {
                     <>
                       <button
                         onClick={() => handleBuyManaClick()}
-                        disabled={
-                          sessionState.status === 'creating' ||
-                          sessionState.status === 'ready'
-                        }
+                        disabled={cryptoLoading}
                         className={clsx(
                           'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
                           'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
