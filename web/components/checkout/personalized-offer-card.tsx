@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
 import { CurrencyDollarIcon, XIcon } from '@heroicons/react/solid'
 import { FaCreditCard } from 'react-icons/fa6'
 import { Col } from 'web/components/layout/col'
@@ -19,6 +18,11 @@ function formatHmsRemaining(ms: number) {
 }
 
 export function PersonalizedOfferCard(props: {
+  // Shared clock owned by the parent (checkout page). Passing it down instead
+  // of ticking our own keeps this card's expiry decision and the parent's
+  // showOfferCard gate on the exact same `now`, so they can't disagree and
+  // leave the page blank.
+  now: number
   activeCount: number
   nextExpiresAt: number | null
   manaAmount: number
@@ -38,6 +42,7 @@ export function PersonalizedOfferCard(props: {
   dismissDisabled?: boolean
 }) {
   const {
+    now,
     activeCount,
     nextExpiresAt,
     manaAmount,
@@ -51,13 +56,6 @@ export function PersonalizedOfferCard(props: {
     onDismiss,
     dismissDisabled,
   } = props
-
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    if (!nextExpiresAt) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [nextExpiresAt])
 
   const remaining = nextExpiresAt != null ? nextExpiresAt - now : 0
   if (activeCount === 0) return null
