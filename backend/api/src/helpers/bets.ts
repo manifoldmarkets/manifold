@@ -22,7 +22,9 @@ import {
   getEffectiveBonusMultiplier,
   resolveEffectiveTier,
   roundTierBonus,
+  SUPPORTER_ENTITLEMENT_IDS,
 } from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import {
@@ -120,14 +122,30 @@ export const fetchContractBetDataAndValidate = async (
     select * from user_bans where user_id = $1 and ended_at is null and (end_time is null or end_time > now());
     -- Creator user for bonus eligibility check
     select * from users where id = (select creator_id from contracts where id = $2);
+    -- Creator's active supporter entitlements: subscription wins in
+    -- resolveEffectiveTier, so the creator's unique-trader bonus must see them.
+    -- (convertUser doesn't load entitlements, so without this a subscriber
+    -- creator would be mis-tiered as unverified.)
+    select user_id, entitlement_id, granted_time, expires_time, enabled, auto_renew, metadata
+      from user_entitlements
+      where user_id = (select creator_id from contracts where id = $2)
+        and entitlement_id in ($5:list)
+        and enabled = true
+        and (expires_time is null or expires_time > now());
   `,
-    [uid, contractId, answerIds ?? null, outcome]
+    [uid, contractId, answerIds ?? null, outcome, [...SUPPORTER_ENTITLEMENT_IDS]]
   )
   const results = await pgTrans.multi(queries)
   const user = convertUser(results[0][0])
   const contract = convertContract(results[1][0])
   const creatorRow = results[8]?.[0]
   const creator = creatorRow ? convertUser(creatorRow) : undefined
+  // Attach the creator's active supporter entitlements (loaded above) so
+  // resolveEffectiveTier recognizes a subscriber creator — otherwise their
+  // unique-trader bonus is computed at the unverified tier.
+  if (creator) {
+    creator.entitlements = (results[9] ?? []).map(convertEntitlement)
+  }
   const answers = results[2].map(convertAnswer)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
