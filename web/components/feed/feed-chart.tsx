@@ -112,6 +112,7 @@ export function FeedNumericChart(props: {
             height={h}
             zoomY
             noWatermark
+            yKind={contract.outcomeType === 'DATE' ? 'date' : undefined}
           />
         )}
       </SizedContainer>

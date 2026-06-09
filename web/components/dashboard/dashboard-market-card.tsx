@@ -145,6 +145,7 @@ export function DashboardMarketCard({
       <div className="min-h-0 flex-1 overflow-hidden px-5 pt-4 pb-2">
         {isBinary && cpmmContract && binaryContract && (
           <Col className="h-full gap-0">
+            {contract.uniqueBettorCount === 0 && <div className="flex-1" />}
             <Row className="items-center justify-between pb-2">
               {resolved ? (
                 <ContractStatusLabel contract={contract} className="text-2xl font-bold" />
@@ -164,12 +165,16 @@ export function DashboardMarketCard({
                 </>
               )}
             </Row>
-            {contract.uniqueBettorCount > 0 && (
-              <FeedBinaryChart
-                contract={binaryContract}
-                className="h-[120px] w-full"
-                startDate={contract.createdTime}
-              />
+            {contract.uniqueBettorCount > 0 ? (
+              <div className="mt-auto">
+                <FeedBinaryChart
+                  contract={binaryContract}
+                  className="h-[120px] w-full"
+                  startDate={contract.createdTime}
+                />
+              </div>
+            ) : (
+              <div className="flex-[3]" />
             )}
           </Col>
         )}
@@ -183,6 +188,7 @@ export function DashboardMarketCard({
 
         {isNumericBuckets && (
           <Col className="h-full gap-0">
+            {!(isMultiNumericChart && contract.uniqueBettorCount > 0) && <div className="flex-1" />}
             <Row className="items-baseline gap-1.5 pb-2">
               <ContractStatusLabel
                 contract={contract}
@@ -192,11 +198,13 @@ export function DashboardMarketCard({
                 {resolved ? 'resolved value' : 'expected value'}
               </span>
             </Row>
-            {isMultiNumericChart && contract.uniqueBettorCount > 0 && (
+            {isMultiNumericChart && contract.uniqueBettorCount > 0 ? (
               <FeedNumericChart
                 contract={contract as MultiNumericContract}
                 className="flex-1 min-h-0"
               />
+            ) : (
+              <div className="flex-[3]" />
             )}
           </Col>
         )}

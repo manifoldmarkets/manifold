@@ -3,6 +3,7 @@ import { last, map, sum, zip, keyBy, sortBy } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { MultiNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
+import { ValueKind } from 'common/chart'
 import {
   getEndDate,
   getRightmostVisibleDate,
@@ -98,6 +99,7 @@ export const MultiNumericContractChart = (props: {
   showZoomer?: boolean
   zoomY?: boolean
   noWatermark?: boolean
+  yKind?: ValueKind
 }) => {
   const {
     contract,
@@ -108,6 +110,7 @@ export const MultiNumericContractChart = (props: {
     showZoomer,
     zoomY,
     noWatermark,
+    yKind,
   } = props
   const start = contract.createdTime
   const end = getEndDate(contract)
@@ -163,6 +166,7 @@ export const MultiNumericContractChart = (props: {
       )}
       color={NUMERIC_GRAPH_COLOR}
       noWatermark={noWatermark}
+      yKind={yKind}
     />
   )
 }
