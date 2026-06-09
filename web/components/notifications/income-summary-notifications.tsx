@@ -51,6 +51,25 @@ import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
 import { BettingStreakProgressModal } from '../profile/first-streak-modal'
+
+// Shown in place of a "reduced because unverified" / "come back for a bonus"
+// subtitle when the user is admin-flagged (effective tier 'restricted'): they
+// earn ZERO bonuses until they verify, so the messaging must say so rather than
+// nudge them toward a bonus they won't receive.
+function FlaggedBonusSubtitle() {
+  return (
+    <span>
+      Bonus not received — your account is flagged for verification.{' '}
+      <a
+        href="/membership"
+        className="text-primary-700 font-semibold hover:underline"
+      >
+        Verify your identity
+      </a>{' '}
+      to earn bonuses.
+    </span>
+  )
+}
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -81,7 +100,9 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
-  const isUnverified = user && getEffectiveTier(user) === 'unverified'
+  const uniqueTier = user ? getEffectiveTier(user) : undefined
+  const isUnverified = uniqueTier === 'unverified'
+  const isFlagged = uniqueTier === 'restricted'
   return (
     <NotificationFrame
       notification={notification}
@@ -89,7 +110,9 @@ export function UniqueBettorBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        isUnverified ? (
+        isFlagged ? (
+          <FlaggedBonusSubtitle />
+        ) : isUnverified ? (
           <span>
             Reduced because your account is unverified.{' '}
             <a
@@ -283,6 +306,9 @@ export function QuestIncomeNotification(props: {
   const isUnverified =
     txnTier === 'unverified' ||
     (txnTier === undefined && userTier === 'unverified')
+  const isFlagged =
+    txnTier === 'restricted' ||
+    (txnTier === undefined && userTier === 'restricted')
   return (
     <NotificationFrame
       notification={notification}
@@ -290,7 +316,9 @@ export function QuestIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        isUnverified ? (
+        isFlagged ? (
+          <FlaggedBonusSubtitle />
+        ) : isUnverified ? (
           <span>
             This bonus is reduced because your account is unverified.{' '}
             <a
@@ -363,6 +391,7 @@ export function BettingStreakBonusIncomeNotification(props: {
   const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
   const verifiedMaxBonus = BETTING_STREAK_BONUS_MAX
   const isUnverified = effectiveTier === 'unverified'
+  const isFlagged = effectiveTier === 'restricted'
 
   return (
     <NotificationFrame
@@ -371,7 +400,9 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        isUnverified ? (
+        isFlagged ? (
+          <FlaggedBonusSubtitle />
+        ) : isUnverified ? (
           <span>
             This bonus is reduced because your account is unverified.{' '}
             <a
