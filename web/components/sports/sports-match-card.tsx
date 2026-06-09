@@ -6,6 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { flagEmojiToCode } from 'common/sports'
 import { SportsBetPanel } from './sports-bet-panel'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
@@ -95,6 +96,7 @@ function OutcomeRow({
   teamColor,
   winnerColor,
   onClick,
+  hasPosition,
 }: {
   flag?: string
   name: string
@@ -107,6 +109,7 @@ function OutcomeRow({
   teamColor?: string
   winnerColor?: string
   onClick?: () => void
+  hasPosition?: boolean
 }) {
   const barColor = isWinner
     ? 'bg-green-400'
@@ -139,6 +142,17 @@ function OutcomeRow({
           opacity: 0.5,
         }}
       />
+      {hasPosition && (
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 w-[5px]"
+          style={{ backgroundColor: teamColor ?? undefined }}
+        >
+          <div
+            className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2"
+            style={{ backgroundColor: 'rgba(255,255,255,0.35)' }}
+          />
+        </div>
+      )}
       <div className="relative z-10 flex w-full items-center gap-2">
         {isDraw ? (
           <div className="border-ink-300 bg-canvas-100 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border">
@@ -206,6 +220,118 @@ function OutcomeRow({
   )
 }
 
+// ── DEV MOCK: cycles cards through position states for visual preview ──────────
+type MockPosition = { name: string; color: string; amount: number; profit: number }
+type MockOrder = { name: string; prob: number; amount: number }
+type MockUserData = { positions: MockPosition[]; limitOrders: MockOrder[] }
+
+function getMockUserData(matchId: string, match: SportsMatch): MockUserData {
+  const hash = matchId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  const teamAName = match.teamA.name
+  const teamBName = match.teamB.name
+  switch (hash % 5) {
+    case 0: return { positions: [], limitOrders: [] }
+    case 1: return {
+      positions: [{ name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 }],
+      limitOrders: [],
+    }
+    case 2: return {
+      positions: [
+        { name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 },
+        { name: 'Draw', color: SPORTS_COLORS.draw, amount: 50, profit: -8 },
+      ],
+      limitOrders: [],
+    }
+    case 3: return {
+      positions: [{ name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 }],
+      limitOrders: [
+        { name: teamAName, prob: 70, amount: 100 },
+        { name: teamAName, prob: 65, amount: 75 },
+        { name: teamAName, prob: 60, amount: 50 },
+        { name: teamBName, prob: 25, amount: 200 },
+        { name: teamBName, prob: 20, amount: 150 },
+        { name: teamBName, prob: 15, amount: 100 },
+        { name: 'Draw', prob: 30, amount: 80 },
+        { name: 'Draw', prob: 25, amount: 60 },
+      ],
+    }
+    default: return {
+      positions: [
+        { name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 },
+        { name: teamBName, color: SPORTS_COLORS.teamB, amount: 80, profit: -12 },
+        { name: 'Draw', color: SPORTS_COLORS.draw, amount: 50, profit: -8 },
+      ],
+      limitOrders: [
+        { name: teamAName, prob: 70, amount: 100 },
+        { name: teamAName, prob: 60, amount: 75 },
+        { name: teamBName, prob: 25, amount: 200 },
+        { name: 'Draw', prob: 30, amount: 80 },
+      ],
+    }
+  }
+}
+
+const MAX_SHOWN = 4
+
+function PositionsHoverContent({ positions, limitOrders }: MockUserData) {
+  const shownPositions = positions.slice(0, MAX_SHOWN)
+  const extraPositions = positions.length - shownPositions.length
+  const shownOrders = limitOrders.slice(0, MAX_SHOWN)
+  const extraOrders = limitOrders.length - shownOrders.length
+
+  return (
+    <div className="min-w-[220px] text-left">
+      {positions.length > 0 && (
+        <>
+          <Row className="mb-2 items-center gap-1.5">
+            <span className="bg-ink-300 h-2.5 w-2.5 flex-shrink-0 rounded-full" />
+            <p className="text-ink-300 text-xs font-bold uppercase tracking-wider">
+              Positions
+            </p>
+          </Row>
+          {shownPositions.map((p) => (
+            <Row key={p.name} className="mb-1 items-center justify-between gap-4">
+              <Row className="min-w-0 items-center gap-1.5">
+                <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: p.color }} />
+                <span className="min-w-0 truncate text-sm">{p.name}</span>
+              </Row>
+              <Row className="flex-shrink-0 items-center gap-1.5 text-sm font-semibold">
+                <span>Ṁ{p.amount}</span>
+                <span className={p.profit >= 0 ? 'text-green-600' : 'text-red-500'}>
+                  {p.profit >= 0 ? '+' : ''}Ṁ{p.profit}
+                </span>
+              </Row>
+            </Row>
+          ))}
+          {extraPositions > 0 && (
+            <p className="text-ink-400 mt-0.5 text-[11px]">+{extraPositions} more — view market</p>
+          )}
+        </>
+      )}
+      {limitOrders.length > 0 && (
+        <div className={positions.length > 0 ? 'mt-3' : ''}>
+          <Row className="mb-2 items-center gap-1.5">
+            <span className="border-ink-300 h-2.5 w-2.5 flex-shrink-0 rounded-full border" />
+            <p className="text-ink-300 text-xs font-bold uppercase tracking-wider">
+              Limit Orders
+            </p>
+          </Row>
+          {shownOrders.map((o, i) => (
+            <Row key={i} className="mb-0.5 items-center gap-1 text-sm text-ink-400">
+              <span className="min-w-0 truncate">{o.name}</span>
+              <span className="flex-shrink-0">at {o.prob}% — Ṁ{o.amount}</span>
+            </Row>
+          ))}
+          {extraOrders > 0 && (
+            <p className="text-ink-400 mt-0.5 text-[11px]">+{extraOrders} more — view market</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const resolved = match.status === 'resolved'
   const now = Date.now()
@@ -248,6 +374,10 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const awayScore = resolved ? match.finalScore?.away : undefined
   const winnerColor = resolved ? vibrantForOutcome(match.winner) : undefined
   const marketHref = match.marketUrl ?? '#'
+  const userData = resolved ? { positions: [], limitOrders: [] } : getMockUserData(match.id, match)
+  const hasPositions = userData.positions.length > 0
+  const hasOrders = userData.limitOrders.length > 0
+  const hasAny = hasPositions || hasOrders
   const LIVE_COLOR = '#16a34a'
 
   // Annotate how a knockout was decided so the fullTime score (which can be a
@@ -383,6 +513,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             teamColor={SPORTS_COLORS.teamA}
             winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
             onClick={!resolved ? () => setBetOutcome('teamA') : undefined}
+            hasPosition={userData.positions.some((p) => p.name === match.teamA.name)}
           />
           <OutcomeRow
             flag={match.teamB.flag}
@@ -394,6 +525,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             teamColor={SPORTS_COLORS.teamB}
             winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
             onClick={!resolved ? () => setBetOutcome('teamB') : undefined}
+            hasPosition={userData.positions.some((p) => p.name === match.teamB.name)}
           />
           {(match.hasDraw ?? true) && (
             <OutcomeRow
@@ -405,12 +537,34 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               teamColor={SPORTS_COLORS.draw}
               winnerColor={match.winner === 'draw' ? winnerColor : undefined}
               onClick={!resolved ? () => setBetOutcome('draw') : undefined}
+              hasPosition={userData.positions.some((p) => p.name === 'Draw')}
             />
           )}
         </Col>
 
-        <Row className="border-ink-200 justify-between border-t pt-2">
+        <Row className="border-ink-200 items-center justify-between border-t pt-2">
           <span className="text-ink-500 text-[11px]">Ṁ {match.volume} vol</span>
+          {hasAny && (
+            <Tooltip
+              text={
+                <Link href={marketHref} className="block">
+                  <PositionsHoverContent {...userData} />
+                </Link>
+              }
+              placement="top"
+              hasSafePolygon
+              tooltipClassName="!bg-canvas-20 border-ink-200 border shadow-lg !text-left !max-w-none !px-3 !py-2.5 !rounded-lg"
+            >
+              <Link
+                href={marketHref}
+                className="text-ink-500 hover:text-ink-700 flex items-center gap-1.5 text-[11px] transition-colors"
+              >
+                {hasPositions && <span className="bg-ink-400 h-2 w-2 rounded-full" />}
+                {hasOrders && <span className="border-ink-600 h-2 w-2 rounded-full border" />}
+                <span>Positions</span>
+              </Link>
+            </Tooltip>
+          )}
           <Link
             href={marketHref}
             className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
