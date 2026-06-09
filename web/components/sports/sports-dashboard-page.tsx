@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { JSONContent } from '@tiptap/core'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -24,30 +25,17 @@ import type { DropResult } from '@hello-pangea/dnd'
 import { Dashboard, DashboardItem, DashboardTextItem } from 'common/dashboard'
 import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
-import { Button } from 'web/components/buttons/button'
 import { shortFormatNumber } from 'common/util/format'
-import { SearchInput } from 'web/components/search/search-input'
-import { ContractFilters } from 'web/components/search/contract-filters'
+import { ContractRow } from 'web/components/contract/contracts-table'
 import {
-  SearchParams,
-  QUERY_KEY,
-  SORT_KEY,
-  FILTER_KEY,
-  CONTRACT_TYPE_KEY,
-  SEARCH_TYPE_KEY,
-  PRIZE_MARKET_KEY,
-  FOR_YOU_KEY,
-  TOPIC_FILTER_KEY,
-  SWEEPIES_KEY,
-  GROUP_IDS_KEY,
-  LIQUIDITY_KEY,
-  HAS_BETS_KEY,
-} from 'web/components/search'
-import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+  traderColumn,
+  liquidityColumn,
+  probColumn,
+} from 'web/components/contract/contract-table-col-formats'
+import { DashboardMarketCard } from 'web/components/dashboard/dashboard-market-card'
+import { DashboardAddContract } from 'web/components/dashboard/dashboard-add-contract'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { APIParams } from 'common/api/schema'
 import { SportsMarket } from 'common/sports'
 import { formatJustTime } from 'client-common/lib/time'
 import toast from 'react-hot-toast'
@@ -59,6 +47,8 @@ import {
   useTextEditor,
 } from 'web/components/widgets/editor'
 import { JSONEmpty } from 'web/components/contract/contract-description'
+import { XCircleIcon } from '@heroicons/react/solid'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -219,196 +209,6 @@ function groupByDate(matches: SportsMatch[]): DateSection[] {
   }))
 }
 
-// ─── Add Market Modal ─────────────────────────────────────────────────────────
-
-const DEFAULT_SEARCH_PARAMS: SearchParams = {
-  [QUERY_KEY]: '',
-  [SORT_KEY]: 'score',
-  [FILTER_KEY]: 'open',
-  [CONTRACT_TYPE_KEY]: 'ALL',
-  [SEARCH_TYPE_KEY]: undefined,
-  [PRIZE_MARKET_KEY]: '0',
-  [FOR_YOU_KEY]: '0',
-  [TOPIC_FILTER_KEY]: '',
-  [SWEEPIES_KEY]: '0',
-  [GROUP_IDS_KEY]: '',
-  [LIQUIDITY_KEY]: '',
-  [HAS_BETS_KEY]: '0',
-}
-
-function AddMarketModal({
-  existingSlugs,
-  onAdd,
-  onClose,
-}: {
-  existingSlugs: Set<string>
-  onAdd: (contractId: string) => Promise<void>
-  onClose: () => void
-}) {
-  const [params, setParams] = useState<SearchParams>(DEFAULT_SEARCH_PARAMS)
-  const [results, setResults] = useState<Contract[]>([])
-  const [searching, setSearching] = useState(false)
-  const [adding, setAdding] = useState<string | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function updateParams(changes: Partial<SearchParams>) {
-    setParams((prev) => ({ ...prev, ...changes }))
-  }
-
-  useEffect(() => {
-    let active = true
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const data = await api('search-markets-full', {
-          term: params[QUERY_KEY],
-          filter: params[
-            FILTER_KEY
-          ] as APIParams<'search-markets-full'>['filter'],
-          sort: params[SORT_KEY] as APIParams<'search-markets-full'>['sort'],
-          contractType: params[
-            CONTRACT_TYPE_KEY
-          ] as APIParams<'search-markets-full'>['contractType'],
-          offset: 0,
-          limit: 20,
-          forYou: (params[FOR_YOU_KEY] ?? '0') as '1' | '0',
-          token: 'MANA',
-          hasBets: params[HAS_BETS_KEY] as '1' | '0' | undefined,
-          liquidity: params[LIQUIDITY_KEY]
-            ? parseInt(params[LIQUIDITY_KEY])
-            : undefined,
-        })
-        // Guard against out-of-order resolutions / unmount overwriting newer state.
-        if (active) setResults((data as Contract[]) ?? [])
-      } catch {
-        if (active) setResults([])
-      } finally {
-        if (active) setSearching(false)
-      }
-    }, 200)
-    return () => {
-      active = false
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [
-    params[QUERY_KEY],
-    params[FILTER_KEY],
-    params[SORT_KEY],
-    params[CONTRACT_TYPE_KEY],
-    params[FOR_YOU_KEY],
-    params[HAS_BETS_KEY],
-    params[LIQUIDITY_KEY],
-  ])
-
-  // Client-side substring filter to catch hyphen/partial misses
-  const query = params[QUERY_KEY]
-  const displayed = query.trim()
-    ? results.filter((m) =>
-        m.question.toLowerCase().includes(query.toLowerCase())
-      )
-    : results
-
-  async function handleAdd(contract: Contract) {
-    setAdding(contract.id)
-    try {
-      await onAdd(contract.slug)
-    } finally {
-      setAdding(null)
-    }
-  }
-
-  return (
-    <Modal
-      open
-      setOpen={(o) => {
-        if (!o) onClose()
-      }}
-      size="md"
-    >
-      <Col className={clsx(MODAL_CLASS, 'gap-3')}>
-        <p className="text-ink-1000 text-base font-semibold">
-          Add market to community tab
-        </p>
-
-        <SearchInput
-          value={params[QUERY_KEY]}
-          setValue={(q) => updateParams({ [QUERY_KEY]: q })}
-          placeholder="Search questions"
-          autoFocus
-          loading={searching}
-        />
-
-        <ContractFilters
-          params={params}
-          updateParams={updateParams}
-          hideSweepsToggle
-        />
-
-        <Col className="max-h-80 gap-0.5 overflow-y-auto">
-          {displayed.length > 0
-            ? displayed.map((contract) => {
-                const already = existingSlugs.has(contract.slug)
-                return (
-                  <Row
-                    key={contract.id}
-                    className={clsx(
-                      'min-w-0 items-center gap-3 rounded-lg px-2 py-2 transition-colors',
-                      already
-                        ? 'opacity-50'
-                        : 'hover:bg-canvas-50 cursor-pointer'
-                    )}
-                    onClick={() => !already && !adding && handleAdd(contract)}
-                  >
-                    <img
-                      src={contract.creatorAvatarUrl ?? '/default-avatar.png'}
-                      alt=""
-                      className="h-7 w-7 shrink-0 rounded-full object-cover"
-                    />
-                    <span className="text-ink-900 min-w-0 flex-1 truncate text-sm">
-                      {contract.question}
-                    </span>
-                    <ContractStatusLabel
-                      contract={contract}
-                      className="shrink-0 text-sm"
-                    />
-                    <span
-                      className={clsx(
-                        'shrink-0 rounded px-2 py-0.5 text-xs font-medium',
-                        already
-                          ? 'text-ink-400'
-                          : adding === contract.id
-                          ? 'text-ink-400'
-                          : 'text-indigo-500 hover:text-indigo-700'
-                      )}
-                    >
-                      {adding === contract.id ? '…' : already ? 'Added' : 'Add'}
-                    </span>
-                  </Row>
-                )
-              })
-            : !searching && (
-                <p className="text-ink-400 py-2 text-sm">
-                  {query.trim() ? 'No markets found.' : 'Loading…'}
-                </p>
-              )}
-        </Col>
-
-        <button
-          onClick={onClose}
-          className="text-ink-500 hover:text-ink-700 self-end text-sm"
-        >
-          Done
-        </button>
-      </Col>
-    </Modal>
-  )
-}
-
-function CommunityMarketCard({ contract }: { contract: Contract }) {
-  return <FeedContractCard contract={contract} />
-}
-
 // ─── Community Tab ────────────────────────────────────────────────────────────
 
 function CommunityTab({
@@ -430,6 +230,10 @@ function CommunityTab({
   const [showAdd, setShowAdd] = useState(false)
   const [pastVisible, setPastVisible] = useState(true)
   const [editMode, setEditMode] = useState(false)
+  const [pollsExpanded, setPollsExpanded] = usePersistentLocalState(
+    false,
+    'sports-polls-expanded'
+  )
 
   async function fetchDashboard() {
     try {
@@ -498,14 +302,21 @@ function CommunityTab({
   }
 
   const now = Date.now()
-  const open = contracts.filter((c) => contractResolvedAt(c) === null)
+  const polls = contracts.filter((c) => c.outcomeType === 'POLL')
+  const open = contracts.filter(
+    (c) => contractResolvedAt(c) === null && c.outcomeType !== 'POLL'
+  )
   const recentResolved = contracts.filter((c) => {
     const t = contractResolvedAt(c)
-    return t !== null && now - t < RECENT_THRESHOLD_MS
+    return (
+      t !== null && now - t < RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
+    )
   })
   const pastResolved = contracts.filter((c) => {
     const t = contractResolvedAt(c)
-    return t !== null && now - t >= RECENT_THRESHOLD_MS
+    return (
+      t !== null && now - t >= RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
+    )
   })
 
   // Report total items in this tab (open + resolved), matching the parent's
@@ -643,9 +454,54 @@ function CommunityTab({
 
       {/* Open markets */}
       {dashboard !== null &&
+        polls.length === 0 &&
         sortedOpen.length === 0 &&
         recentResolved.length === 0 &&
         pastResolved.length === 0 && <CommunityEmptyState />}
+
+      {dashboard !== null && polls.length > 0 && (
+        <Col className="border-ink-200 rounded-xl border">
+          <Row className="border-ink-200 items-center justify-between border-b px-4 py-3">
+            <Row className="items-center gap-2">
+              <span className="text-ink-700 text-sm font-bold">Polls</span>
+              {!pollsExpanded && (
+                <span className="text-ink-400 text-xs">({polls.length})</span>
+              )}
+            </Row>
+            <button
+              onClick={() => setPollsExpanded((e) => !e)}
+              className="text-ink-400 hover:text-ink-600 transition-colors"
+            >
+              {pollsExpanded ? (
+                <ChevronUpIcon className="h-4 w-4" />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4" />
+              )}
+            </button>
+          </Row>
+          {pollsExpanded && (
+            <Col className="divide-ink-100 divide-y">
+              {polls.map((contract) => (
+                <div key={contract.id} className="relative px-4">
+                  {isAdmin && editMode && (
+                    <button
+                      onClick={() => handleRemove(contract)}
+                      className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                      title="Remove from community tab"
+                    >
+                      <XCircleIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                  <ContractRow
+                    contract={contract}
+                    columns={[traderColumn, liquidityColumn, probColumn]}
+                  />
+                </div>
+              ))}
+            </Col>
+          )}
+        </Col>
+      )}
 
       {dashboard !== null && (
         <>
@@ -670,27 +526,27 @@ function CommunityTab({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               className={clsx(
-                                'flex flex-col gap-1.5',
+                                'relative flex flex-col',
                                 snapshot.isDragging && 'opacity-80 shadow-lg'
                               )}
                             >
-                              <Row className="items-center justify-between px-1">
-                                <div
-                                  {...provided.dragHandleProps}
-                                  className="text-ink-400 hover:text-ink-700 cursor-grab select-none text-lg leading-none"
-                                  title="Drag to reorder"
-                                >
+                              <div
+                                {...provided.dragHandleProps}
+                                className="border-ink-400 bg-canvas-50 text-ink-500 hover:border-ink-600 hover:text-ink-700 absolute -left-2 -top-2 z-10 flex cursor-grab select-none items-center rounded border px-1.5 py-1"
+                                title="Drag to reorder"
+                              >
+                                <span className="text-[15px] leading-none">
                                   ⠿
-                                </div>
-                                <button
-                                  onClick={() => handleRemove(contract)}
-                                  className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
-                                  title="Remove from community tab"
-                                >
-                                  ✕
-                                </button>
-                              </Row>
-                              <CommunityMarketCard contract={contract} />
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleRemove(contract)}
+                                className="text-ink-500 hover:text-ink-700 absolute -right-2 -top-2 z-10 transition-colors"
+                                title="Remove from community tab"
+                              >
+                                <XCircleIcon className="h-5 w-5" />
+                              </button>
+                              <DashboardMarketCard contract={contract} />
                             </div>
                           )}
                         </Draggable>
@@ -703,26 +559,24 @@ function CommunityTab({
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {sortedOpen.map((contract) => (
-                  <div key={contract.id} className="flex flex-col gap-1.5">
+                  <div key={contract.id} className="relative flex flex-col">
                     {isAdmin && editMode && (
-                      <Row className="items-center justify-end px-1">
-                        <button
-                          onClick={() => handleRemove(contract)}
-                          className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
-                          title="Remove from community tab"
-                        >
-                          ✕
-                        </button>
-                      </Row>
+                      <button
+                        onClick={() => handleRemove(contract)}
+                        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                        title="Remove from community tab"
+                      >
+                        <XCircleIcon className="h-5 w-5" />
+                      </button>
                     )}
-                    <CommunityMarketCard contract={contract} />
+                    <DashboardMarketCard contract={contract} />
                   </div>
                 ))}
               </div>
             ))}
 
           {recentResolved.length > 0 && (
-            <Col className="gap-3">
+            <Col className="border-ink-300 gap-3 border-t-2 pt-6">
               <Row className="items-center gap-2.5">
                 <span className="text-ink-1000 text-base font-medium">
                   Recent
@@ -733,19 +587,17 @@ function CommunityTab({
               </Row>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {sortedRecent.map((contract) => (
-                  <div key={contract.id} className="flex flex-col gap-1.5">
+                  <div key={contract.id} className="relative flex flex-col">
                     {isAdmin && editMode && (
-                      <Row className="items-center justify-end px-1">
-                        <button
-                          onClick={() => handleRemove(contract)}
-                          className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
-                          title="Remove from community tab"
-                        >
-                          ✕
-                        </button>
-                      </Row>
+                      <button
+                        onClick={() => handleRemove(contract)}
+                        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                        title="Remove from community tab"
+                      >
+                        <XCircleIcon className="h-5 w-5" />
+                      </button>
                     )}
-                    <CommunityMarketCard contract={contract} />
+                    <DashboardMarketCard contract={contract} />
                   </div>
                 ))}
               </div>
@@ -753,7 +605,7 @@ function CommunityTab({
           )}
 
           {pastResolved.length > 0 && (
-            <Col className="border-ink-200 gap-3 border-t pt-6">
+            <Col className="border-ink-300 gap-3 border-t-2 pt-6">
               <Row className="items-center gap-2.5">
                 <span className="text-ink-500 text-sm font-medium">Past</span>
                 <button
@@ -766,19 +618,17 @@ function CommunityTab({
               {pastVisible && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {sortedPast.map((contract) => (
-                    <div key={contract.id} className="flex flex-col gap-1.5">
+                    <div key={contract.id} className="relative flex flex-col">
                       {isAdmin && editMode && (
-                        <Row className="items-center justify-end px-1">
-                          <button
-                            onClick={() => handleRemove(contract)}
-                            className="bg-ink-100 text-ink-600 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors hover:bg-red-100 hover:text-red-600"
-                            title="Remove from community tab"
-                          >
-                            ✕
-                          </button>
-                        </Row>
+                        <button
+                          onClick={() => handleRemove(contract)}
+                          className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                          title="Remove from community tab"
+                        >
+                          <XCircleIcon className="h-5 w-5" />
+                        </button>
                       )}
-                      <CommunityMarketCard contract={contract} />
+                      <DashboardMarketCard contract={contract} />
                     </div>
                   ))}
                 </div>
@@ -789,11 +639,34 @@ function CommunityTab({
       )}
 
       {showAdd && (
-        <AddMarketModal
-          existingSlugs={existingSlugs}
-          onAdd={handleAdd}
-          onClose={() => setShowAdd(false)}
-        />
+        <Modal
+          open
+          setOpen={(o) => {
+            if (!o) setShowAdd(false)
+          }}
+          size="lg"
+        >
+          <Col
+            className={clsx(
+              MODAL_CLASS,
+              'flex h-[70vh] flex-col !items-stretch'
+            )}
+          >
+            <DashboardAddContract
+              addQuestions={async (qs) => {
+                const fetched = await getContracts(
+                  db,
+                  qs.map((q) => q.slug),
+                  'slug'
+                )
+                for (const contract of fetched) {
+                  await handleAdd(contract.id)
+                }
+                setShowAdd(false)
+              }}
+            />
+          </Col>
+        </Modal>
       )}
     </Col>
   )
