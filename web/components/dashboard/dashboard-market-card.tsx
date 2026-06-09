@@ -96,7 +96,6 @@ function statusLabel(contract: Contract): string | null {
   return null
 }
 
-
 export function DashboardMarketCard({
   contract: initialContract,
   trackingLocation = 'dashboard',
@@ -150,28 +149,44 @@ export function DashboardMarketCard({
     if (isBinary || isPseudoNumeric) {
       const m = allMetrics.find((m) => m.answerId === null)
       if (m?.hasShares) {
-        positions = [{ name: m.maxSharesOutcome === 'NO' ? 'No' : 'Yes', amount: m.invested, profit: m.profit }]
+        positions = [
+          {
+            name: m.maxSharesOutcome === 'NO' ? 'No' : 'Yes',
+            amount: m.invested,
+            profit: m.profit,
+          },
+        ]
       }
       limitOrders = myLimitBets
         .filter((b) => b.answerId == null)
-        .map((b) => ({ name: b.outcome === 'NO' ? 'No' : 'Yes', prob: Math.round(b.limitProb * 100), amount: b.orderAmount - b.amount }))
+        .map((b) => ({
+          name: b.outcome === 'NO' ? 'No' : 'Yes',
+          prob: Math.round(b.limitProb * 100),
+          amount: b.orderAmount - b.amount,
+        }))
     } else if (isMulti) {
       positions = allMetrics
         .filter((m) => m.answerId !== null && m.hasShares)
         .map((m) => ({
-          name: multiContract?.answers.find((a) => a.id === m.answerId)?.text ?? 'Answer',
+          name:
+            multiContract?.answers.find((a) => a.id === m.answerId)?.text ??
+            'Answer',
           amount: m.invested,
           profit: m.profit,
         }))
       limitOrders = myLimitBets
         .filter((b) => b.answerId != null)
         .map((b) => ({
-          name: multiContract?.answers.find((a) => a.id === b.answerId)?.text ?? 'Answer',
+          name:
+            multiContract?.answers.find((a) => a.id === b.answerId)?.text ??
+            'Answer',
           prob: Math.round(b.limitProb * 100),
           amount: b.orderAmount - b.amount,
         }))
     } else if (isNumericBuckets) {
-      const bucketMetrics = allMetrics.filter((m) => m.answerId !== null && m.hasShares)
+      const bucketMetrics = allMetrics.filter(
+        (m) => m.answerId !== null && m.hasShares
+      )
       const numericOrders = myLimitBets.filter((b) => b.answerId != null)
       if (bucketMetrics.length > 0 || numericOrders.length > 0) {
         numericSummary = {
@@ -180,7 +195,10 @@ export function DashboardMarketCard({
           profit: bucketMetrics.reduce((sum, m) => sum + m.profit, 0),
           ...(numericOrders.length > 0 && {
             orders: {
-              total: numericOrders.reduce((sum, b) => sum + b.orderAmount - b.amount, 0),
+              total: numericOrders.reduce(
+                (sum, b) => sum + b.orderAmount - b.amount,
+                0
+              ),
               count: numericOrders.length,
             },
           }),
@@ -189,8 +207,10 @@ export function DashboardMarketCard({
     }
   }
   const userData: PositionsData = { positions, limitOrders, numericSummary }
-  const hasPositions = userData.positions.length > 0 || !!userData.numericSummary
-  const hasOrders = userData.limitOrders.length > 0 || !!userData.numericSummary?.orders
+  const hasPositions =
+    userData.positions.length > 0 || !!userData.numericSummary
+  const hasOrders =
+    userData.limitOrders.length > 0 || !!userData.numericSummary?.orders
   const hasAny = hasPositions || hasOrders
 
   return (
@@ -389,8 +409,12 @@ export function DashboardMarketCard({
             tooltipClassName="!bg-canvas-20 border-ink-200 border shadow-lg !text-left !max-w-none !px-3 !py-2.5 !rounded-lg"
           >
             <div className="border-ink-400 text-ink-500 hover:border-ink-600 hover:text-ink-700 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] transition-colors">
-              {hasPositions && <span className="bg-ink-400 h-1.5 w-1.5 rounded-full" />}
-              {hasOrders && <span className="border-ink-500 h-1.5 w-1.5 rounded-full border" />}
+              {hasPositions && (
+                <span className="bg-ink-400 h-1.5 w-1.5 rounded-full" />
+              )}
+              {hasOrders && (
+                <span className="border-ink-500 h-1.5 w-1.5 rounded-full border" />
+              )}
               <span>Positions</span>
             </div>
           </Tooltip>
