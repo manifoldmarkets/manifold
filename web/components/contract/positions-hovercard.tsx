@@ -57,9 +57,9 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
                 <span className="min-w-0 truncate text-sm">{p.name}</span>
               </Row>
               <Row className="flex-shrink-0 items-center gap-1.5 text-sm font-semibold">
-                <span>Ṁ{p.amount}</span>
+                <span>Ṁ{Math.round(p.amount)}</span>
                 <span className={p.profit >= 0 ? 'text-green-600' : 'text-red-500'}>
-                  {p.profit >= 0 ? '+' : ''}Ṁ{p.profit}
+                  {p.profit >= 0 ? '+' : ''}Ṁ{Math.round(p.profit)}
                 </span>
               </Row>
             </Row>
@@ -83,7 +83,7 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
             <Row key={i} className="mb-0.5 items-center gap-1 text-sm text-ink-400">
               <span className="min-w-0 truncate">{o.name}</span>
               <span className="flex-shrink-0">
-                at {o.prob}% — Ṁ{o.amount}
+                at {o.prob}% — Ṁ{Math.round(o.amount)}
               </span>
             </Row>
           ))}
@@ -104,7 +104,7 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
           </Row>
           <Row className="items-center justify-between gap-4">
             <span className="text-ink-400 text-sm">
-              Ṁ{numericSummary.total} across {numericSummary.buckets} buckets
+              Ṁ{Math.round(numericSummary.total)} across {numericSummary.buckets} buckets
             </span>
             <span
               className={clsx(
@@ -112,7 +112,7 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
                 numericSummary.profit >= 0 ? 'text-green-600' : 'text-red-500'
               )}
             >
-              {numericSummary.profit >= 0 ? '+' : ''}Ṁ{numericSummary.profit}
+              {numericSummary.profit >= 0 ? '+' : ''}Ṁ{Math.round(numericSummary.profit)}
             </span>
           </Row>
           {numericSummary.orders && (
@@ -124,7 +124,7 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
                 </p>
               </Row>
               <span className="text-ink-400 text-sm">
-                Ṁ{numericSummary.orders.total} pending across{' '}
+                Ṁ{Math.round(numericSummary.orders.total)} pending across{' '}
                 {numericSummary.orders.count} orders
               </span>
             </div>
