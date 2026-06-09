@@ -5,24 +5,27 @@ import {
   CPMMContract,
   CPMMMultiContract,
   Contract,
-  PseudoNumericContract,
+  MultiNumericContract,
   contractPath,
 } from 'common/contract'
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import { PollOption } from 'common/poll-option'
-import { formatNumericProbability } from 'common/pseudo-numeric'
 import { shortFormatNumber } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { FeedBinaryChart } from 'web/components/feed/feed-chart'
+import { FeedBinaryChart, FeedNumericChart } from 'web/components/feed/feed-chart'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { ReactButton } from 'web/components/contract/react-button'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { UserHovercard } from 'web/components/user/user-hovercard'
 
 type MarketMeta = {
   label: string
@@ -41,7 +44,7 @@ function marketMeta(outcomeType: string): MarketMeta {
     case 'DATE':
       return { label: 'Numeric', badgeClass: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300' }
     case 'POLL':
-      return { label: 'Poll', badgeClass: 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-300' }
+      return { label: 'Poll', badgeClass: 'bg-teal-100 text-teal-700 dark:bg-teal-700 dark:text-teal-100' }
     case 'BOUNTIED_QUESTION':
       return { label: 'Bounty', badgeClass: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300' }
     case 'STONK':
@@ -66,6 +69,7 @@ export function DashboardMarketCard({
 }) {
   const contract = useLiveContract(initialContract)
   const user = useUser()
+  const creator = useDisplayUserById(contract.creatorId)
   const meta = marketMeta(contract.outcomeType)
   const isBinary = contract.outcomeType === 'BINARY'
   const isMulti = contract.outcomeType === 'MULTIPLE_CHOICE'
@@ -74,14 +78,13 @@ export function DashboardMarketCard({
     contract.outcomeType === 'NUMBER' ||
     contract.outcomeType === 'MULTI_NUMERIC' ||
     contract.outcomeType === 'DATE'
+  const isMultiNumericChart =
+    contract.outcomeType === 'MULTI_NUMERIC' || contract.outcomeType === 'DATE'
   const isPoll = contract.outcomeType === 'POLL'
 
   const cpmmContract = isBinary ? (contract as CPMMContract) : null
   const binaryContract = isBinary ? (contract as BinaryContract) : null
-  const multiContract = (isMulti || isNumericBuckets) ? (contract as CPMMMultiContract) : null
-  const pseudoContract = isPseudoNumeric
-    ? (contract as CPMMContract & PseudoNumericContract)
-    : null
+  const multiContract = isMulti ? (contract as CPMMMultiContract) : null
   const pollOptions = isPoll
     ? (contract as { options?: PollOption[] }).options
     : undefined
@@ -94,60 +97,79 @@ export function DashboardMarketCard({
 
   return (
     <div
-      className={clsx(
-        'bg-canvas-50 border-ink-200 flex h-[340px] flex-col rounded-xl border transition-colors',
-        resolved ? 'opacity-70' : 'hover:border-ink-300'
-      )}
+      className="bg-canvas-50 border-ink-200 hover:border-ink-300 flex h-[340px] flex-col rounded-xl border transition-colors"
     >
-      {/* Top row: status + type badge */}
-      <Row className="items-center justify-between gap-2 px-5 pt-6">
+      {/* Creator row + type badge */}
+      <Row className="items-center gap-2 px-5 pt-5">
+        <UserHovercard userId={contract.creatorId} className="min-w-0 flex-1">
+          <Row className="text-ink-500 items-center gap-1.5">
+            <Avatar
+              size="xs"
+              avatarUrl={creator?.avatarUrl ?? contract.creatorAvatarUrl}
+              username={creator?.username ?? contract.creatorUsername}
+              entitlements={creator?.entitlements}
+              displayContext="feed"
+            />
+            <span className="min-w-0 truncate text-xs">
+              <UserLink
+                user={{
+                  id: contract.creatorId,
+                  name: creator?.name ?? contract.creatorName,
+                  username: creator?.username ?? contract.creatorUsername,
+                  entitlements: creator?.entitlements,
+                }}
+                displayContext="feed"
+                className="text-xs"
+              />
+            </span>
+          </Row>
+        </UserHovercard>
         {status && (
-          <span className="text-ink-400 text-[11px]">{status}</span>
+          <span className="text-ink-400 shrink-0 text-[11px]">{status}</span>
         )}
-        <span className={clsx('rounded px-1.5 py-0.5 text-[11px] font-medium', meta.badgeClass)}>
+        <span className={clsx('shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium', meta.badgeClass)}>
           {meta.label}
         </span>
       </Row>
 
       {/* Question title */}
-      <Link href={contractUrl} className="px-5 pt-2.5 hover:opacity-80">
-        <p className="text-ink-900 line-clamp-2 text-base font-semibold leading-snug">
+      <Link href={contractUrl} className="px-5 pt-3 hover:opacity-80">
+        <p className="text-ink-900 line-clamp-2 text-lg font-semibold leading-snug">
           {contract.question}
         </p>
       </Link>
 
       {/* Market-type content */}
-      <div className="min-h-0 flex-1 overflow-hidden px-5 pt-5 pb-2">
+      <div className="min-h-0 flex-1 overflow-hidden px-5 pt-4 pb-2">
         {isBinary && cpmmContract && binaryContract && (
-          resolved ? (
-            <span className={clsx(
-              'text-2xl font-bold',
-              contract.resolution === 'YES' ? 'text-teal-500' : contract.resolution === 'NO' ? 'text-rose-500' : 'text-ink-400'
-            )}>
-              {contract.resolution === 'CANCEL' ? 'N/A' : contract.resolution} ✓
-            </span>
-          ) : (
-            <Col className="h-full gap-0">
-              <Row className="items-center justify-between pb-2">
-                <Row className="items-baseline gap-1.5">
-                  <span className="text-ink-900 text-2xl font-bold leading-[2rem]">{binaryProb}%</span>
-                  <span className="text-ink-400 text-[11px]">chance</span>
-                </Row>
-                <div className="-mt-3">
-                  <BetButton
-                    contract={binaryContract!}
-                    user={user}
-                    labels={{ yes: 'Yes', no: 'No' }}
-                  />
-                </div>
-              </Row>
+          <Col className="h-full gap-0">
+            <Row className="items-center justify-between pb-2">
+              {resolved ? (
+                <ContractStatusLabel contract={contract} className="text-2xl font-bold" />
+              ) : (
+                <>
+                  <Row className="items-baseline gap-1.5">
+                    <span className="text-ink-900 text-2xl font-bold leading-[2rem]">{binaryProb}%</span>
+                    <span className="text-ink-400 text-[11px]">chance</span>
+                  </Row>
+                  <div className="-mt-3">
+                    <BetButton
+                      contract={binaryContract}
+                      user={user}
+                      labels={{ yes: 'Yes', no: 'No' }}
+                    />
+                  </div>
+                </>
+              )}
+            </Row>
+            {contract.uniqueBettorCount > 0 && (
               <FeedBinaryChart
                 contract={binaryContract}
                 className="h-[120px] w-full"
                 startDate={contract.createdTime}
               />
-            </Col>
-          )
+            )}
+          </Col>
         )}
 
         {multiContract && (
@@ -157,22 +179,29 @@ export function DashboardMarketCard({
           />
         )}
 
-        {isPseudoNumeric && pseudoContract && (() => {
-          const prob = pseudoContract.pool && pseudoContract.p != null
-            ? getCpmmProbability(pseudoContract.pool, pseudoContract.p)
-            : pseudoContract.prob
-          const resolveProb = contract.resolutionProbability ?? prob
-          return (
-            <Row className="items-baseline gap-1.5">
-              <span className="text-ink-900 text-2xl font-bold">
-                {contract.resolution
-                  ? formatNumericProbability(resolveProb!, pseudoContract)
-                  : prob !== undefined ? formatNumericProbability(prob, pseudoContract) : '—'}
+        {isNumericBuckets && (
+          <Col className="h-full gap-0">
+            <Row className="items-baseline gap-1.5 pb-2">
+              <ContractStatusLabel
+                contract={contract}
+                className="text-ink-900 text-2xl font-bold"
+              />
+              <span className="text-ink-400 text-xs">
+                {resolved ? 'resolved value' : 'expected value'}
               </span>
-              {contract.resolution && <span className="text-ink-400 text-[11px]">resolved</span>}
             </Row>
-          )
-        })()}
+            {isMultiNumericChart && contract.uniqueBettorCount > 0 && (
+              <FeedNumericChart
+                contract={contract as MultiNumericContract}
+                className="flex-1 min-h-0"
+              />
+            )}
+          </Col>
+        )}
+
+        {isPseudoNumeric && (
+          <ContractStatusLabel contract={contract} className="text-ink-900 text-2xl font-bold" />
+        )}
 
         {isPoll && pollOptions && pollOptions.length > 0 && (
           <Col className="gap-1.5">

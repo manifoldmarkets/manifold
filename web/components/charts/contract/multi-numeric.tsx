@@ -97,6 +97,7 @@ export const MultiNumericContractChart = (props: {
   zoomParams?: ZoomParams
   showZoomer?: boolean
   zoomY?: boolean
+  noWatermark?: boolean
 }) => {
   const {
     contract,
@@ -106,6 +107,7 @@ export const MultiNumericContractChart = (props: {
     zoomParams,
     showZoomer,
     zoomY,
+    noWatermark,
   } = props
   const start = contract.createdTime
   const end = getEndDate(contract)
@@ -160,6 +162,7 @@ export const MultiNumericContractChart = (props: {
         />
       )}
       color={NUMERIC_GRAPH_COLOR}
+      noWatermark={noWatermark}
     />
   )
 }

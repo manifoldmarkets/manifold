@@ -71,9 +71,7 @@ export function DashboardMarketGrid({
   const [showPollsSection, setShowPollsSection] = useState(
     initialContracts.some((c) => c.outcomeType === 'POLL')
   )
-  const [pollsExpanded, setPollsExpanded] = useState(
-    initialContracts.some((c) => c.outcomeType === 'POLL')
-  )
+  const [pollsExpanded, setPollsExpanded] = useState(false)
   const [pollsShowMore, setPollsShowMore] = useState(false)
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
   const [descriptionContent, setDescriptionContent] = useState<JSONContent | undefined>(undefined)
@@ -238,7 +236,7 @@ export function DashboardMarketGrid({
         {showPollsSection && (
           <Col className="border-ink-200 rounded-xl border">
             <Row className="border-ink-200 items-center justify-between border-b px-4 py-3">
-              <span className="text-ink-500 text-sm font-medium">Polls ({polls.length})</span>
+              <span className="text-ink-700 text-sm font-bold">Polls ({polls.length})</span>
               <Row className="items-center gap-2">
                 {editMode && (
                   <button
