@@ -306,7 +306,7 @@ export function DashboardMarketGrid({
                         >
                           <div
                             {...provided.dragHandleProps}
-                            className="absolute top-2 left-2 z-10 flex cursor-grab items-center rounded bg-ink-200/80 px-1.5 py-1 text-ink-600 hover:bg-ink-300 select-none"
+                            className="absolute -top-2 -left-2 z-10 flex cursor-grab items-center rounded border border-ink-400 bg-canvas-50 px-1.5 py-1 text-ink-500 hover:border-ink-600 hover:text-ink-700 select-none"
                             title="Drag to reorder"
                           >
                             <span className="text-[15px] leading-none">⠿</span>

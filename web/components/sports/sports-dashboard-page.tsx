@@ -513,14 +513,14 @@ function CommunityTab({
                             >
                               <div
                                 {...provided.dragHandleProps}
-                                className="text-ink-400 hover:text-ink-700 absolute top-2 left-2 z-10 cursor-grab select-none text-lg leading-none"
+                                className="absolute -top-2 -left-2 z-10 flex cursor-grab items-center rounded border border-ink-400 bg-canvas-50 px-1.5 py-1 text-ink-500 hover:border-ink-600 hover:text-ink-700 select-none"
                                 title="Drag to reorder"
                               >
-                                ⠿
+                                <span className="text-[15px] leading-none">⠿</span>
                               </div>
                               <button
                                 onClick={() => handleRemove(contract)}
-                                className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                                className="text-ink-500 hover:text-ink-700 absolute -top-2 -right-2 z-10 transition-colors"
                                 title="Remove from community tab"
                               >
                                 <XCircleIcon className="h-5 w-5" />
