@@ -132,16 +132,18 @@ const NON_SUBSCRIBER_PERKS = {
 }
 
 export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
-  // Admin-flagged users (bonusEligibility = 'requires_verification'): earn
-  // ZERO bonuses across the board until they complete identity verification.
-  // Distinct from 'unverified' (brand-new users), who still earn a reduced
-  // 0.2x — a flagged/suspected-alt account should earn nothing, not a fraction.
+  // Admin-flagged users (bonusEligibility = 'requires_verification'): earn ZERO
+  // on the farmable bonuses (quest/streak/referral) until they verify — distinct
+  // from 'unverified' (brand-new users), who still earn a reduced 0.2x. The
+  // EXCEPTION is the unique-trader bonus, which still pays in full: it rewards a
+  // creator for attracting *real* unique traders (who already passed bot/API/
+  // redemption gates), so the abuse vector is narrow even for a flagged account.
   restricted: {
     ...NON_SUBSCRIBER_PERKS,
     questMultiplier: 0,
     streakMultiplier: 0,
     referralMultiplier: 0,
-    uniqueTraderMultiplier: 0,
+    uniqueTraderMultiplier: 1,
   },
   unverified: {
     ...NON_SUBSCRIBER_PERKS,

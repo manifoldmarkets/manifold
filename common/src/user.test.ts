@@ -244,10 +244,13 @@ describe('getEffectiveTier — bonusEligibility maps to the right tier', () => {
   })
 })
 
-describe('restricted tier (flagged) earns zero bonuses', () => {
-  it('all bonus multipliers are 0', () => {
-    for (const kind of ['quest', 'streak', 'referral', 'uniqueTrader'] as const) {
+describe('restricted tier (flagged) earns zero — except the unique-trader bonus', () => {
+  it('quest/streak/referral multipliers are 0', () => {
+    for (const kind of ['quest', 'streak', 'referral'] as const) {
       expect(getEffectiveBonusMultiplier('restricted', kind)).toBe(0)
     }
+  })
+  it('unique-trader multiplier is full (1) — narrow abuse vector', () => {
+    expect(getEffectiveBonusMultiplier('restricted', 'uniqueTrader')).toBe(1)
   })
 })
