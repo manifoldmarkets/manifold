@@ -919,7 +919,7 @@ export function SportsDashboardPage({
         <title>{title} | Manifold</title>
       </Head>
       <Col className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6">
-        <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-10 -mt-6 items-center justify-between border-b pb-5 pt-6">
+        <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 items-center justify-between border-b pb-5 pt-6">
           <Row className="items-center gap-3">
             <span className="text-2xl">{emoji}</span>
             <h1 className="text-ink-1000 text-xl font-medium tracking-tight">
