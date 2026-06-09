@@ -12,7 +12,6 @@ type Job = {
   location: string
   comp: string
   stage: string
-  reportsTo?: string
   blurb: string
   intro: string
   whatYoullDo: string[]
@@ -23,7 +22,7 @@ type Job = {
 const JOBS: Job[] = [
   {
     title: 'Backend Engineer',
-    location: 'Remote-first',
+    location: 'Flexible',
     comp: 'Base + equity',
     stage: 'Pre-launch',
     blurb:
@@ -49,10 +48,9 @@ const JOBS: Job[] = [
   },
   {
     title: 'Head of Growth',
-    location: 'Remote-first',
+    location: 'Flexible',
     comp: 'Base + equity',
     stage: 'Pre-launch',
-    reportsTo: 'Founders',
     blurb:
       'Own the MNX narrative end to end — a 0→1 brand and growth seat reporting directly to the founders.',
     intro:
@@ -78,7 +76,7 @@ const JOBS: Job[] = [
   },
   {
     title: 'Quantitative Trader',
-    location: 'Remote-first',
+    location: 'Flexible',
     comp: 'Performance-based',
     stage: 'Pre-launch',
     blurb:
@@ -131,9 +129,14 @@ function JobCard({ job }: { job: Job }) {
         aria-expanded={open}
       >
         <Col className="gap-2">
-          <h2 className="text-ink-1000 text-lg font-bold sm:text-xl md:text-2xl">
-            {job.title}
-          </h2>
+          <Row className="items-start justify-between gap-3">
+            <h2 className="text-ink-1000 text-lg font-bold sm:text-xl md:text-2xl">
+              {job.title}
+            </h2>
+            <span className="text-ink-400 shrink-0 pt-1 font-mono text-[10px] uppercase tracking-widest">
+              Full time
+            </span>
+          </Row>
           <p className="text-ink-600 text-sm leading-relaxed">{job.blurb}</p>
 
           {/* Compact vertical stack on mobile; horizontal spread on desktop.
@@ -143,7 +146,6 @@ function JobCard({ job }: { job: Job }) {
               <MetaField label="Location" value={job.location} />
               <MetaField label="Comp" value={job.comp} />
               <MetaField label="Stage" value={job.stage} />
-              {job.reportsTo && <MetaField label="Reports to" value={job.reportsTo} />}
             </div>
 
             <span className="text-primary-600 shrink-0 self-end font-mono text-sm font-medium">
