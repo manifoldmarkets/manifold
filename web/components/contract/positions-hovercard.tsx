@@ -29,7 +29,11 @@ export type PositionsData = {
 
 const MAX_SHOWN = 4
 
-export function PositionsHovercard({ positions, limitOrders, numericSummary }: PositionsData) {
+export function PositionsHovercard({
+  positions,
+  limitOrders,
+  numericSummary,
+}: PositionsData) {
   const shownPositions = positions.slice(0, MAX_SHOWN)
   const extraPositions = positions.length - shownPositions.length
   const shownOrders = limitOrders.slice(0, MAX_SHOWN)
@@ -46,7 +50,10 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
             </p>
           </Row>
           {shownPositions.map((p) => (
-            <Row key={p.name} className="mb-1 items-center justify-between gap-4">
+            <Row
+              key={p.name}
+              className="mb-1 items-center justify-between gap-4"
+            >
               <Row className="min-w-0 items-center gap-1.5">
                 {p.color !== undefined && (
                   <span
@@ -58,7 +65,9 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
               </Row>
               <Row className="flex-shrink-0 items-center gap-1.5 text-sm font-semibold">
                 <span>Ṁ{Math.round(p.amount)}</span>
-                <span className={p.profit >= 0 ? 'text-green-600' : 'text-red-500'}>
+                <span
+                  className={p.profit >= 0 ? 'text-green-600' : 'text-red-500'}
+                >
                   {p.profit >= 0 ? '+' : ''}Ṁ{Math.round(p.profit)}
                 </span>
               </Row>
@@ -80,7 +89,10 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
             </p>
           </Row>
           {shownOrders.map((o, i) => (
-            <Row key={i} className="mb-0.5 items-center gap-1 text-sm text-ink-400">
+            <Row
+              key={i}
+              className="text-ink-400 mb-0.5 items-center gap-1 text-sm"
+            >
               <span className="min-w-0 truncate">{o.name}</span>
               <span className="flex-shrink-0">
                 at {o.prob}% — Ṁ{Math.round(o.amount)}
@@ -104,7 +116,8 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
           </Row>
           <Row className="items-center justify-between gap-4">
             <span className="text-ink-400 text-sm">
-              Ṁ{Math.round(numericSummary.total)} across {numericSummary.buckets} buckets
+              Ṁ{Math.round(numericSummary.total)} across{' '}
+              {numericSummary.buckets} buckets
             </span>
             <span
               className={clsx(
@@ -112,7 +125,8 @@ export function PositionsHovercard({ positions, limitOrders, numericSummary }: P
                 numericSummary.profit >= 0 ? 'text-green-600' : 'text-red-500'
               )}
             >
-              {numericSummary.profit >= 0 ? '+' : ''}Ṁ{Math.round(numericSummary.profit)}
+              {numericSummary.profit >= 0 ? '+' : ''}Ṁ
+              {Math.round(numericSummary.profit)}
             </span>
           </Row>
           {numericSummary.orders && (
