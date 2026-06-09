@@ -4,13 +4,19 @@ import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagEmojiToCode } from 'common/sports'
+import { ContractMetric } from 'common/contract-metric'
 import { SportsBetPanel } from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   PositionsHovercard,
   PositionsData,
 } from 'web/components/contract/positions-hovercard'
+import { useUser } from 'web/hooks/use-user'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { api } from 'web/lib/api/api'
+import { db } from 'web/lib/supabase/db'
 
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
@@ -224,57 +230,56 @@ function OutcomeRow({
   )
 }
 
-// ── DEV MOCK: cycles cards through position states for visual preview ──────────
-function getMockUserData(matchId: string, match: SportsMatch): PositionsData {
-  const hash = matchId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  const teamAName = match.teamA.name
-  const teamBName = match.teamB.name
-  switch (hash % 5) {
-    case 0: return { positions: [], limitOrders: [] }
-    case 1: return {
-      positions: [{ name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 }],
-      limitOrders: [],
+function useMyMatchMetrics(contractId: string | undefined) {
+  const user = useUser()
+  const [metrics, setMetrics] = useState<ContractMetric[] | undefined>(undefined)
+
+  useEffect(() => {
+    if (!user?.id || !contractId) {
+      setMetrics(undefined)
+      return
     }
-    case 2: return {
-      positions: [
-        { name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 },
-        { name: 'Draw', color: SPORTS_COLORS.draw, amount: 50, profit: -8 },
-      ],
-      limitOrders: [],
-    }
-    case 3: return {
-      positions: [{ name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 }],
-      limitOrders: [
-        { name: teamAName, prob: 70, amount: 100 },
-        { name: teamAName, prob: 65, amount: 75 },
-        { name: teamAName, prob: 60, amount: 50 },
-        { name: teamBName, prob: 25, amount: 200 },
-        { name: teamBName, prob: 20, amount: 150 },
-        { name: teamBName, prob: 15, amount: 100 },
-        { name: 'Draw', prob: 30, amount: 80 },
-        { name: 'Draw', prob: 25, amount: 60 },
-      ],
-    }
-    default: return {
-      positions: [
-        { name: teamAName, color: SPORTS_COLORS.teamA, amount: 150, profit: 23 },
-        { name: teamBName, color: SPORTS_COLORS.teamB, amount: 80, profit: -12 },
-        { name: 'Draw', color: SPORTS_COLORS.draw, amount: 50, profit: -8 },
-      ],
-      limitOrders: [
-        { name: teamAName, prob: 70, amount: 100 },
-        { name: teamAName, prob: 60, amount: 75 },
-        { name: teamBName, prob: 25, amount: 200 },
-        { name: 'Draw', prob: 30, amount: 80 },
-      ],
-    }
-  }
+    db.from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        setMetrics((data ?? []).map((row) => row.data as ContractMetric))
+      })
+  }, [user?.id, contractId])
+
+  useApiSubscription({
+    topics:
+      contractId && user?.id
+        ? [`contract/${contractId}/user-metrics/${user.id}`]
+        : [],
+    enabled: !!user?.id && !!contractId,
+    onBroadcast: ({ data }) => {
+      const updated = data.metrics as ContractMetric[]
+      if (updated?.length) {
+        setMetrics((prev) => {
+          const map = new Map((prev ?? []).map((m) => [m.answerId, m]))
+          updated.forEach((m) => map.set(m.answerId, m))
+          return Array.from(map.values())
+        })
+      }
+    },
+  })
+
+  return metrics
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const resolved = match.status === 'resolved'
   const now = Date.now()
+  const user = useUser()
+  const myMetrics = useMyMatchMetrics(!resolved ? match.contractId : undefined)
+  const allLimitBets = useUnfilledBets(
+    match.contractId ?? '',
+    (params) => api('bets', params),
+    useIsPageVisible,
+    { enabled: !resolved && !!user && !!match.contractId }
+  )
   // Live state is data-driven (a fresh in-play score), not a fixed time window —
   // so a long match never falsely reverts to "Upcoming". Seeded from the initial
   // fetch, then updated live over the websocket below.
@@ -314,7 +319,32 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const awayScore = resolved ? match.finalScore?.away : undefined
   const winnerColor = resolved ? vibrantForOutcome(match.winner) : undefined
   const marketHref = match.marketUrl ?? '#'
-  const userData = resolved ? { positions: [], limitOrders: [] } : getMockUserData(match.id, match)
+  const myLimitBets = (allLimitBets ?? []).filter((b) => b.userId === user?.id)
+  const teamAPos = !resolved && myMetrics?.find((m) => m.answerId === match.teamAAnswerId && m.hasShares)
+  const teamBPos = !resolved && myMetrics?.find((m) => m.answerId === match.teamBAnswerId && m.hasShares)
+  const drawPos = !resolved && myMetrics?.find((m) => m.answerId === match.drawAnswerId && m.hasShares)
+  const positions: PositionsData['positions'] = [
+    ...(teamAPos ? [{ name: match.teamA.name, color: SPORTS_COLORS.teamA, amount: teamAPos.invested, profit: teamAPos.profit }] : []),
+    ...(teamBPos ? [{ name: match.teamB.name, color: SPORTS_COLORS.teamB, amount: teamBPos.invested, profit: teamBPos.profit }] : []),
+    ...(drawPos ? [{ name: 'Draw', color: SPORTS_COLORS.draw, amount: drawPos.invested, profit: drawPos.profit }] : []),
+  ]
+  const limitOrders: PositionsData['limitOrders'] = !resolved && user
+    ? myLimitBets
+        .filter((b) => !!b.answerId)
+        .map((b) => {
+          const name =
+            b.answerId === match.teamAAnswerId
+              ? match.teamA.name
+              : b.answerId === match.teamBAnswerId
+              ? match.teamB.name
+              : b.answerId === match.drawAnswerId
+              ? 'Draw'
+              : null
+          return name ? { name, prob: Math.round(b.limitProb * 100), amount: b.orderAmount - b.amount } : null
+        })
+        .filter((o): o is NonNullable<typeof o> => o !== null)
+    : []
+  const userData: PositionsData = { positions, limitOrders }
   const hasPositions = userData.positions.length > 0
   const hasOrders = userData.limitOrders.length > 0
   const hasAny = hasPositions || hasOrders
