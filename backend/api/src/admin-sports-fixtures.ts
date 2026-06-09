@@ -30,11 +30,11 @@ export const adminSportsFixtures: APIHandler<'admin-sports-fixtures'> = async (
   const matches = await fetchAllCompetitionMatches(config, apiKey, {
     dateFrom,
     dateTo,
-    status: 'SCHEDULED',
   })
 
   const filtered = (stage ? matches.filter((m) => m.stage === stage) : matches)
     .filter((m) => m.homeTeam.name && m.awayTeam.name)
+    .filter((m) => ['SCHEDULED', 'TIMED'].includes(m.status))
 
   // Batch-check which matches already have markets
   const eventIds = filtered.map((m) => matchSportsEventId(m))

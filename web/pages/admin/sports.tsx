@@ -316,7 +316,7 @@ export default function SportsAdminPage() {
       setSelectedIds(
         new Set(
           data.fixtures
-            .filter((f) => !f.existingMarketId && f.status === 'SCHEDULED')
+            .filter((f) => !f.existingMarketId && ['SCHEDULED', 'TIMED'].includes(f.status))
             .map((f) => f.id)
         )
       )
@@ -449,7 +449,7 @@ export default function SportsAdminPage() {
   // "Select all" can't pick up POSTPONED/non-scheduled rows the user is shown
   // as greyed-out.
   const selectableFixtures = fixtures.filter(
-    (f) => !f.existingMarketId && f.status === 'SCHEDULED'
+    (f) => !f.existingMarketId && ['SCHEDULED', 'TIMED'].includes(f.status)
   )
 
   const filteredMarkets =

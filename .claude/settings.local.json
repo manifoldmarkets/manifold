@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add c:Projectsmanifoldwebpackage.json)"
+      "Bash(git add c:Projectsmanifoldwebpackage.json)",
+      "Bash(yarn tsc *)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --title 'feat\\(sports\\): DashboardMarketCard + numeric chart + community tab polish' --body ' *)",
+      "Bash(git checkout *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git branch *)",
+      "Bash(gh pr create --title 'feat\\(sports\\): proportional odds fill + white title on match card' --body ' *)",
+      "Bash(git revert *)",
+      "Bash(gh pr *)",
+      "Bash(lsof -ti:8088)",
+      "Bash(xargs kill -9)",
+      "Bash(yarn prettier *)",
+      "Bash(git stash *)"
     ],
     "deny": [],
     "ask": []
