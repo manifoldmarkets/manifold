@@ -120,7 +120,7 @@ function OutcomeRow({
     <div
       onClick={!resolved ? onClick : undefined}
       className={clsx(
-        'flex items-center gap-2 rounded-lg border-2 px-2 py-1.5 transition-colors',
+        'relative flex items-center gap-2 overflow-hidden rounded-lg border-2 px-2 py-1.5 transition-colors',
         !resolved && 'cursor-pointer',
         !resolved && !isWinner && 'hover:bg-canvas-100'
       )}
@@ -131,45 +131,68 @@ function OutcomeRow({
           isWinner && winnerColor ? `${winnerColor}1F` : undefined,
       }}
     >
-      {isDraw ? (
-        <div className="border-ink-300 bg-canvas-100 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border">
-          <span
-            className={clsx(
-              'text-[8px] font-bold leading-none',
-              !isWinner && 'text-ink-500'
-            )}
-            style={isWinner && winnerColor ? { color: winnerColor } : undefined}
-          >
-            –
-          </span>
-        </div>
-      ) : (
-        <Flag emoji={flag} />
-      )}
-
-      <span
-        className={clsx(
-          'flex-1 truncate',
-          isWinner
-            ? 'text-[14px] font-medium'
-            : isDraw
-            ? 'text-ink-500 text-xs'
-            : 'text-ink-1000 text-[14px] font-medium'
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 transition-[width] duration-500"
+        style={{
+          width: `${prob}%`,
+          backgroundColor: isWinner && winnerColor ? winnerColor : teamColor,
+          opacity: 0.5,
+        }}
+      />
+      <div className="relative z-10 flex w-full items-center gap-2">
+        {isDraw ? (
+          <div className="border-ink-300 bg-canvas-100 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border">
+            <span
+              className={clsx(
+                'text-[8px] font-bold leading-none',
+                !isWinner && 'text-ink-500'
+              )}
+              style={
+                isWinner && winnerColor ? { color: winnerColor } : undefined
+              }
+            >
+              –
+            </span>
+          </div>
+        ) : (
+          <Flag emoji={flag} />
         )}
-        style={isWinner && winnerColor ? { color: winnerColor } : undefined}
-      >
-        {name}
-        {isWinner && <span className="ml-1.5 text-xs">✓</span>}
-      </span>
 
-      {resolved ? (
-        score !== undefined ? (
-          <span
-            className="text-sm font-semibold tabular-nums"
-            style={{ color: isWinner && winnerColor ? winnerColor : undefined }}
-          >
-            {score}
-          </span>
+        <span
+          className={clsx(
+            'flex-1 truncate',
+            isWinner
+              ? 'text-[14px] font-medium'
+              : isDraw
+              ? 'text-ink-500 text-xs'
+              : 'text-ink-1000 text-[14px] font-medium'
+          )}
+          style={isWinner && winnerColor ? { color: winnerColor } : undefined}
+        >
+          {name}
+          {isWinner && <span className="ml-1.5 text-xs">✓</span>}
+        </span>
+
+        {resolved ? (
+          score !== undefined ? (
+            <span
+              className="text-sm font-semibold tabular-nums"
+              style={{
+                color: isWinner && winnerColor ? winnerColor : undefined,
+              }}
+            >
+              {score}
+            </span>
+          ) : (
+            <span
+              className="text-xs font-medium"
+              style={
+                isWinner && winnerColor ? { color: winnerColor } : undefined
+              }
+            >
+              {prob}%
+            </span>
+          )
         ) : (
           <span
             className="text-xs font-medium"
@@ -177,15 +200,8 @@ function OutcomeRow({
           >
             {prob}%
           </span>
-        )
-      ) : (
-        <span
-          className="text-xs font-medium"
-          style={isWinner && winnerColor ? { color: winnerColor } : undefined}
-        >
-          {prob}%
-        </span>
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -300,7 +316,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         {match.question && (
           <Link
             href={marketHref}
-            className="text-ink-700 hover:text-primary-600 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors"
+            className="text-ink-900 hover:text-primary-600 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors"
           >
             {match.question}
           </Link>
