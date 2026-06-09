@@ -206,6 +206,10 @@ function OutcomeRow({
   )
 }
 
+function stripEmoji(str: string): string {
+  return str.replace(/\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '').trim()
+}
+
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const resolved = match.status === 'resolved'
   const now = Date.now()
@@ -318,7 +322,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             href={marketHref}
             className="text-ink-900 hover:text-primary-600 line-clamp-2 text-[15px] font-semibold leading-snug transition-colors"
           >
-            {match.question}
+            {stripEmoji(match.question)}
           </Link>
         )}
 
