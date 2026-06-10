@@ -1,4 +1,5 @@
 import { Server as HttpServer } from 'node:http'
+import { createClient } from 'redis'
 import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
 import { isError } from 'lodash'
 import { LOCAL_DEV, log, metrics } from 'shared/utils'
@@ -14,6 +15,19 @@ const SWITCHBOARD = new Switchboard()
 
 // if a connection doesn't ping for this long, we assume the other side is toast
 const CONNECTION_TIMEOUT_MS = 60 * 1000
+const DEFAULT_REDIS_BROADCAST_CHANNEL_PREFIX = 'api-websocket-broadcasts'
+
+type RedisBroadcast = {
+  topics: string[]
+  data: BroadcastPayload
+}
+
+type RedisClient = ReturnType<typeof createClient>
+
+let redisPublisher: RedisClient | undefined
+let redisPublisherConnect: Promise<RedisClient> | undefined
+let redisSubscriber: RedisClient | undefined
+let redisSubscriberConnect: Promise<void> | undefined
 
 // Categorize topics to avoid unbounded metric cardinality
 function getTopicCategory(topic: string): string {
@@ -22,7 +36,7 @@ function getTopicCategory(topic: string): string {
   } else if (topic.startsWith('contract/')) {
     return 'contract'
   } else if (topic.startsWith('user/')) {
-    return 'user'  
+    return 'user'
   } else if (topic.startsWith('private-user/')) {
     return 'private-user'
   } else if (topic === 'global' || topic.startsWith('global/')) {
@@ -105,37 +119,214 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
   }
 }
 
-export function broadcastMulti(topics: string[], data: BroadcastPayload) {
-  // ian: Don't await this: we don't need to hear back from all the clients and can take a dozen ms
-  const sendToSubscribers = (topic: string, msg: any) => {
-    const json = JSON.stringify(msg)
-    const subscribers = SWITCHBOARD.getSubscribers(topic)
-    return Promise.allSettled(
-      subscribers.map(
-        ([ws, _]) =>
-          new Promise<void>((resolve) =>
-            ws.send(json, (err) => {
-              if (err) log.error('Broadcast error', { error: err })
-              resolve()
-            })
-          )
-      )
-    ).catch((err) => log.error('Broadcast failed', { error: err }))
+function getRedisUrl() {
+  const url = process.env.WEBSOCKET_REDIS_URL ?? process.env.REDIS_URL
+  return url && url.trim().length > 0 ? url : undefined
+}
+
+function getRedisBroadcastEnvironment() {
+  const explicitEnv = process.env.WEBSOCKET_REDIS_ENV
+  if (explicitEnv != null && explicitEnv.trim().length > 0) {
+    return explicitEnv.trim().toLowerCase()
   }
+
+  const firebaseEnv = process.env.NEXT_PUBLIC_FIREBASE_ENV
+  if (firebaseEnv != null && firebaseEnv.trim().length > 0) {
+    return firebaseEnv.trim().toLowerCase()
+  }
+
+  return process.env.GOOGLE_CLOUD_PROJECT === 'mantic-markets' ? 'prod' : 'dev'
+}
+
+function getRedisBroadcastChannel() {
+  const explicitChannel = process.env.WEBSOCKET_REDIS_CHANNEL
+  if (explicitChannel != null && explicitChannel.trim().length > 0) {
+    return explicitChannel.trim()
+  }
+
+  return `${DEFAULT_REDIS_BROADCAST_CHANNEL_PREFIX}-${getRedisBroadcastEnvironment()}`
+}
+
+function redisBroadcastsEnabled() {
+  return (
+    getRedisUrl() != null &&
+    process.env.DISABLE_REDIS_WEBSOCKET_BROADCASTS !== 'true'
+  )
+}
+
+function recordBroadcastMetrics(topics: string[]) {
+  for (const topic of topics) {
+    const topicCategory = getTopicCategory(topic)
+    metrics.inc('ws/broadcasts_sent', { category: topicCategory })
+  }
+}
+
+function sendToLocalSubscribers(
+  topic: string,
+  msg: ServerMessage<'broadcast'> & { topics?: string[] }
+) {
+  const json = JSON.stringify(msg)
+  const subscribers = SWITCHBOARD.getSubscribers(topic)
+  return Promise.allSettled(
+    subscribers.map(
+      ([ws, _]) =>
+        new Promise<void>((resolve) =>
+          ws.send(json, (err) => {
+            if (err) log.error('Broadcast error', { error: err })
+            resolve()
+          })
+        )
+    )
+  ).catch((err) => log.error('Broadcast failed', { error: err }))
+}
+
+function sendToLocalSubscribersMulti(topics: string[], data: BroadcastPayload) {
+  // ian: Don't await this: we don't need to hear back from all the clients and can take a dozen ms
 
   // mqp: it isn't secure to do this in prod because we rely on security-through-
   // topic-id-obscurity for unlisted contracts. but it's super convenient for testing
   if (LOCAL_DEV) {
-    const msg = { type: 'broadcast', topic: '*', topics, data }
-    sendToSubscribers('*', msg)
+    sendToLocalSubscribers('*', { type: 'broadcast', topic: '*', topics, data })
   }
 
   for (const topic of topics) {
-    const msg = { type: 'broadcast', topic, data }
-    sendToSubscribers(topic, msg)
-    // Categorize topics to avoid unbounded cardinality
-    const topicCategory = getTopicCategory(topic)
-    metrics.inc('ws/broadcasts_sent', { category: topicCategory })
+    sendToLocalSubscribers(topic, { type: 'broadcast', topic, data })
+  }
+}
+
+function parseRedisBroadcast(message: string) {
+  const parsed = JSON.parse(message) as RedisBroadcast
+  if (!Array.isArray(parsed.topics)) {
+    throw new Error('Redis websocket broadcast has no topics array.')
+  }
+  for (const topic of parsed.topics) {
+    if (typeof topic !== 'string') {
+      throw new Error('Redis websocket broadcast topic is not a string.')
+    }
+  }
+  if (parsed.data == null || typeof parsed.data !== 'object') {
+    throw new Error('Redis websocket broadcast has invalid data.')
+  }
+  return parsed
+}
+
+function resetRedisPublisher() {
+  redisPublisher = undefined
+  redisPublisherConnect = undefined
+}
+
+async function getRedisPublisher() {
+  if (!redisBroadcastsEnabled()) return undefined
+  if (redisPublisherConnect != null) return await redisPublisherConnect
+
+  const url = getRedisUrl()
+  if (url == null) return undefined
+
+  redisPublisher = createClient({ url })
+  redisPublisher.on('error', (err: unknown) => {
+    log.error('Redis websocket publisher error.', { error: err })
+    metrics.inc('ws/redis_publisher_errors')
+  })
+  redisPublisher.on('reconnecting', () => {
+    log.warn('Redis websocket publisher reconnecting.')
+  })
+
+  redisPublisherConnect = redisPublisher
+    .connect()
+    .then(() => {
+      log.info('Redis websocket publisher connected.')
+      return redisPublisher!
+    })
+    .catch((err: unknown) => {
+      resetRedisPublisher()
+      throw err
+    })
+
+  return await redisPublisherConnect
+}
+
+async function publishRedisBroadcast(topics: string[], data: BroadcastPayload) {
+  const publisher = await getRedisPublisher()
+  if (publisher == null) {
+    sendToLocalSubscribersMulti(topics, data)
+    return
+  }
+
+  const broadcast: RedisBroadcast = { topics, data }
+  await publisher.publish(getRedisBroadcastChannel(), JSON.stringify(broadcast))
+  metrics.inc('ws/redis_broadcasts_published')
+}
+
+function handleRedisBroadcast(message: string) {
+  try {
+    const { topics, data } = parseRedisBroadcast(message)
+    metrics.inc('ws/redis_broadcasts_received')
+    sendToLocalSubscribersMulti(topics, data)
+  } catch (err: unknown) {
+    log.error('Error handling Redis websocket broadcast.', { error: err })
+    metrics.inc('ws/redis_broadcast_parse_errors')
+  }
+}
+
+function startRedisBroadcastSubscriber() {
+  if (!redisBroadcastsEnabled()) return
+  if (redisSubscriberConnect != null) return
+
+  const url = getRedisUrl()
+  if (url == null) return
+
+  redisSubscriber = createClient({ url })
+  redisSubscriber.on('error', (err: unknown) => {
+    log.error('Redis websocket subscriber error.', { error: err })
+    metrics.inc('ws/redis_subscriber_errors')
+  })
+  redisSubscriber.on('reconnecting', () => {
+    log.warn('Redis websocket subscriber reconnecting.')
+  })
+
+  redisSubscriberConnect = redisSubscriber
+    .connect()
+    .then(() =>
+      redisSubscriber!.subscribe(
+        getRedisBroadcastChannel(),
+        handleRedisBroadcast
+      )
+    )
+    .then(() => {
+      log.info(
+        `Redis websocket subscriber listening on ${getRedisBroadcastChannel()}.`
+      )
+    })
+    .catch((err: unknown) => {
+      redisSubscriberConnect = undefined
+      log.error('Failed to start Redis websocket subscriber.', { error: err })
+      metrics.inc('ws/redis_subscriber_start_errors')
+    })
+}
+
+function stopRedisBroadcastSubscriber() {
+  const subscriber = redisSubscriber
+  redisSubscriber = undefined
+  redisSubscriberConnect = undefined
+  subscriber?.quit().catch((err: unknown) => {
+    log.error('Failed to quit Redis websocket subscriber.', { error: err })
+  })
+}
+
+export function broadcastMulti(topics: string[], data: BroadcastPayload) {
+  recordBroadcastMetrics(topics)
+
+  if (redisBroadcastsEnabled()) {
+    publishRedisBroadcast(topics, data).catch((err: unknown) => {
+      log.error(
+        'Redis websocket broadcast failed; falling back to local-only broadcast.',
+        { error: err }
+      )
+      metrics.inc('ws/redis_broadcast_publish_errors')
+      sendToLocalSubscribersMulti(topics, data)
+    })
+  } else {
+    sendToLocalSubscribersMulti(topics, data)
   }
 }
 
@@ -144,6 +335,7 @@ export function broadcast(topic: string, data: BroadcastPayload) {
 }
 
 export function listen(server: HttpServer, path: string) {
+  startRedisBroadcastSubscriber()
   const wss = new WebSocketServer({ server, path })
   let deadConnectionCleaner: NodeJS.Timeout | undefined
   wss.on('listening', () => {
@@ -184,6 +376,7 @@ export function listen(server: HttpServer, path: string) {
   })
   wss.on('close', function close() {
     clearInterval(deadConnectionCleaner)
+    stopRedisBroadcastSubscriber()
   })
   return wss
 }
