@@ -16,6 +16,10 @@ REGION="us-east4" # Ashburn, Virginia
 ZONE="us-east4-a"
 ENV=${1:-dev}
 
+# Private Memorystore instance
+WEBSOCKET_REDIS_URL=redis://10.215.204.211:6379
+DISABLE_REDIS_WEBSOCKET_BROADCASTS=false
+
 case $ENV in
     dev)
         NEXT_PUBLIC_FIREBASE_ENV=DEV
@@ -89,7 +93,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --boot-disk-size=100GB \
-       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
+       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},WEBSOCKET_REDIS_URL=${WEBSOCKET_REDIS_URL},DISABLE_REDIS_WEBSOCKET_BROADCASTS=${DISABLE_REDIS_WEBSOCKET_BROADCASTS} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
        --tags lb-health-check
