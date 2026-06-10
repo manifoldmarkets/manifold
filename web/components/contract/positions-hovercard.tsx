@@ -34,8 +34,9 @@ export function PositionsHovercard({
   limitOrders,
   numericSummary,
 }: PositionsData) {
-  const shownPositions = positions.slice(0, MAX_SHOWN)
-  const extraPositions = positions.length - shownPositions.length
+  const sorted = [...positions].sort((a, b) => b.amount - a.amount)
+  const shownPositions = sorted.slice(0, MAX_SHOWN)
+  const extraPositions = sorted.length - shownPositions.length
   const shownOrders = limitOrders.slice(0, MAX_SHOWN)
   const extraOrders = limitOrders.length - shownOrders.length
 
