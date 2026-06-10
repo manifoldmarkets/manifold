@@ -8,6 +8,7 @@ import { LiteGroup } from 'common/group'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
 import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
+import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
@@ -570,6 +571,20 @@ export function Search(props: SearchProps) {
                     Followed
                   </button>
                 )}
+                <Link
+                  href="/sports/world-cup-2026"
+                  onClick={() =>
+                    track('select search topic', { topic: 'world-cup-2026' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium text-white',
+                    'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500',
+                    'shadow-sm shadow-purple-500/30 ring-1 ring-white/20',
+                    'transition-all hover:brightness-110'
+                  )}
+                >
+                  ⚽ World Cup
+                </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
                     key={topic}
