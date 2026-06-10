@@ -18,23 +18,25 @@ export const adminSportsFixtures: APIHandler<'admin-sports-fixtures'> = async (
   throwErrorIfNotAdmin(auth.uid)
 
   const apiKey = process.env.FOOTBALL_DATA_API_KEY ?? ''
-  if (!apiKey) throw new APIError(500, 'FOOTBALL_DATA_API_KEY not set on server')
+  if (!apiKey)
+    throw new APIError(500, 'FOOTBALL_DATA_API_KEY not set on server')
 
   const { competitionCode, dateFrom, dateTo, stage } = props
 
   const config = TOURNAMENT_CONFIGS[competitionCode]
-  if (!config) throw new APIError(400, `Unknown competition code: ${competitionCode}`)
+  if (!config)
+    throw new APIError(400, `Unknown competition code: ${competitionCode}`)
 
   const pg = createSupabaseDirectClient()
 
   const matches = await fetchAllCompetitionMatches(config, apiKey, {
     dateFrom,
     dateTo,
-    status: 'SCHEDULED',
   })
 
   const filtered = (stage ? matches.filter((m) => m.stage === stage) : matches)
     .filter((m) => m.homeTeam.name && m.awayTeam.name)
+    .filter((m) => ['SCHEDULED', 'TIMED'].includes(m.status))
 
   // Batch-check which matches already have markets
   const eventIds = filtered.map((m) => matchSportsEventId(m))
