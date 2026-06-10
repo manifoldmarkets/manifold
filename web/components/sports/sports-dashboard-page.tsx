@@ -50,6 +50,10 @@ import { JSONEmpty } from 'web/components/contract/contract-description'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { BackButton } from 'web/components/contract/back-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { referralQuery } from 'common/util/share'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -776,6 +780,8 @@ export function SportsDashboardPage({
   }
 
   const isAdmin = useAdminOrMod() || useDev()
+  const user = useUser()
+  useSaveReferral(user)
 
   async function fetchMarkets() {
     try {
@@ -927,6 +933,13 @@ export function SportsDashboardPage({
             <h1 className="text-ink-1000 text-xl font-medium tracking-tight">
               {title}
             </h1>
+            <CopyLinkOrShareButton
+              url={`https://${ENV_CONFIG.domain}${router.pathname}${
+                user?.username ? referralQuery(user.username) : ''
+              }`}
+              eventTrackingName="copy sports dashboard link"
+              tooltip="Share"
+            />
           </Row>
           <Row className="items-center gap-2">
             <SportsDashboardTabButton
