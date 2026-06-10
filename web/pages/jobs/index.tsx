@@ -22,7 +22,7 @@ type Job = {
 const JOBS: Job[] = [
   {
     title: 'Backend Engineer',
-    location: 'Flexible',
+    location: 'SF / remote',
     comp: 'Base + equity',
     stage: 'Pre-launch',
     blurb:
@@ -48,7 +48,7 @@ const JOBS: Job[] = [
   },
   {
     title: 'Head of Growth',
-    location: 'Flexible',
+    location: 'SF / remote',
     comp: 'Base + equity',
     stage: 'Pre-launch',
     blurb:
@@ -76,8 +76,8 @@ const JOBS: Job[] = [
   },
   {
     title: 'Quantitative Trader',
-    location: 'Flexible',
-    comp: 'Performance-based',
+    location: 'SF / remote',
+    comp: 'Base + equity + carry',
     stage: 'Pre-launch',
     blurb:
       'Run the liquidity vault and make markets across novel, illiquid instruments — high-ownership and performance-based.',
