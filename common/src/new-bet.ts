@@ -5,9 +5,12 @@ import { computeFills, CpmmState, getCpmmProbability } from './calculate-cpmm'
 import {
   BinaryContract,
   CPMMMultiContract,
+  FINE_PROB_TAIL,
   MAX_CPMM_PROB,
+  MAX_FINE_CPMM_PROB,
   MAX_STONK_PROB,
   MIN_CPMM_PROB,
+  MIN_FINE_CPMM_PROB,
   MIN_STONK_PROB,
   MultiContract,
   PseudoNumericContract,
@@ -31,6 +34,33 @@ export type BetInfo = {
   newPool?: { [outcome: string]: number }
   newTotalLiquidity?: number
   newP?: number
+}
+
+export const getRoundedLimitProb = (
+  limitProb: number | undefined,
+  fineProbBetting = false
+) => {
+  if (limitProb === undefined) return limitProb
+  // Fine prob betting unlocks 0.1-percentage-point increments at the tails
+  // of the prob range, where a 0.1pp step is no finer a move in log-odds
+  // than the 1pp step at 50% that everyone already has.
+  const fine =
+    fineProbBetting &&
+    (limitProb <= FINE_PROB_TAIL || limitProb >= 1 - FINE_PROB_TAIL)
+  const step = fine ? 1000 : 100
+  const isRounded = floatingEqual(
+    Math.round(limitProb * step),
+    limitProb * step
+  )
+  if (!isRounded)
+    throw new APIError(
+      400,
+      fine
+        ? 'limitProb must be in increments of 0.001 (i.e. tenths of a percentage point) below 3% / above 97%'
+        : 'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+    )
+
+  return Math.round(limitProb * step) / step
 }
 
 export const computeCpmmBet = (
@@ -89,7 +119,8 @@ export const getBinaryCpmmBetInfo = (
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   expiresAt?: number,
-  expiresMillisAfter?: number
+  expiresMillisAfter?: number,
+  fineProbBetting?: boolean
 ) => {
   const cpmmState = {
     pool: contract.pool,
@@ -118,6 +149,8 @@ export const getBinaryCpmmBetInfo = (
     balanceByUserId,
     contract.outcomeType === 'STONK'
       ? { max: MAX_STONK_PROB, min: MIN_STONK_PROB }
+      : fineProbBetting && contract.outcomeType === 'BINARY'
+      ? { max: MAX_FINE_CPMM_PROB, min: MIN_FINE_CPMM_PROB }
       : { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
   const now = Date.now()

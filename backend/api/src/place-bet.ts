@@ -1,7 +1,6 @@
 import {
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
-  getRoundedLimitProb,
   getUniqueBettorBonusQuery,
   getUserBalancesAndMetrics,
   updateMakers,
@@ -23,6 +22,7 @@ import {
   CandidateBet,
   getBinaryCpmmBetInfo,
   getNewMultiCpmmBetInfo,
+  getRoundedLimitProb,
 } from 'common/new-bet'
 import { convertBet } from 'common/supabase/bets'
 import { convertContract } from 'common/supabase/contracts'
@@ -30,7 +30,7 @@ import { convertTxn } from 'common/supabase/txns'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
-import { EPSILON, floatingEqual } from 'common/util/math'
+import { EPSILON } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { first, isEqual, maxBy, sumBy } from 'lodash'
 import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
@@ -88,7 +88,7 @@ const queueDependenciesThenBet = async (
   const { dryRun, contractId } = props
   const minimalDeps = [auth.uid, contractId]
   return await ordersQueue.enqueueFn(async () => {
-    const { contract, answers, unfilledBets, balanceByUserId } =
+    const { user, contract, answers, unfilledBets, balanceByUserId } =
       await fetchContractBetDataAndValidate(
         createSupabaseDirectClient(),
         props,
@@ -98,6 +98,7 @@ const queueDependenciesThenBet = async (
     // Simulate bet to see whose limit orders you match.
     const simulatedResult = calculateBetResult(
       props,
+      user,
       contract,
       answers,
       unfilledBets,
@@ -144,6 +145,7 @@ export const placeBetMain = async (
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     body,
+    user,
     contract,
     answers,
     unfilledBets,
@@ -173,6 +175,7 @@ export const placeBetMain = async (
     }
     const newBetResult = calculateBetResult(
       body,
+      user,
       contract,
       answers,
       unfilledBets,
@@ -181,7 +184,12 @@ export const placeBetMain = async (
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const { newBet } = newBetResult
     if (!newBet.amount && !newBet.orderAmount && !newBet.shares) {
-      throw new APIError(400, 'Betting allowed only between 1-99%.')
+      throw new APIError(
+        400,
+        user.fineProbBetting && contract.outcomeType === 'BINARY'
+          ? 'Betting allowed only between 0.1-99.9%.'
+          : 'Betting allowed only between 1-99%.'
+      )
     }
     const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
     log(
@@ -237,6 +245,7 @@ export const placeBetMain = async (
 
 export const calculateBetResult = (
   body: ValidatedAPIParams<'bet'>,
+  user: User,
   contract: MarketContract,
   answers: Answer[] | undefined,
   unfilledBets: LimitBet[],
@@ -246,24 +255,17 @@ export const calculateBetResult = (
   const { outcomeType, mechanism } = contract
 
   if (mechanism == 'cpmm-1') {
-    // eslint-disable-next-line prefer-const
-    let { outcome, limitProb, expiresAt } = body
+    const { outcome, expiresAt } = body
     if (expiresAt && expiresAt < Date.now())
       throw new APIError(400, 'Bet cannot expire in the past.')
 
-    if (limitProb !== undefined && outcomeType === 'BINARY') {
-      const isRounded = floatingEqual(
-        Math.round(limitProb * 100),
-        limitProb * 100
-      )
-      if (!isRounded)
-        throw new APIError(
-          400,
-          'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
-        )
-
-      limitProb = Math.round(limitProb * 100) / 100
-    }
+    const fineProbBetting = !!user.fineProbBetting && outcomeType === 'BINARY'
+    // Pseudo-numeric and stonk limit probs come from value mapping and are
+    // not grid-constrained (matching legacy behavior).
+    const limitProb =
+      outcomeType === 'BINARY'
+        ? getRoundedLimitProb(body.limitProb, fineProbBetting)
+        : body.limitProb
 
     return getBinaryCpmmBetInfo(
       contract,
@@ -273,7 +275,8 @@ export const calculateBetResult = (
       unfilledBets,
       balanceByUserId,
       expiresAt,
-      expiresMillisAfter
+      expiresMillisAfter,
+      fineProbBetting
     )
   } else if (mechanism == 'cpmm-multi-1') {
     const { shouldAnswersSumToOne } = contract

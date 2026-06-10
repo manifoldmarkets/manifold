@@ -503,6 +503,15 @@ export const MIN_CPMM_PROB = 0.01
 export const MAX_STONK_PROB = 0.95
 export const MIN_STONK_PROB = 0.2
 
+// Users with the `fineProbBetting` setting (settable via the me/update API)
+// can bet on binary markets in 0.1-percentage-point increments at the tails
+// of the prob range, out to these wider bounds. The tail threshold keeps the
+// grid honest in odds terms: a 0.1pp step at 97% is about as large a move in
+// log-odds as the 1pp step at 50% that everyone already has.
+export const MAX_FINE_CPMM_PROB = 0.999
+export const MIN_FINE_CPMM_PROB = 0.001
+export const FINE_PROB_TAIL = 0.03
+
 export const isMarketRanked = (contract: Contract) =>
   contract.isRanked != false &&
   contract.visibility === 'public' &&

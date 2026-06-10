@@ -113,13 +113,17 @@ export type User = {
   // When false, user cannot change their @username
   // Automatically set to false when any ban is applied (unless mod opts out)
   // Must be manually re-enabled by a mod
-  canChangeUsername?: boolean  // undefined = allowed, false = restricted
+  canChangeUsername?: boolean // undefined = allowed, false = restricted
 
   userDeleted?: boolean
   optOutBetWarnings?: boolean
   signupBonusPaid?: number
   isBot?: boolean
   isAdvancedTrader?: boolean
+  // Fine-resolution betting on binary markets: 0.1pp limit order increments
+  // and a 0.1%-99.9% range at the tails (<=3% / >=97%). Settable only via
+  // the me/update API on purpose — no web UI toggle.
+  fineProbBetting?: boolean
   purchasedMana?: boolean
   verifiedPhone?: boolean
 
