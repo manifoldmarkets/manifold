@@ -26,6 +26,7 @@
     "mailgun-js": "0.22.0",
     "openai": "4.92.1",
     "pg-promise": "11.4.1",
+    "redis": "4.7.0",
     "string-similarity": "4.0.4"
   },
   "devDependencies": {

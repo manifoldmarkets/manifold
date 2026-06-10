@@ -35,6 +35,34 @@ export const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  'ws/redis_broadcasts_published': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_broadcasts_received': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_broadcast_publish_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_broadcast_parse_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_publisher_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_subscriber_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_subscriber_start_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'http/request_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
