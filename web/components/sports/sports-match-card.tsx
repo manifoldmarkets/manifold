@@ -4,8 +4,19 @@ import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagEmojiToCode } from 'common/sports'
+import { ContractMetric } from 'common/contract-metric'
 import { SportsBetPanel } from './sports-bet-panel'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import {
+  PositionsHovercard,
+  PositionsData,
+} from 'web/components/contract/positions-hovercard'
+import { useUser } from 'web/hooks/use-user'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { api } from 'web/lib/api/api'
+import { db } from 'web/lib/supabase/db'
 
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
@@ -95,6 +106,7 @@ function OutcomeRow({
   teamColor,
   winnerColor,
   onClick,
+  hasPosition,
 }: {
   flag?: string
   name: string
@@ -107,6 +119,7 @@ function OutcomeRow({
   teamColor?: string
   winnerColor?: string
   onClick?: () => void
+  hasPosition?: boolean
 }) {
   const barColor = isWinner
     ? 'bg-green-400'
@@ -139,6 +152,17 @@ function OutcomeRow({
           opacity: 0.5,
         }}
       />
+      {hasPosition && (
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 w-[5px]"
+          style={{ backgroundColor: teamColor ?? undefined }}
+        >
+          <div
+            className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2"
+            style={{ backgroundColor: 'rgba(255,255,255,0.35)' }}
+          />
+        </div>
+      )}
       <div className="relative z-10 flex w-full items-center gap-2">
         {isDraw ? (
           <div className="border-ink-300 bg-canvas-100 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border">
@@ -206,9 +230,58 @@ function OutcomeRow({
   )
 }
 
+function useMyMatchMetrics(contractId: string | undefined) {
+  const user = useUser()
+  const [metrics, setMetrics] = useState<ContractMetric[] | undefined>(
+    undefined
+  )
+
+  useEffect(() => {
+    if (!user?.id || !contractId) {
+      setMetrics(undefined)
+      return
+    }
+    db.from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        setMetrics((data ?? []).map((row) => row.data as ContractMetric))
+      })
+  }, [user?.id, contractId])
+
+  useApiSubscription({
+    topics:
+      contractId && user?.id
+        ? [`contract/${contractId}/user-metrics/${user.id}`]
+        : [],
+    enabled: !!user?.id && !!contractId,
+    onBroadcast: ({ data }) => {
+      const updated = data.metrics as ContractMetric[]
+      if (updated?.length) {
+        setMetrics((prev) => {
+          const map = new Map((prev ?? []).map((m) => [m.answerId, m]))
+          updated.forEach((m) => map.set(m.answerId, m))
+          return Array.from(map.values())
+        })
+      }
+    },
+  })
+
+  return metrics
+}
+
 export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const resolved = match.status === 'resolved'
   const now = Date.now()
+  const user = useUser()
+  const myMetrics = useMyMatchMetrics(!resolved ? match.contractId : undefined)
+  const allLimitBets = useUnfilledBets(
+    match.contractId ?? '',
+    (params) => api('bets', params),
+    useIsPageVisible,
+    { enabled: !resolved && !!user && !!match.contractId }
+  )
   // Live state is data-driven (a fresh in-play score), not a fixed time window —
   // so a long match never falsely reverts to "Upcoming". Seeded from the initial
   // fetch, then updated live over the websocket below.
@@ -248,6 +321,75 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
   const awayScore = resolved ? match.finalScore?.away : undefined
   const winnerColor = resolved ? vibrantForOutcome(match.winner) : undefined
   const marketHref = match.marketUrl ?? '#'
+  const myLimitBets = (allLimitBets ?? []).filter((b) => b.userId === user?.id)
+  const teamAPos =
+    !resolved &&
+    myMetrics?.find((m) => m.answerId === match.teamAAnswerId && m.hasShares)
+  const teamBPos =
+    !resolved &&
+    myMetrics?.find((m) => m.answerId === match.teamBAnswerId && m.hasShares)
+  const drawPos =
+    !resolved &&
+    myMetrics?.find((m) => m.answerId === match.drawAnswerId && m.hasShares)
+  const positions: PositionsData['positions'] = [
+    ...(teamAPos
+      ? [
+          {
+            name: match.teamA.name,
+            color: SPORTS_COLORS.teamA,
+            amount: teamAPos.invested,
+            profit: teamAPos.profit,
+          },
+        ]
+      : []),
+    ...(teamBPos
+      ? [
+          {
+            name: match.teamB.name,
+            color: SPORTS_COLORS.teamB,
+            amount: teamBPos.invested,
+            profit: teamBPos.profit,
+          },
+        ]
+      : []),
+    ...(drawPos
+      ? [
+          {
+            name: 'Draw',
+            color: SPORTS_COLORS.draw,
+            amount: drawPos.invested,
+            profit: drawPos.profit,
+          },
+        ]
+      : []),
+  ]
+  const limitOrders: PositionsData['limitOrders'] =
+    !resolved && user
+      ? myLimitBets
+          .filter((b) => !!b.answerId)
+          .map((b) => {
+            const name =
+              b.answerId === match.teamAAnswerId
+                ? match.teamA.name
+                : b.answerId === match.teamBAnswerId
+                ? match.teamB.name
+                : b.answerId === match.drawAnswerId
+                ? 'Draw'
+                : null
+            return name
+              ? {
+                  name,
+                  prob: Math.round(b.limitProb * 100),
+                  amount: b.orderAmount - b.amount,
+                }
+              : null
+          })
+          .filter((o): o is NonNullable<typeof o> => o !== null)
+      : []
+  const userData: PositionsData = { positions, limitOrders }
+  const hasPositions = userData.positions.length > 0
+  const hasOrders = userData.limitOrders.length > 0
+  const hasAny = hasPositions || hasOrders
   const LIVE_COLOR = '#16a34a'
 
   // Annotate how a knockout was decided so the fullTime score (which can be a
@@ -383,6 +525,9 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             teamColor={SPORTS_COLORS.teamA}
             winnerColor={match.winner === 'teamA' ? winnerColor : undefined}
             onClick={!resolved ? () => setBetOutcome('teamA') : undefined}
+            hasPosition={userData.positions.some(
+              (p) => p.name === match.teamA.name
+            )}
           />
           <OutcomeRow
             flag={match.teamB.flag}
@@ -394,6 +539,9 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             teamColor={SPORTS_COLORS.teamB}
             winnerColor={match.winner === 'teamB' ? winnerColor : undefined}
             onClick={!resolved ? () => setBetOutcome('teamB') : undefined}
+            hasPosition={userData.positions.some(
+              (p) => p.name === match.teamB.name
+            )}
           />
           {(match.hasDraw ?? true) && (
             <OutcomeRow
@@ -405,12 +553,38 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               teamColor={SPORTS_COLORS.draw}
               winnerColor={match.winner === 'draw' ? winnerColor : undefined}
               onClick={!resolved ? () => setBetOutcome('draw') : undefined}
+              hasPosition={userData.positions.some((p) => p.name === 'Draw')}
             />
           )}
         </Col>
 
-        <Row className="border-ink-200 justify-between border-t pt-2">
+        <Row className="border-ink-200 items-center justify-between border-t pt-2">
           <span className="text-ink-500 text-[11px]">Ṁ {match.volume} vol</span>
+          {hasAny && (
+            <Tooltip
+              text={
+                <Link href={marketHref} className="block">
+                  <PositionsHovercard {...userData} />
+                </Link>
+              }
+              placement="top"
+              hasSafePolygon
+              tooltipClassName="!bg-canvas-20 border-ink-200 border shadow-lg !text-left !max-w-none !px-3 !py-2.5 !rounded-lg"
+            >
+              <Link
+                href={marketHref}
+                className="text-ink-500 hover:text-ink-700 flex items-center gap-1.5 text-[11px] transition-colors"
+              >
+                {hasPositions && (
+                  <span className="bg-ink-400 h-2 w-2 rounded-full" />
+                )}
+                {hasOrders && (
+                  <span className="border-ink-600 h-2 w-2 rounded-full border" />
+                )}
+                <span>Positions</span>
+              </Link>
+            </Tooltip>
+          )}
           <Link
             href={marketHref}
             className="text-ink-500 hover:text-yes-500 text-[11px] transition-colors"
