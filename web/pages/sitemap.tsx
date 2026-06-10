@@ -25,6 +25,7 @@ import {
   HeartIcon,
   ExternalLinkIcon,
   MapIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/outline'
 import { TRADE_TERM } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
@@ -173,6 +174,12 @@ export default function SitemapPage() {
               description="Track your tasks"
               href="/todo"
               icon={ClipboardCheckIcon}
+            />
+            <SitemapLink
+              title="Jobs"
+              description="Curated jobs by employers who value forecasting"
+              href="/jobs"
+              icon={BriefcaseIcon}
             />
           </div>
         </SitemapSection>
