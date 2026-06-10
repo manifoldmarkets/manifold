@@ -49,6 +49,7 @@ import {
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { BackButton } from 'web/components/contract/back-button'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -920,7 +921,8 @@ export function SportsDashboardPage({
       </Head>
       <Col className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6">
         <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 items-center justify-between border-b pb-5 pt-6">
-          <Row className="items-center gap-3">
+          <Row className="items-center gap-2">
+            <BackButton className="-ml-2 shrink-0" />
             <span className="text-2xl">{emoji}</span>
             <h1 className="text-ink-1000 text-xl font-medium tracking-tight">
               {title}
