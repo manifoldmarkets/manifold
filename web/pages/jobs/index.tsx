@@ -121,7 +121,7 @@ function JobCard({ job }: { job: Job }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="border-ink-200 bg-canvas-0 rounded-lg border overflow-hidden transition-shadow hover:shadow-sm">
+    <div className="border-ink-200 bg-canvas-0 overflow-hidden rounded-lg border transition-shadow hover:shadow-sm">
       {/* Card header — always visible */}
       <button
         onClick={() => setOpen((v) => !v)}
@@ -158,7 +158,9 @@ function JobCard({ job }: { job: Job }) {
       {/* Expandable body */}
       {open && (
         <div className="border-ink-100 border-t px-6 pb-6 pt-5">
-          <p className="text-ink-700 mb-6 text-sm leading-relaxed">{job.intro}</p>
+          <p className="text-ink-700 mb-6 text-sm leading-relaxed">
+            {job.intro}
+          </p>
 
           <div className="mb-5">
             <span className="text-ink-400 mb-3 block font-mono text-xs uppercase tracking-widest">
@@ -166,8 +168,11 @@ function JobCard({ job }: { job: Job }) {
             </span>
             <ul className="flex flex-col gap-2">
               {job.whatYoullDo.map((item, i) => (
-                <li key={i} className="flex gap-2.5 text-sm text-ink-700 leading-relaxed">
-                  <span className="text-ink-300 shrink-0 mt-0.5">·</span>
+                <li
+                  key={i}
+                  className="text-ink-700 flex gap-2.5 text-sm leading-relaxed"
+                >
+                  <span className="text-ink-300 mt-0.5 shrink-0">·</span>
                   <span>{item}</span>
                 </li>
               ))}
@@ -180,8 +185,11 @@ function JobCard({ job }: { job: Job }) {
             </span>
             <ul className="flex flex-col gap-2">
               {job.whatWereLookingFor.map((item, i) => (
-                <li key={i} className="flex gap-2.5 text-sm text-ink-700 leading-relaxed">
-                  <span className="text-ink-300 shrink-0 mt-0.5">·</span>
+                <li
+                  key={i}
+                  className="text-ink-700 flex gap-2.5 text-sm leading-relaxed"
+                >
+                  <span className="text-ink-300 mt-0.5 shrink-0">·</span>
                   <span>{item}</span>
                 </li>
               ))}
@@ -232,9 +240,9 @@ export default function JobsPage() {
               MNX - The AI Exchange
             </h2>
             <p className="text-ink-500 text-sm leading-relaxed">
-              MNX is building the financial architecture for the AI era. We are a
-              small, highly talented, and maximally AI-pilled team based in San
-              Francisco.
+              MNX is building the financial architecture for the AI era. We are
+              a small, highly talented, and maximally AI-pilled team based in
+              San Francisco.
             </p>
             <span className="text-ink-400 mt-1 font-mono text-xs uppercase tracking-wider">
               {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
