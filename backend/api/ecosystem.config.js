@@ -12,6 +12,27 @@ module.exports = {
       node_args: '--max-old-space-size=12288',
       env: {
         PORT: 80,
+        // 'both' = keep doing fan-out locally AND publish to the fan-out tier, so
+        // there is no broadcast gap while clients are still routed to /ws here.
+        // After /ws is routed to the fan-out tier (url-map-config.yaml), switch this
+        // to 'publish' to take fan-out off the write event loop entirely.
+        BROADCAST_BRIDGE: 'both',
+      },
+    },
+    {
+      // Dedicated fan-out tier: owns the websocket connections and does the
+      // per-socket sends, fed by the write process over the local bridge. Keeps
+      // spectator fan-out off the write process's single event loop. The process
+      // self-forks FANOUT_WORKERS workers (defaults to cores-1).
+      name: 'fanout',
+      script: 'backend/api/lib/fanout.js',
+      cron_restart: '0 10 * * *',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      node_args: '--max-old-space-size=12288',
+      env: {
+        FANOUT_PORT: 8080,
       },
     },
     {
