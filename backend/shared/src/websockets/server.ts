@@ -132,6 +132,60 @@ function getRedisUrl() {
   return url && url.trim().length > 0 ? url : undefined
 }
 
+function getRedisUrlForLogging() {
+  const url = getRedisUrl()
+  if (url == null) return undefined
+
+  try {
+    const parsed = new URL(url)
+    const auth = parsed.username || parsed.password ? '<redacted>@' : ''
+    return `${parsed.protocol}//${auth}${parsed.hostname}:${
+      parsed.port || '6379'
+    }`
+  } catch {
+    return '<invalid redis url>'
+  }
+}
+
+function getRedisErrorDetails(err: unknown) {
+  if (err == null || typeof err !== 'object') return { error: err }
+  const e = err as {
+    name?: unknown
+    message?: unknown
+    code?: unknown
+    errno?: unknown
+    syscall?: unknown
+    address?: unknown
+    port?: unknown
+    command?: unknown
+    cause?: unknown
+  }
+  return {
+    name: e.name,
+    message: e.message,
+    code: e.code,
+    errno: e.errno,
+    syscall: e.syscall,
+    address: e.address,
+    port: e.port,
+    command: e.command,
+    cause: e.cause,
+  }
+}
+
+function getRedisLogContext() {
+  return {
+    enabled: redisBroadcastsEnabled(),
+    url: getRedisUrlForLogging(),
+    channel: getRedisBroadcastChannel(),
+    env: getRedisBroadcastEnvironment(),
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    firebaseEnv: process.env.NEXT_PUBLIC_FIREBASE_ENV,
+    disabled: process.env.DISABLE_REDIS_WEBSOCKET_BROADCASTS,
+    instanceId: WEBSOCKET_INSTANCE_ID,
+  }
+}
+
 function getRedisBroadcastEnvironment() {
   const explicitEnv = process.env.WEBSOCKET_REDIS_ENV
   if (explicitEnv != null && explicitEnv.trim().length > 0) {
@@ -236,9 +290,16 @@ async function getRedisPublisher() {
   const url = getRedisUrl()
   if (url == null) return undefined
 
+  log.info(
+    'Starting Redis websocket publisher connection.',
+    getRedisLogContext()
+  )
   redisPublisher = createClient({ url })
   redisPublisher.on('error', (err: unknown) => {
-    log.error('Redis websocket publisher error.', { error: err })
+    log.error('Redis websocket publisher error.', {
+      ...getRedisErrorDetails(err),
+      ...getRedisLogContext(),
+    })
     metrics.inc('ws/redis_publisher_errors')
   })
   redisPublisher.on('reconnecting', () => {
@@ -248,11 +309,15 @@ async function getRedisPublisher() {
   redisPublisherConnect = redisPublisher
     .connect()
     .then(() => {
-      log.info('Redis websocket publisher connected.')
+      log.info('Redis websocket publisher connected.', getRedisLogContext())
       return redisPublisher!
     })
     .catch((err: unknown) => {
       resetRedisPublisher()
+      log.error('Failed to start Redis websocket publisher.', {
+        ...getRedisErrorDetails(err),
+        ...getRedisLogContext(),
+      })
       throw err
     })
 
@@ -312,7 +377,10 @@ function scheduleRedisSubscriberRetry() {
 }
 
 function startRedisBroadcastSubscriber() {
-  if (!redisBroadcastsEnabled()) return
+  if (!redisBroadcastsEnabled()) {
+    log.info('Redis websocket broadcasts disabled.', getRedisLogContext())
+    return
+  }
   redisSubscriberShouldRun = true
   if (redisSubscriberConnect != null || redisSubscriberRetryTimeout != null)
     return
@@ -321,10 +389,17 @@ function startRedisBroadcastSubscriber() {
   if (url == null) return
 
   const channel = getRedisBroadcastChannel()
+  log.info(
+    'Starting Redis websocket subscriber connection.',
+    getRedisLogContext()
+  )
   const subscriber = createClient({ url })
   redisSubscriber = subscriber
   subscriber.on('error', (err: unknown) => {
-    log.error('Redis websocket subscriber error.', { error: err })
+    log.error('Redis websocket subscriber error.', {
+      ...getRedisErrorDetails(err),
+      ...getRedisLogContext(),
+    })
     metrics.inc('ws/redis_subscriber_errors')
   })
   subscriber.on('reconnecting', () => {
@@ -336,6 +411,7 @@ function startRedisBroadcastSubscriber() {
     .then(() => subscriber.subscribe(channel, handleRedisBroadcast))
     .then(() => {
       resetRedisSubscriberRetryDelay()
+      log.info('Redis websocket subscriber connected.', getRedisLogContext())
       log.info(`Redis websocket subscriber listening on ${channel}.`)
     })
     .catch((err: unknown) => {
@@ -343,10 +419,14 @@ function startRedisBroadcastSubscriber() {
       redisSubscriberConnect = undefined
       subscriber.quit().catch((quitErr: unknown) => {
         log.error('Failed to quit Redis websocket subscriber.', {
-          error: quitErr,
+          ...getRedisErrorDetails(quitErr),
+          ...getRedisLogContext(),
         })
       })
-      log.error('Failed to start Redis websocket subscriber.', { error: err })
+      log.error('Failed to start Redis websocket subscriber.', {
+        ...getRedisErrorDetails(err),
+        ...getRedisLogContext(),
+      })
       metrics.inc('ws/redis_subscriber_start_errors')
       scheduleRedisSubscriberRetry()
     })
@@ -360,7 +440,10 @@ function stopRedisBroadcastSubscriber() {
   redisSubscriber = undefined
   redisSubscriberConnect = undefined
   subscriber?.quit().catch((err: unknown) => {
-    log.error('Failed to quit Redis websocket subscriber.', { error: err })
+    log.error('Failed to quit Redis websocket subscriber.', {
+      ...getRedisErrorDetails(err),
+      ...getRedisLogContext(),
+    })
   })
 }
 
@@ -370,7 +453,10 @@ export function broadcastMulti(topics: string[], data: BroadcastPayload) {
 
   if (redisBroadcastsEnabled()) {
     publishRedisBroadcast(topics, data).catch((err: unknown) => {
-      log.error('Redis websocket broadcast failed.', { error: err })
+      log.error('Redis websocket broadcast failed.', {
+        ...getRedisErrorDetails(err),
+        ...getRedisLogContext(),
+      })
       metrics.inc('ws/redis_broadcast_publish_errors')
     })
   }
