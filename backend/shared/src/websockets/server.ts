@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { Server as HttpServer } from 'node:http'
 import { createClient } from 'redis'
 import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
@@ -16,8 +17,12 @@ const SWITCHBOARD = new Switchboard()
 // if a connection doesn't ping for this long, we assume the other side is toast
 const CONNECTION_TIMEOUT_MS = 60 * 1000
 const DEFAULT_REDIS_BROADCAST_CHANNEL_PREFIX = 'api-websocket-broadcasts'
+const REDIS_SUBSCRIBER_INITIAL_RETRY_DELAY_MS = 1_000
+const REDIS_SUBSCRIBER_MAX_RETRY_DELAY_MS = 60_000
+const WEBSOCKET_INSTANCE_ID = randomUUID()
 
 type RedisBroadcast = {
+  originInstanceId?: string
   topics: string[]
   data: BroadcastPayload
 }
@@ -28,6 +33,9 @@ let redisPublisher: RedisClient | undefined
 let redisPublisherConnect: Promise<RedisClient> | undefined
 let redisSubscriber: RedisClient | undefined
 let redisSubscriberConnect: Promise<void> | undefined
+let redisSubscriberShouldRun = false
+let redisSubscriberRetryTimeout: NodeJS.Timeout | undefined
+let redisSubscriberRetryDelayMs = REDIS_SUBSCRIBER_INITIAL_RETRY_DELAY_MS
 
 // Categorize topics to avoid unbounded metric cardinality
 function getTopicCategory(topic: string): string {
@@ -207,6 +215,12 @@ function parseRedisBroadcast(message: string) {
   if (parsed.data == null || typeof parsed.data !== 'object') {
     throw new Error('Redis websocket broadcast has invalid data.')
   }
+  if (
+    parsed.originInstanceId != null &&
+    typeof parsed.originInstanceId !== 'string'
+  ) {
+    throw new Error('Redis websocket broadcast origin instance ID is invalid.')
+  }
   return parsed
 }
 
@@ -247,20 +261,22 @@ async function getRedisPublisher() {
 
 async function publishRedisBroadcast(topics: string[], data: BroadcastPayload) {
   const publisher = await getRedisPublisher()
-  if (publisher == null) {
-    sendToLocalSubscribersMulti(topics, data)
-    return
-  }
+  if (publisher == null) return
 
-  const broadcast: RedisBroadcast = { topics, data }
+  const broadcast: RedisBroadcast = {
+    originInstanceId: WEBSOCKET_INSTANCE_ID,
+    topics,
+    data,
+  }
   await publisher.publish(getRedisBroadcastChannel(), JSON.stringify(broadcast))
   metrics.inc('ws/redis_broadcasts_published')
 }
 
 function handleRedisBroadcast(message: string) {
   try {
-    const { topics, data } = parseRedisBroadcast(message)
+    const { originInstanceId, topics, data } = parseRedisBroadcast(message)
     metrics.inc('ws/redis_broadcasts_received')
+    if (originInstanceId === WEBSOCKET_INSTANCE_ID) return
     sendToLocalSubscribersMulti(topics, data)
   } catch (err: unknown) {
     log.error('Error handling Redis websocket broadcast.', { error: err })
@@ -268,43 +284,78 @@ function handleRedisBroadcast(message: string) {
   }
 }
 
+function clearRedisSubscriberRetry() {
+  if (redisSubscriberRetryTimeout != null) {
+    clearTimeout(redisSubscriberRetryTimeout)
+    redisSubscriberRetryTimeout = undefined
+  }
+}
+
+function resetRedisSubscriberRetryDelay() {
+  redisSubscriberRetryDelayMs = REDIS_SUBSCRIBER_INITIAL_RETRY_DELAY_MS
+}
+
+function scheduleRedisSubscriberRetry() {
+  if (!redisSubscriberShouldRun || !redisBroadcastsEnabled()) return
+  if (redisSubscriberRetryTimeout != null) return
+
+  const delayMs = redisSubscriberRetryDelayMs
+  redisSubscriberRetryDelayMs = Math.min(
+    redisSubscriberRetryDelayMs * 2,
+    REDIS_SUBSCRIBER_MAX_RETRY_DELAY_MS
+  )
+  log.warn(`Retrying Redis websocket subscriber in ${delayMs}ms.`)
+  redisSubscriberRetryTimeout = setTimeout(() => {
+    redisSubscriberRetryTimeout = undefined
+    startRedisBroadcastSubscriber()
+  }, delayMs)
+}
+
 function startRedisBroadcastSubscriber() {
   if (!redisBroadcastsEnabled()) return
-  if (redisSubscriberConnect != null) return
+  redisSubscriberShouldRun = true
+  if (redisSubscriberConnect != null || redisSubscriberRetryTimeout != null)
+    return
 
   const url = getRedisUrl()
   if (url == null) return
 
-  redisSubscriber = createClient({ url })
-  redisSubscriber.on('error', (err: unknown) => {
+  const channel = getRedisBroadcastChannel()
+  const subscriber = createClient({ url })
+  redisSubscriber = subscriber
+  subscriber.on('error', (err: unknown) => {
     log.error('Redis websocket subscriber error.', { error: err })
     metrics.inc('ws/redis_subscriber_errors')
   })
-  redisSubscriber.on('reconnecting', () => {
+  subscriber.on('reconnecting', () => {
     log.warn('Redis websocket subscriber reconnecting.')
   })
 
-  redisSubscriberConnect = redisSubscriber
+  redisSubscriberConnect = subscriber
     .connect()
-    .then(() =>
-      redisSubscriber!.subscribe(
-        getRedisBroadcastChannel(),
-        handleRedisBroadcast
-      )
-    )
+    .then(() => subscriber.subscribe(channel, handleRedisBroadcast))
     .then(() => {
-      log.info(
-        `Redis websocket subscriber listening on ${getRedisBroadcastChannel()}.`
-      )
+      resetRedisSubscriberRetryDelay()
+      log.info(`Redis websocket subscriber listening on ${channel}.`)
     })
     .catch((err: unknown) => {
+      if (redisSubscriber === subscriber) redisSubscriber = undefined
       redisSubscriberConnect = undefined
+      subscriber.quit().catch((quitErr: unknown) => {
+        log.error('Failed to quit Redis websocket subscriber.', {
+          error: quitErr,
+        })
+      })
       log.error('Failed to start Redis websocket subscriber.', { error: err })
       metrics.inc('ws/redis_subscriber_start_errors')
+      scheduleRedisSubscriberRetry()
     })
 }
 
 function stopRedisBroadcastSubscriber() {
+  redisSubscriberShouldRun = false
+  clearRedisSubscriberRetry()
+  resetRedisSubscriberRetryDelay()
   const subscriber = redisSubscriber
   redisSubscriber = undefined
   redisSubscriberConnect = undefined
@@ -315,18 +366,13 @@ function stopRedisBroadcastSubscriber() {
 
 export function broadcastMulti(topics: string[], data: BroadcastPayload) {
   recordBroadcastMetrics(topics)
+  sendToLocalSubscribersMulti(topics, data)
 
   if (redisBroadcastsEnabled()) {
     publishRedisBroadcast(topics, data).catch((err: unknown) => {
-      log.error(
-        'Redis websocket broadcast failed; falling back to local-only broadcast.',
-        { error: err }
-      )
+      log.error('Redis websocket broadcast failed.', { error: err })
       metrics.inc('ws/redis_broadcast_publish_errors')
-      sendToLocalSubscribersMulti(topics, data)
     })
-  } else {
-    sendToLocalSubscribersMulti(topics, data)
   }
 }
 
