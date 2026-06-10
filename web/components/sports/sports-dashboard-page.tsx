@@ -53,6 +53,7 @@ import { BackButton } from 'web/components/contract/back-button'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -780,6 +781,7 @@ export function SportsDashboardPage({
 
   const isAdmin = useAdminOrMod() || useDev()
   const user = useUser()
+  useSaveReferral(user)
 
   async function fetchMarkets() {
     try {
