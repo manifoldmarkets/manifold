@@ -658,7 +658,8 @@ export function SportsDashboardTabButton({
     <button
       onClick={onClick}
       className={clsx(
-        'flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+        // Compact on mobile so the header button row fits on one line.
+        'flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium transition-colors sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm',
         active
           ? 'border-ink-700 text-ink-1000 border-2'
           : 'border-ink-300 text-ink-500 hover:border-ink-400 hover:text-ink-700 border'
@@ -668,7 +669,7 @@ export function SportsDashboardTabButton({
       {count !== undefined && (
         <span
           className={clsx(
-            'rounded-full px-1.5 py-0.5 text-xs font-semibold',
+            'rounded-full px-1 py-0.5 text-[10px] font-semibold sm:px-1.5 sm:text-xs',
             active
               ? 'bg-primary-100 text-primary-600'
               : 'bg-ink-100 text-ink-500'
