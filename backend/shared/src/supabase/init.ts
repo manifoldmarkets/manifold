@@ -163,8 +163,15 @@ export function createSupabaseDirectClient(opts?: {
     user: `postgres`,
     password: password,
 
-    // ian: query_timeout doesn't cancel long-running queries, it just stops waiting for them
-    query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
+    // TCP keepalive so a silently-dropped connection (NAT reap, db-side kill)
+    // surfaces as an error in seconds instead of hanging the query until the
+    // kernel gives up retransmitting (~15-30 minutes).
+    keepAlive: true,
+
+    // ian: query_timeout doesn't cancel long-running queries, it just stops waiting for them.
+    // Client-side backstop to statement_timeout where that is set (i.e. on api
+    // processes); scheduler and scripts keep the long timeout.
+    query_timeout: statementTimeout ? statementTimeout * 2 : HOUR_MS,
 
     // ian: during a pool-depletion-related outage, we can cancel any stuck queries
     // without a huge backlog of waiting connections instead of redeploying the api.
