@@ -138,14 +138,15 @@ const getCreatorTraders = async (
   userIds: string[],
   since: number
 ) => {
+  // Drive from the creators' contracts so we only read bets on those
+  // contracts (via the (contract_id, created_time) index), rather than
+  // materializing a distinct over every bet on the site since $2.
   return Object.fromEntries(
     await pg.map(
-      `with contract_traders as (
-          select distinct contract_id, user_id from contract_bets where created_time >= $2
-      )
-       select c.creator_id, count(ct.*)::int as total
+      `select c.creator_id, count(distinct (cb.contract_id, cb.user_id))::int as total
        from contracts as c
-          join contract_traders as ct on c.id = ct.contract_id
+          join contract_bets as cb on cb.contract_id = c.id
+            and cb.created_time >= $2
        where c.creator_id in ($1:list)
        and c.outcome_type != 'POLL' and c.outcome_type != 'BOUNTY'
        group by c.creator_id`,
