@@ -1811,28 +1811,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-partner-stats': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
-    props: z
-      .object({
-        userId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      status: 'success' | 'error'
-      username: string
-      numContractsCreated: number
-      numUniqueBettors: number
-      numReferrals: number
-      numReferralsWhoRetained: number
-      totalTraderIncome: number
-      totalReferralIncome: number
-      dollarsEarned: number
-    },
-  },
   'record-contract-view': {
     method: 'POST',
     visibility: 'public',
