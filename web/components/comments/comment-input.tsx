@@ -9,7 +9,7 @@ import { Contract } from 'common/contract'
 import { STARTING_BALANCE } from 'common/economy'
 import {
   canCommentOnMarket,
-  canReceiveBonuses,
+  hasAccountTrustSignal,
   NEW_USER_COMMENT_GATE_MS,
   User,
 } from 'common/user'
@@ -51,8 +51,8 @@ export function CommentInput(props: {
   autoFocus: boolean
   onClearInput?: () => void
   priorityUserIds?: string[] // user IDs to prioritize in mention suggestions (e.g., contract creator first, then commenters)
-  // When true (market comments), users who purchased mana can comment even
-  // without bonus eligibility. Post comments leave this off.
+  // When true (market comments), also allows the age-based market-comment
+  // fallback. Post comments use the narrower account-trust gate.
   allowPurchasedMana?: boolean
 }) {
   const {
@@ -121,7 +121,7 @@ export function CommentInput(props: {
   const canComment = user
     ? allowPurchasedMana
       ? canCommentOnMarket(user)
-      : canReceiveBonuses(user)
+      : hasAccountTrustSignal(user)
     : true
   const showVerifyPrompt =
     user &&

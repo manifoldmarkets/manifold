@@ -15,7 +15,7 @@ import { APIError } from 'common/api/utils'
 import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updateUser } from 'shared/supabase/users'
+import { recordManaPurchase } from 'shared/supabase/users'
 import { STRIPE_PAYMENTS_ENABLED } from 'common/envs/constants'
 import { WEB_PRICES } from 'common/economy'
 import { isUserBanned } from 'common/ban-utils'
@@ -470,9 +470,10 @@ const issueMoneys = async (session: StripeSession) => {
       } as const
 
       await runTxnInBetQueue(tx, manaPurchaseTxn)
-      await updateUser(tx, userId, {
-        purchasedMana: true,
-      })
+
+      // Mark the purchaser and unlock bonus eligibility (matches the crypto
+      // rail). See recordManaPurchase for the monotonic promotion rule.
+      await recordManaPurchase(tx, userId)
     })
     success = true
   } catch (e) {

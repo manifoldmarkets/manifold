@@ -58,7 +58,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
        COALESCE(SUM(mana_spent), 0) as total_mana_spent,
        COUNT(DISTINCT user_id)::int as participant_count
      FROM sweepstakes_tickets
-     WHERE sweepstakes_num = $1`,
+     WHERE sweepstakes_num = $1 AND voided_at IS NULL`,
     [sweepstakes.sweepstakes_num]
   )
 
@@ -74,7 +74,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
        SUM(num_tickets) as total_tickets,
        SUM(mana_spent) as total_mana_spent
      FROM sweepstakes_tickets
-     WHERE sweepstakes_num = $1
+     WHERE sweepstakes_num = $1 AND voided_at IS NULL
      GROUP BY user_id
      ORDER BY total_tickets DESC
      LIMIT $2`,
@@ -149,6 +149,11 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
   let hasClaimedFreeTicket: boolean | undefined
   let userTotalManaInvested: number | undefined
   let meetsInvestmentRequirement: boolean | undefined
+  // If an admin voided this user's entries (and refunded their mana), surface a
+  // summary so the page can tell them — otherwise their entry count silently
+  // drops with no explanation.
+  let userVoidedEntries: number | undefined
+  let userVoidedManaRefunded: number | undefined
 
   if (auth) {
     const userInTopStats = userStats.some((s) => s.user_id === auth.uid)
@@ -163,7 +168,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
            SUM(num_tickets) as total_tickets,
            SUM(mana_spent) as total_mana_spent
          FROM sweepstakes_tickets
-         WHERE sweepstakes_num = $1 AND user_id = $2
+         WHERE sweepstakes_num = $1 AND user_id = $2 AND voided_at IS NULL
          GROUP BY user_id`,
         [sweepstakes.sweepstakes_num, auth.uid]
       )
@@ -186,6 +191,23 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     userTotalManaInvested = parseFloat(investedResult?.total_invested ?? '0')
     meetsInvestmentRequirement =
       userTotalManaInvested >= SWEEPSTAKES_MIN_MANA_INVESTED
+
+    const voided = await pg.oneOrNone<{
+      voided_tickets: string
+      voided_mana: string
+    }>(
+      `SELECT
+         COALESCE(SUM(num_tickets), 0) as voided_tickets,
+         COALESCE(SUM(mana_spent), 0) as voided_mana
+       FROM sweepstakes_tickets
+       WHERE sweepstakes_num = $1 AND user_id = $2 AND voided_at IS NOT NULL`,
+      [sweepstakes.sweepstakes_num, auth.uid]
+    )
+    const voidedTickets = parseFloat(voided?.voided_tickets ?? '0')
+    if (voidedTickets > 0) {
+      userVoidedEntries = voidedTickets
+      userVoidedManaRefunded = parseFloat(voided?.voided_mana ?? '0')
+    }
   }
 
   return {
@@ -218,5 +240,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     userTotalManaInvested,
     meetsInvestmentRequirement,
     minManaInvested: SWEEPSTAKES_MIN_MANA_INVESTED,
+    userVoidedEntries,
+    userVoidedManaRefunded,
   }
 }

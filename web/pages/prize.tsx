@@ -44,7 +44,7 @@ import {
   getTotalWinnerCount,
   SweepstakesPrize,
 } from 'common/sweepstakes'
-import { canReceiveBonuses } from 'common/user'
+import { canEnterPrizeDrawings } from 'common/user'
 import { DisplayUser } from 'common/api/user-types'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
@@ -134,7 +134,7 @@ export default function SweepstakesPage() {
   const [showPrizeModal, setShowPrizeModal] = useState(false)
 
   // Check if user needs to verify before participating
-  const needsVerification = user && !canReceiveBonuses(user)
+  const needsVerification = user && !canEnterPrizeDrawings(user)
   const isAdminIneligible = !!user && isAdmin
 
   // Promote server-side 'pending' to 'action-needed' if the user can't
@@ -169,6 +169,8 @@ export default function SweepstakesPage() {
   const minManaInvested = data?.minManaInvested ?? 1000
   const totalManaSpent = data?.totalManaSpent ?? 0
   const participantCount = data?.participantCount ?? userStats.length
+  const userVoidedEntries = data?.userVoidedEntries ?? 0
+  const userVoidedManaRefunded = data?.userVoidedManaRefunded ?? 0
 
   // Calculate time remaining
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -561,6 +563,26 @@ export default function SweepstakesPage() {
                 Verify Now
               </Button>
             </Row>
+          </div>
+        )}
+
+        {/* Admin voided this user's entries (and refunded their mana). Explain
+            the dropped entry count rather than silently removing them. */}
+        {userVoidedEntries > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="font-semibold text-amber-900 dark:text-amber-200">
+              {Math.round(userVoidedEntries).toLocaleString()} of your entries
+              in this drawing were voided.
+            </p>
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              {userVoidedManaRefunded > 0 && (
+                <>
+                  {formatMoney(userVoidedManaRefunded)} was refunded to your
+                  balance.{' '}
+                </>
+              )}
+              These entries are null and void and can&apos;t win.
+            </p>
           </div>
         )}
 

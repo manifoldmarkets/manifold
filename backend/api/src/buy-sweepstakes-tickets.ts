@@ -11,7 +11,7 @@ import {
 } from 'common/sweepstakes'
 import { getIp } from 'shared/analytics'
 import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
-import { canReceiveBonuses } from 'common/user'
+import { canEnterPrizeDrawings } from 'common/user'
 import { isAdminId } from 'common/envs/constants'
 
 export const buySweepstakesTickets: APIHandler<
@@ -51,11 +51,15 @@ export const buySweepstakesTickets: APIHandler<
       throw new APIError(400, 'Sweepstakes has closed')
     }
 
-    // Get total ticket count for this sweepstakes (for bonding curve)
+    // Get total ticket count for this sweepstakes (for bonding curve).
+    // Filter voided_at IS NULL so refunded entries don't push the curve
+    // higher for the next buyer — voiding removes mana from the pool, so
+    // pricing should match.
     const ticketStats = await tx.oneOrNone<{ total_tickets: string }>(
       `SELECT COALESCE(SUM(num_tickets), 0) as total_tickets
          FROM sweepstakes_tickets
-         WHERE sweepstakes_num = $1`,
+         WHERE sweepstakes_num = $1
+           AND voided_at IS NULL`,
       [sweepstakesNum]
     )
     const currentTickets = parseFloat(ticketStats?.total_tickets ?? '0')
@@ -107,7 +111,7 @@ export const buySweepstakesTickets: APIHandler<
     if (isAdminId(user.id)) {
       throw new APIError(403, 'Admins cannot participate in the sweepstakes')
     }
-    if (!canReceiveBonuses(user)) {
+    if (!canEnterPrizeDrawings(user)) {
       throw new APIError(
         403,
         'You must verify your identity to participate in the sweepstakes'

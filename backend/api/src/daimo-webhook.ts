@@ -7,7 +7,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from 'common/api/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updateUser } from 'shared/supabase/users'
+import { recordManaPurchase } from 'shared/supabase/users'
 import {
   CRYPTO_MANA_PER_DOLLAR,
   CRYPTO_FIRST_PURCHASE_BONUS_PCT,
@@ -422,9 +422,10 @@ const handleSessionSucceeded = async (event: DaimoWebhookEvent) => {
       } as const
 
       await runTxnInBetQueue(tx, manaPurchaseTxn)
-      await updateUser(tx, userId, {
-        purchasedMana: true,
-      })
+
+      // Mark the purchaser and unlock bonus eligibility (matches the Stripe
+      // rail). See recordManaPurchase for the monotonic promotion rule.
+      await recordManaPurchase(tx, userId)
     })
     success = true
   } catch (e) {

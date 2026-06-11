@@ -15,7 +15,15 @@ export function broadcastUpdatedPrivateUser(userId: string) {
 }
 
 export function broadcastUpdatedUser(user: Partial<User> & { id: string }) {
-  broadcast(`user/${user.id}`, { user })
+  // Never broadcast admin-only verification fields: the user's own browser
+  // subscribes to user/{id}. Strip them before they go over the wire (they're
+  // also stripped from the public REST response).
+  const {
+    verificationFlagReason: _adminOnlyReason,
+    previousBonusEligibility: _adminOnlyPreviousEligibility,
+    ...safe
+  } = user
+  broadcast(`user/${user.id}`, { user: safe })
 }
 
 export function broadcastNewBets(

@@ -12,7 +12,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
 import ShortToggle from '../widgets/short-toggle'
 import { Title } from '../widgets/title'
-import { canReceiveBonuses, PrivateUser, User } from 'common/user'
+import { isIdentityVerified, PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { api, APIError } from 'web/lib/api/api'
@@ -51,7 +51,9 @@ export const AccountSettings = (props: {
 
   return (
     <Col className="gap-5">
-      {!canReceiveBonuses(user) && <IdentityVerificationSetting />}
+      {/* Show the KYC entry point to anyone not yet identity-verified — including
+          bonus-'eligible' purchasers, who still need to verify for prize drawings. */}
+      {!isIdentityVerified(user) && <IdentityVerificationSetting />}
       <div>
         <label className="mb-1 block">
           {capitalize(TRADE_TERM)} warnings{' '}

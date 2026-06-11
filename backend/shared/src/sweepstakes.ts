@@ -3,6 +3,7 @@ import { createHash } from 'crypto'
 import { type ErrorCode } from 'common/api/utils'
 import { getFirstBlockAfter } from 'common/bitcoin'
 import {
+  canEnterPrizeDrawings,
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USER_NAME,
   MANIFOLD_USER_USERNAME,
@@ -20,13 +21,10 @@ import {
   type SupabaseDirectClientTimeout,
 } from 'shared/supabase/init'
 import { bulkInsertNotifications } from 'shared/supabase/notifications'
-import { log } from 'shared/utils'
+import { getUsers, log } from 'shared/utils'
 
 export class SweepstakesError extends Error {
-  constructor(
-    public status: ErrorCode,
-    message: string
-  ) {
+  constructor(public status: ErrorCode, message: string) {
     super(message)
   }
 }
@@ -117,20 +115,61 @@ export const selectSweepstakesWinners = async (
       throw new SweepstakesError(400, 'Winners have already been selected')
     }
 
+    // voided_at IS NULL excludes entries that an admin refunded out of the
+    // pool (via admin-set-prize-eligibility with voidOutstandingEntries).
+    // The downstream canEnterPrizeDrawings filter still runs in JS so
+    // ineligible holders whose tickets weren't actively voided are also
+    // dropped — both gates compose.
     const tickets = await tx.manyOrNone<{
       id: string
       user_id: string
       num_tickets: string
     }>(
-      `SELECT id, user_id, num_tickets 
-       FROM sweepstakes_tickets 
-       WHERE sweepstakes_num = $1 
+      `SELECT id, user_id, num_tickets
+       FROM sweepstakes_tickets
+       WHERE sweepstakes_num = $1
+         AND voided_at IS NULL
        ORDER BY created_time ASC`,
       [sweepstakesNum]
     )
 
     if (tickets.length === 0) {
       throw new SweepstakesError(400, 'No tickets have been purchased')
+    }
+
+    // Void entries from users who are no longer eligible to enter prize
+    // drawings (e.g. flagged ineligible by an admin). Their tickets are
+    // excluded entirely here, so they occupy no probability space and it is
+    // impossible for them to be drawn as a winner — eligibility is enforced at
+    // draw time, not just at entry time.
+    const ticketHolders = await getUsers(
+      tickets.map((t) => t.user_id),
+      tx
+    )
+    const eligibleUserIds = new Set(
+      ticketHolders.filter((u) => canEnterPrizeDrawings(u)).map((u) => u.id)
+    )
+    const eligibleTickets = tickets.filter((t) =>
+      eligibleUserIds.has(t.user_id)
+    )
+    const excludedTicketCount = tickets.length - eligibleTickets.length
+    if (excludedTicketCount > 0) {
+      log(
+        `Sweepstakes ${sweepstakesNum}: excluded ${excludedTicketCount} ticket row(s) from ${
+          ticketHolders.length - eligibleUserIds.size
+        } ineligible user(s); they cannot win.`
+      )
+    }
+
+    // If every remaining ticket holder is prize-ineligible, fail loudly rather
+    // than proceeding: an empty winner set would write winning_ticket_ids = []
+    // (the "already drawn" guard only treats a NON-empty array as drawn), so the
+    // draw would silently become re-runnable. Throw so nothing is written.
+    if (eligibleTickets.length === 0) {
+      throw new SweepstakesError(
+        400,
+        'No eligible ticket holders remain for this drawing'
+      )
     }
 
     let totalTickets = 0
@@ -141,7 +180,7 @@ export const selectSweepstakesWinners = async (
       end: number
     }[] = []
 
-    for (const ticket of tickets) {
+    for (const ticket of eligibleTickets) {
       const numTickets = parseFloat(ticket.num_tickets)
       ticketRanges.push({
         id: ticket.id,

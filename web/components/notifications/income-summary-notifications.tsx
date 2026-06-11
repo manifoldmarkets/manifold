@@ -1,5 +1,8 @@
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { getEffectiveBonusMultiplier } from 'common/supporter-config'
+import {
+  getEffectiveBonusMultiplier,
+  EffectiveTier,
+} from 'common/supporter-config'
 import {
   BettingStreakData,
   getSourceUrl,
@@ -51,6 +54,29 @@ import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
 import { BettingStreakProgressModal } from '../profile/first-streak-modal'
+
+// Shown in place of a "reduced because unverified" / "come back for a bonus"
+// subtitle when the user is admin-flagged (effective tier 'restricted'): they
+// earn ZERO bonuses until they verify, so the messaging must say so rather than
+// nudge them toward a bonus they won't receive.
+function FlaggedBonusSubtitle() {
+  // Forward-looking wording on purpose: this renders on the current user's whole
+  // bonus-notification history (it keys off their live effective tier), so it
+  // must NOT claim a past bonus "wasn't received" — only that new bonuses are
+  // paused while the account is flagged.
+  return (
+    <span>
+      Your account is flagged for verification, so new bonuses are paused.{' '}
+      <a
+        href="/membership"
+        className="text-primary-700 font-semibold hover:underline"
+      >
+        Verify your identity
+      </a>{' '}
+      to restore them.
+    </span>
+  )
+}
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -81,7 +107,17 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
-  const isUnverified = user && getEffectiveTier(user) === 'unverified'
+  // Use the creator's tier at award time (embedded in the txn/notification) so
+  // the "reduced" label is historically accurate; fall back to current tier for
+  // notifications created before effectiveTier was recorded.
+  const txnTier = (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  const userTier = user ? getEffectiveTier(user) : undefined
+  const isUnverified =
+    txnTier === 'unverified' ||
+    (txnTier === undefined && userTier === 'unverified')
+  const isFlagged =
+    txnTier === 'restricted' ||
+    (txnTier === undefined && userTier === 'restricted')
   return (
     <NotificationFrame
       notification={notification}
@@ -89,14 +125,30 @@ export function UniqueBettorBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        isUnverified ? (
+        isFlagged ? (
+          <FlaggedBonusSubtitle />
+        ) : isUnverified ? (
           <span>
             Reduced because your account is unverified.{' '}
             <a
               href="/membership"
               className="text-primary-700 font-semibold hover:underline"
             >
-              Verify or subscribe
+              Verify
+            </a>
+            ,{' '}
+            <a
+              href="/checkout"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              buy mana
+            </a>
+            , or{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              subscribe
             </a>{' '}
             to earn the full unique-trader bonus.
           </span>
@@ -283,6 +335,9 @@ export function QuestIncomeNotification(props: {
   const isUnverified =
     txnTier === 'unverified' ||
     (txnTier === undefined && userTier === 'unverified')
+  const isFlagged =
+    txnTier === 'restricted' ||
+    (txnTier === undefined && userTier === 'restricted')
   return (
     <NotificationFrame
       notification={notification}
@@ -290,14 +345,30 @@ export function QuestIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        isUnverified ? (
+        isFlagged ? (
+          <FlaggedBonusSubtitle />
+        ) : isUnverified ? (
           <span>
             This bonus is reduced because your account is unverified.{' '}
             <a
               href="/membership"
               className="text-primary-700 font-semibold hover:underline"
             >
-              Verify or subscribe
+              Verify
+            </a>
+            ,{' '}
+            <a
+              href="/checkout"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              buy mana
+            </a>
+            , or{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              subscribe
             </a>{' '}
             to earn the full amount.
           </span>
@@ -338,6 +409,7 @@ export function BettingStreakBonusIncomeNotification(props: {
     streak: streakInDays,
     cashAmount,
     bonusAmount,
+    effectiveTier: txnTier,
   } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
 
@@ -358,11 +430,16 @@ export function BettingStreakBonusIncomeNotification(props: {
   }
 
   // Streak multiplier driven by effective tier (verification + subscription).
-  const effectiveTier = user ? getEffectiveTier(user) : 'verified'
+  // Prefer the tier embedded at award time so the "reduced" label and amounts
+  // reflect history; fall back to current tier for older notifications.
+  const effectiveTier: EffectiveTier =
+    (txnTier as EffectiveTier | undefined) ??
+    (user ? getEffectiveTier(user) : 'verified')
   const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
   const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
   const verifiedMaxBonus = BETTING_STREAK_BONUS_MAX
   const isUnverified = effectiveTier === 'unverified'
+  const isFlagged = effectiveTier === 'restricted'
 
   return (
     <NotificationFrame
@@ -371,14 +448,30 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        isUnverified ? (
+        isFlagged ? (
+          <FlaggedBonusSubtitle />
+        ) : isUnverified ? (
           <span>
             This bonus is reduced because your account is unverified.{' '}
             <a
               href="/membership"
               className="text-primary-700 font-semibold hover:underline"
             >
-              Verify or subscribe
+              Verify
+            </a>
+            ,{' '}
+            <a
+              href="/checkout"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              buy mana
+            </a>
+            , or{' '}
+            <a
+              href="/membership"
+              className="text-primary-700 font-semibold hover:underline"
+            >
+              subscribe
             </a>{' '}
             to earn up to{' '}
             <TokenNumber

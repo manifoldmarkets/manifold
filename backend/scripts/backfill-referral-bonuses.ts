@@ -1,29 +1,27 @@
 // One-shot backfill for the referral payout gap introduced on 2026-04-08 by PR
 // #3747 (Prize drawing). The pipeline was changed so the referral bonus only
 // fires on iDenfy verification, but `canSetReferrer` was simultaneously gated
-// on `canReceiveBonuses`, which blocks brand-new users — so most referrals
-// since then never got attributed and even the ones that did never got paid.
+// on the old full-bonus-access check, which blocks brand-new users — so most
+// referrals since then never got attributed and even the ones that did never got
+// paid.
 //
 // This script pays:
 //  - REFERRAL_BET_BONUS to the referrer for every user with referredByUserId
 //    set who has placed at least one bet, if no first-bet/legacy REFERRAL txn
 //    already exists for that referrer/referredUser pair.
 //  - REFERRAL_VERIFY_BONUS to the referrer for every such user who is also
-//    bonus-eligible (verified or grandfathered), if no verify/legacy REFERRAL
+//    identity-verified (verified or grandfathered), if no verify/legacy REFERRAL
 //    txn already exists.
-// Referrer must be bonus-eligible in both cases. Supporter multiplier is
+// Referrer must have full bonus access in both cases. Supporter multiplier is
 // applied using the referrer's current entitlements.
 
 import { runScript } from 'run-script'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { getBenefit } from 'common/supporter-config'
-import { canReceiveBonuses, User } from 'common/user'
+import { hasFullBonusAccess, isIdentityVerified, User } from 'common/user'
 import { convertUser } from 'common/supabase/users'
-import {
-  REFERRAL_BET_BONUS,
-  REFERRAL_VERIFY_BONUS,
-} from 'common/economy'
+import { REFERRAL_BET_BONUS, REFERRAL_VERIFY_BONUS } from 'common/economy'
 import { ReferralTxn } from 'common/txn'
 import { createReferralNotification } from 'shared/create-notification'
 import { SupabaseDirectClient } from 'shared/supabase/init'
@@ -42,7 +40,9 @@ const BUG_WINDOW_START = process.env.BUG_WINDOW_START ?? '2026-04-01'
 if (require.main === module) {
   runScript(async ({ pg }) => {
     if (DRY_RUN) {
-      console.log('DRY_RUN=true — no txns will be written. Set DRY_RUN=false to apply.')
+      console.log(
+        'DRY_RUN=true — no txns will be written. Set DRY_RUN=false to apply.'
+      )
     }
     console.log(`Scoped to users with created_time >= ${BUG_WINDOW_START}`)
 
@@ -53,7 +53,9 @@ if (require.main === module) {
       [BUG_WINDOW_START],
       (row) => convertUser(row)
     )
-    console.log(`Found ${referredUsers.length} users with a referredByUserId in window`)
+    console.log(
+      `Found ${referredUsers.length} users with a referredByUserId in window`
+    )
 
     let firstBetPaid = 0
     let verifyPaid = 0
@@ -78,7 +80,7 @@ if (require.main === module) {
         skipped++
         continue
       }
-      if (!canReceiveBonuses(referrer)) {
+      if (!hasFullBonusAccess(referrer)) {
         skipped++
         continue
       }
@@ -99,7 +101,7 @@ if (require.main === module) {
         hasLegacy || existingTxns.some((t) => t.bonus_type === 'verify')
 
       const userHasBet = !!user.lastBetTime
-      const userIsVerified = canReceiveBonuses(user)
+      const userIsVerified = isIdentityVerified(user)
 
       if (!hasFirstBet && userHasBet) {
         const amount = await payBonus(pg, referrer, user, 'first_bet')

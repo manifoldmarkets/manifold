@@ -79,13 +79,15 @@ export function BettingStreakModal(props: {
         )}
         <span className="text-xl">Daily prediction streaks</span>
         <VerifyPhoneNumberBanner user={currentUser} />
-        {currentUser && effectiveTier === 'unverified' && (
-          <ReducedBonusNotice
-            tier={effectiveTier}
-            kind="streak"
-            earned={bonusAmount}
-          />
-        )}
+        {currentUser &&
+          (effectiveTier === 'unverified' ||
+            effectiveTier === 'restricted') && (
+            <ReducedBonusNotice
+              tier={effectiveTier}
+              kind="streak"
+              earned={bonusAmount}
+            />
+          )}
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are they?</span>
           <span className={'ml-2'}>

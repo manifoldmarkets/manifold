@@ -11,7 +11,7 @@ import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
 import { getPrivateUser, getUser, log } from 'shared/utils'
-import { canReceiveBonuses } from 'common/user'
+import { hasFullBonusAccess } from 'common/user'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -31,10 +31,10 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
       throw new APIError(404, 'Account not found')
     }
     const updatedRow = await tx.one(
-      `update private_users set data = 
+      `update private_users set data =
       jsonb_set(
-        data, 
-        '{notificationPreferences,opt_out_all}', 
+        data,
+        '{notificationPreferences,opt_out_all}',
         coalesce(data->'notificationPreferences'->'opt_out_all', '[]'::jsonb) - 'mobile'
       )
       - 'rejectedPushNotificationsOn'
@@ -46,8 +46,9 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     )
     const newPrivateUser = convertPrivateUser(updatedRow)
     if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
-      // Only pay push notification bonus if user can receive bonuses (verified or grandfathered)
-      if (canReceiveBonuses(user)) {
+      // Only pay push notification bonus to users with full bonus access
+      // (identity-verified, grandfathered, or purchase/admin-'eligible')
+      if (hasFullBonusAccess(user)) {
         const txn = await payUserPushNotificationsBonus(
           auth.uid,
           PUSH_NOTIFICATION_BONUS,
@@ -55,7 +56,9 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
         )
         return { newPrivateUser, txn }
       } else {
-        log(`Skipped push notification bonus for user ${auth.uid} - not eligible for bonuses`)
+        log(
+          `Skipped push notification bonus for user ${auth.uid} - not eligible for bonuses`
+        )
         return { newPrivateUser, txn: null }
       }
     }

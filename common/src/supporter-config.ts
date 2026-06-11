@@ -81,11 +81,13 @@ export const SUPPORTER_ENTITLEMENT_IDS = [
 // Tier ladder (low → high): unverified < verified < basic (Plus) < plus (Pro) < premium
 
 export type EffectiveTier =
+  | 'restricted' // admin-flagged (requires_verification): earns NO bonuses
   | 'unverified'
   | 'verified'
   | SupporterTier // 'basic' | 'plus' | 'premium'
 
 export const EFFECTIVE_TIER_ORDER: EffectiveTier[] = [
+  'restricted',
   'unverified',
   'verified',
   'basic',
@@ -130,6 +132,19 @@ const NON_SUBSCRIBER_PERKS = {
 }
 
 export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
+  // Admin-flagged users (bonusEligibility = 'requires_verification'): earn ZERO
+  // on the farmable bonuses (quest/streak/referral) until they verify — distinct
+  // from 'unverified' (brand-new users), who still earn a reduced 0.2x. The
+  // EXCEPTION is the unique-trader bonus, which still pays in full: it rewards a
+  // creator for attracting *real* unique traders (who already passed bot/API/
+  // redemption gates), so the abuse vector is narrow even for a flagged account.
+  restricted: {
+    ...NON_SUBSCRIBER_PERKS,
+    questMultiplier: 0,
+    streakMultiplier: 0,
+    referralMultiplier: 0,
+    uniqueTraderMultiplier: 1,
+  },
   unverified: {
     ...NON_SUBSCRIBER_PERKS,
     questMultiplier: 0.2,
@@ -318,15 +333,33 @@ export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 // Pure: callers pass in the bits we need so this file doesn't need to import User.
 export function resolveEffectiveTier(args: {
   entitlements: UserEntitlement[] | undefined
-  bonusEligibility: 'verified' | 'grandfathered' | 'ineligible' | undefined
+  // Accepts the full User.bonusEligibility union (unless they have a
+  // subscription, which always wins). 'eligible' (purchaser / admin-granted)
+  // earns at the 'verified' tier alongside verified/grandfathered.
+  // 'requires_verification' (admin-flagged) maps to the 'restricted' tier and
+  // earns ZERO bonuses. 'ineligible' (KYC-failed) and undefined (brand-new)
+  // both fall to 'unverified' (reduced 0.2x).
+  bonusEligibility:
+    | 'verified'
+    | 'grandfathered'
+    | 'eligible'
+    | 'ineligible'
+    | 'requires_verification'
+    | undefined
 }): EffectiveTier {
   const subTier = getUserSupporterTier(args.entitlements)
   if (subTier) return subTier
   if (
     args.bonusEligibility === 'verified' ||
-    args.bonusEligibility === 'grandfathered'
+    args.bonusEligibility === 'grandfathered' ||
+    args.bonusEligibility === 'eligible'
   ) {
     return 'verified'
+  }
+  // Admin-flagged (suspected alt / manual review): earns NO bonuses until they
+  // verify. 'ineligible' (KYC-failed) deliberately stays 'unverified' (0.2x).
+  if (args.bonusEligibility === 'requires_verification') {
+    return 'restricted'
   }
   return 'unverified'
 }
@@ -352,6 +385,7 @@ export function roundTierBonus(amount: number): number {
 
 // Display labels for the membership page tier column headers and inline upsells.
 export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
+  restricted: 'Flagged',
   unverified: 'Unverified',
   verified: 'Verified',
   basic: SUPPORTER_TIERS.basic.name, // 'Plus'
@@ -365,7 +399,12 @@ export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
 // it, non-subscribers default to the unverified (lowest) cap.
 export function getMaxStreakFreezes(
   entitlements: UserEntitlement[] | undefined,
-  bonusEligibility?: 'verified' | 'grandfathered' | 'ineligible'
+  bonusEligibility?:
+    | 'verified'
+    | 'grandfathered'
+    | 'eligible'
+    | 'ineligible'
+    | 'requires_verification'
 ): number {
   const tier = resolveEffectiveTier({ entitlements, bonusEligibility })
   return TIER_BENEFITS[tier].maxStreakFreezes

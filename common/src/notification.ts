@@ -402,6 +402,10 @@ export type BettingStreakData = {
   streak: number
   bonusAmount: number
   cashAmount?: number
+  // Effective tier at the time the bonus was awarded, so the notification's
+  // "reduced because unverified" label reflects history and doesn't change if
+  // the user later verifies. Optional for notifications created before this.
+  effectiveTier?: string
 }
 
 export type StreakFreezeUsedData = {
@@ -452,6 +456,9 @@ export type UniqueBettorData = {
   totalAmountBet?: number
   token?: ContractToken
   bonusAmount?: number
+  // Creator's effective tier at award time, so the "reduced because unverified"
+  // label reflects history rather than the creator's current tier.
+  effectiveTier?: string
 }
 
 export type ReviewNotificationData = {

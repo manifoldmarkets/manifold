@@ -2,7 +2,8 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { ShieldCheckIcon, XIcon } from '@heroicons/react/solid'
 
-import { canReceiveBonuses, User } from 'common/user'
+import { isIdentityVerified, User } from 'common/user'
+import { isSupporter } from 'common/supporter-config'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -36,14 +37,29 @@ export const VerifyPhoneNumberBanner = (props: {
     'verify-banner-dismissed-at'
   )
 
+  // Gate on identity verification, not full bonus access: bonus-'eligible'
+  // purchasers haven't done KYC, so the M500 verify offer is still genuine for
+  // them and nudges them toward the prize-drawing-enabling identity check.
+  //
+  // Subscribers are never shown verification prompts: a subscription already
+  // grants full bonuses (subscription wins in resolveEffectiveTier), so a
+  // subscribed user — including a subscribed flagged user — is treated as a
+  // subscriber, not a flagged/unverified one. The flag re-surfaces here
+  // automatically if their subscription lapses.
   if (
     !user ||
-    canReceiveBonuses(user) ||
-    user.bonusEligibility === 'ineligible'
+    isIdentityVerified(user) ||
+    user.bonusEligibility === 'ineligible' ||
+    isSupporter(user.entitlements)
   )
     return null
 
-  if (dismissible) {
+  const isFlagged = user.bonusEligibility === 'requires_verification'
+
+  // Flagged users earn ZERO bonuses until they verify, so the banner is
+  // force-shown — bypassing the dismiss cooldown so a previously-dismissed
+  // banner re-appears the moment they're flagged.
+  if (dismissible && !isFlagged) {
     const hoursSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60)
     const cooldownHours = Math.min(dismissCount * 2, 24)
     if (dismissedAt > 0 && hoursSinceDismiss < cooldownHours) return null
@@ -104,7 +120,12 @@ export const VerifyPhoneNumberBanner = (props: {
               compact ? 'text-sm sm:text-base' : 'text-lg'
             )}
           >
-            Verify your identity to get {formatMoney(STARTING_BALANCE, 'MANA')}
+            {isFlagged
+              ? 'Your account has been flagged for verification'
+              : `Verify your identity to get ${formatMoney(
+                  STARTING_BALANCE,
+                  'MANA'
+                )}`}
           </div>
           <div
             className={clsx(
@@ -112,8 +133,9 @@ export const VerifyPhoneNumberBanner = (props: {
               compact ? 'text-xs sm:text-sm' : 'text-sm'
             )}
           >
-            Complete a quick identity check (~2 min) to unlock your full
-            starting bonus.
+            {isFlagged
+              ? "You won't receive bonuses until you complete a quick identity check (~2 min)."
+              : 'Complete a quick identity check (~2 min) to unlock your full starting bonus.'}
           </div>
           {error && <div className="text-scarlet-500 text-sm">{error}</div>}
         </Col>

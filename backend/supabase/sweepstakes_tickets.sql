@@ -7,7 +7,9 @@ create table if not exists
     num_tickets numeric not null,
     mana_spent numeric not null,
     is_free boolean default false not null,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    voided_at timestamp with time zone,
+    voided_reason text
   );
 
 -- Row Level Security
@@ -34,3 +36,8 @@ create index sweepstakes_tickets_sweepstakes_user on public.sweepstakes_tickets 
 drop index if exists sweepstakes_tickets_created_time;
 
 create index sweepstakes_tickets_created_time on public.sweepstakes_tickets using btree (created_time desc);
+
+drop index if exists idx_sweepstakes_tickets_active;
+
+create index idx_sweepstakes_tickets_active on public.sweepstakes_tickets using btree (sweepstakes_num)
+where voided_at is null;

@@ -1,9 +1,14 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { PostComment } from 'common/comment'
-import { canReceiveBonuses } from 'common/user'
+import { hasAccountTrustSignal } from 'common/user'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getPrivateUser, revalidateStaticProps, sanitizeJsonContent } from 'shared/utils'
+import {
+  getUser,
+  getPrivateUser,
+  revalidateStaticProps,
+  sanitizeJsonContent,
+} from 'shared/utils'
 import { getPost } from 'shared/supabase/posts'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/monitoring/log'
@@ -23,8 +28,8 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     if (!creator) throw new APIError(401, 'Your account was not found')
     if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
 
-    // Require bonus eligibility (verified or grandfathered) to comment
-    if (!canReceiveBonuses(creator)) {
+    // Forum comments are gated on account trust, not bonus eligibility.
+    if (!hasAccountTrustSignal(creator)) {
       throw new APIError(
         403,
         'Please verify your identity to comment on posts.'
