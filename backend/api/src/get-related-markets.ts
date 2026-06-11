@@ -17,16 +17,27 @@ type cacheType = {
   lastUpdated: number
 }
 const cachedRelatedMarkets = new Map<string, cacheType>()
+// Only the related market *ids* are cached; their contract data is refetched
+// fresh on every hit (see refreshedRelatedMarkets), so a long TTL only delays
+// newly-created markets showing up as related — and close_contract_embeddings
+// is one of the costlier recurring queries on the db.
+const RELATED_MARKETS_TTL = 6 * HOUR_MS
+// Entries are small (a contract id + ~10 related ids), but the map would
+// otherwise grow without bound for the life of the process.
+const MAX_CACHED_CONTRACTS = 20_000
 
 // We cache the state of the contracts every 10 minutes via the cache header,
-// and the actual contracts to include for an hour via the internal cachedRelatedMarkets.
+// and the actual contracts to include via the internal cachedRelatedMarkets.
 export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
   body
 ) => {
   const { contractId, limit, question, uniqueBettorCount } = body
   const pg = createSupabaseDirectClient()
   const cachedResults = cachedRelatedMarkets.get(contractId)
-  if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
+  if (
+    cachedResults &&
+    cachedResults.lastUpdated > Date.now() - RELATED_MARKETS_TTL
+  ) {
     return refreshedRelatedMarkets(contractId, cachedResults, pg)
   }
   const unfilteredMarketsFromEmbeddings = await pg.map(
@@ -59,7 +70,7 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
 
       const prompt = `
 I have a prediction market with the question: "${question}".
-I also have a list of potentially related markets below. 
+I also have a list of potentially related markets below.
 Please identify which markets are semantically different enough to keep, and which are too similar in meaning and should be filtered out.
 
 For markets that ask essentially the same question with different wording, like "Who will win the 2024 election?" vs "2024 election winner?", filter them out.
@@ -90,6 +101,13 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
   }
   marketsFromEmbeddings = marketsFromEmbeddings.slice(0, limit)
 
+  if (
+    !cachedRelatedMarkets.has(contractId) &&
+    cachedRelatedMarkets.size >= MAX_CACHED_CONTRACTS
+  ) {
+    // Map iterates in insertion order, so this evicts the oldest entry.
+    cachedRelatedMarkets.delete(cachedRelatedMarkets.keys().next().value!)
+  }
   cachedRelatedMarkets.set(contractId, {
     marketIdsFromEmbeddings: marketsFromEmbeddings.map((c) => c.id),
     lastUpdated: Date.now(),
