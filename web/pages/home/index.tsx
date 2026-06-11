@@ -29,11 +29,7 @@ export default function Home() {
           the home page too (non-dismissible). Gated to flagged users only, so
           there's no new banner for ordinary unverified users. */}
       {user?.bonusEligibility === 'requires_verification' && (
-        <VerifyPhoneNumberBanner
-          user={user}
-          dismissible={false}
-          compact
-        />
+        <VerifyPhoneNumberBanner user={user} dismissible={false} compact />
       )}
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />

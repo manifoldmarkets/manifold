@@ -110,7 +110,8 @@ export function UniqueBettorBonusIncomeNotification(props: {
   // Use the creator's tier at award time (embedded in the txn/notification) so
   // the "reduced" label is historically accurate; fall back to current tier for
   // notifications created before effectiveTier was recorded.
-  const txnTier = (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  const txnTier = (data as { effectiveTier?: string } | undefined)
+    ?.effectiveTier
   const userTier = user ? getEffectiveTier(user) : undefined
   const isUnverified =
     txnTier === 'unverified' ||
