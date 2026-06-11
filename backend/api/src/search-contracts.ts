@@ -15,7 +15,7 @@ import {
   SearchTypes,
   sortFields,
 } from 'shared/supabase/search-contracts'
-import { log } from 'shared/utils'
+import { getPrivateUser, log } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, type APIHandler } from './helpers/endpoint'
 
@@ -102,12 +102,18 @@ const search = async (
     (token === 'MANA' || token === 'ALL') &&
     !isRecent
   ) {
+    // Enforce blocked users/contracts/topics in the query itself — the
+    // client-side filter only patches holes in already-fetched pages.
+    const privateUser = userId
+      ? (await getPrivateUser(userId, pg)) ?? undefined
+      : undefined
     if (!isForYou || !userId) {
       return await pg.map(
         basicSearchSQL({
           ...props,
           uid: userId,
           isPrizeMarket,
+          privateUser,
         }),
         null,
         convertContract
@@ -118,6 +124,7 @@ const search = async (
         uid: userId,
         sort,
         isPrizeMarket,
+        privateUser,
       })
       return await pg.map(forYouSql, [term], (r) => convertContract(r))
     }
