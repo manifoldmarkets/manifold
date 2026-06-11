@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { getSourceUrl, Notification } from 'common/notification'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Col } from 'web/components/layout/col'
@@ -233,7 +232,6 @@ export function NotificationFrame(props: {
     onDismiss,
   } = props
   const isMobile = useIsMobile()
-  const router = useRouter()
 
   const markAsSeen = () => {
     if (highlighted) {
@@ -248,36 +246,27 @@ export function NotificationFrame(props: {
     if (isFromNestedLink(event)) markAsSeen()
   }
 
-  const handleFrameClick = (event: MouseEvent<HTMLDivElement>) => {
-    // Nested links/buttons inside notification copy should win over the
-    // notification-level action. Otherwise clicking e.g. an upsell link first
-    // navigates to the notification's source or opens its modal.
+  const handleActionClick = (event: MouseEvent<HTMLDivElement>) => {
+    // Nested links/buttons inside notification copy should win over modal-style
+    // notification actions.
     if (isFromInteractiveChild(event)) return
 
     markAsSeen()
     onClick?.()
-    if (!link) return
-
-    if (
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.button === 1
-    ) {
-      window.open(link, '_blank', 'noopener,noreferrer')
-    } else {
-      router.push(link)
-    }
   }
 
-  const handleFrameKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const handleActionKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Enter' && event.key !== ' ') return
     if (isFromInteractiveChild(event)) return
 
     event.preventDefault()
     markAsSeen()
     onClick?.()
-    if (link) router.push(link)
+  }
+
+  const handleOverlayLinkClick = () => {
+    markAsSeen()
+    onClick?.()
   }
 
   const frameObject = (
@@ -325,22 +314,36 @@ export function NotificationFrame(props: {
   return (
     <Row
       className={clsx(
-        'group p-2 transition-colors',
+        'group relative p-2 transition-colors',
         isPinned && 'bg-primary-50',
         'hover:bg-primary-100',
         getHighlightClass(highlighted)
       )}
+      onClickCapture={handleFrameClickCapture}
+      onAuxClickCapture={handleFrameClickCapture}
+      onClick={!link && onClick ? handleActionClick : undefined}
+      onKeyDown={!link && onClick ? handleActionKeyDown : undefined}
+      role={!link && onClick ? 'button' : undefined}
+      tabIndex={!link && onClick ? 0 : undefined}
     >
       {customBackground}
+      {link && (
+        <Link
+          href={link}
+          aria-label="Open notification"
+          className="focus-visible:outline-primary-500 absolute inset-0 z-0 cursor-pointer focus-visible:outline focus-visible:outline-2"
+          onClick={handleOverlayLinkClick}
+        />
+      )}
       <Col
-        className={'w-full'}
-        onClickCapture={handleFrameClickCapture}
-        onAuxClickCapture={handleFrameClickCapture}
-        onClick={handleFrameClick}
-        onAuxClick={handleFrameClick}
-        onKeyDown={handleFrameKeyDown}
-        role={link ? 'link' : onClick ? 'button' : undefined}
-        tabIndex={link || onClick ? 0 : undefined}
+        className={clsx(
+          'relative z-10 w-full',
+          // For link-backed notifications, let non-interactive content clicks
+          // pass through to the sibling overlay <Link>, while real nested
+          // controls keep their own pointer handling.
+          link &&
+            'pointer-events-none [&_[data-stop-notification-click]]:pointer-events-auto [&_[role=button]]:pointer-events-auto [&_[role=link]]:pointer-events-auto [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_select]:pointer-events-auto [&_summary]:pointer-events-auto [&_textarea]:pointer-events-auto'
+        )}
       >
         {frameObject}
       </Col>
