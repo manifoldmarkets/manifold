@@ -562,7 +562,7 @@ const loadScoreThresholds = async (threshold: number) => {
   log('Loaded freshness score threshold:', freshnessScoreThreshold)
 }
 
-const loadRandomUser = async () => {
+const _loadRandomUser = async () => {
   const pg = createSupabaseDirectClient()
   return await pg.one(
     `SELECT user_id AS id FROM user_contract_interactions

@@ -17,7 +17,7 @@ export const getTopicShareUrl = (
 export const referralQuery = (username: string) => {
   try {
     return '?r=' + btoa(username).replace(/=/g, '')
-  } catch (e) {
+  } catch {
     return '?referrer=' + username
   }
 }
