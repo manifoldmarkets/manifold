@@ -30,9 +30,11 @@ const getInteractiveChild = (event: MouseEvent | KeyboardEvent) => {
   const target = event.target
   if (!(target instanceof Element)) return null
   const interactive = target.closest(INTERACTIVE_NOTIFICATION_CHILD_SELECTOR)
-  return interactive && event.currentTarget.contains(interactive)
-    ? interactive
-    : null
+  // If the notification row itself is the closest interactive element (e.g.
+  // role="button" for modal-style notifications), that is the row action, not
+  // a nested control that should suppress the row action.
+  if (!interactive || interactive === event.currentTarget) return null
+  return event.currentTarget.contains(interactive) ? interactive : null
 }
 
 const isFromInteractiveChild = (event: MouseEvent | KeyboardEvent) =>
