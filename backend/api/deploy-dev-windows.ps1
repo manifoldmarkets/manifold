@@ -8,8 +8,8 @@ Write-Host "=== Starting dev deployment ===" -ForegroundColor Cyan
 Write-Host "Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
 # Private Memorystore instance
-$WEBSOCKET_REDIS_URL = "redis://10.215.204.211:6379"
-$DISABLE_REDIS_WEBSOCKET_BROADCASTS = "false"
+$WEBSOCKET_REDIS_URL = ""
+$DISABLE_REDIS_WEBSOCKET_BROADCASTS = "true"
 
 # Check Docker is running
 $dockerStatus = docker info 2>&1

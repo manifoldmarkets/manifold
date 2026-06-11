@@ -23,17 +23,17 @@ REGION="us-east4" # Ashburn, Virginia
 ZONE="us-east4-a"
 ENV=${1:-dev}
 
-# Private Memorystore instance
-WEBSOCKET_REDIS_URL=redis://10.215.204.211:6379
-DISABLE_REDIS_WEBSOCKET_BROADCASTS=false
-
 case $ENV in
     dev)
         NEXT_PUBLIC_FIREBASE_ENV=DEV
+        WEBSOCKET_REDIS_URL=
+        DISABLE_REDIS_WEBSOCKET_BROADCASTS=true
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=e2-small ;;
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
+        WEBSOCKET_REDIS_URL=redis://10.215.204.211:6379
+        DISABLE_REDIS_WEBSOCKET_BROADCASTS=false
         GCLOUD_PROJECT=mantic-markets
         MACHINE_TYPE=c2-standard-4 ;;
     *)
