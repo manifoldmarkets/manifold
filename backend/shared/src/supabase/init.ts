@@ -23,7 +23,7 @@ export const pgp = pgPromise({
   },
   transact(e) {
     if (e.ctx.finish) {
-      const { ctx, query } = e
+      const { ctx } = e
       const { duration, success } = ctx
       if (!duration) return
       const successStr = success ? 'true' : 'false'
