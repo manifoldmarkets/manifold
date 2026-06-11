@@ -20,7 +20,7 @@ module.exports = {
         // Cap statement runtime server-side (incl. lock waits) for
         // request-serving processes. The scheduler runs without a cap.
         // See createSupabaseDirectClient in shared/src/supabase/init.ts.
-        PG_STATEMENT_TIMEOUT_MS: 60_000,
+        PG_STATEMENT_TIMEOUT_MS: 60000,
       },
     },
     {
@@ -35,7 +35,7 @@ module.exports = {
       env: {
         PORT: 8090,
         READ_ONLY: true,
-        PG_STATEMENT_TIMEOUT_MS: 60_000,
+        PG_STATEMENT_TIMEOUT_MS: 60000,
       },
     },
   ],
