@@ -145,6 +145,17 @@ export function createSupabaseDirectClient(opts?: {
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
+
+  // Server-side cap on total statement runtime, including lock waits. Opt-in
+  // via env so only request-serving processes get it (set in
+  // backend/api/ecosystem.config.js); the scheduler and ad-hoc scripts
+  // legitimately run long statements and leave it unset. Without this cap,
+  // queries that are slow only because the db's disk throughput is saturated
+  // pile up for hundreds of seconds and amplify the saturation
+  const statementTimeout = process.env.PG_STATEMENT_TIMEOUT_MS
+    ? parseInt(process.env.PG_STATEMENT_TIMEOUT_MS)
+    : undefined
+
   log('Connecting to postgres at ' + dbHost + ':' + port)
   const client = pgp({
     host: dbHost,
@@ -165,6 +176,7 @@ export function createSupabaseDirectClient(opts?: {
     // Although we don't yet know the cause, setting this timeout will limit the damage
     // from these connections. We should figure out the cause ASAP.
     idle_in_transaction_session_timeout: opts?.idleInTxnTimeout ?? 60_000, // 1 minute
+    ...(statementTimeout ? { statement_timeout: statementTimeout } : {}),
     max: 40,
   })
   const pool = client.$pool
