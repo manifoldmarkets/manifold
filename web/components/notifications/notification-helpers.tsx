@@ -1,7 +1,8 @@
 import clsx from 'clsx'
 import { getSourceUrl, Notification } from 'common/notification'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { useRouter } from 'next/router'
+import { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -22,6 +23,26 @@ function getHighlightClass(highlight: boolean) {
 export const NUM_SUMMARY_LINES = 3
 
 export const NOTIFICATION_ICON_SIZE = 'md'
+
+const INTERACTIVE_NOTIFICATION_CHILD_SELECTOR =
+  'a, button, input, textarea, select, summary, [role="button"], [role="link"], [data-stop-notification-click]'
+
+const getInteractiveChild = (event: MouseEvent | KeyboardEvent) => {
+  const target = event.target
+  if (!(target instanceof Element)) return null
+  const interactive = target.closest(INTERACTIVE_NOTIFICATION_CHILD_SELECTOR)
+  return interactive && event.currentTarget.contains(interactive)
+    ? interactive
+    : null
+}
+
+const isFromInteractiveChild = (event: MouseEvent | KeyboardEvent) =>
+  !!getInteractiveChild(event)
+
+const isFromNestedLink = (event: MouseEvent) => {
+  const interactive = getInteractiveChild(event)
+  return !!interactive?.closest('a[href]')
+}
 
 // TODO: fix badges (id based)
 export function NotificationUserLink(props: {
@@ -212,11 +233,51 @@ export function NotificationFrame(props: {
     onDismiss,
   } = props
   const isMobile = useIsMobile()
+  const router = useRouter()
 
   const markAsSeen = () => {
     if (highlighted) {
       setHighlighted(false)
     }
+  }
+
+  const handleFrameClickCapture = (event: MouseEvent<HTMLDivElement>) => {
+    // If the user follows a nested notification link, count the notification as
+    // seen, but still let that link own navigation. Buttons/dropdowns are not
+    // marked seen here because they may just open a menu or dismiss a pin.
+    if (isFromNestedLink(event)) markAsSeen()
+  }
+
+  const handleFrameClick = (event: MouseEvent<HTMLDivElement>) => {
+    // Nested links/buttons inside notification copy should win over the
+    // notification-level action. Otherwise clicking e.g. an upsell link first
+    // navigates to the notification's source or opens its modal.
+    if (isFromInteractiveChild(event)) return
+
+    markAsSeen()
+    onClick?.()
+    if (!link) return
+
+    if (
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.button === 1
+    ) {
+      window.open(link, '_blank', 'noopener,noreferrer')
+    } else {
+      router.push(link)
+    }
+  }
+
+  const handleFrameKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    if (isFromInteractiveChild(event)) return
+
+    event.preventDefault()
+    markAsSeen()
+    onClick?.()
+    if (link) router.push(link)
   }
 
   const frameObject = (
@@ -271,31 +332,18 @@ export function NotificationFrame(props: {
       )}
     >
       {customBackground}
-      {link && (
-        <Col className={'w-full'}>
-          <Link
-            href={link}
-            className={clsx('flex w-full flex-col')}
-            onClick={() => {
-              markAsSeen()
-              onClick?.()
-            }}
-          >
-            {frameObject}
-          </Link>
-        </Col>
-      )}
-      {!link && (
-        <Col
-          className={'w-full'}
-          onClick={() => {
-            markAsSeen()
-            onClick?.()
-          }}
-        >
-          {frameObject}
-        </Col>
-      )}
+      <Col
+        className={'w-full'}
+        onClickCapture={handleFrameClickCapture}
+        onAuxClickCapture={handleFrameClickCapture}
+        onClick={handleFrameClick}
+        onAuxClick={handleFrameClick}
+        onKeyDown={handleFrameKeyDown}
+        role={link ? 'link' : onClick ? 'button' : undefined}
+        tabIndex={link || onClick ? 0 : undefined}
+      >
+        {frameObject}
+      </Col>
     </Row>
   )
 }
