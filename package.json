@@ -28,6 +28,8 @@
     "eslint": "8.57.0",
     "eslint-plugin-lodash": "^7.4.0",
     "eslint-plugin-unused-imports": "4.1.4",
+    "husky": "9.1.7",
+    "lint-staged": "15.5.2",
     "nodemon": "2.0.20",
     "prettier": "2.8.4",
     "ts-node": "10.9.1",
