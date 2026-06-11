@@ -9,7 +9,7 @@ import { createLeagueChangedNotifications } from './create-notification'
 import { TxnData, insertTxns } from './txn/run-txn'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertUser } from 'common/supabase/users'
-import { canReceiveBonuses } from 'common/user'
+import { hasFullBonusAccess } from 'common/user'
 
 import { log } from './utils'
 
@@ -53,7 +53,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     prize: number
   }> = []
 
-  // Fetch all users who are prize candidates to check their bonus eligibility
+  // Fetch all users who are prize candidates to check full bonus access
   const prizeUserIds = newRows
     .filter((row) => {
       const prevRow = prevRowsByUserId[row.user_id]
@@ -63,13 +63,12 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     })
     .map((row) => row.user_id)
 
-  // Fetch user data to check bonus eligibility
+  // Fetch user data to check full bonus access
   const usersWithEligibility =
     prizeUserIds.length > 0
-      ? await pg.manyOrNone(
-          `SELECT * FROM users WHERE id = ANY($1)`,
-          [prizeUserIds]
-        )
+      ? await pg.manyOrNone(`SELECT * FROM users WHERE id = ANY($1)`, [
+          prizeUserIds,
+        ])
       : []
 
   const siliconUserIds = newRows
@@ -83,7 +82,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
   const eligibleUserIds = new Set([
     ...usersWithEligibility
       .map((row) => convertUser(row))
-      .filter((user) => canReceiveBonuses(user))
+      .filter((user) => hasFullBonusAccess(user))
       .map((user) => user.id),
     ...siliconUserIds,
   ])
@@ -135,11 +134,9 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
       continue
     }
 
-    // Only award prize if user can receive bonuses (verified or grandfathered)
+    // Only award league bonus if user has full bonus access
     if (!eligibleUserIds.has(newRow.user_id)) {
-      log(
-        `User ${newRow.user_id} not eligible for league prize - not verified`
-      )
+      log(`User ${newRow.user_id} not eligible for league prize - not verified`)
       notificationData.push({
         userId: newRow.user_id,
         previousLeague: prevRow,

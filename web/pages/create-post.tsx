@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { STARTING_BALANCE } from 'common/economy'
 import { Group } from 'common/group'
 import { Visibility } from 'common/contract'
-import { canReceiveBonuses } from 'common/user'
+import { hasAccountTrustSignal } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import clsx from 'clsx'
@@ -75,7 +75,7 @@ export function CreatePostForm(props: {
 
   const user = useUser()
   const isAdmin = useAdmin()
-  const canCreate = user && canReceiveBonuses(user)
+  const canCreate = user && hasAccountTrustSignal(user)
 
   async function savePost(title: string) {
     if (!editor) return

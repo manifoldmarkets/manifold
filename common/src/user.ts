@@ -254,29 +254,59 @@ export const isUserLikelySpammer = (
 }
 
 /**
- * @deprecated Use canReceiveBonuses() instead. Phone verification has been replaced by iDenfy identity verification.
+ * @deprecated Phone verification is no longer the primary identity/trust gate.
+ * Use isIdentityVerified(), hasFullBonusAccess(), or hasAccountTrustSignal()
+ * depending on the product capability being checked.
  */
 export const humanish = (user: User) => user.verifiedPhone !== false
 
 // Identity-verified (KYC via iDenfy) or grandfathered. This is the
 // prize-worthy set: only these users may enter cash raffles. Kept separate from
-// canReceiveBonuses so the bonus axis can be broadened (purchasers, hand-granted
-// users) WITHOUT leaking prize access through the canEnterPrizeDrawings fallback.
+// full bonus access so the bonus axis can be broadened (purchasers,
+// hand-granted users) WITHOUT leaking prize access through the
+// canEnterPrizeDrawings fallback.
 export const isIdentityVerified = (user: User) =>
   user.bonusEligibility === 'verified' ||
   user.bonusEligibility === 'grandfathered'
 
-// Check if user can receive site bonuses (signup, referral, quests, leagues,
-// streaks, loans) and earn at the verified effective tier. True for the
-// identity-verified set PLUS 'eligible' users (unlocked by a purchase or an
-// admin grant). Does NOT imply prize-drawing eligibility — see
-// canEnterPrizeDrawings.
-export const canReceiveBonuses = (user: User) =>
+// Full bonus/perk access: identity-verified users plus users explicitly granted
+// bonus access through a mana purchase or admin action. This is for binary
+// bonus/perk gates (push bonus, daily loans, league prizes), not prize drawings
+// and not social anti-spam gates.
+export const hasFullBonusAccess = (user: User) =>
   isIdentityVerified(user) || user.bonusEligibility === 'eligible'
+
+// Admin/system flag requiring identity verification before full bonus access is
+// restored. Distinct from default-unverified users, who may still earn reduced
+// tier-scaled bonuses.
+export const isBonusVerificationRequired = (user: User) =>
+  user.bonusEligibility === 'requires_verification'
+
+// Explicitly blocked from full bonus access. Use getEffectiveTier() for scaled
+// bonus payouts, because some blocked/unverified states can still receive a
+// reduced or zero tier-specific amount depending on bonus type.
+export const isBonusBlocked = (user: User) =>
+  user.bonusEligibility === 'ineligible' || isBonusVerificationRequired(user)
+
+// Account trust signal for anti-spam/social unlocks. This deliberately includes
+// non-KYC trust signals (purchase/subscription) and should be used where the
+// product intent is "trusted enough to post/message/comment", not "eligible for
+// a prize" or "eligible for a full bonus payout".
+export const hasAccountTrustSignal = (user: User) =>
+  hasFullBonusAccess(user) ||
+  user.purchasedMana === true ||
+  isSupporter(user.entitlements)
+
+/**
+ * @deprecated Use hasFullBonusAccess(), isIdentityVerified(),
+ * canEnterPrizeDrawings(), getEffectiveTier(), or hasAccountTrustSignal()
+ * depending on the capability being checked.
+ */
+export const canReceiveBonuses = hasFullBonusAccess
 
 // Check if user can enter prize drawings (cash raffles). Independent of bonus
 // eligibility: an explicit prizeEligibility overrides, otherwise it derives from
-// IDENTITY VERIFICATION (not canReceiveBonuses) so existing verified users keep
+// IDENTITY VERIFICATION (not full bonus access) so existing verified users keep
 // their access while purchasers/hand-granted ('eligible') users stay gated until
 // they complete KYC.
 export const canEnterPrizeDrawings = (user: User) =>
@@ -299,17 +329,13 @@ export const getEffectiveTier = (user: User): EffectiveTier =>
 export const NEW_USER_COMMENT_GATE_MS = 7 * DAY_MS
 
 // Users who can comment on others' markets. Pass-through for:
-//   - verified/grandfathered users
-//   - users who have ever purchased mana
-//   - active subscribers (Plus/Pro/Premium)
+//   - users with a trust signal (identity/grandfathered, bonus-granted,
+//     purchased mana, or active subscription)
 //   - accounts ≥ NEW_USER_COMMENT_GATE_MS old
 // Market creators commenting on their own markets bypass this check (handled at call site).
-export const canCommentOnMarket = (user: User) => {
-  if (canReceiveBonuses(user)) return true
-  if (user.purchasedMana === true) return true
-  if (isSupporter(user.entitlements)) return true
-  return Date.now() - user.createdTime >= NEW_USER_COMMENT_GATE_MS
-}
+export const canCommentOnMarket = (user: User) =>
+  hasAccountTrustSignal(user) ||
+  Date.now() - user.createdTime >= NEW_USER_COMMENT_GATE_MS
 
 // expires: sep 26th, ~530pm PT
 const LIMITED_TIME_DEAL_END = 1727311753233 + DAY_MS

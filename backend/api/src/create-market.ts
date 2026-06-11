@@ -3,7 +3,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { canReceiveBonuses } from 'common/user'
+import { hasAccountTrustSignal } from 'common/user'
 import {
   createBinarySchema,
   createBountySchema,
@@ -64,11 +64,7 @@ import {
   AUTO_TAG_API_MARKET_CREATIONS,
   getNicheTopicMatchesForContract,
 } from 'shared/helpers/topic-matching'
-import {
-  htmlToRichText,
-  isProd,
-  log,
-} from 'shared/utils'
+import { htmlToRichText, isProd, log } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
@@ -244,8 +240,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       const user = first(userAndSlugResult[0].map(convertUser))
       if (!user) throw new APIError(401, 'Your account was not found')
 
-      // Prevent bonus-ineligible users from creating unlisted markets
-      if (visibility === 'unlisted' && !canReceiveBonuses(user)) {
+      // Creating unlisted markets is a trust/anti-spam gate, not a bonus gate.
+      if (visibility === 'unlisted' && !hasAccountTrustSignal(user)) {
         throw new APIError(
           403,
           'Please verify your identity to create unlisted markets.'
@@ -331,7 +327,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
           : 'select 1 where false'
       const contractQuery = pgp.as.format(
-        `insert into contracts 
+        `insert into contracts
         (id, data, ${nativeColumns.join(',')})
          values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`)});`,
         [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
@@ -570,11 +566,8 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'POLL') {
-    ;({ answers, voterVisibility, pollType, maxSelections } = validateMarketType(
-      outcomeType,
-      createPollSchema,
-      body
-    ))
+    ;({ answers, voterVisibility, pollType, maxSelections } =
+      validateMarketType(outcomeType, createPollSchema, body))
     // Validate maxSelections
     if (
       maxSelections !== undefined &&

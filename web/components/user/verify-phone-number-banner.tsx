@@ -37,7 +37,7 @@ export const VerifyPhoneNumberBanner = (props: {
     'verify-banner-dismissed-at'
   )
 
-  // Gate on identity verification, not canReceiveBonuses: bonus-'eligible'
+  // Gate on identity verification, not full bonus access: bonus-'eligible'
   // purchasers haven't done KYC, so the M500 verify offer is still genuine for
   // them and nudges them toward the prize-drawing-enabling identity check.
   //

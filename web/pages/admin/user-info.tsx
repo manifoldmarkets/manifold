@@ -170,10 +170,12 @@ export default function AdminUserInfoPage() {
   useEffect(() => {
     if (!userInfo || !selectedUser) return
     const reason = userInfo.verificationFlagReason
-    if ((selectedUser.verificationFlagReason ?? undefined) !== (reason ?? undefined)) {
+    if (
+      (selectedUser.verificationFlagReason ?? undefined) !==
+      (reason ?? undefined)
+    ) {
       setSelectedUser({ ...selectedUser, verificationFlagReason: reason })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo])
 
   const selectUser = (user: DisplayUser) => {
@@ -1257,8 +1259,7 @@ function PrizeEligibilitySection({
       return
 
     const trimmedReason = reason.trim()
-    const shouldVoid =
-      voidEntries && selectedEligibility === 'ineligible'
+    const shouldVoid = voidEntries && selectedEligibility === 'ineligible'
 
     setIsUpdating(true)
     try {
@@ -1413,10 +1414,10 @@ function PrizeEligibilitySection({
           </li>
           <li>
             <strong>Follow Identity Verification / Not Set:</strong> Prize
-            access derives from KYC identity verification (verified/grandfathered
-            only) — the default. Bonus-only &quot;eligible&quot; purchasers stay
-            gated until they complete KYC. Use the explicit options above to
-            decouple the two.
+            access derives from KYC identity verification
+            (verified/grandfathered only) — the default. Bonus-only
+            &quot;eligible&quot; purchasers stay gated until they complete KYC.
+            Use the explicit options above to decouple the two.
           </li>
         </ul>
       </div>

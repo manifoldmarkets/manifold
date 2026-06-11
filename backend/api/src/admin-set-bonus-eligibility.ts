@@ -26,8 +26,7 @@ export const adminSetBonusEligibility: APIHandler<
 
   if (bonusEligibility === null) {
     // Clear the field entirely - user will be treated as "must verify"
-    // (canReceiveBonuses returns false for undefined, which triggers the
-    // VerificationRequiredModal and shows the settings verification option)
+    // for full bonus access (undefined bonusEligibility is not full access).
     await updateUser(pg, userId, {
       bonusEligibility: FieldVal.delete() as any,
     })

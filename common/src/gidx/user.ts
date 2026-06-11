@@ -45,8 +45,8 @@ export const getVerificationStatus = (
     return { status: 'error', message: USER_IS_UNDEFINED_MESSAGE }
   } else if (!isIdentityVerified(user)) {
     // Sweeps/cashout requires KYC, never a mere purchase — use the narrow
-    // identity check, not the broadened canReceiveBonuses (which now includes
-    // bonus-'eligible' purchasers).
+    // identity check, not full bonus access (which includes bonus-'eligible'
+    // purchasers).
     return { status: 'error', message: IDENTITY_NOT_VERIFIED_MESSAGE }
   } else if (user.kycDocumentStatus === 'fail') {
     return { status: 'error', message: USER_DOCUMENT_FAILED_MESSAGE }

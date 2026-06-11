@@ -37,7 +37,7 @@ export const adminSetPrizeEligibility: APIHandler<
     if (prizeEligibility === null) {
       // Clear the override - prize eligibility falls back to identity
       // verification (canEnterPrizeDrawings derives from isIdentityVerified,
-      // i.e. verified/grandfathered, when unset — NOT canReceiveBonuses, so
+      // i.e. verified/grandfathered, when unset — NOT full bonus access, so
       // bonus-only 'eligible' purchasers stay gated)
       await updateUser(tx, userId, {
         prizeEligibility: FieldVal.delete() as any,

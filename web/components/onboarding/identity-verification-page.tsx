@@ -20,7 +20,7 @@ export function IdentityVerificationPage(props: {
   >(null)
 
   // Check if user has already completed identity verification. Uses
-  // isIdentityVerified (not canReceiveBonuses) so bonus-'eligible' purchasers
+  // isIdentityVerified (not full bonus access) so bonus-'eligible' purchasers
   // still see the KYC flow — they need it to enter prize drawings.
   const isAlreadyVerified = user ? isIdentityVerified(user) : false
 

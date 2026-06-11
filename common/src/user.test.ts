@@ -1,5 +1,5 @@
 import {
-  canReceiveBonuses,
+  hasFullBonusAccess,
   canEnterPrizeDrawings,
   isIdentityVerified,
   getEffectiveTier,
@@ -25,28 +25,28 @@ const u = (overrides: Partial<User>): User =>
     ...overrides,
   } as User)
 
-describe('canReceiveBonuses', () => {
+describe('hasFullBonusAccess', () => {
   it('true for verified', () => {
-    expect(canReceiveBonuses(u({ bonusEligibility: 'verified' }))).toBe(true)
+    expect(hasFullBonusAccess(u({ bonusEligibility: 'verified' }))).toBe(true)
   })
   it('true for grandfathered', () => {
-    expect(canReceiveBonuses(u({ bonusEligibility: 'grandfathered' }))).toBe(
+    expect(hasFullBonusAccess(u({ bonusEligibility: 'grandfathered' }))).toBe(
       true
     )
   })
   it('false for ineligible', () => {
-    expect(canReceiveBonuses(u({ bonusEligibility: 'ineligible' }))).toBe(false)
+    expect(hasFullBonusAccess(u({ bonusEligibility: 'ineligible' }))).toBe(false)
   })
   it('true for eligible (purchaser / admin-granted, no KYC)', () => {
-    expect(canReceiveBonuses(u({ bonusEligibility: 'eligible' }))).toBe(true)
+    expect(hasFullBonusAccess(u({ bonusEligibility: 'eligible' }))).toBe(true)
   })
   it('false for requires_verification (flagged alt)', () => {
     expect(
-      canReceiveBonuses(u({ bonusEligibility: 'requires_verification' }))
+      hasFullBonusAccess(u({ bonusEligibility: 'requires_verification' }))
     ).toBe(false)
   })
   it('false for undefined (new/unverified users)', () => {
-    expect(canReceiveBonuses(u({}))).toBe(false)
+    expect(hasFullBonusAccess(u({}))).toBe(false)
   })
 })
 
@@ -74,9 +74,9 @@ describe("'eligible' (purchaser / admin-granted) — bonuses without prizes", ()
   // (or was hand-granted) earns bonuses at the verified tier, but must still
   // complete KYC before entering cash raffles. This is the no-prize-leak
   // guarantee — without repointing canEnterPrizeDrawings' fallback at
-  // isIdentityVerified, the broadened canReceiveBonuses would leak prize access.
+  // isIdentityVerified, the broadened hasFullBonusAccess would leak prize access.
   it('gets bonuses', () => {
-    expect(canReceiveBonuses(u({ bonusEligibility: 'eligible' }))).toBe(true)
+    expect(hasFullBonusAccess(u({ bonusEligibility: 'eligible' }))).toBe(true)
   })
   it('does NOT get prize access when prizeEligibility is unset (no leak)', () => {
     expect(canEnterPrizeDrawings(u({ bonusEligibility: 'eligible' }))).toBe(
@@ -137,7 +137,7 @@ describe('canEnterPrizeDrawings — explicit overrides', () => {
 
 describe('canEnterPrizeDrawings — fallback to identity verification', () => {
   // When prizeEligibility is unset, fall back to isIdentityVerified (NOT the
-  // broadened canReceiveBonuses). This is the back-compat path — existing
+  // broadened hasFullBonusAccess). This is the back-compat path — existing
   // verified/grandfathered users keep prize access with no backfill — while
   // ensuring purchaser/granted ('eligible') users don't leak into prizes.
   it('falls back to true for verified users', () => {
@@ -187,7 +187,7 @@ describe('decoupling invariant — both axes independently togglable', () => {
       bonusEligibility: 'verified',
       prizeEligibility: 'ineligible',
     })
-    expect(canReceiveBonuses(minor)).toBe(true)
+    expect(hasFullBonusAccess(minor)).toBe(true)
     expect(canEnterPrizeDrawings(minor)).toBe(false)
   })
 
@@ -198,7 +198,7 @@ describe('decoupling invariant — both axes independently togglable', () => {
       bonusEligibility: 'ineligible',
       prizeEligibility: 'eligible',
     })
-    expect(canReceiveBonuses(prizeOnly)).toBe(false)
+    expect(hasFullBonusAccess(prizeOnly)).toBe(false)
     expect(canEnterPrizeDrawings(prizeOnly)).toBe(true)
   })
 
@@ -210,7 +210,7 @@ describe('decoupling invariant — both axes independently togglable', () => {
       bonusEligibility: 'requires_verification',
       prizeEligibility: 'eligible',
     })
-    expect(canReceiveBonuses(flaggedButPrizePinned)).toBe(false)
+    expect(hasFullBonusAccess(flaggedButPrizePinned)).toBe(false)
     expect(canEnterPrizeDrawings(flaggedButPrizePinned)).toBe(true)
   })
 })

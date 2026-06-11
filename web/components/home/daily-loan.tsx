@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { canReceiveBonuses, User } from 'common/user'
+import { hasFullBonusAccess, User } from 'common/user'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -37,8 +37,8 @@ export function DailyLoan(props: {
   const [isClaiming, setIsClaiming] = useState(false)
   const [justClaimed, setJustClaimed] = useState(false)
 
-  // Check if user can receive bonuses (verified or grandfathered)
-  const userCanReceiveBonuses = canReceiveBonuses(user)
+  // Daily free loans are a full-bonus perk.
+  const userCanReceiveBonuses = hasFullBonusAccess(user)
 
   // Get free loan availability
   const {
