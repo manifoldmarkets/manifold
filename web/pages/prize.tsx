@@ -434,12 +434,15 @@ export default function SweepstakesPage() {
       <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
         {/* Header */}
         <Col className="gap-4">
-          <Row className="items-center gap-3">
-            <FaGift className="h-8 w-8 text-teal-500" />
-            <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-              Manifold Prize Drawing
-            </h1>
-            <div className="ml-auto flex items-center gap-2">
+          {/* Mobile stacks the title above the controls; sm+ is one row. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Row className="items-center gap-3">
+              <FaGift className="h-8 w-8 text-teal-500" />
+              <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
+                Manifold Prize Drawing
+              </h1>
+            </Row>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               {sweepstakesList.length > 1 && (
                 <SelectDropdown
                   aria-label="Select prize drawing"
@@ -504,7 +507,7 @@ export default function SweepstakesPage() {
                   </Button>
                 )}
             </div>
-          </Row>
+          </div>
           <p className="text-ink-600 text-lg leading-relaxed">
             Enter the drawing for a chance to win USDC prizes! Winners receive
             real crypto payouts. No purchase necessary.

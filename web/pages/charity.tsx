@@ -426,12 +426,15 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
       <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
         {/* Header */}
         <Col className="gap-4">
-          <Row className="items-center gap-3">
-            <FaHeart className="h-8 w-8 text-emerald-500" />
-            <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-              Manifold Charity Giveaway
-            </h1>
-            <div className="ml-auto flex items-center gap-2">
+          {/* Mobile stacks the title above the controls; sm+ is one row. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Row className="items-center gap-3">
+              <FaHeart className="h-8 w-8 text-emerald-500" />
+              <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
+                Manifold Charity Giveaway
+              </h1>
+            </Row>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               {giveawayList.length > 1 && (
                 <SelectDropdown
                   aria-label="Select charity giveaway"
@@ -474,7 +477,7 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
                   </Button>
                 )}
             </div>
-          </Row>
+          </div>
           <p className="text-ink-600 text-lg leading-relaxed">
             Manifold is giving ${giveaway.prizeAmountUsd.toLocaleString()} to
             charity—you decide which one. Convert mana into entries to boost a

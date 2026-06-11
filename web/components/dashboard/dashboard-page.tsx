@@ -136,7 +136,8 @@ export function DashboardPage(props: {
               className="!w-full !text-lg"
             />
           ) : (
-            <Row className="items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              {/* Mobile stacks the title above the controls; sm+ is one row. */}
               <Title className="!mb-0 ">{dashboard.title}</Title>
 
               <div className="flex items-center">
@@ -166,7 +167,7 @@ export function DashboardPage(props: {
                   </Button>
                 )}
               </div>
-            </Row>
+            </div>
           )}
         </div>
         {editMode ? (

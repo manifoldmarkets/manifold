@@ -98,6 +98,26 @@ function CommunityEmptyState() {
   )
 }
 
+// Placeholder cards matching DashboardMarketCard's shell (340px, 2-col grid),
+// shown while the community markets are loading.
+function MarketCardSkeletonGrid() {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Col
+          key={i}
+          className="bg-canvas-50 border-ink-200 h-[340px] animate-pulse gap-3 rounded-xl border p-5"
+        >
+          <div className="bg-ink-200 h-3 w-1/3 rounded" />
+          <div className="bg-ink-200 h-5 w-3/4 rounded" />
+          <div className="bg-ink-100 flex-1 rounded" />
+          <div className="bg-ink-200 h-8 w-full rounded" />
+        </Col>
+      ))}
+    </div>
+  )
+}
+
 function parseAnswerText(text: string): { flag: string; name: string } {
   const chars = [...text.trim()]
   const isRegionalIndicator = (c?: string) => {
@@ -264,9 +284,15 @@ function CommunityTab({
     )
     .map((i) => i.slug)
 
-  const [contracts, setContracts] = useState<Contract[]>([])
+  // undefined = first fetch still in flight; later re-fetches (after
+  // add/remove/reorder) keep showing the previous contracts instead.
+  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
 
   useEffect(() => {
+    // Until the dashboard itself has loaded, the empty slug list just means
+    // "unknown" — don't mark contracts as loaded ([]), or the no-markets
+    // state flashes before the real fetch even starts.
+    if (dashboard === undefined) return
     if (questionSlugs.length === 0) {
       setContracts([])
       return
@@ -290,7 +316,7 @@ function CommunityTab({
     return () => {
       cancelled = true
     }
-  }, [questionSlugs.join(',')])
+  }, [questionSlugs.join(','), dashboard === undefined])
 
   // Returns resolution timestamp, or null if still open.
   // For cpmm-multi-1 sports markets, waits until all answers are resolved.
@@ -306,18 +332,21 @@ function CommunityTab({
     return null
   }
 
+  const contractsLoading = contracts === undefined
+  const loadedContracts = contracts ?? []
+
   const now = Date.now()
-  const polls = contracts.filter((c) => c.outcomeType === 'POLL')
-  const open = contracts.filter(
+  const polls = loadedContracts.filter((c) => c.outcomeType === 'POLL')
+  const open = loadedContracts.filter(
     (c) => contractResolvedAt(c) === null && c.outcomeType !== 'POLL'
   )
-  const recentResolved = contracts.filter((c) => {
+  const recentResolved = loadedContracts.filter((c) => {
     const t = contractResolvedAt(c)
     return (
       t !== null && now - t < RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
     )
   })
-  const pastResolved = contracts.filter((c) => {
+  const pastResolved = loadedContracts.filter((c) => {
     const t = contractResolvedAt(c)
     return (
       t !== null && now - t >= RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
@@ -326,9 +355,10 @@ function CommunityTab({
 
   // Report total items in this tab (open + resolved), matching the parent's
   // mount-time prefetch so the badge doesn't jump when the tab is first opened.
+  // Skip while loading so we don't overwrite the prefetched count with 0.
   useEffect(() => {
-    onCountChange?.(contracts.length)
-  }, [contracts.length])
+    if (contracts) onCountChange?.(contracts.length)
+  }, [contracts?.length])
 
   const sortedOpen = sortContracts(open, questionSlugs, sort)
   // Apply the same sort to the resolved sections so the toggle isn't silently
@@ -395,7 +425,7 @@ function CommunityTab({
     }
   }
 
-  if (dashboard === undefined) return <LoadingIndicator />
+  if (dashboard === undefined) return <MarketCardSkeletonGrid />
 
   if (dashboard === null && !isAdmin) {
     return <CommunityEmptyState />
@@ -457,8 +487,12 @@ function CommunityTab({
         </p>
       )}
 
+      {/* Markets still loading — don't flash the empty state */}
+      {dashboard !== null && contractsLoading && <MarketCardSkeletonGrid />}
+
       {/* Open markets */}
       {dashboard !== null &&
+        !contractsLoading &&
         polls.length === 0 &&
         sortedOpen.length === 0 &&
         recentResolved.length === 0 &&
@@ -926,22 +960,30 @@ export function SportsDashboardPage({
         <title>{title} | Manifold</title>
       </Head>
       <Col className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6">
-        <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 items-center justify-between border-b pb-5 pt-6">
-          <Row className="items-center gap-2">
-            <BackButton className="-ml-2 shrink-0" />
+        {/* On mobile the title takes its own full-width line above the
+            buttons (back/share/tabs); on sm+ everything sits in one row. */}
+        <div className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 flex flex-wrap items-center gap-x-2 gap-y-3 border-b pb-5 pt-6">
+          <Row className="order-1 w-full items-center gap-2 sm:order-2 sm:w-auto">
             <span className="text-2xl">{emoji}</span>
             <h1 className="text-ink-1000 text-xl font-medium tracking-tight">
               {title}
             </h1>
+          </Row>
+          <BackButton size="xs" className="order-2 -ml-2 shrink-0 sm:order-1" />
+          {/* CopyLinkOrShareButton's className lands on the inner Button (it's
+              wrapped in a Tooltip), so the order class needs its own wrapper. */}
+          <div className="order-3">
             <CopyLinkOrShareButton
               url={`https://${ENV_CONFIG.domain}${router.pathname}${
                 user?.username ? referralQuery(user.username) : ''
               }`}
               eventTrackingName="copy sports dashboard link"
               tooltip="Share"
+              size="xs"
+              className="text-ink-500 hover:text-ink-600"
             />
-          </Row>
-          <Row className="items-center gap-2">
+          </div>
+          <Row className="order-4 ml-auto items-center gap-2">
             <SportsDashboardTabButton
               active={activeTab === 'official'}
               count={upcoming.length}
@@ -957,7 +999,7 @@ export function SportsDashboardPage({
               Community
             </SportsDashboardTabButton>
           </Row>
-        </Row>
+        </div>
 
         {activeTab === 'community' ? (
           hasCommunity ? (
