@@ -115,7 +115,6 @@ import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
-import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getPredictle } from './get-predictle-markets'
 import { getPredictlePercentile } from './get-predictle-percentile'
@@ -419,7 +418,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': searchMyGroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
-  'get-partner-stats': getPartnerStats,
   'get-posts': getPosts,
   'get-post-tip-info': getPostTipInfo,
   'get-seen-market-ids': getSeenMarketIds,
