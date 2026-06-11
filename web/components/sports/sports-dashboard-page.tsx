@@ -926,22 +926,25 @@ export function SportsDashboardPage({
         <title>{title} | Manifold</title>
       </Head>
       <Col className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6">
-        <Row className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 items-center justify-between border-b pb-5 pt-6">
-          <Row className="items-center gap-2">
-            <BackButton className="-ml-2 shrink-0" />
+        {/* On mobile the title takes its own full-width line above the
+            buttons (back/share/tabs); on sm+ everything sits in one row. */}
+        <div className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 flex flex-wrap items-center gap-x-2 gap-y-3 border-b pb-5 pt-6">
+          <Row className="order-1 w-full items-center gap-2 sm:order-2 sm:w-auto">
             <span className="text-2xl">{emoji}</span>
             <h1 className="text-ink-1000 text-xl font-medium tracking-tight">
               {title}
             </h1>
-            <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}${router.pathname}${
-                user?.username ? referralQuery(user.username) : ''
-              }`}
-              eventTrackingName="copy sports dashboard link"
-              tooltip="Share"
-            />
           </Row>
-          <Row className="items-center gap-2">
+          <BackButton className="order-2 -ml-2 shrink-0 sm:order-1" />
+          <CopyLinkOrShareButton
+            className="order-3"
+            url={`https://${ENV_CONFIG.domain}${router.pathname}${
+              user?.username ? referralQuery(user.username) : ''
+            }`}
+            eventTrackingName="copy sports dashboard link"
+            tooltip="Share"
+          />
+          <Row className="order-4 ml-auto items-center gap-2">
             <SportsDashboardTabButton
               active={activeTab === 'official'}
               count={upcoming.length}
@@ -957,7 +960,7 @@ export function SportsDashboardPage({
               Community
             </SportsDashboardTabButton>
           </Row>
-        </Row>
+        </div>
 
         {activeTab === 'community' ? (
           hasCommunity ? (
