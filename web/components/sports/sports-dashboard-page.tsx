@@ -264,7 +264,9 @@ function CommunityTab({
     )
     .map((i) => i.slug)
 
-  const [contracts, setContracts] = useState<Contract[]>([])
+  // undefined = first fetch still in flight; later re-fetches (after
+  // add/remove/reorder) keep showing the previous contracts instead.
+  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
 
   useEffect(() => {
     if (questionSlugs.length === 0) {
@@ -306,18 +308,21 @@ function CommunityTab({
     return null
   }
 
+  const contractsLoading = contracts === undefined
+  const loadedContracts = contracts ?? []
+
   const now = Date.now()
-  const polls = contracts.filter((c) => c.outcomeType === 'POLL')
-  const open = contracts.filter(
+  const polls = loadedContracts.filter((c) => c.outcomeType === 'POLL')
+  const open = loadedContracts.filter(
     (c) => contractResolvedAt(c) === null && c.outcomeType !== 'POLL'
   )
-  const recentResolved = contracts.filter((c) => {
+  const recentResolved = loadedContracts.filter((c) => {
     const t = contractResolvedAt(c)
     return (
       t !== null && now - t < RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
     )
   })
-  const pastResolved = contracts.filter((c) => {
+  const pastResolved = loadedContracts.filter((c) => {
     const t = contractResolvedAt(c)
     return (
       t !== null && now - t >= RECENT_THRESHOLD_MS && c.outcomeType !== 'POLL'
@@ -326,9 +331,10 @@ function CommunityTab({
 
   // Report total items in this tab (open + resolved), matching the parent's
   // mount-time prefetch so the badge doesn't jump when the tab is first opened.
+  // Skip while loading so we don't overwrite the prefetched count with 0.
   useEffect(() => {
-    onCountChange?.(contracts.length)
-  }, [contracts.length])
+    if (contracts) onCountChange?.(contracts.length)
+  }, [contracts?.length])
 
   const sortedOpen = sortContracts(open, questionSlugs, sort)
   // Apply the same sort to the resolved sections so the toggle isn't silently
@@ -457,8 +463,14 @@ function CommunityTab({
         </p>
       )}
 
+      {/* Markets still loading — don't flash the empty state */}
+      {dashboard !== null && contractsLoading && (
+        <LoadingIndicator className="py-20" />
+      )}
+
       {/* Open markets */}
       {dashboard !== null &&
+        !contractsLoading &&
         polls.length === 0 &&
         sortedOpen.length === 0 &&
         recentResolved.length === 0 &&
