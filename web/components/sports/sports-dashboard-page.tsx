@@ -936,14 +936,17 @@ export function SportsDashboardPage({
             </h1>
           </Row>
           <BackButton className="order-2 -ml-2 shrink-0 sm:order-1" />
-          <CopyLinkOrShareButton
-            className="order-3"
-            url={`https://${ENV_CONFIG.domain}${router.pathname}${
-              user?.username ? referralQuery(user.username) : ''
-            }`}
-            eventTrackingName="copy sports dashboard link"
-            tooltip="Share"
-          />
+          {/* CopyLinkOrShareButton's className lands on the inner Button (it's
+              wrapped in a Tooltip), so the order class needs its own wrapper. */}
+          <div className="order-3">
+            <CopyLinkOrShareButton
+              url={`https://${ENV_CONFIG.domain}${router.pathname}${
+                user?.username ? referralQuery(user.username) : ''
+              }`}
+              eventTrackingName="copy sports dashboard link"
+              tooltip="Share"
+            />
+          </div>
           <Row className="order-4 ml-auto items-center gap-2">
             <SportsDashboardTabButton
               active={activeTab === 'official'}
