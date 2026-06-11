@@ -935,7 +935,7 @@ export function SportsDashboardPage({
               {title}
             </h1>
           </Row>
-          <BackButton className="order-2 -ml-2 shrink-0 sm:order-1" />
+          <BackButton size="xs" className="order-2 -ml-2 shrink-0 sm:order-1" />
           {/* CopyLinkOrShareButton's className lands on the inner Button (it's
               wrapped in a Tooltip), so the order class needs its own wrapper. */}
           <div className="order-3">
@@ -945,6 +945,8 @@ export function SportsDashboardPage({
               }`}
               eventTrackingName="copy sports dashboard link"
               tooltip="Share"
+              size="xs"
+              className="text-ink-500 hover:text-ink-600"
             />
           </div>
           <Row className="order-4 ml-auto items-center gap-2">
