@@ -1,0 +1,63 @@
+name: Reformat web
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'common/**'
+
+env:
+  FORCE_COLOR: 3
+  NEXT_TELEMETRY_DISABLED: 1
+
+# mqp - i generated a personal token to use for these writes -- it's unclear
+# why, but the default token didn't work, even when i gave it max permissions
+
+jobs:
+  prettify-main:
+    name: Auto-prettify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.FORMATTER_ACCESS_TOKEN }}
+      - name: Install Node 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            common/node_modules
+            web/node_modules
+            backend/api/node_modules
+            backend/discord-bot/node_modules
+            backend/scheduler/node_modules
+            backend/scripts/node_modules
+            backend/shared/node_modules
+            client-common/node_modules
+          key: ${{ runner.os }}-node20-yarn1-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node20-yarn1-modules-
+      - name: Install dependencies
+        run: mkdir -p "$(yarn cache dir)" && yarn install --prefer-offline --frozen-lockfile --check-files
+      - name: Run Prettier on web client
+        working-directory: web
+        run: yarn format
+      - name: Commit any Prettier changes
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: Auto-prettification
+          branch: ${{ github.head_ref }}
