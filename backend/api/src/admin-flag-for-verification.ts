@@ -18,9 +18,10 @@ import { isAdminId } from 'common/envs/constants'
 // flag: false → clears both fields; user reverts to default (still
 //               bonus-blocked until they verify, but without flag context)
 //
-// Important: this does NOT touch prizeEligibility. The two axes stay
-// independent — flagging a user for bonus verification doesn't automatically
-// pull their prize eligibility, and vice versa.
+// Important: this endpoint does not write prizeEligibility directly. Prize
+// access remains on its own field when an explicit override is set; when it is
+// unset, the normal fallback still derives from the user's current identity
+// verification state.
 export const adminFlagForVerification: APIHandler<
   'admin-flag-for-verification'
 > = async (body, auth) => {
