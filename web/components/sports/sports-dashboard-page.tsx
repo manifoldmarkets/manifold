@@ -98,6 +98,26 @@ function CommunityEmptyState() {
   )
 }
 
+// Placeholder cards matching DashboardMarketCard's shell (340px, 2-col grid),
+// shown while the community markets are loading.
+function MarketCardSkeletonGrid() {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Col
+          key={i}
+          className="bg-canvas-50 border-ink-200 h-[340px] animate-pulse gap-3 rounded-xl border p-5"
+        >
+          <div className="bg-ink-200 h-3 w-1/3 rounded" />
+          <div className="bg-ink-200 h-5 w-3/4 rounded" />
+          <div className="bg-ink-100 flex-1 rounded" />
+          <div className="bg-ink-200 h-8 w-full rounded" />
+        </Col>
+      ))}
+    </div>
+  )
+}
+
 function parseAnswerText(text: string): { flag: string; name: string } {
   const chars = [...text.trim()]
   const isRegionalIndicator = (c?: string) => {
@@ -269,6 +289,10 @@ function CommunityTab({
   const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
 
   useEffect(() => {
+    // Until the dashboard itself has loaded, the empty slug list just means
+    // "unknown" — don't mark contracts as loaded ([]), or the no-markets
+    // state flashes before the real fetch even starts.
+    if (dashboard === undefined) return
     if (questionSlugs.length === 0) {
       setContracts([])
       return
@@ -292,7 +316,7 @@ function CommunityTab({
     return () => {
       cancelled = true
     }
-  }, [questionSlugs.join(',')])
+  }, [questionSlugs.join(','), dashboard === undefined])
 
   // Returns resolution timestamp, or null if still open.
   // For cpmm-multi-1 sports markets, waits until all answers are resolved.
@@ -401,7 +425,7 @@ function CommunityTab({
     }
   }
 
-  if (dashboard === undefined) return <LoadingIndicator />
+  if (dashboard === undefined) return <MarketCardSkeletonGrid />
 
   if (dashboard === null && !isAdmin) {
     return <CommunityEmptyState />
@@ -464,9 +488,7 @@ function CommunityTab({
       )}
 
       {/* Markets still loading — don't flash the empty state */}
-      {dashboard !== null && contractsLoading && (
-        <LoadingIndicator className="py-20" />
-      )}
+      {dashboard !== null && contractsLoading && <MarketCardSkeletonGrid />}
 
       {/* Open markets */}
       {dashboard !== null &&
