@@ -444,6 +444,48 @@ export function buildDescription(
   return parts.join('\n\n\n')
 }
 
+// ─── Final-score comment ──────────────────────────────────────────────────────
+
+// Lines for the comment @ManifoldSports posts on a market as it resolves —
+// same format as the comments previously left by hand:
+//   South Korea - 2
+//   Czechia - 1
+// with a parenthetical when the match went beyond regulation. Returns null
+// when the final score isn't in the payload (e.g. an awarded walkover), in
+// which case no comment should be posted.
+export function finalScoreCommentLines(match: FDMatch): string[] | null {
+  const { winner, duration, fullTime, penalties } = match.score
+  if (fullTime.home == null || fullTime.away == null) return null
+
+  // fullTime is the post-ET aggregate, matching what the match cards show.
+  const lines = [
+    `${match.homeTeam.name} - ${fullTime.home}`,
+    `${match.awayTeam.name} - ${fullTime.away}`,
+  ]
+
+  if (duration === 'PENALTY_SHOOTOUT') {
+    const winnerName =
+      winner === 'HOME_TEAM'
+        ? match.homeTeam.name
+        : winner === 'AWAY_TEAM'
+        ? match.awayTeam.name
+        : null
+    if (winnerName && penalties && penalties.home != null && penalties.away != null) {
+      const [w, l] =
+        winner === 'HOME_TEAM'
+          ? [penalties.home, penalties.away]
+          : [penalties.away, penalties.home]
+      lines.push(`(${winnerName} win ${w}-${l} on penalties)`)
+    } else {
+      lines.push('(decided on penalties)')
+    }
+  } else if (duration === 'EXTRA_TIME') {
+    lines.push('(after extra time)')
+  }
+
+  return lines
+}
+
 // ─── Market params builder ─────────────────────────────────────────────────────
 
 export interface MarketCreateParams {
