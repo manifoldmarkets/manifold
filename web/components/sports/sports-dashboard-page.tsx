@@ -992,20 +992,7 @@ export function SportsDashboardPage({
               className="text-ink-500 hover:text-ink-600"
             />
           </div>
-          {activeTab === 'official' && recentResolved.length > 0 && (
-            <button
-              onClick={() =>
-                recentRef.current?.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'start',
-                })
-              }
-              className="border-ink-200 text-ink-500 hover:bg-canvas-50 order-4 rounded border px-2 py-0.5 text-xs transition-colors"
-            >
-              see recent
-            </button>
-          )}
-          <Row className="order-5 ml-auto items-center gap-2">
+          <Row className="order-4 ml-auto items-center gap-2">
             <SportsDashboardTabButton
               active={activeTab === 'official'}
               count={upcoming.length}
@@ -1087,6 +1074,19 @@ export function SportsDashboardPage({
                   <span className="text-ink-500 text-xs">
                     {matches.length} match{matches.length !== 1 ? 'es' : ''}
                   </span>
+                  {i === 0 && recentResolved.length > 0 && (
+                    <button
+                      onClick={() =>
+                        recentRef.current?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        })
+                      }
+                      className="border-ink-200 text-ink-500 hover:bg-canvas-50 ml-auto rounded border px-2 py-0.5 text-xs transition-colors"
+                    >
+                      see previous
+                    </button>
+                  )}
                 </Row>
                 <div
                   className="grid gap-3"
