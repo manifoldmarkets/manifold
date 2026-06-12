@@ -15,6 +15,7 @@ import { handleMcpRequest } from './mcp'
 import { MINUTE_MS } from 'common/util/time'
 import { addOldRoutes } from './old-routes'
 import { handlers } from './routes'
+import { healthzLive, healthzReady } from './healthz'
 
 export const allowCorsUnrestricted: RequestHandler = cors({
   origin: '*',
@@ -102,6 +103,13 @@ export const apiErrorHandler: ErrorRequestHandler = (
 }
 
 export const app = express()
+
+// Infra health checks, registered before requestMonitoring so the LB's
+// per-instance polling (every few seconds) doesn't spam request logs or inflate
+// http/request_count. These are unauthenticated and intentionally trivial.
+app.get('/healthz/live', healthzLive)
+app.get('/healthz/ready', healthzReady)
+
 app.use(compression())
 app.use(requestMonitoring)
 
