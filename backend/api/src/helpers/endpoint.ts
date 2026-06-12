@@ -94,7 +94,10 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       const key = creds.data
       const privateUser = await getUnbannedPrivateUserByKey(key)
       if (!privateUser) {
-        throw new APIError(401, 'No private user exists with the provided API key.')
+        throw new APIError(
+          401,
+          'No private user exists with the provided API key.'
+        )
       }
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
@@ -113,7 +116,11 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
       }
     })
     if (issues.length > 0) {
-      log.error(issues.map((i) => `${i.field}: ${i.error}`).join('\n'))
+      log.warn(
+        `Validation issues: ${issues
+          .map((i) => `${i.field}: ${i.error}`)
+          .join(', ')}`
+      )
     }
     throw new APIError(400, 'Error validating request.', issues)
   } else {
