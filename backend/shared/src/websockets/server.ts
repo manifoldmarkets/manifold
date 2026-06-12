@@ -128,7 +128,7 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
 }
 
 function getRedisUrl() {
-  const url = process.env.WEBSOCKET_REDIS_URL ?? process.env.REDIS_URL
+  const url = process.env.REDIS_URL
   return url && url.trim().length > 0 ? url : undefined
 }
 
@@ -175,23 +175,18 @@ function getRedisErrorDetails(err: unknown) {
 
 function getRedisLogContext() {
   return {
+    component: 'websocket-broadcast',
     enabled: redisBroadcastsEnabled(),
     url: getRedisUrlForLogging(),
     channel: getRedisBroadcastChannel(),
     env: getRedisBroadcastEnvironment(),
     project: process.env.GOOGLE_CLOUD_PROJECT,
     firebaseEnv: process.env.NEXT_PUBLIC_FIREBASE_ENV,
-    disabled: process.env.DISABLE_REDIS_WEBSOCKET_BROADCASTS,
     instanceId: WEBSOCKET_INSTANCE_ID,
   }
 }
 
 function getRedisBroadcastEnvironment() {
-  const explicitEnv = process.env.WEBSOCKET_REDIS_ENV
-  if (explicitEnv != null && explicitEnv.trim().length > 0) {
-    return explicitEnv.trim().toLowerCase()
-  }
-
   const firebaseEnv = process.env.NEXT_PUBLIC_FIREBASE_ENV
   if (firebaseEnv != null && firebaseEnv.trim().length > 0) {
     return firebaseEnv.trim().toLowerCase()
@@ -201,19 +196,11 @@ function getRedisBroadcastEnvironment() {
 }
 
 function getRedisBroadcastChannel() {
-  const explicitChannel = process.env.WEBSOCKET_REDIS_CHANNEL
-  if (explicitChannel != null && explicitChannel.trim().length > 0) {
-    return explicitChannel.trim()
-  }
-
   return `${DEFAULT_REDIS_BROADCAST_CHANNEL_PREFIX}-${getRedisBroadcastEnvironment()}`
 }
 
 function redisBroadcastsEnabled() {
-  return (
-    getRedisUrl() != null &&
-    process.env.DISABLE_REDIS_WEBSOCKET_BROADCASTS !== 'true'
-  )
+  return getRedisUrl() != null
 }
 
 function recordBroadcastMetrics(topics: string[]) {
@@ -303,7 +290,7 @@ async function getRedisPublisher() {
     metrics.inc('ws/redis_publisher_errors')
   })
   redisPublisher.on('reconnecting', () => {
-    log.warn('Redis websocket publisher reconnecting.')
+    log.warn('Redis websocket publisher reconnecting.', getRedisLogContext())
   })
 
   redisPublisherConnect = redisPublisher
@@ -344,7 +331,10 @@ function handleRedisBroadcast(message: string) {
     if (originInstanceId === WEBSOCKET_INSTANCE_ID) return
     sendToLocalSubscribersMulti(topics, data)
   } catch (err: unknown) {
-    log.error('Error handling Redis websocket broadcast.', { error: err })
+    log.error('Error handling Redis websocket broadcast.', {
+      ...getRedisErrorDetails(err),
+      ...getRedisLogContext(),
+    })
     metrics.inc('ws/redis_broadcast_parse_errors')
   }
 }
@@ -369,7 +359,10 @@ function scheduleRedisSubscriberRetry() {
     redisSubscriberRetryDelayMs * 2,
     REDIS_SUBSCRIBER_MAX_RETRY_DELAY_MS
   )
-  log.warn(`Retrying Redis websocket subscriber in ${delayMs}ms.`)
+  log.warn('Retrying Redis websocket subscriber.', {
+    delayMs,
+    ...getRedisLogContext(),
+  })
   redisSubscriberRetryTimeout = setTimeout(() => {
     redisSubscriberRetryTimeout = undefined
     startRedisBroadcastSubscriber()
@@ -403,7 +396,7 @@ function startRedisBroadcastSubscriber() {
     metrics.inc('ws/redis_subscriber_errors')
   })
   subscriber.on('reconnecting', () => {
-    log.warn('Redis websocket subscriber reconnecting.')
+    log.warn('Redis websocket subscriber reconnecting.', getRedisLogContext())
   })
 
   redisSubscriberConnect = subscriber
@@ -412,7 +405,7 @@ function startRedisBroadcastSubscriber() {
     .then(() => {
       resetRedisSubscriberRetryDelay()
       log.info('Redis websocket subscriber connected.', getRedisLogContext())
-      log.info(`Redis websocket subscriber listening on ${channel}.`)
+      log.info('Redis websocket subscriber listening.', getRedisLogContext())
     })
     .catch((err: unknown) => {
       if (redisSubscriber === subscriber) redisSubscriber = undefined
@@ -433,6 +426,7 @@ function startRedisBroadcastSubscriber() {
 }
 
 function stopRedisBroadcastSubscriber() {
+  log.info('Stopping Redis websocket subscriber.', getRedisLogContext())
   redisSubscriberShouldRun = false
   clearRedisSubscriberRetry()
   resetRedisSubscriberRetryDelay()

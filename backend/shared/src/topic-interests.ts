@@ -1,4 +1,6 @@
 import { log } from 'shared/monitoring/log'
+import { metrics } from 'shared/monitoring/metrics'
+import { cacheMGetJson, cacheSetManyJson } from 'shared/redis/cache'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -29,28 +31,59 @@ export const userIdsToAverageTopicConversionScores: {
 export const activeTopics: { [topicId: string]: number } = {}
 let lastRefreshTime = 0
 
+// How long a user's topic-interest scores live in Redis. They change slowly, so
+// a long ttl maximises the chance a redeploy finds a warm value; the worst case
+// is slightly-stale feed ranking, which is low-risk.
+// WP: We may consider invalidating this when a user blocks/follows a topic.
+const USER_INTERESTS_CACHE_TTL_S = 6 * 60 * 60
+const userInterestsCacheKey = (userId: string) => `user-interests:${userId}`
+
 export const buildUserInterestsCache = async (userIds: string[]) => {
   log('Starting user topic interests cache build process')
   const pg = createSupabaseDirectClient()
-  if (
-    userIds.every(
-      (uid) =>
-        Object.keys(userIdsToAverageTopicConversionScores[uid] ?? {}).length > 0
-    )
-  ) {
-    return
-  }
 
-  log('building cache for users: ', userIds.length)
+  // Already warm in this process's memory (L1) — nothing to do for those.
+  const missingUserIds = userIds.filter(
+    (uid) => userIdsToAverageTopicConversionScores[uid] == null
+  )
+  if (missingUserIds.length === 0) return
+
+  // Keep activeTopics warm whenever there are users to (re)hydrate — even if
+  // Redis ends up serving all of them below. Several feed endpoints read
+  // activeTopics directly, and it used to be populated only as a side effect of
+  // the db build path; without this a fully cache-warm process would never load
+  // it. (refreshActiveTopics self-gates to ~hourly via lastRefreshTime.)
   if (Object.keys(activeTopics).length === 0) await refreshActiveTopics(pg)
-  const topicIdsMeetingMinimumBar = Object.keys(activeTopics)
   // Refresh the cache, and use the old one in the meantime
   if (lastRefreshTime < Date.now() - HOUR_MS) refreshActiveTopics(pg)
+  const topicIdsMeetingMinimumBar = Object.keys(activeTopics)
 
-  const chunks = chunk(userIds, 25)
-  for (const userIds of chunks) {
+  // L2: try the shared Redis cache before touching the db. On a redeploy this
+  // lets a freshly started process repopulate from a sibling/previous process's
+  // work instead of re-running the per-user topic-interest queries (the burst
+  // that 4 processes x every deploy would otherwise put on the db).
+  const cached = await cacheMGetJson<TopicToInterestWeights>(
+    missingUserIds.map(userInterestsCacheKey)
+  )
+  const userIdsToBuild: string[] = []
+  missingUserIds.forEach((userId, i) => {
+    const scores = cached[i]
+    if (scores !== undefined) {
+      userIdsToAverageTopicConversionScores[userId] = scores
+      metrics.inc('cache/hits', { cache: 'user-interests' })
+    } else {
+      userIdsToBuild.push(userId)
+      metrics.inc('cache/misses', { cache: 'user-interests' })
+    }
+  })
+  if (userIdsToBuild.length === 0) return
+
+  log('building cache for users: ', userIdsToBuild.length)
+
+  const chunks = chunk(userIdsToBuild, 25)
+  for (const chunkUserIds of chunks) {
     await Promise.all(
-      userIds.map(async (userId) => {
+      chunkUserIds.map(async (userId) => {
         const results = await pg.multi(
           `
         select group_id from group_members where member_id = $1;
@@ -102,6 +135,17 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
           userIdsToAverageTopicConversionScores[userId][groupId] = 0
         }
       })
+    )
+
+    // Write this chunk back to the shared cache so siblings and post-redeploy
+    // processes can skip the db. Done per-chunk so partial progress is cached
+    // even if a later chunk fails. Best-effort: never blocks on Redis errors.
+    await cacheSetManyJson(
+      chunkUserIds.map((userId) => ({
+        key: userInterestsCacheKey(userId),
+        value: userIdsToAverageTopicConversionScores[userId],
+      })),
+      USER_INTERESTS_CACHE_TTL_S
     )
 
     log(

@@ -5,7 +5,8 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { log, metrics } from 'shared/utils'
+import { cacheGetJson, cacheSetJson } from 'shared/redis/cache'
 
 import { APIHandler } from 'api/helpers/endpoint'
 import { orderBy } from 'lodash'
@@ -16,15 +17,16 @@ type cacheType = {
   marketIdsFromEmbeddings: string[]
   lastUpdated: number
 }
+// L1: per-process, avoids a Redis round-trip on hot contracts. L2 (Redis) is
+// shared across processes and survives redeploys; both store only the related
+// contract ids — the contracts themselves are refetched fresh on every hit.
 const cachedRelatedMarkets = new Map<string, cacheType>()
-// Only the related market *ids* are cached; their contract data is refetched
-// fresh on every hit (see refreshedRelatedMarkets), so a long TTL only delays
-// newly-created markets showing up as related — and close_contract_embeddings
-// is one of the costlier recurring queries on the db.
-const RELATED_MARKETS_TTL = 6 * HOUR_MS
-// Entries are small (a contract id + ~10 related ids), but the map would
-// otherwise grow without bound for the life of the process.
-const MAX_CACHED_CONTRACTS = 20_000
+const RELATED_MARKETS_CACHE_TTL_S = 6 * 60 * 60
+const relatedMarketsCacheKey = (contractId: string, limit: number) =>
+  `related-markets:${contractId}:limit:${limit}`
+
+const orderByNonStonks = (c: Contract) =>
+  c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
 
 // We cache the state of the contracts every 10 minutes via the cache header,
 // and the actual contracts to include via the internal cachedRelatedMarkets.
@@ -33,13 +35,26 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
 ) => {
   const { contractId, limit, question, uniqueBettorCount } = body
   const pg = createSupabaseDirectClient()
-  const cachedResults = cachedRelatedMarkets.get(contractId)
-  if (
-    cachedResults &&
-    cachedResults.lastUpdated > Date.now() - RELATED_MARKETS_TTL
-  ) {
+  const cacheKey = relatedMarketsCacheKey(contractId, limit)
+  const cachedResults = cachedRelatedMarkets.get(cacheKey)
+  if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
     return refreshedRelatedMarkets(contractId, cachedResults, pg)
   }
+
+  // L1 miss/stale: try the shared Redis cache before recomputing the (expensive)
+  // embeddings search + Gemini filter.
+  const cachedIds = await cacheGetJson<string[]>(cacheKey)
+  if (cachedIds !== undefined) {
+    metrics.inc('cache/hits', { cache: 'related-markets' })
+    const entry: cacheType = {
+      marketIdsFromEmbeddings: cachedIds,
+      lastUpdated: Date.now(),
+    }
+    cachedRelatedMarkets.set(cacheKey, entry)
+    return refreshedRelatedMarkets(contractId, entry, pg)
+  }
+  metrics.inc('cache/misses', { cache: 'related-markets' })
+
   const unfilteredMarketsFromEmbeddings = await pg.map(
     `
       select * from close_contract_embeddings(
@@ -50,9 +65,6 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
     [contractId, limit * 2, TOPIC_SIMILARITY_THRESHOLD],
     (row) => row.data as Contract
   )
-
-  const orderByNonStonks = (c: Contract) =>
-    c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
 
   let marketsFromEmbeddings = unfilteredMarketsFromEmbeddings
 
@@ -101,17 +113,12 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
   }
   marketsFromEmbeddings = marketsFromEmbeddings.slice(0, limit)
 
-  if (
-    !cachedRelatedMarkets.has(contractId) &&
-    cachedRelatedMarkets.size >= MAX_CACHED_CONTRACTS
-  ) {
-    // Map iterates in insertion order, so this evicts the oldest entry.
-    cachedRelatedMarkets.delete(cachedRelatedMarkets.keys().next().value!)
-  }
-  cachedRelatedMarkets.set(contractId, {
-    marketIdsFromEmbeddings: marketsFromEmbeddings.map((c) => c.id),
+  const marketIds = marketsFromEmbeddings.map((c) => c.id)
+  cachedRelatedMarkets.set(cacheKey, {
+    marketIdsFromEmbeddings: marketIds,
     lastUpdated: Date.now(),
   })
+  await cacheSetJson(cacheKey, marketIds, RELATED_MARKETS_CACHE_TTL_S)
 
   return {
     marketsFromEmbeddings: orderBy(
@@ -143,7 +150,16 @@ const refreshedRelatedMarkets = async (
     cachedResults.marketIdsFromEmbeddings,
     pg
   )
+  const contractsById = new Map(refreshedContracts.map((c) => [c.id, c]))
+  const orderedContracts = cachedResults.marketIdsFromEmbeddings
+    .map((id) => contractsById.get(id))
+    .filter((c): c is Contract => c != null)
+
   return {
-    marketsFromEmbeddings: refreshedContracts.map(cleanContractForStaticProps),
+    marketsFromEmbeddings: orderBy(
+      orderedContracts,
+      orderByNonStonks,
+      'desc'
+    ).map(cleanContractForStaticProps),
   }
 }
