@@ -1,0 +1,27 @@
+-- Index for the /market/:id/positions leaderboard queries (get-positions.ts):
+--
+--   select data from user_contract_metrics
+--   where contract_id = $1 and profit > $2 order by profit desc nulls last
+--   (and the mirrored profit < $2 ... asc query)
+--
+-- The existing user_contract_metrics_contract_profit_null index is partial on
+-- (answer_id is null), which these queries don't filter on, so the planner
+-- can't use it and reads every metric row for the contract instead — 71k
+-- calls/day each at ~27ms mean and ~70% cache hit (~4.5% of total db time).
+--
+-- Note user_contract_metrics is hot on the bet path, so this does add index
+-- maintenance on every metrics update; the read volume (and that this endpoint
+-- was among the worst hangs in the June 2026 outages) justifies it. If write
+-- amplification ever matters, the older partial index is subsumed by this one
+-- and could be dropped after confirming via pg_stat_user_indexes.
+--
+-- On prod create it CONCURRENTLY by hand to avoid locking the live table:
+--
+--   create index concurrently if not exists user_contract_metrics_contract_profit
+--     on user_contract_metrics (contract_id, profit);
+--
+-- This file uses the plain (transaction-safe) form for fresh / CI databases,
+-- where the table is small so a brief lock is fine. IF NOT EXISTS makes it a
+-- no-op wherever the index already exists (incl. prod).
+create index if not exists user_contract_metrics_contract_profit
+  on user_contract_metrics (contract_id, profit);
