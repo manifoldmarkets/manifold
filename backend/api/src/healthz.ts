@@ -27,10 +27,9 @@ const READY_MAX_WAITING = 5
 // common case (one wedged instance) gets traffic pulled off it automatically.
 export const healthzReady: RequestHandler = (_req, res) => {
   const pool = createSupabaseDirectClient().$pool
-  const { idleCount, waitingCount, totalCount } = pool
+  const { idleCount, waitingCount } = pool
   const saturated = idleCount === 0 && waitingCount > READY_MAX_WAITING
   res.status(saturated ? 503 : 200).json({
     status: saturated ? 'saturated' : 'ok',
-    pool: { idle: idleCount, waiting: waitingCount, total: totalCount },
   })
 }
