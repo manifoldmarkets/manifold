@@ -128,7 +128,7 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
 }
 
 function getRedisUrl() {
-  const url = process.env.WEBSOCKET_REDIS_URL ?? process.env.REDIS_URL
+  const url = process.env.REDIS_URL
   return url && url.trim().length > 0 ? url : undefined
 }
 
@@ -181,17 +181,11 @@ function getRedisLogContext() {
     env: getRedisBroadcastEnvironment(),
     project: process.env.GOOGLE_CLOUD_PROJECT,
     firebaseEnv: process.env.NEXT_PUBLIC_FIREBASE_ENV,
-    disabled: process.env.DISABLE_REDIS_WEBSOCKET_BROADCASTS,
     instanceId: WEBSOCKET_INSTANCE_ID,
   }
 }
 
 function getRedisBroadcastEnvironment() {
-  const explicitEnv = process.env.WEBSOCKET_REDIS_ENV
-  if (explicitEnv != null && explicitEnv.trim().length > 0) {
-    return explicitEnv.trim().toLowerCase()
-  }
-
   const firebaseEnv = process.env.NEXT_PUBLIC_FIREBASE_ENV
   if (firebaseEnv != null && firebaseEnv.trim().length > 0) {
     return firebaseEnv.trim().toLowerCase()
@@ -201,19 +195,11 @@ function getRedisBroadcastEnvironment() {
 }
 
 function getRedisBroadcastChannel() {
-  const explicitChannel = process.env.WEBSOCKET_REDIS_CHANNEL
-  if (explicitChannel != null && explicitChannel.trim().length > 0) {
-    return explicitChannel.trim()
-  }
-
   return `${DEFAULT_REDIS_BROADCAST_CHANNEL_PREFIX}-${getRedisBroadcastEnvironment()}`
 }
 
 function redisBroadcastsEnabled() {
-  return (
-    getRedisUrl() != null &&
-    process.env.DISABLE_REDIS_WEBSOCKET_BROADCASTS !== 'true'
-  )
+  return getRedisUrl() != null
 }
 
 function recordBroadcastMetrics(topics: string[]) {

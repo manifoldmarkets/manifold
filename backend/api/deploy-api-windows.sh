@@ -23,17 +23,19 @@ REGION="us-east4" # Ashburn, Virginia
 ZONE="us-east4-a"
 ENV=${1:-dev}
 
-# Private Memorystore instance
-WEBSOCKET_REDIS_URL=redis://10.215.204.211:6379
-DISABLE_REDIS_WEBSOCKET_BROADCASTS=false
-
 case $ENV in
     dev)
         NEXT_PUBLIC_FIREBASE_ENV=DEV
+        REDIS_URL=
+        DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=e2-small ;;
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
+        # Private Memorystore instance. Passed at the container level so both
+        # the main API process and PM2 read replicas inherit it.
+        REDIS_URL=redis://10.215.204.211:6379
+        DISABLE_REDIS_CACHE=false
         GCLOUD_PROJECT=mantic-markets
         MACHINE_TYPE=c2-standard-4 ;;
     *)
@@ -104,7 +106,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --boot-disk-size=100GB \
-       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},WEBSOCKET_REDIS_URL=${WEBSOCKET_REDIS_URL},DISABLE_REDIS_WEBSOCKET_BROADCASTS=${DISABLE_REDIS_WEBSOCKET_BROADCASTS} \
+       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},REDIS_URL=${REDIS_URL},DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
        --tags lb-health-check
