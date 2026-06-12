@@ -22,8 +22,11 @@ type cacheType = {
 // contract ids — the contracts themselves are refetched fresh on every hit.
 const cachedRelatedMarkets = new Map<string, cacheType>()
 const RELATED_MARKETS_CACHE_TTL_S = 6 * 60 * 60
-const relatedMarketsCacheKey = (contractId: string) =>
-  `related-markets:${contractId}`
+const relatedMarketsCacheKey = (contractId: string, limit: number) =>
+  `related-markets:${contractId}:limit:${limit}`
+
+const orderByNonStonks = (c: Contract) =>
+  c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
 
 // We cache the state of the contracts every 10 minutes via the cache header,
 // and the actual contracts to include for an hour via the internal cachedRelatedMarkets.
@@ -32,23 +35,22 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
 ) => {
   const { contractId, limit, question, uniqueBettorCount } = body
   const pg = createSupabaseDirectClient()
-  const cachedResults = cachedRelatedMarkets.get(contractId)
+  const cacheKey = relatedMarketsCacheKey(contractId, limit)
+  const cachedResults = cachedRelatedMarkets.get(cacheKey)
   if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
     return refreshedRelatedMarkets(contractId, cachedResults, pg)
   }
 
   // L1 miss/stale: try the shared Redis cache before recomputing the (expensive)
   // embeddings search + Gemini filter.
-  const cachedIds = await cacheGetJson<string[]>(
-    relatedMarketsCacheKey(contractId)
-  )
-  if (cachedIds && cachedIds.length > 0) {
+  const cachedIds = await cacheGetJson<string[]>(cacheKey)
+  if (cachedIds !== undefined) {
     metrics.inc('cache/hits', { cache: 'related-markets' })
     const entry: cacheType = {
       marketIdsFromEmbeddings: cachedIds,
       lastUpdated: Date.now(),
     }
-    cachedRelatedMarkets.set(contractId, entry)
+    cachedRelatedMarkets.set(cacheKey, entry)
     return refreshedRelatedMarkets(contractId, entry, pg)
   }
   metrics.inc('cache/misses', { cache: 'related-markets' })
@@ -63,9 +65,6 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
     [contractId, limit * 2, TOPIC_SIMILARITY_THRESHOLD],
     (row) => row.data as Contract
   )
-
-  const orderByNonStonks = (c: Contract) =>
-    c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
 
   let marketsFromEmbeddings = unfilteredMarketsFromEmbeddings
 
@@ -83,7 +82,7 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
 
       const prompt = `
 I have a prediction market with the question: "${question}".
-I also have a list of potentially related markets below. 
+I also have a list of potentially related markets below.
 Please identify which markets are semantically different enough to keep, and which are too similar in meaning and should be filtered out.
 
 For markets that ask essentially the same question with different wording, like "Who will win the 2024 election?" vs "2024 election winner?", filter them out.
@@ -115,17 +114,11 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
   marketsFromEmbeddings = marketsFromEmbeddings.slice(0, limit)
 
   const marketIds = marketsFromEmbeddings.map((c) => c.id)
-  cachedRelatedMarkets.set(contractId, {
+  cachedRelatedMarkets.set(cacheKey, {
     marketIdsFromEmbeddings: marketIds,
     lastUpdated: Date.now(),
   })
-  if (marketIds.length > 0) {
-    await cacheSetJson(
-      relatedMarketsCacheKey(contractId),
-      marketIds,
-      RELATED_MARKETS_CACHE_TTL_S
-    )
-  }
+  await cacheSetJson(cacheKey, marketIds, RELATED_MARKETS_CACHE_TTL_S)
 
   return {
     marketsFromEmbeddings: orderBy(
@@ -157,7 +150,16 @@ const refreshedRelatedMarkets = async (
     cachedResults.marketIdsFromEmbeddings,
     pg
   )
+  const contractsById = new Map(refreshedContracts.map((c) => [c.id, c]))
+  const orderedContracts = cachedResults.marketIdsFromEmbeddings
+    .map((id) => contractsById.get(id))
+    .filter((c): c is Contract => c != null)
+
   return {
-    marketsFromEmbeddings: refreshedContracts.map(cleanContractForStaticProps),
+    marketsFromEmbeddings: orderBy(
+      orderedContracts,
+      orderByNonStonks,
+      'desc'
+    ).map(cleanContractForStaticProps),
   }
 }
