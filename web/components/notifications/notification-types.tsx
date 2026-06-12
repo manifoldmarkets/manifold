@@ -1547,6 +1547,7 @@ export function MultipleAvatarIcons(props: {
 
   return (
     <div
+      data-stop-notification-click
       onClick={(event) => {
         if (relatedNotifications.length === 1) return
         event.preventDefault()
