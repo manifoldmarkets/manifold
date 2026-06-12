@@ -1082,7 +1082,7 @@ export function SportsDashboardPage({
                           block: 'start',
                         })
                       }
-                      className="border-ink-200 text-ink-500 hover:bg-canvas-50 ml-auto rounded border px-2 py-0.5 text-xs transition-colors"
+                      className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
                     >
                       see previous
                     </button>
