@@ -43,8 +43,7 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
 
   // Already warm in this process's memory (L1) — nothing to do for those.
   const missingUserIds = userIds.filter(
-    (uid) =>
-      !Object.keys(userIdsToAverageTopicConversionScores[uid] ?? {}).length
+    (uid) => userIdsToAverageTopicConversionScores[uid] == null
   )
   if (missingUserIds.length === 0) return
 
@@ -68,7 +67,7 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   const userIdsToBuild: string[] = []
   missingUserIds.forEach((userId, i) => {
     const scores = cached[i]
-    if (scores && Object.keys(scores).length > 0) {
+    if (scores !== undefined) {
       userIdsToAverageTopicConversionScores[userId] = scores
       metrics.inc('cache/hits', { cache: 'user-interests' })
     } else {
