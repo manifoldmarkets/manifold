@@ -1076,9 +1076,10 @@ export function SportsDashboardPage({
                       block: 'start',
                     })
                   }
-                  className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
+                  className="border-ink-200 text-ink-500 hover:bg-canvas-50 flex items-center gap-1 rounded border px-2 py-0.5 text-xs transition-colors"
                 >
                   see resolved matches
+                  <ChevronDownIcon className="h-3 w-3" />
                 </button>
               </Row>
             )}
@@ -1128,9 +1129,10 @@ export function SportsDashboardPage({
                         block: 'start',
                       })
                     }
-                    className="border-ink-200 text-ink-500 hover:bg-canvas-50 ml-auto rounded border px-2 py-0.5 text-xs transition-colors"
+                    className="border-ink-200 text-ink-500 hover:bg-canvas-50 ml-auto flex items-center gap-1 rounded border px-2 py-0.5 text-xs transition-colors"
                   >
                     back to top
+                    <ChevronUpIcon className="h-3 w-3" />
                   </button>
                 </Row>
                 <div
