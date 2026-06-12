@@ -173,7 +173,7 @@ export function AvatarNotificationIcon(props: {
       <Link
         href={href}
         target={href.startsWith('http') ? '_blank' : undefined}
-        onClick={(e) => e.stopPropagation}
+        onClick={(e) => e.stopPropagation()}
       >
         <Avatar
           username={sourceUserName}

@@ -29,7 +29,7 @@ const orderByNonStonks = (c: Contract) =>
   c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
 
 // We cache the state of the contracts every 10 minutes via the cache header,
-// and the actual contracts to include for an hour via the internal cachedRelatedMarkets.
+// and the actual contracts to include via the internal cachedRelatedMarkets.
 export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
   body
 ) => {
