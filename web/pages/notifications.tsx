@@ -518,7 +518,9 @@ function NotificationGroupItemComponent(props: {
       {header}
       <div className="relative whitespace-pre-line last:[&>*]:pb-6 sm:last:[&>*]:pb-4">
         {needsExpanding && (
-          <div className={clsx('absolute bottom-0 right-4')}>
+          // z-20 keeps this expander above a link-backed notification's full-row
+          // overlay <Link> (z-0) and content layer (z-10).
+          <div className={clsx('absolute bottom-0 right-4 z-20')}>
             <ShowMoreLessButton
               onClick={onExpandHandler}
               isCollapsed={!expanded}
