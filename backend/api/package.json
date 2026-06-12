@@ -31,6 +31,7 @@
     "@google/genai": "2.6.0",
     "@mendable/firecrawl-js": "1.8.5",
     "@modelcontextprotocol/sdk": "1.17.1",
+    "@redis/client": "1.6.0",
     "@supabase/supabase-js": "2.38.5",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/extension-image": "2.0.0-beta.204",

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Server as HttpServer } from 'node:http'
-import { createClient } from 'redis'
+import { createClient } from '@redis/client'
 import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
 import { isError } from 'lodash'
 import { LOCAL_DEV, log, metrics } from 'shared/utils'
