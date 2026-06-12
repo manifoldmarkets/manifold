@@ -1,4 +1,4 @@
-import { createClient } from 'redis'
+import { createClient } from 'redis/dist/index'
 import { log, metrics } from 'shared/utils'
 
 // A small, shared Redis-backed cache for data that is expensive to compute from
@@ -21,6 +21,9 @@ type RedisClient = ReturnType<typeof createClient>
 const KEY_PREFIX = `cache:v1:${process.env.GOOGLE_CLOUD_PROJECT ?? 'local'}:`
 
 const RECONNECT_MAX_DELAY_MS = 30_000
+// Bound the initial connect so request paths fall back instead of waiting on
+// node-redis' reconnect loop while Redis is down.
+const INITIAL_CONNECT_TIMEOUT_MS = 1_000
 // After a failed initial connect, don't try again for this long — otherwise a
 // request storm while Redis is down would create a client per call.
 const CONNECT_COOLDOWN_MS = 10_000
@@ -43,6 +46,23 @@ function cacheEnabled() {
 function errDetails(err: unknown) {
   const e = (err ?? {}) as { name?: unknown; message?: unknown; code?: unknown }
   return { name: e.name, message: e.message, code: e.code }
+}
+
+async function connectWithTimeout(c: RedisClient) {
+  let timeout: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      c.connect(),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('Redis cache initial connect timed out.')),
+          INITIAL_CONNECT_TIMEOUT_MS
+        )
+      }),
+    ])
+  } finally {
+    if (timeout) clearTimeout(timeout)
+  }
 }
 
 // Returns a *ready* client, or undefined if Redis is unavailable. Never throws.
@@ -68,8 +88,7 @@ async function getClient(): Promise<RedisClient | undefined> {
     log.error('Redis cache client error.', errDetails(err))
   })
 
-  connectPromise = c
-    .connect()
+  connectPromise = connectWithTimeout(c)
     .then(() => {
       client = c
       log.info('Redis cache client connected.')
