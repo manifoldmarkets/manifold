@@ -175,6 +175,7 @@ function getRedisErrorDetails(err: unknown) {
 
 function getRedisLogContext() {
   return {
+    component: 'websocket-broadcast',
     enabled: redisBroadcastsEnabled(),
     url: getRedisUrlForLogging(),
     channel: getRedisBroadcastChannel(),
@@ -289,7 +290,7 @@ async function getRedisPublisher() {
     metrics.inc('ws/redis_publisher_errors')
   })
   redisPublisher.on('reconnecting', () => {
-    log.warn('Redis websocket publisher reconnecting.')
+    log.warn('Redis websocket publisher reconnecting.', getRedisLogContext())
   })
 
   redisPublisherConnect = redisPublisher
@@ -330,7 +331,10 @@ function handleRedisBroadcast(message: string) {
     if (originInstanceId === WEBSOCKET_INSTANCE_ID) return
     sendToLocalSubscribersMulti(topics, data)
   } catch (err: unknown) {
-    log.error('Error handling Redis websocket broadcast.', { error: err })
+    log.error('Error handling Redis websocket broadcast.', {
+      ...getRedisErrorDetails(err),
+      ...getRedisLogContext(),
+    })
     metrics.inc('ws/redis_broadcast_parse_errors')
   }
 }
@@ -355,7 +359,10 @@ function scheduleRedisSubscriberRetry() {
     redisSubscriberRetryDelayMs * 2,
     REDIS_SUBSCRIBER_MAX_RETRY_DELAY_MS
   )
-  log.warn(`Retrying Redis websocket subscriber in ${delayMs}ms.`)
+  log.warn('Retrying Redis websocket subscriber.', {
+    delayMs,
+    ...getRedisLogContext(),
+  })
   redisSubscriberRetryTimeout = setTimeout(() => {
     redisSubscriberRetryTimeout = undefined
     startRedisBroadcastSubscriber()
@@ -389,7 +396,7 @@ function startRedisBroadcastSubscriber() {
     metrics.inc('ws/redis_subscriber_errors')
   })
   subscriber.on('reconnecting', () => {
-    log.warn('Redis websocket subscriber reconnecting.')
+    log.warn('Redis websocket subscriber reconnecting.', getRedisLogContext())
   })
 
   redisSubscriberConnect = subscriber
@@ -398,7 +405,7 @@ function startRedisBroadcastSubscriber() {
     .then(() => {
       resetRedisSubscriberRetryDelay()
       log.info('Redis websocket subscriber connected.', getRedisLogContext())
-      log.info(`Redis websocket subscriber listening on ${channel}.`)
+      log.info('Redis websocket subscriber listening.', getRedisLogContext())
     })
     .catch((err: unknown) => {
       if (redisSubscriber === subscriber) redisSubscriber = undefined
@@ -419,6 +426,7 @@ function startRedisBroadcastSubscriber() {
 }
 
 function stopRedisBroadcastSubscriber() {
+  log.info('Stopping Redis websocket subscriber.', getRedisLogContext())
   redisSubscriberShouldRun = false
   clearRedisSubscriberRetry()
   resetRedisSubscriberRetryDelay()

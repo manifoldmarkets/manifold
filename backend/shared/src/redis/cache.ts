@@ -31,6 +31,7 @@ const CONNECT_COOLDOWN_MS = 10_000
 let client: RedisClient | undefined
 let connectPromise: Promise<RedisClient | undefined> | undefined
 let cooldownUntil = 0
+let loggedDisabled = false
 
 function getCacheRedisUrl() {
   const url = process.env.REDIS_URL
@@ -43,9 +44,67 @@ function cacheEnabled() {
   )
 }
 
+function getRedisUrlForLogging() {
+  const url = getCacheRedisUrl()
+  if (url == null) return undefined
+
+  try {
+    const parsed = new URL(url)
+    const auth = parsed.username || parsed.password ? '<redacted>@' : ''
+    return `${parsed.protocol}//${auth}${parsed.hostname}:${
+      parsed.port || '6379'
+    }`
+  } catch {
+    return '<invalid redis url>'
+  }
+}
+
+function getRedisLogContext() {
+  return {
+    component: 'cache',
+    enabled: cacheEnabled(),
+    url: getRedisUrlForLogging(),
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    firebaseEnv: process.env.NEXT_PUBLIC_FIREBASE_ENV,
+    disabled: process.env.DISABLE_REDIS_CACHE,
+    keyPrefix: KEY_PREFIX,
+  }
+}
+
+function logDisabledOnce() {
+  if (loggedDisabled) return
+  loggedDisabled = true
+  const message =
+    getCacheRedisUrl() == null
+      ? 'Redis cache disabled: REDIS_URL is not set.'
+      : 'Redis cache disabled by DISABLE_REDIS_CACHE.'
+  log.info(message, getRedisLogContext())
+}
+
 function errDetails(err: unknown) {
-  const e = (err ?? {}) as { name?: unknown; message?: unknown; code?: unknown }
-  return { name: e.name, message: e.message, code: e.code }
+  if (err == null || typeof err !== 'object') return { error: err }
+  const e = err as {
+    name?: unknown
+    message?: unknown
+    code?: unknown
+    errno?: unknown
+    syscall?: unknown
+    address?: unknown
+    port?: unknown
+    command?: unknown
+    cause?: unknown
+  }
+  return {
+    name: e.name,
+    message: e.message,
+    code: e.code,
+    errno: e.errno,
+    syscall: e.syscall,
+    address: e.address,
+    port: e.port,
+    command: e.command,
+    cause: e.cause,
+  }
 }
 
 async function connectWithTimeout(c: RedisClient) {
@@ -69,12 +128,16 @@ async function connectWithTimeout(c: RedisClient) {
 // Only ever creates one client: while it's reconnecting (isReady === false) we
 // return undefined so callers fall back rather than spawning a second client.
 async function getClient(): Promise<RedisClient | undefined> {
-  if (!cacheEnabled()) return undefined
+  if (!cacheEnabled()) {
+    logDisabledOnce()
+    return undefined
+  }
   if (client) return client.isReady ? client : undefined
   if (connectPromise) return connectPromise
   if (Date.now() < cooldownUntil) return undefined
 
   const url = getCacheRedisUrl()!
+  log.info('Starting Redis cache client connection.', getRedisLogContext())
   const c = createClient({
     url,
     socket: {
@@ -85,21 +148,28 @@ async function getClient(): Promise<RedisClient | undefined> {
   // An 'error' listener is required, else the client throws on connection drops.
   c.on('error', (err: unknown) => {
     metrics.inc('cache/redis_errors')
-    log.error('Redis cache client error.', errDetails(err))
+    log.error('Redis cache client error.', {
+      ...errDetails(err),
+      ...getRedisLogContext(),
+    })
+  })
+  c.on('reconnecting', () => {
+    log.warn('Redis cache client reconnecting.', getRedisLogContext())
   })
 
   connectPromise = connectWithTimeout(c)
     .then(() => {
       client = c
-      log.info('Redis cache client connected.')
+      log.info('Redis cache client connected.', getRedisLogContext())
       return c
     })
     .catch((err: unknown) => {
       cooldownUntil = Date.now() + CONNECT_COOLDOWN_MS
-      log.error(
-        'Redis cache client failed to connect; falling back to db.',
-        errDetails(err)
-      )
+      log.error('Redis cache client failed to connect; falling back to db.', {
+        ...errDetails(err),
+        cooldownMs: CONNECT_COOLDOWN_MS,
+        ...getRedisLogContext(),
+      })
       // Tear down the dead client so the next attempt (after the cooldown)
       // starts a fresh one rather than leaking sockets/listeners.
       void c.disconnect().catch(() => {})
@@ -120,7 +190,11 @@ export async function cacheGetJson<T>(key: string): Promise<T | undefined> {
     return raw == null ? undefined : (JSON.parse(raw) as T)
   } catch (err) {
     metrics.inc('cache/redis_errors')
-    log.error('Redis cache get failed.', { key, ...errDetails(err) })
+    log.error('Redis cache get failed.', {
+      key,
+      ...errDetails(err),
+      ...getRedisLogContext(),
+    })
     return undefined
   }
 }
@@ -148,6 +222,7 @@ export async function cacheMGetJson<T>(
     log.error('Redis cache mget failed.', {
       count: keys.length,
       ...errDetails(err),
+      ...getRedisLogContext(),
     })
     return keys.map(() => undefined)
   }
@@ -164,7 +239,12 @@ export async function cacheSetJson(
     await c.set(KEY_PREFIX + key, JSON.stringify(value), { EX: ttlSeconds })
   } catch (err) {
     metrics.inc('cache/redis_errors')
-    log.error('Redis cache set failed.', { key, ...errDetails(err) })
+    log.error('Redis cache set failed.', {
+      key,
+      ttlSeconds,
+      ...errDetails(err),
+      ...getRedisLogContext(),
+    })
   }
 }
 
@@ -186,7 +266,9 @@ export async function cacheSetManyJson(
     metrics.inc('cache/redis_errors')
     log.error('Redis cache mset failed.', {
       count: entries.length,
+      ttlSeconds,
       ...errDetails(err),
+      ...getRedisLogContext(),
     })
   }
 }
