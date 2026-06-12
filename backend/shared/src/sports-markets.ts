@@ -1,6 +1,6 @@
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
-import { getUser, log as logger } from 'shared/utils'
+import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
 import {
   createSupabaseDirectClient,
   pgp,
@@ -9,9 +9,13 @@ import {
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { anythingToRichText } from 'shared/tiptap'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import {
+  generateContractEmbeddings,
+  updateContract,
+} from 'shared/supabase/contracts'
 import {
   Contract,
+  contractPath,
   CPMMMultiContract,
   nativeContractColumnsArray,
 } from 'common/contract'
@@ -29,6 +33,7 @@ import { millisToTs } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
+import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { User } from 'common/user'
@@ -422,10 +427,12 @@ async function getUnresolvedSportsMarkets(
 }
 
 // Post the final score on the market as @ManifoldSports, mirroring the
-// comments the account used to leave by hand. A trimmed-down version of
-// api/create-comment's insert (which shared can't import): no bet/position
-// denormalization, fees, or notification fan-out — resolution already
-// notifies every bettor, so a second notification would just be noise.
+// comments the account used to leave by hand. Replicates api/create-comment's
+// insert plus its side effects (which shared can't import): broadcast,
+// follower notifications, lastCommentTime bump, and static-page revalidation.
+// Only the parts meaningless for this account are skipped: bet/position
+// denormalization, fees, and the AI clarification check (gated on
+// unresolved markets anyway — this runs right after resolution).
 async function postFinalScoreComment(
   pg: SupabaseDirectClient,
   contract: CPMMMultiContract,
@@ -463,6 +470,30 @@ async function postFinalScoreComment(
     [contract.id, comment.id, creator.id, millisToTs(now), comment]
   )
   broadcastNewComment(contract.id, contract.visibility, creator, comment)
+
+  await updateContract(pg, contract.id, {
+    lastCommentTime: now,
+    lastUpdatedTime: Date.now(),
+  })
+  // Resolution revalidated the page just before this comment existed; do it
+  // again so new visitors get the comment in the statically cached page.
+  await revalidateStaticProps(contractPath(contract)).catch((e) =>
+    logger.error(
+      `[sports-resolve] revalidate after score comment failed for ${contract.id}: ${e}`
+    )
+  )
+  // Same follower/watcher fan-out a manual comment from the account would
+  // trigger. No replies or mentions in a score comment, and never marked as
+  // requiring a creator response.
+  await createCommentOnContractNotification(
+    comment.id,
+    creator,
+    lines.join('\n'),
+    contract,
+    {},
+    [],
+    false
+  )
 }
 
 // Resolve unresolved markets against an already-fetched set of terminal
