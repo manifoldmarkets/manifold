@@ -1065,6 +1065,24 @@ export function SportsDashboardPage({
             {loading && <LoadingIndicator />}
             {error && <p className="text-sm text-red-500">{error}</p>}
 
+            {upcomingSections.length > 0 && recentResolved.length > 0 && (
+              // -mb-5 pulls the following date section to within gap-3 of
+              // this row, despite the page column's gap-8.
+              <Row className="-mb-5">
+                <button
+                  onClick={() =>
+                    recentRef.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    })
+                  }
+                  className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
+                >
+                  see resolved matches
+                </button>
+              </Row>
+            )}
+
             {upcomingSections.map(({ label, matches }, i) => (
               <Col key={label} className="gap-3">
                 <Row className="items-center gap-2.5">
@@ -1074,19 +1092,6 @@ export function SportsDashboardPage({
                   <span className="text-ink-500 text-xs">
                     {matches.length} match{matches.length !== 1 ? 'es' : ''}
                   </span>
-                  {i === 0 && recentResolved.length > 0 && (
-                    <button
-                      onClick={() =>
-                        recentRef.current?.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'start',
-                        })
-                      }
-                      className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
-                    >
-                      see previous
-                    </button>
-                  )}
                 </Row>
                 <div
                   className="grid gap-3"
