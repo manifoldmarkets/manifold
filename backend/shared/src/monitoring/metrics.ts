@@ -127,6 +127,22 @@ export const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  // Redis-backed shared cache (shared/redis/cache.ts). hits/misses are labelled
+  // by `cache` (e.g. user-interests, related-markets) so we can watch hit rate
+  // per consumer; redis_errors covers connect/get/set failures (which fall back
+  // to the db, so they degrade latency rather than break requests).
+  'cache/hits': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'cache/misses': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'cache/redis_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
 } as const satisfies { [k: string]: MetricDescriptor }
 
 // the typing for all this could be way fancier, but seems overkill
