@@ -34,6 +34,7 @@ let lastRefreshTime = 0
 // How long a user's topic-interest scores live in Redis. They change slowly, so
 // a long ttl maximises the chance a redeploy finds a warm value; the worst case
 // is slightly-stale feed ranking, which is low-risk.
+// WP: We may consider invalidating this when a user blocks/follows a topic.
 const USER_INTERESTS_CACHE_TTL_S = 6 * 60 * 60
 const userInterestsCacheKey = (userId: string) => `user-interests:${userId}`
 
