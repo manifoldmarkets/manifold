@@ -24,7 +24,6 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
 import { Dashboard, DashboardItem, DashboardTextItem } from 'common/dashboard'
 import { Contract } from 'common/contract'
-import { Answer } from 'common/answer'
 import { shortFormatNumber } from 'common/util/format'
 import { ContractRow } from 'web/components/contract/contracts-table'
 import {
@@ -800,6 +799,11 @@ export function SportsDashboardPage({
   const [editingDesc, setEditingDesc] = useState(false)
   const [savingDesc, setSavingDesc] = useState(false)
 
+  // scrollIntoView (not window.scrollTo) so this also works inside the iOS
+  // page-scroll-container.
+  const topRef = useRef<HTMLDivElement>(null)
+  const recentRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (router.isReady) {
       setActiveTab(router.query.tab === 'community' ? 'community' : 'official')
@@ -813,7 +817,9 @@ export function SportsDashboardPage({
     })
   }
 
-  const isAdmin = useAdminOrMod() || useDev()
+  const isAdminOrMod = useAdminOrMod()
+  const isDev = useDev()
+  const isAdmin = isAdminOrMod || isDev
   const user = useUser()
   useSaveReferral(user)
 
@@ -959,7 +965,10 @@ export function SportsDashboardPage({
       <Head>
         <title>{title} | Manifold</title>
       </Head>
-      <Col className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6">
+      <Col
+        ref={topRef}
+        className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6"
+      >
         {/* On mobile the title takes its own full-width line above the
             buttons (back/share/tabs); on sm+ everything sits in one row. */}
         <div className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 flex flex-wrap items-center gap-x-2 gap-y-3 border-b pb-5 pt-6">
@@ -983,7 +992,20 @@ export function SportsDashboardPage({
               className="text-ink-500 hover:text-ink-600"
             />
           </div>
-          <Row className="order-4 ml-auto items-center gap-2">
+          {activeTab === 'official' && recentResolved.length > 0 && (
+            <button
+              onClick={() =>
+                recentRef.current?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start',
+                })
+              }
+              className="border-ink-200 text-ink-500 hover:bg-canvas-50 order-4 rounded border px-2 py-0.5 text-xs transition-colors"
+            >
+              see recent
+            </button>
+          )}
+          <Row className="order-5 ml-auto items-center gap-2">
             <SportsDashboardTabButton
               active={activeTab === 'official'}
               count={upcoming.length}
@@ -1081,7 +1103,12 @@ export function SportsDashboardPage({
             ))}
 
             {recentResolved.length > 0 && (
-              <Col className="gap-3">
+              <Col
+                ref={recentRef}
+                // Clear the sticky header (taller on mobile, where it wraps
+                // to two lines) when scrolled to via the "see recent" button.
+                className="scroll-mt-32 gap-3 sm:scroll-mt-24"
+              >
                 <Row className="items-center gap-2.5">
                   <span className="text-ink-1000 text-base font-medium">
                     Recent
@@ -1089,6 +1116,17 @@ export function SportsDashboardPage({
                   <span className="text-ink-500 text-xs">
                     {recentResolved.length} resolved
                   </span>
+                  <button
+                    onClick={() =>
+                      topRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                      })
+                    }
+                    className="border-ink-200 text-ink-500 hover:bg-canvas-50 ml-auto rounded border px-2 py-0.5 text-xs transition-colors"
+                  >
+                    back to top
+                  </button>
                 </Row>
                 <div
                   className="grid gap-3"
