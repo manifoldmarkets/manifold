@@ -9,6 +9,10 @@
 # Important split:
 # - MIG autohealing uses /healthz/live so saturated-but-live instances are not restarted.
 # - Load balancer backend services use /healthz/ready so saturated instances are drained.
+#
+# Note: the liveness health check intentionally uses fixed port 80 instead of
+# --port-name http. Backend services support named-port health checks correctly,
+# but MIG autohealing can remain UNKNOWN with a named-port health check.
 
 set -euo pipefail
 
@@ -35,7 +39,52 @@ case $ENV in
         ;;
 esac
 
-create_or_update_http_health_check() {
+create_or_update_http_health_check_port() {
+    local name=$1
+    local port=$2
+    local request_path=$3
+
+    if gcloud compute health-checks describe "${name}" \
+        --project "${GCLOUD_PROJECT}" \
+        --global \
+        --format="value(type)" >/dev/null 2>&1; then
+        local type
+        type=$(gcloud compute health-checks describe "${name}" \
+            --project "${GCLOUD_PROJECT}" \
+            --global \
+            --format="value(type)")
+
+        if [ "${type}" != "HTTP" ]; then
+            echo "Health check ${name} already exists but is ${type}, not HTTP."
+            echo "Refusing to mutate protocol in place. Use a new name or delete the old check if safe."
+            exit 1
+        fi
+
+        echo "Updating HTTP health check ${name} -> :${port}${request_path}"
+        gcloud compute health-checks update http "${name}" \
+            --project "${GCLOUD_PROJECT}" \
+            --global \
+            --port "${port}" \
+            --request-path "${request_path}" \
+            --check-interval 5s \
+            --timeout 5s \
+            --healthy-threshold 2 \
+            --unhealthy-threshold 3
+    else
+        echo "Creating HTTP health check ${name} -> :${port}${request_path}"
+        gcloud compute health-checks create http "${name}" \
+            --project "${GCLOUD_PROJECT}" \
+            --global \
+            --port "${port}" \
+            --request-path "${request_path}" \
+            --check-interval 5s \
+            --timeout 5s \
+            --healthy-threshold 2 \
+            --unhealthy-threshold 3
+    fi
+}
+
+create_or_update_http_health_check_port_name() {
     local name=$1
     local port_name=$2
     local request_path=$3
@@ -103,13 +152,13 @@ echo "Updating API health checks in ${GCLOUD_PROJECT} (${ENV})"
 
 echo
 echo "Creating/updating liveness health check for MIG autohealing"
-create_or_update_http_health_check "api-live-health-check" "http" "/healthz/live"
+create_or_update_http_health_check_port "api-live-health-check" "80" "/healthz/live"
 
 echo
 echo "Creating/updating readiness health checks for load balancer backend services"
-create_or_update_http_health_check "api-ready-health-check" "http" "/healthz/ready"
+create_or_update_http_health_check_port_name "api-ready-health-check" "http" "/healthz/ready"
 for i in 0 1 2; do
-    create_or_update_http_health_check "api-lb-read-service-${i}-http-health-check" "read-${i}" "/healthz/ready"
+    create_or_update_http_health_check_port_name "api-lb-read-service-${i}-http-health-check" "read-${i}" "/healthz/ready"
 done
 
 echo
@@ -141,3 +190,9 @@ gcloud compute backend-services list \
     --project "${GCLOUD_PROJECT}" \
     --global \
     --format "table(name,portName,healthChecks.basename())"
+
+echo
+echo "Current API health check definitions:"
+gcloud compute health-checks list \
+    --project "${GCLOUD_PROJECT}" \
+    --format "table(name,type,httpHealthCheck.port,httpHealthCheck.portName,httpHealthCheck.requestPath,tcpHealthCheck.port,tcpHealthCheck.portName)"
