@@ -60,7 +60,8 @@ runScript(async ({ pg }) => {
      from private_users pu
      join users u on u.id = pu.id
      where pu.data->>'pushToken' in (select push_token from shared)
-     order by pu.data->>'pushToken', last_active desc`
+     -- pu.id is a deterministic tiebreaker so keeper selection is reproducible
+     order by pu.data->>'pushToken', last_active desc, pu.id`
   )
 
   // Group accounts by device token.

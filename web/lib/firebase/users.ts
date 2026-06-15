@@ -85,8 +85,24 @@ export async function setCachedReferralInfoForUser(user: User) {
     })
 }
 
+// Best-effort, time-bounded clear of the current account's push token before an
+// auth change (logout or account switch), so the device stops receiving
+// notifications for that account. Only runs on native (push tokens are
+// mobile-only) and only when signed in. Never blocks the auth change for more
+// than a moment on a flaky network — the backend reclaim in set-push-token is
+// the durable backstop if this best-effort call doesn't land.
+async function clearPushTokenBeforeAuthChange() {
+  if (!getIsNative() || !auth.currentUser) return
+  await Promise.race([
+    clearPushToken(),
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+  ]).catch((e) => console.error('error clearing push token before auth change', e))
+}
+
 export async function firebaseLogin() {
   if (getIsNative()) {
+    // If we're switching accounts, clear the outgoing account's push token first.
+    await clearPushTokenBeforeAuthChange()
     // Post the message back to expo
     postMessageToNative('loginClicked', {})
     return
@@ -114,11 +130,8 @@ export async function loginWithApple() {
 export async function firebaseLogout() {
   if (getIsNative()) {
     // Clear this account's push token while still authenticated, so the device
-    // stops receiving notifications for the account being logged out. (Push
-    // tokens only exist on native.)
-    await clearPushToken().catch((e) =>
-      console.error('error clearing push token on logout', e)
-    )
+    // stops receiving notifications for the account being logged out.
+    await clearPushTokenBeforeAuthChange()
     nativeSignOut()
   }
 
