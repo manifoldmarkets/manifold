@@ -30,13 +30,25 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     if (!oldPrivateUser) {
       throw new APIError(404, 'Account not found')
     }
+    // A device's push token must belong to at most one account. If this token
+    // is currently registered to other accounts (e.g. the user previously
+    // logged into multiple accounts on the same device and logged back out),
+    // clear it from them. Otherwise notifications for those logged-out accounts
+    // keep getting delivered to this physical device.
+    await tx.none(
+      `update private_users
+       set data = data - 'pushToken'
+       where id <> $1
+         and data->>'pushToken' = $2`,
+      [auth.uid, pushToken]
+    )
+    // Note: we intentionally do NOT clear 'mobile' from opt_out_all here.
+    // set-push-token runs on every app launch (to refresh the token), so doing
+    // so would silently undo a user's explicit "opt out of all mobile" choice.
+    // Mobile is re-enabled only through the explicit notification settings flow.
     const updatedRow = await tx.one(
       `update private_users set data =
-      jsonb_set(
-        data,
-        '{notificationPreferences,opt_out_all}',
-        coalesce(data->'notificationPreferences'->'opt_out_all', '[]'::jsonb) - 'mobile'
-      )
+      data
       - 'rejectedPushNotificationsOn'
       - 'interestedInPushNotifications'
       || jsonb_build_object('pushToken', $1)

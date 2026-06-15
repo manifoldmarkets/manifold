@@ -14,6 +14,7 @@ import { getFirebaseAuth } from './auth'
 dayjs.extend(utc)
 import { safeLocalStorage } from '../util/local'
 import { api } from '../api/api'
+import { clearPushToken } from 'web/lib/supabase/notifications'
 import { removeUndefinedProps } from 'common/util/object'
 
 export type { User }
@@ -111,7 +112,15 @@ export async function loginWithApple() {
 }
 
 export async function firebaseLogout() {
-  if (getIsNative()) nativeSignOut()
+  if (getIsNative()) {
+    // Clear this account's push token while still authenticated, so the device
+    // stops receiving notifications for the account being logged out. (Push
+    // tokens only exist on native.)
+    await clearPushToken().catch((e) =>
+      console.error('error clearing push token on logout', e)
+    )
+    nativeSignOut()
+  }
 
   await auth.signOut()
 }
