@@ -19,9 +19,10 @@
 //   Dry run (default, no writes):  npx ts-node clear-shared-push-tokens.ts
 //   Apply the changes:             npx ts-node clear-shared-push-tokens.ts --commit
 //
-// Run against prod with prod creds, e.g.:
-//   GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS_PROD \
-//     firebase use prod && npx ts-node clear-shared-push-tokens.ts --commit
+// Run against prod with prod creds (after `firebase use prod`):
+//   export GOOGLE_APPLICATION_CREDENTIALS_PROD=/path/to/your-prod-key.json
+//   npx ts-node clear-shared-push-tokens.ts            # dry run
+//   npx ts-node clear-shared-push-tokens.ts --commit   # apply
 
 import { runScript } from './run-script'
 
