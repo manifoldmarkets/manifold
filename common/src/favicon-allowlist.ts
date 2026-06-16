@@ -140,7 +140,9 @@ export const FAVICON_ALLOWED_HOSTS = new Set<string>([
   'merriam-webster.com',
   'dictionary.com',
   'imdb.com',
+  'boxofficemojo.com',
   'goodreads.com',
+  'liquipedia.net',
 
   // ===== Academic & scientific =====
   'arxiv.org',
@@ -282,12 +284,18 @@ export const FAVICON_ALLOWED_HOSTS = new Set<string>([
   'itftennis.com',
   'pgatour.com',
   'europeantour.com',
+  'iihf.com',
+  'fide.com',
+  'iplt20.com',
 
   // ===== Sports tournaments =====
   'ausopen.com',
   'rolandgarros.com',
   'wimbledon.com',
   'usopen.org',
+  'esportsworldcup.com',
+  'grandchesstour.org',
+  'norwaychess.no',
 
   // ===== Sports media =====
   'espn.com',
@@ -299,6 +307,11 @@ export const FAVICON_ALLOWED_HOSTS = new Set<string>([
   'nbcsports.com',
   'espncricinfo.com',
   'cricbuzz.com',
+
+  // ===== Other (currently uncategorized) =====
+  'imo-official.org',
+  'eurovision.com',
+  'chess.com'
 ])
 
 // Returns true if `hostname` is in the allowlist, OR is a subdomain of an
