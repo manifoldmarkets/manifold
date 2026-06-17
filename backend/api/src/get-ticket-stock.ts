@@ -1,6 +1,10 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getShopItem, getTicketItems, isTicketItem } from 'common/shop/items'
+import {
+  getShopItemOrRetired,
+  getTicketItems,
+  isTicketItem,
+} from 'common/shop/items'
 
 export const getTicketStock: APIHandler<'get-ticket-stock'> = async ({
   itemId,
@@ -25,7 +29,7 @@ export const getTicketStock: APIHandler<'get-ticket-stock'> = async ({
     }
   }
 
-  const item = getShopItem(itemId)
+  const item = getShopItemOrRetired(itemId)
   if (!item || !isTicketItem(item)) {
     throw new APIError(404, 'Ticket item not found')
   }

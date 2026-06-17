@@ -926,8 +926,16 @@ export const SHOP_ITEMS: ShopItem[] = [
     ],
     visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
+]
 
-  // Tickets
+// Retired products. Deliberately NOT part of the live catalog (SHOP_ITEMS), so
+// they are never rendered in the shop, returned by get-shop-items, or sold (the
+// generic shop-purchase / shop-purchase-ticket paths resolve via getShopItem,
+// which only searches SHOP_ITEMS — a retired id 404s). They are retained ONLY so
+// the admin order record and sales stats can resolve historical
+// `shop_orders.item_id` values back to names. Do not re-add these to SHOP_ITEMS.
+export const RETIRED_SHOP_ITEMS: ShopItem[] = [
+  // Manifest tickets — removed from the shop after Manifest 2026.
   {
     id: 'manifest-ticket',
     hidden: true,
@@ -955,8 +963,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
 ]
 
+// Ticket items now live only in the archive — used by the admin record + stats,
+// never by the live shop (which has no ticket-rendering code anymore).
 export const getTicketItems = (): ShopItem[] =>
-  SHOP_ITEMS.filter((item) => item.category === 'ticket')
+  RETIRED_SHOP_ITEMS.filter((item) => item.category === 'ticket')
 
 export const isTicketItem = (item: ShopItem): boolean =>
   item.category === 'ticket'
@@ -996,6 +1006,13 @@ export type CrownPosition = 0 | 1 | 2
 
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
+
+// Like getShopItem, but also searches retired/archived products. Use ONLY in
+// admin/record views (order tables, stats) that need to resolve historical
+// item ids to names. Do NOT use in purchase or catalog paths — that would make
+// retired products buyable again.
+export const getShopItemOrRetired = (id: string): ShopItem | undefined =>
+  getShopItem(id) ?? RETIRED_SHOP_ITEMS.find((item) => item.id === id)
 
 export const getMerchItems = (): ShopItem[] =>
   SHOP_ITEMS.filter((item) => item.category === 'merch')
