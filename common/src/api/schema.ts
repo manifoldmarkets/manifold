@@ -442,7 +442,10 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         amount: z.number().gte(SWEEPS_MIN_BET),
         replyToCommentId: z.string().optional(),
-        limitProb: z.number().gte(0.01).lte(0.99).optional(),
+        // Bounds for users with fineProbBetting; the per-user grid (whole
+        // percentage points, or 0.1pp at the tails when flagged) is enforced
+        // server-side in getRoundedLimitProb.
+        limitProb: z.number().gte(0.001).lte(0.999).optional(),
         expiresMillisAfter: z.number().lt(MAX_EXPIRES_AT).optional(),
         silent: z.boolean().optional(),
         expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
@@ -1283,6 +1286,7 @@ export const API = (_apiTypeCheck = {
       // settings
       optOutBetWarnings: z.boolean().optional(),
       isAdvancedTrader: z.boolean().optional(),
+      fineProbBetting: z.boolean().optional(),
       //internal
       seenStreakModal: z.boolean().optional(),
       shouldShowWelcome: z.boolean().optional(),

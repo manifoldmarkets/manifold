@@ -125,6 +125,10 @@ export type User = {
   signupBonusPaid?: number
   isBot?: boolean
   isAdvancedTrader?: boolean
+  // Fine-resolution betting on binary markets: 0.1pp limit order increments
+  // and a 0.1%-99.9% range at the tails (<=3% / >=97%). Settable only via
+  // the me/update API on purpose — no web UI toggle.
+  fineProbBetting?: boolean
   purchasedMana?: boolean
   verifiedPhone?: boolean
 

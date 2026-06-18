@@ -220,12 +220,18 @@ export const computeFills = (
   const now = Date.now()
   const { max, min } = limitProbs ?? {}
   const limit = initialLimitProb ?? (outcome === 'YES' ? max : min)
+  // Clamp the taker's limit to the allowed range. Passed limitProbs may
+  // widen the range beyond the standard CPMM bounds (fine prob betting) but
+  // never narrow it, preserving legacy behavior for explicit limits on
+  // contract types with tighter default bounds (e.g. STONK).
+  const maxLimitProb = Math.max(max ?? MAX_CPMM_PROB, MAX_CPMM_PROB)
+  const minLimitProb = Math.min(min ?? MIN_CPMM_PROB, MIN_CPMM_PROB)
   const limitProb = !limit
     ? undefined
-    : limit > MAX_CPMM_PROB
-    ? MAX_CPMM_PROB
-    : limit < MIN_CPMM_PROB
-    ? MIN_CPMM_PROB
+    : limit > maxLimitProb
+    ? maxLimitProb
+    : limit < minLimitProb
+    ? minLimitProb
     : limit
 
   const sortedBets = sortBy(

@@ -963,6 +963,8 @@ Parameters:
 - `outcome`: Optional. `YES` (default) or `NO`
 - `limitProb`: Optional. Makes this a limit order. `limitProb` is a number from `0.01` to `0.99` representing the probability price to set a limit order at (like 0.01 is 1%). Can only be two decimal digits - a whole precent.
 
+  Accounts with the `fineProbBetting` setting enabled (via the `me/update` API; binary markets only) may additionally use three decimal digits (0.1 percentage point increments) at the tails — `limitProb` at most `0.03` or at least `0.97` — and the allowed range widens to `0.001` to `0.999`.
+
   If the limit crosses the market price, the bet will execute immediately in the direction of `outcome` up to the limit. If not all the bet is filled, the rest will remain as an open limit order.
 
   - For example, if the current market probability is `50%`:

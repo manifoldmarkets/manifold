@@ -176,18 +176,20 @@ export function getPercent(zeroToOne: number) {
 }
 
 function getPercentDecimalPlaces(zeroToOne: number) {
-  return zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
+  // Matches FINE_PROB_TAIL in common/contract: the region where fine prob
+  // betting allows 0.1pp limit orders, which must display honestly.
+  return zeroToOne < 0.03 || zeroToOne > 0.97 ? 1 : 0
 }
 
 export function formatPercent(zeroToOne: number) {
-  // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
+  // Show 1 decimal place if <3% or >97%, giving more resolution on the tails
   const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
   const percent = zeroToOne * 100
   return percent.toFixed(decimalPlaces) + '%'
 }
 
 export function formatPercentNumber(zeroToOne: number) {
-  // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
+  // Show 1 decimal place if <3% or >97%, giving more resolution on the tails
   const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
   return Number((zeroToOne * 100).toFixed(decimalPlaces))
 }

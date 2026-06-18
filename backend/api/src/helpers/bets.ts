@@ -460,18 +460,6 @@ export const updateMakers = async (
   }
 }
 
-export const getRoundedLimitProb = (limitProb: number | undefined) => {
-  if (limitProb === undefined) return limitProb
-  const isRounded = floatingEqual(Math.round(limitProb * 100), limitProb * 100)
-  if (!isRounded)
-    throw new APIError(
-      400,
-      'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
-    )
-
-  return Math.round(limitProb * 100) / 100
-}
-
 export const getMakerIdsFromBetResult = (result: NewBetResult) => {
   const { makers = [], otherBetResults = [], ordersToCancel = [] } = result
 

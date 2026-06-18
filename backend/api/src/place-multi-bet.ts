@@ -1,11 +1,8 @@
-import {
-  fetchContractBetDataAndValidate,
-  getRoundedLimitProb,
-} from 'api/helpers/bets'
+import { fetchContractBetDataAndValidate } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
+import { getNewMultiCpmmBetsInfo, getRoundedLimitProb } from 'common/new-bet'
 import * as crypto from 'crypto'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
