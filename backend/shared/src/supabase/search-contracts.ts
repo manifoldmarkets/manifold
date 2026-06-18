@@ -369,6 +369,14 @@ function getSearchContractWhereSQL(args: {
   const loveFilter = hideLove
     ? `group_slugs is null or not group_slugs && $1`
     : ''
+  // Drop Manifold Sports markets (identified by sportsEventId) from the default
+  // browse/home feed once they've been resolved for more than 15 minutes — they
+  // otherwise linger in the feed long after the match is decided. Gated on
+  // hideStonks, which marks the default feed (score sort, no search term, no
+  // topic), so explicit searches and the sports dashboard still surface them.
+  const resolvedSportsFilter = hideStonks
+    ? `contracts.data->>'sportsEventId' is null or resolution_time is null or resolution_time > now() - interval '15 minutes'`
+    : ''
   const sortFilter =
     sort === 'close-date'
       ? 'close_time > NOW()'
@@ -412,6 +420,7 @@ function getSearchContractWhereSQL(args: {
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
+    where(resolvedSportsFilter),
     where(loveFilter, [[PROD_MANIFOLD_LOVE_GROUP_SLUG]]),
     where(sortFilter),
     where(contractTypeFilter),
