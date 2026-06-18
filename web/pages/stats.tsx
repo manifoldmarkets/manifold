@@ -34,7 +34,7 @@ import { Contract, contractPath } from 'common/contract'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserIcon, EyeIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
-import { SHOP_ITEMS } from 'common/src/shop/items'
+import { SHOP_ITEMS, getTicketItems } from 'common/src/shop/items'
 
 export const getStaticProps = async () => {
   try {
@@ -1158,9 +1158,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
             title="Ticket Sales"
             items={ticketSales}
             itemDisplayNames={Object.fromEntries(
-              SHOP_ITEMS.filter((item) => item.category === 'ticket').map(
-                (item) => [item.id, item.name]
-              )
+              getTicketItems().map((item) => [item.id, item.name])
             )}
           />
         </>

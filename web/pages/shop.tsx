@@ -21,7 +21,6 @@ import {
   getEntitlementIdsForSlot,
   CROWN_POSITION_OPTIONS,
   getMerchItems,
-  getTicketItems,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
 import {
@@ -90,7 +89,7 @@ import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useOptimisticEntitlements } from 'web/hooks/use-optimistic-entitlements'
 import { api } from 'web/lib/api/api'
@@ -176,7 +175,6 @@ type FilterOption =
   | 'buttons'
   | 'other'
   | 'merch'
-  | 'ticket'
   | 'seasonal'
 
 const FILTER_CONFIG: Record<
@@ -194,7 +192,6 @@ const FILTER_CONFIG: Record<
   buttons: { label: 'Buttons', slots: ['button-yes', 'button-no'] },
   other: { label: 'Other', slots: ['consumable', 'badge'] },
   merch: { label: 'Merch', slots: [], special: true },
-  ticket: { label: 'Tickets', slots: [], special: true },
   seasonal: { label: 'Seasonal', slots: [], special: true },
 }
 
@@ -207,10 +204,9 @@ const filterItems = (
   if (filter === 'seasonal')
     return items.filter((item) => item.seasonalAvailability)
   if (filter === 'merch') return [] // merch handled by separate section
-  if (filter === 'ticket') return [] // tickets handled by separate section
   if (filter === 'owned') {
     // Items the user actively manages — owned toggleable goods.
-    // Merch + tickets are excluded by the regular-grid filter upstream.
+    // Merch is excluded by the regular-grid filter upstream.
     return items.filter((item) =>
       ownedItemIds ? ownedItemIds.has(getEntitlementId(item)) : false
     )
@@ -236,20 +232,15 @@ const hasVisibleItems = (
   if (filter === 'all') return true
   if (filter === 'owned') {
     // Tab only appears once the user owns at least one toggleable item
-    // (excluding merch + tickets, which aren't toggleable).
+    // (excluding merch, which isn't toggleable).
     if (!ownedItemIds || ownedItemIds.size === 0) return false
     return allItems.some(
       (item) =>
-        item.category !== 'merch' &&
-        item.category !== 'ticket' &&
-        ownedItemIds.has(getEntitlementId(item))
+        item.category !== 'merch' && ownedItemIds.has(getEntitlementId(item))
     )
   }
   if (filter === 'merch') {
     return getMerchItems().some((item) => !item.hidden || showHidden)
-  }
-  if (filter === 'ticket') {
-    return getTicketItems().some((item) => !item.hidden || showHidden)
   }
   if (filter === 'seasonal') {
     // Only surface the Seasonal tab when there's at least one non-hidden
@@ -669,10 +660,10 @@ export default function ShopPage() {
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
 
-  // Filtered + sorted regular shop items (excludes tickets/merch/supporter).
+  // Filtered + sorted regular shop items (excludes merch/supporter).
   // Computed once so we can split into the NEW section and the main grid.
   const sortedRegularItems =
-    filterOption === 'ticket' || filterOption === 'merch'
+    filterOption === 'merch'
       ? []
       : sortItems(
           filterItems(
@@ -682,7 +673,6 @@ export default function ShopPage() {
                   item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
                 ) &&
                 item.category !== 'merch' &&
-                item.category !== 'ticket' &&
                 (!item.hidden ||
                   showHidden ||
                   ownedItemIds.has(getEntitlementId(item)) ||
@@ -895,7 +885,7 @@ export default function ShopPage() {
           </>
         )}
 
-        {/* Promote merch above tickets/regular grid on first visit after launch
+        {/* Promote merch above the regular grid on first visit after launch
             (any merch item is NEW to this user). Falls back to its usual
             position below the regular grid once they've cleared the NEW state. */}
         {merchHasNewItems && (
@@ -911,26 +901,12 @@ export default function ShopPage() {
           />
         )}
 
-        {/* Tickets + shop items — hidden when merch filter is active */}
+        {/* Regular shop items — hidden when merch filter is active.
+            On 'all' filter, NEW items are already rendered above, so
+            mainRegularItems has them filtered out. */}
         {filterOption !== 'merch' && (
           <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
-            {/* Tickets first on 'all' and 'ticket' filters */}
-            {(filterOption === 'all' || filterOption === 'ticket') &&
-              getTicketItems()
-                .filter((item) => !item.hidden || showHidden)
-                .map((item) => (
-                  <TicketItemCard
-                    key={item.id}
-                    item={item}
-                    user={user}
-                    allEntitlements={effectiveEntitlements}
-                  />
-                ))}
-
-            {/* Regular shop items — hidden when ticket filter is active.
-                On 'all' filter, NEW items are already rendered above, so
-                mainRegularItems has them filtered out. */}
-            {filterOption !== 'ticket' && mainRegularItems.map(renderShopItem)}
+            {mainRegularItems.map(renderShopItem)}
           </div>
         )}
 
@@ -1054,429 +1030,6 @@ type ShippingRate = {
   currency: string
   minDeliveryDays: number
   maxDeliveryDays: number
-}
-
-function TicketItemCard(props: {
-  item: ShopItem
-  user: User | null | undefined
-  allEntitlements?: UserEntitlement[]
-}) {
-  const { item, user, allEntitlements } = props
-  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
-  const discountedPrice =
-    shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
-  const hasDiscount = shopDiscount > 0
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
-  const [purchasing, setPurchasing] = useState(false)
-  const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const privateUser = usePrivateUser()
-  const userEmail = privateUser?.email ?? null
-  const [purchaseResult, setPurchaseResult] = useState<{
-    discountCode: string | null
-    remainingStock: number
-  } | null>(null)
-  const [doneCountdown, setDoneCountdown] = useState(10)
-
-  useEffect(() => {
-    if (!purchaseResult) {
-      setDoneCountdown(10)
-      return
-    }
-    if (doneCountdown <= 0) return
-    const t = setTimeout(() => setDoneCountdown((c) => c - 1), 1000)
-    return () => clearTimeout(t)
-  }, [purchaseResult, doneCountdown])
-
-  const { data: stockData, refresh: refreshStock } = useAPIGetter(
-    'get-ticket-stock',
-    { itemId: item.id }
-  )
-
-  const { data: purchasedData, refresh: refreshPurchased } = useAPIGetter(
-    'get-user-ticket-purchased',
-    {},
-    undefined,
-    undefined,
-    !!user
-  )
-  const alreadyPurchased = !!purchasedData?.purchased
-
-  const available = stockData?.available ?? null
-  const maxStock = stockData?.maxStock ?? item.maxStock ?? 0
-  const soldOut = available !== null && available <= 0
-  const comingSoon = !!item.comingSoon
-  const isEarlyBird = item.id === 'manifest-ticket'
-  const canPurchase =
-    user &&
-    user.balance >= discountedPrice &&
-    !soldOut &&
-    !comingSoon &&
-    !alreadyPurchased
-
-  const handleBuy = async () => {
-    if (!acceptedTerms) {
-      toast.error('Please accept the terms')
-      return
-    }
-    setPurchasing(true)
-    try {
-      const result = await api('shop-purchase-ticket', {
-        itemId: item.id,
-      })
-      setPurchaseResult({
-        discountCode: result.discountCode,
-        remainingStock: result.remainingStock,
-      })
-      toast.success('Ticket purchased!')
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Failed to purchase ticket')
-    } finally {
-      setPurchasing(false)
-      refreshStock()
-      refreshPurchased?.()
-    }
-  }
-
-  const closeAndReset = () => {
-    setShowPurchaseModal(false)
-    setPurchaseResult(null)
-    setAcceptedTerms(false)
-  }
-
-  const pctClaimed =
-    maxStock > 0 && available !== null
-      ? Math.round(((maxStock - available) / maxStock) * 100)
-      : 0
-
-  return (
-    <>
-      <div
-        className={clsx(
-          'bg-canvas-0 text-ink-900 relative overflow-hidden rounded-xl border-2 shadow-sm',
-          comingSoon
-            ? 'border-ink-300 opacity-80'
-            : isEarlyBird
-            ? 'border-amber-400'
-            : 'border-indigo-400'
-        )}
-      >
-        {/* Top banner */}
-        <div
-          className={clsx(
-            'flex items-center justify-between px-4 py-1.5 text-xs font-bold uppercase tracking-widest',
-            comingSoon
-              ? 'bg-gradient-to-r from-indigo-500 to-indigo-400 text-indigo-950'
-              : isEarlyBird
-              ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-amber-950'
-              : 'bg-gradient-to-r from-indigo-500 to-indigo-400 text-indigo-950'
-          )}
-        >
-          <span>
-            {comingSoon
-              ? '⏳ Available Soon'
-              : isEarlyBird
-              ? 'Early Bird'
-              : 'Standard'}
-          </span>
-          {soldOut && !comingSoon && (
-            <span className="text-scarlet-800">Sold Out</span>
-          )}
-        </div>
-
-        {/* Decorative header with title */}
-        <Col
-          className={clsx(
-            'items-center justify-center gap-1 px-4 py-6 text-center',
-            comingSoon
-              ? 'bg-canvas-50'
-              : isEarlyBird
-              ? 'bg-amber-200/50 dark:bg-amber-500/10'
-              : 'bg-indigo-200/50 dark:bg-indigo-500/10'
-          )}
-        >
-          <div
-            className={clsx(
-              'text-sm font-semibold uppercase tracking-widest',
-              comingSoon
-                ? 'text-ink-500'
-                : isEarlyBird
-                ? 'text-amber-700 dark:text-amber-500'
-                : 'text-indigo-700 dark:text-indigo-400'
-            )}
-          >
-            Manifest 2026
-          </div>
-          <div className="text-lg font-bold leading-tight">
-            {isEarlyBird ? 'Early Bird Ticket' : 'Standard Ticket'}
-          </div>
-        </Col>
-
-        {/* Details */}
-        <Col className="gap-3 p-4">
-          <Row className="text-ink-600 flex-wrap gap-x-3 gap-y-0.5 text-xs">
-            <span>📍 Lighthaven</span>
-            <span>📅 Jun 12–14</span>
-          </Row>
-
-          <div className="text-ink-700 text-xs leading-relaxed">
-            Full access to{' '}
-            <a
-              className="text-primary-700 hover:underline"
-              target="_blank"
-              href="https://manifest.is"
-            >
-              Manifest 2026
-            </a>
-            , Friday through Sunday. 5 meals included.
-          </div>
-
-          {/* Stock display */}
-          {!comingSoon &&
-            available !== null &&
-            (isEarlyBird ? (
-              <Col className="gap-1">
-                <Row className="text-ink-600 justify-between text-[11px]">
-                  <span>
-                    {maxStock - available}/{maxStock} claimed
-                  </span>
-                  <span className="text-amber-700 dark:text-amber-500">
-                    {available} left
-                  </span>
-                </Row>
-                <div className="bg-ink-200 h-1.5 overflow-hidden rounded-full">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all"
-                    style={{ width: `${pctClaimed}%` }}
-                  />
-                </div>
-              </Col>
-            ) : (
-              <div
-                className={clsx(
-                  'text-xs',
-                  soldOut
-                    ? 'text-scarlet-600'
-                    : available <= 5
-                    ? 'text-scarlet-600 dark:text-scarlet-400'
-                    : 'text-teal-600 dark:text-teal-400'
-                )}
-              >
-                {soldOut
-                  ? 'Sold out'
-                  : available <= 5
-                  ? 'Less than 5 remaining — limited stock'
-                  : 'More than 5 remaining — limited stock'}
-              </div>
-            ))}
-
-          {/* Price + CTA */}
-          <Col className="mt-auto gap-2">
-            <Col className="gap-1">
-              <Row className="items-baseline justify-between gap-2">
-                <div className="text-ink-500 text-[10px] uppercase tracking-wider">
-                  {comingSoon ? 'Price' : 'Your cost'}
-                </div>
-                {hasDiscount ? (
-                  <Row className="items-center gap-1.5">
-                    <span className="text-ink-500 text-sm line-through opacity-70">
-                      {formatMoney(item.price)}
-                    </span>
-                    <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                      -{Math.round((1 - discountedPrice / item.price) * 100)}%
-                    </span>
-                  </Row>
-                ) : (
-                  <div className="text-ink-900 text-xl font-bold">
-                    {formatMoney(discountedPrice)}
-                  </div>
-                )}
-              </Row>
-              {hasDiscount && (
-                <div className="text-ink-900 text-right text-xl font-bold">
-                  {formatMoney(discountedPrice)}
-                </div>
-              )}
-            </Col>
-            <Button
-              color={comingSoon ? 'gray' : 'amber'}
-              size="sm"
-              disabled={!canPurchase}
-              onClick={() => setShowPurchaseModal(true)}
-            >
-              {comingSoon
-                ? 'Available Soon'
-                : alreadyPurchased
-                ? 'Purchased'
-                : soldOut
-                ? 'Sold Out'
-                : !user
-                ? 'Sign in to claim'
-                : user.balance < discountedPrice
-                ? 'Insufficient balance'
-                : isEarlyBird
-                ? 'Claim Early Bird Code'
-                : 'Buy Ticket'}
-            </Button>
-          </Col>
-        </Col>
-      </div>
-
-      <Modal
-        open={showPurchaseModal}
-        setOpen={(open) => {
-          if (!open) {
-            // Block accidental dismissal while mid-purchase or during countdown
-            if (purchasing) return
-            if (purchaseResult && doneCountdown > 0) return
-            closeAndReset()
-          }
-        }}
-        size="md"
-      >
-        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
-          {purchaseResult ? (
-            <>
-              <div className="text-lg font-semibold">
-                {purchaseResult.discountCode
-                  ? 'Your discount code'
-                  : 'Purchase successful'}
-              </div>
-              {purchaseResult.discountCode ? (
-                <Row className="items-stretch gap-2">
-                  <div className="flex flex-1 items-center justify-center rounded-lg border-2 border-teal-500 bg-white p-4">
-                    <div className="text-2xl font-bold tracking-widest text-teal-700">
-                      {purchaseResult.discountCode}
-                    </div>
-                  </div>
-                  <Button
-                    color="indigo"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(
-                          purchaseResult.discountCode!
-                        )
-                        toast.success('Code copied!')
-                      } catch {
-                        toast.error('Copy failed')
-                      }
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </Row>
-              ) : (
-                <div className="border-scarlet-400 bg-scarlet-100 dark:border-scarlet-500/50 dark:bg-scarlet-500/20 rounded-lg border-2 p-4 text-sm leading-relaxed">
-                  <div className="text-scarlet-900 dark:text-scarlet-100 font-semibold">
-                    Your purchase was successful, but we couldn't find a code.
-                  </div>
-                  <div className="text-scarlet-800 dark:text-scarlet-200 mt-1">
-                    Contact{' '}
-                    <a
-                      href="mailto:tod@manifold.markets"
-                      className="font-semibold underline"
-                    >
-                      tod@manifold.markets
-                    </a>{' '}
-                    or{' '}
-                    <Link href="/Genzy" className="font-semibold underline">
-                      @Genzy
-                    </Link>{' '}
-                    on site to get your code.
-                  </div>
-                </div>
-              )}
-              <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
-                <div className="font-semibold text-amber-800 dark:text-amber-200">
-                  Important:
-                </div>
-                <ul className="ml-4 mt-1 list-disc space-y-1 text-amber-700 dark:text-amber-300">
-                  <li>
-                    This code is <b>single-use per person</b>.
-                  </li>
-                  <li>
-                    <b>Non-transferable</b> — the email on your manifest.is
-                    ticket must match your Manifold email.
-                  </li>
-                  <li>
-                    Apply it at checkout on the{' '}
-                    <a
-                      href="https://manifest.is/#tickets"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold underline"
-                    >
-                      Manifest ticket page
-                    </a>{' '}
-                    for 100% off.
-                  </li>
-                  <li>Save this code now — it will not be shown again.</li>
-                </ul>
-              </div>
-              <div className="text-ink-500 text-sm">
-                {purchaseResult.remainingStock} ticket
-                {purchaseResult.remainingStock === 1 ? '' : 's'} remaining.
-              </div>
-              <Button
-                color="indigo"
-                disabled={doneCountdown > 0}
-                onClick={closeAndReset}
-              >
-                {doneCountdown > 0 ? `Done (${doneCountdown})` : 'Done'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="text-lg font-semibold">Buy {item.name}</div>
-              <div className="text-ink-600 text-sm">
-                You will be charged {formatMoney(discountedPrice)}
-                {hasDiscount && ' (supporter discount applied)'} and receive a
-                100%-off discount code for Manifest 2026.
-              </div>
-              <Col className="gap-1">
-                <div className="text-sm font-medium">Your email</div>
-                <div className="bg-canvas-50 border-ink-200 rounded border px-3 py-2 font-mono text-sm">
-                  {userEmail ?? '—'}
-                </div>
-                <div className="text-ink-500 text-xs">
-                  The email on your manifest.is ticket must match this email, or
-                  it may be invalidated. Contact{' '}
-                  <a href="mailto:info@manifold.markets" className="underline">
-                    info@manifold.markets
-                  </a>{' '}
-                  if this is an issue.
-                </div>
-              </Col>
-              <label className="flex cursor-pointer items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-0.5"
-                />
-                <span className="text-amber-700 dark:text-amber-300">
-                  I understand the discount code is single-use and
-                  non-transferable.
-                </span>
-              </label>
-              <Row className="justify-end gap-2">
-                <Button color="gray" onClick={closeAndReset}>
-                  Cancel
-                </Button>
-                <Button
-                  color="indigo"
-                  loading={purchasing}
-                  disabled={purchasing || !acceptedTerms || !userEmail}
-                  onClick={handleBuy}
-                >
-                  Confirm Purchase ({formatMoney(discountedPrice)})
-                </Button>
-              </Row>
-            </>
-          )}
-        </Col>
-      </Modal>
-    </>
-  )
 }
 
 /** Renders the merch grid plus its "Merch" heading (heading hidden on the
