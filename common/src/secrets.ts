@@ -50,7 +50,6 @@ export const secrets = (
     'IP_API_PRO_KEY',
     'PRINTFUL_API_TOKEN',
     'PRINTFUL_WEBHOOK_SECRET',
-    'MANIFEST_DISCOUNT_CODE',
     // Stripe Product/Coupon IDs for the "20% off 5,000 mana" personalized
     // offer (M5K for $40 via a $50 Price + 20%-off Coupon). The Coupon is
     // restricted to the matching Product (applies_to.products) so the

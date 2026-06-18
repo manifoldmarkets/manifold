@@ -930,10 +930,10 @@ export const SHOP_ITEMS: ShopItem[] = [
 
 // Retired products. Deliberately NOT part of the live catalog (SHOP_ITEMS), so
 // they are never rendered in the shop, returned by get-shop-items, or sold (the
-// generic shop-purchase / shop-purchase-ticket paths resolve via getShopItem,
-// which only searches SHOP_ITEMS — a retired id 404s). They are retained ONLY so
-// the admin order record and sales stats can resolve historical
-// `shop_orders.item_id` values back to names. Do not re-add these to SHOP_ITEMS.
+// generic shop-purchase path resolves via getShopItem, which only searches
+// SHOP_ITEMS — a retired id 404s). They are retained ONLY so the admin order
+// record and sales stats can resolve historical `shop_orders.item_id` values
+// back to names. Do not re-add these to SHOP_ITEMS.
 export const RETIRED_SHOP_ITEMS: ShopItem[] = [
   // Manifest tickets — removed from the shop after Manifest 2026.
   {
