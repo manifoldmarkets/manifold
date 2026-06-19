@@ -331,11 +331,7 @@ const getDesktopNav = (
                 <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
                   Prize {options.prizePoolLabel}
                 </span>
-              ) : (
-                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                  Manifest
-                </span>
-              )}
+              ) : null}
             </>
           ) : undefined,
       },
