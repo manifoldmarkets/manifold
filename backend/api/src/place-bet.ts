@@ -4,6 +4,7 @@ import {
   getRoundedLimitProb,
   getUniqueBettorBonusQuery,
   getUserBalancesAndMetrics,
+  lockContractAndGetBetData,
   updateMakers,
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
@@ -127,20 +128,13 @@ export const placeBetMain = async (
   const startTime = Date.now()
   const { contractId, replyToCommentId, deterministic, answerId, silent } = body
   // Fetch data outside transaction first to avoid locking all limit orderers
-  const {
-    user,
-    contract,
-    creator,
-    answers,
-    unfilledBets,
-    balanceByUserId,
-    unfilledBetUserIds,
-  } = await fetchContractBetDataAndValidate(
-    createSupabaseDirectClient(),
-    body,
-    uid,
-    isApi
-  )
+  const { user, contract, creator, answers, unfilledBets, balanceByUserId } =
+    await fetchContractBetDataAndValidate(
+      createSupabaseDirectClient(),
+      body,
+      uid,
+      isApi
+    )
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     body,
@@ -153,19 +147,28 @@ export const placeBetMain = async (
 
   const result = await runTransactionWithRetries(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
+    // Re-read pool/answers/open limit orders under a FOR UPDATE lock on the
+    // contract row, so each retry recomputes against current state rather than the
+    // possibly-stale pre-transaction read.
+    const {
+      contract: lockedContract,
+      answers: lockedAnswers,
+      unfilledBets: lockedUnfilledBets,
+      unfilledBetUserIds: lockedUnfilledBetUserIds,
+    } = await lockContractAndGetBetData(pgTrans, body, uid)
     // Refetch just user balance and metrics in transaction, since queue only enforces contract and bets not changing.
     const { balanceByUserId, contractMetrics } =
       await getUserBalancesAndMetrics(
         pgTrans,
         [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
-        contract,
+        lockedContract,
         answerId
       )
     user.balance = balanceByUserId[uid]
     if (user.balance < body.amount)
       throw new APIError(403, 'Insufficient balance.')
 
-    for (const userId of unfilledBetUserIds) {
+    for (const userId of lockedUnfilledBetUserIds) {
       if (!(userId in balanceByUserId)) {
         // Assume other makers have infinite balance since they are not involved in this bet.
         balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
@@ -173,9 +176,9 @@ export const placeBetMain = async (
     }
     const newBetResult = calculateBetResult(
       body,
-      contract,
-      answers,
-      unfilledBets,
+      lockedContract,
+      lockedAnswers,
+      lockedUnfilledBets,
       balanceByUserId
     )
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
@@ -196,14 +199,15 @@ export const placeBetMain = async (
     }
 
     const betGroupId =
-      contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+      lockedContract.mechanism === 'cpmm-multi-1' &&
+      lockedContract.shouldAnswersSumToOne
         ? getNewBetId()
         : undefined
 
     return await executeNewBetResult(
       pgTrans,
       newBetResult,
-      contract,
+      lockedContract,
       user,
       creator,
       isApi,
