@@ -58,8 +58,11 @@ export function ContextualEditorPanel(props: {
   isGeneratingAnswers?: boolean
   balance?: number
   submitState?: 'EDITING' | 'LOADING' | 'DONE'
+  // Mirrors the backend FREE_MARKET_USER_ID waiver; suppresses the
+  // CostSection "Insufficient balance" banner for eligible free markets.
+  isFreeMarket?: boolean
 }) {
-  const { formState, onUpdate, balance, validationErrors } = props
+  const { formState, onUpdate, balance, validationErrors, isFreeMarket } = props
 
   const { outcomeType, answers, liquidityTier, addAnswersMode } = formState
   const isPoll = outcomeType === 'POLL'
@@ -104,6 +107,7 @@ export function ContextualEditorPanel(props: {
                 numAnswers={
                   numAnswersForCost > 0 ? numAnswersForCost : undefined
                 }
+                isFreeMarket={isFreeMarket}
               />
             </Col>
           )}
