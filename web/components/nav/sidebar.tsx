@@ -435,6 +435,7 @@ const getMobileNav = (
     },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
+    { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
     loggedIn && {
       name: 'Referrals',
@@ -479,7 +480,9 @@ const bottomNav = (
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
+    // Jobs only belongs in the bottom section on desktop (behind "More"). On
+    // mobile it lives higher up in the main nav list (see getMobileNav).
+    !isMobile && { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     loggedIn &&
       !isMobile && {
         name: 'Referrals',
