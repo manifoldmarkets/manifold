@@ -7,6 +7,7 @@ import { executeNewBetResult } from 'api/place-bet'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import * as crypto from 'crypto'
+import { getPoolDepToken } from 'api/helpers/answer-bet-parallelism'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
@@ -15,9 +16,17 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
+  // Pool tokens mutually exclude this bet from single bets on any answer it
+  // touches (those run at READ COMMITTED, so exclusion must come from the queue —
+  // see getPoolDepToken). The coarse contractId token keeps multi-answer ops
+  // serialized among themselves.
   return await betsQueue.enqueueFn(
     () => placeMultiBetMain(props, auth.uid, isApi),
-    [auth.uid, props.contractId]
+    [
+      auth.uid,
+      props.contractId,
+      ...props.answerIds.map((id) => getPoolDepToken(props.contractId, id)),
+    ]
   )
 }
 
