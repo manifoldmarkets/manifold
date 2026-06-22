@@ -1,6 +1,7 @@
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
+import { annotateScoreChanges } from 'shared/sports-goal-annotations'
 import {
   createSupabaseDirectClient,
   pgp,
@@ -929,18 +930,45 @@ export async function pollAndStoreLiveScores(
     }
 
     if (isLive) {
-      const rows = await pg.manyOrNone<{ id: string }>(
-        `update contracts set data = data || $1::jsonb
-         where data->>'sportsEventId' = $2
-           and data->>'sportsLeague' = $3
-           and token = 'MANA'
-           and resolution is null
-         returning id`,
+      // Capture each contract's prior score in the SAME statement that overwrites
+      // it, so we can diff for goals. Writing the new score here is also what
+      // dedups annotations: next poll sees old == new and detects no goal.
+      const rows = await pg.manyOrNone<{
+        id: string
+        old_home: number | null
+        old_away: number | null
+      }>(
+        `with prev as (
+           select id,
+                  (data->>'sportsHomeScore')::int as old_home,
+                  (data->>'sportsAwayScore')::int as old_away
+           from contracts
+           where data->>'sportsEventId' = $2
+             and data->>'sportsLeague' = $3
+             and token = 'MANA'
+             and resolution is null
+         )
+         update contracts c set data = c.data || $1::jsonb
+         from prev where c.id = prev.id
+         returning c.id, prev.old_home, prev.old_away`,
         [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
       )
       updated += rows.length
       // In-memory fan-out to every open dashboard — viewer-count-independent.
       for (const row of rows) broadcastSportsLiveScore(row.id, patch)
+      // Detect goals (score deltas) and back-date a marker onto the price spike.
+      // Off the hot path unless a score actually changed.
+      await annotateScoreChanges(
+        pg,
+        config,
+        m,
+        rows.map((r) => ({
+          contractId: r.id,
+          oldHome: r.old_home,
+          oldAway: r.old_away,
+        })),
+        updatedTime
+      ).catch((e) => log.error(`annotateScoreChanges failed: ${e}`))
     } else {
       // Terminal: tell dashboards the match is over (status is not live) so they
       // clear the live banner immediately; resolution + the final score follow
