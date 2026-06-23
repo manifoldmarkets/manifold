@@ -1,17 +1,16 @@
 import WidgetKit
 import SwiftUI
 
-// MARK: - Demo data
+// MARK: - Shared data (App Group)
 //
-// Renders HARDCODED data for now. Only `resetDate` is real — the next midnight in
-// America/Los_Angeles (matching the backend streak reset); the countdown to it
-// ticks live with no app/network.
-//
-// To wire real data: read currentBettingStreak / lastBetTime /
-// lastStreakFreezeTime / streakForgiveness + quest flags from a shared App Group
-// UserDefaults written by the RN app.
+// The RN app writes a streak snapshot into this App Group container on login and
+// whenever the streak changes (native/lib/streak-widget.ts). We read it here and
+// recompute lit/pending/frozen ourselves against the next midnight-Pacific reset,
+// so the widget stays correct for hours after the last write. Only `resetDate`
+// (the countdown) is fully live with no app/network.
 
-private let kDemoStreak = 12
+private let kAppGroup = "group.com.markets.manifold"
+private let kStreakKey = "streakData"
 
 enum StreakState {
   case lit      // bet today — flame is hot
@@ -19,19 +18,46 @@ enum StreakState {
   case frozen   // a streak-freeze covered a missed day
 }
 
-private let kDemoState: StreakState = .pending
-private let kDemoFreezesLeft = 2
-
 struct QuestItem {
   let title: String
   let rewardMana: Int
   let done: Bool
 }
 
-private let kDemoQuests: [QuestItem] = [
-  QuestItem(title: "Share a market", rewardMana: 5, done: true),
-  QuestItem(title: "Create a market", rewardMana: 100, done: false),
-]
+// Mirror of NativeStreakData (common/native-message.ts). Times are ms-epoch;
+// 0 means "never". `loggedIn` may arrive as a JSON bool or 0/1, so decode it
+// leniently; every field defaults so a partial/legacy blob never throws.
+struct StreakData: Decodable {
+  let loggedIn: Bool
+  let streak: Int
+  let lastBetTime: Double
+  let lastStreakFreezeTime: Double
+  let freezesLeft: Int
+
+  enum CodingKeys: String, CodingKey {
+    case loggedIn, streak, lastBetTime, lastStreakFreezeTime, freezesLeft
+  }
+
+  init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    if let b = try? c.decode(Bool.self, forKey: .loggedIn) {
+      loggedIn = b
+    } else {
+      loggedIn = ((try? c.decode(Int.self, forKey: .loggedIn)) ?? 0) != 0
+    }
+    streak = (try? c.decode(Int.self, forKey: .streak)) ?? 0
+    lastBetTime = (try? c.decode(Double.self, forKey: .lastBetTime)) ?? 0
+    lastStreakFreezeTime =
+      (try? c.decode(Double.self, forKey: .lastStreakFreezeTime)) ?? 0
+    freezesLeft = (try? c.decode(Int.self, forKey: .freezesLeft)) ?? 0
+  }
+}
+
+func loadStreakData() -> StreakData? {
+  guard let defaults = UserDefaults(suiteName: kAppGroup),
+        let raw = defaults.data(forKey: kStreakKey) else { return nil }
+  return try? JSONDecoder().decode(StreakData.self, from: raw)
+}
 
 // MARK: - Reset time (next midnight Pacific)
 
@@ -41,6 +67,22 @@ func nextPacificReset(after date: Date) -> Date {
   let startOfToday = cal.startOfDay(for: date)
   return cal.date(byAdding: .day, value: 1, to: startOfToday)
     ?? date.addingTimeInterval(86_400)
+}
+
+// Most recent midnight Pacific (the streak "today" boundary).
+func pacificStartOfDay(_ date: Date) -> Date {
+  var cal = Calendar(identifier: .gregorian)
+  cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+  return cal.startOfDay(for: date)
+}
+
+// Recompute state from the snapshot vs. the current Pacific day. Bet today →
+// lit; else a freeze landed today → frozen; else the clock is ticking → pending.
+func computeState(_ d: StreakData, now: Date) -> StreakState {
+  let startMs = pacificStartOfDay(now).timeIntervalSince1970 * 1000
+  if d.lastBetTime > 0 && d.lastBetTime >= startMs { return .lit }
+  if d.lastStreakFreezeTime > 0 && d.lastStreakFreezeTime >= startMs { return .frozen }
+  return .pending
 }
 
 func pacificDayOfYear(_ date: Date) -> Int {
@@ -90,17 +132,33 @@ struct StreakEntry: TimelineEntry {
   let state: StreakState
   let quests: [QuestItem]
   let freezesLeft: Int
+  let loggedIn: Bool
 }
 
 struct Provider: TimelineProvider {
+  // Real entry from the App Group snapshot. No data / logged out / no streak yet
+  // → the logged-out invite. Quests aren't wired natively yet, so always empty.
   func entry(_ date: Date) -> StreakEntry {
-    StreakEntry(date: date, streak: kDemoStreak, resetDate: nextPacificReset(after: date),
-                state: kDemoState, quests: kDemoQuests, freezesLeft: kDemoFreezesLeft)
+    let reset = nextPacificReset(after: date)
+    guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else {
+      return StreakEntry(date: date, streak: 0, resetDate: reset, state: .pending,
+                         quests: [], freezesLeft: 0, loggedIn: false)
+    }
+    return StreakEntry(date: date, streak: d.streak, resetDate: reset,
+                       state: computeState(d, now: date), quests: [],
+                       freezesLeft: d.freezesLeft, loggedIn: true)
   }
-  func placeholder(in context: Context) -> StreakEntry { entry(Date()) }
+
+  // Representative sample for the widget gallery / loading shimmer.
+  func placeholder(in context: Context) -> StreakEntry {
+    StreakEntry(date: Date(), streak: 7, resetDate: nextPacificReset(after: Date()),
+                state: .lit, quests: [], freezesLeft: 2, loggedIn: true)
+  }
+
   func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
-    completion(entry(Date()))
+    completion(context.isPreview ? placeholder(in: context) : entry(Date()))
   }
+
   func getTimeline(in context: Context, completion: @escaping (Timeline<StreakEntry>) -> Void) {
     let e = entry(Date())
     completion(Timeline(entries: [e], policy: .after(e.resetDate)))
@@ -166,12 +224,85 @@ struct StreakWidgetEntryView: View {
   }
 
   @ViewBuilder private var content: some View {
+    if !entry.loggedIn {
+      loggedOut
+    } else {
+      switch family {
+      case .accessoryCircular:    circular
+      case .accessoryInline:      inline
+      case .accessoryRectangular: rectangular
+      case .systemMedium:         medium
+      default:                    small
+      }
+    }
+  }
+
+  // MARK: Logged-out — invite to start a streak.
+
+  @ViewBuilder private var loggedOut: some View {
     switch family {
-    case .accessoryCircular:    circular
-    case .accessoryInline:      inline
-    case .accessoryRectangular: rectangular
-    case .systemMedium:         medium
-    default:                    small
+    case .accessoryCircular:    loggedOutCircular
+    case .accessoryInline:      Text("🔥 Start a streak")
+    case .accessoryRectangular: loggedOutRectangular
+    case .systemMedium:         loggedOutMedium
+    default:                    loggedOutSmall
+    }
+  }
+
+  private var loggedOutSmall: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      Text("🔥").font(.system(size: 46)).grayscale(1).opacity(0.7)
+      Spacer(minLength: 4)
+      Text("Start a streak")
+        .font(.system(size: 20, weight: .heavy)).foregroundColor(.white)
+        .lineLimit(2).minimumScaleFactor(0.6)
+      Text("Open Manifold")
+        .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
+    }
+    .padding(16)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+  }
+
+  private var loggedOutMedium: some View {
+    HStack(spacing: 16) {
+      VStack(alignment: .leading, spacing: 0) {
+        Text("🔥").font(.system(size: 40)).grayscale(1).opacity(0.7)
+        Spacer(minLength: 6)
+        Text("Start a streak")
+          .font(.system(size: 22, weight: .heavy)).foregroundColor(.white)
+          .lineLimit(2).minimumScaleFactor(0.6)
+        Text("Predict daily to keep it alive")
+          .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.8))
+          .lineLimit(2).minimumScaleFactor(0.8)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      VStack(spacing: 8) {
+        logo(48)
+        Text("Open Manifold")
+          .font(.system(size: 12, weight: .bold)).foregroundColor(.white.opacity(0.9))
+      }
+    }
+    .padding(16)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+  }
+
+  private var loggedOutCircular: some View {
+    ZStack {
+      AccessoryWidgetBackground()
+      logo(26, opacity: 0.9)
+    }
+    .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 2))
+  }
+
+  private var loggedOutRectangular: some View {
+    HStack(spacing: 10) {
+      Text("🔥").font(.system(size: 24)).grayscale(1)
+      VStack(alignment: .leading, spacing: 1) {
+        Text("Start a streak")
+          .font(.system(size: 15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
+        Text("Open Manifold").font(.system(size: 12)).opacity(0.9)
+      }
+      Spacer(minLength: 0)
     }
   }
 
@@ -258,22 +389,35 @@ struct StreakWidgetEntryView: View {
       Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
 
       VStack(alignment: .leading, spacing: 7) {
-        ForEach(Array(entry.quests.enumerated()), id: \.offset) { _, q in
-          questRow(q)
-        }
-        Spacer(minLength: 0)
-        // Bigger logo + rotating daily hook, anchored at the bottom.
-        HStack(spacing: 9) {
-          logo(34)
-          Text(hookText(state: entry.state, date: entry.date))
-            .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
-            .lineLimit(2).minimumScaleFactor(0.75)
+        // Quests aren't fetched natively yet, so this is empty for now — center
+        // the logo + hook. Once quests are wired, they stack on top and the hook
+        // anchors to the bottom.
+        if entry.quests.isEmpty {
+          Spacer(minLength: 0)
+          bottomHookRow
+          Spacer(minLength: 0)
+        } else {
+          ForEach(Array(entry.quests.enumerated()), id: \.offset) { _, q in
+            questRow(q)
+          }
+          Spacer(minLength: 0)
+          bottomHookRow
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
     .padding(16)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+  }
+
+  // Bigger logo + rotating daily hook (medium widget).
+  private var bottomHookRow: some View {
+    HStack(spacing: 9) {
+      logo(34)
+      Text(hookText(state: entry.state, date: entry.date))
+        .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+        .lineLimit(2).minimumScaleFactor(0.75)
+    }
   }
 
   private func questRow(_ q: QuestItem) -> some View {
