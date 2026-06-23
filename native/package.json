@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.24.7",
+    "@bacons/apple-targets": "^4.0.7",
     "@expo-google-fonts/readex-pro": "^0.2.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-clipboard/clipboard": "1.16.3",
