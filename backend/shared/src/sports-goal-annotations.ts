@@ -25,12 +25,12 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import { broadcastNewChartAnnotation } from 'shared/websockets/helpers'
 
-// Kill switch. Ships OFF so a deploy is inert — the feature fires only once
-// SPORTS_GOAL_ANNOTATIONS=true is set on the backend service. Set it when you're
-// supervising a live match; unset (+ restart) to disable. Gating the whole
-// annotator means when off we do zero bet queries / inserts / broadcasts — the
-// live score-write path is unchanged.
-const ANNOTATIONS_ENABLED = process.env.SPORTS_GOAL_ANNOTATIONS === 'true'
+// On by default now that placement is validated across real games. Kept as an
+// emergency kill switch: set SPORTS_GOAL_ANNOTATIONS=false on the backend service
+// to disable without a rebuild (gcloud ... update-container --container-env, then
+// the container restarts). Gating the whole annotator means when off we do zero
+// bet queries / inserts / broadcasts — the live score-write path is unchanged.
+const ANNOTATIONS_ENABLED = process.env.SPORTS_GOAL_ANNOTATIONS !== 'false'
 
 // How far back from detection to hunt for the market's reaction. Matches the
 // findMoveOnset default; kept here too because it bounds the bet query.
