@@ -45,7 +45,10 @@
       "channel": "preview",
       "distribution": "internal",
       "env": {
-        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD",
+        "EAS_OWNER": "manifold-markets",
+        "EAS_PROJECT_ID": "54330829-62c2-4f65-8d9e-61f24937cf09",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "android": {
         "credentialsSource": "local"
