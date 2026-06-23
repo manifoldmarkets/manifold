@@ -16,7 +16,11 @@ import {
   type User,
   type UserAndPrivateUser,
 } from 'common/user'
-import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
+import {
+  nativePassUsers,
+  nativeSetStreak,
+  nativeSignOut,
+} from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/api/api'
@@ -260,6 +264,27 @@ export function AuthProvider(props: {
   useEffectCheckEquality(() => {
     if (authLoaded && listenPrivateUser) setPrivateUser(listenPrivateUser)
   }, [authLoaded, listenPrivateUser])
+
+  // Mirror the streak snapshot to the native app for the home/lock-screen
+  // streak widget. Fires on initial load and whenever the live user's streak
+  // fields change (e.g. right after a bet lights up the streak). No-ops on web.
+  useEffect(() => {
+    if (!user) return
+    nativeSetStreak({
+      loggedIn: true,
+      streak: user.currentBettingStreak ?? 0,
+      lastBetTime: user.lastBetTime ?? 0,
+      lastStreakFreezeTime: user.lastStreakFreezeTime ?? 0,
+      freezesLeft: user.streakForgiveness ?? 0,
+      updatedAt: Date.now(),
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    user?.currentBettingStreak,
+    user?.lastBetTime,
+    user?.lastStreakFreezeTime,
+    user?.streakForgiveness,
+  ])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>

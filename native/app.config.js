@@ -88,6 +88,16 @@ export default ({ config }) => {
             'Pictures can be attached to the content you create.',
           ITSAppUsesNonExemptEncryption: false,
         },
+        // Shared App Group: the app writes the streak snapshot the widget reads.
+        // Must match the widget target's entitlement
+        // (targets/widget/expo-target.config.js) and the suiteName in
+        // targets/widget/index.swift. Adding this capability triggers a one-time
+        // EAS credentials re-provision.
+        entitlements: {
+          'com.apple.security.application-groups': [
+            'group.com.markets.manifold',
+          ],
+        },
         supportsTablet: true,
         usesAppleSignIn: true,
         bundleIdentifier: 'com.markets.manifold',

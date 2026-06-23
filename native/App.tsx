@@ -5,6 +5,7 @@ import { EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import {
   MesageTypeMap,
+  NativeStreakData,
   nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
@@ -26,6 +27,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { User as FirebaseUser } from 'firebase/auth'
 import { clearData, getData, storeData } from 'lib/auth'
 import { checkLocationPermission, getLocation } from 'lib/location'
+import { clearStreakWidget, writeStreakWidget } from 'lib/streak-widget'
 import { useIsConnected } from 'lib/use-is-connected'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { BackHandler, Platform, Share, StyleSheet } from 'react-native'
@@ -368,6 +370,9 @@ const App = () => {
       })
     } else if (type === 'signOut') {
       await signOutUsers('Error on sign out')
+    } else if (type === 'setStreak') {
+      // Mirror the streak snapshot into the shared App Group for the widget.
+      writeStreakWidget(payload as NativeStreakData)
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
@@ -453,6 +458,7 @@ const App = () => {
       log(errorMessage, err)
     }
     setFbUser(null)
+    clearStreakWidget()
     await clearData('user').catch((err) => {
       log('Error clearing user data', err)
     })

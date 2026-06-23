@@ -15,7 +15,10 @@ module.exports = {
     // White crane on transparent — used on home widgets and the lock screen.
     ManifoldLogo: './manifold-logo.png',
   },
-  // NOTE: no App Group entitlement yet — this first build renders hardcoded
-  // demo data so we can ship to-device fast. Real streak data (read from a
-  // shared App Group container) is a follow-up.
+  // Shared App Group: the RN app writes the streak snapshot here and the widget
+  // reads it. Must match the entitlement on the app target (app.config.js) and
+  // the suiteName the Swift Provider opens (index.swift).
+  entitlements: {
+    'com.apple.security.application-groups': ['group.com.markets.manifold'],
+  },
 }
