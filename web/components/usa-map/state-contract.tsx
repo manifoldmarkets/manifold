@@ -6,7 +6,7 @@ import {
 } from 'web/public/data/elections-data'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
-import { probToColor } from './state-election-map'
+import { DEM_COLOR, probToColor, REP_COLOR } from './state-election-map'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -56,7 +56,28 @@ export function StateContract(props: {
 }
 
 export function EmptyStateContract() {
-  return <div className=" h-[264px] w-full" />
+  return (
+    <Col className="text-ink-500 h-[200px] w-full items-center justify-center gap-3 text-sm">
+      <div className="text-ink-400">Hover or tap a state to see its race</div>
+      <Row className="flex-wrap items-center justify-center gap-x-4 gap-y-1">
+        <LegendSwatch color={DEM_COLOR} label="Democratic favored" />
+        <LegendSwatch color={REP_COLOR} label="Republican favored" />
+        <LegendSwatch color="#9ca3af" label="No market yet" />
+      </Row>
+    </Col>
+  )
+}
+
+function LegendSwatch(props: { color: string; label: string }) {
+  return (
+    <Row className="items-center gap-1.5">
+      <div
+        className="h-3 w-3 rounded-sm"
+        style={{ backgroundColor: props.color }}
+      />
+      <span>{props.label}</span>
+    </Row>
+  )
 }
 
 export function SwingStateContract(props: {
@@ -228,14 +249,14 @@ export function extractStateFromPresidentContract(
 export function extractBeforeGovernorsRace(
   sentence: string
 ): string | undefined {
-  const regex = /^(.*?)\s*Governor's Race: Which party will win in 2024\?/
-  const match = sentence.match(regex)
-
-  if (match && match[1]) {
-    return match[1]
-  } else {
-    return undefined
-  }
+  // Governor markets are titled inconsistently across creators ("Texas
+  // Governor's Race: ...", "Which Party will win the Alaska Governors race in
+  // 2026?"). Find the US state the question names and present a clean
+  // "<State> Governor" title. Longest name first so "West Virginia" wins.
+  const match = Object.values(DATA)
+    .sort((a, b) => b.name.length - a.name.length)
+    .find((s) => new RegExp(`\\b${s.name}\\b`, 'i').test(sentence))
+  return match ? `${match.name} Governor` : undefined
 }
 
 export function SwingStates() {

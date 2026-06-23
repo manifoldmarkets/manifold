@@ -1,74 +1,45 @@
 import clsx from 'clsx'
-import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
+import { Contract } from 'common/contract'
+import { CongressSenate } from 'web/public/custom-components/congress_senate'
 import { CongressCenter } from 'web/public/custom-components/congress_center'
 import { CongressHouse } from 'web/public/custom-components/congress_house'
-import { CongressSenate } from 'web/public/custom-components/congress_senate'
-import { WhiteHouse } from 'web/public/custom-components/whiteHouse'
+import { Governor } from 'web/public/custom-components/governor'
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { useLiveContract } from 'web/hooks/use-contract'
 import {
-  ElectoralCollegeVisual,
-  sortByDemocraticDiff,
-} from './electoral-college-visual'
-import {
-  SwingStateContract,
+  EmptyStateContract,
   StateContract,
   extractBeforeGovernorsRace,
-  extractStateFromPresidentContract,
-  EmptyStateContract,
 } from './state-contract'
 import { USAMap } from './usa-map'
-import { PresidentialState } from './presidential-state'
 import { SenateCurrentOrContract, SenateState } from './senate-state'
 import { SenateBar } from './senate-bar'
-import { Governor } from 'web/public/custom-components/governor'
 import { GovernorState } from './governor-state'
-import {
-  MapContractsDictionary,
-  swingStates,
-} from 'web/public/data/elections-data'
-import { HouseTable } from './house-table'
-import { useSweepstakes } from '../sweepstakes-provider'
+import { HouseMapSection } from './house-map'
+import { FeedContractCard } from '../contract/feed-contract-card'
+import { MapContractsDictionary } from 'web/public/data/elections-data'
 
-type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
+// 2026 midterms: no presidential race. The Senate/Governor races map onto
+// states; the House is decided by district, so it's a table rather than a map.
+type MapMode = 'senate' | 'house' | 'governor'
 
 export function HomepageMap(props: {
-  rawPresidencyStateContracts: MapContractsDictionary
-  rawPresidencySwingCashContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
-  houseContract: MultiContract
+  rawSenateCandidateContracts: MapContractsDictionary
+  rawGovernorCandidateContracts: MapContractsDictionary
+  houseDistrictsContract: Contract | null
 }) {
   const {
-    rawPresidencyStateContracts,
-    rawPresidencySwingCashContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
-    houseContract,
+    rawSenateCandidateContracts,
+    rawGovernorCandidateContracts,
+    houseDistrictsContract,
   } = props
-
-  const { prefersPlay } = useSweepstakes()
-
-  const presidencyContractsDictionary = Object.keys(
-    rawPresidencyStateContracts
-  ).reduce((acc, key) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const currentContract =
-      !prefersPlay && rawPresidencySwingCashContracts[key]
-        ? rawPresidencySwingCashContracts[key]
-        : rawPresidencyStateContracts[key]
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContract(currentContract!)
-
-    return acc
-  }, {} as MapContractsDictionary)
-
-  const sortedPresidencyContractsDictionary = sortByDemocraticDiff(
-    presidencyContractsDictionary
-  )
 
   const senateContractsDictionary = Object.keys(rawSenateStateContracts).reduce(
     (acc, key) => {
@@ -87,9 +58,7 @@ export function HomepageMap(props: {
     return acc
   }, {} as MapContractsDictionary)
 
-  const liveHouseContract = useLiveContract(houseContract)
-
-  const [mode, setMode] = useState<MapMode>('presidency')
+  const [mode, setMode] = useState<MapMode>('senate')
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
     undefined
@@ -118,54 +87,7 @@ export function HomepageMap(props: {
   return (
     <Col className="bg-canvas-0 rounded-xl p-4">
       <MapTab mode={mode} setMode={setMode} />
-      {mode === 'presidency' ? (
-        <>
-          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
-            Which party will win the US Presidency?
-          </div>
-          <ElectoralCollegeVisual
-            sortedContractsDictionary={sortedPresidencyContractsDictionary}
-            handleClick={handleClick}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            targetState={targetState}
-            hoveredState={hoveredState}
-          />
-          <Spacer h={4} />
-          <USAMap
-            mapContractsDictionary={presidencyContractsDictionary}
-            handleClick={handleClick}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            targetState={targetState}
-            hoveredState={hoveredState}
-            CustomStateComponent={PresidentialState}
-          />
-          {(!!hoveredState || !!targetState) &&
-          !swingStates.includes(hoveredState ?? targetState!) ? (
-            <StateContract
-              targetContract={
-                presidencyContractsDictionary[
-                  hoveredState! ?? targetState
-                ] as Contract
-              }
-              targetState={targetState}
-              setTargetState={setTargetState}
-              customTitleFunction={extractStateFromPresidentContract}
-              includeHead
-            />
-          ) : (
-            <SwingStateContract
-              hoveredState={hoveredState}
-              setHoveredState={setHoveredState}
-              targetState={targetState}
-              sortedPresidencyContractsDictionary={
-                sortedPresidencyContractsDictionary
-              }
-            />
-          )}
-        </>
-      ) : mode === 'governor' ? (
+      {mode === 'governor' ? (
         <>
           <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
             Which party will win the Governor's Race?
@@ -194,21 +116,38 @@ export function HomepageMap(props: {
           ) : (
             <EmptyStateContract />
           )}
+          {!!targetState && rawGovernorCandidateContracts[targetState] && (
+            <CandidateRaceCard
+              contract={rawGovernorCandidateContracts[targetState] as Contract}
+            />
+          )}
         </>
       ) : mode === 'house' ? (
         <>
           <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
             Which party will win the House?
           </div>
-          <HouseTable
-            liveHouseContract={liveHouseContract as CPMMMultiContract}
-          />
           <Spacer h={4} />
+          {houseDistrictsContract ? (
+            <HouseMapSection
+              contract={houseDistrictsContract}
+              handleClick={handleClick}
+              onMouseEnter={onMouseEnter}
+              onMouseLeave={onMouseLeave}
+              targetState={targetState}
+              hoveredState={hoveredState}
+              setTargetState={setTargetState}
+            />
+          ) : (
+            <Col className="text-ink-500 h-[200px] items-center justify-center text-sm">
+              No House district market available yet.
+            </Col>
+          )}
         </>
       ) : (
         <>
           <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
-            Which party will win Senate?
+            Which party will win the Senate?
           </div>
           <SenateBar
             mapContractsDictionary={senateContractsDictionary}
@@ -242,8 +181,25 @@ export function HomepageMap(props: {
           ) : (
             <EmptyStateContract />
           )}
+          {!!targetState && rawSenateCandidateContracts[targetState] && (
+            <CandidateRaceCard
+              contract={rawSenateCandidateContracts[targetState] as Contract}
+            />
+          )}
         </>
       )}
+    </Col>
+  )
+}
+
+// Surfaces the candidate ("who will win") market for the selected state, so the
+// party map is complemented by the actual people running — and a place to bet
+// on them. Only rendered for states that have such a community market.
+function CandidateRaceCard(props: { contract: Contract }) {
+  return (
+    <Col className="mt-3 gap-1">
+      <div className="text-ink-600 text-sm font-semibold">Who's running</div>
+      <FeedContractCard contract={props.contract} hideBottomRow />
     </Col>
   )
 }
@@ -251,32 +207,19 @@ export function HomepageMap(props: {
 function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
   const { mode, setMode } = props
   return (
-    <Row className="text-ink-600 mx-auto mb-4 gap-6 text-sm transition-colors">
-      <MapTabButton
-        onClick={() => setMode('presidency')}
-        isActive={mode === 'presidency'}
-        icon={
-          <WhiteHouse
-            height={9}
-            className={clsx(
-              '-mb-3',
-              mode === 'presidency'
-                ? 'fill-primary-700'
-                : 'fill-ink-500 group-hover:fill-ink-700 transition-colors'
-            )}
-          />
-        }
-        text="Presidency"
-      />
+    <Row className="text-ink-600 mx-auto mb-4 items-end gap-8 text-base transition-colors">
+      {/* Senate (left wing) + dome + House (right wing) nest into one Capitol.
+          Margins are tuned to height={12}; scale them together if you resize. */}
       <Row className="relative">
         <MapTabButton
           onClick={() => setMode('senate')}
           isActive={mode === 'senate'}
+          className="pl-4"
           icon={
             <CongressSenate
-              height={9}
+              height={12}
               className={clsx(
-                '-mb-3 -mr-6',
+                '-mb-4 -mr-8',
                 mode === 'senate'
                   ? 'fill-primary-700'
                   : 'fill-ink-500 group-hover:fill-ink-700 transition-colors'
@@ -286,18 +229,18 @@ function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
           text="Senate"
         />
         <CongressCenter
-          height={9}
-          className={clsx('-ml-[15.5px] -mr-[13.5px]', 'fill-ink-500')}
+          height={12}
+          className={clsx('-ml-[20.7px] -mr-[18px]', 'fill-ink-500')}
         />
         <MapTabButton
           onClick={() => setMode('house')}
           isActive={mode === 'house'}
-          className="items-start"
+          className="items-start pr-4"
           icon={
             <CongressHouse
-              height={9}
+              height={12}
               className={clsx(
-                '-mb-3 -ml-6',
+                '-mb-4 -ml-8',
                 mode === 'house'
                   ? 'fill-primary-700'
                   : 'fill-ink-500 group-hover:fill-ink-700 transition-colors'
@@ -310,9 +253,10 @@ function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
       <MapTabButton
         onClick={() => setMode('governor')}
         isActive={mode === 'governor'}
+        className="px-3"
         icon={
           <Governor
-            height={7}
+            height={10}
             className={clsx(
               '-mb-2 mt-1',
               mode === 'governor'
@@ -339,7 +283,7 @@ function MapTabButton(props: {
     <button
       onClick={onClick}
       className={clsx(
-        'group flex flex-col items-center transition-colors',
+        'group flex flex-col items-center py-2 transition-colors',
         isActive ? 'text-primary-700' : 'text-ink-500 hover:text-ink-700 ',
         className
       )}

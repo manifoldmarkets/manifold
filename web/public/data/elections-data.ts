@@ -1,9 +1,7 @@
-import { MultiPoints } from 'common/chart'
-import { BinaryContract, CPMMMultiContract, Contract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Dashboard } from 'common/dashboard'
-import { PolicyContractType } from './policy-data'
 
 export interface StateElectionMarket {
   slug: string
@@ -14,6 +12,19 @@ export interface StateElectionMarket {
 
 export const NH_LINK =
   'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
+
+// Headline aggregate markets for the 2026 midterm page. All community-created;
+// chosen as the best-trafficked market for each top-line question.
+export const MIDTERMS_2026 = {
+  // Multi-choice "who controls government" — the page's hero card.
+  balanceOfPower: 'balance-of-power-who-will-control-t',
+  // Binary, YES = Republicans hold the House.
+  houseControl: 'republicans-have-house-majority-aft',
+  // Binary, YES = Republicans win the Senate.
+  senateControl: 'will-republicans-win-the-senate-in-738388924521',
+  // Independent multi-choice; each answer is a district, YES = Democrat wins.
+  houseDistricts: 'will-a-democrat-win-these-us-house',
+} as const
 
 export const presidency2024: StateElectionMarket[] = [
   {
@@ -232,27 +243,22 @@ export type MapContractsDictionary = {
 }
 
 export type ElectionsPageProps = {
-  rawPresidencyStateContracts: MapContractsDictionary
-  rawPresidencySwingCashContracts: MapContractsDictionary
+  // Per-state maps (community markets, keyed by state code).
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
-  rawPolicyContracts: PolicyContractType[]
-  electionPartyContract: BinaryContract | null
-  electionPartyCashContract: BinaryContract | null
-  electionCandidateContract: Contract | null
-  republicanCandidateContract: Contract | null
-  democratCandidateContract: Contract | null
-  newHampshireContract: Contract | null
-  republicanVPContract: Contract | null
-  houseContract: Contract | null
-  democraticVPContract: Contract | null
-  // republicanElectability: Contract | null
-  democraticElectability: Contract | null
-  linkPreviews: LinkPreviews
+  // Candidate ("who will win") markets for races that have one, keyed by state.
+  rawSenateCandidateContracts: MapContractsDictionary
+  rawGovernorCandidateContracts: MapContractsDictionary
+  // Headline aggregate markets.
+  balanceOfPowerContract: Contract | null
+  houseControlContract: Contract | null
+  senateControlContract: Contract | null
+  // Per-district House market (independent multi-choice).
+  houseDistrictsContract: Contract | null
+  // Trending politics dashboards.
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]
   trendingDashboard: NewsDashboardPageProps
-  partyGraphData: { partyPoints: MultiPoints; afterTime: number }
 }
 
 export type SuccesNewsDashboardPageProps = {

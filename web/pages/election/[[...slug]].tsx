@@ -2,9 +2,7 @@ import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { getElectionsPageProps } from 'web/lib/politics/home'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { useUser } from 'web/hooks/use-user'
 import { USElectionsPage } from 'web/components/elections-page'
-import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 export async function getStaticPaths() {
@@ -21,16 +19,13 @@ export async function getStaticProps() {
 }
 
 export default function Elections(props: ElectionsPageProps) {
-  const user = useUser()
-  // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
-  useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
   useSaveCampaign()
 
   return (
-    <Page trackPageView="us elections page 2024">
+    <Page trackPageView="us midterms page 2026">
       <SEO
-        title="Manifold 2024 Election Forecast"
-        description="Live prediction market odds on the 2024 US election"
+        title="Manifold 2026 Midterm Forecast"
+        description="Live prediction market odds on the 2026 US midterm elections"
         image="/election-map24.png"
       />
 

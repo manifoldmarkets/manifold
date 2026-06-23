@@ -1,15 +1,13 @@
-import { MultiContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
-import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
-import Custom404 from 'web/pages/404'
 import { Row } from './layout/row'
 import { HomepageMap } from './usa-map/homepage-map'
 import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
-import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
+import { FeedContractCard } from './contract/feed-contract-card'
+import { BalanceOfPowerPanel } from './us-elections/balance-of-power-panel'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
-import { useSweepstakes } from './sweepstakes-provider'
 
+// Kept for legacy political market panels that still reference it.
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
   'Who will win the Presidential Election?'
 
@@ -17,32 +15,17 @@ export function USElectionsPage(
   props: ElectionsPageProps & { hideTitle?: boolean }
 ) {
   const {
-    rawPresidencyStateContracts,
-    rawPresidencySwingCashContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
-    rawPolicyContracts,
-    electionCandidateContract,
-    electionPartyContract,
-    electionPartyCashContract,
-    republicanCandidateContract,
-    democratCandidateContract,
-    houseContract,
+    rawSenateCandidateContracts,
+    rawGovernorCandidateContracts,
+    balanceOfPowerContract,
+    houseControlContract,
+    senateControlContract,
+    houseDistrictsContract,
     trendingDashboard,
     hideTitle,
   } = props
-
-  const { prefersPlay } = useSweepstakes()
-  if (
-    !electionPartyContract ||
-    !electionPartyCashContract ||
-    !electionCandidateContract ||
-    !republicanCandidateContract ||
-    !democratCandidateContract ||
-    !houseContract
-  ) {
-    return <Custom404 />
-  }
 
   const trending =
     trendingDashboard.state == 'not found' ? null : (
@@ -68,52 +51,41 @@ export function USElectionsPage(
       </Col>
     )
 
-  const currentElectionPartyContract =
-    !prefersPlay && electionPartyContract
-      ? electionPartyCashContract
-      : electionPartyContract
-
   return (
     <Col className="mb-8 gap-6 px-1 sm:gap-8 sm:px-2">
       <Col className={hideTitle ? 'hidden' : ''}>
         <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
-          Manifold 2024 Election Forecast
+          Manifold 2026 Midterm Forecast
         </div>
         <div className="text-canvas-500 text-md mt-2 flex font-normal">
-          Live prediction market odds on the US election
+          Live prediction market odds on the US midterm elections
         </div>
       </Col>
 
-      <PoliticsCard
-        contract={currentElectionPartyContract}
-        viewType="BINARY_PARTY"
-        customTitle={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
-        includeHead
+      {/* Big balance-of-power hero: the three levers of federal power. */}
+      <BalanceOfPowerPanel
+        houseControl={houseControlContract}
+        senateControl={senateControlContract}
       />
 
       <HomepageMap
-        rawPresidencyStateContracts={rawPresidencyStateContracts}
-        rawPresidencySwingCashContracts={rawPresidencySwingCashContracts}
         rawSenateStateContracts={rawSenateStateContracts}
         rawGovernorStateContracts={rawGovernorStateContracts}
-        houseContract={houseContract as MultiContract}
+        rawSenateCandidateContracts={rawSenateCandidateContracts}
+        rawGovernorCandidateContracts={rawGovernorCandidateContracts}
+        houseDistrictsContract={houseDistrictsContract}
       />
 
+      {/* The full joint-distribution market, for trading the exact split. */}
+      {balanceOfPowerContract && (
+        <FeedContractCard
+          contract={balanceOfPowerContract}
+          trackingPostfix="midterms balance of power"
+          showGraph
+        />
+      )}
+
       {trending}
-
-      {/* <PoliticsCard
-        contract={electionCandidateContract as MultiContract}
-        viewType="CANDIDATE"
-        className="-mt-4"
-      /> */}
-
-      <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
-      {/* 
-      <PoliticsCard
-        contract={electionCandidateContract as MultiContract}
-        viewType="CANDIDATE"
-        className="-mt-4"
-      /> */}
     </Col>
   )
 }
