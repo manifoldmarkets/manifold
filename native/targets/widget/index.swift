@@ -19,7 +19,8 @@ enum StreakState {
   case frozen   // a streak-freeze was auto-used
 }
 
-private let kDemoState: StreakState = .lit
+private let kDemoState: StreakState = .frozen
+private let kDemoFreezesLeft = 2
 
 // Quests shown on the medium widget (the streak/prediction quest is the left side).
 struct QuestItem {
@@ -51,13 +52,14 @@ struct StreakEntry: TimelineEntry {
   let resetDate: Date
   let state: StreakState
   let quests: [QuestItem]
+  let freezesLeft: Int
 }
 
 struct Provider: TimelineProvider {
   func placeholder(in context: Context) -> StreakEntry {
     StreakEntry(date: Date(), streak: kDemoStreak,
                 resetDate: nextPacificReset(after: Date()),
-                state: kDemoState, quests: kDemoQuests)
+                state: kDemoState, quests: kDemoQuests, freezesLeft: kDemoFreezesLeft)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
@@ -68,7 +70,7 @@ struct Provider: TimelineProvider {
     let now = Date()
     let reset = nextPacificReset(after: now)
     let entry = StreakEntry(date: now, streak: kDemoStreak, resetDate: reset,
-                            state: kDemoState, quests: kDemoQuests)
+                            state: kDemoState, quests: kDemoQuests, freezesLeft: kDemoFreezesLeft)
     // Reload at midnight PT so the day flips.
     completion(Timeline(entries: [entry], policy: .after(reset)))
   }
@@ -89,7 +91,7 @@ private let greyGradient = LinearGradient(
   startPoint: .top, endPoint: .bottom)
 
 private func emoji(for state: StreakState) -> String {
-  state == .frozen ? "❄️" : "🔥"
+  state == .frozen ? "🧊" : "🔥"
 }
 
 // MARK: - Views
@@ -156,14 +158,11 @@ struct StreakWidgetEntryView: View {
       // No label — the lit-up orange already says "done today".
       EmptyView()
     case .frozen:
-      HStack(spacing: 5) {
-        Image(systemName: "snowflake")
-        Text("Frozen")
-      }
-      .font(.system(size: size, weight: .bold))
-      .foregroundColor(.white)
-      .lineLimit(1)
-      .minimumScaleFactor(0.6)
+      Text("Frozen · \(entry.freezesLeft) left")
+        .font(.system(size: size, weight: .bold))
+        .foregroundColor(Color(red: 0.90, green: 0.96, blue: 1.0))
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
     }
   }
 
@@ -215,7 +214,7 @@ struct StreakWidgetEntryView: View {
         Text("day streak")
           .font(.system(size: 12, weight: .semibold))
           .foregroundColor(.white.opacity(0.85))
-        if entry.state == .pending {
+        if entry.state != .lit {
           statusLine(size: 13).padding(.top, 4)
         }
       }
@@ -265,12 +264,17 @@ struct StreakWidgetEntryView: View {
 
   // Lock screen — circular
   private var circular: some View {
-    // Ring fills once the day is secured (bet placed, or a freeze covered it).
-    let done = entry.state != .pending
+    // Ring fills ONLY when you've actually bet today. Frozen = protected but
+    // not done, so its ring stays empty (same as pending).
+    let done = entry.state == .lit
     return ZStack {
       AccessoryWidgetBackground()
-      // Faint crane watermark behind the number.
-      logo(44, opacity: 0.22)
+      // Frozen shows an ice-cube watermark; otherwise the crane.
+      if entry.state == .frozen {
+        Text("🧊").font(.system(size: 30)).opacity(0.30)
+      } else {
+        logo(44, opacity: 0.22)
+      }
       Text("\(entry.streak)")
         .font(.system(size: 22, weight: .bold))
         .lineLimit(1)
@@ -295,7 +299,7 @@ struct StreakWidgetEntryView: View {
           countdown
             .font(.system(size: 12)).opacity(0.9)
         } else {
-          Text(entry.state == .frozen ? "Frozen today ❄️" : "Done today ✓")
+          Text(entry.state == .frozen ? "Frozen · \(entry.freezesLeft) left" : "Done today ✓")
             .font(.system(size: 12)).opacity(0.9)
         }
       }
