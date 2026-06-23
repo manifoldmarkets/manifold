@@ -84,6 +84,10 @@ export function HomepageMap(props: {
     setHoveredState(undefined)
   }
 
+  // The state whose detail (and candidate card) is shown: hover takes priority,
+  // falling back to the clicked/pinned state.
+  const selectedState = hoveredState ?? targetState
+
   return (
     <Col className="bg-canvas-0 rounded-xl p-4">
       <MapTab mode={mode} setMode={setMode} />
@@ -116,9 +120,9 @@ export function HomepageMap(props: {
           ) : (
             <EmptyStateContract />
           )}
-          {!!targetState && rawGovernorCandidateContracts[targetState] && (
+          {selectedState && rawGovernorCandidateContracts[selectedState] && (
             <CandidateRaceCard
-              contract={rawGovernorCandidateContracts[targetState] as Contract}
+              contract={rawGovernorCandidateContracts[selectedState] as Contract}
             />
           )}
         </>
@@ -181,9 +185,9 @@ export function HomepageMap(props: {
           ) : (
             <EmptyStateContract />
           )}
-          {!!targetState && rawSenateCandidateContracts[targetState] && (
+          {selectedState && rawSenateCandidateContracts[selectedState] && (
             <CandidateRaceCard
-              contract={rawSenateCandidateContracts[targetState] as Contract}
+              contract={rawSenateCandidateContracts[selectedState] as Contract}
             />
           )}
         </>
