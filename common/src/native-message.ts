@@ -45,8 +45,23 @@ export type webToNativeMessageType =
   | 'versionRequested'
   | 'setAppUrl'
   | 'copyImageToClipboard'
+  | 'setStreak'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
+
+// Streak snapshot sent to the native app, which mirrors it into a shared App
+// Group container for the home/lock-screen streak widget to read. All times are
+// ms-epoch; 0 means "never". The widget recomputes lit/pending/frozen state
+// itself from these vs. the next midnight-Pacific reset, so it stays correct
+// even hours after this snapshot was written.
+export type NativeStreakData = {
+  loggedIn: boolean
+  streak: number
+  lastBetTime: number // 0 if never bet
+  lastStreakFreezeTime: number // 0 if no freeze ever used
+  freezesLeft: number // == user.streakForgiveness
+  updatedAt: number // when this snapshot was taken
+}
 
 export type MesageTypeMap = {
   version: {
