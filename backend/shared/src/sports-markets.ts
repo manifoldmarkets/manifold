@@ -1,6 +1,6 @@
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
-import { getUser, log } from 'shared/utils'
+import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
 import { annotateScoreChanges } from 'shared/sports-goal-annotations'
 import {
   createSupabaseDirectClient,
@@ -10,9 +10,13 @@ import {
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { anythingToRichText } from 'shared/tiptap'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import {
+  generateContractEmbeddings,
+  updateContract,
+} from 'shared/supabase/contracts'
 import {
   Contract,
+  contractPath,
   CPMMMultiContract,
   nativeContractColumnsArray,
 } from 'common/contract'
@@ -21,9 +25,16 @@ import { answerToRow } from 'shared/supabase/answers'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { broadcastSportsLiveScore } from 'shared/websockets/helpers'
+import {
+  broadcastNewComment,
+  broadcastSportsLiveScore,
+} from 'shared/websockets/helpers'
+import { ContractComment } from 'common/comment'
+import { millisToTs } from 'common/supabase/utils'
+import { removeUndefinedProps } from 'common/util/object'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
+import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { User } from 'common/user'
@@ -41,6 +52,7 @@ import {
   CHAMPIONS_LEAGUE_2026,
   PREMIER_LEAGUE_2526,
   pickSportsWinningAnswer,
+  finalScoreCommentLines,
   FDMatch,
   MarketCreateParams,
   sportsEventId,
@@ -415,6 +427,76 @@ async function getUnresolvedSportsMarkets(
   })
 }
 
+// Post the final score on the market as @ManifoldSports, mirroring the
+// comments the account used to leave by hand. Replicates api/create-comment's
+// insert plus its side effects (which shared can't import): broadcast,
+// follower notifications, lastCommentTime bump, and static-page revalidation.
+// Only the parts meaningless for this account are skipped: bet/position
+// denormalization, fees, and the AI clarification check (gated on
+// unresolved markets anyway — this runs right after resolution).
+async function postFinalScoreComment(
+  pg: SupabaseDirectClient,
+  contract: CPMMMultiContract,
+  creator: User,
+  match: FDMatch
+) {
+  const lines = finalScoreCommentLines(match)
+  if (!lines) return
+
+  const content: JSONContent[] = []
+  lines.forEach((line, i) => {
+    if (i > 0) content.push({ type: 'hardBreak' })
+    content.push({ type: 'text', text: line })
+  })
+
+  const now = Date.now()
+  const comment = removeUndefinedProps({
+    id: randomString(),
+    content: { type: 'doc', content: [{ type: 'paragraph', content }] },
+    createdTime: now,
+    userId: creator.id,
+    userName: creator.name,
+    userUsername: creator.username,
+    userAvatarUrl: creator.avatarUrl,
+    commentType: 'contract',
+    contractId: contract.id,
+    contractSlug: contract.slug,
+    contractQuestion: contract.question,
+    visibility: contract.visibility,
+  } as ContractComment)
+
+  await pg.none(
+    `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+     values ($1, $2, $3, $4, $5)`,
+    [contract.id, comment.id, creator.id, millisToTs(now), comment]
+  )
+  broadcastNewComment(contract.id, contract.visibility, creator, comment)
+
+  await updateContract(pg, contract.id, {
+    lastCommentTime: now,
+    lastUpdatedTime: Date.now(),
+  })
+  // Resolution revalidated the page just before this comment existed; do it
+  // again so new visitors get the comment in the statically cached page.
+  await revalidateStaticProps(contractPath(contract)).catch((e) =>
+    logger.error(
+      `[sports-resolve] revalidate after score comment failed for ${contract.id}: ${e}`
+    )
+  )
+  // Same follower/watcher fan-out a manual comment from the account would
+  // trigger. No replies or mentions in a score comment, and never marked as
+  // requiring a creator response.
+  await createCommentOnContractNotification(
+    comment.id,
+    creator,
+    lines.join('\n'),
+    contract,
+    {},
+    [],
+    false
+  )
+}
+
 // Resolve unresolved markets against an already-fetched set of terminal
 // (FINISHED/AWARDED) matches. Shared by the 15-min backstop cron and the 10s
 // live poller, so a finished match resolves within ~10s of full time off the
@@ -538,6 +620,18 @@ export async function resolveTournamentMarketsForMatches(
         await pg.none(
           `update contracts set data = data || $1::jsonb where id = $2`,
           [JSON.stringify(scorePatch), market.id]
+        )
+      }
+      // The market is resolved at this point, so a comment failure is
+      // logged but doesn't count the resolution as an error (and won't
+      // retry — the market no longer appears in the unresolved set).
+      try {
+        await postFinalScoreComment(pg, contract, creatorUser, match)
+      } catch (e) {
+        logger.error(
+          `[sports-resolve] final-score comment failed for ${market.id}: ${
+            e instanceof Error ? e.message : e
+          }`
         )
       }
       resolved++
@@ -968,7 +1062,7 @@ export async function pollAndStoreLiveScores(
           oldAway: r.old_away,
         })),
         updatedTime
-      ).catch((e) => log.error(`annotateScoreChanges failed: ${e}`))
+      ).catch((e) => logger.error(`annotateScoreChanges failed: ${e}`))
     } else {
       // Terminal: tell dashboards the match is over (status is not live) so they
       // clear the live banner immediately; resolution + the final score follow

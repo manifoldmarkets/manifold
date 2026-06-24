@@ -1,5 +1,6 @@
 import {
   pickSportsWinningAnswer,
+  finalScoreCommentLines,
   buildMarketParams,
   buildDescription,
   stageLabel,
@@ -399,5 +400,78 @@ describe('buildDescription', () => {
       customNote: '{team1} vs {team2} — {stage}',
     })
     expect(desc).toContain('Brazil vs Argentina — Group A')
+  })
+})
+
+describe('finalScoreCommentLines', () => {
+  it('formats a regulation result as one line per team', () => {
+    const lines = finalScoreCommentLines(
+      makeMatch({
+        score: {
+          winner: 'HOME_TEAM',
+          duration: 'REGULAR',
+          fullTime: { home: 2, away: 0 },
+          halfTime: { home: 1, away: 0 },
+        },
+      })
+    )
+    expect(lines).toEqual(['Brazil - 2', 'Argentina - 0'])
+  })
+
+  it('notes extra time', () => {
+    const lines = finalScoreCommentLines(
+      makeMatch({
+        score: {
+          winner: 'AWAY_TEAM',
+          duration: 'EXTRA_TIME',
+          fullTime: { home: 1, away: 2 },
+          halfTime: { home: 1, away: 1 },
+          extraTime: { home: 0, away: 1 },
+        },
+      })
+    )
+    expect(lines).toEqual(['Brazil - 1', 'Argentina - 2', '(after extra time)'])
+  })
+
+  it("notes the shootout from the winner's perspective", () => {
+    const lines = finalScoreCommentLines(
+      makeMatch({
+        score: {
+          winner: 'AWAY_TEAM',
+          duration: 'PENALTY_SHOOTOUT',
+          fullTime: { home: 1, away: 1 },
+          halfTime: { home: 0, away: 1 },
+          extraTime: { home: 0, away: 0 },
+          penalties: { home: 2, away: 4 },
+        },
+      })
+    )
+    expect(lines).toEqual([
+      'Brazil - 1',
+      'Argentina - 1',
+      '(Argentina win 4-2 on penalties)',
+    ])
+  })
+
+  it('falls back to a generic shootout note when penalty scores are missing', () => {
+    const lines = finalScoreCommentLines(
+      makeMatch({
+        score: {
+          winner: 'HOME_TEAM',
+          duration: 'PENALTY_SHOOTOUT',
+          fullTime: { home: 0, away: 0 },
+          halfTime: { home: 0, away: 0 },
+        },
+      })
+    )
+    expect(lines).toEqual([
+      'Brazil - 0',
+      'Argentina - 0',
+      '(decided on penalties)',
+    ])
+  })
+
+  it('returns null when the final score is unknown', () => {
+    expect(finalScoreCommentLines(makeMatch())).toBeNull()
   })
 })
