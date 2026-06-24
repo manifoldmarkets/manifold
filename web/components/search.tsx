@@ -585,6 +585,20 @@ export function Search(props: SearchProps) {
                 >
                   ⚽ World Cup
                 </Link>
+                <Link
+                  href="/election"
+                  onClick={() =>
+                    track('select search topic', { topic: 'midterms-2026' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium text-white',
+                    'bg-gradient-to-r from-blue-600 via-violet-600 to-rose-600',
+                    'shadow-sm shadow-violet-500/30 ring-1 ring-white/20',
+                    'transition-all hover:brightness-110'
+                  )}
+                >
+                  🗳️ 2026 Midterms
+                </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
                     key={topic}
