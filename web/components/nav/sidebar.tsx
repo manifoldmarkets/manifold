@@ -5,6 +5,7 @@ import {
   DotsHorizontalIcon,
   GiftIcon,
   HeartIcon,
+  LibraryIcon,
   LoginIcon,
   LogoutIcon,
   MoonIcon,
@@ -479,6 +480,7 @@ const bottomNav = (
   isMobile: boolean | undefined
 ) =>
   buildArray<NavItem>(
+    { name: 'Election', href: '/election', icon: LibraryIcon },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     // Jobs only belongs in the bottom section on desktop (behind "More"). On
     // mobile it lives higher up in the main nav list (see getMobileNav).
