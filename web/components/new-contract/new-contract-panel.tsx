@@ -2,7 +2,7 @@ import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { Contract, CreateableOutcomeType } from 'common/contract'
 import { MarketDraft } from 'common/drafts'
-import { BOOST_COST_MANA, getAnte } from 'common/economy'
+import { BOOST_COST_MANA, FREE_MARKET_USER_ID, getAnte } from 'common/economy'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
@@ -464,9 +464,11 @@ export function NewContractPanel(props: {
   // Avoids duplication between mobile and desktop action bars
   const getSubmitButtonText = () => {
     if (willBoost) {
-      return `Create + Boost for ${formatMoney(totalCost)}`
+      return `Create + Boost for ${formatMoney(
+        isFreeMarket ? boostCost : totalCost
+      )}`
     }
-    return `Create for ${formatMoney(cost)}`
+    return isFreeMarket ? `Create for free!` : `Create for ${formatMoney(cost)}`
   }
 
   // Auto-extract close date from question
@@ -738,11 +740,14 @@ export function NewContractPanel(props: {
   const boostCost = willBoost ? BOOST_COST_MANA : 0
   const totalCost = cost + boostCost
 
+  // Mirror the backend's FREE_MARKET_USER_ID exemption (create-market.ts):
+  const isFreeMarket = creator.id === FREE_MARKET_USER_ID && cost <= 100
+
   // Add balance validation
   // Distinguish market-cost vs boost-cost insufficiency so the boost-only case
   // doesn't trigger the panel-wide red ring (it surfaces inline in BoostSection).
-  const insufficientForMarket = cost > creator.balance
-  const hasInsufficientBalance = totalCost > creator.balance
+  const insufficientForMarket = !isFreeMarket && cost > creator.balance
+  const hasInsufficientBalance = !isFreeMarket && totalCost > creator.balance
   const insufficientForBoostOnly =
     hasInsufficientBalance && !insufficientForMarket
   const validationErrors = {
@@ -1429,6 +1434,7 @@ export function NewContractPanel(props: {
           onUpdate={updateField}
           validationErrors={validationErrors}
           balance={creator.balance}
+          isFreeMarket={isFreeMarket}
           submitState={isSubmitting ? 'LOADING' : 'EDITING'}
           onGenerateAnswers={generateAnswers}
           isGeneratingAnswers={isGeneratingAnswers}

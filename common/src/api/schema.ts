@@ -3957,22 +3957,6 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
   },
-  'shop-purchase-ticket': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    props: z
-      .object({
-        itemId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      success: boolean
-      orderId: string
-      discountCode: string | null
-      remainingStock: number
-    },
-  },
   'get-ticket-stock': {
     method: 'GET',
     visibility: 'public',
@@ -3980,13 +3964,6 @@ export const API = (_apiTypeCheck = {
     cache: 'public, max-age=2, stale-while-revalidate=10',
     props: z.object({ itemId: z.string().optional() }).strict(),
     returns: {} as { sold: number; maxStock: number; available: number },
-  },
-  'get-user-ticket-purchased': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    props: z.object({}).strict(),
-    returns: {} as { purchased: boolean },
   },
   'get-ticket-orders': {
     method: 'GET',

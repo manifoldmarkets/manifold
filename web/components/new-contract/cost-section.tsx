@@ -19,9 +19,16 @@ export const CostSection = (props: {
   liquidityTier: number
   setLiquidityTier: (tier: number) => void
   numAnswers: number | undefined
+  isFreeMarket?: boolean
 }) => {
-  const { balance, outcomeType, liquidityTier, setLiquidityTier, numAnswers } =
-    props
+  const {
+    balance,
+    outcomeType,
+    liquidityTier,
+    setLiquidityTier,
+    numAnswers,
+    isFreeMarket,
+  } = props
   const ante = getAnte(outcomeType, numAnswers, liquidityTier)
 
   return (
@@ -34,7 +41,7 @@ export const CostSection = (props: {
           outcomeType={outcomeType}
         />
       )}
-      {ante > balance && (
+      {!isFreeMarket && ante > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
           <span className="text-scarlet-500 mr-2">Insufficient balance</span>
           <Link

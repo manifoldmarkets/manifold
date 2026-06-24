@@ -47,21 +47,20 @@ import { getInsertQuery } from 'shared/supabase/utils'
 import { txnToRow } from 'shared/txn/run-txn'
 import { contractColumnsToSelect } from 'shared/utils'
 
-export const fetchContractBetDataAndValidate = async (
-  pgTrans: SupabaseTransaction | SupabaseDirectClient,
-  body: {
-    contractId: string
-    amount: number | undefined
-    answerId?: string
-    answerIds?: string[]
-    outcome: 'YES' | 'NO'
-  },
-  uid: string,
-  isApi: boolean,
-  isAdminTrade: boolean = false
-) => {
-  const startTime = Date.now()
-  const { amount, contractId, outcome } = body
+type BetDataBody = {
+  contractId: string
+  amount?: number | undefined
+  answerId?: string
+  answerIds?: string[]
+  outcome: 'YES' | 'NO'
+}
+
+// Shared SQL fragments for selecting a contract's open limit orders. These are
+// reused by both fetchContractBetDataAndValidate (pre-transaction read) and
+// lockContractAndGetBetData (in-transaction locked re-read) so the two paths
+// can't drift. The fragments assume the query is formatted with
+// [uid, contractId, answerIds, outcome] bound to $1..$4.
+const getLimitOrderQueryFragments = (body: BetDataBody) => {
   const answerIds =
     'answerIds' in body
       ? body.answerIds
@@ -87,6 +86,26 @@ export const fetchContractBetDataAndValidate = async (
       (not ${isSumsToOne} and ($3 is null or b.answer_id in ($3:list)) and b.outcome != $4)
     )
   `
+  return { answerIds, isSumsToOne, whereLimitOrderBets }
+}
+
+export const fetchContractBetDataAndValidate = async (
+  pgTrans: SupabaseTransaction | SupabaseDirectClient,
+  body: {
+    contractId: string
+    amount: number | undefined
+    answerId?: string
+    answerIds?: string[]
+    outcome: 'YES' | 'NO'
+  },
+  uid: string,
+  isApi: boolean,
+  isAdminTrade: boolean = false
+) => {
+  const startTime = Date.now()
+  const { amount, contractId, outcome } = body
+  const { answerIds, isSumsToOne, whereLimitOrderBets } =
+    getLimitOrderQueryFragments(body)
   const queries = pgp.as.format(
     `
     select * from users where id = $1;
@@ -133,7 +152,13 @@ export const fetchContractBetDataAndValidate = async (
         and enabled = true
         and (expires_time is null or expires_time > now());
   `,
-    [uid, contractId, answerIds ?? null, outcome, [...SUPPORTER_ENTITLEMENT_IDS]]
+    [
+      uid,
+      contractId,
+      answerIds ?? null,
+      outcome,
+      [...SUPPORTER_ENTITLEMENT_IDS],
+    ]
   )
   const results = await pgTrans.multi(queries)
   const user = convertUser(results[0][0])
@@ -258,6 +283,65 @@ export const fetchContractBetDataAndValidate = async (
     balanceByUserId,
     unfilledBetUserIds,
     contractMetrics,
+  }
+}
+
+// Lock the contract row FOR UPDATE and re-read its fresh pool/answers/open limit
+// orders, inside the transaction. fetchContractBetDataAndValidate runs *before*
+// the transaction (to keep the heavy validation/metric reads out of it), so the
+// pool it read can be stale by the time we write, and the in-process betsQueue
+// only serializes bets within a single API replica. Without this, two bets on the
+// same contract on different replicas could each compute against the same pool and
+// blind-write conflicting absolute values (a lost update).
+//
+// Because this read is inside the transaction callback it reruns on every
+// runTransactionWithRetries attempt, so each retry recomputes against current
+// state; the FOR UPDATE serializes same-contract bets/sells across replicas,
+// surfacing a concurrent write as a 40001 retry instead of a silent race.
+export const lockContractAndGetBetData = async (
+  pgTrans: SupabaseTransaction,
+  body: BetDataBody,
+  uid: string
+) => {
+  const { contractId, outcome } = body
+  const { answerIds, isSumsToOne, whereLimitOrderBets } =
+    getLimitOrderQueryFragments(body)
+  const queries = pgp.as.format(
+    `
+    select ${contractColumnsToSelect} from contracts where id = $2 for update;
+    select * from answers
+      where contract_id = $2 and (
+        $3 is null or id in ($3:list) or ${isSumsToOne}
+      ) order by index;
+    select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
+      where ${whereLimitOrderBets};
+  `,
+    [uid, contractId, answerIds ?? null, outcome]
+  )
+  const results = await pgTrans.multi(queries)
+  const contract = convertContract(results[0][0]) as MarketContract
+  const answers = results[1].map(convertAnswer)
+  if (contract.mechanism === 'cpmm-multi-1')
+    contract.answers = sortBy(
+      uniqBy([...answers, ...contract.answers], 'id'),
+      'index'
+    )
+  const unfilledBets = results[2].map(convertBet) as (LimitBet & {
+    balance: number
+  })[]
+  const balanceByUserId = Object.fromEntries(
+    uniqBy(unfilledBets, (b) => b.userId).map((bet) => [
+      bet.userId,
+      bet.balance,
+    ])
+  )
+  const unfilledBetUserIds = Object.keys(balanceByUserId)
+  return {
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    unfilledBetUserIds,
   }
 }
 

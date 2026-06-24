@@ -1,6 +1,8 @@
 import {
+  BriefcaseIcon,
   ChatIcon,
   DeviceMobileIcon,
+  DotsHorizontalIcon,
   GiftIcon,
   HeartIcon,
   LoginIcon,
@@ -22,7 +24,6 @@ import { SHOP_ITEMS } from 'common/shop/items'
 import { getTotalPrizePool, SweepstakesPrize } from 'common/sweepstakes'
 import { DAY_MS, isAprilFools } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LuGem } from 'react-icons/lu'
 import { IoCompassOutline } from 'react-icons/io5'
@@ -38,6 +39,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { Col } from '../layout/col'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { ReportsIcon } from '../reports-icon'
 import { LiveTVIcon } from '../tv-icon'
@@ -226,7 +228,7 @@ export default function Sidebar(props: {
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
-      <ul role="list" className="m-0 mb-4 flex list-none flex-col gap-1 p-0">
+      <ul className="m-0 mb-4 flex list-none flex-col gap-1 p-0">
         {navOptions.map((item) => (
           <li key={item.name}>
             {item.name === 'Shop' && isAprilFools() ? (
@@ -254,7 +256,6 @@ export default function Sidebar(props: {
         )}
       </ul>
       <ul
-        role="list"
         className={clsx(
           'm-0 mb-6 mt-auto flex list-none flex-col gap-1 p-0',
           isMobile && 'pb-8'
@@ -265,11 +266,54 @@ export default function Sidebar(props: {
             <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
           </li>
         )}
-        {bottomNavOptions.map((item) => (
-          <li key={item.name}>
-            <SidebarItem item={item} currentPage={currentPage} />
+        {/* On mobile (drawer) the bottom items are flat. On desktop they live
+            behind a "More" popover that floats up and overlaps the buttons
+            above it, so the menu can grow without crowding short viewports. */}
+        {isMobile ? (
+          bottomNavOptions.map((item) => (
+            <li key={item.name}>
+              <SidebarItem item={item} currentPage={currentPage} />
+            </li>
+          ))
+        ) : (
+          <li>
+            <DropdownMenu
+              className="w-full"
+              buttonClass="w-full"
+              anchor={{ to: 'top start', gap: 8 }}
+              menuWidth="w-56"
+              buttonContent={(open) => (
+                <div
+                  className={clsx(
+                    'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
+                    open
+                      ? 'bg-ink-200 text-ink-900'
+                      : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700'
+                  )}
+                >
+                  <DotsHorizontalIcon
+                    className="text-ink-500 group-hover:text-ink-600 -ml-1 mr-3 h-6 w-6 flex-shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">More</span>
+                </div>
+              )}
+              items={bottomNavOptions.map((item) => ({
+                name: item.name,
+                buttonContent: item.children ?? item.name,
+                icon: item.icon ? <item.icon className="h-5 w-5" /> : undefined,
+                isLink: !!item.href,
+                linkProps: item.href
+                  ? {
+                      href: item.href,
+                      target: item.href.startsWith('/') ? undefined : '_blank',
+                    }
+                  : undefined,
+                onClick: item.onClick,
+              }))}
+            />
           </li>
-        ))}
+        )}
       </ul>
     </nav>
   )
@@ -331,11 +375,7 @@ const getDesktopNav = (
                 <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
                   Prize {options.prizePoolLabel}
                 </span>
-              ) : (
-                <span className="ml-2 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                  Manifest
-                </span>
-              )}
+              ) : null}
             </>
           ) : undefined,
       },
@@ -395,6 +435,7 @@ const getMobileNav = (
     },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
+    { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
     loggedIn && {
       name: 'Referrals',
@@ -439,6 +480,9 @@ const bottomNav = (
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+    // Jobs only belongs in the bottom section on desktop (behind "More"). On
+    // mobile it lives higher up in the main nav list (see getMobileNav).
+    !isMobile && { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     loggedIn &&
       !isMobile && {
         name: 'Referrals',
