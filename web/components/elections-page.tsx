@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
@@ -11,17 +11,29 @@ import { Presidency2028Section } from './us-elections/presidency-2028-section'
 import { BackButton } from './contract/back-button'
 import { ContractsTable } from './contract/contracts-table'
 import { Search } from './search'
+import { FilterPill } from './search/filter-pills'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 
 // Kept for legacy political market panels that still reference it.
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
   'Who will win the Presidential Election?'
 
-// One consistent, centered section divider used throughout the page so the
-// blue headings read as a deliberate rhythm rather than scattered labels.
+// Topic tags for the bottom feed, so visitors can sort the election markets by
+// race/subject from this page. Each slug is a real Manifold group with a healthy
+// number of open markets (verified against prod).
+const ELECTION_FEED_TOPICS = [
+  { slug: 'us-politics', label: 'All politics' },
+  { slug: '2026-us-congressional-elections', label: '2026 Congress' },
+  { slug: '2028-us-presidential-election-6tdsp26zly', label: '2028 President' },
+  { slug: 'us-senate', label: 'Senate' },
+  { slug: 'donald-trump', label: 'Trump' },
+  { slug: 'elections', label: 'All elections' },
+]
+
+// One consistent, left-aligned section divider used throughout the page.
 function SectionHeader(props: { children: ReactNode; subtitle?: string }) {
   return (
-    <Col className="items-center gap-0.5 text-center">
+    <Col className="gap-0.5">
       <div className="text-primary-700 text-xl font-semibold sm:text-2xl">
         {props.children}
       </div>
@@ -51,12 +63,14 @@ export function USElectionsPage(
     hideTitle,
   } = props
 
+  const [feedTopic, setFeedTopic] = useState(ELECTION_FEED_TOPICS[0])
+
   const trending =
     trendingDashboard.state == 'not found' ? null : (
       <Col className="gap-2">
         <Link
           href="/election/politicsheadline"
-          className="text-primary-700 hover:text-primary-800 mx-auto flex items-center gap-1.5 text-xl font-semibold sm:text-2xl"
+          className="text-primary-700 hover:text-primary-800 flex w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl"
         >
           <span className="relative h-4 w-4">
             <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
@@ -75,10 +89,10 @@ export function USElectionsPage(
 
   return (
     <Col className="mb-8 gap-6 px-1 sm:px-2">
-      {/* Hero with back navigation (back is left, title stays centered). */}
-      <Row className="relative items-center justify-center pt-3 sm:pt-1">
-        <BackButton className="absolute left-0 top-1/2 -translate-y-1/2" />
-        <Col className={clsx('items-center text-center', hideTitle && 'hidden')}>
+      {/* Hero with back navigation, left-aligned (back sits left of the title). */}
+      <Row className="items-center gap-2 pt-3 sm:pt-1">
+        <BackButton />
+        <Col className={clsx(hideTitle && 'hidden')}>
           <div className="text-primary-700 text-3xl font-normal sm:text-4xl">
             Elections
           </div>
@@ -126,8 +140,6 @@ export function USElectionsPage(
         </Col>
       )}
 
-      {trending}
-
       {/* The full joint-distribution market, for trading the exact split. */}
       {balanceOfPowerContract && (
         <Col className="gap-3">
@@ -140,17 +152,30 @@ export function USElectionsPage(
         </Col>
       )}
 
-      {/* Infinite-scroll feed of all US-politics markets. */}
+      {trending}
+
+      {/* Infinite-scroll feed of election markets; topic bubbles sit in their
+          own row below the sort/filter controls (Search's extraFilterPills). */}
       <Col className="gap-3">
         <SectionHeader>More election markets</SectionHeader>
         <Search
+          key={feedTopic.slug}
           persistPrefix="election-page-markets"
-          topicSlug="us-politics"
+          topicSlug={feedTopic.slug}
           contractsOnly
           hideSearchTypes
           useUrlParams={false}
           defaultSort="score"
           defaultFilter="open"
+          extraFilterPills={ELECTION_FEED_TOPICS.map((t) => (
+            <FilterPill
+              key={t.slug}
+              selected={t.slug === feedTopic.slug}
+              onSelect={() => setFeedTopic(t)}
+            >
+              {t.label}
+            </FilterPill>
+          ))}
         />
       </Col>
     </Col>
