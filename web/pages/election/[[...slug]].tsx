@@ -24,8 +24,8 @@ export default function Elections(props: ElectionsPageProps) {
   return (
     <Page trackPageView="us midterms page 2026">
       <SEO
-        title="Manifold 2026 Midterm Forecast"
-        description="Live prediction market odds on the 2026 US midterm elections"
+        title="Manifold Elections"
+        description="Live prediction market odds on US elections — the 2028 presidential race and the 2026 midterms"
         image="/election-map24.png"
       />
 

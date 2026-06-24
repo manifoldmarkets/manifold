@@ -5,6 +5,7 @@ import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { FeedContractCard } from './contract/feed-contract-card'
 import { BalanceOfPowerPanel } from './us-elections/balance-of-power-panel'
+import { PoliticsCard } from './us-elections/contracts/politics-card'
 import { Search } from './search'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 
@@ -16,6 +17,7 @@ export function USElectionsPage(
   props: ElectionsPageProps & { hideTitle?: boolean }
 ) {
   const {
+    presidency2028Contract,
     rawSenateStateContracts,
     rawGovernorStateContracts,
     rawSenateCandidateContracts,
@@ -56,12 +58,27 @@ export function USElectionsPage(
     <Col className="mb-8 gap-6 px-1 sm:gap-8 sm:px-2">
       <Col className={hideTitle ? 'hidden' : ''}>
         <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
-          Manifold 2026 Midterm Forecast
+          Elections
         </div>
         <div className="text-canvas-500 text-md mt-2 flex font-normal">
-          Live prediction market odds on the US midterm elections
+          Live prediction market odds on US elections
         </div>
       </Col>
+
+      {/* 2028 presidential field — candidate faces with win odds. */}
+      {presidency2028Contract && (
+        <PoliticsCard
+          contract={presidency2028Contract}
+          viewType="CANDIDATE"
+          customTitle="Who will be president in 2028?"
+          titleSize="lg"
+          excludeAnswers={['No 2028 Election']}
+        />
+      )}
+
+      <div className="text-primary-700 mt-2 text-2xl font-normal sm:text-3xl">
+        2026 Midterms
+      </div>
 
       {/* Big balance-of-power hero: the three levers of federal power. */}
       <BalanceOfPowerPanel

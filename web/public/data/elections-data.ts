@@ -26,6 +26,10 @@ export const MIDTERMS_2026 = {
   houseDistricts: 'will-a-democrat-win-these-us-house',
 } as const
 
+// 2028 presidential election — the most-traded "who will be elected president"
+// market, shown as candidate faces at the top of the page.
+export const PRESIDENT_2028_SLUG = 'who-will-be-elected-president-in-20'
+
 export const presidency2024: StateElectionMarket[] = [
   {
     state: 'AL',
@@ -243,6 +247,8 @@ export type MapContractsDictionary = {
 }
 
 export type ElectionsPageProps = {
+  // 2028 presidential candidate market (faces + win %).
+  presidency2028Contract: Contract | null
   // Per-state maps (community markets, keyed by state code).
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary

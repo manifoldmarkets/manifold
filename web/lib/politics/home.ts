@@ -5,6 +5,7 @@ import {
   ElectionsPageProps,
   MapContractsDictionary,
   MIDTERMS_2026,
+  PRESIDENT_2028_SLUG,
   StateElectionMarket,
 } from 'web/public/data/elections-data'
 import {
@@ -33,6 +34,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
+    presidency2028Contract,
   ] = await Promise.all([
     getStateContracts(getContractFromSlugFunction, senate2026),
     getStateContracts(getContractFromSlugFunction, governors2026),
@@ -43,6 +45,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     getContractFromSlugFunction(MIDTERMS_2026.houseControl),
     getContractFromSlugFunction(MIDTERMS_2026.senateControl),
     getContractFromSlugFunction(MIDTERMS_2026.houseDistricts),
+    getContractFromSlugFunction(PRESIDENT_2028_SLUG),
   ])
 
   const newsDashboards = await Promise.all(
@@ -52,6 +55,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
   const trendingDashboard = await getDashboardProps('politicsheadline')
 
   return {
+    presidency2028Contract,
     rawSenateStateContracts: senateStateContracts,
     rawGovernorStateContracts: governorStateContracts,
     rawSenateCandidateContracts: senateCandidateContracts,
