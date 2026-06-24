@@ -23,6 +23,7 @@ import { DAY_MS } from 'common/util/time'
 import { mergeWith, uniqBy } from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -182,6 +183,14 @@ export function ContractPageContent(props: ContractParams) {
 
   const initialHideGraph = shouldHideGraph(liveContract)
   const [hideGraph, setHideGraph] = useState(initialHideGraph)
+
+  // Deep-linking to the graph (e.g. the elections page's "chart →" links): on
+  // many-answer markets the graph is hidden by default, so `?graph` forces it
+  // open. Done in an effect to avoid an SSR/hydration mismatch.
+  const router = useRouter()
+  useEffect(() => {
+    if (router.isReady && router.query.graph) setHideGraph(false)
+  }, [router.isReady, router.query.graph])
 
   const {
     graphUser,
