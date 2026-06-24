@@ -30,6 +30,23 @@ export const MIDTERMS_2026 = {
 // market, shown as candidate faces at the top of the page.
 export const PRESIDENT_2028_SLUG = 'who-will-be-elected-president-in-20'
 
+// 2028 presidency by party — the most-traded "which party wins" market. Shown as
+// a Democrat-vs-Republican head-to-head bar under the candidate field.
+export const PRESIDENT_2028_PARTY_SLUG = 'which-political-party-wins-the-us-p-nUsCQcZ6Lc'
+
+// Notable 2026 primary races (community markets) — a compact watch-list. Each is
+// the best-trafficked multi-choice market for that primary. Resolved/closed ones
+// are filtered out at fetch time, so this can degrade gracefully as races land.
+export const PRIMARIES_2026 = [
+  'michigan-democratic-senate-primary', // MI — Democratic Senate primary
+  'who-will-win-the-2026-massachusetts', // MA — Democratic Senate primary
+  'who-will-win-the-2026-minnesota-dem', // MN — Democratic Senate primary
+  'who-will-the-democratic-primary-for', // MN — Democratic Governor primary
+  'who-will-win-the-2026-republican-pr', // FL — Republican Governor primary
+  'who-wins-missouris-1st-congressiona', // MO-01 — Democratic House primary
+  'survivor-2026-whose-gop-primary-tor', // National — GOP incumbents vs. Trump
+]
+
 export const presidency2024: StateElectionMarket[] = [
   {
     state: 'AL',
@@ -249,6 +266,8 @@ export type MapContractsDictionary = {
 export type ElectionsPageProps = {
   // 2028 presidential candidate market (faces + win %).
   presidency2028Contract: Contract | null
+  // 2028 presidency-by-party market (Dem-vs-Rep head-to-head bar).
+  presidency2028PartyContract: Contract | null
   // Per-state maps (community markets, keyed by state code).
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
@@ -261,6 +280,8 @@ export type ElectionsPageProps = {
   senateControlContract: Contract | null
   // Per-district House market (independent multi-choice).
   houseDistrictsContract: Contract | null
+  // Notable 2026 primary markets (open only), for the watch-list section.
+  primaryContracts: Contract[]
   // Trending politics dashboards.
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]

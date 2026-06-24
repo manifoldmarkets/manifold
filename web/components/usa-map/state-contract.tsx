@@ -57,7 +57,7 @@ export function StateContract(props: {
 
 export function EmptyStateContract() {
   return (
-    <Col className="text-ink-500 h-[200px] w-full items-center justify-center gap-3 text-sm">
+    <Col className="text-ink-500 h-[120px] w-full items-center justify-center gap-2 text-sm">
       <div className="text-ink-400">Hover or tap a state to see its race</div>
       <Row className="flex-wrap items-center justify-center gap-x-4 gap-y-1">
         <LegendSwatch color={DEM_COLOR} label="Democratic favored" />

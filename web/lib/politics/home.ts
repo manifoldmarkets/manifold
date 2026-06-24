@@ -6,6 +6,8 @@ import {
   MapContractsDictionary,
   MIDTERMS_2026,
   PRESIDENT_2028_SLUG,
+  PRESIDENT_2028_PARTY_SLUG,
+  PRIMARIES_2026,
   StateElectionMarket,
 } from 'web/public/data/elections-data'
 import {
@@ -35,6 +37,8 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     senateControlContract,
     houseDistrictsContract,
     presidency2028Contract,
+    presidency2028PartyContract,
+    primaryContractsRaw,
   ] = await Promise.all([
     getStateContracts(getContractFromSlugFunction, senate2026),
     getStateContracts(getContractFromSlugFunction, governors2026),
@@ -46,7 +50,15 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     getContractFromSlugFunction(MIDTERMS_2026.senateControl),
     getContractFromSlugFunction(MIDTERMS_2026.houseDistricts),
     getContractFromSlugFunction(PRESIDENT_2028_SLUG),
+    getContractFromSlugFunction(PRESIDENT_2028_PARTY_SLUG),
+    Promise.all(PRIMARIES_2026.map(getContractFromSlugFunction)),
   ])
+
+  // Keep only primaries that still exist and are open (so the watch-list shrinks
+  // gracefully as races resolve, rather than showing stale/settled markets).
+  const primaryContracts = primaryContractsRaw.filter(
+    (c): c is Contract => !!c && !c.isResolved && !c.resolution
+  )
 
   const newsDashboards = await Promise.all(
     headlines.map(async (headline) => getDashboardProps(headline.slug))
@@ -56,6 +68,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
 
   return {
     presidency2028Contract,
+    presidency2028PartyContract,
     rawSenateStateContracts: senateStateContracts,
     rawGovernorStateContracts: governorStateContracts,
     rawSenateCandidateContracts: senateCandidateContracts,
@@ -64,6 +77,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
+    primaryContracts,
     newsDashboards,
     headlines,
     trendingDashboard,
