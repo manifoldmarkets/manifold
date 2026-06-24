@@ -21,13 +21,13 @@ case $ENV in
     dev)
         GCLOUD_PROJECT=dev-mantic-markets
         MIN_REPLICAS=1
-        MAX_REPLICAS=2
+        MAX_REPLICAS=1
         TARGET_CPU_UTILIZATION=0.60
         COOL_DOWN_PERIOD=180 ;;
     prod)
         GCLOUD_PROJECT=mantic-markets
         MIN_REPLICAS=1
-        MAX_REPLICAS=2
+        MAX_REPLICAS=1
         TARGET_CPU_UTILIZATION=0.60
         COOL_DOWN_PERIOD=180 ;;
     *)
