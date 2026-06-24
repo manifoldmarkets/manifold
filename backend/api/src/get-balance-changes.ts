@@ -2,7 +2,11 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { orderBy } from 'lodash'
-import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
+import {
+  BetBalanceChange,
+  TxnBalanceChange,
+  BET_BALANCE_CHANGE_TYPES,
+} from 'common/balance-change'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
@@ -14,25 +18,45 @@ import { getContractsDirect } from 'shared/supabase/contracts'
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
-  const { userId, before, after, limit, offset } = props
+  const { userId, before, after, limit, offset, changeType } = props
+
+  const isBetType =
+    changeType !== undefined &&
+    (BET_BALANCE_CHANGE_TYPES as readonly string[]).includes(changeType)
+  const fetchBets = !changeType || isBetType
+  const fetchTxns = !changeType || !isBetType
+  const fetchLiquidity = !changeType || changeType === 'ADD_SUBSIDY'
+
   const [betBalanceChanges, txnBalanceChanges, liquidityChanges] =
     await Promise.all([
-      getBetBalanceChanges(before, after, userId),
-      getTxnBalanceChanges(before, after, userId),
-      getLiquidityBalanceChanges(before, after, userId),
+      fetchBets ? getBetBalanceChanges(before, after, userId) : [],
+      fetchTxns
+        ? getTxnBalanceChanges(
+            before,
+            after,
+            userId,
+            !isBetType ? changeType : undefined
+          )
+        : [],
+      fetchLiquidity ? getLiquidityBalanceChanges(before, after, userId) : [],
     ])
-  const allChanges = orderBy(
+
+  let allChanges = orderBy(
     [...betBalanceChanges, ...txnBalanceChanges, ...liquidityChanges],
     (change) => change.createdTime,
     'desc'
   )
+  if (changeType) {
+    allChanges = allChanges.filter((c) => c.type === changeType)
+  }
   return allChanges.slice(offset, offset + limit)
 }
 
 const getTxnBalanceChanges = async (
   before: number | undefined,
   after: number,
-  userId: string
+  userId: string,
+  categoryFilter?: string
 ) => {
   const pg = createSupabaseDirectClient()
   const balanceChanges = [] as TxnBalanceChange[]
@@ -44,8 +68,11 @@ const getTxnBalanceChanges = async (
       ($1 is null or created_time < millis_to_ts($1)) and
       created_time >= millis_to_ts($2)
       and (to_id = $3 or from_id = $3)
+      ${categoryFilter ? 'and category = $4' : ''}
     order by created_time`,
-    [before, after, userId],
+    categoryFilter
+      ? [before, after, userId, categoryFilter]
+      : [before, after, userId],
     convertTxn
   )
   const contractIds = filterDefined(

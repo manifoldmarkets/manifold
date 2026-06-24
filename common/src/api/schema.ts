@@ -1808,6 +1808,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(100),
         offset: z.coerce.number().gte(0).default(0),
         userId: z.string(),
+        changeType: z.string().optional(),
       })
       .strict(),
   },
