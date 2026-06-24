@@ -20,6 +20,7 @@ import { getTopMarketsYesterday } from 'api/get-top-markets-yesterday'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getTotalLoanAmount } from 'api/get-total-loan-amount'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
+import { getEmbeddingFeed } from 'api/get-embedding-feed'
 import { getUnifiedFeed } from 'api/get-unified-feed'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
@@ -435,6 +436,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'multi-sell': multiSell,
   'get-feed': getFeed,
   'get-unified-feed': getUnifiedFeed,
+  'get-embedding-feed': getEmbeddingFeed,
   'get-mana-supply': getManaSupply,
   'update-mod-report': updateModReport,
   'get-mod-reports': getModReports,
