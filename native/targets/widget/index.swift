@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import UIKit
 
 // MARK: - Shared data (App Group)
 //
@@ -11,6 +12,14 @@ import SwiftUI
 
 private let kAppGroup = "group.com.markets.manifold"
 private let kStreakKey = "streakData"
+
+// When true, the widget uses the SIMPLE render path: it reads the App Group
+// directly in the view and draws the streak on a solid colour — no Image, no
+// gradient, no live timer. This is the proven-safe path (the diagnostic build
+// rendered fine this way). The richer `content` design (gradients, crane
+// watermark, lock-screen countdown) is layered back on once each piece is
+// confirmed on-device. Set false to use the full design.
+private let kDiagnostic = true
 
 enum StreakState {
   case lit      // bet today — flame is hot
@@ -59,6 +68,29 @@ func loadStreakData() -> StreakData? {
   return try? JSONDecoder().decode(StreakData.self, from: raw)
 }
 
+private let kQuestKey = "questData"
+
+// Mirror of NativeQuestItem (common/native-message.ts). `period` is "daily" or
+// "weekly"; the widget resets `done` to false on its own once that period rolls.
+struct QuestSnapshot: Decodable {
+  let title: String
+  let rewardMana: Int
+  let done: Bool
+  let period: String
+}
+
+private struct QuestPayload: Decodable {
+  let quests: [QuestSnapshot]
+}
+
+func loadQuestData() -> [QuestSnapshot] {
+  guard let defaults = UserDefaults(suiteName: kAppGroup),
+        let raw = defaults.data(forKey: kQuestKey),
+        let payload = try? JSONDecoder().decode(QuestPayload.self, from: raw)
+  else { return [] }
+  return payload.quests
+}
+
 // MARK: - Reset time (next midnight Pacific)
 
 func nextPacificReset(after date: Date) -> Date {
@@ -74,6 +106,34 @@ func pacificStartOfDay(_ date: Date) -> Date {
   var cal = Calendar(identifier: .gregorian)
   cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
   return cal.startOfDay(for: date)
+}
+
+// Next Monday 00:00 Pacific — the weekly-quest reset (backend: Mondays midnight LA).
+func nextPacificWeekReset(after date: Date) -> Date {
+  var cal = Calendar(identifier: .gregorian)
+  cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+  var comps = DateComponents()
+  comps.weekday = 2 // Monday (1 = Sunday)
+  comps.hour = 0
+  comps.minute = 0
+  comps.second = 0
+  return cal.nextDate(after: date, matching: comps, matchingPolicy: .nextTime)
+    ?? nextPacificReset(after: date)
+}
+
+// Effective quest rows for an entry rendered at `date`: a quest stays done only
+// until its period rolls over (daily → next midnight PT, weekly → next Monday).
+// After that we assume "not done" — the safe empty state.
+func questItems(_ snaps: [QuestSnapshot], at date: Date, now: Date) -> [QuestItem] {
+  if snaps.isEmpty { return [] }
+  let dayEnd = nextPacificReset(after: now).timeIntervalSince1970 * 1000
+  let weekEnd = nextPacificWeekReset(after: now).timeIntervalSince1970 * 1000
+  let t = date.timeIntervalSince1970 * 1000
+  return snaps.map { s in
+    let periodEnd = s.period == "weekly" ? weekEnd : dayEnd
+    return QuestItem(title: s.title, rewardMana: s.rewardMana,
+                     done: s.done && t < periodEnd)
+  }
 }
 
 // Recompute state from the snapshot vs. the current Pacific day. Bet today →
@@ -136,32 +196,46 @@ struct StreakEntry: TimelineEntry {
 }
 
 struct Provider: TimelineProvider {
-  // Real entry from the App Group snapshot. No data / logged out / no streak yet
-  // → the logged-out invite. Quests aren't wired natively yet, so always empty.
-  func entry(_ date: Date) -> StreakEntry {
-    let reset = nextPacificReset(after: date)
-    guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else {
-      return StreakEntry(date: date, streak: 0, resetDate: reset, state: .pending,
-                         quests: [], freezesLeft: 0, loggedIn: false)
-    }
-    return StreakEntry(date: date, streak: d.streak, resetDate: reset,
-                       state: computeState(d, now: date), quests: [],
-                       freezesLeft: d.freezesLeft, loggedIn: true)
-  }
-
   // Representative sample for the widget gallery / loading shimmer.
   func placeholder(in context: Context) -> StreakEntry {
-    StreakEntry(date: Date(), streak: 7, resetDate: nextPacificReset(after: Date()),
-                state: .lit, quests: [], freezesLeft: 2, loggedIn: true)
+    let sample = [
+      QuestItem(title: "Share a market", rewardMana: 5, done: true),
+      QuestItem(title: "Create a market", rewardMana: 100, done: false),
+    ]
+    return StreakEntry(date: Date(), streak: 7, resetDate: nextPacificReset(after: Date()),
+                       state: .lit, quests: sample, freezesLeft: 2, loggedIn: true)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
-    completion(context.isPreview ? placeholder(in: context) : entry(Date()))
+    if kDiagnostic { completion(trivialEntry()); return }
+    completion(context.isPreview ? placeholder(in: context) : currentEntry(Date()))
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<StreakEntry>) -> Void) {
-    let e = entry(Date())
+    // Diagnostic: a trivial entry that never reads the App Group, so the view is
+    // guaranteed to render if the extension runs. The view does the reading.
+    let e = kDiagnostic ? trivialEntry() : currentEntry(Date())
     completion(Timeline(entries: [e], policy: .after(e.resetDate)))
+  }
+
+  private func trivialEntry() -> StreakEntry {
+    let now = Date()
+    return StreakEntry(date: now, streak: 0, resetDate: now.addingTimeInterval(3600),
+                       state: .pending, quests: [], freezesLeft: 0, loggedIn: false)
+  }
+
+  // Single current entry from the App Group snapshot. No data / logged out / no
+  // streak yet → the logged-out invite.
+  private func currentEntry(_ now: Date) -> StreakEntry {
+    let reset0 = nextPacificReset(after: now)
+    guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else {
+      return StreakEntry(date: now, streak: 0, resetDate: reset0, state: .pending,
+                         quests: [], freezesLeft: 0, loggedIn: false)
+    }
+    return StreakEntry(date: now, streak: d.streak, resetDate: reset0,
+                       state: computeState(d, now: now),
+                       quests: questItems(loadQuestData(), at: now, now: now),
+                       freezesLeft: d.freezesLeft, loggedIn: true)
   }
 }
 
@@ -189,30 +263,218 @@ struct StreakWidgetEntryView: View {
   @Environment(\.widgetFamily) var family
   var entry: StreakEntry
 
-  var body: some View {
-    content
-      .containerBackground(for: .widget) {
-        switch family {
-        case .systemSmall:
-          ZStack(alignment: .bottomTrailing) {
-            backgroundGradient(for: entry.state)
-            logo(92, opacity: 0.13).padding(.trailing, 6).padding(.bottom, 22)
+  @ViewBuilder var body: some View {
+    if kDiagnostic {
+      simpleStreakView
+        .containerBackground(for: .widget) {
+          switch family {
+          case .systemSmall:
+            ZStack(alignment: .bottomTrailing) {
+              gradientBG()
+              logo(92, opacity: 0.13).padding(.trailing, 6).padding(.bottom, 22)
+            }
+          case .systemMedium:
+            ZStack(alignment: .bottomTrailing) {
+              gradientBG()
+              logo(120, opacity: 0.10).padding(.trailing, 12).padding(.bottom, 10)
+            }
+          default:
+            Color.clear // lock-screen accessories use the system material
           }
-        case .systemMedium:
-          backgroundGradient(for: entry.state)
-        default:
-          Color.clear // lock-screen accessories use the system material
         }
-      }
+    } else {
+      content
+        .containerBackground(for: .widget) {
+          switch family {
+          case .systemSmall:
+            ZStack(alignment: .bottomTrailing) {
+              backgroundGradient(for: entry.state)
+              logo(92, opacity: 0.13).padding(.trailing, 6).padding(.bottom, 22)
+            }
+          case .systemMedium:
+            backgroundGradient(for: entry.state)
+          default:
+            Color.clear // lock-screen accessories use the system material
+          }
+        }
+    }
   }
 
-  // Manifold crane mark (white). iOS tints it on the lock screen.
-  private func logo(_ size: CGFloat, opacity: Double = 0.95) -> some View {
-    Image("ManifoldLogo")
-      .resizable()
-      .aspectRatio(contentMode: .fit)
-      .frame(width: size, height: size)
-      .opacity(opacity)
+  // MARK: Simple render path — reads the App Group directly (the provider returns
+  // a trivial entry). Solid colours, no Image, no gradient, no timer: the
+  // proven-safe path from the diagnostic build. The richer design layers back on
+  // once each piece is confirmed.
+
+  private func snapshot() -> StreakData? {
+    guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else { return nil }
+    return d
+  }
+
+  // State-based gradient (pure SwiftUI; the same palette as the full design).
+  private func gradientBG() -> LinearGradient {
+    guard let d = snapshot() else { return greyGradient }
+    switch computeState(d, now: Date()) {
+    case .lit:     return flameGradient
+    case .frozen:  return iceGradient
+    case .pending: return greyGradient
+    }
+  }
+
+  @ViewBuilder private var simpleStreakView: some View {
+    switch family {
+    case .accessoryCircular:    simpleCircular
+    case .accessoryInline:      simpleInline
+    case .accessoryRectangular: simpleRectangular
+    case .systemMedium:         simpleMedium
+    default:                    simpleHome
+    }
+  }
+
+  // Lock screen — circular: ring fills white once you've bet today; crane (nil-safe)
+  // or ice in the middle. NO AccessoryWidgetBackground (the suspected culprit) —
+  // everything here is standard SwiftUI.
+  private var simpleCircular: some View {
+    let d = snapshot()
+    let state = d.map { computeState($0, now: Date()) } ?? .pending
+    let done = state == .lit
+    return ZStack {
+      if state == .frozen {
+        Text("🧊").font(.system(size: 38)).opacity(0.32)
+        circularFrost
+      } else {
+        logo(44, opacity: 0.18)
+      }
+      Text(d.map { "\($0.streak)" } ?? "0")
+        .font(.system(size: 22, weight: .bold)).lineLimit(1).minimumScaleFactor(0.4).padding(3)
+    }
+    .overlay(Circle().strokeBorder(.white.opacity(done ? 0.95 : 0.18), lineWidth: done ? 3 : 2))
+  }
+
+  // Lock screen — rectangular: streak + static status line (no countdown).
+  @ViewBuilder private var simpleRectangular: some View {
+    let d = snapshot()
+    let state = d.map { computeState($0, now: Date()) } ?? .pending
+    HStack(spacing: 10) {
+      Text(state == .frozen ? "🧊" : "🔥").font(.system(size: 26))
+      VStack(alignment: .leading, spacing: 1) {
+        Text(d.map { "\($0.streak)-day streak" } ?? "Start a streak")
+          .font(.system(size: 15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
+        if let d = d {
+          switch state {
+          case .pending:
+            Text("Bet today to keep it 🔥")
+              .font(.system(size: 12)).opacity(0.9).lineLimit(1).minimumScaleFactor(0.6)
+          case .lit:
+            Text("Done today ✓").font(.system(size: 12)).opacity(0.9)
+          case .frozen:
+            Text("Frozen · \(d.freezesLeft) left").font(.system(size: 12)).opacity(0.9)
+          }
+        } else {
+          Text("Open Manifold").font(.system(size: 12)).opacity(0.9)
+        }
+      }
+      Spacer(minLength: 0)
+    }
+  }
+
+  // Lock screen — inline (beside the clock). No countdown.
+  private var simpleInline: some View {
+    let d = snapshot()
+    let glyph = d.map { computeState($0, now: Date()) == .frozen ? "🧊" : "🔥" } ?? "🔥"
+    return HStack(spacing: 4) {
+      Text(glyph)
+      Text(d.map { "\($0.streak)-day streak" } ?? "Start a streak")
+        .lineLimit(1).minimumScaleFactor(0.6)
+    }
+  }
+
+  // Medium home: streak on the left, rotating daily hook on the right.
+  @ViewBuilder private var simpleMedium: some View {
+    if let d = snapshot() {
+      let state = computeState(d, now: Date())
+      HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 0) {
+          Text(state == .frozen ? "🧊" : "🔥")
+            .font(.system(size: 38))
+            .grayscale(state == .pending ? 1 : 0)
+            .opacity(state == .pending ? 0.8 : 1)
+          Spacer(minLength: 2)
+          Text("\(d.streak)")
+            .font(.system(size: 42, weight: .heavy)).foregroundColor(.white)
+            .lineLimit(1).minimumScaleFactor(0.4)
+          Text("day streak")
+            .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
+          if state == .frozen {
+            Text("Frozen · \(d.freezesLeft) left")
+              .font(.system(size: 11, weight: .bold)).foregroundColor(.white.opacity(0.9))
+              .lineLimit(1).minimumScaleFactor(0.6)
+          }
+        }
+        .frame(width: 92, alignment: .leading)
+        Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
+        Text(hookText(state: state, date: Date()))
+          .font(.system(size: 14, weight: .bold)).foregroundColor(.white)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+          .lineLimit(3).minimumScaleFactor(0.7)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+      .padding(16)
+    } else {
+      simpleHome
+    }
+  }
+
+  @ViewBuilder private var simpleHome: some View {
+    if let d = snapshot() {
+      let state = computeState(d, now: Date())
+      VStack(alignment: .leading, spacing: 0) {
+        Text(state == .frozen ? "🧊" : "🔥")
+          .font(.system(size: 44))
+          .grayscale(state == .pending ? 1 : 0)
+          .opacity(state == .pending ? 0.8 : 1)
+        Spacer(minLength: 4)
+        Text("\(d.streak)")
+          .font(.system(size: 46, weight: .heavy)).foregroundColor(.white)
+          .lineLimit(1).minimumScaleFactor(0.4)
+        Text("day streak")
+          .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
+        if state == .frozen {
+          Text("Frozen · \(d.freezesLeft) left")
+            .font(.system(size: 11, weight: .bold)).foregroundColor(.white.opacity(0.9))
+            .lineLimit(1).minimumScaleFactor(0.6)
+        }
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+      .padding(14)
+      .overlay { if state == .frozen { smallFrost } }
+    } else {
+      VStack(alignment: .leading, spacing: 2) {
+        Text("🔥").font(.system(size: 42)).grayscale(1).opacity(0.7)
+        Spacer(minLength: 4)
+        Text("Start a streak")
+          .font(.system(size: 18, weight: .heavy)).foregroundColor(.white)
+          .lineLimit(2).minimumScaleFactor(0.6)
+        Text("Open Manifold")
+          .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+      .padding(14)
+    }
+  }
+
+  // Manifold crane mark (white). Loaded via UIImage with a nil-check so a missing
+  // asset falls back to nothing instead of breaking the render — if the crane
+  // shows, the asset resolves; if it's blank, the asset isn't in the widget bundle.
+  @ViewBuilder private func logo(_ size: CGFloat, opacity: Double = 0.95) -> some View {
+    if let ui = UIImage(named: "ManifoldLogo") {
+      Image(uiImage: ui)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: size, height: size)
+        .opacity(opacity)
+    } else {
+      Color.clear.frame(width: size, height: size)
+    }
   }
 
   private func backgroundGradient(for state: StreakState) -> LinearGradient {
@@ -306,16 +568,21 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Live countdown to midnight PT.
+  // Live countdown to midnight PT. Clamp defensively so the range can never be
+  // degenerate (lowerBound must be <= upperBound, or SwiftUI traps).
   private var countdown: some View {
-    Text(timerInterval: entry.date...entry.resetDate, countsDown: true)
+    let start = min(entry.date, entry.resetDate)
+    let end = max(entry.resetDate, start.addingTimeInterval(1))
+    return Text(timerInterval: start...end, countsDown: true)
       .monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
   }
 
   @ViewBuilder private func statusLine(size: CGFloat) -> some View {
     switch entry.state {
     case .pending:
-      countdown.font(.system(size: size, weight: .bold)).foregroundColor(.white)
+      // Home widgets convey urgency via the greyed-out state, not a live timer
+      // (Duolingo-style). The countdown lives on the lock-screen accessories.
+      EmptyView()
     case .lit:
       EmptyView() // the lit-up orange already says "done today"
     case .frozen:
