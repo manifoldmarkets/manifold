@@ -5,6 +5,7 @@ import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { FeedContractCard } from './contract/feed-contract-card'
 import { BalanceOfPowerPanel } from './us-elections/balance-of-power-panel'
+import { Search } from './search'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 
 // Kept for legacy political market panels that still reference it.
@@ -86,6 +87,22 @@ export function USElectionsPage(
           showGraph
         />
       )}
+
+      {/* Infinite-scroll feed of all US-politics markets. */}
+      <Col className="gap-2">
+        <div className="text-primary-700 text-xl font-normal sm:text-2xl">
+          More election markets
+        </div>
+        <Search
+          persistPrefix="election-page-markets"
+          topicSlug="us-politics"
+          contractsOnly
+          hideSearchTypes
+          useUrlParams={false}
+          defaultSort="score"
+          defaultFilter="open"
+        />
+      </Col>
     </Col>
   )
 }
