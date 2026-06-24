@@ -592,8 +592,8 @@ export function Search(props: SearchProps) {
                   }
                   className={clsx(
                     'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium text-white',
-                    'bg-gradient-to-r from-blue-600 via-violet-600 to-rose-600',
-                    'shadow-sm shadow-violet-500/30 ring-1 ring-white/20',
+                    'bg-gradient-to-r from-blue-800 to-red-700',
+                    'shadow-sm shadow-blue-900/30 ring-1 ring-white/20',
                     'transition-all hover:brightness-110'
                   )}
                 >

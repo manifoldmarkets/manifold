@@ -88,8 +88,9 @@ export function HomepageMap(props: {
   // falling back to the clicked/pinned state.
   const selectedState = hoveredState ?? targetState
 
+  // Bare — rendered inside the "2026 Midterms" card, which supplies the frame.
   return (
-    <Col className="bg-canvas-0 rounded-xl p-4">
+    <Col>
       <MapTab mode={mode} setMode={setMode} />
       {mode === 'governor' ? (
         <>

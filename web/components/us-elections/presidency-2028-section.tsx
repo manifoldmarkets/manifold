@@ -43,25 +43,30 @@ const REP_LOGO = '/politics-party/republican_symbol.png'
 
 const EXCLUDED_ANSWERS = ['No 2028 Election']
 
-// The 2028 presidential field, sitting above the midterms content. Collapsible
-// so it can step out of the way — when collapsed it still shows the leading
-// Democrat and Republican as a one-line summary.
-export function Presidency2028Section(props: { contract: Contract }) {
+// The whole 2028 presidential outlook in one collapsible card. Collapsed (the
+// default) it's a neat one-liner: the title plus the leading Democrat and
+// Republican. Expanded it reveals the party split (Dem-vs-Rep, with betting)
+// and the full candidate field.
+export function Presidency2028Section(props: {
+  contract: Contract
+  partyContract: Contract | null
+}) {
   const contract = useLiveContract(props.contract)
   const [expanded, setExpanded] = usePersistentInMemoryState(
-    true,
+    false,
     'expand-2028-presidency'
   )
 
   const leaders = getPartyLeaders(contract)
+  const partyProbs = getPartyProbs(props.partyContract)
 
   return (
-    <Col className="gap-1.5">
-      <Row className="items-center justify-between gap-2">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="group flex min-w-0 items-center gap-1.5 text-left"
-        >
+    <Col className="bg-canvas-0 overflow-hidden rounded-xl">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="hover:bg-canvas-50 group flex flex-col gap-2 px-4 py-3 text-left transition-colors sm:flex-row sm:items-center sm:justify-between"
+      >
+        <Row className="min-w-0 items-center gap-1.5">
           <ChevronDownIcon
             className={clsx(
               'text-ink-400 group-hover:text-ink-700 h-5 w-5 shrink-0 transition-transform',
@@ -71,23 +76,66 @@ export function Presidency2028Section(props: { contract: Contract }) {
           <span className="group-hover:text-primary-700 truncate font-semibold transition-colors sm:text-lg">
             Who will be president in 2028?
           </span>
-        </button>
-        {!expanded && leaders.length > 0 && (
-          <Row className="shrink-0 items-center gap-3">
+        </Row>
+        {!expanded && (
+          <Row className="ml-[26px] flex-wrap items-center gap-x-4 gap-y-1.5 sm:ml-0">
+            {partyProbs && (
+              <PartyMiniPreview dem={partyProbs.dem} rep={partyProbs.rep} />
+            )}
             {leaders.map((l) => (
               <LeaderChip key={l.text} {...l} />
             ))}
           </Row>
         )}
-      </Row>
+      </button>
       {expanded && (
-        <CandidatePanel
-          contract={contract as MultiContract}
-          maxAnswers={8}
-          excludeAnswers={EXCLUDED_ANSWERS}
-        />
+        <Col className="border-ink-200 gap-3 border-t px-4 py-4">
+          {props.partyContract && (
+            <PresidencyPartyBar contract={props.partyContract} />
+          )}
+          <div className="border-ink-200 border-t" />
+          <Col className="gap-1.5">
+            <Row className="items-center justify-between">
+              <span className="text-ink-500 text-xs font-semibold uppercase tracking-wide">
+                By candidate
+              </span>
+              <Link
+                href={`${contractPath(contract)}?graph=true`}
+                className="text-ink-400 hover:text-primary-600 text-xs hover:underline"
+              >
+                chart →
+              </Link>
+            </Row>
+            <CandidatePanel
+              contract={contract as MultiContract}
+              maxAnswers={8}
+              excludeAnswers={EXCLUDED_ANSWERS}
+            />
+          </Col>
+        </Col>
       )}
     </Col>
+  )
+}
+
+// Compact Dem-vs-Rep split for the collapsed header — the party-level companion
+// to the candidate face chips.
+function PartyMiniPreview(props: { dem: number; rep: number }) {
+  const { dem, rep } = props
+  const denom = dem + rep || 1
+  return (
+    <Row className="items-center gap-1.5">
+      <span className="text-sm font-bold" style={{ color: DEM_COLOR }}>
+        {formatPercent(dem)}
+      </span>
+      <div className="flex h-1.5 w-10 overflow-hidden rounded-full">
+        <div style={{ width: `${(dem / denom) * 100}%`, backgroundColor: DEM_COLOR }} />
+        <div style={{ width: `${(rep / denom) * 100}%`, backgroundColor: REP_COLOR }} />
+      </div>
+      <span className="text-sm font-bold" style={{ color: REP_COLOR }}>
+        {formatPercent(rep)}
+      </span>
+    </Row>
   )
 }
 
@@ -140,7 +188,8 @@ function LeaderChip(props: Leader) {
 // The 2028 presidency as a Democrat-vs-Republican head-to-head: party logos
 // left/right, a split bar, and one-tap betting on either side. Party odds come
 // from the community "which party wins" market (tolerant of varied labels).
-export function PresidencyPartyBar(props: { contract: Contract }) {
+// Rendered inset inside the collapsible 2028 card.
+function PresidencyPartyBar(props: { contract: Contract }) {
   const contract = useLiveContract(props.contract)
   const [betAnswer, setBetAnswer] = useState<Answer | undefined>()
 
@@ -161,10 +210,10 @@ export function PresidencyPartyBar(props: { contract: Contract }) {
   }
 
   return (
-    <Col className="bg-canvas-0 gap-2 rounded-xl p-3 sm:p-4">
+    <Col className="gap-2">
       <Row className="items-center justify-between">
-        <span className="text-ink-700 font-medium">
-          Which party wins the presidency in 2028?
+        <span className="text-ink-500 text-xs font-semibold uppercase tracking-wide">
+          By party
         </span>
         <Link
           href={contractPath(contract)}
