@@ -277,7 +277,7 @@ export const BalanceChangeTable = (props: { user: User }) => {
         balanceChanges={balanceChanges}
         previousBalanceChanges={previousBalanceChanges}
         user={user}
-        hideBalance={!!query}
+        hideBalance={!!query || changeType !== 'all'}
       />
       <PaginationNextPrev
         isStart={page === 0}
