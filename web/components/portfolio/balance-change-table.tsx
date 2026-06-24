@@ -14,6 +14,7 @@ import { User } from 'common/user'
 import { ReactNode, useEffect, useState } from 'react'
 import {
   AnyBalanceChangeType,
+  BALANCE_CHANGE_TYPE_LABELS,
   BetBalanceChange,
   isBetChange,
   isTxnChange,
@@ -41,8 +42,17 @@ import { QuestType } from 'common/quest'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { PaginationNextPrev } from '../widgets/pagination'
+import { SelectDropdown } from '../widgets/select-dropdown'
 
 const BALANCE_CHANGES_PER_PAGE = 50
+
+const CHANGE_TYPE_OPTIONS = [
+  { value: 'all', label: 'All types' },
+  ...Object.entries(BALANCE_CHANGE_TYPE_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  })),
+]
 
 export const BalanceChangeTable = (props: { user: User }) => {
   const { user } = props
@@ -51,6 +61,7 @@ export const BalanceChangeTable = (props: { user: User }) => {
   const [before, setBefore] = useState<number | undefined>(undefined)
   const [after, setAfter] = useState<number | undefined>(undefined)
   const [showDateFilters, setShowDateFilters] = useState(false)
+  const [changeType, setChangeType] = useState<string>('all')
 
   const [query, setQuery] = useState('')
 
@@ -59,6 +70,7 @@ export const BalanceChangeTable = (props: { user: User }) => {
   const isSearching = query.trim().length > 0
   const pageOffset = isSearching ? 0 : page * BALANCE_CHANGES_PER_PAGE
   const pageLimit = isSearching ? 1000 : BALANCE_CHANGES_PER_PAGE + 1
+  const changeTypeParam = changeType === 'all' ? undefined : changeType
 
   const { data: allBalanceChanges, loading } = useAPIGetter(
     'get-balance-changes',
@@ -68,11 +80,12 @@ export const BalanceChangeTable = (props: { user: User }) => {
       after,
       limit: pageLimit,
       offset: pageOffset,
+      changeType: changeTypeParam,
     },
     undefined,
     `balance-changes-${user.id}-${pageOffset}-${pageLimit}-${
       before ?? 'none'
-    }-${after ?? 'none'}`
+    }-${after ?? 'none'}-${changeType}`
   )
   const { data: previousBalanceChangesData } = useAPIGetter(
     'get-balance-changes',
@@ -83,17 +96,18 @@ export const BalanceChangeTable = (props: { user: User }) => {
           before,
           after,
           limit: pageOffset,
+          changeType: changeTypeParam,
         },
     undefined,
     `balance-changes-${user.id}-previous-${pageOffset}-${before ?? 'none'}-${
       after ?? 'none'
-    }`,
+    }-${changeType}`,
     page > 0 && !isSearching
   )
 
   useEffect(() => {
     setPage(0)
-  }, [query, before, after])
+  }, [query, before, after, changeType])
   const { data: cashouts } = useAPIGetter('get-cashouts', {
     userId: user.id,
   })
@@ -150,73 +164,84 @@ export const BalanceChangeTable = (props: { user: User }) => {
       />
 
       <Row className="flex-wrap items-center justify-between gap-2">
-        {showDateFilters ? (
-          <Row className="flex-wrap items-center gap-2">
-            <Row className="flex-nowrap items-center gap-2">
-              <Input
-                type="date"
-                className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
-                value={after ? dayjs(after).format('YYYY-MM-DD') : ''}
-                max={before ? dayjs(before).format('YYYY-MM-DD') : undefined}
-                onChange={(e) =>
-                  setAfter(
-                    e.target.value
-                      ? dayjs(e.target.value).startOf('day').valueOf()
-                      : undefined
-                  )
-                }
-              />
-              <span className="text-ink-700 whitespace-nowrap text-sm">to</span>
-              <Input
-                type="date"
-                className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
-                value={before ? dayjs(before).format('YYYY-MM-DD') : ''}
-                min={after ? dayjs(after).format('YYYY-MM-DD') : undefined}
-                onChange={(e) =>
-                  setBefore(
-                    e.target.value
-                      ? dayjs(e.target.value).endOf('day').valueOf()
-                      : undefined
-                  )
-                }
-              />
+        <Row className="flex-wrap items-center gap-2">
+          {showDateFilters ? (
+            <Row className="flex-wrap items-center gap-2">
+              <Row className="flex-nowrap items-center gap-2">
+                <Input
+                  type="date"
+                  className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+                  value={after ? dayjs(after).format('YYYY-MM-DD') : ''}
+                  max={before ? dayjs(before).format('YYYY-MM-DD') : undefined}
+                  onChange={(e) =>
+                    setAfter(
+                      e.target.value
+                        ? dayjs(e.target.value).startOf('day').valueOf()
+                        : undefined
+                    )
+                  }
+                />
+                <span className="text-ink-700 whitespace-nowrap text-sm">
+                  to
+                </span>
+                <Input
+                  type="date"
+                  className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+                  value={before ? dayjs(before).format('YYYY-MM-DD') : ''}
+                  min={after ? dayjs(after).format('YYYY-MM-DD') : undefined}
+                  onChange={(e) =>
+                    setBefore(
+                      e.target.value
+                        ? dayjs(e.target.value).endOf('day').valueOf()
+                        : undefined
+                    )
+                  }
+                />
+              </Row>
+              <Row className="flex-nowrap items-center gap-2">
+                <Button
+                  color="gray-outline"
+                  className="whitespace-nowrap"
+                  size="xs"
+                  onClick={() => {
+                    setAfter(undefined)
+                    setBefore(undefined)
+                  }}
+                >
+                  Clear dates
+                </Button>
+                <Button
+                  color="gray-outline"
+                  className="whitespace-nowrap"
+                  size="xs"
+                  onClick={() => setShowDateFilters(false)}
+                >
+                  Hide dates
+                </Button>
+              </Row>
             </Row>
-            <Row className="flex-nowrap items-center gap-2">
+          ) : (
+            <Row className="items-center gap-2">
+              <span className="text-ink-700 text-sm">{dateFilterText}</span>
               <Button
                 color="gray-outline"
-                className="whitespace-nowrap"
                 size="xs"
-                onClick={() => {
-                  setAfter(undefined)
-                  setBefore(undefined)
-                }}
-              >
-                Clear dates
-              </Button>
-              <Button
-                color="gray-outline"
                 className="whitespace-nowrap"
-                size="xs"
-                onClick={() => setShowDateFilters(false)}
+                onClick={() => setShowDateFilters(true)}
               >
-                Hide dates
+                <CalendarIcon className="mr-1 h-4 w-4" />
+                Filter dates
               </Button>
             </Row>
-          </Row>
-        ) : (
-          <Row className="items-center gap-2">
-            <span className="text-ink-700 text-sm">{dateFilterText}</span>
-            <Button
-              color="gray-outline"
-              size="xs"
-              className="whitespace-nowrap"
-              onClick={() => setShowDateFilters(true)}
-            >
-              <CalendarIcon className="mr-1 h-4 w-4" />
-              Filter dates
-            </Button>
-          </Row>
-        )}
+          )}
+          <SelectDropdown
+            value={changeType}
+            options={CHANGE_TYPE_OPTIONS}
+            onChange={setChangeType}
+            buttonClassName="!h-8 !py-1 !text-sm whitespace-nowrap"
+            aria-label="Filter by change type"
+          />
+        </Row>
         {hasCashouts && (
           <DropdownMenu
             items={[
