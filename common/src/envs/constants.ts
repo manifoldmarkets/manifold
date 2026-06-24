@@ -191,6 +191,7 @@ export const BOT_USERNAMES = [
   'Gluten',
   'Rice',
   'pythia',
+  'KemboBot',
 ]
 
 export const MOD_IDS = [
