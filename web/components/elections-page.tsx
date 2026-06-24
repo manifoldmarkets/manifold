@@ -29,7 +29,7 @@ export function USElectionsPage(
 
   const trending =
     trendingDashboard.state == 'not found' ? null : (
-      <Col className="-mb-6">
+      <Col>
         <Row className="items-center gap-1 font-semibold sm:text-lg">
           <div className="relative">
             <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
@@ -76,6 +76,8 @@ export function USElectionsPage(
         houseDistrictsContract={houseDistrictsContract}
       />
 
+      {trending}
+
       {/* The full joint-distribution market, for trading the exact split. */}
       {balanceOfPowerContract && (
         <FeedContractCard
@@ -84,8 +86,6 @@ export function USElectionsPage(
           showGraph
         />
       )}
-
-      {trending}
     </Col>
   )
 }
