@@ -1,5 +1,5 @@
 import { ExtensionStorage } from '@bacons/apple-targets'
-import { NativeStreakData } from 'common/native-message'
+import { NativeQuestData, NativeStreakData } from 'common/native-message'
 import { Platform } from 'react-native'
 import { log } from 'components/logger'
 
@@ -9,6 +9,7 @@ import { log } from 'components/logger'
 // suiteName the Swift Provider opens (targets/widget/index.swift).
 export const STREAK_APP_GROUP = 'group.com.markets.manifold'
 const STREAK_KEY = 'streakData'
+const QUEST_KEY = 'questData'
 // Must match the widget `kind` in index.swift (StaticConfiguration kind).
 const WIDGET_KIND = 'StreakWidget'
 
@@ -40,5 +41,28 @@ export const clearStreakWidget = () => {
     ExtensionStorage.reloadWidget(WIDGET_KIND)
   } catch (e) {
     log('Error clearing streak widget data', e)
+  }
+}
+
+// Writes the quest completion the widget renders as secondary rows. The widget
+// resets each quest to "not done" on its own once the period rolls over.
+export const writeQuestWidget = (data: NativeQuestData) => {
+  if (!storage) return
+  try {
+    storage.set(QUEST_KEY, data as any)
+    ExtensionStorage.reloadWidget(WIDGET_KIND)
+  } catch (e) {
+    log('Error writing quest widget data', e)
+  }
+}
+
+// Drops quest rows (e.g. on sign-out); the widget falls back to streak-only.
+export const clearQuestWidget = () => {
+  if (!storage) return
+  try {
+    storage.remove(QUEST_KEY)
+    ExtensionStorage.reloadWidget(WIDGET_KIND)
+  } catch (e) {
+    log('Error clearing quest widget data', e)
   }
 }

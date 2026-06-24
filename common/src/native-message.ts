@@ -46,6 +46,7 @@ export type webToNativeMessageType =
   | 'setAppUrl'
   | 'copyImageToClipboard'
   | 'setStreak'
+  | 'setQuests'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
 
@@ -61,6 +62,23 @@ export type NativeStreakData = {
   lastStreakFreezeTime: number // 0 if no freeze ever used
   freezesLeft: number // == user.streakForgiveness
   updatedAt: number // when this snapshot was taken
+}
+
+// A single widget quest. State is binary (done this period or not). `period`
+// tells the widget when to reset `done` back to false on its own: 'daily' rolls
+// at midnight PT, 'weekly' at Monday midnight PT (matching the backend reset
+// jobs). The streak quest is the widget's main display, so it's not included
+// here — only the secondary quest rows.
+export type NativeQuestItem = {
+  title: string
+  rewardMana: number
+  done: boolean
+  period: 'daily' | 'weekly'
+}
+
+export type NativeQuestData = {
+  quests: NativeQuestItem[]
+  updatedAt: number
 }
 
 export type MesageTypeMap = {
