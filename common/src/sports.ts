@@ -333,6 +333,29 @@ export function flagEmojiToCode(flag: string): string {
   return cps.map((cp) => String.fromCharCode(cp - A + 97)).join('')
 }
 
+// The UK home nations share the GB flag emoji (football-data gives them area
+// code GB), so the emoji alone can't tell them apart. They have no usable single
+// emoji — the subdivision "tag sequence" emoji renders as a bare black flag on
+// Windows/older Android — but flagcdn serves their ISO 3166-2 flag IMAGES. Since
+// the team name is always alongside the flag, disambiguate by name for the image
+// while leaving the Union Jack emoji as the (recognizable) cross-platform
+// fallback.
+const SUBDIVISION_FLAG_CODE: Record<string, string> = {
+  england: 'gb-eng',
+  scotland: 'gb-sct',
+  wales: 'gb-wls',
+  'northern ireland': 'gb-nir',
+}
+
+// Resolve the flagcdn image code for a team, preferring a name-based subdivision
+// override (England/Scotland/Wales/N. Ireland) and otherwise falling back to the
+// ISO2 code derived from the flag emoji.
+export function flagImageCode(emoji?: string, name?: string): string {
+  const key = name?.trim().toLowerCase()
+  if (key && SUBDIVISION_FLAG_CODE[key]) return SUBDIVISION_FLAG_CODE[key]
+  return emoji ? flagEmojiToCode(emoji) : ''
+}
+
 function teamFlag(team: FDMatch['homeTeam']): string {
   return teamFlagFromArea(team.area?.code ?? team.tla ?? '')
 }

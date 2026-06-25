@@ -5,7 +5,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
-import { flagEmojiToCode } from 'common/sports'
+import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
 import { SportsBetPanel } from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -21,9 +21,10 @@ import { db } from 'web/lib/supabase/db'
 // Renders a country flag as an image (works on every platform) rather than the
 // regional-indicator emoji, which Windows/Chrome draw as bare letters ("KR").
 // Falls back to the emoji for inputs we can't map (e.g. club tournaments, which
-// pass no flag).
-export function Flag({ emoji }: { emoji?: string }) {
-  const code = emoji ? flagEmojiToCode(emoji) : ''
+// pass no flag). The team name disambiguates UK home nations, which all share
+// the GB flag emoji but have distinct flag images.
+export function Flag({ emoji, name }: { emoji?: string; name?: string }) {
+  const code = flagImageCode(emoji, name)
   const [failed, setFailed] = useState(false)
   // No mappable code, or the image failed to load → fall back to the emoji.
   if (!code || failed)
@@ -101,7 +102,6 @@ function OutcomeRow({
   score,
   isWinner,
   isDraw,
-  isFirstTeam,
   resolved,
   teamColor,
   winnerColor,
@@ -114,24 +114,29 @@ function OutcomeRow({
   score?: number
   isWinner?: boolean
   isDraw?: boolean
-  isFirstTeam?: boolean
   resolved?: boolean
   teamColor?: string
   winnerColor?: string
   onClick?: () => void
   hasPosition?: boolean
 }) {
-  const barColor = isWinner
-    ? 'bg-green-400'
-    : isDraw
-    ? 'bg-ink-400'
-    : isFirstTeam
-    ? 'bg-yes-500'
-    : 'bg-no-500'
+  const clickable = !resolved && !!onClick
 
   return (
     <div
-      onClick={!resolved ? onClick : undefined}
+      onClick={clickable ? onClick : undefined}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onClick?.()
+              }
+            }
+          : undefined
+      }
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
       className={clsx(
         'relative flex items-center gap-2 overflow-hidden rounded-lg border-2 px-2 py-1.5 transition-colors',
         !resolved && 'cursor-pointer',
@@ -179,7 +184,7 @@ function OutcomeRow({
             </span>
           </div>
         ) : (
-          <Flag emoji={flag} />
+          <Flag emoji={flag} name={name} />
         )}
 
         <span
@@ -526,7 +531,6 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
             prob={probs.teamA}
             score={homeScore}
             isWinner={resolved && match.winner === 'teamA'}
-            isFirstTeam
             resolved={resolved}
             teamColor={SPORTS_COLORS.teamA}
             winnerColor={match.winner === 'teamA' ? winnerColor : undefined}

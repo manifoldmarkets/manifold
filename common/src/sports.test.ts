@@ -7,6 +7,7 @@ import {
   computeCloseTime,
   flagEmoji,
   flagEmojiToCode,
+  flagImageCode,
   FDMatch,
   TournamentConfig,
 } from './sports'
@@ -275,6 +276,30 @@ describe('flagEmojiToCode', () => {
     expect(flagEmojiToCode('')).toBe('')
     expect(flagEmojiToCode('KR')).toBe('') // plain letters, not the emoji
     expect(flagEmojiToCode('⚽')).toBe('')
+  })
+})
+
+describe('flagImageCode', () => {
+  it('overrides UK home nations by name to their subdivision flag images', () => {
+    // football-data gives all four the GB flag emoji; disambiguate by name.
+    const gb = flagEmoji('GB')
+    expect(flagImageCode(gb, 'Scotland')).toBe('gb-sct')
+    expect(flagImageCode(gb, 'England')).toBe('gb-eng')
+    expect(flagImageCode(gb, 'Wales')).toBe('gb-wls')
+    expect(flagImageCode(gb, 'Northern Ireland')).toBe('gb-nir')
+  })
+  it('is case- and whitespace-insensitive on the name', () => {
+    expect(flagImageCode(flagEmoji('GB'), '  scotland ')).toBe('gb-sct')
+  })
+  it('falls back to the emoji-derived ISO2 for other teams', () => {
+    expect(flagImageCode(flagEmoji('BR'), 'Brazil')).toBe('br')
+    expect(flagImageCode('🇯🇵', 'Japan')).toBe('jp')
+    // Great Britain proper (not a home nation) keeps the GB flag.
+    expect(flagImageCode(flagEmoji('GB'), 'Great Britain')).toBe('gb')
+  })
+  it('returns empty string when nothing is mappable', () => {
+    expect(flagImageCode(undefined, undefined)).toBe('')
+    expect(flagImageCode('', 'Club FC')).toBe('')
   })
 })
 
