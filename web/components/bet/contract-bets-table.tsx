@@ -26,7 +26,7 @@ import { formatTimeShort } from 'client-common/lib/time'
 import { Pagination } from '../widgets/pagination'
 import { MoneyDisplay } from './money-display'
 import { ContractMetric } from 'common/contract-metric'
-import { getPseudonym } from '../charts/contract/choice'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 
 export function ContractBetsTable(props: {
@@ -208,6 +208,17 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
 
   const isCashContract = contract.token === 'CASH'
   const sharesOrShortSellShares = Math.abs(shares)
+  const binaryMCAnswer =
+    isBinaryMC && contract.mechanism === 'cpmm-multi-1'
+      ? (() => {
+          const answer =
+            contract.answers.find((a) => a.id === bet.answerId) ??
+            contract.answers[0]
+          return outcome === 'YES'
+            ? answer
+            : contract.answers.find((a) => a.id !== answer.id)
+        })()
+      : undefined
   return (
     <tr>
       {(isCPMM || isCpmmMulti) && (
@@ -219,12 +230,18 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
         </td>
       )}
       <td className="font-medium">
-        <OutcomeLabel
-          pseudonym={getPseudonym(contract)}
-          outcome={outcome}
-          contract={contract}
-          truncate="short"
-        />
+        {binaryMCAnswer ? (
+          <span style={{ color: getAnswerColor(binaryMCAnswer) }}>
+            {binaryMCAnswer.text}
+          </span>
+        ) : (
+          <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
+            outcome={outcome}
+            contract={contract}
+            truncate="short"
+          />
+        )}
       </td>
       <td className="text-right font-medium tabular-nums">
         <MoneyDisplay
@@ -262,8 +279,6 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
               <span>{formatPercent(probAfter)}</span>
             </span>
           )
-        ) : isBinaryMC ? (
-          formatPercent(getBinaryMCProb(bet.limitProb ?? 0, outcome))
         ) : (
           formatPercent(bet.limitProb ?? 0)
         )}

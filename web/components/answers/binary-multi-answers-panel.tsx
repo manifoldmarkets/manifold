@@ -184,10 +184,10 @@ function BinaryMultiChoiceBetPanel(props: {
       className="bg-canvas-50"
     >
       <Row className="items-baseline justify-between">
-        <div className={'group mr-6 text-2xl'}>
-          {answer.text}
+        <Row className={'group mr-6 items-center gap-2 text-2xl'}>
+          <span>{answer.text}</span>
           {canEdit && user && (
-            <div>
+            <>
               <Button
                 color="gray-white"
                 aria-label={`Edit answer ${answer.text}`}
@@ -204,9 +204,9 @@ function BinaryMultiChoiceBetPanel(props: {
                 answer={answer}
                 color={color}
               />
-            </div>
+            </>
           )}
-        </div>
+        </Row>
         <span className="text-2xl">{formatPercent(answer.prob)}</span>
       </Row>
     </BuyPanelBody>

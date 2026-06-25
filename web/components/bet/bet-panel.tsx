@@ -1090,12 +1090,18 @@ export const BuyPanelBody = (
               contract,
               lastBetDetails.outcome as 'YES' | 'NO'
             )}
-            answer={multiProps?.answerToBuy.text}
-            avgPrice={formatPercent(
-              lastBetDetails.outcome === 'YES'
-                ? lastBetDetails.amount / lastBetDetails.shares
-                : 1 - lastBetDetails.amount / lastBetDetails.shares
-            )}
+            answer={
+              isBinaryMC ? multiProps?.answerText : multiProps?.answerToBuy.text
+            }
+            avgPrice={
+              lastBetDetails.limitProb !== undefined
+                ? formatPercent(lastBetDetails.limitProb)
+                : formatPercent(
+                    lastBetDetails.outcome === 'YES'
+                      ? lastBetDetails.amount / lastBetDetails.shares
+                      : 1 - lastBetDetails.amount / lastBetDetails.shares
+                  )
+            }
             betAmount={lastBetDetails.amount}
             winAmount={lastBetDetails.shares}
             bettor={{
