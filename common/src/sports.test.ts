@@ -309,6 +309,8 @@ describe('stageLabel', () => {
   })
   it('abbreviates knockout stages', () => {
     expect(stageLabel(makeMatch({ stage: 'ROUND_OF_16' }))).toBe('R16')
+    expect(stageLabel(makeMatch({ stage: 'LAST_16' }))).toBe('R16')
+    expect(stageLabel(makeMatch({ stage: 'LAST_32' }))).toBe('R32')
     expect(stageLabel(makeMatch({ stage: 'FINAL' }))).toBe('Final')
   })
   it('uses matchday for regular season / league phase', () => {
@@ -365,6 +367,19 @@ describe('buildMarketParams', () => {
     expect(params.question).toBe("Arsenal vs Chelsea [Test '26]")
     expect(params.answers).toEqual(['Arsenal FC', 'Chelsea FC', 'Draw'])
     expect(params.answerShortTexts).toEqual(['Arsenal', 'Chelsea', 'Draw'])
+  })
+
+  it('treats football-data LAST_32 / LAST_16 as knockout, not group stage', () => {
+    for (const stage of ['LAST_32', 'LAST_16'] as const) {
+      const params = buildMarketParams(makeMatch({ stage, group: null }), makeConfig(), 'g')
+      expect(params.answers).toEqual([`${BR} Brazil`, `${AR} Argentina`])
+      expect(params.answers).not.toContain('Draw')
+      expect(params.answerImageUrls).toEqual(['https://x/bra.png', 'https://x/arg.png'])
+      expect(params.liquidityTier).toBe(10_000)
+      expect(params.closeTime).toBe(
+        new Date('2026-06-15T19:00:00Z').getTime() + 3.5 * 60 * 60 * 1000
+      )
+    }
   })
 
   it('omits images on a knockout when any crest is missing', () => {
