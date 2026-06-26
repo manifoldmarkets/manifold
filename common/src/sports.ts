@@ -368,6 +368,9 @@ export function stageLabel(match: FDMatch): string {
       return (match.group ?? 'Group Stage').replace(/^GROUP_/, 'Group ')
     case 'LEAGUE_PHASE':
       return match.matchday != null ? `MD ${match.matchday}` : 'League Phase'
+    case 'LAST_32':
+      return 'R32'
+    case 'LAST_16':
     case 'ROUND_OF_16':
       return 'R16'
     case 'QUARTER_FINALS':
@@ -383,6 +386,13 @@ export function stageLabel(match: FDMatch): string {
   }
 }
 
+// football-data.org uses LAST_16 / LAST_32 for the World Cup knockout rounds;
+// map them to our canonical ROUND_OF_16 key so configs don't need extra entries.
+function normalizeStage(stage: string): string {
+  if (stage === 'LAST_16' || stage === 'LAST_32') return 'ROUND_OF_16'
+  return stage
+}
+
 export function stageLiquidityForMatch(
   match: FDMatch,
   config: TournamentConfig,
@@ -390,7 +400,7 @@ export function stageLiquidityForMatch(
 ): LiquidityTierValue {
   const tiers = { ...config.stageLiquidityTiers, ...overrides }
   return (
-    (tiers as Record<string, LiquidityTierValue | undefined>)[match.stage] ??
+    (tiers as Record<string, LiquidityTierValue | undefined>)[normalizeStage(match.stage)] ??
     tiers.LEAGUE_PHASE ??
     tiers.GROUP_STAGE ??
     1_000
@@ -409,7 +419,15 @@ export function computeCloseTime(match: FDMatch, config: TournamentConfig): numb
 }
 
 function isKnockoutStage(stage: string): boolean {
-  return ['ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'].includes(stage)
+  return [
+    'LAST_32',
+    'LAST_16',
+    'ROUND_OF_16',
+    'QUARTER_FINALS',
+    'SEMI_FINALS',
+    'THIRD_PLACE',
+    'FINAL',
+  ].includes(stage)
 }
 
 export function sportsEventId(match: FDMatch): string {
