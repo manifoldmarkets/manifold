@@ -36,6 +36,8 @@ const STAGE_LABELS: Record<string, string> = {
   REGULAR_SEASON: 'Regular Season',
   GROUP_STAGE: 'Group Stage',
   LEAGUE_PHASE: 'League Phase',
+  LAST_32: 'Round of 32',
+  LAST_16: 'Round of 16',
   ROUND_OF_16: 'Round of 16',
   QUARTER_FINALS: 'Quarterfinal',
   SEMI_FINALS: 'Semifinal',
