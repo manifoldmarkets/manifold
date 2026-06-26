@@ -5,14 +5,17 @@ import { FaStar } from 'react-icons/fa'
 import { DAY_MS } from 'common/util/time'
 import { MAX_LOAN_NET_WORTH_PERCENT } from 'common/loans'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { REFERRAL_AMOUNT } from 'common/economy'
+import {
+  REFERRAL_AMOUNT,
+  REFERRAL_BET_BONUS,
+  REFERRAL_VERIFY_BONUS,
+} from 'common/economy'
 import { shortFormatNumber } from 'common/util/format'
 import {
   SUPPORTER_TIERS,
   SUPPORTER_BENEFITS,
   SupporterTier,
   EffectiveTier,
-  EFFECTIVE_TIER_ORDER,
   EFFECTIVE_TIER_LABELS,
   TIER_BENEFITS,
   getUserSupporterTier,
@@ -25,6 +28,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
@@ -48,10 +52,6 @@ export default function SupporterPage() {
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
 
-  // Allow admins to access supporter page for testing even when feature flag is off
-  if (!SPEND_MANA_ENABLED && !isAdminOrMod) {
-    return <Custom404 />
-  }
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
@@ -134,6 +134,13 @@ export default function SupporterPage() {
   // Active tier for highlighting (hovered or selected)
   const activeTier = hoveredTier ?? selectedTier
 
+  // Gate access after all hooks run (react-hooks/rules-of-hooks): hooks must be
+  // called unconditionally on every render. Admins bypass the feature flag so
+  // they can test the page while it's behind SPEND_MANA_ENABLED.
+  if (!SPEND_MANA_ENABLED && !isAdminOrMod) {
+    return <Custom404 />
+  }
+
   return (
     <Page trackPageView="supporter page" className="p-3">
       <SEO
@@ -149,7 +156,13 @@ export default function SupporterPage() {
         />
       )}
 
-      <Col className="mx-auto w-full min-w-0 max-w-3xl gap-6 overflow-x-hidden">
+      {/* No overflow-x clipping here: it hard-cuts the tier cards' glow
+          (a box-shadow) at the column edge. A box-shadow never adds to
+          scrollable width, so letting it bleed can't cause a horizontal
+          scrollbar. Wide *content* is guarded elsewhere — the hero truncates
+          via min-w-0, BenefitsTable has its own overflow-x-auto — and min-w-0
+          here keeps this Col from forcing the page wider. */}
+      <Col className="mx-auto w-full min-w-0 max-w-3xl gap-6">
         {/* Hero Section */}
         <div className="border-ink-200 bg-canvas-0 min-w-0 rounded-xl border p-4">
           <Row className="min-w-0 items-center justify-between gap-4">
@@ -493,6 +506,10 @@ function MonthlyValueBreakdown({
   const referralAtTier = Math.round(
     REFERRAL_AMOUNT * referralsPerMonth * refMult
   )
+  // The two-part split at this tier, for the referrals tooltip. Sums to the
+  // per-referral payout, so it stays consistent with the row's total.
+  const referralBetBonusAtTier = Math.round(REFERRAL_BET_BONUS * refMult)
+  const referralVerifyBonusAtTier = Math.round(REFERRAL_VERIFY_BONUS * refMult)
   // Delta vs verified referral payout.
   const referralBonus = Math.round(
     REFERRAL_AMOUNT * referralsPerMonth * (refMult - 1)
@@ -593,6 +610,14 @@ function MonthlyValueBreakdown({
         <Row className="items-center justify-between">
           <Row className="items-center gap-1">
             <span className="text-ink-600">🤝 Referrals</span>
+            <InfoTooltip
+              size="sm"
+              text={`Each referral pays out in two parts — ${
+                ENV_CONFIG.moneyMoniker
+              }${referralBetBonusAtTier.toLocaleString()} after their first trade and ${
+                ENV_CONFIG.moneyMoniker
+              }${referralVerifyBonusAtTier.toLocaleString()} when they verify their identity. The multiplier is set by your tier at each payout, not when they signed up.`}
+            />
             <Row className="items-center gap-0.5">
               <button
                 onClick={() =>
