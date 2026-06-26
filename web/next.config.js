@@ -109,6 +109,24 @@ module.exports = {
         destination: '/lab',
         permanent: true,
       },
+      {
+        source: '/store',
+        destination: '/shop',
+        permanent: true,
+      },
+      // Aliases that should land on the jobs board (/jobs).
+      ...[
+        '/job-board',
+        '/jobboard',
+        '/jobs-board',
+        '/jobsboard',
+        '/career',
+        '/careers',
+      ].map((source) => ({
+        source,
+        destination: '/jobs',
+        permanent: true,
+      })),
 
       {
         source: '/versus',
