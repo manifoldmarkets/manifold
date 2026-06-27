@@ -325,8 +325,8 @@ function SmallWidget({
     )
   }
   const tier = streakTier(data.streak)
-  const flameSize = 46 + tier * 4
-  const numberSize = 54 + tier * 5
+  const flameSize = 40 + tier * 4
+  const numberSize = 48 + tier * 4
   const rank = streakRank(data.streak)
   return (
     <Shell
@@ -359,26 +359,20 @@ function SmallWidget({
             ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
           }}
         />
-        {rank ? (
-          <TextWidget
-            text={rank.toUpperCase()}
-            maxLines={1}
-            style={{
-              fontSize: 13,
-              fontWeight: '900',
-              color: WHITE,
-              letterSpacing: 1,
-              marginTop: 1,
-            }}
-          />
-        ) : null}
         <TextWidget
-          text="day streak"
-          style={{
-            fontSize: rank ? 10 : 12,
-            fontWeight: '600',
-            color: rank ? 'rgba(255, 255, 255, 0.7)' : WHITE_85,
-          }}
+          text={rank ? rank.toUpperCase() : 'day streak'}
+          maxLines={1}
+          style={
+            rank
+              ? {
+                  fontSize: 13,
+                  fontWeight: '900',
+                  color: WHITE,
+                  letterSpacing: 1,
+                  marginTop: 2,
+                }
+              : { fontSize: 12, fontWeight: '600', color: WHITE_85 }
+          }
         />
         {state === 'frozen' && (
           <TextWidget
@@ -435,8 +429,8 @@ function MediumWidget({
     )
   }
   const tier = streakTier(data.streak)
-  const flameSize = 38 + tier * 4
-  const numberSize = 46 + tier * 5
+  const flameSize = 34 + tier * 4
+  const numberSize = 42 + tier * 4
   const rank = streakRank(data.streak)
   return (
     <Shell
@@ -485,26 +479,20 @@ function MediumWidget({
               ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
             }}
           />
-          {rank ? (
-            <TextWidget
-              text={rank.toUpperCase()}
-              maxLines={1}
-              style={{
-                fontSize: 12,
-                fontWeight: '900',
-                color: WHITE,
-                letterSpacing: 1,
-                marginTop: 1,
-              }}
-            />
-          ) : null}
           <TextWidget
-            text="day streak"
-            style={{
-              fontSize: rank ? 10 : 12,
-              fontWeight: '600',
-              color: rank ? 'rgba(255, 255, 255, 0.7)' : WHITE_85,
-            }}
+            text={rank ? rank.toUpperCase() : 'day streak'}
+            maxLines={1}
+            style={
+              rank
+                ? {
+                    fontSize: 12,
+                    fontWeight: '900',
+                    color: WHITE,
+                    letterSpacing: 1,
+                    marginTop: 2,
+                  }
+                : { fontSize: 12, fontWeight: '600', color: WHITE_85 }
+            }
           />
           {state === 'frozen' && (
             <TextWidget
