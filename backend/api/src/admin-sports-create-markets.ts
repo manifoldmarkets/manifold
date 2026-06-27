@@ -156,9 +156,9 @@ export const adminSportsCreateMarkets: APIHandler<
 
     const eventId = matchSportsEventId(match)
 
-    // Idempotency check. Only an *active* (live, visible) market blocks
-    // re-creation — a market that's been resolved N/A, hidden, or deleted leaves
-    // the fixture free so a corrected one can be regenerated.
+    // Idempotency check. Only a market that hasn't been resolved N/A blocks
+    // re-creation — once a market is resolved N/A its fixture is free so a
+    // corrected one can be regenerated.
     const existing = await pg.oneOrNone<{ id: string }>(
       `select id from contracts
        where data->>'sportsEventId' = $1 and ${ACTIVE_SPORTS_MARKET_FILTER}

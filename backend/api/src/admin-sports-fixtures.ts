@@ -40,8 +40,8 @@ export const adminSportsFixtures: APIHandler<'admin-sports-fixtures'> = async (
     .filter((m) => ['SCHEDULED', 'TIMED'].includes(m.status))
 
   // Batch-check which matches already have an *active* market. A market that's
-  // been resolved N/A, hidden, or deleted no longer counts as "exists" here, so
-  // the row becomes selectable and a corrected market can be regenerated.
+  // been resolved N/A no longer counts as "exists" here, so the row becomes
+  // selectable and a corrected market can be regenerated.
   const eventIds = filtered.map((m) => matchSportsEventId(m))
   const existingRows = await pg.manyOrNone<{
     event_id: string
