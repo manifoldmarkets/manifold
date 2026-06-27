@@ -1,4 +1,4 @@
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { getPrivateUsersNotSent, isProd, log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
@@ -167,7 +167,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           const currentValue = cm.payout
           const { resolution, mechanism } = cpmmContract
           const resolutionTitle =
-            mechanism === 'cpmm-multi-1' &&
+            isMultiCpmm(cpmmContract) &&
             resolution &&
             cpmmContract.shouldAnswersSumToOne
               ? cpmmContract.answers.find((a) => a.id === resolution)?.text

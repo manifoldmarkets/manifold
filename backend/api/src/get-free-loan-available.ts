@@ -15,6 +15,7 @@ import {
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
+import { isMultiCpmm } from 'common/contract'
 import {
   getFreeLoanRate,
   getMaxLoanNetWorthPercent,
@@ -147,7 +148,7 @@ export const getFreeLoanAvailable: APIHandler<
     const contractMetrics = metricsGroupedByContract[contractId]
     const contract = contractsById[contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     if (isIndependent) {
       // For independent markets, calculate limits per answer
@@ -190,7 +191,7 @@ export const getFreeLoanAvailable: APIHandler<
 
     const contract = contractsById[m.contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     let freeLoanContribution = baseFreeLoan
 

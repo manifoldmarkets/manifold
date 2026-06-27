@@ -1,5 +1,5 @@
 import { APIError } from 'common/api/utils'
-import { MarketContract } from 'common/contract'
+import { isMultiCpmm, MarketContract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { convertPost, TopLevelPost } from 'common/top-level-post'
@@ -145,7 +145,7 @@ export async function superBanUserCore(
     try {
       for (const contract of contracts.filter(
         (c) =>
-          (c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1') &&
+          (c.mechanism === 'cpmm-1' || isMultiCpmm(c)) &&
           !c.isResolved
       )) {
         await resolveMarketHelper(

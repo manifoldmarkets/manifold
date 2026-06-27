@@ -16,6 +16,7 @@ import {
   CPMM_MIN_POOL_QTY,
   MarketContract,
   MultiContract,
+  isMultiCpmm,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -199,8 +200,7 @@ export const placeBetMain = async (
     }
 
     const betGroupId =
-      lockedContract.mechanism === 'cpmm-multi-1' &&
-      lockedContract.shouldAnswersSumToOne
+      isMultiCpmm(lockedContract) && lockedContract.shouldAnswersSumToOne
         ? getNewBetId()
         : undefined
 
@@ -279,7 +279,7 @@ export const calculateBetResult = (
       expiresAt,
       expiresMillisAfter
     )
-  } else if (mechanism == 'cpmm-multi-1') {
+  } else if (isMultiCpmm(contract)) {
     const { shouldAnswersSumToOne } = contract
     if (!body.answerId || !answers) {
       throw new APIError(400, 'answerId must be specified for multi bets')
@@ -430,7 +430,7 @@ export const executeNewBetResult = async (
   }[] = []
 
   const sumsToOne =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   let bonusTxnQuery = 'select 1 where false'
   if (
     (!isMultiBet || firstBetInMultiBet) &&
@@ -529,7 +529,7 @@ export const executeNewBetResult = async (
             prob:
               newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
           }
-        : contract.mechanism === 'cpmm-multi-1' &&
+        : isMultiCpmm(contract) &&
           answerUpdates.length > 0 &&
           contract.answers.length > 0
         ? {

@@ -1,5 +1,5 @@
 import { ENV_CONFIG } from '../envs/constants'
-import { ContractToken, MarketContract } from 'common/contract'
+import { ContractToken, isMultiCpmm, MarketContract } from 'common/contract'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { floatingEqual } from './math'
 
@@ -260,7 +260,7 @@ export const formatOutcomeLabel = (
   }
   if (
     contract.outcomeType === 'BINARY' ||
-    contract.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(contract)
   ) {
     return outcomeLabel
   }

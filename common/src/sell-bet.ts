@@ -7,6 +7,7 @@ import {
 import {
   Contract,
   CPMMContract,
+  isMultiCpmm,
   MarketContract,
   MultiContract,
 } from './contract'
@@ -34,7 +35,7 @@ export const getCpmmSellBetInfo = (
   loanPaid: number,
   answer?: Answer
 ) => {
-  if (contract.mechanism === 'cpmm-multi-1' && !answer) {
+  if (isMultiCpmm(contract) && !answer) {
     throw new Error('getCpmmSellBetInfo: answer required for cpmm-multi-1')
   }
 
@@ -275,7 +276,7 @@ export const getSaleResult = (
   balanceByUserId: { [userId: string]: number },
   answer?: Answer
 ) => {
-  if (contract.mechanism === 'cpmm-multi-1' && !answer)
+  if (isMultiCpmm(contract) && !answer)
     throw new Error('getSaleResult: answer must be defined for cpmm-multi-1')
 
   const initialProb = answer

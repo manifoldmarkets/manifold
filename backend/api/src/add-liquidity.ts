@@ -8,6 +8,7 @@ import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
+import { isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
@@ -43,7 +44,7 @@ export const addContractLiquidity = async (
 
     if (
       contract.mechanism !== 'cpmm-1' &&
-      contract.mechanism !== 'cpmm-multi-1'
+      !isMultiCpmm(contract)
     )
       throw new APIError(403, 'Only cpmm-1 and cpmm-multi-1 are supported')
 

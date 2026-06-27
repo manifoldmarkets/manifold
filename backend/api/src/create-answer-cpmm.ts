@@ -7,7 +7,7 @@ import {
   addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { isAdminId } from 'common/envs/constants'
 import { noFees } from 'common/fees'
@@ -82,7 +82,7 @@ const verifyContract = async (contractId: string, creatorId: string) => {
   if (contract.token !== 'MANA') {
     throw new APIError(403, 'Cannot add answers to sweepstakes question')
   }
-  if (contract.mechanism !== 'cpmm-multi-1')
+  if (!isMultiCpmm(contract))
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
   if (contract.outcomeType === 'NUMBER')
     throw new APIError(403, 'Cannot create new answers for numeric contracts')

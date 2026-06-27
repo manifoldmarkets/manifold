@@ -2,6 +2,7 @@ import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { isSummary } from 'common/contract-metric'
+import { isMultiCpmm } from 'common/contract'
 import { MS_PER_DAY } from 'common/loans'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { convertBet } from 'common/supabase/bets'
@@ -36,7 +37,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const results = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
-    const { closeTime, isResolved, mechanism } = contract
+    const { closeTime, isResolved } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
     if (isResolved) throw new APIError(403, 'Market is resolved.')
@@ -46,7 +47,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
       )
     }
-    if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
+    if (!isMultiCpmm(contract) || !('shouldAnswersSumToOne' in contract))
       throw new APIError(400, 'Contract type/mechanism not supported')
 
     const answersToSell = contract.answers.filter((a) =>

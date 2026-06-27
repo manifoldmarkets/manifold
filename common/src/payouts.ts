@@ -6,6 +6,7 @@ import {
   Contract,
   CPMMContract,
   CPMMMultiContract,
+  isMultiCpmm,
   tradingAllowed,
 } from './contract'
 import { ContractMetric } from './contract-metric'
@@ -78,7 +79,7 @@ export const getPayouts = (
     )
   }
   if (
-    contract.mechanism === 'cpmm-multi-1' &&
+    isMultiCpmm(contract) &&
     !contract.shouldAnswersSumToOne &&
     answerId
   ) {
@@ -95,7 +96,7 @@ export const getPayouts = (
       resolutionProbability ?? answer.prob
     )
   }
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     if (outcome === 'CANCEL') {
       return getFixedCancelPayouts(contractMetrics, liquidities)
     }

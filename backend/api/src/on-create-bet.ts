@@ -6,7 +6,7 @@ import {
   getUsers,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { User } from 'common/user'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
@@ -489,7 +489,7 @@ export const injectLiquidityBonus = async (
 
   if (contract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(contract.id, subsidy)
-  } else if (contract.mechanism === 'cpmm-multi-1' && bet.answerId) {
+  } else if (isMultiCpmm(contract) && bet.answerId) {
     if (
       contract.shouldAnswersSumToOne &&
       (bet.probAfter < 0.15 || bet.probAfter > 0.95)

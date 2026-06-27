@@ -1,4 +1,4 @@
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { mapAsync } from 'common/util/promise'
 import { APIError } from 'common/api/utils'
 import {
@@ -55,7 +55,7 @@ const drizzleMarket = async (contractId: string) => {
     const v = (uniqueBettorCount ?? 0) < 50 ? 0.3 : 0.6
     const amount = subsidyPool <= 1 ? subsidyPool : r * v * subsidyPool
 
-    if (contract.mechanism === 'cpmm-multi-1') {
+    if (isMultiCpmm(contract)) {
       const answers = contract.answers
       if (!answers.length) {
         return

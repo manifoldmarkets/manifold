@@ -17,7 +17,7 @@ export async function denormalizeAnswers() {
     `
         select id from contracts
         where last_updated_time > $1
-        and mechanism = 'cpmm-multi-1'
+        and mechanism in ('cpmm-multi-1', 'cpmm-multi-2')
         `,
     [oneMinuteAgo.toISOString()],
     (r) => r.id as string

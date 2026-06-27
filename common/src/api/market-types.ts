@@ -3,6 +3,7 @@ import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   Contract,
+  isMultiCpmm,
   MAX_QUESTION_LENGTH,
   MultiContract,
   RESOLUTIONS,
@@ -151,7 +152,7 @@ export function toLiteMarket(
     numericValues = { value, min, max, isLogScale }
   }
   const answers =
-    includeLiteAnswers && contract.mechanism === 'cpmm-multi-1'
+    includeLiteAnswers && isMultiCpmm(contract)
       ? contract.answers?.map((answer) => ({
           id: answer.id,
           text: answer.text,
@@ -212,14 +213,14 @@ export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const { outcomeType } = contract
   const answers =
-    contract.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(contract)
       ? contract.answers.map((answer) =>
           augmentAnswerWithProbability(contract, answer)
         )
       : undefined
 
   let multiValues = {}
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     multiValues = {
       shouldAnswersSumToOne: contract.shouldAnswersSumToOne,
       addAnswersMode: contract.addAnswersMode,
