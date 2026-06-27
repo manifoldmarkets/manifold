@@ -130,6 +130,8 @@ export function MultiBetDialog(props: {
             {isBinaryMC ? (
               <BinaryMultiAnswersPanel
                 contract={contract as CPMMMultiContract}
+                preselect
+                onClose={() => setOpen(false)}
               />
             ) : (
               <AnswersPanel
