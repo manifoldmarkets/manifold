@@ -119,9 +119,9 @@ export function IdentityVerificationPage(props: {
       </div>
 
       <div className="text-ink-700 text-lg">
-        Verify your identity to receive bonuses and participate in our USDC
-        prize drawings. This quick process helps prevent fraud and ensures a
-        secure experience for everyone.
+        Verify your identity to receive larger bonuses and participate in our
+        USDC prize drawings. This quick process helps prevent fraud and ensures
+        a secure experience for everyone.
       </div>
 
       <Col className="bg-canvas-50 mt-2 rounded-lg p-4">

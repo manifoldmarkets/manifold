@@ -27,6 +27,8 @@ import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { unfollowTopic } from 'web/lib/supabase/groups'
+import { FirstBetPage } from 'web/components/onboarding/first-bet-page'
+import { useABTest } from 'web/hooks/use-ab-test'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -45,6 +47,15 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
 
   const shouldShowWelcomeModal = user?.shouldShowWelcome
 
+  // A/B: insert a guided first-bet step after topic selection.
+  const firstBetVariant = useABTest('guided-first-bet-onboarding', [
+    'control',
+    'guided',
+  ])
+  const showFirstBet = firstBetVariant === 'guided'
+  const firstBetPageIndex = showFirstBet ? 4 : -1
+  const identityPageIndex = showFirstBet ? 5 : 4
+
   const handleSetPage = (page: number) => {
     if (page === 0) {
       track('welcome screen: what is manifold')
@@ -54,7 +65,9 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       track('welcome screen: how it works')
     } else if (page === 3) {
       track('welcome screen: topic selection')
-    } else if (page === 4) {
+    } else if (page === firstBetPageIndex) {
+      track('welcome screen: first bet')
+    } else if (page === identityPageIndex) {
       track('welcome screen: identity verification')
     }
     setPage(page)
@@ -87,6 +100,12 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
         onNext={increasePage}
         setFeedKey={setFeedKey}
         user={user}
+        goBack={() => handleSetPage(page - 1)}
+      />
+    ),
+    showFirstBet && (
+      <FirstBetPage
+        onNext={increasePage}
         goBack={() => handleSetPage(page - 1)}
       />
     ),

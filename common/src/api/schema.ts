@@ -323,6 +323,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-onboarding-market': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { market: Contract | null },
+    props: z.object({}).strict(),
+  },
   'get-contract': {
     method: 'GET',
     visibility: 'undocumented',

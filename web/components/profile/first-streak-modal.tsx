@@ -22,6 +22,11 @@ export function FirstStreakModalManager() {
     if (
       user?.currentBettingStreak === 1 &&
       !user?.seenStreakModal &&
+      // Don't interrupt onboarding: if the first bet happens inside the welcome
+      // flow, defer this reveal until onboarding finishes (shouldShowWelcome
+      // flips to false) so it doesn't stack on the welcome modal or flash the
+      // reduced-bonus note before the user reaches the verify step.
+      !user?.shouldShowWelcome &&
       user?.createdTime > START
     ) {
       setOpen(true)
@@ -29,7 +34,7 @@ export function FirstStreakModalManager() {
         seenStreakModal: true,
       })
     }
-  }, [user?.currentBettingStreak])
+  }, [user?.currentBettingStreak, user?.shouldShowWelcome])
 
   const streakMultiplier = user
     ? getEffectiveBonusMultiplier(getEffectiveTier(user), 'streak')

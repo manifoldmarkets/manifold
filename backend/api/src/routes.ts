@@ -90,6 +90,7 @@ import {
 } from './get-comment-threads'
 import { getComments, getUserComments } from './get-comments'
 import { getContract } from './get-contract'
+import { getOnboardingMarket } from './get-onboarding-market'
 import { getContractAnswers } from './get-contract-answers'
 import { getContractTopics } from './get-contract-topics'
 import { getCurrentPrivateUser } from './get-current-private-user'
@@ -317,6 +318,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-channel-seen-time': getLastSeenChannelTime,
   'set-channel-seen-time': setChannelLastSeenTime,
   'get-contract': getContract,
+  'get-onboarding-market': getOnboardingMarket,
   comment: createComment,
   'comment-threads': getContractCommentThreads,
   'comment-thread': getCommentThread,
