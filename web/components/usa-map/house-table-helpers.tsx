@@ -8,6 +8,7 @@ import {
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
   isBinaryMulti,
+  isMultiCpmm,
 } from 'common/contract'
 import {
   formatPercent,
@@ -218,7 +219,7 @@ export const BuyPanelBody = (props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }

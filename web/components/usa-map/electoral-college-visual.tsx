@@ -11,7 +11,7 @@ import {
   StateElectionMarket,
 } from 'web/public/data/elections-data'
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, isMultiCpmm } from 'common/contract'
 
 export function ElectoralCollegeVisual(props: {
   sortedContractsDictionary: MapContractsDictionary
@@ -117,7 +117,7 @@ export function sortByDemocraticDiff(
     .map(([state, contract]) => {
       let diff = 0
 
-      if (contract?.mechanism === 'cpmm-multi-1') {
+      if (contract && isMultiCpmm(contract)) {
         // ... existing CPMM multi logic ...
         const democraticAnswer = contract.answers.find(
           (answer) =>

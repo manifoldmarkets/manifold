@@ -15,7 +15,7 @@ import { db } from 'web/lib/supabase/db'
 import { formatMoney } from 'common/util/format'
 import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Input } from 'web/components/widgets/input'
 import { ProbabilitySlider } from 'web/components/widgets/probability-input'
@@ -89,7 +89,7 @@ export function SportsBetPanel({
     let cancelled = false
     getContract(db, match.contractId)
       .then(async (c) => {
-        if (cancelled || !c || c.mechanism !== 'cpmm-multi-1') return
+        if (cancelled || !c || !isMultiCpmm(c)) return
         const answerMap = await getAnswersForContracts(db, [c.id])
         if (cancelled) return
         const multi = c as CPMMMultiContract

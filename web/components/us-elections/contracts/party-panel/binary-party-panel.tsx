@@ -2,7 +2,7 @@ import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { getDisplayProbability, getProbability } from 'common/calculate'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, isMultiCpmm } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
@@ -390,7 +390,7 @@ export function BinaryBetButton(props: {
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
+    (contract.mechanism === 'cpmm-1' || isMultiCpmm(contract))
   ) {
     return (
       <>

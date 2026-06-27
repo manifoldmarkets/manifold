@@ -15,6 +15,7 @@ import { Bet, LimitBet } from 'common/bet'
 import { calculateCpmmAmountToBuyShares } from 'common/calculate-cpmm'
 import {
   isBinaryMulti,
+  isMultiCpmm,
   MarketContract,
   MAX_CPMM_PROB,
   MAX_STONK_PROB,
@@ -300,7 +301,7 @@ export const BuyPanelBody = (
 
   const quickAddButtonSize =
     liquidityTier === 0 ||
-    (contract.mechanism === 'cpmm-multi-1' &&
+    (isMultiCpmm(contract) &&
       liquidityTier === 1 &&
       !contract.shouldAnswersSumToOne)
       ? 'small'
@@ -349,7 +350,7 @@ export const BuyPanelBody = (
   const [dismissTimeoutRef, setDismissTimeoutRef] =
     useState<NodeJS.Timeout | null>(null)
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
@@ -1126,7 +1127,7 @@ export const BuyPanelBody = (
         )}
       </Col>
 
-      {contract.mechanism === 'cpmm-multi-1' && (
+      {isMultiCpmm(contract) && (
         <YourOrders
           className="mt-2 py-4"
           contract={contract}
