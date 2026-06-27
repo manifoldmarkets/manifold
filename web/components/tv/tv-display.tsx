@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Router from 'next/router'
 
-import { Contract, tradingAllowed } from 'common/contract'
+import { Contract, isMultiCpmm, tradingAllowed } from 'common/contract'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { BinaryResolutionOrChance } from 'web/components/contract/contract-price'
@@ -41,8 +41,7 @@ export function TVDisplay(props: {
 
   const isBinary = contract.outcomeType === 'BINARY'
   const isMulti =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
+    contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)
 
   const betPanel = (
     <>

@@ -4,7 +4,7 @@ import {
   maximumRemovableLiquidity,
   removeCpmmLiquidity,
 } from 'common/calculate-cpmm'
-import { type MarketContract } from 'common/contract'
+import { isMultiCpmm, type MarketContract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
@@ -140,7 +140,7 @@ export function AddLiquidityControl(props: {
 
   const addLiquidityEnabled =
     user &&
-    (contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1') &&
+    (contract.mechanism == 'cpmm-1' || isMultiCpmm(contract)) &&
     contractOpenAndPublic
   const [mode, setMode] = useState<'add' | 'remove'>('add')
   const canWithdraw =

@@ -1,4 +1,8 @@
-import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
+import {
+  Contract,
+  isMultiCpmm,
+  MINUTES_ALLOWED_TO_UNRESOLVE,
+} from 'common/contract'
 import { WEEK_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { useEffect } from 'react'
@@ -95,7 +99,7 @@ export function DangerZone(props: {
     (outcomeType === 'MULTIPLE_CHOICE' ||
       outcomeType === 'MULTI_NUMERIC' ||
       outcomeType === 'DATE') &&
-    mechanism === 'cpmm-multi-1' &&
+    isMultiCpmm(contract) &&
     'shouldAnswersSumToOne' in contract &&
     !contract.shouldAnswersSumToOne
   const hasResolvedIndependentAnswers =

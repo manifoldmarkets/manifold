@@ -1,7 +1,7 @@
 import { LinkIcon } from '@heroicons/react/outline'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { getShareUrl } from 'common/util/share'
 import toast from 'react-hot-toast'
 import { trackShareEvent } from 'web/lib/service/analytics'
@@ -43,7 +43,7 @@ export function CreatorSharePanel(props: { contract: Contract }) {
         </Row>
 
         {(contract.mechanism === 'cpmm-1' ||
-          contract.mechanism === 'cpmm-multi-1') && (
+          isMultiCpmm(contract)) && (
           <div className="text-ink-500 text-base">
             Earn{' '}
             {formatMoney(

@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
-import { MultiContract } from 'common/contract'
+import { MultiContract, isMultiCpmm } from 'common/contract'
 import { User } from 'common/user'
 import { sortBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
@@ -248,7 +248,7 @@ function PartyAnswer(props: {
 
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const isCpmm = isMultiCpmm(contract)
 
   const isDemocraticParty = answer.text == 'Democratic Party'
   const isRepublicanParty = answer.text == 'Republican Party'
@@ -342,7 +342,7 @@ function PartyAnswerSnippet(props: {
 
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const isCpmm = isMultiCpmm(contract)
 
   const isDemocraticParty = answer.text == 'Democratic Party'
 
