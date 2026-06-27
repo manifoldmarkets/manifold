@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/solid'
 import { Answer } from 'common/answer'
 import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
@@ -18,12 +19,19 @@ import {
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
   feedReason?: string
+  // When set (e.g. inside a bet modal), skip the two-step "pick a side first"
+  // picker: open pre-selected on a side with a persistent two-side selector so
+  // both options stay visible and switching sides updates the panel in place.
+  preselect?: boolean
+  onClose?: () => void
 }) {
-  const { feedReason, contract } = props
+  const { feedReason, contract, preselect, onClose } = props
   const answers = contract.answers
   const user = useUser()
 
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
+    preselect ? 'YES' : undefined
+  )
 
   if (contract.isResolved) {
     return (
@@ -40,6 +48,20 @@ export function BinaryMultiAnswersPanel(props: {
           />
         ))}
       </>
+    )
+  }
+
+  if (preselect) {
+    const selected = outcome ?? 'YES'
+    return (
+      <BinaryMultiChoiceBetPanel
+        answer={selected === 'YES' ? answers[0] : answers[1]}
+        contract={contract}
+        outcome={selected}
+        setOutcome={setOutcome}
+        closePanel={onClose ?? (() => setOutcome('YES'))}
+        showSelector
+      />
     )
   }
 
@@ -147,8 +169,12 @@ function BinaryMultiChoiceBetPanel(props: {
   closePanel: () => void
   outcome: 'YES' | 'NO' | undefined
   setOutcome: (outcome: 'YES' | 'NO') => void
+  // Render a persistent two-side selector (both options visible) at the top of
+  // the panel instead of the single selected-answer header.
+  showSelector?: boolean
 }) {
-  const { answer, contract, closePanel, outcome, setOutcome } = props
+  const { answer, contract, closePanel, outcome, setOutcome, showSelector } =
+    props
 
   const [editing, setEditing] = useState(false)
   const color = getAnswerColor(answer)
@@ -183,32 +209,60 @@ function BinaryMultiChoiceBetPanel(props: {
       location={'contract page answer'}
       className="bg-canvas-50"
     >
-      <Row className="items-baseline justify-between">
-        <div className={'group mr-6 text-2xl'}>
-          {answer.text}
-          {canEdit && user && (
-            <div>
-              <Button
-                color="gray-white"
-                aria-label={`Edit answer ${answer.text}`}
-                className="visible group-hover:visible sm:invisible"
-                size="xs"
-                onClick={() => setEditing(true)}
+      {showSelector ? (
+        <Row className="bg-canvas-100 mb-1 mt-1 w-full items-stretch gap-1 rounded-lg p-1">
+          {contract.answers.map((a, i) => {
+            const oc = i === 0 ? 'YES' : 'NO'
+            const isSelected = outcome === oc
+            return (
+              <button
+                key={a.id}
+                onClick={() => setOutcome(oc)}
+                aria-label={`Bet ${a.text}`}
+                className={clsx(
+                  'flex min-w-0 flex-1 items-center justify-between gap-1 truncate rounded-md px-3 py-2 text-base font-semibold transition-colors',
+                  isSelected ? 'text-white' : 'text-ink-600 hover:text-ink-900'
+                )}
+                style={
+                  isSelected
+                    ? { backgroundColor: getAnswerColor(a) }
+                    : undefined
+                }
               >
-                <PencilIcon className="text-primary-700 h-4 w-4" />
-              </Button>
-              <EditAnswerModal
-                open={editing}
-                setOpen={setEditing}
-                contract={contract}
-                answer={answer}
-                color={color}
-              />
-            </div>
-          )}
-        </div>
-        <span className="text-2xl">{formatPercent(answer.prob)}</span>
-      </Row>
+                <span className="truncate">{a.text}</span>
+                <span className="shrink-0">{formatPercent(a.prob)}</span>
+              </button>
+            )
+          })}
+        </Row>
+      ) : (
+        <Row className="items-baseline justify-between">
+          <div className={'group mr-6 text-2xl'}>
+            {answer.text}
+            {canEdit && user && (
+              <div>
+                <Button
+                  color="gray-white"
+                  aria-label={`Edit answer ${answer.text}`}
+                  className="visible group-hover:visible sm:invisible"
+                  size="xs"
+                  onClick={() => setEditing(true)}
+                >
+                  <PencilIcon className="text-primary-700 h-4 w-4" />
+                </Button>
+                <EditAnswerModal
+                  open={editing}
+                  setOpen={setEditing}
+                  contract={contract}
+                  answer={answer}
+                  color={color}
+                />
+              </div>
+            )}
+          </div>
+          <span className="text-2xl">{formatPercent(answer.prob)}</span>
+        </Row>
+      )}
     </BuyPanelBody>
   )
 }
