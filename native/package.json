@@ -2,6 +2,7 @@
   "name": "manifold",
   "version": "1.0.0",
   "scripts": {
+    "postinstall": "patch-package",
     "android:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV yarn android -d",
     "android:prod": "NEXT_PUBLIC_FIREBASE_ENV=PROD yarn android -d",
     "prebuild": "npx expo prebuild",
@@ -64,7 +65,9 @@
     "@babel/core": "^7.24.7",
     "@types/lodash": "^4.17.5",
     "babel-plugin-transform-inline-environment-variables": "^0.4.4",
-    "babel-preset-expo": "~54.0.0"
+    "babel-preset-expo": "~54.0.0",
+    "patch-package": "8.0.1",
+    "postinstall-postinstall": "2.1.0"
   },
   "private": true
 }

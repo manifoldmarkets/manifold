@@ -1,0 +1,71 @@
+diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
+index 834cbaf..f5eebb3 100644
+--- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
++++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
+@@ -115,10 +115,43 @@ public class RNWidget {
+         }
+         addCollectionViews(widgetId, remoteWidgetView, widgetWithViews);
+ 
++        applyCountdown(remoteWidgetView, light);
++
+         AppWidgetManager.getInstance(appContext)
+             .updateAppWidget(widgetId, remoteWidgetView);
+     }
+ 
++    // Live countdown overlay. The root widget passes { showCountdown, countdownMs }
++    // via clickActionData (a supported passthrough). When shown, we drive a native
++    // Chronometer that ticks down to the target with no app process — the one thing
++    // a flattened-bitmap widget can't do on its own. countdownMs is the remaining
++    // time at render; the Chronometer keeps ticking accurately between re-renders.
++    private void applyCountdown(RemoteViews remoteWidgetView, ReadableMap rootConfig) {
++        boolean show = false;
++        long countdownMs = 0;
++        if (rootConfig != null && rootConfig.hasKey("props")) {
++            ReadableMap props = rootConfig.getMap("props");
++            if (props != null && props.hasKey("clickActionData")) {
++                ReadableMap data = props.getMap("clickActionData");
++                if (data != null && data.hasKey("showCountdown") && data.getBoolean("showCountdown")) {
++                    show = true;
++                    if (data.hasKey("countdownMs")) {
++                        countdownMs = (long) data.getDouble("countdownMs");
++                    }
++                }
++            }
++        }
++
++        if (show && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
++            long base = android.os.SystemClock.elapsedRealtime() + Math.max(0, countdownMs);
++            remoteWidgetView.setChronometer(R.id.rn_widget_chronometer, base, "%s left", true);
++            remoteWidgetView.setChronometerCountDown(R.id.rn_widget_chronometer, true);
++            remoteWidgetView.setViewVisibility(R.id.rn_widget_chronometer, View.VISIBLE);
++        } else {
++            remoteWidgetView.setViewVisibility(R.id.rn_widget_chronometer, View.GONE);
++        }
++    }
++
+     public WritableMap createPreview(int width, int height) throws Exception {
+         ReadableMap configClone = Arguments.makeNativeMap(config.toHashMap());
+ 
+diff --git a/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml b/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml
+index 6651155..3731629 100644
+--- a/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml
++++ b/node_modules/react-native-android-widget/android/src/main/res/layout/rn_widget.xml
+@@ -19,6 +19,18 @@
+         android:scaleType="matrix"
+         android:visibility="gone" />
+ 
++    <Chronometer
++        android:id="@+id/rn_widget_chronometer"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="bottom|start"
++        android:layout_marginStart="16dp"
++        android:layout_marginBottom="14dp"
++        android:textColor="#FFFFFF"
++        android:textSize="15sp"
++        android:textStyle="bold"
++        android:visibility="gone" />
++
+     <FrameLayout
+         android:id="@+id/rn_widget_clickable_container"
+         android:layout_width="match_parent"
