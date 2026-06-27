@@ -158,7 +158,7 @@ Quality + clarity filter (every tier):
 1. **Open, with runway:** `resolution_time is null`, `close_time > now() + 2h` (so it can't resolve mid-onboarding), `visibility='public'`, `deleted=false`, `token='MANA'`.
 2. **Easy to understand:** `outcome_type in ('BINARY','MULTIPLE_CHOICE')` (~98% of first bets; they convert — §G).
 3. **A real call to make:** binary `prob` in 0.1–0.9; multiple-choice restricted to `cpmm-multi-1` and skipped if its favorite answer is already ≥0.9 (the UI pre-selects the top answer, so it shouldn't be near-certain).
-4. **Straightforward resolution:** exclude markets with an unresolved `pending_clarifications` request, or an open `mod_reports` (status `new` / `under review` / `needs admin`).
+4. **Straightforward resolution:** exclude markets with an open `mod_reports` (status `new` / `under review` / `needs admin`). _(The `pending_clarifications` state auto-resolves within ~1h, so ~0 markets are ever pending — it was a no-op as a filter, so we dropped it.)_
 5. **A real crowd:** `unique_bettor_count >= MIN_TRADERS`.
 
 Tiered fallback (first hit wins; `{market:null}` only if nothing qualifies → the step self-skips):

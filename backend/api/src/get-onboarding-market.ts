@@ -52,13 +52,6 @@ const qualityWhere = `
       )
     )
   )
-  -- exclude markets with an unresolved clarification request (ambiguous wording)
-  and not exists (
-    select 1 from pending_clarifications pc
-    where pc.contract_id = c.id
-      and pc.applied_time is null
-      and pc.cancelled_time is null
-  )
   -- exclude markets under active moderation / dispute
   and not exists (
     select 1 from mod_reports mr
