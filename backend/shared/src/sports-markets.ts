@@ -90,6 +90,16 @@ export {
   sportsEventId as matchSportsEventId,
 }
 
+// SQL predicate for an *active* sports market: a live, visible mana contract.
+// The autocreate flow (manual admin panel + scheduler cron) de-dupes new markets
+// against this, so once a market has been resolved N/A, hidden (unlisted), or
+// deleted, its fixture is treated as free and a corrected market can be
+// regenerated. Static fragment — no user input, safe to interpolate into SQL.
+export const ACTIVE_SPORTS_MARKET_FILTER = `token = 'MANA'
+    and resolution is distinct from 'CANCEL'
+    and coalesce(deleted, false) = false
+    and coalesce(visibility, 'public') <> 'unlisted'`
+
 export interface ResolveLogEntry {
   question: string
   result: string
@@ -800,7 +810,9 @@ export async function createTournamentMarkets(
     const eventId = sportsEventId(match)
 
     const existing = await pg.oneOrNone<{ id: string }>(
-      `select id from contracts where data->>'sportsEventId' = $1 and token = 'MANA' limit 1`,
+      `select id from contracts
+       where data->>'sportsEventId' = $1 and ${ACTIVE_SPORTS_MARKET_FILTER}
+       limit 1`,
       [eventId]
     )
     if (existing) {
