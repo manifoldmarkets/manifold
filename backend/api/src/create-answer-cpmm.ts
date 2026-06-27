@@ -162,6 +162,7 @@ const createAnswerCpmmMain = async (
         isOther: false,
         poolYes,
         poolNo,
+        p: 0.5, // balanced pool at p=0.5; v2 lossless split sets per-answer p (PR2 late add-on)
         prob,
         totalLiquidity,
         subsidyPool: 0,
