@@ -22,7 +22,7 @@ From the new-user analysis (all prod, last 90 days unless noted):
 - **First-bet is a minutes-long decision or never:** median time-to-first-bet **3.3 min**, **94% of bettors bet within 24 h**, only ~0.9% ever first-bet after day 1. The first session is the whole game. _(§D)_
 - **The trade panel already converts ~89–96%** — the bottleneck is getting users _to_ it, not the bet UX. ~26% never fire `welcome screen: landed`; ~31% of those who do never open a panel. _(§B, §E)_
 - **Commitment predicts retention:** moving a user from "no day-0 action" (1.2% ever-return) to "placed a bet" (30.3% ever-return) is the single biggest lever we have. _(§C)_
-- **What converts is live, news-driven content** (sports/World Cup, US politics), almost entirely BINARY / MULTIPLE_CHOICE markets. _(§G)_
+- **What converts is live, news-driven content** (sports/World Cup, US politics), almost entirely BINARY / MULTIPLE*CHOICE markets. *(§G)\_
 
 A guided first bet attacks all of these at once: it forces the welcome→panel transition (the leak), on the content that converts, inside the minutes-long window when intent is highest.
 
@@ -151,23 +151,24 @@ export function FirstBetPage(props: {
 
 Returns **one** market for the calling user. Reuse the curation logic in `backend/api/src/get-feed.ts` (`getFeed`) and the scoring in `backend/shared/src/importance-score.ts` rather than reinventing — constrain it to a single best result.
 
-Selection criteria (in priority order):
+**As built** — a shared quality + resolution-clarity filter, ranked by `importance_score desc`, run in a 4-tier fallback. Returns `{ market: Contract | null }`.
 
-1. **Token = MANA**, `resolution IS NULL`, `close_time > now()` (open), `deleted = false`, `visibility = 'public'`.
-2. `outcome_type IN ('BINARY','MULTIPLE_CHOICE')` — 98% of first bets, and they convert (§G).
-3. Matches the user's selected topics (`user_topic_interests` / the `group_ids` they just followed in TopicsPage). Join via `contracts.group_slugs` / `group_contracts`.
-4. High `importance_score` and adequate liquidity (so the market feels alive and the bet moves nothing weird).
-5. For binary, prob not extreme (between ~0.1 and ~0.9) so the bet feels live.
-6. Prefer soon-to-resolve / live-event markets (sports fixtures, active news) — these convert best (§G). Optional ranking boost.
-7. **Fallbacks:** no topic match → top `importance_score` MANA market globally (mirrors get-feed's new-user fallback, get-feed.ts where no interests → `importance_score desc`); never return nothing.
+Quality + clarity filter (every tier):
 
-Signature sketch:
+1. **Open, with runway:** `resolution_time is null`, `close_time > now() + 2h` (so it can't resolve mid-onboarding), `visibility='public'`, `deleted=false`, `token='MANA'`.
+2. **Easy to understand:** `outcome_type in ('BINARY','MULTIPLE_CHOICE')` (~98% of first bets; they convert — §G).
+3. **A real call to make:** binary `prob` in 0.1–0.9; multiple-choice restricted to `cpmm-multi-1` and skipped if its favorite answer is already ≥0.9 (the UI pre-selects the top answer, so it shouldn't be near-certain).
+4. **Straightforward resolution:** exclude markets with an unresolved `pending_clarifications` request, or an open `mod_reports` (status `new` / `under review` / `needs admin`).
+5. **A real crowd:** `unique_bettor_count >= MIN_TRADERS`.
 
-```ts
-// get-onboarding-market: APIHandler<'get-onboarding-market'>
-// reads userId from auth, looks up their followed topics, runs the constrained
-// importance-ranked query, returns a single Contract (full betting payload).
-```
+Tiered fallback (first hit wins; `{market:null}` only if nothing qualifies → the step self-skips):
+
+1. topic-matched (groups the user just followed, via `group_members`) + `MIN_TRADERS_STRICT` (25)
+2. topic-matched + `MIN_TRADERS_RELAXED` (5)
+3. global + 25
+4. global + 5
+
+Validated on prod: typical pick is a well-traded, in-band, current market; the topic tier returns topic-relevant markets; ~250–420 ms typical (≈1.3 s only in the pathological all-miss case). Possible future tightening (not done): reuse `minimumContractsQualityBarWhereClauses`, actively prefer auto-resolving sports / trusted-creator markets, add an index backing the importance ordering over the filter.
 
 ### 6.3 Signup bonus — already handled
 
