@@ -90,15 +90,15 @@ export {
   sportsEventId as matchSportsEventId,
 }
 
-// SQL predicate for an *active* sports market: a live, visible mana contract.
-// The autocreate flow (manual admin panel + scheduler cron) de-dupes new markets
-// against this, so once a market has been resolved N/A, hidden (unlisted), or
-// deleted, its fixture is treated as free and a corrected market can be
-// regenerated. Static fragment — no user input, safe to interpolate into SQL.
+// SQL predicate for an *active* sports market: a mana contract that hasn't been
+// resolved N/A. The autocreate flow (manual admin panel + scheduler cron)
+// de-dupes new markets against this, so once a market is resolved N/A its
+// fixture is treated as free and a corrected market can be regenerated. We only
+// ever hide/delete a market after resolving it N/A, so the N/A check alone is
+// enough — no need to also test deleted/visibility. Static fragment, no user
+// input, safe to interpolate into SQL.
 export const ACTIVE_SPORTS_MARKET_FILTER = `token = 'MANA'
-    and resolution is distinct from 'CANCEL'
-    and coalesce(deleted, false) = false
-    and coalesce(visibility, 'public') <> 'unlisted'`
+    and resolution is distinct from 'CANCEL'`
 
 export interface ResolveLogEntry {
   question: string
