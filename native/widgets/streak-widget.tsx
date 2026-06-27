@@ -142,21 +142,31 @@ const GREY: Gradient = { from: '#33333A', to: '#1F1F24', orientation: 'TOP_BOTTO
 // Milestone "level up" gradients: the lit widget turns gold as the streak grows
 // — a cheap, persistent stand-in for the campfire-growth idea (no bespoke art).
 const GOLD: Gradient = { from: '#FFD24D', to: '#E0810E', orientation: 'TL_BR' }
-const GOLD_RICH: Gradient = { from: '#FFE6A0', to: '#C9700A', orientation: 'TL_BR' }
+const GOLD_RICH: Gradient = { from: '#FFE891', to: '#BC5E00', orientation: 'TL_BR' }
 
-// Streak milestones. tier(): 0 (<30), 1 (>=30), 2 (>=100) — drives the gold
-// gradient + the flame/number scaling so the widget visibly levels up.
-const MILESTONES = [7, 30, 100, 365]
+// Streak rank ladder — names + thresholds from the prediction-streak trophy
+// (common/src/trophies.ts on the `trophies` branch). Once Spark (14 days) is hit,
+// the widget shows the rank title + a trophy, and levels its gradient up to gold.
+const STREAK_RANKS: { threshold: number; name: string }[] = [
+  { threshold: 1065, name: 'Timeless' },
+  { threshold: 700, name: 'Undying' },
+  { threshold: 365, name: 'Eternal Flame' },
+  { threshold: 200, name: 'Phoenix' },
+  { threshold: 100, name: 'Inferno' },
+  { threshold: 60, name: 'Blaze' },
+  { threshold: 30, name: 'Ember' },
+  { threshold: 14, name: 'Spark' },
+]
+function streakRank(streak: number): string | null {
+  for (const r of STREAK_RANKS) if (streak >= r.threshold) return r.name
+  return null
+}
+// tier(): 0 (<30, flame), 1 (Ember/Blaze, gold), 2 (Inferno+, rich gold) — drives
+// the gradient + flame/number scaling so the widget visibly levels up.
 function streakTier(streak: number): 0 | 1 | 2 {
   if (streak >= 100) return 2
   if (streak >= 30) return 1
   return 0
-}
-// Highest milestone reached, for the badge (0 = none yet).
-function reachedMilestone(streak: number): number {
-  let m = 0
-  for (const x of MILESTONES) if (streak >= x) m = x
-  return m
 }
 
 // Gradient by state, escalating to gold once lit and past a milestone. Frozen and
@@ -182,6 +192,16 @@ const NUMBER_SHADOW = {
   textShadowRadius: 7,
   textShadowOffset: { width: 0, height: 2 },
 }
+// Stronger, warmer glow for milestone (ranked) streaks — makes the number really
+// pop off the gold.
+const MILESTONE_SHADOW = {
+  textShadowColor: 'rgba(90, 35, 0, 0.5)' as const,
+  textShadowRadius: 11,
+  textShadowOffset: { width: 0, height: 2 },
+}
+// Pale-gold rim used to "frame" milestone widgets (a solid outer layer behind the
+// gradient, since backgroundGradient overrides borders).
+const FRAME_GOLD: `#${string}` = '#FFE6A8'
 
 function glyph(state: StreakState): string {
   return state === 'frozen' ? '🧊' : '🔥'
@@ -196,14 +216,16 @@ function Shell({
   gradient,
   craneSize,
   clickData,
+  frame,
   children,
 }: {
   gradient: Gradient
   craneSize: number
   clickData?: Record<string, unknown>
+  frame?: `#${string}`
   children: any
 }) {
-  return (
+  const inner = (
     <OverlapWidget
       clickAction="OPEN_APP"
       clickActionData={clickData}
@@ -211,7 +233,7 @@ function Shell({
         height: 'match_parent',
         width: 'match_parent',
         backgroundGradient: gradient,
-        borderRadius: RADIUS,
+        borderRadius: frame ? RADIUS - 3 : RADIUS,
       }}
     >
       <FlexWidget
@@ -231,6 +253,37 @@ function Shell({
       </FlexWidget>
       {children}
     </OverlapWidget>
+  )
+  if (!frame) return inner
+  // Frame: a solid pale-gold layer behind the gradient gives milestone widgets a
+  // premium rim (a real border can't sit on a gradient background in this lib).
+  return (
+    <FlexWidget
+      style={{
+        height: 'match_parent',
+        width: 'match_parent',
+        backgroundColor: frame,
+        borderRadius: RADIUS,
+        padding: 3,
+      }}
+    >
+      {inner}
+    </FlexWidget>
+  )
+}
+
+// Milestone badge — a sparkle + a big trophy, shown once a streak rank (Spark,
+// 14 days) is reached. Bigger + flashier on the small widget where there's room
+// top-right.
+function MilestoneBadge({ big }: { big?: boolean }) {
+  return (
+    <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <TextWidget text="✨" style={{ fontSize: big ? 16 : 13 }} />
+      <TextWidget
+        text="🏆"
+        style={{ fontSize: big ? 32 : 26, marginLeft: 2, ...NUMBER_SHADOW }}
+      />
+    </FlexWidget>
   )
 }
 
@@ -274,9 +327,14 @@ function SmallWidget({
   const tier = streakTier(data.streak)
   const flameSize = 46 + tier * 4
   const numberSize = 54 + tier * 5
-  const milestone = reachedMilestone(data.streak)
+  const rank = streakRank(data.streak)
   return (
-    <Shell gradient={gradientFor(state, data.streak)} craneSize={84} clickData={clickData}>
+    <Shell
+      gradient={gradientFor(state, data.streak)}
+      craneSize={84}
+      clickData={clickData}
+      frame={state === 'lit' && tier >= 1 ? FRAME_GOLD : undefined}
+    >
       <FlexWidget style={contentStyle}>
         <FlexWidget
           style={{
@@ -287,7 +345,7 @@ function SmallWidget({
           }}
         >
           <TextWidget text={glyph(state)} style={{ fontSize: flameSize }} />
-          {milestone > 0 && <TextWidget text="🏆" style={{ fontSize: 18 }} />}
+          {rank ? <MilestoneBadge big /> : null}
         </FlexWidget>
         <TextWidget
           text={`${data.streak}`}
@@ -298,12 +356,29 @@ function SmallWidget({
             color: WHITE,
             marginTop: 2,
             adjustsFontSizeToFit: true,
-            ...NUMBER_SHADOW,
+            ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
           }}
         />
+        {rank ? (
+          <TextWidget
+            text={rank.toUpperCase()}
+            maxLines={1}
+            style={{
+              fontSize: 13,
+              fontWeight: '900',
+              color: WHITE,
+              letterSpacing: 1,
+              marginTop: 1,
+            }}
+          />
+        ) : null}
         <TextWidget
           text="day streak"
-          style={{ fontSize: 12, fontWeight: '600', color: WHITE_85 }}
+          style={{
+            fontSize: rank ? 10 : 12,
+            fontWeight: '600',
+            color: rank ? 'rgba(255, 255, 255, 0.7)' : WHITE_85,
+          }}
         />
         {state === 'frozen' && (
           <TextWidget
@@ -362,9 +437,14 @@ function MediumWidget({
   const tier = streakTier(data.streak)
   const flameSize = 38 + tier * 4
   const numberSize = 46 + tier * 5
-  const milestone = reachedMilestone(data.streak)
+  const rank = streakRank(data.streak)
   return (
-    <Shell gradient={gradientFor(state, data.streak)} craneSize={104} clickData={clickData}>
+    <Shell
+      gradient={gradientFor(state, data.streak)}
+      craneSize={104}
+      clickData={clickData}
+      frame={state === 'lit' && tier >= 1 ? FRAME_GOLD : undefined}
+    >
       <FlexWidget
         style={{
           height: 'match_parent',
@@ -391,7 +471,7 @@ function MediumWidget({
             }}
           >
             <TextWidget text={glyph(state)} style={{ fontSize: flameSize }} />
-            {milestone > 0 && <TextWidget text="🏆" style={{ fontSize: 16 }} />}
+            {rank ? <MilestoneBadge /> : null}
           </FlexWidget>
           <TextWidget
             text={`${data.streak}`}
@@ -402,12 +482,29 @@ function MediumWidget({
               color: WHITE,
               marginTop: 2,
               adjustsFontSizeToFit: true,
-              ...NUMBER_SHADOW,
+              ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
             }}
           />
+          {rank ? (
+            <TextWidget
+              text={rank.toUpperCase()}
+              maxLines={1}
+              style={{
+                fontSize: 12,
+                fontWeight: '900',
+                color: WHITE,
+                letterSpacing: 1,
+                marginTop: 1,
+              }}
+            />
+          ) : null}
           <TextWidget
             text="day streak"
-            style={{ fontSize: 12, fontWeight: '600', color: WHITE_85 }}
+            style={{
+              fontSize: rank ? 10 : 12,
+              fontWeight: '600',
+              color: rank ? 'rgba(255, 255, 255, 0.7)' : WHITE_85,
+            }}
           />
           {state === 'frozen' && (
             <TextWidget
