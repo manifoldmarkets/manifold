@@ -44,6 +44,34 @@ export default ({ config }) => {
         ['expo-web-browser'],
         ['expo-apple-authentication'],
         '@bacons/apple-targets',
+        // Android home-screen streak widget. One resizable widget that renders a
+        // small (≈2x2) or medium (≈4x2) layout based on its size. The render code
+        // + headless update task live in native/widgets/. iOS uses a separate
+        // SwiftUI target (@bacons/apple-targets) — this is Android-only.
+        [
+          'react-native-android-widget',
+          {
+            widgets: [
+              {
+                name: 'Streak',
+                label: 'Manifold Streak',
+                description: 'Keep your Manifold streak alive 🔥',
+                // Default to 2 wide x 1 tall. Some launchers (e.g. Motorola) have
+                // tall grid rows, so 2 rows renders as a huge half-screen tile;
+                // one row is a compact ~square. minHeight is the floor on dense
+                // grids; min == minResize in this lib, so keep min low enough to
+                // let users shrink it.
+                minWidth: '110dp',
+                minHeight: '90dp',
+                targetCellWidth: 2,
+                targetCellHeight: 1,
+                maxResizeWidth: '320dp',
+                maxResizeHeight: '200dp',
+                resizeMode: 'horizontal|vertical',
+              },
+            ],
+          },
+        ],
       ],
       splash: {
         image: './assets/splash.png',

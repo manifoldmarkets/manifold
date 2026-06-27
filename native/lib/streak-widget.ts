@@ -22,6 +22,10 @@ const storage =
 // widget computes lit/pending/frozen itself from these fields, so we just mirror
 // the raw numbers.
 export const writeStreakWidget = (data: NativeStreakData) => {
+  if (Platform.OS === 'android') {
+    require('./streak-widget-android').writeAndroidStreakWidget(data)
+    return
+  }
   if (!storage) return
   try {
     // set() is typed for string|number values, but the native setObject path
@@ -35,6 +39,10 @@ export const writeStreakWidget = (data: NativeStreakData) => {
 
 // Flips the widget to its logged-out state (e.g. on sign-out).
 export const clearStreakWidget = () => {
+  if (Platform.OS === 'android') {
+    require('./streak-widget-android').clearAndroidStreakWidget()
+    return
+  }
   if (!storage) return
   try {
     storage.set(STREAK_KEY, { loggedIn: false } as any)
