@@ -7,7 +7,7 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
-import { SportsBetPanel } from './sports-bet-panel'
+import { SportsBetPanel, SportsVersusBetDialog } from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   PositionsHovercard,
@@ -604,19 +604,26 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
         </Row>
       </div>
 
-      {betOutcome && (
-        <SportsBetPanel
-          match={{
-            ...match,
-            teamA: { ...match.teamA, prob: probs.teamA },
-            teamB: { ...match.teamB, prob: probs.teamB },
-            draw: { prob: probs.draw },
-            liveScore,
-          }}
-          initialOutcome={betOutcome}
-          onClose={() => setBetOutcome(null)}
-        />
-      )}
+      {betOutcome &&
+        (match.hasDraw === false ? (
+          // Knockout (2-way) markets use the standard versus bet modal.
+          <SportsVersusBetDialog
+            contractId={match.contractId}
+            onClose={() => setBetOutcome(null)}
+          />
+        ) : (
+          <SportsBetPanel
+            match={{
+              ...match,
+              teamA: { ...match.teamA, prob: probs.teamA },
+              teamB: { ...match.teamB, prob: probs.teamB },
+              draw: { prob: probs.draw },
+              liveScore,
+            }}
+            initialOutcome={betOutcome}
+            onClose={() => setBetOutcome(null)}
+          />
+        ))}
     </>
   )
 }

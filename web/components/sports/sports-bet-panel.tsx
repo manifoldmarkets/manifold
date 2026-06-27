@@ -21,10 +21,56 @@ import { Input } from 'web/components/widgets/input'
 import { ProbabilitySlider } from 'web/components/widgets/probability-input'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { OrderBookPanel } from 'web/components/bet/order-book'
+import { MultiBetDialog } from 'web/components/bet/bet-dialog'
 import { getLimitBetReturns } from 'client-common/lib/bet'
 import { SportsMatch, MatchOutcome, SPORTS_COLORS } from './sports-match-card'
 
 const expirationOptions = EXPIRATION_OPTIONS.filter((o) => o.value !== -1)
+
+// Knockout markets have no Draw answer, so they're plain binary-multi "versus"
+// markets — bet on them with Manifold's standard versus modal (MultiBetDialog →
+// BinaryMultiAnswersPanel) instead of the custom three-way sports panel below.
+// Loads the contract by id the same way SportsBetPanel does.
+export function SportsVersusBetDialog({
+  contractId,
+  onClose,
+}: {
+  contractId: string | undefined
+  onClose: () => void
+}) {
+  const [contract, setContract] = useState<CPMMMultiContract | null>(null)
+
+  useEffect(() => {
+    if (!contractId) return
+    let cancelled = false
+    getContract(db, contractId)
+      .then(async (c) => {
+        if (cancelled || !c || c.mechanism !== 'cpmm-multi-1') return
+        const answerMap = await getAnswersForContracts(db, [c.id])
+        if (cancelled) return
+        const multi = c as CPMMMultiContract
+        setContract({
+          ...multi,
+          answers: answerMap[c.id] ?? multi.answers ?? [],
+        })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [contractId])
+
+  if (!contract) return null
+  return (
+    <MultiBetDialog
+      contract={contract}
+      open
+      setOpen={(open) => {
+        if (!open) onClose()
+      }}
+    />
+  )
+}
 
 export function SportsBetPanel({
   match,
