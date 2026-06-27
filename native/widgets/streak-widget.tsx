@@ -126,16 +126,34 @@ type Gradient = {
 const FLAME: Gradient = { from: '#FF8A3D', to: '#C7331A', orientation: 'TL_BR' }
 const ICE: Gradient = { from: '#8FDBFF', to: '#1F5ECC', orientation: 'TL_BR' }
 const GREY: Gradient = { from: '#33333A', to: '#1F1F24', orientation: 'TOP_BOTTOM' }
+// Milestone "level up" gradients: the lit widget turns gold as the streak grows
+// — a cheap, persistent stand-in for the campfire-growth idea (no bespoke art).
+const GOLD: Gradient = { from: '#FFD24D', to: '#E0810E', orientation: 'TL_BR' }
+const GOLD_RICH: Gradient = { from: '#FFE6A0', to: '#C9700A', orientation: 'TL_BR' }
 
-function gradientFor(state: StreakState): Gradient {
-  switch (state) {
-    case 'lit':
-      return FLAME
-    case 'frozen':
-      return ICE
-    default:
-      return GREY // pending + loggedOut
-  }
+// Streak milestones. tier(): 0 (<30), 1 (>=30), 2 (>=100) — drives the gold
+// gradient + the flame/number scaling so the widget visibly levels up.
+const MILESTONES = [7, 30, 100, 365]
+function streakTier(streak: number): 0 | 1 | 2 {
+  if (streak >= 100) return 2
+  if (streak >= 30) return 1
+  return 0
+}
+// Highest milestone reached, for the badge (0 = none yet).
+function reachedMilestone(streak: number): number {
+  let m = 0
+  for (const x of MILESTONES) if (streak >= x) m = x
+  return m
+}
+
+// Gradient by state, escalating to gold once lit and past a milestone. Frozen and
+// pending keep their state colors (pending stays grey — grey = "act today").
+function gradientFor(state: StreakState, streak: number): Gradient {
+  if (state === 'frozen') return ICE
+  if (state !== 'lit') return GREY // pending + loggedOut
+  if (streak >= 100) return GOLD_RICH
+  if (streak >= 30) return GOLD
+  return FLAME
 }
 
 const WHITE = '#FFFFFF'
@@ -143,6 +161,14 @@ const WHITE_85 = 'rgba(255, 255, 255, 0.85)'
 const WHITE_90 = 'rgba(255, 255, 255, 0.9)'
 const WHITE_22 = 'rgba(255, 255, 255, 0.22)'
 const RADIUS = 20
+
+// Soft warm drop shadow that makes the big number pop off the gradient (the
+// "hero glow"). Spread into the streak-number TextWidget style.
+const NUMBER_SHADOW = {
+  textShadowColor: 'rgba(20, 8, 0, 0.34)' as const,
+  textShadowRadius: 7,
+  textShadowOffset: { width: 0, height: 2 },
+}
 
 function glyph(state: StreakState): string {
   return state === 'frozen' ? '🧊' : '🔥'
@@ -227,13 +253,35 @@ function SmallWidget({
       </Shell>
     )
   }
+  const tier = streakTier(data.streak)
+  const flameSize = 46 + tier * 4
+  const numberSize = 54 + tier * 5
+  const milestone = reachedMilestone(data.streak)
   return (
-    <Shell gradient={gradientFor(state)} craneSize={84}>
+    <Shell gradient={gradientFor(state, data.streak)} craneSize={84}>
       <FlexWidget style={contentStyle}>
-        <TextWidget text={glyph(state)} style={{ fontSize: 42 }} />
+        <FlexWidget
+          style={{
+            width: 'match_parent',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <TextWidget text={glyph(state)} style={{ fontSize: flameSize }} />
+          {milestone > 0 && <TextWidget text="🏆" style={{ fontSize: 18 }} />}
+        </FlexWidget>
         <TextWidget
           text={`${data.streak}`}
-          style={{ fontSize: 46, fontWeight: '900', color: WHITE, marginTop: 4 }}
+          maxLines={1}
+          style={{
+            fontSize: numberSize,
+            fontWeight: '900',
+            color: WHITE,
+            marginTop: 2,
+            adjustsFontSizeToFit: true,
+            ...NUMBER_SHADOW,
+          }}
         />
         <TextWidget
           text="day streak"
@@ -291,8 +339,12 @@ function MediumWidget({
       </Shell>
     )
   }
+  const tier = streakTier(data.streak)
+  const flameSize = 38 + tier * 4
+  const numberSize = 46 + tier * 5
+  const milestone = reachedMilestone(data.streak)
   return (
-    <Shell gradient={gradientFor(state)} craneSize={104}>
+    <Shell gradient={gradientFor(state, data.streak)} craneSize={104}>
       <FlexWidget
         style={{
           height: 'match_parent',
@@ -307,13 +359,31 @@ function MediumWidget({
             flexDirection: 'column',
             alignItems: 'flex-start',
             justifyContent: 'center',
-            width: 96,
+            width: 100,
           }}
         >
-          <TextWidget text={glyph(state)} style={{ fontSize: 36 }} />
+          <FlexWidget
+            style={{
+              width: 'match_parent',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <TextWidget text={glyph(state)} style={{ fontSize: flameSize }} />
+            {milestone > 0 && <TextWidget text="🏆" style={{ fontSize: 16 }} />}
+          </FlexWidget>
           <TextWidget
             text={`${data.streak}`}
-            style={{ fontSize: 42, fontWeight: '900', color: WHITE, marginTop: 2 }}
+            maxLines={1}
+            style={{
+              fontSize: numberSize,
+              fontWeight: '900',
+              color: WHITE,
+              marginTop: 2,
+              adjustsFontSizeToFit: true,
+              ...NUMBER_SHADOW,
+            }}
           />
           <TextWidget
             text="day streak"
@@ -357,6 +427,10 @@ function MediumWidget({
 
 // MARK: - Entry point
 
+// TEMP preview overrides (dev only — leave null in committed code).
+const FORCE_STATE: StreakState | null = null
+const FORCE_STREAK: number | null = null
+
 // Single resizable widget: pick small vs medium by the host width (dp). Mirrors
 // the iOS systemSmall / systemMedium families of one widget.
 export function StreakWidget({
@@ -368,12 +442,23 @@ export function StreakWidget({
   data: NativeStreakData | null
   now: Date
 }) {
-  const state = computeState(data, now)
+  const previewData: NativeStreakData | null =
+    FORCE_STREAK != null
+      ? {
+          loggedIn: true,
+          streak: FORCE_STREAK,
+          lastBetTime: now.getTime(),
+          lastStreakFreezeTime: 0,
+          freezesLeft: 2,
+          updatedAt: now.getTime(),
+        }
+      : data
+  const state = FORCE_STATE ?? computeState(previewData, now)
   const isMedium = widgetInfo.width >= 200
   return isMedium ? (
-    <MediumWidget state={state} data={data} now={now} />
+    <MediumWidget state={state} data={previewData} now={now} />
   ) : (
-    <SmallWidget state={state} data={data} />
+    <SmallWidget state={state} data={previewData} />
   )
 }
 
