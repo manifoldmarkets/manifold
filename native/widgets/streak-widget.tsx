@@ -57,6 +57,19 @@ function computeState(d: NativeStreakData | null, now: Date): StreakState {
   }
 }
 
+// Milliseconds from now until the next midnight America/Los_Angeles (the streak
+// reset). Drives the live countdown Chronometer in the pending state. (+24h from
+// the most-recent midnight can be off by an hour on the two DST-change days; the
+// app-open re-render corrects it — fine for a countdown.)
+function msUntilPacificReset(now: Date): number {
+  try {
+    const nextMidnight = pacificStartOfDayMs(now) + 24 * 60 * 60 * 1000
+    return Math.max(0, nextMidnight - now.getTime())
+  } catch {
+    return 0
+  }
+}
+
 // Day-of-year in LA (1-366), used to deterministically rotate the hook copy.
 function pacificDayOfYear(now: Date): number {
   try {
@@ -182,15 +195,18 @@ function glyph(state: StreakState): string {
 function Shell({
   gradient,
   craneSize,
+  clickData,
   children,
 }: {
   gradient: Gradient
   craneSize: number
+  clickData?: Record<string, unknown>
   children: any
 }) {
   return (
     <OverlapWidget
       clickAction="OPEN_APP"
+      clickActionData={clickData}
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -223,9 +239,11 @@ function Shell({
 function SmallWidget({
   state,
   data,
+  clickData,
 }: {
   state: StreakState
   data: NativeStreakData | null
+  clickData?: Record<string, unknown>
 }) {
   const contentStyle = {
     height: 'match_parent' as const,
@@ -237,7 +255,7 @@ function SmallWidget({
   }
   if (state === 'loggedOut' || !data) {
     return (
-      <Shell gradient={GREY} craneSize={84}>
+      <Shell gradient={GREY} craneSize={84} clickData={clickData}>
         <FlexWidget style={contentStyle}>
           <TextWidget text="🔥" style={{ fontSize: 42 }} />
           <TextWidget
@@ -258,7 +276,7 @@ function SmallWidget({
   const numberSize = 54 + tier * 5
   const milestone = reachedMilestone(data.streak)
   return (
-    <Shell gradient={gradientFor(state, data.streak)} craneSize={84}>
+    <Shell gradient={gradientFor(state, data.streak)} craneSize={84} clickData={clickData}>
       <FlexWidget style={contentStyle}>
         <FlexWidget
           style={{
@@ -303,14 +321,16 @@ function MediumWidget({
   state,
   data,
   now,
+  clickData,
 }: {
   state: StreakState
   data: NativeStreakData | null
   now: Date
+  clickData?: Record<string, unknown>
 }) {
   if (state === 'loggedOut' || !data) {
     return (
-      <Shell gradient={GREY} craneSize={104}>
+      <Shell gradient={GREY} craneSize={104} clickData={clickData}>
         <FlexWidget
           style={{
             height: 'match_parent',
@@ -344,7 +364,7 @@ function MediumWidget({
   const numberSize = 46 + tier * 5
   const milestone = reachedMilestone(data.streak)
   return (
-    <Shell gradient={gradientFor(state, data.streak)} craneSize={104}>
+    <Shell gradient={gradientFor(state, data.streak)} craneSize={104} clickData={clickData}>
       <FlexWidget
         style={{
           height: 'match_parent',
@@ -454,11 +474,17 @@ export function StreakWidget({
         }
       : data
   const state = FORCE_STATE ?? computeState(previewData, now)
+  // Live midnight countdown only while the streak is still unguarded today.
+  const showCountdown = state === 'pending'
+  const clickData = {
+    showCountdown,
+    countdownMs: showCountdown ? msUntilPacificReset(now) : 0,
+  }
   const isMedium = widgetInfo.width >= 200
   return isMedium ? (
-    <MediumWidget state={state} data={previewData} now={now} />
+    <MediumWidget state={state} data={previewData} now={now} clickData={clickData} />
   ) : (
-    <SmallWidget state={state} data={previewData} />
+    <SmallWidget state={state} data={previewData} clickData={clickData} />
   )
 }
 
