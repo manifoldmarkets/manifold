@@ -90,6 +90,16 @@ export {
   sportsEventId as matchSportsEventId,
 }
 
+// SQL predicate for an *active* sports market: a mana contract that hasn't been
+// resolved N/A. The autocreate flow (manual admin panel + scheduler cron)
+// de-dupes new markets against this, so once a market is resolved N/A its
+// fixture is treated as free and a corrected market can be regenerated. We only
+// ever hide/delete a market after resolving it N/A, so the N/A check alone is
+// enough — no need to also test deleted/visibility. Static fragment, no user
+// input, safe to interpolate into SQL.
+export const ACTIVE_SPORTS_MARKET_FILTER = `token = 'MANA'
+    and resolution is distinct from 'CANCEL'`
+
 export interface ResolveLogEntry {
   question: string
   result: string
@@ -800,7 +810,9 @@ export async function createTournamentMarkets(
     const eventId = sportsEventId(match)
 
     const existing = await pg.oneOrNone<{ id: string }>(
-      `select id from contracts where data->>'sportsEventId' = $1 and token = 'MANA' limit 1`,
+      `select id from contracts
+       where data->>'sportsEventId' = $1 and ${ACTIVE_SPORTS_MARKET_FILTER}
+       limit 1`,
       [eventId]
     )
     if (existing) {

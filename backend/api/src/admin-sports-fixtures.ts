@@ -9,6 +9,7 @@ import {
   computeCloseTime,
   stageLiquidityForMatch,
   matchSportsEventId,
+  ACTIVE_SPORTS_MARKET_FILTER,
 } from 'shared/sports-markets'
 
 export const adminSportsFixtures: APIHandler<'admin-sports-fixtures'> = async (
@@ -38,7 +39,9 @@ export const adminSportsFixtures: APIHandler<'admin-sports-fixtures'> = async (
     .filter((m) => m.homeTeam.name && m.awayTeam.name)
     .filter((m) => ['SCHEDULED', 'TIMED'].includes(m.status))
 
-  // Batch-check which matches already have markets
+  // Batch-check which matches already have an *active* market. A market that's
+  // been resolved N/A no longer counts as "exists" here, so the row becomes
+  // selectable and a corrected market can be regenerated.
   const eventIds = filtered.map((m) => matchSportsEventId(m))
   const existingRows = await pg.manyOrNone<{
     event_id: string
@@ -47,7 +50,7 @@ export const adminSportsFixtures: APIHandler<'admin-sports-fixtures'> = async (
     `select data->>'sportsEventId' as event_id, id as market_id
      from contracts
      where data->>'sportsEventId' = any($1::text[])
-       and token = 'MANA'`,
+       and ${ACTIVE_SPORTS_MARKET_FILTER}`,
     [eventIds]
   )
   const marketByEventId = new Map(

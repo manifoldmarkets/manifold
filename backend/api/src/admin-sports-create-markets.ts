@@ -14,6 +14,7 @@ import {
   matchSportsEventId,
   runSportsMarketPostCreate,
   StageLiquidityTiers,
+  ACTIVE_SPORTS_MARKET_FILTER,
 } from 'shared/sports-markets'
 import { createMarketHelper } from './create-market'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
@@ -155,9 +156,13 @@ export const adminSportsCreateMarkets: APIHandler<
 
     const eventId = matchSportsEventId(match)
 
-    // Idempotency check
+    // Idempotency check. Only a market that hasn't been resolved N/A blocks
+    // re-creation — once a market is resolved N/A its fixture is free so a
+    // corrected one can be regenerated.
     const existing = await pg.oneOrNone<{ id: string }>(
-      `select id from contracts where data->>'sportsEventId' = $1 and token = 'MANA' limit 1`,
+      `select id from contracts
+       where data->>'sportsEventId' = $1 and ${ACTIVE_SPORTS_MARKET_FILTER}
+       limit 1`,
       [eventId]
     )
     if (existing) {
