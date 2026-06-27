@@ -14,7 +14,7 @@ export const getUserContractMetricsWithContracts: APIHandler<
   const { userId, limit, offset = 0, perAnswer = false, order } = props
   const visibilitySQL = getContractPrivacyWhereSQLFilter(auth?.uid, 'c.id')
   const pg = createSupabaseDirectClient()
-  const metricFilterSQL = `(c.mechanism <> 'cpmm-multi-1' OR ucm.answer_id is not null)`
+  const metricFilterSQL = `(c.mechanism not in ('cpmm-multi-1', 'cpmm-multi-2') OR ucm.answer_id is not null)`
   const rankedOrderBySQL =
     order === 'profit'
       ? `total_profit DESC`

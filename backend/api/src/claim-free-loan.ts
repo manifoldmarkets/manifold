@@ -2,6 +2,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import { hasFullBonusAccess } from 'common/user'
+import { isMultiCpmm } from 'common/contract'
 import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
@@ -165,7 +166,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     const contractMetrics = metricsGroupedByContract[contractId]
     const contract = contractsById[contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     if (isIndependent) {
       // For independent markets, calculate limits per answer
@@ -208,7 +209,7 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
 
     const contract = contractsById[m.contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     if (isIndependent) {
       // For independent markets, use per-answer limit

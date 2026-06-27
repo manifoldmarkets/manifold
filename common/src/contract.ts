@@ -187,7 +187,7 @@ export const NO_CLOSE_TIME_TYPES: OutcomeType[] = NON_BETTING_OUTCOMES.concat([
  * reference this contract id.
  */
 export type CPMMMulti = {
-  mechanism: 'cpmm-multi-1'
+  mechanism: 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
   addAnswersMode?: add_answers_mode
@@ -206,7 +206,7 @@ export type CPMMMulti = {
 }
 
 export type CPMMNumber = {
-  mechanism: 'cpmm-multi-1'
+  mechanism: 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: 'NUMBER'
   shouldAnswersSumToOne: true
   addAnswersMode: 'DISABLED'
@@ -269,7 +269,7 @@ export type Number = {
 }
 
 export type MultiNumeric = {
-  mechanism: 'cpmm-multi-1'
+  mechanism: 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: 'MULTI_NUMERIC'
   unit: string
   answers: Answer[]
@@ -387,7 +387,7 @@ export function contractUrl(contract: Contract) {
 export function contractPool(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
     ? formatMoney(contract.totalLiquidity)
-    : contract.mechanism === 'cpmm-multi-1'
+    : isMultiCpmm(contract)
     ? formatMoney(
         sum(
           contract.answers.map((a) =>
@@ -398,8 +398,21 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
+// True for any multi-answer CPMM market, v1 or v2. The mechanism is the AMM engine and is
+// orthogonal to outcomeType, so this covers MULTIPLE_CHOICE / NUMBER / MULTI_NUMERIC / DATE
+// alike (they are all cpmm-multi markets). Type guard → MultiContract.
+export const isMultiCpmm = (contract: Contract): contract is MultiContract =>
+  contract.mechanism === 'cpmm-multi-1' || contract.mechanism === 'cpmm-multi-2'
+
+// For sites that only have the mechanism string (destructured, raw, or compound `|| 'cpmm-1'`).
+export const isMultiCpmmMechanism = (mechanism: string): boolean =>
+  mechanism === 'cpmm-multi-1' || mechanism === 'cpmm-multi-2'
+
+// Raw-SQL fragment for the same predicate (the TS helpers can't reach SQL string literals).
+export const MULTI_CPMM_MECHANISMS_SQL = `('cpmm-multi-1', 'cpmm-multi-2')`
+
 export const isBinaryMulti = (contract: Contract) =>
-  contract.mechanism === 'cpmm-multi-1' &&
+  isMultiCpmm(contract) &&
   contract.outcomeType !== 'NUMBER' &&
   contract.outcomeType !== 'MULTI_NUMERIC' &&
   contract.outcomeType !== 'DATE' &&
@@ -413,7 +426,7 @@ export const isSportsContract = (
 ): contract is SportsContract => 'sportsEventId' in contract
 
 export const getMainBinaryMCAnswer = (contract: Contract) =>
-  isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
+  isBinaryMulti(contract) && isMultiCpmm(contract)
     ? contract.answers[0]
     : undefined
 
@@ -516,7 +529,7 @@ export const getAdjustedProfit = (
   answers: Answer[] | undefined,
   answerId: string | null
 ) => {
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     // Null answerId stands for the summary of all answer metrics
     if (!answerId) {
       return isMarketRanked(contract) &&

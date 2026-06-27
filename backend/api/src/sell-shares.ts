@@ -8,7 +8,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { MS_PER_DAY } from 'common/loans'
-import { MarketContract } from 'common/contract'
+import { MarketContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { floatingLesserEqual } from 'common/util/math'
@@ -61,7 +61,7 @@ const calculateSellResult = (
   let answer
   if (
     mechanism === 'cpmm-1' ||
-    (mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne)
+    (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne)
   ) {
     if (answerId) {
       answer = answers?.find((a) => a.id === answerId)

@@ -1,6 +1,11 @@
 import { sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { Contract, MarketContract, MultiContract } from 'common/contract'
+import {
+  Contract,
+  MarketContract,
+  MultiContract,
+  isMultiCpmm,
+} from 'common/contract'
 import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
@@ -97,7 +102,7 @@ function getResolutionParams(
   props: ValidatedAPIParams<'market/:contractId/resolve'>
 ) {
   const { outcomeType } = contract
-  const isMultiChoice = contract.mechanism === 'cpmm-multi-1'
+  const isMultiChoice = isMultiCpmm(contract)
 
   if (
     outcomeType === 'BINARY' ||

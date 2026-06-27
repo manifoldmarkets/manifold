@@ -4,7 +4,12 @@ import {
   getInitialProbability,
 } from 'common/calculate'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
-import { Contract, ContractParams, MultiContract } from 'common/contract'
+import {
+  Contract,
+  ContractParams,
+  isMultiCpmm,
+  MultiContract,
+} from 'common/contract'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import {
   getPinnedComments,
@@ -71,7 +76,7 @@ export async function getContractParams(
   const contractSlug = contract.slug
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isMulti = isMultiCpmm(contract)
   const isNumber = contract.outcomeType === 'NUMBER'
   const numberContractBetCount = async () =>
     retryUnAuthedApi(contractSlug, 'unique-bet-group-count', async () =>
@@ -80,7 +85,7 @@ export async function getContractParams(
       }).then((res) => res.count)
     )
   const includeRedemptions =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const [
     totalBets,
     lastBetArray,
@@ -149,7 +154,7 @@ export async function getContractParams(
 
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(contract)
   ) {
     contract.answers = sortAnswers(contract, contract.answers)
       .slice(0, 20)
@@ -280,7 +285,7 @@ export const getAnswerProbAtEveryBetTime = (
 }
 
 export const shouldHideGraph = (contract: Contract) => {
-  if (contract.mechanism !== 'cpmm-multi-1') return false
+  if (!isMultiCpmm(contract)) return false
   if (
     contract.outcomeType == 'NUMBER' ||
     contract.outcomeType == 'MULTI_NUMERIC' ||

@@ -6,6 +6,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
+import { isMultiCpmm } from 'common/contract'
 import * as crypto from 'crypto'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
@@ -47,9 +48,7 @@ export const placeMultiBetMain = async (
       isApi
     )
 
-    const { mechanism } = contract
-
-    if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract)) {
+    if (!isMultiCpmm(contract) || !('shouldAnswersSumToOne' in contract)) {
       throw new APIError(400, 'Contract type/mechanism not supported')
     }
     if (!answers) throw new APIError(404, 'Answers not found')

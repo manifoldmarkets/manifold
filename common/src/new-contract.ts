@@ -9,6 +9,7 @@ import {
   CPMMNumber,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
+  isMultiCpmmMechanism,
   MultiDate,
   MultiNumeric,
   NonBet,
@@ -188,7 +189,7 @@ export function getNewContract(
     elasticity:
       propsByOutcomeType.mechanism === 'cpmm-1'
         ? computeBinaryCpmmElasticityFromAnte(ante)
-        : propsByOutcomeType.mechanism === 'cpmm-multi-1'
+        : isMultiCpmmMechanism(propsByOutcomeType.mechanism)
         ? 4.99 // TODO: calculate
         : 1_000_000,
 
