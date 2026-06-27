@@ -107,6 +107,7 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
 
     poolYes: row.pool_yes!,
     poolNo: row.pool_no!,
+    p: row.p ?? 0.5,
     prob: row.prob!,
     totalLiquidity: row.total_liquidity!,
     subsidyPool: row.subsidy_pool!,

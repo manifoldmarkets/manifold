@@ -476,6 +476,7 @@ function createAnswers(
 
       poolYes,
       poolNo,
+      p: 0.5, // cpmm-multi-1 / cpmm-multi-2-at-uniform-init; per-answer p set on v2 creation (PR2c)
       prob,
       totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
       subsidyPool: 0,
