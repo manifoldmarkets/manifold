@@ -1,5 +1,6 @@
 import {
   ArrowRightIcon,
+  CashIcon,
   ChatIcon,
   ChevronDownIcon,
   DotsVerticalIcon,
@@ -26,8 +27,10 @@ import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
   Contract,
+  MarketContract,
   MultiContract,
   contractPath,
+  isMultiCpmm,
   tradingAllowed,
 } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
@@ -68,6 +71,7 @@ import {
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { getAnswerColor } from '../charts/contract/choice'
+import { AddLiquidityModal } from '../contract/liquidity-modal'
 import { Col } from '../layout/col'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
@@ -590,6 +594,14 @@ export function AnswerComponent(props: {
 
   const [tradesModalOpen, setTradesModalOpen] = useState(false)
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
+  const [addLiquidityOpen, setAddLiquidityOpen] = useState(false)
+
+  // Per-answer subsidy: deepen this answer's own binary CPMM (cpmm-multi only, open market).
+  const canSubsidizeAnswer =
+    isMultiCpmm(contract) &&
+    !contract.isResolved &&
+    (contract.closeTime ?? Infinity) > Date.now() &&
+    answer.poolYes != undefined
 
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
@@ -656,6 +668,11 @@ export function AnswerComponent(props: {
       icon: <ScaleIcon className="h-4 w-4" />,
       name: getOrderBookButtonLabel(unfilledBets),
       onClick: () => setLimitBetModalOpen(true),
+    },
+    canSubsidizeAnswer && {
+      icon: <CashIcon className="h-4 w-4" />,
+      name: 'Add liquidity',
+      onClick: () => setAddLiquidityOpen(true),
     }
   )
 
@@ -767,6 +784,15 @@ export function AnswerComponent(props: {
           modalOpen={tradesModalOpen}
           setModalOpen={setTradesModalOpen}
           answer={answer}
+        />
+      )}
+      {addLiquidityOpen && isMultiCpmm(contract) && (
+        <AddLiquidityModal
+          contract={contract as MarketContract}
+          isOpen={addLiquidityOpen}
+          setOpen={setAddLiquidityOpen}
+          answerId={answer.id}
+          answerText={answer.text}
         />
       )}
       {!!hasLimitOrders && (
