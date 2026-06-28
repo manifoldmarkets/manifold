@@ -549,20 +549,19 @@ function validateMarketBody(body: Body) {
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
 
-    // cpmm-multi-2 (PR2c): per-answer initial probabilities. First cut supports
-    // only fixed, sum-to-one markets with no "Other" answer — so each provided
-    // prob maps 1:1 to a created answer and Σp = 1 is well-defined. (Non-uniform
-    // "Other" splitting is a later add-on; see pr2-plan.md "Other split".)
+    // cpmm-multi-2 (PR2c): per-answer initial probabilities. Supports both
+    // fixed sum-to-one ("Multiple Choice", Σp normalized to 1) and independent
+    // ("Set", each prob absolute, no Σ constraint) markets — in both, each prob
+    // maps 1:1 to a created answer. No "Other"/addable answers (their probs
+    // aren't covered by initialProbs); "Other" splitting is a later add-on, see
+    // pr2-plan.md "Other split". Both representations are balanced-pool + per-
+    // answer p (lossless): a skewed start is carried by p, never by discarding
+    // shares or oversizing one reserve past the funded ante.
     if (initialProbs !== undefined) {
       if (!CPMM_MULTI_2_CREATION_ENABLED)
         throw new APIError(
           403,
           'Creating cpmm-multi-2 (custom initial probabilities) markets is not currently enabled.'
-        )
-      if (shouldAnswersSumToOne === false)
-        throw new APIError(
-          400,
-          'initialProbs requires shouldAnswersSumToOne markets.'
         )
       if (addAnswersMode !== 'DISABLED')
         throw new APIError(

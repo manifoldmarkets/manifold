@@ -455,16 +455,25 @@ function createAnswers(
   // cpmm-multi-2: per-answer initial probs ⇒ balanced deep pools dialed to
   // target via each answer's own `p`. For balanced reserves (Y = N), the
   // probability formula prob = p·N / ((1−p)·Y + p·N) collapses to prob = p
-  // (GP6a), so we set p_i = (normalized) target prob and Y_i = N_i = ante/n.
-  // Worst-case payout when any answer wins is poolYes_i + Σ_{j≠i} poolNo_j =
-  // ante/n + (n−1)·ante/n = ante — i.e. the exact same mana budget v1 uses.
+  // (GP6a), so we set p_i = target prob and Y_i = N_i = ante/n. The balanced
+  // (lossless) representation is required so later liquidity adds don't discard
+  // shares (an asymmetric pool + p=0.5 would).
+  //
+  // Sum-to-one ("Multiple Choice"): exactly one answer resolves YES, so the raw
+  // percentages are normalized to Σ targetProb = 1. Worst-case payout when any
+  // answer wins is poolYes_i + Σ_{j≠i} poolNo_j = ante/n + (n−1)·ante/n = ante —
+  // the same mana budget v1 uses.
+  // Independent ("Set"): each answer is its own CPMM with no Σ=1 constraint, so
+  // each percentage is its own absolute prob (pct/100, no normalization).
   if (initialProbs && initialProbs.length > 0) {
     const n = answers.length
     const sum = initialProbs.reduce((s, x) => s + x, 0)
     const L = ante / n
     const now = Date.now()
     return answers.map((text, i) => {
-      const targetProb = initialProbs[i] / sum
+      const targetProb = shouldAnswersSumToOne
+        ? initialProbs[i] / sum
+        : initialProbs[i] / 100
       const answer: Answer = removeUndefinedProps({
         id: ids[i],
         index: i,

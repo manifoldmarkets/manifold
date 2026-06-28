@@ -404,8 +404,10 @@ export const createMultiSchema = z.object({
   shouldAnswersSumToOne: z.boolean().optional(),
   // cpmm-multi-2 (PR2c): per-answer initial probabilities, as percentages in
   // (0, 100). When provided, the market is created as `cpmm-multi-2` with each
-  // answer's `p` set so its displayed prob matches (normalized to sum to 1).
-  // Length must match `answers`. Absent ⇒ uniform 1/n `cpmm-multi-1` (unchanged).
+  // answer's `p` set so its displayed prob matches. Sum-to-one ("Multiple
+  // Choice") markets normalize the percentages to Σ = 1; independent ("Set")
+  // markets treat each as an absolute prob (no Σ constraint). Length must match
+  // `answers`. Absent ⇒ uniform 1/n `cpmm-multi-1` (unchanged).
   initialProbs: z.array(z.number().gt(0).lt(100)).max(MAX_ANSWERS).optional(),
 })
 
