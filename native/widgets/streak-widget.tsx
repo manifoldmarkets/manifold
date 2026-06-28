@@ -530,6 +530,103 @@ function MediumWidget({
   )
 }
 
+// Compact (home, short/wide cell — e.g. a Pixel's 2x1): flame beside the number
+// instead of stacked, so the content fits a short cell where the vertical layout
+// would clip. Same data, horizontal arrangement.
+function CompactWidget({
+  state,
+  data,
+  clickData,
+}: {
+  state: StreakState
+  data: NativeStreakData | null
+  clickData?: Record<string, unknown>
+}) {
+  const rowStyle = {
+    height: 'match_parent' as const,
+    width: 'match_parent' as const,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    padding: 12,
+  }
+  if (state === 'loggedOut' || !data) {
+    return (
+      <Shell gradient={GREY} craneSize={70} clickData={clickData}>
+        <FlexWidget style={rowStyle}>
+          <TextWidget text="🔥" style={{ fontSize: 34 }} />
+          <FlexWidget
+            style={{ flexDirection: 'column', marginLeft: 10, flex: 1 }}
+          >
+            <TextWidget
+              text="Start a streak"
+              maxLines={1}
+              style={{ fontSize: 15, fontWeight: '900', color: WHITE }}
+            />
+            <TextWidget
+              text="Open Manifold"
+              style={{ fontSize: 11, fontWeight: '600', color: WHITE_85 }}
+            />
+          </FlexWidget>
+        </FlexWidget>
+      </Shell>
+    )
+  }
+  const tier = streakTier(data.streak)
+  const rank = streakRank(data.streak)
+  const label =
+    state === 'frozen'
+      ? `Frozen · ${data.freezesLeft} left`
+      : rank
+      ? rank.toUpperCase()
+      : 'day streak'
+  return (
+    <Shell
+      gradient={gradientFor(state, data.streak)}
+      craneSize={70}
+      clickData={clickData}
+      frame={state === 'lit' && tier >= 1 ? FRAME_GOLD : undefined}
+    >
+      <FlexWidget style={rowStyle}>
+        <TextWidget text={glyph(state)} style={{ fontSize: 40 }} />
+        <FlexWidget
+          style={{
+            flexDirection: 'column',
+            marginLeft: 10,
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
+          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextWidget
+              text={`${data.streak}`}
+              maxLines={1}
+              style={{
+                fontSize: 42,
+                fontWeight: '900',
+                color: WHITE,
+                adjustsFontSizeToFit: true,
+                ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
+              }}
+            />
+            {rank ? (
+              <TextWidget text="🏆" style={{ fontSize: 17, marginLeft: 6 }} />
+            ) : null}
+          </FlexWidget>
+          <TextWidget
+            text={label}
+            maxLines={1}
+            style={
+              rank && state !== 'frozen'
+                ? { fontSize: 11, fontWeight: '900', color: WHITE, letterSpacing: 1 }
+                : { fontSize: 11, fontWeight: '600', color: WHITE_85 }
+            }
+          />
+        </FlexWidget>
+      </FlexWidget>
+    </Shell>
+  )
+}
+
 // MARK: - Entry point
 
 // TEMP preview overrides (dev only — leave null in committed code).
@@ -565,9 +662,14 @@ export function StreakWidget({
     showCountdown,
     countdownMs: showCountdown ? msUntilPacificReset(now) : 0,
   }
-  const isMedium = widgetInfo.width >= 200
+  // Pick layout by cell shape: wide -> medium (hook), short/wide -> compact
+  // (flame beside number, e.g. a Pixel 2x1), else the tall/square vertical small.
+  const isMedium = widgetInfo.width >= 220
+  const isShort = !isMedium && widgetInfo.height < 130
   return isMedium ? (
     <MediumWidget state={state} data={previewData} now={now} clickData={clickData} />
+  ) : isShort ? (
+    <CompactWidget state={state} data={previewData} clickData={clickData} />
   ) : (
     <SmallWidget state={state} data={previewData} clickData={clickData} />
   )
