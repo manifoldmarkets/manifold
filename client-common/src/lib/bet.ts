@@ -43,7 +43,7 @@ export const getLimitBetReturns = (
           YES: multiProps!.answerToBuy.poolYes,
           NO: multiProps!.answerToBuy.poolNo,
         },
-        p: 0.5,
+        p: multiProps!.answerToBuy.p,
         collectedFees: contract.collectedFees,
       }
     : {

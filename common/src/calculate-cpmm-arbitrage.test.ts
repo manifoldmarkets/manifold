@@ -731,3 +731,103 @@ const getNumericAnswers = (min: number, max: number, step: number) => {
   const prob = 1 / bucketRanges.length
   return bucketRanges.map((_, i) => getAnswer(i, prob))
 }
+
+// --- cpmm-multi-2: per-answer p (general-p auto-arb) -------------------------
+// Balanced pools (Y = N = L) give prob_i = p_i exactly, so a valid sum-to-one
+// v2 market is just per-answer p that sums to 1. There is NO external p != 0.5
+// oracle (vendor v1 throws on p != 0.5), so internal-consistency invariants and a
+// cross-language anchor against the independent Python reference oracle
+// (manifold/market_simulator.MarketSimulator.simulate_buy, per-answer p threaded
+// in Slice 1b) do the validation. At p = 0.5 every path reduces to v1 (the suite
+// staying byte-identical is the regression lock).
+const getAnswerWithP = (index: number, p: number, L = 100): Answer =>
+  ({
+    id: `answer${index}`,
+    contractId: `contract${index}`,
+    userId: `user${index}`,
+    text: `Answer ${index}`,
+    createdTime: 0,
+    index,
+    prob: p, // balanced pool (Y = N = L) => prob = p
+    poolYes: L,
+    poolNo: L,
+    p,
+    totalLiquidity: 0,
+    subsidyPool: 0,
+    probChanges: { day: 0, week: 0, month: 0 },
+    volume: 0,
+  } as Answer)
+
+// Final per-answer prob, matched to each answer by identity (id) — never by
+// array position — and priced with that answer's own p.
+const probsAfterBet = (
+  result: ReturnType<typeof calculateCpmmMultiArbitrageBet>,
+  answers: Answer[]
+) => {
+  const byId = new Map<string, number>()
+  for (const r of [result.newBetResult, ...result.otherBetResults]) {
+    byId.set(r.answer.id, getCpmmProbability(r.cpmmState.pool, r.cpmmState.p))
+  }
+  return answers.map((a) => byId.get(a.id)!)
+}
+
+describe('calculateCpmmMultiArbitrageBet — per-answer p (cpmm-multi-2)', () => {
+  it('restores Σp = 1 (and is monotone) after a YES buy at non-uniform p', () => {
+    for (const ps of [
+      [0.5, 0.3, 0.2],
+      [0.7, 0.2, 0.1],
+      [0.6, 0.15, 0.15, 0.1],
+      [0.9, 0.05, 0.05],
+    ]) {
+      const answers = ps.map((p, i) => getAnswerWithP(i, p))
+      const result = calculateCpmmMultiArbitrageBet(
+        answers,
+        answers[0],
+        'YES',
+        25,
+        undefined,
+        [],
+        {},
+        noFees
+      )
+      const probs = probsAfterBet(result, answers)
+      expect(sumBy(probs, (p) => p)).toBeCloseTo(1, 6)
+      expect(probs[0]).toBeGreaterThan(ps[0]) // bought answer rises
+      for (let i = 1; i < ps.length; i++) {
+        expect(probs[i]).toBeLessThan(ps[i]) // every other answer falls
+      }
+    }
+  })
+
+  it('matches the Python reference oracle at p != 0.5 (cross-language anchor)', () => {
+    const cases = [
+      {
+        ps: [0.5, 0.3, 0.2],
+        sharesAns0: 46.82123779918318,
+        probs: [0.5668062275, 0.261508744769, 0.171685027732],
+      },
+      {
+        ps: [0.7, 0.2, 0.1],
+        sharesAns0: 34.78445693634237,
+        probs: [0.736335611567, 0.176510366064, 0.08715402237],
+      },
+    ]
+    for (const { ps, sharesAns0, probs: expected } of cases) {
+      const answers = ps.map((p, i) => getAnswerWithP(i, p))
+      const result = calculateCpmmMultiArbitrageBet(
+        answers,
+        answers[0],
+        'YES',
+        25,
+        undefined,
+        [],
+        {},
+        noFees
+      )
+      const probs = probsAfterBet(result, answers)
+      expected.forEach((e, i) => expect(probs[i]).toBeCloseTo(e, 6))
+      const shares = sumBy(result.newBetResult.takers, 'shares')
+      expect(shares).toBeCloseTo(sharesAns0, 4)
+    }
+  })
+})

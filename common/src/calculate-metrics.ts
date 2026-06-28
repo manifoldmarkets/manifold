@@ -167,7 +167,7 @@ const computeMultiCpmmElasticity = (
   const elasticities = contract.answers.map((a) => {
     const cpmmState = {
       pool: { YES: a.poolYes, NO: a.poolNo },
-      p: 0.5,
+      p: a.p,
       collectedFees: noFees,
     }
     const unfilledBetsForAnswer = unfilledBets.filter(
