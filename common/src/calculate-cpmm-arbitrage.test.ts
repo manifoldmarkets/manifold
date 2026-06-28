@@ -913,3 +913,83 @@ describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 no transient-overs
     expect(r.finalById['answer0']).toBeCloseTo(a0Final, 2) // order has no effect
   })
 })
+
+// --- cpmm-multi-2: m>1 basket multi-bet must conserve at resolution ----------------------------
+// Regression for the m>1 redemption share-split bug (tasks/cpmm_multi_2/
+// findings-m1-basket-conservation-bug-2026-06-28.md, GP16). A multi-answer YES basket buy
+// (m>=2) used to credit each basket answer eta/m redemption YES shares; the residual
+// "pays eta iff ANY basket answer wins" requires eta YES shares in EACH basket answer, so a
+// winning basket answer paid only eta/m and resolution to a basket answer DESTROYED mana
+// (found on the dev instance: a sole participant's payout came up ~10% short). The defect was
+// invisible to jest because no test checked cross-answer resolution conservation.
+//
+// Resolution payout for sum-to-one CHOOSE_ONE to winner W is (payouts-fixed.ts
+// getMultiLiquidityPoolPayouts + getMultiFixedPayouts): poolYes_W + traderYES_W +
+// Sum_{j!=W} (poolNo_j + traderNO_j). Conservation <=> that total is constant across W
+// <=> T_i^YES - T_i^NO is constant across answers, where T_i^YES = poolYes_i + traderYES_i,
+// T_i^NO = poolNo_i + traderNO_i. This holds for ANY p (general-p), not just p=0.5.
+describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 m>1 basket conserves at resolution', () => {
+  // For each candidate winner W, the total resolution payout (traders + LP) given the
+  // post-bet pools + recorded trader shares. Must be equal for every W.
+  const payoutByWinner = (
+    res: ReturnType<typeof calculateCpmmMultiArbitrageYesBets>
+  ) => {
+    const yesShares: Record<string, number> = {}
+    const noShares: Record<string, number> = {}
+    for (const r of res.newBetResults)
+      yesShares[r.answer.id] =
+        (yesShares[r.answer.id] ?? 0) + sumBy(r.takers, (t) => t.shares)
+    for (const r of res.otherBetResults)
+      noShares[r.answer.id] =
+        (noShares[r.answer.id] ?? 0) + sumBy(r.takers, (t) => t.shares)
+    const tYes = (a: Answer) => a.poolYes + (yesShares[a.id] ?? 0)
+    const tNo = (a: Answer) => a.poolNo + (noShares[a.id] ?? 0)
+    return res.updatedAnswers.map(
+      (w) =>
+        tYes(w) +
+        sumBy(
+          res.updatedAnswers.filter((a) => a.id !== w.id),
+          (a) => tNo(a)
+        )
+    )
+  }
+
+  const runBasket = (ps: number[], basketIdx: number[], bet: number) => {
+    const answers = ps.map((p, i) => getAnswerWithP(i, p))
+    return calculateCpmmMultiArbitrageYesBets(
+      answers,
+      basketIdx.map((i) => answers[i]),
+      bet,
+      undefined,
+      [],
+      {},
+      noFees,
+      'cpmm-multi-2'
+    )
+  }
+
+  it('m=2 basket: resolution payout identical for every winner (no mana destroyed)', () => {
+    // skewed 4-answer market, basket of the 2nd and 3rd answers (the exact dev-instance repro)
+    const res = runBasket([0.55, 0.25, 0.12, 0.08], [1, 2], 150)
+    const payouts = payoutByWinner(res)
+    const mn = Math.min(...payouts)
+    const mx = Math.max(...payouts)
+    // before the eta/m -> eta fix this spread was ~127 (basket winners short)
+    expect(mx - mn).toBeLessThan(0.01)
+  })
+
+  it('m=3 basket and uniform pools both conserve across all winners', () => {
+    for (const cfg of [
+      { ps: [0.4, 0.25, 0.2, 0.15], basket: [0, 1, 2], bet: 90 },
+      { ps: [0.25, 0.25, 0.25, 0.25], basket: [0, 1], bet: 200 }, // uniform still leaked pre-fix
+    ]) {
+      const payouts = payoutByWinner(runBasket(cfg.ps, cfg.basket, cfg.bet))
+      expect(Math.max(...payouts) - Math.min(...payouts)).toBeLessThan(0.01)
+    }
+  })
+
+  it('m=1 (single-answer via basket path) still conserves (byte-identical eta credit)', () => {
+    const payouts = payoutByWinner(runBasket([0.5, 0.3, 0.2], [0], 25))
+    expect(Math.max(...payouts) - Math.min(...payouts)).toBeLessThan(0.01)
+  })
+})
