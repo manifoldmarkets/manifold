@@ -1,4 +1,4 @@
-import { getDisplayProbability } from 'common/calculate'
+import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
 import {
   MapContractsDictionary,
@@ -48,40 +48,63 @@ export const getPartyProbs = (
   let dem: number
   let rep: number
   let other: number
+  // Whether the market actually represents each major party. A market that's
+  // missing a whole side (candidate-only, or one-party) can't map to a blended
+  // color — it's grayed out below rather than painted fully one color, which
+  // would fake max certainty from a one-sided market.
+  let hasDem: boolean
+  let hasRep: boolean
 
   if (contract.mechanism === 'cpmm-multi-1') {
     const answers = contract.answers
-    dem = answers
-      .filter((a) => isDemocraticAnswer(a.text))
-      .reduce((sum, a) => sum + a.prob, 0)
-    rep = answers
-      .filter((a) => isRepublicanAnswer(a.text))
-      .reduce((sum, a) => sum + a.prob, 0)
+    const demAnswers = answers.filter((a) => isDemocraticAnswer(a.text))
+    const repAnswers = answers.filter((a) => isRepublicanAnswer(a.text))
+    // Use getAnswerProbability (not raw a.prob) so resolved answers report
+    // their settled 1/0/MKT value — the map color and the senate-bar sort stay
+    // correct after races are called on election night.
+    dem = demAnswers.reduce(
+      (s, a) => s + getAnswerProbability(contract, a.id),
+      0
+    )
+    rep = repAnswers.reduce(
+      (s, a) => s + getAnswerProbability(contract, a.id),
+      0
+    )
     // Everything not clearly D or R (e.g. "Other", "Independent (Dan Osborn)").
     other = answers
       .filter((a) => !isDemocraticAnswer(a.text) && !isRepublicanAnswer(a.text))
-      .reduce((sum, a) => sum + a.prob, 0)
-    // No party answer at all (e.g. a candidate-only market) — can't map to a
-    // party color, so leave the state uncolored rather than fake a tossup.
-    if (dem === 0 && rep === 0) return undefined
+      .reduce((s, a) => s + getAnswerProbability(contract, a.id), 0)
+    hasDem = demAnswers.length > 0
+    hasRep = repAnswers.length > 0
   } else if (contract.mechanism === 'cpmm-1') {
     // Binary markets are framed "will the Republican win?" → YES = Republican.
     rep = getDisplayProbability(contract)
     dem = 1 - rep
     other = 0
+    hasDem = true
+    hasRep = true
   } else {
     return undefined
   }
 
   // A market can pre-assign its "Other" bucket to a party (e.g. a race where
-  // the only viable non-major candidate caucuses with one side).
+  // the only viable non-major candidate caucuses with one side) — this can also
+  // supply an otherwise-missing side.
   if (data?.otherParty === 'Democratic Party') {
     dem += other
     other = 0
+    hasDem = true
   } else if (data?.otherParty === 'Republican Party') {
     rep += other
     other = 0
+    hasRep = true
   }
+
+  // Need both major parties represented to render a meaningful blue/red blend;
+  // otherwise leave the state uncolored (gray). partyProbsToColor already
+  // gradients by lead size, so genuinely lopsided two-party races still show
+  // a strong (dark) color — only structurally one-sided markets go gray.
+  if (!hasDem || !hasRep) return undefined
 
   return { dem, rep, other }
 }

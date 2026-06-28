@@ -16,8 +16,10 @@ export const NH_LINK =
 // Headline aggregate markets for the 2026 midterm page. All community-created;
 // chosen as the best-trafficked market for each top-line question.
 export const MIDTERMS_2026 = {
-  // Multi-choice "who controls government" — the page's hero card.
-  balanceOfPower: 'balance-of-power-who-will-control-t',
+  // Multi-choice "who controls Congress" — the page's hero card. Congress-only
+  // (Senate + House, no presidential dimension), which fits a midterms page
+  // where the presidency isn't on the ballot.
+  balanceOfPower: 'who-controls-congress-after-the-202',
   // Binary, YES = Republicans hold the House.
   houseControl: 'republicans-have-house-majority-aft',
   // Binary, YES = Republicans win the Senate.
@@ -32,7 +34,8 @@ export const PRESIDENT_2028_SLUG = 'who-will-be-elected-president-in-20'
 
 // 2028 presidency by party — the most-traded "which party wins" market. Shown as
 // a Democrat-vs-Republican head-to-head bar under the candidate field.
-export const PRESIDENT_2028_PARTY_SLUG = 'which-political-party-wins-the-us-p-nUsCQcZ6Lc'
+export const PRESIDENT_2028_PARTY_SLUG =
+  'which-political-party-wins-the-us-p-nUsCQcZ6Lc'
 
 // Notable 2026 primary races (community markets) — a compact watch-list. Each is
 // the best-trafficked multi-choice market for that primary. Resolved/closed ones
