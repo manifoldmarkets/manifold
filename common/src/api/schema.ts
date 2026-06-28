@@ -22,6 +22,12 @@ import {
   SearchGroupShape,
   Topic,
 } from 'common/group'
+import {
+  JOB_INTERESTS,
+  JOB_REGIONS,
+  JOB_SKILLS,
+  JobSeekerInterest,
+} from 'common/job-seeker'
 import { League } from 'common/leagues'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -1468,6 +1474,26 @@ export const API = (_apiTypeCheck = {
       medium: z.enum(['email', 'browser', 'mobile']),
       enabled: z.boolean(),
     }),
+  },
+  'set-job-interest': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        skills: z.array(z.enum(JOB_SKILLS)),
+        interests: z.array(z.enum(JOB_INTERESTS)),
+        region: z.enum(JOB_REGIONS).nullable(),
+        openToContact: z.boolean(),
+      })
+      .strict(),
+  },
+  'get-job-interest': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { interest: JobSeekerInterest | null },
   },
   headlines: {
     method: 'GET',
