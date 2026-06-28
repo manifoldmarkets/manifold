@@ -219,8 +219,8 @@ export const adminSportsCreateMarkets: APIHandler<
       // Attach group tags (createMarketHelper doesn't do this — only the full handler does)
       await Promise.allSettled(
         params.groupIds.map((gId) =>
-          pg.oneOrNone(
-            `select id from groups where id = $1 limit 1`,
+          pg.oneOrNone<{ id: string; slug: string }>(
+            `select id, slug from groups where id = $1 limit 1`,
             [gId]
           ).then((g) => g ? addGroupToContract(pg, contract, g) : null)
         )

@@ -255,23 +255,40 @@ export const FieldVal = {
 
   delete: () => (fieldName: string) => `- '${fieldName}'`,
 
-  arrayConcat:
-    (...values: string[]) =>
-    (fieldName: string) => {
+  arrayConcat: (...values: string[]) => {
+    // Untyped query results can sneak undefined past the string[] signature,
+    // and :json would silently serialize it as a json null inside the array
+    // (e.g. groupSlugs [null, null, null], which broke blocked-topic filters).
+    if (values.some((v) => v == null)) {
+      throw new Error(
+        `FieldVal.arrayConcat: got null/undefined in values: ${JSON.stringify(
+          values
+        )}`
+      )
+    }
+    return (fieldName: string) => {
       return pgp.as.format(
         `|| jsonb_build_object($1, coalesce(data->$1, '[]'::jsonb) || $2:json)`,
         [fieldName, values]
       )
-    },
+    }
+  },
 
-  arrayRemove:
-    (...values: string[]) =>
-    (fieldName: string) => {
+  arrayRemove: (...values: string[]) => {
+    if (values.some((v) => v == null)) {
+      throw new Error(
+        `FieldVal.arrayRemove: got null/undefined in values: ${JSON.stringify(
+          values
+        )}`
+      )
+    }
+    return (fieldName: string) => {
       return pgp.as.format(
         `|| jsonb_build_object($1, coalesce(data->$1,'[]'::jsonb) - '{$2:raw}'::text[])`,
         [fieldName, values.join(',')]
       )
-    },
+    }
+  },
 }
 export type FieldValFunction = (fieldName: string) => string
 

@@ -765,7 +765,7 @@ export async function createTournamentMarkets(
     notifyFollowers?: boolean
   } = {}
 ): Promise<{ created: number; skipped: number; errors: number; log: CreateLogEntry[] }> {
-  const { daysAhead = 7, dryRun = false, dashboardUrl } = opts
+  const { daysAhead = 14, dryRun = false, dashboardUrl } = opts
   const pg = createSupabaseDirectClient()
   const log: CreateLogEntry[] = []
 
