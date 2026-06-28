@@ -11,19 +11,22 @@ import { convertLiquidity } from 'common/supabase/liquidity'
 import { CPMM_MULTI_2_CREATION_ENABLED, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
+import { getAnswer, updateAnswer } from 'shared/supabase/answers'
 
 export const addLiquidity: APIHandler<'market/:contractId/add-liquidity'> =
   onlyUsersWhoCanPerformAction(
     'addLiquidity',
-    async ({ contractId, amount }, auth) => {
-      return addContractLiquidity(contractId, amount, auth.uid)
+    async ({ contractId, amount, answerId }, auth) => {
+      return addContractLiquidity(contractId, amount, auth.uid, answerId)
     }
   )
 
 export const addContractLiquidity = async (
   contractId: string,
   amount: number,
-  userId: string
+  userId: string,
+  // When set, subsidize a single answer (its own binary CPMM) rather than the whole market.
+  answerId?: string
 ) => {
   // Run as transaction to prevent race conditions
   return await createSupabaseDirectClient().tx(async (tx) => {
@@ -50,6 +53,19 @@ export const addContractLiquidity = async (
         403,
         'Only cpmm-1 and multiple-choice CPMM markets are supported'
       )
+
+    // Per-answer subsidy: only meaningful for multi-choice CPMM (each answer is its own binary
+    // pool). Validate the answer belongs to this contract before we move any mana.
+    if (answerId !== undefined) {
+      if (!isMultiCpmm(contract))
+        throw new APIError(
+          403,
+          'answerId is only supported for multiple-choice CPMM markets'
+        )
+      const answer = await getAnswer(tx, answerId)
+      if (!answer || answer.contractId !== contractId)
+        throw new APIError(404, 'Answer not found on this contract')
+    }
 
     const { closeTime } = contract
     if (closeTime && Date.now() > closeTime)
@@ -79,7 +95,8 @@ export const addContractLiquidity = async (
     const newLiquidityProvision = getNewLiquidityProvision(
       userId,
       subsidyAmount,
-      contract
+      contract,
+      answerId
     )
 
     const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
@@ -96,11 +113,26 @@ export const addContractLiquidity = async (
     const shouldConvertToV2 =
       CPMM_MULTI_2_CREATION_ENABLED && contract.mechanism === 'cpmm-multi-1'
 
-    await updateContract(tx, contractId, {
-      subsidyPool: FieldVal.increment(subsidyAmount),
-      totalLiquidity: FieldVal.increment(subsidyAmount),
-      ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
-    })
+    if (answerId !== undefined) {
+      // Per-answer: the subsidy lands in THAT answer's subsidyPool (drizzleAnswer deepens it
+      // losslessly). updateAnswer takes a concrete value, so read-then-add within this tx.
+      const answer = await getAnswer(tx, answerId)
+      await updateAnswer(tx, answerId, {
+        subsidyPool: (answer?.subsidyPool ?? 0) + subsidyAmount,
+      })
+      // contract-level totalLiquidity still tracks the whole market's subsidy; the conversion
+      // trigger applies just as for a whole-market add.
+      await updateContract(tx, contractId, {
+        totalLiquidity: FieldVal.increment(subsidyAmount),
+        ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
+      })
+    } else {
+      await updateContract(tx, contractId, {
+        subsidyPool: FieldVal.increment(subsidyAmount),
+        totalLiquidity: FieldVal.increment(subsidyAmount),
+        ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
+      })
+    }
 
     return {
       result: liquidity,

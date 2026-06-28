@@ -19,6 +19,7 @@ import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import { LimitBet } from './bet'
 import {
+  addCpmmLiquidity,
   addCpmmMultiLiquidityAnswersSumToOneV2,
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
   calculateCpmmMultiSumsToOneSale,
@@ -360,9 +361,33 @@ class Sim {
     return this.posOf(user, this.answers[answerIndex].id)[outcome]
   }
 
-  addLiquidity(user: string, amount: number) {
-    // model whole-market add as the lossless v2 deepen (what drizzle realizes), so the added
-    // mana sits in pools and is read by getMultiLiquidityPoolPayouts at resolution.
+  // Add liquidity. With `answerIndex` set, subsidize a SINGLE answer (its own binary CPMM) via
+  // the same lossless float-p deepen the per-answer drizzle (drizzleAnswer) realizes — this is
+  // the `liq_target=single_outcome` covering-array case. Without it, whole-market (every answer).
+  // Both model the add as the deepen the drizzle eventually applies, so the mana sits in pools and
+  // is read by getMultiLiquidityPoolPayouts at resolution.
+  addLiquidity(user: string, amount: number, answerIndex?: number) {
+    if (answerIndex !== undefined) {
+      const a = this.answers[answerIndex]
+      const { newPool, newP } = addCpmmLiquidity({ YES: a.poolYes, NO: a.poolNo }, a.p, amount)
+      this.answers = this.answers.map((x, i) =>
+        i === answerIndex
+          ? { ...x, poolYes: newPool.YES, poolNo: newPool.NO, p: newP,
+              prob: getCpmmProbability(newPool, newP) }
+          : x
+      )
+      this.spend(user, amount)
+      this.liquidities.push({
+        id: `lp${this.lpId++}`,
+        userId: user,
+        contractId: 'c',
+        createdTime: this.lpId,
+        amount,
+        answerId: a.id,
+      })
+      this.check(`per-answer addLiquidity a${answerIndex} M$${amount} by ${user}`)
+      return
+    }
     const map = Object.fromEntries(
       this.answers.map((a) => [a.id, { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p }])
     )
@@ -602,6 +627,48 @@ describe('cpmm-multi-2 conservation grid (calc-layer rows)', () => {
         ) as ('YES' | 'NO')[]
         s.resolve('set_yesno', { setOutcomes: outs })
       }
+  })
+
+  // --- per-answer add-liquidity (covering array: liq_target=single_outcome) -------------------
+  it('sum-to-one: per-answer add-liquidity -> trade -> resolve (traded / subsidized answer)', () => {
+    for (const probs of ['balanced', 'skewed', 'extreme'] as const)
+      for (const n of [2, 3, 5]) {
+        const s = new Sim({ n, probs, type: 'mc_sumone' })
+        s.buy('alice', 0, 'YES', 50)
+        s.addLiquidity('bob', 150, 1 % n) // subsidize a SINGLE answer
+        s.buy('alice', 1 % n, 'NO', 30)
+        s.resolve('one', { winner: 0 })
+
+        const s2 = new Sim({ n, probs, type: 'mc_sumone' })
+        s2.addLiquidity('carol', 120, n - 1) // subsidize the last answer...
+        s2.resolve('one', { winner: n - 1 }) // ...and resolve to it
+      }
+  })
+
+  it('sum-to-one: per-answer add on multiple answers + MULTIPLE / CANCEL resolve', () => {
+    const s = new Sim({ n: 5, probs: 'skewed', type: 'mc_sumone' })
+    s.addLiquidity('bob', 100, 0)
+    s.addLiquidity('carol', 80, 2)
+    s.multibet('alice', [0, 1], 120)
+    s.resolve('multiple', { split: [0.6, 0.4] })
+
+    const s2 = new Sim({ n: 3, probs: 'skewed', type: 'mc_sumone' })
+    s2.addLiquidity('bob', 90, 1)
+    s2.buy('alice', 0, 'YES', 40)
+    s2.resolve('cancel')
+  })
+
+  it('Set (independent): per-answer add-liquidity -> per-answer resolution', () => {
+    for (const n of [2, 3]) {
+      const s = new Sim({ n, probs: 'extreme', type: 'set_indep' })
+      s.buy('alice', 0, 'YES', 40)
+      s.addLiquidity('bob', 100, 0)
+      if (n > 2) s.addLiquidity('carol', 60, 2)
+      const outs = Array.from({ length: n }, (_, i) =>
+        i % 2 === 0 ? 'YES' : 'NO'
+      ) as ('YES' | 'NO')[]
+      s.resolve('set_yesno', { setOutcomes: outs })
+    }
   })
 })
 
