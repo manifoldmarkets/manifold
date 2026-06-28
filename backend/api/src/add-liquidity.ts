@@ -42,11 +42,14 @@ export const addContractLiquidity = async (
       )
     }
 
-    if (
-      contract.mechanism !== 'cpmm-1' &&
-      !isMultiCpmm(contract)
-    )
-      throw new APIError(403, 'Only cpmm-1 and cpmm-multi-1 are supported')
+    // isMultiCpmm covers both cpmm-multi-1 and cpmm-multi-2; the subsidy lands in
+    // subsidyPool + an LP-provision row, and the drizzle job injects it into the
+    // pools (losslessly via the V2 float-p add for cpmm-multi-2; see 2b.6).
+    if (contract.mechanism !== 'cpmm-1' && !isMultiCpmm(contract))
+      throw new APIError(
+        403,
+        'Only cpmm-1 and multiple-choice CPMM markets are supported'
+      )
 
     const { closeTime } = contract
     if (closeTime && Date.now() > closeTime)

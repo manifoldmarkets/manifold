@@ -472,7 +472,9 @@ export const executeNewBetResult = async (
         })
 
         const { YES: poolYes, NO: poolNo } = cpmmState.pool
-        const prob = getCpmmProbability(cpmmState.pool, 0.5)
+        // Use the answer's own p (cpmm-multi-2) so the denormalized `prob`
+        // matches the read-path `probability`; p=0.5 ⇒ byte-identical for v1.
+        const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
         answerUpdates.push({
           id: answer.id,
           poolYes,
@@ -495,11 +497,14 @@ export const executeNewBetResult = async (
   // Multi-cpmm-1 contract: add main bet's answer update
   if (newBet.answerId && newPool) {
     const { YES: poolYes, NO: poolNo } = newPool
-    const prob = getCpmmProbability(newPool, 0.5)
     const answer = (contract as MultiContract).answers.find(
       (a) => a.id === newBet.answerId
     )
     if (!answer) throw new APIError(404, 'Answer not found')
+    // newP is only set for cpmm-1; for multi the per-answer p is unchanged by a
+    // buy/sell, so use answer.p (= 0.5 for cpmm-multi-1 ⇒ byte-identical). This
+    // keeps the denormalized `prob` consistent with the read-path `probability`.
+    const prob = getCpmmProbability(newPool, answer.p)
     answerUpdates.push({
       id: newBet.answerId,
       poolYes,
