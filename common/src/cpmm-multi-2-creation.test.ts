@@ -8,11 +8,13 @@ import { getNewContract } from './new-contract'
 import { User } from './user'
 
 // cpmm-multi-2 (PR2c) — creation path: per-answer `initialProbs` produce a
-// `cpmm-multi-2` market whose every answer's `p` is its (normalized) target
-// prob, on balanced deep pools (Y = N), with the same ante budget v1 uses.
-// Verified at jest level (no running dev instance): the created answers are
-// then fed straight into the v2 multi-buy arb to confirm they trade and hold
-// Σp = 1.
+// `cpmm-multi-2` market at the requested probabilities, with the same ante budget
+// v1 uses (no house risk). Sum-to-one markets use the √variance creation rule
+// (pool depth W_i ∝ √(q_i(1-q_i)); reduces to v1 exactly at uniform, balanced only
+// at n=2; see tasks/cpmm_multi_2/creation-liquidity-findings.md, GP13-GP15).
+// Independent ("Set") markets stay balanced (= binary CPMM, optimal per-answer).
+// Verified at jest level (no running dev instance): the created answers are then
+// fed straight into the v2 multi-buy arb to confirm they trade and hold Σp = 1.
 
 const creator = {
   id: 'creator1',
@@ -63,37 +65,94 @@ const makeMC = (
 const sumProbs = (answers: Answer[]) =>
   sumBy(answers, (a) => getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p))
 
+// Point liquidity a = dprob/dshares = q(1-q)/W, W = (1-p)Y + pN (GP13). Lower =
+// more liquid. W is the per-answer depth the √variance rule allocates.
+const depthW = (a: Answer) => (1 - a.p) * a.poolYes + a.p * a.poolNo
+const pointLiq = (a: Answer) => {
+  const q = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+  return (q * (1 - q)) / depthW(a)
+}
+
 describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
-  it('sets mechanism cpmm-multi-2 and per-answer p = normalized target prob', () => {
+  it('cpmm-multi-2 mechanism; prob_i = normalized target; funds exactly (no house risk)', () => {
     const ante = 1200
     const contract = makeMC(['A', 'B', 'C'], [60, 30, 10], ante)
     expect(contract.mechanism).toBe('cpmm-multi-2')
 
     const targets = [0.6, 0.3, 0.1]
-    const n = contract.answers.length
     contract.answers.forEach((a, i) => {
-      // balanced deep pools: Y = N = ante / n
-      expect(a.poolYes).toBeCloseTo(ante / n, 8)
-      expect(a.poolNo).toBeCloseTo(ante / n, 8)
-      // p_i = target, and (because Y = N) displayed prob = p_i exactly (GP6a)
-      expect(a.p).toBeCloseTo(targets[i], 10)
-      expect(a.prob).toBeCloseTo(targets[i], 10)
+      // The displayed prob is exact regardless of pool shape: p carries the
+      // target, so getCpmmProbability(pool, p) == target even when Y != N.
       expect(getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)).toBeCloseTo(
         targets[i],
         10
       )
+      expect(a.prob).toBeCloseTo(targets[i], 10)
     })
 
     // Σ prob = 1 exactly.
     expect(sumProbs(contract.answers)).toBeCloseTo(1, 10)
 
-    // Ante budget: when any answer wins, payout = poolYes_i + Σ_{j≠i} poolNo_j,
-    // which equals the ante for every i (the same budget v1 uses).
+    // No house risk: when any answer wins, payout = poolYes_i + Σ_{j≠i} poolNo_j,
+    // which equals the ante for every i (all-winners-tight; the same budget v1 uses).
     contract.answers.forEach((a, i) => {
       const payout =
         a.poolYes +
         sumBy(
           contract.answers.filter((_, j) => j !== i),
+          (o) => o.poolNo
+        )
+      expect(payout).toBeCloseTo(ante, 6)
+    })
+  })
+
+  it('uniform sum-to-one initialProbs reduce to v1 pools exactly', () => {
+    // Equal targets ⇒ the √variance rule coincides with v1's construction.
+    const ante = 1000
+    const contract = makeMC(['A', 'B', 'C'], [1, 1, 1], ante)
+    expect(contract.mechanism).toBe('cpmm-multi-2')
+    const n = contract.answers.length
+    contract.answers.forEach((a) => {
+      expect(a.poolYes).toBeCloseTo(ante / 2, 6)
+      expect(a.poolNo).toBeCloseTo(ante / (2 * n - 2), 6)
+      expect(a.p).toBeCloseTo(0.5, 8)
+      expect(getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)).toBeCloseTo(
+        1 / n,
+        10
+      )
+    })
+  })
+
+  it('skewed sum-to-one is asymmetric and more liquid than balanced', () => {
+    const ante = 1000
+    const contract = makeMC(['A', 'B', 'C'], [60, 25, 15], ante)
+    const ans = contract.answers
+    const n = ans.length
+
+    // Not the balanced pool: the √variance shape is asymmetric for n>=3 skew.
+    expect(Math.abs(ans[0].poolYes - ans[0].poolNo)).toBeGreaterThan(1)
+
+    // More liquid: total point-liquidity beats the balanced construction (W=ante/n)
+    // at the same probabilities (lower Σ a_i = more liquid).
+    const L = ante / n
+    const sqrtVarSum = sumBy(ans, pointLiq)
+    const balancedSum = sumBy(ans, (a) => {
+      const q = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+      return (q * (1 - q)) / L
+    })
+    expect(sqrtVarSum).toBeLessThan(balancedSum)
+
+    // Depth follows √variance: higher-variance (mid-prob) answers are deeper.
+    // q = [0.6, 0.25, 0.15] ⇒ variance order A > B > C.
+    expect(depthW(ans[0])).toBeGreaterThan(depthW(ans[1]))
+    expect(depthW(ans[1])).toBeGreaterThan(depthW(ans[2]))
+
+    // Still funds exactly (no house risk).
+    ans.forEach((a, i) => {
+      const payout =
+        a.poolYes +
+        sumBy(
+          ans.filter((_, j) => j !== i),
           (o) => o.poolNo
         )
       expect(payout).toBeCloseTo(ante, 6)
@@ -168,14 +227,18 @@ describe('cpmm-multi-2 creation — independent ("Set") absolute probs', () => {
     const input = [40, 20, 10]
     const set = independent(['A', 'B', 'C'], input)
     const s2o = makeMC(['A', 'B', 'C'], input, 1000, true).answers
-    // Set: absolute 0.40 / 0.20 / 0.10
-    expect(set.map((a) => a.p)).toEqual([
+    // Compare the displayed probs: under √variance the sum-to-one `p` field
+    // carries the skew (p ≠ prob), so compare getCpmmProbability, not raw `p`.
+    const probOf = (a: Answer) =>
+      getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+    // Set: absolute 0.40 / 0.20 / 0.10 (balanced ⇒ prob = p).
+    expect(set.map(probOf)).toEqual([
       expect.closeTo(0.4, 10),
       expect.closeTo(0.2, 10),
       expect.closeTo(0.1, 10),
     ])
-    // sum-to-one: normalized 4/7 / 2/7 / 1/7
-    expect(s2o.map((a) => a.p)).toEqual([
+    // sum-to-one: normalized 4/7 / 2/7 / 1/7 (carried by the √variance pools).
+    expect(s2o.map(probOf)).toEqual([
       expect.closeTo(4 / 7, 10),
       expect.closeTo(2 / 7, 10),
       expect.closeTo(1 / 7, 10),

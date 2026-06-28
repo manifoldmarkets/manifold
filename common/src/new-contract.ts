@@ -434,6 +434,43 @@ const getDateProps = (
   return system
 }
 
+// The √variance creation rule for cpmm-multi-2 sum-to-one markets. Given the
+// normalized target probs q_i (Σ = 1) and the ante, allocate pool depth
+// W_i = (1−p_i)Y_i + p_iN_i ∝ √(q_i(1−q_i)) — the variance-weighted depth that
+// maximizes effective liquidity under the no-house-risk basket budget (closed
+// form; derivation + benchmarks in tasks/cpmm_multi_2, GP13–GP15). Properties:
+// reduces to v1's pools exactly at uniform, to a balanced pool at n=2; funds
+// exactly (every winning scenario pays the ante) and reads back prob_i = q_i.
+function cpmmMulti2SumToOnePools(
+  q: number[],
+  ante: number
+): { poolYes: number; poolNo: number; p: number; prob: number }[] {
+  const n = q.length
+  if (n < 2) {
+    return q.map((qi) => ({ poolYes: ante, poolNo: ante, p: qi, prob: qi }))
+  }
+  const sqrtC = q.map((qi) => Math.sqrt(qi * (1 - qi)))
+  const meanSqrtC = sqrtC.reduce((s, x) => s + x, 0) / n
+  const D0 = (ante * (n - 2)) / (2 * (n - 1)) // uniform-optimum D (closed form)
+  const Wbar = (ante * n) / (4 * (n - 1)) // uniform-optimum depth
+  // Realize the depth profile W_i at the assumed D0:
+  //   W_i = N_i(N_i + D0)/(N_i + q_i D0)  ⇒  N_i² + N_i(D0 − W_i) − W_i q_i D0 = 0.
+  const N = q.map((qi, i) => {
+    const Wi = (Wbar * sqrtC[i]) / meanSqrtC
+    const b = D0 - Wi
+    return (-b + Math.sqrt(b * b + 4 * Wi * qi * D0)) / 2
+  })
+  // Force exact funding: Y_i = N_i + D with D = ante − ΣN_j makes every winning
+  // scenario pay exactly the ante (all-winners-tight). p_i set so prob_i = q_i.
+  const D = ante - N.reduce((s, x) => s + x, 0)
+  return q.map((qi, i) => {
+    const poolNo = N[i]
+    const poolYes = poolNo + D
+    const p = (qi * poolYes) / (qi * poolYes + (1 - qi) * poolNo)
+    return { poolYes, poolNo, p, prob: qi }
+  })
+}
+
 function createAnswers(
   contractId: string,
   userId: string,
@@ -452,28 +489,37 @@ function createAnswers(
   const { colors, shortTexts, imageUrls, midpoints, initialProbs } = options
   const ids = answers.map(() => randomString())
 
-  // cpmm-multi-2: per-answer initial probs ⇒ balanced deep pools dialed to
-  // target via each answer's own `p`. For balanced reserves (Y = N), the
-  // probability formula prob = p·N / ((1−p)·Y + p·N) collapses to prob = p
-  // (GP6a), so we set p_i = target prob and Y_i = N_i = ante/n. The balanced
-  // (lossless) representation is required so later liquidity adds don't discard
-  // shares (an asymmetric pool + p=0.5 would).
+  // cpmm-multi-2: per-answer initial probs, dialed to target via each answer's
+  // own `p`. Two regimes (see tasks/cpmm_multi_2/creation-liquidity-findings.md,
+  // GP13–GP15):
   //
   // Sum-to-one ("Multiple Choice"): exactly one answer resolves YES, so the raw
-  // percentages are normalized to Σ targetProb = 1. Worst-case payout when any
-  // answer wins is poolYes_i + Σ_{j≠i} poolNo_j = ante/n + (n−1)·ante/n = ante —
-  // the same mana budget v1 uses.
-  // Independent ("Set"): each answer is its own CPMM with no Σ=1 constraint, so
-  // each percentage is its own absolute prob (pct/100, no normalization).
+  // percentages are normalized to Σ q_i = 1. Pools use the √variance creation
+  // rule — depth W_i = (1−p_i)Y_i + p_iN_i ∝ √(q_i(1−q_i)) — which maximizes
+  // effective liquidity under the no-house-risk basket budget (every winning
+  // scenario pays exactly the ante). It reduces to v1's pools exactly at uniform
+  // and to a balanced pool at n=2; for n≥3 skew it is asymmetric with p_i≠q_i.
+  //
+  // Independent ("Set"): each answer is its own CPMM with no Σ=1 constraint and
+  // its own max-loss budget max(Y,N); at fixed risk the liquidity optimum is the
+  // balanced pool Y_i=N_i with p_i=q_i — exactly the binary-CPMM construction.
+  // Absolute probs (pct/100, no normalization).
   if (initialProbs && initialProbs.length > 0) {
     const n = answers.length
     const sum = initialProbs.reduce((s, x) => s + x, 0)
-    const L = ante / n
     const now = Date.now()
+    const pools = shouldAnswersSumToOne
+      ? cpmmMulti2SumToOnePools(
+          initialProbs.map((x) => x / sum),
+          ante
+        )
+      : initialProbs.map((x) => {
+          const L = ante / n
+          const prob = x / 100
+          return { poolYes: L, poolNo: L, p: prob, prob }
+        })
     return answers.map((text, i) => {
-      const targetProb = shouldAnswersSumToOne
-        ? initialProbs[i] / sum
-        : initialProbs[i] / 100
+      const { poolYes, poolNo, p, prob } = pools[i]
       const answer: Answer = removeUndefinedProps({
         id: ids[i],
         index: i,
@@ -484,11 +530,11 @@ function createAnswers(
         color: colors?.[i],
         shortText: shortTexts?.[i],
         imageUrl: imageUrls?.[i],
-        poolYes: L,
-        poolNo: L,
-        p: targetProb,
-        prob: targetProb,
-        totalLiquidity: getMultiCpmmLiquidity({ YES: L, NO: L }),
+        poolYes,
+        poolNo,
+        p,
+        prob,
+        totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
         subsidyPool: 0,
         isOther: false,
         probChanges: { day: 0, week: 0, month: 0 },
