@@ -1,5 +1,5 @@
 import { Answer } from './answer'
-import { getMultiCpmmLiquidity } from './calculate-cpmm'
+import { getCpmmLiquidity, getMultiCpmmLiquidity } from './calculate-cpmm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import {
   Binary,
@@ -534,7 +534,10 @@ function createAnswers(
         poolNo,
         p,
         prob,
-        totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
+        // True general-p CPMM liquidity invariant k = Y^p · N^(1-p). getMultiCpmmLiquidity is the
+        // p=0.5 special case √(Y·N), which understates depth on the √variance asymmetric v2 pools
+        // (Y_i≠N_i, p_i≠0.5). Balanced Set pools (Y=N) give the same value either way.
+        totalLiquidity: getCpmmLiquidity({ YES: poolYes, NO: poolNo }, p),
         subsidyPool: 0,
         isOther: false,
         probChanges: { day: 0, week: 0, month: 0 },
