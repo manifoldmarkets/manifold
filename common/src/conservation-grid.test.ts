@@ -17,6 +17,7 @@
 // (per-answer addLiquidity not yet built for v2).
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
+import { LimitBet } from './bet'
 import {
   addCpmmMultiLiquidityAnswersSumToOneV2,
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
@@ -87,7 +88,14 @@ class Sim {
   liquidities: LiquidityProvision[] = []
   // trader positions: key `${user}|${answerId}` -> {YES, NO, invested, sold}
   pos = new Map<string, { YES: number; NO: number; invested: number; sold: number }>()
+  // resting limit orders (makers). Threaded into every calc; the `makers` the calc returns
+  // are applied to maker users here. Makers are NOT balance-capped — vendor's own multi-bet/
+  // sell simulation assumes infinite maker balance (sell-shares.ts), and computeFills skips
+  // the cap when balanceByUserId lacks the user, so we pass {} for balances and the real
+  // unfilled book here.
+  unfilled: LimitBet[] = []
   private lpId = 0
+  private limitId = 0
 
   constructor(cfg: Cfg, creator = 'creator', ante = 1000) {
     this.type = cfg.type
@@ -120,6 +128,65 @@ class Sim {
     const k = `${user}|${answerId}`
     if (!this.pos.has(k)) this.pos.set(k, { YES: 0, NO: 0, invested: 0, sold: 0 })
     return this.pos.get(k)!
+  }
+
+  // Place a resting limit order (maker). Returns the LimitBet so tests can inspect whether it
+  // interacted (bet.amount stays 0 and !isCancelled => untouched).
+  placeLimit(
+    user: string,
+    answerIndex: number,
+    outcome: 'YES' | 'NO',
+    limitProb: number,
+    orderAmount: number
+  ): LimitBet {
+    const a = this.answers[answerIndex]
+    const bet: LimitBet = {
+      id: `L${this.limitId++}`,
+      userId: user,
+      contractId: 'c',
+      answerId: a.id,
+      createdTime: this.limitId,
+      amount: 0,
+      loanAmount: 0,
+      outcome,
+      shares: 0,
+      probBefore: a.prob,
+      probAfter: a.prob,
+      fees: noFees,
+      isRedemption: false,
+      orderAmount,
+      limitProb,
+      isFilled: false,
+      isCancelled: false,
+      fills: [],
+    } as LimitBet
+    this.unfilled.push(bet)
+    return bet
+  }
+
+  // Apply the maker fills a calc produced: the maker pays `amount`, gains `shares` of their
+  // outcome, and the resting order's filled amount accumulates on the book. This is the maker
+  // side of conservation — it MUST be counted or `Sum deltas + fees` will not close.
+  private applyMakers(
+    makers: { bet: LimitBet; amount: number; shares: number }[],
+    ordersToCancel: LimitBet[] = []
+  ) {
+    for (const m of makers) {
+      const book = this.unfilled.find((b) => b.id === m.bet.id)
+      if (!book) continue
+      this.spend(m.bet.userId, m.amount) // maker pays mana
+      this.posOf(m.bet.userId, m.bet.answerId!)[m.bet.outcome as 'YES' | 'NO'] += m.shares
+      book.amount += m.amount
+      book.shares += m.shares
+      book.fills.push({ matchedBetId: null, amount: m.amount, shares: m.shares, timestamp: 0 })
+      if (Math.abs(book.amount) >= book.orderAmount - 1e-6) book.isFilled = true
+    }
+    for (const o of ordersToCancel) {
+      const book = this.unfilled.find((b) => b.id === o.id)
+      if (book) book.isCancelled = true
+    }
+    // a filled / cancelled order leaves the book (no further fills).
+    this.unfilled = this.unfilled.filter((b) => !b.isFilled && !b.isCancelled)
   }
 
   // apply a bet result (newBetResult-style: {answer, takers}) for `outcome` to user state
@@ -166,7 +233,7 @@ class Sim {
       outcome,
       amount,
       undefined,
-      [],
+      this.unfilled,
       {},
       noFees
     )
@@ -184,6 +251,10 @@ class Sim {
     this.applyResult(user, res.newBetResult as any, outcome)
     for (const o of res.otherBetResults)
       this.applyResult(user, o as any, outcome === 'YES' ? 'NO' : 'YES')
+    this.applyMakers(
+      [res.newBetResult, ...res.otherBetResults].flatMap((r: any) => r.makers ?? []),
+      [res.newBetResult, ...res.otherBetResults].flatMap((r: any) => r.ordersToCancel ?? [])
+    )
     this.fees += getFeeTotal(res.newBetResult.totalFees)
     this.check(`buy ${outcome} a${answerIndex} M$${amount} by ${user}`)
   }
@@ -194,7 +265,7 @@ class Sim {
       basketIdx.map((i) => this.answers[i]),
       amount,
       undefined,
-      [],
+      this.unfilled,
       {},
       noFees,
       'cpmm-multi-2'
@@ -202,6 +273,10 @@ class Sim {
     this.answers = res.updatedAnswers as Answer[]
     for (const r of res.newBetResults) this.applyResult(user, r as any, 'YES')
     for (const r of res.otherBetResults) this.applyResult(user, r as any, 'NO')
+    this.applyMakers(
+      [...res.newBetResults, ...res.otherBetResults].flatMap((r: any) => r.makers ?? []),
+      [...res.newBetResults, ...res.otherBetResults].flatMap((r: any) => r.ordersToCancel ?? [])
+    )
     this.check(`multibet {${basketIdx}} M$${amount} by ${user}`)
   }
 
@@ -220,7 +295,7 @@ class Sim {
   sell(user: string, answerIndex: number, outcome: 'YES' | 'NO', shares: number) {
     const answerToSell = this.answers[answerIndex]
     if (this.type === 'set_indep') {
-      const { cpmmState, saleValue, fees } = calculateCpmmSale(
+      const { cpmmState, saleValue, fees, makers } = calculateCpmmSale(
         {
           pool: { YES: answerToSell.poolYes, NO: answerToSell.poolNo },
           p: answerToSell.p,
@@ -228,7 +303,7 @@ class Sim {
         },
         shares,
         outcome,
-        [],
+        this.unfilled.filter((b) => b.answerId === answerToSell.id),
         {}
       )
       this.answers = this.answers.map((x, i) =>
@@ -241,6 +316,7 @@ class Sim {
       p[outcome] -= shares
       p.sold += saleValue
       this.credit(user, saleValue)
+      this.applyMakers((makers as any) ?? [])
       this.fees += getFeeTotal(fees)
       this.check(`set sell ${outcome} ${shares}sh a${answerIndex} by ${user}`)
       return
@@ -251,7 +327,7 @@ class Sim {
       shares,
       outcome,
       undefined,
-      [],
+      this.unfilled,
       {},
       noFees
     )
@@ -269,6 +345,10 @@ class Sim {
     pos[outcome] -= shares
     pos.sold += saleValue
     this.credit(user, saleValue)
+    this.applyMakers(
+      [newBetResult, ...otherBetResults].flatMap((r: any) => r.makers ?? []),
+      [newBetResult, ...otherBetResults].flatMap((r: any) => r.ordersToCancel ?? [])
+    )
     this.fees +=
       getFeeTotal(newBetResult.totalFees) +
       sumBy(otherBetResults, (r) => getFeeTotal(r.totalFees))
@@ -522,5 +602,162 @@ describe('cpmm-multi-2 conservation grid (calc-layer rows)', () => {
         ) as ('YES' | 'NO')[]
         s.resolve('set_yesno', { setOutcomes: outs })
       }
+  })
+})
+
+// --- LIMIT ORDERS (covering array: limits != none) -------------------------------------------
+// Master invariant (Evan, 2026-06-28): with resting limit orders, a limit STRICTLY outside
+// (initial, final) on its answer must NOT interact — the maker gets no shares and the order's
+// size on the book is unchanged. Resting orders are always on their far side (a NO maker rests
+// ABOVE current prob and fills only when price rises to it; a YES maker rests BELOW), so
+// "strictly outside (initial, final)" means the price excursion never reached it.
+//
+// This is also the acceptance test for v2's NON-OVERSHOOTING auto-arb vs. the §8 reversibility
+// caveat (docs/amm-invariants.md): v1 multibet could overshoot a limit at the peak and not
+// unwind it, so a limit past `final` still got consumed. If v2's "Approach C" solve leaves
+// just-past-final limits untouched even on a basket multibet, v2 killed that bug at the calc
+// layer. The grid adjudicates — it is NOT assumed.
+//
+// `Sum(all balance deltas) + fees == 0` must still close across taker + ALL makers + creator.
+const CAP_HI = 0.97
+const CAP_LO = 0.03
+// a validly-resting maker is strictly outside its answer's band iff price never reached it.
+const strictlyOutside = (
+  bet: { outcome: string; limitProb: number },
+  lo: number,
+  hi: number
+) =>
+  bet.outcome === 'NO' ? bet.limitProb > hi + 1e-9 : bet.limitProb < lo - 1e-9
+
+const assertOutsideUntouched = (
+  s: Sim,
+  placed: { bet: LimitBet; ai: number }[],
+  init: number[]
+) => {
+  const final = s.answers.map((a) => a.prob)
+  let checked = 0
+  for (const { bet, ai } of placed) {
+    const lo = Math.min(init[ai], final[ai])
+    const hi = Math.max(init[ai], final[ai])
+    if (strictlyOutside(bet, lo, hi)) {
+      expect(bet.amount).toBeCloseTo(0, 6) // no fill => shares & book size unchanged
+      expect(bet.isCancelled).toBe(false)
+      checked++
+    }
+  }
+  return checked
+}
+
+describe('cpmm-multi-2 conservation grid — limit orders', () => {
+  it('a crossed maker IS filled and IS counted in conservation (buy & sell)', () => {
+    for (const n of [2, 3, 5]) {
+      // buy crosses a NO maker resting just above answer-0's current prob
+      const s = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
+      const mkBuy = s.placeLimit('mk', 0, 'NO', Math.min(s.answers[0].prob + 0.02, CAP_HI), 300)
+      s.buy('alice', 0, 'YES', 200)
+      expect(mkBuy.amount).toBeGreaterThan(0) // positive control: it interacted
+      s.resolve('one', { winner: 0 }) // conservation across alice + mk + creator
+
+      // sell crosses a YES maker resting just below answer-0's current prob
+      const s2 = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
+      s2.buy('alice', 0, 'YES', 250) // give alice a position to sell
+      const mkSell = s2.placeLimit('mk', 0, 'YES', Math.max(s2.answers[0].prob - 0.02, CAP_LO), 300)
+      s2.sell('alice', 0, 'YES', s2.sharesOf('alice', 0, 'YES'))
+      expect(mkSell.amount).toBeGreaterThan(0)
+      s2.resolve('one', { winner: 0 })
+    }
+  })
+
+  it('INVARIANT: out-of-band resting limits never interact — buy (+ in-band positive control)', () => {
+    for (const probs of ['balanced', 'skewed'] as const)
+      for (const n of [2, 3, 5]) {
+        const s = new Sim({ n, probs, type: 'mc_sumone' })
+        const init = s.answers.map((a) => a.prob)
+        // far-out NO makers on every answer (above hi) + far-out YES makers (below lo): a single
+        // bounded buy on answer 0 reaches none of them.
+        const placed = s.answers.flatMap((_, ai) => [
+          { bet: s.placeLimit('mk', ai, 'NO', CAP_HI, 100), ai },
+          { bet: s.placeLimit('mk', ai, 'YES', CAP_LO, 100), ai },
+        ])
+        // in-band positive control on answer 0 (just above init0): must be touched.
+        const control = s.placeLimit('mk', 0, 'NO', Math.min(init[0] + 0.02, CAP_HI), 80)
+        s.buy('alice', 0, 'YES', 120)
+        const checked = assertOutsideUntouched(s, placed, init)
+        expect(checked).toBeGreaterThan(0) // not vacuous
+        expect(control.amount).toBeGreaterThan(0) // the matcher DOES fire in-band
+        s.resolve('one', { winner: 0 })
+      }
+  })
+
+  it('INVARIANT: out-of-band resting limits never interact — sell', () => {
+    for (const probs of ['balanced', 'skewed'] as const)
+      for (const n of [2, 3, 5]) {
+        const s = new Sim({ n, probs, type: 'mc_sumone' })
+        s.buy('alice', 0, 'YES', 200) // position to sell
+        const init = s.answers.map((a) => a.prob)
+        const placed = s.answers.flatMap((_, ai) => [
+          { bet: s.placeLimit('mk', ai, 'NO', CAP_HI, 100), ai },
+          { bet: s.placeLimit('mk', ai, 'YES', CAP_LO, 100), ai },
+        ])
+        s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES') * 0.6)
+        const checked = assertOutsideUntouched(s, placed, init)
+        expect(checked).toBeGreaterThan(0)
+        s.resolve('multiple', { split: [0.6, 0.4] })
+      }
+  })
+
+  it('INVARIANT/§8 prize: v2 basket multibet does NOT overshoot a limit just past final', () => {
+    for (const n of [3, 5]) {
+      // baseline: where does the basket buy on [0,1] land each answer (no makers present)?
+      const base = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
+      base.multibet('alice', [0, 1], 160)
+      const finals = base.answers.map((a) => a.prob)
+      // re-run with a NO maker just past final on each UP-moved (bought) answer, and a YES maker
+      // just past final on each DOWN-moved (arbed) answer — each strictly outside its own band.
+      const s = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
+      const init = s.answers.map((a) => a.prob)
+      const placed = s.answers.map((_, ai) => {
+        const up = finals[ai] >= init[ai]
+        return up
+          ? { bet: s.placeLimit('mk', ai, 'NO', Math.min(finals[ai] + 0.01, CAP_HI), 200), ai }
+          : { bet: s.placeLimit('mk', ai, 'YES', Math.max(finals[ai] - 0.01, CAP_LO), 200), ai }
+      })
+      s.multibet('alice', [0, 1], 160)
+      // every just-past-final maker must be untouched => v2 did not overshoot.
+      for (const { bet } of placed) {
+        expect(bet.amount).toBeCloseTo(0, 6)
+        expect(bet.isCancelled).toBe(false)
+      }
+      s.resolve('one', { winner: 0 })
+
+      // independent positive control (own sim, so it can't perturb the run above): a maker
+      // mid-band on answer 0 MUST be crossed by the same multibet — proves the trade reaches
+      // into the band, so the untouched just-past-final result is a genuine no-overshoot.
+      const pc = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
+      const control = pc.placeLimit('mk', 0, 'NO', (init[0] + finals[0]) / 2, 50)
+      pc.multibet('alice', [0, 1], 160)
+      expect(control.amount).toBeGreaterThan(0)
+      pc.resolve('one', { winner: 0 })
+    }
+  })
+
+  it('NON-REVERSIBILITY: a buy that crosses a maker, then sell-all, does NOT return to creation', () => {
+    for (const n of [2, 3]) {
+      const s = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
+      const before = s.answers.map((a) => ({ y: a.poolYes, no: a.poolNo }))
+      const maker = s.placeLimit('mk', 0, 'NO', Math.min(s.answers[0].prob + 0.02, CAP_HI), 150)
+      s.buy('alice', 0, 'YES', 200)
+      expect(maker.amount).toBeGreaterThan(0) // a maker was permanently engaged
+      s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES')) // alice unwinds fully
+      // pools do NOT return to creation: the maker now holds NO shares the AMM can't unwind.
+      const moved = s.answers.some(
+        (a, i) =>
+          Math.abs(a.poolYes - before[i].y) > 1e-3 ||
+          Math.abs(a.poolNo - before[i].no) > 1e-3
+      )
+      expect(moved).toBe(true)
+      // but global conservation STILL closes across alice + maker + creator.
+      s.resolve('one', { winner: 0 })
+    }
   })
 })
