@@ -504,13 +504,20 @@ function calculateCpmmMultiArbitrageBetsYesV2(
       fees: noFees,
     })
   }
-  // Split the redemption credit equally across the basket (eta/m shares, netOthers/m mana each);
-  // for m = 1 this reduces exactly to the single-answer redemption fill (eta shares, netOthers mana).
+  // Redemption credit to the basket YES legs. The eta NO shares held in each of the (n-m)
+  // other answers pay eta*(n-m) iff a basket answer wins and eta*(n-m-1) iff an other wins;
+  // the guaranteed floor eta*(n-m-1) is redeemed above, leaving a residual worth eta iff ANY
+  // basket answer wins. That residual is eta YES shares in EACH basket answer (whichever basket
+  // answer wins pays eta), NOT eta/m: with eta/m a winning basket answer would pay only eta/m,
+  // breaking sum-to-one conservation (T_i^YES - T_i^NO must be constant across answers) and
+  // destroying mana at resolution to a basket answer. The net mana (netOthers) still splits
+  // equally across the m basket legs so summed taker amount == betAmount. For m = 1 this is
+  // identical to the single-answer redemption fill (eta shares, netOthers mana).
   for (const yesBetResult of yesBetResults) {
     yesBetResult.takers.push({
       matchedBetId: null,
       amount: netOthers / m,
-      shares: eta / m,
+      shares: eta,
       timestamp: Date.now(),
       fees: noFees,
     })
