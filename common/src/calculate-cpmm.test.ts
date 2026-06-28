@@ -1,5 +1,6 @@
 import {
   addCpmmLiquidity,
+  calculateCpmmAmountToBuySharesFixedP,
   calculateCpmmPurchase,
   calculateCpmmShares,
   CpmmState,
@@ -189,6 +190,63 @@ describe('CPMM Calculations', () => {
       expect(finalPool.YES).toBeCloseTo(initialPool.YES, 5)
       expect(finalPool.NO).toBeCloseTo(initialPool.NO, 5)
       expect(finalP).toBeCloseTo(initialP, 5)
+    })
+  })
+
+  describe('calculateCpmmAmountToBuySharesFixedP (general p, cpmm-multi-2)', () => {
+    // The shares -> cost direction is transcendental for p != 0.5; the function
+    // inverts the (general-p) forward map calculateCpmmShares by bisection. These
+    // tests pin that inverse: cross-language anchors from the Python oracle
+    // (manifold/amm_core.cost_for_shares, GP3), a self-validating round-trip against
+    // calculateCpmmShares, and a check that the p=0.5 closed form is unchanged.
+    it('matches the general-p Python oracle (amm_core.cost_for_shares)', () => {
+      const cases = [
+        { pool: { YES: 100, NO: 50 }, p: 0.7, shares: 20, outcome: 'YES' as const, cost: 11.5061941179877 },
+        { pool: { YES: 100, NO: 50 }, p: 0.7, shares: 20, outcome: 'NO' as const, cost: 10.016299628032943 },
+        { pool: { YES: 80, NO: 120 }, p: 0.3, shares: 35, outcome: 'YES' as const, cost: 15.379495592014415 },
+        { pool: { YES: 200, NO: 100 }, p: 0.9, shares: 10, outcome: 'NO' as const, cost: 1.8886896107765505 },
+      ]
+      for (const { pool, p, shares, outcome, cost } of cases) {
+        const state: CpmmState = { pool, p, collectedFees: noFees }
+        expect(
+          calculateCpmmAmountToBuySharesFixedP(state, shares, outcome)
+        ).toBeCloseTo(cost, 6)
+      }
+    })
+
+    it('round-trips against calculateCpmmShares for general p (invert ∘ forward = id)', () => {
+      const ps = [0.3, 0.5, 0.7, 0.9]
+      const pools = [
+        { YES: 100, NO: 100 },
+        { YES: 100, NO: 50 },
+        { YES: 30, NO: 200 },
+      ]
+      const amounts = [1, 10, 50, 200]
+      for (const p of ps)
+        for (const pool of pools)
+          for (const outcome of ['YES', 'NO'] as const)
+            for (const amount of amounts) {
+              const shares = calculateCpmmShares(pool, p, amount, outcome)
+              const state: CpmmState = { pool, p, collectedFees: noFees }
+              const recovered = calculateCpmmAmountToBuySharesFixedP(
+                state,
+                shares,
+                outcome
+              )
+              expect(recovered).toBeCloseTo(amount, 4)
+            }
+    })
+
+    it('leaves the p = 0.5 closed form unchanged', () => {
+      const pool = { YES: 120, NO: 80 }
+      const shares = 25
+      const state: CpmmState = { pool, p: 0.5, collectedFees: noFees }
+      const closed =
+        (shares - 120 - 80 + Math.sqrt(4 * 80 * shares + (120 + 80 - shares) ** 2)) /
+        2
+      expect(
+        calculateCpmmAmountToBuySharesFixedP(state, shares, 'YES')
+      ).toBeCloseTo(closed, 10)
     })
   })
 })
