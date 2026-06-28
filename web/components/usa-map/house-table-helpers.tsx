@@ -308,7 +308,10 @@ export const BuyPanelBody = (props: {
       YES: multiProps!.answerToBuy.poolYes,
       NO: multiProps!.answerToBuy.poolNo,
     },
-    p: 0.5,
+    // Per-answer p (defaults 0.5 for cpmm-multi-1); hardcoding 0.5 showed a wrong
+    // probBefore/probAfter/probChange for a cpmm-multi-2 answer with p != 0.5. Mirrors the
+    // shared bet-preview path (client-common/src/lib/bet.ts).
+    p: multiProps!.answerToBuy.p,
     collectedFees: contract.collectedFees,
   }
 
