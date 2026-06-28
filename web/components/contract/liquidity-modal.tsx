@@ -27,8 +27,11 @@ export function AddLiquidityModal(props: {
   contract: MarketContract
   isOpen: boolean
   setOpen: (open: boolean) => void
+  // When set, subsidize a single answer (its own binary CPMM) instead of the whole market.
+  answerId?: string
+  answerText?: string
 }) {
-  const { contract, isOpen, setOpen } = props
+  const { contract, isOpen, setOpen, answerId, answerText } = props
 
   const lps = useLiquidity(contract.id) ?? []
 
@@ -43,7 +46,11 @@ export function AddLiquidityModal(props: {
             Liquidity
           </h2>
           <p className="text-ink-500 mt-1 text-sm">
-            Subsidize this market to incentivize more accurate predictions
+            {answerId
+              ? `Subsidize "${
+                  answerText ?? 'this answer'
+                }" to incentivize more accurate predictions`
+              : 'Subsidize this market to incentivize more accurate predictions'}
           </p>
         </div>
 
@@ -55,6 +62,7 @@ export function AddLiquidityModal(props: {
           contract={contract}
           amount={amount}
           setAmount={setAmount}
+          answerId={answerId}
         />
 
         {/* Contributors Section */}
@@ -125,8 +133,10 @@ export function AddLiquidityControl(props: {
   contract: MarketContract
   amount: number | undefined
   setAmount: (amount: number | undefined) => void
+  // When set, the subsidy targets a single answer (its own binary CPMM).
+  answerId?: string
 }) {
-  const { contract, amount, setAmount } = props
+  const { contract, amount, setAmount, answerId } = props
   const { id: contractId, slug, totalLiquidity } = contract
 
   const [error, setError] = useState<string | undefined>(undefined)
@@ -180,6 +190,7 @@ export function AddLiquidityControl(props: {
         await api('market/:contractId/add-liquidity', {
           amount,
           contractId,
+          ...(answerId ? { answerId } : {}),
         })
         toast.success(
           <>
