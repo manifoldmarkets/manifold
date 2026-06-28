@@ -741,6 +741,81 @@ describe('cpmm-multi-2 conservation grid — limit orders', () => {
     }
   })
 
+  // FALSIFICATION SWEEP: try hard to make a v2 trade touch an out-of-range limit. Place a maker
+  // just past `final` (on the far, unreached side) at progressively TIGHTER margins, per answer,
+  // one at a time (so an out-of-range maker can't perturb the run), across configs and across
+  // buy / sell / basket-multibet. ANY fill is a v2 invariant violation. Margins go to 1e-4 to
+  // catch numerical overshoot, not just the gross v1 transient band.
+  const MARGINS = [0.02, 0.0001] // one gross (v1 transient band), one tight (numerical overshoot)
+  // The invariant is per ATOMIC op: a limit outside THAT op's own (init,final) excursion must
+  // not interact. So each measured op is a single monotonic call; any position the op needs is
+  // built in a `setup` phase that runs BEFORE the maker is placed (and is not part of the range).
+  // ANY fill at any margin (down to 1e-4, to catch numerical overshoot) is a v2 violation.
+  it('FALSIFY: no v2 op (buy/sell/multibet) touches a limit outside its own range, any margin', () => {
+    let probes = 0
+    for (const probs of ['balanced', 'skewed', 'extreme'] as const)
+      for (const n of [2, 3, 5]) {
+        const cases: {
+          label: string
+          setup: (s: Sim) => void
+          op: (s: Sim) => void
+        }[] = [
+          { label: 'buy', setup: () => {}, op: (s) => s.buy('alice', 0, 'YES', 90) },
+          {
+            label: 'sell',
+            setup: (s) => s.buy('alice', 0, 'YES', 200), // build position FIRST, no maker yet
+            op: (s) => s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES') * 0.5),
+          },
+          // n=5 multibet overshoot is covered by the dedicated §8 prize test; keep the broad
+          // sweep's multibet at n=3 to bound cost.
+          ...(n === 3
+            ? [{ label: 'multibet', setup: () => {}, op: (s: Sim) => s.multibet('alice', [0, 1], 140) }]
+            : []),
+        ]
+        for (const c of cases) {
+          // baseline: range of the measured op alone (after setup, before any maker).
+          const base = new Sim({ n, probs, type: 'mc_sumone' })
+          c.setup(base)
+          const init = base.answers.map((a) => a.prob)
+          c.op(base)
+          const finals = base.answers.map((a) => a.prob)
+          for (let ai = 0; ai < n; ai++) {
+            const lo = Math.min(init[ai], finals[ai])
+            const hi = Math.max(init[ai], finals[ai])
+            for (const m of MARGINS) {
+              // A valid resting maker outside the op's [lo,hi] excursion, BOTH sides:
+              //   NO  maker above hi  (rests above current prob; price never rose to it)
+              //   YES maker below lo  (rests below current prob; price never fell to it)
+              const placements: { outcome: 'YES' | 'NO'; L: number }[] = []
+              const noL = Math.min(hi + m, CAP_HI)
+              if (noL > hi + 1e-9) placements.push({ outcome: 'NO', L: noL })
+              const yesL = Math.max(lo - m, 0.011) // floor just above MIN_CPMM_PROB
+              if (yesL < lo - 1e-9) placements.push({ outcome: 'YES', L: yesL })
+              for (const pl of placements) {
+                const s = new Sim({ n, probs, type: 'mc_sumone' })
+                c.setup(s) // identical position build, still no maker
+                const bet = s.placeLimit('mk', ai, pl.outcome, pl.L, 300)
+                c.op(s)
+                if (Math.abs(bet.amount) > 1e-6 || bet.isCancelled) {
+                  // eslint-disable-next-line no-console
+                  console.log('VIOLATION', JSON.stringify({
+                    probs, n, op: c.label, ai, m, outcome: pl.outcome,
+                    init: +init[ai].toFixed(5), final: +finals[ai].toFixed(5),
+                    lo: +lo.toFixed(5), hi: +hi.toFixed(5), L: +pl.L.toFixed(5),
+                    fill: +bet.amount.toFixed(5), finalNow: +s.answers[ai].prob.toFixed(5),
+                  }))
+                }
+                expect(bet.amount).toBeCloseTo(0, 6)
+                expect(bet.isCancelled).toBe(false)
+                probes++
+              }
+            }
+          }
+        }
+      }
+    expect(probes).toBeGreaterThan(50) // the sweep actually exercised many placements
+  })
+
   it('NON-REVERSIBILITY: a buy that crosses a maker, then sell-all, does NOT return to creation', () => {
     for (const n of [2, 3]) {
       const s = new Sim({ n, probs: 'skewed', type: 'mc_sumone' })
