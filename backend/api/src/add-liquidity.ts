@@ -8,7 +8,7 @@ import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { isMultiCpmm } from 'common/contract'
+import { CPMM_MULTI_2_CREATION_ENABLED, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
@@ -85,9 +85,21 @@ export const addContractLiquidity = async (
     const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
     const liquidity = convertLiquidity(liquidityRow)
 
+    // Lazy v1 -> v2 conversion: an explicit user addLiquidity is THE conversion trigger for a
+    // cpmm-multi-1 market (the scheduler drizzle never converts — it must not flip fill semantics
+    // under resting orders; see migration policy). Conversion is lossless in state: a cpmm-multi-1
+    // market IS a cpmm-multi-2 market with every answer p = 0.5, so flipping the mechanism string is
+    // the whole migration. p is nullable-defaulting-0.5 on read, and the first v2 drizzle deepen
+    // persists each answer's concrete floated p. The mechanism flip is the API-visible version event
+    // that switches reads/bets/drizzle to the v2 (lossless + reversible-fill) path. Gated behind the
+    // same staged-rollout kill-switch as v2 creation, so it stays inert until deliberately enabled.
+    const shouldConvertToV2 =
+      CPMM_MULTI_2_CREATION_ENABLED && contract.mechanism === 'cpmm-multi-1'
+
     await updateContract(tx, contractId, {
       subsidyPool: FieldVal.increment(subsidyAmount),
       totalLiquidity: FieldVal.increment(subsidyAmount),
+      ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
     })
 
     return {
