@@ -20,6 +20,7 @@ import {
   Contract,
   NO_CLOSE_TIME_TYPES,
   NUMBER_CREATION_ENABLED,
+  CPMM_MULTI_2_CREATION_ENABLED,
   OutcomeType,
   PollType,
   PollVoterVisibility,
@@ -179,6 +180,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    initialProbs,
     takerAPIOrdersDisabled,
     liquidityTier,
     unit,
@@ -295,6 +297,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answers: answers ?? [],
           answerShortTexts,
           answerImageUrls,
+          initialProbs,
           addAnswersMode,
           shouldAnswersSumToOne,
           isAutoBounty,
@@ -438,6 +441,7 @@ function validateMarketBody(body: Body) {
     answers: string[] | undefined,
     answerShortTexts: string[] | undefined,
     answerImageUrls: string[] | undefined,
+    initialProbs: number[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
@@ -537,12 +541,40 @@ function validateMarketBody(body: Body) {
       answers,
       answerShortTexts,
       answerImageUrls,
+      initialProbs,
       addAnswersMode,
       shouldAnswersSumToOne,
     } = validateMarketType(outcomeType, createMultiSchema, body))
     const hasOtherAnswer =
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
+
+    // cpmm-multi-2 (PR2c): per-answer initial probabilities. First cut supports
+    // only fixed, sum-to-one markets with no "Other" answer — so each provided
+    // prob maps 1:1 to a created answer and Σp = 1 is well-defined. (Non-uniform
+    // "Other" splitting is a later add-on; see pr2-plan.md "Other split".)
+    if (initialProbs !== undefined) {
+      if (!CPMM_MULTI_2_CREATION_ENABLED)
+        throw new APIError(
+          403,
+          'Creating cpmm-multi-2 (custom initial probabilities) markets is not currently enabled.'
+        )
+      if (shouldAnswersSumToOne === false)
+        throw new APIError(
+          400,
+          'initialProbs requires shouldAnswersSumToOne markets.'
+        )
+      if (addAnswersMode !== 'DISABLED')
+        throw new APIError(
+          400,
+          'initialProbs is not supported with addable answers (no "Other" answer).'
+        )
+      if (initialProbs.length !== answers.length)
+        throw new APIError(
+          400,
+          'initialProbs must have exactly one probability per answer.'
+        )
+    }
     // Unfortunately this is a requirement because if we don't add an answer,
     // then the market creation cost will just be lost. If we just set totalLiquidity to 0,
     // then the answer costs will be calculated based on 0, which is not what we want.
@@ -611,6 +643,7 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    initialProbs,
     takerAPIOrdersDisabled,
     unit,
     midpoints,
