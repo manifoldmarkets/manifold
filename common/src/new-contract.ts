@@ -58,6 +58,10 @@ export function getNewContract(
     shouldAnswersSumToOne?: boolean | undefined
     answerShortTexts?: string[]
     answerImageUrls?: string[]
+    // cpmm-multi-2: per-answer initial probabilities (percentages in (0,100)).
+    // Present ⇒ create a cpmm-multi-2 market with each answer's p set to its
+    // (normalized) target prob. Absent ⇒ uniform 1/n cpmm-multi-1 (unchanged).
+    initialProbs?: number[] | undefined
 
     // Bountied
     isAutoBounty?: boolean | undefined
@@ -104,6 +108,7 @@ export function getNewContract(
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    initialProbs,
     takerAPIOrdersDisabled,
     siblingContractId,
     unit,
@@ -128,7 +133,8 @@ export function getNewContract(
         shouldAnswersSumToOne ?? true,
         ante,
         answerShortTexts,
-        answerImageUrls
+        answerImageUrls,
+        initialProbs
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -292,12 +298,18 @@ const getMultipleChoiceProps = (
   shouldAnswersSumToOne: boolean,
   ante: number,
   shortTexts?: string[],
-  imageUrls?: string[]
+  imageUrls?: string[],
+  initialProbs?: number[]
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
     answers.length === 2 &&
     shouldAnswersSumToOne
+
+  // cpmm-multi-2: per-answer initial probs ⇒ the v2 mechanism. The caller
+  // (create-market.ts) has already validated that initialProbs (when present)
+  // has one entry per answer, sums-to-one is on, and there is no "Other" answer.
+  const isV2 = !!initialProbs && initialProbs.length > 0
 
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
@@ -313,10 +325,11 @@ const getMultipleChoiceProps = (
       colors: isBinaryMulti ? VERSUS_COLORS : undefined,
       shortTexts,
       imageUrls,
+      initialProbs,
     })
   )
   const system: CPMMMulti = {
-    mechanism: 'cpmm-multi-1',
+    mechanism: isV2 ? 'cpmm-multi-2' : 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
     addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
@@ -433,10 +446,49 @@ function createAnswers(
     shortTexts?: string[]
     imageUrls?: string[]
     midpoints?: number[]
+    initialProbs?: number[]
   } = {}
 ) {
-  const { colors, shortTexts, imageUrls, midpoints } = options
+  const { colors, shortTexts, imageUrls, midpoints, initialProbs } = options
   const ids = answers.map(() => randomString())
+
+  // cpmm-multi-2: per-answer initial probs ⇒ balanced deep pools dialed to
+  // target via each answer's own `p`. For balanced reserves (Y = N), the
+  // probability formula prob = p·N / ((1−p)·Y + p·N) collapses to prob = p
+  // (GP6a), so we set p_i = (normalized) target prob and Y_i = N_i = ante/n.
+  // Worst-case payout when any answer wins is poolYes_i + Σ_{j≠i} poolNo_j =
+  // ante/n + (n−1)·ante/n = ante — i.e. the exact same mana budget v1 uses.
+  if (initialProbs && initialProbs.length > 0) {
+    const n = answers.length
+    const sum = initialProbs.reduce((s, x) => s + x, 0)
+    const L = ante / n
+    const now = Date.now()
+    return answers.map((text, i) => {
+      const targetProb = initialProbs[i] / sum
+      const answer: Answer = removeUndefinedProps({
+        id: ids[i],
+        index: i,
+        contractId,
+        userId,
+        text,
+        createdTime: now,
+        color: colors?.[i],
+        shortText: shortTexts?.[i],
+        imageUrl: imageUrls?.[i],
+        poolYes: L,
+        poolNo: L,
+        p: targetProb,
+        prob: targetProb,
+        totalLiquidity: getMultiCpmmLiquidity({ YES: L, NO: L }),
+        subsidyPool: 0,
+        isOther: false,
+        probChanges: { day: 0, week: 0, month: 0 },
+        midpoint: midpoints?.[i],
+        volume: 0,
+      })
+      return answer
+    })
+  }
 
   let prob = 0.5
   let poolYes = ante / answers.length

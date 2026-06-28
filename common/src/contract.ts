@@ -452,6 +452,10 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 export const CPMM_MIN_POOL_QTY = 0.01
 export const NUMBER_BUCKETS_MAX = 50
 export const NUMBER_CREATION_ENABLED = false
+// cpmm-multi-2 (PR2c) kill-switch: gates creating multiple-choice markets with
+// per-answer initial probabilities. Reads are always safe (p ?? 0.5), so only
+// the creation path is flagged. Flip last, for staged rollout.
+export const CPMM_MULTI_2_CREATION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
