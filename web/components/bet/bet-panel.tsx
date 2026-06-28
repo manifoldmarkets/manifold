@@ -456,6 +456,26 @@ export const BuyPanelBody = (
     }
   })
 
+  // Callers pass `multiProps` as an inline object literal, so its identity
+  // changes on every render and would defeat the payout-preview memo below.
+  // Re-key it on its constituent (contract-derived, referentially stable)
+  // fields so the memo only invalidates when the answer/pool actually moves —
+  // which is exactly when the arbitrage preview should recompute.
+  const multiPropsAnswers = multiProps?.answers
+  const multiPropsAnswerToBuy = multiProps?.answerToBuy
+  const multiPropsAnswerText = multiProps?.answerText
+  const stableMultiProps = useMemo<MultiBetProps | undefined>(
+    () =>
+      multiPropsAnswers && multiPropsAnswerToBuy
+        ? {
+            answers: multiPropsAnswers,
+            answerToBuy: multiPropsAnswerToBuy,
+            answerText: multiPropsAnswerText,
+          }
+        : undefined,
+    [multiPropsAnswers, multiPropsAnswerToBuy, multiPropsAnswerText]
+  )
+
   // Memoized so the (potentially expensive, for sum-to-one multi markets)
   // arbitrage preview only recomputes when an input that actually affects the
   // result changes — not on every unrelated re-render (hover, focus, submit
@@ -476,7 +496,7 @@ export const BuyPanelBody = (
         unfilledBets,
         balanceByUserId,
         contract,
-        multiProps,
+        stableMultiProps,
         undefined,
         slippageProtection
       ),
@@ -486,7 +506,7 @@ export const BuyPanelBody = (
       unfilledBets,
       balanceByUserId,
       contract,
-      multiProps,
+      stableMultiProps,
       slippageProtection,
     ]
   )
