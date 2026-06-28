@@ -5,9 +5,11 @@ import {
   addCpmmLiquidity,
   addCpmmLiquidityFixedP,
   addCpmmMultiLiquidityAnswersSumToOne,
+  addCpmmMultiLiquidityAnswersSumToOneV2,
   addCpmmMultiLiquidityToAnswersIndependently,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
+import { Answer } from 'common/answer'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { shuffle } from 'lodash'
 import {
@@ -61,21 +63,52 @@ const drizzleMarket = async (contractId: string) => {
         return
       }
 
-      const poolsByAnswer = Object.fromEntries(
-        answers.map((a) => [a.id, { YES: a.poolYes, NO: a.poolNo }])
-      )
-      const newPools = contract.shouldAnswersSumToOne
-        ? addCpmmMultiLiquidityAnswersSumToOne(poolsByAnswer, amount)
-        : addCpmmMultiLiquidityToAnswersIndependently(poolsByAnswer, amount)
+      // cpmm-multi-2 sum-to-one markets take the lossless float-p subsidy: inject into both
+      // reserves and let each answer's p absorb the mana, so probability is preserved with no
+      // discarded shares. This only DEEPENS an already-converted v2 market — drizzle never
+      // converts a v1 market (conversion is gated to an explicit user addLiquidity, so the
+      // scheduler can't flip fill semantics under resting orders; see migration policy).
+      const isV2SumToOne =
+        contract.mechanism === 'cpmm-multi-2' && contract.shouldAnswersSumToOne
 
-      const poolEntries = Object.entries(newPools).slice(0, 50_000)
+      let answerUpdates: (Partial<Answer> & { id: string })[]
+      if (isV2SumToOne) {
+        const poolsByAnswer = Object.fromEntries(
+          answers.map((a) => [
+            a.id,
+            { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
+          ])
+        )
+        const newByAnswer = addCpmmMultiLiquidityAnswersSumToOneV2(
+          poolsByAnswer,
+          amount
+        )
+        answerUpdates = Object.entries(newByAnswer)
+          .slice(0, 50_000)
+          .map(([answerId, { pool, p }]) => ({
+            id: answerId,
+            poolYes: pool.YES,
+            poolNo: pool.NO,
+            p,
+            prob: getCpmmProbability(pool, p),
+          }))
+      } else {
+        const poolsByAnswer = Object.fromEntries(
+          answers.map((a) => [a.id, { YES: a.poolYes, NO: a.poolNo }])
+        )
+        const newPools = contract.shouldAnswersSumToOne
+          ? addCpmmMultiLiquidityAnswersSumToOne(poolsByAnswer, amount)
+          : addCpmmMultiLiquidityToAnswersIndependently(poolsByAnswer, amount)
 
-      const answerUpdates = poolEntries.map(([answerId, newPool]) => ({
-        id: answerId,
-        poolYes: newPool.YES,
-        poolNo: newPool.NO,
-        prob: getCpmmProbability(newPool, 0.5),
-      }))
+        answerUpdates = Object.entries(newPools)
+          .slice(0, 50_000)
+          .map(([answerId, newPool]) => ({
+            id: answerId,
+            poolYes: newPool.YES,
+            poolNo: newPool.NO,
+            prob: getCpmmProbability(newPool, 0.5),
+          }))
+      }
 
       await updateAnswers(pgTrans, contractId, answerUpdates)
 
