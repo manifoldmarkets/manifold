@@ -634,7 +634,10 @@ export function calculateCpmmAmountToBuyShares(
     ? allUnfilledBets.filter((b) => b.answerId === answer.id)
     : allUnfilledBets
 
-  if (contract.mechanism === 'cpmm-1') {
+  // cpmm-multi-2 answers carry a general (non-0.5) p, so they take the same
+  // general-p inverse as cpmm-1 (the startCpmmState above already supplies
+  // answer.p). cpmm-multi-1 stays on the p=0.5 FixedP path (byte-identical).
+  if (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-2') {
     return calculateAmountToBuyShares(
       startCpmmState,
       shares,
@@ -651,7 +654,7 @@ export function calculateCpmmAmountToBuyShares(
       balanceByUserId
     )
   } else {
-    throw new Error('Only works for cpmm-1 and cpmm-multi-1')
+    throw new Error('Only works for cpmm-1, cpmm-multi-1, and cpmm-multi-2')
   }
 }
 
