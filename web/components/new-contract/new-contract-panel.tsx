@@ -935,18 +935,21 @@ export function NewContractPanel(props: {
         payload.answers = mcAnswers
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = formState.addAnswersMode
-        // cpmm-multi-2: ship per-answer initial probs (raw percentages; the
-        // backend normalizes Σ=1). Missing entries default to an equal share.
+        // cpmm-multi-2: ship per-answer initial probs (raw percentages). The
+        // backend normalizes Σ=1 for sum-to-one ("Multiple Choice") and uses
+        // each as an absolute prob for independent ("Set") markets. Missing
+        // entries default to an equal share (sum-to-one) or 50% (Set).
         if (
           CPMM_MULTI_2_CREATION_ENABLED &&
           formState.useCustomInitialProbs &&
-          formState.shouldAnswersSumToOne &&
           formState.addAnswersMode === 'DISABLED' &&
           mcAnswers.length >= 2
         ) {
-          const equal = 100 / mcAnswers.length
+          const defaultPct = formState.shouldAnswersSumToOne
+            ? 100 / mcAnswers.length
+            : 50
           payload.initialProbs = mcAnswers.map(
-            (_, i) => formState.initialProbs?.[i] ?? equal
+            (_, i) => formState.initialProbs?.[i] ?? defaultPct
           )
         }
       } else if (formState.outcomeType === 'POLL') {

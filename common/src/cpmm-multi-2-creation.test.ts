@@ -25,7 +25,8 @@ const creator = {
 const makeMC = (
   answers: string[],
   initialProbs: number[] | undefined,
-  ante = 1000
+  ante = 1000,
+  shouldAnswersSumToOne = true
 ): CPMMMulti =>
   getNewContract({
     id: 'contract1',
@@ -44,7 +45,7 @@ const makeMC = (
     isLogScale: false,
     answers,
     addAnswersMode: 'DISABLED',
-    shouldAnswersSumToOne: true,
+    shouldAnswersSumToOne,
     initialProbs,
     token: 'MANA',
     coverImageUrl: undefined,
@@ -125,6 +126,84 @@ describe('cpmm-multi-2 creation — per-answer initialProbs', () => {
       // v1 ante-maximizing pools
       expect(a.poolYes).toBeCloseTo(ante / 2, 8)
       expect(a.poolNo).toBeCloseTo(ante / (2 * n - 2), 8)
+    })
+  })
+})
+
+// cpmm-multi-2 (Set / INDEPENDENT_MULTIPLE_CHOICE): each answer is its own CPMM,
+// so per-answer initialProbs are ABSOLUTE (no Σ=1 normalization). Same balanced
+// deep pool + per-answer p representation as sum-to-one — required so the LP's
+// max loss = max(Y, N) = ante/n stays funded for any target prob (an asymmetric
+// p=0.5 pool would blow up max(Y,N) at the extremes ⇒ discard shares or house
+// risk; see tasks/cpmm_multi_2 math TODO).
+describe('cpmm-multi-2 creation — independent ("Set") absolute probs', () => {
+  const independent = (
+    answers: string[],
+    initialProbs: number[],
+    ante = 1000
+  ) => makeMC(answers, initialProbs, ante, false).answers
+
+  it('sets per-answer p = absolute prob, NOT normalized', () => {
+    const ante = 900
+    const probs = [80, 30, 10] // sum 120 — must NOT be rescaled
+    const ans = independent(['A', 'B', 'C'], probs, ante)
+    const n = ans.length
+    const targets = [0.8, 0.3, 0.1]
+    ans.forEach((a, i) => {
+      expect(a.p).toBeCloseTo(targets[i], 10)
+      expect(a.prob).toBeCloseTo(targets[i], 10)
+      expect(a.poolYes).toBeCloseTo(ante / n, 8)
+      expect(a.poolNo).toBeCloseTo(ante / n, 8)
+    })
+    // Independent ⇒ probs need not (and here do not) sum to 1.
+    expect(sumProbs(ans)).toBeCloseTo(1.2, 8)
+  })
+
+  it('mechanism is cpmm-multi-2', () => {
+    const contract = makeMC(['A', 'B'], [40, 90], 1000, false)
+    expect(contract.mechanism).toBe('cpmm-multi-2')
+  })
+
+  it('Set absolute differs from the sum-to-one normalization for the same input', () => {
+    const input = [40, 20, 10]
+    const set = independent(['A', 'B', 'C'], input)
+    const s2o = makeMC(['A', 'B', 'C'], input, 1000, true).answers
+    // Set: absolute 0.40 / 0.20 / 0.10
+    expect(set.map((a) => a.p)).toEqual([
+      expect.closeTo(0.4, 10),
+      expect.closeTo(0.2, 10),
+      expect.closeTo(0.1, 10),
+    ])
+    // sum-to-one: normalized 4/7 / 2/7 / 1/7
+    expect(s2o.map((a) => a.p)).toEqual([
+      expect.closeTo(4 / 7, 10),
+      expect.closeTo(2 / 7, 10),
+      expect.closeTo(1 / 7, 10),
+    ])
+  })
+
+  it('funding invariant: max(Y, N) = ante/n even at extreme probs (no house risk, no discard)', () => {
+    const ante = 1000
+    const ans = independent(['Long', 'Mid', 'Fav'], [1, 50, 99], ante)
+    const n = ans.length
+    ans.forEach((a) => {
+      // balanced ⇒ max(Y, N) = ante/n regardless of how extreme the prob is
+      expect(Math.max(a.poolYes, a.poolNo)).toBeCloseTo(ante / n, 8)
+      // all of the funded ante lands as liquidity — nothing discarded
+      expect(a.totalLiquidity).toBeCloseTo(ante / n, 8)
+    })
+  })
+
+  it('regression: Set with no initialProbs ⇒ v1 cpmm-multi-1, each answer 50%', () => {
+    const ante = 1000
+    const contract = makeMC(['A', 'B', 'C'], undefined, ante, false)
+    expect(contract.mechanism).toBe('cpmm-multi-1')
+    const n = contract.answers.length
+    contract.answers.forEach((a) => {
+      expect(a.prob).toBeCloseTo(0.5, 10)
+      expect(a.p).toBe(0.5)
+      expect(a.poolYes).toBeCloseTo(ante / n, 8)
+      expect(a.poolNo).toBeCloseTo(ante / n, 8)
     })
   })
 })
