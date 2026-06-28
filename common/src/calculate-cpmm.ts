@@ -626,7 +626,7 @@ export function calculateCpmmAmountToBuyShares(
       ? contract
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
-          p: 0.5,
+          p: answer!.p,
           collectedFees: contract.collectedFees,
         }
 

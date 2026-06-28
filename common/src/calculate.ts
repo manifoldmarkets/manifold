@@ -88,7 +88,7 @@ export function getAnswerProbability(
     if (resolution === 'NO') return 0
   }
   const pool = { YES: poolYes, NO: poolNo }
-  return getCpmmProbability(pool, 0.5)
+  return getCpmmProbability(pool, answer.p)
 }
 
 export function getInitialAnswerProbability(
@@ -389,10 +389,7 @@ export const getContractBetMetricsPerAnswerWithoutLoans = (
       const answerId = bets[0].answerId
       const baseMetrics = getContractBetMetrics(contract, bets, answerId)
       let periodMetrics
-      if (
-        contract.mechanism === 'cpmm-1' ||
-        isMultiCpmm(contract)
-      ) {
+      if (contract.mechanism === 'cpmm-1' || isMultiCpmm(contract)) {
         const answer = answers?.find((a) => a.id === answerId)
         const passedAnswer = !!answer
         if (isMultiCpmm(contract) && !passedAnswer) {

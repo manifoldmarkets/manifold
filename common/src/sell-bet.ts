@@ -44,7 +44,7 @@ export const getCpmmSellBetInfo = (
       ? contract
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
-          p: 0.5,
+          p: answer!.p,
           collectedFees: contract.collectedFees,
         }
 
@@ -127,7 +127,7 @@ export const getCpmmMultiSellBetInfo = (
   const { cpmmState, makers, takers, ordersToCancel, totalFees } = newBetResult!
 
   const probBefore = answerToSell.prob
-  const probAfter = getCpmmProbability(cpmmState.pool, 0.5)
+  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   const takerAmount = sumBy(takers, 'amount')
   const takerShares = sumBy(takers, 'shares')
@@ -285,7 +285,7 @@ export const getSaleResult = (
   const initialCpmmState = answer
     ? {
         pool: { YES: answer.poolYes, NO: answer.poolNo },
-        p: 0.5,
+        p: answer.p,
         collectedFees: contract.collectedFees,
       }
     : {

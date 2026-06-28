@@ -167,7 +167,7 @@ const computeMultiCpmmElasticity = (
   const elasticities = contract.answers.map((a) => {
     const cpmmState = {
       pool: { YES: a.poolYes, NO: a.poolNo },
-      p: 0.5,
+      p: a.p,
       collectedFees: noFees,
     }
     const unfilledBetsForAnswer = unfilledBets.filter(
@@ -299,7 +299,10 @@ export const calculateUserMetricsWithNewBetsOnly = (
       const freeLoanRatio = um.loan / totalCurrentLoan
       const marginLoanRatio = (um.marginLoan ?? 0) / totalCurrentLoan
       newLoan = Math.max(0, um.loan - repayment * freeLoanRatio)
-      newMarginLoan = Math.max(0, (um.marginLoan ?? 0) - repayment * marginLoanRatio)
+      newMarginLoan = Math.max(
+        0,
+        (um.marginLoan ?? 0) - repayment * marginLoanRatio
+      )
     } else {
       // No existing loans - shouldn't happen but handle gracefully
       newLoan = 0
