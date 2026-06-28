@@ -68,6 +68,11 @@ export default ({ config }) => {
                 maxResizeWidth: '320dp',
                 maxResizeHeight: '200dp',
                 resizeMode: 'horizontal|vertical',
+                // Re-render every 30 min (the OS minimum) so the widget flips
+                // lit -> pending shortly after midnight PT even with the app
+                // closed. The headless task recomputes state from the stored
+                // snapshot vs. the current time — no network needed.
+                updatePeriodMillis: 1800000,
               },
             ],
           },
