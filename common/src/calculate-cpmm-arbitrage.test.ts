@@ -831,3 +831,85 @@ describe('calculateCpmmMultiArbitrageBet — per-answer p (cpmm-multi-2)', () =>
     }
   })
 })
+
+// --- cpmm-multi-2: direct (Approach C) multi-buy removes transient-overshoot fills ----------
+// The v1 YES-basket auto-arb drives basket answers UP PAST their settled price, then back down,
+// consuming and KEEPING resting makers crossed only in the transient band (the bug). The v2 solve
+// (gated on the 'cpmm-multi-2' arg) buys each basket answer once, straight to final — every maker
+// is crossed at most once, in one direction. Fixture mirrors the multibuy-limit-cases spec
+// (5 answers @ 0.2, k=1000, YES basket {a0,a1}, bet 60; a0 settles ~0.399 with peak ~0.677 in v1).
+const getAnswerK = (index: number, prob: number, k: number): Answer =>
+  ({
+    id: `answer${index}`,
+    contractId: 'c',
+    userId: `user${index}`,
+    text: `Answer ${index}`,
+    createdTime: 0,
+    index,
+    prob,
+    poolYes: Math.sqrt((k * (1 - prob)) / prob),
+    poolNo: k / Math.sqrt((k * (1 - prob)) / prob),
+    p: 0.5,
+    totalLiquidity: 0,
+    subsidyPool: 0,
+    probChanges: { day: 0, week: 0, month: 0 },
+    volume: 0,
+  } as Answer)
+
+describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 no transient-overshoot fills', () => {
+  const mkMarket = () => [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+  const BASKET = [0, 1]
+  const BET = 60
+  const runV2 = (orders: LimitBet[]) => {
+    const answers = mkMarket()
+    const res = calculateCpmmMultiArbitrageYesBets(
+      answers,
+      BASKET.map((i) => answers[i]),
+      BET,
+      undefined,
+      orders,
+      { mk: 1e9 },
+      noFees,
+      'cpmm-multi-2'
+    )
+    const finalById: Record<string, number> = {}
+    for (const a of res.updatedAnswers)
+      finalById[a.id] = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+    const makers = [
+      ...res.newBetResults.flatMap((r) => r.makers),
+      ...res.otherBetResults.flatMap((r) => r.makers),
+    ]
+    const filledById = groupBy(makers, (mk) => mk.bet.id)
+    const filled = (id: string) => sumBy(filledById[id] ?? [], (mk) => mk.amount)
+    const cost =
+      sumBy(res.newBetResults, (r) => sumBy(r.takers, 'amount')) +
+      sumBy(res.otherBetResults, (r) => sumBy(r.takers, 'amount'))
+    return { res, finalById, filled, cost }
+  }
+
+  // No-limit settle price of the traded answer a0 (used by the past-final case).
+  const a0Final = runV2([]).finalById['answer0']
+
+  it('no-limit: Σp = 1, cost = betAmount, traded answer rises (~0.399)', () => {
+    const r = runV2([])
+    expect(sumBy(r.res.updatedAnswers, (a) => r.finalById[a.id])).toBeCloseTo(1, 6)
+    expect(r.cost).toBeCloseTo(BET, 3)
+    expect(a0Final).toBeGreaterThan(0.2)
+    expect(a0Final).toBeCloseTo(0.39942, 2)
+  })
+
+  it('in-path LARGE NO-ask on a basket answer -> price PINS at the limit (v1 mis-settles)', () => {
+    const o = getLimitBet('L1', mkMarket()[0], 'NO', 'mk', 600, 0.3)
+    const r = runV2([o])
+    expect(r.finalById['answer0']).toBeCloseTo(0.3, 2) // rests AT the limit, not past it
+    expect(r.filled('L1')).toBeGreaterThan(0)
+  })
+
+  it('past-final NO-ask (rho in the v1 overshoot band) -> UNFILLED (v1 keeps a phantom fill)', () => {
+    // 0.5 is above the no-limit settle (~0.399) but below v1's transient peak (~0.677).
+    const o = getLimitBet('L2', mkMarket()[0], 'NO', 'mk', 600, 0.5)
+    const r = runV2([o])
+    expect(r.filled('L2')).toBeLessThanOrEqual(1e-9) // never net-crossed
+    expect(r.finalById['answer0']).toBeCloseTo(a0Final, 2) // order has no effect
+  })
+})

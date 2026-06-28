@@ -94,7 +94,12 @@ export function calculateCpmmMultiArbitrageYesBets(
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  collectedFees: Fees
+  collectedFees: Fees,
+  // cpmm-multi-2 (per-answer p + reversible-limit auto-arb) routes the basket buy through the
+  // direct, non-overshooting "Approach C" solve. Defaults to the frozen v1 path so every
+  // existing cpmm-multi-1 caller is byte-identical. Gate at the call site on
+  // contract.mechanism === 'cpmm-multi-2'.
+  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2' = 'cpmm-multi-1'
 ) {
   const result = calculateCpmmMultiArbitrageBetsYes(
     answers,
@@ -103,7 +108,8 @@ export function calculateCpmmMultiArbitrageYesBets(
     limitProb,
     unfilledBets,
     balanceByUserId,
-    collectedFees
+    collectedFees,
+    arbVersion
   )
   if (
     floatingEqual(
@@ -189,8 +195,20 @@ function calculateCpmmMultiArbitrageBetsYes(
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  collectedFees: Fees
+  collectedFees: Fees,
+  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2' = 'cpmm-multi-1'
 ) {
+  if (arbVersion === 'cpmm-multi-2') {
+    return calculateCpmmMultiArbitrageBetsYesV2(
+      initialAnswers,
+      initialAnswersToBuy,
+      initialBetAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId,
+      collectedFees
+    )
+  }
   // Maintain mutable snapshots of unfilled orders and maker balances across the whole multi-buy
   let workingUnfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
   let workingBalanceByUserId = { ...balanceByUserId }
@@ -281,6 +299,248 @@ function calculateCpmmMultiArbitrageBetsYes(
     updatedAnswers.filter(
       (r) => !initialAnswersToBuy.map((a) => a.id).includes(r.id)
     ),
+    collectedFees
+  )
+
+  return { newBetResults, otherBetResults, updatedAnswers }
+}
+
+// cpmm-multi-2 multi-buy: the direct, non-overshooting "Approach C" solve (GP12 / reference
+// `tasks/cpmm_multi_2/proofs/reference_solve_c.py`). The DOLLAR-CENTRIC decomposition makes it
+// correct-by-construction under resting limits:
+//   * each basket answer is bought ONCE, straight up start -> final  (a single rising YES sweep)
+//   * each non-basket answer moves ONCE, straight down start -> final (a single falling NO sweep)
+// No answer is ever pushed past its settled price, so every resting maker is crossed exactly once,
+// in one direction (pinning included). This eliminates v1's transient-overshoot fills: the
+// iterate-buy-arb-reinvest loop in calculateCpmmMultiArbitrageBetsYes drives basket answers UP PAST
+// their final price and back down, consuming and keeping makers in the transient band (the bug).
+//
+// Because each answer is touched by exactly one leg (basket = YES, others = NO) and a resting order
+// lives on a single answerId, the per-answer maker books are disjoint — there is no cross-leg
+// working-state maker mutation to reason about (unlike the v1 share-centric "NO in all" loop).
+//
+//   solve g (equal YES shares per basket answer) s.t. net spend == budget        [outer bisection]
+//     buy g YES shares in each basket answer (limit-aware single rising sweep)
+//     solve eta (NO shares in each non-basket answer) s.t. Sum prob == 1          [inner bisection]
+//       buy eta NO shares in each non-basket answer (limit-aware single falling sweep)
+//     net = basketCost + othersCost - eta*(n - m - 1)   (dollar-centric redemption; m = |basket|)
+//
+// net is strictly increasing in g (GP12a: dt/dg = Sum_basket prob > 0) and Sum_others prob is
+// strictly decreasing in eta (GP5a) — so both bisections are on monotone objectives.
+function calculateCpmmMultiArbitrageBetsYesV2(
+  initialAnswers: Answer[],
+  initialAnswersToBuy: Answer[],
+  betAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  collectedFees: Fees
+) {
+  const unfilledBetsByAnswer = groupBy(unfilledBets, (b) => b.answerId)
+  const basketIds = new Set(initialAnswersToBuy.map((a) => a.id))
+  const others = initialAnswers.filter((a) => !basketIds.has(a.id))
+  const n = initialAnswers.length
+  const m = initialAnswersToBuy.length
+
+  // Evaluate one g: realize the basket YES legs + the arbed OTHER NO legs at the eta that pins
+  // Sum prob == 1. Returns undefined when g is infeasible (basket alone already sums >= 1).
+  const evalG = (g: number) => {
+    // Fresh working snapshots so each g-probe is independent (no maker capacity bleed across probes).
+    const workingUnfilledBetsByAnswer = mapValues(unfilledBetsByAnswer, (bets) => [
+      ...bets,
+    ])
+    const workingBalanceByUserId = { ...balanceByUserId }
+
+    // --- basket: buy g YES shares in each basket answer (single rising sweep, limit-aware) ---
+    let basketCost = 0
+    const yesBetResults = initialAnswersToBuy.map((answer) => {
+      const pool = { YES: answer.poolYes, NO: answer.poolNo }
+      const state = { pool, p: answer.p, collectedFees }
+      const yesAmount = calculateAmountToBuySharesFixedP(
+        state,
+        g,
+        'YES',
+        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        workingBalanceByUserId
+      )
+      const result = {
+        ...computeFills(
+          state,
+          'YES',
+          yesAmount,
+          limitProb,
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId
+        ),
+        answer,
+      }
+      applyMakersToWorkingState(
+        result.makers,
+        result.ordersToCancel,
+        workingUnfilledBetsByAnswer,
+        workingBalanceByUserId
+      )
+      basketCost += sumBy(result.takers, 'amount')
+      return result
+    })
+    const basketSum = sumBy(yesBetResults, (r) =>
+      getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
+    )
+    const target = 1 - basketSum // required Sum over the non-basket answers
+    if (target <= 1e-9) {
+      return undefined // basket alone sums to >= 1: this g is infeasible
+    }
+
+    // --- inner: eta NO shares in each OTHER answer so their prob-sum == target. Read-only preview
+    // (never applies makers) — Sum_others prob is strictly decreasing in eta => unique eta. ---
+    const othersSumAtEta = (eta: number) =>
+      sumBy(others, (answer) => {
+        const pool = { YES: answer.poolYes, NO: answer.poolNo }
+        const state = { pool, p: answer.p, collectedFees }
+        const noAmount = calculateAmountToBuySharesFixedP(
+          state,
+          eta,
+          'NO',
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId,
+          true
+        )
+        const { cpmmState } = computeFills(
+          state,
+          'NO',
+          noAmount,
+          undefined,
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId,
+          undefined,
+          true
+        )
+        return getCpmmProbability(cpmmState.pool, cpmmState.p)
+      })
+
+    let eta = 0
+    if (othersSumAtEta(0) > target) {
+      let hi = 1
+      while (othersSumAtEta(hi) > target && hi < 1e12) hi *= 2
+      // othersSum decreasing in eta => comparator (target - othersSum) increasing in eta.
+      eta = binarySearch(0, hi, (e) => target - othersSumAtEta(e))
+    }
+
+    // --- realize the OTHER NO legs at eta, this time applying maker fills to working state ---
+    let othersCost = 0
+    const noBetResults = others.map((answer) => {
+      const pool = { YES: answer.poolYes, NO: answer.poolNo }
+      const state = { pool, p: answer.p, collectedFees }
+      const noAmount = calculateAmountToBuySharesFixedP(
+        state,
+        eta,
+        'NO',
+        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        workingBalanceByUserId,
+        true
+      )
+      const result = {
+        ...computeFills(
+          state,
+          'NO',
+          noAmount,
+          undefined,
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId,
+          undefined,
+          true
+        ),
+        answer,
+      }
+      applyMakersToWorkingState(
+        result.makers,
+        result.ordersToCancel,
+        workingUnfilledBetsByAnswer,
+        workingBalanceByUserId
+      )
+      othersCost += sumBy(result.takers, 'amount')
+      return result
+    })
+
+    // Dollar-centric redemption credit: eta NO shares in each of the (n - m) other answers, with g
+    // YES shares in each of the m basket answers, forms complete sets worth eta*(n - m - 1) mana.
+    // (For m = 1 this is eta*(n - 2), matching the single-answer calculateCpmmMultiArbitrageBetYes.)
+    const net = basketCost + othersCost - eta * (n - m - 1)
+    return { yesBetResults, noBetResults, eta, net }
+  }
+
+  // outer: net strictly increasing in g (and undefined past the feasibility boundary, which is an
+  // upper bound) => bracket by doubling, then bisect on net == betAmount.
+  let gHi = 1
+  while (true) {
+    const r = evalG(gHi)
+    if (!r || r.net >= betAmount) break
+    gHi *= 2
+    if (gHi > 1e9) {
+      throw new Error('budget unreachable in cpmm-multi-2 YES basket solve')
+    }
+  }
+  const g = binarySearch(0, gHi, (gg) => {
+    const r = evalG(gg)
+    return r ? r.net - betAmount : 1 // infeasible g overshoots Sum p => push g lower
+  })
+  const solved = evalG(g)
+  if (!solved) {
+    throw new Error('Invariant failed in cpmm-multi-2 YES basket solve')
+  }
+  const { yesBetResults, noBetResults, eta, net } = solved
+
+  // Redemption fills (mirrors the single-answer path): the NO-in-others legs are internal
+  // arbitrage that nets to zero mana/shares; the redemption credit flows to the basket YES legs.
+  // netOthers = othersCost - eta*(n - m - 1); summed taker amount across all legs == betAmount.
+  const othersCost = sumBy(noBetResults, (r) => sumBy(r.takers, 'amount'))
+  const netOthers = othersCost - eta * (n - m - 1)
+  for (const noBetResult of noBetResults) {
+    noBetResult.takers.push({
+      matchedBetId: null,
+      amount: -sumBy(noBetResult.takers, 'amount'),
+      shares: -sumBy(noBetResult.takers, 'shares'),
+      timestamp: Date.now(),
+      fees: noFees,
+    })
+  }
+  // Split the redemption credit equally across the basket (eta/m shares, netOthers/m mana each);
+  // for m = 1 this reduces exactly to the single-answer redemption fill (eta shares, netOthers mana).
+  for (const yesBetResult of yesBetResults) {
+    yesBetResult.takers.push({
+      matchedBetId: null,
+      amount: netOthers / m,
+      shares: eta / m,
+      timestamp: Date.now(),
+      fees: noFees,
+    })
+  }
+  void net
+
+  const updatedAnswers = initialAnswers.map((answer) => {
+    const r =
+      yesBetResults.find((b) => b.answer.id === answer.id) ??
+      noBetResults.find((b) => b.answer.id === answer.id)
+    if (!r) return answer
+    const { pool, p } = r.cpmmState
+    return {
+      ...answer,
+      poolYes: pool.YES,
+      poolNo: pool.NO,
+      prob: getCpmmProbability(pool, p),
+    }
+  })
+
+  const newBetResults = combineBetsOnSameAnswers(
+    yesBetResults,
+    'YES',
+    updatedAnswers.filter((a) => basketIds.has(a.id)),
+    collectedFees
+  )
+  const otherBetResults = combineBetsOnSameAnswers(
+    noBetResults,
+    'NO',
+    updatedAnswers.filter((a) => !basketIds.has(a.id)),
     collectedFees
   )
 
