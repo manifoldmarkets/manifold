@@ -20,7 +20,9 @@ import { Answer } from './answer'
 import {
   addCpmmMultiLiquidityAnswersSumToOneV2,
   addCpmmMultiLiquidityToAnswersIndependentlyV2,
+  calculateCpmmMultiSumsToOneSale,
   calculateCpmmPurchase,
+  calculateCpmmSale,
   getCpmmProbability,
 } from './calculate-cpmm'
 import {
@@ -203,6 +205,81 @@ class Sim {
     this.check(`multibet {${basketIdx}} M$${amount} by ${user}`)
   }
 
+  // Sell `shares` of `outcome` that `user` holds on answer `answerIndex`.
+  // Drives the REAL vendor sale calc (calculateCpmmSale for Set, the sum-to-one arb sale
+  // otherwise). Conservation model, verified against vendor (calculate-cpmm-arbitrage.ts
+  // calculateCpmmMultiArbitrageSellYes/No):
+  //   - the seller's position in the sold answer drops by `shares`;
+  //   - the seller's balance rises by `saleValue`;
+  //   - every answer's pool moves to the calc's final state.
+  // The cross-answer arb legs (otherBetResults) each get a redemption fill that EXACTLY
+  // cancels their arb buy (net amount 0, net shares 0), so they move pools only — the seller
+  // gains no other-answer position, and the cost of moving those pools is already folded into
+  // `saleValue` via the sold answer's arb taker. (Self-checked: dropping any of the three
+  // updates, or the otherBetResults pool moves, breaks the conservation oracle below.)
+  sell(user: string, answerIndex: number, outcome: 'YES' | 'NO', shares: number) {
+    const answerToSell = this.answers[answerIndex]
+    if (this.type === 'set_indep') {
+      const { cpmmState, saleValue, fees } = calculateCpmmSale(
+        {
+          pool: { YES: answerToSell.poolYes, NO: answerToSell.poolNo },
+          p: answerToSell.p,
+          collectedFees: noFees,
+        },
+        shares,
+        outcome,
+        [],
+        {}
+      )
+      this.answers = this.answers.map((x, i) =>
+        i === answerIndex
+          ? { ...x, poolYes: cpmmState.pool.YES, poolNo: cpmmState.pool.NO, p: cpmmState.p,
+              prob: getCpmmProbability(cpmmState.pool, cpmmState.p) }
+          : x
+      )
+      const p = this.posOf(user, answerToSell.id)
+      p[outcome] -= shares
+      p.sold += saleValue
+      this.credit(user, saleValue)
+      this.fees += getFeeTotal(fees)
+      this.check(`set sell ${outcome} ${shares}sh a${answerIndex} by ${user}`)
+      return
+    }
+    const { saleValue, newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
+      this.answers,
+      answerToSell,
+      shares,
+      outcome,
+      undefined,
+      [],
+      {},
+      noFees
+    )
+    // sold answer pool by known id (newBetResult carries no `answer`); arb legs by their id.
+    const poolById = new Map<string, { [o: string]: number }>()
+    poolById.set(answerToSell.id, newBetResult.cpmmState.pool)
+    for (const o of otherBetResults) poolById.set(o.answer.id, o.cpmmState.pool)
+    this.answers = this.answers.map((a) => {
+      const pl = poolById.get(a.id)
+      return pl
+        ? { ...a, poolYes: pl.YES, poolNo: pl.NO, prob: getCpmmProbability(pl as any, a.p) }
+        : a
+    })
+    const pos = this.posOf(user, answerToSell.id)
+    pos[outcome] -= shares
+    pos.sold += saleValue
+    this.credit(user, saleValue)
+    this.fees +=
+      getFeeTotal(newBetResult.totalFees) +
+      sumBy(otherBetResults, (r) => getFeeTotal(r.totalFees))
+    this.check(`sell ${outcome} ${shares}sh a${answerIndex} by ${user}`)
+  }
+
+  // current YES/NO shares a user holds on an answer (for "sell what you bought").
+  sharesOf(user: string, answerIndex: number, outcome: 'YES' | 'NO') {
+    return this.posOf(user, this.answers[answerIndex].id)[outcome]
+  }
+
   addLiquidity(user: string, amount: number) {
     // model whole-market add as the lossless v2 deepen (what drizzle realizes), so the added
     // mana sits in pools and is read by getMultiLiquidityPoolPayouts at resolution.
@@ -363,6 +440,74 @@ describe('cpmm-multi-2 conservation grid (calc-layer rows)', () => {
     s.buy('bob', 1, 'NO', 40)
     s.addLiquidity('carol', 100)
     s.resolve('cancel')
+  })
+
+  // --- sell rows (covering array: trade=sell — rows 4,10,11,16,21; limits/single-outcome
+  //     liquidity aspects deferred to their own increments) -----------------------------------
+  it('sum-to-one: buy then sell-all round-trips pools to creation (+ conservation on resolve)', () => {
+    for (const probs of ['balanced', 'skewed', 'extreme'] as const)
+      for (const n of [2, 3, 5]) {
+        const s = new Sim({ n, probs, type: 'mc_sumone' })
+        const before = s.answers.map((a) => ({ y: a.poolYes, no: a.poolNo }))
+        s.buy('alice', 0, 'YES', 60)
+        const held = s.sharesOf('alice', 0, 'YES')
+        s.sell('alice', 0, 'YES', held) // sell everything back
+        // round-trip: pools return to creation (the AMM is path-reversible for a lone trader)
+        s.answers.forEach((a, i) => {
+          expect(a.poolYes).toBeCloseTo(before[i].y, 4)
+          expect(a.poolNo).toBeCloseTo(before[i].no, 4)
+        })
+        s.resolve('one', { winner: 0 })
+      }
+  })
+
+  it('sum-to-one: buy then PARTIAL sell -> resolve (traded / untouched / multiple)', () => {
+    for (const probs of ['balanced', 'skewed', 'extreme'] as const)
+      for (const n of [2, 3, 5]) {
+        const a = new Sim({ n, probs, type: 'mc_sumone' })
+        a.buy('alice', 0, 'YES', 80)
+        a.sell('alice', 0, 'YES', a.sharesOf('alice', 0, 'YES') / 2)
+        a.resolve('one', { winner: 0 }) // resolve to the (still partly-held) traded answer
+
+        const b = new Sim({ n, probs, type: 'mc_sumone' })
+        b.buy('alice', 0, 'YES', 80)
+        b.sell('alice', 0, 'YES', b.sharesOf('alice', 0, 'YES') / 2)
+        b.resolve('one', { winner: n - 1 }) // resolve to an untouched answer
+
+        const c = new Sim({ n, probs, type: 'mc_sumone' })
+        c.buy('alice', 1 % n, 'YES', 70)
+        c.sell('alice', 1 % n, 'YES', c.sharesOf('alice', 1 % n, 'YES') * 0.4)
+        c.resolve('multiple', { split: [0.6, 0.4] })
+      }
+  })
+
+  it('sum-to-one: multi-user sell + add-liquidity -> CHOOSE_ONE conservation (row 16 shape)', () => {
+    const s = new Sim({ n: 5, probs: 'balanced', type: 'mc_sumone' })
+    s.buy('alice', 0, 'YES', 60)
+    s.buy('bob', 2, 'NO', 40)
+    s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES') * 0.5)
+    s.addLiquidity('carol', 200)
+    s.resolve('one', { winner: 0 })
+  })
+
+  it('Set (independent): buy then sell (full + partial) -> per-answer resolution', () => {
+    for (const probs of ['skewed', 'extreme'] as const)
+      for (const n of [2, 3]) {
+        const s = new Sim({ n, probs, type: 'set_indep' })
+        const before = s.answers.map((a) => ({ y: a.poolYes, no: a.poolNo }))
+        s.buy('alice', 0, 'YES', 40)
+        s.sell('alice', 0, 'YES', s.sharesOf('alice', 0, 'YES')) // round-trip answer 0
+        expect(s.answers[0].poolYes).toBeCloseTo(before[0].y, 4)
+        expect(s.answers[0].poolNo).toBeCloseTo(before[0].no, 4)
+        if (n > 2) {
+          s.buy('bob', 1, 'NO', 25)
+          s.sell('bob', 1, 'NO', s.sharesOf('bob', 1, 'NO') * 0.5) // partial
+        }
+        const outs = Array.from({ length: n }, (_, i) =>
+          i % 2 === 0 ? 'YES' : 'NO'
+        ) as ('YES' | 'NO')[]
+        s.resolve('set_yesno', { setOutcomes: outs })
+      }
   })
 
   it('Set (independent): create -> buys -> add-liquidity -> per-answer resolution', () => {
