@@ -1,5 +1,4 @@
-import { partition } from 'lodash'
-import { Expo, ExpoPushMessage, ExpoPushSuccessTicket } from 'expo-server-sdk'
+import { Expo, ExpoPushMessage } from 'expo-server-sdk'
 
 import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
@@ -42,42 +41,51 @@ export const createPushNotifications = async (
     })
   }
   const chunks = expo.chunkPushNotifications(messages)
+  // chunkPushNotifications preserves order, and sendPushNotificationsAsync
+  // returns one ticket per message in the same order. Track the running offset
+  // into `messages` so each ticket maps back to the message (and recipient) it
+  // came from. The previous code indexed into post-partition/post-filter arrays,
+  // which misattributed tickets and could delete the wrong user's push token.
+  let messageOffset = 0
   for (const chunk of chunks) {
     const tickets = await expo.sendPushNotificationsAsync(chunk)
-    const [successTickets, errorTickets] = partition(
-      tickets,
-      (ticket) => ticket.status === 'ok'
-    )
 
-    const values = (successTickets as ExpoPushSuccessTicket[]).map(
-      (ticket, index) => {
-        const message = messages[index]
-        return {
-          id: ticket.id,
-          receipt_status: 'not-checked',
-          user_id: message.data.userId,
-          notification_id: message.data.id,
-          status: ticket.status,
-        }
-      }
-    )
-
-    if (values.length > 0) {
-      await bulkInsert(pg, 'push_notification_tickets', values)
-    }
+    const values: {
+      id: string
+      receipt_status: string
+      user_id: string
+      notification_id: string
+      status: string
+    }[] = []
 
     await Promise.all(
-      errorTickets.map(async (ticket, index) => {
-        if (ticket.status === 'error') {
+      tickets.map(async (ticket, i) => {
+        const message = messages[messageOffset + i]
+        if (ticket.status === 'ok') {
+          values.push({
+            id: ticket.id,
+            receipt_status: 'not-checked',
+            user_id: message.data.userId,
+            notification_id: message.data.id,
+            status: ticket.status,
+          })
+        } else if (ticket.status === 'error') {
           log.error('Error generating push notification, ticket:', { ticket })
           if (ticket.details?.error === 'DeviceNotRegistered') {
-            // set private user pushToken to null
-            await updatePrivateUser(pg, userAndNotification[index][0].id, {
+            // The device this token belonged to is gone; clear it so we stop
+            // trying to push to it.
+            await updatePrivateUser(pg, message.data.userId, {
               pushToken: FieldVal.delete(),
             })
           }
         }
       })
     )
+
+    if (values.length > 0) {
+      await bulkInsert(pg, 'push_notification_tickets', values)
+    }
+
+    messageOffset += chunk.length
   }
 }

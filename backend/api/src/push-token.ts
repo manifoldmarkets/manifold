@@ -30,6 +30,18 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     if (!oldPrivateUser) {
       throw new APIError(404, 'Account not found')
     }
+    // A device's push token must belong to at most one account. If this token
+    // is currently registered to other accounts (e.g. the user previously
+    // logged into multiple accounts on the same device and logged back out),
+    // clear it from them. Otherwise notifications for those logged-out accounts
+    // keep getting delivered to this physical device.
+    await tx.none(
+      `update private_users
+       set data = data - 'pushToken'
+       where id <> $1
+         and data->>'pushToken' = $2`,
+      [auth.uid, pushToken]
+    )
     const updatedRow = await tx.one(
       `update private_users set data =
       jsonb_set(

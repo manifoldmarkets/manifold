@@ -22,6 +22,16 @@ export const handlePushNotificationPermissionStatus = async (
   }
 }
 
+// Removes this account's push token from its private user record. Call on
+// logout so notifications for the now-logged-out account stop being delivered
+// to the device. Unlike setPushTokenRequestDenied, this does NOT mark the user
+// as having rejected push notifications.
+export const clearPushToken = async () => {
+  await api('me/private/update', {
+    pushToken: DELETE_PUSH_TOKEN,
+  })
+}
+
 export const setPushTokenRequestDenied = async () => {
   console.log('push token denied')
   await api('me/private/update', {

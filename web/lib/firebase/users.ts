@@ -14,7 +14,9 @@ import { getFirebaseAuth } from './auth'
 dayjs.extend(utc)
 import { safeLocalStorage } from '../util/local'
 import { api } from '../api/api'
+import { clearPushToken } from 'web/lib/supabase/notifications'
 import { removeUndefinedProps } from 'common/util/object'
+import { sleep } from 'common/util/time'
 
 export type { User }
 
@@ -84,8 +86,30 @@ export async function setCachedReferralInfoForUser(user: User) {
     })
 }
 
+// Best-effort, time-bounded clear of the current account's push token before an
+// auth change (logout or account switch), so the device stops receiving
+// notifications for that account. Only runs on native (push tokens are
+// mobile-only) and only when signed in. Never blocks the auth change for more
+// than a moment on a flaky network — the backend reclaim in set-push-token is
+// the durable backstop if this best-effort call doesn't land.
+async function clearPushTokenBeforeAuthChange() {
+  if (!getIsNative() || !auth.currentUser) return
+  // Handle errors on the call itself so a rejection arriving after the timeout
+  // below doesn't surface as an unhandled rejection.
+  const clear = clearPushToken().catch((e) =>
+    console.error('error clearing push token before auth change', e)
+  )
+  // Best-effort: don't let a slow network block the auth change. The backend
+  // reclaim in set-push-token is the durable backstop.
+  await Promise.race([clear, sleep(2000)])
+}
+
 export async function firebaseLogin() {
   if (getIsNative()) {
+    // If we're switching accounts, clear the outgoing account's push token.
+    // Fire-and-forget so the login flow isn't delayed; the set-push-token
+    // reclaim when the next account registers is the durable backstop.
+    void clearPushTokenBeforeAuthChange()
     // Post the message back to expo
     postMessageToNative('loginClicked', {})
     return
@@ -111,7 +135,12 @@ export async function loginWithApple() {
 }
 
 export async function firebaseLogout() {
-  if (getIsNative()) nativeSignOut()
+  if (getIsNative()) {
+    // Clear this account's push token while still authenticated, so the device
+    // stops receiving notifications for the account being logged out.
+    await clearPushTokenBeforeAuthChange()
+    nativeSignOut()
+  }
 
   await auth.signOut()
 }
