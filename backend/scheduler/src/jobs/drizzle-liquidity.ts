@@ -7,6 +7,7 @@ import {
   addCpmmMultiLiquidityAnswersSumToOne,
   addCpmmMultiLiquidityAnswersSumToOneV2,
   addCpmmMultiLiquidityToAnswersIndependently,
+  addCpmmMultiLiquidityToAnswersIndependentlyV2,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { Answer } from 'common/answer'
@@ -63,26 +64,27 @@ const drizzleMarket = async (contractId: string) => {
         return
       }
 
-      // cpmm-multi-2 sum-to-one markets take the lossless float-p subsidy: inject into both
-      // reserves and let each answer's p absorb the mana, so probability is preserved with no
-      // discarded shares. This only DEEPENS an already-converted v2 market — drizzle never
-      // converts a v1 market (conversion is gated to an explicit user addLiquidity, so the
-      // scheduler can't flip fill semantics under resting orders; see migration policy).
-      const isV2SumToOne =
-        contract.mechanism === 'cpmm-multi-2' && contract.shouldAnswersSumToOne
+      // cpmm-multi-2 markets take the lossless float-p subsidy: inject the mana into BOTH reserves
+      // of each answer and let that answer's p absorb it, so each probability is preserved with no
+      // discarded shares (the same move the binary CPMM makes in addCpmmLiquidity). Sum-to-one
+      // keeps Σ prob = 1 as a consequence (GP6a); independent answers are each their own binary
+      // market. This only DEEPENS an already-converted v2 market — drizzle NEVER converts a v1
+      // market (conversion is gated to an explicit user addLiquidity, so the scheduler can't flip
+      // fill semantics under resting orders; see migration policy). So any in-flight v1 subsidy
+      // keeps draining through the frozen v1 fixed-p path below, unchanged.
+      const isV2 = contract.mechanism === 'cpmm-multi-2'
 
       let answerUpdates: (Partial<Answer> & { id: string })[]
-      if (isV2SumToOne) {
+      if (isV2) {
         const poolsByAnswer = Object.fromEntries(
           answers.map((a) => [
             a.id,
             { pool: { YES: a.poolYes, NO: a.poolNo }, p: a.p },
           ])
         )
-        const newByAnswer = addCpmmMultiLiquidityAnswersSumToOneV2(
-          poolsByAnswer,
-          amount
-        )
+        const newByAnswer = contract.shouldAnswersSumToOne
+          ? addCpmmMultiLiquidityAnswersSumToOneV2(poolsByAnswer, amount)
+          : addCpmmMultiLiquidityToAnswersIndependentlyV2(poolsByAnswer, amount)
         answerUpdates = Object.entries(newByAnswer)
           .slice(0, 50_000)
           .map(([answerId, { pool, p }]) => ({
@@ -93,6 +95,7 @@ const drizzleMarket = async (contractId: string) => {
             prob: getCpmmProbability(pool, p),
           }))
       } else {
+        // cpmm-multi-1 (frozen v1): lossy fixed-p add, p pinned at 0.5.
         const poolsByAnswer = Object.fromEntries(
           answers.map((a) => [a.id, { YES: a.poolYes, NO: a.poolNo }])
         )
@@ -156,9 +159,19 @@ const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
     const amount = subsidyPool <= 1 ? subsidyPool : r * 0.4 * subsidyPool
 
     const pool = { YES: poolYes, NO: poolNo }
-    const { newPool } = addCpmmLiquidityFixedP(pool, amount)
 
-    if (!isFinite(newPool.YES) || !isFinite(newPool.NO)) {
+    // A cpmm-multi-2 answer is its own binary CPMM, so it takes the lossless float-p add (inject
+    // into both reserves, float p to hold its probability — no discarded shares, prob preserved).
+    // cpmm-multi-1 stays on the frozen lossy fixed-p add (which pins p = 0.5 and clobbers prob to
+    // N/(Y+N)). Drizzle only deepens — it never converts (that's the explicit user addLiquidity).
+    const contract = await getContract(tx, answer.contractId)
+    const isV2 = contract?.mechanism === 'cpmm-multi-2'
+
+    const { newPool, newP } = isV2
+      ? addCpmmLiquidity(pool, answer.p, amount)
+      : { ...addCpmmLiquidityFixedP(pool, amount), newP: 0.5 }
+
+    if (!isFinite(newPool.YES) || !isFinite(newPool.NO) || !isFinite(newP)) {
       throw new APIError(
         500,
         'Liquidity injection rejected due to overflow error.'
@@ -168,7 +181,8 @@ const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
     await updateAnswer(tx, answerId, {
       poolYes: newPool.YES,
       poolNo: newPool.NO,
-      prob: getCpmmProbability(newPool, 0.5),
+      ...(isV2 ? { p: newP } : {}),
+      prob: getCpmmProbability(newPool, newP),
       subsidyPool: subsidyPool - amount,
     })
 

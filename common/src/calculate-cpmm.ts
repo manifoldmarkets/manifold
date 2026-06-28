@@ -860,6 +860,36 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
   })
 }
 
+// cpmm-multi-2: lossless whole-market liquidity add for INDEPENDENT (non-sum-to-one / "Set")
+// markets.
+//
+// An independent answer is literally its own standalone binary CPMM, so each answer takes the
+// exact binary lossless add (addCpmmLiquidity — inject the subsidy into BOTH reserves and float
+// that answer's p to hold its probability, discarding no shares). There is no Σ prob = 1 coupling
+// between answers — each is independent — so unlike the v1 fixed-p path
+// (addCpmmMultiLiquidityToAnswersIndependently → addCpmmLiquidityFixedP, which DISCARDS shares to
+// pin p = 0.5 on a skewed pool and clobbers prob to N/(Y+N)) nothing is thrown away and each
+// answer's true probability is preserved.
+//
+// Mathematically this is the same per-answer operation as addCpmmMultiLiquidityAnswersSumToOneV2
+// (sum-to-one preserves Σ = 1 only as a *consequence* of each prob being individually preserved —
+// GP6a); the two are kept as separate named functions to mirror the v1 sum-to-one / independent
+// split and keep the drizzle call sites self-documenting. At p = 0.5 on a balanced pool both
+// reserves get +amountPerAnswer, p stays 0.5, and prob is unchanged — i.e. it reduces to the v1
+// fixed-p add with sharesThrownAway = 0.
+export function addCpmmMultiLiquidityToAnswersIndependentlyV2(
+  poolsByAnswer: {
+    [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+  },
+  amount: number
+) {
+  const amountPerAnswer = amount / Object.keys(poolsByAnswer).length
+  return mapValues(poolsByAnswer, ({ pool, p }) => {
+    const { newPool, liquidity, newP } = addCpmmLiquidity(pool, p, amountPerAnswer)
+    return { pool: newPool, p: newP, liquidity }
+  })
+}
+
 // Must be at least this many yes and no shares
 export const MINIMUM_LIQUIDITY = 100
 
