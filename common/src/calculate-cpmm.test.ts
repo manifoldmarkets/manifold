@@ -3,6 +3,7 @@ import {
   addCpmmLiquidity,
   addCpmmLiquidityFixedP,
   addCpmmMultiLiquidityAnswersSumToOneV2,
+  addCpmmMultiLiquidityToAnswersIndependentlyV2,
   calculateCpmmAmountToBuySharesFixedP,
   calculateCpmmPurchase,
   calculateCpmmShares,
@@ -321,5 +322,56 @@ describe('cpmm-multi-2 lossless liquidity add (addCpmmMultiLiquidityAnswersSumTo
       getCpmmProbability(skewed, 0.5),
       10
     )
+  })
+})
+
+describe('cpmm-multi-2 lossless liquidity add — INDEPENDENT / "Set" (addCpmmMultiLiquidityToAnswersIndependentlyV2)', () => {
+  const market = (ps: number[], L = 100) =>
+    Object.fromEntries(ps.map((p, i) => [`a${i}`, { pool: { YES: L, NO: L }, p }]))
+
+  const probsOf = (byId: {
+    [id: string]: { pool: { YES: number; NO: number }; p: number }
+  }) => mapValues(byId, ({ pool, p }) => getCpmmProbability(pool, p))
+
+  it('REGRESSION: a balanced Set answer with p != 0.5 keeps prob == p (NOT clobbered to 0.5)', () => {
+    // The bug: the lossy fixed-p path recomputed prob as getCpmmProbability(newPool, 0.5) on the
+    // balanced (Y=N) Set pool, writing 0.5 and overwriting the real probability p. The float-p add
+    // must preserve prob == p exactly.
+    for (const p of [0.6, 0.75, 0.9, 0.1, 0.5]) {
+      const before = { only: { pool: { YES: 100, NO: 100 }, p } }
+      const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 40).only
+      expect(getCpmmProbability(after.pool, after.p)).toBeCloseTo(p, 10)
+      // both reserves deepened, k added, nothing discarded
+      expect(after.pool.YES).toBeGreaterThan(100)
+      expect(after.pool.NO).toBeGreaterThan(100)
+      expect(after.liquidity).toBeGreaterThan(0)
+    }
+  })
+
+  it('preserves each independent answer probability — and they need NOT sum to 1', () => {
+    // Independent answers are each their own binary CPMM: no Σ prob = 1 coupling.
+    const before = market([0.8, 0.65, 0.3]) // Σ prob = 1.75, deliberately != 1
+    const probsBefore = probsOf(before)
+    const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 60)
+    const probsAfter = probsOf(after)
+    for (const id of Object.keys(before)) {
+      expect(probsAfter[id]).toBeCloseTo(probsBefore[id], 10)
+      expect(after[id].pool.YES).toBeGreaterThan(before[id].pool.YES)
+      expect(after[id].pool.NO).toBeGreaterThan(before[id].pool.NO)
+    }
+    expect(sum(Object.values(probsAfter))).toBeCloseTo(1.75, 10)
+  })
+
+  it('at p = 0.5 on a balanced pool reduces to the v1 fixed-p add (no discard)', () => {
+    const before = market([0.5, 0.5])
+    const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 50) // 25 per answer
+    for (const id of Object.keys(before)) {
+      const v1 = addCpmmLiquidityFixedP(before[id].pool, 25)
+      expect(after[id].p).toBeCloseTo(0.5, 10)
+      expect(after[id].pool.YES).toBeCloseTo(v1.newPool.YES, 8)
+      expect(after[id].pool.NO).toBeCloseTo(v1.newPool.NO, 8)
+      expect(v1.sharesThrownAway.YES).toBeCloseTo(0, 10)
+      expect(v1.sharesThrownAway.NO).toBeCloseTo(0, 10)
+    }
   })
 })
