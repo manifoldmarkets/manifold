@@ -61,12 +61,43 @@ export const updateStatsCore = async (daysAgo: number) => {
 
   const startOfYesterday = endDay.subtract(1, 'day').startOf('day').valueOf()
   await updateTxnStats(pg, startOfYesterday, 1)
-  await recalculateAllUserPortfolios(pg)
+
+  // Snapshot mana supply, then rebuild the /stats page, BEFORE the heavy
+  // recalculateAllUserPortfolios pass below. That pass is slow and, on the
+  // scheduler (which deliberately runs without a statement_timeout), can stall
+  // for hours during the saturated nightly maintenance window. Previously it
+  // ran first, so when it stalled the job never reached insertLatestManaStats
+  // OR revalidateStaticProps: the mana_supply_stats snapshot was skipped (the
+  // chart flatlined ~June 15-27 2026) and, worse, the static /stats page was
+  // never rebuilt, so every tab froze at an old build even though daily_stats
+  // and txn_summary_stats had been computed fresh. Running these first means
+  // the page regenerates nightly regardless of whether the recalc finishes.
+  // insertLatestManaStats reads user_portfolio_history_latest, kept fresh by
+  // the every-minute update-user-portfolio-histories job, so it does not need
+  // the full recalc to have run first.
   await insertLatestManaStats(pg)
 
-  await saveCalibrationData(pg)
+  // Best-effort: calibration data isn't shown on /stats, so a failure here
+  // must not block the page revalidation below.
+  try {
+    await saveCalibrationData(pg)
+  } catch (err) {
+    log.error('saveCalibrationData failed (non-fatal)', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
 
   await revalidateStaticProps(`/stats`)
+
+  // Heavy, best-effort, and intentionally last: a stall or error here must not
+  // prevent the stats writes and page revalidation above.
+  try {
+    await recalculateAllUserPortfolios(pg)
+  } catch (err) {
+    log.error('recalculateAllUserPortfolios failed (non-fatal)', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
 
   log('Done')
 }
