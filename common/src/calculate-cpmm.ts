@@ -832,6 +832,34 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
   return newPools
 }
 
+// cpmm-multi-2: lossless whole-market liquidity add.
+//
+// v1 (addCpmmMultiLiquidityAnswersSumToOne, above) pins p = 0.5 and DISCARDS shares to hold each
+// answer's probability on a skewed pool, then iterates a while-loop redistributing the thrown-away
+// shares (the `sharesThrownAway` inefficiency). With per-answer p we don't have to: inject the
+// subsidy into BOTH reserves of each answer and float that answer's p to hold its probability (the
+// same lossless move the binary CPMM already makes in addCpmmLiquidity — GP6a). Because every
+// answer's probability is individually unchanged, Σ prob_i stays 1 with NO cross-answer
+// rebalancing and NO discarded shares — so there is no while-loop and no leftover to chase.
+//
+// p is the degree of freedom that MOVES to absorb the mana losslessly (probability is the invariant
+// that is preserved, not p). Returns the new pool, the floated p, and the liquidity (k) added per
+// answer for LP-provision accounting. At p = 0.5 on a balanced pool this reduces exactly to the v1
+// path (both reserves get +amount, p stays 0.5, sharesThrownAway = 0).
+export function addCpmmMultiLiquidityAnswersSumToOneV2(
+  poolsByAnswer: {
+    [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+  },
+  amount: number
+) {
+  const answerIds = Object.keys(poolsByAnswer)
+  const amountPerAnswer = amount / answerIds.length
+  return mapValues(poolsByAnswer, ({ pool, p }) => {
+    const { newPool, liquidity, newP } = addCpmmLiquidity(pool, p, amountPerAnswer)
+    return { pool: newPool, p: newP, liquidity }
+  })
+}
+
 // Must be at least this many yes and no shares
 export const MINIMUM_LIQUIDITY = 100
 
