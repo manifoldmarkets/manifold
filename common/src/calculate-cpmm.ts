@@ -185,20 +185,48 @@ export function calculateCpmmAmountToBuySharesFixedP(
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
-  if (!floatingEqual(state.p, 0.5)) {
-    throw new Error(CPMM_ARBITRAGE_ERROR_PREFIX + state.p)
-  }
-
   const { YES: y, NO: n } = state.pool
-  if (outcome === 'YES') {
-    // https://www.wolframalpha.com/input?i=%28y%2Bb-s%29%5E0.5+*+%28n%2Bb%29%5E0.5+%3D+y+%5E+0.5+*+n+%5E+0.5%2C+solve+b
+
+  if (floatingEqual(state.p, 0.5)) {
+    if (outcome === 'YES') {
+      // https://www.wolframalpha.com/input?i=%28y%2Bb-s%29%5E0.5+*+%28n%2Bb%29%5E0.5+%3D+y+%5E+0.5+*+n+%5E+0.5%2C+solve+b
+      return (
+        (shares - y - n + Math.sqrt(4 * n * shares + (y + n - shares) ** 2)) / 2
+      )
+    }
     return (
-      (shares - y - n + Math.sqrt(4 * n * shares + (y + n - shares) ** 2)) / 2
+      (shares - y - n + Math.sqrt(4 * y * shares + (y + n - shares) ** 2)) / 2
     )
   }
-  return (
-    (shares - y - n + Math.sqrt(4 * y * shares + (y + n - shares) ** 2)) / 2
-  )
+
+  // General p (cpmm-multi-2): shares -> cost has no closed form, so invert the
+  // general-p forward map calculateCpmmShares by bisection. calculateCpmmShares is
+  // monotone increasing in the bet amount, and a buy of `shares` costs < `shares`
+  // mana, so [0, shares*10] brackets a buy; a sell (shares < 0) is bounded below by
+  // draining the opposite pool side. Mirrors the proven Python oracle
+  // amm_core.cost_for_shares (GP3); 50 iterations reach double precision.
+  if (shares === 0) return 0
+  let low: number
+  let high: number
+  if (shares > 0) {
+    low = 0
+    high = shares * 10
+  } else {
+    const otherPool = outcome === 'YES' ? n : y
+    low = -otherPool * (1 - 1e-9)
+    high = 0
+  }
+  for (let i = 0; i < 50; i++) {
+    const mid = (low + high) / 2
+    if (mid === low || mid === high) break
+    const sharesForMid = calculateCpmmShares(state.pool, state.p, mid, outcome)
+    if (sharesForMid < shares) {
+      low = mid
+    } else {
+      high = mid
+    }
+  }
+  return (low + high) / 2
 }
 
 export const computeFills = (
