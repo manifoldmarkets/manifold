@@ -36,7 +36,7 @@ import {
 } from 'lib/streak-widget'
 import { useIsConnected } from 'lib/use-is-connected'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { BackHandler, Platform, Share, StyleSheet } from 'react-native'
+import { AppState, BackHandler, Platform, Share, StyleSheet } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import WebView from 'react-native-webview'
 import { app, auth, ENV } from './init'
@@ -116,6 +116,20 @@ const App = () => {
       log('Error syncing streak from API', e)
     }
   }
+
+  // Re-sync the streak widget whenever the app is backgrounded or re-activated —
+  // most importantly, right after a bet when the user swipes to the home screen
+  // to look at the widget. Uses the public-API sync above, so the widget updates
+  // promptly against prod even before the web `setStreak` live-message ships.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if ((next === 'background' || next === 'active') && fbUser?.uid) {
+        syncStreakFromApi(fbUser.uid)
+      }
+    })
+    return () => sub.remove()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fbUser?.uid])
 
   const signInUserFromStorage = async () => {
     const user = await getData<FirebaseUser>('user')

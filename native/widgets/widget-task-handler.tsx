@@ -1,6 +1,6 @@
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget'
 import { renderStreakWidget, STREAK_WIDGET_NAME } from './streak-widget'
-import { loadStreakSnapshot } from './widget-storage'
+import { loadQuestSnapshot, loadStreakSnapshot } from './widget-storage'
 
 // Headless task the OS invokes to (re)draw the widget when the app isn't the one
 // driving the update — on add, on resize, on reboot, on periodic refresh. It
@@ -14,8 +14,11 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     case 'WIDGET_ADDED':
     case 'WIDGET_UPDATE':
     case 'WIDGET_RESIZED': {
-      const data = await loadStreakSnapshot()
-      renderWidget(renderStreakWidget(widgetInfo, data))
+      const [data, quests] = await Promise.all([
+        loadStreakSnapshot(),
+        loadQuestSnapshot(),
+      ])
+      renderWidget(renderStreakWidget(widgetInfo, data, quests))
       break
     }
     case 'WIDGET_CLICK':
