@@ -42,6 +42,16 @@ export const drizzleLiquidity = async () => {
 
   log('found', answers.length, 'answers to drizzle')
 
+  // Per-answer subsidies (from a per-answer addLiquidity) drizzle here, independently of the
+  // whole-market subsidy above. NOTE (cpmm-multi-2, observed on the dev instance): when a market
+  // has BOTH a contract-level subsidy and a per-answer subsidy, drizzleMarket rewrites every
+  // answer's pool and so contends on the same rows as drizzleAnswer; drizzleMarket retries
+  // (runTransactionWithRetries) while drizzleAnswer uses a plain tx, so the per-answer side tends
+  // to lose and only drains once the contract-level subsidy is exhausted. This merely DELAYS
+  // distribution — it never loses mana: any undrizzled subsidy (contract or per-answer) is still
+  // paid out at resolution (getMultiLiquidityPoolPayouts sums answer.subsidyPool). Deemed
+  // acceptable; not adding retry parity here. The only cost is the per-answer subsidy deepens the
+  // live market later than a lone subsidy would.
   await mapAsync(answers, (answer) => drizzleAnswer(pg, answer.id), 10)
 }
 
