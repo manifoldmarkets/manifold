@@ -7,6 +7,7 @@ import {
   calculateCpmmAmountToBuySharesFixedP,
   calculateCpmmPurchase,
   calculateCpmmShares,
+  cpmmMulti2SumToOnePools,
   CpmmState,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
@@ -322,6 +323,50 @@ describe('cpmm-multi-2 lossless liquidity add (addCpmmMultiLiquidityAnswersSumTo
       getCpmmProbability(skewed, 0.5),
       10
     )
+  })
+
+  // GP17 — the whole-market add follows the √variance CREATION shape (not a flat equal-split):
+  // it MERGES a Δ-ante √variance creation computed at the current probs, then re-prices each p.
+  // proofs/liquidity_add_split.py is the reference; these lock the key consequences in jest.
+  it('GP17: concentrates added depth in uncertain answers (NOT a flat equal-split)', () => {
+    // Skewed 4-answer market at q = [.55,.25,.12,.08], created on the √variance manifold, then a
+    // whole-market add. The added geometric depth Δk should be far from flat (uncertain answers get
+    // much more) — the deliberate departure from the old amount/n equal-split.
+    const q = [0.55, 0.25, 0.12, 0.08]
+    const created = cpmmMulti2SumToOnePools(q, 1000)
+    const before = Object.fromEntries(
+      created.map((c, i) => [
+        `a${i}`,
+        { pool: { YES: c.poolYes, NO: c.poolNo }, p: c.p },
+      ])
+    )
+    const after = addCpmmMultiLiquidityAnswersSumToOneV2(before, 500)
+    const dk = Object.keys(before).map((id) => after[id].liquidity)
+    // ratio of most-uncertain to least-uncertain added depth ≫ 1 (≈5; equal-split would be ≈1.17)
+    expect(Math.max(...dk) / Math.min(...dk)).toBeGreaterThan(4)
+    // every prob preserved + Σ = 1 still holds under the new shape
+    const probsAfter = Object.keys(before).map((id) =>
+      getCpmmProbability(after[id].pool, after[id].p)
+    )
+    q.forEach((qi, i) => expect(probsAfter[i]).toBeCloseTo(qi, 10))
+    expect(sum(probsAfter)).toBeCloseTo(1, 10)
+  })
+
+  it('GP17: on an untraded market, add(Δ) == create(A+Δ) (homogeneity / scale)', () => {
+    const q = [0.55, 0.25, 0.12, 0.08]
+    const A = 1000
+    const D = 500
+    const base = cpmmMulti2SumToOnePools(q, A)
+    const before = Object.fromEntries(
+      base.map((c, i) => [`a${i}`, { pool: { YES: c.poolYes, NO: c.poolNo }, p: c.p }])
+    )
+    const after = addCpmmMultiLiquidityAnswersSumToOneV2(before, D)
+    const created = cpmmMulti2SumToOnePools(q, A + D)
+    created.forEach((c, i) => {
+      expect(after[`a${i}`].pool.YES).toBeCloseTo(c.poolYes, 6)
+      expect(after[`a${i}`].pool.NO).toBeCloseTo(c.poolNo, 6)
+      expect(after[`a${i}`].p).toBeCloseTo(c.p, 8)
+    })
   })
 })
 

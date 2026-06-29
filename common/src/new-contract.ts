@@ -1,5 +1,9 @@
 import { Answer } from './answer'
-import { getCpmmLiquidity, getMultiCpmmLiquidity } from './calculate-cpmm'
+import {
+  cpmmMulti2SumToOnePools,
+  getCpmmLiquidity,
+  getMultiCpmmLiquidity,
+} from './calculate-cpmm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import {
   Binary,
@@ -441,36 +445,6 @@ const getDateProps = (
 // form; derivation + benchmarks in tasks/cpmm_multi_2, GP13–GP15). Properties:
 // reduces to v1's pools exactly at uniform, to a balanced pool at n=2; funds
 // exactly (every winning scenario pays the ante) and reads back prob_i = q_i.
-function cpmmMulti2SumToOnePools(
-  q: number[],
-  ante: number
-): { poolYes: number; poolNo: number; p: number; prob: number }[] {
-  const n = q.length
-  if (n < 2) {
-    return q.map((qi) => ({ poolYes: ante, poolNo: ante, p: qi, prob: qi }))
-  }
-  const sqrtC = q.map((qi) => Math.sqrt(qi * (1 - qi)))
-  const meanSqrtC = sqrtC.reduce((s, x) => s + x, 0) / n
-  const D0 = (ante * (n - 2)) / (2 * (n - 1)) // uniform-optimum D (closed form)
-  const Wbar = (ante * n) / (4 * (n - 1)) // uniform-optimum depth
-  // Realize the depth profile W_i at the assumed D0:
-  //   W_i = N_i(N_i + D0)/(N_i + q_i D0)  ⇒  N_i² + N_i(D0 − W_i) − W_i q_i D0 = 0.
-  const N = q.map((qi, i) => {
-    const Wi = (Wbar * sqrtC[i]) / meanSqrtC
-    const b = D0 - Wi
-    return (-b + Math.sqrt(b * b + 4 * Wi * qi * D0)) / 2
-  })
-  // Force exact funding: Y_i = N_i + D with D = ante − ΣN_j makes every winning
-  // scenario pay exactly the ante (all-winners-tight). p_i set so prob_i = q_i.
-  const D = ante - N.reduce((s, x) => s + x, 0)
-  return q.map((qi, i) => {
-    const poolNo = N[i]
-    const poolYes = poolNo + D
-    const p = (qi * poolYes) / (qi * poolYes + (1 - qi) * poolNo)
-    return { poolYes, poolNo, p, prob: qi }
-  })
-}
-
 function createAnswers(
   contractId: string,
   userId: string,
