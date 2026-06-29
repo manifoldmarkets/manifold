@@ -98,3 +98,29 @@ Align iOS to Android (Android is the reviewed reference):
   now makes it fire on each foreground (pre-existing log, higher frequency).
 - Consider `"postinstall": "patch-package --error-on-fail"` in CI so a future
   failed patch fails the build loudly.
+
+## 5. In-app "Add to home screen" prompt — enable for iOS
+
+There's now a prompt at the bottom of the quests modal
+(`web/components/home/add-widget-prompt.tsx`) that nudges users to add the
+streak widget, with a live preview (2x2 + 2x3) and a one-tap **Add to home
+screen** button. It is **gated to native Android only**
+(`isNative && platform === 'android'`) so we don't prompt anyone who can't use
+it (web, or iOS while its widget is unfinished).
+
+To enable it for iOS once your widget ships:
+- Relax the gate to allow `platform === 'ios'`.
+- iOS has **no API to programmatically pin a widget** (Apple forbids it), so for
+  iOS show manual instructions instead of the pin button — e.g. "Long-press your
+  home screen, tap +, then search Manifold." (There's already a commented note to
+  this effect in the component.)
+- The Android one-tap path uses a small native module,
+  `native/android/.../WidgetPinModule.kt` (wraps `requestPinAppWidget`), invoked
+  via the `pinStreakWidget` web→native message (see `App.tsx`). No iOS equivalent
+  is needed — manual add only.
+
+**Prebuild caveat (Android):** `WidgetPinModule.kt` / `WidgetPinPackage.kt` and
+the `add(WidgetPinPackage())` line in `MainApplication.kt` live in the tracked
+`native/android` dir. A `expo prebuild --clean` would regenerate that dir and
+drop them. If the project ever moves to clean prebuilds, port this to a config
+plugin. (Fine as-is with the current committed-android workflow.)

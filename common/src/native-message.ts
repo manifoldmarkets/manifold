@@ -51,6 +51,10 @@ export type webToNativeMessageType =
   | 'copyImageToClipboard'
   | 'setStreak'
   | 'setQuests'
+  // Android-only: ask the native app to show the system "add widget to home
+  // screen" dialog for the streak widget (AppWidgetManager.requestPinAppWidget).
+  // No-ops on iOS (no such API) and on web. Payload is empty.
+  | 'pinStreakWidget'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
 

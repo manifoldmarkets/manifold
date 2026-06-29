@@ -36,7 +36,14 @@ import {
 } from 'lib/streak-widget'
 import { useIsConnected } from 'lib/use-is-connected'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, BackHandler, Platform, Share, StyleSheet } from 'react-native'
+import {
+  AppState,
+  BackHandler,
+  NativeModules,
+  Platform,
+  Share,
+  StyleSheet,
+} from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import WebView from 'react-native-webview'
 import { app, auth, ENV } from './init'
@@ -425,6 +432,17 @@ const App = () => {
       writeStreakWidget(payload as NativeStreakData)
     } else if (type === 'setQuests') {
       writeQuestWidget(payload as NativeQuestData)
+    } else if (type === 'pinStreakWidget') {
+      // Android only: show the system "add widget to home screen" dialog via our
+      // native module. No-op on iOS (no such API) and on older builds that
+      // predate the module (NativeModules.WidgetPin is then undefined).
+      if (Platform.OS === 'android' && NativeModules.WidgetPin?.pinStreakWidget) {
+        try {
+          await NativeModules.WidgetPin.pinStreakWidget()
+        } catch (e) {
+          log('pinStreakWidget failed', e)
+        }
+      }
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
