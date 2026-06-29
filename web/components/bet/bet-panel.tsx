@@ -1,7 +1,7 @@
 import { LockClosedIcon, LockOpenIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import {
@@ -283,8 +283,12 @@ export const BuyPanelBody = (
       useIsPageVisible
     )
 
-  const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
-    (b) => b.answerId === multiProps?.answerToBuy?.id
+  const unfilledBetsMatchingAnswer = useMemo(
+    () =>
+      allUnfilledBets.filter(
+        (b) => b.answerId === multiProps?.answerToBuy?.id
+      ),
+    [allUnfilledBets, multiProps?.answerToBuy?.id]
   )
 
   const isBinaryMC = isBinaryMulti(contract)
@@ -452,6 +456,30 @@ export const BuyPanelBody = (
     }
   })
 
+  // Callers pass `multiProps` as an inline object literal, so its identity
+  // changes on every render and would defeat the payout-preview memo below.
+  // Re-key it on its constituent (contract-derived, referentially stable)
+  // fields so the memo only invalidates when the answer/pool actually moves —
+  // which is exactly when the arbitrage preview should recompute.
+  const multiPropsAnswers = multiProps?.answers
+  const multiPropsAnswerToBuy = multiProps?.answerToBuy
+  const multiPropsAnswerText = multiProps?.answerText
+  const stableMultiProps = useMemo<MultiBetProps | undefined>(
+    () =>
+      multiPropsAnswers && multiPropsAnswerToBuy
+        ? {
+            answers: multiPropsAnswers,
+            answerToBuy: multiPropsAnswerToBuy,
+            answerText: multiPropsAnswerText,
+          }
+        : undefined,
+    [multiPropsAnswers, multiPropsAnswerToBuy, multiPropsAnswerText]
+  )
+
+  // Memoized so the (potentially expensive, for sum-to-one multi markets)
+  // arbitrage preview only recomputes when an input that actually affects the
+  // result changes — not on every unrelated re-render (hover, focus, submit
+  // state, streamed bets that don't move the pool, etc.).
   const {
     currentPayout,
     probAfter: newProbAfter,
@@ -460,15 +488,27 @@ export const BuyPanelBody = (
     limitProb,
     prob,
     calculationError,
-  } = getLimitBetReturns(
-    outcome ?? 'YES',
-    betAmount ?? 0,
-    unfilledBets,
-    balanceByUserId,
-    contract,
-    multiProps,
-    undefined,
-    slippageProtection
+  } = useMemo(
+    () =>
+      getLimitBetReturns(
+        outcome ?? 'YES',
+        betAmount ?? 0,
+        unfilledBets,
+        balanceByUserId,
+        contract,
+        stableMultiProps,
+        undefined,
+        slippageProtection
+      ),
+    [
+      outcome,
+      betAmount,
+      unfilledBets,
+      balanceByUserId,
+      contract,
+      stableMultiProps,
+      slippageProtection,
+    ]
   )
   let probBefore = prob
   let probAfter = newProbAfter
