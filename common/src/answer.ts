@@ -13,7 +13,8 @@ export type Answer = {
   // Mechanism props
   poolYes: number // YES shares
   poolNo: number // NO shares
-  prob: number // Computed from poolYes and poolNo.
+  p: number // CPMM parameter; prob = p*poolNo / ((1-p)*poolYes + p*poolNo). 0.5 for cpmm-multi-1.
+  prob: number // Computed from poolYes, poolNo and p.
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in M
   subsidyPool: number // current value of subsidy pool in M
   volume: number // current volume of the answer in M

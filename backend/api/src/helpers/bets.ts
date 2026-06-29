@@ -5,7 +5,7 @@ import { APIError } from 'common/api/utils'
 import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
 import { LimitBet, maker } from 'common/bet'
 import { MarginalBet } from 'common/calculate-metrics'
-import { Contract, MarketContract } from 'common/contract'
+import { Contract, MarketContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { getUniqueBettorBonusAmount } from 'common/economy'
 import {
@@ -219,7 +219,7 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
 
-  if (contract.mechanism === 'cpmm-multi-1')
+  if (isMultiCpmm(contract))
     contract.answers = sortBy(
       uniqBy([...answers, ...contract.answers], 'id'),
       'index'
@@ -370,7 +370,7 @@ export const getUserBalancesAndMetrics = async (
   const { id: contractId, mechanism } = contract
   // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
   const sumsToOne =
-    mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const results = await pgTrans.multi(
     `
       SELECT balance, id FROM users WHERE id = ANY($1);

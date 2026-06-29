@@ -12,6 +12,7 @@ import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
 import { convertTxn } from 'common/supabase/txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
+import { isMultiCpmm } from 'common/contract'
 import { getContractsDirect } from 'shared/supabase/contracts'
 
 // market creation fees
@@ -169,7 +170,7 @@ const getLiquidityBalanceChanges = async (
       answerText:
         doc.answerId &&
         contract.visibility === 'public' &&
-        contract.mechanism === 'cpmm-multi-1'
+        isMultiCpmm(contract)
           ? contract.answers.find((a) => a.id === doc.answerId)?.text
           : undefined,
     }

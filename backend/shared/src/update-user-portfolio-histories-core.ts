@@ -13,6 +13,7 @@ import {
   Contract,
   ContractToken,
   CPMMMultiContract,
+  isMultiCpmm,
   MarketContract,
 } from 'common/contract'
 import {
@@ -241,7 +242,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     where('c.resolution_time is null'),
     where('(a is null or a.resolution_time is null)'),
     where(
-      `case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end`
+      `case when c.mechanism in ('cpmm-multi-1', 'cpmm-multi-2') then ucm.answer_id is not null else true end`
     ),
   ]
   const metricsSql = renderSql(
@@ -350,7 +351,7 @@ export const getUnresolvedStatsForToken = (
     }
 
     // ignore summary metrics
-    if (contract.mechanism === 'cpmm-multi-1') {
+    if (isMultiCpmm(contract)) {
       if (!cm.answerId)
         return { value: 0, invested: 0, dailyProfit: 0, loan: 0 }
       const answer = contract.answers.find((a) => a.id === cm.answerId)

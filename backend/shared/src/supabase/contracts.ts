@@ -2,6 +2,7 @@ import { APIError } from 'common/api/utils'
 import {
   Contract,
   CPMMMultiContract,
+  isMultiCpmm,
   nativeContractColumnsArray,
 } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
@@ -73,7 +74,7 @@ export const getContractsDirect = async (
   )
   const contracts = results[0].map(convertContract)
   const answers = results[1].map(convertAnswer)
-  const multiContracts = contracts.filter((c) => c.mechanism === 'cpmm-multi-1')
+  const multiContracts = contracts.filter((c) => isMultiCpmm(c))
   for (const contract of multiContracts) {
     // eslint-disable-next-line no-extra-semi
     ;(contract as CPMMMultiContract).answers = sortBy(

@@ -678,6 +678,7 @@ const getAnswer = (index: number, prob: number) => {
     prob,
     poolYes,
     poolNo,
+    p: 0.5,
     totalLiquidity: 0,
     subsidyPool: 0,
     probChanges: { day: 0, week: 0, month: 0 },
@@ -730,3 +731,265 @@ const getNumericAnswers = (min: number, max: number, step: number) => {
   const prob = 1 / bucketRanges.length
   return bucketRanges.map((_, i) => getAnswer(i, prob))
 }
+
+// --- cpmm-multi-2: per-answer p (general-p auto-arb) -------------------------
+// Balanced pools (Y = N = L) give prob_i = p_i exactly, so a valid sum-to-one
+// v2 market is just per-answer p that sums to 1. There is NO external p != 0.5
+// oracle (vendor v1 throws on p != 0.5), so internal-consistency invariants and a
+// cross-language anchor against the independent Python reference oracle
+// (manifold/market_simulator.MarketSimulator.simulate_buy, per-answer p threaded
+// in Slice 1b) do the validation. At p = 0.5 every path reduces to v1 (the suite
+// staying byte-identical is the regression lock).
+const getAnswerWithP = (index: number, p: number, L = 100): Answer =>
+  ({
+    id: `answer${index}`,
+    contractId: `contract${index}`,
+    userId: `user${index}`,
+    text: `Answer ${index}`,
+    createdTime: 0,
+    index,
+    prob: p, // balanced pool (Y = N = L) => prob = p
+    poolYes: L,
+    poolNo: L,
+    p,
+    totalLiquidity: 0,
+    subsidyPool: 0,
+    probChanges: { day: 0, week: 0, month: 0 },
+    volume: 0,
+  } as Answer)
+
+// Final per-answer prob, matched to each answer by identity (id) — never by
+// array position — and priced with that answer's own p.
+const probsAfterBet = (
+  result: ReturnType<typeof calculateCpmmMultiArbitrageBet>,
+  answers: Answer[]
+) => {
+  const byId = new Map<string, number>()
+  for (const r of [result.newBetResult, ...result.otherBetResults]) {
+    byId.set(r.answer.id, getCpmmProbability(r.cpmmState.pool, r.cpmmState.p))
+  }
+  return answers.map((a) => byId.get(a.id)!)
+}
+
+describe('calculateCpmmMultiArbitrageBet — per-answer p (cpmm-multi-2)', () => {
+  it('restores Σp = 1 (and is monotone) after a YES buy at non-uniform p', () => {
+    for (const ps of [
+      [0.5, 0.3, 0.2],
+      [0.7, 0.2, 0.1],
+      [0.6, 0.15, 0.15, 0.1],
+      [0.9, 0.05, 0.05],
+    ]) {
+      const answers = ps.map((p, i) => getAnswerWithP(i, p))
+      const result = calculateCpmmMultiArbitrageBet(
+        answers,
+        answers[0],
+        'YES',
+        25,
+        undefined,
+        [],
+        {},
+        noFees
+      )
+      const probs = probsAfterBet(result, answers)
+      expect(sumBy(probs, (p) => p)).toBeCloseTo(1, 6)
+      expect(probs[0]).toBeGreaterThan(ps[0]) // bought answer rises
+      for (let i = 1; i < ps.length; i++) {
+        expect(probs[i]).toBeLessThan(ps[i]) // every other answer falls
+      }
+    }
+  })
+
+  it('matches the Python reference oracle at p != 0.5 (cross-language anchor)', () => {
+    const cases = [
+      {
+        ps: [0.5, 0.3, 0.2],
+        sharesAns0: 46.82123779918318,
+        probs: [0.5668062275, 0.261508744769, 0.171685027732],
+      },
+      {
+        ps: [0.7, 0.2, 0.1],
+        sharesAns0: 34.78445693634237,
+        probs: [0.736335611567, 0.176510366064, 0.08715402237],
+      },
+    ]
+    for (const { ps, sharesAns0, probs: expected } of cases) {
+      const answers = ps.map((p, i) => getAnswerWithP(i, p))
+      const result = calculateCpmmMultiArbitrageBet(
+        answers,
+        answers[0],
+        'YES',
+        25,
+        undefined,
+        [],
+        {},
+        noFees
+      )
+      const probs = probsAfterBet(result, answers)
+      expected.forEach((e, i) => expect(probs[i]).toBeCloseTo(e, 6))
+      const shares = sumBy(result.newBetResult.takers, 'shares')
+      expect(shares).toBeCloseTo(sharesAns0, 4)
+    }
+  })
+})
+
+// --- cpmm-multi-2: direct (Approach C) multi-buy removes transient-overshoot fills ----------
+// The v1 YES-basket auto-arb drives basket answers UP PAST their settled price, then back down,
+// consuming and KEEPING resting makers crossed only in the transient band (the bug). The v2 solve
+// (gated on the 'cpmm-multi-2' arg) buys each basket answer once, straight to final — every maker
+// is crossed at most once, in one direction. Fixture mirrors the multibuy-limit-cases spec
+// (5 answers @ 0.2, k=1000, YES basket {a0,a1}, bet 60; a0 settles ~0.399 with peak ~0.677 in v1).
+const getAnswerK = (index: number, prob: number, k: number): Answer =>
+  ({
+    id: `answer${index}`,
+    contractId: 'c',
+    userId: `user${index}`,
+    text: `Answer ${index}`,
+    createdTime: 0,
+    index,
+    prob,
+    poolYes: Math.sqrt((k * (1 - prob)) / prob),
+    poolNo: k / Math.sqrt((k * (1 - prob)) / prob),
+    p: 0.5,
+    totalLiquidity: 0,
+    subsidyPool: 0,
+    probChanges: { day: 0, week: 0, month: 0 },
+    volume: 0,
+  } as Answer)
+
+describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 no transient-overshoot fills', () => {
+  const mkMarket = () => [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+  const BASKET = [0, 1]
+  const BET = 60
+  const runV2 = (orders: LimitBet[]) => {
+    const answers = mkMarket()
+    const res = calculateCpmmMultiArbitrageYesBets(
+      answers,
+      BASKET.map((i) => answers[i]),
+      BET,
+      undefined,
+      orders,
+      { mk: 1e9 },
+      noFees,
+      'cpmm-multi-2'
+    )
+    const finalById: Record<string, number> = {}
+    for (const a of res.updatedAnswers)
+      finalById[a.id] = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+    const makers = [
+      ...res.newBetResults.flatMap((r) => r.makers),
+      ...res.otherBetResults.flatMap((r) => r.makers),
+    ]
+    const filledById = groupBy(makers, (mk) => mk.bet.id)
+    const filled = (id: string) => sumBy(filledById[id] ?? [], (mk) => mk.amount)
+    const cost =
+      sumBy(res.newBetResults, (r) => sumBy(r.takers, 'amount')) +
+      sumBy(res.otherBetResults, (r) => sumBy(r.takers, 'amount'))
+    return { res, finalById, filled, cost }
+  }
+
+  // No-limit settle price of the traded answer a0 (used by the past-final case).
+  const a0Final = runV2([]).finalById['answer0']
+
+  it('no-limit: Σp = 1, cost = betAmount, traded answer rises (~0.399)', () => {
+    const r = runV2([])
+    expect(sumBy(r.res.updatedAnswers, (a) => r.finalById[a.id])).toBeCloseTo(1, 6)
+    expect(r.cost).toBeCloseTo(BET, 3)
+    expect(a0Final).toBeGreaterThan(0.2)
+    expect(a0Final).toBeCloseTo(0.39942, 2)
+  })
+
+  it('in-path LARGE NO-ask on a basket answer -> price PINS at the limit (v1 mis-settles)', () => {
+    const o = getLimitBet('L1', mkMarket()[0], 'NO', 'mk', 600, 0.3)
+    const r = runV2([o])
+    expect(r.finalById['answer0']).toBeCloseTo(0.3, 2) // rests AT the limit, not past it
+    expect(r.filled('L1')).toBeGreaterThan(0)
+  })
+
+  it('past-final NO-ask (rho in the v1 overshoot band) -> UNFILLED (v1 keeps a phantom fill)', () => {
+    // 0.5 is above the no-limit settle (~0.399) but below v1's transient peak (~0.677).
+    const o = getLimitBet('L2', mkMarket()[0], 'NO', 'mk', 600, 0.5)
+    const r = runV2([o])
+    expect(r.filled('L2')).toBeLessThanOrEqual(1e-9) // never net-crossed
+    expect(r.finalById['answer0']).toBeCloseTo(a0Final, 2) // order has no effect
+  })
+})
+
+// --- cpmm-multi-2: m>1 basket multi-bet must conserve at resolution ----------------------------
+// Regression for the m>1 redemption share-split bug (tasks/cpmm_multi_2/
+// findings-m1-basket-conservation-bug-2026-06-28.md, GP16). A multi-answer YES basket buy
+// (m>=2) used to credit each basket answer eta/m redemption YES shares; the residual
+// "pays eta iff ANY basket answer wins" requires eta YES shares in EACH basket answer, so a
+// winning basket answer paid only eta/m and resolution to a basket answer DESTROYED mana
+// (found on the dev instance: a sole participant's payout came up ~10% short). The defect was
+// invisible to jest because no test checked cross-answer resolution conservation.
+//
+// Resolution payout for sum-to-one CHOOSE_ONE to winner W is (payouts-fixed.ts
+// getMultiLiquidityPoolPayouts + getMultiFixedPayouts): poolYes_W + traderYES_W +
+// Sum_{j!=W} (poolNo_j + traderNO_j). Conservation <=> that total is constant across W
+// <=> T_i^YES - T_i^NO is constant across answers, where T_i^YES = poolYes_i + traderYES_i,
+// T_i^NO = poolNo_i + traderNO_i. This holds for ANY p (general-p), not just p=0.5.
+describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 m>1 basket conserves at resolution', () => {
+  // For each candidate winner W, the total resolution payout (traders + LP) given the
+  // post-bet pools + recorded trader shares. Must be equal for every W.
+  const payoutByWinner = (
+    res: ReturnType<typeof calculateCpmmMultiArbitrageYesBets>
+  ) => {
+    const yesShares: Record<string, number> = {}
+    const noShares: Record<string, number> = {}
+    for (const r of res.newBetResults)
+      yesShares[r.answer.id] =
+        (yesShares[r.answer.id] ?? 0) + sumBy(r.takers, (t) => t.shares)
+    for (const r of res.otherBetResults)
+      noShares[r.answer.id] =
+        (noShares[r.answer.id] ?? 0) + sumBy(r.takers, (t) => t.shares)
+    const tYes = (a: Answer) => a.poolYes + (yesShares[a.id] ?? 0)
+    const tNo = (a: Answer) => a.poolNo + (noShares[a.id] ?? 0)
+    return res.updatedAnswers.map(
+      (w) =>
+        tYes(w) +
+        sumBy(
+          res.updatedAnswers.filter((a) => a.id !== w.id),
+          (a) => tNo(a)
+        )
+    )
+  }
+
+  const runBasket = (ps: number[], basketIdx: number[], bet: number) => {
+    const answers = ps.map((p, i) => getAnswerWithP(i, p))
+    return calculateCpmmMultiArbitrageYesBets(
+      answers,
+      basketIdx.map((i) => answers[i]),
+      bet,
+      undefined,
+      [],
+      {},
+      noFees,
+      'cpmm-multi-2'
+    )
+  }
+
+  it('m=2 basket: resolution payout identical for every winner (no mana destroyed)', () => {
+    // skewed 4-answer market, basket of the 2nd and 3rd answers (the exact dev-instance repro)
+    const res = runBasket([0.55, 0.25, 0.12, 0.08], [1, 2], 150)
+    const payouts = payoutByWinner(res)
+    const mn = Math.min(...payouts)
+    const mx = Math.max(...payouts)
+    // before the eta/m -> eta fix this spread was ~127 (basket winners short)
+    expect(mx - mn).toBeLessThan(0.01)
+  })
+
+  it('m=3 basket and uniform pools both conserve across all winners', () => {
+    for (const cfg of [
+      { ps: [0.4, 0.25, 0.2, 0.15], basket: [0, 1, 2], bet: 90 },
+      { ps: [0.25, 0.25, 0.25, 0.25], basket: [0, 1], bet: 200 }, // uniform still leaked pre-fix
+    ]) {
+      const payouts = payoutByWinner(runBasket(cfg.ps, cfg.basket, cfg.bet))
+      expect(Math.max(...payouts) - Math.min(...payouts)).toBeLessThan(0.01)
+    }
+  })
+
+  it('m=1 (single-answer via basket path) still conserves (byte-identical eta credit)', () => {
+    const payouts = payoutByWinner(runBasket([0.5, 0.3, 0.2], [0], 25))
+    expect(Math.max(...payouts) - Math.min(...payouts)).toBeLessThan(0.01)
+  })
+})

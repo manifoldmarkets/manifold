@@ -9,6 +9,7 @@ import { getProbability } from 'common/calculate'
 import {
   getBinaryMCProb,
   isBinaryMulti,
+  isMultiCpmm,
   MarketContract,
   MultiContract,
 } from 'common/contract'
@@ -94,7 +95,7 @@ export default function LimitOrderPanel(props: {
         ? 'YES'
         : 'NO'
       : undefined
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }

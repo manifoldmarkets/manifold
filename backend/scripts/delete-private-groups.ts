@@ -39,7 +39,7 @@ runScript(async ({ pg }) => {
   console.log(`redacting all answers`)
   await pg.none(
     `with private_contracts as (
-      select id from contracts where visibility = 'private' and mechanism = 'cpmm-multi-1'
+      select id from contracts where visibility = 'private' and mechanism in ('cpmm-multi-1', 'cpmm-multi-2')
     )
     update answers
     set data = data || jsonb_build_object('text', '[deleted answer ' || index || ']')

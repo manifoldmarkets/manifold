@@ -97,6 +97,7 @@ export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   color: answer.color,
   pool_yes: answer.poolYes,
   pool_no: answer.poolNo,
+  p: answer.p,
   prob: answer.prob,
   total_liquidity: answer.totalLiquidity,
   subsidy_pool: answer.subsidyPool,

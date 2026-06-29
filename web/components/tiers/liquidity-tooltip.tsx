@@ -1,6 +1,6 @@
 import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { formatWithToken } from 'common/util/format'
 
 import { Tooltip } from '../widgets/tooltip'
@@ -20,7 +20,7 @@ export function LiquidityTooltip(props: {
   const { mechanism } = contract
 
   const isCashContract = contract.token === 'CASH'
-  const hasAnswers = contract.mechanism === 'cpmm-multi-1'
+  const hasAnswers = isMultiCpmm(contract)
   const totalLiquidity =
     'totalLiquidity' in contract ? contract.totalLiquidity : 0
   const liquidityTier = hasAnswers
@@ -29,7 +29,7 @@ export function LiquidityTooltip(props: {
         contract.answers.length
       ) - 1
     : getTierIndexFromLiquidity(totalLiquidity)
-  if (mechanism !== 'cpmm-multi-1' && mechanism !== 'cpmm-1') return <></>
+  if (!isMultiCpmm(contract) && mechanism !== 'cpmm-1') return <></>
   const amount = contract.totalLiquidity
   return (
     <Tooltip

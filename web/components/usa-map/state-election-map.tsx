@@ -1,5 +1,5 @@
 import { getDisplayProbability } from 'common/calculate'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { StateElectionMarket } from 'web/public/data/elections-data'
 
 export const DEM_LIGHT_HEX = '#cedcef'
@@ -46,7 +46,7 @@ export const probToColor = (
   let probOther: number | undefined
   let probDemocraticIndependent: number
 
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     const answers = contract.answers
     probDemocraticIndependent =
       answers.find((a) => ALSO_DEMOCRATIC.includes(a.text))?.prob ?? 0

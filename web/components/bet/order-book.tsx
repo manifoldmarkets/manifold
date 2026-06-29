@@ -10,6 +10,7 @@ import {
   CPMMMultiContract,
   getBinaryMCProb,
   isBinaryMulti,
+  isMultiCpmm,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
@@ -135,7 +136,7 @@ export function OrderTable(props: {
 }) {
   const { limitBets, contract, isYou, showAnswers } = props
   const answers =
-    showAnswers && contract.mechanism === 'cpmm-multi-1'
+    showAnswers && isMultiCpmm(contract)
       ? contract.answers.filter((a) =>
           limitBets.map((b) => b.answerId).includes(a.id)
         )
@@ -486,7 +487,7 @@ export function OrderBookPanel(props: {
     (bet) => bet.createdTime
   )
 
-  const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCPMMMulti = isMultiCpmm(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   if (limitBets.length === 0) return <></>

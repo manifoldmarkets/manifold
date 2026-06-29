@@ -12,7 +12,7 @@ import { computeCpmmBet } from 'common/new-bet'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { MarketContract } from 'common/contract'
-import { isBinaryMulti } from 'common/contract'
+import { isBinaryMulti, isMultiCpmm } from 'common/contract'
 const DEFAULT_SLIPPAGE = 0.1
 
 export const getLimitBetReturns = (
@@ -36,14 +36,14 @@ export const getLimitBetReturns = (
         : 'NO'
       : undefined) ?? binaryOutcome
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   const cpmmState = isCpmmMulti
     ? {
         pool: {
           YES: multiProps!.answerToBuy.poolYes,
           NO: multiProps!.answerToBuy.poolNo,
         },
-        p: 0.5,
+        p: multiProps!.answerToBuy.p,
         collectedFees: contract.collectedFees,
       }
     : {

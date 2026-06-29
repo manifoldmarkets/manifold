@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
@@ -93,7 +93,7 @@ export function duplicateContractHref(contract: Contract) {
     params.unit = contract.unit
   }
 
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     params.addAnswersMode = contract.addAnswersMode
     params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
   }

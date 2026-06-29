@@ -185,20 +185,48 @@ export function calculateCpmmAmountToBuySharesFixedP(
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
-  if (!floatingEqual(state.p, 0.5)) {
-    throw new Error(CPMM_ARBITRAGE_ERROR_PREFIX + state.p)
-  }
-
   const { YES: y, NO: n } = state.pool
-  if (outcome === 'YES') {
-    // https://www.wolframalpha.com/input?i=%28y%2Bb-s%29%5E0.5+*+%28n%2Bb%29%5E0.5+%3D+y+%5E+0.5+*+n+%5E+0.5%2C+solve+b
+
+  if (floatingEqual(state.p, 0.5)) {
+    if (outcome === 'YES') {
+      // https://www.wolframalpha.com/input?i=%28y%2Bb-s%29%5E0.5+*+%28n%2Bb%29%5E0.5+%3D+y+%5E+0.5+*+n+%5E+0.5%2C+solve+b
+      return (
+        (shares - y - n + Math.sqrt(4 * n * shares + (y + n - shares) ** 2)) / 2
+      )
+    }
     return (
-      (shares - y - n + Math.sqrt(4 * n * shares + (y + n - shares) ** 2)) / 2
+      (shares - y - n + Math.sqrt(4 * y * shares + (y + n - shares) ** 2)) / 2
     )
   }
-  return (
-    (shares - y - n + Math.sqrt(4 * y * shares + (y + n - shares) ** 2)) / 2
-  )
+
+  // General p (cpmm-multi-2): shares -> cost has no closed form, so invert the
+  // general-p forward map calculateCpmmShares by bisection. calculateCpmmShares is
+  // monotone increasing in the bet amount, and a buy of `shares` costs < `shares`
+  // mana, so [0, shares*10] brackets a buy; a sell (shares < 0) is bounded below by
+  // draining the opposite pool side. Mirrors the proven Python oracle
+  // amm_core.cost_for_shares (GP3); 50 iterations reach double precision.
+  if (shares === 0) return 0
+  let low: number
+  let high: number
+  if (shares > 0) {
+    low = 0
+    high = shares * 10
+  } else {
+    const otherPool = outcome === 'YES' ? n : y
+    low = -otherPool * (1 - 1e-9)
+    high = 0
+  }
+  for (let i = 0; i < 50; i++) {
+    const mid = (low + high) / 2
+    if (mid === low || mid === high) break
+    const sharesForMid = calculateCpmmShares(state.pool, state.p, mid, outcome)
+    if (sharesForMid < shares) {
+      low = mid
+    } else {
+      high = mid
+    }
+  }
+  return (low + high) / 2
 }
 
 export const computeFills = (
@@ -598,7 +626,7 @@ export function calculateCpmmAmountToBuyShares(
       ? contract
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
-          p: 0.5,
+          p: answer!.p,
           collectedFees: contract.collectedFees,
         }
 
@@ -606,7 +634,10 @@ export function calculateCpmmAmountToBuyShares(
     ? allUnfilledBets.filter((b) => b.answerId === answer.id)
     : allUnfilledBets
 
-  if (contract.mechanism === 'cpmm-1') {
+  // cpmm-multi-2 answers carry a general (non-0.5) p, so they take the same
+  // general-p inverse as cpmm-1 (the startCpmmState above already supplies
+  // answer.p). cpmm-multi-1 stays on the p=0.5 FixedP path (byte-identical).
+  if (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-2') {
     return calculateAmountToBuyShares(
       startCpmmState,
       shares,
@@ -623,7 +654,7 @@ export function calculateCpmmAmountToBuyShares(
       balanceByUserId
     )
   } else {
-    throw new Error('Only works for cpmm-1 and cpmm-multi-1')
+    throw new Error('Only works for cpmm-1, cpmm-multi-1, and cpmm-multi-2')
   }
 }
 
@@ -802,6 +833,132 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
     amountRemaining = minSharesThrownAway
   }
   return newPools
+}
+
+// cpmm-multi-2: the √variance sum-to-one CREATION pool rule (also used by new-contract.ts
+// createAnswers). Given target probabilities q (Σ q = 1) and an `ante`, build per-answer pools whose
+// effective depth W_i = (1−p_i)Y_i + p_iN_i ∝ √(q_i(1−q_i)) — the max-total-liquidity shape under
+// the no-house-risk basket budget (every winning scenario pays exactly the ante). Structure: all
+// answers share Y_i − N_i = D (all-winners-tight funding), p_i set so prob_i = q_i. Reduces to v1's
+// asymmetric pool at uniform q and to a balanced pool at n = 2. See
+// tasks/cpmm_multi_2/creation-liquidity-findings.md (GP13–GP15). It is HOMOGENEOUS degree-1 in ante
+// (reserves ∝ ante, p invariant — GP17a), which is what makes the whole-market liquidity-add merge
+// below well-defined.
+export function cpmmMulti2SumToOnePools(
+  q: number[],
+  ante: number
+): { poolYes: number; poolNo: number; p: number; prob: number }[] {
+  const n = q.length
+  if (n < 2) {
+    return q.map((qi) => ({ poolYes: ante, poolNo: ante, p: qi, prob: qi }))
+  }
+  const sqrtC = q.map((qi) => Math.sqrt(qi * (1 - qi)))
+  const meanSqrtC = sqrtC.reduce((s, x) => s + x, 0) / n
+  const D0 = (ante * (n - 2)) / (2 * (n - 1)) // uniform-optimum D (closed form)
+  const Wbar = (ante * n) / (4 * (n - 1)) // uniform-optimum depth
+  // Realize the depth profile W_i at the assumed D0:
+  //   W_i = N_i(N_i + D0)/(N_i + q_i D0)  ⇒  N_i² + N_i(D0 − W_i) − W_i q_i D0 = 0.
+  const N = q.map((qi, i) => {
+    const Wi = (Wbar * sqrtC[i]) / meanSqrtC
+    const b = D0 - Wi
+    return (-b + Math.sqrt(b * b + 4 * Wi * qi * D0)) / 2
+  })
+  // Force exact funding: Y_i = N_i + D with D = ante − ΣN_j makes every winning
+  // scenario pay exactly the ante (all-winners-tight). p_i set so prob_i = q_i.
+  const D = ante - N.reduce((s, x) => s + x, 0)
+  return q.map((qi, i) => {
+    const poolNo = N[i]
+    const poolYes = poolNo + D
+    const p = (qi * poolYes) / (qi * poolYes + (1 - qi) * poolNo)
+    return { poolYes, poolNo, p, prob: qi }
+  })
+}
+
+// cpmm-multi-2: lossless whole-market liquidity add — √variance MERGE rule (GP17).
+//
+// v1 (addCpmmMultiLiquidityAnswersSumToOne, above) pins p = 0.5 and DISCARDS shares to hold each
+// answer's probability on a skewed pool. v2 is lossless: probability is the invariant we preserve,
+// p is the degree of freedom that floats to absorb the mana. The QUESTION is how to split the
+// subsidy across answers. The old implementation EQUAL-split (amount/n into each), which is
+// LMSR/balanced-shaped at the margin — inconsistent with the √variance CREATION rule above.
+//
+// The creation-consistent rule (Evan: "apply creation's allocation to the *added* mana at current
+// probs; don't rearrange existing depth") is to MERGE a Δ = amount ante √variance creation computed
+// at the CURRENT probabilities into the existing reserves, then re-price each answer's p to hold its
+// probability. Properties (proofs/liquidity_add_split.py, GP17): each prob is preserved (unique
+// re-pricing, GP17b) so Σ prob = 1 is inherited; conservation holds because the Δ-creation is
+// all-winners-tight (locks exactly Δ) and resolution payout is linear in reserves, so the merge
+// superposes two conservative markets (GP17c); on an untraded market it equals create(A+Δ) and at
+// n = 2 it reduces EXACTLY to the old equal-split (GP17a/d). It concentrates the added depth in the
+// uncertain answers instead of spreading it flat. drizzleMarket inherits this (it calls this fn),
+// keeping the market on the √variance manifold rather than drifting toward balanced.
+//
+// Returns the new pool, the floated p, and the liquidity (k) added per answer for LP accounting.
+export function addCpmmMultiLiquidityAnswersSumToOneV2(
+  poolsByAnswer: {
+    [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+  },
+  amount: number
+) {
+  const answerIds = Object.keys(poolsByAnswer)
+  // Current probabilities (Σ = 1 for a sum-to-one market).
+  const probs = answerIds.map((id) =>
+    getCpmmProbability(poolsByAnswer[id].pool, poolsByAnswer[id].p)
+  )
+  // Allocate the ADDED mana exactly as creation would, at the current probs (√variance shape).
+  const delta = cpmmMulti2SumToOnePools(probs, amount)
+  const result: {
+    [answerId: string]: {
+      pool: { YES: number; NO: number }
+      p: number
+      liquidity: number
+    }
+  } = {}
+  answerIds.forEach((id, i) => {
+    const { pool } = poolsByAnswer[id]
+    const prob = probs[i]
+    const newPool = {
+      YES: pool.YES + delta[i].poolYes,
+      NO: pool.NO + delta[i].poolNo,
+    }
+    // Re-price p so prob(newPool, newP) == prob (unique; same form as creation's p).
+    const newP =
+      (prob * newPool.YES) / (prob * newPool.YES + (1 - prob) * newPool.NO)
+    const liquidity =
+      getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
+    result[id] = { pool: newPool, p: newP, liquidity }
+  })
+  return result
+}
+
+// cpmm-multi-2: lossless whole-market liquidity add for INDEPENDENT (non-sum-to-one / "Set")
+// markets.
+//
+// An independent answer is literally its own standalone binary CPMM, so each answer takes the
+// exact binary lossless add (addCpmmLiquidity — inject the subsidy into BOTH reserves and float
+// that answer's p to hold its probability, discarding no shares). There is no Σ prob = 1 coupling
+// between answers — each is independent — so unlike the v1 fixed-p path
+// (addCpmmMultiLiquidityToAnswersIndependently → addCpmmLiquidityFixedP, which DISCARDS shares to
+// pin p = 0.5 on a skewed pool and clobbers prob to N/(Y+N)) nothing is thrown away and each
+// answer's true probability is preserved.
+//
+// Mathematically this is the same per-answer operation as addCpmmMultiLiquidityAnswersSumToOneV2
+// (sum-to-one preserves Σ = 1 only as a *consequence* of each prob being individually preserved —
+// GP6a); the two are kept as separate named functions to mirror the v1 sum-to-one / independent
+// split and keep the drizzle call sites self-documenting. At p = 0.5 on a balanced pool both
+// reserves get +amountPerAnswer, p stays 0.5, and prob is unchanged — i.e. it reduces to the v1
+// fixed-p add with sharesThrownAway = 0.
+export function addCpmmMultiLiquidityToAnswersIndependentlyV2(
+  poolsByAnswer: {
+    [answerId: string]: { pool: { YES: number; NO: number }; p: number }
+  },
+  amount: number
+) {
+  const amountPerAnswer = amount / Object.keys(poolsByAnswer).length
+  return mapValues(poolsByAnswer, ({ pool, p }) => {
+    const { newPool, liquidity, newP } = addCpmmLiquidity(pool, p, amountPerAnswer)
+    return { pool: newPool, p: newP, liquidity }
+  })
 }
 
 // Must be at least this many yes and no shares

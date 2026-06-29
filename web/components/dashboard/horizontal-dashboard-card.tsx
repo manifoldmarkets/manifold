@@ -1,7 +1,12 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { Contract, contractPath, isBinaryMulti } from 'common/contract'
+import {
+  Contract,
+  contractPath,
+  isBinaryMulti,
+  isMultiCpmm,
+} from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
@@ -153,7 +158,7 @@ export function HorizontalDashboardCard(props: {
           )}
 
           {isBinaryMc &&
-            contract.mechanism === 'cpmm-multi-1' &&
+            isMultiCpmm(contract) &&
             contract.outcomeType !== 'NUMBER' &&
             contract.outcomeType !== 'MULTI_NUMERIC' &&
             contract.outcomeType !== 'DATE' && (

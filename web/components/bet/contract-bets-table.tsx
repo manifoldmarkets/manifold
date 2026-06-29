@@ -4,6 +4,7 @@ import {
   CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
+  isMultiCpmm,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import {
@@ -63,7 +64,7 @@ export function ContractBetsTable(props: {
   )
 
   const isCPMM = mechanism === 'cpmm-1'
-  const isCpmmMulti = mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isBinaryMC = isBinaryMulti(contract)
@@ -188,7 +189,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
   const { mechanism, outcomeType } = contract
 
   const isCPMM = mechanism === 'cpmm-1'
-  const isCpmmMulti = mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isBinaryMC = isBinaryMulti(contract)

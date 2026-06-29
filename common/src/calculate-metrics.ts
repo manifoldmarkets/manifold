@@ -16,7 +16,7 @@ import {
   getContractBetMetricsPerAnswerWithoutLoans,
 } from './calculate'
 import { computeFills, CpmmState, getCpmmProbability } from './calculate-cpmm'
-import { Contract, MultiContract } from './contract'
+import { Contract, isMultiCpmm, MultiContract } from './contract'
 import { noFees } from './fees'
 import { floatingEqual, logit } from './util/math'
 import { removeUndefinedProps } from './util/object'
@@ -71,6 +71,7 @@ export const computeElasticity = (
         contract,
         betAmount
       )
+    case 'cpmm-multi-2':
     case 'cpmm-multi-1':
       return computeMultiCpmmElasticity(
         isResolved ? [] : unfilledBets, // only consider limit orders for open markets
@@ -166,7 +167,7 @@ const computeMultiCpmmElasticity = (
   const elasticities = contract.answers.map((a) => {
     const cpmmState = {
       pool: { YES: a.poolYes, NO: a.poolNo },
-      p: 0.5,
+      p: a.p,
       collectedFees: noFees,
     }
     const unfilledBetsForAnswer = unfilledBets.filter(
@@ -298,7 +299,10 @@ export const calculateUserMetricsWithNewBetsOnly = (
       const freeLoanRatio = um.loan / totalCurrentLoan
       const marginLoanRatio = (um.marginLoan ?? 0) / totalCurrentLoan
       newLoan = Math.max(0, um.loan - repayment * freeLoanRatio)
-      newMarginLoan = Math.max(0, (um.marginLoan ?? 0) - repayment * marginLoanRatio)
+      newMarginLoan = Math.max(
+        0,
+        (um.marginLoan ?? 0) - repayment * marginLoanRatio
+      )
     } else {
       // No existing loans - shouldn't happen but handle gracefully
       newLoan = 0
@@ -560,7 +564,7 @@ export const calculateUpdatedMetricsForContracts = (
           return metric
             ? [calculateProfitMetricsAtProbOrCancel(state, metric)]
             : []
-        } else if (contract.mechanism === 'cpmm-multi-1') {
+        } else if (isMultiCpmm(contract)) {
           const oldSummary = useIncludedSummaryMetric
             ? userMetrics.find(isSummary)
             : undefined
@@ -618,7 +622,7 @@ export const calculateMetricsFromProbabilityChanges = (
     if (!contract) return metric
 
     let newProb: number
-    if (contract.mechanism === 'cpmm-multi-1' && metric.answerId) {
+    if (isMultiCpmm(contract) && metric.answerId) {
       const answer = contract.answers.find((a) => a.id === metric.answerId)
       if (!answer) return metric
       newProb = answer.prob
@@ -634,7 +638,7 @@ export const calculateMetricsFromProbabilityChanges = (
     // Calculate period profit changes (from calculatePeriodProfit logic)
     const calculatePeriodChange = (period: 'day' | 'week' | 'month') => {
       let probChange: number
-      if (contract.mechanism === 'cpmm-multi-1' && metric.answerId) {
+      if (isMultiCpmm(contract) && metric.answerId) {
         const answer = contract.answers.find((a) => a.id === metric.answerId)
         probChange = answer?.probChanges[period] ?? 0
       } else if (contract.mechanism === 'cpmm-1') {

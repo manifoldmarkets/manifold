@@ -1,4 +1,4 @@
-import { Contract, CPMMMultiContract } from 'common/contract'
+import { Contract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
@@ -99,8 +99,7 @@ export async function getElectionsPageProps() {
 
   let partyPoints = null
   if (
-    electionPartyContract &&
-    electionPartyContract.mechanism == 'cpmm-multi-1'
+    electionPartyContract && isMultiCpmm(electionPartyContract)
   ) {
     const allBetPoints = await getBetPoints(electionPartyContract.id, {
       afterTime: afterTime,

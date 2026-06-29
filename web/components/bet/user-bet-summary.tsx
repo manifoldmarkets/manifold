@@ -7,6 +7,7 @@ import {
   CPMMMultiContract,
   getMainBinaryMCAnswer,
   isBinaryMulti,
+  isMultiCpmm,
 } from 'common/contract'
 import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -240,7 +241,7 @@ export function BetsSummary(props: {
             contract.creatorBannedFromBetting &&
             includeSellButton.id === contract.creatorId
           ) &&
-          (contract.mechanism !== 'cpmm-multi-1' ||
+          (!isMultiCpmm(contract) ||
             isBinaryMulti(contract)) && (
             <Row className="items-center gap-2">
               <SellRow

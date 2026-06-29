@@ -1,7 +1,12 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { Contract, contractPath, isBinaryMulti } from 'common/contract'
+import {
+  Contract,
+  contractPath,
+  isBinaryMulti,
+  isMultiCpmm,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
 import { ContractCardView } from 'common/events'
@@ -301,7 +306,7 @@ export function FeedContractCard(props: {
         )}
 
         {isBinaryMc &&
-          contract.mechanism === 'cpmm-multi-1' &&
+          isMultiCpmm(contract) &&
           contract.outcomeType !== 'NUMBER' &&
           contract.outcomeType !== 'MULTI_NUMERIC' &&
           contract.outcomeType !== 'DATE' && (

@@ -10,6 +10,7 @@ import {
   contractPath,
   ContractToken,
   CPMMMultiContract,
+  isMultiCpmm,
   MarketContract,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -86,7 +87,7 @@ export const resolveMarketHelper = async (
       unresolvedContract,
       answerId
     )
-    const isIndieMC = c.mechanism === 'cpmm-multi-1' && !c.shouldAnswersSumToOne
+    const isIndieMC = isMultiCpmm(c) && !c.shouldAnswersSumToOne
 
     unresolvedContract = c as MarketContract
     if (unresolvedContract.isResolved) {
@@ -148,7 +149,7 @@ export const resolveMarketHelper = async (
       })
     let updateAnswerAttrs: Partial<Answer> | undefined
 
-    if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
+    if (isMultiCpmm(unresolvedContract) && answerId) {
       // Only resolve the contract if all other answers are resolved.
       const allOtherAnswers = unresolvedContract.answers.filter(
         (a) => a.id !== answerId
@@ -200,7 +201,7 @@ export const resolveMarketHelper = async (
         ),
       } as Partial<CPMMMultiContract> & { id: string }
     } else if (
-      unresolvedContract.mechanism === 'cpmm-multi-1' &&
+      isMultiCpmm(unresolvedContract) &&
       updatedContractAttrs.isResolved
     ) {
       updateAnswerAttrs = removeUndefinedProps({
@@ -245,7 +246,7 @@ export const resolveMarketHelper = async (
       await updateAnswer(tx, answerId, props)
     } else if (
       updateAnswerAttrs &&
-      resolvedContract.mechanism === 'cpmm-multi-1'
+      isMultiCpmm(resolvedContract)
     ) {
       const answerUpdates = resolvedContract.answers.map((a) =>
         removeUndefinedProps({

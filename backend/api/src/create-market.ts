@@ -20,11 +20,13 @@ import {
   Contract,
   NO_CLOSE_TIME_TYPES,
   NUMBER_CREATION_ENABLED,
+  CPMM_MULTI_2_CREATION_ENABLED,
   OutcomeType,
   PollType,
   PollVoterVisibility,
   add_answers_mode,
   contractUrl,
+  isMultiCpmm,
   nativeContractColumnsArray,
 } from 'common/contract'
 import { FREE_MARKET_USER_ID, getAnte } from 'common/economy'
@@ -178,6 +180,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    initialProbs,
     takerAPIOrdersDisabled,
     liquidityTier,
     unit,
@@ -294,6 +297,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answers: answers ?? [],
           answerShortTexts,
           answerImageUrls,
+          initialProbs,
           addAnswersMode,
           shouldAnswersSumToOne,
           isAutoBounty,
@@ -323,7 +327,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
       )
       const insertAnswersQuery =
-        contract.mechanism === 'cpmm-multi-1'
+        isMultiCpmm(contract)
           ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
           : 'select 1 where false'
       const contractQuery = pgp.as.format(
@@ -337,7 +341,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
        ${insertAnswersQuery};`
       )
 
-      if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
+      if (result[1].length > 0 && isMultiCpmm(contract)) {
         contract.answers = result[1].map(convertAnswer)
       }
       const house = isProd()
@@ -437,6 +441,7 @@ function validateMarketBody(body: Body) {
     answers: string[] | undefined,
     answerShortTexts: string[] | undefined,
     answerImageUrls: string[] | undefined,
+    initialProbs: number[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
@@ -536,12 +541,39 @@ function validateMarketBody(body: Body) {
       answers,
       answerShortTexts,
       answerImageUrls,
+      initialProbs,
       addAnswersMode,
       shouldAnswersSumToOne,
     } = validateMarketType(outcomeType, createMultiSchema, body))
     const hasOtherAnswer =
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
+
+    // cpmm-multi-2 (PR2c): per-answer initial probabilities. Supports both
+    // fixed sum-to-one ("Multiple Choice", Σp normalized to 1) and independent
+    // ("Set", each prob absolute, no Σ constraint) markets — in both, each prob
+    // maps 1:1 to a created answer. No "Other"/addable answers (their probs
+    // aren't covered by initialProbs); "Other" splitting is a later add-on, see
+    // pr2-plan.md "Other split". Both representations are balanced-pool + per-
+    // answer p (lossless): a skewed start is carried by p, never by discarding
+    // shares or oversizing one reserve past the funded ante.
+    if (initialProbs !== undefined) {
+      if (!CPMM_MULTI_2_CREATION_ENABLED)
+        throw new APIError(
+          403,
+          'Creating cpmm-multi-2 (custom initial probabilities) markets is not currently enabled.'
+        )
+      if (addAnswersMode !== 'DISABLED')
+        throw new APIError(
+          400,
+          'initialProbs is not supported with addable answers (no "Other" answer).'
+        )
+      if (initialProbs.length !== answers.length)
+        throw new APIError(
+          400,
+          'initialProbs must have exactly one probability per answer.'
+        )
+    }
     // Unfortunately this is a requirement because if we don't add an answer,
     // then the market creation cost will just be lost. If we just set totalLiquidity to 0,
     // then the answer costs will be calculated based on 0, which is not what we want.
@@ -610,6 +642,7 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    initialProbs,
     takerAPIOrdersDisabled,
     unit,
     midpoints,

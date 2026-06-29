@@ -930,6 +930,10 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         amount: z.number().gt(0).finite(),
+        // Subsidize a SINGLE answer (its own binary CPMM) instead of the whole market. Omit for
+        // the whole-market add. The subsidy lands in that answer's subsidyPool and the per-answer
+        // drizzle deepens it losslessly (float-p for cpmm-multi-2) — see add-liquidity.ts.
+        answerId: z.string().optional(),
       })
       .strict(),
   },

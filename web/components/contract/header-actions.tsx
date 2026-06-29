@@ -4,7 +4,7 @@ import {
   EyeOffIcon,
   InformationCircleIcon,
 } from '@heroicons/react/solid'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getShareUrl } from 'common/util/share'
 import { useEffect, useState } from 'react'
@@ -86,7 +86,7 @@ export function HeaderActions(props: {
   }
 
   const addLiquidityPossible =
-    contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1'
+    contract.mechanism == 'cpmm-1' || isMultiCpmm(contract)
 
   const [following, setFollowing] = useState<boolean>()
   const [followingOpen, setFollowingOpen] = useState(false)
