@@ -16,3 +16,9 @@ export const nativeSetStreak = (streak: NativeStreakData) => {
 export const nativeSetQuests = (quests: NativeQuestData) => {
   postMessageToNative('setQuests', quests)
 }
+// Android-only: asks the native app to show the system "add widget to home
+// screen" dialog. No-ops on web (postMessageToNative guards on getIsNative());
+// the native side no-ops on iOS.
+export const nativePinStreakWidget = () => {
+  postMessageToNative('pinStreakWidget', {})
+}
