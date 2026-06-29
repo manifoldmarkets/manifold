@@ -55,6 +55,10 @@ export const clearStreakWidget = () => {
 // Writes the quest completion the widget renders as secondary rows. The widget
 // resets each quest to "not done" on its own once the period rolls over.
 export const writeQuestWidget = (data: NativeQuestData) => {
+  if (Platform.OS === 'android') {
+    require('./streak-widget-android').writeAndroidQuestWidget(data)
+    return
+  }
   if (!storage) return
   try {
     storage.set(QUEST_KEY, data as any)
@@ -66,6 +70,10 @@ export const writeQuestWidget = (data: NativeQuestData) => {
 
 // Drops quest rows (e.g. on sign-out); the widget falls back to streak-only.
 export const clearQuestWidget = () => {
+  if (Platform.OS === 'android') {
+    require('./streak-widget-android').clearAndroidQuestWidget()
+    return
+  }
   if (!storage) return
   try {
     storage.remove(QUEST_KEY)

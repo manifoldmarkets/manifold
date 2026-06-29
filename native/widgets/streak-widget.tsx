@@ -3,10 +3,11 @@ import {
   FlexWidget,
   ImageWidget,
   OverlapWidget,
+  SvgWidget,
   TextWidget,
 } from 'react-native-android-widget'
 import type { WidgetInfo } from 'react-native-android-widget'
-import type { NativeStreakData } from 'common/native-message'
+import type { NativeQuestData, NativeStreakData } from 'common/native-message'
 import { CRANE_DATA_URI } from './crane-data'
 
 // Android home-screen streak widget. This is the platform-mirror of the iOS
@@ -70,6 +71,67 @@ function msUntilPacificReset(now: Date): number {
   }
 }
 
+// MARK: - Quests
+//
+// The medium widget shows the secondary daily/weekly quests ("Share a market",
+// "Create a market") as a checklist. The snapshot records each quest's `done` as
+// of `updatedAt`; the widget keeps that valid only until the quest's period rolls
+// over (daily → next midnight PT, weekly → next Monday midnight PT), then assumes
+// "not done" — the safe state. Mirrors questItems() in index.swift.
+
+type WidgetQuest = { title: string; rewardMana: number; done: boolean }
+
+// Weekday in LA, 0=Sun … 6=Sat.
+function pacificWeekday(now: Date): number {
+  const s = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    weekday: 'short',
+  }).format(now)
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  }
+  return map[s] ?? 0
+}
+
+// Next Monday 00:00 Pacific strictly after `at` (the weekly-quest reset).
+function nextPacificWeekResetMs(at: Date): number {
+  const startToday = pacificStartOfDayMs(at)
+  const wd = pacificWeekday(at)
+  let days = (1 - wd + 7) % 7 // 0 if today is Monday
+  if (days === 0) days = 7 // this Monday's midnight already passed → next one
+  return startToday + days * 24 * 60 * 60 * 1000
+}
+
+// Apply the period-reset to a stored quest snapshot, returning the rows to render.
+function effectiveQuests(
+  data: NativeQuestData | null,
+  now: Date
+): WidgetQuest[] {
+  if (!data || !data.quests?.length) return []
+  try {
+    const nowMs = now.getTime()
+    const dayEnd = pacificStartOfDayMs(new Date(data.updatedAt)) + 24 * 60 * 60 * 1000
+    const weekEnd = nextPacificWeekResetMs(new Date(data.updatedAt))
+    return data.quests.map((q) => {
+      const periodEnd = q.period === 'weekly' ? weekEnd : dayEnd
+      return {
+        title: q.title,
+        rewardMana: q.rewardMana,
+        done: q.done && nowMs < periodEnd,
+      }
+    })
+  } catch {
+    // Never throw from a render: fall back to the streak-only medium.
+    return []
+  }
+}
+
 // Day-of-year in LA (1-366), used to deterministically rotate the hook copy.
 function pacificDayOfYear(now: Date): number {
   try {
@@ -95,29 +157,40 @@ function pacificDayOfYear(now: Date): number {
 // Rotating daily nudge on the medium widget. Mirrors hookText() in index.swift.
 function hookText(state: StreakState, now: Date): string {
   if (state === 'lit') return 'Locked in. See you tomorrow 🔥'
-  if (state === 'frozen') return "Saved by a freeze 🧊 — don't push your luck"
+  if (state === 'frozen') return 'Saved by a freeze 🧊'
   const day = pacificDayOfYear(now)
   const pct = 55 + ((day * 7) % 40) // 55–94, deterministic by day
+  // Keep these short — the medium's hook column is narrow, so anything much longer
+  // than ~30 chars truncates mid-word (e.g. "…don't push").
   const hooks = [
-    `Open the app today? ${pct}% 📈`,
-    `P(you predict today): ${pct}%`,
-    'Resolves YES if you predict today',
+    `Predict today? ${pct}% 📈`,
+    `P(you predict): ${pct}%`,
+    'Resolves YES if you bet today',
     'Your streak: trading at 96%',
-    `Will your streak survive the week? ${pct}%`,
-    `Market says you'll bet today: ${pct}% ▲`,
+    `Survives the week? ${pct}%`,
+    `You'll bet today: ${pct}% ▲`,
     'We miss you!',
     'Your streak is lonely',
     "Don't break the chain",
     'Keep the flame alive 🔥',
-    'Come back — we saved your spot',
+    'We saved your spot',
     'The future awaits',
     'Predict the future',
     'Be less wrong',
-    "What do you know that we don't?",
-    'Put your mana where your mouth is',
-    "Someone's wrong on the internet 👀",
+    'What do you know?',
+    'Mana where your mouth is',
+    "Someone's wrong online 👀",
   ]
   return hooks[day % hooks.length]
+}
+
+// Short, single-line caption for the bottom of a tall small widget. The medium's
+// hookText() wraps to 2-3 lines, which overflows a narrow tall cell under the big
+// milestone hero — so the tall layout uses these punchy one-liners instead.
+function tallBottomText(state: StreakState): string {
+  if (state === 'frozen') return 'Streak saved 🧊'
+  if (state === 'loggedOut') return 'Predict daily 🔥'
+  return 'Locked in 🔥' // lit
 }
 
 // MARK: - Palette (exact match to index.swift gradient stops)
@@ -144,29 +217,21 @@ const GREY: Gradient = { from: '#33333A', to: '#1F1F24', orientation: 'TOP_BOTTO
 const GOLD: Gradient = { from: '#FFD24D', to: '#E0810E', orientation: 'TL_BR' }
 const GOLD_RICH: Gradient = { from: '#FFE891', to: '#BC5E00', orientation: 'TL_BR' }
 
-// Streak rank ladder — names + thresholds from the prediction-streak trophy
-// (common/src/trophies.ts on the `trophies` branch). Once Spark (14 days) is hit,
-// the widget shows the rank title + a trophy, and levels its gradient up to gold.
-const STREAK_RANKS: { threshold: number; name: string }[] = [
-  { threshold: 1065, name: 'Timeless' },
-  { threshold: 700, name: 'Undying' },
-  { threshold: 365, name: 'Eternal Flame' },
-  { threshold: 200, name: 'Phoenix' },
-  { threshold: 100, name: 'Inferno' },
-  { threshold: 60, name: 'Blaze' },
-  { threshold: 30, name: 'Ember' },
-  { threshold: 14, name: 'Spark' },
-]
-function streakRank(streak: number): string | null {
-  for (const r of STREAK_RANKS) if (streak >= r.threshold) return r.name
-  return null
+// A "gold milestone" = a lit streak of 30+. It turns on the coherent gold cues at
+// once — the gold gradient (see gradientFor: gold at 30, richer gold at 100), a
+// trophy badge, and (only where there's vertical room) a gold frame — so a
+// milestone reads as one premium "level up". Crucially we do NOT scale the number
+// up at a milestone: the short 2x2 / medium cells (≈133dp tall) can't fit a bigger
+// hero without clipping the label, and the gold treatment already says "special".
+function isGoldMilestone(state: StreakState, streak: number): boolean {
+  return state === 'lit' && streak >= 30
 }
-// tier(): 0 (<30, flame), 1 (Ember/Blaze, gold), 2 (Inferno+, rich gold) — drives
-// the gradient + flame/number scaling so the widget visibly levels up.
-function streakTier(streak: number): 0 | 1 | 2 {
-  if (streak >= 100) return 2
-  if (streak >= 30) return 1
-  return 0
+
+// The label under the number — always "day streak" (clear + universal), except
+// when a freeze saved the day, where it carries the freeze count *in place of* the
+// label rather than as an extra line that would overflow a short cell.
+function streakLabel(state: StreakState, freezesLeft: number): string {
+  return state === 'frozen' ? `Frozen · ${freezesLeft} left` : 'day streak'
 }
 
 // Gradient by state, escalating to gold once lit and past a milestone. Frozen and
@@ -183,6 +248,8 @@ const WHITE = '#FFFFFF'
 const WHITE_85 = 'rgba(255, 255, 255, 0.85)'
 const WHITE_90 = 'rgba(255, 255, 255, 0.9)'
 const WHITE_22 = 'rgba(255, 255, 255, 0.22)'
+const WHITE_55 = 'rgba(255, 255, 255, 0.55)'
+const WHITE_45 = 'rgba(255, 255, 255, 0.45)'
 const RADIUS = 20
 
 // Soft warm drop shadow that makes the big number pop off the gradient (the
@@ -203,8 +270,28 @@ const MILESTONE_SHADOW = {
 // gradient, since backgroundGradient overrides borders).
 const FRAME_GOLD: `#${string}` = '#FFE6A8'
 
-function glyph(state: StreakState): string {
-  return state === 'frozen' ? '🧊' : '🔥'
+// Unlit (grey) flame for the pending state. They haven't bet today, so the flame
+// shouldn't look lit — iOS desaturates the 🔥 with grayscale(), but TextWidget
+// has no opacity/grayscale, so we draw the flame as an inline SVG we can colour.
+// (Material "whatshot" path.)
+const UNLIT_FLAME_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+  '<path fill="#9CA0A8" d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 ' +
+  '0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 ' +
+  '8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 ' +
+  '2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>'
+
+// The streak glyph. Lit = 🔥, frozen = 🧊, pending = a grey (unlit) flame.
+function GlyphWidget({ state, size }: { state: StreakState; size: number }) {
+  if (state === 'pending') {
+    return <SvgWidget svg={UNLIT_FLAME_SVG} style={{ width: size, height: size }} />
+  }
+  return (
+    <TextWidget
+      text={state === 'frozen' ? '🧊' : '🔥'}
+      style={{ fontSize: size }}
+    />
+  )
 }
 
 // MARK: - Layouts
@@ -272,8 +359,8 @@ function Shell({
   )
 }
 
-// Milestone badge — a sparkle + a big trophy, shown once a streak rank (Spark,
-// 14 days) is reached. Bigger + flashier on the small widget where there's room
+// Milestone badge — a sparkle + a big trophy, shown on a gold milestone (a lit
+// streak of 30+). Bigger + flashier on the small widget where there's room
 // top-right.
 function MilestoneBadge({ big }: { big?: boolean }) {
   return (
@@ -287,114 +374,203 @@ function MilestoneBadge({ big }: { big?: boolean }) {
   )
 }
 
-// Small (home): vertical, left-aligned — glyph, big number, "day streak",
-// optional frozen line, over a faint crane. Logged-out shows the invite.
+// Small (home): vertical, left-aligned — glyph, big number, "day streak" (or the
+// freeze count when frozen), over a faint crane. Logged-out shows the invite.
+//
+// `isTall` (a 2x3-ish cell) anchors the hero to the TOP and fills the lower half
+// so the content doesn't float, marooned, in the middle of a tall gradient field.
+// What fills the bottom depends on state: pending already gets the native
+// countdown Chronometer overlaid bottom-left (see the patch), so we add a hook
+// line at the bottom only for the other states — never both, or they'd collide.
 function SmallWidget({
   state,
   data,
+  isTall,
+  showCountdown,
   clickData,
 }: {
   state: StreakState
   data: NativeStreakData | null
+  isTall?: boolean
+  showCountdown?: boolean
   clickData?: Record<string, unknown>
 }) {
+  // On the square, showing the live countdown means top-anchoring the hero and
+  // dropping the "day streak" label, so the native bottom-left Chronometer has
+  // clear space (the tall already top-anchors, so it keeps its label + room).
+  const squareCountdown = !!showCountdown && !isTall
   const contentStyle = {
     height: 'match_parent' as const,
     width: 'match_parent' as const,
     flexDirection: 'column' as const,
-    justifyContent: 'center' as const,
+    justifyContent: (isTall
+      ? 'space-between'
+      : squareCountdown
+      ? 'flex-start'
+      : 'center') as 'space-between' | 'flex-start' | 'center',
     alignItems: 'flex-start' as const,
-    padding: 14,
+    padding: isTall ? 14 : 8,
   }
+  // Bottom caption on tall cells — a short one-liner that anchors the lower half
+  // so the hero isn't marooned mid-cell. Skipped in pending/frozen (the live
+  // countdown Chronometer owns the bottom-left there) and when not tall.
+  const bottomHook =
+    isTall && state !== 'pending' && state !== 'frozen' ? (
+      <TextWidget
+        text={tallBottomText(state)}
+        maxLines={1}
+        style={{ fontSize: 14, fontWeight: 'bold', color: WHITE_90, marginTop: 8 }}
+      />
+    ) : null
   if (state === 'loggedOut' || !data) {
     return (
       <Shell gradient={GREY} craneSize={84} clickData={clickData}>
         <FlexWidget style={contentStyle}>
-          <TextWidget text="🔥" style={{ fontSize: 42 }} />
-          <TextWidget
-            text="Start a streak"
-            maxLines={2}
-            style={{ fontSize: 18, fontWeight: '900', color: WHITE, marginTop: 8 }}
-          />
-          <TextWidget
-            text="Open Manifold"
-            style={{ fontSize: 12, fontWeight: '600', color: WHITE_85, marginTop: 2 }}
-          />
+          <FlexWidget
+            style={{ flexDirection: 'column', alignItems: 'flex-start' }}
+          >
+            <TextWidget text="🔥" style={{ fontSize: 42 }} />
+            <TextWidget
+              text="Start a streak"
+              maxLines={2}
+              style={{ fontSize: 18, fontWeight: '900', color: WHITE, marginTop: 8 }}
+            />
+            <TextWidget
+              text="Open Manifold"
+              style={{ fontSize: 12, fontWeight: '600', color: WHITE_85, marginTop: 2 }}
+            />
+          </FlexWidget>
+          {bottomHook}
         </FlexWidget>
       </Shell>
     )
   }
-  const tier = streakTier(data.streak)
-  const flameSize = 40 + tier * 4
-  const numberSize = 48 + tier * 4
-  const rank = streakRank(data.streak)
+  const milestone = isGoldMilestone(state, data.streak)
+  // Fixed sizes (no milestone scaling): tall cells have room to go big; the short
+  // square (down to ~130dp — below that it routes to CompactWidget) must stay
+  // conservative so glyph + number + label all fit with margin and never clip.
+  const flameSize = isTall ? 32 : 24
+  const numberSize = isTall ? 54 : 42
   return (
     <Shell
       gradient={gradientFor(state, data.streak)}
       craneSize={84}
       clickData={clickData}
-      frame={state === 'lit' && tier >= 1 ? FRAME_GOLD : undefined}
+      frame={isTall && milestone ? FRAME_GOLD : undefined}
     >
       <FlexWidget style={contentStyle}>
         <FlexWidget
           style={{
             width: 'match_parent',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
           }}
         >
-          <TextWidget text={glyph(state)} style={{ fontSize: flameSize }} />
-          {rank ? <MilestoneBadge big /> : null}
+          {/* Flame to the LEFT of the number on every small size (square + tall)
+              so the streak line reads the same across the whole widget family. */}
+          <FlexWidget
+            style={{
+              width: 'match_parent',
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
+          >
+            <GlyphWidget state={state} size={flameSize} />
+            <TextWidget
+              text={`${data.streak}`}
+              maxLines={1}
+              style={{
+                fontSize: numberSize,
+                fontWeight: '900',
+                color: WHITE,
+                marginLeft: isTall ? 8 : 6,
+                adjustsFontSizeToFit: true,
+                ...(milestone ? MILESTONE_SHADOW : NUMBER_SHADOW),
+              }}
+            />
+            {milestone ? <FlexWidget style={{ flex: 1 }} /> : null}
+            {milestone ? (
+              isTall ? (
+                <MilestoneBadge big />
+              ) : (
+                <TextWidget text="🏆" style={{ fontSize: 20 }} />
+              )
+            ) : null}
+          </FlexWidget>
+          {squareCountdown ? null : (
+            <TextWidget
+              text={streakLabel(state, data.freezesLeft)}
+              maxLines={1}
+              style={{
+                fontSize: isTall ? 14 : 12,
+                fontWeight: '600',
+                color: WHITE_85,
+                marginTop: isTall ? 2 : 1,
+              }}
+            />
+          )}
         </FlexWidget>
-        <TextWidget
-          text={`${data.streak}`}
-          maxLines={1}
-          style={{
-            fontSize: numberSize,
-            fontWeight: '900',
-            color: WHITE,
-            marginTop: 2,
-            adjustsFontSizeToFit: true,
-            ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
-          }}
-        />
-        <TextWidget
-          text={rank ? rank.toUpperCase() : 'day streak'}
-          maxLines={1}
-          style={
-            rank
-              ? {
-                  fontSize: 13,
-                  fontWeight: '900',
-                  color: WHITE,
-                  letterSpacing: 1,
-                  marginTop: 2,
-                }
-              : { fontSize: 12, fontWeight: '600', color: WHITE_85 }
-          }
-        />
-        {state === 'frozen' && (
-          <TextWidget
-            text={`Frozen · ${data.freezesLeft} left`}
-            style={{ fontSize: 11, fontWeight: 'bold', color: WHITE_90, marginTop: 2 }}
-          />
-        )}
+        {bottomHook}
       </FlexWidget>
     </Shell>
   )
 }
 
-// Medium (home): streak column on the left, divider, rotating daily hook right.
+// One quest checklist row (medium widget): checkbox + title + mana reward. Done
+// quests dim + check; pending ones stay bright. Full cell width, so the title and
+// reward both fit without truncating (unlike a narrow right column).
+function QuestRow({ quest }: { quest: WidgetQuest }) {
+  const { done } = quest
+  return (
+    <FlexWidget
+      style={{
+        width: 'match_parent',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 5,
+      }}
+    >
+      <TextWidget text={done ? '✅' : '⬜'} style={{ fontSize: 14 }} />
+      <TextWidget
+        text={quest.title}
+        maxLines={1}
+        style={{
+          fontSize: 13,
+          fontWeight: '600',
+          color: done ? WHITE_55 : WHITE,
+          marginLeft: 8,
+        }}
+      />
+      <FlexWidget style={{ flex: 1 }} />
+      <TextWidget
+        text={`+M${quest.rewardMana}`}
+        style={{
+          fontSize: 12,
+          fontWeight: 'bold',
+          color: done ? WHITE_45 : WHITE_85,
+        }}
+      />
+    </FlexWidget>
+  )
+}
+
+// Medium (home): when quests are synced, a compact streak header over a daily/
+// weekly quest checklist (the wide-but-short Android medium fits full-width rows
+// far better than iOS's left/right split). Without quests it falls back to the
+// streak column + rotating hook.
 function MediumWidget({
   state,
   data,
   now,
+  quests,
+  showCountdown,
   clickData,
 }: {
   state: StreakState
   data: NativeStreakData | null
   now: Date
+  quests: WidgetQuest[]
+  showCountdown?: boolean
   clickData?: Record<string, unknown>
 }) {
   if (state === 'loggedOut' || !data) {
@@ -428,16 +604,81 @@ function MediumWidget({
       </Shell>
     )
   }
-  const tier = streakTier(data.streak)
-  const flameSize = 34 + tier * 4
-  const numberSize = 42 + tier * 4
-  const rank = streakRank(data.streak)
+  const milestone = isGoldMilestone(state, data.streak)
+  // Quest panel (Layout B): full-width quest checklist on TOP, streak on the
+  // BOTTOM. In pending/frozen the live countdown Chronometer overlays the
+  // bottom-left — clear here because the streak sits bottom-RIGHT and drops its
+  // label to make way; lit has no timer, so the streak goes bottom-left with its
+  // full label. This frees the corner the live ticker needs (no rebuild).
+  if (quests.length > 0) {
+    return (
+      <Shell
+        gradient={gradientFor(state, data.streak)}
+        craneSize={104}
+        clickData={clickData}
+      >
+        <FlexWidget
+          style={{
+            height: 'match_parent',
+            width: 'match_parent',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: 12,
+          }}
+        >
+          <FlexWidget
+            style={{ width: 'match_parent', flexDirection: 'column' }}
+          >
+            {quests.map((q, i) => (
+              <QuestRow key={i} quest={q} />
+            ))}
+          </FlexWidget>
+          <FlexWidget
+            style={{
+              width: 'match_parent',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+            }}
+          >
+            <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <GlyphWidget state={state} size={20} />
+              <TextWidget
+                text={`${data.streak}`}
+                maxLines={1}
+                style={{
+                  fontSize: 26,
+                  fontWeight: '900',
+                  color: WHITE,
+                  marginLeft: 6,
+                }}
+              />
+              {milestone ? (
+                <TextWidget text="🏆" style={{ fontSize: 16, marginLeft: 4 }} />
+              ) : null}
+            </FlexWidget>
+            {/* "day streak" sits under the number — in the exact spot the live
+                timer occupies (they never show together), so it's rendered
+                transparent while the timer ticks to reserve the same position. */}
+            <TextWidget
+              text={streakLabel(state, data.freezesLeft)}
+              maxLines={1}
+              style={{
+                fontSize: 12,
+                fontWeight: '600',
+                color: showCountdown ? 'rgba(255, 255, 255, 0)' : WHITE_85,
+                marginTop: 1,
+              }}
+            />
+          </FlexWidget>
+        </FlexWidget>
+      </Shell>
+    )
+  }
   return (
     <Shell
       gradient={gradientFor(state, data.streak)}
       craneSize={104}
       clickData={clickData}
-      frame={state === 'lit' && tier >= 1 ? FRAME_GOLD : undefined}
     >
       <FlexWidget
         style={{
@@ -445,7 +686,7 @@ function MediumWidget({
           width: 'match_parent',
           flexDirection: 'row',
           alignItems: 'center',
-          padding: 16,
+          padding: 10,
         }}
       >
         <FlexWidget
@@ -453,7 +694,7 @@ function MediumWidget({
             flexDirection: 'column',
             alignItems: 'flex-start',
             justifyContent: 'center',
-            width: 100,
+            width: 96,
           }}
         >
           <FlexWidget
@@ -464,42 +705,26 @@ function MediumWidget({
               alignItems: 'center',
             }}
           >
-            <TextWidget text={glyph(state)} style={{ fontSize: flameSize }} />
-            {rank ? <MilestoneBadge /> : null}
+            <GlyphWidget state={state} size={24} />
+            {milestone ? <MilestoneBadge /> : null}
           </FlexWidget>
           <TextWidget
             text={`${data.streak}`}
             maxLines={1}
             style={{
-              fontSize: numberSize,
+              fontSize: 42,
               fontWeight: '900',
               color: WHITE,
               marginTop: 2,
               adjustsFontSizeToFit: true,
-              ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
+              ...(milestone ? MILESTONE_SHADOW : NUMBER_SHADOW),
             }}
           />
           <TextWidget
-            text={rank ? rank.toUpperCase() : 'day streak'}
+            text={streakLabel(state, data.freezesLeft)}
             maxLines={1}
-            style={
-              rank
-                ? {
-                    fontSize: 12,
-                    fontWeight: '900',
-                    color: WHITE,
-                    letterSpacing: 1,
-                    marginTop: 2,
-                  }
-                : { fontSize: 12, fontWeight: '600', color: WHITE_85 }
-            }
+            style={{ fontSize: 12, fontWeight: '600', color: WHITE_85, marginTop: 1 }}
           />
-          {state === 'frozen' && (
-            <TextWidget
-              text={`Frozen · ${data.freezesLeft} left`}
-              style={{ fontSize: 11, fontWeight: 'bold', color: WHITE_90, marginTop: 2 }}
-            />
-          )}
         </FlexWidget>
 
         <FlexWidget
@@ -507,7 +732,7 @@ function MediumWidget({
             width: 1,
             height: 'match_parent',
             backgroundColor: WHITE_22,
-            marginHorizontal: 14,
+            marginHorizontal: 10,
           }}
         />
 
@@ -571,23 +796,15 @@ function CompactWidget({
       </Shell>
     )
   }
-  const tier = streakTier(data.streak)
-  const rank = streakRank(data.streak)
-  const label =
-    state === 'frozen'
-      ? `Frozen · ${data.freezesLeft} left`
-      : rank
-      ? rank.toUpperCase()
-      : 'day streak'
+  const milestone = isGoldMilestone(state, data.streak)
   return (
     <Shell
       gradient={gradientFor(state, data.streak)}
       craneSize={70}
       clickData={clickData}
-      frame={state === 'lit' && tier >= 1 ? FRAME_GOLD : undefined}
     >
       <FlexWidget style={rowStyle}>
-        <TextWidget text={glyph(state)} style={{ fontSize: 40 }} />
+        <GlyphWidget state={state} size={40} />
         <FlexWidget
           style={{
             flexDirection: 'column',
@@ -605,21 +822,17 @@ function CompactWidget({
                 fontWeight: '900',
                 color: WHITE,
                 adjustsFontSizeToFit: true,
-                ...(rank ? MILESTONE_SHADOW : NUMBER_SHADOW),
+                ...(milestone ? MILESTONE_SHADOW : NUMBER_SHADOW),
               }}
             />
-            {rank ? (
+            {milestone ? (
               <TextWidget text="🏆" style={{ fontSize: 17, marginLeft: 6 }} />
             ) : null}
           </FlexWidget>
           <TextWidget
-            text={label}
+            text={streakLabel(state, data.freezesLeft)}
             maxLines={1}
-            style={
-              rank && state !== 'frozen'
-                ? { fontSize: 11, fontWeight: '900', color: WHITE, letterSpacing: 1 }
-                : { fontSize: 11, fontWeight: '600', color: WHITE_85 }
-            }
+            style={{ fontSize: 11, fontWeight: '600', color: WHITE_85 }}
           />
         </FlexWidget>
       </FlexWidget>
@@ -632,16 +845,25 @@ function CompactWidget({
 // TEMP preview overrides (dev only — leave null in committed code).
 const FORCE_STATE: StreakState | null = null
 const FORCE_STREAK: number | null = null
+// Sample quests for previewing the quest panel on-device until the web `setQuests`
+// sync ships. To preview, set this to a NativeQuestData literal (e.g. two quests);
+// must be null in commits.
+const FORCE_QUESTS: NativeQuestData | null = null
+// Dev: override the remaining ms to preview the countdown urgency colours
+// (e.g. 3 * 60 * 60 * 1000 = 3h → red). Null = use the real time to midnight.
+const FORCE_COUNTDOWN_MS: number | null = null
 
 // Single resizable widget: pick small vs medium by the host width (dp). Mirrors
 // the iOS systemSmall / systemMedium families of one widget.
 export function StreakWidget({
   widgetInfo,
   data,
+  questData,
   now,
 }: {
   widgetInfo: WidgetInfo
   data: NativeStreakData | null
+  questData: NativeQuestData | null
   now: Date
 }) {
   const previewData: NativeStreakData | null =
@@ -656,22 +878,50 @@ export function StreakWidget({
         }
       : data
   const state = FORCE_STATE ?? computeState(previewData, now)
-  // Live midnight countdown only while the streak is still unguarded today.
-  const showCountdown = state === 'pending'
-  const clickData = {
-    showCountdown,
-    countdownMs: showCountdown ? msUntilPacificReset(now) : 0,
-  }
   // Pick layout by cell shape: wide -> medium (hook), short/wide -> compact
-  // (flame beside number, e.g. a Pixel 2x1), else the tall/square vertical small.
+  // (flame beside number, e.g. a Pixel 2x1), tall/narrow -> the top-anchored
+  // small (hero up top, hook/countdown filling the bottom), else the square
+  // vertical small (centered).
   const isMedium = widgetInfo.width >= 220
   const isShort = !isMedium && widgetInfo.height < 130
+  const isTall = !isMedium && widgetInfo.height >= 200
+  const isSquare = !isMedium && !isShort && !isTall
+  const quests = effectiveQuests(FORCE_QUESTS ?? questData, now)
+  const mediumHasQuests = isMedium && quests.length > 0
+  // Live midnight countdown whenever they haven't bet today (pending OR frozen —
+  // a freeze covered today but the day still isn't "done"). The native Chronometer
+  // is hard-anchored bottom-left (see the patch), so it only fits where that
+  // corner is clear: the tall + square (hero top-anchored), and the medium quest
+  // panel (Layout B — streak sits bottom-right). The plain (no-quest) medium can't
+  // host it, so it's left off there.
+  const showCountdown =
+    (state === 'pending' || state === 'frozen') &&
+    (isTall || isSquare || mediumHasQuests)
+  const clickData = {
+    showCountdown,
+    countdownMs: showCountdown
+      ? FORCE_COUNTDOWN_MS ?? msUntilPacificReset(now)
+      : 0,
+  }
   return isMedium ? (
-    <MediumWidget state={state} data={previewData} now={now} clickData={clickData} />
+    <MediumWidget
+      state={state}
+      data={previewData}
+      now={now}
+      quests={quests}
+      showCountdown={showCountdown}
+      clickData={clickData}
+    />
   ) : isShort ? (
     <CompactWidget state={state} data={previewData} clickData={clickData} />
   ) : (
-    <SmallWidget state={state} data={previewData} clickData={clickData} />
+    <SmallWidget
+      state={state}
+      data={previewData}
+      isTall={isTall}
+      showCountdown={showCountdown}
+      clickData={clickData}
+    />
   )
 }
 
@@ -679,9 +929,17 @@ export function StreakWidget({
 // task handler. Stamps `now` once so state + hook are consistent within a render.
 export function renderStreakWidget(
   widgetInfo: WidgetInfo,
-  data: NativeStreakData | null
+  data: NativeStreakData | null,
+  questData: NativeQuestData | null = null
 ) {
-  return <StreakWidget widgetInfo={widgetInfo} data={data} now={new Date()} />
+  return (
+    <StreakWidget
+      widgetInfo={widgetInfo}
+      data={data}
+      questData={questData}
+      now={new Date()}
+    />
+  )
 }
 
 export const STREAK_WIDGET_NAME = 'Streak'
