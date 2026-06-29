@@ -125,6 +125,10 @@ const App = () => {
     const sub = AppState.addEventListener('change', (next) => {
       if ((next === 'background' || next === 'active') && fbUser?.uid) {
         syncStreakFromApi(fbUser.uid)
+        // Quest scores aren't on the public API the streak sync uses, so ask the
+        // webview to re-fetch + re-push them. Lets a completed quest reach the
+        // widget on the next foreground without a full reload.
+        communicateWithWebview('refreshQuests', {})
       }
     })
     return () => sub.remove()

@@ -281,15 +281,24 @@ const UNLIT_FLAME_SVG =
   '8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 ' +
   '2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>'
 
-// The streak glyph. Lit = 🔥, frozen = 🧊, pending = a grey (unlit) flame.
+// Dark halo behind the lit/frozen emoji so it reads against the warm gradient
+// (an orange 🔥 on the orange "lit" background otherwise washes out).
+const GLYPH_SHADOW = {
+  textShadowColor: 'rgba(0, 0, 0, 0.5)' as const,
+  textShadowRadius: 6,
+  textShadowOffset: { width: 0, height: 1 },
+}
+
+// The streak glyph. Lit = 🔥, frozen = 🧊, pending/loggedOut = a grey (unlit)
+// flame — a logged-out / no-streak user has no lit flame to show.
 function GlyphWidget({ state, size }: { state: StreakState; size: number }) {
-  if (state === 'pending') {
+  if (state === 'pending' || state === 'loggedOut') {
     return <SvgWidget svg={UNLIT_FLAME_SVG} style={{ width: size, height: size }} />
   }
   return (
     <TextWidget
       text={state === 'frozen' ? '🧊' : '🔥'}
-      style={{ fontSize: size }}
+      style={{ fontSize: size, ...GLYPH_SHADOW }}
     />
   )
 }
@@ -429,7 +438,7 @@ function SmallWidget({
           <FlexWidget
             style={{ flexDirection: 'column', alignItems: 'flex-start' }}
           >
-            <TextWidget text="🔥" style={{ fontSize: 42 }} />
+            <GlyphWidget state="loggedOut" size={42} />
             <TextWidget
               text="Start a streak"
               maxLines={2}
@@ -519,7 +528,9 @@ function SmallWidget({
 // One quest checklist row (medium widget): checkbox + title + mana reward. Done
 // quests dim + check; pending ones stay bright. Full cell width, so the title and
 // reward both fit without truncating (unlike a narrow right column).
-function QuestRow({ quest }: { quest: WidgetQuest }) {
+// `large` scales the row up on tall medium cells (e.g. Pixel's tall grid) so the
+// checklist fills the box instead of floating; short cells keep the compact size.
+function QuestRow({ quest, large }: { quest: WidgetQuest; large?: boolean }) {
   const { done } = quest
   return (
     <FlexWidget
@@ -527,25 +538,25 @@ function QuestRow({ quest }: { quest: WidgetQuest }) {
         width: 'match_parent',
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 5,
+        marginBottom: large ? 10 : 5,
       }}
     >
-      <TextWidget text={done ? '✅' : '⬜'} style={{ fontSize: 14 }} />
+      <TextWidget text={done ? '✅' : '⬜'} style={{ fontSize: large ? 18 : 14 }} />
       <TextWidget
         text={quest.title}
         maxLines={1}
         style={{
-          fontSize: 13,
+          fontSize: large ? 16 : 13,
           fontWeight: '600',
           color: done ? WHITE_55 : WHITE,
-          marginLeft: 8,
+          marginLeft: large ? 10 : 8,
         }}
       />
       <FlexWidget style={{ flex: 1 }} />
       <TextWidget
         text={`+M${quest.rewardMana}`}
         style={{
-          fontSize: 12,
+          fontSize: large ? 14 : 12,
           fontWeight: 'bold',
           color: done ? WHITE_45 : WHITE_85,
         }}
@@ -564,6 +575,7 @@ function MediumWidget({
   now,
   quests,
   showCountdown,
+  isTallMedium,
   clickData,
 }: {
   state: StreakState
@@ -571,6 +583,7 @@ function MediumWidget({
   now: Date
   quests: WidgetQuest[]
   showCountdown?: boolean
+  isTallMedium?: boolean
   clickData?: Record<string, unknown>
 }) {
   if (state === 'loggedOut' || !data) {
@@ -588,7 +601,7 @@ function MediumWidget({
           <FlexWidget
             style={{ flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}
           >
-            <TextWidget text="🔥" style={{ fontSize: 38 }} />
+            <GlyphWidget state="loggedOut" size={38} />
             <TextWidget
               text="Start a streak"
               maxLines={2}
@@ -622,7 +635,14 @@ function MediumWidget({
             height: 'match_parent',
             width: 'match_parent',
             flexDirection: 'column',
-            justifyContent: 'space-between',
+            // Only tall grid cells (e.g. Pixel's tall rows) have slack: there
+            // space-between dumps it all into the middle as a void, so center the
+            // group to keep it compact. Short cells (small phones) have no slack —
+            // centering + a gap would overflow and clip "day streak", so keep
+            // space-between. In pending/frozen the streak must stay bottom (native
+            // Chronometer is hard-anchored bottom-left), so never center there.
+            justifyContent:
+              isTallMedium && !showCountdown ? 'center' : 'space-between',
             padding: 12,
           }}
         >
@@ -630,7 +650,7 @@ function MediumWidget({
             style={{ width: 'match_parent', flexDirection: 'column' }}
           >
             {quests.map((q, i) => (
-              <QuestRow key={i} quest={q} />
+              <QuestRow key={i} quest={q} large={isTallMedium} />
             ))}
           </FlexWidget>
           <FlexWidget
@@ -638,22 +658,28 @@ function MediumWidget({
               width: 'match_parent',
               flexDirection: 'column',
               alignItems: 'flex-start',
+              // Breathing room from the quest list when centered on a tall cell
+              // (no effect under space-between, where the blocks are already apart).
+              marginTop: isTallMedium && !showCountdown ? 16 : 0,
             }}
           >
             <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <GlyphWidget state={state} size={20} />
+              <GlyphWidget state={state} size={isTallMedium ? 26 : 20} />
               <TextWidget
                 text={`${data.streak}`}
                 maxLines={1}
                 style={{
-                  fontSize: 26,
+                  fontSize: isTallMedium ? 34 : 26,
                   fontWeight: '900',
                   color: WHITE,
                   marginLeft: 6,
                 }}
               />
               {milestone ? (
-                <TextWidget text="🏆" style={{ fontSize: 16, marginLeft: 4 }} />
+                <TextWidget
+                  text="🏆"
+                  style={{ fontSize: isTallMedium ? 20 : 16, marginLeft: 4 }}
+                />
               ) : null}
             </FlexWidget>
             {/* "day streak" sits under the number — in the exact spot the live
@@ -663,7 +689,7 @@ function MediumWidget({
               text={streakLabel(state, data.freezesLeft)}
               maxLines={1}
               style={{
-                fontSize: 12,
+                fontSize: isTallMedium ? 14 : 12,
                 fontWeight: '600',
                 color: showCountdown ? 'rgba(255, 255, 255, 0)' : WHITE_85,
                 marginTop: 1,
@@ -778,7 +804,7 @@ function CompactWidget({
     return (
       <Shell gradient={GREY} craneSize={70} clickData={clickData}>
         <FlexWidget style={rowStyle}>
-          <TextWidget text="🔥" style={{ fontSize: 34 }} />
+          <GlyphWidget state="loggedOut" size={34} />
           <FlexWidget
             style={{ flexDirection: 'column', marginLeft: 10, flex: 1 }}
           >
@@ -910,6 +936,9 @@ export function StreakWidget({
       now={now}
       quests={quests}
       showCountdown={showCountdown}
+      // Tall enough to have vertical slack (content needs ~135dp). Below this the
+      // cell is "short-wide" and the compact space-between layout fills it.
+      isTallMedium={widgetInfo.height >= 170}
       clickData={clickData}
     />
   ) : isShort ? (

@@ -13,6 +13,10 @@ export type nativeToWebMessageType =
   | 'locationPermissionStatus'
   | 'hasReviewAction'
   | 'version'
+  // Native asks the web to re-push quest completion to the streak widget (sent on
+  // app-foreground, since quest scores aren't on the public API the native streak
+  // sync uses). Payload is empty.
+  | 'refreshQuests'
 export type nativeToWebMessage = {
   type: nativeToWebMessageType
   data: any
@@ -107,4 +111,5 @@ export type MesageTypeMap = {
   link: {
     url: string
   }
+  refreshQuests: object
 }
