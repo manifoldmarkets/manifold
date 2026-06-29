@@ -118,14 +118,21 @@ function effectiveQuests(
     const nowMs = now.getTime()
     const dayEnd = pacificStartOfDayMs(new Date(data.updatedAt)) + 24 * 60 * 60 * 1000
     const weekEnd = nextPacificWeekResetMs(new Date(data.updatedAt))
-    return data.quests.map((q) => {
-      const periodEnd = q.period === 'weekly' ? weekEnd : dayEnd
-      return {
-        title: q.title,
-        rewardMana: q.rewardMana,
-        done: q.done && nowMs < periodEnd,
-      }
-    })
+    // Defensive: skip any malformed row so the headless render never passes
+    // undefined across the bridge to a native TextWidget (text is typed
+    // string). Well-formed setQuests payloads pass through unchanged.
+    return data.quests
+      .filter(
+        (q) => typeof q?.title === 'string' && Number.isFinite(q?.rewardMana)
+      )
+      .map((q) => {
+        const periodEnd = q.period === 'weekly' ? weekEnd : dayEnd
+        return {
+          title: q.title,
+          rewardMana: q.rewardMana,
+          done: !!q.done && nowMs < periodEnd,
+        }
+      })
   } catch {
     // Never throw from a render: fall back to the streak-only medium.
     return []

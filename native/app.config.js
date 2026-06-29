@@ -1,20 +1,11 @@
 export default ({ config }) => {
   const otaUpdateVersion = '1.0.0'
-  // Override to build under your own Expo account (e.g. for a personal test
-  // build): set EAS_OWNER, then run `eas init` and set EAS_PROJECT_ID to the
-  // new id it prints. When owner is overridden, we DON'T fall back to the
-  // shared project id — otherwise `eas init` thinks it's already linked.
-  const owner = process.env.EAS_OWNER || 'iansp'
-  const isDefaultOwner = owner === 'iansp'
-  const projectId =
-    process.env.EAS_PROJECT_ID ||
-    (isDefaultOwner ? '0ce454fc-3885-4eab-88b6-787b1691973b' : undefined)
 
   return {
     expo: {
       name: 'Manifold',
       slug: 'manifold-markets',
-      owner,
+      owner: 'iansp',
       scheme: 'com.markets.manifold',
       newArchEnabled: true,
       jsEngine: 'hermes',
@@ -89,7 +80,7 @@ export default ({ config }) => {
       platforms: ['ios', 'android'],
       updates: {
         fallbackToCacheTimeout: 0,
-        ...(projectId ? { url: `https://u.expo.dev/${projectId}` } : {}),
+        url: 'https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b',
       },
       android: {
         intentFilters: [
@@ -148,7 +139,7 @@ export default ({ config }) => {
         ...config?.extra,
         eas: {
           ...config?.extra?.eas,
-          projectId,
+          projectId: '0ce454fc-3885-4eab-88b6-787b1691973b',
           NATIVE_BUILD_TYPE: process.env.NATIVE_BUILD_TYPE,
           NEXT_PUBLIC_FIREBASE_ENV: process.env.NEXT_PUBLIC_FIREBASE_ENV,
         },
