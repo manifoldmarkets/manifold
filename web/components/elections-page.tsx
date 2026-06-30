@@ -102,14 +102,6 @@ export function USElectionsPage(
         </Col>
       </Row>
 
-      {/* 2028 outlook — one collapsible card (party split + candidate field). */}
-      {presidency2028Contract && (
-        <Presidency2028Section
-          contract={presidency2028Contract}
-          partyContract={presidency2028PartyContract}
-        />
-      )}
-
       {/* 2026 Midterms — the balance-of-power levers and the race map together
           in a single card so the section reads as one unit. */}
       <Col className="gap-3">
@@ -153,6 +145,16 @@ export function USElectionsPage(
       )}
 
       {trending}
+
+      {/* 2028 outlook — one collapsible card (party split + candidate field).
+          Sits below the midterms + trending so the 2026 races (the page's focus)
+          lead, with the longer-range 2028 outlook just above the general feed. */}
+      {presidency2028Contract && (
+        <Presidency2028Section
+          contract={presidency2028Contract}
+          partyContract={presidency2028PartyContract}
+        />
+      )}
 
       {/* Infinite-scroll feed of election markets; topic bubbles sit in their
           own row below the sort/filter controls (Search's extraFilterPills). */}
