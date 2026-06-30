@@ -8,6 +8,7 @@ import {
   PRESIDENT_2028_SLUG,
   PRESIDENT_2028_PARTY_SLUG,
   PRIMARIES_2026,
+  REDISTRICTING_2026,
   StateElectionMarket,
 } from 'web/public/data/elections-data'
 import {
@@ -39,6 +40,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     presidency2028Contract,
     presidency2028PartyContract,
     primaryContractsRaw,
+    redistrictingContractsRaw,
   ] = await Promise.all([
     getStateContracts(getContractFromSlugFunction, senate2026),
     getStateContracts(getContractFromSlugFunction, governors2026),
@@ -52,11 +54,17 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     getContractFromSlugFunction(PRESIDENT_2028_SLUG),
     getContractFromSlugFunction(PRESIDENT_2028_PARTY_SLUG),
     Promise.all(PRIMARIES_2026.map(getContractFromSlugFunction)),
+    Promise.all(REDISTRICTING_2026.map(getContractFromSlugFunction)),
   ])
 
   // Keep only primaries that still exist and are open (so the watch-list shrinks
   // gracefully as races resolve, rather than showing stale/settled markets).
   const primaryContracts = primaryContractsRaw.filter(
+    (c): c is Contract => !!c && !c.isResolved && !c.resolution
+  )
+
+  // Same for redistricting markets — open only, so settled questions drop off.
+  const redistrictingContracts = redistrictingContractsRaw.filter(
     (c): c is Contract => !!c && !c.isResolved && !c.resolution
   )
 
@@ -78,6 +86,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     senateControlContract,
     houseDistrictsContract,
     primaryContracts,
+    redistrictingContracts,
     newsDashboards,
     headlines,
     trendingDashboard,

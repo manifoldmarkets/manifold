@@ -52,8 +52,11 @@ export function Presidency2028Section(props: {
   partyContract: Contract | null
 }) {
   const contract = useLiveContract(props.contract)
+  // Default expanded: the section now sits lower on the page (below Trending),
+  // so it should lead with the full party split + candidate field rather than
+  // the collapsed one-liner.
   const [expanded, setExpanded] = usePersistentInMemoryState(
-    false,
+    true,
     'expand-2028-presidency'
   )
 

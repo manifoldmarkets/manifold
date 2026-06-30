@@ -59,6 +59,7 @@ export function USElectionsPage(
     senateControlContract,
     houseDistrictsContract,
     primaryContracts,
+    redistrictingContracts,
     trendingDashboard,
     hideTitle,
   } = props
@@ -129,6 +130,17 @@ export function USElectionsPage(
         <Col className="gap-3">
           <SectionHeader>2026 Primaries to watch</SectionHeader>
           <ContractsTable contracts={primaryContracts} hideAvatar />
+        </Col>
+      )}
+
+      {/* Mid-decade redistricting — its own watch-list so these don't crowd the
+          Trending block. Shown once a few are live. */}
+      {redistrictingContracts.length > 0 && (
+        <Col className="gap-3">
+          <SectionHeader subtitle="Mid-decade map fights that could swing House seats">
+            Redistricting
+          </SectionHeader>
+          <ContractsTable contracts={redistrictingContracts} hideAvatar />
         </Col>
       )}
 

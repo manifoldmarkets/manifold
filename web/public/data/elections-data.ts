@@ -50,6 +50,18 @@ export const PRIMARIES_2026 = [
   'survivor-2026-whose-gop-primary-tor', // National — GOP incumbents vs. Trump
 ]
 
+// Mid-decade redistricting markets (community) — their own watch-list so they
+// don't crowd the Trending block. Best-trafficked, 2026-relevant questions;
+// resolved/closed ones are filtered out at fetch time.
+export const REDISTRICTING_2026 = [
+  'large-states-redistrict-before-2026', // Multi — which large states redistrict
+  'virginia-redistricting-will-the-cha', // VA — Charlottesville district blue?
+  'if-the-texas-gop-succeeds-in-redist', // TX — GOP gains seats if it redistricts
+  'will-texass-2025-redistricting-map', // TX — 2025 map used in the 2026 midterms
+  'virginia-redistricting-before-midte', // VA — redistricting before midterms
+  'florida-redistricting-before-2026-m', // FL — redistricting before midterms
+]
+
 export const presidency2024: StateElectionMarket[] = [
   {
     state: 'AL',
@@ -285,6 +297,8 @@ export type ElectionsPageProps = {
   houseDistrictsContract: Contract | null
   // Notable 2026 primary markets (open only), for the watch-list section.
   primaryContracts: Contract[]
+  // Mid-decade redistricting markets (open only), for the watch-list section.
+  redistrictingContracts: Contract[]
   // Trending politics dashboards.
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]
