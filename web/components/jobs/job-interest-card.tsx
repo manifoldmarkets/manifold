@@ -34,7 +34,10 @@ export function JobInterestCard() {
     !!user
   )
   const interest = data?.interest
-  const registered = !!interest
+  // "Registered" means actively on the list. A user who opted out keeps their
+  // row (so re-joining pre-fills), but openToContact is false — treat them as
+  // not registered so they see the join CTA again.
+  const registered = !!interest && interest.openToContact
 
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(true)
@@ -72,13 +75,45 @@ export function JobInterestCard() {
     }
   }
 
+  // Discard in-progress edits and snap the form back to the saved row.
+  const cancel = () => {
+    setSkills(interest?.skills ?? [])
+    setInterests(interest?.interests ?? [])
+    setRegion(interest?.region ?? null)
+    setOpen(false)
+  }
+
+  // Opt out without deleting the row (openToContact=false), so their prior
+  // picks are still there if they choose to re-join later.
+  const remove = async () => {
+    if (!interest) return
+    setSaving(true)
+    try {
+      await api('set-job-interest', {
+        skills: interest.skills,
+        interests: interest.interests,
+        region: interest.region,
+        openToContact: false,
+      })
+      await refresh()
+      toast.success('Removed — you can re-join anytime')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const canSave = skills.length > 0 || interests.length > 0
 
-  const chips = [
-    ...skills.map((s) => JOB_SKILL_LABELS[s]),
-    ...interests.map((i) => JOB_INTEREST_LABELS[i]),
-    ...(region ? [JOB_REGION_LABELS[region]] : []),
-  ]
+  // Summary chips reflect the *saved* row, never in-progress edits.
+  const chips = interest
+    ? [
+        ...interest.skills.map((s) => JOB_SKILL_LABELS[s]),
+        ...interest.interests.map((i) => JOB_INTEREST_LABELS[i]),
+        ...(interest.region ? [JOB_REGION_LABELS[interest.region]] : []),
+      ]
+    : []
 
   // Registered and not editing → a collapsible summary panel.
   if (registered && !open) {
@@ -110,12 +145,21 @@ export function JobInterestCard() {
                   </span>
                 ))}
               </Row>
-              <button
-                onClick={() => setOpen(true)}
-                className="text-primary-600 hover:text-primary-700 self-start text-sm font-medium"
-              >
-                Update preferences
-              </button>
+              <Row className="items-center gap-4">
+                <button
+                  onClick={() => setOpen(true)}
+                  className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                >
+                  Update preferences
+                </button>
+                <button
+                  onClick={remove}
+                  disabled={saving}
+                  className="text-ink-500 hover:text-ink-700 text-sm disabled:opacity-50"
+                >
+                  Remove me
+                </button>
+              </Row>
             </Col>
           )}
         </Col>
@@ -211,7 +255,7 @@ export function JobInterestCard() {
               {registered ? 'Save changes' : "I'm interested"}
             </Button>
             <button
-              onClick={() => setOpen(false)}
+              onClick={cancel}
               className="text-ink-500 hover:text-ink-700 text-sm"
             >
               Cancel

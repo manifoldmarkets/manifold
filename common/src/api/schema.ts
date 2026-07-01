@@ -1481,8 +1481,8 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z
       .object({
-        skills: z.array(z.enum(JOB_SKILLS)),
-        interests: z.array(z.enum(JOB_INTERESTS)),
+        skills: z.array(z.enum(JOB_SKILLS)).max(JOB_SKILLS.length),
+        interests: z.array(z.enum(JOB_INTERESTS)).max(JOB_INTERESTS.length),
         region: z.enum(JOB_REGIONS).nullable(),
         openToContact: z.boolean(),
       })
