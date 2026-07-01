@@ -479,7 +479,6 @@ const bottomNav = (
   isMobile: boolean | undefined
 ) =>
   buildArray<NavItem>(
-    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     // Jobs only belongs in the bottom section on desktop (behind "More"). On
     // mobile it lives higher up in the main nav list (see getMobileNav).
     !isMobile && { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
@@ -489,6 +488,7 @@ const bottomNav = (
         href: '/referrals',
         icon: StarIcon,
       },
+    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
       name: theme ?? 'auto',
       children:

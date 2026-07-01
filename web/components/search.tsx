@@ -221,6 +221,8 @@ type SearchProps = {
   showTopicsFilterPills?: boolean
   refreshOnVisible?: boolean
   showHotTopics?: boolean
+  // Extra pills rendered as their own row below the sort/filter controls.
+  extraFilterPills?: ReactNode
 }
 
 // Collect all group IDs from SEARCH_TOPICS_TO_SUBTOPICS to filter out duplicates
@@ -280,6 +282,7 @@ export function Search(props: SearchProps) {
     refreshOnVisible,
     showHotTopics,
     initialTopics,
+    extraFilterPills,
   } = props
 
   // Filter hot topics to exclude duplicates of default topics and subtopics
@@ -585,6 +588,20 @@ export function Search(props: SearchProps) {
                 >
                   ⚽ World Cup
                 </Link>
+                <Link
+                  href="/election"
+                  onClick={() =>
+                    track('select search topic', { topic: 'midterms-2026' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    'bg-gradient-to-r from-blue-100 to-rose-100 dark:from-blue-900/50 dark:to-rose-900/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  2026 Midterms
+                </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
                     key={topic}
@@ -735,6 +752,7 @@ export function Search(props: SearchProps) {
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
             hideSweepsToggle={hideSweepsToggle}
+            extraFilterPills={extraFilterPills}
           />
         )}
       </Col>

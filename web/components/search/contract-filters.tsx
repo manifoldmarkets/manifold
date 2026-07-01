@@ -3,7 +3,7 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { getLabelFromValue } from './search-dropdown-helpers'
 
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
 import { FaDroplet, FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
@@ -62,8 +62,18 @@ export function ContractFilters(props: {
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug?: string
   hideSweepsToggle?: boolean
+  // Extra pills rendered as their own row below the sort/filter controls
+  // (e.g. topic filters).
+  extraFilterPills?: ReactNode
 }) {
-  const { className, params, updateParams, hideSweepsToggle, topicSlug } = props
+  const {
+    className,
+    params,
+    updateParams,
+    hideSweepsToggle,
+    topicSlug,
+    extraFilterPills,
+  } = props
   const user = useUser()
 
   const {
@@ -365,6 +375,11 @@ export function ContractFilters(props: {
           <FaSliders className="h-4 w-4" />
         </IconButton>
       </Carousel>
+      {extraFilterPills && (
+        <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
+          {extraFilterPills}
+        </Carousel>
+      )}
       <FilterModal
         open={openFilterModal}
         setOpen={setOpenFilterModal}

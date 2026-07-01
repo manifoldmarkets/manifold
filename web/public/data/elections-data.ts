@@ -1,9 +1,7 @@
-import { MultiPoints } from 'common/chart'
-import { BinaryContract, CPMMMultiContract, Contract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Dashboard } from 'common/dashboard'
-import { PolicyContractType } from './policy-data'
 
 export interface StateElectionMarket {
   slug: string
@@ -14,6 +12,55 @@ export interface StateElectionMarket {
 
 export const NH_LINK =
   'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
+
+// Headline aggregate markets for the 2026 midterm page. All community-created;
+// chosen as the best-trafficked market for each top-line question.
+export const MIDTERMS_2026 = {
+  // Multi-choice "who controls Congress" — the page's hero card. Congress-only
+  // (Senate + House, no presidential dimension), which fits a midterms page
+  // where the presidency isn't on the ballot.
+  balanceOfPower: 'who-controls-congress-after-the-202',
+  // Binary, YES = Republicans hold the House.
+  houseControl: 'republicans-have-house-majority-aft',
+  // Binary, YES = Republicans win the Senate.
+  senateControl: 'will-republicans-win-the-senate-in-738388924521',
+  // Independent multi-choice; each answer is a district, YES = Democrat wins.
+  houseDistricts: 'will-a-democrat-win-these-us-house',
+} as const
+
+// 2028 presidential election — the most-traded "who will be elected president"
+// market, shown as candidate faces at the top of the page.
+export const PRESIDENT_2028_SLUG = 'who-will-be-elected-president-in-20'
+
+// 2028 presidency by party — the most-traded "which party wins" market. Shown as
+// a Democrat-vs-Republican head-to-head bar under the candidate field.
+export const PRESIDENT_2028_PARTY_SLUG =
+  'which-political-party-wins-the-us-p-nUsCQcZ6Lc'
+
+// Notable 2026 primary races (community markets) — a compact watch-list. Each is
+// the best-trafficked multi-choice market for that primary. Resolved/closed ones
+// are filtered out at fetch time, so this can degrade gracefully as races land.
+export const PRIMARIES_2026 = [
+  'michigan-democratic-senate-primary', // MI — Democratic Senate primary
+  'who-will-win-the-2026-massachusetts', // MA — Democratic Senate primary
+  'who-will-win-the-2026-minnesota-dem', // MN — Democratic Senate primary
+  'who-will-the-democratic-primary-for', // MN — Democratic Governor primary
+  'who-will-win-the-2026-republican-pr', // FL — Republican Governor primary
+  'who-wins-missouris-1st-congressiona', // MO-01 — Democratic House primary
+  'survivor-2026-whose-gop-primary-tor', // National — GOP incumbents vs. Trump
+]
+
+// Mid-decade redistricting markets (community) — their own watch-list so they
+// don't crowd the Trending block. Best-trafficked, 2026-relevant questions;
+// resolved/closed ones are filtered out at fetch time.
+export const REDISTRICTING_2026 = [
+  'large-states-redistrict-before-2026', // Multi — which large states redistrict
+  'virginia-redistricting-will-the-cha', // VA — Charlottesville district blue?
+  'if-the-texas-gop-succeeds-in-redist', // TX — GOP gains seats if it redistricts
+  'will-texass-2025-redistricting-map', // TX — 2025 map used in the 2026 midterms
+  'virginia-redistricting-before-midte', // VA — redistricting before midterms
+  'florida-redistricting-before-2026-m', // FL — redistricting before midterms
+]
 
 export const presidency2024: StateElectionMarket[] = [
   {
@@ -232,27 +279,30 @@ export type MapContractsDictionary = {
 }
 
 export type ElectionsPageProps = {
-  rawPresidencyStateContracts: MapContractsDictionary
-  rawPresidencySwingCashContracts: MapContractsDictionary
+  // 2028 presidential candidate market (faces + win %).
+  presidency2028Contract: Contract | null
+  // 2028 presidency-by-party market (Dem-vs-Rep head-to-head bar).
+  presidency2028PartyContract: Contract | null
+  // Per-state maps (community markets, keyed by state code).
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
-  rawPolicyContracts: PolicyContractType[]
-  electionPartyContract: BinaryContract | null
-  electionPartyCashContract: BinaryContract | null
-  electionCandidateContract: Contract | null
-  republicanCandidateContract: Contract | null
-  democratCandidateContract: Contract | null
-  newHampshireContract: Contract | null
-  republicanVPContract: Contract | null
-  houseContract: Contract | null
-  democraticVPContract: Contract | null
-  // republicanElectability: Contract | null
-  democraticElectability: Contract | null
-  linkPreviews: LinkPreviews
+  // Candidate ("who will win") markets for races that have one, keyed by state.
+  rawSenateCandidateContracts: MapContractsDictionary
+  rawGovernorCandidateContracts: MapContractsDictionary
+  // Headline aggregate markets.
+  balanceOfPowerContract: Contract | null
+  houseControlContract: Contract | null
+  senateControlContract: Contract | null
+  // Per-district House market (independent multi-choice).
+  houseDistrictsContract: Contract | null
+  // Notable 2026 primary markets (open only), for the watch-list section.
+  primaryContracts: Contract[]
+  // Mid-decade redistricting markets (open only), for the watch-list section.
+  redistrictingContracts: Contract[]
+  // Trending politics dashboards.
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]
   trendingDashboard: NewsDashboardPageProps
-  partyGraphData: { partyPoints: MultiPoints; afterTime: number }
 }
 
 export type SuccesNewsDashboardPageProps = {

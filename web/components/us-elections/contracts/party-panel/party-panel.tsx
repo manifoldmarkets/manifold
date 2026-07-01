@@ -30,6 +30,10 @@ import { IoIosPerson } from 'react-icons/io'
 import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { api } from 'web/lib/api/api'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import {
+  isDemocraticAnswer,
+  isRepublicanAnswer,
+} from 'web/components/usa-map/state-election-map'
 
 // just the bars
 export function PartyPanel(props: {
@@ -74,21 +78,18 @@ export function PartyPanel(props: {
   )
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
-  // Calculate Republican to Democratic ratio
-  const republicanAnswer = answers.find((a) =>
-    a.text.includes('Republican Party')
-  )
-  const democraticAnswer = answers.find((a) =>
-    a.text.includes('Democratic Party')
-  )
+  // Calculate Republican to Democratic ratio. Community markets label parties
+  // inconsistently ("Democrats", "Democratic party", etc.), so match defensively
+  // and guard against a missing side rather than asserting non-null.
+  const republicanAnswer = answers.find((a) => isRepublicanAnswer(a.text))
+  const democraticAnswer = answers.find((a) => isDemocraticAnswer(a.text))
 
-  const republicanProb = getAnswerProbability(contract, republicanAnswer!.id)
-  const democraticProb = getAnswerProbability(contract, democraticAnswer!.id)
-
-  let democratToRepublicanRatio = 0
+  let democratToRepublicanRatio = 0.5
   if (republicanAnswer && democraticAnswer) {
+    const republicanProb = getAnswerProbability(contract, republicanAnswer.id)
+    const democraticProb = getAnswerProbability(contract, democraticAnswer.id)
     const totalProb = republicanProb + democraticProb
-    democratToRepublicanRatio = democraticProb / totalProb
+    democratToRepublicanRatio = totalProb > 0 ? democraticProb / totalProb : 0.5
   }
 
   if (includeNeedle) {
@@ -205,11 +206,8 @@ export function PartyPanel(props: {
 }
 
 export function getPartyColor(name: string) {
-  // return 'bg-primary-500'
-  if (name == 'Democratic Party' || name.includes('Democratic Party'))
-    return '#adc4e3'
-  if (name == 'Republican Party' || name.includes('Republican Party'))
-    return '#ecbab5'
+  if (isDemocraticAnswer(name)) return '#adc4e3'
+  if (isRepublicanAnswer(name)) return '#ecbab5'
   return '#9E9FBD'
 }
 

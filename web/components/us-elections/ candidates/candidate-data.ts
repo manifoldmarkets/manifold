@@ -235,4 +235,14 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/mcraven.png',
     shortName: 'McRaven',
   },
+  'Alexandria Ocasio-Cortez': {
+    party: 'Democrat',
+    photo: '/political-candidates/aoc.png',
+    shortName: 'AOC',
+  },
+  'Jon Ossoff': {
+    party: 'Democrat',
+    photo: '/political-candidates/ossoff.png',
+    shortName: 'Ossoff',
+  },
 }
