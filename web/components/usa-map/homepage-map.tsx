@@ -123,7 +123,9 @@ export function HomepageMap(props: {
           )}
           {selectedState && rawGovernorCandidateContracts[selectedState] && (
             <CandidateRaceCard
-              contract={rawGovernorCandidateContracts[selectedState] as Contract}
+              contract={
+                rawGovernorCandidateContracts[selectedState] as Contract
+              }
             />
           )}
         </>

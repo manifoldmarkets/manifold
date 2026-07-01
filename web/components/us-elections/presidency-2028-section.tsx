@@ -26,10 +26,7 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './contracts/candidates-panel/candidates-panel'
 import { removeTextInParentheses } from './contracts/candidates-panel/candidate-bar'
-import {
-  CANDIDATE_DATA,
-  CandidateDataType,
-} from './ candidates/candidate-data'
+import { CANDIDATE_DATA, CandidateDataType } from './ candidates/candidate-data'
 import {
   DEM_COLOR,
   REP_COLOR,
@@ -132,8 +129,18 @@ function PartyMiniPreview(props: { dem: number; rep: number }) {
         {formatPercent(dem)}
       </span>
       <div className="flex h-1.5 w-10 overflow-hidden rounded-full">
-        <div style={{ width: `${(dem / denom) * 100}%`, backgroundColor: DEM_COLOR }} />
-        <div style={{ width: `${(rep / denom) * 100}%`, backgroundColor: REP_COLOR }} />
+        <div
+          style={{
+            width: `${(dem / denom) * 100}%`,
+            backgroundColor: DEM_COLOR,
+          }}
+        />
+        <div
+          style={{
+            width: `${(rep / denom) * 100}%`,
+            backgroundColor: REP_COLOR,
+          }}
+        />
       </div>
       <span className="text-sm font-bold" style={{ color: REP_COLOR }}>
         {formatPercent(rep)}

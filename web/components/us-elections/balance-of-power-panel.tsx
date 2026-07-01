@@ -127,11 +127,7 @@ function PowerLever(props: { title: string; contract: Contract | null }) {
   )
 }
 
-function BetChip(props: {
-  label: string
-  color: string
-  onClick: () => void
-}) {
+function BetChip(props: { label: string; color: string; onClick: () => void }) {
   const { label, color, onClick } = props
   return (
     <button

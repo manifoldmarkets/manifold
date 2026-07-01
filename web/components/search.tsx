@@ -596,7 +596,7 @@ export function Search(props: SearchProps) {
                   className={clsx(
                     'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
                     'bg-gradient-to-r from-blue-100 to-rose-100 dark:from-blue-900/50 dark:to-rose-900/50',
-                    'text-ink-700 ring-1 ring-ink-200',
+                    'text-ink-700 ring-ink-200 ring-1',
                     'transition-all hover:brightness-105'
                   )}
                 >
