@@ -3,6 +3,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
+import { BackButton } from 'web/components/contract/back-button'
 import { JobInterestCard } from 'web/components/jobs/job-interest-card'
 
 // All job data lives here. To add, edit, or remove a listing, change this array
@@ -226,14 +227,17 @@ export default function JobsPage() {
         url="/jobs"
       />
       <Col className="mx-auto w-full max-w-3xl gap-8 p-4 py-8">
-        <Col className="gap-2">
-          <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
-            Job Board
-          </h1>
-          <p className="text-ink-500 max-w-xl text-base leading-relaxed">
-            Curated jobs by employers who value forecasting
-          </p>
-        </Col>
+        <Row className="items-center gap-2">
+          <BackButton />
+          <Col className="gap-2">
+            <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
+              Job Board
+            </h1>
+            <p className="text-ink-500 max-w-xl text-base leading-relaxed">
+              Curated jobs by employers who value forecasting
+            </p>
+          </Col>
+        </Row>
 
         <JobInterestCard />
 
