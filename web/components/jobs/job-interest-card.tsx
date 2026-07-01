@@ -176,8 +176,7 @@ export function JobInterestCard() {
         <p className="text-ink-600 max-w-xl text-sm leading-relaxed">
           Tag your strengths and what you're after. We'll aim to connect you
           with employers hiring from the community, and may notify you of
-          relevant postings. Your profile stays private until you choose to
-          reply.
+          relevant postings.
         </p>
       </Col>
 
