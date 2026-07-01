@@ -3,6 +3,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
+import { JobInterestCard } from 'web/components/jobs/job-interest-card'
 
 // All job data lives here. To add, edit, or remove a listing, change this array
 // and open a PR — there is intentionally no database or employer-facing editor.
@@ -233,6 +234,8 @@ export default function JobsPage() {
             Curated jobs by employers who value forecasting
           </p>
         </Col>
+
+        <JobInterestCard />
 
         <Col className="gap-3">
           <Col className="gap-1">
