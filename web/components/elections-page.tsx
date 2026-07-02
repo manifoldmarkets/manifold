@@ -20,13 +20,16 @@ export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
 
 // Topic tags for the bottom feed, so visitors can sort the election markets by
 // race/subject from this page. Each slug is a real Manifold group with a healthy
-// number of open markets (verified against prod).
+// number of open markets (verified against prod). The first entry is the default
+// view: the 2026 Midterms tag — tightly scoped to this page's focus, rather than
+// the much broader "us-politics", which pulled in a lot of off-topic markets.
 const ELECTION_FEED_TOPICS = [
-  { slug: 'us-politics', label: 'All politics' },
+  { slug: '2026-midterms', label: '2026 Midterms' },
   { slug: '2026-us-congressional-elections', label: '2026 Congress' },
   { slug: '2028-us-presidential-election-6tdsp26zly', label: '2028 President' },
   { slug: 'us-senate', label: 'Senate' },
   { slug: 'donald-trump', label: 'Trump' },
+  { slug: 'us-politics', label: 'All politics' },
   { slug: 'elections', label: 'All elections' },
 ]
 
