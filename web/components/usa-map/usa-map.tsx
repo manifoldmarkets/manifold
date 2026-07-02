@@ -15,6 +15,10 @@ const DEM_BACKGROUND = '#4a5fa8'
 const REP_BACKGROUND = '#9d3336'
 const DEM_CROSSHATCH = '#262c45'
 const REP_CROSSHATCH = '#3e1316'
+// Split delegations (one Dem + one Rep senator not up this cycle, e.g. PA, WI)
+// fill with a purple crosshatch — a blend of the Dem/Rep colors above.
+const SPLIT_BACKGROUND = '#73496f'
+const SPLIT_CROSSHATCH = '#321f2d'
 
 export type ClickHandler<
   E = SVGPathElement | SVGTextElement | SVGCircleElement,
@@ -110,6 +114,36 @@ export const USAMap = (props: {
                 x2="0"
                 y2={PATTERN_SIZE}
                 stroke={DEM_CROSSHATCH}
+                strokeWidth="2"
+              />
+            </pattern>
+            <pattern
+              id="crossHatchPurple"
+              patternUnits="userSpaceOnUse"
+              width={PATTERN_SIZE}
+              height={PATTERN_SIZE}
+            >
+              <rect
+                width={PATTERN_SIZE}
+                height={PATTERN_SIZE}
+                fill={SPLIT_BACKGROUND}
+              />
+              {/* Horizontal line */}
+              <line
+                x1="0"
+                y1="0"
+                x2={PATTERN_SIZE}
+                y2={PATTERN_SIZE}
+                stroke={SPLIT_CROSSHATCH}
+                strokeWidth="2"
+              />
+              {/* Vertical line */}
+              <line
+                x1={PATTERN_SIZE}
+                y1="0"
+                x2="0"
+                y2={PATTERN_SIZE}
+                stroke={SPLIT_CROSSHATCH}
                 strokeWidth="2"
               />
             </pattern>
