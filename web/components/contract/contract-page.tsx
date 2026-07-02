@@ -301,10 +301,18 @@ export function ContractPageContent(props: ContractParams) {
                 )}
                 {headerStuck && (
                   <span
+                    role="button"
+                    tabIndex={0}
                     className="text-ink-1000 line-clamp-2 cursor-pointer select-none first:ml-4"
                     onClick={() =>
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }
+                    }}
                   >
                     {isSpiceMarket && (
                       <Tooltip text={SPICE_MARKET_TOOLTIP}>
@@ -500,6 +508,8 @@ export function ContractPageContent(props: ContractParams) {
                 creatorId={props.contract.creatorId}
                 isSweeps={isCashContract}
                 description={description}
+                creatorBannedFromBetting={liveContract.creatorBannedFromBetting}
+                contract={liveContract}
               />
             )}
             {!isResolved && !isClosed && isCreator && (

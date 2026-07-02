@@ -41,11 +41,11 @@ export const TRADER_TERM = 'trader'
 export const PERPS_ENABLED = true
 
 // Testing-only escape hatch: bypass the "oracle price too old" check in the
-// perp engine's open/close paths. Intended for local dev where the update-
-// perps job isn't running and the cached oraclePriceTime drifts past the
-// contract's maxOraclePriceAgeMs. MUST be false in prod — a stale feed lets
-// traders cherry-pick a favorable cached price.
-export const PERPS_SKIP_ORACLE_FRESHNESS = true
+// perp engine's open/close paths. MUST be false in prod — a stale feed lets
+// traders cherry-pick a favorable cached price. For local dev without the
+// scheduler running, create test markets with a very large
+// maxOraclePriceAgeMs instead of flipping this.
+export const PERPS_SKIP_ORACLE_FRESHNESS = false
 
 export const ENV_CONFIG = CONFIGS[ENV]
 

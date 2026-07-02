@@ -51,7 +51,7 @@ import {
 import { buildPerpUserContractMetricsQuery } from './user-contract-metrics'
 import { log } from 'shared/utils'
 import { getUser } from 'shared/utils'
-import { HOUR_MS } from 'common/util/time'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 // -----------------------------------------------------------------------
 // helpers
@@ -619,6 +619,30 @@ export const runOracleUpdate = async (
       lastUpdatedTime: ts,
     })
 
+    // Fast path: no liquidations and no ADL means no position changed, so
+    // only the contract's cached price needs writing. Without this, a
+    // sub-minute oracle tick rebuilds user_contract_metrics for every holder
+    // on every price move. Metric rows DO embed unrealized PnL at the oracle
+    // price, but runFunding rebuilds them for all holders unconditionally, so
+    // they stay at worst FUNDING_PERIOD_MS stale — the pre-fast-tick cadence.
+    if (
+      upserts.length === 0 &&
+      deletes.length === 0 &&
+      applied.events.length === 0
+    ) {
+      await pgTrans.none(mergeContractDataQuery(contractId, contractPatch))
+      return {
+        liquidated: [],
+        adlAdjusted: [],
+        adlFactorLong: 1,
+        adlFactorShort: 1,
+        poolLongBefore,
+        poolLongAfter: applied.finalState.pool.L,
+        poolShortBefore,
+        poolShortAfter: applied.finalState.pool.S,
+      }
+    }
+
     const affectedUsers = Array.from(
       new Set<string>([
         ...state.positions.map((p) => p.userId),
@@ -672,6 +696,22 @@ export const runFunding = async (
 ): Promise<PerpFundingEvent | null> => {
   return runTransactionWithRetries(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+    // Cadence gate lives INSIDE the advisory lock: the scheduler's own check
+    // runs unlocked, so two overlapping ticks (fine hourly, likely at fast
+    // tick rates) could both decide to fund and double-haircut positions.
+    // The one-minute tolerance stops scheduler jitter from skipping a period.
+    const lastFunding = await pgTrans.oneOrNone<{ ts: string }>(
+      `select ts from contract_perp_funding_events
+       where contract_id = $1 order by ts desc limit 1`,
+      [contractId]
+    )
+    if (
+      lastFunding &&
+      ts - new Date(lastFunding.ts).getTime() < FUNDING_PERIOD_MS - MINUTE_MS
+    ) {
+      return null
+    }
 
     const fundingRate = computeFundingRate(
       state.pool.L,
@@ -783,6 +823,10 @@ export const resolvePerp = async (
   const latest = await getLatestOraclePrice(pg, preContract.oracleFeedId)
   const finalPrice = latest?.price ?? preContract.oraclePrice
   const oracleTs = latest?.ts ?? Date.now()
+  // Every open position settles at this price; a corrupt feed row here would
+  // misprice the whole book. runOracleUpdate has the same guard on ticks.
+  if (!isFinite(finalPrice) || finalPrice <= 0)
+    throw new APIError(500, `Invalid final oracle price ${finalPrice}`)
 
   // Single-transaction resolution: apply liquidation + ADL + close-all +
   // residual-to-creator + mark-resolved in one atomic step, so traders can't

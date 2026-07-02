@@ -1107,8 +1107,10 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         feedId: z.string().min(1).max(200),
-        ts: z.number().int(),
-        price: z.number().finite(),
+        ts: z.number().int().positive(),
+        // The engine divides by entry prices and treats <= 0 as invalid;
+        // reject junk at the door rather than poisoning the feed.
+        price: z.number().finite().positive(),
       })
       .strict(),
   },
