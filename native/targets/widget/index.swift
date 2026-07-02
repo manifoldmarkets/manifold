@@ -323,6 +323,212 @@ private func emoji(for state: StreakState) -> String {
   state == .frozen ? "🧊" : "🔥"
 }
 
+// MARK: - Mani, the mascot 🐦
+//
+// A faceted purple origami-crane head that peeks from the small widget's
+// bottom-right corner and EMOTES: its mood tracks the streak state and the
+// time left in the day (the same state + 12h/4h tier boundaries that drive the
+// countdown colour), Duolingo-style — the face is the notification. The POSE
+// within a mood rotates by (pacificDayOfYear + streak) % variants: changes
+// daily and differs between users, but is stable all day (no flicker between
+// re-renders). Drawn as vector paths in a 120×140 design space — no image
+// assets, crisp at any size, and a new pose is a few lines.
+
+enum ManiPose {
+  case happyClassic, smug, starstruck, party, fireEye // lit
+  case watching, sideEye, quizzical                   // pending, >12h
+  case sweating, alarmed                              // pending, <12h
+  case madClassic, fuming, disappointed               // pending, <4h
+  case icy, shivering                                 // frozen
+  case asleep                                         // logged out
+}
+
+// Streaks that get the one-day party hat (the day you cross a milestone).
+private let kPartyStreaks: Set<Int> = [30, 50, 100, 200, 365, 500, 1000]
+
+func maniPose(state: StreakState, loggedIn: Bool, remaining: TimeInterval,
+              streak: Int, day: Int) -> ManiPose {
+  if !loggedIn { return .asleep }
+  let roll = day + streak
+  switch state {
+  case .frozen:
+    return [.icy, .shivering][roll % 2]
+  case .lit:
+    if kPartyStreaks.contains(streak) { return .party }
+    // fireEye is the rare manic roll (~1 in 6); starstruck joins on gold.
+    let happy: [ManiPose] = isGoldMilestone(state, streak)
+      ? [.happyClassic, .smug, .starstruck, .happyClassic, .fireEye, .smug]
+      : [.happyClassic, .smug, .happyClassic, .fireEye, .smug, .happyClassic]
+    return happy[roll % happy.count]
+  case .pending:
+    if remaining <= 4 * 3600 { return [.madClassic, .fuming, .disappointed][roll % 3] }
+    if remaining <= 12 * 3600 { return [.sweating, .alarmed][roll % 2] }
+    return [.watching, .sideEye, .quizzical][roll % 3]
+  }
+}
+
+private struct ManiPalette {
+  let neckShade, neck, head, jaw, beak: Color
+}
+
+private func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color {
+  Color(red: r / 255, green: g / 255, blue: b / 255)
+}
+
+private let maniPurple = ManiPalette(
+  neckShade: rgb(79, 63, 214), neck: rgb(108, 92, 231), head: rgb(139, 123, 247),
+  jaw: rgb(91, 75, 224), beak: rgb(59, 47, 184))
+private let maniIce = ManiPalette(
+  neckShade: rgb(53, 104, 184), neck: rgb(74, 127, 214), head: rgb(127, 183, 240),
+  jaw: rgb(74, 127, 214), beak: rgb(47, 95, 184))
+private let maniGrey = ManiPalette(
+  neckShade: rgb(74, 74, 85), neck: rgb(92, 92, 104), head: rgb(115, 115, 127),
+  jaw: rgb(92, 92, 104), beak: rgb(63, 63, 74))
+
+private let maniInk = rgb(42, 34, 88)   // brows/lids on the purple body
+private let maniPupil = rgb(28, 22, 51)
+
+struct ManiView: View {
+  let pose: ManiPose
+
+  var body: some View {
+    Canvas { ctx, size in
+      let s = min(size.width / 120, size.height / 140)
+      let pal: ManiPalette = {
+        switch pose {
+        case .icy, .shivering: return maniIce
+        case .asleep: return maniGrey
+        default: return maniPurple
+        }
+      }()
+
+      func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x * s, y: y * s) }
+      func poly(_ pts: [(Double, Double)], _ color: Color) {
+        var p = Path()
+        p.move(to: pt(pts[0].0, pts[0].1))
+        for q in pts.dropFirst() { p.addLine(to: pt(q.0, q.1)) }
+        p.closeSubpath()
+        ctx.fill(p, with: .color(color))
+      }
+      func circle(_ x: Double, _ y: Double, _ r: Double, _ color: Color) {
+        ctx.fill(Path(ellipseIn: CGRect(x: (x - r) * s, y: (y - r) * s,
+                                        width: 2 * r * s, height: 2 * r * s)),
+                 with: .color(color))
+      }
+      func line(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double,
+                _ w: Double, _ color: Color) {
+        var p = Path()
+        p.move(to: pt(x1, y1)); p.addLine(to: pt(x2, y2))
+        ctx.stroke(p, with: .color(color),
+                   style: StrokeStyle(lineWidth: w * s, lineCap: .round))
+      }
+      func quad(_ x1: Double, _ y1: Double, _ cx: Double, _ cy: Double,
+                _ x2: Double, _ y2: Double, _ w: Double, _ color: Color) {
+        var p = Path()
+        p.move(to: pt(x1, y1)); p.addQuadCurve(to: pt(x2, y2), control: pt(cx, cy))
+        ctx.stroke(p, with: .color(color),
+                   style: StrokeStyle(lineWidth: w * s, lineCap: .round))
+      }
+      func glyphText(_ str: String, _ x: Double, _ y: Double, _ fontSize: Double,
+                     _ color: Color, bold: Bool = false) {
+        ctx.draw(Text(str)
+                   .font(.system(size: fontSize * s, weight: bold ? .heavy : .regular))
+                   .foregroundColor(color),
+                 at: pt(x, y))
+      }
+
+      // Body (shared): neck shade, neck, head, jaw, beak.
+      poly([(100, 140), (114, 140), (104, 68), (94, 70)], pal.neckShade)
+      poly([(78, 140), (100, 140), (94, 70), (80, 74)], pal.neck)
+      poly([(50, 36), (92, 30), (102, 66), (66, 74)], pal.head)
+      poly([(66, 74), (102, 66), (94, 70), (80, 74)], pal.jaw)
+      poly([(54, 48), (64, 70), (8, 62)], pal.beak)
+
+      // Face per pose.
+      switch pose {
+      case .happyClassic:
+        quad(68, 50, 77, 41, 86, 50, 4.5, .white)
+      case .smug:
+        var half = Path()
+        half.move(to: pt(70, 49))
+        half.addArc(center: pt(78, 49), radius: 8 * s,
+                    startAngle: .degrees(180), endAngle: .degrees(0), clockwise: true)
+        half.closeSubpath()
+        ctx.fill(half, with: .color(.white))
+        circle(78, 51, 2.6, maniPupil)
+        line(69, 46, 87, 46, 3.5, maniInk)
+      case .starstruck:
+        poly([(78, 41), (81, 47), (88, 50), (81, 53), (78, 59), (75, 53), (68, 50), (75, 47)],
+             rgb(255, 210, 77))
+        glyphText("✦", 98, 22, 13, rgb(255, 232, 145))
+        glyphText("✦", 106, 41, 9, rgb(255, 232, 145))
+      case .party:
+        quad(68, 50, 77, 41, 86, 50, 4.5, .white)
+        poly([(72, 10), (86, 29), (57, 32)], rgb(255, 92, 138))
+        circle(72, 10, 3.5, .white)
+        circle(48, 22, 2, rgb(255, 210, 77))
+        circle(102, 18, 2, rgb(143, 220, 255))
+        circle(60, 14, 2, rgb(124, 255, 178))
+        circle(96, 32, 2, rgb(255, 179, 199))
+      case .fireEye:
+        circle(78, 50, 8.5, .white)
+        var flame = Path()
+        flame.move(to: pt(78, 43.5))
+        flame.addQuadCurve(to: pt(78, 57), control: pt(72.5, 51))
+        flame.addQuadCurve(to: pt(78, 43.5), control: pt(83.5, 51))
+        ctx.fill(flame, with: .color(rgb(255, 138, 61)))
+        var core = Path()
+        core.move(to: pt(78, 48))
+        core.addQuadCurve(to: pt(78, 55.2), control: pt(75.4, 52.2))
+        core.addQuadCurve(to: pt(78, 48), control: pt(80.6, 52.2))
+        ctx.fill(core, with: .color(rgb(255, 210, 77)))
+        quad(64, 38, 76, 29, 90, 35, 4, maniInk)
+        glyphText("✦", 98, 27, 12, rgb(255, 184, 107))
+      case .watching:
+        circle(78, 50, 7, .white); circle(75, 51, 3.2, maniPupil)
+      case .sideEye:
+        circle(78, 51, 7, .white); circle(72, 52, 3.2, maniPupil)
+      case .quizzical:
+        circle(78, 52, 6.5, .white); circle(76, 53, 3, maniPupil)
+        quad(66, 38, 78, 31, 90, 38, 4, maniInk)
+      case .sweating:
+        circle(78, 52, 6, .white); circle(76, 53, 2.8, maniPupil)
+        line(66, 40, 90, 44, 4, maniInk)
+        var drop = Path()
+        drop.move(to: pt(97, 30))
+        drop.addQuadCurve(to: pt(97, 42), control: pt(103, 38))
+        drop.addQuadCurve(to: pt(97, 30), control: pt(91, 38))
+        ctx.fill(drop, with: .color(rgb(159, 214, 255)))
+      case .alarmed:
+        circle(78, 51, 8.5, .white); circle(78, 52, 2.2, maniPupil)
+        glyphText("!", 100, 27, 16, .white, bold: true)
+      case .madClassic:
+        circle(78, 52, 6.5, .white); circle(75, 52, 3, maniPupil)
+        line(64, 47, 90, 37, 5, maniInk)
+      case .fuming:
+        line(70, 52, 86, 49, 4.5, .white)
+        line(64, 46, 90, 36, 5, maniInk)
+        glyphText("💢", 98, 27, 15, .white)
+      case .disappointed:
+        circle(78, 51, 6.5, .white); circle(77, 53, 2.8, maniPupil)
+        line(70, 45, 86, 45, 4, maniInk)
+      case .icy:
+        circle(78, 51, 6, .white); circle(76, 52, 2.8, maniPupil)
+        glyphText("❄", 101, 23, 15, rgb(223, 242, 255))
+      case .shivering:
+        circle(78, 51, 6, .white); circle(76, 52, 2.8, maniPupil)
+        quad(46, 34, 41, 39, 46, 44, 2.5, rgb(223, 242, 255))
+        quad(42, 30, 35, 38, 42, 46, 2, rgb(223, 242, 255).opacity(0.6))
+        quad(106, 42, 111, 47, 106, 52, 2.5, rgb(223, 242, 255))
+      case .asleep:
+        line(70, 50, 86, 50, 4, .white)
+        glyphText("z", 98, 29, 13, rgb(207, 207, 218), bold: true)
+        glyphText("z", 107, 20, 10, rgb(181, 181, 194), bold: true)
+      }
+    }
+  }
+}
+
 // MARK: - Views
 
 struct StreakWidgetEntryView: View {
@@ -353,9 +559,14 @@ struct StreakWidgetEntryView: View {
         .containerBackground(for: .widget) {
           switch family {
           case .systemSmall:
+            // Mani replaces the old faint crane watermark: solid mascot peeking
+            // from the corner, mood driven by state + time (see maniPose).
             ZStack(alignment: .bottomTrailing) {
               gradientFor(state: entry.state, streak: entry.streak)
-              logo(92, opacity: 0.13).padding(.trailing, 6).padding(.bottom, 22)
+              ManiView(pose: pose)
+                .frame(width: 96, height: 112)
+                .offset(x: 8, y: 12)
+                .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
             }
           case .systemMedium:
             gradientFor(state: entry.state, streak: entry.streak)
@@ -543,6 +754,13 @@ struct StreakWidgetEntryView: View {
     }
   }
 
+  // Mani's mood for this entry (state + time-to-reset + daily variant roll).
+  private var pose: ManiPose {
+    maniPose(state: entry.state, loggedIn: entry.loggedIn,
+             remaining: entry.resetDate.timeIntervalSince(entry.date),
+             streak: entry.streak, day: pacificDayOfYear(entry.date))
+  }
+
   // The streak glyph on home families. Lit = 🔥, frozen = 🧊 (with a dark halo
   // so they read on the warm gradient — Android's GLYPH_SHADOW), pending = the
   // grey unlit flame.
@@ -677,11 +895,10 @@ struct StreakWidgetEntryView: View {
     Text(s).font(.system(size: size)).foregroundColor(.white).opacity(op).position(x: x, y: y)
   }
 
-  // Home screen — small: flame to the LEFT of the number (matches the Android
-  // small family), label under, trophy on the right at a gold milestone. While
-  // today isn't done (pending/frozen), the hero anchors to the TOP and a live
-  // countdown fills the bottom-left (the crane keeps the bottom-right); once
-  // lit, there's no timer and the hero centres.
+  // Home screen — small: streak pinned TOP-left (flame left of the number,
+  // label under), Mani peeking bottom-right, and while today isn't done a live
+  // countdown bottom-left. The content top-anchors in every state so the
+  // mascot always owns the lower-right corner.
   private var small: some View {
     let milestone = isGoldMilestone(entry.state, entry.streak)
     let showTimer = entry.state != .lit
@@ -708,8 +925,7 @@ struct StreakWidgetEntryView: View {
       }
     }
     .padding(16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity,
-           alignment: showTimer ? .topLeading : .leading)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .overlay { if entry.state == .frozen { smallFrost } }
   }
 
