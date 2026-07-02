@@ -142,10 +142,29 @@ export async function revalidateContractStaticProps(contract: {
     revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
+
+/**
+ * Auto-detected and set when running locally but still connecting to remote Supabase/Firebase.
+ * Uses local service account credentials.
+ */
 export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
-// TODO: deprecate in favor of common/src/envs/is-prod.ts
+/**
+ * Set via `.env.local` for running the entire stack locally, including Supabase.
+ * This is mainly for external contributors who don't have access to Supabase/Firebase.
+ * Also useful for testing major backend changes.
+ */
+export const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+
+if (LOCAL_ONLY && !LOCAL_DEV) {
+  throw new Error('LOCAL_ONLY cannot be true in a deployed environment')
+}
+
+/** @deprecated in favor of common/src/envs/is-prod.ts */
 export const isProd = () => {
+  if (LOCAL_ONLY) {
+    return false
+  }
   // ian: The first clause is for the API server, and the
   // second clause is for local scripts and cloud functions
   if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {

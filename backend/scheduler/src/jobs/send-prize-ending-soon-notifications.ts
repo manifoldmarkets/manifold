@@ -1,5 +1,4 @@
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
-import { getTotalPrizePool, SweepstakesPrize } from 'common/sweepstakes'
 import { formatMoneyUSD } from 'common/util/format'
 import { createPrizeCampaignNotification } from 'shared/notifications/create-prize-campaign-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -19,43 +18,6 @@ export async function sendPrizeEndingSoonNotifications({
   const previousThreshold = new Date(previousRunTime + 2 * HOUR_MS).toISOString()
   const currentThreshold = new Date(now + 2 * HOUR_MS).toISOString()
   const nowIso = new Date(now).toISOString()
-
-  const endingSoonSweepstakes = await pg.manyOrNone<{
-    sweepstakes_num: number
-    prizes: SweepstakesPrize[]
-    close_time: string
-  }>(
-    `select sweepstakes_num, prizes, close_time
-     from sweepstakes
-     where close_time > $1
-       and close_time <= $2
-       and close_time > $3`,
-    [previousThreshold, currentThreshold, nowIso]
-  )
-
-  for (const sweepstakes of endingSoonSweepstakes) {
-    try {
-      const totalPrizeUsd = getTotalPrizePool(sweepstakes.prizes)
-      await createPrizeCampaignNotification(pg, {
-        reason: 'prize_drawings',
-        eventType: 'ending_soon',
-        sourceSlug: `prize/${sweepstakes.sweepstakes_num}`,
-        title: `Prize Drawing #${sweepstakes.sweepstakes_num} ends soon`,
-        body: `${formatMoneyUSD(totalPrizeUsd)} in total prizes. Ends in about 2 hours.`,
-        data: {
-          eventType: 'ending_soon',
-          sweepstakesNum: sweepstakes.sweepstakes_num,
-          totalPrizeUsd,
-          closeTime: new Date(sweepstakes.close_time).valueOf(),
-        },
-      })
-    } catch (err) {
-      log.error(
-        `Failed to send ending-soon notifications for Prize Drawing #${sweepstakes.sweepstakes_num}`,
-        { err }
-      )
-    }
-  }
 
   const endingSoonGiveaways = await pg.manyOrNone<{
     giveaway_num: number

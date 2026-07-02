@@ -224,25 +224,14 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
 function Posts(props: { posts: TopLevelPost[] }) {
   const { posts } = props
 
-  // Feature the first post if it's the "best" view
-  const [featured, ...rest] = posts
-
   return (
     <Col className="gap-4">
-      {/* Featured post */}
-      {featured && (
-        <div className="animate-fade-in">
-          <PostCard post={featured} featured />
-        </div>
-      )}
-
-      {/* Rest of posts */}
       <div className="space-y-3">
-        {rest.map((post, index) => (
+        {posts.map((post, index) => (
           <div
             key={post.id}
             className="animate-fade-in"
-            style={{ animationDelay: `${(index + 1) * 50}ms` }}
+            style={{ animationDelay: `${index * 50}ms` }}
           >
             <PostCard post={post} />
           </div>

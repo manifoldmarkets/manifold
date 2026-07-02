@@ -5,13 +5,14 @@ import {
   BETTING_STREAK_BONUS_MAX,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { canReceiveBonuses, User } from 'common/user'
-import { getBenefit } from 'common/supporter-config'
+import { getEffectiveTier, User } from 'common/user'
+import { getEffectiveBonusMultiplier } from 'common/supporter-config'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import clsx from 'clsx'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+import { ReducedBonusNotice } from 'web/components/upsell/reduced-bonus-notice'
 
 // Initialize dayjs plugins
 dayjs.extend(utc)
@@ -29,13 +30,12 @@ export function BettingStreakModal(props: {
     previewFrozen || (currentUser && wasStreakFrozenRecently(currentUser))
   const showFrozen = previewFrozen || (missingStreak && wasFrozen)
 
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(
-    currentUser?.entitlements,
-    'questMultiplier'
-  )
-  const bonusAmount = Math.floor(BETTING_STREAK_BONUS_AMOUNT * questMultiplier)
-  const bonusMax = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
+  // Streak multiplier driven by effective tier (verification + subscription).
+  // Unverified: 0.2x, verified: 1x, subscribers higher.
+  const effectiveTier = currentUser ? getEffectiveTier(currentUser) : 'verified'
+  const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
+  const bonusAmount = Math.floor(BETTING_STREAK_BONUS_AMOUNT * streakMultiplier)
+  const bonusMax = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
 
   // Determine emoji visual state:
   // - Normal (colored): streak completed today
@@ -79,21 +79,25 @@ export function BettingStreakModal(props: {
         )}
         <span className="text-xl">Daily prediction streaks</span>
         <VerifyPhoneNumberBanner user={currentUser} />
+        {currentUser &&
+          (effectiveTier === 'unverified' ||
+            effectiveTier === 'restricted') && (
+            <ReducedBonusNotice
+              tier={effectiveTier}
+              kind="streak"
+              earned={bonusAmount}
+            />
+          )}
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are they?</span>
           <span className={'ml-2'}>
-            {currentUser && !canReceiveBonuses(currentUser) ? (
-              <span className={'font-semibold'}>Verified users</span>
-            ) : (
-              'You'
-            )}{' '}
-            get {formatMoney(bonusAmount)} for each consecutive day of
+            You get {formatMoney(bonusAmount)} for each consecutive day of
             predicting, up to {formatMoney(bonusMax)}. The more days you predict
             in a row, the more you earn!
-            {questMultiplier > 1 && (
+            {streakMultiplier > 1 && (
               <span className="text-primary-600">
                 {' '}
-                ({questMultiplier}x membership bonus!)
+                ({streakMultiplier}x membership bonus!)
               </span>
             )}
           </span>

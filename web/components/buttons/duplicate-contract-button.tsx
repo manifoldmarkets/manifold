@@ -26,7 +26,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
 
 // Pass along the Uri to create a new contract
 export function duplicateContractHref(contract: Contract) {
-  const descriptionString = JSON.stringify(contract.description)
+  const descriptionString = JSON.stringify(contract.description ?? '')
   // Don't set a closeTime that's in the past
   const closeTime =
     (contract?.closeTime ?? 0) <= Date.now() ? 0 : contract.closeTime

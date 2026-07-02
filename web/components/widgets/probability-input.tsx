@@ -2,7 +2,7 @@ import clsx from 'clsx'
 
 import { Col } from '../layout/col'
 import { Input } from './input'
-import { Slider, sliderColors } from './slider'
+import { Slider, SliderColor } from './slider'
 export const PROBABILITY_SLIDER_VALUES = Array.from(
   { length: 99 },
   (_, i) => i + 1
@@ -15,7 +15,7 @@ export function ProbabilitySlider(props: {
   onProbChange: (newProb: number | undefined) => void
   disabled?: boolean
   className?: string
-  color?: keyof typeof sliderColors
+  color?: SliderColor
   outcome?: 'YES' | 'NO'
 }) {
   const { prob, onProbChange, disabled, className, outcome } = props

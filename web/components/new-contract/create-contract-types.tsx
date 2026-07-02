@@ -80,7 +80,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
         <BsCalendar2Date className="h-12 w-12" />
       </Col>
     ),
-    shouldSumToOne: true,
+    shouldSumToOne: false,
     outcomeType: 'DATE',
   },
 } as const

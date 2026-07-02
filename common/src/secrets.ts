@@ -38,6 +38,7 @@ export const secrets = (
     'PERPLEXITY_API_KEY',
     'FIRECRAWL_API_KEY',
     'SPORTSDB_KEY',
+    'FOOTBALL_DATA_API_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
     'IDENFY_API_KEY',
@@ -48,7 +49,16 @@ export const secrets = (
     'DAIMO_HOT_WALLET_ADDRESS',
     'IP_API_PRO_KEY',
     'PRINTFUL_API_TOKEN',
-    'MANIFEST_DISCOUNT_CODE',
+    'PRINTFUL_WEBHOOK_SECRET',
+    // Stripe Product/Coupon IDs for the "20% off 5,000 mana" personalized
+    // offer (M5K for $40 via a $50 Price + 20%-off Coupon). The Coupon is
+    // restricted to the matching Product (applies_to.products) so the
+    // per-offer Promotion Codes can't cross-apply to standard mana tiers.
+    // Test-mode IDs in dev project, live-mode IDs in prod project — same
+    // secret names. Variants for other offer sizes/discounts would get
+    // parallel names (e.g. STRIPE_15_OFF_10K_PRICE_ID).
+    'STRIPE_20_OFF_5K_PRICE_ID',
+    'STRIPE_20_OFF_5K_COUPON_ID',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

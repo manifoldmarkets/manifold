@@ -7,7 +7,7 @@ import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { getMonitoringContext } from 'shared/monitoring/context'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
-import { isProd, log, metrics } from '../utils'
+import { LOCAL_ONLY, isProd, log, metrics } from '../utils'
 export { type SupabaseClient } from 'common/supabase/utils'
 
 export const pgp = pgPromise({
@@ -23,7 +23,7 @@ export const pgp = pgPromise({
   },
   transact(e) {
     if (e.ctx.finish) {
-      const { ctx, query } = e
+      const { ctx } = e
       const { duration, success } = ctx
       if (!duration) return
       const successStr = success ? 'true' : 'false'
@@ -63,6 +63,8 @@ pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
 pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
 
 pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
+pgp.pg.types.setTypeParser(1114, (value) => value) // timestamp
+pgp.pg.types.setTypeParser(1184, (value) => value) // timestamptz
 export type SupabaseDirectClientTimeout = IDatabase<{}, IClient>
 export type SupabaseTransaction = ITask<{}>
 export type SupabaseDirectClient =
@@ -112,22 +114,52 @@ export function createSupabaseDirectClient(opts?: {
   idleInTxnTimeout?: number
 }): SupabaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
-  const instanceId = opts?.instanceId ?? getInstanceId()
-  if (!instanceId) {
-    throw new Error(
-      "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
-    )
+
+  const host = process.env.SUPABASE_HOST
+  const port = process.env.SUPABASE_PORT
+    ? parseInt(process.env.SUPABASE_PORT)
+    : 5432
+
+  let dbHost: string
+  if (LOCAL_ONLY) {
+    if (!host) {
+      throw new Error(
+        'LOCAL_ONLY mode requires process.env.SUPABASE_HOST to be set.'
+      )
+    }
+    // LOCAL_ONLY mode: connect directly to local Supabase postgres
+    dbHost = host
+  } else {
+    const instanceId = opts?.instanceId ?? getInstanceId()
+    if (!instanceId) {
+      throw new Error(
+        "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
+      )
+    }
+    dbHost = `db.${getInstanceHostname(instanceId)}`
   }
+
   const password = opts?.password ?? process.env.SUPABASE_PASSWORD
   if (!password) {
     throw new Error(
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
-  log('Connecting to postgres')
+
+  // Server-side cap on total statement runtime, including lock waits. Opt-in
+  // via env so only request-serving processes get it (set in
+  // backend/api/ecosystem.config.js); the scheduler and ad-hoc scripts
+  // legitimately run long statements and leave it unset. Without this cap,
+  // queries that are slow only because the db's disk throughput is saturated
+  // pile up for hundreds of seconds and amplify the saturation
+  const statementTimeout = process.env.PG_STATEMENT_TIMEOUT_MS
+    ? parseInt(process.env.PG_STATEMENT_TIMEOUT_MS)
+    : undefined
+
+  log('Connecting to postgres at ' + dbHost + ':' + port)
   const client = pgp({
-    host: `db.${getInstanceHostname(instanceId)}`,
-    port: 5432,
+    host: dbHost,
+    port: port,
     user: `postgres`,
     password: password,
 
@@ -144,6 +176,7 @@ export function createSupabaseDirectClient(opts?: {
     // Although we don't yet know the cause, setting this timeout will limit the damage
     // from these connections. We should figure out the cause ASAP.
     idle_in_transaction_session_timeout: opts?.idleInTxnTimeout ?? 60_000, // 1 minute
+    ...(statementTimeout ? { statement_timeout: statementTimeout } : {}),
     max: 40,
   })
   const pool = client.$pool

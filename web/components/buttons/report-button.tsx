@@ -70,7 +70,7 @@ export const ReportModal = (props: {
             ? `You've reported this ${label}. Our team will take a look within 24 hours.`
             : `Report this ${label} for objectionable content that violates our `}
           <a
-            href="https://manifoldmarkets.notion.site/Community-Guidelines-2b986d33f0c646478d4921667c272f21?pvs=4"
+            href="/community-guidelines"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary-600 hover:text-primary-800 hover:underline"

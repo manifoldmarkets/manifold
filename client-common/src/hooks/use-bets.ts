@@ -131,7 +131,12 @@ export function betShouldBeFiltered(bet: Bet, options?: APIParams<'bets'>) {
     // if open-limit kind exists, and bet is not filled/cancelled
     (options.kinds === 'open-limit' && (bet.isFilled || bet.isCancelled)) ||
     // if commentRepliesOnly is true, and bet is not a comment reply
-    (options.commentRepliesOnly && !bet.replyToCommentId)
+    (options.commentRepliesOnly && !bet.replyToCommentId) ||
+    // if minAmount exists, and bet amount is below the minimum
+    (options.minAmount !== undefined &&
+      Math.abs(bet.amount) < options.minAmount) ||
+    // if excludeApi is true, and bet was made via API
+    (options.excludeApi && bet.isApi)
 
   return shouldBeFiltered
 }

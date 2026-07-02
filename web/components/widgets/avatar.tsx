@@ -274,16 +274,14 @@ export const Avatar = memo(
           <FireItemDecoration size={size} animate={animateFireItem} />
         )}
         {/* Solid border ring — extracted from the avatar image so wings can
-            sit on top of it (but still behind the avatar photo itself). */}
-        {(isUserFresh ||
-          hasGoldenBorder ||
-          hasBadAura ||
-          hasManaAura ||
-          hasBlackHole) && (
+            sit on top of it (but still behind the avatar photo itself).
+            isUserFresh's ring is applied directly to the image/icon below so
+            it tracks the avatar even when a margin class (e.g. mt-0.5) is
+            passed in via className and offsets the image inside the wrapper. */}
+        {(hasGoldenBorder || hasBadAura || hasManaAura || hasBlackHole) && (
           <div
             className={clsx(
               'pointer-events-none absolute inset-0 rounded-full',
-              isUserFresh && 'ring-1 ring-green-500',
               hasGoldenBorder && 'ring-2 ring-amber-400',
               hasBadAura && 'ring-2 ring-red-500',
               hasManaAura && 'ring-2 ring-violet-400',
@@ -323,6 +321,7 @@ export const Avatar = memo(
               'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
               `w-${s} h-${s}`,
               !noLink && 'cursor-pointer',
+              isUserFresh && 'ring-1 ring-green-500',
               className
             )}
             style={{
@@ -343,6 +342,7 @@ export const Avatar = memo(
           <UserCircleIcon
             className={clsx(
               `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
+              isUserFresh && 'ring-1 ring-green-500',
               className
             )}
             style={{ position: 'relative', zIndex: 0 }}
@@ -556,18 +556,6 @@ function FireItemForeground(props: {
           0% { transform: translate(0, 0) scale(1); opacity: 0.9; }
           100% { transform: translate(1px, -18px) scale(0); opacity: 0; }
         }
-        @keyframes wisp-drift-1 {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(6px) translateY(-1.5px); }
-        }
-        @keyframes wisp-drift-2 {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(5px) translateY(1px); }
-        }
-        @keyframes wisp-drift-3 {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(4px) translateY(-1px); }
-        }
         @keyframes flame-smoke-drift-1 {
           0% { transform: translate(0, 0); opacity: 0.7; }
           50% { transform: translate(-6px, -8px); opacity: 0.4; }
@@ -632,62 +620,6 @@ function FireItemForeground(props: {
               'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.35) 0%, rgba(234,88,12,0.2) 25%, rgba(220,38,38,0.1) 45%, transparent 70%)',
           }}
         />
-        {/* Wispy smoke streaks — left-to-right, over the avatar */}
-        <div
-          className="absolute"
-          style={{
-            left: '10%',
-            top: '55%',
-            width: '80%',
-            height: '4px',
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)',
-            borderRadius: '2px',
-            filter: 'blur(1.5px)',
-            ...(animate
-              ? { animation: 'wisp-drift-1 4s ease-in-out infinite' }
-              : {}),
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            left: '5%',
-            top: '40%',
-            width: '65%',
-            height: '3.5px',
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)',
-            borderRadius: '2px',
-            filter: 'blur(2px)',
-            ...(animate
-              ? {
-                  animation: 'wisp-drift-2 5s ease-in-out infinite',
-                  animationDelay: '0.8s',
-                }
-              : {}),
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            left: '20%',
-            top: '68%',
-            width: '70%',
-            height: '3.5px',
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)',
-            borderRadius: '2px',
-            filter: 'blur(1.5px)',
-            ...(animate
-              ? {
-                  animation: 'wisp-drift-3 4.5s ease-in-out infinite',
-                  animationDelay: '1.5s',
-                }
-              : {}),
-          }}
-        />
-
         {/* Ember particles — above the flames, drift upward when animated */}
         <div
           className="absolute h-[2px] w-[2px] rounded-full bg-amber-400"

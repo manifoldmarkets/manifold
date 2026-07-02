@@ -130,32 +130,6 @@ export function Manifest2026Banner() {
   )
 }
 
-export function Manifest2025Banner(props: { hideBanner: () => void }) {
-  const { hideBanner } = props
-  return (
-    <Banner
-      className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
-      link="https://www.manifest.is/"
-      setShowBanner={hideBanner}
-    >
-      <Row className="gap-2 py-1">
-        <LogoIcon
-          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
-          height={24}
-          width={24}
-          aria-hidden
-          strokeWidth={1}
-        />
-        <div>
-          <span className="font-semibold">
-            Manifest 2025 tickets available! 🎉
-          </span>
-        </div>
-      </Row>
-    </Banner>
-  )
-}
-
 export function DowntimeBanner() {
   const maintainanceBannerEnabled = false
   if (!maintainanceBannerEnabled) return null
@@ -385,3 +359,53 @@ export const PrizeDrawingBanner = () => {
     </Banner>
   )
 }
+
+// Disabled while we run bigger non-daily prize drawings. Keep around so we
+// can re-enable / fork into a new campaign banner without re-writing the
+// gradient + copy each time. To re-enable: uncomment and re-import in
+// web/pages/home/index.tsx alongside <DowntimeBanner />.
+/*
+export const DailyPrizeDrawingBanner = () => {
+  const [showBanner, hideBanner] = useBanner('daily-prize-drawing-100')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-emerald-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-emerald-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-emerald-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-emerald-900/50"
+      link="/prize"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>💰</span>
+        <div className="text-ink-700">
+          <span className="font-semibold">Daily $100 Prize Drawing!</span> Enter
+          every day for a chance to win
+        </div>
+        <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
+
+export const PrizeDrawing2Banner = () => {
+  const [showBanner, hideBanner] = useBanner('prize-drawing-2-banner')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-indigo-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-emerald-900/50"
+      link="/prize/2"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>🎁</span>
+        <div className="text-ink-700">
+          <span className="font-semibold">Prize Drawing #2 is live!</span> Win
+          $10,000 in prizes
+        </div>
+        <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
+*/

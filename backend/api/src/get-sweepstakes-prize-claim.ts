@@ -56,8 +56,8 @@ export const getSweepstakesPrizeClaim: APIHandler<
     id: string
     rank: number
     prize_amount_usdc: string
-    wallet_address: string
-    payment_status: 'awaiting' | 'sent' | 'rejected'
+    wallet_address: string | null
+    payment_status: 'awaiting' | 'sent' | 'rejected' | 'opted_out'
     payment_txn_hash: string | null
     created_time: string
   } | null = null

@@ -4,6 +4,10 @@ import { getActiveUserBans } from 'api/helpers/rate-limit'
 import { getPrivateUser, getUser, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { track } from 'shared/analytics'
+import {
+  OFFER_PRICE_CRYPTO,
+  PAYMENT_PENDING_LOCK_MINUTES,
+} from 'common/personalized-mana-offer'
 
 const DAIMO_API_URL = 'https://api.daimo.com/v1/sessions'
 
@@ -43,7 +47,7 @@ type DaimoErrorResponse = {
 }
 
 export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
-  _props,
+  props,
   auth
 ) => {
   const pg = createSupabaseDirectClient()
@@ -75,20 +79,83 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
     throw new APIError(500, 'Crypto payment service not configured')
   }
 
-  const payload = {
+  const { offerId } = props
+
+  if (offerId) {
+    // Atomically: verify the offer is redeemable + claim the cross-method
+    // pending lock if no other payment session is already in flight for this
+    // offer. Shared with createcheckoutsession so a user can't have one Stripe
+    // and one Daimo session running for the same offer simultaneously.
+    const claimed = await pg.oneOrNone<{ id: string }>(
+      `update personalized_mana_offers
+          set payment_pending_session_id = 'pending-' || gen_random_uuid()::text,
+              payment_pending_at = now()
+        where id = $1
+          and user_id = $2
+          and status = 'active'
+          and expires_at > now()
+          and (
+            payment_pending_at is null
+            or payment_pending_at < now() - ($3 || ' minutes')::interval
+          )
+       returning id`,
+      [offerId, auth.uid, String(PAYMENT_PENDING_LOCK_MINUTES)]
+    )
+    if (!claimed) {
+      const existing = await pg.oneOrNone<{
+        status: string
+        expires_at: string | null
+        payment_pending_at: string | null
+      }>(
+        `select status, expires_at, payment_pending_at
+           from personalized_mana_offers
+          where id = $1 and user_id = $2`,
+        [offerId, auth.uid]
+      )
+      if (
+        existing &&
+        existing.payment_pending_at &&
+        new Date(existing.payment_pending_at).getTime() >
+          Date.now() - PAYMENT_PENDING_LOCK_MINUTES * 60 * 1000
+      ) {
+        throw new APIError(
+          409,
+          'A checkout for this offer is already in progress. Complete or close it first.'
+        )
+      }
+      throw new APIError(400, 'Offer not redeemable')
+    }
+  }
+
+  const payload: Record<string, unknown> = {
     destination: {
       type: 'evm',
       address: hotWalletAddress,
       chainId: BASE_CHAIN_ID,
       tokenAddress: BASE_USDC_ADDRESS,
+      // Per Daimo: amountUnits as a string locks the deposit to that exact
+      // USDC amount so the user can't pay more or less. Use two-decimal
+      // padding to match every Daimo docs example and stay defensive against
+      // any future strict-validation change on their side.
+      ...(offerId ? { amountUnits: OFFER_PRICE_CRYPTO.toFixed(2) } : {}),
     },
-    display: {
-      title: 'Buy mana',
-      verb: 'Deposit',
-    },
-    metadata: {
-      userId: auth.uid,
-    },
+    display: offerId
+      ? {
+          title: 'Personalized mana sale',
+          verb: 'Pay',
+        }
+      : {
+          title: 'Buy mana with crypto',
+          verb: 'Deposit',
+        },
+    metadata: offerId
+      ? {
+          userId: auth.uid,
+          offerId,
+        }
+      : {
+          userId: auth.uid,
+        },
     refundAddress: hotWalletAddress,
   }
 

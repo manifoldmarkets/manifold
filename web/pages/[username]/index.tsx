@@ -129,7 +129,7 @@ export default function UserPage(props: {
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
-    privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
+    privateUser?.blockedUserIds?.includes(user?.id ?? '_') ?? false
   if (!user) return <Custom404 />
   else if (user.userDeleted && !isAdminOrMod) return <DeletedUser />
 
@@ -145,10 +145,13 @@ const shouldIgnoreUserPage = async (
   hasCreatedQuestion: boolean
 ) => {
   // lastBetTime isn't always reliable, so use the contract_bets table to be sure
-  const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
+  let hasBet = false
+  try {
+    const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
+    hasBet = bet.length > 0
+  } catch {}
   return (
-    user.userDeleted ||
-    isUserLikelySpammer(user, bet.length > 0, hasCreatedQuestion)
+    user.userDeleted || isUserLikelySpammer(user, hasBet, hasCreatedQuestion)
   )
 }
 

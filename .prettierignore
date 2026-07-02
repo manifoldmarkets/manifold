@@ -1,0 +1,20 @@
+node_modules
+**/node_modules
+
+# Build/generated outputs
+**/lib
+**/dist
+**/.next
+**/out
+**/build
+**/.docusaurus
+
+# Web generated/static artifacts already ignored by web/.prettierignore
+web/public/**/*.json
+web/public/**/*.html
+web/next-env.d.ts
+
+# Local/env files
+.env
+.env.*
+*.log

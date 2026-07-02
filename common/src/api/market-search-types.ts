@@ -17,6 +17,7 @@ export const searchProps = z
         z.literal('resolved'),
         z.literal('all'),
         z.literal('news'),
+        z.literal('uncertain'),
       ])
       .default('all'),
     sort: z
@@ -37,6 +38,7 @@ export const searchProps = z
         z.literal('bounty-amount'),
         z.literal('prob-descending'),
         z.literal('prob-ascending'),
+        z.literal('prob-50'),
       ])
       .default('score'),
     contractType: z

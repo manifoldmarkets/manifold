@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { canReceiveBonuses, User } from 'common/user'
+import { getEffectiveTier, User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
@@ -21,13 +21,13 @@ import {
   BETTING_STREAK_BONUS_MAX,
 } from 'common/economy'
 import { QUEST_DETAILS } from 'common/quest'
-import { getBenefit } from 'common/supporter-config'
+import { getEffectiveBonusMultiplier } from 'common/supporter-config'
 import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { StreakProgressBar } from '../profile/streak-progress-bar'
-import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
+import { ReducedBonusNotice } from 'web/components/upsell/reduced-bonus-notice'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -38,10 +38,6 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   const router = useRouter()
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
-  const [showVerificationModal, setShowVerificationModal] = useState(false)
-
-  // Check if user can receive bonuses (verified or grandfathered)
-  const userCanReceiveBonuses = user ? canReceiveBonuses(user) : false
 
   useEffect(() => {
     if (showQuestsModal) {
@@ -50,12 +46,9 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   }, [showQuestsModal])
   if (!user) return <></>
 
+  // Unverified users can still see and complete quests — bonuses are reduced
+  // (0.2x), not blocked. Verifying / subscribing scales up the rewards.
   const handleQuestsClick = () => {
-    // Check if user needs verification first
-    if (!userCanReceiveBonuses) {
-      setShowVerificationModal(true)
-      return
-    }
     setShowQuestsModal(true)
   }
 
@@ -99,14 +92,6 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
           previewFrozen={previewFrozen}
         />
       )}
-      {showVerificationModal && (
-        <VerificationRequiredModal
-          open={showVerificationModal}
-          setOpen={setShowVerificationModal}
-          user={user}
-          action="earn quest rewards"
-        />
-      )}
     </>
   )
 })
@@ -133,8 +118,19 @@ export function QuestsModal(props: {
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
 
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(user.entitlements, 'questMultiplier')
+  // Effective tier (verification + subscription) drives the bonus multiplier.
+  // Unverified: 0.2x, verified: 1x, subscribers higher.
+  const effectiveTier = getEffectiveTier(user)
+  const questMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
+  const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
+
+  // Preview the streak bonus for the next-day streak (for the upsell notice).
+  const previewStreakAmount = Math.floor(
+    Math.min(
+      BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
+      BETTING_STREAK_BONUS_MAX
+    ) * streakMultiplier
+  )
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -149,6 +145,15 @@ export function QuestsModal(props: {
             max={1}
             className={'mb-1 w-1/2'}
           />
+          {(effectiveTier === 'unverified' ||
+            effectiveTier === 'restricted') && (
+            <ReducedBonusNotice
+              tier={effectiveTier}
+              kind="quest"
+              earned={previewStreakAmount}
+              className="mx-auto max-w-md"
+            />
+          )}
         </Col>
         <Col className={'mb-4 gap-6'}>
           <Row className={'text-primary-700 '}>Daily</Row>
@@ -161,19 +166,14 @@ export function QuestsModal(props: {
             }
             complete={streakStatus.currentCount >= streakStatus.requiredCount}
             status={`(${streakStatus.currentCount}/${streakStatus.requiredCount})`}
-            reward={Math.floor(
-              Math.min(
-                BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
-                BETTING_STREAK_BONUS_MAX
-              ) * questMultiplier
-            )}
+            reward={previewStreakAmount}
             onClick={() => setShowStreakModal(true)}
           />
           {(user?.currentBettingStreak ?? 0) <= 5 && (
             <Row className="-mt-2 w-full px-2 pl-12">
               <StreakProgressBar
                 currentStreak={user?.currentBettingStreak ?? 0}
-                questMultiplier={questMultiplier}
+                questMultiplier={streakMultiplier}
               />
             </Row>
           )}

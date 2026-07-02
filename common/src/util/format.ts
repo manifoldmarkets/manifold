@@ -134,6 +134,19 @@ export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }
 
+// Like formatMoney, but avoids collapsing tiny non-zero spends to "Ṁ0".
+// Any positive amount below 1 is shown as Ṁ1 (and any negative amount above
+// -1 as -Ṁ1) so the UI always reflects that mana was actually spent.
+export function formatMoneyAuto(amount: number) {
+  if (amount > 0 && amount < 1) {
+    return ENV_CONFIG.moneyMoniker + '1'
+  }
+  if (amount < 0 && amount > -1) {
+    return '-' + ENV_CONFIG.moneyMoniker + '1'
+  }
+  return formatMoney(amount)
+}
+
 export function formatMoneyToDecimal(amount: number) {
   return ENV_CONFIG.moneyMoniker + getMoneyNumberToDecimal(amount)
 }

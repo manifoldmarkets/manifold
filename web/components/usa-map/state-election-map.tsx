@@ -1,6 +1,9 @@
-import { getDisplayProbability } from 'common/calculate'
+import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
-import { StateElectionMarket } from 'web/public/data/elections-data'
+import {
+  MapContractsDictionary,
+  StateElectionMarket,
+} from 'web/public/data/elections-data'
 
 export const DEM_LIGHT_HEX = '#cedcef'
 export const REP_LIGHT_HEX = '#f4dad7'
@@ -19,14 +22,108 @@ export function hexToRgb(hex: string) {
   return { r, g, b }
 }
 
+// Independents who caucus with / are scored as Democrats by name.
 export const ALSO_DEMOCRATIC = [
   'Angus King (Independent)',
   'Bernie Sanders (Independent)',
 ]
 
+// Community-created markets label the parties inconsistently: "Democratic
+// Party", "Democratic party", "Democratic", "Democrats", "Ashley Hinson
+// (Republican)", etc. Match defensively on the party stem rather than an exact
+// string so any of these render correctly on the map.
+export const isDemocraticAnswer = (text: string) =>
+  /democrat/i.test(text) || ALSO_DEMOCRATIC.includes(text)
+export const isRepublicanAnswer = (text: string) => /republican/i.test(text)
+
+// Returns the aggregate {dem, rep, other} probabilities for a state market,
+// or undefined if the contract can't be interpreted. Summing (rather than
+// finding a single answer) tolerates split fields and named independents.
+export const getPartyProbs = (
+  contract: Contract | null,
+  data?: StateElectionMarket
+): { dem: number; rep: number; other: number } | undefined => {
+  if (!contract) return undefined
+
+  let dem: number
+  let rep: number
+  let other: number
+  // Whether the market actually represents each major party. A market that's
+  // missing a whole side (candidate-only, or one-party) can't map to a blended
+  // color — it's grayed out below rather than painted fully one color, which
+  // would fake max certainty from a one-sided market.
+  let hasDem: boolean
+  let hasRep: boolean
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const answers = contract.answers
+    const demAnswers = answers.filter((a) => isDemocraticAnswer(a.text))
+    const repAnswers = answers.filter((a) => isRepublicanAnswer(a.text))
+    // Use getAnswerProbability (not raw a.prob) so resolved answers report
+    // their settled 1/0/MKT value — the map color and the senate-bar sort stay
+    // correct after races are called on election night.
+    dem = demAnswers.reduce(
+      (s, a) => s + getAnswerProbability(contract, a.id),
+      0
+    )
+    rep = repAnswers.reduce(
+      (s, a) => s + getAnswerProbability(contract, a.id),
+      0
+    )
+    // Everything not clearly D or R (e.g. "Other", "Independent (Dan Osborn)").
+    other = answers
+      .filter((a) => !isDemocraticAnswer(a.text) && !isRepublicanAnswer(a.text))
+      .reduce((s, a) => s + getAnswerProbability(contract, a.id), 0)
+    hasDem = demAnswers.length > 0
+    hasRep = repAnswers.length > 0
+  } else if (contract.mechanism === 'cpmm-1') {
+    // Binary markets are framed "will the Republican win?" → YES = Republican.
+    rep = getDisplayProbability(contract)
+    dem = 1 - rep
+    other = 0
+    hasDem = true
+    hasRep = true
+  } else {
+    return undefined
+  }
+
+  // A market can pre-assign its "Other" bucket to a party (e.g. a race where
+  // the only viable non-major candidate caucuses with one side) — this can also
+  // supply an otherwise-missing side.
+  if (data?.otherParty === 'Democratic Party') {
+    dem += other
+    other = 0
+    hasDem = true
+  } else if (data?.otherParty === 'Republican Party') {
+    rep += other
+    other = 0
+    hasRep = true
+  }
+
+  // Need both major parties represented to render a meaningful blue/red blend;
+  // otherwise leave the state uncolored (gray). partyProbsToColor already
+  // gradients by lead size, so genuinely lopsided two-party races still show
+  // a strong (dark) color — only structurally one-sided markets go gray.
+  if (!hasDem || !hasRep) return undefined
+
+  return { dem, rep, other }
+}
+
 export const probToColor = (
   contract: Contract | null,
   data?: StateElectionMarket
+) => {
+  const probs = getPartyProbs(contract, data)
+  if (!probs) return undefined
+  return partyProbsToColor(probs.dem, probs.rep)
+}
+
+// Maps raw {dem, rep} probabilities to a blended blue/red fill. Exposed so
+// aggregate views (e.g. the House map, which averages a state's districts) can
+// color without constructing a contract.
+export const partyProbsToColor = (
+  probDemocratic: number,
+  probRepublican: number
 ) => {
   type Color = { r: number; g: number; b: number }
   function interpolateColor(color1: Color, color2: Color, factor: number) {
@@ -39,53 +136,11 @@ export const probToColor = (
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
   }
 
-  if (!contract) return undefined
-
-  let probDemocratic: number | undefined
-  let probRepublican: number | undefined
-  let probOther: number | undefined
-  let probDemocraticIndependent: number
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    const answers = contract.answers
-    probDemocraticIndependent =
-      answers.find((a) => ALSO_DEMOCRATIC.includes(a.text))?.prob ?? 0
-    probDemocratic =
-      (answers.find(
-        (a) =>
-          a.text == 'Democratic Party' || a.text.includes('Democratic Party')
-      )?.prob ?? 0) + probDemocraticIndependent
-    probRepublican = answers.find(
-      (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
-    )?.prob
-    probOther = answers.find((a) => a.text == 'Other')?.prob ?? 0
-  } else if (contract.mechanism === 'cpmm-1') {
-    probRepublican = getDisplayProbability(contract)
-    probDemocratic = 1 - probRepublican
-    probOther = 0
-  }
-
   // Base colors
   const DEM_LIGHT = hexToRgb(DEM_LIGHT_HEX)
   const REP_LIGHT = hexToRgb(REP_LIGHT_HEX)
   const DEM_DARK = hexToRgb(DEM_DARK_HEX)
   const REP_DARK = hexToRgb(REP_DARK_HEX)
-
-  if (
-    probDemocratic === undefined ||
-    probRepublican === undefined ||
-    probOther === undefined
-  )
-    return undefined
-
-  if (data && data.otherParty) {
-    if (data.otherParty == 'Democratic Party') {
-      probDemocratic += probOther
-    }
-    if (data.otherParty == 'Republican Party') {
-      probRepublican += probOther
-    }
-  }
 
   // Calculate the difference
   const repOverDem = probRepublican - probDemocratic
@@ -131,4 +186,25 @@ export function isColorLight(colorHex: string): boolean {
 
   const luminance = calculateLuminance(rgb)
   return luminance > 0.75 // Adjust threshold as needed
+}
+
+export function sortByDemocraticDiff(
+  unsortedContractsDictionary: MapContractsDictionary,
+  data?: StateElectionMarket[]
+): MapContractsDictionary {
+  return Object.entries(unsortedContractsDictionary)
+    .map(([state, contract]) => {
+      // Sort by Democratic strength, reusing the shared party-prob helper so
+      // the varied community answer labels are handled consistently.
+      const probs = getPartyProbs(
+        contract,
+        data?.find((d) => d.state === state)
+      )
+      return { state, contract, diff: probs?.dem ?? 0 }
+    })
+    .sort((a, b) => b.diff - a.diff)
+    .reduce((sortedData, data) => {
+      sortedData[data.state] = data.contract
+      return sortedData
+    }, {} as MapContractsDictionary)
 }

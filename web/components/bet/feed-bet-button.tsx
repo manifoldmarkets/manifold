@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
@@ -99,6 +100,15 @@ export function BetButton(props: {
               inModal={true}
               feedReason={feedReason}
             />
+            <Row className="mt-3 justify-end">
+              <a
+                href={`/${contract.creatorUsername}/${contract.slug}`}
+                className="text-ink-400 hover:text-ink-600 text-[13px] transition-colors"
+                onClick={() => setDialogueThatIsOpen(undefined)}
+              >
+                View market →
+              </a>
+            </Row>
           </Col>
         </Modal>
       )}

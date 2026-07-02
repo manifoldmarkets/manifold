@@ -1,5 +1,9 @@
 import { charities } from 'common/charity'
-import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyAuto,
+  formatMoneyWithDecimals,
+} from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
@@ -12,6 +16,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useAdmin } from 'web/hooks/use-admin'
 import { api, APIError } from 'web/lib/api/api'
 import { Select } from 'web/components/widgets/select'
+import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -31,7 +36,11 @@ import { FaHeart } from 'react-icons/fa6'
 import {
   calculateTicketsFromMana,
   getCurrentGiveawayTicketPrice,
+  MAX_CHARITY_GIVEAWAY_PRIZE_DELTA_USD,
 } from 'common/charity-giveaway'
+import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
+import { HovercardBackgroundPreview } from 'web/pages/shop'
+import { FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID } from 'common/shop/items'
 
 function formatEntries(entries: number): string {
   if (entries >= 1000) {
@@ -98,6 +107,10 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
   const [newCloseTime, setNewCloseTime] = useState('')
   const [newPrizeAmount, setNewPrizeAmount] = useState('1000')
   const [isCreatingGiveaway, setIsCreatingGiveaway] = useState(false)
+
+  const [showAdjustPrizeModal, setShowAdjustPrizeModal] = useState(false)
+  const [adjustPrizeAmount, setAdjustPrizeAmount] = useState('')
+  const [isAdjustingPrize, setIsAdjustingPrize] = useState(false)
 
   // Winner reveal state
   const [isSelectingWinner, setIsSelectingWinner] = useState(false)
@@ -240,6 +253,37 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
     }
   }
 
+  const handleOpenAdjustPrize = () => {
+    if (!giveaway) return
+    setAdjustPrizeAmount(String(giveaway.prizeAmountUsd))
+    setShowAdjustPrizeModal(true)
+  }
+
+  const handleAdjustPrize = async () => {
+    if (!giveaway || isAdjustingPrize) return
+    const amount = Number(adjustPrizeAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error('Please enter a valid prize amount')
+      return
+    }
+    setIsAdjustingPrize(true)
+    try {
+      await api('admin-update-charity-giveaway-prize', {
+        giveawayNum: giveaway.giveawayNum,
+        prizeAmountUsd: amount,
+      })
+      toast.success('Prize amount updated')
+      setShowAdjustPrizeModal(false)
+      refresh()
+    } catch (e) {
+      const msg =
+        e instanceof APIError ? e.message : 'Failed to update prize amount'
+      toast.error(msg)
+    } finally {
+      setIsAdjustingPrize(false)
+    }
+  }
+
   const handleCreateGiveaway = async () => {
     if (isCreatingGiveaway) return
     const closeTimestamp = Date.parse(newCloseTime)
@@ -330,8 +374,8 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
     return (
       <Page trackPageView={'charity giveaway'}>
         <SEO
-          title="Charity Giveaway"
-          description="Get entries for your favorite charity to win $1,000!"
+          title="Manifold Charity Giveaway"
+          description="Enter the Manifold Charity Giveaway to help your favorite charity win a cash donation from Manifold."
           url="/charity"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
@@ -370,44 +414,55 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
   return (
     <Page trackPageView={'charity giveaway'}>
       <SEO
-        title="Manifold Charity Giveaway"
-        description="Get entries for your favorite charity to win $1,000!"
-        url="/charity"
+        title={
+          giveaway.giveawayNum
+            ? `Manifold Charity Giveaway #${giveaway.giveawayNum}`
+            : 'Manifold Charity Giveaway'
+        }
+        description={`Help your favorite charity win $${giveaway.prizeAmountUsd.toLocaleString()} from Manifold. Convert mana into entries to boost their odds.`}
+        url={giveawayNum ? `/charity/${giveaway.giveawayNum}` : '/charity'}
       />
 
       <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
         {/* Header */}
         <Col className="gap-4">
-          <Row className="items-center gap-3">
-            <FaHeart className="h-8 w-8 text-emerald-500" />
-            <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-              Manifold Charity Giveaway
-            </h1>
-            <div className="ml-auto flex items-center gap-2">
+          {/* Mobile stacks the title above the controls; sm+ is one row. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Row className="items-center gap-3">
+              <FaHeart className="h-8 w-8 text-emerald-500" />
+              <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
+                Manifold Charity Giveaway
+              </h1>
+            </Row>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               {giveawayList.length > 1 && (
-                <div className="relative">
-                  <select
-                    value={String(giveaway.giveawayNum)}
-                    onChange={(e) => {
-                      const nextNum = Number(e.target.value)
-                      if (
-                        activeGiveaway &&
-                        nextNum === activeGiveaway.giveawayNum
-                      ) {
-                        router.push('/charity')
-                      } else {
-                        router.push(`/charity/${nextNum}`)
-                      }
-                    }}
-                    className="bg-canvas-50 border-canvas-200 text-ink-700 appearance-none rounded-md border px-2 py-1 pr-7 text-sm"
-                  >
-                    {giveawayList.map((g) => (
-                      <option key={g.giveawayNum} value={g.giveawayNum}>
-                        {`Giveaway #${g.giveawayNum}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <SelectDropdown
+                  aria-label="Select charity giveaway"
+                  value={giveaway.giveawayNum}
+                  options={giveawayList.map((g) => ({
+                    value: g.giveawayNum,
+                    label: `Giveaway #${g.giveawayNum}`,
+                  }))}
+                  onChange={(nextNum) => {
+                    if (
+                      activeGiveaway &&
+                      nextNum === activeGiveaway.giveawayNum
+                    ) {
+                      router.push('/charity')
+                    } else {
+                      router.push(`/charity/${nextNum}`)
+                    }
+                  }}
+                />
+              )}
+              {isAdmin && (
+                <Button
+                  color="gray-outline"
+                  size="sm"
+                  onClick={handleOpenAdjustPrize}
+                >
+                  Adjust prize
+                </Button>
               )}
               {isAdmin &&
                 isClosed &&
@@ -422,7 +477,7 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
                   </Button>
                 )}
             </div>
-          </Row>
+          </div>
           <p className="text-ink-600 text-lg leading-relaxed">
             Manifold is giving ${giveaway.prizeAmountUsd.toLocaleString()} to
             charity—you decide which one. Convert mana into entries to boost a
@@ -581,6 +636,30 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
         {/* Confetti */}
         {showConfetti && <FullscreenConfetti />}
 
+        {/* Charity Champion Trophy + Champion's Legacy hovercard residual */}
+        {(() => {
+          const legacyEntitlement = user?.entitlements?.find(
+            (e) => e.entitlementId === FORMER_CHARITY_CHAMPION_ENTITLEMENT_ID
+          )
+          return (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <CharityChampionCard
+                data={data}
+                isLoading={!data}
+                user={user}
+                entitlements={user?.entitlements}
+                onEntitlementsChange={() => refresh()}
+              />
+              <ChampionLegacyCard
+                user={user}
+                isOwned={!!legacyEntitlement}
+                isEnabled={legacyEntitlement?.enabled ?? false}
+                onChange={() => refresh()}
+              />
+            </div>
+          )
+        })()}
+
         {/* Sales History */}
         <SalesHistory
           giveawayNum={giveaway.giveawayNum}
@@ -607,8 +686,92 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
           isCreatingGiveaway={isCreatingGiveaway}
           onCreate={handleCreateGiveaway}
         />
+
+        <AdjustPrizeModal
+          open={showAdjustPrizeModal}
+          setOpen={setShowAdjustPrizeModal}
+          giveawayNum={giveaway.giveawayNum}
+          currentPrizeAmount={giveaway.prizeAmountUsd}
+          adjustPrizeAmount={adjustPrizeAmount}
+          setAdjustPrizeAmount={setAdjustPrizeAmount}
+          isAdjustingPrize={isAdjustingPrize}
+          onAdjust={handleAdjustPrize}
+        />
       </Col>
     </Page>
+  )
+}
+
+function ChampionLegacyCard(props: {
+  user: ReturnType<typeof useUser>
+  isOwned: boolean
+  isEnabled: boolean
+  onChange: () => void
+}) {
+  const { user, isOwned, isEnabled, onChange } = props
+  const [toggling, setToggling] = useState(false)
+
+  const handleToggle = async () => {
+    const newEnabled = !isEnabled
+    setToggling(true)
+    try {
+      const result = await api('shop-toggle', {
+        itemId: 'former-charity-champion',
+        enabled: newEnabled,
+      })
+      if (result.success) {
+        toast.success(
+          newEnabled
+            ? "Champion's Legacy enabled"
+            : "Champion's Legacy disabled"
+        )
+        onChange()
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to toggle')
+    } finally {
+      setToggling(false)
+    }
+  }
+
+  return (
+    <Col
+      className={clsx(
+        'bg-canvas-0 border-canvas-50 gap-2 rounded-xl border p-3 shadow-sm',
+        !isOwned && 'opacity-80'
+      )}
+    >
+      <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+        Champion's Legacy
+      </span>
+      <HovercardBackgroundPreview user={user} background="champions-legacy" />
+      <p className="text-ink-500 text-xs">
+        {isOwned
+          ? 'Permanent hovercard background — yours from holding the trophy. Visible in the shop once owned.'
+          : 'Permanent hovercard background — kept for life once you claim the trophy, even after being dethroned.'}
+      </p>
+      <Row className="items-center justify-center gap-2 pt-1">
+        {isOwned ? (
+          <label className="relative inline-flex cursor-pointer items-center">
+            <input
+              type="checkbox"
+              checked={isEnabled}
+              onChange={handleToggle}
+              disabled={toggling}
+              className="peer sr-only"
+            />
+            <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-amber-500 peer-checked:after:translate-x-full dark:bg-gray-600" />
+            <span className="text-ink-700 ml-2 text-sm">
+              {isEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+          </label>
+        ) : (
+          <span className="text-ink-400 text-xs italic">
+            Locked — claim the trophy to unlock
+          </span>
+        )}
+      </Row>
+    </Col>
   )
 }
 
@@ -1193,7 +1356,7 @@ function SaleRow(props: {
         {formatEntries(sale.numTickets)}
       </td>
       <td className="text-ink-600 px-5 py-4 text-right text-sm tabular-nums">
-        {formatMoney(sale.manaSpent)}
+        {formatMoneyAuto(sale.manaSpent)}
       </td>
       <td className="text-ink-400 px-5 py-4 text-right text-sm">
         <RelativeTimestamp time={sale.createdTime} />
@@ -1439,6 +1602,137 @@ function ProvablyFairBanner(props: {
         </Col>
       </Modal>
     </>
+  )
+}
+
+const ADJUST_PRIZE_CONFIRM_PHRASE = 'update prize'
+
+function AdjustPrizeModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  giveawayNum: number
+  currentPrizeAmount: number
+  adjustPrizeAmount: string
+  setAdjustPrizeAmount: (value: string) => void
+  isAdjustingPrize: boolean
+  onAdjust: () => void
+}) {
+  const {
+    open,
+    setOpen,
+    giveawayNum,
+    currentPrizeAmount,
+    adjustPrizeAmount,
+    setAdjustPrizeAmount,
+    isAdjustingPrize,
+    onAdjust,
+  } = props
+
+  const [confirmText, setConfirmText] = useState('')
+
+  useEffect(() => {
+    if (open) setConfirmText('')
+  }, [open])
+
+  const parsed = Number(adjustPrizeAmount)
+  const delta =
+    Number.isFinite(parsed) && parsed > 0 ? parsed - currentPrizeAmount : 0
+  const exceedsCap = Math.abs(delta) > MAX_CHARITY_GIVEAWAY_PRIZE_DELTA_USD
+  const isAmountValid =
+    Number.isFinite(parsed) &&
+    parsed > 0 &&
+    parsed !== currentPrizeAmount &&
+    !exceedsCap
+  const isConfirmed = confirmText.trim() === ADJUST_PRIZE_CONFIRM_PHRASE
+
+  const adjustBy = (amount: number) => {
+    const next = (Number(adjustPrizeAmount) || 0) + amount
+    setAdjustPrizeAmount(String(Math.max(0, next)))
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen} size="md">
+      <Col className={clsx(MODAL_CLASS, 'gap-5')}>
+        <Col className="gap-1">
+          <h3 className="text-ink-900 text-lg font-semibold">
+            Adjust prize pool
+          </h3>
+          <p className="text-ink-500 text-sm">
+            Edit the prize amount for Giveaway #{giveawayNum}. Current:{' '}
+            <span className="text-ink-700 font-medium">
+              ${currentPrizeAmount.toLocaleString()}
+            </span>
+          </p>
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">
+            New prize amount (USD)
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={adjustPrizeAmount}
+            onChange={(e) => setAdjustPrizeAmount(e.target.value)}
+          />
+          <Row className="flex-wrap gap-1.5">
+            {[-100, -10, +10, +100, +1000].map((n) => (
+              <button
+                key={n}
+                onClick={() => adjustBy(n)}
+                className="text-ink-600 hover:bg-canvas-100 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+              >
+                {n > 0 ? `+$${n}` : `-$${Math.abs(n)}`}
+              </button>
+            ))}
+          </Row>
+          {delta !== 0 && (
+            <p
+              className={clsx(
+                'text-xs',
+                exceedsCap ? 'text-red-600 dark:text-red-400' : 'text-ink-500'
+              )}
+            >
+              Change: {delta > 0 ? '+' : ''}${delta.toLocaleString()}
+              {exceedsCap &&
+                ` — exceeds the $${MAX_CHARITY_GIVEAWAY_PRIZE_DELTA_USD.toLocaleString()} per-adjustment cap. Make multiple smaller changes.`}
+            </p>
+          )}
+        </Col>
+
+        <Col className="gap-2">
+          <label className="text-ink-700 text-sm font-medium">
+            Type{' '}
+            <span className="bg-canvas-100 text-ink-900 rounded px-1.5 py-0.5 font-mono text-xs">
+              {ADJUST_PRIZE_CONFIRM_PHRASE}
+            </span>{' '}
+            to confirm
+          </label>
+          <Input
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={ADJUST_PRIZE_CONFIRM_PHRASE}
+            autoComplete="off"
+          />
+        </Col>
+
+        <Row className="justify-end gap-2">
+          <Button color="gray-outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="indigo"
+            loading={isAdjustingPrize}
+            disabled={isAdjustingPrize || !isAmountValid || !isConfirmed}
+            onClick={onAdjust}
+          >
+            Save
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
 

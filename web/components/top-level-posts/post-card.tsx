@@ -1,4 +1,4 @@
-import { ChatIcon, ClockIcon, FireIcon } from '@heroicons/react/outline'
+import { ChatIcon, ClockIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon, EyeOffIcon } from '@heroicons/react/solid'
 import { fromNow } from 'client-common/lib/time'
 import clsx from 'clsx'
@@ -25,12 +25,8 @@ import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { UserLink } from '../widgets/user-link'
 
-export function PostCard(props: {
-  post: TopLevelPost
-  featured?: boolean
-  className?: string
-}) {
-  const { post, featured, className } = props
+export function PostCard(props: { post: TopLevelPost; className?: string }) {
+  const { post, className } = props
   const isAdminOrMod = useAdminOrMod()
   const currentUser = useUser()
   const creator = useDisplayUserById(post.creatorId)
@@ -87,21 +83,10 @@ export function PostCard(props: {
         'transition-all duration-200 ease-out',
         'hover:border-primary-300 dark:hover:border-primary-500',
         'hover:shadow-primary-500/5 hover:shadow-lg',
-        featured && 'ring-primary-500/20 ring-2',
         className
       )}
     >
-      {/* Featured badge */}
-      {featured && (
-        <div className="absolute -top-2.5 left-4">
-          <span className="bg-primary-500 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium text-white shadow-sm">
-            <FireIcon className="h-3 w-3" />
-            Featured
-          </span>
-        </div>
-      )}
-
-      <div className={clsx('p-5', featured && 'pt-6')}>
+      <div className="p-5">
         {/* Header */}
         <Row className="items-start justify-between gap-3">
           <Row className="min-w-0 flex-1 items-center gap-3">

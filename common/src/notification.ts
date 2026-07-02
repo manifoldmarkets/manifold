@@ -94,6 +94,8 @@ export type notification_source_types =
   | 'membership_subscription'
   | 'prize_winner'
   | 'charity_champion'
+  | 'merch_order_update'
+  | 'personalized_mana_offer'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -367,6 +369,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'Updates when your membership auto-renews or is cancelled due to insufficient balance',
   },
+  merch_order_update: {
+    simple: 'Merch order updates',
+    detailed: 'Updates when your merch order ships or is canceled',
+  },
+  personalized_mana_offer: {
+    simple: 'Personalized mana sales',
+    detailed: 'Time-limited personalized discounts on mana purchases',
+  },
   market_movements: {
     simple: 'Market movements',
     detailed:
@@ -401,6 +411,10 @@ export type BettingStreakData = {
   streak: number
   bonusAmount: number
   cashAmount?: number
+  // Effective tier at the time the bonus was awarded, so the notification's
+  // "reduced because unverified" label reflects history and doesn't change if
+  // the user later verifies. Optional for notifications created before this.
+  effectiveTier?: string
 }
 
 export type StreakFreezeUsedData = {
@@ -411,6 +425,7 @@ export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
   newLeague: { season: number; division: number; cohort: string }
   bonusAmount: number
+  missedPrizeReason?: 'silicon_min_mana_not_met'
 }
 
 export type BetFillData = {
@@ -450,6 +465,9 @@ export type UniqueBettorData = {
   totalAmountBet?: number
   token?: ContractToken
   bonusAmount?: number
+  // Creator's effective tier at award time, so the "reduced because unverified"
+  // label reflects history rather than the creator's current tier.
+  effectiveTier?: string
 }
 
 export type ReviewNotificationData = {
@@ -501,6 +519,10 @@ export type PrizeDrawingNotificationData = {
   sweepstakesNum: number
   totalPrizeUsd: number
   closeTime: number
+  // Optional for backward compat — older 'created' notifications didn't
+  // include this. The in-app renderer falls back to a generic format
+  // when missing so historical notifications still render.
+  winnerCount?: number
 }
 
 export type CharityGiveawayNotificationData = {

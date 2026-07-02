@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { Row } from '../layout/row'
 import { Contract } from 'common/contract'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
-import { fromNow } from 'client-common/lib/time'
+import { fromNow, getLocalTimezoneShort } from 'client-common/lib/time'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
@@ -201,6 +201,7 @@ export const EditCloseTimeModal = (props: {
     : undefined
 
   const isPoll = contract.outcomeType === 'POLL'
+  const timezone = getLocalTimezoneShort()
   const isCurrentlyOpen = (contract.closeTime ?? Date.now() + 1) > Date.now()
   const hasChanges = newCloseTime !== closeTime
 
@@ -282,6 +283,7 @@ export const EditCloseTimeModal = (props: {
                 at{' '}
                 <span className="text-ink-900 font-medium">
                   {dayjs(newCloseTime).format('h:mm A')}
+                  {timezone ? ` ${timezone}` : ''}
                 </span>
               </div>
             )}

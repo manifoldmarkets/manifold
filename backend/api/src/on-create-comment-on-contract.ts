@@ -473,7 +473,7 @@ Whoever created the market gets to resolve it! Manifold puts trust in its users 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
 - Market creators who are known to be reputable will earn followers, positive reviews, and more activity on their questions.
-- Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+- Check out the [resolution section in the community guidelines](https://manifold.markets/community-guidelines/resolving-markets).
 
 ### How should I resolve a market?
 

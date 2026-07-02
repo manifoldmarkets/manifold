@@ -4,6 +4,16 @@ import { forEach } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { User } from 'firebase/auth'
 
+// LOCAL_ONLY mode: set a user ID that will be sent as X-Local-User header.
+// Initialize from env var to avoid race conditions with async auth setup.
+let localOnlyUserId: string | null =
+  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LOCAL_TEST_USER_ID
+    ? process.env.NEXT_PUBLIC_LOCAL_TEST_USER_ID
+    : null
+export function setLocalOnlyUserId(userId: string | null) {
+  localOnlyUserId = userId
+}
+
 export function unauthedApi<P extends APIPath>(path: P, params: APIParams<P>) {
   return baseApiCall(
     formatApiUrlWithParams(path, params),
@@ -51,7 +61,9 @@ export async function baseApiCall(
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   }
-  if (user) {
+  if (localOnlyUserId) {
+    headers['X-Local-User'] = localOnlyUserId
+  } else if (user) {
     const token = await user.getIdToken()
     headers.Authorization = `Bearer ${token}`
   }

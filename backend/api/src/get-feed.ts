@@ -23,7 +23,11 @@ import {
 } from 'shared/topic-interests'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
-import { FeedContract, GROUP_SCORE_PRIOR } from 'common/feed'
+import {
+  FeedContract,
+  GROUP_SCORE_PRIOR,
+  NICHE_BLEND_TOPIC_SCORE_SQL,
+} from 'common/feed'
 
 const DEBUG_USER_ID = undefined
 const DEBUG_FEED = false //process.platform === 'darwin'
@@ -113,7 +117,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const baseQueryArray = () =>
     buildArray(
       select('contracts.*'),
-      select(`avg(uti.topic_score) as topic_conversion_score`),
+      select(`${NICHE_BLEND_TOPIC_SCORE_SQL} as topic_conversion_score`),
       from(
         `(select
                unnest(array[$1]) as group_id,
@@ -151,8 +155,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     order(`contracts.conversion_score desc`)
   )
   const sorts = {
-    conversion: `avg(uti.topic_score  * contracts.conversion_score) desc`,
-    freshness: `avg(uti.topic_score  * contracts.freshness_score) desc`,
+    conversion: `${NICHE_BLEND_TOPIC_SCORE_SQL} * contracts.conversion_score desc`,
+    freshness: `${NICHE_BLEND_TOPIC_SCORE_SQL} * contracts.freshness_score desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
     renderSql(...baseQueryArray(), order(orderQ))

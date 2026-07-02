@@ -12,10 +12,10 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
 import ShortToggle from '../widgets/short-toggle'
 import { Title } from '../widgets/title'
-import { canReceiveBonuses, PrivateUser, User } from 'common/user'
+import { isIdentityVerified, PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { DeleteYourselfButton } from './delete-yourself'
 import { capitalize } from 'lodash'
@@ -51,7 +51,9 @@ export const AccountSettings = (props: {
 
   return (
     <Col className="gap-5">
-      {!canReceiveBonuses(user) && <IdentityVerificationSetting />}
+      {/* Show the KYC entry point to anyone not yet identity-verified — including
+          bonus-'eligible' purchasers, who still need to verify for prize drawings. */}
+      {!isIdentityVerified(user) && <IdentityVerificationSetting />}
       <div>
         <label className="mb-1 block">
           {capitalize(TRADE_TERM)} warnings{' '}
@@ -119,13 +121,8 @@ export const AccountSettings = (props: {
             <Col>
               <Title>Are you sure?</Title>
               <div>
-                Updating your API key will break any existing applications
-                connected to your account, <b>including the Twitch bot</b>. You
-                will need to go to the{' '}
-                <Link href="/twitch" className="underline focus:outline-none">
-                  Twitch page
-                </Link>{' '}
-                to relink your account.
+                Updating your API key will break ALL existing applications
+                connected to your account!
               </div>
             </Col>
           </ConfirmationButton>
@@ -160,7 +157,11 @@ function IdentityVerificationSetting() {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
     } finally {
       setLoading(false)
     }

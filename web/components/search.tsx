@@ -8,6 +8,7 @@ import { LiteGroup } from 'common/group'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
 import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
+import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
@@ -63,6 +64,7 @@ export const SORTS = [
   { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'High %', value: 'prob-descending' },
   { label: 'Low %', value: 'prob-ascending' },
+  { label: 'Mid %', value: 'prob-50' },
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
@@ -78,12 +80,13 @@ export const predictionMarketSorts = new Set([
   'most-popular',
   'prob-descending',
   'prob-ascending',
+  'prob-50',
   'freshness-score',
 ])
 
 export const bountySorts = new Set(['bounty-amount'])
 
-const probSorts = new Set(['prob-descending', 'prob-ascending'])
+const probSorts = new Set(['prob-descending', 'prob-ascending', 'prob-50'])
 
 export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
@@ -112,6 +115,7 @@ export const FILTERS = [
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
   { label: 'Recently changed', value: 'news' },
+  { label: 'Uncertain', value: 'uncertain' },
 ] as const
 
 export type Filter = (typeof FILTERS)[number]['value']
@@ -123,6 +127,7 @@ export const CONTRACT_TYPES = [
   { label: 'Set', value: 'INDEPENDENT_MULTIPLE_CHOICE' },
   { label: 'Dependent MC', value: 'DEPENDENT_MULTIPLE_CHOICE' },
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
+  { label: 'Date', value: 'DATE' },
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
@@ -217,6 +222,8 @@ type SearchProps = {
   showTopicsFilterPills?: boolean
   refreshOnVisible?: boolean
   showHotTopics?: boolean
+  // Extra pills rendered as their own row below the sort/filter controls.
+  extraFilterPills?: ReactNode
 }
 
 // Collect all group IDs from SEARCH_TOPICS_TO_SUBTOPICS to filter out duplicates
@@ -276,6 +283,7 @@ export function Search(props: SearchProps) {
     refreshOnVisible,
     showHotTopics,
     initialTopics,
+    extraFilterPills,
   } = props
 
   // Filter hot topics to exclude duplicates of default topics and subtopics
@@ -567,6 +575,34 @@ export function Search(props: SearchProps) {
                     Followed
                   </button>
                 )}
+                <Link
+                  href="/sports/world-cup-2026"
+                  onClick={() =>
+                    track('select search topic', { topic: 'world-cup-2026' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium text-white',
+                    'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500',
+                    'shadow-sm shadow-purple-500/30 ring-1 ring-white/20',
+                    'transition-all hover:brightness-110'
+                  )}
+                >
+                  ⚽ World Cup
+                </Link>
+                <Link
+                  href="/election"
+                  onClick={() =>
+                    track('select search topic', { topic: 'midterms-2026' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    'bg-gradient-to-r from-blue-100 to-rose-100 dark:from-blue-900/50 dark:to-rose-900/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  2026 Midterms
+                </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
                     key={topic}
@@ -717,6 +753,7 @@ export function Search(props: SearchProps) {
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
             hideSweepsToggle={hideSweepsToggle}
+            extraFilterPills={extraFilterPills}
           />
         )}
       </Col>

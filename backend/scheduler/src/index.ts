@@ -1,17 +1,18 @@
-import { initFirebase, initSecrets } from './utils'
-initFirebase()
-
 import * as fs from 'fs'
 import * as path from 'path'
 import * as Handlebars from 'handlebars'
 import * as express from 'express'
 import * as basicAuth from 'express-basic-auth'
 import { sortBy } from 'lodash'
-import { isProd } from 'shared/utils'
-import { log } from 'shared/utils'
+import { LOCAL_ONLY, isProd, log } from 'shared/utils'
 import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
+import { initFirebase, initSecrets } from './utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
+
+if (!LOCAL_ONLY) {
+  initFirebase()
+}
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -22,12 +23,17 @@ function loadTemplate(filename: string) {
 const indexTemplate = loadTemplate('index.hbs')
 
 async function start() {
-  await initSecrets()
+  if (LOCAL_ONLY) {
+    log.info(
+      'Scheduler starting in LOCAL_ONLY mode, skipping secrets and metrics.'
+    )
+  } else {
+    await initSecrets()
+    METRIC_WRITER.start()
+  }
 
   const app = express()
   app.use(express.json())
-
-  METRIC_WRITER.start()
 
   const prod = isProd()
   app.use(

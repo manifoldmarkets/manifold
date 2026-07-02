@@ -64,6 +64,16 @@ module.exports = {
   async redirects() {
     return [
       {
+        source: '/community-guidelines/prize-faq',
+        destination: '/community-guidelines/prize-drawings-faq',
+        permanent: true,
+      },
+      {
+        source: '/community-guidelines/prize-rules',
+        destination: '/community-guidelines/prize-drawings-rules',
+        permanent: true,
+      },
+      {
         source: '/supporter',
         destination: '/membership',
         permanent: true,
@@ -99,6 +109,24 @@ module.exports = {
         destination: '/lab',
         permanent: true,
       },
+      {
+        source: '/store',
+        destination: '/shop',
+        permanent: true,
+      },
+      // Aliases that should land on the jobs board (/jobs).
+      ...[
+        '/job-board',
+        '/jobboard',
+        '/jobs-board',
+        '/jobsboard',
+        '/career',
+        '/careers',
+      ].map((source) => ({
+        source,
+        destination: '/jobs',
+        permanent: true,
+      })),
 
       {
         source: '/versus',
@@ -180,6 +208,11 @@ module.exports = {
         source: '/dashboard/:slug',
         destination: '/news/:slug',
         permanent: true,
+      },
+      {
+        source: '/sports/world-cup',
+        destination: '/sports/world-cup-2026',
+        permanent: false,
       },
       {
         source: '/home/:newsSlug*',

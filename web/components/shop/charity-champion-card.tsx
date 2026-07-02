@@ -15,6 +15,7 @@ import { Avatar } from '../widgets/avatar'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { TrophySvg } from './trophy-svg'
 import { NewBadge } from './new-badge'
+import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
 import { CharityGiveawayData } from './charity-giveaway-card'
 
@@ -26,6 +27,9 @@ export function CharityChampionCard(props: {
   entitlements?: UserEntitlement[]
   isNew?: boolean
   onEntitlementsChange?: (entitlements: UserEntitlement[]) => void
+  // Renders a "Hidden" pill in the corner so shop owners know the item
+  // is only visible to them. Off by default (e.g. on the charity page).
+  showHiddenBadge?: boolean
 }) {
   const {
     data,
@@ -35,6 +39,7 @@ export function CharityChampionCard(props: {
     entitlements,
     isNew,
     onEntitlementsChange,
+    showHiddenBadge = false,
   } = props
   const [claiming, setClaiming] = useState(false)
   const [toggling, setToggling] = useState(false)
@@ -131,14 +136,14 @@ export function CharityChampionCard(props: {
   }
 
   return (
-    <div className="relative h-full">
+    <div className="group relative h-full pb-2">
       {/* NEW sticker — sibling of Card so it can overflow the card's clipping */}
       {isNew && <NewBadge variant="sticker" />}
       <Card
         className={clsx(
           'relative flex h-full flex-col gap-2 overflow-hidden p-4 transition-all duration-200',
           'dark:via-yellow-900/15 bg-gradient-to-br from-amber-50/50 via-yellow-50/30 to-orange-50/50 dark:from-amber-900/20 dark:to-orange-900/20',
-          'hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:ring-2 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
+          'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-amber-200/50 group-hover:ring-2 group-hover:ring-amber-500 dark:group-hover:shadow-amber-900/30',
           className
         )}
       >
@@ -151,6 +156,13 @@ export function CharityChampionCard(props: {
           <span className="text-lg font-semibold text-amber-700 dark:text-amber-400">
             Champion Trophy
           </span>
+          {showHiddenBadge && (
+            <Tooltip text="This item is only visible because you already own it">
+              <div className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 sm:px-2 sm:text-xs">
+                Hidden
+              </div>
+            </Tooltip>
+          )}
         </Row>
 
         {/* Current trophy holder section */}
@@ -264,7 +276,7 @@ export function CharityChampionCard(props: {
               <span>
                 {champion
                   ? `Outbid @${champion.username} to claim`
-                  : 'Earn entries in the giveaway to claim'}
+                  : 'Get entries in the giveaway to claim'}
               </span>
             </div>
           )}

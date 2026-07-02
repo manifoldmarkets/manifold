@@ -1,4 +1,4 @@
-import { GiftIcon, StarIcon } from '@heroicons/react/solid'
+import { GiftIcon, SparklesIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { TRADED_TERM } from 'common/envs/constants'
 import {
@@ -204,6 +204,22 @@ export function NotificationItem(props: {
   } else if (reason === 'charity_giveaways') {
     return (
       <CharityGiveawayCampaignNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'merch_order_update') {
+    return (
+      <MerchOrderNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'personalized_mana_offer') {
+    return (
+      <PersonalizedManaOfferNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -1531,6 +1547,7 @@ export function MultipleAvatarIcons(props: {
 
   return (
     <div
+      data-stop-notification-click
       onClick={(event) => {
         if (relatedNotifications.length === 1) return
         event.preventDefault()
@@ -2296,7 +2313,12 @@ function PrizeDrawingCampaignNotification(props: {
     >
       {data.eventType === 'created' ? (
         <span>
-          New prize drawing with <b>{prizeAmount}</b> in prizes.
+          New prize drawing is live: <b>{prizeAmount}</b>
+          {data.winnerCount === 1
+            ? ' to one winner.'
+            : data.winnerCount && data.winnerCount > 1
+            ? ` across ${data.winnerCount} winners.`
+            : ' in prizes.'}
         </span>
       ) : hasEnded ? (
         <span>
@@ -2347,6 +2369,71 @@ function CharityGiveawayCampaignNotification(props: {
         <span>
           Charity Giveaway #{data.giveawayNum} ends in {timeLeft}.{' '}
           <b>{prizeAmount}</b> prize amount.
+        </span>
+      )}
+    </NotificationFrame>
+  )
+}
+
+function PersonalizedManaOfferNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<SparklesIcon className="h-8 w-8 text-amber-500" />}
+      // ?showOffer=1 forces the offer card to render even if the user has
+      // previously dismissed it — clicking the notification is an explicit
+      // request to view the offer.
+      link="/checkout?showOffer=1"
+      subtitle={
+        <span className="text-ink-600 text-xs">
+          Limited-time discount on a mana bundle — tap to view.
+        </span>
+      }
+    >
+      <span>{notification.sourceText}</span>
+    </NotificationFrame>
+  )
+}
+
+function MerchOrderNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const data = notification.data as {
+    itemName?: string
+    event?: string
+    refundAmount?: number
+  }
+  const isShipped = data?.event === 'shipped'
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <GiftIcon
+          className={
+            isShipped ? 'text-primary-500 h-8 w-8' : 'text-ink-500 h-8 w-8'
+          }
+        />
+      }
+      link="/shop"
+    >
+      <span>{notification.sourceText}</span>
+      {data?.refundAmount != null && (
+        <span className="text-ink-600">
+          {' '}
+          ({formatMoney(data.refundAmount)} refunded)
         </span>
       )}
     </NotificationFrame>

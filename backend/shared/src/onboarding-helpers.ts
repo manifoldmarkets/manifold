@@ -6,7 +6,6 @@ import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { NEXT_DAY_BONUS } from 'common/economy'
 import { isProd, log } from 'shared/utils'
 import {
-  canReceiveBonuses,
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USER_NAME,
   MANIFOLD_USER_USERNAME,
@@ -189,11 +188,10 @@ const processUserForBonus = async (
     return undefined
   }
 
-  // Only send bonus to users who can receive bonuses (verified or grandfathered)
-  if (!canReceiveBonuses(user)) {
-    log(`User ${user.id} not eligible for next day bonus - not verified`)
-    return undefined
-  }
+  // The next-day bonus is a pure retention nudge (come back the day after
+  // signup), so it goes to ALL new users at the full amount — regardless of
+  // verification/eligibility tier. It's one-time per account (manaBonusSent
+  // above), so it isn't a farmable ongoing bonus.
 
   const result: SignupBonusResult = {}
 

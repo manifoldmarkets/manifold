@@ -93,7 +93,6 @@ pathMatchers:
           - pathTemplateMatch: /v0/slug/*
           - pathTemplateMatch: /search-contract-positions
           - pathTemplateMatch: /fetch-link-preview
-          - pathTemplateMatch: /v0/get-partner-stats
           - pathTemplateMatch: /v0/get-posts
           - pathTemplateMatch: /get-mana-supply
           - pathTemplateMatch: /get-txn-summary-stats

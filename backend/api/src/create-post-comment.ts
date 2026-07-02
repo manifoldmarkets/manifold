@@ -1,9 +1,14 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { PostComment } from 'common/comment'
-import { canReceiveBonuses } from 'common/user'
+import { hasAccountTrustSignal } from 'common/user'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getPrivateUser, revalidateStaticProps, sanitizeJsonContent } from 'shared/utils'
+import {
+  getUser,
+  getPrivateUser,
+  revalidateStaticProps,
+  sanitizeJsonContent,
+} from 'shared/utils'
 import { getPost } from 'shared/supabase/posts'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/monitoring/log'
@@ -23,8 +28,8 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     if (!creator) throw new APIError(401, 'Your account was not found')
     if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
 
-    // Require bonus eligibility (verified or grandfathered) to comment
-    if (!canReceiveBonuses(creator)) {
+    // Forum comments are gated on account trust, not bonus eligibility.
+    if (!hasAccountTrustSignal(creator)) {
       throw new APIError(
         403,
         'Please verify your identity to comment on posts.'
@@ -34,6 +39,24 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     const pg = createSupabaseDirectClient()
     const post = await getPost(pg, postId)
     if (!post) throw new APIError(404, 'Post not found')
+
+    if (replyToCommentId) {
+      const repliedComment = await pg.oneOrNone<{
+        comment_id: string
+        reply_to_comment_id: string | null
+      }>(
+        `select comment_id, data->>'replyToCommentId' as reply_to_comment_id
+         from old_post_comments
+         where comment_id = $1 and post_id = $2`,
+        [replyToCommentId, postId]
+      )
+      if (!repliedComment) {
+        throw new APIError(404, 'Comment to reply to not found')
+      }
+      if (repliedComment.reply_to_comment_id) {
+        throw new APIError(400, 'Can only reply to top-level comments')
+      }
+    }
 
     // Check if commenter is blocked by post creator or has blocked post creator
     const privateUser = await getPrivateUser(auth.uid)

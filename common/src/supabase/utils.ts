@@ -30,11 +30,14 @@ export type Column<T extends Selectable> = keyof Row<T> & string
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 
 export function createClient(
-  instanceId: string,
+  instanceIdOrUrl: string,
   key: string,
   opts?: SupabaseClientOptionsGeneric<'public'>
 ) {
-  const url = `https://${instanceId}.supabase.co`
+  // If it looks like a full URL (starts with http), use it directly
+  const url = instanceIdOrUrl.startsWith('http')
+    ? instanceIdOrUrl
+    : `https://${instanceIdOrUrl}.supabase.co`
   return createClientGeneric(url, key, opts) as SupabaseClient
 }
 
@@ -77,7 +80,9 @@ export function millisToTs(millis: number) {
   return new Date(millis).toISOString()
 }
 
-export function tsToMillis(ts: string) {
+export function tsToMillis(ts: string | Date | null | undefined): number {
+  if (ts == null) return NaN
+  if (ts instanceof Date) return ts.getTime()
   return Date.parse(ts)
 }
 

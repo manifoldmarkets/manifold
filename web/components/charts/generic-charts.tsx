@@ -730,6 +730,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   zoomParams?: ZoomParams
   showZoomer?: boolean
   yKind?: ValueKind
+  yTickFormat?: (y: number) => string
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   onMouseLeave?: () => void
@@ -774,6 +775,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     areaClassName,
     noWatermark,
     rightmostDate,
+    yTickFormat,
   } = props
 
   useLayoutEffect(() => {
@@ -812,7 +814,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     }
 
     yAxis.tickFormat(
-      yKind === 'percent'
+      yTickFormat
+        ? (n) => yTickFormat(+n)
+        : yKind === 'percent'
         ? (n) => formatPct(n)
         : yKind === 'Ṁ' || yKind === 'spice'
         ? (n) => formatMoneyNumber(n)
@@ -836,7 +840,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     )
 
     return { xAxis, yAxis }
-  }, [w, h, yKind, xScale, yScale])
+  }, [w, h, yKind, yTickFormat, xScale, yScale])
 
   const xRangeSelector = dataAtXSelector(data, xScale)
   const allTimeSelector = dataAtTimeSelector(data)

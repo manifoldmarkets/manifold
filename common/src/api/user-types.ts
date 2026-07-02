@@ -21,10 +21,20 @@ export type FullUser = User & {
 
 /**
  * Convert user to API response format.
+ *
+ * Strips admin-only verification fields that must never reach the public User
+ * surface. The user/:username and user/by-id/:id endpoints are unauthenticated,
+ * so this is stripped centrally for every FullUser consumer. Admins read the
+ * flag reason via the admin-gated get-user-info endpoint instead.
  */
 export function toUserAPIResponse(user: User): FullUser {
+  const {
+    verificationFlagReason: _adminOnlyReason,
+    previousBonusEligibility: _adminOnlyPreviousEligibility,
+    ...rest
+  } = user
   return {
-    ...user,
+    ...rest,
     url: `https://${ENV_CONFIG.domain}/${user.username}`,
     isBot: user.isBot ?? BOT_USERNAMES.includes(user.username),
     isAdmin: ENV_CONFIG.adminIds.includes(user.id),

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
-import { canReceiveBonuses, User } from 'common/user'
-import { api } from 'web/lib/api/api'
+import { isIdentityVerified, User } from 'common/user'
+import { api, APIError } from 'web/lib/api/api'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -19,12 +19,14 @@ export function IdentityVerificationPage(props: {
     'pending' | 'approved' | 'denied' | 'suspected' | null
   >(null)
 
-  // Check if user is already eligible for bonuses
-  const isAlreadyEligible = user ? canReceiveBonuses(user) : false
+  // Check if user has already completed identity verification. Uses
+  // isIdentityVerified (not full bonus access) so bonus-'eligible' purchasers
+  // still see the KYC flow — they need it to enter prize drawings.
+  const isAlreadyVerified = user ? isIdentityVerified(user) : false
 
   // Fetch verification status from the database
   useEffect(() => {
-    if (!user || isAlreadyEligible) return
+    if (!user || isAlreadyVerified) return
 
     api('get-idenfy-status', {})
       .then((result) => {
@@ -33,7 +35,7 @@ export function IdentityVerificationPage(props: {
       .catch((e) => {
         console.error('Failed to fetch verification status:', e)
       })
-  }, [user?.id, isAlreadyEligible])
+  }, [user?.id, isAlreadyVerified])
 
   const isPending = verificationStatus === 'pending'
 
@@ -56,7 +58,11 @@ export function IdentityVerificationPage(props: {
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
       track('identity verification: error', {
         error: e instanceof Error ? e.message : 'Unknown error',
       })
@@ -70,7 +76,7 @@ export function IdentityVerificationPage(props: {
     onSkip()
   }
 
-  if (isAlreadyEligible) {
+  if (isAlreadyVerified) {
     return (
       <Col className="gap-4">
         <div className="text-primary-700 mb-2 text-center text-2xl font-normal">

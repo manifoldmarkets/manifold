@@ -51,6 +51,8 @@ export type notification_preferences = {
   extra_purchased_mana: notification_destination_types[]
   payment_status: notification_destination_types[]
   membership_subscription: notification_destination_types[]
+  merch_order_update: notification_destination_types[]
+  personalized_mana_offer: notification_destination_types[]
 
   // Leagues
   league_changed: notification_destination_types[]
@@ -158,6 +160,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     extra_purchased_mana: constructPref(true, false, false),
     payment_status: constructPref(true, false, false),
     membership_subscription: constructPref(true, true, true),
+    merch_order_update: constructPref(true, false, false),
+    personalized_mana_offer: constructPref(true, false, true),
 
     // Leagues
     league_changed: constructPref(true, false, false),

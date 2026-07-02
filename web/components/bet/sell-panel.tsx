@@ -67,6 +67,8 @@ export function SellPanel(props: {
     sellForUserId,
   } = props
   const { outcomeType } = contract
+  const isCreatorBanned =
+    user.id === contract.creatorId && contract.creatorBannedFromBetting === true
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isMultiSumsToOne =
@@ -125,7 +127,10 @@ export function SellPanel(props: {
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const betDisabled =
-    isSubmitting || !amount || (error && error.includes('Maximum'))
+    isSubmitting ||
+    !amount ||
+    (error && error.includes('Maximum')) ||
+    isCreatorBanned
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)

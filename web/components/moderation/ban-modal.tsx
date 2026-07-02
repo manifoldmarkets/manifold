@@ -1063,9 +1063,17 @@ function BanHistoryRecord({
 function BonusEligibilityControl({ user }: { user: User }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  // 'requires_verification' is set via the dedicated flag endpoint on the
+  // user-info page; this control sticks to admin-set-bonus-eligibility's
+  // narrower enum. Normalize the initial value to undefined when flagged so
+  // the local state type matches.
+  const initialEligibility =
+    user.bonusEligibility === 'requires_verification'
+      ? undefined
+      : user.bonusEligibility
   const [selectedEligibility, setSelectedEligibility] = useState<
-    'verified' | 'grandfathered' | 'ineligible' | null | undefined
-  >(user.bonusEligibility)
+    'verified' | 'grandfathered' | 'eligible' | 'ineligible' | null | undefined
+  >(initialEligibility)
 
   const eligibilityOptions = [
     { value: 'verified' as const, label: 'Verified', color: 'text-green-600' },
@@ -1073,6 +1081,11 @@ function BonusEligibilityControl({ user }: { user: User }) {
       value: 'grandfathered' as const,
       label: 'Grandfathered',
       color: 'text-blue-600',
+    },
+    {
+      value: 'eligible' as const,
+      label: 'Eligible (bonuses only)',
+      color: 'text-teal-600',
     },
     {
       value: 'ineligible' as const,
@@ -1131,12 +1144,20 @@ function BonusEligibilityControl({ user }: { user: User }) {
                 ? 'bg-green-100 text-green-800'
                 : user.bonusEligibility === 'grandfathered'
                 ? 'bg-blue-100 text-blue-800'
+                : user.bonusEligibility === 'eligible'
+                ? 'bg-teal-100 text-teal-800'
                 : user.bonusEligibility === 'ineligible'
                 ? 'bg-red-100 text-red-800'
-                : 'bg-orange-100 text-orange-800'
+                : user.bonusEligibility === 'requires_verification'
+                ? 'bg-orange-100 text-orange-800'
+                : 'bg-gray-100 text-gray-700'
             }`}
           >
-            {currentEligibility?.label ?? 'Not Set'}
+            {user.bonusEligibility === 'eligible'
+              ? 'Eligible (bonuses only)'
+              : user.bonusEligibility === 'requires_verification'
+              ? 'Requires Verification'
+              : currentEligibility?.label ?? 'Not Set'}
           </span>
         </Row>
         {isExpanded ? (

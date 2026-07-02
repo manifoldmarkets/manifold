@@ -48,8 +48,8 @@ export const isBlocked = (
   otherUserId: string
 ) => {
   return (
-    privateUser?.blockedUserIds.includes(otherUserId) ||
-    privateUser?.blockedByUserIds.includes(otherUserId)
+    privateUser?.blockedUserIds?.includes(otherUserId) ||
+    privateUser?.blockedByUserIds?.includes(otherUserId)
   )
 }
 

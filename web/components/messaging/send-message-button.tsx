@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { Button } from 'web/components/buttons/button'
+import { Button, SizeType } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
 import { BiEnvelope } from 'react-icons/bi'
 import { useSortedPrivateMessageMemberships } from 'web/hooks/use-private-messages'
@@ -25,8 +25,17 @@ export const SendMessageButton = (props: {
   currentUser: User | undefined | null
   includeLabel?: boolean
   circleButton?: boolean
+  size?: SizeType
+  className?: string
 }) => {
-  const { toUser, currentUser, includeLabel, circleButton } = props
+  const {
+    toUser,
+    currentUser,
+    includeLabel,
+    circleButton,
+    size = 'sm',
+    className,
+  } = props
   const router = useRouter()
   const privateUser = usePrivateUser()
   const channelMemberships = useSortedPrivateMessageMemberships(currentUser?.id)
@@ -96,7 +105,15 @@ export const SendMessageButton = (props: {
           <BiEnvelope className="h-4.5 w-4.5 text-white" />
         </button>
       ) : (
-        <Button size="sm" onClick={messageButtonClicked} className="gap-1.5">
+        <Button
+          size={size}
+          onClick={messageButtonClicked}
+          className={clsx(
+            'my-auto gap-1.5',
+            !includeLabel && 'h-9 w-9 !px-0',
+            className
+          )}
+        >
           <BiEnvelope className="h-4 w-4" />
           {includeLabel && <span>Message</span>}
         </Button>

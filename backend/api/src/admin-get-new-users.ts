@@ -24,7 +24,13 @@ export const adminGetNewUsers: APIHandler<'admin-get-new-users'> = async (
     referred_by_user_id: string | null
     referred_by_username: string | null
     referred_by_name: string | null
-    bonus_eligibility: 'verified' | 'grandfathered' | 'ineligible' | null
+    bonus_eligibility:
+      | 'verified'
+      | 'grandfathered'
+      | 'eligible'
+      | 'ineligible'
+      | 'requires_verification'
+      | null
     purchased_mana: boolean | null
     email: string | null
     ip_address: string | null

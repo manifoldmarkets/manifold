@@ -18,9 +18,11 @@ export type ShopItemCategory =
   | 'merch'
   | 'ticket'
 
-// Merch size variant for clothing items
+// Merch size/colour variant for clothing items. `color` is optional — items
+// like the caps and the AGGC tee that ship in a single colour omit it.
 export type MerchVariant = {
   size: string
+  color?: string
   printfulSyncVariantId: string
 }
 
@@ -200,6 +202,14 @@ export type ShopItem = {
   variants?: MerchVariant[]
   // Image carousel for merch cards: [{label, url}, ...]
   merchImages?: { label: string; url: string }[]
+  // Per-colour image carousel for items with multiple colour variants.
+  // Keyed by the same `color` string used in `variants`. When set, the card
+  // swaps the carousel as the user picks a colour. Falls back to merchImages.
+  merchImagesByColor?: Record<string, { label: string; url: string }[]>
+  // Index of the image to show first in the carousel. Lets you keep the
+  // natural Front-then-Back ordering of dots while landing the user on a
+  // different image initially. Also used as the reset target on colour swap.
+  defaultImageIndex?: number
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -789,7 +799,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'charity-champion-trophy',
     hidden: true,
     name: 'Charity Champion Trophy',
-    description: 'Exclusive trophy for the #1 ticket buyer in the charity raffle',
+    description: 'Exclusive trophy for the #1 entry holder in the charity giveaway',
     price: 0, // Cannot be purchased
     type: 'earned',
     limit: 'one-time',
@@ -808,10 +818,51 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'hovercard',
     slot: 'hovercard-background',
   },
-  // Merch items
+  // Merch items (newest first)
+  {
+    id: 'merch-wordmark-tshirt',
+    name: 'White Wordmark Unisex T-Shirt',
+    description:
+      'White Manifold wordmark print — pick your colour and size.',
+    price: 5000,
+    type: 'instant',
+    limit: 'one-time',
+    category: 'merch',
+    slot: 'consumable',
+    imageUrl: '/merch/White-wordmark-black-t-shirt-front.png',
+    merchImagesByColor: {
+      Black: [
+        { label: 'Front', url: '/merch/White-wordmark-black-t-shirt-front.png' },
+        { label: 'Back', url: '/merch/White-wordmark-black-t-shirt-back.png' },
+      ],
+      Navy: [
+        { label: 'Front', url: '/merch/White-wordmark-navy-t-shirt-front.png' },
+        { label: 'Back', url: '/merch/White-wordmark-navy-t-shirt-back.png' },
+      ],
+    },
+    // Bella + Canvas 3001 unisex tee. 4XL / 5XL variants exist on Printful but
+    // are intentionally excluded — their wholesale price pushes margin below
+    // acceptable at the uniform M$5,000 shelf price.
+    variants: [
+      { size: 'XS', color: 'Black', printfulSyncVariantId: '69e70ad8bc1045' },
+      { size: 'S', color: 'Black', printfulSyncVariantId: '69e70ad8bc1202' },
+      { size: 'M', color: 'Black', printfulSyncVariantId: '69e70ad8bc12f9' },
+      { size: 'L', color: 'Black', printfulSyncVariantId: '69e70ad8bc13b5' },
+      { size: 'XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc1463' },
+      { size: '2XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc1517' },
+      { size: '3XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc15d1' },
+      { size: 'XS', color: 'Navy', printfulSyncVariantId: '69026b379412e7' },
+      { size: 'S', color: 'Navy', printfulSyncVariantId: '69026b37941355' },
+      { size: 'M', color: 'Navy', printfulSyncVariantId: '69026b379413a7' },
+      { size: 'L', color: 'Navy', printfulSyncVariantId: '69026b37941404' },
+      { size: 'XL', color: 'Navy', printfulSyncVariantId: '69026b37941459' },
+      { size: '2XL', color: 'Navy', printfulSyncVariantId: '69026b379414b6' },
+      { size: '3XL', color: 'Navy', printfulSyncVariantId: '69026b37941505' },
+    ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
+  },
   {
     id: 'merch-aggc-tshirt',
-    hidden: true,
     name: 'AGGC T-Shirt',
     description: 'Embroidered Manifold logo on front, "Anti Gambling Gambling Club" print on back',
     price: 5000,
@@ -819,11 +870,12 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'merch',
     slot: 'consumable',
-    imageUrl: '/merch/AGGC-front-ghost.png',
+    imageUrl: '/merch/AGGC-back-ghost.png',
     merchImages: [
       { label: 'Front', url: '/merch/AGGC-front-ghost.png' },
       { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
     ],
+    defaultImageIndex: 1,
     variants: [
       { size: 'S', printfulSyncVariantId: '69026b955ba991' },
       { size: 'M', printfulSyncVariantId: '69026b955baa12' },
@@ -832,10 +884,10 @@ export const SHOP_ITEMS: ShopItem[] = [
       { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
       { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
     ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-white-logo',
-    hidden: true,
     name: 'White Logo Cap',
     description: 'Black dad cap with white embroidered Manifold logo',
     price: 3000,
@@ -847,14 +899,15 @@ export const SHOP_ITEMS: ShopItem[] = [
     merchImages: [
       { label: 'Front', url: '/merch/White-Logo-Cap-Black.png' },
       { label: 'Angle', url: '/merch/White-Logo-Cap-Black-Tilt.png' },
+      { label: 'Back', url: '/merch/White-Logo-Cap-Black-Back.png' },
     ],
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c7bf5859673' },
     ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-purple-logo',
-    hidden: true,
     name: 'Purple Logo Cap',
     description: 'White dad cap with purple embroidered Manifold logo',
     price: 3000,
@@ -866,13 +919,23 @@ export const SHOP_ITEMS: ShopItem[] = [
     merchImages: [
       { label: 'Front', url: '/merch/Purple-Logo-Cap-White.png' },
       { label: 'Angle', url: '/merch/Purple-Logo-Cap-White-Tilt.png' },
+      { label: 'Back', url: '/merch/Purple-Logo-Cap-White-Back.png' },
     ],
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c786e6c50b2' },
     ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
+]
 
-  // Tickets
+// Retired products. Deliberately NOT part of the live catalog (SHOP_ITEMS), so
+// they are never rendered in the shop, returned by get-shop-items, or sold (the
+// generic shop-purchase path resolves via getShopItem, which only searches
+// SHOP_ITEMS — a retired id 404s). They are retained ONLY so the admin order
+// record and sales stats can resolve historical `shop_orders.item_id` values
+// back to names. Do not re-add these to SHOP_ITEMS.
+export const RETIRED_SHOP_ITEMS: ShopItem[] = [
+  // Manifest tickets — removed from the shop after Manifest 2026.
   {
     id: 'manifest-ticket',
     hidden: true,
@@ -896,12 +959,14 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'ticket',
     slot: 'unique',
-    maxStock: 20,
+    maxStock: 0,
   },
 ]
 
+// Ticket items now live only in the archive — used by the admin record + stats,
+// never by the live shop (which has no ticket-rendering code anymore).
 export const getTicketItems = (): ShopItem[] =>
-  SHOP_ITEMS.filter((item) => item.category === 'ticket')
+  RETIRED_SHOP_ITEMS.filter((item) => item.category === 'ticket')
 
 export const isTicketItem = (item: ShopItem): boolean =>
   item.category === 'ticket'
@@ -941,6 +1006,13 @@ export type CrownPosition = 0 | 1 | 2
 
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
+
+// Like getShopItem, but also searches retired/archived products. Use ONLY in
+// admin/record views (order tables, stats) that need to resolve historical
+// item ids to names. Do NOT use in purchase or catalog paths — that would make
+// retired products buyable again.
+export const getShopItemOrRetired = (id: string): ShopItem | undefined =>
+  getShopItem(id) ?? RETIRED_SHOP_ITEMS.find((item) => item.id === id)
 
 export const getMerchItems = (): ShopItem[] =>
   SHOP_ITEMS.filter((item) => item.category === 'merch')

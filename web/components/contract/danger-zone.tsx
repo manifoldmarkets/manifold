@@ -92,7 +92,9 @@ export function DangerZone(props: {
     now.diff(dayjs(resolutionTime), 'minute') < MINUTES_ALLOWED_TO_UNRESOLVE
 
   const isIndependentMulti =
-    outcomeType === 'MULTIPLE_CHOICE' &&
+    (outcomeType === 'MULTIPLE_CHOICE' ||
+      outcomeType === 'MULTI_NUMERIC' ||
+      outcomeType === 'DATE') &&
     mechanism === 'cpmm-multi-1' &&
     'shouldAnswersSumToOne' in contract &&
     !contract.shouldAnswersSumToOne

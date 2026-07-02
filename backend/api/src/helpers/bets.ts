@@ -17,10 +17,25 @@ import { convertBet } from 'common/supabase/bets'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { convertUser } from 'common/supabase/users'
 import { UniqueBettorBonusTxn } from 'common/txn'
-import { canReceiveBonuses, User, UserBan } from 'common/user'
+import { User, UserBan } from 'common/user'
+import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+  roundTierBonus,
+  SUPPORTER_ENTITLEMENT_IDS,
+} from 'common/supporter-config'
+import { convertEntitlement } from 'common/shop/types'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
-import { groupBy, mapValues, orderBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
+import {
+  groupBy,
+  mapValues,
+  orderBy,
+  sortBy,
+  sumBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 import { log } from 'shared/monitoring/log'
 import {
@@ -32,21 +47,20 @@ import { getInsertQuery } from 'shared/supabase/utils'
 import { txnToRow } from 'shared/txn/run-txn'
 import { contractColumnsToSelect } from 'shared/utils'
 
-export const fetchContractBetDataAndValidate = async (
-  pgTrans: SupabaseTransaction | SupabaseDirectClient,
-  body: {
-    contractId: string
-    amount: number | undefined
-    answerId?: string
-    answerIds?: string[]
-    outcome: 'YES' | 'NO'
-  },
-  uid: string,
-  isApi: boolean,
-  isAdminTrade: boolean = false
-) => {
-  const startTime = Date.now()
-  const { amount, contractId, outcome } = body
+type BetDataBody = {
+  contractId: string
+  amount?: number | undefined
+  answerId?: string
+  answerIds?: string[]
+  outcome: 'YES' | 'NO'
+}
+
+// Shared SQL fragments for selecting a contract's open limit orders. These are
+// reused by both fetchContractBetDataAndValidate (pre-transaction read) and
+// lockContractAndGetBetData (in-transaction locked re-read) so the two paths
+// can't drift. The fragments assume the query is formatted with
+// [uid, contractId, answerIds, outcome] bound to $1..$4.
+const getLimitOrderQueryFragments = (body: BetDataBody) => {
   const answerIds =
     'answerIds' in body
       ? body.answerIds
@@ -72,6 +86,26 @@ export const fetchContractBetDataAndValidate = async (
       (not ${isSumsToOne} and ($3 is null or b.answer_id in ($3:list)) and b.outcome != $4)
     )
   `
+  return { answerIds, isSumsToOne, whereLimitOrderBets }
+}
+
+export const fetchContractBetDataAndValidate = async (
+  pgTrans: SupabaseTransaction | SupabaseDirectClient,
+  body: {
+    contractId: string
+    amount: number | undefined
+    answerId?: string
+    answerIds?: string[]
+    outcome: 'YES' | 'NO'
+  },
+  uid: string,
+  isApi: boolean,
+  isAdminTrade: boolean = false
+) => {
+  const startTime = Date.now()
+  const { amount, contractId, outcome } = body
+  const { answerIds, isSumsToOne, whereLimitOrderBets } =
+    getLimitOrderQueryFragments(body)
   const queries = pgp.as.format(
     `
     select * from users where id = $1;
@@ -83,7 +117,7 @@ export const fetchContractBetDataAndValidate = async (
     select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
-    select data, margin_loan, loan from user_contract_metrics ucm where 
+    select data, margin_loan, loan from user_contract_metrics ucm where
       contract_id = $2 and user_id = $1
       and (
         -- Get metrics for selected answers
@@ -91,7 +125,7 @@ export const fetchContractBetDataAndValidate = async (
         or
         -- Get null answer metrics
         ucm.answer_id is null
-      ); 
+      );
     -- Limit orderers' contract metrics
     with matching_user_answer_pairs as (
       select distinct b.user_id, b.answer_id
@@ -107,14 +141,36 @@ export const fetchContractBetDataAndValidate = async (
     select * from user_bans where user_id = $1 and ended_at is null and (end_time is null or end_time > now());
     -- Creator user for bonus eligibility check
     select * from users where id = (select creator_id from contracts where id = $2);
+    -- Creator's active supporter entitlements: subscription wins in
+    -- resolveEffectiveTier, so the creator's unique-trader bonus must see them.
+    -- (convertUser doesn't load entitlements, so without this a subscriber
+    -- creator would be mis-tiered as unverified.)
+    select user_id, entitlement_id, granted_time, expires_time, enabled, auto_renew, metadata
+      from user_entitlements
+      where user_id = (select creator_id from contracts where id = $2)
+        and entitlement_id in ($5:list)
+        and enabled = true
+        and (expires_time is null or expires_time > now());
   `,
-    [uid, contractId, answerIds ?? null, outcome]
+    [
+      uid,
+      contractId,
+      answerIds ?? null,
+      outcome,
+      [...SUPPORTER_ENTITLEMENT_IDS],
+    ]
   )
   const results = await pgTrans.multi(queries)
   const user = convertUser(results[0][0])
   const contract = convertContract(results[1][0])
   const creatorRow = results[8]?.[0]
   const creator = creatorRow ? convertUser(creatorRow) : undefined
+  // Attach the creator's active supporter entitlements (loaded above) so
+  // resolveEffectiveTier recognizes a subscriber creator — otherwise their
+  // unique-trader bonus is computed at the unverified tier.
+  if (creator) {
+    creator.entitlements = (results[9] ?? []).map(convertEntitlement)
+  }
   const answers = results[2].map(convertAnswer)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
@@ -208,6 +264,16 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.outcomeType === 'STONK' && isApi) {
     throw new APIError(403, 'API users cannot bet on STONK contracts.')
   }
+  if (
+    contract.creatorBannedFromBetting &&
+    uid === contract.creatorId &&
+    !isAdminTrade
+  ) {
+    throw new APIError(
+      403,
+      'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
+    )
+  }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
@@ -222,6 +288,65 @@ export const fetchContractBetDataAndValidate = async (
     balanceByUserId,
     unfilledBetUserIds,
     contractMetrics,
+  }
+}
+
+// Lock the contract row FOR UPDATE and re-read its fresh pool/answers/open limit
+// orders, inside the transaction. fetchContractBetDataAndValidate runs *before*
+// the transaction (to keep the heavy validation/metric reads out of it), so the
+// pool it read can be stale by the time we write, and the in-process betsQueue
+// only serializes bets within a single API replica. Without this, two bets on the
+// same contract on different replicas could each compute against the same pool and
+// blind-write conflicting absolute values (a lost update).
+//
+// Because this read is inside the transaction callback it reruns on every
+// runTransactionWithRetries attempt, so each retry recomputes against current
+// state; the FOR UPDATE serializes same-contract bets/sells across replicas,
+// surfacing a concurrent write as a 40001 retry instead of a silent race.
+export const lockContractAndGetBetData = async (
+  pgTrans: SupabaseTransaction,
+  body: BetDataBody,
+  uid: string
+) => {
+  const { contractId, outcome } = body
+  const { answerIds, isSumsToOne, whereLimitOrderBets } =
+    getLimitOrderQueryFragments(body)
+  const queries = pgp.as.format(
+    `
+    select ${contractColumnsToSelect} from contracts where id = $2 for update;
+    select * from answers
+      where contract_id = $2 and (
+        $3 is null or id in ($3:list) or ${isSumsToOne}
+      ) order by index;
+    select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
+      where ${whereLimitOrderBets};
+  `,
+    [uid, contractId, answerIds ?? null, outcome]
+  )
+  const results = await pgTrans.multi(queries)
+  const contract = convertContract(results[0][0]) as MarketContract
+  const answers = results[1].map(convertAnswer)
+  if (contract.mechanism === 'cpmm-multi-1')
+    contract.answers = sortBy(
+      uniqBy([...answers, ...contract.answers], 'id'),
+      'index'
+    )
+  const unfilledBets = results[2].map(convertBet) as (LimitBet & {
+    balance: number
+  })[]
+  const balanceByUserId = Object.fromEntries(
+    uniqBy(unfilledBets, (b) => b.userId).map((bet) => [
+      bet.userId,
+      bet.balance,
+    ])
+  )
+  const unfilledBetUserIds = Object.keys(balanceByUserId)
+  return {
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    unfilledBetUserIds,
   }
 }
 
@@ -478,20 +603,13 @@ export const getUniqueBettorBonusQuery = (
     // Require the contract creator to also be the answer creator for real-money bonus.
     creatorId === contract.creatorId
 
-  // Check if both bettor and creator can receive bonuses (verified or grandfathered)
-  // If creator is not provided, we skip the creator eligibility check (backwards compat)
-  const bettorCanReceiveBonuses = canReceiveBonuses(bettor)
-  const creatorCanReceiveBonuses = creator ? canReceiveBonuses(creator) : true
-
   if (
     isCreator ||
     isBot ||
     isUnlisted ||
     isRedemption ||
     isUnfilledLimitOrder ||
-    isApi ||
-    !bettorCanReceiveBonuses ||
-    !creatorCanReceiveBonuses
+    isApi
   )
     return {
       balanceUpdate: undefined,
@@ -499,16 +617,41 @@ export const getUniqueBettorBonusQuery = (
     }
 
   // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
-  const bonusAmount = getUniqueBettorBonusAmount(
+  const baseBonusAmount = getUniqueBettorBonusAmount(
     contract.totalLiquidity,
     'answers' in contract ? contract.answers.length : 0
   )
+
+  // Scale by creator's effective tier. Unverified creators get a reduced
+  // amount (0.5x) instead of zero; verified and all subscribers get the
+  // full base amount. If creator wasn't passed in, assume verified for
+  // backwards compatibility.
+  const creatorTier = creator
+    ? resolveEffectiveTier({
+        entitlements: creator.entitlements,
+        bonusEligibility: creator.bonusEligibility,
+      })
+    : 'verified'
+  const uniqueTraderMultiplier = getEffectiveBonusMultiplier(
+    creatorTier,
+    'uniqueTrader'
+  )
+  const bonusAmount = roundTierBonus(baseBonusAmount * uniqueTraderMultiplier)
+
+  if (bonusAmount <= 0) {
+    return {
+      balanceUpdate: undefined,
+      txnQuery: 'select 1 where false',
+    }
+  }
 
   const bonusTxnData = removeUndefinedProps({
     contractId: contract.id,
     uniqueNewBettorId: bettor.id,
     answerId,
     isPartner,
+    effectiveTier: creatorTier,
+    uniqueTraderMultiplier,
   })
 
   const bonusTxn: Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'> = {

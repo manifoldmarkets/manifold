@@ -6,6 +6,7 @@ export type ErrorCode =
   | 401 // you aren't logged in / your account doesn't exist
   | 403 // you aren't allowed to do it
   | 404 // we can't find it
+  | 409 // it conflicts with current state (e.g. another action in progress)
   | 429 // you're too much for us
   | 500 // we fucked up
   | 503 // we're too busy to handle your request

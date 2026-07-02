@@ -234,7 +234,7 @@ export function getSearchContractSQL(
     where(
       `
     exists (
-      select 1 from group_contracts gc 
+      select 1 from group_contracts gc
       where ${
         token === 'CASH'
           ? "gc.contract_id = contracts.data->>'siblingContractId'"
@@ -348,6 +348,7 @@ function getSearchContractWhereSQL(args: {
     'closing-90-days': `close_time > now() AND close_time < (now() + interval '90 days' + interval '7 hours') AND resolution_time IS NULL`,
     resolved: 'resolution_time IS NOT NULL',
     news: '', // News filter uses a different approach with a join
+    uncertain: `outcome_type = 'BINARY' AND resolution_time IS NULL AND (close_time > NOW() or close_time is null) AND (contracts.data->>'prob')::numeric BETWEEN 0.3 AND 0.7`,
     all: '',
   }
   const contractTypeFilter =
@@ -368,11 +369,21 @@ function getSearchContractWhereSQL(args: {
   const loveFilter = hideLove
     ? `group_slugs is null or not group_slugs && $1`
     : ''
+  // Drop Manifold Sports markets (identified by sportsEventId) from the default
+  // browse/home feed once they've been resolved for more than 15 minutes — they
+  // otherwise linger in the feed long after the match is decided. Gated on
+  // hideStonks, which marks the default feed (score sort, no search term, no
+  // topic), so explicit searches and the sports dashboard still surface them.
+  const resolvedSportsFilter = hideStonks
+    ? `contracts.data->>'sportsEventId' is null or resolution_time is null or resolution_time > now() - interval '15 minutes'`
+    : ''
   const sortFilter =
     sort === 'close-date'
       ? 'close_time > NOW()'
       : sort === '24-hour-vol'
       ? "(contracts.data->>'volume24Hours')::numeric > 0"
+      : sort === 'prob-50'
+      ? "outcome_type = 'BINARY' AND (contracts.data->>'prob') is not null"
       : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
@@ -409,6 +420,7 @@ function getSearchContractWhereSQL(args: {
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
+    where(resolvedSportsFilter),
     where(loveFilter, [[PROD_MANIFOLD_LOVE_GROUP_SLUG]]),
     where(sortFilter),
     where(contractTypeFilter),
@@ -511,13 +523,19 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   'prob-descending': {
-    sql: "resolution DESC, (contracts.data->>'p')::numeric",
-    sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
+    sql: "resolution DESC, (contracts.data->>'prob')::numeric",
+    sortCallback: (c: Contract) => ('prob' in c && c.prob) || 0,
     order: 'DESC NULLS LAST',
   },
   'prob-ascending': {
-    sql: "resolution DESC, (contracts.data->>'p')::numeric",
-    sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
+    sql: "resolution DESC, (contracts.data->>'prob')::numeric",
+    sortCallback: (c: Contract) => ('prob' in c && c.prob) || 0,
+    order: 'ASC',
+  },
+  'prob-50': {
+    sql: "abs((contracts.data->>'prob')::numeric - 0.5)",
+    sortCallback: (c: Contract) =>
+      Math.abs(((('prob' in c && c.prob) || 0) as number) - 0.5),
     order: 'ASC',
   },
 }
@@ -553,7 +571,7 @@ const loadScoreThresholds = async (threshold: number) => {
   log('Loaded freshness score threshold:', freshnessScoreThreshold)
 }
 
-const loadRandomUser = async () => {
+const _loadRandomUser = async () => {
   const pg = createSupabaseDirectClient()
   return await pg.one(
     `SELECT user_id AS id FROM user_contract_interactions

@@ -11,7 +11,7 @@ import {
   ValidatedAPIParams,
 } from 'common/api/schema'
 import { PrivateUser } from 'common/user'
-import { getUnbannedPrivateUserByKey, log } from 'shared/utils'
+import { getUnbannedPrivateUserByKey, log, LOCAL_ONLY } from 'shared/utils'
 export { APIError } from 'common//api/utils'
 
 export type Json = Record<string, unknown> | Json[]
@@ -39,6 +39,19 @@ type KeyCredentials = { kind: 'key'; data: string }
 type Credentials = JwtCredentials | KeyCredentials
 
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
+  // LOCAL_ONLY mode: accept X-Local-User header as trusted auth
+  // Never fall through to Firebase — it isn't initialized.
+  if (LOCAL_ONLY) {
+    const localUserId = req.get('X-Local-User')
+    if (localUserId) {
+      return {
+        kind: 'jwt',
+        data: { user_id: localUserId } as unknown as admin.auth.DecodedIdToken,
+      }
+    }
+    throw new APIError(401, 'Missing X-Local-User header (LOCAL_ONLY mode).')
+  }
+
   const auth = admin.auth()
   const authHeader = req.get('Authorization')
   if (!authHeader) {
@@ -81,7 +94,10 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       const key = creds.data
       const privateUser = await getUnbannedPrivateUserByKey(key)
       if (!privateUser) {
-        throw new APIError(401, `No private user exists with API key ${key}.`)
+        throw new APIError(
+          401,
+          'No private user exists with the provided API key.'
+        )
       }
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
@@ -100,7 +116,11 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
       }
     })
     if (issues.length > 0) {
-      log.error(issues.map((i) => `${i.field}: ${i.error}`).join('\n'))
+      log.warn(
+        `Validation issues: ${issues
+          .map((i) => `${i.field}: ${i.error}`)
+          .join(', ')}`
+      )
     }
     throw new APIError(400, 'Error validating request.', issues)
   } else {

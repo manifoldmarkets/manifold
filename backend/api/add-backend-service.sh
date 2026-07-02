@@ -54,12 +54,55 @@ gcloud compute instance-groups unmanaged set-named-ports \
 
 HEALTH_CHECK_NAME="${BACKEND_NAME}-health-check"
 
+# HTTP check against /healthz/ready (not TCP). A TCP check only proves the port
+# is open, so a process that's alive but wedged/saturated keeps passing and the
+# LB keeps routing to it. /healthz/ready reports 503 from local pool state (no
+# db query) when the instance is saturated, so the LB drains it. The endpoint
+# never hangs, and GCP fails open if every backend is unhealthy at once.
+#
+# unhealthy-threshold is deliberately > healthy-threshold: slow to pull an
+# instance out (avoid flapping on a brief burst), quick to put it back.
 echo "Creating health check"
-gcloud compute health-checks create tcp ${HEALTH_CHECK_NAME} \
+gcloud compute health-checks create http ${HEALTH_CHECK_NAME} \
     --project=${GCLOUD_PROJECT} \
     --port-name ${PORT_NAME} \
+    --request-path /healthz/ready \
+    --check-interval 5s \
+    --timeout 5s \
+    --healthy-threshold 2 \
+    --unhealthy-threshold 3 \
     --global
 
+
+# Health-check protocol note: a backend service can't switch an existing
+# check's protocol in place, so converting the existing prod read services from
+# the old TCP checks to the HTTP /healthz/ready checks means creating new HTTP
+# checks and re-pointing each service (one-time; the old TCP checks can be
+# deleted afterwards once nothing references them):
+#
+#   for i in 0 1 2; do
+#     gcloud compute health-checks create http api-lb-read-service-$i-http-health-check \
+#       --project mantic-markets --global \
+#       --port-name read-$i --request-path /healthz/ready \
+#       --check-interval 5s --timeout 5s \
+#       --healthy-threshold 2 --unhealthy-threshold 3
+#     gcloud compute backend-services update api-lb-read-service-$i \
+#       --project mantic-markets --global \
+#       --health-checks api-lb-read-service-$i-http-health-check
+#   done
+#
+# The default api-lb-service (write process + /ws websockets) can be converted
+# the same way and benefits equally — readiness is independent of the long
+# backend-service timeout that /ws needs, so this is safe:
+#
+#   gcloud compute health-checks create http api-lb-service-http-health-check \
+#     --project mantic-markets --global \
+#     --port-name http --request-path /healthz/ready \
+#     --check-interval 5s --timeout 5s \
+#     --healthy-threshold 2 --unhealthy-threshold 3
+#   gcloud compute backend-services update api-lb-service \
+#     --project mantic-markets --global \
+#     --health-checks api-lb-service-http-health-check
 
 # backend type instance group
 echo "Creating backend service ${BACKEND_NAME}"

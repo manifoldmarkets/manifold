@@ -1,0 +1,2 @@
+# Verify takes 60-90 seconds, disabling until we add some caching
+# yarn verify

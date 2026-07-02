@@ -3,7 +3,7 @@ import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
 import { isUserBanned } from 'common/ban-utils'
-import { canReceiveBonuses } from 'common/user'
+import { hasAccountTrustSignal } from 'common/user'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createPrivateUserMessageMain } from 'shared/supabase/private-messages'
 import { getUser } from 'shared/utils'
@@ -57,8 +57,8 @@ export const createprivateusermessage = authEndpoint(async (req, auth) => {
     }
   }
 
-  // Check if user is bonus-ineligible (not verified or grandfathered)
-  if (!canReceiveBonuses(creator) && !allRecipientsAreAdmins) {
+  // Private messaging is gated on account trust, not bonus eligibility.
+  if (!hasAccountTrustSignal(creator) && !allRecipientsAreAdmins) {
     throw new APIError(
       403,
       'Please verify your identity to send messages. You can still message Manifold staff for support.'

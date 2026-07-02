@@ -10,7 +10,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { formatMoney } from 'common/util/format'
-import { getShopItem, getTicketItems } from 'common/shop/items'
+import { getShopItemOrRetired, getTicketItems } from 'common/shop/items'
 import Link from 'next/link'
 
 export default function AdminTicketsPage() {
@@ -140,7 +140,7 @@ export default function AdminTicketsPage() {
                       {o.email ?? '—'}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-xs">
-                      {getShopItem(o.itemId)?.name ?? o.itemId}
+                      {getShopItemOrRetired(o.itemId)?.name ?? o.itemId}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2">
                       {formatMoney(o.priceMana)}

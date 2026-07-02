@@ -58,7 +58,7 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
     if (championRow.user_id !== auth.uid) {
       throw new APIError(
         403,
-        'Only the #1 ticket buyer can claim the Charity Champion Trophy'
+        'Only the #1 entry holder can claim the Charity Champion Trophy'
       )
     }
 

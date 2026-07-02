@@ -5,7 +5,7 @@ import { type Contract } from 'common/contract'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
-import { canReceiveBonuses } from 'common/user'
+import { canCommentOnMarket } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { first } from 'lodash'
@@ -24,8 +24,8 @@ import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
-// For now, only supports creating a new top-level comment on a contract.
-// Replies, posts, chats are not supported yet.
+// Creates a new comment on a contract.
+// Posts and chats are not supported yet.
 export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction(
   'comment',
   async (props, auth) => {
@@ -80,6 +80,24 @@ export const createCommentOnContractInternal = async (
 
   const pg = createSupabaseDirectClient()
   const now = Date.now()
+
+  if (replyToCommentId) {
+    const repliedComment = await pg.oneOrNone<{
+      comment_id: string
+      reply_to_comment_id: string | null
+    }>(
+      `select comment_id, data->>'replyToCommentId' as reply_to_comment_id
+       from contract_comments
+       where comment_id = $1 and contract_id = $2`,
+      [replyToCommentId, contractId]
+    )
+    if (!repliedComment) {
+      throw new APIError(404, 'Comment to reply to not found')
+    }
+    if (repliedComment.reply_to_comment_id) {
+      throw new APIError(400, 'Can only reply to top-level comments')
+    }
+  }
 
   const bet = replyToBetId
     ? await pg
@@ -222,12 +240,13 @@ export const validateComment = async (
 
   if (!contract) throw new APIError(404, 'Contract not found')
 
-  // Allow market creators to comment on their own markets even if they
-  // cannot receive bonuses; require bonus eligibility for everyone else.
-  if (!canReceiveBonuses(you) && contract.creatorId !== you.id) {
+  // Market creators can always comment on their own markets. Everyone else
+  // must pass canCommentOnMarket, which unlocks after 7 days, KYC verification,
+  // any mana purchase, or any active subscription.
+  if (!canCommentOnMarket(you) && contract.creatorId !== you.id) {
     throw new APIError(
       403,
-      'Please verify your identity to comment on other users\' markets.'
+      'Commenting on other users\' markets unlocks 7 days after signup. Verify your identity, purchase mana, or subscribe to unlock immediately.'
     )
   }
   if (contract.token !== 'MANA') {

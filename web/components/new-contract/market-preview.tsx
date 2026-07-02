@@ -15,6 +15,7 @@ import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
 import dayjs from 'dayjs'
+import { getLocalTimezoneShort } from 'client-common/lib/time'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
@@ -185,6 +186,7 @@ export function MarketPreview(props: {
     useState(false) // Could be used for loading indicator
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null)
   const isMobile = useIsMobile()
+  const timezone = getLocalTimezoneShort()
 
   // Notify parent when topics modal opens/closes
   const handleSetTopicsModal = (open: boolean) => {
@@ -510,7 +512,11 @@ export function MarketPreview(props: {
                   className="text-ink-600 hover:text-ink-700 flex items-center gap-1 text-xs transition-colors"
                 >
                   <span>
-                    {closeDate
+                    {data.closeTime
+                      ? `${dayjs(data.closeTime).format('MMM D, YYYY h:mm A')}${
+                          timezone ? ` ${timezone}` : ''
+                        }`
+                      : closeDate
                       ? dayjs(closeDate).format('MMM D, YYYY')
                       : 'close date'}
                   </span>

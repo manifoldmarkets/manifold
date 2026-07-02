@@ -25,7 +25,11 @@ import {
 } from 'shared/topic-interests'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
-import { FeedContract, GROUP_SCORE_PRIOR } from 'common/feed'
+import {
+  FeedContract,
+  GROUP_SCORE_PRIOR,
+  NICHE_BLEND_TOPIC_SCORE_SQL,
+} from 'common/feed'
 import { CommentWithTotalReplies } from 'common/comment'
 import { JSONContent } from '@tiptap/core'
 import { contractColumnsToSelect } from 'shared/utils'
@@ -181,7 +185,7 @@ async function fetchPersonalizedFeed(
   const baseQueryArray = () =>
     buildArray(
       select('contracts.*'),
-      select(`avg(uti.topic_score) as topic_conversion_score`),
+      select(`${NICHE_BLEND_TOPIC_SCORE_SQL} as topic_conversion_score`),
       from(
         `(select unnest(array[$1]) as group_id, unnest(array[$2]) as topic_score) as uti`,
         [
@@ -219,7 +223,9 @@ async function fetchPersonalizedFeed(
   // Run optimized parallel queries - combine conversion and freshness into single query
   const combinedQuery = renderSql(
     ...baseQueryArray(),
-    order(`avg(uti.topic_score * contracts.conversion_score * contracts.freshness_score) desc`)
+    order(
+      `${NICHE_BLEND_TOPIC_SCORE_SQL} * contracts.conversion_score * contracts.freshness_score desc`
+    )
   )
 
   const [combinedContracts, followedContracts, followedRepostData, topicRepostData] =

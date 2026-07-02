@@ -93,6 +93,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   coverImageUrl?: string
   isRanked?: boolean
 
+  creatorBannedFromBetting?: boolean
+
   gptCommentSummary?: string
 
   token: ContractToken
@@ -632,7 +634,7 @@ export const dayProbChange = (contract: CPMMContract) => {
     return 0
   }
   const change = Math.abs(
-    Math.round(clampChange(contract.prob, contract.probChanges.day) * 100)
+    Math.round(clampChange(contract.prob, contract.probChanges?.day ?? 0) * 100)
   )
   return change > 2 ? change : 0
 }

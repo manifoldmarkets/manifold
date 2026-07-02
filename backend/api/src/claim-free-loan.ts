@@ -1,7 +1,7 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
-import { canReceiveBonuses } from 'common/user'
+import { hasFullBonusAccess } from 'common/user'
 import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
@@ -43,8 +43,9 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     throw new APIError(404, `User ${userId} not found`)
   }
 
-  // Only allow users who can receive bonuses (verified or grandfathered) to claim free loans
-  if (!canReceiveBonuses(user)) {
+  // Daily free loans are a full-bonus perk: identity-verified/grandfathered
+  // users and purchase/admin-granted users can claim them.
+  if (!hasFullBonusAccess(user)) {
     throw new APIError(
       403,
       'Complete identity verification to access daily free loans'
@@ -322,11 +323,13 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
   const { userUpdates } = await betsQueue.enqueueFn(async () => {
     return pg.tx(async (tx) => {
       // Lock the user row to serialize concurrent free-loan claims for this
-      // user. The pre-tx eligibility check at line ~58 reads without a lock,
-      // so we re-check inside the locked transaction.
-      await tx.oneOrNone('select 1 from users where id = $1 for update', [userId])
+      // user. Eligibility was checked before entering the queue; under the lock
+      // we re-check the once-per-day claim state.
+      await tx.oneOrNone('select 1 from users where id = $1 for update', [
+        userId,
+      ])
 
-      // Re-check eligibility under the lock.
+      // Re-check claim availability under the lock.
       const lockedRow = await tx.oneOrNone<{
         last_free_loan_claim: Date | null
       }>(`SELECT last_free_loan_claim FROM users WHERE id = $1`, [userId])

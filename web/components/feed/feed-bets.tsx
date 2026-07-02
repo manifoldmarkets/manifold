@@ -11,12 +11,12 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BETTOR } from 'common/user'
 import {
-  formatMoney,
+  formatMoneyWithDecimals,
   formatOutcomeLabel,
   formatPercent,
   formatSweepies,
 } from 'common/util/format'
-import { floatingEqual, floatingLesserEqual } from 'common/util/math'
+import { floatingEqual } from 'common/util/math'
 import dayjs from 'dayjs'
 import { sumBy, uniq } from 'lodash'
 import { memo, useEffect, useState } from 'react'
@@ -63,7 +63,7 @@ function BetTooltipContent(props: {
   contract: MarketContract
 }) {
   const { bet, isCashContract, contract } = props
-  const formatAmount = isCashContract ? formatSweepies : formatMoney
+  const formatAmount = isCashContract ? formatSweepies : formatMoneyWithDecimals
   const answerId =
     contract.mechanism === 'cpmm-multi-1' ? bet.answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, answerId)
@@ -203,13 +203,47 @@ function BetUserLink(props: {
   )
 }
 
+const getLimitOrderFillStatus = (bet: Bet) => {
+  const filledAmount = Math.abs(bet.amount)
+  const orderAmount = Math.abs(bet.orderAmount ?? 0)
+  const hasAnyFill = !floatingEqual(filledAmount, 0)
+  const isFullyFilled =
+    bet.isFilled || (!!orderAmount && floatingEqual(filledAmount, orderAmount))
+  const isPartiallyFilled = hasAnyFill && !isFullyFilled
+  const isExpired = !!bet.expiresAt && bet.expiresAt < Date.now() && !bet.silent
+
+  return {
+    filledAmount,
+    orderAmount,
+    hasAnyFill,
+    isFullyFilled,
+    isPartiallyFilled,
+    isExpired,
+    isCancelledOrExpired: bet.isCancelled || isExpired,
+    terminalStatus: bet.isCancelled ? 'cancelled' : isExpired ? 'expired' : '',
+  }
+}
+
+const getLimitOrderFillVerb = (bet: Bet) =>
+  bet.amount < 0 || (floatingEqual(bet.amount, 0) && (bet.orderAmount ?? 0) < 0)
+    ? 'sold'
+    : 'bought'
+
+const getLimitOrderStatusText = (bet: Bet) => {
+  const status = getLimitOrderFillStatus(bet)
+  if (status.terminalStatus) return `limit order ${status.terminalStatus}`
+  if (status.isFullyFilled) return 'limit order filled'
+  if (status.isPartiallyFilled) return 'limit order open, partially filled'
+  return 'limit order open'
+}
+
 // Compact action text (e.g., "bought M$100 YES")
 function BetActionText(props: { bet: Bet; contract: Contract }) {
   const { bet, contract } = props
   const { amount, outcome, answerId } = bet
   const isCashContract = contract.token === 'CASH'
   const isLimitOrder = isNormalLimitOrder(bet)
-  const anyFilled = !floatingLesserEqual(amount, 0)
+  const limitOrderStatus = getLimitOrderFillStatus(bet)
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
@@ -222,7 +256,7 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
       <span className="font-semibold">
         <MoneyDisplay
-          amount={bet.orderAmount}
+          amount={Math.abs(bet.orderAmount)}
           isCashContract={isCashContract}
         />
       </span>
@@ -237,13 +271,19 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
   return (
     <span className="text-ink-700 text-sm">
       {isLimitOrder ? (
-        anyFilled ? (
+        limitOrderStatus.hasAnyFill ? (
           <>
-            <span className="text-ink-500">filled</span> {money}/{orderAmount}{' '}
+            <span className="text-ink-500">{getLimitOrderFillVerb(bet)}</span>{' '}
+            {money}
+            {limitOrderStatus.isPartiallyFilled && <> of {orderAmount}</>}{' '}
+          </>
+        ) : limitOrderStatus.isCancelledOrExpired ? (
+          <>
+            <span className="text-ink-500">opened order for</span> {orderAmount}{' '}
           </>
         ) : (
           <>
-            <span className="text-ink-500">limit</span> {orderAmount}{' '}
+            <span className="text-ink-500">opened order for</span> {orderAmount}{' '}
           </>
         )
       ) : (
@@ -267,10 +307,8 @@ function BetDetailsText(props: { bet: Bet; contract: Contract }) {
   const { bet, contract } = props
   const { outcome, isApi } = bet
   const isLimitOrder = isNormalLimitOrder(bet)
-  const cancelledOrExpired =
-    bet.isCancelled ||
-    (bet.expiresAt && bet.expiresAt < Date.now() && !bet.silent)
-  const allFilled = floatingEqual(bet.amount, bet.orderAmount ?? bet.amount)
+  const limitOrderStatus = getLimitOrderFillStatus(bet)
+  const statusText = isLimitOrder ? getLimitOrderStatusText(bet) : ''
 
   const getProb = (prob: number) =>
     !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
@@ -294,9 +332,17 @@ function BetDetailsText(props: { bet: Bet; contract: Contract }) {
     <span className="text-ink-500">
       {isLimitOrder ? (
         <>
-          <span className="text-ink-700 font-medium">{toProb}</span>
-          {cancelledOrExpired && !allFilled && (
-            <span className="text-ink-400 ml-1">(cancelled)</span>
+          {limitOrderStatus.hasAnyFill && fromProb !== toProb ? (
+            <>
+              <span className="text-ink-600">{fromProb}</span>
+              <span className="text-ink-400 mx-0.5">→</span>
+              <span className="text-ink-900 font-semibold">{toProb}</span>
+            </>
+          ) : (
+            <span className="text-ink-700 font-medium">{toProb}</span>
+          )}
+          {statusText && (
+            <span className="text-ink-400 ml-1">· {statusText}</span>
           )}
         </>
       ) : fromProb === toProb ? (
@@ -647,12 +693,11 @@ export function BetStatusText(props: {
   const isCashContract = contract.token === 'CASH'
   const betUser = useDisplayUserById(bet.userId)
   const self = useUser()
-  const { amount, outcome, createdTime, answerId, isApi, silent } = bet
+  const { amount, outcome, createdTime, answerId, isApi } = bet
   const getProb = (prob: number) =>
     !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
-  const cancelledOrExpired =
-    bet.isCancelled ||
-    (bet.expiresAt && bet.expiresAt < Date.now() && !bet.silent)
+  const limitOrderStatus = getLimitOrderFillStatus(bet)
+  const statusText = isNormalLimitOrder(bet) ? getLimitOrderStatusText(bet) : ''
 
   const probBefore = getProb(bet.probBefore)
   const probAfter = getProb(bet.probAfter)
@@ -667,10 +712,12 @@ export function BetStatusText(props: {
   )
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
-      <MoneyDisplay amount={bet.orderAmount} isCashContract={isCashContract} />
+      <MoneyDisplay
+        amount={Math.abs(bet.orderAmount)}
+        isCashContract={isCashContract}
+      />
     ) : null
-  const anyFilled = !floatingLesserEqual(amount, 0)
-  const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
+  const anyFilled = limitOrderStatus.hasAnyFill
 
   const hadPoolMatch = bet.fills?.length ?? false
 
@@ -711,10 +758,13 @@ export function BetStatusText(props: {
         <span>
           {anyFilled ? (
             <>
-              filled limit order {money}/{orderAmount}
+              {getLimitOrderFillVerb(bet)} {money}
+              {limitOrderStatus.isPartiallyFilled && <>/{orderAmount}</>}
             </>
+          ) : limitOrderStatus.isCancelledOrExpired ? (
+            <>opened limit order for {orderAmount}</>
           ) : (
-            <>created limit order for {orderAmount}</>
+            <>placed order for {orderAmount}</>
           )}{' '}
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
@@ -723,7 +773,10 @@ export function BetStatusText(props: {
             contract={contract}
             truncate="short"
           />{' '}
-          at {toProb} {cancelledOrExpired && !allFilled ? '(cancelled)' : ''}
+          {limitOrderStatus.hasAnyFill && fromProb !== toProb
+            ? ` / ${fromProb}→${toProb}`
+            : ` @ ${toProb}`}{' '}
+          {statusText ? `· ${statusText}` : ''}
         </span>
       ) : (
         <>

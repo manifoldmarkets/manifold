@@ -19,7 +19,7 @@ import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-ans
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { NumberResolutionOrExpectation } from 'web/components/contract/contract-price'
-import { sliderColors } from '../widgets/slider'
+import { SliderColor } from '../widgets/slider'
 import { getProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
 
@@ -32,11 +32,11 @@ export function BetDialog(props: {
   binaryPseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
   }
   questionPseudonym?: string
@@ -130,6 +130,8 @@ export function MultiBetDialog(props: {
             {isBinaryMC ? (
               <BinaryMultiAnswersPanel
                 contract={contract as CPMMMultiContract}
+                preselect
+                onClose={() => setOpen(false)}
               />
             ) : (
               <AnswersPanel

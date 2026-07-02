@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { getSourceUrl, Notification } from 'common/notification'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -22,6 +22,28 @@ function getHighlightClass(highlight: boolean) {
 export const NUM_SUMMARY_LINES = 3
 
 export const NOTIFICATION_ICON_SIZE = 'md'
+
+const INTERACTIVE_NOTIFICATION_CHILD_SELECTOR =
+  'a, button, input, textarea, select, summary, [role="button"], [role="link"], [data-stop-notification-click]'
+
+const getInteractiveChild = (event: MouseEvent | KeyboardEvent) => {
+  const target = event.target
+  if (!(target instanceof Element)) return null
+  const interactive = target.closest(INTERACTIVE_NOTIFICATION_CHILD_SELECTOR)
+  // If the notification row itself is the closest interactive element (e.g.
+  // role="button" for modal-style notifications), that is the row action, not
+  // a nested control that should suppress the row action.
+  if (!interactive || interactive === event.currentTarget) return null
+  return event.currentTarget.contains(interactive) ? interactive : null
+}
+
+const isFromInteractiveChild = (event: MouseEvent | KeyboardEvent) =>
+  !!getInteractiveChild(event)
+
+const isFromNestedLink = (event: MouseEvent) => {
+  const interactive = getInteractiveChild(event)
+  return !!interactive?.closest('a[href]')
+}
 
 // TODO: fix badges (id based)
 export function NotificationUserLink(props: {
@@ -151,7 +173,7 @@ export function AvatarNotificationIcon(props: {
       <Link
         href={href}
         target={href.startsWith('http') ? '_blank' : undefined}
-        onClick={(e) => e.stopPropagation}
+        onClick={(e) => e.stopPropagation()}
       >
         <Avatar
           username={sourceUserName}
@@ -219,6 +241,36 @@ export function NotificationFrame(props: {
     }
   }
 
+  const handleFrameClickCapture = (event: MouseEvent<HTMLDivElement>) => {
+    // If the user follows a nested notification link, count the notification as
+    // seen, but still let that link own navigation. Buttons/dropdowns are not
+    // marked seen here because they may just open a menu or dismiss a pin.
+    if (isFromNestedLink(event)) markAsSeen()
+  }
+
+  const handleActionClick = (event: MouseEvent<HTMLDivElement>) => {
+    // Nested links/buttons inside notification copy should win over modal-style
+    // notification actions.
+    if (isFromInteractiveChild(event)) return
+
+    markAsSeen()
+    onClick?.()
+  }
+
+  const handleActionKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    if (isFromInteractiveChild(event)) return
+
+    event.preventDefault()
+    markAsSeen()
+    onClick?.()
+  }
+
+  const handleOverlayLinkClick = () => {
+    markAsSeen()
+    onClick?.()
+  }
+
   const frameObject = (
     <Row className="cursor-pointer text-sm md:text-base">
       <Row className="w-full items-start gap-3">
@@ -264,38 +316,39 @@ export function NotificationFrame(props: {
   return (
     <Row
       className={clsx(
-        'group p-2 transition-colors',
+        'group relative p-2 transition-colors',
         isPinned && 'bg-primary-50',
         'hover:bg-primary-100',
         getHighlightClass(highlighted)
       )}
+      onClickCapture={handleFrameClickCapture}
+      onAuxClickCapture={handleFrameClickCapture}
+      onClick={!link && onClick ? handleActionClick : undefined}
+      onKeyDown={!link && onClick ? handleActionKeyDown : undefined}
+      role={!link && onClick ? 'button' : undefined}
+      tabIndex={!link && onClick ? 0 : undefined}
     >
       {customBackground}
       {link && (
-        <Col className={'w-full'}>
-          <Link
-            href={link}
-            className={clsx('flex w-full flex-col')}
-            onClick={() => {
-              markAsSeen()
-              onClick?.()
-            }}
-          >
-            {frameObject}
-          </Link>
-        </Col>
+        <Link
+          href={link}
+          aria-label="Open notification"
+          className="focus-visible:outline-primary-500 absolute inset-0 z-0 cursor-pointer focus-visible:outline focus-visible:outline-2"
+          onClick={handleOverlayLinkClick}
+        />
       )}
-      {!link && (
-        <Col
-          className={'w-full'}
-          onClick={() => {
-            markAsSeen()
-            onClick?.()
-          }}
-        >
-          {frameObject}
-        </Col>
-      )}
+      <Col
+        className={clsx(
+          'relative z-10 w-full',
+          // For link-backed notifications, let non-interactive content clicks
+          // pass through to the sibling overlay <Link>, while real nested
+          // controls keep their own pointer handling.
+          link &&
+            'pointer-events-none [&_[data-stop-notification-click]]:pointer-events-auto [&_[role=button]]:pointer-events-auto [&_[role=link]]:pointer-events-auto [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_select]:pointer-events-auto [&_summary]:pointer-events-auto [&_textarea]:pointer-events-auto'
+        )}
+      >
+        {frameObject}
+      </Col>
     </Row>
   )
 }

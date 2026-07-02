@@ -568,22 +568,34 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   )
   const totalNoAmount = sum(noAmounts)
 
+  const workingUnfilledBetsByAnswer = mapValues(
+    unfilledBetsByAnswer,
+    (bets) => [...bets]
+  )
+  const workingBalanceByUserId = { ...balanceByUserId }
   const noBetResults = noAmounts.map((noAmount, i) => {
     const answer = otherAnswers[i]
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
-    return {
+    const result = {
       ...computeFills(
         { pool, p: 0.5, collectedFees },
         'NO',
         noAmount,
         undefined,
-        unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId,
+        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        workingBalanceByUserId,
         undefined,
         true
       ),
       answer,
     }
+    applyMakersToWorkingState(
+      result.makers,
+      result.ordersToCancel,
+      workingUnfilledBetsByAnswer,
+      workingBalanceByUserId
+    )
+    return result
   })
 
   // Identity: No shares in all other answers is equal to noShares * (n-2) mana + yes shares in answerToBuy (quantity: noShares)
@@ -615,8 +627,8 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
       'YES',
       yesBetAmount,
       limitProb,
-      unfilledBetsByAnswer[answerToBuy.id] ?? [],
-      balanceByUserId
+      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+      workingBalanceByUserId
     ),
     answer: answerToBuy,
   }
@@ -757,22 +769,34 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   )
   const totalYesAmount = sum(yesAmounts)
 
+  const workingUnfilledBetsByAnswer = mapValues(
+    unfilledBetsByAnswer,
+    (bets) => [...bets]
+  )
+  const workingBalanceByUserId = { ...balanceByUserId }
   const yesBetResults = yesAmounts.map((yesAmount, i) => {
     const answer = otherAnswers[i]
     const { poolYes, poolNo } = answer
-    return {
+    const result = {
       ...computeFills(
         { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
         'YES',
         yesAmount,
         undefined,
-        unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId,
+        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        workingBalanceByUserId,
         undefined,
         true
       ),
       answer,
     }
+    applyMakersToWorkingState(
+      result.makers,
+      result.ordersToCancel,
+      workingUnfilledBetsByAnswer,
+      workingBalanceByUserId
+    )
+    return result
   })
   //{"id": "tQudZcEtlp", "slug": "whos-gonna-win-gn8sCuyRpl", "volume": 0, "answers": [{"id": "Ncus9Qtty2", "prob": 0.16666666666666666, "text": "a", "index": 0, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "CAqyQ8AOSn", "prob": 0.16666666666666666, "text": "b", "index": 1, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "Pc86OAUEsn", "prob": 0.16666666666666666, "text": "c", "index": 2, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "dn0gpUIzpq", "prob": 0.16666666666666666, "text": "d", "index": 3, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "uq5uZd5O0A", "prob": 0.16666666666666666, "text": "e", "index": 4, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "ACNE8CLyyS", "prob": 0.16666666666666666, "text": "Other", "index": 5, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": true, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}], "isRanked": false, "question": "Who's gonna win?", "closeTime": 1767254340000, "creatorId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "mechanism": "cpmm-multi-1", "elasticity": 4.99, "groupSlugs": ["nonpredictive"], "isResolved": false, "visibility": "public", "createdTime": 1755714659073, "creatorName": "Ian Bobby", "description": {"type": "doc", "content": [{"type": "paragraph"}]}, "outcomeType": "MULTIPLE_CHOICE", "subsidyPool": 0, "collectedFees": {"creatorFee": 0, "platformFee": 0, "liquidityFee": 0}, "volume24Hours": 0, "addAnswersMode": "ANYONE", "totalLiquidity": 1000, "creatorUsername": "IanPhilip", "lastUpdatedTime": 1755714659519, "popularityScore": 0, "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/user-images%2FIanPhilip%2FEyIU8AZ2RC.png?alt=media&token=ff41c9e8-21d5-412d-ac19-854a90cce076", "uniqueBettorCount": 0, "creatorCreatedTime": 1668811545000, "uniqueBettorCountDay": 0, "shouldAnswersSumToOne": true}
   let noBetAmount = betAmount - totalYesAmount
@@ -801,8 +825,8 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
       'NO',
       noBetAmount,
       limitProb,
-      unfilledBetsByAnswer[answerToBuy.id] ?? [],
-      balanceByUserId
+      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+      workingBalanceByUserId
     ),
     answer: answerToBuy,
   }

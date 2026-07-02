@@ -1,6 +1,6 @@
 import { groupBy, sumBy } from 'lodash'
 import { Answer } from './answer'
-import { Bet } from './bet'
+import { Bet, LimitBet } from './bet'
 import {
   calculateCpmmMultiSumsToOneSale,
   getCpmmProbability,
@@ -80,6 +80,60 @@ describe('calculateCpmmMultiArbitrageBet', () => {
     for (let i = 0; i < answers.length; i++) {
       expect(initialYesShares[i]).toBeCloseTo(finalAnswerYesShares[i])
     }
+  })
+
+  it('does not overdraw the same maker across indirect YES legs', async () => {
+    const answers: Answer[] = [
+      getAnswer(1, 0.5),
+      getAnswer(2, 0.3),
+      getAnswer(3, 0.2),
+    ]
+    const makerBalance = 5
+    const unfilledBets: LimitBet[] = [
+      getLimitBet('limit1', answers[1], 'YES', 'maker', 10, 0.9),
+      getLimitBet('limit2', answers[2], 'YES', 'maker', 10, 0.9),
+    ]
+
+    const result = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[0],
+      'YES',
+      100,
+      undefined,
+      unfilledBets,
+      { maker: makerBalance },
+      noFees
+    )
+
+    const totalMakerSpent = getMakerSpent(result, 'maker')
+    expect(totalMakerSpent).toBeLessThanOrEqual(makerBalance + 1e-9)
+  })
+
+  it('does not overdraw the same maker across indirect NO legs', async () => {
+    const answers: Answer[] = [
+      getAnswer(1, 0.5),
+      getAnswer(2, 0.3),
+      getAnswer(3, 0.2),
+    ]
+    const makerBalance = 5
+    const unfilledBets: LimitBet[] = [
+      getLimitBet('limit1', answers[1], 'NO', 'maker', 10, 0.1),
+      getLimitBet('limit2', answers[2], 'NO', 'maker', 10, 0.1),
+    ]
+
+    const result = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[0],
+      'NO',
+      100,
+      undefined,
+      unfilledBets,
+      { maker: makerBalance },
+      noFees
+    )
+
+    const totalMakerSpent = getMakerSpent(result, 'maker')
+    expect(totalMakerSpent).toBeLessThanOrEqual(makerBalance + 1e-9)
   })
 })
 
@@ -630,6 +684,46 @@ const getAnswer = (index: number, prob: number) => {
     volume: 0,
   }
 }
+
+const getMakerSpent = (
+  result: ReturnType<typeof calculateCpmmMultiArbitrageBet>,
+  userId: string
+) => {
+  const makerFills = [
+    ...result.newBetResult.makers,
+    ...result.otherBetResults.flatMap((b) => b.makers),
+  ].filter((m) => m.bet.userId === userId)
+
+  return sumBy(makerFills, (m) => m.amount)
+}
+
+const getLimitBet = (
+  id: string,
+  answer: Answer,
+  outcome: 'YES' | 'NO',
+  userId: string,
+  orderAmount: number,
+  limitProb: number
+): LimitBet => ({
+  id,
+  userId,
+  contractId: answer.contractId,
+  answerId: answer.id,
+  createdTime: 0,
+  amount: 0,
+  loanAmount: 0,
+  outcome,
+  shares: 0,
+  probBefore: answer.prob,
+  probAfter: answer.prob,
+  fees: noFees,
+  isRedemption: false,
+  orderAmount,
+  limitProb,
+  isFilled: false,
+  isCancelled: false,
+  fills: [],
+})
 
 const getNumericAnswers = (min: number, max: number, step: number) => {
   const bucketRanges = getMultiNumericAnswerBucketRanges(min, max, step)

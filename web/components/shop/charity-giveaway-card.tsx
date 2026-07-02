@@ -180,7 +180,7 @@ export function CharityGiveawayCard(props: {
         href="/charity"
         className={className}
         gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
-        hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+        hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
         icon={<FaHeart className="h-5 w-5 text-emerald-500" />}
         title="Charity Giveaway"
         pill={{
@@ -228,7 +228,7 @@ export function CharityGiveawayCard(props: {
         href="/charity"
         className={className}
         gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
-        hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+        hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
         icon={<FaGift className="h-5 w-5 text-emerald-500" />}
         title="Charity Giveaway"
         pill={ENDED_PILL}
@@ -266,7 +266,7 @@ export function CharityGiveawayCard(props: {
       href="/charity"
       className={className}
       gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
-      hoverShadowClassName="hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30"
+      hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
       icon={<FaHeart className="h-5 w-5 text-emerald-500" />}
       title="Charity Giveaway"
       pill={ENDED_PILL}

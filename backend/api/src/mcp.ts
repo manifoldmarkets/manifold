@@ -49,6 +49,7 @@ function getServer(): Server {
         title: 'Search Markets',
         inputSchema: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             term: { type: 'string', description: 'Search query' },
             contractType: {
@@ -59,17 +60,17 @@ function getServer(): Server {
                 'MULTIPLE_CHOICE',
                 'DEPENDENT_MULTIPLE_CHOICE',
                 'INDEPENDENT_MULTIPLE_CHOICE',
+                'FREE_RESPONSE',
+                'PSEUDO_NUMERIC',
+                'BOUNTIED_QUESTION',
+                'STONK',
                 'POLL',
+                'NUMBER',
                 'MULTI_NUMERIC',
                 'DATE',
               ],
-              description: 'Question type (default: ALL)',
-            },
-            filter: {
-              type: 'string',
-              enum: ['open', 'resolved', 'all'],
               description:
-                'Filter by question state. Resolved means the event has happened. (default: all)',
+                'Market/question type filter (default: ALL). Use contractType, not outcomeType.',
             },
             limit: {
               type: 'number',
@@ -87,8 +88,9 @@ function getServer(): Server {
             },
             sort: {
               type: 'string',
-              enum: ['newest', 'score', 'liquidity'],
-              description: 'Sort order (default: score)',
+              enum: ['newest', 'score'],
+              description:
+                'Sort order for market search (default: score). Do not use /markets sort values here.',
             },
           },
           required: ['term'],
@@ -248,7 +250,17 @@ function getServer(): Server {
     try {
       switch (name) {
         case 'search-markets': {
-          const params = API['search-markets'].props.parse(args)
+          const rawParams =
+            args && typeof args === 'object'
+              ? (args as Record<string, unknown>)
+              : {}
+          const params = API['search-markets'].props.parse(
+            removeUndefinedProps({
+              ...rawParams,
+              contractType: rawParams.contractType ?? rawParams.outcomeType,
+              outcomeType: undefined,
+            })
+          )
 
           // Map the params to match the search-markets API schema
           const searchParams = {

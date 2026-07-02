@@ -1,7 +1,7 @@
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { MAX_DESCRIPTION_LENGTH, Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -13,14 +13,24 @@ import { LogoIcon } from '../icons/logo-icon'
 import { Row } from '../layout/row'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { PendingClarifications } from './pending-clarifications'
+import { CreatorBannedFromBettingInfo } from './creator-banned-from-betting-info'
 
 export function ContractDescription(props: {
   contractId: string // the description is stored on this contract
   creatorId: string
   isSweeps: boolean
   description: string | JSONContent
+  creatorBannedFromBetting?: boolean
+  contract: Contract
 }) {
-  const { contractId, creatorId, isSweeps, description } = props
+  const {
+    contractId,
+    creatorId,
+    isSweeps,
+    description,
+    creatorBannedFromBetting,
+    contract,
+  } = props
 
   const isModOrAdmin = useAdminOrMod()
   const user = useUser()
@@ -55,6 +65,13 @@ export function ContractDescription(props: {
           <span>This question is managed and resolved by Manifold.</span>
           <LogoIcon className="h-5 w-5 text-indigo-600" />
         </div>
+
+        {creatorBannedFromBetting && (
+          <CreatorBannedFromBettingInfo
+            contract={contract}
+            creatorId={creatorId}
+          />
+        )}
       </div>
     </>
   )

@@ -16,39 +16,57 @@ env:
 
 jobs:
   check:
-    name: Static analysis
+    name: Typecheck, Lint, Format & Test
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: Install Node 20
-        uses: actions/setup-node@v4
-        env:
-          FORCE_COLOR: 0 # https://github.com/actions/setup-node/issues/317
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
+
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            common/node_modules
+            web/node_modules
+            backend/api/node_modules
+            backend/discord-bot/node_modules
+            backend/scheduler/node_modules
+            backend/scripts/node_modules
+            backend/shared/node_modules
+            client-common/node_modules
+          key: ${{ runner.os }}-node20-yarn1-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node20-yarn1-modules-
+
       - name: Install dependencies
-        run: yarn install --prefer-offline --frozen-lockfile
-      - name: Build common
-        working-directory: common
-        run: yarn build
-      - name: Run Typescript checker on web client
-        run: yarn typecheck:web
-      - name: Build shared
-        if: ${{ success() || failure() }}
-        working-directory: backend/shared
-        run: yarn build
-      - name: Check TypeScript Version
-        run: yarn tsc --version
-      - name: Run Typescript checker on API
-        run: yarn typecheck:api
-      - name: Lint API
-        if: ${{ success() }}
-        working-directory: backend/api
-        run: yarn verify:dir
-      - name: Run Typescript checker on scheduler
-        if: ${{ success() || failure() }}
-        run: yarn typecheck:scheduler
+        # https://github.com/actions/setup-node/issues/1137#issuecomment-2508963254
+        run: mkdir -p "$(yarn cache dir)" && yarn install --prefer-offline --frozen-lockfile --check-files
+
+      - name: Build common/shared
+        if: ${{ !cancelled() }}
+        run: yarn build:ci
+
+      - name: Typecheck
+        if: ${{ !cancelled() }}
+        run: yarn typecheck
+
+      - name: Lint
+        if: ${{ !cancelled() }}
+        run: yarn lint
+
+      - name: Check formatting
+        if: ${{ !cancelled() }}
+        run: yarn format:check
+
+      - name: Test
+        if: ${{ !cancelled() }}
+        run: yarn test

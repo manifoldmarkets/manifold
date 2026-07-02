@@ -236,6 +236,10 @@ export function BetsSummary(props: {
 
         {includeSellButton &&
           !resolution &&
+          !(
+            contract.creatorBannedFromBetting &&
+            includeSellButton.id === contract.creatorId
+          ) &&
           (contract.mechanism !== 'cpmm-multi-1' ||
             isBinaryMulti(contract)) && (
             <Row className="items-center gap-2">
@@ -325,15 +329,21 @@ export function BetsSummary(props: {
           />
         )}
       </Row>
-      {mainBinaryMCAnswer && (
-        <BinaryMultiSellRow
-          answer={mainBinaryMCAnswer}
-          contract={contract as CPMMMultiContract}
-        />
-      )}
-      {includeSellButton && contract.outcomeType === 'NUMBER' && (
-        <MultiNumericSellPanel contract={contract} userId={metric.userId} />
-      )}
+      {mainBinaryMCAnswer &&
+        !(contract.creatorBannedFromBetting && areYourBets) && (
+          <BinaryMultiSellRow
+            answer={mainBinaryMCAnswer}
+            contract={contract as CPMMMultiContract}
+          />
+        )}
+      {includeSellButton &&
+        contract.outcomeType === 'NUMBER' &&
+        !(
+          contract.creatorBannedFromBetting &&
+          includeSellButton.id === contract.creatorId
+        ) && (
+          <MultiNumericSellPanel contract={contract} userId={metric.userId} />
+        )}
     </Col>
   )
 }

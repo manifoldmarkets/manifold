@@ -1,6 +1,9 @@
-import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyAuto,
+  formatMoneyWithDecimals,
+} from 'common/util/format'
 import { sortBy } from 'lodash'
-import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -11,8 +14,10 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
 import { useAdmin } from 'web/hooks/use-admin'
 import { api, APIError } from 'web/lib/api/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
+import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -23,8 +28,9 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import { FaGift } from 'react-icons/fa6'
+import { FaClock, FaCircleExclamation, FaGift } from 'react-icons/fa6'
 import { useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi'
+import { isAddress } from 'viem'
 import {
   CryptoProviders,
   useCryptoReady,
@@ -35,66 +41,19 @@ import {
   getCurrentSweepstakesTicketPrice,
   getRankLabel,
   getTotalPrizePool,
+  getTotalWinnerCount,
   SweepstakesPrize,
 } from 'common/sweepstakes'
-import {
-  checkSweepstakesGeofence,
-  GeoLocationResult,
-} from 'common/sweepstakes-geofencing'
-import { getBestClientIp } from 'common/client-ip'
-import { canReceiveBonuses } from 'common/user'
+import { canEnterPrizeDrawings } from 'common/user'
+import { DisplayUser } from 'common/api/user-types'
 import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
-interface SweepstakesPageProps {
-  isLocationRestricted: boolean
-  sweepstakesNum?: number
-}
-
-export const getSweepstakesServerSideProps: GetServerSideProps<
-  SweepstakesPageProps
-> = async (context) => {
-  const ip = getBestClientIp(context.req.headers, [
-    context.req.socket.remoteAddress,
-  ])
-
-  const apiKey = process.env.IP_API_PRO_KEY
-  if (!apiKey) {
-    // Allow access if API key not configured (backend will validate on purchase)
-    return {
-      props: {
-        isLocationRestricted: false,
-      },
-    }
-  }
-
-  try {
-    const fields = 'status,message,countryCode,region'
-    const response = await fetch(
-      `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`
-    )
-    const geo: GeoLocationResult = await response.json()
-    const { allowed } = checkSweepstakesGeofence(geo)
-
-    return {
-      props: {
-        isLocationRestricted: !allowed,
-      },
-    }
-  } catch (error) {
-    // On error, allow access (backend will validate on purchase)
-    return {
-      props: {
-        isLocationRestricted: false,
-      },
-    }
-  }
-}
-
-export const getServerSideProps: GetServerSideProps<
-  SweepstakesPageProps
-> = async (context) => {
-  return getSweepstakesServerSideProps(context)
-}
+// /prize used to run `getServerSideProps` that called pro.ip-api.com to gate
+// a banner for restricted regions. That blocked every Link-driven nav until
+// the external API returned — which could hang for 10+s when ip-api was
+// degraded. The page is now fully static-shell + client-side data fetching,
+// and the geo check moved to a `/check-sweepstakes-geo` API call that runs
+// after mount. Purchase paths still validate geo server-side.
 
 // Format entries with appropriate precision
 function formatEntries(entries: number): string {
@@ -123,18 +82,47 @@ const COLORS = [
   '#d946ef', // fuchsia
 ]
 
-export default function SweepstakesPage({
-  isLocationRestricted,
-  sweepstakesNum,
-}: SweepstakesPageProps) {
+export default function SweepstakesPage() {
   const user = useUser()
   const isAdmin = useAdmin()
   const router = useRouter()
+  // sweepstakesNum used to come from getServerSideProps; now read directly
+  // from the URL on the client so the page no longer needs SSR for params.
+  const sweepstakesNumRaw = router.query.sweepstakesNum
+  const sweepstakesNum =
+    typeof sweepstakesNumRaw === 'string'
+      ? Number(sweepstakesNumRaw)
+      : undefined
+  const validSweepstakesNum = Number.isFinite(sweepstakesNum)
+    ? sweepstakesNum
+    : undefined
+  // Scope the cache per drawing — useAPIGetter keys React state by
+  // `overrideKey ?? path`, not by props. Without this, switching from
+  // /prize/1 to /prize/2 leaves #1's payload mounted (stats, winners,
+  // purchase form) until #2 resolves, which is a real mis-purchase risk
+  // when the user clicks Buy in that window.
+  const sweepstakesCacheKey = `get-sweepstakes-${
+    validSweepstakesNum ?? 'active'
+  }`
+  // Gate the fetch on router.isReady so a direct nav to /prize/N doesn't
+  // first fire `get-sweepstakes` with `{}` (active drawing) and then again
+  // with the real sweepstakesNum once query hydrates. `isReady` is true
+  // on first render for paths without dynamic params (so /prize fires
+  // immediately).
   const { data, refresh } = useAPIGetter(
     'get-sweepstakes',
-    sweepstakesNum ? { sweepstakesNum } : {}
+    validSweepstakesNum ? { sweepstakesNum: validSweepstakesNum } : {},
+    undefined,
+    sweepstakesCacheKey,
+    router.isReady
   )
   const { data: sweepstakesListData } = useAPIGetter('get-sweepstakes-list', {})
+  // Client-side geo check (replaces the old SSR call to pro.ip-api.com that
+  // could hang nav for 10+s). Defaults to "not restricted" until the check
+  // completes, so the page loads instantly and the banner just appears late
+  // for restricted users.
+  const { data: geoData } = useAPIGetter('check-sweepstakes-geo', {})
+  const isLocationRestricted = geoData ? !geoData.allowed : false
 
   const [manaAmount, setManaAmount] = useState<number>(100)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -146,8 +134,29 @@ export default function SweepstakesPage({
   const [showPrizeModal, setShowPrizeModal] = useState(false)
 
   // Check if user needs to verify before participating
-  const needsVerification = user && !canReceiveBonuses(user)
+  const needsVerification = user && !canEnterPrizeDrawings(user)
   const isAdminIneligible = !!user && isAdmin
+
+  // Promote server-side 'pending' to 'action-needed' if the user can't
+  // currently complete a payout (unverified). Then pick the worst across
+  // all drawings for the trigger icon, and the list of action-needed
+  // drawings for the page banner.
+  const effectiveStatusByDrawing = (sweepstakesListData?.sweepstakes ?? []).map(
+    (s) => {
+      const raw = s.userStatus ?? null
+      const bumped =
+        raw === 'pending' && needsVerification
+          ? ('action-needed' as const)
+          : raw
+      return { sweepstakesNum: s.sweepstakesNum, status: bumped }
+    }
+  )
+  const triggerStatus = getWorstStatus(
+    effectiveStatusByDrawing.map((e) => e.status)
+  )
+  const actionNeededDrawings = effectiveStatusByDrawing.filter(
+    (e) => e.status === 'action-needed'
+  )
 
   const sweepstakes = data ? data.sweepstakes : undefined
   const userStats = data ? data.userStats : []
@@ -158,7 +167,10 @@ export default function SweepstakesPage({
   const meetsInvestmentRequirement = data?.meetsInvestmentRequirement ?? true
   const userTotalManaInvested = data?.userTotalManaInvested ?? 0
   const minManaInvested = data?.minManaInvested ?? 1000
-  const totalManaSpent = userStats.reduce((sum, s) => sum + s.totalManaSpent, 0)
+  const totalManaSpent = data?.totalManaSpent ?? 0
+  const participantCount = data?.participantCount ?? userStats.length
+  const userVoidedEntries = data?.userVoidedEntries ?? 0
+  const userVoidedManaRefunded = data?.userVoidedManaRefunded ?? 0
 
   // Calculate time remaining
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -287,7 +299,7 @@ export default function SweepstakesPage({
     try {
       const result = await api('buy-sweepstakes-tickets', {
         sweepstakesNum: sweepstakes.sweepstakesNum,
-        numTickets,
+        maxManaSpent: manaAmount,
       })
       toast.success(
         `Gained ${formatEntries(result.numTickets)} entries for ${formatMoney(
@@ -334,10 +346,32 @@ export default function SweepstakesPage({
   }
 
   if (data === undefined) {
+    // Render the page shell immediately — header, intro, and skeleton
+    // placeholders for the heavier sections. This avoids a 20-second
+    // blank-page feeling while the slower API calls (get-sweepstakes
+    // SUM-on-user_contract_metrics, etc.) complete in the background.
     return (
       <Page trackPageView={'prize-drawing'}>
-        <Col className="items-center justify-center py-20">
-          <LoadingIndicator />
+        <SEO
+          title="Manifold Prize Drawing"
+          description="Win real USDC in Manifold's prize drawing. No purchase necessary."
+          url="/prize"
+          image="/prize-drawing-og.png"
+        />
+        <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
+          <Col className="gap-4">
+            <Row className="items-center gap-3">
+              <FaGift className="h-8 w-8 text-teal-500" />
+              <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
+                Manifold Prize Drawing
+              </h1>
+            </Row>
+            <p className="text-ink-600 text-lg leading-relaxed">
+              Enter the drawing for a chance to win USDC prizes! Winners receive
+              real crypto payouts. No purchase necessary.
+            </p>
+          </Col>
+          <PrizePageSkeleton />
         </Col>
       </Page>
     )
@@ -348,8 +382,9 @@ export default function SweepstakesPage({
       <Page trackPageView={'prize-drawing'}>
         <SEO
           title="Manifold Prize Drawing"
-          description="Enter for a chance to win USDC prizes!"
+          description="Win real USDC in Manifold's prize drawing. No purchase necessary."
           url="/prize"
+          image="/prize-drawing-og.png"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
           <h1 className="text-ink-900 text-2xl font-semibold">
@@ -386,44 +421,77 @@ export default function SweepstakesPage({
   return (
     <Page trackPageView={'prize-drawing'}>
       <SEO
-        title="Manifold Prize Drawing"
-        description={`Enter for a chance to win $${totalPrizePool.toLocaleString()} in USDC prizes!`}
-        url="/prize"
+        title={
+          sweepstakes.sweepstakesNum
+            ? `Manifold Prize Drawing #${sweepstakes.sweepstakesNum}`
+            : 'Manifold Prize Drawing'
+        }
+        description={`Win $${totalPrizePool.toLocaleString()} in USDC in Manifold's prize drawing. No purchase necessary.`}
+        url={sweepstakesNum ? `/prize/${sweepstakes.sweepstakesNum}` : '/prize'}
+        image="/prize-drawing-og.png"
       />
 
       <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">
         {/* Header */}
         <Col className="gap-4">
-          <Row className="items-center gap-3">
-            <FaGift className="h-8 w-8 text-teal-500" />
-            <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-              Manifold Prize Drawing
-            </h1>
-            <div className="ml-auto flex items-center gap-2">
+          {/* Mobile stacks the title above the controls; sm+ is one row. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Row className="items-center gap-3">
+              <FaGift className="h-8 w-8 text-teal-500" />
+              <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
+                Manifold Prize Drawing
+              </h1>
+            </Row>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               {sweepstakesList.length > 1 && (
-                <div className="relative">
-                  <select
-                    value={String(sweepstakes.sweepstakesNum)}
-                    onChange={(e) => {
-                      const nextNum = Number(e.target.value)
-                      if (
-                        activeSweepstakes &&
-                        nextNum === activeSweepstakes.sweepstakesNum
-                      ) {
-                        router.push('/prize')
-                      } else {
-                        router.push(`/prize/${nextNum}`)
-                      }
-                    }}
-                    className="bg-canvas-50 border-canvas-200 text-ink-700 appearance-none rounded-md border px-2 py-1 pr-7 text-sm"
-                  >
-                    {sweepstakesList.map((s) => (
-                      <option key={s.sweepstakesNum} value={s.sweepstakesNum}>
-                        {`Drawing #${s.sweepstakesNum}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <SelectDropdown
+                  aria-label="Select prize drawing"
+                  value={sweepstakes.sweepstakesNum}
+                  renderButtonLabel={(opt) =>
+                    opt ? `Drawing #${opt.value}` : 'Select drawing'
+                  }
+                  buttonPrefix={
+                    triggerStatus ? (
+                      <UserStatusIcon status={triggerStatus} large />
+                    ) : undefined
+                  }
+                  options={sweepstakesList.map((s) => {
+                    // The server returns 'pending' for "wallet submitted,
+                    // payment in flight". If the user isn't verified, that's
+                    // still blocking — bump it to action-needed.
+                    const effectiveStatus: EffectiveUserStatus =
+                      s.userStatus === 'pending' && needsVerification
+                        ? 'action-needed'
+                        : s.userStatus ?? null
+                    return {
+                      value: s.sweepstakesNum,
+                      label: (
+                        <PastDrawingLabel
+                          sweepstakesNum={s.sweepstakesNum}
+                          totalPrizeUsd={s.totalPrizeUsd}
+                          userStatus={effectiveStatus}
+                        />
+                      ),
+                      // Big-prize rows get a row-level gold tint so the bg
+                      // fills the entire option width (the inner truncate
+                      // span would otherwise clip a label-level background).
+                      buttonClassName:
+                        s.totalPrizeUsd && s.totalPrizeUsd >= 10000
+                          ? 'bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20'
+                          : undefined,
+                    }
+                  })}
+                  onChange={(nextNum) => {
+                    if (
+                      activeSweepstakes &&
+                      nextNum === activeSweepstakes.sweepstakesNum
+                    ) {
+                      router.push('/prize')
+                    } else {
+                      router.push(`/prize/${nextNum}`)
+                    }
+                  }}
+                />
               )}
               {isAdmin &&
                 isClosed &&
@@ -439,7 +507,7 @@ export default function SweepstakesPage({
                   </Button>
                 )}
             </div>
-          </Row>
+          </div>
           <p className="text-ink-600 text-lg leading-relaxed">
             Enter the drawing for a chance to win USDC prizes! Winners receive
             real crypto payouts. No purchase necessary.
@@ -455,14 +523,41 @@ export default function SweepstakesPage({
           </div>
         )}
 
-        {/* Verification Required Banner */}
+        {/* Unclaimed-prize banner. Surfaces drawings where the user won but
+            hasn't completed the steps to receive their prize. */}
+        {actionNeededDrawings.length > 0 && (
+          <UnclaimedPrizesBanner
+            drawings={actionNeededDrawings}
+            currentSweepstakesNum={sweepstakes?.sweepstakesNum}
+            needsVerification={!!needsVerification}
+            onGoToDrawing={(num) => {
+              if (
+                activeSweepstakes &&
+                num === activeSweepstakes.sweepstakesNum
+              ) {
+                router.push('/prize')
+              } else {
+                router.push(`/prize/${num}`)
+              }
+            }}
+          />
+        )}
+
+        {/* KYC Required Banner. KYC is a regulatory requirement for prize
+            drawings — a subscription does NOT unlock entry. */}
         {!isLocationRestricted && needsVerification && (
           <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
             <Row className="items-center justify-between gap-4">
-              <p className="text-indigo-800 dark:text-indigo-300">
-                You must verify your identity to participate in the prize
-                drawing.
-              </p>
+              <Col className="gap-1">
+                <p className="font-semibold text-indigo-900 dark:text-indigo-200">
+                  KYC identity verification is required to participate in prize
+                  drawings.
+                </p>
+                <p className="text-sm text-indigo-800 dark:text-indigo-300">
+                  This is a regulatory requirement and applies even to active
+                  subscribers. Verifying takes a few minutes.
+                </p>
+              </Col>
               <Button
                 color="indigo"
                 size="sm"
@@ -471,6 +566,26 @@ export default function SweepstakesPage({
                 Verify Now
               </Button>
             </Row>
+          </div>
+        )}
+
+        {/* Admin voided this user's entries (and refunded their mana). Explain
+            the dropped entry count rather than silently removing them. */}
+        {userVoidedEntries > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="font-semibold text-amber-900 dark:text-amber-200">
+              {Math.round(userVoidedEntries).toLocaleString()} of your entries
+              in this drawing were voided.
+            </p>
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              {userVoidedManaRefunded > 0 && (
+                <>
+                  {formatMoney(userVoidedManaRefunded)} was refunded to your
+                  balance.{' '}
+                </>
+              )}
+              These entries are null and void and can&apos;t win.
+            </p>
           </div>
         )}
 
@@ -534,6 +649,7 @@ export default function SweepstakesPage({
             totalTickets={totalTickets}
             hoveredUserId={hoveredUserId}
             onHoverUser={setHoveredUserId}
+            participantCount={participantCount}
             myEntries={
               user
                 ? userStats.find((s) => s.userId === user.id)?.totalTickets
@@ -569,7 +685,7 @@ export default function SweepstakesPage({
             open={showVerificationModal}
             setOpen={setShowVerificationModal}
             user={user}
-            action="receive bonuses"
+            action="enter prize drawings"
           />
         )}
 
@@ -671,6 +787,10 @@ export default function SweepstakesPage({
           />
         )}
 
+        {isAdmin && sweepstakes && (
+          <AnnouncePrizeDrawingSection sweepstakes={sweepstakes} />
+        )}
+
         <CreateSweepstakesModal
           open={showCreateSweepstakesModal}
           setOpen={setShowCreateSweepstakesModal}
@@ -683,6 +803,309 @@ export default function SweepstakesPage({
         />
       </Col>
     </Page>
+  )
+}
+
+// Admin-only "announce drawing to subscribers" section. Shows a live preview
+// of the notification, then a confirm-to-send button. Once-only enforcement
+// is server-side (sweepstakes.announcement_sent flag); this UI just disables
+// the button when announcementSent is already true.
+function AnnouncePrizeDrawingSection(props: {
+  sweepstakes: {
+    sweepstakesNum: number
+    prizes: SweepstakesPrize[]
+    closeTime: number
+    announcementSent: boolean
+  }
+}) {
+  const { sweepstakes } = props
+  const totalPrize = getTotalPrizePool(sweepstakes.prizes)
+  const winnerCount = getTotalWinnerCount(sweepstakes.prizes)
+
+  const title = 'New prize drawing is live'
+  const audience =
+    winnerCount === 1 ? 'to one winner' : `across ${winnerCount} winners`
+  const body = `$${totalPrize.toLocaleString()} ${audience}.`
+
+  const [sent, setSent] = useState(sweepstakes.announcementSent)
+  const [sending, setSending] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+
+  const onSend = async () => {
+    setSending(true)
+    try {
+      await api('admin-announce-prize-drawing', {
+        sweepstakesNum: sweepstakes.sweepstakesNum,
+      })
+      setSent(true)
+      setConfirming(false)
+      toast.success('Announcement sent')
+    } catch (err) {
+      toast.error(
+        err instanceof APIError ? err.message : 'Failed to send announcement'
+      )
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 dark:border-indigo-800 dark:bg-indigo-950/20">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-ink-900 text-sm font-semibold uppercase tracking-wide">
+          Admin · Announce to subscribers
+        </h3>
+        <span className="text-ink-500 text-xs">
+          Only users opted in to <code>prize_drawings</code> notifications will
+          receive this.
+        </span>
+      </div>
+
+      {/* Notification preview — mimics how it'll render in users' inboxes */}
+      <div className="bg-canvas-0 border-ink-200 mb-3 rounded-md border p-3 shadow-sm">
+        <div className="text-ink-400 mb-1 text-xs">PREVIEW</div>
+        <div className="flex gap-3">
+          <div className="bg-primary-100 text-primary-700 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+            M
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-ink-900 text-sm font-medium">{title}</div>
+            <div className="text-ink-700 mt-0.5 text-sm">{body}</div>
+            <div className="text-ink-400 mt-1 text-xs">
+              from Manifold Markets
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {sent ? (
+        <div className="text-ink-600 flex items-center gap-2 text-sm">
+          <span className="text-green-600">✓</span>
+          Announcement already sent for Drawing #{sweepstakes.sweepstakesNum}
+        </div>
+      ) : confirming ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-ink-700 text-sm">
+            Send to all eligible users now?
+          </span>
+          <Button
+            color="indigo"
+            size="sm"
+            loading={sending}
+            disabled={sending}
+            onClick={onSend}
+          >
+            Yes, send
+          </Button>
+          <Button
+            color="gray-outline"
+            size="sm"
+            disabled={sending}
+            onClick={() => setConfirming(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <Button color="indigo" size="sm" onClick={() => setConfirming(true)}>
+          Send announcement
+        </Button>
+      )}
+    </div>
+  )
+}
+
+// Placeholder shown while the heavy /prize data loads. Mimics the layout of
+// the real page (totals card, stats row, chart, activity table) so the page
+// doesn't jump around when data arrives. Animate-pulse gives the "loading"
+// affordance without needing per-section spinners.
+function PrizePageSkeleton() {
+  return (
+    <Col className="gap-6">
+      {/* Total Prizes card */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-20 w-full animate-pulse rounded-lg" />
+      {/* Time Left / Total Entries / Mana Spent stat row */}
+      <Row className="gap-4">
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+        <div className="bg-canvas-100 dark:bg-canvas-50 h-24 flex-1 animate-pulse rounded-lg" />
+      </Row>
+      {/* Entry Distribution chart */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-56 w-full animate-pulse rounded-lg" />
+      {/* Recent Activity */}
+      <div className="bg-canvas-100 dark:bg-canvas-50 h-40 w-full animate-pulse rounded-lg" />
+    </Col>
+  )
+}
+
+// User-facing claim states. 'action-needed' covers both "haven't submitted
+// wallet yet" and "haven't completed KYC", because both block the prize.
+type EffectiveUserStatus = 'paid' | 'pending' | 'action-needed' | null
+
+// Tiered styling for past-drawings dropdown options. Larger prizes pop
+// visually so people scrolling history can spot the big ones at a glance.
+// The aesthetic is restrained — most rows look default; the jackpot tier
+// earns a subtle gold-tinted border + a sparkle, not a highlighter band.
+function PastDrawingLabel(props: {
+  sweepstakesNum: number
+  totalPrizeUsd: number | undefined
+  userStatus?: EffectiveUserStatus
+}) {
+  const { sweepstakesNum, userStatus } = props
+  // Old API responses (pre-totalPrizeUsd) and the type-narrowing both need a
+  // default so the dropdown never crashes if the field hasn't shipped yet.
+  const totalPrizeUsd = props.totalPrizeUsd ?? 0
+  const tier =
+    totalPrizeUsd >= 10000
+      ? 'jackpot'
+      : totalPrizeUsd >= 1000
+      ? 'major'
+      : totalPrizeUsd >= 500
+      ? 'minor'
+      : 'standard'
+
+  const priceClass = clsx(
+    'shrink-0 tabular-nums',
+    tier === 'jackpot' &&
+      'text-sm font-semibold text-amber-700 dark:text-amber-300',
+    tier === 'major' &&
+      'text-sm font-semibold text-amber-700 dark:text-amber-300',
+    tier === 'minor' &&
+      'text-xs font-medium text-amber-700/80 dark:text-amber-400',
+    tier === 'standard' && 'text-xs text-ink-400'
+  )
+
+  return (
+    <span className="flex w-full items-center justify-between gap-3">
+      <span
+        className={clsx(
+          'flex items-center gap-1.5',
+          tier === 'jackpot' && 'text-amber-900 dark:text-amber-100'
+        )}
+      >
+        {userStatus && <UserStatusIcon status={userStatus} />}
+        {tier === 'jackpot' && !userStatus && (
+          <span aria-hidden className="text-amber-500 dark:text-amber-300">
+            ✦
+          </span>
+        )}
+        Drawing #{sweepstakesNum}
+      </span>
+      {totalPrizeUsd > 0 && (
+        <span className={priceClass}>${totalPrizeUsd.toLocaleString()}</span>
+      )}
+    </span>
+  )
+}
+
+// Small inline icon that signals per-drawing user state. Priority order
+// when multiple drawings collide for the dropdown trigger is
+// 'action-needed' > 'pending' > 'paid'.
+function UserStatusIcon(props: {
+  status: EffectiveUserStatus
+  large?: boolean
+}) {
+  const { status, large } = props
+  const size = large ? 'h-4 w-4' : 'h-3.5 w-3.5'
+  if (status === 'action-needed') {
+    return (
+      <FaCircleExclamation
+        aria-label="Action needed"
+        className={clsx(size, 'text-scarlet-500 shrink-0')}
+      />
+    )
+  }
+  if (status === 'pending') {
+    return (
+      <FaClock
+        aria-label="Payment pending"
+        className={clsx(size, 'text-ink-400 shrink-0')}
+      />
+    )
+  }
+  if (status === 'paid') {
+    return (
+      <FaGift
+        aria-label="Prize received"
+        className={clsx(size, 'shrink-0 text-teal-500')}
+      />
+    )
+  }
+  return null
+}
+
+// Highest-priority status across all drawings — used by the trigger icon
+// and the page banner.
+function getWorstStatus(statuses: EffectiveUserStatus[]): EffectiveUserStatus {
+  if (statuses.includes('action-needed')) return 'action-needed'
+  if (statuses.includes('pending')) return 'pending'
+  if (statuses.includes('paid')) return 'paid'
+  return null
+}
+
+// Top-of-page nudge for users who have won drawings but still need to act
+// (submit wallet, verify identity, etc.). Renders a single line when one
+// drawing is unclaimed; a click-list when multiple.
+function UnclaimedPrizesBanner(props: {
+  drawings: { sweepstakesNum: number }[]
+  currentSweepstakesNum: number | undefined
+  needsVerification: boolean
+  onGoToDrawing: (num: number) => void
+}) {
+  const { drawings, currentSweepstakesNum, needsVerification, onGoToDrawing } =
+    props
+
+  const verbB = needsVerification ? 'verify to claim' : 'claim'
+
+  if (drawings.length === 1) {
+    const d = drawings[0]
+    const isCurrent = d.sweepstakesNum === currentSweepstakesNum
+    return (
+      <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 flex items-center gap-3 rounded-lg border p-4">
+        <FaCircleExclamation className="text-scarlet-500 h-5 w-5 shrink-0" />
+        <div className="text-scarlet-800 dark:text-scarlet-200 flex-1 text-sm">
+          You won Drawing #{d.sweepstakesNum} and still need to {verbB}.
+        </div>
+        {!isCurrent && (
+          <button
+            onClick={() => onGoToDrawing(d.sweepstakesNum)}
+            className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 shrink-0 text-sm font-medium underline"
+          >
+            Go to drawing →
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 rounded-lg border p-4">
+      <div className="flex items-start gap-3">
+        <FaCircleExclamation className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
+        <div className="flex-1">
+          <div className="text-scarlet-800 dark:text-scarlet-200 text-sm font-medium">
+            You have {drawings.length} unclaimed prizes
+          </div>
+          <div className="text-scarlet-700 dark:text-scarlet-300 mt-1 text-sm">
+            {needsVerification
+              ? 'Verify your identity to receive your USDC, then submit your wallet on each drawing.'
+              : 'Submit your wallet address on each drawing to claim.'}
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {drawings.map((d) => (
+              <li key={d.sweepstakesNum}>
+                <button
+                  onClick={() => onGoToDrawing(d.sweepstakesNum)}
+                  className="text-scarlet-700 hover:text-scarlet-900 dark:text-scarlet-300 dark:hover:text-scarlet-100 border-scarlet-300 bg-canvas-0/50 dark:border-scarlet-700 dark:bg-canvas-0/10 rounded-md border px-2 py-0.5 text-xs font-medium"
+                >
+                  Drawing #{d.sweepstakesNum} →
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -1005,7 +1428,8 @@ function PurchaseForm(props: {
             <InfoTooltip
               text={`Current rate: ${formatMoneyWithDecimals(
                 currentPrice
-              )} per entry. Rates follow a bonding curve—earlier entries require less mana.`}
+              )} per entry. Rates follow a bonding curve—earlier entries require less mana.
+              Your mana spend is fixed; the final entry count is calculated at purchase time.`}
               size="sm"
             />
           </Row>
@@ -1056,7 +1480,8 @@ function PurchaseForm(props: {
           disabled={numTickets <= 0 || isSubmitting || disabled}
           className="w-full justify-center rounded-lg py-3 font-semibold"
         >
-          Get {formatEntries(numTickets)} entries for {formatMoney(manaAmount)}
+          Get up to {formatEntries(numTickets)} entries for{' '}
+          {formatMoney(manaAmount)}
         </Button>
       </Col>
     </div>
@@ -1077,7 +1502,11 @@ function SignInPrompt() {
         <p className="text-ink-600 text-center text-sm">
           Sign in to enter the prize drawing
         </p>
-        <Button color="indigo" className="w-full justify-center">
+        <Button
+          color="indigo"
+          className="w-full justify-center"
+          onClick={firebaseLogin}
+        >
           Sign in to participate
         </Button>
       </Col>
@@ -1094,10 +1523,17 @@ function UserDistributionChart(props: {
   totalTickets: number
   hoveredUserId: string | null
   onHoverUser: (userId: string | null) => void
+  participantCount: number
   myEntries?: number
 }) {
-  const { userStats, totalTickets, hoveredUserId, onHoverUser, myEntries } =
-    props
+  const {
+    userStats,
+    totalTickets,
+    hoveredUserId,
+    onHoverUser,
+    participantCount,
+    myEntries,
+  } = props
 
   if (userStats.length === 0) {
     return (
@@ -1117,6 +1553,24 @@ function UserDistributionChart(props: {
     value: stat.totalTickets,
     color: COLORS[i % COLORS.length],
   }))
+
+  // Batch-fetch the top-8 legend users in a single request instead of one
+  // per row. Avoids the N+1 that previously made the chart take seconds to
+  // populate on cold cache. We only fetch for the rows we actually render,
+  // and skip the call entirely when there are no users (empty arrays 400
+  // on the server because the query string can't be parsed).
+  const legendUserIds = segments.slice(0, 8).map((s) => s.userId)
+  const { data: legendUsersData } = useAPIGetter(
+    'users/by-id',
+    { ids: legendUserIds },
+    undefined,
+    undefined,
+    legendUserIds.length > 0
+  )
+  const userById = useMemo(
+    () => new Map((legendUsersData ?? []).map((u) => [u.id, u])),
+    [legendUsersData]
+  )
 
   const radius = 15
   const circumference = 2 * Math.PI * radius
@@ -1213,7 +1667,7 @@ function UserDistributionChart(props: {
               return (
                 <UserLegendItem
                   key={index}
-                  userId={segment.userId}
+                  user={userById.get(segment.userId)}
                   color={segment.color}
                   percentage={percentage}
                   isHovered={isHovered}
@@ -1222,9 +1676,9 @@ function UserDistributionChart(props: {
                 />
               )
             })}
-            {segments.length > 8 && (
+            {participantCount > 8 && (
               <div className="text-ink-400 px-3 py-1 text-xs">
-                +{userStats.length - 8} more
+                +{participantCount - 8} more
               </div>
             )}
           </Col>
@@ -1235,15 +1689,21 @@ function UserDistributionChart(props: {
 }
 
 function UserLegendItem(props: {
-  userId: string
+  user: DisplayUser | undefined
   color: string
   percentage: string
   isHovered: boolean
   onHover: () => void
   onLeave: () => void
 }) {
-  const { userId, color, percentage, isHovered, onHover, onLeave } = props
-  const { data: userData } = useAPIGetter('user/by-id/:id', { id: userId })
+  const {
+    user: userData,
+    color,
+    percentage,
+    isHovered,
+    onHover,
+    onLeave,
+  } = props
 
   return (
     <Row
@@ -1365,6 +1825,27 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
 
   const sales = data?.sales ?? []
 
+  // Batch-fetch the (deduplicated) sale user ids in one request rather than
+  // one per row. With limit: 50 above, the previous N+1 fired up to 50
+  // separate user/by-id calls per /prize load — the dominant N+1 on the
+  // page in production. Skip when empty so we don't fire ?ids=[] (which
+  // 400s on the server).
+  const saleUserIds = useMemo(
+    () => Array.from(new Set(sales.map((s) => s.userId))),
+    [sales]
+  )
+  const { data: saleUsersData } = useAPIGetter(
+    'users/by-id',
+    { ids: saleUserIds },
+    undefined,
+    undefined,
+    saleUserIds.length > 0
+  )
+  const saleUserById = useMemo(
+    () => new Map((saleUsersData ?? []).map((u) => [u.id, u])),
+    [saleUsersData]
+  )
+
   if (sales.length === 0) {
     return null
   }
@@ -1396,7 +1877,11 @@ function SalesHistory(props: { sweepstakesNum: number; refreshKey: number }) {
           </thead>
           <tbody className="divide-canvas-50 divide-y">
             {sales.map((sale) => (
-              <SaleRow key={sale.id} sale={sale} />
+              <SaleRow
+                key={sale.id}
+                sale={sale}
+                user={saleUserById.get(sale.userId)}
+              />
             ))}
           </tbody>
         </table>
@@ -1414,9 +1899,9 @@ function SaleRow(props: {
     isFree: boolean
     createdTime: number
   }
+  user: DisplayUser | undefined
 }) {
-  const { sale } = props
-  const { data: userData } = useAPIGetter('user/by-id/:id', { id: sale.userId })
+  const { sale, user: userData } = props
 
   return (
     <tr className="hover:bg-canvas-50 transition-colors">
@@ -1443,7 +1928,7 @@ function SaleRow(props: {
         )}
       </td>
       <td className="text-ink-600 px-5 py-4 text-right text-sm tabular-nums">
-        {sale.isFree ? 'Free' : formatMoney(sale.manaSpent)}
+        {sale.isFree ? 'Free' : formatMoneyAuto(sale.manaSpent)}
       </td>
       <td className="text-ink-400 px-5 py-4 text-right text-sm">
         <RelativeTimestamp time={sale.createdTime} />
@@ -1613,20 +2098,22 @@ function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
           </p>
         </div>
         <Col className="gap-4 p-5">
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
-            <Row className="items-center gap-2">
-              <span className="text-lg">✓</span>
-              <Col className="gap-1">
-                <span className="font-medium text-green-800 dark:text-green-300">
-                  Claim Submitted
-                </span>
-                <span className="text-sm text-green-700 dark:text-green-400">
-                  Wallet: {claim.walletAddress.slice(0, 6)}...
-                  {claim.walletAddress.slice(-4)}
-                </span>
-              </Col>
-            </Row>
-          </div>
+          {claim.walletAddress && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
+              <Row className="items-center gap-2">
+                <span className="text-lg">✓</span>
+                <Col className="gap-1">
+                  <span className="font-medium text-green-800 dark:text-green-300">
+                    Claim Submitted
+                  </span>
+                  <span className="text-sm text-green-700 dark:text-green-400">
+                    Wallet: {claim.walletAddress.slice(0, 6)}...
+                    {claim.walletAddress.slice(-4)}
+                  </span>
+                </Col>
+              </Row>
+            </div>
+          )}
 
           <Row className="items-center justify-between">
             <span className="text-ink-600 text-sm">Payment Status:</span>
@@ -1638,12 +2125,15 @@ function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
                 claim.paymentStatus === 'sent' &&
                   'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
                 claim.paymentStatus === 'rejected' &&
-                  'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                  'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+                claim.paymentStatus === 'opted_out' &&
+                  'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
               )}
             >
               {claim.paymentStatus === 'awaiting' && '⏳ Awaiting Payment'}
               {claim.paymentStatus === 'sent' && '✓ Payment Sent'}
               {claim.paymentStatus === 'rejected' && '✗ Rejected'}
+              {claim.paymentStatus === 'opted_out' && 'Opted out'}
             </span>
           </Row>
 
@@ -1680,7 +2170,12 @@ function WinnerClaimSection(props: { sweepstakesNum: number; userId: string }) {
         <p className="text-ink-700 text-sm">
           Connect your Ethereum wallet to receive your prize. Make sure this is
           a wallet you control—we cannot recover funds sent to the wrong
-          address.
+          address.{' '}
+          <span className="font-semibold">
+            Your submission is final and cannot be changed. The wallet you
+            choose applies only to this prize — you'll choose a wallet again for
+            any future prize.
+          </span>
         </p>
 
         <WalletClaimFormWrapper
@@ -1749,10 +2244,26 @@ function WalletClaimFormInner(props: {
   const { sweepstakesNum, isSubmitting, setIsSubmitting, onSuccess } = props
 
   const [showWalletModal, setShowWalletModal] = useState(false)
+  const [showManualEntry, setShowManualEntry] = useState(false)
   const { address, isConnected } = useAccount()
   const { connect, isPending: isConnecting, error: connectError } = useConnect()
   const { disconnect } = useDisconnect()
   const connectors = useConnectors()
+  const hasBrowserWallet = useHasBrowserWallet(connectors)
+
+  // Reset on auto-reconnect so the user doesn't land back on manual entry with empty state if they later disconnect.
+  useEffect(() => {
+    if (isConnected && showManualEntry) {
+      setShowManualEntry(false)
+    }
+  }, [isConnected, showManualEntry])
+
+  // Hide the generic fallback `injected` connector when no browser wallet is
+  // actually present — clicking it produces a cryptic viem error. Keep any
+  // EIP-6963-detected wallets (id !== 'injected') and WalletConnect.
+  const availableConnectors = hasBrowserWallet
+    ? connectors
+    : connectors.filter((c) => c.id !== 'injected')
 
   const handleSubmitClaim = async () => {
     if (!address || isSubmitting) return
@@ -1774,20 +2285,67 @@ function WalletClaimFormInner(props: {
   }
 
   if (!isConnected) {
+    if (showManualEntry) {
+      return (
+        <ManualWalletEntry
+          sweepstakesNum={sweepstakesNum}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+          onSuccess={onSuccess}
+          onCancel={() => setShowManualEntry(false)}
+        />
+      )
+    }
+
+    const friendlyConnectError = connectError
+      ? getFriendlyConnectError(connectError, hasBrowserWallet)
+      : null
+
     return (
       <>
-        <Col className="items-center gap-4">
-          <Button
-            color="gradient"
-            size="xl"
-            className="w-full"
-            onClick={() => setShowWalletModal(true)}
+        <Col className="gap-4">
+          {!hasBrowserWallet && <NoWalletDetectedBanner />}
+
+          <Col className="items-center gap-2">
+            <Button
+              color="gradient"
+              size="xl"
+              className="w-full"
+              onClick={() => setShowWalletModal(true)}
+            >
+              🔗 Connect Wallet
+            </Button>
+            {friendlyConnectError && (
+              <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 w-full rounded-lg border p-3">
+                <p className="text-scarlet-700 dark:text-scarlet-300 text-sm font-medium">
+                  {friendlyConnectError.title}
+                </p>
+                {friendlyConnectError.description && (
+                  <p className="text-scarlet-600 dark:text-scarlet-400 mt-1 text-sm">
+                    {friendlyConnectError.description}
+                  </p>
+                )}
+                {friendlyConnectError.showInstallLink && (
+                  <a
+                    href="https://metamask.io/download"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-scarlet-700 dark:text-scarlet-300 mt-2 inline-block text-sm font-semibold underline"
+                  >
+                    Install MetaMask →
+                  </a>
+                )}
+              </div>
+            )}
+          </Col>
+
+          <button
+            type="button"
+            onClick={() => setShowManualEntry(true)}
+            className="text-scarlet-600 hover:text-scarlet-700 dark:text-scarlet-400 dark:hover:text-scarlet-300 self-center text-xs font-medium underline"
           >
-            🔗 Connect Wallet
-          </Button>
-          {connectError && (
-            <p className="text-scarlet-500 text-sm">{connectError.message}</p>
-          )}
+            Not recommended: Add wallet address manually
+          </button>
         </Col>
 
         {/* Wallet Selection Modal */}
@@ -1805,27 +2363,54 @@ function WalletClaimFormInner(props: {
               </p>
             </Col>
 
-            <div className="grid grid-cols-2 gap-2">
-              {sortConnectors(connectors).map((connector) => (
-                <button
-                  key={connector.uid}
-                  onClick={() => {
-                    connect({ connector })
-                    setShowWalletModal(false)
-                  }}
-                  disabled={isConnecting}
-                  className={clsx(
-                    'bg-canvas-50 hover:bg-canvas-100 border-canvas-100 rounded-lg border px-3 py-2 text-center transition-all',
-                    'hover:border-primary-300 hover:shadow-sm',
-                    'disabled:cursor-not-allowed disabled:opacity-50'
-                  )}
+            {!hasBrowserWallet && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  No browser wallet detected
+                </p>
+                <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                  You need a wallet browser extension (like MetaMask) to receive
+                  your prize. Desktop apps like OneKey won't work on their own —
+                  install the browser extension too.
+                </p>
+                <a
+                  href="https://metamask.io/download"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-xs font-semibold text-amber-800 underline dark:text-amber-300"
                 >
-                  <span className="text-ink-900 text-sm font-medium">
-                    {simplifyWalletName(connector.name)}
-                  </span>
-                </button>
-              ))}
-            </div>
+                  Install MetaMask →
+                </a>
+              </div>
+            )}
+
+            {availableConnectors.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {sortConnectors(availableConnectors).map((connector) => (
+                  <button
+                    key={connector.uid}
+                    onClick={() => {
+                      connect({ connector })
+                      setShowWalletModal(false)
+                    }}
+                    disabled={isConnecting}
+                    className={clsx(
+                      'bg-canvas-50 hover:bg-canvas-100 border-canvas-100 rounded-lg border px-3 py-2 text-center transition-all',
+                      'hover:border-primary-300 hover:shadow-sm',
+                      'disabled:cursor-not-allowed disabled:opacity-50'
+                    )}
+                  >
+                    <span className="text-ink-900 text-sm font-medium">
+                      {simplifyWalletName(connector.name)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-ink-500 text-center text-sm">
+                Install a browser wallet extension to continue.
+              </p>
+            )}
 
             <p className="text-ink-400 text-center text-xs">
               By connecting, you agree to receive USDC on Ethereum mainnet
@@ -1871,6 +2456,298 @@ function WalletClaimFormInner(props: {
       </Button>
     </Col>
   )
+}
+
+type AddressValidation =
+  | { kind: 'empty' }
+  | { kind: 'valid'; message: string }
+  | { kind: 'incomplete'; message: string }
+  | { kind: 'invalid'; message: string }
+
+function validateEthAddress(input: string): AddressValidation {
+  if (input.length === 0) return { kind: 'empty' }
+  if (!/^0x[a-fA-F0-9]*$/.test(input)) {
+    return {
+      kind: 'invalid',
+      message: '❌ This is not an Ethereum wallet address',
+    }
+  }
+  if (input.length < 42) {
+    return {
+      kind: 'incomplete',
+      message: '⚠️ This wallet address is incomplete',
+    }
+  }
+  if (input.length > 42) {
+    return { kind: 'invalid', message: '❌ This wallet address is too long' }
+  }
+  // viem's default isAddress requires either all-lowercase, all-uppercase, or
+  // a valid EIP-55 checksum — catches typos in mixed-case pastes.
+  if (!isAddress(input)) {
+    return {
+      kind: 'invalid',
+      message:
+        '❌ This address has a checksum error — likely a typo. Double-check every character.',
+    }
+  }
+  return {
+    kind: 'valid',
+    message: '✓ This is a valid Ethereum wallet address',
+  }
+}
+
+function ManualWalletEntry(props: {
+  sweepstakesNum: number
+  isSubmitting: boolean
+  setIsSubmitting: (isSubmitting: boolean) => void
+  onSuccess: () => void
+  onCancel: () => void
+}) {
+  const { sweepstakesNum, isSubmitting, setIsSubmitting, onSuccess, onCancel } =
+    props
+
+  const [address, setAddress] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
+
+  const trimmed = address.trim()
+  const validation = validateEthAddress(trimmed)
+  const canSubmit = validation.kind === 'valid' && confirmed && !isSubmitting
+
+  const normalize = (raw: string) => raw.trim().replace(/^0X/, '0x')
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      setAddress(normalize(text))
+    } catch {
+      toast.error('Could not read clipboard. Please paste manually.')
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return
+    setIsSubmitting(true)
+    try {
+      await api('claim-sweepstakes-prize', {
+        sweepstakesNum,
+        walletAddress: trimmed,
+      })
+      toast.success('Prize claim submitted successfully!')
+      onSuccess()
+    } catch (e) {
+      const msg = e instanceof APIError ? e.message : 'Failed to submit claim'
+      toast.error(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Col className="gap-4">
+      <div className="border-scarlet-200 bg-scarlet-50 dark:border-scarlet-800 dark:bg-scarlet-950/30 rounded-lg border p-3">
+        <p className="text-scarlet-700 dark:text-scarlet-300 text-sm font-semibold">
+          ⚠️ Not recommended
+        </p>
+        <p className="text-scarlet-600 dark:text-scarlet-400 mt-1 text-xs">
+          Manually entering a wallet address is risky. If the address is wrong
+          or not a wallet you control, your prize will be lost forever and
+          cannot be recovered. Connect a browser wallet whenever possible.
+        </p>
+        <p className="text-scarlet-700 dark:text-scarlet-300 mt-2 text-xs font-semibold">
+          The address you submit is your first and final answer for this prize —
+          it cannot be edited after you click Claim Prize. Double-check every
+          character. (Future prizes are claimed separately.)
+        </p>
+      </div>
+
+      <Col className="gap-1.5">
+        <label
+          htmlFor="manual-wallet-address"
+          className="text-ink-700 text-sm font-medium"
+        >
+          Ethereum wallet address
+        </label>
+        <Row className="gap-2">
+          <Input
+            id="manual-wallet-address"
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(normalize(e.target.value))}
+            placeholder="0x..."
+            className="flex-1 font-mono"
+            autoComplete="off"
+            spellCheck={false}
+            error={validation.kind === 'invalid'}
+          />
+          <Button
+            color="gray-outline"
+            size="md"
+            onClick={handlePaste}
+            disabled={isSubmitting}
+          >
+            Paste
+          </Button>
+        </Row>
+        {validation.kind !== 'empty' && (
+          <p
+            className={clsx(
+              'text-xs',
+              validation.kind === 'valid' &&
+                'text-green-700 dark:text-green-400',
+              validation.kind === 'incomplete' &&
+                'text-amber-700 dark:text-amber-400',
+              validation.kind === 'invalid' &&
+                'text-scarlet-700 dark:text-scarlet-300'
+            )}
+          >
+            {validation.message}
+          </p>
+        )}
+      </Col>
+
+      <label className="flex cursor-pointer items-start gap-2">
+        <input
+          type="checkbox"
+          checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+          className="mt-1"
+          disabled={isSubmitting}
+        />
+        <span className="text-ink-700 text-sm">
+          I understand that if this is not my wallet, my prize will be lost and
+          cannot be recovered.
+        </span>
+      </label>
+
+      <Row className="gap-2">
+        <Button
+          color="gray-outline"
+          size="lg"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="flex-1"
+        >
+          Back
+        </Button>
+        <Button
+          color="gradient"
+          size="lg"
+          className="flex-[2]"
+          onClick={handleSubmit}
+          loading={isSubmitting}
+          disabled={!canSubmit}
+        >
+          🎁 Claim Prize
+        </Button>
+      </Row>
+    </Col>
+  )
+}
+
+// Detect whether any real browser-extension wallet is installed. Wagmi's
+// generic `injected()` connector is always present, so we look for either an
+// EIP-6963-detected connector (id !== 'injected') or `window.ethereum`.
+function useHasBrowserWallet(connectors: readonly { id: string }[]): boolean {
+  const [hasWindowEth, setHasWindowEth] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHasWindowEth(!!(window as any).ethereum)
+    }
+  }, [])
+  const hasDetectedWallet = connectors.some(
+    (c) => c.id !== 'injected' && c.id !== 'walletConnect'
+  )
+  return hasDetectedWallet || hasWindowEth
+}
+
+// Shown above the Connect Wallet button when no browser-extension wallet is
+// detected. Instructs users to install MetaMask.
+function NoWalletDetectedBanner() {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+      <Col className="gap-2">
+        <Row className="items-center gap-2">
+          <span className="text-lg">🦊</span>
+          <span className="font-semibold text-amber-900 dark:text-amber-200">
+            You'll need a crypto wallet to claim
+          </span>
+        </Row>
+        <p className="text-sm text-amber-800 dark:text-amber-300">
+          We didn't detect a wallet browser extension. Install MetaMask (or
+          another Ethereum wallet extension) in your browser, then come back and
+          click Connect Wallet.
+        </p>
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Note: desktop-only apps like OneKey's .exe don't work here unless you
+          also install their browser extension.
+        </p>
+        <Row className="mt-1 flex-wrap gap-3">
+          <a
+            href="https://metamask.io/download"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
+          >
+            Install MetaMask →
+          </a>
+          <a
+            href="https://ethereum.org/en/wallets/find-wallet/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 underline dark:text-amber-300"
+          >
+            Browse other wallets
+          </a>
+        </Row>
+      </Col>
+    </div>
+  )
+}
+
+// Translate cryptic viem/wagmi connection errors into friendly, actionable
+// guidance for end users.
+function getFriendlyConnectError(
+  error: Error,
+  hasBrowserWallet: boolean
+): {
+  title: string
+  description?: string
+  showInstallLink: boolean
+} {
+  const msg = error.message?.toLowerCase() ?? ''
+
+  if (!hasBrowserWallet) {
+    return {
+      title: "We couldn't connect to a wallet",
+      description:
+        'No browser wallet extension was detected. Install MetaMask and refresh this page.',
+      showInstallLink: true,
+    }
+  }
+
+  if (msg.includes('user rejected') || msg.includes('user denied')) {
+    return {
+      title: 'Connection cancelled',
+      description:
+        'You declined the connection in your wallet. Click Connect Wallet and approve the request to continue.',
+      showInstallLink: false,
+    }
+  }
+
+  if (msg.includes('no provider') || msg.includes('not found')) {
+    return {
+      title: 'No wallet provider found',
+      description:
+        "Your browser doesn't have a wallet extension installed or enabled.",
+      showInstallLink: true,
+    }
+  }
+
+  return {
+    title: 'Failed to connect',
+    description: error.message,
+    showInstallLink: false,
+  }
 }
 
 // Helper to simplify wallet names

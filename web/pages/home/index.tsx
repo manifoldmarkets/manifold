@@ -4,9 +4,10 @@ import Router from 'next/router'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
-import { DowntimeBanner, Manifest2026Banner } from 'web/components/nav/banner'
+import { DowntimeBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
+import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
@@ -24,7 +25,12 @@ export default function Home() {
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
-      <Manifest2026Banner />
+      {/* Flagged users earn zero bonuses until they verify — make it evident on
+          the home page too (non-dismissible). Gated to flagged users only, so
+          there's no new banner for ordinary unverified users. */}
+      {user?.bonusEligibility === 'requires_verification' && (
+        <VerifyPhoneNumberBanner user={user} dismissible={false} compact />
+      )}
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (

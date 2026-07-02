@@ -25,6 +25,10 @@ export interface CharityGiveawayStats {
   totalManaSpent: number
 }
 
+// Maximum admin-adjustable change to a giveaway's prize pool in a single
+// update. Limits the blast radius of a fat-fingered adjustment.
+export const MAX_CHARITY_GIVEAWAY_PRIZE_DELTA_USD = 10_000
+
 // Bonding curve constants
 export const GIVEAWAY_BASE_PRICE = 0.1 // 0.10 mana per ticket to start
 const MANA_PER_DOLLAR = 100

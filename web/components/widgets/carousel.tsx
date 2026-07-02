@@ -1,7 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { throttle } from 'lodash'
-import { useState, useEffect, forwardRef, useRef, Ref, ReactNode } from 'react'
+import { useState, useEffect, forwardRef, Ref, ReactNode } from 'react'
 import { Row } from '../layout/row'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
@@ -25,14 +25,13 @@ export function Carousel(props: CarouselProps) {
     ...rest
   } = props
 
-  const ref = useRef<HTMLDivElement>(null)
+  // Callback ref so attachment triggers a re-render — needed for atFront/atBack to measure on mount.
+  const [el, setEl] = useState<HTMLDivElement | null>(null)
   const [isHovered, setIsHovered] = useState(false)
 
-  const { scrollLeft, scrollRight, atFront, atBack, onScroll } = useCarousel(
-    ref.current
-  )
+  const { scrollLeft, scrollRight, atFront, atBack, onScroll } = useCarousel(el)
 
-  useEffect(onScroll, [children])
+  useEffect(onScroll, [children, el])
 
   const showArrows = showArrowsOnHover ? isHovered : !fadeEdges
 
@@ -58,7 +57,7 @@ export function Carousel(props: CarouselProps) {
             'scrollbar-hide w-full snap-x overflow-x-auto scroll-smooth',
             labelsParentClassName ?? 'gap-4'
           )}
-          ref={ref}
+          ref={setEl}
           onScroll={onScroll}
         >
           {children}

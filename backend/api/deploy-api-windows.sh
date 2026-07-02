@@ -26,10 +26,16 @@ ENV=${1:-dev}
 case $ENV in
     dev)
         NEXT_PUBLIC_FIREBASE_ENV=DEV
+        REDIS_URL=
+        DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=e2-small ;;
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
+        # Private Memorystore instance. Passed at the container level so both
+        # the main API process and PM2 read replicas inherit it.
+        REDIS_URL=redis://10.215.204.211:6379
+        DISABLE_REDIS_CACHE=false
         GCLOUD_PROJECT=mantic-markets
         MACHINE_TYPE=c2-standard-4 ;;
     *)
@@ -92,38 +98,6 @@ fi
 TEMPLATE_NAME="${SERVICE_NAME}-${IMAGE_TAG}"
 GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/${ZONE}/${SERVICE_GROUP}?project=${GCLOUD_PROJECT}"
 
-# ian: GambleId requires a static IP address for the API
-STATIC_IP_NAME="${SERVICE_NAME}-static-ip"
-MAX_IPS=4  # Maximum number of static IPs to cycle through
-
-for i in $(seq 1 $MAX_IPS); do
-    CURRENT_IP_NAME="${STATIC_IP_NAME}-${i}"
-    STATIC_IP_ADDRESS=$(gcloud compute addresses describe ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT} --format='get(address)' 2>/dev/null || echo "")
-
-    if [ -z "${STATIC_IP_ADDRESS}" ]; then
-        echo "Creating new static IP address ${CURRENT_IP_NAME}..."
-        gcloud compute addresses create ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT}
-        STATIC_IP_ADDRESS=$(gcloud compute addresses describe ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT} --format='get(address)')
-    fi
-
-    # Check if any instance is using this IP
-    INSTANCE_USING_IP=$(gcloud compute instances list --project=${GCLOUD_PROJECT} --filter="networkInterfaces.accessConfigs.natIP:${STATIC_IP_ADDRESS}" --format="value(name)")
-
-    if [ -z "${INSTANCE_USING_IP}" ]; then
-        echo "Using available static IP address: ${STATIC_IP_ADDRESS}"
-        break
-    else
-        echo "IP ${STATIC_IP_ADDRESS} is currently in use by instance ${INSTANCE_USING_IP}. Trying next IP."
-    fi
-done
-
-if [ -z "${STATIC_IP_ADDRESS}" ]; then
-    echo "Error: No available static IPs found. Are there too many concurrent deploys? Check your GCP virtual machine dashboard."
-    exit 1
-fi
-
-echo "Using static IP address: ${STATIC_IP_ADDRESS}"
-echo
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
 gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --project ${GCLOUD_PROJECT} \
@@ -132,11 +106,10 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --boot-disk-size=100GB \
-       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
+       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},REDIS_URL=${REDIS_URL},DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
-       --tags lb-health-check \
-       --address ${STATIC_IP_ADDRESS}
+       --tags lb-health-check
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
 gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \
@@ -144,7 +117,8 @@ gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GRO
        --zone ${ZONE} \
        --version template=${TEMPLATE_NAME} \
        --no-user-output-enabled \
-       --max-unavailable 0 # don't kill old one until new one is healthy
+       --max-unavailable 0 \
+       --max-surge 1 # don't kill old one until new one is healthy
 
 echo "Rollout underway. Waiting for update to finish rolling out"
 echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"

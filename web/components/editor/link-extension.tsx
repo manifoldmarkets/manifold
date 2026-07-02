@@ -2,10 +2,11 @@ import { mergeAttributes } from '@tiptap/core'
 import { Link as TiptapLink } from '@tiptap/extension-link'
 import NextLink from 'next/link'
 import { ReactNode } from 'react'
-import { linkClass } from 'web/components/widgets/site-link'
+import { linkClass, LinkFavicon } from 'web/components/widgets/site-link'
 
 const LinkComponent = (props: { href: string; children: ReactNode }) => {
-  const { href, children } = props
+  const { href: rawHref, children } = props
+  const href = safeHref(rawHref)
 
   if (isInternal(href)) {
     return (
@@ -17,6 +18,7 @@ const LinkComponent = (props: { href: string; children: ReactNode }) => {
 
   return (
     <a href={href} target="_blank" rel="noopener ugc" className={linkClass}>
+      <LinkFavicon href={href} />
       {children}
     </a>
   )
@@ -24,16 +26,7 @@ const LinkComponent = (props: { href: string; children: ReactNode }) => {
 
 export const DisplayLink = TiptapLink.extend({
   renderHTML({ HTMLAttributes }) {
-    // Block dangerous protocols (javascript:, data:, vbscript:, etc.)
-    const href = HTMLAttributes.href
-    if (
-      href &&
-      !/^https?:\/\//i.test(href) &&
-      !href.startsWith('/') &&
-      !href.startsWith('#')
-    ) {
-      HTMLAttributes.href = '#'
-    }
+    HTMLAttributes.href = safeHref(HTMLAttributes.href)
 
     // This is used for SSR and copy/paste
     HTMLAttributes.target = isInternal(HTMLAttributes.href) ? '_self' : '_blank'
@@ -57,8 +50,36 @@ export const DisplayLink = TiptapLink.extend({
   },
 })
 
-const isInternal = (href: string) =>
-  href.startsWith('/') ||
-  href.startsWith('#') ||
-  href.includes('manifold.markets') ||
-  href.includes('localhost')
+// Allow http(s) absolute URLs, root-relative paths, and in-page anchors only.
+// Reject protocol-relative (`//host`, `/\host`) and everything else
+// (javascript:, data:, vbscript:, file:, etc.) → '#'.
+const isLocalPath = (href: string) =>
+  (href.startsWith('/') && !href.startsWith('//') && !href.startsWith('/\\')) ||
+  href.startsWith('#')
+
+const safeHref = (href: string | undefined | null): string => {
+  if (!href) return '#'
+  if (isLocalPath(href)) return href
+  if (/^https?:\/\//i.test(href)) return href
+  return '#'
+}
+
+const INTERNAL_HOSTS = new Set([
+  'manifold.markets',
+  'manifold.love',
+  'localhost',
+])
+
+const isInternal = (href: string) => {
+  if (isLocalPath(href)) return true
+  try {
+    const { hostname } = new URL(href)
+    return (
+      INTERNAL_HOSTS.has(hostname) ||
+      hostname.endsWith('.manifold.markets') ||
+      hostname.endsWith('.manifold.love')
+    )
+  } catch {
+    return false
+  }
+}

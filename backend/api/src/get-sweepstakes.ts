@@ -8,6 +8,8 @@ import {
   SWEEPSTAKES_MIN_MANA_INVESTED,
 } from 'common/sweepstakes'
 
+const TOP_PARTICIPANTS_LIMIT = 100
+
 export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
   props,
   auth
@@ -25,11 +27,12 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     winning_ticket_ids: string[] | null
     nonce: string | null
     created_time: string
+    announcement_sent: boolean
   }>(
     sweepstakesNum
       ? `SELECT * FROM sweepstakes WHERE sweepstakes_num = $1`
-      : `SELECT * FROM sweepstakes 
-         ORDER BY 
+      : `SELECT * FROM sweepstakes
+         ORDER BY
            CASE WHEN close_time > NOW() THEN 0 ELSE 1 END,
            close_time DESC
          LIMIT 1`,
@@ -37,30 +40,50 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
   )
 
   if (!sweepstakes) {
-    return { userStats: [], totalTickets: 0 }
+    return {
+      userStats: [],
+      totalTickets: 0,
+      totalManaSpent: 0,
+      participantCount: 0,
+    }
   }
 
-  // Get ticket stats per user for this sweepstakes
+  const totals = await pg.one<{
+    total_tickets: string
+    total_mana_spent: string
+    participant_count: number
+  }>(
+    `SELECT
+       COALESCE(SUM(num_tickets), 0) as total_tickets,
+       COALESCE(SUM(mana_spent), 0) as total_mana_spent,
+       COUNT(DISTINCT user_id)::int as participant_count
+     FROM sweepstakes_tickets
+     WHERE sweepstakes_num = $1 AND voided_at IS NULL`,
+    [sweepstakes.sweepstakes_num]
+  )
+
+  // Only the top participants are needed for the distribution chart. Returning
+  // every participant can make /prize slow as old drawings accumulate entries.
   const userStats = await pg.manyOrNone<{
     user_id: string
     total_tickets: string
     total_mana_spent: string
   }>(
-    `SELECT 
+    `SELECT
        user_id,
        SUM(num_tickets) as total_tickets,
        SUM(mana_spent) as total_mana_spent
      FROM sweepstakes_tickets
-     WHERE sweepstakes_num = $1
+     WHERE sweepstakes_num = $1 AND voided_at IS NULL
      GROUP BY user_id
-     ORDER BY total_tickets DESC`,
-    [sweepstakes.sweepstakes_num]
+     ORDER BY total_tickets DESC
+     LIMIT $2`,
+    [sweepstakes.sweepstakes_num, TOP_PARTICIPANTS_LIMIT]
   )
 
-  const totalTickets = userStats.reduce(
-    (sum, s) => sum + parseFloat(s.total_tickets),
-    0
-  )
+  const totalTickets = parseFloat(totals.total_tickets)
+  const totalManaSpent = parseFloat(totals.total_mana_spent)
+  const participantCount = totals.participant_count
 
   // If there are winning tickets, get the winner details
   let winners: SweepstakesWinner[] | undefined
@@ -72,10 +95,9 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     const winningTickets = await pg.manyOrNone<{
       id: string
       user_id: string
-    }>(
-      `SELECT id, user_id FROM sweepstakes_tickets WHERE id = ANY($1)`,
-      [sweepstakes.winning_ticket_ids]
-    )
+    }>(`SELECT id, user_id FROM sweepstakes_tickets WHERE id = ANY($1)`, [
+      sweepstakes.winning_ticket_ids,
+    ])
 
     // Create a map for quick lookup
     const ticketMap = new Map(winningTickets.map((t) => [t.id, t]))
@@ -127,8 +149,32 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
   let hasClaimedFreeTicket: boolean | undefined
   let userTotalManaInvested: number | undefined
   let meetsInvestmentRequirement: boolean | undefined
+  // If an admin voided this user's entries (and refunded their mana), surface a
+  // summary so the page can tell them — otherwise their entry count silently
+  // drops with no explanation.
+  let userVoidedEntries: number | undefined
+  let userVoidedManaRefunded: number | undefined
 
   if (auth) {
+    const userInTopStats = userStats.some((s) => s.user_id === auth.uid)
+    if (!userInTopStats) {
+      const currentUserStats = await pg.oneOrNone<{
+        user_id: string
+        total_tickets: string
+        total_mana_spent: string
+      }>(
+        `SELECT
+           user_id,
+           SUM(num_tickets) as total_tickets,
+           SUM(mana_spent) as total_mana_spent
+         FROM sweepstakes_tickets
+         WHERE sweepstakes_num = $1 AND user_id = $2 AND voided_at IS NULL
+         GROUP BY user_id`,
+        [sweepstakes.sweepstakes_num, auth.uid]
+      )
+      if (currentUserStats) userStats.push(currentUserStats)
+    }
+
     const freeTicket = await pg.oneOrNone(
       `SELECT 1 FROM sweepstakes_free_tickets WHERE sweepstakes_num = $1 AND user_id = $2`,
       [sweepstakes.sweepstakes_num, auth.uid]
@@ -145,6 +191,23 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     userTotalManaInvested = parseFloat(investedResult?.total_invested ?? '0')
     meetsInvestmentRequirement =
       userTotalManaInvested >= SWEEPSTAKES_MIN_MANA_INVESTED
+
+    const voided = await pg.oneOrNone<{
+      voided_tickets: string
+      voided_mana: string
+    }>(
+      `SELECT
+         COALESCE(SUM(num_tickets), 0) as voided_tickets,
+         COALESCE(SUM(mana_spent), 0) as voided_mana
+       FROM sweepstakes_tickets
+       WHERE sweepstakes_num = $1 AND user_id = $2 AND voided_at IS NOT NULL`,
+      [sweepstakes.sweepstakes_num, auth.uid]
+    )
+    const voidedTickets = parseFloat(voided?.voided_tickets ?? '0')
+    if (voidedTickets > 0) {
+      userVoidedEntries = voidedTickets
+      userVoidedManaRefunded = parseFloat(voided?.voided_mana ?? '0')
+    }
   }
 
   return {
@@ -155,6 +218,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
       closeTime: tsToMillis(sweepstakes.close_time),
       winningTicketIds: sweepstakes.winning_ticket_ids,
       createdTime: tsToMillis(sweepstakes.created_time),
+      announcementSent: sweepstakes.announcement_sent,
     },
     userStats: userStats.map((s) => ({
       userId: s.user_id,
@@ -162,6 +226,8 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
       totalManaSpent: parseFloat(s.total_mana_spent),
     })),
     totalTickets,
+    totalManaSpent,
+    participantCount,
     winners,
     // Provably fair: nonce contains the Bitcoin block hash used for winner selection
     // Only revealed AFTER winners are selected. Users verify by finding first block after closeTime.
@@ -174,5 +240,7 @@ export const getSweepstakes: APIHandler<'get-sweepstakes'> = async (
     userTotalManaInvested,
     meetsInvestmentRequirement,
     minManaInvested: SWEEPSTAKES_MIN_MANA_INVESTED,
+    userVoidedEntries,
+    userVoidedManaRefunded,
   }
 }

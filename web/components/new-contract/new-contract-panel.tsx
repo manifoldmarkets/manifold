@@ -2,7 +2,7 @@ import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { Contract, CreateableOutcomeType } from 'common/contract'
 import { MarketDraft } from 'common/drafts'
-import { getAnte } from 'common/economy'
+import { BOOST_COST_MANA, FREE_MARKET_USER_ID, getAnte } from 'common/economy'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
@@ -30,6 +30,7 @@ import {
 } from 'web/lib/validation/contract-validation'
 import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
 import { Button } from '../buttons/button'
+import { BackButton } from '../contract/back-button'
 import { ExpandSection } from '../explainer-panel'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -87,6 +88,7 @@ export function NewContractPanel(props: {
     unit: '',
     midpoints: [],
     includeSeeResults: true,
+    boostMarket: false,
   })
 
   // Initialize form state with defaults (from params if provided)
@@ -115,6 +117,7 @@ export function NewContractPanel(props: {
     unit: params?.unit || '',
     midpoints: params?.midpoints || [],
     includeSeeResults: true,
+    boostMarket: false,
   })
 
   const [formState, setFormState] = usePersistentLocalState<FormState>(
@@ -466,7 +469,12 @@ export function NewContractPanel(props: {
   // Helper: Get submit button text based on outcome type
   // Avoids duplication between mobile and desktop action bars
   const getSubmitButtonText = () => {
-    return `Create for ${formatMoney(cost)}`
+    if (willBoost) {
+      return `Create + Boost for ${formatMoney(
+        isFreeMarket ? boostCost : totalCost
+      )}`
+    }
+    return isFreeMarket ? `Create for free!` : `Create for ${formatMoney(cost)}`
   }
 
   // Auto-extract close date from question
@@ -733,23 +741,48 @@ export function NewContractPanel(props: {
     formState.liquidityTier
   )
 
+  // Boost is only available for publicly listed markets
+  const willBoost = !!formState.boostMarket && formState.visibility === 'public'
+  const boostCost = willBoost ? BOOST_COST_MANA : 0
+  const totalCost = cost + boostCost
+
+  // Mirror the backend's FREE_MARKET_USER_ID exemption (create-market.ts):
+  const isFreeMarket = creator.id === FREE_MARKET_USER_ID && cost <= 100
+
   // Add balance validation
-  const hasInsufficientBalance = cost > creator.balance
-  if (hasInsufficientBalance && !validation.errors.balance) {
-    validation.errors.balance = `Insufficient balance. You need ${formatMoney(
-      cost
-    )} but only have ${formatMoney(creator.balance)}`
+  // Distinguish market-cost vs boost-cost insufficiency so the boost-only case
+  // doesn't trigger the panel-wide red ring (it surfaces inline in BoostSection).
+  const insufficientForMarket = !isFreeMarket && cost > creator.balance
+  const hasInsufficientBalance = !isFreeMarket && totalCost > creator.balance
+  const insufficientForBoostOnly =
+    hasInsufficientBalance && !insufficientForMarket
+  const validationErrors = {
+    ...validation.errors,
+    ...(insufficientForMarket && !validation.errors.balance
+      ? {
+          balance: `Insufficient balance. You need ${formatMoney(
+            cost
+          )} but only have ${formatMoney(creator.balance)}`,
+        }
+      : {}),
   }
+  const isFormValid =
+    validation.isValid &&
+    Object.keys(validationErrors).length === 0 &&
+    !hasInsufficientBalance
 
   // Handle type change
   const handleTypeChange = (
     newType: CreateableOutcomeType,
     shouldSumToOne: boolean
   ) => {
+    const defaultShouldAnswersSumToOne =
+      newType === 'DATE' ? false : shouldSumToOne
+
     setFormState((prev) => ({
       ...prev,
       outcomeType: newType,
-      shouldAnswersSumToOne: shouldSumToOne,
+      shouldAnswersSumToOne: defaultShouldAnswersSumToOne,
       // Clear all market-specific data for discussion posts
       answers:
         newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
@@ -835,22 +868,28 @@ export function NewContractPanel(props: {
     if (isSubmitting) return
 
     // Check validation and show field-level errors if invalid
-    if (!validation.isValid) {
-      setFieldErrors(validation.errors)
+    if (!isFormValid) {
+      setFieldErrors(validationErrors)
 
-      const errorKeys = Object.keys(validation.errors)
+      const errorKeys = Object.keys(validationErrors)
       const isOnlyCloseDateError =
         errorKeys.length === 1 && errorKeys[0] === 'closeDate'
 
       // Auto-open close date modal only if it's the ONLY error (don't shake button)
       if (isOnlyCloseDateError) {
         setIsCloseDateModalOpen(true)
+      } else if (insufficientForBoostOnly && errorKeys.length === 0) {
+        // Boost-only balance issue: tell the user how to proceed.
+        toast.error(
+          'Not enough mana to boost. Switch to "No boost" to create without boosting, or top up.'
+        )
+        setSubmitAttemptCount((prev) => prev + 1)
       } else {
         // Increment submit attempt count (triggers shake animation) for other errors
         setSubmitAttemptCount((prev) => prev + 1)
       }
 
-      scrollToFirstError(validation.errors)
+      scrollToFirstError(validationErrors)
       return
     }
 
@@ -945,6 +984,7 @@ export function NewContractPanel(props: {
         hasDescription: !!formState.description,
         numAnswers: formState.answers.length,
         liquidityTier: formState.liquidityTier,
+        boostMarket: willBoost,
       })
 
       // Call API to create market
@@ -953,6 +993,27 @@ export function NewContractPanel(props: {
       // Clear form state and editor autosave
       localStorage.removeItem('new-contract-form')
       localStorage.removeItem('text new-contract-description')
+
+      // If user opted to boost the new market, purchase a boost starting now.
+      // Failures here shouldn't block navigation to the newly-created market.
+      if (willBoost && result?.id) {
+        try {
+          await api('purchase-boost', {
+            contractId: result.id,
+            startTime: Date.now(),
+            method: 'mana',
+          })
+          toast.success(
+            `Market boosted! It will be featured on the homepage for 24 hours.`
+          )
+        } catch (boostError: any) {
+          console.error('Error purchasing boost:', boostError)
+          toast.error(
+            boostError?.message ||
+              'Market created but failed to purchase boost.'
+          )
+        }
+      }
 
       // Redirect to new market
       if (result && result.slug) {
@@ -977,7 +1038,9 @@ export function NewContractPanel(props: {
     answers: formState.answers.map((text) => ({ text })),
     closeTime: formState.closeDate
       ? (() => {
-          const time = new Date(formState.closeDate + 'T23:59').getTime()
+          const time = new Date(
+            formState.closeDate + 'T' + (formState.closeHoursMinutes || '23:59')
+          ).getTime()
           return isNaN(time) ? undefined : time
         })()
       : undefined,
@@ -1000,12 +1063,7 @@ export function NewContractPanel(props: {
       {/* Header */}
       <Row className="bg-canvas-0 border-ink-200 items-center justify-between border-b px-4 py-3 shadow-sm">
         <Row className="items-center gap-3">
-          <button
-            onClick={() => Router.back()}
-            className="text-ink-600 hover:text-ink-800 transition-colors lg:hidden"
-          >
-            ←
-          </button>
+          <BackButton className="lg:hidden" />
           <h1 className="text-ink-900 text-xl font-semibold">
             Create a market
           </h1>
@@ -1380,8 +1438,9 @@ export function NewContractPanel(props: {
         <ContextualEditorPanel
           formState={formState}
           onUpdate={updateField}
-          validationErrors={validation.errors}
+          validationErrors={validationErrors}
           balance={creator.balance}
+          isFreeMarket={isFreeMarket}
           submitState={isSubmitting ? 'LOADING' : 'EDITING'}
           onGenerateAnswers={generateAnswers}
           isGeneratingAnswers={isGeneratingAnswers}

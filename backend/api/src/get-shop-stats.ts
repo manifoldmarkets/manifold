@@ -33,6 +33,14 @@ export type ShopStats = {
     quantity: number
     revenue: number
   }[]
+  // Daily merch sales (physical items via Printful — never reach 'COMPLETED'
+  // status, so they're tracked separately from `digitalGoodsSales`).
+  merchSales: {
+    date: string
+    itemId: string
+    quantity: number
+    revenue: number
+  }[]
   // Current active subscriber counts by tier
   subscribersByTier: {
     tier: 'basic' | 'plus' | 'premium'
@@ -110,6 +118,32 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     order by date, item_id
     `,
     [start, excludeFromGoods]
+  )
+
+  // Get daily merch sales. Merch orders flow PENDING_FULFILLMENT → SHIPPED;
+  // they never reach 'COMPLETED' so the digitalGoods query above misses them.
+  // Count anything that hasn't been refunded/canceled/failed (CANCELLED,
+  // REFUNDED, FAILED) — those are real sales from the user's perspective.
+  const merchSales = await pg.manyOrNone<{
+    date: string
+    itemId: string
+    quantity: number
+    revenue: number
+  }>(
+    `
+    select
+      date_trunc('day', created_time at time zone 'America/Los_Angeles')::date::text as date,
+      item_id as "itemId",
+      sum(quantity)::int as quantity,
+      sum(price_mana)::bigint as revenue
+    from shop_orders
+    where created_time >= $1
+      and status not in ('CANCELLED', 'REFUNDED', 'FAILED')
+      and item_id like 'merch-%'
+    group by date, item_id
+    order by date, item_id
+    `,
+    [start]
   )
 
   // Get ticket sales
@@ -212,6 +246,7 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     subscriptionSales: subscriptionSales ?? [],
     digitalGoodsSales: digitalGoodsSales ?? [],
     ticketSales: ticketSales ?? [],
+    merchSales: merchSales ?? [],
     subscribersByTier: subscribersByTier ?? [],
     subscriptionsOverTime: subscriptionsOverTime ?? [],
   }

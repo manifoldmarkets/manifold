@@ -68,6 +68,18 @@ export const createIdenfySession: APIHandler<'create-idenfy-session'> = async (
       status: response.status,
       body: errorText,
     })
+    let identifier: string | undefined
+    try {
+      identifier = JSON.parse(errorText)?.identifier
+    } catch {
+      // body wasn't JSON; identifier stays undefined
+    }
+    if (identifier === 'PERMISSIONS_ERROR') {
+      throw new APIError(
+        503,
+        'Identity verification is temporarily unavailable. Please try again later or contact support.'
+      )
+    }
     throw new APIError(500, 'Failed to create verification session')
   }
 

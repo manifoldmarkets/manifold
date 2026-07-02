@@ -33,7 +33,7 @@ export function TierSelector({
   const activeTier = hoveredTier ?? selectedTier
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
       {TIER_ORDER.map((tier) => {
         const tierConfig = SUPPORTER_TIERS[tier]
         const item = TIER_ITEMS[tier]
@@ -50,7 +50,7 @@ export function TierSelector({
             onMouseLeave={onHoverEnd}
             style={{ outline: 'none' }}
             className={clsx(
-              'relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200',
+              'relative flex min-w-0 flex-col items-center gap-1 rounded-xl border-2 p-2 transition-all duration-200 sm:gap-2 sm:p-4',
               'outline-none focus:outline-none focus-visible:outline-none',
               // Selected state - animated glowing border
               isSelected &&
@@ -115,10 +115,15 @@ export function TierSelector({
               )}
             </div>
 
-            <span className={clsx('font-bold', tierConfig.textColor)}>
+            <span
+              className={clsx(
+                'text-sm font-bold sm:text-base',
+                tierConfig.textColor
+              )}
+            >
               {tierConfig.name}
             </span>
-            <span className="text-ink-600 text-sm font-medium">
+            <span className="text-ink-600 text-xs font-medium sm:text-sm">
               {formatMoney(item.price)}/mo
             </span>
           </button>

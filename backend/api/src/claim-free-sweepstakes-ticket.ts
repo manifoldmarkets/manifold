@@ -3,7 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getIp } from 'shared/analytics'
 import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
 import { getUser } from 'shared/utils'
-import { canReceiveBonuses } from 'common/user'
+import { canEnterPrizeDrawings } from 'common/user'
 import { isAdminId } from 'common/envs/constants'
 import { SWEEPSTAKES_MIN_MANA_INVESTED } from 'common/sweepstakes'
 
@@ -49,7 +49,7 @@ export const claimFreeSweepstakesTicket: APIHandler<
     if (isAdminId(user.id)) {
       throw new APIError(403, 'Admins cannot participate in the sweepstakes')
     }
-    if (!canReceiveBonuses(user)) {
+    if (!canEnterPrizeDrawings(user)) {
       throw new APIError(
         403,
         'You must verify your identity to participate in the sweepstakes'

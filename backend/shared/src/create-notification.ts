@@ -306,7 +306,12 @@ export const createReferralNotification = async (
   toUserId: string,
   referredUser: User,
   bonusAmount: string,
-  referredByContract?: Contract
+  referredByContract?: Contract,
+  // Suffix the notification id so the split payout (first_bet + verify) emits
+  // two notifications instead of having the second silently dropped by the
+  // ON CONFLICT DO NOTHING insert. Defaults to 'legacy' so existing callers
+  // and backfilled rows keep their stable id.
+  bonusType: 'first_bet' | 'verify' | 'legacy' = 'legacy'
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
@@ -317,7 +322,7 @@ export const createReferralNotification = async (
   if (!sendToBrowser) return
 
   const notification: Notification = {
-    id: referredUser.id + '-signup-referral-bonus',
+    id: `${referredUser.id}-signup-referral-bonus-${bonusType}`,
     userId: toUserId,
     reason:
       referredByContract?.creatorId === toUserId
@@ -466,7 +471,7 @@ export const createCharityChampionEligibleNotification = async (
     sourceUserName: MANIFOLD_USER_NAME,
     sourceUserUsername: MANIFOLD_USER_USERNAME,
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: `You're the #1 ticket buyer with ${totalTickets} tickets! Claim the Charity Champion Trophy in the shop.`,
+    sourceText: `You're the #1 entry holder with ${totalTickets} entries! Claim the Charity Champion Trophy on the charity page.`,
     sourceTitle: 'Charity Champion Trophy',
   }
   const pg = createSupabaseDirectClient()
@@ -479,7 +484,8 @@ export const createBettingStreakBonusNotification = async (
   bet: Bet,
   contract: Contract,
   amount: number,
-  streak: number
+  streak: number,
+  effectiveTier?: string
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
@@ -512,6 +518,7 @@ export const createBettingStreakBonusNotification = async (
       streak: streak,
       bonusAmount: amount,
       cashAmount: 0,
+      effectiveTier,
     } as BettingStreakData,
   }
   const pg = createSupabaseDirectClient()
@@ -674,6 +681,7 @@ export const createLeagueChangedNotifications = async (
       previousLeague: item.previousLeague,
       newLeague: item.newLeague,
       bonusAmount: item.bonusAmount,
+      missedPrizeReason: item.missedPrizeReason,
     }
 
     const notification: Notification = {
@@ -774,6 +782,8 @@ export const createNewBettorNotification = async (
         totalAmountBet: sumBy(bets, 'amount'),
         token: contract.token,
         bonusAmount: txn.amount,
+        effectiveTier: (txn.data as { effectiveTier?: string } | undefined)
+          ?.effectiveTier,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)

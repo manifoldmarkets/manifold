@@ -17,7 +17,8 @@ import { CandidateBet } from 'common/new-bet'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { formatOutcomeLabel, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
-import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
+import { MINUTE_MS } from 'common/util/time'
+import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
@@ -37,19 +38,11 @@ import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilitySlider } from '../widgets/probability-input'
-import { sliderColors } from '../widgets/slider'
+import { SliderColor } from '../widgets/slider'
 import { MoneyDisplay } from './money-display'
 import { ShareBetModal } from './share-bet'
 
-const expirationOptions = [
-  { label: 'Never expires', value: 0 },
-  { label: 'Expires immediately', value: 1 },
-  { label: 'Expires in 1 hour', value: HOUR_MS },
-  { label: 'Expires in 1 day', value: DAY_MS },
-  { label: 'Expires in 1 week', value: WEEK_MS },
-  { label: 'Expires in 1 month', value: MONTH_MS },
-  { label: 'Custom time...', value: -1 },
-]
+const expirationOptions = EXPIRATION_OPTIONS
 
 const WAIT_TO_DISMISS = 3000
 
@@ -66,11 +59,11 @@ export default function LimitOrderPanel(props: {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
+      pseudonymColor: SliderColor
     }
   }
   initialProb?: number

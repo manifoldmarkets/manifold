@@ -10,9 +10,12 @@ import { hrtime } from 'node:process'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { log, metrics } from 'shared/utils'
 import { typedEndpoint } from './helpers/endpoint'
+import { ipRateLimitMiddleware } from './helpers/rate-limit'
 import { handleMcpRequest } from './mcp'
+import { MINUTE_MS } from 'common/util/time'
 import { addOldRoutes } from './old-routes'
 import { handlers } from './routes'
+import { healthzLive, healthzReady } from './healthz'
 
 export const allowCorsUnrestricted: RequestHandler = cors({
   origin: '*',
@@ -100,6 +103,13 @@ export const apiErrorHandler: ErrorRequestHandler = (
 }
 
 export const app = express()
+
+// Infra health checks, registered before requestMonitoring so the LB's
+// per-instance polling (every few seconds) doesn't spam request logs or inflate
+// http/request_count. These are unauthenticated and intentionally trivial.
+app.get('/healthz/live', healthzLive)
+app.get('/healthz/ready', healthzReady)
+
 app.use(compression())
 app.use(requestMonitoring)
 
@@ -130,7 +140,22 @@ Object.entries(handlers).forEach(([path, handler]) => {
   }
 })
 
-// Add MCP POST endpoint
-app.post('/v0/mcp', express.json(), allowCorsUnrestricted, handleMcpRequest)
+// Add MCP POST endpoint. The handler is unauthenticated (it wraps already-public
+// read-only tools), so rate-limit by client IP to prevent abuse / DoS. Limits
+// are intentionally generous for legitimate MCP sessions while bounding cost.
+app.post(
+  '/v0/mcp',
+  // CORS first so that 429 (and any other short-circuit) responses still
+  // include Access-Control-Allow-Origin; otherwise browser-based MCP clients
+  // see a CORS failure instead of the JSON-RPC rate-limit body + Retry-After.
+  allowCorsUnrestricted,
+  ipRateLimitMiddleware({
+    maxCalls: 60,
+    windowMs: MINUTE_MS,
+    metricName: 'mcp/rate_limit',
+  }),
+  express.json({ limit: '256kb' }),
+  handleMcpRequest
+)
 
 addOldRoutes(app)

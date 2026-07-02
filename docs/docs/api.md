@@ -1391,6 +1391,14 @@ This approach treats each answer as an independent binary resolution, ensuring t
 
 [Requires Auth](#authentication).
 
+### `POST /v0/market/[marketId]/rebalance`
+
+Rebalances your position in a sum-to-one multi-choice market. This collapses mixed YES/NO positions into an all-YES position and redeems the minimum amount across outcomes. This is purely an accounting operation and does not affect the AMM or incur fees.
+
+Only applicable to `cpmm-multi-1` markets when `shouldAnswersSumToOne` is true. The equivalent operation is done automatically on binary markets.
+
+[Requires Auth](#authentication).
+
 ### `POST /v0/market/[marketId]/sell`
 
 Sell shares in a market.
@@ -1405,7 +1413,7 @@ Parameters:
 
 ### `POST /v0/comment`
 
-Create a comment in the specified market. Only supports top-level comments for now.
+Create a comment in the specified market.
 
 Parameters:
 
@@ -1413,6 +1421,7 @@ Parameters:
 - `content`: The comment to post, formatted as [TipTap json](https://tiptap.dev/guide/output#option-1-json), OR
 - `html`: The comment to post, formatted as an HTML string, OR
 - `markdown`: The comment to post, formatted as a markdown string.
+- `replyToCommentId`: Optional. The ID of the comment you are replying to. Must be a valid comment ID in the same market.
 
 [Requires Auth](#authentication).
 

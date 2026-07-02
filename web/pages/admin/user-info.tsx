@@ -41,6 +41,7 @@ export default function AdminUserInfoPage() {
     firebaseEmail?: string
     initialDeviceToken?: string
     initialIpAddress?: string
+    verificationFlagReason?: string
   } | null>(null)
   const [manualEmail, setManualEmail] = useState('')
   const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(false)
@@ -162,6 +163,20 @@ export default function AdminUserInfoPage() {
       setShowAllRelated(false)
     }
   }, [selectedUser])
+
+  // verificationFlagReason is stripped from the public User response, so
+  // re-hydrate it onto selectedUser from the admin-gated get-user-info result.
+  // Keyed on userInfo (not selectedUser) + value-guarded so it doesn't loop.
+  useEffect(() => {
+    if (!userInfo || !selectedUser) return
+    const reason = userInfo.verificationFlagReason
+    if (
+      (selectedUser.verificationFlagReason ?? undefined) !==
+      (reason ?? undefined)
+    ) {
+      setSelectedUser({ ...selectedUser, verificationFlagReason: reason })
+    }
+  }, [userInfo])
 
   const selectUser = (user: DisplayUser) => {
     setSelectedUser(user as FullUser)
@@ -501,6 +516,18 @@ export default function AdminUserInfoPage() {
                 onUpdate={(newUser) => setSelectedUser(newUser)}
               />
 
+              {/* Flag for Verification (suspected alt / suspicious signup) */}
+              <FlagForVerificationSection
+                user={selectedUser}
+                onUpdate={(newUser) => setSelectedUser(newUser)}
+              />
+
+              {/* Prize Eligibility */}
+              <PrizeEligibilitySection
+                user={selectedUser}
+                onUpdate={(newUser) => setSelectedUser(newUser)}
+              />
+
               {/* Email Status */}
               <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
                 <h3 className="font-semibold">Email Status</h3>
@@ -588,9 +615,7 @@ export default function AdminUserInfoPage() {
                   <div className="space-y-2">
                     <div className="mb-2 rounded border border-amber-200 bg-amber-50 p-2">
                       <p className="text-sm text-amber-800">
-                        Found {relatedUsers.length} account
-                        {relatedUsers.length !== 1 ? 's' : ''} with matching IP,
-                        device token, or managram history.
+                        {formatRelatedAccountsSummary(relatedUsers)}
                       </p>
                     </div>
                     {(showAllRelated
@@ -955,6 +980,42 @@ export default function AdminUserInfoPage() {
   )
 }
 
+type MatchReason = 'ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram'
+
+const MATCH_REASON_LABELS: Record<MatchReason, string> = {
+  ip: 'matching IP',
+  deviceToken: 'matching device token',
+  referrer: 'matching referrer',
+  referee: 'matching referee',
+  managram: 'matching managram history',
+}
+
+function formatRelatedAccountsSummary(
+  relatedUsers: Array<{ matchReasons: MatchReason[] }>
+) {
+  const counts: Record<MatchReason, number> = {
+    ip: 0,
+    deviceToken: 0,
+    referrer: 0,
+    referee: 0,
+    managram: 0,
+  }
+  for (const { matchReasons } of relatedUsers) {
+    for (const reason of matchReasons) counts[reason]++
+  }
+
+  const parts = (Object.keys(MATCH_REASON_LABELS) as MatchReason[])
+    .filter((reason) => counts[reason] > 0)
+    .map((reason) => `${counts[reason]} ${MATCH_REASON_LABELS[reason]}`)
+
+  if (parts.length === 0) {
+    return `Found ${relatedUsers.length} related account${
+      relatedUsers.length !== 1 ? 's' : ''
+    }.`
+  }
+  return `Found ${parts.join(', ')}.`
+}
+
 function BonusEligibilitySection({
   user,
   onUpdate,
@@ -963,9 +1024,16 @@ function BonusEligibilitySection({
   onUpdate: (user: FullUser) => void
 }) {
   const [isUpdating, setIsUpdating] = useState(false)
+  // 'requires_verification' isn't selectable in this control — that path goes
+  // through FlagForVerificationSection below. Normalize it to undefined here
+  // so the local state stays within what admin-set-bonus-eligibility accepts.
+  const initialEligibility =
+    user.bonusEligibility === 'requires_verification'
+      ? undefined
+      : user.bonusEligibility
   const [selectedEligibility, setSelectedEligibility] = useState<
-    'verified' | 'grandfathered' | 'ineligible' | null | undefined
-  >(user.bonusEligibility)
+    'verified' | 'grandfathered' | 'eligible' | 'ineligible' | null | undefined
+  >(initialEligibility)
 
   const eligibilityOptions = [
     {
@@ -979,6 +1047,13 @@ function BonusEligibilitySection({
       label: 'Grandfathered',
       description: 'Active user before KYC requirement',
       color: 'text-blue-600',
+    },
+    {
+      value: 'eligible' as const,
+      label: 'Eligible (bonuses only)',
+      description:
+        'Gets bonuses without KYC (purchaser or hand-granted). Does NOT unlock prize drawings.',
+      color: 'text-teal-600',
     },
     {
       value: 'ineligible' as const,
@@ -995,6 +1070,11 @@ function BonusEligibilitySection({
     },
   ] as const
 
+  // 'requires_verification' is set via the dedicated FlagForVerificationSection
+  // below, not via this generic setter — so it isn't in eligibilityOptions.
+  // Surface it as its own status label when present.
+  const isFlaggedForVerification =
+    user.bonusEligibility === 'requires_verification'
   const currentEligibility = eligibilityOptions.find(
     (o) => o.value === (user.bonusEligibility ?? null)
   )
@@ -1035,17 +1115,28 @@ function BonusEligibilitySection({
       <div className="space-y-2">
         <div>
           <span className="text-ink-600 text-sm">Current Status: </span>
-          <span
-            className={`font-medium ${
-              currentEligibility?.color ?? 'text-orange-600'
-            }`}
-          >
-            {currentEligibility?.label ?? 'Not Set (Pending)'}
-          </span>
-          {currentEligibility && (
+          {isFlaggedForVerification ? (
+            <span className="font-medium text-amber-600">
+              Flagged for Verification
+            </span>
+          ) : (
+            <span
+              className={`font-medium ${
+                currentEligibility?.color ?? 'text-orange-600'
+              }`}
+            >
+              {currentEligibility?.label ?? 'Not Set (Pending)'}
+            </span>
+          )}
+          {!isFlaggedForVerification && currentEligibility && (
             <span className="text-ink-500 ml-2 text-sm">
               - {currentEligibility.description}
             </span>
+          )}
+          {isFlaggedForVerification && user.verificationFlagReason && (
+            <div className="text-ink-500 mt-1 text-sm">
+              <strong>Flag reason:</strong> {user.verificationFlagReason}
+            </div>
           )}
         </div>
 
@@ -1083,7 +1174,7 @@ function BonusEligibilitySection({
                 Update Eligibility
               </Button>
               <Button
-                onClick={() => setSelectedEligibility(user.bonusEligibility)}
+                onClick={() => setSelectedEligibility(initialEligibility)}
                 disabled={isUpdating}
                 color="gray-outline"
                 size="sm"
@@ -1118,6 +1209,347 @@ function BonusEligibilitySection({
           </li>
         </ul>
       </div>
+    </div>
+  )
+}
+
+function PrizeEligibilitySection({
+  user,
+  onUpdate,
+}: {
+  user: FullUser
+  onUpdate: (user: FullUser) => void
+}) {
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [selectedEligibility, setSelectedEligibility] = useState<
+    'eligible' | 'ineligible' | null | undefined
+  >(user.prizeEligibility)
+  const [voidEntries, setVoidEntries] = useState(false)
+  const [reason, setReason] = useState('')
+
+  const eligibilityOptions = [
+    {
+      value: 'eligible' as const,
+      label: 'Eligible',
+      description: 'May enter prize drawings',
+      color: 'text-green-600',
+    },
+    {
+      value: 'ineligible' as const,
+      label: 'Ineligible',
+      description: 'Barred from prize drawings',
+      color: 'text-red-600',
+    },
+    {
+      value: null,
+      label: 'Follow Identity Verification',
+      description:
+        'Default - prize access derives from KYC identity verification (verified/grandfathered only). Bonus-only "eligible" purchasers do NOT get prize access.',
+      color: 'text-orange-600',
+    },
+  ] as const
+
+  const currentEligibility = eligibilityOptions.find(
+    (o) => o.value === (user.prizeEligibility ?? null)
+  )
+
+  const handleUpdate = async () => {
+    if (selectedEligibility === undefined) return
+    if ((selectedEligibility ?? null) === (user.prizeEligibility ?? null))
+      return
+
+    const trimmedReason = reason.trim()
+    const shouldVoid = voidEntries && selectedEligibility === 'ineligible'
+
+    setIsUpdating(true)
+    try {
+      const res = await api('admin-set-prize-eligibility', {
+        userId: user.id,
+        prizeEligibility: selectedEligibility,
+        ...(shouldVoid ? { voidOutstandingEntries: true } : {}),
+        ...(trimmedReason ? { reason: trimmedReason } : {}),
+      })
+      const refundMsg =
+        res.voidedEntryCount > 0
+          ? ` Voided ${res.voidedEntryCount} ${
+              res.voidedEntryCount === 1 ? 'entry' : 'entries'
+            }, refunded ${res.refundedManaTotal} mana.`
+          : ''
+      toast.success(
+        (selectedEligibility === null
+          ? 'Cleared prize override - follows identity verification'
+          : `Prize eligibility updated to '${selectedEligibility}'`) + refundMsg
+      )
+      onUpdate({
+        ...user,
+        prizeEligibility: selectedEligibility ?? undefined,
+      })
+      setVoidEntries(false)
+      setReason('')
+    } catch (error) {
+      toast.error(
+        'Failed to update: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
+      <h3 className="font-semibold">Prize Drawing Eligibility</h3>
+      <div className="space-y-2">
+        <div>
+          <span className="text-ink-600 text-sm">Current Status: </span>
+          <span
+            className={`font-medium ${
+              currentEligibility?.color ?? 'text-orange-600'
+            }`}
+          >
+            {currentEligibility?.label ?? 'Follow Bonus Eligibility'}
+          </span>
+          {currentEligibility && (
+            <span className="text-ink-500 ml-2 text-sm">
+              - {currentEligibility.description}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <label className="text-ink-700 block text-sm font-medium">
+            Change Eligibility:
+          </label>
+          <Row className="flex-wrap gap-2">
+            {eligibilityOptions.map((option) => (
+              <button
+                key={String(option.value)}
+                onClick={() => setSelectedEligibility(option.value)}
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  selectedEligibility === option.value
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-ink-200 hover:border-ink-300 bg-canvas-0'
+                }`}
+              >
+                <span className={option.color}>{option.label}</span>
+              </button>
+            ))}
+          </Row>
+        </div>
+
+        {selectedEligibility === 'ineligible' && (
+          <div className="mt-2 space-y-2">
+            <div>
+              <label className="text-ink-700 mb-1 block text-sm font-medium">
+                Reason (optional, stamped onto voided entry rows):
+              </label>
+              <input
+                type="text"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="e.g. under-18 (iDenfy ID-UA18)"
+                maxLength={500}
+                className="border-ink-200 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+            <label className="text-ink-700 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={voidEntries}
+                onChange={(e) => setVoidEntries(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                Void this user's outstanding entries and refund the mana they
+                paid. Recommended for under-18 / wrongly-charged cases — they
+                bought entries they can't win.
+              </span>
+            </label>
+          </div>
+        )}
+
+        {selectedEligibility !== undefined &&
+          (selectedEligibility ?? null) !== (user.prizeEligibility ?? null) && (
+            <Row className="mt-3 gap-2">
+              <Button
+                onClick={handleUpdate}
+                loading={isUpdating}
+                disabled={isUpdating}
+                color="indigo"
+                size="sm"
+              >
+                Update Eligibility
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedEligibility(user.prizeEligibility)
+                  setVoidEntries(false)
+                  setReason('')
+                }}
+                disabled={isUpdating}
+                color="gray-outline"
+                size="sm"
+              >
+                Cancel
+              </Button>
+            </Row>
+          )}
+      </div>
+
+      <div className="mt-3 rounded border border-blue-200 bg-blue-50 p-3">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> Prize eligibility controls whether the user can
+          enter prize drawings (cash raffles). It is independent of bonus
+          eligibility, so a user can be eligible for bonuses but not prizes, or
+          vice versa.
+        </p>
+        <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
+          <li>
+            <strong>Eligible:</strong> User may enter prize drawings regardless
+            of bonus eligibility
+          </li>
+          <li>
+            <strong>Ineligible:</strong> User is barred from prize drawings even
+            if bonus-eligible
+          </li>
+          <li>
+            <strong>Follow Identity Verification / Not Set:</strong> Prize
+            access derives from KYC identity verification
+            (verified/grandfathered only) — the default. Bonus-only
+            &quot;eligible&quot; purchasers stay gated until they complete KYC.
+            Use the explicit options above to decouple the two.
+          </li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function FlagForVerificationSection({
+  user,
+  onUpdate,
+}: {
+  user: FullUser
+  onUpdate: (user: FullUser) => void
+}) {
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [reason, setReason] = useState('')
+
+  const isFlagged = user.bonusEligibility === 'requires_verification'
+
+  const handleFlag = async () => {
+    const trimmed = reason.trim()
+    setIsUpdating(true)
+    try {
+      await api('admin-flag-for-verification', {
+        userId: user.id,
+        flag: true,
+        ...(trimmed ? { reason: trimmed } : {}),
+      })
+      toast.success(
+        'Flagged — user must complete iDenfy to unlock bonus eligibility'
+      )
+      onUpdate({
+        ...user,
+        bonusEligibility: 'requires_verification',
+        verificationFlagReason: trimmed || undefined,
+      })
+      setReason('')
+      // Prior eligibility is snapshotted server-side; clearing the flag will
+      // restore it (see handleClear).
+    } catch (error) {
+      toast.error(
+        'Failed to flag: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleClear = async () => {
+    setIsUpdating(true)
+    try {
+      const res = await api('admin-flag-for-verification', {
+        userId: user.id,
+        flag: false,
+      })
+      toast.success(
+        res.bonusEligibility
+          ? `Cleared flag — restored bonus eligibility to '${res.bonusEligibility}'`
+          : 'Cleared verification flag'
+      )
+      onUpdate({
+        ...user,
+        // Server restores the pre-flag eligibility if one was snapshotted.
+        bonusEligibility: res.bonusEligibility,
+        verificationFlagReason: undefined,
+      })
+      setReason('')
+    } catch (error) {
+      toast.error(
+        'Failed to clear: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
+      <h3 className="font-semibold">Flag for Verification</h3>
+      <p className="text-ink-600 text-sm">
+        Use this for users you want to force through identity verification
+        before bonuses unlock — suspected alts, suspicious signups, manual
+        review. Independent of the prize-eligibility axis.
+      </p>
+
+      {isFlagged ? (
+        <div className="space-y-2">
+          <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <strong>Currently flagged.</strong> User cannot receive bonuses
+            until they complete iDenfy verification.
+            {user.verificationFlagReason && (
+              <div className="mt-1">
+                <strong>Reason:</strong> {user.verificationFlagReason}
+              </div>
+            )}
+          </div>
+          <Button
+            onClick={handleClear}
+            loading={isUpdating}
+            disabled={isUpdating}
+            color="gray-outline"
+            size="sm"
+          >
+            Clear flag
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <label className="text-ink-700 block text-sm font-medium">
+            Reason (optional, shown to other admins):
+          </label>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. suspected alt of @other-user"
+            maxLength={500}
+            className="border-ink-200 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm"
+          />
+          <Button
+            onClick={handleFlag}
+            loading={isUpdating}
+            disabled={isUpdating}
+            color="amber"
+            size="sm"
+          >
+            Flag for Verification
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

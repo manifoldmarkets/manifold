@@ -1,60 +1,72 @@
-import { Contract, CPMMMultiContract } from 'common/contract'
-import { fetchLinkPreviews } from 'common/link-preview'
-import { getContract, getContractFromSlug } from 'common/supabase/contracts'
+import { Contract } from 'common/contract'
+import { getContractFromSlug } from 'common/supabase/contracts'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
   ElectionsPageProps,
   MapContractsDictionary,
-  NH_LINK,
-  presidency2024,
+  MIDTERMS_2026,
+  PRESIDENT_2028_SLUG,
+  PRESIDENT_2028_PARTY_SLUG,
+  PRIMARIES_2026,
+  REDISTRICTING_2026,
   StateElectionMarket,
-  swingStates,
 } from 'web/public/data/elections-data'
-import { governors2024 } from 'web/public/data/governors-data'
-import { senate2024 } from 'web/public/data/senate-state-data'
+import {
+  governors2026,
+  governorCandidates2026,
+} from 'web/public/data/governors-data'
+import {
+  senate2026,
+  senateCandidates2026,
+} from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/api/api'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
-import { getMultiBetPoints } from 'common/contract-params'
-import { PolicyContractType, PolicyData } from 'web/public/data/policy-data'
-import { mapValues } from 'lodash'
-import { getBetPoints } from 'common/bets'
 
-export const ELECTION_PARTY_CONTRACT_SLUG =
-  // 'which-party-will-win-the-2024-us-pr-f4158bf9278a'
-  'will-trump-win-the-2024-election'
-
-export async function getElectionsPageProps() {
+export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
   const adminDb = await initSupabaseAdmin()
   const getContractFromSlugFunction = (slug: string) =>
     getContractFromSlug(adminDb, slug)
 
-  const getCashContract = (contract: Contract | null) => {
-    if (!contract || !contract.siblingContractId) return null
-    return getContract(adminDb, contract.siblingContractId)
-  }
-
   const [
-    presidencyStateContracts,
     senateStateContracts,
     governorStateContracts,
+    senateCandidateContracts,
+    governorCandidateContracts,
     headlines,
+    balanceOfPowerContract,
+    houseControlContract,
+    senateControlContract,
+    houseDistrictsContract,
+    presidency2028Contract,
+    presidency2028PartyContract,
+    primaryContractsRaw,
+    redistrictingContractsRaw,
   ] = await Promise.all([
-    getStateContracts(getContractFromSlugFunction, presidency2024),
-    getStateContracts(getContractFromSlugFunction, senate2024),
-    getStateContracts(getContractFromSlugFunction, governors2024),
+    getStateContracts(getContractFromSlugFunction, senate2026),
+    getStateContracts(getContractFromSlugFunction, governors2026),
+    getStateContracts(getContractFromSlugFunction, senateCandidates2026),
+    getStateContracts(getContractFromSlugFunction, governorCandidates2026),
     api('headlines', { slug: 'politics' }),
+    getContractFromSlugFunction(MIDTERMS_2026.balanceOfPower),
+    getContractFromSlugFunction(MIDTERMS_2026.houseControl),
+    getContractFromSlugFunction(MIDTERMS_2026.senateControl),
+    getContractFromSlugFunction(MIDTERMS_2026.houseDistricts),
+    getContractFromSlugFunction(PRESIDENT_2028_SLUG),
+    getContractFromSlugFunction(PRESIDENT_2028_PARTY_SLUG),
+    Promise.all(PRIMARIES_2026.map(getContractFromSlugFunction)),
+    Promise.all(REDISTRICTING_2026.map(getContractFromSlugFunction)),
   ])
 
-  const presidencySwingCashContracts = await Object.entries(
-    presidencyStateContracts
+  // Keep only primaries that still exist and are open (so the watch-list shrinks
+  // gracefully as races resolve, rather than showing stale/settled markets).
+  const primaryContracts = primaryContractsRaw.filter(
+    (c): c is Contract => !!c && !c.isResolved && !c.resolution
   )
-    .filter(([state]) => swingStates.includes(state))
-    .reduce(async (acc, [state, contract]) => {
-      const cashContract = await getCashContract(contract)
-      return { ...(await acc), [state]: cashContract }
-    }, Promise.resolve({} as MapContractsDictionary))
 
-  const policyContracts = await getPolicyContracts(getContractFromSlugFunction)
+  // Same for redistricting markets — open only, so settled questions drop off.
+  const redistrictingContracts = redistrictingContractsRaw.filter(
+    (c): c is Contract => !!c && !c.isResolved && !c.resolution
+  )
 
   const newsDashboards = await Promise.all(
     headlines.map(async (headline) => getDashboardProps(headline.slug))
@@ -62,86 +74,23 @@ export async function getElectionsPageProps() {
 
   const trendingDashboard = await getDashboardProps('politicsheadline')
 
-  const specialContractSlugs = [
-    ELECTION_PARTY_CONTRACT_SLUG,
-    'who-will-win-the-2024-us-presidenti-8c1c8b2f8964',
-    'who-will-win-the-2024-republican-pr-e1332cf40e59',
-    'who-will-win-the-2024-democratic-pr-47576e90fa38',
-    'who-will-win-the-new-hampshire-repu',
-    'who-will-be-the-republican-nominee-8a36dedc6445',
-    '2024-house-races-which-congressiona',
-    'who-will-be-the-democratic-nominee-9d4a78f63ce1',
-    // 'who-would-win-the-us-presidential-e-e43c62c31980',
-    // 'who-would-win-the-us-presidential-e-2f4e0b318013',
-    'who-would-win-the-presidential-elec',
-  ]
-  const contractsPromises = specialContractSlugs.map(async (slug) =>
-    getContractFromSlugFunction(slug)
-  )
-
-  const [
-    electionPartyContract,
-    electionCandidateContract,
-    republicanCandidateContract,
-    democratCandidateContract,
-    newHampshireContract,
-    republicanVPContract,
-    houseContract,
-    democraticVPContract,
-    democraticElectability,
-    // republicanElectability,
-  ] = await Promise.all(contractsPromises)
-
-  const electionPartyCashContract = await getCashContract(electionPartyContract)
-
-  const linkPreviews = await fetchLinkPreviews([NH_LINK])
-  const afterTime = new Date().getTime() - 7 * 24 * 60 * 60 * 1000
-
-  let partyPoints = null
-  if (
-    electionPartyContract &&
-    electionPartyContract.mechanism == 'cpmm-multi-1'
-  ) {
-    const allBetPoints = await getBetPoints(electionPartyContract.id, {
-      afterTime: afterTime,
-    })
-
-    const serializedMultiPoints = getMultiBetPoints(
-      allBetPoints,
-      electionPartyContract as CPMMMultiContract
-    )
-    partyPoints = mapValues(serializedMultiPoints, (points) =>
-      points.map(([x, y]) => ({ x, y } as const))
-    )
-    // weird hack to get rid of points that I can't figure out how it's getting there
-    Object.values(partyPoints).forEach((points) => {
-      points.shift()
-    })
-  }
-
   return {
-    rawPresidencyStateContracts: presidencyStateContracts,
-    rawPresidencySwingCashContracts: presidencySwingCashContracts,
+    presidency2028Contract,
+    presidency2028PartyContract,
     rawSenateStateContracts: senateStateContracts,
     rawGovernorStateContracts: governorStateContracts,
-    rawPolicyContracts: policyContracts,
-    electionPartyContract,
-    electionPartyCashContract,
-    electionCandidateContract,
-    republicanCandidateContract,
-    democratCandidateContract,
-    newHampshireContract,
-    republicanVPContract,
-    democraticVPContract,
-    democraticElectability,
-    // republicanElectability,
-    linkPreviews,
+    rawSenateCandidateContracts: senateCandidateContracts,
+    rawGovernorCandidateContracts: governorCandidateContracts,
+    balanceOfPowerContract,
+    houseControlContract,
+    senateControlContract,
+    houseDistrictsContract,
+    primaryContracts,
+    redistrictingContracts,
     newsDashboards,
     headlines,
     trendingDashboard,
-    partyGraphData: { partyPoints, afterTime },
-    houseContract,
-  } as ElectionsPageProps
+  }
 }
 
 async function getStateContracts(
@@ -155,26 +104,11 @@ async function getStateContracts(
 
   const mapContractsArray = await Promise.all(mapContractsPromises)
 
-  // Convert array to dictionary
+  // Convert array to dictionary, dropping states whose community market has
+  // gone missing (deleted/renamed). The map renders those states uncolored
+  // rather than crashing on a null contract in useLiveContract.
   return mapContractsArray.reduce((acc, mapContract) => {
-    acc[mapContract.state] = mapContract.contract
+    if (mapContract.contract) acc[mapContract.state] = mapContract.contract
     return acc
   }, {} as MapContractsDictionary)
-}
-
-async function getPolicyContracts(
-  getContract: (slug: string) => Promise<Contract | null>
-): Promise<PolicyContractType[]> {
-  const mapContractsPromises = PolicyData.map(async (m) => {
-    const harrisContract = await getContract(m.harrisSlug)
-    const trumpContract = await getContract(m.trumpSlug)
-
-    return {
-      title: m.title,
-      harrisContract: harrisContract,
-      trumpContract: trumpContract,
-    }
-  })
-
-  return await Promise.all(mapContractsPromises)
 }

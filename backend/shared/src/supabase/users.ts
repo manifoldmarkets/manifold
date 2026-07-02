@@ -121,6 +121,29 @@ export const updateUser = async (
   broadcastUpdatedUser({ id, ...update })
 }
 
+// Record a completed mana purchase on the user row: mark them a purchaser and,
+// if they have no bonusEligibility yet, promote them to 'eligible' (bonuses
+// without prizes). Monotonic — only promotes from an unset state, so it never
+// overrides 'verified'/'grandfathered'/'ineligible'/'requires_verification' and
+// never downgrades anyone. Deliberately leaves prizeEligibility untouched (a
+// purchase never unlocks cash raffles) and never pays the signup/referral lump
+// sum (that stays on the KYC path). Shared by the Stripe and Daimo purchase
+// webhooks so the promotion rule has a single source of truth.
+export const recordManaPurchase = async (
+  tx: SupabaseDirectClient,
+  userId: string
+) => {
+  const row = await tx.oneOrNone<{ bonusEligibility: string | null }>(
+    `select data->>'bonusEligibility' as "bonusEligibility"
+       from users where id = $1`,
+    [userId]
+  )
+  await updateUser(tx, userId, {
+    purchasedMana: true,
+    ...(row?.bonusEligibility ? {} : { bonusEligibility: 'eligible' as const }),
+  })
+}
+
 // private_users has 2 columns that aren't in the data column
 export type UpdateType =
   | Partial<PrivateUser>

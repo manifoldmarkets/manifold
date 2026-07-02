@@ -24,6 +24,9 @@ export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
   if (!referredByUser) {
     throw new APIError(404, `User ${referredByUsername} not found`)
   }
+  if (referredByUser.id === auth.uid) {
+    throw new APIError(400, `Cannot refer yourself`)
+  }
   if (referredByUser.isBannedFromPosting) {
     throw new APIError(
       404,

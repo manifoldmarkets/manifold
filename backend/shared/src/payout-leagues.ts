@@ -2,13 +2,14 @@ import {
   getLeaguePrize,
   league_user_info,
   LeagueChangeNotificationData,
+  SILICON_PRIZE_MIN_MANA_EARNED,
 } from 'common/leagues'
 import { SupabaseTransaction } from './supabase/init'
 import { createLeagueChangedNotifications } from './create-notification'
 import { TxnData, insertTxns } from './txn/run-txn'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertUser } from 'common/supabase/users'
-import { canReceiveBonuses } from 'common/user'
+import { hasFullBonusAccess } from 'common/user'
 
 import { log } from './utils'
 
@@ -52,7 +53,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     prize: number
   }> = []
 
-  // Fetch all users who are prize candidates to check their bonus eligibility
+  // Fetch all users who are prize candidates to check full bonus access
   const prizeUserIds = newRows
     .filter((row) => {
       const prevRow = prevRowsByUserId[row.user_id]
@@ -62,21 +63,29 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     })
     .map((row) => row.user_id)
 
-  // Fetch user data to check bonus eligibility
+  // Fetch user data to check full bonus access
   const usersWithEligibility =
     prizeUserIds.length > 0
-      ? await pg.manyOrNone(
-          `SELECT * FROM users WHERE id = ANY($1)`,
-          [prizeUserIds]
-        )
+      ? await pg.manyOrNone(`SELECT * FROM users WHERE id = ANY($1)`, [
+          prizeUserIds,
+        ])
       : []
 
-  const eligibleUserIds = new Set(
-    usersWithEligibility
+  const siliconUserIds = newRows
+    .filter((row) => {
+      const prevRow = prevRowsByUserId[row.user_id]
+      return prevRow?.division === 0
+    })
+    .map((row) => row.user_id)
+
+  // Silicon (bots) bypasses iDenfy verification — bots can't be KYC'd.
+  const eligibleUserIds = new Set([
+    ...usersWithEligibility
       .map((row) => convertUser(row))
-      .filter((user) => canReceiveBonuses(user))
-      .map((user) => user.id)
-  )
+      .filter((user) => hasFullBonusAccess(user))
+      .map((user) => user.id),
+    ...siliconUserIds,
+  ])
 
   // Check eligibility for users in this chunk
   for (const newRow of newRows) {
@@ -102,6 +111,21 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
       continue
     }
 
+    // Silicon (bots): require minimum mana earned so idle bots can't win by default.
+    if (
+      prevRow.division === 0 &&
+      (prevRow.mana_earned ?? 0) < SILICON_PRIZE_MIN_MANA_EARNED
+    ) {
+      notificationData.push({
+        userId: newRow.user_id,
+        previousLeague: prevRow,
+        newLeague: newRow,
+        bonusAmount: 0,
+        missedPrizeReason: 'silicon_min_mana_not_met',
+      })
+      continue
+    }
+
     // Check if prize already awarded using our Set
     if (alreadyGotPrizeUserIds.has(newRow.user_id)) {
       log(
@@ -110,11 +134,9 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
       continue
     }
 
-    // Only award prize if user can receive bonuses (verified or grandfathered)
+    // Only award league bonus if user has full bonus access
     if (!eligibleUserIds.has(newRow.user_id)) {
-      log(
-        `User ${newRow.user_id} not eligible for league prize - not verified`
-      )
+      log(`User ${newRow.user_id} not eligible for league prize - not verified`)
       notificationData.push({
         userId: newRow.user_id,
         previousLeague: prevRow,

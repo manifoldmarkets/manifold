@@ -7,11 +7,13 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
+  GiftIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
 import {
+  GiftIcon as GiftIconSolid,
   MenuAlt3Icon,
   QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
   // SearchIcon as SearchIconSolid,
@@ -26,12 +28,14 @@ import { Fragment, useState } from 'react'
 import { FaSearch as SearchIconSolid } from 'react-icons/fa'
 import { IoCompass, IoCompassOutline } from 'react-icons/io5'
 import { NotificationsIcon } from 'web/components/notifications-icon'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import {
   mergeEntitlements,
   useOptimisticEntitlements,
 } from 'web/hooks/use-optimistic-entitlements'
 import { useUser } from 'web/hooks/use-user'
+import { getTotalPrizePool, SweepstakesPrize } from 'common/sweepstakes'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
@@ -87,7 +91,20 @@ function getNavigation(user: User) {
   ]
 }
 
-const signedOutNavigation = () => [
+function formatPrizePoolLabel(
+  prizes: SweepstakesPrize[] | undefined
+): string | undefined {
+  if (!prizes) return undefined
+  const total = getTotalPrizePool(prizes)
+  if (!Number.isFinite(total) || total <= 0) return undefined
+  if (total < 1000) return `$${total}`
+  const thousands = total / 1000
+  return `$${thousands.toLocaleString(undefined, {
+    maximumFractionDigits: 1,
+  })}k`
+}
+
+const signedOutNavigation = (prizePoolLabel: string | undefined) => [
   {
     name: 'Browse',
     href: '/browse',
@@ -96,14 +113,20 @@ const signedOutNavigation = () => [
     alwaysShowName: true,
   },
   {
+    name: 'Prize',
+    subLabel: prizePoolLabel,
+    href: '/prize',
+    icon: GiftIcon,
+    solidIcon: GiftIconSolid,
+    itemClassName: '!px-1',
+  },
+  {
     name: 'Explore',
     href: '/explore',
     icon: IoCompassOutline,
     solidIcon: IoCompass,
     iconClassName: exploreIconClassName,
-    // prefetch: false, // should we not prefetch this?
   },
-  // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
   {
     name: 'About',
     href: '/about',
@@ -126,12 +149,21 @@ export function BottomNavBar() {
 
   const user = useUser()
 
+  const { data: sweepstakesData } = useAPIGetter('get-sweepstakes', {})
+  const prizeCloseTime = sweepstakesData?.sweepstakes?.closeTime
+  const prizePoolLabel =
+    prizeCloseTime && prizeCloseTime > Date.now()
+      ? formatPrizePoolLabel(sweepstakesData?.sweepstakes?.prizes)
+      : undefined
+
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
   }
 
-  const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
+  const navigationOptions = user
+    ? getNavigation(user)
+    : signedOutNavigation(prizePoolLabel)
 
   return (
     <nav
@@ -253,7 +285,12 @@ function NavBarItem(props: {
     return (
       <button
         type="button"
-        className={clsx(itemClass, touched && touchItemClass, className)}
+        className={clsx(
+          itemClass,
+          touched && touchItemClass,
+          className,
+          item.itemClassName
+        )}
         onClick={() => {
           track()
           item.onClick?.()
@@ -265,7 +302,7 @@ function NavBarItem(props: {
           <item.icon className={clsx(iconClassName, item.iconClassName)} />
         )}
         {children}
-        {item.name}
+        <NavItemLabel name={item.name} subLabel={item.subLabel} />
       </button>
     )
   }
@@ -286,7 +323,8 @@ function NavBarItem(props: {
         itemClass,
         touched && touchItemClass,
         isCurrentPage && selectedItemClass,
-        className
+        className,
+        item.itemClassName
       )}
       onClick={track}
       onTouchStart={() => setTouched(true)}
@@ -296,8 +334,20 @@ function NavBarItem(props: {
         <IconComponent className={clsx(iconClassName, item.iconClassName)} />
       )}
       {children}
-      {item.name}
+      <NavItemLabel name={item.name} subLabel={item.subLabel} />
     </Link>
+  )
+}
+
+function NavItemLabel(props: { name: string; subLabel?: string }) {
+  const { name, subLabel } = props
+  return (
+    <span className="whitespace-nowrap">
+      {name}
+      {subLabel && (
+        <span className="hidden min-[360px]:inline">&nbsp;{subLabel}</span>
+      )}
+    </span>
   )
 }
 

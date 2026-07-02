@@ -1,4 +1,5 @@
 import { APIHandler } from 'api/helpers/endpoint'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { convertPost, TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -12,6 +13,12 @@ import {
   select,
   where,
 } from 'shared/supabase/sql-builder'
+
+// Boost added to importance_score for admin-authored posts on the Best tab.
+// importance_score is clamped to [0, 1], so this gives admins meaningful
+// precedence without strictly dominating high-engagement community posts.
+const ADMIN_IMPORTANCE_BOOST = 0.2
+
 export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
   const {
     sortBy = 'created_time',
@@ -23,6 +30,13 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
   } = props
   const requester = auth?.uid
   const pg = createSupabaseDirectClient()
+
+  const orderByClause =
+    sortBy === 'new-comments'
+      ? 'last_comment_time DESC NULLS LAST'
+      : sortBy === 'importance_score'
+      ? `op.importance_score + (case when op.creator_id in ($1:list) then ${ADMIN_IMPORTANCE_BOOST} else 0 end) DESC`
+      : `op.${sortBy} DESC`
 
   const sqlParts = buildArray(
     select(
@@ -42,9 +56,8 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
       ),
     groupBy('op.id'),
     orderBy(
-      sortBy === 'new-comments'
-        ? 'last_comment_time DESC NULLS LAST'
-        : `op.${sortBy} DESC`
+      orderByClause,
+      sortBy === 'importance_score' ? [ENV_CONFIG.adminIds] : undefined
     ),
     limitSql(limit, offset)
   )

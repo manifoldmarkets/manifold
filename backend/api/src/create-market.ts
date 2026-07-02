@@ -3,7 +3,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { canReceiveBonuses } from 'common/user'
+import { hasAccountTrustSignal } from 'common/user'
 import {
   createBinarySchema,
   createBountySchema,
@@ -61,10 +61,10 @@ import {
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
 import {
-  htmlToRichText,
-  isProd,
-  log,
-} from 'shared/utils'
+  AUTO_TAG_API_MARKET_CREATIONS,
+  getNicheTopicMatchesForContract,
+} from 'shared/helpers/topic-matching'
+import { htmlToRichText, isProd, log } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
@@ -112,10 +112,43 @@ export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
           market.answers.forEach(broadcastNewAnswer)
         }
         await onCreateMarket(market, embedding)
+        await maybeAutoTagApiMarket(pg, market, groupIds)
       },
     }
   }
 )
+
+// API counterpart to the web UI's getSimilarGroupsToContract suggester,
+// for markets created without groupIds. Off by default — see flag.
+async function maybeAutoTagApiMarket(
+  pg: SupabaseDirectClient,
+  market: Contract,
+  groupIdsProvided: string[] | null | undefined
+) {
+  if (!AUTO_TAG_API_MARKET_CREATIONS) return
+  if (groupIdsProvided && groupIdsProvided.length > 0) return
+  if (market.visibility !== 'public') return
+  if (market.outcomeType === 'STONK' || market.outcomeType === 'POLL') return
+
+  try {
+    const matches = await getNicheTopicMatchesForContract(pg, market.id)
+    for (const match of matches) {
+      await addGroupToContract(pg, market, {
+        id: match.id,
+        slug: match.slug,
+      })
+    }
+    if (matches.length > 0) {
+      log(
+        `Auto-tagged API market ${market.id} with: ${matches
+          .map((m) => m.slug)
+          .join(', ')}`
+      )
+    }
+  } catch (err) {
+    log.error('Auto-tag failed for market ' + market.id, { err })
+  }
+}
 
 export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const {
@@ -207,8 +240,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       const user = first(userAndSlugResult[0].map(convertUser))
       if (!user) throw new APIError(401, 'Your account was not found')
 
-      // Prevent bonus-ineligible users from creating unlisted markets
-      if (visibility === 'unlisted' && !canReceiveBonuses(user)) {
+      // Creating unlisted markets is a trust/anti-spam gate, not a bonus gate.
+      if (visibility === 'unlisted' && !hasAccountTrustSignal(user)) {
         throw new APIError(
           403,
           'Please verify your identity to create unlisted markets.'
@@ -294,7 +327,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
           : 'select 1 where false'
       const contractQuery = pgp.as.format(
-        `insert into contracts 
+        `insert into contracts
         (id, data, ${nativeColumns.join(',')})
          values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`)});`,
         [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
@@ -533,11 +566,8 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'POLL') {
-    ;({ answers, voterVisibility, pollType, maxSelections } = validateMarketType(
-      outcomeType,
-      createPollSchema,
-      body
-    ))
+    ;({ answers, voterVisibility, pollType, maxSelections } =
+      validateMarketType(outcomeType, createPollSchema, body))
     // Validate maxSelections
     if (
       maxSelections !== undefined &&

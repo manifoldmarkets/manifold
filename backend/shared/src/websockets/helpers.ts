@@ -15,7 +15,15 @@ export function broadcastUpdatedPrivateUser(userId: string) {
 }
 
 export function broadcastUpdatedUser(user: Partial<User> & { id: string }) {
-  broadcast(`user/${user.id}`, { user })
+  // Never broadcast admin-only verification fields: the user's own browser
+  // subscribes to user/{id}. Strip them before they go over the wire (they're
+  // also stripped from the public REST response).
+  const {
+    verificationFlagReason: _adminOnlyReason,
+    previousBonusEligibility: _adminOnlyPreviousEligibility,
+    ...safe
+  } = user
+  broadcast(`user/${user.id}`, { user: safe })
 }
 
 export function broadcastNewBets(
@@ -112,6 +120,22 @@ export function broadcastUpdatedContract(
     topics.push('global', 'global/updated-contract')
   }
   broadcastMulti(topics, payload)
+}
+
+// Live sports score for a market, pushed by the sports-live poller. Its own
+// topic (the score fields live in contract.data, not on Contract) so only the
+// sports dashboard subscribes and the generic contract/global topics stay quiet.
+export function broadcastSportsLiveScore(
+  contractId: string,
+  score: {
+    sportsHomeScore: number | null
+    sportsAwayScore: number | null
+    sportsLiveStatus: string
+    sportsLiveMinute: string | null
+    sportsLiveUpdatedTime: number
+  }
+) {
+  broadcast(`contract/${contractId}/sports-live`, score)
 }
 
 export function broadcastNewAnswer(answer: Answer) {

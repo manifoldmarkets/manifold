@@ -71,6 +71,12 @@ const App = () => {
   // This tracks if the app has its nativeMessageListener set up
   // NOTE: After the webview is killed on android due to OOM, this will always be false, see: https://github.com/react-native-webview/react-native-webview/issues/2680
   const listeningToNative = useRef(false)
+  // Stores a notification that arrived before the webview was ready (cold start).
+  // Delivered once the web app signals 'startedListening'.
+  const pendingNotification = useRef<{
+    notification: Notification
+    destination: string
+  } | null>(null)
   const [baseUri, setBaseUri] = useState(BASE_URI)
 
   // Auth
@@ -169,15 +175,21 @@ const App = () => {
       return
     }
 
-    // If the webview is already loaded and listening, forward the message so
-    // the web client can mark the notification as seen, etc.
     if (hasLoadedWebView && listeningToNative.current) {
+      // Webview is ready — deliver immediately via message bridge
       communicateWithWebview('notification', notification)
+      setEndpointWithNativeQuery(destination)
+    } else if (Platform.OS === 'android') {
+      // Android cold start: WebView ignores rapid source prop changes during
+      // initial mount, so the destination URL gets silently dropped. Queue and
+      // deliver via message bridge once the web app signals 'startedListening'.
+      log('Queuing notification for delivery after webview is ready')
+      pendingNotification.current = { notification, destination }
+    } else {
+      // iOS cold start: source prop changes are honored during mount, so the
+      // original behavior works without the handshake delay.
+      setEndpointWithNativeQuery(destination)
     }
-
-    // Always set the URL so that, even if the message is missed, the webview
-    // navigates to the correct page when it becomes active.
-    setEndpointWithNativeQuery(destination)
   }
 
   useEffect(() => {
@@ -390,6 +402,14 @@ const App = () => {
       log('Client started listening')
       listeningToNative.current = true
       if (fbUser) sendWebviewAuthInfo(fbUser)
+      // Deliver any notification that arrived during cold start
+      if (pendingNotification.current) {
+        const { notification, destination } = pendingNotification.current
+        pendingNotification.current = null
+        log('Delivering pending cold-start notification:', notification.reason)
+        communicateWithWebview('notification', notification)
+        setEndpointWithNativeQuery(destination)
+      }
     } else if (type === 'locationPermissionStatusRequested') {
       log('Location permission status requested from web')
       const status = await checkLocationPermission()
@@ -405,7 +425,12 @@ const App = () => {
       log('Has review action requested from web')
       const isAvailable = await StoreReview.isAvailableAsync()
       const hasAction = await StoreReview.hasAction()
-      communicateWithWebview('hasReviewAction', { hasAction, isAvailable })
+      const reason = payload?.reason
+      communicateWithWebview('hasReviewAction', {
+        hasAction,
+        isAvailable,
+        reason,
+      })
     } else if (type === 'versionRequested') {
       log('Version requested from web')
       const version = Constants.expoConfig?.version

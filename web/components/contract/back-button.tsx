@@ -2,10 +2,10 @@ import { ArrowLeftIcon } from '@heroicons/react/solid'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
-import { Button } from 'web/components/buttons/button'
+import { Button, SizeType } from 'web/components/buttons/button'
 
-export function BackButton(props: { className?: string }) {
-  const { className } = props
+export function BackButton(props: { className?: string; size?: SizeType }) {
+  const { className, size } = props
   const router = useRouter()
   const [canGoBack, setCanGoBack] = useState(false)
 
@@ -21,6 +21,7 @@ export function BackButton(props: { className?: string }) {
       className={clsx('rounded', className)}
       onClick={router.back}
       color={'gray-white'}
+      size={size}
     >
       <ArrowLeftIcon className="h-5 w-5" aria-hidden />
       <div className="sr-only">Back</div>

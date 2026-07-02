@@ -1,6 +1,6 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { canReceiveBonuses, PrivateUser, User } from 'common/user'
+import { hasFullBonusAccess, PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -97,7 +97,7 @@ export function PushNotificationsModal(props: {
     }
   }, [open])
 
-  const bonusEligible = canReceiveBonuses(user) && !privateUser.pushToken
+  const bonusEligible = hasFullBonusAccess(user) && !privateUser.pushToken
 
   return (
     <Modal open={open} setOpen={setOpen}>

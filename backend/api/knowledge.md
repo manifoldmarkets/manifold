@@ -342,7 +342,7 @@ When a mod clears a user's alert, it goes through the ban-user endpoint with `ba
 - `common/src/user.ts` - `BanType` and `UserBan` type definitions
 - `backend/api/src/helpers/rate-limit.ts` - `getActiveUserBans()`, `onlyUsersWhoCanPerformAction()`
 - `backend/api/src/ban-user.ts` - Admin endpoint to ban/unban users and send mod alerts
-- `backend/api/src/get-user-bans.ts` - Endpoint to fetch user bans (users can fetch their own, mods can fetch anyone's)
+- `backend/api/src/get-user-bans.ts` - Endpoint to fetch user bans (mods get full data; self gets bans with mod identity hidden; public viewers get sanitized blocking bans — no reason, no mod identity, modAlerts omitted — so the Restricted badge can render)
 - `backend/api/src/dismiss-mod-alert.ts` - User endpoint to dismiss their own mod alert
 - `backend/scheduler/src/jobs/unban-users.ts` - Scheduled job to expire temporary bans
 - `web/components/moderation/ban-banner.tsx` - User-facing banner showing bans and mod alerts

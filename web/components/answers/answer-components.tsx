@@ -256,7 +256,16 @@ const YesNoBetButtons = (props: {
   feedReason?: string
 }) => {
   const { answer, contract, feedReason, fillColor } = props
+  const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+
+  if (isCreatorBanned) {
+    return null
+  }
 
   return (
     <>
@@ -561,7 +570,9 @@ export function AnswerPosition(props: {
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
   const isCashContract = contract.token === 'CASH'
-  const canSell = tradingAllowed(contract, answer)
+  const canSell =
+    tradingAllowed(contract, answer) &&
+    !(contract.creatorBannedFromBetting && user.id === contract.creatorId)
   const won =
     (position > 1e-7 && answer.resolution === 'YES') ||
     (position < -1e-7 && answer.resolution === 'NO')

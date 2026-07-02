@@ -11,10 +11,10 @@ import {
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { ReactNode, useState } from 'react'
-import { DAY_MS } from 'common/util/time'
+import { ReactNode, useEffect, useState } from 'react'
 import {
   AnyBalanceChangeType,
+  BALANCE_CHANGE_TYPE_LABELS,
   BetBalanceChange,
   isBetChange,
   isTxnChange,
@@ -30,6 +30,7 @@ import {
 import { contractPathWithoutContract } from 'common/contract'
 import { linkClass } from 'web/components/widgets/site-link'
 import { ScaleIcon } from '@heroicons/react/outline'
+import { CalendarIcon } from '@heroicons/react/solid'
 import { Input } from 'web/components/widgets/input'
 import { customFormatTime, formatJustDateShort } from 'client-common/lib/time'
 import { assertUnreachable } from 'common/util/types'
@@ -39,29 +40,85 @@ import { Button } from 'web/components/buttons/button'
 import { Modal } from '../layout/modal'
 import { QuestType } from 'common/quest'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
-import { CalendarIcon } from '@heroicons/react/solid'
 import DropdownMenu from '../widgets/dropdown-menu'
+import { PaginationNextPrev } from '../widgets/pagination'
+import { SelectDropdown } from '../widgets/select-dropdown'
+
+const BALANCE_CHANGES_PER_PAGE = 50
+
+const CHANGE_TYPE_OPTIONS = [
+  { value: 'all', label: 'All types' },
+  ...Object.entries(BALANCE_CHANGE_TYPE_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  })),
+]
 
 export const BalanceChangeTable = (props: { user: User }) => {
   const { user } = props
 
-  const fourteenDaysAgo = dayjs().startOf('day').subtract(14, 'day').valueOf()
+  const [page, setPage] = useState(0)
   const [before, setBefore] = useState<number | undefined>(undefined)
-  const [after, setAfter] = useState(fourteenDaysAgo)
+  const [after, setAfter] = useState<number | undefined>(undefined)
   const [showDateFilters, setShowDateFilters] = useState(false)
-
-  const { data: allBalanceChanges } = useAPIGetter('get-balance-changes', {
-    userId: user.id,
-    before,
-    after,
-  })
+  const [changeType, setChangeType] = useState<string>('all')
 
   const [query, setQuery] = useState('')
+
+  // When a text query is active, fetch all results (no pagination) so the
+  // client-side filter sees everything, not just the current page.
+  const isSearching = query.trim().length > 0
+  const pageOffset = isSearching ? 0 : page * BALANCE_CHANGES_PER_PAGE
+  const pageLimit = isSearching ? 1000 : BALANCE_CHANGES_PER_PAGE + 1
+  const changeTypeParam = changeType === 'all' ? undefined : changeType
+
+  const { data: allBalanceChanges, loading } = useAPIGetter(
+    'get-balance-changes',
+    {
+      userId: user.id,
+      before,
+      after,
+      limit: pageLimit,
+      offset: pageOffset,
+      changeType: changeTypeParam,
+    },
+    undefined,
+    `balance-changes-${user.id}-${pageOffset}-${pageLimit}-${
+      before ?? 'none'
+    }-${after ?? 'none'}-${changeType}`
+  )
+  const { data: previousBalanceChangesData } = useAPIGetter(
+    'get-balance-changes',
+    page === 0 || isSearching
+      ? undefined
+      : {
+          userId: user.id,
+          before,
+          after,
+          limit: pageOffset,
+          changeType: changeTypeParam,
+        },
+    undefined,
+    `balance-changes-${user.id}-previous-${pageOffset}-${before ?? 'none'}-${
+      after ?? 'none'
+    }-${changeType}`,
+    page > 0 && !isSearching
+  )
+
+  useEffect(() => {
+    setPage(0)
+  }, [query, before, after, changeType])
   const { data: cashouts } = useAPIGetter('get-cashouts', {
     userId: user.id,
   })
   const [showCashoutModal, setShowCashoutModal] = useState(false)
-  const balanceChanges = (allBalanceChanges ?? []).filter((change) => {
+  const previousBalanceChanges = previousBalanceChangesData ?? []
+  const currentPageBalanceChanges = isSearching
+    ? allBalanceChanges ?? []
+    : (allBalanceChanges ?? []).slice(0, BALANCE_CHANGES_PER_PAGE)
+  const hasNextPage =
+    !isSearching && (allBalanceChanges?.length ?? 0) > BALANCE_CHANGES_PER_PAGE
+  const balanceChanges = currentPageBalanceChanges.filter((change) => {
     const { type } = change
     const contractQuestion =
       ('contract' in change && change.contract?.question) || ''
@@ -89,12 +146,12 @@ export const BalanceChangeTable = (props: { user: User }) => {
     cashouts?.filter((c) => c.txn.gidxStatus === 'Pending')?.length ?? 0
 
   const hasCashouts = cashouts && cashouts.length > 0
-
-  const relativeDateText = before
-    ? `${formatJustDateShort(after)} - ${formatJustDateShort(before)}`
-    : after === fourteenDaysAgo
-    ? 'Last 14 days'
-    : `Since ${formatJustDateShort(after)}`
+  const dateFilterText =
+    after || before
+      ? `${after ? formatJustDateShort(after) : 'Any date'} – ${
+          before ? formatJustDateShort(before) : 'Today'
+        }`
+      : 'Any date'
 
   return (
     <Col className={'w-full justify-center gap-4 py-1'}>
@@ -107,54 +164,84 @@ export const BalanceChangeTable = (props: { user: User }) => {
       />
 
       <Row className="flex-wrap items-center justify-between gap-2">
-        {showDateFilters ? (
-          <Row className="items-center gap-2">
-            <Input
-              type="date"
-              className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
-              value={dayjs(after).format('YYYY-MM-DD')}
-              max={before ? dayjs(before).format('YYYY-MM-DD') : undefined}
-              onChange={(e) =>
-                setAfter(dayjs(e.target.value).startOf('day').valueOf())
-              }
-            />
-            <span className="text-ink-700 text-sm">to</span>
-            <Input
-              type="date"
-              className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
-              value={before ? dayjs(before).format('YYYY-MM-DD') : ''}
-              min={dayjs(after).format('YYYY-MM-DD')}
-              onChange={(e) =>
-                setBefore(
-                  e.target.value
-                    ? dayjs(e.target.value).endOf('day').valueOf()
-                    : undefined
-                )
-              }
-            />
-            <Button
-              color="gray-outline"
-              className="whitespace-nowrap"
-              size="xs"
-              onClick={() => setShowDateFilters(false)}
-            >
-              Hide dates
-            </Button>
-          </Row>
-        ) : (
-          <Row className="items-center gap-2">
-            <span className="text-ink-700 text-sm">{relativeDateText}</span>
-            <Button
-              color="gray-outline"
-              size="xs"
-              className="whitespace-nowrap"
-              onClick={() => setShowDateFilters(true)}
-            >
-              <CalendarIcon className="mr-1 h-4 w-4" />
-              Filter dates
-            </Button>
-          </Row>
-        )}
+        <Row className="flex-wrap items-center gap-2">
+          {showDateFilters ? (
+            <Row className="flex-wrap items-center gap-2">
+              <Row className="flex-nowrap items-center gap-2">
+                <Input
+                  type="date"
+                  className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+                  value={after ? dayjs(after).format('YYYY-MM-DD') : ''}
+                  max={before ? dayjs(before).format('YYYY-MM-DD') : undefined}
+                  onChange={(e) =>
+                    setAfter(
+                      e.target.value
+                        ? dayjs(e.target.value).startOf('day').valueOf()
+                        : undefined
+                    )
+                  }
+                />
+                <span className="text-ink-700 whitespace-nowrap text-sm">
+                  to
+                </span>
+                <Input
+                  type="date"
+                  className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+                  value={before ? dayjs(before).format('YYYY-MM-DD') : ''}
+                  min={after ? dayjs(after).format('YYYY-MM-DD') : undefined}
+                  onChange={(e) =>
+                    setBefore(
+                      e.target.value
+                        ? dayjs(e.target.value).endOf('day').valueOf()
+                        : undefined
+                    )
+                  }
+                />
+              </Row>
+              <Row className="flex-nowrap items-center gap-2">
+                <Button
+                  color="gray-outline"
+                  className="whitespace-nowrap"
+                  size="xs"
+                  onClick={() => {
+                    setAfter(undefined)
+                    setBefore(undefined)
+                  }}
+                >
+                  Clear dates
+                </Button>
+                <Button
+                  color="gray-outline"
+                  className="whitespace-nowrap"
+                  size="xs"
+                  onClick={() => setShowDateFilters(false)}
+                >
+                  Hide dates
+                </Button>
+              </Row>
+            </Row>
+          ) : (
+            <Row className="items-center gap-2">
+              <span className="text-ink-700 text-sm">{dateFilterText}</span>
+              <Button
+                color="gray-outline"
+                size="xs"
+                className="whitespace-nowrap"
+                onClick={() => setShowDateFilters(true)}
+              >
+                <CalendarIcon className="mr-1 h-4 w-4" />
+                Filter dates
+              </Button>
+            </Row>
+          )}
+          <SelectDropdown
+            value={changeType}
+            options={CHANGE_TYPE_OPTIONS}
+            onChange={setChangeType}
+            buttonClassName="!h-8 !py-1 !text-sm whitespace-nowrap"
+            aria-label="Filter by change type"
+          />
+        </Row>
         {hasCashouts && (
           <DropdownMenu
             items={[
@@ -170,59 +257,36 @@ export const BalanceChangeTable = (props: { user: User }) => {
           />
         )}
       </Row>
-      {!!before && before < Date.now() && (
-        <Row className="text-ink-400 mt-4 items-center justify-center gap-6">
-          <div className="border-ink-400 grow border" />
-          <span>Cutoff: {formatJustDateShort(before)}</span>
-          <span className="flex gap-2">
-            <button
-              className="text-primary-500 hover:underline"
-              onClick={() => setBefore(before + 7 * DAY_MS)}
-            >
-              Load 1W
-            </button>
-            <button
-              className="text-primary-500 hover:underline"
-              onClick={() => setBefore(undefined)}
-            >
-              Clear
-            </button>
-          </span>
-          <div className="border-ink-400 grow border" />
-        </Row>
-      )}
+
+      <span className="text-ink-700 text-sm">
+        {balanceChanges.length > 0
+          ? isSearching
+            ? `Showing ${balanceChanges.length} result${
+                balanceChanges.length === 1 ? '' : 's'
+              }`
+            : `Showing ${page * BALANCE_CHANGES_PER_PAGE + 1}–${
+                page * BALANCE_CHANGES_PER_PAGE + balanceChanges.length
+              }`
+          : loading
+          ? 'Loading balance changes…'
+          : 'No balance changes found'}
+      </span>
 
       <RenderBalanceChanges
         avatarSize={'md'}
         balanceChanges={balanceChanges}
+        previousBalanceChanges={previousBalanceChanges}
         user={user}
-        hideBalance={!!query}
+        hideBalance={!!query || changeType !== 'all'}
       />
-      <Row className="text-ink-400 mt-4 items-center justify-center gap-6">
-        <div className="border-ink-400 grow border" />
-        <span>Cutoff: {formatJustDateShort(after)}</span>
-        <span className="flex gap-2">
-          <button
-            className="text-primary-500 hover:underline"
-            onClick={() => setAfter(after - 7 * DAY_MS)}
-          >
-            Load 1W
-          </button>
-          <button
-            className="text-primary-500 hover:underline"
-            onClick={() => setAfter(after - 30 * DAY_MS)}
-          >
-            1M
-          </button>
-          <button
-            className="text-primary-500 hover:underline"
-            onClick={() => setAfter(after - 365 * DAY_MS)}
-          >
-            1Y
-          </button>
-        </span>
-        <div className="border-ink-400 grow border" />
-      </Row>
+      <PaginationNextPrev
+        isStart={page === 0}
+        isEnd={!hasNextPage}
+        isLoading={loading}
+        isComplete={!hasNextPage}
+        getPrev={() => setPage(page - 1)}
+        getNext={() => setPage(page + 1)}
+      />
 
       <Modal open={showCashoutModal} setOpen={setShowCashoutModal}>
         <Col className={'bg-canvas-0 gap-4 rounded-md p-4'}>
@@ -256,14 +320,35 @@ export const BalanceChangeTable = (props: { user: User }) => {
 
 function RenderBalanceChanges(props: {
   balanceChanges: AnyBalanceChangeType[]
+  previousBalanceChanges?: AnyBalanceChangeType[]
   user: User
   avatarSize: 'sm' | 'md'
   hideBalance?: boolean
 }) {
-  const { balanceChanges, user, avatarSize, hideBalance } = props
+  const {
+    balanceChanges,
+    previousBalanceChanges = [],
+    user,
+    avatarSize,
+    hideBalance,
+  } = props
   let currManaBalance = user.balance
   let currCashBalance = user.cashBalance
   let currSpiceBalance = user.spiceBalance
+
+  for (const change of previousBalanceChanges) {
+    if (isTxnChange(change) && change.token === 'SPICE') {
+      currSpiceBalance -= change.amount
+    } else if (
+      isTxnChange(change)
+        ? change.token === 'CASH'
+        : change.contract.token === 'CASH'
+    ) {
+      currCashBalance -= change.amount
+    } else {
+      currManaBalance -= change.amount
+    }
+  }
   const balanceRunningTotals = [
     { mana: currManaBalance, cash: currCashBalance, spice: currSpiceBalance },
     ...balanceChanges.map((change) => {

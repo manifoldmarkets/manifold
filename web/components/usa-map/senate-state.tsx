@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import {
   ChooseStateButton,
@@ -11,7 +12,11 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { StateProps } from './presidential-state'
-import { currentSenate, senate2024 } from 'web/public/data/senate-state-data'
+import {
+  currentSenate2026,
+  senate2026,
+  senateHeldSeats2026,
+} from 'web/public/data/senate-state-data'
 
 export function SenateState(props: StateProps) {
   const {
@@ -32,7 +37,7 @@ export function SenateState(props: StateProps) {
         state={stateKey}
         fill={probToColor(
           stateContract,
-          senate2024.filter((s) => s.state === stateKey)[0]
+          senate2026.filter((s) => s.state === stateKey)[0]
         )}
         onClickState={() => {
           handleClick(stateKey)
@@ -71,8 +76,10 @@ export function SenateState(props: StateProps) {
 }
 
 function getSenateFill(stateKey: string) {
-  // Find the state in the currentSenate array
-  const statesSenate = currentSenate.find((state) => state.state === stateKey)
+  // Find the state in the currentSenate2026 (not-up-this-cycle) array
+  const statesSenate = currentSenate2026.find(
+    (state) => state.state === stateKey
+  )
 
   if (!statesSenate) return undefined // State not found
 
@@ -108,17 +115,40 @@ export function SenateCurrentOrContract(props: {
     )
   }
 
+  const state = hoveredState ?? targetState
+  const held = state ? senateHeldSeats2026[state] : undefined
+
   return (
-    <StateContractCard
-      contract={targetContract}
-      customTitle={
-        extractStateFromSenateContract(targetContract.question) ??
-        targetContract.question
-      }
-      titleSize="lg"
-      targetState={targetState}
-      setTargetState={setTargetState}
-    />
+    <Col className="gap-1">
+      <StateContractCard
+        contract={targetContract}
+        customTitle={
+          extractStateFromSenateContract(targetContract.question) ??
+          targetContract.question
+        }
+        titleSize="lg"
+        targetState={targetState}
+        setTargetState={setTargetState}
+      />
+      {held && (
+        <Row className="text-ink-500 items-center gap-1 px-1 text-xs">
+          State's other seat:
+          <span
+            className={clsx(
+              'font-semibold',
+              held.party === 'Republican'
+                ? 'text-sienna-700'
+                : held.party === 'Democrat'
+                ? 'text-azure-700'
+                : 'text-ink-700'
+            )}
+          >
+            {held.name} ({held.party[0]})
+          </span>
+          — not on the 2026 ballot
+        </Row>
+      )}
+    </Col>
   )
 }
 
@@ -131,7 +161,7 @@ export function SenateCurrentCard(props: {
     return <EmptyStateContract />
   }
   const stateName = DATA[state].name
-  const currentSenators = currentSenate.find((s) => s.state === state)
+  const currentSenators = currentSenate2026.find((s) => s.state === state)
   const { name1, party1, name2, party2 } = currentSenators ?? {
     name1: '',
     party1: '',
@@ -145,7 +175,7 @@ export function SenateCurrentCard(props: {
         <div className=" font-semibold sm:text-lg">{stateName}</div>
         <ChooseStateButton setTargetState={setTargetState} />
       </Row>
-      <div className="text-ink-700 text-sm">No senate election in 2024</div>
+      <div className="text-ink-700 text-sm">No senate election in 2026</div>
       <Spacer h={4} />
       <Col>
         <div className="text-ink-500 text-sm">Current Senators</div>
@@ -171,10 +201,13 @@ export function SenateCurrentCard(props: {
 export function extractStateFromSenateContract(
   sentence: string
 ): string | undefined {
-  // Adjusted regex to capture additional info in parentheses more flexibly
-  const regex = /race in (.+?) in 2024(?: \((.+?)\))?/
-  const match = sentence.match(regex)
-
-  // If a match is found and has additional details, concatenate them; otherwise, return just the state
-  return match ? (match[2] ? `${match[1]} (${match[2]})` : match[1]) : undefined
+  // Community markets phrase Senate questions inconsistently ("... Senate
+  // Election in Ohio?", "... 2026 Texas Senate race?"). Rather than match a
+  // fixed template, find whichever US state name the question mentions and
+  // present a clean "<State> Senate" title. Longest name first so "West
+  // Virginia" wins over "Virginia".
+  const match = Object.values(DATA)
+    .sort((a, b) => b.name.length - a.name.length)
+    .find((s) => new RegExp(`\\b${s.name}\\b`, 'i').test(sentence))
+  return match ? `${match.name} Senate` : undefined
 }

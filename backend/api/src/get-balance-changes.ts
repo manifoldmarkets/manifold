@@ -2,7 +2,11 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { orderBy } from 'lodash'
-import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
+import {
+  BetBalanceChange,
+  TxnBalanceChange,
+  BET_BALANCE_CHANGE_TYPES,
+} from 'common/balance-change'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
@@ -14,25 +18,45 @@ import { getContractsDirect } from 'shared/supabase/contracts'
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
-  const { userId, before, after } = props
+  const { userId, before, after, limit, offset, changeType } = props
+
+  const isBetType =
+    changeType !== undefined &&
+    (BET_BALANCE_CHANGE_TYPES as readonly string[]).includes(changeType)
+  const fetchBets = !changeType || isBetType
+  const fetchTxns = !changeType || !isBetType
+  const fetchLiquidity = !changeType || changeType === 'ADD_SUBSIDY'
+
   const [betBalanceChanges, txnBalanceChanges, liquidityChanges] =
     await Promise.all([
-      getBetBalanceChanges(before, after, userId),
-      getTxnBalanceChanges(before, after, userId),
-      getLiquidityBalanceChanges(before, after, userId),
+      fetchBets ? getBetBalanceChanges(before, after, userId) : [],
+      fetchTxns
+        ? getTxnBalanceChanges(
+            before,
+            after,
+            userId,
+            !isBetType ? changeType : undefined
+          )
+        : [],
+      fetchLiquidity ? getLiquidityBalanceChanges(before, after, userId) : [],
     ])
-  const allChanges = orderBy(
+
+  let allChanges = orderBy(
     [...betBalanceChanges, ...txnBalanceChanges, ...liquidityChanges],
     (change) => change.createdTime,
     'desc'
   )
-  return allChanges
+  if (changeType) {
+    allChanges = allChanges.filter((c) => c.type === changeType)
+  }
+  return allChanges.slice(offset, offset + limit)
 }
 
 const getTxnBalanceChanges = async (
   before: number | undefined,
   after: number,
-  userId: string
+  userId: string,
+  categoryFilter?: string
 ) => {
   const pg = createSupabaseDirectClient()
   const balanceChanges = [] as TxnBalanceChange[]
@@ -44,8 +68,11 @@ const getTxnBalanceChanges = async (
       ($1 is null or created_time < millis_to_ts($1)) and
       created_time >= millis_to_ts($2)
       and (to_id = $3 or from_id = $3)
+      ${categoryFilter ? 'and category = $4' : ''}
     order by created_time`,
-    [before, after, userId],
+    categoryFilter
+      ? [before, after, userId, categoryFilter]
+      : [before, after, userId],
     convertTxn
   )
   const contractIds = filterDefined(
@@ -222,14 +249,22 @@ const getBetBalanceChanges = async (
 
     for (let i = 0; i < bets.length; i++) {
       const bet = bets[i]
-      const { isRedemption, outcome, createdTime, amount, shares } = bet
+      const {
+        isRedemption,
+        isRebalance,
+        outcome,
+        createdTime,
+        amount,
+        shares,
+      } = bet as any
       // Bets get their loan amount updated recently, we want to discard them
       if (bet.limitProb === undefined && bet.createdTime < after) continue
 
       const nextBetExists = i < bets.length - 1
       const nextBetIsRedemption = nextBetExists && bets[i + 1].isRedemption
-      if (isRedemption && nextBetIsRedemption) continue
-      if (isRedemption && amount === 0) continue
+      // Skip consecutive redemptions ONLY if they are not rebalance bets
+      if (isRedemption && !isRebalance && nextBetIsRedemption) continue
+      if (isRedemption && !isRebalance && amount === 0) continue
 
       const { question, visibility, creatorUsername, slug, token } = contract
       const balanceChangeProps = {
@@ -265,7 +300,10 @@ const getBetBalanceChanges = async (
           balanceChanges.push(balanceChange)
         }
       } else {
-        const changeToBalance = isRedemption ? Math.abs(shares) : -amount
+        // Rebalance bets have amount != 0 and represent the actual cash value.
+        // Redemption bets had amount == 0 and use Math.abs(shares).
+        const changeToBalance =
+          isRedemption && !isRebalance ? Math.abs(shares) : -amount
         const balanceChange = {
           ...balanceChangeProps,
           type: isRedemption

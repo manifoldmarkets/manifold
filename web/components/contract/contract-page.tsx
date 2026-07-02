@@ -23,6 +23,7 @@ import { DAY_MS } from 'common/util/time'
 import { mergeWith, uniqBy } from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -68,12 +69,17 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import {
+  WIN_BET_MIN_PROFIT,
+  WIN_BET_RECENT_RESOLUTION_MS,
+} from 'common/store-review'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { LogoIcon } from '../icons/logo-icon'
@@ -144,6 +150,21 @@ export function ContractPageContent(props: ContractParams) {
     liveContract
   const { coverImageUrl } = liveContract
 
+  const tryOfferReview = useStoreReviewNudge('win-bet')
+  // Boolean instead of raw profit so streaming-bet metric ticks don't
+  // re-arm the 3s timer; we only care about the threshold transition.
+  const winNudgeEligible =
+    isResolved &&
+    !!privateUser &&
+    (myContractMetrics?.profit ?? 0) >= WIN_BET_MIN_PROFIT &&
+    !!liveContract.resolutionTime &&
+    Date.now() - liveContract.resolutionTime <= WIN_BET_RECENT_RESOLUTION_MS
+  useEffect(() => {
+    if (!winNudgeEligible) return
+    const t = setTimeout(tryOfferReview, 3000)
+    return () => clearTimeout(t)
+  }, [winNudgeEligible, tryOfferReview])
+
   const description = liveContract.description
   const isPerp = liveContract.mechanism === 'perp'
 
@@ -163,6 +184,14 @@ export function ContractPageContent(props: ContractParams) {
 
   const initialHideGraph = shouldHideGraph(liveContract)
   const [hideGraph, setHideGraph] = useState(initialHideGraph)
+
+  // Deep-linking to the graph (e.g. the elections page's "chart →" links): on
+  // many-answer markets the graph is hidden by default, so `?graph` forces it
+  // open. Done in an effect to avoid an SSR/hydration mismatch.
+  const router = useRouter()
+  useEffect(() => {
+    if (router.isReady && router.query.graph) setHideGraph(false)
+  }, [router.isReady, router.query.graph])
 
   const {
     graphUser,
@@ -496,6 +525,8 @@ export function ContractPageContent(props: ContractParams) {
                 creatorId={props.contract.creatorId}
                 isSweeps={isCashContract}
                 description={description}
+                creatorBannedFromBetting={liveContract.creatorBannedFromBetting}
+                contract={liveContract}
               />
             )}
             {props.contract.isRanked !== false && (

@@ -14,7 +14,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 export const TWOMBA_CASHOUT_ENABLED = true
 export const SWEEP_PRODUCTION_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
-export const STRIPE_PAYMENTS_ENABLED = false
+export const STRIPE_PAYMENTS_ENABLED = true
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const CASH_TO_MANA_CONVERSION_RATE = 100
 export const MIN_CASH_DONATION = 25
@@ -319,6 +319,7 @@ export const VERIFIED_USERNAMES = [
   'ModernDayDebate',
   'NickyCase',
   'TamayBesiroglu',
+  'realTomBayes',
 ]
 
 export const BANNED_TRADING_USER_IDS = [
@@ -579,7 +580,9 @@ export const RESERVED_PATHS = [
   'groups',
   'help',
   'home',
+  'jobboard',
   'jobs',
+  'jobsboard',
   'lab',
   'leaderboard',
   'leaderboards',
@@ -625,6 +628,7 @@ export const RESERVED_PATHS = [
   'sitemap',
   'slack',
   'stats',
+  'store',
   'styles',
   'supporter',
   'swipe',

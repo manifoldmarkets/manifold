@@ -407,6 +407,73 @@ text {
   animation: glow-amber-subtle 3s ease-in-out infinite;
 }
 
+/* Slower, less-aggressive opacity pulse for "new offer" badge */
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+/* Diagonal gloss sweep — for an attention-grabbing "shiny tag" effect on
+   sale/offer badges. Uses a pseudo-element so the base background is
+   untouched. Parent must have overflow-clip (e.g. rounded-full). */
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(210%);
+  }
+}
+
+.shimmer-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 65%
+  );
+  transform: translateX(-110%);
+  animation: shimmer-sweep 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Soft fade-in for async-loaded promotional cards so they don't jarringly
+   pop into existence at the top of the page after a fetch resolves. */
+@keyframes offer-card-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-offer-card-in {
+  animation: offer-card-fade-in 0.4s ease-out;
+}
+
 /* Spinning border effect for hovercard */
 @keyframes spin-border {
   0% {

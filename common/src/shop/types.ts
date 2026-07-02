@@ -19,19 +19,21 @@ export type ShopOrder = {
   txnId?: string // reference to txns table
   printfulOrderId?: string // from Printful API (future)
   printfulStatus?: string // synced from Printful (future)
+  // Note: 'DELIVERED' / `deliveredTime` were removed — Printful's webhook API
+  // doesn't push delivery events (only `package_shipped` / `_returned`), so
+  // the carrier-level delivery state never reached us. If Printful adds a
+  // delivery event later, we can re-add the column + status branch.
   status:
     | 'CREATED'
     | 'COMPLETED'
     | 'PENDING_FULFILLMENT'
     | 'SHIPPED'
-    | 'DELIVERED'
     | 'CANCELLED'
     | 'FAILED'
     | 'REFUNDED'
   metadata?: Record<string, any> // size, color, variant, etc.
   createdTime: number
   shippedTime?: number
-  deliveredTime?: number
 }
 
 // Converter from database row (snake_case) to TypeScript type (camelCase)
@@ -66,7 +68,6 @@ export const convertShopOrder = (row: {
   metadata?: Record<string, any> | null
   created_time: string
   shipped_time?: string | null
-  delivered_time?: string | null
 }): ShopOrder => ({
   id: row.id,
   userId: row.user_id,
@@ -80,7 +81,4 @@ export const convertShopOrder = (row: {
   metadata: row.metadata ?? undefined,
   createdTime: new Date(row.created_time).getTime(),
   shippedTime: row.shipped_time ? new Date(row.shipped_time).getTime() : undefined,
-  deliveredTime: row.delivered_time
-    ? new Date(row.delivered_time).getTime()
-    : undefined,
 })

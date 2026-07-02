@@ -2,6 +2,7 @@ import {
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
   getUserBalancesAndMetrics,
+  lockContractAndGetBetData,
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { Answer } from 'common/answer'
@@ -152,7 +153,6 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     balanceByUserId,
     unfilledBets,
     contractMetrics,
-    unfilledBetUserIds,
   } = await fetchContractBetDataAndValidate(
     pg,
     { ...props, amount: undefined, outcome: oppositeOutcome },
@@ -176,16 +176,29 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     log(
       `Inside main transaction for user ${uid} selling ${shares} shares on contract id ${contractId}.`
     )
+    // Re-read pool/answers/open limit orders under a FOR UPDATE lock on the
+    // contract row, so each retry recomputes against current state rather than the
+    // possibly-stale pre-transaction read.
+    const {
+      contract: lockedContract,
+      answers: lockedAnswers,
+      unfilledBets: lockedUnfilledBets,
+      unfilledBetUserIds: lockedUnfilledBetUserIds,
+    } = await lockContractAndGetBetData(
+      pgTrans,
+      { ...props, outcome: oppositeOutcome },
+      uid
+    )
     const { balanceByUserId, contractMetrics } =
       await getUserBalancesAndMetrics(
         pgTrans,
         [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
-        contract,
+        lockedContract,
         answerId
       )
     user.balance = balanceByUserId[uid]
 
-    for (const userId of unfilledBetUserIds) {
+    for (const userId of lockedUnfilledBetUserIds) {
       if (!(userId in balanceByUserId)) {
         // Assume other makers have infinite balance since they are not involved in this bet.
         balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
@@ -200,9 +213,9 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     const marginLoanBefore = userMetric.marginLoan ?? 0
 
     const newBetResult = calculateSellResult(
-      contract,
-      answers,
-      unfilledBets,
+      lockedContract,
+      lockedAnswers,
+      lockedUnfilledBets,
       balanceByUserId,
       answerId,
       outcome,
@@ -225,7 +238,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     const betResult = await executeNewBetResult(
       pgTrans,
       newBetResult,
-      contract,
+      lockedContract,
       user,
       undefined, // creator - not needed for sells (no unique bettor bonus)
       isApi,

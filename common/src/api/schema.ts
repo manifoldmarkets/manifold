@@ -22,6 +22,12 @@ import {
   SearchGroupShape,
   Topic,
 } from 'common/group'
+import {
+  JOB_INTERESTS,
+  JOB_REGIONS,
+  JOB_SKILLS,
+  JobSeekerInterest,
+} from 'common/job-seeker'
 import { League } from 'common/leagues'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -34,6 +40,7 @@ import {
 } from 'common/portfolio-metrics'
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
+import { SportsMarket } from 'common/sports'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -53,6 +60,7 @@ import {
 import { DisplayUser, FullUser } from './user-types'
 
 import { ContractMetric } from 'common/contract-metric'
+import { PersonalizedManaOfferSummary } from 'common/personalized-mana-offer'
 import {
   CheckoutSession,
   GIDXDocument,
@@ -75,7 +83,7 @@ import { RanksType } from 'common/achievements'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
 import { ShopItem } from 'common/shop/items'
-import { UserEntitlement } from 'common/shop/types'
+import { UserEntitlement, ShopOrder } from 'common/shop/types'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
@@ -157,6 +165,9 @@ export const API = (_apiTypeCheck = {
       firebaseEmail?: string
       initialDeviceToken?: string
       initialIpAddress?: string
+      // Admin-only audit note for flagged users — served only through this
+      // admin-gated endpoint, never the public User surface.
+      verificationFlagReason?: string
     },
   },
   'admin-delete-user': {
@@ -178,11 +189,65 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string(),
         bonusEligibility: z
-          .enum(['verified', 'grandfathered', 'ineligible'])
+          .enum(['verified', 'grandfathered', 'eligible', 'ineligible'])
           .nullable(),
       })
       .strict(),
     returns: {} as { success: boolean },
+  },
+  'admin-set-prize-eligibility': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        prizeEligibility: z.enum(['eligible', 'ineligible']).nullable(),
+        // When true AND prizeEligibility is 'ineligible', void the user's
+        // outstanding entries in unresolved drawings and refund the mana
+        // they paid. Use for under-18 cases where the buyer is owed their
+        // money back, or confirmed fraud where the pool should be cleaned.
+        voidOutstandingEntries: z.boolean().optional(),
+        // Optional free-text reason stamped onto each voided entry row
+        // (sweepstakes_tickets.voided_reason) for audit. Surfaced in admin
+        // UI only.
+        reason: z.string().max(500).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      voidedEntryCount: number
+      refundedManaTotal: number
+    },
+  },
+  'admin-flag-for-verification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        // true = flag (bonusEligibility = 'requires_verification' + reason).
+        // false = clear (restore prior bonus state if one was snapshotted,
+        // else revert to undefined; clears the reason either way).
+        flag: z.boolean(),
+        // Optional free-text note shown to other admins in the user-info
+        // page. Examples: "suspected alt of @other-user", "fraud signal from
+        // signup_blocklist", "manual review requested after dispute".
+        reason: z.string().max(500).optional(),
+      })
+      .strict(),
+    // bonusEligibility = the resulting state ('requires_verification' on flag;
+    // the restored prior value or undefined on clear) so the UI can update
+    // optimistically without guessing.
+    returns: {} as {
+      success: boolean
+      bonusEligibility?:
+        | 'verified'
+        | 'grandfathered'
+        | 'eligible'
+        | 'requires_verification'
+    },
   },
   'admin-search-users-by-email': {
     method: 'GET',
@@ -505,6 +570,25 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // Apply share identities to collapse mixed YES/NO positions on a sum-to-one
+  // multi-choice market into all-YES (with at least one zero) and redeem the
+  // minimum across outcomes as cash. Pure accounting — no AMM, no fees.
+  'market/:contractId/rebalance': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      cashRedeemed: number
+      minShares: number
+      betCount: number
+      loanPaid: number
+    },
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+  },
   'get-user-limit-orders-with-contracts': {
     method: 'GET',
     visibility: 'undocumented',
@@ -567,6 +651,7 @@ export const API = (_apiTypeCheck = {
         // undocumented fields. idk what a good api interface would be
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
+        excludeApi: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
         count: coerceBoolean.optional(),
         points: coerceBoolean.optional(),
@@ -1402,6 +1487,7 @@ export const API = (_apiTypeCheck = {
         installedAppPlatforms: z.array(z.string()).optional(),
         paymentInfo: z.string().optional(),
         lastAppReviewTime: z.number().optional(),
+        optOutAppReviewPrompts: z.boolean().optional(),
       })
       .strict(),
   },
@@ -1546,6 +1632,26 @@ export const API = (_apiTypeCheck = {
       medium: z.enum(['email', 'browser', 'mobile']),
       enabled: z.boolean(),
     }),
+  },
+  'set-job-interest': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        skills: z.array(z.enum(JOB_SKILLS)).max(JOB_SKILLS.length),
+        interests: z.array(z.enum(JOB_INTERESTS)).max(JOB_INTERESTS.length),
+        region: z.enum(JOB_REGIONS).nullable(),
+        openToContact: z.boolean(),
+      })
+      .strict(),
+  },
+  'get-job-interest': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { interest: JobSeekerInterest | null },
   },
   headlines: {
     method: 'GET',
@@ -1883,31 +1989,12 @@ export const API = (_apiTypeCheck = {
       .object({
         before: z.coerce.number().optional(),
         after: z.coerce.number().default(0),
+        limit: z.coerce.number().gte(0).lte(1000).default(100),
+        offset: z.coerce.number().gte(0).default(0),
         userId: z.string(),
+        changeType: z.string().optional(),
       })
       .strict(),
-  },
-  'get-partner-stats': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
-    props: z
-      .object({
-        userId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      status: 'success' | 'error'
-      username: string
-      numContractsCreated: number
-      numUniqueBettors: number
-      numReferrals: number
-      numReferralsWhoRetained: number
-      totalTraderIncome: number
-      totalReferralIncome: number
-      dollarsEarned: number
-    },
   },
   'record-contract-view': {
     method: 'POST',
@@ -3036,6 +3123,26 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'get-referral-earnings': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      total: number
+      byReferredUserId: Record<
+        string,
+        {
+          amount: number
+          maxMultiplier: number
+          // Which bonus types this referrer has been paid for this referred
+          // user. 'first_bet'/'verify' are the new split; 'legacy' means a
+          // pre-split single-payment txn exists (treated as fully paid).
+          bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
+        }
+      >
+    },
+  },
 
   'save-market-draft': {
     method: 'POST',
@@ -3443,11 +3550,46 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({}).strict(),
+    props: z
+      .object({
+        offerId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       sessionId: string
       clientSecret: string
     },
+  },
+  'get-personalized-mana-offers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'activate-personalized-mana-offers': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'release-personalized-mana-offer-lock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ offerId: z.string() }).strict(),
+    returns: {} as { success: boolean },
+  },
+  'dismiss-personalized-mana-offer': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    // Global dismiss: applies to all active offers for the calling user.
+    // dismissed=false un-dismisses them (used by the "show hidden offer(s)"
+    // chip on /checkout).
+    props: z.object({ dismissed: z.boolean() }).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
   },
   'admin-create-charity-giveaway': {
     method: 'POST',
@@ -3461,6 +3603,21 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as {
       giveawayNum: number
+    },
+  },
+  'admin-update-charity-giveaway-prize': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        giveawayNum: z.number(),
+        prizeAmountUsd: z.number().finite().positive(),
+      })
+      .strict(),
+    returns: {} as {
+      giveawayNum: number
+      prizeAmountUsd: number
     },
   },
   'buy-charity-giveaway-tickets': {
@@ -3536,6 +3693,7 @@ export const API = (_apiTypeCheck = {
         closeTime: number
         winningTicketIds: string[] | null
         createdTime: number
+        announcementSent: boolean
       }
       userStats: {
         userId: string
@@ -3543,6 +3701,8 @@ export const API = (_apiTypeCheck = {
         totalManaSpent: number
       }[]
       totalTickets: number
+      totalManaSpent?: number
+      participantCount?: number
       winners?: {
         rank: number
         label: string
@@ -3564,12 +3724,21 @@ export const API = (_apiTypeCheck = {
       userTotalManaInvested?: number
       meetsInvestmentRequirement?: boolean
       minManaInvested?: number
+      // Set when an admin voided this user's entries in this drawing (and
+      // refunded their mana). Lets the page explain the dropped entry count.
+      userVoidedEntries?: number
+      userVoidedManaRefunded?: number
     },
   },
   'get-sweepstakes-list': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    // Wait for Firebase auth to settle before firing — the per-drawing
+    // userStatus icons depend on auth.uid, and without preferAuth the
+    // first call races auth-loading and comes back with everything null,
+    // which then gets cached for the rest of the session.
+    preferAuth: true,
     props: z.object({}).strict(),
     returns: {} as {
       sweepstakes: Array<{
@@ -3578,6 +3747,10 @@ export const API = (_apiTypeCheck = {
         closeTime: number
         createdTime: number
         hasWinners: boolean
+        totalPrizeUsd: number
+        // Per-user claim status for surfacing icons. Null when no relevant
+        // state (unauthenticated, didn't win, or rejected/opted_out).
+        userStatus: 'paid' | 'pending' | 'action-needed' | null
       }>
     },
   },
@@ -3603,6 +3776,40 @@ export const API = (_apiTypeCheck = {
       sweepstakesNum: number
     },
   },
+  'check-sweepstakes-geo': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Don't cache — the user's IP can change between visits (VPN toggle,
+    // mobile network handoff) and an incorrect cached "allowed" would let
+    // a restricted user see the buy UI.
+    props: z.object({}).strict(),
+    returns: {} as { allowed: boolean },
+  },
+  'admin-announce-prize-drawing': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        // When true, returns the title + body that *would* be sent
+        // without actually firing notifications or flipping the
+        // announcement_sent flag. Used by the admin UI for the preview.
+        dryRun: z.boolean().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      sweepstakesNum: number
+      title: string
+      body: string
+      totalPrizeUsd: number
+      winnerCount: number
+      closeTime: number
+      alreadySent: boolean
+      sent: boolean
+    },
+  },
   'buy-sweepstakes-tickets': {
     method: 'POST',
     visibility: 'undocumented',
@@ -3610,9 +3817,13 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         sweepstakesNum: z.number(),
-        numTickets: z.number().positive(),
+        numTickets: z.number().positive().optional(),
+        maxManaSpent: z.number().positive().optional(),
       })
-      .strict(),
+      .strict()
+      .refine((props) => props.numTickets || props.maxManaSpent, {
+        message: 'Must provide numTickets or maxManaSpent',
+      }),
     returns: {} as {
       ticketId: string
       numTickets: number
@@ -3711,8 +3922,10 @@ export const API = (_apiTypeCheck = {
         id: string
         rank: number
         prizeAmountUsdc: number
-        walletAddress: string
-        paymentStatus: 'awaiting' | 'sent' | 'rejected'
+        // Null when admin recorded an opted_out / rejected status before
+        // the user ever submitted a wallet.
+        walletAddress: string | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out'
         paymentTxnHash: string | null
         createdTime: number
       } | null
@@ -3738,7 +3951,7 @@ export const API = (_apiTypeCheck = {
         rank: number
         prizeAmountUsdc: number
         walletAddress: string | null
-        paymentStatus: 'awaiting' | 'sent' | 'rejected' | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out' | null
         paymentTxnHash: string | null
         createdTime: number | null
       }>
@@ -3748,13 +3961,30 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
+    // Identify the claim by either an existing claimId (user already
+    // submitted a wallet) or by (sweepstakesNum, userId) — the latter lets
+    // admins record opted_out/rejected decisions for winners who never
+    // submitted a wallet, by upserting a row with NULL wallet_address.
     props: z
       .object({
-        claimId: z.string(),
-        paymentStatus: z.enum(['awaiting', 'sent', 'rejected']),
+        claimId: z.string().optional(),
+        sweepstakesNum: z.number().int().optional(),
+        userId: z.string().optional(),
+        paymentStatus: z.enum(['awaiting', 'sent', 'rejected', 'opted_out']),
         paymentTxnHash: z.string().optional(),
       })
-      .strict(),
+      .strict()
+      .refine(
+        (v) => !!v.claimId || (v.sweepstakesNum !== undefined && !!v.userId),
+        { message: 'Provide either claimId or (sweepstakesNum, userId)' }
+      ),
+    returns: {} as { success: boolean },
+  },
+  'admin-delete-prize-claim': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ claimId: z.string() }).strict(),
     returns: {} as { success: boolean },
   },
   'admin-get-mana-sales': {
@@ -3818,7 +4048,13 @@ export const API = (_apiTypeCheck = {
         referredByUserId: string | null
         referredByUsername: string | null
         referredByName: string | null
-        bonusEligibility: 'verified' | 'grandfathered' | 'ineligible' | null
+        bonusEligibility:
+          | 'verified'
+          | 'grandfathered'
+          | 'eligible'
+          | 'ineligible'
+          | 'requires_verification'
+          | null
         purchasedMana: boolean
         email: string | null
         ipAddress: string | null
@@ -3906,22 +4142,6 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
   },
-  'shop-purchase-ticket': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    props: z
-      .object({
-        itemId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      success: boolean
-      orderId: string
-      discountCode: string | null
-      remainingStock: number
-    },
-  },
   'get-ticket-stock': {
     method: 'GET',
     visibility: 'public',
@@ -3929,13 +4149,6 @@ export const API = (_apiTypeCheck = {
     cache: 'public, max-age=2, stale-while-revalidate=10',
     props: z.object({ itemId: z.string().optional() }).strict(),
     returns: {} as { sold: number; maxStock: number; available: number },
-  },
-  'get-user-ticket-purchased': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    props: z.object({}).strict(),
-    returns: {} as { purchased: boolean },
   },
   'get-ticket-orders': {
     method: 'GET',
@@ -3971,9 +4184,11 @@ export const API = (_apiTypeCheck = {
           address1: z.string().max(200),
           address2: z.string().max(200).optional(),
           city: z.string().max(100),
-          state: z.string().max(100),
-          zip: z.string().max(20),
+          state: z.string().max(100).optional(),
+          zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
+          taxNumber: z.string().max(50).optional(),
+          email: z.string().email().max(254).optional(),
         }),
       })
       .strict(),
@@ -3994,8 +4209,9 @@ export const API = (_apiTypeCheck = {
           address1: z.string().max(200),
           city: z.string().max(100),
           state: z.string().max(100).optional(),
-          zip: z.string().max(20),
+          zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
+          taxNumber: z.string().max(50).optional(),
         }),
       })
       .strict(),
@@ -4113,6 +4329,12 @@ export const API = (_apiTypeCheck = {
         quantity: number
         revenue: number
       }[]
+      merchSales: {
+        date: string
+        itemId: string
+        quantity: number
+        revenue: number
+      }[]
       subscribersByTier: {
         tier: 'basic' | 'plus' | 'premium'
         count: number
@@ -4163,6 +4385,197 @@ export const API = (_apiTypeCheck = {
         pending: number
         suspected: number
       }[]
+    },
+  },
+  // Merch admin endpoints
+  'get-merch-orders': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limit: z.coerce.number().int().min(1).max(2000).default(25),
+        offset: z.coerce.number().int().min(0).default(0),
+        dateRange: z
+          .enum(['all', 'week', 'month', '3-months', '6-months', 'year'])
+          .default('all'),
+      })
+      .strict(),
+    returns: {} as {
+      orders: (ShopOrder & { username: string; displayName: string })[]
+      total: number
+    },
+  },
+  'get-merch-stock-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as { outOfStockItems: string[] },
+  },
+  'toggle-merch-stock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+      })
+      .strict(),
+    returns: {} as { itemId: string; outOfStock: boolean },
+  },
+  'cancel-merch-order': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        orderId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; refundedAmount: number },
+  },
+  'get-user-merch-orders': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { orders: ShopOrder[] },
+  },
+
+  // ─── Sports Admin ────────────────────────────────────────────────────────────
+
+  'admin-sports-fixtures': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        dateFrom: z.string(),
+        dateTo: z.string(),
+        stage: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      fixtures: Array<{
+        id: number
+        homeTeam: { name: string; tla: string; crest: string }
+        awayTeam: { name: string; tla: string; crest: string }
+        homeFlag: string
+        awayFlag: string
+        utcDate: string
+        stageCode: string
+        stageLabel: string
+        group: string | null
+        status: string
+        closeTime: number
+        liquidityTier: number
+        existingMarketId: string | null
+        sportsEventId: string
+      }>
+    },
+  },
+
+  'admin-sports-create-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        matchIds: z.array(z.number()),
+        dryRun: z.boolean(),
+        customNote: z.string().optional(),
+        dashboardUrl: z.string().optional(),
+        liquidityTierOverrides: z.record(z.string(), z.number()).optional(),
+        // Extra topic/group slugs to tag every created market with, on top of
+        // the tournament's configured groups. Unknown slugs are ignored.
+        extraGroupSlugs: z.array(z.string()).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      groupRestricted: boolean
+      communityGroupId: string
+      communityGroupCreated: boolean
+      communityDashboardId: string
+      communityDashboardCreated: boolean
+      results: Array<{
+        matchId: number
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        question: string
+        marketId: string | null
+        reason: string | null
+      }>
+    },
+  },
+
+  'admin-sports-community-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        contractId: z.string(),
+        action: z.enum(['add', 'remove']),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      dashboardId: string
+      action: 'add' | 'remove'
+      contractId: string
+    },
+  },
+
+  'admin-sports-init-community': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ competitionCode: z.string() }).strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      dashboardId: string
+      dashboardCreated: boolean
+    },
+  },
+
+  'sports-markets': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        sportsLeague: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      markets: SportsMarket[]
+    },
+  },
+
+  'admin-sports-resolve': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      resolved: number
+      skipped: number
+      errors: number
+      log: Array<{
+        question: string
+        result: string
+        status: 'resolved' | 'skipped' | 'error'
+      }>
     },
   },
 } as const)

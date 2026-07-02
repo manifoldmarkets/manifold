@@ -127,7 +127,6 @@ import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
-import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getPredictle } from './get-predictle-markets'
 import { getPredictlePercentile } from './get-predictle-percentile'
@@ -167,6 +166,7 @@ import {
 } from './search-contracts'
 import { searchGroups, searchMyGroups } from './search-groups'
 import { searchUsers } from './search-users'
+import { rebalancePosition } from './rebalance-position'
 import { sellShares } from './sell-shares'
 import { setnews } from './set-news'
 import { superBanUser } from './super-ban-user'
@@ -176,6 +176,8 @@ import { updateMe } from './update-me'
 import { updateModReport } from './update-mod-report'
 import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
+import { setJobInterest } from './set-job-interest'
+import { getJobInterest } from './get-job-interest'
 
 import { createCategory } from './create-category'
 import { createTask } from './create-task'
@@ -190,6 +192,8 @@ import { adminGetUserInfo } from './admin-get-user-info'
 import { adminIpBanUser } from './admin-ip-ban-user'
 import { adminRecoverUser } from './admin-recover-user'
 import { adminSetBonusEligibility } from './admin-set-bonus-eligibility'
+import { adminSetPrizeEligibility } from './admin-set-prize-eligibility'
+import { adminFlagForVerification } from './admin-flag-for-verification'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
@@ -205,15 +209,29 @@ import { claimSweepstakesPrize } from './claim-sweepstakes-prize'
 import { getSweepstakesPrizeClaim } from './get-sweepstakes-prize-claim'
 import { adminGetPrizeClaims } from './admin-get-prize-claims'
 import { adminUpdatePrizePayment } from './admin-update-prize-payment'
+import { adminDeletePrizeClaim } from './admin-delete-prize-claim'
 import { adminGetManaSales } from './admin-get-mana-sales'
 import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
+import { adminSportsFixtures } from './admin-sports-fixtures'
+import { adminSportsCreateMarkets } from './admin-sports-create-markets'
+import { sportsMarkets } from './sports-markets'
+import { adminSportsResolve } from './admin-sports-resolve'
+import { adminSportsCommunityMarket } from './admin-sports-community-market'
+import { adminSportsInitCommunity } from './admin-sports-init-community'
 import { getSweepstakesList } from './get-sweepstakes-list'
+import { adminAnnouncePrizeDrawing } from './admin-announce-prize-drawing'
+import { checkSweepstakesGeo } from './check-sweepstakes-geo'
 import { adminCreateSweepstakes } from './admin-create-sweepstakes'
 import { getCharityGiveawayList } from './get-charity-giveaway-list'
 import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
 import { createDaimoSession } from './create-daimo-session'
+import { getPersonalizedManaOffers } from './get-personalized-mana-offers'
+import { activatePersonalizedManaOffers } from './activate-personalized-mana-offers'
+import { releasePersonalizedManaOfferLock } from './release-personalized-mana-offer-lock'
+import { dismissPersonalizedManaOffer } from './dismiss-personalized-mana-offer'
 import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
+import { adminUpdateCharityGiveawayPrize } from './admin-update-charity-giveaway-prize'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -268,13 +286,17 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
+import { getReferralEarnings } from './get-referral-earnings'
+import { cancelMerchOrder } from './cancel-merch-order'
+import { getMerchOrders } from './get-merch-orders'
+import { getMerchStockStatus } from './get-merch-stock-status'
+import { getUserMerchOrders } from './get-user-merch-orders'
+import { toggleMerchStock } from './toggle-merch-stock'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
-import { shopPurchaseTicket } from './shop-purchase-ticket'
 import { getTicketStock } from './get-ticket-stock'
 import { getTicketOrders } from './get-ticket-orders'
-import { getUserTicketPurchased } from './get-user-ticket-purchased'
 import { shopResetAll } from './shop-reset-all'
 import { shopShippingRates } from './shop-shipping-rates'
 import { shopToggle } from './shop-toggle'
@@ -289,6 +311,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-delete-user': adminDeleteUser,
   'admin-ip-ban-user': adminIpBanUser,
   'admin-set-bonus-eligibility': adminSetBonusEligibility,
+  'admin-set-prize-eligibility': adminSetPrizeEligibility,
+  'admin-flag-for-verification': adminFlagForVerification,
   'admin-get-related-users': adminGetRelatedUsers,
   'admin-search-users-by-email': adminSearchUsersByEmail,
   'anonymize-user': anonymizeUser,
@@ -297,6 +321,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
+  'market/:contractId/rebalance': rebalancePosition,
   bets: getBets,
   'bet-points': getBetPointsBetween,
   'get-bettors-from-bet-ids': getBettorsFromBetIds,
@@ -383,6 +408,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'save-twitch': saveTwitchCredentials,
   'set-push-token': setPushToken,
   'update-notif-settings': updateNotifSettings,
+  'set-job-interest': setJobInterest,
+  'get-job-interest': getJobInterest,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   post: post,
@@ -405,7 +432,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': searchMyGroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
-  'get-partner-stats': getPartnerStats,
   'get-posts': getPosts,
   'get-post-tip-info': getPostTipInfo,
   'get-seen-market-ids': getSeenMarketIds,
@@ -499,6 +525,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-concise-title': generateConciseTitle,
   'get-close-date': getCloseDateEndpoint,
   'refer-user': referUser,
+  'get-referral-earnings': getReferralEarnings,
   'create-post-comment': createPostComment,
   'create-post': createPost,
   'update-post': updatePost,
@@ -528,6 +555,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-charity-giveaway-list': getCharityGiveawayList,
   'get-crypto-purchase-status': getCryptoPurchaseStatus,
   'create-daimo-session': createDaimoSession,
+  'get-personalized-mana-offers': getPersonalizedManaOffers,
+  'activate-personalized-mana-offers': activatePersonalizedManaOffers,
+  'release-personalized-mana-offer-lock': releasePersonalizedManaOfferLock,
+  'dismiss-personalized-mana-offer': dismissPersonalizedManaOffer,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
@@ -541,21 +572,29 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-sweepstakes-prize': claimSweepstakesPrize,
   'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
   'admin-create-sweepstakes': adminCreateSweepstakes,
+  'admin-announce-prize-drawing': adminAnnouncePrizeDrawing,
+  'check-sweepstakes-geo': checkSweepstakesGeo,
   'admin-create-charity-giveaway': adminCreateCharityGiveaway,
+  'admin-update-charity-giveaway-prize': adminUpdateCharityGiveawayPrize,
   'admin-get-prize-claims': adminGetPrizeClaims,
   'admin-update-prize-payment': adminUpdatePrizePayment,
+  'admin-delete-prize-claim': adminDeletePrizeClaim,
   'admin-get-mana-sales': adminGetManaSales,
   'admin-get-top-whale-users': adminGetTopWhaleUsers,
   'admin-get-new-users': adminGetNewUsers,
+  'admin-sports-fixtures': adminSportsFixtures,
+  'admin-sports-create-markets': adminSportsCreateMarkets,
+  'sports-markets': sportsMarkets,
+  'admin-sports-resolve': adminSportsResolve,
+  'admin-sports-community-market': adminSportsCommunityMarket,
+  'admin-sports-init-community': adminSportsInitCommunity,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'get-shop-stats': getShopStats,
   'shop-purchase': shopPurchase,
   'shop-purchase-merch': shopPurchaseMerch,
-  'shop-purchase-ticket': shopPurchaseTicket,
   'get-ticket-stock': getTicketStock,
   'get-ticket-orders': getTicketOrders,
-  'get-user-ticket-purchased': getUserTicketPurchased,
   'shop-shipping-rates': shopShippingRates,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
@@ -564,4 +603,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-charity-champion': claimCharityChampion,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,
+  'get-merch-orders': getMerchOrders,
+  'get-merch-stock-status': getMerchStockStatus,
+  'toggle-merch-stock': toggleMerchStock,
+  'cancel-merch-order': cancelMerchOrder,
+  'get-user-merch-orders': getUserMerchOrders,
 } as const

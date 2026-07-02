@@ -5,7 +5,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 
@@ -13,21 +13,29 @@ type VerificationRequiredModalProps = {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
-  // What the user is trying to do (for messaging)
-  action?: 'claim free loan' | 'earn quest rewards' | 'receive bonuses'
+  // What the user is trying to do (for messaging). Defaults to
+  // 'earn full bonuses' — under the unverified-tier model, unverified
+  // users already receive reduced bonuses, so the verify CTA is about
+  // unlocking the full amount, not enabling bonuses at all.
+  action?: 'claim free loan' | 'earn full bonuses' | 'enter prize drawings'
 }
 
 export function VerificationRequiredModal({
   open,
   setOpen,
   user,
-  action = 'receive bonuses',
+  action = 'earn full bonuses',
 }: VerificationRequiredModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Check if user has been explicitly denied (ineligible)
   const isDenied = user.bonusEligibility === 'ineligible'
+  // User has been actively flagged for required verification (suspected alt,
+  // suspicious signup, manual review). Distinct from the default unverified
+  // state — show different copy so they understand this is a system action,
+  // not just a missing-step prompt.
+  const isFlagged = user.bonusEligibility === 'requires_verification'
 
   const handleVerify = async () => {
     setLoading(true)
@@ -40,7 +48,11 @@ export function VerificationRequiredModal({
       window.location.href = response.redirectUrl
     } catch (e) {
       console.error('Failed to start verification:', e)
-      setError('Failed to start verification. Please try again.')
+      setError(
+        e instanceof APIError && e.code === 503
+          ? e.message
+          : 'Failed to start verification. Please try again.'
+      )
       track('bonus verification: error', {
         action,
         error: e instanceof Error ? e.message : 'Unknown error',
@@ -51,7 +63,7 @@ export function VerificationRequiredModal({
   }
 
   const handleClose = () => {
-    track('bonus verification: dismissed', { action, isDenied })
+    track('bonus verification: dismissed', { action, isDenied, isFlagged })
     setOpen(false)
   }
 
@@ -67,6 +79,7 @@ export function VerificationRequiredModal({
             loading={loading}
             error={error}
             action={action}
+            isFlagged={isFlagged}
           />
         )}
       </Col>
@@ -80,22 +93,25 @@ function VerifyContent({
   loading,
   error,
   action,
+  isFlagged = false,
 }: {
   onClose: () => void
   onVerify: () => void
   loading: boolean
   error: string | null
   action: string
+  isFlagged?: boolean
 }) {
   return (
     <>
       <ShieldCheckIcon className="text-primary-500 mx-auto h-16 w-16" />
       <div className="text-primary-700 text-center text-2xl font-semibold">
-        Verification Required
+        {isFlagged ? 'Verification Needed' : 'Verification Required'}
       </div>
       <div className="text-ink-600 text-center">
-        To {action}, please verify your identity. This helps us ensure fair play
-        and prevents fraud.
+        {isFlagged
+          ? `Your account has been flagged for review. To ${action}, please complete identity verification. If verification succeeds, your bonus eligibility will be reinstated.`
+          : `To ${action}, please verify your identity. This helps us ensure fair play and prevents fraud.`}
       </div>
       <div className="text-ink-500 mt-2 text-center text-sm">
         Verification takes about 2 minutes and requires a valid ID.
@@ -139,11 +155,18 @@ function DeniedContent({
         Not Eligible
       </div>
       <div className="text-ink-600 text-center">
-        Unfortunately, you are not eligible to {action}. This may be due to a
-        previous verification attempt that was unsuccessful.
+        A previous verification attempt was unsuccessful, so you can't {action}{' '}
+        on this account.
       </div>
       <div className="text-ink-500 mt-2 text-center text-sm">
-        If you believe this is an error, please contact support.
+        If you believe this is a mistake, email{' '}
+        <a
+          href="mailto:info@manifold.markets"
+          className="text-primary-700 font-semibold hover:underline"
+        >
+          info@manifold.markets
+        </a>{' '}
+        and our team can re-enable verification for you.
       </div>
       <Button onClick={onClose} color="gray" className="mt-4 w-full">
         Close

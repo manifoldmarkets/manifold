@@ -18,12 +18,28 @@ export async function addGroupToContract(
   group: { id: string; slug: string },
   userId?: string
 ) {
-  await pg.none(
-    `insert into group_contracts (contract_id, group_id) values ($1, $2)`,
+  // Some callers build the group object from untyped queries — a missing
+  // slug would otherwise append a json null to the contract's groupSlugs,
+  // breaking blocked-topic filtering.
+  let slug = group.slug
+  if (!slug) {
+    slug = await pg.one(
+      `select slug from groups where id = $1`,
+      [group.id],
+      (r) => r.slug
+    )
+  }
+  // RETURNING 1 lets us skip the slug append on duplicates —
+  // FieldVal.arrayConcat would otherwise double-append.
+  const inserted = await pg.oneOrNone(
+    `insert into group_contracts (contract_id, group_id) values ($1, $2)
+     on conflict (contract_id, group_id) do nothing
+     returning 1`,
     [contract.id, group.id]
   )
+  if (!inserted) return
   await updateContract(pg, contract.id, {
-    groupSlugs: FieldVal.arrayConcat(group.slug),
+    groupSlugs: FieldVal.arrayConcat(slug),
     lastUpdatedTime: Date.now(),
   })
 
