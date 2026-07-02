@@ -2700,6 +2700,22 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-embedding-feed': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      contracts: Contract[]
+      idsToReason: { [id: string]: string }
+    },
+    props: z
+      .object({
+        limit: z.coerce.number().gt(0).lte(50).default(20),
+        offset: z.coerce.number().gte(0).default(0),
+        ignoreContractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
   'get-sports-games': {
     method: 'GET',
     visibility: 'public',
