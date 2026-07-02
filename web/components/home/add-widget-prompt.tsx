@@ -46,6 +46,38 @@ function PreviewSmall() {
   )
 }
 
+// iOS medium: streak column | divider | quest checklist, mirroring the SwiftUI
+// medium's left/right split (Android's medium stacks quests full-width instead).
+function PreviewMediumIOS() {
+  return (
+    <div className={CARD} style={{ width: 208, height: 96 }}>
+      <CraneMark />
+      <Row className="relative h-full items-stretch gap-2">
+        <Col className="justify-center">
+          <Row className="items-center gap-1">
+            <span className="text-2xl leading-none drop-shadow">🔥</span>
+            <span className="text-2xl font-black leading-none">5</span>
+          </Row>
+          <div className="mt-1 text-[10px] font-semibold opacity-90">
+            day streak
+          </div>
+        </Col>
+        <div className="w-px shrink-0 bg-white/25" />
+        <Col className="min-w-0 flex-1 justify-center gap-1 text-[10px] font-semibold">
+          <Row className="items-center justify-between gap-1">
+            <span className="truncate">✅ Share a market</span>
+            <span className="opacity-90">+M5</span>
+          </Row>
+          <Row className="items-center justify-between gap-1">
+            <span className="truncate">⬜ Create a market</span>
+            <span className="opacity-90">+M100</span>
+          </Row>
+        </Col>
+      </Row>
+    </div>
+  )
+}
+
 // 2x3: taller widget that also shows the quest checklist above the streak.
 function PreviewTall() {
   return (
@@ -70,21 +102,22 @@ function PreviewTall() {
   )
 }
 
-// Native Android only: the streak widget ships on Android (the iOS widget is
-// still in progress) and Android can one-tap pin via our native module. Never
-// shown on web or iOS so we don't prompt someone who can't add it. Enable iOS
-// here once its widget ships (with manual long-press instructions).
+// Native only: the streak widget ships on both platforms. Android can one-tap
+// pin via our native module; iOS has no API to programmatically pin a widget
+// (Apple forbids it), so it gets manual long-press instructions instead. Never
+// shown on web so we don't prompt someone who can't add it.
 //
-// Collapsed state is a clean "Add to home screen" button; expanding reveals the
-// previews. The collapsed choice persists (localStorage), so once a user folds
-// it away it stays a tidy button on future visits.
+// Collapsed state is a clean one-liner; expanding reveals the previews. The
+// collapsed choice persists (localStorage), so once a user folds it away it
+// stays tidy on future visits.
 export function AddWidgetPrompt() {
   const { isNative, platform } = useNativeInfo()
   const [collapsed, setCollapsed] = usePersistentLocalState(
     false,
     'streak-widget-prompt-collapsed'
   )
-  if (!isNative || platform !== 'android') return null
+  if (!isNative || (platform !== 'android' && platform !== 'ios')) return null
+  const isIOS = platform === 'ios'
 
   const onAdd = () => {
     track('add streak widget clicked')
@@ -94,10 +127,17 @@ export function AddWidgetPrompt() {
   return (
     <Col className="border-ink-200 bg-canvas-50 mt-2 gap-3 rounded-lg border p-3">
       <Row className="items-center justify-between gap-2">
-        <Button color="indigo" size="sm" onClick={onAdd} className="w-fit">
-          <PlusIcon className="mr-1 h-4 w-4" />
-          Add to home screen
-        </Button>
+        {isIOS ? (
+          <Row className="text-ink-700 items-center gap-1.5 text-sm font-semibold">
+            <PlusIcon className="h-4 w-4" />
+            Add the streak widget
+          </Row>
+        ) : (
+          <Button color="indigo" size="sm" onClick={onAdd} className="w-fit">
+            <PlusIcon className="mr-1 h-4 w-4" />
+            Add to home screen
+          </Button>
+        )}
         <button
           className="text-ink-500 hover:text-ink-700 -m-1 shrink-0 p-1"
           onClick={() => setCollapsed(!collapsed)}
@@ -116,16 +156,21 @@ export function AddWidgetPrompt() {
           <Row className="items-start gap-3">
             <Col className="items-center gap-1">
               <PreviewSmall />
-              <span className="text-ink-500 text-[10px] font-medium">2x2</span>
+              <span className="text-ink-500 text-[10px] font-medium">
+                {isIOS ? 'Small' : '2x2'}
+              </span>
             </Col>
             <Col className="items-center gap-1">
-              <PreviewTall />
-              <span className="text-ink-500 text-[10px] font-medium">2x3</span>
+              {isIOS ? <PreviewMediumIOS /> : <PreviewTall />}
+              <span className="text-ink-500 text-[10px] font-medium">
+                {isIOS ? 'Medium' : '2x3'}
+              </span>
             </Col>
           </Row>
           <span className="text-ink-600 text-sm">
-            Add the Manifold streak widget so your streak and quests are one
-            glance away.
+            {isIOS
+              ? 'Long-press your home screen, tap + (or Edit → Add Widget), then search "Manifold".'
+              : 'Add the Manifold streak widget so your streak and quests are one glance away.'}
           </span>
         </>
       )}

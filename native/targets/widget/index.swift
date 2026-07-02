@@ -13,13 +13,13 @@ import UIKit
 private let kAppGroup = "group.com.markets.manifold"
 private let kStreakKey = "streakData"
 
-// When true, the widget uses the SIMPLE render path: it reads the App Group
-// directly in the view and draws the streak on a solid colour — no Image, no
-// gradient, no live timer. This is the proven-safe path (the diagnostic build
-// rendered fine this way). The richer `content` design (gradients, crane
-// watermark, lock-screen countdown) is layered back on once each piece is
-// confirmed on-device. Set false to use the full design.
-private let kDiagnostic = true
+// Diagnostic fallback: when true, the widget uses the SIMPLE render path — it
+// reads the App Group directly in the view and draws the streak on a solid
+// colour with no Image, no gradient, no live timer (the path proven safe on
+// device). False ships the full design: gradients, crane watermark, gold
+// milestones, quest rows, lock-screen countdown. If the rich path ever breaks
+// (blank widget / infinite shimmer), flip back to true to triage.
+private let kDiagnostic = false
 
 enum StreakState {
   case lit      // bet today — flame is hot
@@ -79,16 +79,15 @@ struct QuestSnapshot: Decodable {
   let period: String
 }
 
-private struct QuestPayload: Decodable {
+struct QuestPayload: Decodable {
   let quests: [QuestSnapshot]
+  let updatedAt: Double? // ms-epoch snapshot time; absent in legacy blobs
 }
 
-func loadQuestData() -> [QuestSnapshot] {
+func loadQuestData() -> QuestPayload? {
   guard let defaults = UserDefaults(suiteName: kAppGroup),
-        let raw = defaults.data(forKey: kQuestKey),
-        let payload = try? JSONDecoder().decode(QuestPayload.self, from: raw)
-  else { return [] }
-  return payload.quests
+        let raw = defaults.data(forKey: kQuestKey) else { return nil }
+  return try? JSONDecoder().decode(QuestPayload.self, from: raw)
 }
 
 // MARK: - Reset time (next midnight Pacific)
@@ -122,14 +121,19 @@ func nextPacificWeekReset(after date: Date) -> Date {
 }
 
 // Effective quest rows for an entry rendered at `date`: a quest stays done only
-// until its period rolls over (daily → next midnight PT, weekly → next Monday).
-// After that we assume "not done" — the safe empty state.
-func questItems(_ snaps: [QuestSnapshot], at date: Date, now: Date) -> [QuestItem] {
-  if snaps.isEmpty { return [] }
-  let dayEnd = nextPacificReset(after: now).timeIntervalSince1970 * 1000
-  let weekEnd = nextPacificWeekReset(after: now).timeIntervalSince1970 * 1000
+// until the period that contained the snapshot rolls over (daily → the midnight
+// PT after `updatedAt`, weekly → the Monday after it). Past that we assume
+// "not done" — the safe empty state. Anchoring to `updatedAt` (not the timeline
+// generation time) is what makes done rows actually reset: each midnight
+// regeneration would otherwise re-extend a stale blob's validity forever.
+// Mirrors effectiveQuests() in native/widgets/streak-widget.tsx.
+func questItems(_ payload: QuestPayload?, at date: Date) -> [QuestItem] {
+  guard let payload = payload, !payload.quests.isEmpty else { return [] }
+  let updatedAt = Date(timeIntervalSince1970: (payload.updatedAt ?? 0) / 1000)
+  let dayEnd = nextPacificReset(after: updatedAt).timeIntervalSince1970 * 1000
+  let weekEnd = nextPacificWeekReset(after: updatedAt).timeIntervalSince1970 * 1000
   let t = date.timeIntervalSince1970 * 1000
-  return snaps.map { s in
+  return payload.quests.map { s in
     let periodEnd = s.period == "weekly" ? weekEnd : dayEnd
     return QuestItem(title: s.title, rewardMana: s.rewardMana,
                      done: s.done && t < periodEnd)
@@ -156,29 +160,31 @@ func pacificDayOfYear(_ date: Date) -> Int {
 func hookText(state: StreakState, date: Date) -> String {
   switch state {
   case .lit:    return "Locked in. See you tomorrow 🔥"
-  case .frozen: return "Saved by a freeze 🧊 — don't push your luck"
+  case .frozen: return "Saved by a freeze 🧊"
   case .pending: break
   }
   let day = pacificDayOfYear(date)
-  let pct = 55 + (day * 7) % 40 // 55–94, varies by day but deterministic
+  let pct = 55 + (day * 7) % 40 // 55–94, deterministic by day
+  // Keep these short — the medium's hook column is narrow, so anything much
+  // longer than ~30 chars truncates mid-word. Same set as streak-widget.tsx.
   let hooks = [
-    "Open the app today? \(pct)% 📈",
-    "P(you predict today): \(pct)%",
-    "Resolves YES if you predict today",
+    "Predict today? \(pct)% 📈",
+    "P(you predict): \(pct)%",
+    "Resolves YES if you bet today",
     "Your streak: trading at 96%",
-    "Will your streak survive the week? \(pct)%",
-    "Market says you'll bet today: \(pct)% ▲",
+    "Survives the week? \(pct)%",
+    "You'll bet today: \(pct)% ▲",
     "We miss you!",
     "Your streak is lonely",
     "Don't break the chain",
     "Keep the flame alive 🔥",
-    "Come back — we saved your spot",
+    "We saved your spot",
     "The future awaits",
     "Predict the future",
     "Be less wrong",
-    "What do you know that we don't?",
-    "Put your mana where your mouth is",
-    "Someone's wrong on the internet 👀",
+    "What do you know?",
+    "Mana where your mouth is",
+    "Someone's wrong online 👀",
   ]
   return hooks[day % hooks.count]
 }
@@ -212,10 +218,27 @@ struct Provider: TimelineProvider {
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<StreakEntry>) -> Void) {
-    // Diagnostic: a trivial entry that never reads the App Group, so the view is
-    // guaranteed to render if the extension runs. The view does the reading.
-    let e = kDiagnostic ? trivialEntry() : currentEntry(Date())
-    completion(Timeline(entries: [e], policy: .after(e.resetDate)))
+    if kDiagnostic {
+      // Diagnostic: a trivial entry that never reads the App Group, so the view
+      // is guaranteed to render if the extension runs. The view does the reading.
+      let e = trivialEntry()
+      completion(Timeline(entries: [e], policy: .after(e.resetDate)))
+      return
+    }
+    let now = Date()
+    let first = currentEntry(now)
+    var entries = [first]
+    if first.loggedIn && first.state == .pending {
+      // The lock-screen countdown steps white → amber (<12h) → red (<4h), like
+      // Android. A live Text(timerInterval:) can't recolor mid-entry, so emit a
+      // fresh entry at each boundary still ahead; the view derives the tier
+      // from resetDate − entry.date.
+      for hoursLeft in [12.0, 4.0] {
+        let boundary = first.resetDate.addingTimeInterval(-hoursLeft * 3600)
+        if boundary > now { entries.append(currentEntry(boundary)) }
+      }
+    }
+    completion(Timeline(entries: entries, policy: .after(first.resetDate)))
   }
 
   private func trivialEntry() -> StreakEntry {
@@ -224,22 +247,23 @@ struct Provider: TimelineProvider {
                        state: .pending, quests: [], freezesLeft: 0, loggedIn: false)
   }
 
-  // Single current entry from the App Group snapshot. No data / logged out / no
-  // streak yet → the logged-out invite.
-  private func currentEntry(_ now: Date) -> StreakEntry {
-    let reset0 = nextPacificReset(after: now)
+  // Entry as of `date` from the App Group snapshot (works for future same-day
+  // dates too — the tier boundaries above). No data / logged out / no streak
+  // yet → the logged-out invite.
+  private func currentEntry(_ date: Date) -> StreakEntry {
+    let reset0 = nextPacificReset(after: date)
     guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else {
-      return StreakEntry(date: now, streak: 0, resetDate: reset0, state: .pending,
+      return StreakEntry(date: date, streak: 0, resetDate: reset0, state: .pending,
                          quests: [], freezesLeft: 0, loggedIn: false)
     }
-    return StreakEntry(date: now, streak: d.streak, resetDate: reset0,
-                       state: computeState(d, now: now),
-                       quests: questItems(loadQuestData(), at: now, now: now),
+    return StreakEntry(date: date, streak: d.streak, resetDate: reset0,
+                       state: computeState(d, now: date),
+                       quests: questItems(loadQuestData(), at: date),
                        freezesLeft: d.freezesLeft, loggedIn: true)
   }
 }
 
-// MARK: - Palette
+// MARK: - Palette (kept in lockstep with the Android widget, streak-widget.tsx)
 
 private let flameGradient = LinearGradient(
   colors: [Color(red: 1.0, green: 0.54, blue: 0.24), Color(red: 0.78, green: 0.20, blue: 0.10)],
@@ -252,6 +276,47 @@ private let iceGradient = LinearGradient(
 private let greyGradient = LinearGradient(
   colors: [Color(red: 0.20, green: 0.20, blue: 0.22), Color(red: 0.12, green: 0.12, blue: 0.14)],
   startPoint: .top, endPoint: .bottom)
+
+// Milestone "level up" gradients: the lit widget turns gold as the streak grows.
+// GOLD = #FFD24D→#E0810E, GOLD_RICH = #FFE891→#BC5E00 (Android's exact stops).
+private let goldGradient = LinearGradient(
+  colors: [Color(red: 1.0, green: 0.824, blue: 0.302), Color(red: 0.878, green: 0.506, blue: 0.055)],
+  startPoint: .topLeading, endPoint: .bottomTrailing)
+
+private let goldRichGradient = LinearGradient(
+  colors: [Color(red: 1.0, green: 0.910, blue: 0.569), Color(red: 0.737, green: 0.369, blue: 0.0)],
+  startPoint: .topLeading, endPoint: .bottomTrailing)
+
+// Unlit (grey) flame for pending / logged-out — they haven't bet today, so the
+// flame shouldn't look lit. #9CA0A8, the fill of Android's UNLIT_FLAME_SVG.
+private let unlitFlame = Color(red: 0.612, green: 0.627, blue: 0.659)
+
+// Soft warm glow behind the big number (Android NUMBER_SHADOW); stronger and
+// warmer on milestones (MILESTONE_SHADOW).
+private let numberShadow = Color(red: 0.078, green: 0.031, blue: 0).opacity(0.34)
+private let milestoneNumberShadow = Color(red: 0.353, green: 0.137, blue: 0).opacity(0.5)
+
+// A "gold milestone" = a lit streak of 30+ (richer gold at 100+). Same
+// thresholds as Android's isGoldMilestone/gradientFor.
+func isGoldMilestone(_ state: StreakState, _ streak: Int) -> Bool {
+  state == .lit && streak >= 30
+}
+
+// Gradient by state, escalating to gold once lit and past a milestone. Frozen
+// and pending keep their state colours (pending stays grey — grey = "act today").
+func gradientFor(state: StreakState, streak: Int) -> LinearGradient {
+  if state == .frozen { return iceGradient }
+  if state != .lit { return greyGradient }
+  if streak >= 100 { return goldRichGradient }
+  if streak >= 30 { return goldGradient }
+  return flameGradient
+}
+
+// The label under the number — "day streak", except when a freeze saved the
+// day, where the freeze count takes its place (one line, never two).
+func streakLabel(state: StreakState, freezesLeft: Int) -> String {
+  state == .frozen ? "Frozen · \(freezesLeft) left" : "day streak"
+}
 
 private func emoji(for state: StreakState) -> String {
   state == .frozen ? "🧊" : "🔥"
@@ -288,11 +353,11 @@ struct StreakWidgetEntryView: View {
           switch family {
           case .systemSmall:
             ZStack(alignment: .bottomTrailing) {
-              backgroundGradient(for: entry.state)
+              gradientFor(state: entry.state, streak: entry.streak)
               logo(92, opacity: 0.13).padding(.trailing, 6).padding(.bottom, 22)
             }
           case .systemMedium:
-            backgroundGradient(for: entry.state)
+            gradientFor(state: entry.state, streak: entry.streak)
           default:
             Color.clear // lock-screen accessories use the system material
           }
@@ -477,12 +542,25 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  private func backgroundGradient(for state: StreakState) -> LinearGradient {
-    switch state {
-    case .lit:     return flameGradient
-    case .frozen:  return iceGradient
-    case .pending: return greyGradient
+  // The streak glyph on home families. Lit = 🔥, frozen = 🧊 (with a dark halo
+  // so they read on the warm gradient — Android's GLYPH_SHADOW), pending = the
+  // grey unlit flame.
+  @ViewBuilder private func glyph(size: CGFloat) -> some View {
+    if entry.state == .pending {
+      unlitFlameGlyph(size: size)
+    } else {
+      Text(emoji(for: entry.state))
+        .font(.system(size: size))
+        .shadow(color: .black.opacity(0.5), radius: 3, x: 0, y: 1)
     }
+  }
+
+  // Grey unlit flame (SF Symbol) — the same idea as Android's UNLIT_FLAME_SVG:
+  // a flame *shape* in grey, not a desaturated emoji.
+  private func unlitFlameGlyph(size: CGFloat) -> some View {
+    Image(systemName: "flame.fill")
+      .font(.system(size: size))
+      .foregroundColor(unlitFlame)
   }
 
   @ViewBuilder private var content: some View {
@@ -513,7 +591,7 @@ struct StreakWidgetEntryView: View {
 
   private var loggedOutSmall: some View {
     VStack(alignment: .leading, spacing: 0) {
-      Text("🔥").font(.system(size: 46)).grayscale(1).opacity(0.7)
+      unlitFlameGlyph(size: 42)
       Spacer(minLength: 4)
       Text("Start a streak")
         .font(.system(size: 20, weight: .heavy)).foregroundColor(.white)
@@ -528,7 +606,7 @@ struct StreakWidgetEntryView: View {
   private var loggedOutMedium: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 0) {
-        Text("🔥").font(.system(size: 40)).grayscale(1).opacity(0.7)
+        unlitFlameGlyph(size: 38)
         Spacer(minLength: 6)
         Text("Start a streak")
           .font(.system(size: 22, weight: .heavy)).foregroundColor(.white)
@@ -548,9 +626,11 @@ struct StreakWidgetEntryView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
   }
 
+  // NO AccessoryWidgetBackground here or in `circular` — it was the suspected
+  // culprit in the earlier blank-widget failure, and the simple path proved
+  // fine without it.
   private var loggedOutCircular: some View {
     ZStack {
-      AccessoryWidgetBackground()
       logo(26, opacity: 0.9)
     }
     .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 2))
@@ -568,29 +648,26 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Live countdown to midnight PT. Clamp defensively so the range can never be
-  // degenerate (lowerBound must be <= upperBound, or SwiftUI traps).
+  // Live countdown to midnight PT (lock-screen only — home widgets convey
+  // urgency via the greyed-out state, Duolingo-style). Clamp defensively so the
+  // range can never be degenerate (lowerBound must be <= upperBound, or SwiftUI
+  // traps). Urgency steps white → amber (<12h) → red (<4h), matching Android;
+  // the tier is fixed per timeline entry (getTimeline emits boundary entries).
+  // The iPhone lock screen renders accessories in vibrant (monochrome) mode
+  // where colour only shifts brightness, so the red tier also goes semibold to
+  // still read as urgent there.
   private var countdown: some View {
     let start = min(entry.date, entry.resetDate)
     let end = max(entry.resetDate, start.addingTimeInterval(1))
+    let remaining = entry.resetDate.timeIntervalSince(entry.date)
+    let color: Color = remaining > 12 * 3600 ? .white
+      : remaining > 4 * 3600 ? Color(red: 1.0, green: 0.784, blue: 0.235)
+      : Color(red: 1.0, green: 0.361, blue: 0.361)
     return Text(timerInterval: start...end, countsDown: true)
-      .monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
-  }
-
-  @ViewBuilder private func statusLine(size: CGFloat) -> some View {
-    switch entry.state {
-    case .pending:
-      // Home widgets convey urgency via the greyed-out state, not a live timer
-      // (Duolingo-style). The countdown lives on the lock-screen accessories.
-      EmptyView()
-    case .lit:
-      EmptyView() // the lit-up orange already says "done today"
-    case .frozen:
-      Text("Frozen · \(entry.freezesLeft) left")
-        .font(.system(size: size, weight: .bold))
-        .foregroundColor(Color(red: 0.90, green: 0.96, blue: 1.0))
-        .lineLimit(1).minimumScaleFactor(0.6)
-    }
+      .monospacedDigit()
+      .fontWeight(remaining <= 4 * 3600 ? .semibold : .regular)
+      .foregroundColor(color)
+      .lineLimit(1).minimumScaleFactor(0.5)
   }
 
   // A single frost speck (used on frozen widgets).
@@ -598,21 +675,27 @@ struct StreakWidgetEntryView: View {
     Text(s).font(.system(size: size)).foregroundColor(.white).opacity(op).position(x: x, y: y)
   }
 
-  // Home screen — small
+  // Home screen — small: flame to the LEFT of the number (matches the Android
+  // small family), label under, trophy on the right at a gold milestone.
   private var small: some View {
-    let dim = entry.state == .pending
+    let milestone = isGoldMilestone(entry.state, entry.streak)
     return VStack(alignment: .leading, spacing: 0) {
-      Text(emoji(for: entry.state))
-        .font(.system(size: 48))
-        .grayscale(dim ? 1 : 0).opacity(dim ? 0.75 : 1)
-      Spacer(minLength: 4)
-      Text("\(entry.streak)")
-        .font(.system(size: 48, weight: .heavy)).foregroundColor(.white)
-        .lineLimit(1).minimumScaleFactor(0.4)
-      Text("day streak")
+      HStack(spacing: 6) {
+        glyph(size: 28)
+        Text("\(entry.streak)")
+          .font(.system(size: 48, weight: .heavy)).foregroundColor(.white)
+          .lineLimit(1).minimumScaleFactor(0.4)
+          .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
+                  radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
+        if milestone {
+          Spacer(minLength: 4)
+          Text("🏆").font(.system(size: 22))
+        }
+      }
+      Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
         .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
-      Spacer(minLength: 4)
-      statusLine(size: 14)
+        .lineLimit(1).minimumScaleFactor(0.6)
+        .padding(.top, 2)
     }
     .padding(16)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -633,31 +716,39 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Home screen — medium: streak (left) + quests & rotating hook (right)
+  // Home screen — medium: streak (left) + quests & rotating hook (right).
+  // Android's medium uses a full-width quest panel instead (its cells are wide
+  // but short) — an intentional per-platform divergence; the copy, colours,
+  // milestone tiers, and quest-row content do match.
   private var medium: some View {
-    let dim = entry.state == .pending
+    let milestone = isGoldMilestone(entry.state, entry.streak)
     return HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 0) {
-        Text(emoji(for: entry.state))
-          .font(.system(size: 38))
-          .grayscale(dim ? 1 : 0).opacity(dim ? 0.75 : 1)
+        HStack(spacing: 2) {
+          glyph(size: 32)
+          if milestone {
+            Spacer(minLength: 2)
+            Text("✨").font(.system(size: 13))
+            Text("🏆").font(.system(size: 26))
+          }
+        }
         Spacer(minLength: 2)
         Text("\(entry.streak)")
           .font(.system(size: 42, weight: .heavy)).foregroundColor(.white)
           .lineLimit(1).minimumScaleFactor(0.4)
-        Text("day streak")
+          .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
+                  radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
+        Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
           .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
-        if entry.state != .lit {
-          statusLine(size: 13).padding(.top, 4)
-        }
+          .lineLimit(1).minimumScaleFactor(0.6)
       }
       .frame(width: 92, alignment: .leading)
 
       Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
 
       VStack(alignment: .leading, spacing: 7) {
-        // Quests aren't fetched natively yet, so this is empty for now — center
-        // the logo + hook. Once quests are wired, they stack on top and the hook
+        // No quest data synced yet (e.g. the blob predates the quest sync) —
+        // center the logo + hook. With quests they stack on top and the hook
         // anchors to the bottom.
         if entry.quests.isEmpty {
           Spacer(minLength: 0)
@@ -704,10 +795,10 @@ struct StreakWidgetEntryView: View {
   }
 
   // Lock screen — circular. Ring fills ONLY when you've actually bet today.
+  // (No AccessoryWidgetBackground — see loggedOutCircular.)
   private var circular: some View {
     let done = entry.state == .lit
     return ZStack {
-      AccessoryWidgetBackground()
       if entry.state == .frozen {
         Text("🧊").font(.system(size: 40)).opacity(0.32)
         circularFrost
