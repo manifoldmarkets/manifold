@@ -10,6 +10,7 @@ import { BetDialog } from 'web/components/bet/bet-dialog'
 import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { sliderColors } from 'web/components/widgets/slider'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 const DEM_LOGO = '/politics-party/democrat_symbol.png'
 const REP_LOGO = '/politics-party/republican_symbol.png'
@@ -40,20 +41,41 @@ export function BalanceOfPowerPanel(props: {
   // subtitle, and background.
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <PowerLever title="Senate" contract={senateControl} />
-      <PowerLever title="House" contract={houseControl} />
+      <PowerLever
+        title="Senate Control"
+        contract={senateControl}
+        info="Senate control requires 51 seats, or 50 with the Republican Vice President casting the tie-breaking vote."
+      />
+      <PowerLever title="House Control" contract={houseControl} />
     </div>
   )
 }
 
-function PowerLever(props: { title: string; contract: Contract | null }) {
-  const { title, contract } = props
+function PowerLever(props: {
+  title: string
+  contract: Contract | null
+  info?: string
+}) {
+  const { title, contract, info } = props
   const [betOutcome, setBetOutcome] = useState<BinaryOutcomes>()
+
+  const titleEl = (
+    <Row className="text-ink-700 items-center gap-1 font-medium">
+      {title}
+      {info && (
+        <InfoTooltip
+          size="sm"
+          text={info}
+          tooltipParams={{ className: 'text-xs' }}
+        />
+      )}
+    </Row>
+  )
 
   if (!contract) {
     return (
       <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
-        <span className="text-ink-700 font-medium">{title}</span>
+        {titleEl}
         <span className="text-ink-500 text-sm">No market yet</span>
       </Col>
     )
@@ -66,7 +88,7 @@ function PowerLever(props: { title: string; contract: Contract | null }) {
   return (
     <Col className="bg-canvas-50 gap-2 rounded-lg p-3">
       <Row className="items-center justify-between">
-        <span className="text-ink-700 font-medium">{title}</span>
+        {titleEl}
         <Link
           href={contractPath(contract)}
           className="text-ink-400 hover:text-primary-600 text-xs hover:underline"
