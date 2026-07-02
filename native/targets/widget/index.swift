@@ -903,17 +903,18 @@ struct StreakWidgetEntryView: View {
     let milestone = isGoldMilestone(entry.state, entry.streak)
     let showTimer = entry.state != .lit
     return VStack(alignment: .leading, spacing: 0) {
+      // NO trophy here: glyph + a 3-digit number + 🏆 over-constrained the row
+      // and SwiftUI truncated the number to "…" (emoji can't compress). The
+      // gold gradient + Mani's starstruck/party poses carry the milestone.
+      // layoutPriority guarantees the number wins any width negotiation.
       HStack(spacing: 6) {
         glyph(size: 28)
         Text("\(entry.streak)")
           .font(.system(size: 48, weight: .heavy)).foregroundColor(.white)
           .lineLimit(1).minimumScaleFactor(0.4)
+          .layoutPriority(1)
           .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                   radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
-        if milestone {
-          Spacer(minLength: 4)
-          Text("🏆").font(.system(size: 22))
-        }
       }
       Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
         .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
@@ -963,6 +964,7 @@ struct StreakWidgetEntryView: View {
         Text("\(entry.streak)")
           .font(.system(size: 42, weight: .heavy)).foregroundColor(.white)
           .lineLimit(1).minimumScaleFactor(0.4)
+          .layoutPriority(1)
           .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                   radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
         Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
