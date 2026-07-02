@@ -847,8 +847,10 @@ struct StreakWidgetEntryView: View {
         case .pending:
           countdown().font(.system(size: 12)).opacity(0.9)
         case .frozen:
+          // Just "Frozen" + the ticking timer — the freezes-left count lives on
+          // the home widgets; three segments truncated here ("Frozen · 2 le…").
           HStack(spacing: 4) {
-            Text("Frozen · \(entry.freezesLeft) left ·")
+            Text("Frozen ·")
             countdown()
           }
           .font(.system(size: 12)).opacity(0.9)
