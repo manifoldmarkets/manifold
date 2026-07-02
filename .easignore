@@ -1,0 +1,35 @@
+# Extra excludes for the EAS build archive (uploaded from the repo root on
+# every `eas build`). NOTE: when this file exists, EAS ignores .gitignore
+# entirely — so the .gitignore patterns are re-stated first.
+#
+# Why: EAS honors only a root ignore file, not nested ones (web/.gitignore,
+# native/.gitignore), so local build artifacts (web/.next, native/android
+# Gradle output) were bloating the upload from ~160 MB of sources to 4+ GB.
+# Do NOT add native/google-services.json here — the build needs it, and it
+# only uploads because nested .gitignores are skipped.
+
+# --- from root .gitignore ---
+.DS_Store
+.idea/
+.vercel
+node_modules
+yarn-error.log
+dev
+firebase-debug.log
+dev-mantic-markets-firebase-adminsdk*.json
+mantic-markets-firebase-adminsdk*.json
+.env
+.env.local
+
+# --- build outputs & caches the EAS worker never needs ---
+.git/
+web/.next/
+web/out/
+web/tsconfig.tsbuildinfo
+native/android/app/build/
+native/android/app/.cxx/
+native/android/build/
+native/android/.gradle/
+native/.expo/
+native/screenshots/
+mani/
