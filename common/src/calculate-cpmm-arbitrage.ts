@@ -342,6 +342,18 @@ function calculateCpmmMultiArbitrageBetsYesV2(
   const n = initialAnswers.length
   const m = initialAnswersToBuy.length
 
+  // m = n is the one structurally infeasible basket: with no other answers to arb down, any
+  // g > 0 pushes Sum p past 1, so every evalG is undefined and the bisection collapses to a
+  // denormal g where calculateAmountToBuySharesFixedP degenerates to NaN — surfacing as a
+  // stack-leaking 'Invalid bet amount' deep in computeFills. Reject up front with the typed
+  // error instead (new-bet.ts maps it to a 503).
+  if (others.length === 0) {
+    throw new CpmmMulti2InvariantError(
+      'cpmm-multi-2 YES basket cannot include every answer (m = n is infeasible)',
+      { n, m }
+    )
+  }
+
   // Evaluate one g: realize the basket YES legs + the arbed OTHER NO legs at the eta that pins
   // Sum prob == 1. Returns undefined when g is infeasible (basket alone already sums >= 1).
   const evalG = (g: number) => {
@@ -486,7 +498,12 @@ function calculateCpmmMultiArbitrageBetsYesV2(
   })
   const solved = evalG(g)
   if (!solved) {
-    throw new Error('Invariant failed in cpmm-multi-2 YES basket solve')
+    // Reachable e.g. when the basket is ALL answers (m = n: every g is infeasible, target <= 0).
+    // Typed so new-bet.ts maps it to a 503 instead of leaking a 500 stack to the API caller.
+    throw new CpmmMulti2InvariantError(
+      'Invariant failed in cpmm-multi-2 YES basket solve',
+      { g, betAmount, n, m }
+    )
   }
   const { yesBetResults, noBetResults, eta, net } = solved
 
@@ -551,7 +568,186 @@ function calculateCpmmMultiArbitrageBetsYesV2(
     collectedFees
   )
 
+  // Always-on post-hoc verification (cost is one pass over the result vs. ~100 evalG bisection
+  // probes to produce it). Throws CpmmMulti2InvariantError; new-bet.ts maps it to a retryable
+  // 503, so a wrong solve fails the bet instead of committing a mis-priced fill.
+  verifyCpmmMulti2BetResult(
+    betAmount,
+    newBetResults,
+    otherBetResults,
+    updatedAnswers,
+    unfilledBets
+  )
+
   return { newBetResults, otherBetResults, updatedAnswers }
+}
+
+// --- cpmm-multi-2 post-hoc solve verification -------------------------------------------------
+// The v2 solve above bisects on the premise that net(g) is strictly increasing. That premise is
+// proven only at p = 1/2 with no resting limits (GP12a); production runs general p against a live
+// limit book. If the premise ever fails, binarySearch returns a wrong g SILENTLY — the taker is
+// mis-charged with no error anywhere. But verifying a claimed equilibrium is trivial even where
+// finding it is hard, so we check the returned result and fail the bet (which the client can
+// retry) rather than commit a wrong fill. This demotes monotonicity from a correctness assumption
+// to a performance assumption.
+//
+// Deliberately a typed error rather than common/api/utils APIError: importing api/utils here
+// would close the module cycle api/utils -> api/schema -> new-bet -> this file. new-bet.ts
+// (which already imports APIError) maps it to APIError(503, ...), so API callers see a retryable
+// error instead of a stack-leaking 500.
+export class CpmmMulti2InvariantError extends Error {
+  details?: unknown
+  constructor(message: string, details?: unknown) {
+    super(message)
+    this.name = 'CpmmMulti2InvariantError'
+    this.details = details
+  }
+}
+
+// Tolerances calibrated 2026-07-01 against the 50-iteration bisection's observed residuals on
+// this repo's v2 jest fixtures plus the net(g) monotonicity probe's 152-call sweep (p = 1/2 and
+// general-p pools, m = 1..4 baskets, balanced/skewed/extreme creation pools, resting makers,
+// bets M$1..M$100k). Worst observed: cost 1.5e-9 absolute (M$100k whale; <= 1.1e-11 for bets
+// <= 500), basket share spread 2.2e-13 (relative), maker price / order overfill exactly 0.
+// Cost and shares are relative with an absolute floor (residuals scale with bet size).
+//
+// PROB-SUM CAVEAT — why its tolerance is loose (1e-2) while cost is tight: when a maker holds
+// YES bids on TWO+ non-basket answers but has balance for only one leg, the inner eta solve
+// previews the NO legs with per-leg balance copies yet realizes them against a shared decremented
+// balance, so realized Sum_others prob lands short of target — final Sum q deviates from 1 by up
+// to ~2e-3 (observed 1.73e-3 at bet 500). This is PRE-EXISTING behavior shared with frozen v1
+// (same config shows -1.03e-3 on v1) and the taker charge stays exact (cost residual 2.3e-12);
+// the market is merely left with a small open arb. A tight Sum q check would make v2 refuse bets
+// v1 accepts — a functional regression — so the tolerance sits above the balance-binding
+// deviation. In every non-balance-bound config |Sum q - 1| <= 8.9e-16.
+// TODO: recalibrate against the whale-bet probe (cpmm-perf-bench) before raising bet-size caps.
+const V2_VERIFY_COST_EPS = 1e-8 // relative to betAmount, floored at V2_VERIFY_COST_EPS_ABS
+const V2_VERIFY_COST_EPS_ABS = 1e-6 // absolute floor (observed worst 1.5e-9 at M$100k)
+const V2_VERIFY_PROB_SUM_EPS = 1e-2 // absolute on Sum_i prob_i — loose, see caveat above
+const V2_VERIFY_SHARES_EPS = 1e-9 // relative, basket equal-shares spread & other-leg net shares
+const V2_VERIFY_MAKER_EPS = 1e-9 // maker fill bookkeeping (exact identities up to roundoff)
+
+// Checks the v2 result exactly as downstream consumes it (executeNewBetResult / the conservation
+// grid): taker fills = `takers`, maker fills = `makers`, final pools = per-answer cpmmState.
+// NOT checkable post-hoc: the no-overshoot path property (a maker strictly outside an answer's
+// [initial, final] excursion must not be crossed) — the result carries no price path, so the
+// conservation grid's falsification sweep owns that invariant, not this verifier.
+export const verifyCpmmMulti2BetResult = (
+  betAmount: number,
+  newBetResults: ArbitrageBetArray,
+  otherBetResults: ArbitrageBetArray,
+  updatedAnswers: Answer[],
+  unfilledBets: LimitBet[]
+) => {
+  const fail = (check: string, details: unknown): never => {
+    throw new CpmmMulti2InvariantError(
+      `cpmm-multi-2 solve verification failed: ${check}`,
+      details
+    )
+  }
+
+  // (a) Cost conservation. The taker's whole spend lives on the basket YES legs: each other-
+  // answer NO leg carries an appended redemption fill that nets it to exactly zero mana AND zero
+  // shares (the eta*(n-m-1) credit plus the residual eta YES/leg flow to the basket legs). So
+  // Sum_basket takers.amount == betAmount — the same identity new-bet.ts uses for isFilled and
+  // the conservation grid's `Sum(balance deltas) + fees == 0` closure. A wrong g from a
+  // non-monotone net(g) surfaces HERE: the inner eta solve re-pins Sum p == 1 for any g, so
+  // mis-solves mis-charge rather than mis-price.
+  const spend = sumBy(
+    newBetResults.flatMap((r) => r.takers),
+    'amount'
+  )
+  const costTol = Math.max(
+    V2_VERIFY_COST_EPS_ABS,
+    V2_VERIFY_COST_EPS * betAmount
+  )
+  if (Math.abs(spend - betAmount) > costTol) {
+    fail('taker spend != betAmount (wrong g?)', { spend, betAmount })
+  }
+  for (const r of otherBetResults) {
+    const netAmount = sumBy(r.takers, 'amount')
+    const netShares = sumBy(r.takers, 'shares')
+    const grossShares = sumBy(r.takers, (t) => Math.abs(t.shares))
+    if (
+      Math.abs(netAmount) > costTol ||
+      Math.abs(netShares) > V2_VERIFY_SHARES_EPS * Math.max(1, grossShares)
+    ) {
+      fail('other-answer NO leg does not net to zero', {
+        answerId: r.answer.id,
+        netAmount,
+        netShares,
+      })
+    }
+  }
+
+  // (b) Sum-to-one + (c) positivity on the final state of EVERY answer. updatedAnswers is the
+  // solve's own final state (basket + others both realized), the same pools executeNewBetResult
+  // persists. The Sum q tolerance is deliberately loose — see the balance-bound-maker caveat at
+  // the EPS definitions above (legitimate ~2e-3 deviation shared with v1).
+  let probSum = 0
+  for (const a of updatedAnswers) {
+    if (!(a.poolYes > 0) || !(a.poolNo > 0) || !(a.p > 0 && a.p < 1)) {
+      fail('final pool not positive / p outside (0,1)', {
+        answerId: a.id,
+        poolYes: a.poolYes,
+        poolNo: a.poolNo,
+        p: a.p,
+      })
+    }
+    probSum += getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
+  }
+  if (Math.abs(probSum - 1) > V2_VERIFY_PROB_SUM_EPS) {
+    fail('final probabilities do not sum to 1', { probSum })
+  }
+
+  // (d) Maker-fill sanity. A limit fill is priced AT the maker's limitProb (computeFill:
+  // maker.amount = shares * makerPrice), and the fills against one order cannot exceed what was
+  // left unfilled on the book when the solve started. Each answer's book is touched by exactly
+  // one leg in v2, but group by order id anyway so the check doesn't depend on that.
+  const bookById = new Map(unfilledBets.map((b) => [b.id, b]))
+  const allMakers = [...newBetResults, ...otherBetResults].flatMap(
+    (r) => r.makers
+  )
+  for (const m of allMakers) {
+    const price =
+      m.bet.outcome === 'YES' ? m.bet.limitProb : 1 - m.bet.limitProb
+    if (
+      m.shares < -V2_VERIFY_MAKER_EPS ||
+      m.amount < -V2_VERIFY_MAKER_EPS ||
+      Math.abs(m.amount - m.shares * price) >
+        V2_VERIFY_MAKER_EPS * Math.max(1, m.amount)
+    ) {
+      fail('maker fill not priced at its limitProb / negative fill', {
+        orderId: m.bet.id,
+        amount: m.amount,
+        shares: m.shares,
+        limitProb: m.bet.limitProb,
+      })
+    }
+  }
+  for (const [orderId, fills] of Object.entries(
+    groupBy(allMakers, (m) => m.bet.id)
+  )) {
+    const order = bookById.get(orderId) ?? fills[0].bet
+    const remaining = order.orderAmount - order.amount
+    const filled = sumBy(fills, 'amount')
+    if (filled > remaining + V2_VERIFY_MAKER_EPS * Math.max(1, remaining)) {
+      fail('maker order filled beyond its remaining size', {
+        orderId,
+        filled,
+        remaining,
+      })
+    }
+  }
+
+  // (e) Equal shares — the multi-bet contract: every basket answer acquires the same YES shares
+  // (g from the sweep + eta from the redemption residual).
+  const basketShares = newBetResults.map((r) => sumBy(r.takers, 'shares'))
+  const maxShares = Math.max(...basketShares)
+  const spread = maxShares - Math.min(...basketShares)
+  if (spread > V2_VERIFY_SHARES_EPS * Math.max(1, maxShares)) {
+    fail('basket YES shares not equal across answers', { basketShares })
+  }
 }
 
 export const getBetResultsAndUpdatedAnswers = (

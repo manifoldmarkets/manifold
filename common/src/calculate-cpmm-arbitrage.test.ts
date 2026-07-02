@@ -9,6 +9,8 @@ import {
   calculateCpmmMultiArbitrageBet,
   calculateCpmmMultiArbitrageSellYesEqually,
   calculateCpmmMultiArbitrageYesBets,
+  CpmmMulti2InvariantError,
+  verifyCpmmMulti2BetResult,
 } from './calculate-cpmm-arbitrage'
 import { getFeeTotal, getTakerFee, noFees } from './fees'
 import { getMultiNumericAnswerBucketRanges } from './number'
@@ -991,5 +993,120 @@ describe('calculateCpmmMultiArbitrageYesBets — cpmm-multi-2 m>1 basket conserv
   it('m=1 (single-answer via basket path) still conserves (byte-identical eta credit)', () => {
     const payouts = payoutByWinner(runBasket([0.5, 0.3, 0.2], [0], 25))
     expect(Math.max(...payouts) - Math.min(...payouts)).toBeLessThan(0.01)
+  })
+})
+
+// --- cpmm-multi-2: post-hoc solve verification (verifyCpmmMulti2BetResult) --------------------
+// The v2 solve's outer bisection is sound only if net(g) is strictly increasing, and GP12a proves
+// that only at p = 1/2 with no resting limits — production runs general p against a limit book.
+// The verifier re-checks the RETURNED result (cost/sum-to-one/positivity/maker-fill/equal-shares)
+// so a monotonicity failure fails the bet instead of silently mis-charging the taker. These tests
+// pin (1) that healthy solves pass, (2) that corrupted results are actually rejected (a verifier
+// that never fires is dead weight), and (3) that solve-level invariant failures surface as the
+// typed error (new-bet.ts maps it to a 503), not a stack-leaking plain Error.
+describe('verifyCpmmMulti2BetResult — cpmm-multi-2 post-hoc verification', () => {
+  // deep clone so tampering can't leak between assertions (results share object references)
+  const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x))
+
+  const runV2 = (
+    answers: Answer[],
+    basketIdx: number[],
+    bet: number,
+    orders: LimitBet[] = [],
+    balances: { [userId: string]: number } = { mk: 1e9 }
+  ) =>
+    calculateCpmmMultiArbitrageYesBets(
+      answers,
+      basketIdx.map((i) => answers[i]),
+      bet,
+      undefined,
+      orders,
+      balances,
+      noFees,
+      'cpmm-multi-2'
+    )
+
+  const verify = (
+    bet: number,
+    res: ReturnType<typeof runV2>,
+    orders: LimitBet[] = []
+  ) =>
+    verifyCpmmMulti2BetResult(
+      bet,
+      res.newBetResults,
+      res.otherBetResults,
+      res.updatedAnswers as Answer[],
+      orders
+    )
+
+  it('passes on representative solves: no limits, maker fills, general p', () => {
+    // p = 1/2, no limits (the GP12a-proven regime)
+    const a1 = [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+    expect(() => verify(60, runV2(a1, [0, 1], 60))).not.toThrow()
+
+    // maker fills: an in-path NO ask pins a basket answer (limit book engaged)
+    const a2 = [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+    const orders = [getLimitBet('L1', a2[0], 'NO', 'mk', 600, 0.3)]
+    const res2 = runV2(a2, [0, 1], 60, orders)
+    // positive control: the maker actually filled, so check (d) is exercised, not vacuous
+    expect(res2.newBetResults.flatMap((r) => r.makers).length).toBeGreaterThan(0)
+    expect(() => verify(60, res2, orders)).not.toThrow()
+
+    // general p (outside GP12a's proven scope — exactly why the verifier exists)
+    const a3 = [0.55, 0.25, 0.12, 0.08].map((p, i) => getAnswerWithP(i, p))
+    expect(() => verify(150, runV2(a3, [1, 2], 150))).not.toThrow()
+  })
+
+  it('accepts the balance-bound maker case (legitimate Sum q deviation, shared with v1)', () => {
+    // A maker with YES bids on TWO non-basket answers but balance covering only ~one leg: the
+    // inner eta solve previews the NO legs with per-leg balance copies yet realizes them against
+    // a shared decremented balance, so final Sum q lands short of 1 by up to ~2e-3. Frozen v1
+    // shows the same deviation on this shape and the taker charge stays exact, so the verifier's
+    // Sum q tolerance must NOT reject it — else v2 refuses bets v1 accepts.
+    const answers = [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+    const orders = [
+      getLimitBet('Y2', answers[2], 'YES', 'poorMk', 100, 0.15),
+      getLimitBet('Y3', answers[3], 'YES', 'poorMk', 100, 0.15),
+    ]
+    const res = runV2(answers, [0, 1], 500, orders, { poorMk: 5 })
+    // positive control: the maker actually engaged (otherwise this exercises nothing)
+    const makerFills = res.otherBetResults.flatMap((r) => r.makers)
+    expect(makerFills.length).toBeGreaterThan(0)
+    expect(() => verify(500, res, orders)).not.toThrow()
+  })
+
+  it('rejects a tampered taker amount (the mis-charge a wrong g would produce)', () => {
+    const answers = [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+    const res = clone(runV2(answers, [0, 1], 60))
+    res.newBetResults[0].takers[0].amount += 1
+    expect(() => verify(60, res)).toThrow(CpmmMulti2InvariantError)
+  })
+
+  it('rejects a negative pool reserve', () => {
+    const answers = [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+    const res = clone(runV2(answers, [0, 1], 60))
+    res.updatedAnswers[0].poolYes = -1
+    expect(() => verify(60, res)).toThrow(CpmmMulti2InvariantError)
+  })
+
+  it('rejects unequal basket shares (broken multi-bet equal-shares contract)', () => {
+    const answers = [0, 1, 2, 3, 4].map((i) => getAnswerK(i, 0.2, 1000))
+    const res = clone(runV2(answers, [0, 1], 60))
+    res.newBetResults[0].takers[0].shares += 0.5
+    expect(() => verify(60, res)).toThrow(CpmmMulti2InvariantError)
+  })
+
+  it('m = n (all-answers basket) surfaces as the typed error, not a plain Error', () => {
+    // Every g is infeasible when the basket is all answers (no "others" to arb against), so the
+    // solve's feasibility invariant fires. Regression: this used to throw a bare Error, which
+    // leaked to API callers as a 500 with a stack.
+    const answers = [0.5, 0.3, 0.2].map((p, i) => getAnswerWithP(i, p))
+    let caught: unknown
+    try {
+      runV2(answers, [0, 1, 2], 50)
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).toBeInstanceOf(CpmmMulti2InvariantError)
   })
 })
