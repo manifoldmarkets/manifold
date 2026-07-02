@@ -20,6 +20,7 @@
     "colors": "1.4.0",
     "dayjs": "1.11.4",
     "expo-server-sdk": "3.6.0",
+    "fflate": "0.8.2",
     "firebase-admin": "11.11.1",
     "gcp-metadata": "6.1.0",
     "lodash": "4.17.21",

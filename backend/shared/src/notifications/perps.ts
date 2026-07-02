@@ -4,8 +4,39 @@ import { getPrivateUser } from 'shared/utils'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { MANIFOLD_AVATAR_URL } from 'common/user'
 import { nanoid } from 'common/util/random'
+import type { OracleUpdateResult } from 'shared/perps/engine'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+
+// Emit per-user notifications for one oracle update's liquidations and ADL
+// adjustments. Shared by the hourly update-perps job and the fast
+// update-oracle-feeds tick so the two paths can't drift. ADL notifications go
+// only to users whose positions were actually scaled — applyADL only shrinks
+// profitable positions on the winning side, so a blanket "everyone on this
+// side" notification would mislead losers.
+export const notifyPerpOracleResult = async (
+  pg: SupabaseDirectClient,
+  contract: PerpContract,
+  oraclePrice: number,
+  result: OracleUpdateResult
+) => {
+  for (const liq of result.liquidated) {
+    await createPerpLiquidationNotification(pg, contract, liq.userId, {
+      direction: liq.direction,
+      liquidationPrice: liq.liquidationPrice,
+      oraclePrice,
+      size: liq.size,
+      originalCostBasis: liq.originalCostBasis,
+    })
+  }
+  for (const adj of result.adlAdjusted) {
+    await createPerpAdlNotification(pg, contract, adj.position.userId, {
+      direction: adj.position.direction,
+      scaleFactor: adj.scaleFactor,
+      oraclePrice,
+    })
+  }
+}
 
 // Notify a user that their perp position was liquidated.
 export const createPerpLiquidationNotification = async (

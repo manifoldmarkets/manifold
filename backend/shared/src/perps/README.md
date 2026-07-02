@@ -55,11 +55,42 @@ Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
 - `POST /internal-write-oracle-price` (admin-authed, intended for bots) — writes a
   single `(feed_id, ts, price)` row idempotently.
 
+## Oracle feeds
+
+`backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence
+(`fast` | `daily`), sanity bounds, jump guard, and staleness threshold. Feed
+adapters live next to it:
+
+- `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
+  US-accessible; Binance geo-blocks US IPs).
+- `uk-grid-carbon.ts` — GB grid carbon intensity (gCO2/kWh), NESO 30-min
+  actuals.
+- `eci.ts` — Epoch Capabilities Index frontier (max ECI over released
+  models), parsed from Epoch's benchmark data zip (CC-BY — credit Epoch in
+  market descriptions).
+- `trump-approval.ts` — 14-day rolling approval average (VoteHub).
+
+Backfill scripts (`backend/scripts/backfill-{eci,btc,uk-carbon,trump-approval}-oracle.ts`)
+seed chart history before market creation.
+
 ## Scheduler
 
-`backend/scheduler/src/jobs/update-perps.ts` runs hourly, calls
-`runOracleUpdate` then `runFunding` for every unresolved perp contract, and emits
-`perp_liquidation` / `perp_adl` notifications for affected users.
+- `update-oracle-feeds.ts` runs **every 15 seconds** (croner handles
+  sub-minute fine — see the existing `sports-live` job). It fetches `fast`
+  feeds, validates points against the registry, writes `oracle_prices`, and
+  applies `runOracleUpdate` to live perps on those feeds. Liquidation + ADL
+  always run in the same transaction as the price write — never add a
+  price-only update path; closes settle against the cached price.
+- `update-perps.ts` runs hourly: oracle updates for `daily`-feed contracts
+  (a cheap no-op for fast-feed contracts thanks to the engine's no-change
+  fast path), `runFunding` for all, and stale-feed alerting for any live
+  contract. The once-per-`FUNDING_PERIOD_MS` funding gate lives INSIDE
+  `runFunding`, under the advisory lock, so overlapping ticks can't
+  double-fund.
+- `update-trump-approval.ts` / `update-eci.ts` write one daily point each.
+
+Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
+`[update-perps]` — wire GCP log-based alerting to those.
 
 ## Integration points (grep for these to find everything)
 

@@ -59,6 +59,8 @@ import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { updatePerps } from './update-perps'
+import { updateOracleFeeds } from './update-oracle-feeds'
+import { updateEci } from './update-eci'
 import { updateTrumpApproval } from './update-trump-approval'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
@@ -181,6 +183,11 @@ export function createJobs() {
       '0 0 * * * *', // every hour on the hour
       updatePerps
     ),
+    createJob(
+      'update-oracle-feeds',
+      '*/15 * * * * *', // every 15 seconds (fast perp oracle tick)
+      updateOracleFeeds
+    ),
     // Daily jobs:
     createJob(
       'process-membership-renewals',
@@ -296,6 +303,11 @@ export function createJobs() {
       'update-trump-approval',
       '0 30 5 * * *', // 5:30am daily
       updateTrumpApproval
+    ),
+    createJob(
+      'update-eci',
+      '0 45 5 * * *', // 5:45am daily
+      updateEci
     ),
     createJob(
       'onboarding-notification',
