@@ -228,11 +228,12 @@ struct Provider: TimelineProvider {
     let now = Date()
     let first = currentEntry(now)
     var entries = [first]
-    if first.loggedIn && first.state == .pending {
-      // The lock-screen countdown steps white → amber (<12h) → red (<4h), like
-      // Android. A live Text(timerInterval:) can't recolor mid-entry, so emit a
-      // fresh entry at each boundary still ahead; the view derives the tier
-      // from resetDate − entry.date.
+    if first.loggedIn && first.state != .lit {
+      // The countdown (home + lock, shown whenever today isn't done — pending
+      // or frozen) steps white → amber (<12h) → red (<4h), like Android. A live
+      // Text(timerInterval:) can't recolor mid-entry, so emit a fresh entry at
+      // each boundary still ahead; the view derives the tier from
+      // resetDate − entry.date.
       for hoursLeft in [12.0, 4.0] {
         let boundary = first.resetDate.addingTimeInterval(-hoursLeft * 3600)
         if boundary > now { entries.append(currentEntry(boundary)) }
@@ -648,15 +649,16 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Live countdown to midnight PT (lock-screen only — home widgets convey
-  // urgency via the greyed-out state, Duolingo-style). Clamp defensively so the
-  // range can never be degenerate (lowerBound must be <= upperBound, or SwiftUI
-  // traps). Urgency steps white → amber (<12h) → red (<4h), matching Android;
-  // the tier is fixed per timeline entry (getTimeline emits boundary entries).
-  // The iPhone lock screen renders accessories in vibrant (monochrome) mode
-  // where colour only shifts brightness, so the red tier also goes semibold to
-  // still read as urgent there.
-  private var countdown: some View {
+  // Live countdown to midnight PT, shown wherever today isn't done (pending or
+  // frozen) on home AND lock widgets — mirrors Android's Chronometer. Clamp
+  // defensively so the range can never be degenerate (lowerBound must be <=
+  // upperBound, or SwiftUI traps). Urgency steps white → amber (<12h) → red
+  // (<4h), matching Android; the tier is fixed per timeline entry (getTimeline
+  // emits boundary entries). The iPhone lock screen renders accessories in
+  // vibrant (monochrome) mode where colour only shifts brightness, so the red
+  // tier also goes bold to still read as urgent there. `weight` is the base
+  // weight below the red tier (bold on home gradients, regular on lock).
+  private func countdown(weight: Font.Weight = .regular) -> some View {
     let start = min(entry.date, entry.resetDate)
     let end = max(entry.resetDate, start.addingTimeInterval(1))
     let remaining = entry.resetDate.timeIntervalSince(entry.date)
@@ -665,7 +667,7 @@ struct StreakWidgetEntryView: View {
       : Color(red: 1.0, green: 0.361, blue: 0.361)
     return Text(timerInterval: start...end, countsDown: true)
       .monospacedDigit()
-      .fontWeight(remaining <= 4 * 3600 ? .semibold : .regular)
+      .fontWeight(remaining <= 4 * 3600 ? .bold : weight)
       .foregroundColor(color)
       .lineLimit(1).minimumScaleFactor(0.5)
   }
@@ -676,9 +678,13 @@ struct StreakWidgetEntryView: View {
   }
 
   // Home screen — small: flame to the LEFT of the number (matches the Android
-  // small family), label under, trophy on the right at a gold milestone.
+  // small family), label under, trophy on the right at a gold milestone. While
+  // today isn't done (pending/frozen), the hero anchors to the TOP and a live
+  // countdown fills the bottom-left (the crane keeps the bottom-right); once
+  // lit, there's no timer and the hero centres.
   private var small: some View {
     let milestone = isGoldMilestone(entry.state, entry.streak)
+    let showTimer = entry.state != .lit
     return VStack(alignment: .leading, spacing: 0) {
       HStack(spacing: 6) {
         glyph(size: 28)
@@ -696,9 +702,14 @@ struct StreakWidgetEntryView: View {
         .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
         .lineLimit(1).minimumScaleFactor(0.6)
         .padding(.top, 2)
+      if showTimer {
+        Spacer(minLength: 4)
+        countdown(weight: .bold).font(.system(size: 16))
+      }
     }
     .padding(16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, maxHeight: .infinity,
+           alignment: showTimer ? .topLeading : .leading)
     .overlay { if entry.state == .frozen { smallFrost } }
   }
 
@@ -741,6 +752,9 @@ struct StreakWidgetEntryView: View {
         Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
           .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
           .lineLimit(1).minimumScaleFactor(0.6)
+        if entry.state != .lit {
+          countdown(weight: .bold).font(.system(size: 14)).padding(.top, 3)
+        }
       }
       .frame(width: 92, alignment: .leading)
 
@@ -829,26 +843,34 @@ struct StreakWidgetEntryView: View {
       VStack(alignment: .leading, spacing: 1) {
         Text("\(entry.streak)-day streak")
           .font(.system(size: 15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
-        if entry.state == .pending {
-          countdown.font(.system(size: 12)).opacity(0.9)
-        } else {
-          Text(entry.state == .frozen ? "Frozen · \(entry.freezesLeft) left" : "Done today ✓")
-            .font(.system(size: 12)).opacity(0.9)
+        switch entry.state {
+        case .pending:
+          countdown().font(.system(size: 12)).opacity(0.9)
+        case .frozen:
+          HStack(spacing: 4) {
+            Text("Frozen · \(entry.freezesLeft) left ·")
+            countdown()
+          }
+          .font(.system(size: 12)).opacity(0.9)
+          .lineLimit(1).minimumScaleFactor(0.6)
+        case .lit:
+          Text("Done today ✓").font(.system(size: 12)).opacity(0.9)
         }
       }
       Spacer(minLength: 0)
     }
   }
 
-  // Lock screen — inline (beside the clock)
+  // Lock screen — inline (beside the clock). The glyph already says lit/frozen,
+  // so any not-done-today state shows the ticking countdown.
   private var inline: some View {
     HStack(spacing: 4) {
       Text(emoji(for: entry.state))
-      if entry.state == .pending {
-        Text("\(entry.streak) ·")
-        countdown
-      } else {
+      if entry.state == .lit {
         Text("\(entry.streak)-day streak")
+      } else {
+        Text("\(entry.streak) ·")
+        countdown()
       }
     }
   }
