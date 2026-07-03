@@ -847,10 +847,10 @@ struct StreakWidgetEntryView: View {
 
   // NO AccessoryWidgetBackground here or in `circular` — it was the suspected
   // culprit in the earlier blank-widget failure, and the simple path proved
-  // fine without it.
+  // fine without it. Emoji instead of the crane Image (see `circular`).
   private var loggedOutCircular: some View {
     ZStack {
-      logo(26, opacity: 0.9)
+      Text("🔥").font(.system(size: 24)).grayscale(1).opacity(0.5)
     }
     .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 2))
   }
@@ -1027,7 +1027,10 @@ struct StreakWidgetEntryView: View {
   }
 
   // Lock screen — circular. Ring fills ONLY when you've actually bet today.
-  // (No AccessoryWidgetBackground — see loggedOutCircular.)
+  // (No AccessoryWidgetBackground — see loggedOutCircular. And NO UIImage
+  // crane on ANY lock accessory: after a bet flipped the state to lit, the
+  // lock widgets shimmered — the crane Image was the only non-emoji element
+  // on that path, while the emoji-only frozen path rendered fine. Emoji only.)
   private var circular: some View {
     let done = entry.state == .lit
     return ZStack {
@@ -1035,7 +1038,7 @@ struct StreakWidgetEntryView: View {
         Text("🧊").font(.system(size: 40)).opacity(0.32)
         circularFrost
       } else {
-        logo(44, opacity: 0.22)
+        Text("🔥").font(.system(size: 40)).opacity(0.3)
       }
       Text("\(entry.streak)")
         .font(.system(size: 22, weight: .bold)).lineLimit(1).minimumScaleFactor(0.4).padding(3)
