@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { api } from 'web/lib/api/api'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
 import { PerpPositionPanel } from './perp-position-panel'
@@ -13,8 +14,44 @@ import { PerpPositionPanel } from './perp-position-panel'
 // the per-period rate stored on the contract annualizes as rate * 24 * 365.
 const FUNDING_PERIODS_PER_YEAR = 24 * 365
 
+// Poll cadence for the live oracle price. Matches the scheduler's fast tick;
+// there are no websocket broadcasts for oracle updates (the engine runs in
+// the scheduler process, not the API's socket server), so the page polls.
+const PRICE_POLL_MS = 15_000
+
+// Overlay the latest oracle point onto the SSR contract so the price header,
+// bet panel, and position PnL track the feed without a page reload. Never
+// rewind: an older cached response must not beat the SSR snapshot.
+const useLiveOraclePrice = (contract: PerpContract) => {
+  const [latest, setLatest] = useState<{ price: number; ts: number } | null>(
+    null
+  )
+  useEffect(() => {
+    let cancelled = false
+    const tick = () =>
+      api('get-oracle-price', { feedId: contract.oracleFeedId })
+        .then((res) => {
+          if (!cancelled && res.latest) setLatest(res.latest)
+        })
+        .catch(() => {})
+    tick()
+    const id = setInterval(tick, PRICE_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [contract.oracleFeedId])
+
+  if (!latest || latest.ts <= (contract.oraclePriceTime ?? 0)) return contract
+  return {
+    ...contract,
+    oraclePrice: latest.price,
+    oraclePriceTime: latest.ts,
+  }
+}
+
 export const PerpOverview = (props: { contract: PerpContract }) => {
-  const { contract } = props
+  const contract = useLiveOraclePrice(props.contract)
   const [chartMode, setChartMode] = useState<'price' | 'funding'>('price')
 
   const price = Number(contract.oraclePrice)
