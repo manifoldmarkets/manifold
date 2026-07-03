@@ -437,8 +437,8 @@ function SmallWidget({
         pacificDayOfYear(now)
       )
     ),
-    width: isTall ? 86 : 72,
-    height: isTall ? 100 : 84,
+    width: isTall ? 96 : 72,
+    height: isTall ? 112 : 84,
   }
   if (state === 'loggedOut' || !data) {
     return (

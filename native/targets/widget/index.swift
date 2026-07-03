@@ -903,16 +903,19 @@ struct StreakWidgetEntryView: View {
     let milestone = isGoldMilestone(entry.state, entry.streak)
     let showTimer = entry.state != .lit
     return VStack(alignment: .leading, spacing: 0) {
-      // NO trophy here: glyph + a 3-digit number + 🏆 over-constrained the row
-      // and SwiftUI truncated the number to "…" (emoji can't compress). The
-      // gold gradient + Mani's starstruck/party poses carry the milestone.
-      // layoutPriority guarantees the number wins any width negotiation.
+      // NO trophy here (it over-crowded the row at 3+ digits; the gold gradient
+      // + Mani's starstruck/party poses carry the milestone), and NO
+      // layoutPriority on the number (it starved the glyph instead — the flame
+      // compressed to invisible under a wide number). Instead: the glyph is
+      // fixedSize so it can never be squeezed, and the number shrinks via
+      // minimumScaleFactor. 24/44 match Android's flame/number proportions and
+      // fit 3 digits with no scaling on every device size.
       HStack(spacing: 6) {
-        glyph(size: 28)
+        glyph(size: 24)
+          .fixedSize()
         Text("\(entry.streak)")
-          .font(.system(size: 48, weight: .heavy)).foregroundColor(.white)
+          .font(.system(size: 44, weight: .heavy)).foregroundColor(.white)
           .lineLimit(1).minimumScaleFactor(0.4)
-          .layoutPriority(1)
           .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                   radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
       }
