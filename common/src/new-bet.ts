@@ -297,8 +297,6 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     // NOTE: only accepts YES bets atm
     // cpmm-multi-2 routes through the direct non-overshooting solve (Approach C);
     // cpmm-multi-1 keeps the v1 nested search byte-identically.
-    const arbVersion =
-      contract.mechanism === 'cpmm-multi-2' ? 'cpmm-multi-2' : 'cpmm-multi-1'
     try {
       const multiRes = calculateCpmmMultiArbitrageYesBets(
         answers,
@@ -308,7 +306,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
         unfilledBets,
         balanceByUserId,
         contract.collectedFees,
-        arbVersion
+        contract.mechanism
       )
       newBetResults.push(...multiRes.newBetResults)
       otherBetsResults.push(...multiRes.otherBetResults)

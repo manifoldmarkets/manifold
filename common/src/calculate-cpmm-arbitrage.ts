@@ -96,10 +96,11 @@ export function calculateCpmmMultiArbitrageYesBets(
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees,
   // cpmm-multi-2 (per-answer p + reversible-limit auto-arb) routes the basket buy through the
-  // direct, non-overshooting "Approach C" solve. Defaults to the frozen v1 path so every
-  // existing cpmm-multi-1 caller is byte-identical. Gate at the call site on
-  // contract.mechanism === 'cpmm-multi-2'.
-  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2' = 'cpmm-multi-1'
+  // direct, non-overshooting "Approach C" solve; cpmm-multi-1 keeps the frozen v1 nested
+  // search byte-identically. REQUIRED — pass contract.mechanism. Deliberately no default:
+  // a silent v1 default let a preview path (numeric-bet-panel) show v1 fills for a v2
+  // market; the compiler now forces every caller to say which market it is pricing.
+  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2'
 ) {
   const result = calculateCpmmMultiArbitrageBetsYes(
     answers,
@@ -196,7 +197,7 @@ function calculateCpmmMultiArbitrageBetsYes(
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees,
-  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2' = 'cpmm-multi-1'
+  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2'
 ) {
   if (arbVersion === 'cpmm-multi-2') {
     return calculateCpmmMultiArbitrageBetsYesV2(

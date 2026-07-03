@@ -302,7 +302,8 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       undefined,
       [],
       {},
-      noFees
+      noFees,
+      'cpmm-multi-1' // pinned: frozen-v1 behavior test
     )
     const { newBetResults, otherBetResults } = result
     const pools = [
@@ -324,7 +325,8 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       undefined,
       [],
       {},
-      noFees
+      noFees,
+      'cpmm-multi-1' // pinned: frozen-v1 behavior test
     )
     const { newBetResults, otherBetResults, updatedAnswers } = result
 
@@ -389,7 +391,8 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       undefined,
       [],
       {},
-      noFees
+      noFees,
+      'cpmm-multi-1' // pinned: frozen-v1 behavior test
     )
     const totalUserAmount = sumBy(
       newBetResults.flatMap((r) => r.takers),
@@ -442,7 +445,8 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
         undefined,
         unfilledBets,
         balanceByUserId,
-        noFees
+        noFees,
+        'cpmm-multi-1' // pinned: frozen-v1 behavior test
       )
 
     const allMakers = [
