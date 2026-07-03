@@ -386,6 +386,19 @@ enum ManiPose {
 // Streaks that get the one-day party hat (the day you cross a milestone).
 private let kPartyStreaks: Set<Int> = [30, 50, 100, 200, 365, 500, 1000]
 
+// Seasonal dress-up, gated on the DEVICE-local calendar date (holidays happen
+// where the phone is). Accessories draw on top of whatever pose the day rolls.
+enum ManiSeason { case none, halloween, christmas, newYear }
+
+func maniSeason(for date: Date) -> ManiSeason {
+  let c = Calendar.current.dateComponents([.month, .day], from: date)
+  guard let m = c.month, let d = c.day else { return .none }
+  if m == 10 && d >= 24 { return .halloween }
+  if m == 12 && d >= 18 && d <= 26 { return .christmas }
+  if (m == 12 && d == 31) || (m == 1 && d == 1) { return .newYear }
+  return .none
+}
+
 // betHour: the DEVICE-local hour of the user's last bet (nil if unknown) —
 // a dawn bet gets the energized early bird, a late-night one the satisfied
 // night owl. allQuestsDone: quests synced AND every row ticked → ecstatic.
@@ -469,6 +482,7 @@ enum ManiOrientation { case left, right, front, hangTop }
 struct ManiView: View {
   let pose: ManiPose
   var orientation: ManiOrientation = .left
+  var season: ManiSeason = .none
 
   var body: some View {
     Canvas { rawCtx, size in
@@ -590,14 +604,23 @@ struct ManiView: View {
           ctx.fill(moon, with: .color(rgb(202, 220, 255)))
           glyphText("✦", 84, 8, 8, rgb(230, 238, 255))
         case .ecstatic:
+          // v2: open-beak gasp (standard beak skipped by the body), brows up,
+          // star eyes, crown ticks, sparks on three sides.
+          poly([(52, 48), (68, 48), (60, 58)], pal.beak)
+          poly([(55, 63), (65, 63), (60, 72)], pal.beak)
           for ex in [45.0, 75.0] {
             circle(ex, 45, 7.5, .white)
             poly([(ex, 40), (ex + 1.8, 43.2), (ex + 5, 45), (ex + 1.8, 46.8),
                   (ex, 50), (ex - 1.8, 46.8), (ex - 5, 45), (ex - 1.8, 43.2)],
                  rgb(255, 210, 77))
           }
-          glyphText("✦", 96, 20, 12, rgb(255, 232, 145))
-          glyphText("✦", 24, 26, 9, rgb(255, 232, 145))
+          quad(36, 32, 45, 26, 54, 32, 3.5, maniInk)
+          quad(66, 32, 75, 26, 84, 32, 3.5, maniInk)
+          line(44, 16, 48, 24, 2.5, rgb(255, 232, 145))
+          line(76, 24, 80, 16, 2.5, rgb(255, 232, 145))
+          glyphText("✦", 18, 28, 10, rgb(255, 232, 145))
+          glyphText("✦", 94, 18, 13, rgb(255, 232, 145))
+          glyphText("✦", 100, 42, 8, rgb(255, 232, 145))
         case .happyClassic, .party:
           quad(37, 46, 45, 38, 53, 46, 4, .white)
           quad(67, 46, 75, 38, 83, 46, 4, .white)
@@ -709,23 +732,29 @@ struct ManiView: View {
       }
 
       if orientation == .front {
-        // Front-facing body: symmetric head, centred beak, two eyes.
+        // Front-facing body: symmetric head, centred beak, two eyes. The
+        // ecstatic pose draws its own OPEN beak in frontFace().
         poly([(44, 140), (76, 140), (72, 72), (48, 72)], pal.neck)
         poly([(64, 140), (76, 140), (72, 72), (64, 73)], pal.neckShade)
         poly([(34, 34), (86, 34), (92, 64), (60, 78), (28, 64)], pal.head)
         poly([(28, 64), (60, 78), (92, 64), (88, 70), (60, 84), (32, 70)], pal.jaw)
-        poly([(52, 50), (68, 50), (60, 68)], pal.beak)
+        if pose != .ecstatic {
+          poly([(52, 50), (68, 50), (60, 68)], pal.beak)
+        }
         frontFace()
+        drawSeason(withHat: false)
         return
       }
 
       // Side-profile body (mirrored for .right, flipped for .hangTop): neck
-      // shade, neck, head, jaw, beak.
+      // shade, neck, head, jaw, beak. The night owl's beak droops toward the
+      // floor — a bird nodding off.
       poly([(100, 140), (114, 140), (104, 68), (94, 70)], pal.neckShade)
       poly([(78, 140), (100, 140), (94, 70), (80, 74)], pal.neck)
       poly([(50, 36), (92, 30), (102, 66), (66, 74)], pal.head)
       poly([(66, 74), (102, 66), (94, 70), (80, 74)], pal.jaw)
-      poly([(54, 48), (64, 70), (8, 62)], pal.beak)
+      let beakTip: (Double, Double) = pose == .nightOwl ? (12, 80) : (8, 62)
+      poly([(54, 48), (64, 70), beakTip], pal.beak)
 
       if orientation == .hangTop {
         hangFace()
@@ -748,6 +777,110 @@ struct ManiView: View {
                    control2: pt(cx + r * 0.9, cy + r * 0.35))
         p.closeSubpath()
         ctx.fill(p, with: .color(rgb(255, 92, 138)))
+      }
+
+      // Seasonal dress-up drawn over the finished pose (device-local date).
+      // Hats are authored for the side profile; front/hanging orientations
+      // keep only the scene items (bat, pumpkin, snow, firework).
+      func drawSeason(withHat: Bool) {
+        func ellipse(_ cx: Double, _ cy: Double, _ rx: Double, _ ry: Double,
+                     _ color: Color) {
+          ctx.fill(Path(ellipseIn: CGRect(x: (cx - rx) * s, y: (cy - ry) * s,
+                                          width: 2 * rx * s, height: 2 * ry * s)),
+                   with: .color(color))
+        }
+        switch season {
+        case .none:
+          break
+        case .christmas:
+          if withHat {
+            // One continuous bent-sock silhouette + fold shade + pompom + band.
+            var sock = Path()
+            sock.move(to: pt(52, 36))
+            sock.addCurve(to: pt(71, 6), control1: pt(54, 20), control2: pt(60, 9))
+            sock.addCurve(to: pt(92, 12), control1: pt(80, 3), control2: pt(88, 6))
+            sock.addCurve(to: pt(91, 23), control1: pt(95, 16), control2: pt(95, 21))
+            sock.addCurve(to: pt(79, 12), control1: pt(88, 17), control2: pt(84, 13))
+            sock.addCurve(to: pt(90, 30), control1: pt(84, 17), control2: pt(88, 23))
+            sock.closeSubpath()
+            ctx.fill(sock, with: .color(rgb(225, 75, 75)))
+            var fold = Path()
+            fold.move(to: pt(79, 12))
+            fold.addCurve(to: pt(90, 30), control1: pt(84, 17), control2: pt(88, 23))
+            fold.addLine(to: pt(85, 31))
+            fold.addCurve(to: pt(79, 12), control1: pt(83, 22), control2: pt(81, 16))
+            fold.closeSubpath()
+            ctx.fill(fold, with: .color(rgb(201, 58, 58)))
+            circle(92, 24, 5, .white)
+            line(50, 37, 92, 31, 9, .white)
+          }
+          glyphText("❄", 30, 16, 9, rgb(234, 244, 255))
+          glyphText("❄", 104, 46, 8, rgb(234, 244, 255))
+        case .halloween:
+          if withHat {
+            // Witch hat, rotated onto the head's slant.
+            var hat = ctx
+            hat.translateBy(x: 72 * s, y: 33 * s)
+            hat.rotate(by: .degrees(-8))
+            hat.translateBy(x: -72 * s, y: -33 * s)
+            func hpoly(_ pts: [(Double, Double)], _ color: Color) {
+              var p = Path()
+              p.move(to: pt(pts[0].0, pts[0].1))
+              for q in pts.dropFirst() { p.addLine(to: pt(q.0, q.1)) }
+              p.closeSubpath()
+              hat.fill(p, with: .color(color))
+            }
+            hat.fill(Path(ellipseIn: CGRect(x: (72 - 26) * s, y: (33 - 5.5) * s,
+                                            width: 52 * s, height: 11 * s)),
+                     with: .color(rgb(36, 29, 61)))
+            hpoly([(58, 33), (88, 33), (76, 4)], rgb(44, 35, 80))
+            hpoly([(64, 25), (82, 25), (82, 30.5), (64, 30.5)], rgb(68, 55, 117))
+            hpoly([(70, 24.5), (76, 24.5), (76, 31), (70, 31)], rgb(255, 210, 77))
+          }
+          // Bat.
+          var bat = Path()
+          bat.move(to: pt(14, 18))
+          bat.addQuadCurve(to: pt(29, 11), control: pt(20, 7))
+          bat.addQuadCurve(to: pt(34, 5), control: pt(30, 5))
+          bat.addQuadCurve(to: pt(36, 10), control: pt(34, 9))
+          bat.addQuadCurve(to: pt(38, 5), control: pt(38, 9))
+          bat.addQuadCurve(to: pt(43, 11), control: pt(42, 5))
+          bat.addQuadCurve(to: pt(58, 18), control: pt(52, 7))
+          bat.addQuadCurve(to: pt(45, 18), control: pt(50, 14))
+          bat.addQuadCurve(to: pt(36, 18), control: pt(41, 14))
+          bat.addQuadCurve(to: pt(27, 18), control: pt(31, 14))
+          bat.addQuadCurve(to: pt(14, 18), control: pt(22, 14))
+          bat.closeSubpath()
+          ctx.fill(bat, with: .color(rgb(141, 132, 184)))
+          // Jack-o'-lantern.
+          ellipse(30, 106, 12, 9.5, rgb(242, 140, 40))
+          ellipse(30, 106, 5, 9.5, rgb(224, 118, 18))
+          poly([(28, 93), (32, 93), (32, 99), (28, 99)], rgb(90, 122, 58))
+          poly([(24, 102), (27, 106), (21, 106)], rgb(36, 29, 61))
+          poly([(36, 102), (39, 106), (33, 106)], rgb(36, 29, 61))
+          poly([(22, 110), (26, 108), (30, 111), (34, 108), (38, 110), (30, 114)],
+               rgb(36, 29, 61))
+        case .newYear:
+          if withHat {
+            poly([(64, 26), (86, 24), (76, 2)], rgb(255, 210, 77))
+            line(70, 18, 84, 17, 2.5, rgb(180, 83, 9))
+            line(67, 23, 86, 21.5, 2.5, rgb(180, 83, 9))
+            circle(76, 2, 3, rgb(255, 92, 138))
+          }
+          // Firework burst + confetti.
+          circle(20, 14, 2.5, rgb(255, 232, 145))
+          for i in 0..<8 {
+            let a = Double(i) * .pi / 4
+            line(20 + cos(a) * 4.5, 14 + sin(a) * 4.5,
+                 20 + cos(a) * 8.5, 14 + sin(a) * 8.5, 2, rgb(255, 210, 77))
+          }
+          circle(20, 3.5, 1.8, rgb(255, 92, 138))
+          circle(20, 24.5, 1.8, rgb(143, 220, 255))
+          circle(9.5, 14, 1.8, rgb(124, 255, 178))
+          circle(30.5, 14, 1.8, rgb(255, 179, 199))
+          circle(100, 12, 2, rgb(143, 220, 255))
+          circle(104, 36, 2, rgb(124, 255, 178))
+        }
       }
 
       // Face per pose.
@@ -776,13 +909,16 @@ struct ManiView: View {
                97 + cos(a) * 12, 21 + sin(a) * 12, 2.5, rgb(255, 210, 77))
         }
       case .nightOwl:
+        // Drowsy: lids at half mast, pupil sagging (the beak droop happens in
+        // the body — see beakTip above).
         var lid = Path()
-        lid.move(to: pt(70, 49))
-        lid.addArc(center: pt(78, 49), radius: 8 * s,
+        lid.move(to: pt(70, 51))
+        lid.addArc(center: pt(78, 51), radius: 8 * s,
                    startAngle: .degrees(180), endAngle: .degrees(0), clockwise: true)
         lid.closeSubpath()
         ctx.fill(lid, with: .color(.white))
-        circle(78, 51, 2.6, maniPupil)
+        circle(77, 53.5, 2.4, maniPupil)
+        line(69, 48, 87, 48, 3.5, maniInk)
         // Crescent as explicit cubics — arc-pair constructions degenerate when
         // the inner radius is under half the chord (learned the hard way).
         var moon = Path()
@@ -877,6 +1013,8 @@ struct ManiView: View {
         glyphText("z", 98, 29, 13, rgb(207, 207, 218), bold: true)
         glyphText("z", 107, 20, 10, rgb(181, 181, 194), bold: true)
       }
+
+      drawSeason(withHat: true)
     }
   }
 }
@@ -915,7 +1053,7 @@ struct StreakWidgetEntryView: View {
             // from the corner, mood driven by state + time (see maniPose).
             ZStack(alignment: .bottomTrailing) {
               gradientFor(state: entry.state, streak: entry.streak)
-              ManiView(pose: pose)
+              ManiView(pose: pose, season: season)
                 .frame(width: 96, height: 112)
                 .offset(x: 8, y: 12)
                 .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
@@ -927,7 +1065,7 @@ struct StreakWidgetEntryView: View {
             ZStack {
               gradientFor(state: entry.state, streak: entry.streak)
               if entry.quests.isEmpty {
-                ManiView(pose: pose)
+                ManiView(pose: pose, season: season)
                   .frame(width: 132, height: 154)
                   .frame(maxWidth: .infinity, maxHeight: .infinity,
                          alignment: .bottomTrailing)
@@ -1131,6 +1269,9 @@ struct StreakWidgetEntryView: View {
              allQuestsDone: !entry.quests.isEmpty && entry.quests.allSatisfy { $0.done })
   }
 
+  // Seasonal dress-up window (device-local date).
+  private var season: ManiSeason { maniSeason(for: entry.date) }
+
   // Where Mani sits on the quest-medium today.
   private var placement: ManiPlacement {
     maniPlacement(state: entry.state,
@@ -1144,7 +1285,7 @@ struct StreakWidgetEntryView: View {
   @ViewBuilder private var mediumQuestMani: some View {
     switch placement {
     case .rightCorner:
-      ManiView(pose: pose)
+      ManiView(pose: pose, season: season)
         .frame(width: 88, height: 103)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .offset(x: 8, y: 14)
@@ -1152,7 +1293,8 @@ struct StreakWidgetEntryView: View {
     case .centerLeft, .centerRight, .centerFront:
       ManiView(pose: pose,
                orientation: placement == .centerLeft ? .left
-                 : placement == .centerRight ? .right : .front)
+                 : placement == .centerRight ? .right : .front,
+               season: season)
         .frame(width: 84, height: 98)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         .offset(x: 96, y: 14)

@@ -26,6 +26,19 @@ export type ManiPose =
 // Streaks that get the one-day party hat (the day you cross a milestone).
 const PARTY_STREAKS = new Set([30, 50, 100, 200, 365, 500, 1000])
 
+// Seasonal dress-up, gated on the DEVICE-local calendar date (holidays happen
+// where the phone is). Mirrors maniSeason() in index.swift.
+export type ManiSeason = 'none' | 'halloween' | 'christmas' | 'newYear'
+
+export function maniSeason(date: Date): ManiSeason {
+  const m = date.getMonth() + 1
+  const d = date.getDate()
+  if (m === 10 && d >= 24) return 'halloween'
+  if (m === 12 && d >= 18 && d <= 26) return 'christmas'
+  if ((m === 12 && d === 31) || (m === 1 && d === 1)) return 'newYear'
+  return 'none'
+}
+
 const HOUR = 3_600_000
 
 // Mirrors maniPose() in index.swift exactly — keep the two in lockstep so the
@@ -96,14 +109,58 @@ const GREY_P: Palette = {
 const INK = '#2a2258' // brows/lids on the purple body
 const PUPIL = '#1c1633'
 
-function body(p: Palette): string {
+// The night owl's beak droops toward the floor — a bird nodding off.
+function body(p: Palette, drowsy?: boolean): string {
+  const beakTip = drowsy ? '12,80' : '8,62'
   return (
     `<polygon points="100,140 114,140 104,68 94,70" fill="${p.neckShade}"/>` +
     `<polygon points="78,140 100,140 94,70 80,74" fill="${p.neck}"/>` +
     `<polygon points="50,36 92,30 102,66 66,74" fill="${p.head}"/>` +
     `<polygon points="66,74 102,66 94,70 80,74" fill="${p.jaw}"/>` +
-    `<polygon points="54,48 64,70 8,62" fill="${p.beak}"/>`
+    `<polygon points="54,48 64,70 ${beakTip}" fill="${p.beak}"/>`
   )
+}
+
+// Seasonal accessories drawn over the finished pose. All-vector (androidsvg).
+const SEASONS: Record<Exclude<ManiSeason, 'none'>, string> = {
+  christmas:
+    // one continuous bent-sock silhouette + fold shade + pompom + band
+    '<path d="M52,36 C54,20 60,9 71,6 C80,3 88,6 92,12 C95,16 95,21 91,23 C88,17 84,13 79,12 C84,17 88,23 90,30 Z" fill="#E14B4B"/>' +
+    '<path d="M79,12 C84,17 88,23 90,30 L85,31 C83,22 81,16 79,12 Z" fill="#C93A3A"/>' +
+    '<circle cx="92" cy="24" r="5" fill="#fff"/>' +
+    '<path d="M50,37 L92,31" stroke="#fff" stroke-width="9" stroke-linecap="round"/>' +
+    spark(28, 14, 4, '#EAF4FF') +
+    spark(101, 44, 3, '#EAF4FF'),
+  halloween:
+    '<g transform="rotate(-8 72 33)">' +
+    '<ellipse cx="72" cy="33" rx="26" ry="5.5" fill="#241d3d"/>' +
+    '<polygon points="58,33 88,33 76,4" fill="#2c2350"/>' +
+    '<rect x="64" y="25" width="18" height="5.5" fill="#443775"/>' +
+    '<rect x="70" y="24.5" width="6" height="6.5" fill="#FFD24D"/></g>' +
+    // bat
+    '<path d="M14,18 Q20,7 29,11 Q30,5 34,5 Q34,9 36,10 Q38,9 38,5 Q42,5 43,11 Q52,7 58,18 Q50,14 45,18 Q41,14 36,18 Q31,14 27,18 Q22,14 14,18 Z" fill="#8d84b8"/>' +
+    // jack-o'-lantern
+    '<ellipse cx="30" cy="106" rx="12" ry="9.5" fill="#F28C28"/>' +
+    '<ellipse cx="30" cy="106" rx="5" ry="9.5" fill="#E07612"/>' +
+    '<rect x="28" y="93" width="4" height="6" fill="#5a7a3a"/>' +
+    '<polygon points="24,102 27,106 21,106" fill="#241d3d"/>' +
+    '<polygon points="36,102 39,106 33,106" fill="#241d3d"/>' +
+    '<polygon points="22,110 26,108 30,111 34,108 38,110 30,114" fill="#241d3d"/>',
+  newYear:
+    '<polygon points="64,26 86,24 76,2" fill="#FFD24D"/>' +
+    '<line x1="70" y1="18" x2="84" y2="17" stroke="#B45309" stroke-width="2.5"/>' +
+    '<line x1="67" y1="23" x2="86" y2="21.5" stroke="#B45309" stroke-width="2.5"/>' +
+    '<circle cx="76" cy="2" r="3" fill="#FF5C8A"/>' +
+    // firework burst
+    '<circle cx="20" cy="14" r="2.5" fill="#FFE891"/>' +
+    '<g stroke="#FFD24D" stroke-width="2" stroke-linecap="round">' +
+    '<line x1="20" y1="5.5" x2="20" y2="9.5"/><line x1="20" y1="18.5" x2="20" y2="22.5"/>' +
+    '<line x1="11.5" y1="14" x2="15.5" y2="14"/><line x1="24.5" y1="14" x2="28.5" y2="14"/>' +
+    '<line x1="14" y1="8" x2="16.8" y2="10.8"/><line x1="23.2" y1="17.2" x2="26" y2="20"/>' +
+    '<line x1="26" y1="8" x2="23.2" y2="10.8"/><line x1="16.8" y1="17.2" x2="14" y2="20"/></g>' +
+    '<circle cx="20" cy="3.5" r="1.8" fill="#FF5C8A"/><circle cx="20" cy="24.5" r="1.8" fill="#8fdcff"/>' +
+    '<circle cx="9.5" cy="14" r="1.8" fill="#7CFFB2"/><circle cx="30.5" cy="14" r="1.8" fill="#FFB3C7"/>' +
+    '<circle cx="100" cy="12" r="2" fill="#8fdcff"/><circle cx="104" cy="36" r="2" fill="#7CFFB2"/>',
 }
 
 const eye = (x: number, y: number, r: number, px: number, py: number, pr: number) =>
@@ -144,8 +201,10 @@ const FACES: Record<ManiPose, string> = {
     '<line x1="88.5" y1="12.5" x2="91" y2="15"/><line x1="103" y1="27" x2="105.5" y2="29.5"/>' +
     '<line x1="105.5" y1="12.5" x2="103" y2="15"/><line x1="91" y1="27" x2="88.5" y2="29.5"/></g>',
   nightOwl:
-    '<path d="M70,49 A8,8 0 0 0 86,49 Z" fill="#fff"/>' +
-    `<circle cx="78" cy="51" r="2.6" fill="${PUPIL}"/>` +
+    // drowsy: lids at half mast, pupil sagging (beak droop lives in body())
+    '<path d="M70,51 A8,8 0 0 0 86,51 Z" fill="#fff"/>' +
+    `<circle cx="77" cy="53.5" r="2.4" fill="${PUPIL}"/>` +
+    `<line x1="69" y1="48" x2="87" y2="48" stroke="${INK}" stroke-width="3.5" stroke-linecap="round"/>` +
     // crescent as explicit cubics: arc-pair crescents silently degenerate when
     // the inner radius is under half the chord (androidsvg + browsers alike)
     '<path d="M98,12 C87,14 87,26 98,28 C92,24 92,16 98,12 Z" fill="#CADCFF"/>' +
@@ -227,7 +286,7 @@ const FACES: Record<ManiPose, string> = {
 // (re-centering, killing the bottom anchor) if the frame ratio differs.
 export const MANI_ASPECT = 118 / 110
 
-export function maniSvg(pose: ManiPose): string {
+export function maniSvg(pose: ManiPose, season: ManiSeason = 'none'): string {
   const pal =
     pose === 'icy' || pose === 'shivering'
       ? ICE_P
@@ -236,8 +295,9 @@ export function maniSvg(pose: ManiPose): string {
       : PURPLE
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 118">' +
-    body(pal) +
+    body(pal, pose === 'nightOwl') +
     FACES[pose] +
+    (season === 'none' ? '' : SEASONS[season]) +
     '</svg>'
   )
 }

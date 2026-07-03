@@ -9,7 +9,7 @@ import {
 import type { WidgetInfo } from 'react-native-android-widget'
 import type { NativeQuestData, NativeStreakData } from 'common/native-message'
 import { CRANE_DATA_URI } from './crane-data'
-import { MANI_ASPECT, maniSvg, pickManiPose } from './mani-svg'
+import { MANI_ASPECT, maniSeason, maniSvg, pickManiPose } from './mani-svg'
 
 // Android home-screen streak widget. This is the platform-mirror of the iOS
 // SwiftUI widget (native/targets/widget/index.swift): same state machine, same
@@ -413,9 +413,17 @@ function Shell({
         }}
       >
         {mascot ? (
+          // marginRight clears the widget's rounded corner: launchers don't
+          // clip children to the corner radius, so ink there would float
+          // outside the visible widget. The neck bleeds off the FLAT bottom
+          // edge instead.
           <SvgWidget
             svg={mascot.svg}
-            style={{ width: mascot.width, height: mascot.height }}
+            style={{
+              width: mascot.width,
+              height: mascot.height,
+              marginRight: 22,
+            }}
           />
         ) : (
           <ImageWidget
@@ -518,7 +526,8 @@ function SmallWidget({
           ? new Date(data.lastBetTime).getHours()
           : null,
         allQuestsDone
-      )
+      ),
+      maniSeason(now)
     ),
     width: maniW,
     height: Math.round(maniW * MANI_ASPECT),
