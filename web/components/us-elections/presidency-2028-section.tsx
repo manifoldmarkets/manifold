@@ -8,6 +8,7 @@ import {
   CPMMMultiContract,
   MultiContract,
   contractPath,
+  isMultiCpmm,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
@@ -204,7 +205,7 @@ function PresidencyPartyBar(props: { contract: Contract }) {
   const [betAnswer, setBetAnswer] = useState<Answer | undefined>()
 
   const probs = getPartyProbs(contract)
-  if (!probs || contract.mechanism !== 'cpmm-multi-1') return null
+  if (!probs || !isMultiCpmm(contract)) return null
 
   const { dem, rep, other } = probs
   const demAnswer = contract.answers.find((a) => isDemocraticAnswer(a.text))
