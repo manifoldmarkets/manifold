@@ -15,6 +15,10 @@ import {
 } from 'common/envs/constants'
 import { getFormattedExpectedDate } from 'common/multi-date'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
+import {
+  formatPrice as formatPerpPrice,
+  inferPriceDecimals as inferPerpPriceDecimals,
+} from 'common/perps/format'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Answer } from 'common/src/answer'
 import { getFormattedNumberExpectedValue } from 'common/src/number'
@@ -498,10 +502,15 @@ export function ContractStatusLabel(props: {
       return <span className="text-fuchsia-500/70">POLL</span>
     }
     case 'PERP': {
-      const price = Number((contract as any).oraclePrice ?? 0)
+      const price = Number((contract as any).oraclePrice)
+      // Endpoints that slim contracts may omit oraclePrice; show a dash
+      // rather than a fake "0.0000".
+      if (!Number.isFinite(price)) {
+        return <span className={clsx('text-ink-400', className)}>—</span>
+      }
       return (
         <span className={clsx(probTextColor, className)}>
-          {price.toFixed(price >= 1 ? 2 : 4)}
+          {formatPerpPrice(price, inferPerpPriceDecimals([price]))}
         </span>
       )
     }

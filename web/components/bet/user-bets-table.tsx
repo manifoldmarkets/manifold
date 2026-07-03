@@ -20,8 +20,14 @@ import {
 } from 'common/contract'
 import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
+import {
+  formatPrice as formatPerpPrice,
+  inferPriceDecimals as inferPerpPriceDecimals,
+} from 'common/perps/format'
+import { getUserFacingPnl } from 'common/perps/pnl'
+import { PerpPosition } from 'common/perps/position'
 import { buildArray } from 'common/util/array'
-import { formatWithToken } from 'common/util/format'
+import { formatMoney, formatWithToken } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { Dictionary, mapValues, sortBy, sum, uniqBy } from 'lodash'
@@ -739,7 +745,15 @@ function BetsTable(props: {
                 >
                   <div
                     className="flex w-full"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setNewExpandedId(contract.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setNewExpandedId(contract.id)
+                      }
+                    }}
                   >
                     {/* Question cell */}
                     <div
@@ -1186,13 +1200,23 @@ function BetsTable(props: {
                   {/* Expanded content below the main row content */}
                   {expandedIds.includes(contract.id) && (
                     <div className="border-ink-200 border-t px-2 py-2">
-                      <ExpandedBetRow
-                        contract={contract}
-                        user={user}
-                        signedInUser={signedInUser}
-                        contractMetric={metric}
-                        areYourBets={areYourBets}
-                      />
+                      {/* The endpoint's type says MarketContract, but perp
+                          contracts flow through this table at runtime. */}
+                      {(contract as Contract).mechanism === 'perp' ? (
+                        <ExpandedPerpRow
+                          contract={contract}
+                          user={user}
+                          contractMetric={metric}
+                        />
+                      ) : (
+                        <ExpandedBetRow
+                          contract={contract}
+                          user={user}
+                          signedInUser={signedInUser}
+                          contractMetric={metric}
+                          areYourBets={areYourBets}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -1206,6 +1230,188 @@ function BetsTable(props: {
         </div>
       </div>
     </div>
+  )
+}
+
+// Perp expansion: positions + recent activity. Perps have no rows in the
+// bets table (the engine keeps its own event log), so the CPMM expansion
+// renders an empty table with CPMM-speak headers ("Expected value", PROB).
+const ExpandedPerpRow = (props: {
+  contract: Contract
+  user: User
+  contractMetric: ContractMetric
+}) => {
+  const { contract, user, contractMetric: m } = props
+  // The API response omits contractId; re-attach it for the PnL helpers.
+  const [positions, setPositions] = useState<
+    Omit<PerpPosition, 'contractId'>[] | undefined
+  >()
+  const [events, setEvents] = useState<
+    | {
+        id: number
+        ts: number
+        eventType: string
+        direction: 'long' | 'short' | null
+        sizeDelta: number
+        originalCostBasisDelta: number
+        oraclePrice: number
+        payout: number | null
+        pnl: number | null
+      }[]
+    | undefined
+  >()
+
+  useEffect(() => {
+    let cancelled = false
+    api('get-perp-positions', { contractId: contract.id, userId: user.id })
+      .then((p) => !cancelled && setPositions(p))
+      .catch(() => !cancelled && setPositions([]))
+    api('get-perp-events', {
+      contractId: contract.id,
+      userId: user.id,
+      limit: 10,
+    })
+      .then((e) => !cancelled && setEvents(e))
+      .catch(() => !cancelled && setEvents([]))
+    return () => {
+      cancelled = true
+    }
+  }, [contract.id, user.id])
+
+  const markPrice = Number((contract as any).oraclePrice)
+  const hasMark = Number.isFinite(markPrice)
+  const decimals = inferPerpPriceDecimals([markPrice])
+
+  if (positions === undefined || events === undefined) {
+    return (
+      <Col className={'w-full items-center justify-center'}>
+        <LoadingIndicator />
+      </Col>
+    )
+  }
+
+  return (
+    <Col className="mt-2 w-full gap-4 pb-2">
+      {/* Summary in perp terms, not CPMM-speak */}
+      <Row className="flex-wrap gap-x-8 gap-y-2 text-sm">
+        <Col>
+          <span className="text-ink-500 text-xs">Position value</span>
+          <span className="font-semibold">{formatMoney(m.payout)}</span>
+        </Col>
+        <Col>
+          <span className="text-ink-500 text-xs">Margin deposited</span>
+          <span className="font-semibold">
+            {formatMoney(m.totalAmountInvested)}
+          </span>
+        </Col>
+        <Col>
+          <span className="text-ink-500 text-xs">Returned on closes</span>
+          <span className="font-semibold">
+            {formatMoney(m.totalAmountSold ?? 0)}
+          </span>
+        </Col>
+        <Col>
+          <span className="text-ink-500 text-xs">Profit</span>
+          <span
+            className={clsx(
+              'font-semibold',
+              m.profit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+            )}
+          >
+            {m.profit >= 0 ? '+' : ''}
+            {formatMoney(m.profit)}
+          </span>
+        </Col>
+      </Row>
+
+      {positions.length > 0 && (
+        <Col className="gap-1">
+          <span className="text-ink-500 text-xs font-semibold uppercase">
+            Open positions
+          </span>
+          {positions.map((p) => {
+            const pnl = hasMark
+              ? getUserFacingPnl(
+                  { ...p, contractId: contract.id } as PerpPosition,
+                  markPrice
+                )
+              : undefined
+            return (
+              <Row
+                key={p.direction}
+                className="flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums"
+              >
+                <span
+                  className={clsx(
+                    'font-semibold capitalize',
+                    p.direction === 'long'
+                      ? 'text-teal-600'
+                      : 'text-scarlet-600'
+                  )}
+                >
+                  {p.direction}
+                </span>
+                <span>{formatMoney(p.size)} notional</span>
+                <span className="text-ink-500">
+                  {formatMoney(p.originalCostBasis)} margin
+                </span>
+                <span className="text-ink-500">
+                  entry {formatPerpPrice(p.entryPrice, decimals)}
+                </span>
+                <span className="text-ink-500">
+                  liq {formatPerpPrice(p.liquidationPrice, decimals)}
+                </span>
+                {pnl !== undefined && (
+                  <span
+                    className={clsx(
+                      'font-semibold',
+                      pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                    )}
+                  >
+                    {pnl >= 0 ? '+' : ''}
+                    {formatMoney(pnl)}
+                  </span>
+                )}
+              </Row>
+            )
+          })}
+        </Col>
+      )}
+
+      {events.length > 0 && (
+        <Col className="gap-1">
+          <span className="text-ink-500 text-xs font-semibold uppercase">
+            Recent activity
+          </span>
+          {events.map((e) => (
+            <Row
+              key={e.id}
+              className="text-ink-700 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums"
+            >
+              <span className="text-ink-500 w-14 capitalize">
+                {e.eventType}
+              </span>
+              {e.direction && <span className="capitalize">{e.direction}</span>}
+              <span>
+                {e.sizeDelta >= 0 ? '+' : ''}
+                {formatMoney(e.sizeDelta)}
+              </span>
+              <span className="text-ink-500">
+                @ {formatPerpPrice(e.oraclePrice, decimals)}
+              </span>
+              {e.payout != null && (
+                <span className="text-ink-500">
+                  payout {formatMoney(e.payout)}
+                </span>
+              )}
+              <span className="text-ink-400 text-xs">
+                <RelativeTimestamp time={e.ts} shortened />
+              </span>
+            </Row>
+          ))}
+        </Col>
+      )}
+    </Col>
   )
 }
 
@@ -1341,7 +1547,15 @@ function BetsTableHeaders(props: {
                   'text-ink-500 w-[90px] flex-shrink-0 cursor-pointer py-2 text-right text-sm',
                   'border-ink-200 border-b'
                 )}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleHeaderClick(sortField)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleHeaderClick(sortField)
+                  }
+                }}
               >
                 <Row className="relative items-center justify-end gap-1">
                   <span>
