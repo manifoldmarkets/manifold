@@ -569,7 +569,18 @@ struct StreakWidgetEntryView: View {
                 .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
             }
           case .systemMedium:
-            gradientFor(state: entry.state, streak: entry.streak)
+            // Without quest rows the medium goes full mascot: a bigger Mani
+            // owns the right side (the quest checklist takes that spot once
+            // quest data is synced).
+            ZStack(alignment: .bottomTrailing) {
+              gradientFor(state: entry.state, streak: entry.streak)
+              if entry.quests.isEmpty {
+                ManiView(pose: pose)
+                  .frame(width: 132, height: 154)
+                  .offset(x: 10, y: 14)
+                  .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+              }
+            }
           default:
             Color.clear // lock-screen accessories use the system material
           }
@@ -818,7 +829,6 @@ struct StreakWidgetEntryView: View {
       Text("Open Manifold")
         .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
     }
-    .padding(16)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
   }
 
@@ -835,13 +845,9 @@ struct StreakWidgetEntryView: View {
           .lineLimit(2).minimumScaleFactor(0.8)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
-      VStack(spacing: 8) {
-        logo(48)
-        Text("Open Manifold")
-          .font(.system(size: 12, weight: .bold)).foregroundColor(.white.opacity(0.9))
-      }
+      // The asleep Mani (container background) owns the right side.
+      Spacer(minLength: 116)
     }
-    .padding(16)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
   }
 
@@ -928,7 +934,9 @@ struct StreakWidgetEntryView: View {
         countdown(weight: .bold).font(.system(size: 16))
       }
     }
-    .padding(16)
+    // No inner padding: iOS 17 already applies automatic content margins
+    // (~16pt); stacking our own on top pushed the hero down-right and floated
+    // the timer up to beak height.
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .overlay { if entry.state == .frozen { smallFrost } }
   }
@@ -947,12 +955,15 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Home screen — medium: streak (left) + quests & rotating hook (right).
-  // Android's medium uses a full-width quest panel instead (its cells are wide
-  // but short) — an intentional per-platform divergence; the copy, colours,
-  // milestone tiers, and quest-row content do match.
+  // Home screen — medium. With quest rows: streak column | divider | quests +
+  // rotating hook (Android's medium uses a full-width quest panel instead —
+  // an intentional per-platform divergence). Without quests: full mascot mode —
+  // a bigger Mani (drawn in the container background) owns the right side, the
+  // streak column widens, and the hook tucks under the label when lit (the
+  // timer takes that slot while today isn't done).
   private var medium: some View {
     let milestone = isGoldMilestone(entry.state, entry.streak)
+    let hasQuests = !entry.quests.isEmpty
     return HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 0) {
         HStack(spacing: 2) {
@@ -967,39 +978,38 @@ struct StreakWidgetEntryView: View {
         Text("\(entry.streak)")
           .font(.system(size: 42, weight: .heavy)).foregroundColor(.white)
           .lineLimit(1).minimumScaleFactor(0.4)
-          .layoutPriority(1)
           .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                   radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
         Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
           .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
           .lineLimit(1).minimumScaleFactor(0.6)
         if entry.state != .lit {
-          countdown(weight: .bold).font(.system(size: 14)).padding(.top, 3)
+          countdown(weight: .bold).font(.system(size: 16)).padding(.top, 3)
+        } else if !hasQuests {
+          Text(hookText(state: entry.state, date: entry.date))
+            .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+            .lineLimit(2).minimumScaleFactor(0.75)
+            .padding(.top, 4)
         }
       }
-      .frame(width: 92, alignment: .leading)
+      .frame(width: hasQuests ? 92 : 150, alignment: .leading)
 
-      Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
+      if hasQuests {
+        Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
 
-      VStack(alignment: .leading, spacing: 7) {
-        // No quest data synced yet (e.g. the blob predates the quest sync) —
-        // center the logo + hook. With quests they stack on top and the hook
-        // anchors to the bottom.
-        if entry.quests.isEmpty {
-          Spacer(minLength: 0)
-          bottomHookRow
-          Spacer(minLength: 0)
-        } else {
+        VStack(alignment: .leading, spacing: 7) {
           ForEach(Array(entry.quests.enumerated()), id: \.offset) { _, q in
             questRow(q)
           }
           Spacer(minLength: 0)
           bottomHookRow
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      } else {
+        // Mani (container background) owns the right side.
+        Spacer(minLength: 0)
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
-    .padding(16)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
   }
 
