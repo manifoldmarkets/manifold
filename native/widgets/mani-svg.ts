@@ -16,6 +16,7 @@ export type ManiState = 'lit' | 'pending' | 'frozen' | 'loggedOut'
 export type ManiPose =
   | 'happyClassic' | 'smug' | 'starstruck' | 'party' | 'fireEye' // lit
   | 'heartEye' | 'blushing' | 'chirping'                         // lit extras
+  | 'earlyBird' | 'nightOwl' | 'ecstatic'                        // behaviour-aware
   | 'watching' | 'sideEye' | 'quizzical'                         // pending >12h
   | 'sweating' | 'alarmed'                                       // pending <12h
   | 'madClassic' | 'fuming' | 'disappointed'                     // pending <4h
@@ -29,17 +30,26 @@ const HOUR = 3_600_000
 
 // Mirrors maniPose() in index.swift exactly — keep the two in lockstep so the
 // same user sees the same mood on both platforms on the same day.
+// betHour: DEVICE-local hour of the last bet (null if unknown) — dawn bets get
+// the early bird, late-night ones the night owl. allQuestsDone → ecstatic.
 export function pickManiPose(
   state: ManiState,
   remainingMs: number,
   streak: number,
-  day: number
+  day: number,
+  betHour?: number | null,
+  allQuestsDone?: boolean
 ): ManiPose {
   if (state === 'loggedOut') return 'asleep'
   const roll = day + streak
   if (state === 'frozen') return (['icy', 'shivering'] as const)[roll % 2]
   if (state === 'lit') {
     if (PARTY_STREAKS.has(streak)) return 'party'
+    if (allQuestsDone) return 'ecstatic'
+    if (betHour != null) {
+      if (betHour < 9) return 'earlyBird'
+      if (betHour >= 22) return 'nightOwl'
+    }
     // The lit face is what a keeper sees 99% of the time, so it gets the
     // widest rotation (mirrors index.swift): fireEye is the rare manic roll,
     // starstruck joins on gold.
@@ -124,6 +134,25 @@ const FACES: Record<ManiPose, string> = {
     '<circle cx="99" cy="28" r="3" fill="#fff"/>' +
     '<rect x="100.8" y="14" width="2.4" height="14" fill="#fff"/>' +
     '<path d="M103.2,14 q5,1.5 4,6 q-1,-2.5 -4,-3 z" fill="#fff"/>',
+  earlyBird:
+    '<path d="M68,50 Q77,41 86,50" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="100" cy="23" r="4.5" fill="#FFD24D"/>' +
+    '<g stroke="#FFD24D" stroke-width="2" stroke-linecap="round">' +
+    '<line x1="100" y1="14" x2="100" y2="16.5"/><line x1="100" y1="29.5" x2="100" y2="32"/>' +
+    '<line x1="91" y1="23" x2="93.5" y2="23"/><line x1="106.5" y1="23" x2="109" y2="23"/>' +
+    '<line x1="93.6" y1="16.6" x2="95.4" y2="18.4"/><line x1="104.6" y1="27.6" x2="106.4" y2="29.4"/>' +
+    '<line x1="106.4" y1="16.6" x2="104.6" y2="18.4"/><line x1="95.4" y1="27.6" x2="93.6" y2="29.4"/></g>',
+  nightOwl:
+    '<path d="M70,49 A8,8 0 0 0 86,49 Z" fill="#fff"/>' +
+    `<circle cx="78" cy="51" r="2.6" fill="${PUPIL}"/>` +
+    // crescent moon (two-arc cutout)
+    '<path d="M98,16.5 a5.5,5.5 0 1 0 0.1,11 a4.4,4.4 0 1 1 -0.1,-11 z" fill="#CADCFF"/>',
+  ecstatic:
+    '<circle cx="78" cy="50" r="8.5" fill="#fff"/>' +
+    '<polygon points="78,44.5 80,48 83.5,50 80,52 78,55.5 76,52 72.5,50 76,48" fill="#FFD24D"/>' +
+    `<path d="M64,37 Q76,30 88,35" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round"/>` +
+    spark(98, 24, 6, '#FFE891') +
+    spark(106, 38, 4, '#FFE891'),
   smug:
     '<path d="M70,49 A8,8 0 0 0 86,49 Z" fill="#fff"/>' +
     `<circle cx="78" cy="51" r="2.6" fill="${PUPIL}"/>` +

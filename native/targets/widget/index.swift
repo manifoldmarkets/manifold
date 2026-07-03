@@ -210,6 +210,9 @@ struct StreakEntry: TimelineEntry {
   let tierBadge: QuestTierBadge?
   let freezesLeft: Int
   let loggedIn: Bool
+  // Device-local hour of the last bet (nil if never) — drives Mani's
+  // early-bird / night-owl flavour when lit.
+  let betHour: Int?
 }
 
 struct Provider: TimelineProvider {
@@ -221,7 +224,7 @@ struct Provider: TimelineProvider {
     ]
     return StreakEntry(date: Date(), streak: 7, resetDate: nextPacificReset(after: Date()),
                        state: .lit, quests: sample, tierBadge: nil, freezesLeft: 2,
-                       loggedIn: true)
+                       loggedIn: true, betHour: nil)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
@@ -258,7 +261,7 @@ struct Provider: TimelineProvider {
     let now = Date()
     return StreakEntry(date: now, streak: 0, resetDate: now.addingTimeInterval(3600),
                        state: .pending, quests: [], tierBadge: nil, freezesLeft: 0,
-                       loggedIn: false)
+                       loggedIn: false, betHour: nil)
   }
 
   // Entry as of `date` from the App Group snapshot (works for future same-day
@@ -268,14 +271,20 @@ struct Provider: TimelineProvider {
     let reset0 = nextPacificReset(after: date)
     guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else {
       return StreakEntry(date: date, streak: 0, resetDate: reset0, state: .pending,
-                         quests: [], tierBadge: nil, freezesLeft: 0, loggedIn: false)
+                         quests: [], tierBadge: nil, freezesLeft: 0, loggedIn: false,
+                         betHour: nil)
     }
     let qp = loadQuestData()
+    let betHour = d.lastBetTime > 0
+      ? Calendar.current.component(.hour,
+          from: Date(timeIntervalSince1970: d.lastBetTime / 1000))
+      : nil
     return StreakEntry(date: date, streak: d.streak, resetDate: reset0,
                        state: computeState(d, now: date),
                        quests: questItems(qp, at: date),
                        tierBadge: qp?.tier,
-                       freezesLeft: d.freezesLeft, loggedIn: true)
+                       freezesLeft: d.freezesLeft, loggedIn: true,
+                       betHour: betHour)
   }
 }
 
@@ -366,6 +375,7 @@ private func emoji(for state: StreakState) -> String {
 enum ManiPose {
   case happyClassic, smug, starstruck, party, fireEye // lit
   case heartEye, blushing, chirping                   // lit (emotive extras)
+  case earlyBird, nightOwl, ecstatic                  // lit (behaviour-aware)
   case watching, sideEye, quizzical                   // pending, >12h
   case sweating, alarmed                              // pending, <12h
   case madClassic, fuming, disappointed               // pending, <4h
@@ -376,8 +386,12 @@ enum ManiPose {
 // Streaks that get the one-day party hat (the day you cross a milestone).
 private let kPartyStreaks: Set<Int> = [30, 50, 100, 200, 365, 500, 1000]
 
+// betHour: the DEVICE-local hour of the user's last bet (nil if unknown) —
+// a dawn bet gets the energized early bird, a late-night one the satisfied
+// night owl. allQuestsDone: quests synced AND every row ticked → ecstatic.
 func maniPose(state: StreakState, loggedIn: Bool, remaining: TimeInterval,
-              streak: Int, day: Int) -> ManiPose {
+              streak: Int, day: Int, betHour: Int? = nil,
+              allQuestsDone: Bool = false) -> ManiPose {
   if !loggedIn { return .asleep }
   let roll = day + streak
   switch state {
@@ -385,6 +399,11 @@ func maniPose(state: StreakState, loggedIn: Bool, remaining: TimeInterval,
     return [.icy, .shivering][roll % 2]
   case .lit:
     if kPartyStreaks.contains(streak) { return .party }
+    if allQuestsDone { return .ecstatic }
+    if let h = betHour {
+      if h < 9 { return .earlyBird }
+      if h >= 22 { return .nightOwl }
+    }
     // The lit face is what a keeper sees 99% of the time, so it gets the
     // widest rotation: 8 slots, fireEye as the rare manic roll, starstruck
     // joining on gold. Mani should never feel unphased by your streak.
@@ -542,6 +561,42 @@ struct ManiView: View {
           quad(37, 46, 45, 38, 53, 46, 4, .white)
           quad(67, 46, 75, 38, 83, 46, 4, .white)
           glyphText("♪", 96, 22, 14, .white, bold: true)
+        case .earlyBird:
+          quad(37, 46, 45, 38, 53, 46, 4, .white)
+          quad(67, 46, 75, 38, 83, 46, 4, .white)
+          circle(96, 18, 4, rgb(255, 210, 77))
+          for i in 0..<8 {
+            let a = Double(i) * .pi / 4
+            line(96 + cos(a) * 5.8, 18 + sin(a) * 5.8,
+                 96 + cos(a) * 8.4, 18 + sin(a) * 8.4, 1.8, rgb(255, 210, 77))
+          }
+        case .nightOwl:
+          for ex in [45.0, 75.0] {
+            var lid = Path()
+            lid.move(to: pt(ex - 6, 45))
+            lid.addArc(center: pt(ex, 45), radius: 6 * s,
+                       startAngle: .degrees(180), endAngle: .degrees(0),
+                       clockwise: true)
+            lid.closeSubpath()
+            ctx.fill(lid, with: .color(.white))
+            circle(ex, 46.5, 2.2, maniPupil)
+          }
+          var moon = Path()
+          moon.addArc(center: pt(96, 18), radius: 5 * s,
+                      startAngle: .degrees(-70), endAngle: .degrees(130), clockwise: false)
+          moon.addArc(center: pt(98.3, 15.7), radius: 4.2 * s,
+                      startAngle: .degrees(130), endAngle: .degrees(-70), clockwise: true)
+          moon.closeSubpath()
+          ctx.fill(moon, with: .color(rgb(202, 220, 255)))
+        case .ecstatic:
+          for ex in [45.0, 75.0] {
+            circle(ex, 45, 7.5, .white)
+            poly([(ex, 40), (ex + 1.8, 43.2), (ex + 5, 45), (ex + 1.8, 46.8),
+                  (ex, 50), (ex - 1.8, 46.8), (ex - 5, 45), (ex - 1.8, 43.2)],
+                 rgb(255, 210, 77))
+          }
+          glyphText("✦", 96, 20, 12, rgb(255, 232, 145))
+          glyphText("✦", 24, 26, 9, rgb(255, 232, 145))
         case .happyClassic, .party:
           quad(37, 46, 45, 38, 53, 46, 4, .white)
           quad(67, 46, 75, 38, 83, 46, 4, .white)
@@ -710,6 +765,36 @@ struct ManiView: View {
         quad(68, 50, 77, 41, 86, 50, 4.5, .white)
         glyphText("♪", 100, 26, 15, .white, bold: true)
         glyphText("♪", 108, 16, 10, rgb(255, 255, 255).opacity(0.75), bold: true)
+      case .earlyBird:
+        quad(68, 50, 77, 41, 86, 50, 4.5, .white)
+        circle(100, 23, 4.5, rgb(255, 210, 77))
+        for i in 0..<8 {
+          let a = Double(i) * .pi / 4
+          line(100 + cos(a) * 6.5, 23 + sin(a) * 6.5,
+               100 + cos(a) * 9.5, 23 + sin(a) * 9.5, 2, rgb(255, 210, 77))
+        }
+      case .nightOwl:
+        var lid = Path()
+        lid.move(to: pt(70, 49))
+        lid.addArc(center: pt(78, 49), radius: 8 * s,
+                   startAngle: .degrees(180), endAngle: .degrees(0), clockwise: true)
+        lid.closeSubpath()
+        ctx.fill(lid, with: .color(.white))
+        circle(78, 51, 2.6, maniPupil)
+        var moon = Path()
+        moon.addArc(center: pt(98, 22), radius: 5.5 * s,
+                    startAngle: .degrees(-70), endAngle: .degrees(130), clockwise: false)
+        moon.addArc(center: pt(100.5, 19.5), radius: 4.6 * s,
+                    startAngle: .degrees(130), endAngle: .degrees(-70), clockwise: true)
+        moon.closeSubpath()
+        ctx.fill(moon, with: .color(rgb(202, 220, 255)))
+      case .ecstatic:
+        circle(78, 50, 8.5, .white)
+        poly([(78, 44.5), (80, 48), (83.5, 50), (80, 52),
+              (78, 55.5), (76, 52), (72.5, 50), (76, 48)], rgb(255, 210, 77))
+        quad(64, 37, 76, 30, 88, 35, 3.5, maniInk)
+        glyphText("✦", 98, 24, 13, rgb(255, 232, 145))
+        glyphText("✦", 106, 38, 9, rgb(255, 232, 145))
       case .smug:
         var half = Path()
         half.move(to: pt(70, 49))
@@ -1031,11 +1116,14 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Mani's mood for this entry (state + time-to-reset + daily variant roll).
+  // Mani's mood for this entry (state + time-to-reset + daily variant roll +
+  // bet-time flavour + quest completion).
   private var pose: ManiPose {
     maniPose(state: entry.state, loggedIn: entry.loggedIn,
              remaining: entry.resetDate.timeIntervalSince(entry.date),
-             streak: entry.streak, day: pacificDayOfYear(entry.date))
+             streak: entry.streak, day: pacificDayOfYear(entry.date),
+             betHour: entry.betHour,
+             allQuestsDone: !entry.quests.isEmpty && entry.quests.allSatisfy { $0.done })
   }
 
   // Where Mani sits on the quest-medium today.

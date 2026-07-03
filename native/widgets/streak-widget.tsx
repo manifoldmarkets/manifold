@@ -475,6 +475,7 @@ function SmallWidget({
   data,
   now,
   cellWidth,
+  allQuestsDone,
   isTall,
   clickData,
 }: {
@@ -482,6 +483,7 @@ function SmallWidget({
   data: NativeStreakData | null
   now: Date
   cellWidth: number // granted cell width in dp (widgetInfo.width)
+  allQuestsDone?: boolean
   isTall?: boolean
   clickData?: Record<string, unknown>
 }) {
@@ -511,7 +513,11 @@ function SmallWidget({
         state,
         msUntilPacificReset(now),
         data?.streak ?? 0,
-        pacificDayOfYear(now)
+        pacificDayOfYear(now),
+        data && data.lastBetTime > 0
+          ? new Date(data.lastBetTime).getHours()
+          : null,
+        allQuestsDone
       )
     ),
     width: maniW,
@@ -1049,6 +1055,7 @@ export function StreakWidget({
       data={previewData}
       now={now}
       cellWidth={widgetInfo.width}
+      allQuestsDone={quests.length > 0 && quests.every((q) => q.done)}
       isTall={isTall}
       clickData={clickData}
     />
