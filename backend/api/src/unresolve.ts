@@ -116,6 +116,9 @@ const verifyUserCanUnresolve = async (
   }
 
   let resolutionTime: number
+  // Whole-market-only unresolve for binary and LINKED multi — the mirror of the routing gate
+  // in resolve-market.ts. If cpmm-multi-2 per-answer NO resolution of linked answers ships
+  // (reserved — see the CPMMMulti doc comment in common/src/contract.ts), this relaxes too.
   if (
     mechanism === 'cpmm-1' ||
     (isMultiCpmm(contract) && contract.shouldAnswersSumToOne)

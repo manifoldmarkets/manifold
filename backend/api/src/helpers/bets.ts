@@ -60,6 +60,11 @@ type BetDataBody = {
 // lockContractAndGetBetData (in-transaction locked re-read) so the two paths
 // can't drift. The fragments assume the query is formatted with
 // [uid, contractId, answerIds, outcome] bound to $1..$4.
+// NOTE: `isSumsToOne` makes both answer-load queries below fetch ALL of a linked contract's
+// answers, including resolved ones — safe today because linked answers cannot be individually
+// resolved. If cpmm-multi-2 early per-answer NO resolution ships (reserved; see the CPMMMulti
+// doc comment in common/src/contract.ts), the sum-to-one arb must receive only the unresolved
+// subset — these loads are the natural filter site.
 const getLimitOrderQueryFragments = (body: BetDataBody) => {
   const answerIds =
     'answerIds' in body

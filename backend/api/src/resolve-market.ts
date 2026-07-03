@@ -104,6 +104,13 @@ function getResolutionParams(
   const { outcomeType } = contract
   const isMultiChoice = isMultiCpmm(contract)
 
+  // Routing: independent multi (shouldAnswersSumToOne = false) resolves PER ANSWER (binary
+  // schema + answerId); linked multi resolves WHOLE MARKET only (multi schema below — even
+  // CHOOSE_ONE becomes a full resolutions map, never a per-answer resolve). This branch is
+  // the single enforcement point of "linked answers are never individually resolved".
+  // cpmm-multi-2 reserves relaxing this to allow early per-answer NO resolution of linked
+  // answers (see the CPMMMulti doc comment in common/src/contract.ts) — don't add new code
+  // that bakes the whole-market-only assumption into cpmm-multi-2 handling.
   if (
     outcomeType === 'BINARY' ||
     (isMultiChoice && !contract.shouldAnswersSumToOne)

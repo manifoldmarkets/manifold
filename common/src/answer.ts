@@ -22,6 +22,11 @@ export type Answer = {
   // Is this 'Other', the answer that represents all other answers, including answers added in the future.
   isOther?: boolean
 
+  // Per-answer resolution. Set today only for independent (shouldAnswersSumToOne = false)
+  // markets, where each answer resolves on its own. Reserved cpmm-multi-2 behavior: linked
+  // answers MAY also be individually resolved NO in the future (market stays open, probs
+  // sum to 1 over the unresolved answers) — see the CPMMMulti doc comment in contract.ts.
+  // Consumers should not assume linked answers are never individually resolved.
   resolution?: resolution
   resolutionTime?: number
   resolutionProbability?: number

@@ -327,6 +327,12 @@ function calculateCpmmMultiArbitrageBetsYes(
 //
 // net is strictly increasing in g (GP12a: dt/dg = Sum_basket prob > 0) and Sum_others prob is
 // strictly decreasing in eta (GP5a) — so both bisections are on monotone objectives.
+//
+// Precondition: `initialAnswers` is the FULL LIVE answer set — every answer participating in
+// the sum-to-one constraint. Today that is all of the contract's answers by construction
+// (linked answers cannot be individually resolved). If cpmm-multi-2 per-answer NO resolution
+// ships (reserved — see the CPMMMulti doc comment in contract.ts), callers must pass the
+// unresolved subset; every identity here (n, m, eta*(n - m - 1)) is relative to this array.
 function calculateCpmmMultiArbitrageBetsYesV2(
   initialAnswers: Answer[],
   initialAnswersToBuy: Answer[],
