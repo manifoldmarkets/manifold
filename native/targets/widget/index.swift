@@ -564,11 +564,12 @@ struct ManiView: View {
         case .earlyBird:
           quad(37, 46, 45, 38, 53, 46, 4, .white)
           quad(67, 46, 75, 38, 83, 46, 4, .white)
-          circle(96, 18, 4, rgb(255, 210, 77))
+          circle(96, 16, 5.5, rgb(255, 210, 77))
+          circle(96, 16, 2.5, rgb(255, 232, 145))
           for i in 0..<8 {
             let a = Double(i) * .pi / 4
-            line(96 + cos(a) * 5.8, 18 + sin(a) * 5.8,
-                 96 + cos(a) * 8.4, 18 + sin(a) * 8.4, 1.8, rgb(255, 210, 77))
+            line(96 + cos(a) * 7.5, 16 + sin(a) * 7.5,
+                 96 + cos(a) * 10.5, 16 + sin(a) * 10.5, 2.2, rgb(255, 210, 77))
           }
         case .nightOwl:
           for ex in [45.0, 75.0] {
@@ -582,12 +583,12 @@ struct ManiView: View {
             circle(ex, 46.5, 2.2, maniPupil)
           }
           var moon = Path()
-          moon.addArc(center: pt(96, 18), radius: 5 * s,
-                      startAngle: .degrees(-70), endAngle: .degrees(130), clockwise: false)
-          moon.addArc(center: pt(98.3, 15.7), radius: 4.2 * s,
-                      startAngle: .degrees(130), endAngle: .degrees(-70), clockwise: true)
+          moon.move(to: pt(97, 9))
+          moon.addCurve(to: pt(97, 23), control1: pt(87, 11), control2: pt(87, 21))
+          moon.addCurve(to: pt(97, 9), control1: pt(91.5, 19.5), control2: pt(91.5, 12.5))
           moon.closeSubpath()
           ctx.fill(moon, with: .color(rgb(202, 220, 255)))
+          glyphText("✦", 84, 8, 8, rgb(230, 238, 255))
         case .ecstatic:
           for ex in [45.0, 75.0] {
             circle(ex, 45, 7.5, .white)
@@ -767,11 +768,12 @@ struct ManiView: View {
         glyphText("♪", 108, 16, 10, rgb(255, 255, 255).opacity(0.75), bold: true)
       case .earlyBird:
         quad(68, 50, 77, 41, 86, 50, 4.5, .white)
-        circle(100, 23, 4.5, rgb(255, 210, 77))
+        circle(97, 21, 6.5, rgb(255, 210, 77))
+        circle(97, 21, 3, rgb(255, 232, 145))
         for i in 0..<8 {
           let a = Double(i) * .pi / 4
-          line(100 + cos(a) * 6.5, 23 + sin(a) * 6.5,
-               100 + cos(a) * 9.5, 23 + sin(a) * 9.5, 2, rgb(255, 210, 77))
+          line(97 + cos(a) * 8.5, 21 + sin(a) * 8.5,
+               97 + cos(a) * 12, 21 + sin(a) * 12, 2.5, rgb(255, 210, 77))
         }
       case .nightOwl:
         var lid = Path()
@@ -781,13 +783,16 @@ struct ManiView: View {
         lid.closeSubpath()
         ctx.fill(lid, with: .color(.white))
         circle(78, 51, 2.6, maniPupil)
+        // Crescent as explicit cubics — arc-pair constructions degenerate when
+        // the inner radius is under half the chord (learned the hard way).
         var moon = Path()
-        moon.addArc(center: pt(98, 22), radius: 5.5 * s,
-                    startAngle: .degrees(-70), endAngle: .degrees(130), clockwise: false)
-        moon.addArc(center: pt(100.5, 19.5), radius: 4.6 * s,
-                    startAngle: .degrees(130), endAngle: .degrees(-70), clockwise: true)
+        moon.move(to: pt(98, 12))
+        moon.addCurve(to: pt(98, 28), control1: pt(87, 14), control2: pt(87, 26))
+        moon.addCurve(to: pt(98, 12), control1: pt(92, 24), control2: pt(92, 16))
         moon.closeSubpath()
         ctx.fill(moon, with: .color(rgb(202, 220, 255)))
+        glyphText("✦", 84, 12, 9, rgb(230, 238, 255))
+        glyphText("✦", 106, 34, 7, rgb(230, 238, 255))
       case .ecstatic:
         circle(78, 50, 8.5, .white)
         poly([(78, 44.5), (80, 48), (83.5, 50), (80, 52),

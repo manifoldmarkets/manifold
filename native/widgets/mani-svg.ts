@@ -136,17 +136,21 @@ const FACES: Record<ManiPose, string> = {
     '<path d="M103.2,14 q5,1.5 4,6 q-1,-2.5 -4,-3 z" fill="#fff"/>',
   earlyBird:
     '<path d="M68,50 Q77,41 86,50" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>' +
-    '<circle cx="100" cy="23" r="4.5" fill="#FFD24D"/>' +
-    '<g stroke="#FFD24D" stroke-width="2" stroke-linecap="round">' +
-    '<line x1="100" y1="14" x2="100" y2="16.5"/><line x1="100" y1="29.5" x2="100" y2="32"/>' +
-    '<line x1="91" y1="23" x2="93.5" y2="23"/><line x1="106.5" y1="23" x2="109" y2="23"/>' +
-    '<line x1="93.6" y1="16.6" x2="95.4" y2="18.4"/><line x1="104.6" y1="27.6" x2="106.4" y2="29.4"/>' +
-    '<line x1="106.4" y1="16.6" x2="104.6" y2="18.4"/><line x1="95.4" y1="27.6" x2="93.6" y2="29.4"/></g>',
+    '<circle cx="97" cy="21" r="6.5" fill="#FFD24D"/>' +
+    '<circle cx="97" cy="21" r="3" fill="#FFE891"/>' +
+    '<g stroke="#FFD24D" stroke-width="2.5" stroke-linecap="round">' +
+    '<line x1="97" y1="9" x2="97" y2="12.5"/><line x1="97" y1="29.5" x2="97" y2="33"/>' +
+    '<line x1="85" y1="21" x2="88.5" y2="21"/><line x1="105.5" y1="21" x2="109" y2="21"/>' +
+    '<line x1="88.5" y1="12.5" x2="91" y2="15"/><line x1="103" y1="27" x2="105.5" y2="29.5"/>' +
+    '<line x1="105.5" y1="12.5" x2="103" y2="15"/><line x1="91" y1="27" x2="88.5" y2="29.5"/></g>',
   nightOwl:
     '<path d="M70,49 A8,8 0 0 0 86,49 Z" fill="#fff"/>' +
     `<circle cx="78" cy="51" r="2.6" fill="${PUPIL}"/>` +
-    // crescent moon (two-arc cutout)
-    '<path d="M98,16.5 a5.5,5.5 0 1 0 0.1,11 a4.4,4.4 0 1 1 -0.1,-11 z" fill="#CADCFF"/>',
+    // crescent as explicit cubics: arc-pair crescents silently degenerate when
+    // the inner radius is under half the chord (androidsvg + browsers alike)
+    '<path d="M98,12 C87,14 87,26 98,28 C92,24 92,16 98,12 Z" fill="#CADCFF"/>' +
+    spark(84, 12, 3.5, '#E6EEFF') +
+    spark(105, 34, 3, '#E6EEFF'),
   ecstatic:
     '<circle cx="78" cy="50" r="8.5" fill="#fff"/>' +
     '<polygon points="78,44.5 80,48 83.5,50 80,52 78,55.5 76,52 72.5,50 76,48" fill="#FFD24D"/>' +
