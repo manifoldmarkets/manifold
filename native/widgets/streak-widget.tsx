@@ -9,7 +9,7 @@ import {
 import type { WidgetInfo } from 'react-native-android-widget'
 import type { NativeQuestData, NativeStreakData } from 'common/native-message'
 import { CRANE_DATA_URI } from './crane-data'
-import { maniSvg, pickManiPose } from './mani-svg'
+import { MANI_ASPECT, maniSvg, pickManiPose } from './mani-svg'
 
 // Android home-screen streak widget. This is the platform-mirror of the iOS
 // SwiftUI widget (native/targets/widget/index.swift): same state machine, same
@@ -405,12 +405,14 @@ function SmallWidget({
   state,
   data,
   now,
+  cellWidth,
   isTall,
   clickData,
 }: {
   state: StreakState
   data: NativeStreakData | null
   now: Date
+  cellWidth: number // granted cell width in dp (widgetInfo.width)
   isTall?: boolean
   clickData?: Record<string, unknown>
 }) {
@@ -427,7 +429,10 @@ function SmallWidget({
   }
   // Mani the mascot (see mani-svg.ts): mood from state + time-to-reset, pose
   // rotated daily. Replaces the crane watermark AND the old tall-cell bottom
-  // caption — Mani fills that space now.
+  // caption — Mani fills that space now. Sized relative to the granted cell so
+  // it holds its presence across launcher grids; the SVG viewport is cropped
+  // so the neck runs off the widget's bottom-right edge (see MANI_ASPECT).
+  const maniW = Math.round(cellWidth * (isTall ? 0.56 : 0.5))
   const mascot = {
     svg: maniSvg(
       pickManiPose(
@@ -437,8 +442,8 @@ function SmallWidget({
         pacificDayOfYear(now)
       )
     ),
-    width: isTall ? 96 : 72,
-    height: isTall ? 112 : 84,
+    width: maniW,
+    height: Math.round(maniW * MANI_ASPECT),
   }
   if (state === 'loggedOut' || !data) {
     return (
@@ -956,6 +961,7 @@ export function StreakWidget({
       state={state}
       data={previewData}
       now={now}
+      cellWidth={widgetInfo.width}
       isTall={isTall}
       clickData={clickData}
     />

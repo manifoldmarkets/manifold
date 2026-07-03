@@ -171,6 +171,13 @@ const FACES: Record<ManiPose, string> = {
     '<text x="104" y="22" font-size="11" font-weight="bold" fill="#b5b5c2">z</text>',
 }
 
+// The poses are authored in a 120×140 design space, but the rendered viewport
+// crops the right/bottom edges (110×126) so the neck runs off the widget edge
+// — the same corner "bleed" iOS achieves by offsetting ManiView past the edge.
+// Size the SvgWidget frame with this exact ratio: androidsvg letterboxes
+// (re-centering, killing the bottom anchor) if the frame ratio differs.
+export const MANI_ASPECT = 126 / 110
+
 export function maniSvg(pose: ManiPose): string {
   const pal =
     pose === 'icy' || pose === 'shivering'
@@ -179,7 +186,7 @@ export function maniSvg(pose: ManiPose): string {
       ? GREY_P
       : PURPLE
   return (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 126">' +
     body(pal) +
     FACES[pose] +
     '</svg>'
