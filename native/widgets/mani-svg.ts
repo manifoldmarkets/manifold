@@ -122,45 +122,57 @@ function body(p: Palette, drowsy?: boolean): string {
 }
 
 // Seasonal accessories drawn over the finished pose. All-vector (androidsvg).
-const SEASONS: Record<Exclude<ManiSeason, 'none'>, string> = {
-  christmas:
+// Split hat/scene: the party pose keeps ITS hat (two hats stack ridiculously),
+// but scene items (bat, pumpkin, snow, firework) always draw.
+const SEASONS: Record<
+  Exclude<ManiSeason, 'none'>,
+  { hat: string; scene: string }
+> = {
+  christmas: {
     // one continuous bent-sock silhouette + fold shade + pompom + band
-    '<path d="M52,36 C54,20 60,9 71,6 C80,3 88,6 92,12 C95,16 95,21 91,23 C88,17 84,13 79,12 C84,17 88,23 90,30 Z" fill="#E14B4B"/>' +
-    '<path d="M79,12 C84,17 88,23 90,30 L85,31 C83,22 81,16 79,12 Z" fill="#C93A3A"/>' +
-    '<circle cx="92" cy="24" r="5" fill="#fff"/>' +
-    '<path d="M50,37 L92,31" stroke="#fff" stroke-width="9" stroke-linecap="round"/>' +
-    spark(28, 14, 4, '#EAF4FF') +
-    spark(101, 44, 3, '#EAF4FF'),
-  halloween:
-    '<g transform="rotate(-8 72 33)">' +
-    '<ellipse cx="72" cy="33" rx="26" ry="5.5" fill="#241d3d"/>' +
-    '<polygon points="58,33 88,33 76,4" fill="#2c2350"/>' +
-    '<rect x="64" y="25" width="18" height="5.5" fill="#443775"/>' +
-    '<rect x="70" y="24.5" width="6" height="6.5" fill="#FFD24D"/></g>' +
-    // bat
-    '<path d="M14,18 Q20,7 29,11 Q30,5 34,5 Q34,9 36,10 Q38,9 38,5 Q42,5 43,11 Q52,7 58,18 Q50,14 45,18 Q41,14 36,18 Q31,14 27,18 Q22,14 14,18 Z" fill="#8d84b8"/>' +
-    // jack-o'-lantern
-    '<ellipse cx="30" cy="106" rx="12" ry="9.5" fill="#F28C28"/>' +
-    '<ellipse cx="30" cy="106" rx="5" ry="9.5" fill="#E07612"/>' +
-    '<rect x="28" y="93" width="4" height="6" fill="#5a7a3a"/>' +
-    '<polygon points="24,102 27,106 21,106" fill="#241d3d"/>' +
-    '<polygon points="36,102 39,106 33,106" fill="#241d3d"/>' +
-    '<polygon points="22,110 26,108 30,111 34,108 38,110 30,114" fill="#241d3d"/>',
-  newYear:
-    '<polygon points="64,26 86,24 76,2" fill="#FFD24D"/>' +
-    '<line x1="70" y1="18" x2="84" y2="17" stroke="#B45309" stroke-width="2.5"/>' +
-    '<line x1="67" y1="23" x2="86" y2="21.5" stroke="#B45309" stroke-width="2.5"/>' +
-    '<circle cx="76" cy="2" r="3" fill="#FF5C8A"/>' +
-    // firework burst
-    '<circle cx="20" cy="14" r="2.5" fill="#FFE891"/>' +
-    '<g stroke="#FFD24D" stroke-width="2" stroke-linecap="round">' +
-    '<line x1="20" y1="5.5" x2="20" y2="9.5"/><line x1="20" y1="18.5" x2="20" y2="22.5"/>' +
-    '<line x1="11.5" y1="14" x2="15.5" y2="14"/><line x1="24.5" y1="14" x2="28.5" y2="14"/>' +
-    '<line x1="14" y1="8" x2="16.8" y2="10.8"/><line x1="23.2" y1="17.2" x2="26" y2="20"/>' +
-    '<line x1="26" y1="8" x2="23.2" y2="10.8"/><line x1="16.8" y1="17.2" x2="14" y2="20"/></g>' +
-    '<circle cx="20" cy="3.5" r="1.8" fill="#FF5C8A"/><circle cx="20" cy="24.5" r="1.8" fill="#8fdcff"/>' +
-    '<circle cx="9.5" cy="14" r="1.8" fill="#7CFFB2"/><circle cx="30.5" cy="14" r="1.8" fill="#FFB3C7"/>' +
-    '<circle cx="100" cy="12" r="2" fill="#8fdcff"/><circle cx="104" cy="36" r="2" fill="#7CFFB2"/>',
+    hat:
+      '<path d="M52,36 C54,20 60,9 71,6 C80,3 88,6 92,12 C95,16 95,21 91,23 C88,17 84,13 79,12 C84,17 88,23 90,30 Z" fill="#E14B4B"/>' +
+      '<path d="M79,12 C84,17 88,23 90,30 L85,31 C83,22 81,16 79,12 Z" fill="#C93A3A"/>' +
+      '<circle cx="92" cy="24" r="5" fill="#fff"/>' +
+      '<path d="M50,37 L92,31" stroke="#fff" stroke-width="9" stroke-linecap="round"/>',
+    scene: spark(28, 14, 4, '#EAF4FF') + spark(101, 44, 3, '#EAF4FF'),
+  },
+  halloween: {
+    hat:
+      '<g transform="rotate(-8 72 33)">' +
+      '<ellipse cx="72" cy="33" rx="26" ry="5.5" fill="#241d3d"/>' +
+      '<polygon points="58,33 88,33 76,4" fill="#2c2350"/>' +
+      '<rect x="64" y="25" width="18" height="5.5" fill="#443775"/>' +
+      '<rect x="70" y="24.5" width="6" height="6.5" fill="#FFD24D"/></g>',
+    scene:
+      // bat
+      '<path d="M14,18 Q20,7 29,11 Q30,5 34,5 Q34,9 36,10 Q38,9 38,5 Q42,5 43,11 Q52,7 58,18 Q50,14 45,18 Q41,14 36,18 Q31,14 27,18 Q22,14 14,18 Z" fill="#8d84b8"/>' +
+      // jack-o'-lantern
+      '<ellipse cx="30" cy="106" rx="12" ry="9.5" fill="#F28C28"/>' +
+      '<ellipse cx="30" cy="106" rx="5" ry="9.5" fill="#E07612"/>' +
+      '<rect x="28" y="93" width="4" height="6" fill="#5a7a3a"/>' +
+      '<polygon points="24,102 27,106 21,106" fill="#241d3d"/>' +
+      '<polygon points="36,102 39,106 33,106" fill="#241d3d"/>' +
+      '<polygon points="22,110 26,108 30,111 34,108 38,110 30,114" fill="#241d3d"/>',
+  },
+  newYear: {
+    hat:
+      '<polygon points="64,26 86,24 76,2" fill="#FFD24D"/>' +
+      '<line x1="70" y1="18" x2="84" y2="17" stroke="#B45309" stroke-width="2.5"/>' +
+      '<line x1="67" y1="23" x2="86" y2="21.5" stroke="#B45309" stroke-width="2.5"/>' +
+      '<circle cx="76" cy="2" r="3" fill="#FF5C8A"/>',
+    scene:
+      // firework burst
+      '<circle cx="20" cy="14" r="2.5" fill="#FFE891"/>' +
+      '<g stroke="#FFD24D" stroke-width="2" stroke-linecap="round">' +
+      '<line x1="20" y1="5.5" x2="20" y2="9.5"/><line x1="20" y1="18.5" x2="20" y2="22.5"/>' +
+      '<line x1="11.5" y1="14" x2="15.5" y2="14"/><line x1="24.5" y1="14" x2="28.5" y2="14"/>' +
+      '<line x1="14" y1="8" x2="16.8" y2="10.8"/><line x1="23.2" y1="17.2" x2="26" y2="20"/>' +
+      '<line x1="26" y1="8" x2="23.2" y2="10.8"/><line x1="16.8" y1="17.2" x2="14" y2="20"/></g>' +
+      '<circle cx="20" cy="3.5" r="1.8" fill="#FF5C8A"/><circle cx="20" cy="24.5" r="1.8" fill="#8fdcff"/>' +
+      '<circle cx="9.5" cy="14" r="1.8" fill="#7CFFB2"/><circle cx="30.5" cy="14" r="1.8" fill="#FFB3C7"/>' +
+      '<circle cx="100" cy="12" r="2" fill="#8fdcff"/><circle cx="104" cy="36" r="2" fill="#7CFFB2"/>',
+  },
 }
 
 const eye = (x: number, y: number, r: number, px: number, py: number, pr: number) =>
@@ -293,11 +305,15 @@ export function maniSvg(pose: ManiPose, season: ManiSeason = 'none'): string {
       : pose === 'asleep'
       ? GREY_P
       : PURPLE
+  const dressUp =
+    season === 'none'
+      ? ''
+      : (pose === 'party' ? '' : SEASONS[season].hat) + SEASONS[season].scene
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 118">' +
     body(pal, pose === 'nightOwl') +
     FACES[pose] +
-    (season === 'none' ? '' : SEASONS[season]) +
+    dressUp +
     '</svg>'
   )
 }

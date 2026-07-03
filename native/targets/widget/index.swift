@@ -213,6 +213,8 @@ struct StreakEntry: TimelineEntry {
   // Device-local hour of the last bet (nil if never) — drives Mani's
   // early-bird / night-owl flavour when lit.
   let betHour: Int?
+  // kDebugParade only: index into the pose/placement/season carousel.
+  var parade: Int? = nil
 }
 
 struct Provider: TimelineProvider {
@@ -241,6 +243,21 @@ struct Provider: TimelineProvider {
       return
     }
     let now = Date()
+    if kDebugParade {
+      let sample = [
+        QuestItem(title: "Share a market", rewardMana: 10, done: true),
+        QuestItem(title: "Create a market", rewardMana: 200, done: false),
+      ]
+      let badge = QuestTierBadge(label: "PRO", multiplier: 2, color: "indigo")
+      let parade = (0..<44).map { i in
+        StreakEntry(date: now.addingTimeInterval(Double(i) * 60), streak: 224,
+                    resetDate: nextPacificReset(after: now), state: .lit,
+                    quests: sample, tierBadge: badge, freezesLeft: 2,
+                    loggedIn: true, betHour: nil, parade: i)
+      }
+      completion(Timeline(entries: parade, policy: .atEnd))
+      return
+    }
     let first = currentEntry(now)
     var entries = [first]
     if first.loggedIn && first.state != .lit {
@@ -382,6 +399,22 @@ enum ManiPose {
   case icy, shivering                                 // frozen
   case asleep                                         // logged out
 }
+
+// DEBUG PARADE: when true, the timeline becomes a 60-second carousel cycling
+// every pose × placement × season, so the whole Mani matrix can be audited
+// on-device in ~40 minutes instead of months of daily rolls. The committed
+// value must ALWAYS be false — flip locally and cut a throwaway build.
+private let kDebugParade = false
+
+private let kParadePoses: [ManiPose] = [
+  .happyClassic, .smug, .starstruck, .party, .fireEye,
+  .heartEye, .blushing, .chirping,
+  .earlyBird, .nightOwl, .ecstatic,
+  .watching, .sideEye, .quizzical,
+  .sweating, .alarmed,
+  .madClassic, .fuming, .disappointed,
+  .icy, .shivering, .asleep,
+]
 
 // Streaks that get the one-day party hat (the day you cross a milestone).
 private let kPartyStreaks: Set<Int> = [30, 50, 100, 200, 365, 500, 1000]
@@ -781,8 +814,11 @@ struct ManiView: View {
 
       // Seasonal dress-up drawn over the finished pose (device-local date).
       // Hats are authored for the side profile; front/hanging orientations
-      // keep only the scene items (bat, pumpkin, snow, firework).
-      func drawSeason(withHat: Bool) {
+      // keep only the scene items (bat, pumpkin, snow, firework). The party
+      // pose keeps ITS hat — two hats stack ridiculously (found on the
+      // contact sheet).
+      func drawSeason(withHat rawHat: Bool) {
+        let withHat = rawHat && pose != .party
         func ellipse(_ cx: Double, _ cy: Double, _ rx: Double, _ ry: Double,
                      _ color: Color) {
           ctx.fill(Path(ellipseIn: CGRect(x: (cx - rx) * s, y: (cy - ry) * s,
@@ -1262,21 +1298,30 @@ struct StreakWidgetEntryView: View {
   // Mani's mood for this entry (state + time-to-reset + daily variant roll +
   // bet-time flavour + quest completion).
   private var pose: ManiPose {
-    maniPose(state: entry.state, loggedIn: entry.loggedIn,
-             remaining: entry.resetDate.timeIntervalSince(entry.date),
-             streak: entry.streak, day: pacificDayOfYear(entry.date),
-             betHour: entry.betHour,
-             allQuestsDone: !entry.quests.isEmpty && entry.quests.allSatisfy { $0.done })
+    if let i = entry.parade { return kParadePoses[i % kParadePoses.count] }
+    return maniPose(state: entry.state, loggedIn: entry.loggedIn,
+                    remaining: entry.resetDate.timeIntervalSince(entry.date),
+                    streak: entry.streak, day: pacificDayOfYear(entry.date),
+                    betHour: entry.betHour,
+                    allQuestsDone: !entry.quests.isEmpty && entry.quests.allSatisfy { $0.done })
   }
 
   // Seasonal dress-up window (device-local date).
-  private var season: ManiSeason { maniSeason(for: entry.date) }
+  private var season: ManiSeason {
+    if let i = entry.parade {
+      return [.none, .halloween, .christmas, .newYear][(i / 5) % 4]
+    }
+    return maniSeason(for: entry.date)
+  }
 
   // Where Mani sits on the quest-medium today.
   private var placement: ManiPlacement {
-    maniPlacement(state: entry.state,
-                  remaining: entry.resetDate.timeIntervalSince(entry.date),
-                  streak: entry.streak, day: pacificDayOfYear(entry.date))
+    if let i = entry.parade {
+      return [.rightCorner, .centerLeft, .centerRight, .centerFront, .topPeek][i % 5]
+    }
+    return maniPlacement(state: entry.state,
+                         remaining: entry.resetDate.timeIntervalSince(entry.date),
+                         streak: entry.streak, day: pacificDayOfYear(entry.date))
   }
 
   // Mani on the quest-medium, drawn in the container background so he bleeds
