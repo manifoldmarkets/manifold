@@ -42,9 +42,13 @@ struct StreakData: Decodable {
   let lastBetTime: Double
   let lastStreakFreezeTime: Double
   let freezesLeft: Int
+  // Daily streak bonus with the tier multiplier applied ("+M50 / day").
+  // nil when the blob predates the field — the widget falls back gracefully.
+  let streakBonus: Int?
 
   enum CodingKeys: String, CodingKey {
     case loggedIn, streak, lastBetTime, lastStreakFreezeTime, freezesLeft
+    case streakBonus
   }
 
   init(from decoder: Decoder) throws {
@@ -59,6 +63,7 @@ struct StreakData: Decodable {
     lastStreakFreezeTime =
       (try? c.decode(Double.self, forKey: .lastStreakFreezeTime)) ?? 0
     freezesLeft = (try? c.decode(Int.self, forKey: .freezesLeft)) ?? 0
+    streakBonus = try? c.decode(Int.self, forKey: .streakBonus)
   }
 }
 
@@ -169,7 +174,7 @@ func pacificDayOfYear(_ date: Date) -> Int {
 
 func hookText(state: StreakState, date: Date) -> String {
   switch state {
-  case .lit:    return "Locked in. See you tomorrow 🔥"
+  case .lit:    return "See you tomorrow 🔥"
   case .frozen: return "Saved by a freeze 🧊"
   case .pending: break
   }
@@ -195,6 +200,10 @@ func hookText(state: StreakState, date: Date) -> String {
     "What do you know?",
     "Mana where your mouth is",
     "Someone's wrong online 👀",
+    "Try sorting by 'new' 👀",
+    "Buy low, sell high",
+    "Fresh markets just listed",
+    "Early bird gets the mana",
   ]
   return hooks[day % hooks.count]
 }
@@ -213,6 +222,8 @@ struct StreakEntry: TimelineEntry {
   // Device-local hour of the last bet (nil if never) — drives Mani's
   // early-bird / night-owl flavour when lit.
   let betHour: Int?
+  // Daily streak bonus, tier multiplier applied (nil on legacy blobs).
+  var streakBonus: Int? = nil
   // kDebugParade only: index into the pose/placement/season carousel.
   var parade: Int? = nil
 }
@@ -226,7 +237,7 @@ struct Provider: TimelineProvider {
     ]
     return StreakEntry(date: Date(), streak: 7, resetDate: nextPacificReset(after: Date()),
                        state: .lit, quests: sample, tierBadge: nil, freezesLeft: 2,
-                       loggedIn: true, betHour: nil)
+                       loggedIn: true, betHour: nil, streakBonus: 25)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
@@ -253,7 +264,7 @@ struct Provider: TimelineProvider {
         StreakEntry(date: now.addingTimeInterval(Double(i) * 60), streak: 224,
                     resetDate: nextPacificReset(after: now), state: .lit,
                     quests: sample, tierBadge: badge, freezesLeft: 2,
-                    loggedIn: true, betHour: nil, parade: i)
+                    loggedIn: true, betHour: nil, streakBonus: 50, parade: i)
       }
       completion(Timeline(entries: parade, policy: .atEnd))
       return
@@ -301,7 +312,7 @@ struct Provider: TimelineProvider {
                        quests: questItems(qp, at: date),
                        tierBadge: qp?.tier,
                        freezesLeft: d.freezesLeft, loggedIn: true,
-                       betHour: betHour)
+                       betHour: betHour, streakBonus: d.streakBonus)
   }
 }
 
@@ -364,12 +375,14 @@ func streakLabel(state: StreakState, freezesLeft: Int) -> String {
 // timer occupies while pending, so the done-state never feels bare.
 func litCaption(date: Date, streak: Int) -> String {
   let lines = [
-    "Locked in 🔥",
+    "See you tomorrow 🔥",
     "Streak secured",
-    "See you tomorrow",
     "Another one 📈",
     "Nice.",
     "Day \(streak) ✓",
+    "Buy low, sell high",
+    "Be less wrong",
+    "Compounding 📈",
   ]
   return lines[(pacificDayOfYear(date) + streak) % lines.count]
 }
@@ -1579,12 +1592,16 @@ struct StreakWidgetEntryView: View {
             .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
             .lineLimit(2).minimumScaleFactor(0.75)
             .padding(.top, 4)
-        } else {
-          Text(litCaption(date: entry.date, streak: entry.streak))
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.white.opacity(0.9))
-            .lineLimit(1).minimumScaleFactor(0.7)
-            .padding(.top, 3)
+        }
+        // The freeze safety-net readout (skipped while frozen — the label
+        // already carries the count there — and when they own none). Lit
+        // shows JUST this under the label — clean, per design review.
+        if hasQuests && entry.state != .frozen && entry.freezesLeft > 0 {
+          Text("🧊 ×\(entry.freezesLeft)")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.white.opacity(0.85))
+            .lineLimit(1)
+            .padding(.top, 2)
         }
         Spacer(minLength: 0)
       }

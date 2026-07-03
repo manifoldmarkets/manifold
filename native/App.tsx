@@ -9,6 +9,7 @@ import {
   NativeStreakData,
   nativeToWebMessage,
   nativeToWebMessageType,
+  streakBonusPerDay,
   webToNativeMessage,
 } from 'common/native-message'
 import { NativeShareData } from 'common/native-share-data'
@@ -117,6 +118,9 @@ const App = () => {
         lastBetTime: u.lastBetTime ?? 0,
         lastStreakFreezeTime: u.lastStreakFreezeTime ?? 0,
         freezesLeft: u.streakForgiveness ?? 0,
+        // Same formula/multiplier as the web push — the public user object
+        // carries the tier fields, so both paths agree.
+        streakBonus: streakBonusPerDay(u),
         updatedAt: Date.now(),
       })
     } catch (e) {

@@ -21,6 +21,7 @@ import {
   nativeSetStreak,
   nativeSignOut,
 } from 'web/lib/native/native-messages'
+import { streakBonusPerDay } from 'common/native-message'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/api/api'
@@ -276,6 +277,7 @@ export function AuthProvider(props: {
       lastBetTime: user.lastBetTime ?? 0,
       lastStreakFreezeTime: user.lastStreakFreezeTime ?? 0,
       freezesLeft: user.streakForgiveness ?? 0,
+      streakBonus: streakBonusPerDay(user),
       updatedAt: Date.now(),
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps

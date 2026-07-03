@@ -1,5 +1,11 @@
 import { GPSData } from 'common/gidx/gidx'
 import { Notification } from 'common/notification'
+import {
+  BETTING_STREAK_BONUS_AMOUNT,
+  BETTING_STREAK_BONUS_MAX,
+} from 'common/economy'
+import { getEffectiveTier, User } from 'common/user'
+import { getEffectiveBonusMultiplier } from 'common/supporter-config'
 
 export type nativeToWebMessageType =
   | 'iapReceipt'
@@ -70,6 +76,23 @@ export type NativeStreakData = {
   lastStreakFreezeTime: number // 0 if no freeze ever used
   freezesLeft: number // == user.streakForgiveness
   updatedAt: number // when this snapshot was taken
+  // Today's streak bonus with the tier's streak multiplier applied — shown on
+  // the widget as "+M50 / day". Optional so legacy blobs stay decodable.
+  streakBonus?: number
+}
+
+// The daily betting-streak bonus for the widget, streak multiplier applied —
+// the same formula the streak progress bar shows. Computed wherever the full
+// user object lives (web setStreak push AND the native API self-fetch) so the
+// snapshot stays correct whichever path wrote it last.
+export function streakBonusPerDay(user: User): number {
+  const base = Math.min(
+    BETTING_STREAK_BONUS_AMOUNT * Math.max(user.currentBettingStreak ?? 0, 1),
+    BETTING_STREAK_BONUS_MAX
+  )
+  return Math.floor(
+    base * getEffectiveBonusMultiplier(getEffectiveTier(user), 'streak')
+  )
 }
 
 // A single widget quest. State is binary (done this period or not). `period`

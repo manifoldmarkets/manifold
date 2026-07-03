@@ -206,12 +206,14 @@ function effectiveQuests(
 // bare. Mirrors litCaption() in index.swift.
 function litCaption(now: Date, streak: number): string {
   const lines = [
-    'Locked in 🔥',
+    'See you tomorrow 🔥',
     'Streak secured',
-    'See you tomorrow',
     'Another one 📈',
     'Nice.',
     `Day ${streak} ✓`,
+    'Buy low, sell high',
+    'Be less wrong',
+    'Compounding 📈',
   ]
   return lines[(pacificDayOfYear(now) + streak) % lines.length]
 }
@@ -240,7 +242,7 @@ function pacificDayOfYear(now: Date): number {
 
 // Rotating daily nudge on the medium widget. Mirrors hookText() in index.swift.
 function hookText(state: StreakState, now: Date): string {
-  if (state === 'lit') return 'Locked in. See you tomorrow 🔥'
+  if (state === 'lit') return 'See you tomorrow 🔥'
   if (state === 'frozen') return 'Saved by a freeze 🧊'
   const day = pacificDayOfYear(now)
   const pct = 55 + ((day * 7) % 40) // 55–94, deterministic by day
@@ -264,6 +266,10 @@ function hookText(state: StreakState, now: Date): string {
     'What do you know?',
     'Mana where your mouth is',
     "Someone's wrong online 👀",
+    "Try sorting by 'new' 👀",
+    'Buy low, sell high',
+    'Fresh markets just listed',
+    'Early bird gets the mana',
   ]
   return hooks[day % hooks.length]
 }
