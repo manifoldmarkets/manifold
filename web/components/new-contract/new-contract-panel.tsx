@@ -931,7 +931,13 @@ export function NewContractPanel(props: {
       if (formState.outcomeType === 'BINARY') {
         payload.initialProb = formState.probability || 50
       } else if (formState.outcomeType === 'MULTIPLE_CHOICE') {
-        const mcAnswers = formState.answers.filter((a) => a.trim().length > 0)
+        // Keep each kept answer's ORIGINAL row index: initialProbs is row-aligned with
+        // the unfiltered editor rows, so filtering blank middle rows and then indexing
+        // probs by filtered position would silently shift every later answer's prob.
+        const mcAnswerRows = formState.answers
+          .map((text, originalIndex) => ({ text, originalIndex }))
+          .filter(({ text }) => text.trim().length > 0)
+        const mcAnswers = mcAnswerRows.map(({ text }) => text)
         payload.answers = mcAnswers
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = formState.addAnswersMode
@@ -948,8 +954,9 @@ export function NewContractPanel(props: {
           const defaultPct = formState.shouldAnswersSumToOne
             ? 100 / mcAnswers.length
             : 50
-          payload.initialProbs = mcAnswers.map(
-            (_, i) => formState.initialProbs?.[i] ?? defaultPct
+          payload.initialProbs = mcAnswerRows.map(
+            ({ originalIndex }) =>
+              formState.initialProbs?.[originalIndex] ?? defaultPct
           )
         }
       } else if (formState.outcomeType === 'POLL') {
