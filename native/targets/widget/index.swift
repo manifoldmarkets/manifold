@@ -334,6 +334,20 @@ func streakLabel(state: StreakState, freezesLeft: Int) -> String {
   state == .frozen ? "Frozen · \(freezesLeft) left" : "day streak"
 }
 
+// Short rotating caption for the LIT small widget — fills the corner the
+// timer occupies while pending, so the done-state never feels bare.
+func litCaption(date: Date, streak: Int) -> String {
+  let lines = [
+    "Locked in 🔥",
+    "Streak secured",
+    "See you tomorrow",
+    "Another one 📈",
+    "Nice.",
+    "Day \(streak) ✓",
+  ]
+  return lines[(pacificDayOfYear(date) + streak) % lines.count]
+}
+
 private func emoji(for state: StreakState) -> String {
   state == .frozen ? "🧊" : "🔥"
 }
@@ -351,6 +365,7 @@ private func emoji(for state: StreakState) -> String {
 
 enum ManiPose {
   case happyClassic, smug, starstruck, party, fireEye // lit
+  case heartEye, blushing, chirping                   // lit (emotive extras)
   case watching, sideEye, quizzical                   // pending, >12h
   case sweating, alarmed                              // pending, <12h
   case madClassic, fuming, disappointed               // pending, <4h
@@ -370,10 +385,14 @@ func maniPose(state: StreakState, loggedIn: Bool, remaining: TimeInterval,
     return [.icy, .shivering][roll % 2]
   case .lit:
     if kPartyStreaks.contains(streak) { return .party }
-    // fireEye is the rare manic roll (~1 in 6); starstruck joins on gold.
+    // The lit face is what a keeper sees 99% of the time, so it gets the
+    // widest rotation: 8 slots, fireEye as the rare manic roll, starstruck
+    // joining on gold. Mani should never feel unphased by your streak.
     let happy: [ManiPose] = isGoldMilestone(state, streak)
-      ? [.happyClassic, .smug, .starstruck, .happyClassic, .fireEye, .smug]
-      : [.happyClassic, .smug, .happyClassic, .fireEye, .smug, .happyClassic]
+      ? [.happyClassic, .heartEye, .smug, .starstruck,
+         .blushing, .fireEye, .chirping, .smug]
+      : [.happyClassic, .heartEye, .smug, .chirping,
+         .blushing, .fireEye, .happyClassic, .chirping]
     return happy[roll % happy.count]
   case .pending:
     if remaining <= 4 * 3600 { return [.madClassic, .fuming, .disappointed][roll % 3] }
@@ -506,6 +525,23 @@ struct ManiView: View {
       // Face for the front-facing orientation — every pose, symmetric.
       func frontFace() {
         switch pose {
+        case .heartEye:
+          for ex in [45.0, 75.0] {
+            circle(ex, 45, 7, .white)
+            heart(ex, 45, 4.2)
+          }
+        case .blushing:
+          quad(37, 46, 45, 38, 53, 46, 4, .white)
+          quad(67, 46, 75, 38, 83, 46, 4, .white)
+          for cx in [32.0, 88.0] {
+            ctx.fill(Path(ellipseIn: CGRect(x: (cx - 5) * s, y: (55 - 3) * s,
+                                            width: 10 * s, height: 6 * s)),
+                     with: .color(rgb(255, 157, 181).opacity(0.75)))
+          }
+        case .chirping:
+          quad(37, 46, 45, 38, 53, 46, 4, .white)
+          quad(67, 46, 75, 38, 83, 46, 4, .white)
+          glyphText("♪", 96, 22, 14, .white, bold: true)
         case .happyClassic, .party:
           quad(37, 46, 45, 38, 53, 46, 4, .white)
           quad(67, 46, 75, 38, 83, 46, 4, .white)
@@ -640,10 +676,40 @@ struct ManiView: View {
         return
       }
 
+      // Heart-shaped pupil (side + front heart eyes).
+      func heart(_ cx: Double, _ cy: Double, _ r: Double) {
+        var p = Path()
+        p.move(to: pt(cx, cy + r))
+        p.addCurve(to: pt(cx - r, cy - r * 0.35),
+                   control1: pt(cx - r * 0.9, cy + r * 0.35),
+                   control2: pt(cx - r, cy + r * 0.1))
+        p.addArc(center: pt(cx - r * 0.5, cy - r * 0.35), radius: r * 0.5 * s,
+                 startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+        p.addArc(center: pt(cx + r * 0.5, cy - r * 0.35), radius: r * 0.5 * s,
+                 startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+        p.addCurve(to: pt(cx, cy + r),
+                   control1: pt(cx + r, cy + r * 0.1),
+                   control2: pt(cx + r * 0.9, cy + r * 0.35))
+        p.closeSubpath()
+        ctx.fill(p, with: .color(rgb(255, 92, 138)))
+      }
+
       // Face per pose.
       switch pose {
       case .happyClassic:
         quad(68, 50, 77, 41, 86, 50, 4.5, .white)
+      case .heartEye:
+        circle(78, 50, 8, .white)
+        heart(78, 50, 5)
+      case .blushing:
+        quad(68, 50, 77, 41, 86, 50, 4.5, .white)
+        ctx.fill(Path(ellipseIn: CGRect(x: (60 - 5) * s, y: (60 - 3) * s,
+                                        width: 10 * s, height: 6 * s)),
+                 with: .color(rgb(255, 157, 181).opacity(0.75)))
+      case .chirping:
+        quad(68, 50, 77, 41, 86, 50, 4.5, .white)
+        glyphText("♪", 100, 26, 15, .white, bold: true)
+        glyphText("♪", 108, 16, 10, rgb(255, 255, 255).opacity(0.75), bold: true)
       case .smug:
         var half = Path()
         half.move(to: pt(70, 49))
@@ -1152,7 +1218,7 @@ struct StreakWidgetEntryView: View {
       // minimumScaleFactor. 24/44 match Android's flame/number proportions and
       // fit 3 digits with no scaling on every device size.
       HStack(spacing: 6) {
-        glyph(size: 24)
+        glyph(size: 30)
           .fixedSize()
         Text("\(entry.streak)")
           .font(.system(size: 44, weight: .heavy)).foregroundColor(.white)
@@ -1164,9 +1230,15 @@ struct StreakWidgetEntryView: View {
         .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
         .lineLimit(1).minimumScaleFactor(0.6)
         .padding(.top, 2)
+      Spacer(minLength: 4)
       if showTimer {
-        Spacer(minLength: 4)
         countdown(weight: .bold).font(.system(size: 16))
+      } else {
+        Text(litCaption(date: entry.date, streak: entry.streak))
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundColor(.white.opacity(0.9))
+          .lineLimit(1).minimumScaleFactor(0.7)
+          .padding(.trailing, 64) // clear of Mani
       }
     }
     // No inner padding: iOS 17 already applies automatic content margins
@@ -1201,14 +1273,9 @@ struct StreakWidgetEntryView: View {
     let hasQuests = !entry.quests.isEmpty
     return HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 0) {
-        HStack(spacing: 2) {
-          glyph(size: 32)
-          if milestone {
-            Spacer(minLength: 2)
-            Text("✨").font(.system(size: 13))
-            Text("🏆").font(.system(size: 26))
-          }
-        }
+        // No ✨🏆 next to the flame — it read as under-produced next to Mani;
+        // the gold gradient + starstruck/party poses carry the milestone.
+        glyph(size: 32)
         Spacer(minLength: 2)
         Text("\(entry.streak)")
           .font(.system(size: 42, weight: .heavy)).foregroundColor(.white)
@@ -1230,7 +1297,13 @@ struct StreakWidgetEntryView: View {
       .frame(width: hasQuests ? 92 : 150, alignment: .leading)
 
       if hasQuests {
-        Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
+        // On centre placements Mani straddles this spot — hide the line (his
+        // body separates the columns) rather than let it cross over him.
+        let centerMani = [ManiPlacement.centerLeft, .centerRight, .centerFront]
+          .contains(placement)
+        Rectangle()
+          .fill(centerMani ? Color.clear : Color.white.opacity(0.22))
+          .frame(width: 1)
 
         VStack(alignment: .leading, spacing: 7) {
           if let badge = entry.tierBadge {

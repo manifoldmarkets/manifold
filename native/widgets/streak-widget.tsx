@@ -194,6 +194,21 @@ function effectiveQuests(
   }
 }
 
+// Short rotating caption for the LIT small widget — fills the corner the
+// countdown Chronometer occupies while pending, so the done-state never feels
+// bare. Mirrors litCaption() in index.swift.
+function litCaption(now: Date, streak: number): string {
+  const lines = [
+    'Locked in 🔥',
+    'Streak secured',
+    'See you tomorrow',
+    'Another one 📈',
+    'Nice.',
+    `Day ${streak} ✓`,
+  ]
+  return lines[(pacificDayOfYear(now) + streak) % lines.length]
+}
+
 // Day-of-year in LA (1-366), used to deterministically rotate the hook copy.
 function pacificDayOfYear(now: Date): number {
   try {
@@ -477,7 +492,10 @@ function SmallWidget({
     height: 'match_parent' as const,
     width: 'match_parent' as const,
     flexDirection: 'column' as const,
-    justifyContent: 'flex-start' as const,
+    // Hero pins top; the lit caption (when present) drops to the bottom-left,
+    // clear of Mani's corner. Pending/frozen leave the bottom to the native
+    // Chronometer, so there's only ever one child and it stays top.
+    justifyContent: 'space-between' as const,
     alignItems: 'flex-start' as const,
     padding: isTall ? 14 : 8,
   }
@@ -587,6 +605,17 @@ function SmallWidget({
             }}
           />
         </FlexWidget>
+        {state === 'lit' ? (
+          <TextWidget
+            text={litCaption(now, data.streak)}
+            maxLines={1}
+            style={{
+              fontSize: 13,
+              fontWeight: '600',
+              color: 'rgba(255, 255, 255, 0.9)',
+            }}
+          />
+        ) : null}
       </FlexWidget>
     </Shell>
   )

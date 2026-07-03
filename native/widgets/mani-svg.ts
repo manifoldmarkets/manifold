@@ -15,6 +15,7 @@ export type ManiState = 'lit' | 'pending' | 'frozen' | 'loggedOut'
 
 export type ManiPose =
   | 'happyClassic' | 'smug' | 'starstruck' | 'party' | 'fireEye' // lit
+  | 'heartEye' | 'blushing' | 'chirping'                         // lit extras
   | 'watching' | 'sideEye' | 'quizzical'                         // pending >12h
   | 'sweating' | 'alarmed'                                       // pending <12h
   | 'madClassic' | 'fuming' | 'disappointed'                     // pending <4h
@@ -39,16 +40,18 @@ export function pickManiPose(
   if (state === 'frozen') return (['icy', 'shivering'] as const)[roll % 2]
   if (state === 'lit') {
     if (PARTY_STREAKS.has(streak)) return 'party'
-    // fireEye is the rare manic roll (~1 in 6); starstruck joins on gold.
+    // The lit face is what a keeper sees 99% of the time, so it gets the
+    // widest rotation (mirrors index.swift): fireEye is the rare manic roll,
+    // starstruck joins on gold.
     const happy =
       streak >= 30
         ? ([
-            'happyClassic', 'smug', 'starstruck',
-            'happyClassic', 'fireEye', 'smug',
+            'happyClassic', 'heartEye', 'smug', 'starstruck',
+            'blushing', 'fireEye', 'chirping', 'smug',
           ] as const)
         : ([
-            'happyClassic', 'smug', 'happyClassic',
-            'fireEye', 'smug', 'happyClassic',
+            'happyClassic', 'heartEye', 'smug', 'chirping',
+            'blushing', 'fireEye', 'happyClassic', 'chirping',
           ] as const)
     return happy[roll % happy.length]
   }
@@ -109,6 +112,18 @@ function spark(cx: number, cy: number, r: number, fill: string): string {
 const FACES: Record<ManiPose, string> = {
   happyClassic:
     '<path d="M68,50 Q77,41 86,50" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>',
+  heartEye:
+    '<circle cx="78" cy="50" r="8" fill="#fff"/>' +
+    '<path d="M78,54.5 c-4,-3.5 -7.5,-5.6 -7.5,-8.3 c0,-2.4 2.2,-3.7 4.2,-3 c1.4,0.5 2.4,1.6 3.3,3 c0.9,-1.4 1.9,-2.5 3.3,-3 c2,-0.7 4.2,0.6 4.2,3 c0,2.7 -3.5,4.8 -7.5,8.3 z" fill="#FF5C8A"/>',
+  blushing:
+    '<path d="M68,50 Q77,41 86,50" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="60" cy="60" rx="5" ry="3" fill="#FF9DB5" opacity="0.75"/>',
+  chirping:
+    '<path d="M68,50 Q77,41 86,50" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>' +
+    // eighth note, drawn (androidsvg font coverage for ♪ is unreliable)
+    '<circle cx="99" cy="28" r="3" fill="#fff"/>' +
+    '<rect x="100.8" y="14" width="2.4" height="14" fill="#fff"/>' +
+    '<path d="M103.2,14 q5,1.5 4,6 q-1,-2.5 -4,-3 z" fill="#fff"/>',
   smug:
     '<path d="M70,49 A8,8 0 0 0 86,49 Z" fill="#fff"/>' +
     `<circle cx="78" cy="51" r="2.6" fill="${PUPIL}"/>` +
@@ -172,11 +187,12 @@ const FACES: Record<ManiPose, string> = {
 }
 
 // The poses are authored in a 120×140 design space, but the rendered viewport
-// crops the right/bottom edges (110×126) so the neck runs off the widget edge
-// — the same corner "bleed" iOS achieves by offsetting ManiView past the edge.
+// crops the right/bottom edges (110×118) so the neck is clearly CUT by the
+// widget edge (a flush 126 crop still read as "the whole bird fits inside") —
+// the same corner "bleed" iOS achieves by offsetting ManiView past the edge.
 // Size the SvgWidget frame with this exact ratio: androidsvg letterboxes
 // (re-centering, killing the bottom anchor) if the frame ratio differs.
-export const MANI_ASPECT = 126 / 110
+export const MANI_ASPECT = 118 / 110
 
 export function maniSvg(pose: ManiPose): string {
   const pal =
@@ -186,7 +202,7 @@ export function maniSvg(pose: ManiPose): string {
       ? GREY_P
       : PURPLE
   return (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 126">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 118">' +
     body(pal) +
     FACES[pose] +
     '</svg>'
