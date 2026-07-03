@@ -16,7 +16,7 @@ import {
   sum,
   sumBy,
 } from 'lodash'
-import { Answer } from './answer'
+import { Answer, answerP } from './answer'
 import { Bet } from './bet'
 import {
   calculateCpmmPurchase,
@@ -88,7 +88,8 @@ export function getAnswerProbability(
     if (resolution === 'NO') return 0
   }
   const pool = { YES: poolYes, NO: poolNo }
-  return getCpmmProbability(pool, answer.p)
+  // answerP, not answer.p: this is called on blob-sourced answers (SSR/embeds/lite).
+  return getCpmmProbability(pool, answerP(answer))
 }
 
 export function getInitialAnswerProbability(

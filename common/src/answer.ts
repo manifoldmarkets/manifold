@@ -72,6 +72,14 @@ export const getDefaultSort = (contract: MultiContract) => {
   return 'old'
 }
 
+// Read an answer's CPMM p with the storage default applied. Answer.p is typed
+// non-optional and convertAnswer defaults it (row.p ?? 0.5), but answers deserialized
+// from the denormalized contract data blob (data->'answers' — SSR/SEO/embeds, search
+// "lite" answers) bypass convertAnswer, so any answer written before p existed reads
+// p === undefined at runtime and a bare `answer.p` poisons downstream math with NaN.
+// Use this accessor anywhere the answer may have come from the blob.
+export const answerP = (answer: Answer) => answer.p ?? 0.5
+
 export const sortAnswers = <T extends Answer>(
   contract: MultiContract,
   answers: T[],

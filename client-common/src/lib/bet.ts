@@ -3,7 +3,7 @@ import {
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { LimitBet } from 'common/bet'
-import { Answer } from 'common/answer'
+import { Answer, answerP } from 'common/answer'
 import { noFees } from 'common/fees'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import { sumBy } from 'lodash'
@@ -43,7 +43,7 @@ export const getLimitBetReturns = (
           YES: multiProps!.answerToBuy.poolYes,
           NO: multiProps!.answerToBuy.poolNo,
         },
-        p: multiProps!.answerToBuy.p,
+        p: answerP(multiProps!.answerToBuy),
         collectedFees: contract.collectedFees,
       }
     : {
