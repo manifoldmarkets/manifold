@@ -1553,9 +1553,11 @@ struct StreakWidgetEntryView: View {
     let hasQuests = !entry.quests.isEmpty
     return HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 0) {
-        // Flame LEFT of the number, matching the small widget — the old
-        // stacked layout let a spacer strand the flame far above the count.
-        // Block top-anchors; the bottom of the column stays free for Mani.
+        // Flame LEFT of the number, matching the small widget. The block
+        // centres vertically (top-anchoring left the lower half dead), and
+        // there's ALWAYS a third line — the timer while today isn't done, a
+        // hook or the small widget's rotating caption once lit.
+        Spacer(minLength: 0)
         HStack(spacing: 5) {
           glyph(size: 24)
             .fixedSize()
@@ -1577,6 +1579,12 @@ struct StreakWidgetEntryView: View {
             .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
             .lineLimit(2).minimumScaleFactor(0.75)
             .padding(.top, 4)
+        } else {
+          Text(litCaption(date: entry.date, streak: entry.streak))
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.white.opacity(0.9))
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .padding(.top, 3)
         }
         Spacer(minLength: 0)
       }
