@@ -1553,18 +1553,23 @@ struct StreakWidgetEntryView: View {
     let hasQuests = !entry.quests.isEmpty
     return HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 0) {
-        // No ✨🏆 next to the flame — it read as under-produced next to Mani;
-        // the gold gradient + starstruck/party poses carry the milestone.
-        glyph(size: 32)
-        Spacer(minLength: 2)
-        Text("\(entry.streak)")
-          .font(.system(size: 42, weight: .heavy)).foregroundColor(.white)
-          .lineLimit(1).minimumScaleFactor(0.4)
-          .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
-                  radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
+        // Flame LEFT of the number, matching the small widget — the old
+        // stacked layout let a spacer strand the flame far above the count.
+        // Block top-anchors; the bottom of the column stays free for Mani.
+        HStack(spacing: 5) {
+          glyph(size: 24)
+            .fixedSize()
+          Text("\(entry.streak)")
+            .font(.system(size: hasQuests ? 40 : 44, weight: .heavy))
+            .foregroundColor(.white)
+            .lineLimit(1).minimumScaleFactor(0.4)
+            .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
+                    radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
+        }
         Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
           .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
           .lineLimit(1).minimumScaleFactor(0.6)
+          .padding(.top, 2)
         if entry.state != .lit {
           countdown(weight: .bold).font(.system(size: 16)).padding(.top, 3)
         } else if !hasQuests {
@@ -1573,6 +1578,7 @@ struct StreakWidgetEntryView: View {
             .lineLimit(2).minimumScaleFactor(0.75)
             .padding(.top, 4)
         }
+        Spacer(minLength: 0)
       }
       .frame(width: hasQuests ? 92 : 150, alignment: .leading)
 

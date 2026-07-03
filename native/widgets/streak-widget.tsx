@@ -9,7 +9,14 @@ import {
 import type { WidgetInfo } from 'react-native-android-widget'
 import type { NativeQuestData, NativeStreakData } from 'common/native-message'
 import { CRANE_DATA_URI } from './crane-data'
-import { MANI_ASPECT, maniSeason, maniSvg, pickManiPose } from './mani-svg'
+import {
+  MANI_ASPECT,
+  ManiPose,
+  ManiSeason,
+  maniSeason,
+  maniSvg,
+  pickManiPose,
+} from './mani-svg'
 
 // Android home-screen streak widget. This is the platform-mirror of the iOS
 // SwiftUI widget (native/targets/widget/index.swift): same state machine, same
@@ -982,6 +989,64 @@ function CompactWidget({
 
 // MARK: - Entry point
 
+// DEBUG: render a grid of every Mani pose ('poses') or one pose across all
+// seasons ('seasons') instead of the real widget — an on-device androidsvg
+// audit in one screenshot (Android's answer to iOS's kDebugParade; the OS
+// gives us no timed carousel, so we tile instead). Must be null in commits.
+const DEBUG_MANI_MATRIX: 'poses' | 'seasons' | null = null
+
+const ALL_MANI_POSES: ManiPose[] = [
+  'happyClassic', 'smug', 'starstruck', 'party', 'fireEye',
+  'heartEye', 'blushing', 'chirping',
+  'earlyBird', 'nightOwl', 'ecstatic',
+  'watching', 'sideEye', 'quizzical',
+  'sweating', 'alarmed',
+  'madClassic', 'fuming', 'disappointed',
+  'icy', 'shivering', 'asleep',
+]
+
+function ManiMatrixWidget({ mode }: { mode: 'poses' | 'seasons' }) {
+  const svgs =
+    mode === 'poses'
+      ? ALL_MANI_POSES.map((p) => maniSvg(p))
+      : (['none', 'halloween', 'christmas', 'newYear'] as ManiSeason[]).map(
+          (s) => maniSvg('watching', s)
+        )
+  const perRow = mode === 'poses' ? 5 : 2
+  const size = mode === 'poses' ? 32 : 74
+  const rows: string[][] = []
+  for (let i = 0; i < svgs.length; i += perRow)
+    rows.push(svgs.slice(i, i + perRow))
+  return (
+    <FlexWidget
+      style={{
+        height: 'match_parent',
+        width: 'match_parent',
+        backgroundColor: '#3A3F63',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      {rows.map((row, i) => (
+        <FlexWidget key={i} style={{ flexDirection: 'row' }}>
+          {row.map((svg, j) => (
+            <SvgWidget
+              key={j}
+              svg={svg}
+              style={{
+                width: size,
+                height: Math.round(size * MANI_ASPECT),
+                marginRight: 2,
+              }}
+            />
+          ))}
+        </FlexWidget>
+      ))}
+    </FlexWidget>
+  )
+}
+
 // TEMP preview overrides (dev only — leave null in committed code).
 const FORCE_STATE: StreakState | null = null
 const FORCE_STREAK: number | null = null
@@ -1006,6 +1071,8 @@ export function StreakWidget({
   questData: NativeQuestData | null
   now: Date
 }) {
+  if (DEBUG_MANI_MATRIX) return <ManiMatrixWidget mode={DEBUG_MANI_MATRIX} />
+
   const previewData: NativeStreakData | null =
     FORCE_STREAK != null
       ? {
