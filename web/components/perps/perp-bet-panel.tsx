@@ -1,14 +1,20 @@
-import { ArrowDownIcon, ArrowUpIcon, XIcon } from '@heroicons/react/solid'
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronDownIcon,
+  XIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   computeFundingRate,
   liquidationPrice as computeLiquidationPrice,
 } from 'common/perps/amm'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -40,9 +46,9 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
   const [leverage, setLeverage] = useState<number>(2)
   const [submitting, setSubmitting] = useState(false)
   const [amountError, setAmountError] = useState<string | undefined>(undefined)
-  const [openDirection, setOpenDirection] = useState<
-    'long' | 'short' | null
-  >(null)
+  const [openDirection, setOpenDirection] = useState<'long' | 'short' | null>(
+    null
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -89,8 +95,7 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
   )
   // Sign matters to the user: +ve rate → longs pay shorts → a long pays this
   // fraction of notional per period. Short sees the opposite sign.
-  const userFundingRate =
-    direction === 'long' ? fundingRate : -fundingRate
+  const userFundingRate = direction === 'long' ? fundingRate : -fundingRate
 
   const isAdd = openDirection === direction
   // Flipping: user holds a position in the opposite direction, and we'll
@@ -192,7 +197,8 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
       </Row>
 
       <Col className="gap-1.5">
-        <label className="text-ink-600 text-sm font-medium">Margin</label>
+        {/* Visual heading; the input's accessible name comes from fieldLabel. */}
+        <span className="text-ink-600 text-sm font-medium">Margin</span>
         <BuyAmountInput
           parentClassName="max-w-full"
           amount={margin}
@@ -209,9 +215,8 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
 
       <Col className="gap-1.5">
         <Row className="items-baseline justify-between">
-          <label className="text-ink-600 text-sm font-medium">
-            Leverage
-          </label>
+          {/* Visual heading; the slider carries ariaLabel="Leverage". */}
+          <span className="text-ink-600 text-sm font-medium">Leverage</span>
           <span className="text-ink-900 font-mono text-lg font-semibold tabular-nums">
             {leverage.toFixed(leverage < 10 ? 1 : 0)}×
           </span>
@@ -225,7 +230,10 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
       </Col>
 
       <StatsGrid
+        direction={direction}
         notional={notional}
+        margin={marginAmount}
+        leverage={leverage}
         entryPrice={price}
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
@@ -295,10 +303,12 @@ const ToggleButton = (props: {
   </button>
 )
 
-// Drives the continuous leverage slider. We shift to a 0-based range
-// internally (0..maxLeverage-1) so the Slider's mark positioning — which is
-// rendered relative to (value / (max - min)) — lines up correctly; then add
-// 1 when surfacing the value. Ticks are rendered at common leverage stops.
+// Drives the leverage slider in LOG space. Leverage is perceived
+// logarithmically (1×→2× matters far more than 50×→51×), and a linear scale
+// crammed the 1×/5×/10× marks into the left edge — unreadable on a 375px
+// phone. Position = ln(lev)/ln(maxLev), which spreads 1/5/10/25/50/100 out
+// roughly evenly. The Slider positions marks at value/(max-min), so feeding it
+// ln(mark) over the [0, ln(maxLev)] domain lines the labels up correctly.
 const LeverageSlider = (props: {
   value: number
   onChange: (v: number) => void
@@ -306,20 +316,28 @@ const LeverageSlider = (props: {
   color: keyof typeof sliderColors
 }) => {
   const { value, onChange, maxLeverage, color } = props
+  const logMax = Math.log(maxLeverage)
   const marks = useMemo(() => getLeverageMarks(maxLeverage), [maxLeverage])
 
   const displayMarks = marks.map((m) => ({
-    value: m - 1,
+    value: Math.log(m),
     label: `${m}×`,
   }))
+
+  const toLeverage = (logValue: number) => {
+    const lev = Math.exp(logValue)
+    // Finer steps where they matter (0.5× near the bottom), whole numbers high up.
+    const rounded = lev < 10 ? Math.round(lev * 10) / 10 : Math.round(lev)
+    return Math.min(maxLeverage, Math.max(1, rounded))
+  }
 
   return (
     <Slider
       min={0}
-      max={maxLeverage - 1}
-      step={0.1}
-      amount={Math.min(maxLeverage - 1, Math.max(0, value - 1))}
-      onChange={(v) => onChange(Math.round((v + 1) * 10) / 10)}
+      max={logMax}
+      step={logMax / 200}
+      amount={Math.min(logMax, Math.max(0, Math.log(value)))}
+      onChange={(v) => onChange(toLeverage(v))}
       color={color}
       marks={displayMarks}
       ariaLabel="Leverage"
@@ -328,8 +346,27 @@ const LeverageSlider = (props: {
   )
 }
 
+// Profit tiers shown in the scenario ladder: each is a +r return on margin.
+const RETURN_TIERS = [0.25, 0.5, 1] as const
+
+// Funding charged per period is f × costBasis (≈ margin at open), not ×
+// notional (see applyFunding in amm.ts). Adaptive precision so sub-cent
+// hourly amounts don't collapse to "0.00".
+const formatFundingPerHour = (absPerHour: number) => {
+  const m = ENV_CONFIG.moneyMoniker
+  if (!(absPerHour > 0)) return `${m}0`
+  const body =
+    absPerHour >= 0.01
+      ? absPerHour.toFixed(2)
+      : `${Number(absPerHour.toPrecision(2))}`
+  return `${m}${body}`
+}
+
 const StatsGrid = (props: {
+  direction: 'long' | 'short'
   notional: number
+  margin: number
+  leverage: number
   entryPrice: number
   liqPrice: number
   priceDecimals: number
@@ -341,15 +378,45 @@ const StatsGrid = (props: {
   userFundingRate: number
 }) => {
   const {
+    direction,
     notional,
+    margin,
+    leverage,
     entryPrice,
     liqPrice,
     priceDecimals,
     marketFundingRate,
     userFundingRate,
   } = props
+
+  const [scenariosOpen, setScenariosOpen] = useState(false)
+
+  const canShowScenarios =
+    Number.isFinite(entryPrice) && margin > 0 && leverage > 0
+
+  // At leverage ℓ a +r return on margin needs a price move of r/ℓ, so the
+  // target price is entry·(1 ± r/ℓ) and the mana P&L is just r·margin.
+  const scenarios = canShowScenarios
+    ? RETURN_TIERS.map((ret) => ({
+        ret,
+        price:
+          direction === 'long'
+            ? entryPrice * (1 + ret / leverage)
+            : entryPrice * (1 - ret / leverage),
+        pnl: ret * margin,
+      })).filter((s) => Number.isFinite(s.price) && s.price > 0)
+    : []
+
   const hourlyPct = marketFundingRate * 100
-  const sign = hourlyPct > 0 ? '+' : ''
+  const fundingPerHour = userFundingRate * margin // > 0 ⇒ user pays
+  const paysFunding = fundingPerHour > 0
+  const earnsFunding = fundingPerHour < 0
+  const fundingValue = `${
+    paysFunding ? '-' : earnsFunding ? '+' : ''
+  }${formatFundingPerHour(Math.abs(fundingPerHour))}/hr · ${
+    hourlyPct >= 0 ? '+' : ''
+  }${hourlyPct.toFixed(3)}%`
+
   return (
     <Col className="bg-canvas-50 border-ink-200 gap-2 rounded-md border p-3 text-sm">
       <StatRow label="Notional" value={formatMoney(notional)} bold />
@@ -364,15 +431,65 @@ const StatsGrid = (props: {
       />
       <StatRow
         label="Funding"
-        value={`${sign}${hourlyPct.toFixed(3)}%/hr`}
+        value={fundingValue}
         valueClass={
-          userFundingRate > 0
+          paysFunding
             ? 'text-red-600'
-            : userFundingRate < 0
+            : earnsFunding
             ? 'text-teal-600'
             : undefined
         }
       />
+
+      {scenarios.length > 0 && (
+        <>
+          <div className="border-ink-200 -mx-3 mt-0.5 border-t" />
+          <button
+            type="button"
+            onClick={() => setScenariosOpen((o) => !o)}
+            className="text-ink-500 hover:text-ink-700 flex items-center gap-1 self-start py-0.5 text-xs font-medium"
+            aria-expanded={scenariosOpen}
+          >
+            <ChevronDownIcon
+              className={clsx(
+                'h-3.5 w-3.5 transition-transform',
+                scenariosOpen && 'rotate-180'
+              )}
+            />
+            {scenariosOpen ? 'Hide profit scenarios' : 'Show profit scenarios'}
+          </button>
+
+          {scenariosOpen && (
+            <>
+              <Row className="text-ink-400 items-baseline text-xs">
+                <span className="flex-1">gain</span>
+                <span className="w-20 text-right">at price</span>
+                <span className="w-20 text-right">profit</span>
+              </Row>
+              {scenarios.map((s) => (
+                <Row key={s.ret} className="items-baseline tabular-nums">
+                  <span className="text-ink-700 flex-1 font-medium">
+                    +{Math.round(s.ret * 100)}%
+                  </span>
+                  <span className="text-ink-700 w-20 text-right">
+                    {formatPrice(s.price, priceDecimals)}
+                  </span>
+                  <span className="w-20 text-right font-medium text-teal-600">
+                    +{formatMoneyWithDecimals(s.pnl)}
+                  </span>
+                </Row>
+              ))}
+              {(paysFunding || earnsFunding) && (
+                <span className="text-ink-400 text-xs leading-tight">
+                  {paysFunding
+                    ? 'You pay funding — subtract it from the profit above for each hour you hold.'
+                    : 'You earn funding — add it to the profit above for each hour you hold.'}
+                </span>
+              )}
+            </>
+          )}
+        </>
+      )}
     </Col>
   )
 }
