@@ -18,7 +18,11 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
-import { getAnswer, updateAnswer, updateAnswers } from 'shared/supabase/answers'
+import {
+  getAnswerForUpdate,
+  updateAnswer,
+  updateAnswers,
+} from 'shared/supabase/answers'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
@@ -159,7 +163,9 @@ const drizzleMarket = async (contractId: string) => {
 
 const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
   await pg.tx(async (tx) => {
-    const answer = await getAnswer(tx, answerId)
+    // Row-locked read: this tx read-modify-writes subsidyPool (and pools) with concrete
+    // values, racing the per-answer addLiquidity API path in another process.
+    const answer = await getAnswerForUpdate(tx, answerId)
     if (!answer) return
 
     const { subsidyPool, poolYes, poolNo } = answer

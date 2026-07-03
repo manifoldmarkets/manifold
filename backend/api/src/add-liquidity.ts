@@ -11,7 +11,11 @@ import { convertLiquidity } from 'common/supabase/liquidity'
 import { CPMM_MULTI_2_CREATION_ENABLED, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
-import { getAnswer, updateAnswer } from 'shared/supabase/answers'
+import {
+  getAnswer,
+  getAnswerForUpdate,
+  updateAnswer,
+} from 'shared/supabase/answers'
 
 export const addLiquidity: APIHandler<'market/:contractId/add-liquidity'> =
   onlyUsersWhoCanPerformAction(
@@ -115,8 +119,11 @@ export const addContractLiquidity = async (
 
     if (answerId !== undefined) {
       // Per-answer: the subsidy lands in THAT answer's subsidyPool (drizzleAnswer deepens it
-      // losslessly). updateAnswer takes a concrete value, so read-then-add within this tx.
-      const answer = await getAnswer(tx, answerId)
+      // losslessly). updateAnswer takes a concrete value, so the read-then-add must hold a
+      // row lock — the scheduler's drizzleAnswer (separate process; betsQueue is per-process
+      // only) also read-modify-writes subsidyPool, and either interleaving would create or
+      // destroy subsidy mana.
+      const answer = await getAnswerForUpdate(tx, answerId)
       await updateAnswer(tx, answerId, {
         subsidyPool: (answer?.subsidyPool ?? 0) + subsidyAmount,
       })
