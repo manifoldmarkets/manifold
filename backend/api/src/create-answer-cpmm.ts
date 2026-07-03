@@ -8,7 +8,11 @@ import {
   getCpmmLiquidity,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
-import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
+import {
+  CPMMMultiContract,
+  isMultiCpmm,
+  MIN_CPMM_PROB,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { isAdminId } from 'common/envs/constants'
 import { noFees } from 'common/fees'
@@ -493,6 +497,20 @@ async function createAnswerAndSumAnswersToOneV2(
   const No = otherAnswer.poolNo
   const pOther = otherAnswer.p ?? 0.5
   const probOther = getCpmmProbability({ YES: Yo, NO: No }, pOther)
+  // GP19d split floor: each split halves Other's prob mass geometrically, and both
+  // children land at probOther/2 — below MIN_CPMM_PROB they'd sit under the
+  // market-order clamp (untradeable-downward zombie answers). The split itself never
+  // breaks strict sanity (GP19d), so this is the ONLY guard the operation needs.
+  if (probOther < 2 * MIN_CPMM_PROB) {
+    throw new APIError(
+      403,
+      `Cannot add an answer: the "Other" answer's probability (${Math.round(
+        probOther * 1000
+      ) / 10}%) is too low to split — both halves would fall below the ${
+        MIN_CPMM_PROB * 100
+      }% minimum. Trade "Other" up or resolve the market instead.`
+    )
+  }
   const targetProb = probOther / 2 // A and Other' each take half of Other's prob mass
   const a = answerCost / 2 // symmetric: split the added mana 50/50 (GP18e: the 1 free DOF)
 

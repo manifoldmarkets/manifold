@@ -21,6 +21,7 @@ import {
   NO_CLOSE_TIME_TYPES,
   NUMBER_CREATION_ENABLED,
   CPMM_MULTI_2_CREATION_ENABLED,
+  MIN_CPMM_PROB,
   OutcomeType,
   PollType,
   PollVoterVisibility,
@@ -580,7 +581,16 @@ function validateMarketBody(body: Body) {
       // clear 400 here; the construction in new-contract.ts also throws as a backstop.
       if (shouldAnswersSumToOne) {
         const total = sum(initialProbs)
-        if (!cpmmMulti2SumToOneFeasible(initialProbs.map((x) => x / total)))
+        const normalized = initialProbs.map((x) => x / total)
+        // The [1,99] schema bound is pre-normalization; a direct API call with a sum
+        // far from 100 could still normalize an answer below the market-order floor.
+        // Keep every created prob inside [MIN, MAX]_CPMM_PROB, like binary creation.
+        if (normalized.some((q) => q < MIN_CPMM_PROB - 1e-12))
+          throw new APIError(
+            400,
+            'initialProbs must normalize to at least 1% per answer for sum-to-one markets.'
+          )
+        if (!cpmmMulti2SumToOneFeasible(normalized))
           throw new APIError(
             400,
             'initialProbs are too extreme for this many answers: no valid sum-to-one ' +

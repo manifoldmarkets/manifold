@@ -450,39 +450,43 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
       return { res, after, stats, anyNaNp }
     }
 
-    it('BUG repro: sell 10,000 YES into thin pools (L=2), p far from 0.5', () => {
+    it('FIXED: sell 10,000 YES into thin pools (L=2), p far from 0.5', () => {
       const answers = mkV2Market([0.1, 0.1, 0.8], 2)
       const { res, stats, anyNaNp } = sellAndInspect(answers, answers[2], 10_000, 'YES')
       record(
         'P2 oversell 10k YES (L=2, p=0.8)',
-        'BUG',
+        'FIXED',
         `NaN newP=${anyNaNp} ${fmtStats(stats)} saleValue=${res.saleValue.toFixed(4)} ` +
-          `— corner collapse: solver skipped the arb legs entirely, market left at ` +
-          `sumProb=${(1 + stats.sumProbResidual).toFixed(3)} with a pool side exactly 0`
+          `— solver finds the interior root; pool side still underflows to exactly 0 ` +
+          `(physical; execution guarded by CPMM_MIN_POOL_QTY) but sum-to-one holds`
       )
-      // These assertions PIN the buggy behavior so a fix flips them loudly:
-      expect(anyNaNp).toBe(true) // newP = NaN out of addCpmmLiquidity
-      expect(stats.minPool).toBe(0) // pool side cancelled to exactly 0
-      expect(stats.sumProbResidual).toBeLessThan(-0.5) // sum-to-one destroyed
+      // These assertions PIN the fixed behavior (was: NaN newP -> silent corner
+      // collapse with sumProb ~ 0.1; addCpmmLiquidity's 0/0 rescue + binarySearch
+      // NaN fail-fast repaired it):
+      expect(anyNaNp).toBe(false) // no NaN out of addCpmmLiquidity
+      expect(stats.minPool).toBe(0) // the underflow itself is physical, still present
+      expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-9) // sum-to-one restored
+      expect(isFinite(res.saleValue) && res.saleValue > 0).toBe(true)
     })
 
-    it('BUG repro: sell 10,000 NO into thin pools (L=2)', () => {
+    it('FIXED: sell 10,000 NO into thin pools (L=2)', () => {
       const answers = mkV2Market([0.1, 0.1, 0.8], 2)
       const { res, stats, anyNaNp } = sellAndInspect(answers, answers[0], 10_000, 'NO')
       record(
         'P2 oversell 10k NO (L=2, p=0.1)',
-        'BUG',
+        'FIXED',
         `NaN newP=${anyNaNp} ${fmtStats(stats)} saleValue=${res.saleValue.toFixed(4)} ` +
-          `— mirror-image corner collapse, market left at sumProb=${(1 + stats.sumProbResidual).toFixed(3)}`
+          `— mirror-image of the YES case: interior root found, sum-to-one holds`
       )
-      expect(anyNaNp).toBe(true)
+      expect(anyNaNp).toBe(false)
       expect(stats.minPool).toBe(0)
-      expect(Math.abs(stats.sumProbResidual)).toBeGreaterThan(0.5)
+      expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-9)
+      expect(isFinite(res.saleValue) && res.saleValue > 0).toBe(true)
     })
 
-    it('threshold: realistic p=0.9 answer with L=100 breaks near ~5,000 shares', () => {
+    it('threshold sweep: p=0.9 with L=100 stays NaN-free through the old ~5,000-share cliff', () => {
       const rows: string[] = []
-      let threshold: number | undefined
+      let firstNaN: number | undefined
       for (const S of [500, 1000, 2000, 4000, 5000, 10000]) {
         const answers = [
           mkV2Answer(0, 0.05), mkV2Answer(1, 0.05), mkV2Answer(2, 0.9),
@@ -492,15 +496,18 @@ d('cpmm-multi-2 sell-path domain probe (general p)', () => {
           `S=${S}: sumProb=${(1 + stats.sumProbResidual).toFixed(4)} ` +
             `minPool=${stats.minPool.toExponential(1)} NaN=${anyNaNp} perShare=${(res.saleValue / S).toFixed(4)}`
         )
-        if (anyNaNp && threshold === undefined) threshold = S
+        if (anyNaNp && firstNaN === undefined) firstNaN = S
+        // The old bug NaN'd from S≈5,000 (a realistic position size); pin clean math
+        // and Σ=1 at every size now.
+        expect(anyNaNp).toBe(false)
+        expect(Math.abs(stats.sumProbResidual)).toBeLessThan(1e-9)
       }
       record(
         'P2 breakdown threshold (p=0.9, L=100)',
-        'BUG',
-        rows.join(' | ') + ` — first NaN at S=${threshold}`
+        'FIXED',
+        rows.join(' | ') + ` — first NaN at S=${firstNaN} (was S=5000 pre-fix)`
       )
-      expect(threshold).toBeDefined()
-      expect(threshold!).toBeLessThanOrEqual(5000) // realistic position size
+      expect(firstNaN).toBeUndefined()
     })
 
     it('control: p=0.5 pools never hit the NaN hole even at S=1e9', () => {

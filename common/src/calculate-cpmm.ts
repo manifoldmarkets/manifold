@@ -752,7 +752,16 @@ export function addCpmmLiquidity(
   const { YES: y, NO: n } = pool
   const numerator = prob * (amount + y)
   const denominator = amount - n * (prob - 1) + prob * y
-  const newP = numerator / denominator
+  let newP = numerator / denominator
+  // 0/0 rescue: at general p an extreme buy can underflow a pool side to EXACTLY 0
+  // (residual k^{1/(1-p)}/(pool+b)^{p/(1-p)} below one ulp — possible at p far from
+  // 0.5, never at v1's p = 0.5), making prob and hence both terms 0 when this is
+  // called with amount = 0 (calculateCpmmPurchase's post-bet re-price). A zero add
+  // leaves p unchanged. Guarded on non-finiteness so every well-conditioned call —
+  // in particular every v1 call — keeps the formula bit-for-bit.
+  if (amount === 0 && !isFinite(newP)) {
+    newP = p
+  }
 
   const newPool = { YES: y + amount, NO: n + amount }
 
