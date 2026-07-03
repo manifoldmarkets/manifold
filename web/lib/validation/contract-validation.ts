@@ -170,7 +170,7 @@ export function validateContractForm(
         if (
           !state.midpoints ||
           state.midpoints.length < nonEmptyAnswers.length ||
-          state.midpoints.some((m) => !m || isNaN(m))
+          state.midpoints.some((m) => !Number.isFinite(m))
         ) {
           errors.answers = 'Please wait for numeric buckets to generate'
         } else if (nonEmptyAnswers.length < MIN_ANSWERS) {
@@ -194,7 +194,7 @@ export function validateContractForm(
         if (
           !state.midpoints ||
           state.midpoints.length < nonEmptyAnswers.length ||
-          state.midpoints.some((m) => !m || isNaN(m))
+          state.midpoints.some((m) => !Number.isFinite(m))
         ) {
           errors.answers = 'Please wait for date buckets to generate'
         } else if (nonEmptyAnswers.length < MIN_ANSWERS) {
