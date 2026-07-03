@@ -77,7 +77,15 @@ export const PerpChart = (props: {
       .range([40, width - 10])
     const yMin = Math.min(...ys)
     const yMax = Math.max(...ys)
-    const pad = (yMax - yMin) * 0.1 || 1
+    // Flat series need a synthetic pad, but the fallback must match the
+    // data's units: ±1 is fine for prices, while funding rates are raw
+    // per-hour fractions (~1e-5), where a ±1 pad renders the axis as
+    // ±876,000% annualized. Pad relative to the series' own magnitude.
+    const flatPad =
+      mode === 'funding'
+        ? Math.max(Math.abs(yMax), Math.abs(yMin)) * 0.5 || 1e-5
+        : 1
+    const pad = (yMax - yMin) * 0.1 || flatPad
     const y = scaleLinear()
       .domain([yMin - pad, yMax + pad])
       .range([height - 20, 10])
@@ -85,7 +93,7 @@ export const PerpChart = (props: {
       .x((p) => x(p.ts))
       .y((p) => y(p.value))
     return { xScale: x, yScale: y, path: l(points) ?? '' }
-  }, [points, height])
+  }, [points, height, mode])
 
   if (loading) {
     return (
@@ -237,7 +245,9 @@ const formatTick = (
 ) => {
   if (mode === 'funding') {
     const annualPct = v * FUNDING_PERIODS_PER_YEAR * 100
-    return `${annualPct.toFixed(annualPct >= 100 || annualPct <= -100 ? 0 : 1)}%`
+    return `${annualPct.toFixed(
+      annualPct >= 100 || annualPct <= -100 ? 0 : 1
+    )}%`
   }
   return formatPrice(v, priceDecimals)
 }

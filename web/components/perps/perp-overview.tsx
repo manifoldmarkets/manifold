@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import clsx from 'clsx'
 import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
@@ -50,11 +51,27 @@ const useLiveOraclePrice = (contract: PerpContract) => {
   }
 }
 
+// Exchange-style tick flash: returns 'up' | 'down' for ~700ms after the
+// value changes, so the price header can pulse green/red like a real book.
+const useTickFlash = (value: number) => {
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null)
+  const prev = useRef(value)
+  useEffect(() => {
+    if (value === prev.current) return
+    setFlash(value > prev.current ? 'up' : 'down')
+    prev.current = value
+    const t = setTimeout(() => setFlash(null), 700)
+    return () => clearTimeout(t)
+  }, [value])
+  return flash
+}
+
 export const PerpOverview = (props: { contract: PerpContract }) => {
   const contract = useLiveOraclePrice(props.contract)
   const [chartMode, setChartMode] = useState<'price' | 'funding'>('price')
 
   const price = Number(contract.oraclePrice)
+  const flash = useTickFlash(price)
   // Single-sample inference: integer prices (e.g. DAU counts) show 0
   // decimals, fractional prices scale to their magnitude.
   const priceDecimals = inferPriceDecimals([price])
@@ -77,7 +94,13 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         <Row className="items-baseline gap-8">
           <Col>
             <div className="text-ink-500 text-sm">Oracle price</div>
-            <div className="text-3xl font-semibold">
+            <div
+              className={clsx(
+                'text-3xl font-semibold tabular-nums transition-colors duration-700',
+                flash === 'up' && 'text-teal-500 duration-0',
+                flash === 'down' && 'text-scarlet-500 duration-0'
+              )}
+            >
               {formatPrice(price, priceDecimals)}
             </div>
           </Col>
