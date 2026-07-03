@@ -449,7 +449,8 @@ class Sim {
     expect(netSum + this.fees).toBeCloseTo(0, 4)
   }
 
-  private check(step: string) {
+  // The param is a call-site label only (readable invariant-check tags); keep it named.
+  private check(_step: string) {
     for (const a of this.answers) {
       const pr = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, a.p)
       expect(pr).toBeGreaterThan(0)

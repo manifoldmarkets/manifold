@@ -43,12 +43,12 @@ export const Stats = (props: {
 }) => {
   const { contract, user, onRequestCreatorBan } = props
   const { creatorId } = contract
-  const shouldAnswersSumToOne =
-    isMultiCpmm(contract)
-      ? contract.shouldAnswersSumToOne
-      : false
-  const addAnswersMode =
-    isMultiCpmm(contract) ? contract.addAnswersMode : 'DISABLED'
+  const shouldAnswersSumToOne = isMultiCpmm(contract)
+    ? contract.shouldAnswersSumToOne
+    : false
+  const addAnswersMode = isMultiCpmm(contract)
+    ? contract.addAnswersMode
+    : 'DISABLED'
   const isCashContract = contract.token === 'CASH'
 
   const hideAdvanced = !user

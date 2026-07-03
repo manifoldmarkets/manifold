@@ -65,8 +65,7 @@ function BetTooltipContent(props: {
 }) {
   const { bet, isCashContract, contract } = props
   const formatAmount = isCashContract ? formatSweepies : formatMoneyWithDecimals
-  const answerId =
-    isMultiCpmm(contract) ? bet.answerId : undefined
+  const answerId = isMultiCpmm(contract) ? bet.answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, answerId)
   const { answer: fetchedAnswer } = useAnswer(answerId)
   const answer = answerFromContract ?? fetchedAnswer
@@ -263,8 +262,7 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
       </span>
     ) : null
 
-  const resolvedAnswerId =
-    isMultiCpmm(contract) ? answerId : undefined
+  const resolvedAnswerId = isMultiCpmm(contract) ? answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
   const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
   const answer = answerFromContract ?? fetchedAnswer
@@ -641,8 +639,7 @@ export function BetStatusesText(props: {
   const { amount, outcome, createdTime, answerId, userId } = bets[0]
   const user = useDisplayUserById(userId)
   const isCashContract = contract.token === 'CASH'
-  const resolvedAnswerId =
-    isMultiCpmm(contract) ? answerId : undefined
+  const resolvedAnswerId = isMultiCpmm(contract) ? answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
   const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
   const answer = answerFromContract ?? fetchedAnswer
@@ -730,8 +727,7 @@ export function BetStatusText(props: {
     ? getFormattedMappedValue(contract, probAfter)
     : getFormattedMappedValue(contract, limitProb ?? probAfter)
 
-  const resolvedAnswerId =
-    isMultiCpmm(contract) ? answerId : undefined
+  const resolvedAnswerId = isMultiCpmm(contract) ? answerId : undefined
   const answerFromContract = getAnswerFromContract(contract, resolvedAnswerId)
   const { answer: fetchedAnswer } = useAnswer(resolvedAnswerId)
   const answer = answerFromContract ?? fetchedAnswer

@@ -479,8 +479,7 @@ const BinaryUserPositionsTable = memo(
 
     const largestColumnLength = Math.max(totalYesPositions, totalNoPositions)
 
-    const isBinary =
-      contract.outcomeType === 'BINARY' || isMultiCpmm(contract)
+    const isBinary = contract.outcomeType === 'BINARY' || isMultiCpmm(contract)
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
     const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)

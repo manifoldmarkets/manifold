@@ -42,8 +42,7 @@ export function CreatorSharePanel(props: { contract: Contract }) {
           )}
         </Row>
 
-        {(contract.mechanism === 'cpmm-1' ||
-          isMultiCpmm(contract)) && (
+        {(contract.mechanism === 'cpmm-1' || isMultiCpmm(contract)) && (
           <div className="text-ink-500 text-base">
             Earn{' '}
             {formatMoney(

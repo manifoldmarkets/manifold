@@ -527,10 +527,9 @@ export function LimitOrdersTable(props: {
   )
 }
 const getProb = (bet: LimitBet, contract: MarketContract) => {
-  const prob =
-    isMultiCpmm(contract)
-      ? contract.answers.find((a) => a.id === bet.answerId)?.prob ?? 0
-      : contract.prob
+  const prob = isMultiCpmm(contract)
+    ? contract.answers.find((a) => a.id === bet.answerId)?.prob ?? 0
+    : contract.prob
   return prob
 }
 

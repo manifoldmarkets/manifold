@@ -34,10 +34,7 @@ export async function getStaticProps() {
   }).catch(() => [])
 
   const companies: Company[] = contracts
-    .filter(
-      (c) =>
-        c.question.includes('Exit valuation of ') && isMultiCpmm(c)
-    )
+    .filter((c) => c.question.includes('Exit valuation of ') && isMultiCpmm(c))
     .map((contract) => {
       const name = contract.question
         .split('Exit valuation of ')[1]

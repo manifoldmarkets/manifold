@@ -375,7 +375,7 @@ export const getUserBalancesAndMetrics = async (
   answerId?: string
 ) => {
   const startTime = Date.now()
-  const { id: contractId, mechanism } = contract
+  const { id: contractId } = contract
   // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
   const sumsToOne =
     isMultiCpmm(contract) && contract.shouldAnswersSumToOne

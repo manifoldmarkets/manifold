@@ -541,9 +541,7 @@ const ChoiceOverview = (props: {
           answers={contract.answers}
         />
       ) : null}
-      {!shouldAnswersSumToOne &&
-      isMultiCpmm(contract) &&
-      showUnresolver ? (
+      {!shouldAnswersSumToOne && isMultiCpmm(contract) && showUnresolver ? (
         <IndependentAnswersUnresolvePanel
           contract={contract}
           onClose={() => setShowUnresolver(false)}

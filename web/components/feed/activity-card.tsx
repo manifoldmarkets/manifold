@@ -390,10 +390,9 @@ const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
 
-  const answer =
-    isMultiCpmm(contract)
-      ? contract.answers?.find((a) => a.id === answerId)
-      : undefined
+  const answer = isMultiCpmm(contract)
+    ? contract.answers?.find((a) => a.id === answerId)
+    : undefined
 
   const fromProb = `${(probBefore * 100).toFixed(0)}%`
   const toProb = `${(probAfter * 100).toFixed(0)}%`

@@ -241,8 +241,7 @@ export function BetsSummary(props: {
             contract.creatorBannedFromBetting &&
             includeSellButton.id === contract.creatorId
           ) &&
-          (!isMultiCpmm(contract) ||
-            isBinaryMulti(contract)) && (
+          (!isMultiCpmm(contract) || isBinaryMulti(contract)) && (
             <Row className="items-center gap-2">
               <SellRow
                 contract={contract as CPMMContract}

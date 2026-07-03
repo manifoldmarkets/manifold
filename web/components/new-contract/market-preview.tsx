@@ -292,7 +292,10 @@ export function MarketPreview(props: {
     onEditInitialProbs?.(next)
   }
   const initialProbsSumPct = customProbsActive
-    ? answers.reduce((s, _, i) => s + (initialProbs?.[i] ?? defaultInitialPct), 0)
+    ? answers.reduce(
+        (s, _, i) => s + (initialProbs?.[i] ?? defaultInitialPct),
+        0
+      )
     : 0
 
   // Auto-resize question textarea to fit content
@@ -1269,9 +1272,7 @@ export function MarketPreview(props: {
                     meaningful for sum-to-one; Set answers are independent) */}
                 {customProbsActive && isSumToOne && answers.length > 0 && (
                   <Row className="text-ink-500 items-center gap-1 px-1 text-xs">
-                    <span>
-                      Sum {Math.round(initialProbsSumPct * 10) / 10}%
-                    </span>
+                    <span>Sum {Math.round(initialProbsSumPct * 10) / 10}%</span>
                     <span className="text-ink-400">
                       · normalized to 100% on create
                     </span>

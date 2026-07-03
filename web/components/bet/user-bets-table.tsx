@@ -721,14 +721,13 @@ function BetsTable(props: {
             {visibleContracts.map((contract) => {
               const metric = metricsByContractId[contract.id]
               const closeDate = contract.resolutionTime ?? contract.closeTime
-              const resolvedAnswer =
-                isMultiCpmm(contract)
-                  ? contract.answers.find(
-                      (a) =>
-                        a.id === contract.resolution ||
-                        (contract.resolutions?.[a.id] ?? 0) >= 99
-                    )
-                  : undefined
+              const resolvedAnswer = isMultiCpmm(contract)
+                ? contract.answers.find(
+                    (a) =>
+                      a.id === contract.resolution ||
+                      (contract.resolutions?.[a.id] ?? 0) >= 99
+                  )
+                : undefined
 
               const maxOutcome =
                 metricsByContractId[contract.id].maxSharesOutcome

@@ -615,10 +615,7 @@ function CapabilityCard({
       displayValue = formatPercent(prob)
     }
   } else if (displayType === 'numeric' && liveContract) {
-    if (
-      multiNumericValue !== null &&
-      isMultiCpmm(liveContract)
-    ) {
+    if (multiNumericValue !== null && isMultiCpmm(liveContract)) {
       // For multi-numeric contracts
       displayValue = formatExpectedValue(
         multiNumericValue,
