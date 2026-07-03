@@ -14,6 +14,13 @@ export type MarketDraft = {
     closeHoursMinutes?: string
     visibility: Visibility
     selectedGroups: Group[]
+    // Numeric (MULTI_NUMERIC/NUMBER/PSEUDO_NUMERIC) and DATE market params
+    min?: number
+    max?: number
+    minString?: string
+    maxString?: string
+    unit?: string
+    midpoints?: number[]
     savedAt: number
   }
   createdAt: string

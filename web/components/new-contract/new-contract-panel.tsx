@@ -387,6 +387,12 @@ export function NewContractPanel(props: {
         closeHoursMinutes: formState.closeHoursMinutes,
         visibility: formState.visibility,
         selectedGroups: formState.selectedGroups,
+        min: formState.min,
+        max: formState.max,
+        minString: formState.minString,
+        maxString: formState.maxString,
+        unit: formState.unit,
+        midpoints: formState.midpoints,
         savedAt: Date.now(),
       }
       await api('save-market-draft', { data: draft as any })
@@ -412,6 +418,12 @@ export function NewContractPanel(props: {
         closeHoursMinutes: draft.data.closeHoursMinutes,
         visibility: draft.data.visibility,
         selectedGroups: draft.data.selectedGroups,
+        min: draft.data.min,
+        max: draft.data.max,
+        minString: draft.data.minString ?? '',
+        maxString: draft.data.maxString ?? '',
+        unit: draft.data.unit ?? '',
+        midpoints: draft.data.midpoints ?? [],
       })
       if (draft.data.description && descriptionEditor) {
         descriptionEditor.commands.setContent(draft.data.description)

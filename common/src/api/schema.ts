@@ -3002,6 +3002,12 @@ export const API = (_apiTypeCheck = {
           closeHoursMinutes: z.string().optional(),
           visibility: z.string(),
           selectedGroups: z.array(z.any()),
+          min: z.number().optional(),
+          max: z.number().optional(),
+          minString: z.string().optional(),
+          maxString: z.string().optional(),
+          unit: z.string().optional(),
+          midpoints: z.array(z.number()).optional(),
           savedAt: z.number(),
         }),
       })
