@@ -237,8 +237,15 @@ export default function AdminCreatePerpPage() {
               onChange={(v) => update('maxFundingRateAnnualPct', v)}
               step={1}
               min={0.01}
-              max={100}
-              hint={`= ${(maxFundingRatePerPeriod * 100).toFixed(4)}% per hour`}
+              // The engine caps the per-period rate at 1 (100%/hr). Skewed
+              // markets need real teeth (Kalshi caps at ~6%/day), so allow
+              // well past 100%/yr; the hint shows the per-hour/per-day cost.
+              max={8000}
+              hint={`= ${(maxFundingRatePerPeriod * 100).toFixed(4)}%/hr, ${(
+                maxFundingRatePerPeriod *
+                24 *
+                100
+              ).toFixed(2)}%/day max`}
             />
             <NumberInput
               label="Funding sensitivity (k)"
