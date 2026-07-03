@@ -630,7 +630,10 @@ export const runOracleUpdate = async (
       deletes.length === 0 &&
       applied.events.length === 0
     ) {
-      await pgTrans.none(mergeContractDataQuery(contractId, contractPatch))
+      // mergeContractDataQuery ends in `returning *`, so exactly one row comes
+      // back — .none() would throw QueryResultError(notEmpty) and roll back
+      // the whole tick (froze every fast-feed perp at its creation price).
+      await pgTrans.one(mergeContractDataQuery(contractId, contractPatch))
       return {
         liquidated: [],
         adlAdjusted: [],
