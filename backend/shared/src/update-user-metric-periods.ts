@@ -3,7 +3,7 @@ import {
   calculateMetricsFromProbabilityChanges,
   isEmptyMetric,
 } from 'common/calculate-metrics'
-import { Contract, CPMMMultiContract } from 'common/contract'
+import { Contract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { convertBet } from 'common/supabase/bets'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -17,6 +17,7 @@ import {
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
 import { bulkUpdateDataQuery, bulkUpdateQuery } from './supabase/utils'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
@@ -160,7 +161,7 @@ export async function updateUserMetricPeriods(
     const contracts = results[0].map(convertContract)
     const answers = results[1].map(convertAnswer)
     contracts.forEach((c) => {
-      if (c.mechanism === 'cpmm-multi-1')
+      if (isMultiCpmm(c))
         contractsById[c.id] = {
           ...c,
           answers: answers.filter((a) => a.contractId === c.id),
@@ -374,7 +375,7 @@ const getUnresolvedOrRecentlyResolvedBets = async (
     where
       cb.user_id in ($1:list)
       and cb.contract_id in ($3:list)
-      and (c.mechanism != 'cpmm-multi-1' or not cb.is_redemption)
+      and (c.mechanism not in ${MULTI_CPMM_MECHANISMS_SQL} or not cb.is_redemption)
       and (c.resolution_time is null or c.resolution_time > $2)
       and (a is null or a.resolution_time is null or a.resolution_time > $2)
     `,

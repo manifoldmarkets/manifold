@@ -17,6 +17,8 @@ export type NewQuestionParams = {
   answers?: string[]
   addAnswersMode?: add_answers_mode
   shouldAnswersSumToOne?: boolean
+  // cpmm-multi-2: per-answer initial probabilities (percentages, answer-aligned)
+  initialProbs?: number[]
   precision?: number
   sportsStartTimestamp?: string
   sportsEventId?: string

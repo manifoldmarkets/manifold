@@ -1,7 +1,13 @@
+import { mapValues, sum } from 'lodash'
 import {
   addCpmmLiquidity,
+  addCpmmLiquidityFixedP,
+  addCpmmMultiLiquidityAnswersSumToOneV2,
+  addCpmmMultiLiquidityToAnswersIndependentlyV2,
+  calculateCpmmAmountToBuySharesFixedP,
   calculateCpmmPurchase,
   calculateCpmmShares,
+  cpmmMulti2SumToOnePools,
   CpmmState,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
@@ -190,5 +196,227 @@ describe('CPMM Calculations', () => {
       expect(finalPool.NO).toBeCloseTo(initialPool.NO, 5)
       expect(finalP).toBeCloseTo(initialP, 5)
     })
+  })
+
+  describe('calculateCpmmAmountToBuySharesFixedP (general p, cpmm-multi-2)', () => {
+    // The shares -> cost direction is transcendental for p != 0.5; the function
+    // inverts the (general-p) forward map calculateCpmmShares by bisection. These
+    // tests pin that inverse: cross-language anchors from the Python oracle
+    // (manifold/amm_core.cost_for_shares, GP3), a self-validating round-trip against
+    // calculateCpmmShares, and a check that the p=0.5 closed form is unchanged.
+    it('matches the general-p Python oracle (amm_core.cost_for_shares)', () => {
+      const cases = [
+        { pool: { YES: 100, NO: 50 }, p: 0.7, shares: 20, outcome: 'YES' as const, cost: 11.5061941179877 },
+        { pool: { YES: 100, NO: 50 }, p: 0.7, shares: 20, outcome: 'NO' as const, cost: 10.016299628032943 },
+        { pool: { YES: 80, NO: 120 }, p: 0.3, shares: 35, outcome: 'YES' as const, cost: 15.379495592014415 },
+        { pool: { YES: 200, NO: 100 }, p: 0.9, shares: 10, outcome: 'NO' as const, cost: 1.8886896107765505 },
+      ]
+      for (const { pool, p, shares, outcome, cost } of cases) {
+        const state: CpmmState = { pool, p, collectedFees: noFees }
+        expect(
+          calculateCpmmAmountToBuySharesFixedP(state, shares, outcome)
+        ).toBeCloseTo(cost, 6)
+      }
+    })
+
+    it('round-trips against calculateCpmmShares for general p (invert ∘ forward = id)', () => {
+      const ps = [0.3, 0.5, 0.7, 0.9]
+      const pools = [
+        { YES: 100, NO: 100 },
+        { YES: 100, NO: 50 },
+        { YES: 30, NO: 200 },
+      ]
+      const amounts = [1, 10, 50, 200]
+      for (const p of ps)
+        for (const pool of pools)
+          for (const outcome of ['YES', 'NO'] as const)
+            for (const amount of amounts) {
+              const shares = calculateCpmmShares(pool, p, amount, outcome)
+              const state: CpmmState = { pool, p, collectedFees: noFees }
+              const recovered = calculateCpmmAmountToBuySharesFixedP(
+                state,
+                shares,
+                outcome
+              )
+              expect(recovered).toBeCloseTo(amount, 4)
+            }
+    })
+
+    it('leaves the p = 0.5 closed form unchanged', () => {
+      const pool = { YES: 120, NO: 80 }
+      const shares = 25
+      const state: CpmmState = { pool, p: 0.5, collectedFees: noFees }
+      const closed =
+        (shares - 120 - 80 + Math.sqrt(4 * 80 * shares + (120 + 80 - shares) ** 2)) /
+        2
+      expect(
+        calculateCpmmAmountToBuySharesFixedP(state, shares, 'YES')
+      ).toBeCloseTo(closed, 10)
+    })
+  })
+})
+
+// --- cpmm-multi-2: lossless whole-market liquidity add (2b.5) ------------------------------
+// A valid v2 sum-to-one market is per-answer (pool, p) with Σ prob_i = 1. Balanced pools
+// (Y = N = L) give prob_i = p_i, so any {p_i} that sums to 1 is a valid market. There is NO
+// external p != 0.5 oracle (vendor v1 throws), so losslessness is validated by the invariants:
+// each answer's probability is preserved exactly, Σ prob stays 1, k strictly increases, and
+// nothing is discarded — versus v1's addCpmmLiquidityFixedP, which throws shares away on a
+// skewed pool. At p = 0.5 v2 reduces to the v1 fixed-p add (the regression anchor).
+describe('cpmm-multi-2 lossless liquidity add (addCpmmMultiLiquidityAnswersSumToOneV2)', () => {
+  const market = (ps: number[], L = 100) =>
+    Object.fromEntries(ps.map((p, i) => [`a${i}`, { pool: { YES: L, NO: L }, p }]))
+
+  const probsOf = (byId: {
+    [id: string]: { pool: { YES: number; NO: number }; p: number }
+  }) => mapValues(byId, ({ pool, p }) => getCpmmProbability(pool, p))
+
+  it('preserves every answer probability and Σ prob = 1 (lossless), deepening each pool', () => {
+    for (const ps of [
+      [0.5, 0.3, 0.2],
+      [0.7, 0.2, 0.1],
+      [0.9, 0.05, 0.05],
+      [0.4, 0.3, 0.2, 0.1],
+    ]) {
+      const before = market(ps)
+      const probsBefore = probsOf(before)
+      const after = addCpmmMultiLiquidityAnswersSumToOneV2(before, 50)
+      const probsAfter = probsOf(after)
+      for (const id of Object.keys(before)) {
+        // probability preserved exactly (the invariant), p floated to absorb the mana
+        expect(probsAfter[id]).toBeCloseTo(probsBefore[id], 10)
+        // pool deepened in BOTH reserves; positive k added; nothing discarded
+        expect(after[id].liquidity).toBeGreaterThan(0)
+        expect(after[id].pool.YES).toBeGreaterThan(before[id].pool.YES)
+        expect(after[id].pool.NO).toBeGreaterThan(before[id].pool.NO)
+      }
+      expect(sum(Object.values(probsAfter))).toBeCloseTo(1, 10)
+    }
+  })
+
+  it('at p = 0.5 reduces to the v1 fixed-p add (both reserves +amount, p stays 0.5, no discard)', () => {
+    const before = market([0.5, 0.5]) // uniform 2-answer market, Σ prob = 1
+    const after = addCpmmMultiLiquidityAnswersSumToOneV2(before, 50) // 25 per answer
+    for (const id of Object.keys(before)) {
+      const v1 = addCpmmLiquidityFixedP(before[id].pool, 25)
+      expect(after[id].p).toBeCloseTo(0.5, 10)
+      expect(after[id].pool.YES).toBeCloseTo(v1.newPool.YES, 8)
+      expect(after[id].pool.NO).toBeCloseTo(v1.newPool.NO, 8)
+      expect(v1.sharesThrownAway.YES).toBeCloseTo(0, 10)
+      expect(v1.sharesThrownAway.NO).toBeCloseTo(0, 10)
+    }
+  })
+
+  it('on a SKEWED pool v1 discards shares to hold prob; v2 keeps both reserves whole', () => {
+    const skewed = { YES: 30, NO: 270 } // prob = 0.9
+    const v1 = addCpmmLiquidityFixedP(skewed, 50)
+    // v1 holds prob by topping up the deep side and DISCARDING the shallow side's excess
+    expect(v1.sharesThrownAway.YES).toBeGreaterThan(0)
+    // v2 injects the full amount into both reserves and floats p instead — nothing thrown away
+    const v2 = addCpmmMultiLiquidityAnswersSumToOneV2(
+      { only: { pool: skewed, p: 0.5 } },
+      50
+    ).only
+    expect(v2.pool.YES).toBeCloseTo(skewed.YES + 50, 8)
+    expect(v2.pool.NO).toBeCloseTo(skewed.NO + 50, 8)
+    expect(getCpmmProbability(v2.pool, v2.p)).toBeCloseTo(
+      getCpmmProbability(skewed, 0.5),
+      10
+    )
+  })
+
+  // GP17 — the whole-market add follows the √variance CREATION shape (not a flat equal-split):
+  // it MERGES a Δ-ante √variance creation computed at the current probs, then re-prices each p.
+  // proofs/liquidity_add_split.py is the reference; these lock the key consequences in jest.
+  it('GP17: concentrates added depth in uncertain answers (NOT a flat equal-split)', () => {
+    // Skewed 4-answer market at q = [.55,.25,.12,.08], created on the √variance manifold, then a
+    // whole-market add. The added geometric depth Δk should be far from flat (uncertain answers get
+    // much more) — the deliberate departure from the old amount/n equal-split.
+    const q = [0.55, 0.25, 0.12, 0.08]
+    const created = cpmmMulti2SumToOnePools(q, 1000)
+    const before = Object.fromEntries(
+      created.map((c, i) => [
+        `a${i}`,
+        { pool: { YES: c.poolYes, NO: c.poolNo }, p: c.p },
+      ])
+    )
+    const after = addCpmmMultiLiquidityAnswersSumToOneV2(before, 500)
+    const dk = Object.keys(before).map((id) => after[id].liquidity)
+    // ratio of most-uncertain to least-uncertain added depth ≫ 1 (≈5; equal-split would be ≈1.17)
+    expect(Math.max(...dk) / Math.min(...dk)).toBeGreaterThan(4)
+    // every prob preserved + Σ = 1 still holds under the new shape
+    const probsAfter = Object.keys(before).map((id) =>
+      getCpmmProbability(after[id].pool, after[id].p)
+    )
+    q.forEach((qi, i) => expect(probsAfter[i]).toBeCloseTo(qi, 10))
+    expect(sum(probsAfter)).toBeCloseTo(1, 10)
+  })
+
+  it('GP17: on an untraded market, add(Δ) == create(A+Δ) (homogeneity / scale)', () => {
+    const q = [0.55, 0.25, 0.12, 0.08]
+    const A = 1000
+    const D = 500
+    const base = cpmmMulti2SumToOnePools(q, A)
+    const before = Object.fromEntries(
+      base.map((c, i) => [`a${i}`, { pool: { YES: c.poolYes, NO: c.poolNo }, p: c.p }])
+    )
+    const after = addCpmmMultiLiquidityAnswersSumToOneV2(before, D)
+    const created = cpmmMulti2SumToOnePools(q, A + D)
+    created.forEach((c, i) => {
+      expect(after[`a${i}`].pool.YES).toBeCloseTo(c.poolYes, 6)
+      expect(after[`a${i}`].pool.NO).toBeCloseTo(c.poolNo, 6)
+      expect(after[`a${i}`].p).toBeCloseTo(c.p, 8)
+    })
+  })
+})
+
+describe('cpmm-multi-2 lossless liquidity add — INDEPENDENT / "Set" (addCpmmMultiLiquidityToAnswersIndependentlyV2)', () => {
+  const market = (ps: number[], L = 100) =>
+    Object.fromEntries(ps.map((p, i) => [`a${i}`, { pool: { YES: L, NO: L }, p }]))
+
+  const probsOf = (byId: {
+    [id: string]: { pool: { YES: number; NO: number }; p: number }
+  }) => mapValues(byId, ({ pool, p }) => getCpmmProbability(pool, p))
+
+  it('REGRESSION: a balanced Set answer with p != 0.5 keeps prob == p (NOT clobbered to 0.5)', () => {
+    // The bug: the lossy fixed-p path recomputed prob as getCpmmProbability(newPool, 0.5) on the
+    // balanced (Y=N) Set pool, writing 0.5 and overwriting the real probability p. The float-p add
+    // must preserve prob == p exactly.
+    for (const p of [0.6, 0.75, 0.9, 0.1, 0.5]) {
+      const before = { only: { pool: { YES: 100, NO: 100 }, p } }
+      const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 40).only
+      expect(getCpmmProbability(after.pool, after.p)).toBeCloseTo(p, 10)
+      // both reserves deepened, k added, nothing discarded
+      expect(after.pool.YES).toBeGreaterThan(100)
+      expect(after.pool.NO).toBeGreaterThan(100)
+      expect(after.liquidity).toBeGreaterThan(0)
+    }
+  })
+
+  it('preserves each independent answer probability — and they need NOT sum to 1', () => {
+    // Independent answers are each their own binary CPMM: no Σ prob = 1 coupling.
+    const before = market([0.8, 0.65, 0.3]) // Σ prob = 1.75, deliberately != 1
+    const probsBefore = probsOf(before)
+    const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 60)
+    const probsAfter = probsOf(after)
+    for (const id of Object.keys(before)) {
+      expect(probsAfter[id]).toBeCloseTo(probsBefore[id], 10)
+      expect(after[id].pool.YES).toBeGreaterThan(before[id].pool.YES)
+      expect(after[id].pool.NO).toBeGreaterThan(before[id].pool.NO)
+    }
+    expect(sum(Object.values(probsAfter))).toBeCloseTo(1.75, 10)
+  })
+
+  it('at p = 0.5 on a balanced pool reduces to the v1 fixed-p add (no discard)', () => {
+    const before = market([0.5, 0.5])
+    const after = addCpmmMultiLiquidityToAnswersIndependentlyV2(before, 50) // 25 per answer
+    for (const id of Object.keys(before)) {
+      const v1 = addCpmmLiquidityFixedP(before[id].pool, 25)
+      expect(after[id].p).toBeCloseTo(0.5, 10)
+      expect(after[id].pool.YES).toBeCloseTo(v1.newPool.YES, 8)
+      expect(after[id].pool.NO).toBeCloseTo(v1.newPool.NO, 8)
+      expect(v1.sharesThrownAway.YES).toBeCloseTo(0, 10)
+      expect(v1.sharesThrownAway.NO).toBeCloseTo(0, 10)
+    }
   })
 })

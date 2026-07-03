@@ -9,7 +9,11 @@ import { JSONContent } from '@tiptap/core'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { MAX_ANSWERS } from 'common/answer'
-import { Contract, CreateableOutcomeType } from 'common/contract'
+import {
+  Contract,
+  CPMM_MULTI_2_CREATION_ENABLED,
+  CreateableOutcomeType,
+} from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -36,7 +40,10 @@ import { Modal } from '../layout/modal'
 import { ContractTopicsList } from '../topics/contract-topics-list'
 import { TopicTag } from '../topics/topic-tag'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { ProbabilitySlider } from '../widgets/probability-input'
+import {
+  ProbabilityInput,
+  ProbabilitySlider,
+} from '../widgets/probability-input'
 import ShortToggle from '../widgets/short-toggle'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 import {
@@ -134,6 +141,11 @@ export function MarketPreview(props: {
   fieldErrors?: ValidationErrors
   onToggleIncludeSeeResults?: () => void
   onReplaceQuestionText?: (original: string, replacement: string) => void
+  // cpmm-multi-2: custom per-answer initial probabilities (MULTIPLE_CHOICE).
+  useCustomInitialProbs?: boolean
+  initialProbs?: (number | undefined)[]
+  onToggleUseCustomInitialProbs?: () => void
+  onEditInitialProbs?: (probs: (number | undefined)[]) => void
 }) {
   const {
     data,
@@ -170,6 +182,10 @@ export function MarketPreview(props: {
     fieldErrors = {},
     onToggleIncludeSeeResults,
     onReplaceQuestionText,
+    useCustomInitialProbs = false,
+    initialProbs,
+    onToggleUseCustomInitialProbs,
+    onEditInitialProbs,
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
@@ -245,6 +261,42 @@ export function MarketPreview(props: {
     shouldAnswersSumToOne,
     addAnswersMode,
   } = data
+
+  // cpmm-multi-2: per-answer initial probabilities are offered for both fixed
+  // sum-to-one ("Multiple Choice") and independent ("Set") multiple-choice
+  // markets (no "Other"/addable answers), behind the creation kill-switch.
+  // customProbsActive = the toggle is also on.
+  const isSumToOne = shouldAnswersSumToOne ?? true
+  const customInitialProbsAvailable =
+    CPMM_MULTI_2_CREATION_ENABLED &&
+    outcomeType === 'MULTIPLE_CHOICE' &&
+    (addAnswersMode || 'DISABLED') === 'DISABLED'
+  const customProbsActive = customInitialProbsAvailable && useCustomInitialProbs
+
+  // Default per-answer percentage when an entry is unset: an equal split for
+  // sum-to-one, 50% for independent (Set) answers (each is its own market).
+  const defaultInitialPct = isSumToOne
+    ? answers.length > 0
+      ? 100 / answers.length
+      : 0
+    : 50
+
+  // Set one answer's raw initial-probability percentage. The array stays
+  // answer-aligned; a cleared input stores an undefined hole (every consumer —
+  // sum display, preview, payload — defaults it per answer).
+  const setInitialProb = (i: number, value: number | undefined) => {
+    const next: (number | undefined)[] = answers.map(
+      (_, idx) => initialProbs?.[idx]
+    )
+    next[i] = value
+    onEditInitialProbs?.(next)
+  }
+  const initialProbsSumPct = customProbsActive
+    ? answers.reduce(
+        (s, _, i) => s + (initialProbs?.[i] ?? defaultInitialPct),
+        0
+      )
+    : 0
 
   // Auto-resize question textarea to fit content
   const resizeQuestionTextarea = useCallback(() => {
@@ -366,7 +418,20 @@ export function MarketPreview(props: {
     if (data.shouldAnswersSumToOne) {
       const totalAnswers = answers.length + (hasOther ? 1 : 0)
       const equalProb = 1 / totalAnswers
-      mcProbs = answers.map(() => equalProb)
+      if (customProbsActive) {
+        // cpmm-multi-2: normalize the raw per-answer percentages to sum to 1 so
+        // the preview matches what the backend will create.
+        const equalPct = 100 / answers.length
+        const raw = answers.map((_, i) => initialProbs?.[i] ?? equalPct)
+        const sum = raw.reduce((s, x) => s + x, 0)
+        mcProbs = raw.map((x) => (sum > 0 ? x / sum : equalProb))
+      } else {
+        mcProbs = answers.map(() => equalProb)
+      }
+    } else if (customProbsActive) {
+      // cpmm-multi-2 independent ("Set"): each answer's own absolute prob, no
+      // normalization (they need not sum to 1).
+      mcProbs = answers.map((_, i) => (initialProbs?.[i] ?? 50) / 100)
     } else {
       mcProbs = answers.map(() => 0.5)
     }
@@ -887,6 +952,25 @@ export function MarketPreview(props: {
                 : ''
             )}
           >
+            {customInitialProbsAvailable && (
+              <Row className="items-center gap-2 px-1">
+                <ShortToggle
+                  on={useCustomInitialProbs}
+                  setOn={() => onToggleUseCustomInitialProbs?.()}
+                  ariaLabel="Custom initial probabilities"
+                />
+                <Row className="text-ink-700 items-center gap-1.5 text-sm">
+                  <span>Custom initial probabilities</span>
+                  <InfoTooltip
+                    text={
+                      isSumToOne
+                        ? "Set each answer's starting probability instead of an equal split. Values are normalized to sum to 100% (cpmm-multi-2)."
+                        : "Set each answer's independent starting probability (cpmm-multi-2). Set answers are separate predictions and need not sum to 100%."
+                    }
+                  />
+                </Row>
+              </Row>
+            )}
             {answers.length > 0 || addAnswersModeEnabled ? (
               <>
                 {answers.map((answer, i) => (
@@ -897,9 +981,24 @@ export function MarketPreview(props: {
                     {/* Desktop layout: horizontal */}
                     <Row className="hidden items-center gap-3 sm:flex">
                       {/* Probability - Prominent on left like real markets */}
-                      <span className="text-ink-700 min-w-[3rem] text-lg font-semibold">
-                        {Math.round(mcProbs[i] * 100)}%
-                      </span>
+                      {customProbsActive && isEditable ? (
+                        <ProbabilityInput
+                          prob={
+                            initialProbs?.[i] !== undefined
+                              ? Math.round(initialProbs[i]!)
+                              : undefined
+                          }
+                          onChange={(newProb) => setInitialProb(i, newProb)}
+                          placeholder={`${Math.round(defaultInitialPct)}`}
+                          ariaLabel={`Initial probability for answer ${i + 1}`}
+                          className="w-20"
+                          inputClassName="!h-8 !pr-8 !text-base"
+                        />
+                      ) : (
+                        <span className="text-ink-700 min-w-[3rem] text-lg font-semibold">
+                          {Math.round(mcProbs[i] * 100)}%
+                        </span>
+                      )}
 
                       {/* Answer text/input - grows to fill space */}
                       {isEditable && onEditAnswers ? (
@@ -1007,9 +1106,24 @@ export function MarketPreview(props: {
                     {/* Mobile layout: stacked */}
                     <Row className="items-center gap-2 sm:hidden">
                       {/* Probability - on the left, smaller */}
-                      <span className="text-ink-700 shrink-0 text-sm font-semibold">
-                        {Math.round(mcProbs[i] * 100)}%
-                      </span>
+                      {customProbsActive && isEditable ? (
+                        <ProbabilityInput
+                          prob={
+                            initialProbs?.[i] !== undefined
+                              ? Math.round(initialProbs[i]!)
+                              : undefined
+                          }
+                          onChange={(newProb) => setInitialProb(i, newProb)}
+                          placeholder={`${Math.round(defaultInitialPct)}`}
+                          ariaLabel={`Initial probability for answer ${i + 1}`}
+                          className="w-16 shrink-0"
+                          inputClassName="!h-7 !pr-7 !text-sm"
+                        />
+                      ) : (
+                        <span className="text-ink-700 shrink-0 text-sm font-semibold">
+                          {Math.round(mcProbs[i] * 100)}%
+                        </span>
+                      )}
 
                       {/* Answer text/input - with relative positioning for X button */}
                       <div className="relative flex-1">
@@ -1153,6 +1267,17 @@ export function MarketPreview(props: {
                       </Row>
                     </div>
                   )}
+
+                {/* cpmm-multi-2: running sum of the custom percentages (only
+                    meaningful for sum-to-one; Set answers are independent) */}
+                {customProbsActive && isSumToOne && answers.length > 0 && (
+                  <Row className="text-ink-500 items-center gap-1 px-1 text-xs">
+                    <span>Sum {Math.round(initialProbsSumPct * 10) / 10}%</span>
+                    <span className="text-ink-400">
+                      · normalized to 100% on create
+                    </span>
+                  </Row>
+                )}
 
                 {/* Action buttons row */}
                 {isEditable && onEditAnswers && (

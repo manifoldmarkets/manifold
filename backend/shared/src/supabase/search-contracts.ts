@@ -1,4 +1,4 @@
-import { Contract, isSportsContract } from 'common/contract'
+import { Contract, isMultiCpmm, isSportsContract } from 'common/contract'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { tsToMillis } from 'common/supabase/utils'
@@ -26,6 +26,7 @@ import {
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const DEFAULT_THRESHOLD = 1000
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
@@ -396,11 +397,11 @@ function getSearchContractWhereSQL(args: {
   const liquidityFilter = liquidity
     ? `(
     CASE
-        WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
+        WHEN mechanism in ${MULTI_CPMM_MECHANISMS_SQL} AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
         THEN (coalesce((contracts.data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(contracts.data->'answers'))
         ELSE coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
     END
-  ) >= case when mechanism = 'cpmm-multi-1' then ${answerLiquidity} else ${liquidity} end`
+  ) >= case when mechanism in ${MULTI_CPMM_MECHANISMS_SQL} then ${answerLiquidity} else ${liquidity} end`
     : ''
   const deletedFilter = `deleted = false`
 
@@ -472,7 +473,7 @@ export const sortFields: SortFields = {
   subsidy: {
     sql: "COALESCE((contracts.data->>'totalLiquidity')::numeric, 0)",
     sortCallback: (c: Contract) =>
-      c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
+      c.mechanism === 'cpmm-1' || isMultiCpmm(c)
         ? c.totalLiquidity
         : 0,
     order: 'DESC',

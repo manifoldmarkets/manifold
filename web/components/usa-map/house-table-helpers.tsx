@@ -1,13 +1,14 @@
 import { XIcon } from '@heroicons/react/outline'
 import { CheckIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
+import { Answer, answerP } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
   isBinaryMulti,
+  isMultiCpmm,
 } from 'common/contract'
 import {
   formatPercent,
@@ -218,7 +219,7 @@ export const BuyPanelBody = (props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
@@ -307,7 +308,11 @@ export const BuyPanelBody = (props: {
       YES: multiProps!.answerToBuy.poolYes,
       NO: multiProps!.answerToBuy.poolNo,
     },
-    p: 0.5,
+    // answerP (per-answer p, storage-default 0.5): hardcoding 0.5 showed a wrong
+    // probBefore/probAfter/probChange for a cpmm-multi-2 answer with p != 0.5, and a bare
+    // .p is undefined->NaN on blob-sourced answers. Mirrors the shared bet-preview path
+    // (client-common/src/lib/bet.ts).
+    p: answerP(multiProps!.answerToBuy),
     collectedFees: contract.collectedFees,
   }
 

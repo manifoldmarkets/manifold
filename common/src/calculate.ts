@@ -16,7 +16,7 @@ import {
   sum,
   sumBy,
 } from 'lodash'
-import { Answer } from './answer'
+import { Answer, answerP } from './answer'
 import { Bet } from './bet'
 import {
   calculateCpmmPurchase,
@@ -31,6 +31,7 @@ import {
   BinaryContract,
   Contract,
   CPMMContract,
+  isMultiCpmm,
   MarketContract,
   MultiContract,
   PseudoNumericContract,
@@ -65,6 +66,7 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
       return outcome === 'YES'
         ? getCpmmProbability(contract.pool, contract.p)
         : 1 - getCpmmProbability(contract.pool, contract.p)
+    case 'cpmm-multi-2':
     case 'cpmm-multi-1':
       return 0
     default:
@@ -86,7 +88,8 @@ export function getAnswerProbability(
     if (resolution === 'NO') return 0
   }
   const pool = { YES: poolYes, NO: poolNo }
-  return getCpmmProbability(pool, 0.5)
+  // answerP, not answer.p: this is called on blob-sourced answers (SSR/embeds/lite).
+  return getCpmmProbability(pool, answerP(answer))
 }
 
 export function getInitialAnswerProbability(
@@ -97,6 +100,18 @@ export function getInitialAnswerProbability(
     return 0.5
   } else {
     if (contract.addAnswersMode === 'DISABLED') {
+      // cpmm-multi-2: creation probs can be custom (not uniform) and are not
+      // stored. Best available baseline is the pool-implied prob — exact for an
+      // untraded answer (pool untouched since creation); for a traded answer it
+      // only anchors the short pre-first-trade chart segment. (A converted v1
+      // market that traded before converting gets its current rather than 1/n
+      // here — same cosmetic class.) v1 keeps the exact uniform baseline.
+      if (contract.mechanism === 'cpmm-multi-2') {
+        return getCpmmProbability(
+          { YES: answer.poolYes, NO: answer.poolNo },
+          answerP(answer)
+        )
+      }
       return 1 / contract.answers.length
     } else {
       const answers = contract.answers
@@ -122,6 +137,7 @@ export function getOutcomeProbabilityAfterBet(
   switch (mechanism) {
     case 'cpmm-1':
       return getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
+    case 'cpmm-multi-2':
     case 'cpmm-multi-1':
       return 0
     default:
@@ -147,7 +163,7 @@ export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   const { mechanism } = contract
   return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, outcome)
-    : mechanism === 'cpmm-multi-1'
+    : isMultiCpmm(contract)
     ? calculateFixedPayoutMulti(contract, bet, outcome)
     : bet?.amount ?? 0
 }
@@ -158,7 +174,7 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 
   return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, resolution)
-    : mechanism === 'cpmm-multi-1'
+    : isMultiCpmm(contract)
     ? calculateFixedPayoutMulti(contract, bet, resolution)
     : bet?.amount ?? 0
 }
@@ -210,7 +226,7 @@ export function getSimpleCpmmInvested(yourBets: Bet[]) {
 export function getInvested(contract: Contract, yourBets: Bet[]) {
   const { mechanism } = contract
   if (mechanism === 'cpmm-1') return getCpmmInvested(yourBets)
-  if (mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     const betsByAnswerId = groupBy(yourBets, 'answerId')
     const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)
     return sum(Object.values(investedByAnswerId))
@@ -260,8 +276,7 @@ function getCpmmOrDpmProfit(
 }
 
 export function getProfitMetrics(contract: Contract, yourBets: Bet[]) {
-  const { mechanism } = contract
-  if (mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     const betsByAnswerId = groupBy(yourBets, 'answerId')
     const profitMetricsPerAnswer = Object.entries(betsByAnswerId).map(
       ([answerId, bets]) => {
@@ -336,8 +351,7 @@ export const getContractBetMetrics = (
   yourBets: Bet[],
   answerId?: string
 ): Omit<ContractMetric, 'id' | 'from' | 'userId' | 'loan' | 'marginLoan'> => {
-  const { mechanism } = contract
-  const isCpmmMulti = mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   const {
     profit,
     profitPercent,
@@ -388,15 +402,12 @@ export const getContractBetMetricsPerAnswerWithoutLoans = (
       const answerId = bets[0].answerId
       const baseMetrics = getContractBetMetrics(contract, bets, answerId)
       let periodMetrics
-      if (
-        contract.mechanism === 'cpmm-1' ||
-        contract.mechanism === 'cpmm-multi-1'
-      ) {
+      if (contract.mechanism === 'cpmm-1' || isMultiCpmm(contract)) {
         const answer = answers?.find((a) => a.id === answerId)
         const passedAnswer = !!answer
-        if (contract.mechanism === 'cpmm-multi-1' && !passedAnswer) {
+        if (isMultiCpmm(contract) && !passedAnswer) {
           console.log(
-            `answer with id ${bets[0].answerId} not found, but is required for cpmm-multi-1 contract: ${contract.id}`
+            `answer with id ${bets[0].answerId} not found, but is required for multi-choice cpmm contract: ${contract.id}`
           )
         } else {
           periodMetrics = Object.fromEntries(
@@ -415,7 +426,7 @@ export const getContractBetMetricsPerAnswerWithoutLoans = (
   )
 
   // Calculate overall contract metrics with answerId:null bc it's nice to have
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     const baseFrom = metricsPerAnswer[0].from
     const calculateProfitPercent = (
       metrics: ContractMetric[],

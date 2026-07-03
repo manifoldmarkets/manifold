@@ -16,6 +16,7 @@ import {
   Contract,
   contractPath,
   CPMMContract,
+  isMultiCpmm,
   MarketContract,
 } from 'common/contract'
 import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
@@ -720,14 +721,13 @@ function BetsTable(props: {
             {visibleContracts.map((contract) => {
               const metric = metricsByContractId[contract.id]
               const closeDate = contract.resolutionTime ?? contract.closeTime
-              const resolvedAnswer =
-                contract.mechanism === 'cpmm-multi-1'
-                  ? contract.answers.find(
-                      (a) =>
-                        a.id === contract.resolution ||
-                        (contract.resolutions?.[a.id] ?? 0) >= 99
-                    )
-                  : undefined
+              const resolvedAnswer = isMultiCpmm(contract)
+                ? contract.answers.find(
+                    (a) =>
+                      a.id === contract.resolution ||
+                      (contract.resolutions?.[a.id] ?? 0) >= 99
+                  )
+                : undefined
 
               const maxOutcome =
                 metricsByContractId[contract.id].maxSharesOutcome

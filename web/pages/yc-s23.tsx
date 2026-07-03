@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { Answer } from 'common/answer'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -34,11 +34,7 @@ export async function getStaticProps() {
   }).catch(() => [])
 
   const companies: Company[] = contracts
-    .filter(
-      (c) =>
-        c.question.includes('Exit valuation of ') &&
-        c.mechanism === 'cpmm-multi-1'
-    )
+    .filter((c) => c.question.includes('Exit valuation of ') && isMultiCpmm(c))
     .map((contract) => {
       const name = contract.question
         .split('Exit valuation of ')[1]

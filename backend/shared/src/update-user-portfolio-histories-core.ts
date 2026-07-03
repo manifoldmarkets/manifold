@@ -13,6 +13,7 @@ import {
   Contract,
   ContractToken,
   CPMMMultiContract,
+  isMultiCpmm,
   MarketContract,
 } from 'common/contract'
 import {
@@ -37,6 +38,7 @@ import {
   leftJoin,
   where,
 } from './supabase/sql-builder'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -241,7 +243,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     where('c.resolution_time is null'),
     where('(a is null or a.resolution_time is null)'),
     where(
-      `case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end`
+      `case when c.mechanism in ${MULTI_CPMM_MECHANISMS_SQL} then ucm.answer_id is not null else true end`
     ),
   ]
   const metricsSql = renderSql(
@@ -350,7 +352,7 @@ export const getUnresolvedStatsForToken = (
     }
 
     // ignore summary metrics
-    if (contract.mechanism === 'cpmm-multi-1') {
+    if (isMultiCpmm(contract)) {
       if (!cm.answerId)
         return { value: 0, invested: 0, dailyProfit: 0, loan: 0 }
       const answer = contract.answers.find((a) => a.id === cm.answerId)

@@ -2,7 +2,7 @@ import { sortBy } from 'lodash'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { Answer } from 'common/answer'
-import { Contract, CPMMMultiContract } from 'common/contract'
+import { Contract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -41,7 +41,7 @@ export function parseDistrict(text: string) {
 }
 
 function districtsForState(contract: Contract, stateKey: string): Answer[] {
-  if (contract.mechanism !== 'cpmm-multi-1') return []
+  if (!isMultiCpmm(contract)) return []
   return contract.answers.filter(
     (a) => parseDistrict(a.text)?.stateCode === stateKey
   )

@@ -4,7 +4,7 @@ import { Answer } from 'common/answer'
 import { DisplayUser } from 'common/api/user-types'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, isMultiCpmm } from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { maybePluralize, shortFormatNumber } from 'common/util/format'
 import { BetsTabContent } from 'web/components/contract/bets-tab-content'
@@ -106,7 +106,7 @@ export function ContractTabs(props: {
         },
         totalBets > 0 &&
           (liveContract.mechanism === 'cpmm-1' ||
-            liveContract.mechanism === 'cpmm-multi-1') && {
+            isMultiCpmm(liveContract)) && {
             title: positionsTitle,
             content: (
               <UserPositionsTable

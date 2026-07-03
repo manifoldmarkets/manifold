@@ -1,13 +1,23 @@
 import { followContractInternal } from 'api/follow-contract'
-import { getUnfilledBetsAndUserBalances, updateMakers } from 'api/helpers/bets'
+import {
+  getUnfilledBets,
+  getUnfilledBetsAndUserBalances,
+  updateMakers,
+} from 'api/helpers/bets'
 import { Answer, getMaximumAnswers } from 'common/answer'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
+  getCpmmLiquidity,
   getCpmmProbability,
+  pForProbability,
 } from 'common/calculate-cpmm'
-import { CPMMMultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  isMultiCpmm,
+  MIN_CPMM_PROB,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { isAdminId } from 'common/envs/constants'
 import { noFees } from 'common/fees'
@@ -58,6 +68,8 @@ import { broadcastUpdatedMetrics } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { redeemShares } from './redeem-shares'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> =
   onlyUsersWhoCanPerformAction('createAnswer', async (props, auth) => {
     const { contractId, text } = props
@@ -82,7 +94,7 @@ const verifyContract = async (contractId: string, creatorId: string) => {
   if (contract.token !== 'MANA') {
     throw new APIError(403, 'Cannot add answers to sweepstakes question')
   }
-  if (contract.mechanism !== 'cpmm-multi-1')
+  if (!isMultiCpmm(contract))
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
   if (contract.outcomeType === 'NUMBER')
     throw new APIError(403, 'Cannot create new answers for numeric contracts')
@@ -162,6 +174,7 @@ const createAnswerCpmmMain = async (
         isOther: false,
         poolYes,
         poolNo,
+        p: 0.5, // balanced pool at p=0.5; v2 lossless split sets per-answer p (PR2 late add-on)
         prob,
         totalLiquidity,
         subsidyPool: 0,
@@ -171,14 +184,26 @@ const createAnswerCpmmMain = async (
 
       const updatedAnswers: Answer[] = []
       if (shouldAnswersSumToOne) {
-        await createAnswerAndSumAnswersToOne(
-          pgTrans,
-          user,
-          contract,
-          answers,
-          newAnswer,
-          answerCost
-        )
+        // cpmm-multi-2: lossless refinement split (GP18). v1 path stays frozen.
+        if (contract.mechanism === 'cpmm-multi-2') {
+          await createAnswerAndSumAnswersToOneV2(
+            pgTrans,
+            user,
+            contract,
+            answers,
+            newAnswer,
+            answerCost
+          )
+        } else {
+          await createAnswerAndSumAnswersToOne(
+            pgTrans,
+            user,
+            contract,
+            answers,
+            newAnswer,
+            answerCost
+          )
+        }
         const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
         await convertOtherAnswerShares(
           pgTrans,
@@ -441,6 +466,131 @@ async function createAnswerAndSumAnswersToOne(
 
   allOrdersToCancel.push(...unfilledBetsOnOther)
   await cancelLimitOrders(pgTrans, allOrdersToCancel)
+}
+
+// cpmm-multi-2: lossless "Other" split as a REFINEMENT (GP18, tasks/cpmm_multi_2/
+// proofs/other_split_refinement.py + findings-other-split-refinement-2026-06-28.md).
+// Treat Other as the event (A or Other'); adding A refines it, so it must be invariant w.r.t.
+// anything that can't distinguish A from Other':
+//   - copy Other's YES inventory into BOTH new pools and fund their NO with a balanced
+//     answerCost/2 add (D-preserving), repriced via per-answer p to q_A = q_Other' = p_o/2;
+//   - listed pools are UNTOUCHED (prices fixed) — no excess-NO dump, no bet-down;
+//   - the pool's NO inventory relabels to YES in each listed answer (redemption identity:
+//     NO-Other ≡ Σ YES-listed), held OFF the listed pools (so prices stay) — conserves mana
+//     exactly (GP18f: keeping NO in the pools would create `No` mana);
+//   - user positions are handled by convertOtherAnswerShares (the same refinement on bets).
+// The v1 path (createAnswerAndSumAnswersToOne, p=0.5 surgery + overshoot + bet-down) is frozen.
+async function createAnswerAndSumAnswersToOneV2(
+  pgTrans: SupabaseTransaction,
+  user: User,
+  contract: CPMMMultiContract,
+  answers: Answer[],
+  newAnswer: Answer,
+  answerCost: number
+) {
+  const [otherAnswers, answersWithoutOther] = partition(
+    answers,
+    (a) => a.isOther
+  )
+  const otherAnswer = otherAnswers[0]
+  if (!otherAnswer) {
+    throw new APIError(
+      500,
+      '"Other" answer not found, and is required for adding new answers.'
+    )
+  }
+
+  const Yo = otherAnswer.poolYes
+  const No = otherAnswer.poolNo
+  const pOther = otherAnswer.p ?? 0.5
+  const probOther = getCpmmProbability({ YES: Yo, NO: No }, pOther)
+  // GP19d split floor: each split halves Other's prob mass geometrically, and both
+  // children land at probOther/2 — below MIN_CPMM_PROB they'd sit under the
+  // market-order clamp (untradeable-downward zombie answers). The split itself never
+  // breaks strict sanity (GP19d), so this is the ONLY guard the operation needs.
+  if (probOther < 2 * MIN_CPMM_PROB) {
+    throw new APIError(
+      403,
+      `Cannot add an answer: the "Other" answer's probability (${Math.round(
+        probOther * 1000
+      ) / 10}%) is too low to split — both halves would fall below the ${
+        MIN_CPMM_PROB * 100
+      }% minimum. Trade "Other" up or resolve the market instead.`
+    )
+  }
+  const targetProb = probOther / 2 // A and Other' each take half of Other's prob mass
+  const a = answerCost / 2 // symmetric: split the added mana 50/50 (GP18e: the 1 free DOF)
+
+  const newAnswerPool = { YES: Yo + a, NO: a }
+  const newOtherPool = { YES: Yo + a, NO: a }
+  const newAnswerP = pForProbability(newAnswerPool, targetProb)
+  const newOtherP = pForProbability(newOtherPool, targetProb)
+
+  const n = answers.length
+  newAnswer = {
+    ...newAnswer,
+    index: n - 1,
+    poolYes: newAnswerPool.YES,
+    poolNo: newAnswerPool.NO,
+    p: newAnswerP,
+    prob: targetProb,
+    totalLiquidity: getCpmmLiquidity(newAnswerPool, newAnswerP),
+  }
+  const updatedOtherAnswerProps = {
+    poolYes: newOtherPool.YES,
+    poolNo: newOtherPool.NO,
+    p: newOtherP,
+    prob: targetProb,
+    index: n,
+    totalLiquidity: getCpmmLiquidity(newOtherPool, newOtherP),
+  }
+
+  await insertAnswer(pgTrans, newAnswer)
+  await updateAnswer(pgTrans, otherAnswer.id, updatedOtherAnswerProps)
+
+  // Relabel the POOL's NO inventory: `No` NO-Other shares ≡ `No` YES in each listed answer
+  // (redemption identity GP18a). Credit them to the LP (contract creator) as redemption bets, OFF
+  // the listed pools so listed prices stay fixed. Single-LP attribution is fine for conservation;
+  // multi-LP proportional attribution is a follow-up refinement.
+  const now = Date.now()
+  const poolNoBets: Bet[] = answersWithoutOther.map((listed) => ({
+    id: getNewBetId(),
+    contractId: contract.id,
+    userId: contract.creatorId,
+    answerId: listed.id,
+    outcome: 'YES',
+    shares: No,
+    amount: 0,
+    isCancelled: false,
+    isFilled: true,
+    loanAmount: 0,
+    probBefore: listed.prob,
+    probAfter: listed.prob,
+    createdTime: now,
+    fees: noFees,
+    isRedemption: true,
+    isApi: false,
+  }))
+  if (poolNoBets.length > 0) {
+    const metrics = await getContractMetrics(
+      pgTrans,
+      [contract.creatorId],
+      contract.id,
+      filterDefined(poolNoBets.map((b) => b.answerId)),
+      true
+    )
+    await bulkInsertBets(pgTrans, poolNoBets, metrics)
+  }
+
+  // Cancel Other's resting limit orders (priced at the old probability). Fetch just
+  // that answer's unfilled bets — the v2 split doesn't move any listed price, so the
+  // whole-contract balances/metrics load the v1 path needs is pure overhead here.
+  const ordersToCancel = await getUnfilledBets(
+    pgTrans,
+    contract.id,
+    otherAnswer.id
+  )
+  await cancelLimitOrders(pgTrans, ordersToCancel)
 }
 
 async function convertOtherAnswerShares(

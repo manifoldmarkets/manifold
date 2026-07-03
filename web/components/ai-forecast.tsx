@@ -5,6 +5,7 @@ import {
   Contract,
   contractPath,
   MultiNumericContract,
+  isMultiCpmm,
 } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -507,7 +508,7 @@ function CapabilityCard({
   const multiNumericValue =
     liveContract &&
     liveContract.outcomeType === 'MULTI_NUMERIC' &&
-    liveContract.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(liveContract)
       ? getExpectedValue(liveContract as unknown as MultiNumericContract)
       : null
 
@@ -614,10 +615,7 @@ function CapabilityCard({
       displayValue = formatPercent(prob)
     }
   } else if (displayType === 'numeric' && liveContract) {
-    if (
-      multiNumericValue !== null &&
-      liveContract.mechanism === 'cpmm-multi-1'
-    ) {
+    if (multiNumericValue !== null && isMultiCpmm(liveContract)) {
       // For multi-numeric contracts
       displayValue = formatExpectedValue(
         multiNumericValue,

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 
 import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
-import { CPMMContract, MultiContract } from 'common/contract'
+import { CPMMContract, isMultiCpmm, MultiContract } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { formatPercent, formatWithToken } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
@@ -25,7 +25,7 @@ export const QuickLimitOrderButtons = (props: {
   className?: string
 }) => {
   const { contract, answer, className } = props
-  if (!answer && contract.mechanism === 'cpmm-multi-1') {
+  if (!answer && isMultiCpmm(contract)) {
     throw new Error('Answer must be provided for multi contracts')
   }
 

@@ -3,7 +3,7 @@ import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
 import { FullUser } from 'common/api/user-types'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { LiteGroup } from 'common/group'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
@@ -381,7 +381,7 @@ export function Search(props: SearchProps) {
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
   const answersWithChanges = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(c)
       ? orderBy(
           c.answers.filter((a) => Math.abs(a.probChanges.day) > 0.02),
           (a) => Math.abs(a.probChanges.day),
@@ -391,7 +391,7 @@ export function Search(props: SearchProps) {
   )
 
   const answersMatchingQuery = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(c)
       ? c.answers
           .filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
           .slice(0, 2)

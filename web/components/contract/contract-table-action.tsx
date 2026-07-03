@@ -1,4 +1,9 @@
-import { Contract, BinaryContract, CPMMMultiContract } from 'common/contract'
+import {
+  Contract,
+  BinaryContract,
+  CPMMMultiContract,
+  isMultiCpmm,
+} from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -83,7 +88,7 @@ export function BetButton(props: {
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
+    (contract.mechanism === 'cpmm-1' || isMultiCpmm(contract))
   ) {
     return (
       <>

@@ -3,6 +3,7 @@ import { runScript } from 'run-script'
 import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getUser } from 'shared/utils'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 runScript(async ({ pg }) => {
   console.log(`deleting all private comments`)
@@ -39,7 +40,7 @@ runScript(async ({ pg }) => {
   console.log(`redacting all answers`)
   await pg.none(
     `with private_contracts as (
-      select id from contracts where visibility = 'private' and mechanism = 'cpmm-multi-1'
+      select id from contracts where visibility = 'private' and mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
     )
     update answers
     set data = data || jsonb_build_object('text', '[deleted answer ' || index || ']')

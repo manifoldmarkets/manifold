@@ -8,6 +8,7 @@ import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  isMultiCpmm,
   MultiContract,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -72,7 +73,7 @@ export function SellPanel(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isMultiSumsToOne =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const answer =
     answerId && 'answers' in contract
       ? contract.answers.find((a) => a.id === answerId)

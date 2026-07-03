@@ -23,7 +23,8 @@ import { useUser } from 'web/hooks/use-user'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
 import { Dashboard, DashboardItem, DashboardTextItem } from 'common/dashboard'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
+import { Answer } from 'common/answer'
 import { shortFormatNumber } from 'common/util/format'
 import { ContractRow } from 'web/components/contract/contracts-table'
 import {
@@ -303,7 +304,7 @@ function CommunityTab({
       for (const c of fetched) {
         // Merge answers for all cpmm-multi-1 markets (MC, NUMBER, MULTI_NUMERIC, DATE)
         // regardless of whether 'answers' is already in the data blob
-        if ((c as any).mechanism === 'cpmm-multi-1') {
+        if (isMultiCpmm(c)) {
           ;(c as any).answers =
             answersByContractId[c.id] ?? (c as any).answers ?? []
         }

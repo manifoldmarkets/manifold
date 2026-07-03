@@ -21,6 +21,7 @@ import {
   buyNoSharesUntilAnswersSumToOne,
   calculateCpmmMultiArbitrageBet,
   calculateCpmmMultiArbitrageYesBets,
+  CpmmMulti2InvariantError,
 } from './calculate-cpmm-arbitrage'
 import { APIError } from 'common/api/utils'
 
@@ -180,7 +181,7 @@ export const getNewMultiCpmmBetInfo = (
 
   const { poolYes, poolNo } = answer
   const pool = { YES: poolYes, NO: poolNo }
-  const cpmmState = { pool, p: 0.5, collectedFees: contract.collectedFees }
+  const cpmmState = { pool, p: answer.p, collectedFees: contract.collectedFees }
 
   const answerUnfilledBets = unfilledBets.filter(
     (b) => b.answerId === answer.id
@@ -294,17 +295,37 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       otherBetsResults.push(...(otherBetResults as ArbitrageBetArray))
   } else {
     // NOTE: only accepts YES bets atm
-    const multiRes = calculateCpmmMultiArbitrageYesBets(
-      answers,
-      answersToBuy,
-      initialBetAmount,
-      limitProb,
-      unfilledBets,
-      balanceByUserId,
-      contract.collectedFees
-    )
-    newBetResults.push(...multiRes.newBetResults)
-    otherBetsResults.push(...multiRes.otherBetResults)
+    // cpmm-multi-2 routes through the direct non-overshooting solve (Approach C);
+    // cpmm-multi-1 keeps the v1 nested search byte-identically.
+    try {
+      const multiRes = calculateCpmmMultiArbitrageYesBets(
+        answers,
+        answersToBuy,
+        initialBetAmount,
+        limitProb,
+        unfilledBets,
+        balanceByUserId,
+        contract.collectedFees,
+        contract.mechanism
+      )
+      newBetResults.push(...multiRes.newBetResults)
+      otherBetsResults.push(...multiRes.otherBetResults)
+    } catch (e) {
+      // v2 post-hoc verification (or the solve's own feasibility invariant) failed. Nothing has
+      // been committed yet, so surface a retryable 503 rather than a stack-leaking 500 — the
+      // safe outcome is "bet didn't execute", never "bet executed at a mis-solved price".
+      if (e instanceof CpmmMulti2InvariantError) {
+        throw new APIError(
+          503,
+          'Bet solve verification failed, please try again.',
+          {
+            reason: e.message,
+            details: e.details,
+          }
+        )
+      }
+      throw e
+    }
   }
   const now = Date.now()
   return newBetResults.map((newBetResult, i) => {

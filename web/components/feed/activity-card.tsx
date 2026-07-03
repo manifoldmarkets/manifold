@@ -14,6 +14,7 @@ import {
   contractPath,
   CPMMMultiContract,
   CPMMNumericContract,
+  isMultiCpmm,
   PollContract,
 } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -187,7 +188,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
 
         {/* Answer bars for multiple choice markets */}
         {contract.outcomeType === 'MULTIPLE_CHOICE' &&
-          contract.mechanism === 'cpmm-multi-1' && (
+          isMultiCpmm(contract) && (
             <div onClick={(e) => e.stopPropagation()} className="mt-2">
               <SimpleAnswerBars
                 contract={contract as CPMMMultiContract}
@@ -389,10 +390,9 @@ const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
 
-  const answer =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers?.find((a) => a.id === answerId)
-      : undefined
+  const answer = isMultiCpmm(contract)
+    ? contract.answers?.find((a) => a.id === answerId)
+    : undefined
 
   const fromProb = `${(probBefore * 100).toFixed(0)}%`
   const toProb = `${(probAfter * 100).toFixed(0)}%`

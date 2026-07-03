@@ -7,6 +7,7 @@ import {
   CPMMMultiContract,
   getMainBinaryMCAnswer,
   isBinaryMulti,
+  isMultiCpmm,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getStonkDisplayShares } from 'common/stonk'
@@ -90,7 +91,7 @@ export const UserPositionsTable = memo(
     )
     const answers = answer
       ? [answer]
-      : contract.mechanism !== 'cpmm-multi-1'
+      : !isMultiCpmm(contract)
       ? []
       : contract.answers
 
@@ -328,7 +329,7 @@ export const UserPositionsTable = memo(
           />
         </Col>
       )
-    } else if (contract.mechanism === 'cpmm-multi-1') {
+    } else if (isMultiCpmm(contract)) {
       return (
         <Col className={'w-full'}>
           {!answer && answers.length < 4 && (
@@ -478,8 +479,7 @@ const BinaryUserPositionsTable = memo(
 
     const largestColumnLength = Math.max(totalYesPositions, totalNoPositions)
 
-    const isBinary =
-      contract.outcomeType === 'BINARY' || contract.mechanism === 'cpmm-multi-1'
+    const isBinary = contract.outcomeType === 'BINARY' || isMultiCpmm(contract)
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
     const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)

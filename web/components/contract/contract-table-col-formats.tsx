@@ -1,5 +1,5 @@
 import { ChatIcon, UserIcon } from '@heroicons/react/solid'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'common/util/formatNumber'
 import { Row } from '../layout/row'
@@ -115,7 +115,7 @@ export const liquidityColumn = {
   content: (props: { contract: Contract }) => {
     const { contract } = props
 
-    const hasAnswers = contract.mechanism === 'cpmm-multi-1'
+    const hasAnswers = isMultiCpmm(contract)
     const isCashContract = contract.token === 'CASH'
     const totalLiquidity =
       'totalLiquidity' in contract ? contract.totalLiquidity : 0

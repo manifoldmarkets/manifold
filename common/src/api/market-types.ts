@@ -3,6 +3,7 @@ import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   Contract,
+  isMultiCpmm,
   MAX_QUESTION_LENGTH,
   MultiContract,
   RESOLUTIONS,
@@ -151,7 +152,7 @@ export function toLiteMarket(
     numericValues = { value, min, max, isLogScale }
   }
   const answers =
-    includeLiteAnswers && contract.mechanism === 'cpmm-multi-1'
+    includeLiteAnswers && isMultiCpmm(contract)
       ? contract.answers?.map((answer) => ({
           id: answer.id,
           text: answer.text,
@@ -212,14 +213,14 @@ export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const { outcomeType } = contract
   const answers =
-    contract.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(contract)
       ? contract.answers.map((answer) =>
           augmentAnswerWithProbability(contract, answer)
         )
       : undefined
 
   let multiValues = {}
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     multiValues = {
       shouldAnswersSumToOne: contract.shouldAnswersSumToOne,
       addAnswersMode: contract.addAnswersMode,
@@ -401,6 +402,16 @@ export const createMultiSchema = z.object({
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
+  // cpmm-multi-2 (PR2c): per-answer initial probabilities, as percentages in
+  // [1, 99] — the same bounds as binary `initialProb`, keeping every created
+  // answer inside the market-order clamp [MIN, MAX]_CPMM_PROB (an open (0,100)
+  // bound admitted sub-floor answers that trades could never reach). When
+  // provided, the market is created as `cpmm-multi-2` with each answer's `p`
+  // set so its displayed prob matches. Sum-to-one ("Multiple Choice") markets
+  // normalize the percentages to Σ = 1; independent ("Set") markets treat each
+  // as an absolute prob (no Σ constraint). Length must match `answers`.
+  // Absent ⇒ uniform 1/n `cpmm-multi-1` (unchanged).
+  initialProbs: z.array(z.number().min(1).max(99)).max(MAX_ANSWERS).optional(),
 })
 
 export const createNumberSchema = z.object({

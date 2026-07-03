@@ -13,7 +13,8 @@ export type Answer = {
   // Mechanism props
   poolYes: number // YES shares
   poolNo: number // NO shares
-  prob: number // Computed from poolYes and poolNo.
+  p: number // CPMM parameter; prob = p*poolNo / ((1-p)*poolYes + p*poolNo). 0.5 for cpmm-multi-1.
+  prob: number // Computed from poolYes, poolNo and p.
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in M
   subsidyPool: number // current value of subsidy pool in M
   volume: number // current volume of the answer in M
@@ -21,6 +22,11 @@ export type Answer = {
   // Is this 'Other', the answer that represents all other answers, including answers added in the future.
   isOther?: boolean
 
+  // Per-answer resolution. Set today only for independent (shouldAnswersSumToOne = false)
+  // markets, where each answer resolves on its own. Reserved cpmm-multi-2 behavior: linked
+  // answers MAY also be individually resolved NO in the future (market stays open, probs
+  // sum to 1 over the unresolved answers) — see the CPMMMulti doc comment in contract.ts.
+  // Consumers should not assume linked answers are never individually resolved.
   resolution?: resolution
   resolutionTime?: number
   resolutionProbability?: number
@@ -65,6 +71,14 @@ export const getDefaultSort = (contract: MultiContract) => {
   else if (answers.length > 10) return 'prob-desc'
   return 'old'
 }
+
+// Read an answer's CPMM p with the storage default applied. Answer.p is typed
+// non-optional and convertAnswer defaults it (row.p ?? 0.5), but answers deserialized
+// from the denormalized contract data blob (data->'answers' — SSR/SEO/embeds, search
+// "lite" answers) bypass convertAnswer, so any answer written before p existed reads
+// p === undefined at runtime and a bare `answer.p` poisons downstream math with NaN.
+// Use this accessor anywhere the answer may have come from the blob.
+export const answerP = (answer: Answer) => answer.p ?? 0.5
 
 export const sortAnswers = <T extends Answer>(
   contract: MultiContract,

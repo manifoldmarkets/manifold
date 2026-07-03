@@ -1,6 +1,11 @@
 import { sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { Contract, MarketContract, MultiContract } from 'common/contract'
+import {
+  Contract,
+  MarketContract,
+  MultiContract,
+  isMultiCpmm,
+} from 'common/contract'
 import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
@@ -97,8 +102,15 @@ function getResolutionParams(
   props: ValidatedAPIParams<'market/:contractId/resolve'>
 ) {
   const { outcomeType } = contract
-  const isMultiChoice = contract.mechanism === 'cpmm-multi-1'
+  const isMultiChoice = isMultiCpmm(contract)
 
+  // Routing: independent multi (shouldAnswersSumToOne = false) resolves PER ANSWER (binary
+  // schema + answerId); linked multi resolves WHOLE MARKET only (multi schema below — even
+  // CHOOSE_ONE becomes a full resolutions map, never a per-answer resolve). This branch is
+  // the single enforcement point of "linked answers are never individually resolved".
+  // cpmm-multi-2 reserves relaxing this to allow early per-answer NO resolution of linked
+  // answers (see the CPMMMulti doc comment in common/src/contract.ts) — don't add new code
+  // that bakes the whole-market-only assumption into cpmm-multi-2 handling.
   if (
     outcomeType === 'BINARY' ||
     (isMultiChoice && !contract.shouldAnswersSumToOne)

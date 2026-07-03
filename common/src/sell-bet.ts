@@ -7,6 +7,7 @@ import {
 import {
   Contract,
   CPMMContract,
+  isMultiCpmm,
   MarketContract,
   MultiContract,
 } from './contract'
@@ -34,8 +35,10 @@ export const getCpmmSellBetInfo = (
   loanPaid: number,
   answer?: Answer
 ) => {
-  if (contract.mechanism === 'cpmm-multi-1' && !answer) {
-    throw new Error('getCpmmSellBetInfo: answer required for cpmm-multi-1')
+  if (isMultiCpmm(contract) && !answer) {
+    throw new Error(
+      'getCpmmSellBetInfo: answer required for multi-choice cpmm contracts'
+    )
   }
 
   const startCpmmState =
@@ -43,7 +46,7 @@ export const getCpmmSellBetInfo = (
       ? contract
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
-          p: 0.5,
+          p: answer!.p,
           collectedFees: contract.collectedFees,
         }
 
@@ -126,7 +129,7 @@ export const getCpmmMultiSellBetInfo = (
   const { cpmmState, makers, takers, ordersToCancel, totalFees } = newBetResult!
 
   const probBefore = answerToSell.prob
-  const probAfter = getCpmmProbability(cpmmState.pool, 0.5)
+  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   const takerAmount = sumBy(takers, 'amount')
   const takerShares = sumBy(takers, 'shares')
@@ -275,8 +278,10 @@ export const getSaleResult = (
   balanceByUserId: { [userId: string]: number },
   answer?: Answer
 ) => {
-  if (contract.mechanism === 'cpmm-multi-1' && !answer)
-    throw new Error('getSaleResult: answer must be defined for cpmm-multi-1')
+  if (isMultiCpmm(contract) && !answer)
+    throw new Error(
+      'getSaleResult: answer must be defined for multi-choice cpmm contracts'
+    )
 
   const initialProb = answer
     ? answer.prob
@@ -284,7 +289,7 @@ export const getSaleResult = (
   const initialCpmmState = answer
     ? {
         pool: { YES: answer.poolYes, NO: answer.poolNo },
-        p: 0.5,
+        p: answer.p,
         collectedFees: contract.collectedFees,
       }
     : {

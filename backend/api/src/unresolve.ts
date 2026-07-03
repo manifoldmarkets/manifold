@@ -3,7 +3,11 @@ import { onlyUsersWhoCanPerformAction } from 'api/helpers/rate-limit'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
-import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
+import {
+  Contract,
+  MINUTES_ALLOWED_TO_UNRESOLVE,
+  isMultiCpmm,
+} from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { convertAnswer } from 'common/supabase/contracts'
 import { convertTxn } from 'common/supabase/txns'
@@ -112,9 +116,12 @@ const verifyUserCanUnresolve = async (
   }
 
   let resolutionTime: number
+  // Whole-market-only unresolve for binary and LINKED multi — the mirror of the routing gate
+  // in resolve-market.ts. If cpmm-multi-2 per-answer NO resolution of linked answers ships
+  // (reserved — see the CPMMMulti doc comment in common/src/contract.ts), this relaxes too.
   if (
     mechanism === 'cpmm-1' ||
-    (mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne)
+    (isMultiCpmm(contract) && contract.shouldAnswersSumToOne)
   ) {
     if (answerId !== undefined) {
       throw new APIError(
@@ -129,7 +136,7 @@ const verifyUserCanUnresolve = async (
   } else {
     // Is independent multi.
     assert(
-      mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne,
+      isMultiCpmm(contract) && !contract.shouldAnswersSumToOne,
       'Invalid contract mechanism'
     )
 
@@ -327,7 +334,7 @@ const undoResolution = async (
     }))
     await bulkUpdateContractMetrics(updateMetrics, pg)
   }
-  if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
+  if (isMultiCpmm(contract) && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract, restore subsidyPool
     const newAnswers = await pg.map(
       `

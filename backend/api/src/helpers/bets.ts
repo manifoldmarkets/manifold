@@ -5,7 +5,7 @@ import { APIError } from 'common/api/utils'
 import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
 import { LimitBet, maker } from 'common/bet'
 import { MarginalBet } from 'common/calculate-metrics'
-import { Contract, MarketContract } from 'common/contract'
+import { Contract, MarketContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { getUniqueBettorBonusAmount } from 'common/economy'
 import {
@@ -60,6 +60,11 @@ type BetDataBody = {
 // lockContractAndGetBetData (in-transaction locked re-read) so the two paths
 // can't drift. The fragments assume the query is formatted with
 // [uid, contractId, answerIds, outcome] bound to $1..$4.
+// NOTE: `isSumsToOne` makes both answer-load queries below fetch ALL of a linked contract's
+// answers, including resolved ones — safe today because linked answers cannot be individually
+// resolved. If cpmm-multi-2 early per-answer NO resolution ships (reserved; see the CPMMMulti
+// doc comment in common/src/contract.ts), the sum-to-one arb must receive only the unresolved
+// subset — these loads are the natural filter site.
 const getLimitOrderQueryFragments = (body: BetDataBody) => {
   const answerIds =
     'answerIds' in body
@@ -219,7 +224,7 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
 
-  if (contract.mechanism === 'cpmm-multi-1')
+  if (isMultiCpmm(contract))
     contract.answers = sortBy(
       uniqBy([...answers, ...contract.answers], 'id'),
       'index'
@@ -321,7 +326,10 @@ export const lockContractAndGetBetData = async (
   const results = await pgTrans.multi(queries)
   const contract = convertContract(results[0][0]) as MarketContract
   const answers = results[1].map(convertAnswer)
-  if (contract.mechanism === 'cpmm-multi-1')
+  // isMultiCpmm, matching the pre-transaction read above — the in-transaction locked
+  // re-read must merge the fresh SQL answers for BOTH multi mechanisms, or a
+  // cpmm-multi-2 bet executes against the stale denormalized blob answers.
+  if (isMultiCpmm(contract))
     contract.answers = sortBy(
       uniqBy([...answers, ...contract.answers], 'id'),
       'index'
@@ -367,10 +375,10 @@ export const getUserBalancesAndMetrics = async (
   answerId?: string
 ) => {
   const startTime = Date.now()
-  const { id: contractId, mechanism } = contract
+  const { id: contractId } = contract
   // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
   const sumsToOne =
-    mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const results = await pgTrans.multi(
     `
       SELECT balance, id FROM users WHERE id = ANY($1);

@@ -1,6 +1,10 @@
 import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
-import { Contract, CreateableOutcomeType } from 'common/contract'
+import {
+  Contract,
+  CPMM_MULTI_2_CREATION_ENABLED,
+  CreateableOutcomeType,
+} from 'common/contract'
 import { MarketDraft } from 'common/drafts'
 import { BOOST_COST_MANA, FREE_MARKET_USER_ID, getAnte } from 'common/economy'
 import { User } from 'common/user'
@@ -80,6 +84,8 @@ export function NewContractPanel(props: {
     liquidityTier: 100,
     shouldAnswersSumToOne: true,
     addAnswersMode: 'DISABLED',
+    useCustomInitialProbs: false,
+    initialProbs: [],
     probability: 50,
     min: undefined,
     max: undefined,
@@ -109,6 +115,8 @@ export function NewContractPanel(props: {
     liquidityTier: 100, // Default to tier 0 (100 mana)
     shouldAnswersSumToOne: params?.shouldAnswersSumToOne ?? true,
     addAnswersMode: params?.addAnswersMode || 'DISABLED',
+    useCustomInitialProbs: (params?.initialProbs?.length ?? 0) > 0,
+    initialProbs: params?.initialProbs ?? [],
     probability: 50,
     min: params?.min,
     max: params?.max,
@@ -923,9 +931,34 @@ export function NewContractPanel(props: {
       if (formState.outcomeType === 'BINARY') {
         payload.initialProb = formState.probability || 50
       } else if (formState.outcomeType === 'MULTIPLE_CHOICE') {
-        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
+        // Keep each kept answer's ORIGINAL row index: initialProbs is row-aligned with
+        // the unfiltered editor rows, so filtering blank middle rows and then indexing
+        // probs by filtered position would silently shift every later answer's prob.
+        const mcAnswerRows = formState.answers
+          .map((text, originalIndex) => ({ text, originalIndex }))
+          .filter(({ text }) => text.trim().length > 0)
+        const mcAnswers = mcAnswerRows.map(({ text }) => text)
+        payload.answers = mcAnswers
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = formState.addAnswersMode
+        // cpmm-multi-2: ship per-answer initial probs (raw percentages). The
+        // backend normalizes Σ=1 for sum-to-one ("Multiple Choice") and uses
+        // each as an absolute prob for independent ("Set") markets. Missing
+        // entries default to an equal share (sum-to-one) or 50% (Set).
+        if (
+          CPMM_MULTI_2_CREATION_ENABLED &&
+          formState.useCustomInitialProbs &&
+          formState.addAnswersMode === 'DISABLED' &&
+          mcAnswers.length >= 2
+        ) {
+          const defaultPct = formState.shouldAnswersSumToOne
+            ? 100 / mcAnswers.length
+            : 50
+          payload.initialProbs = mcAnswerRows.map(
+            ({ originalIndex }) =>
+              formState.initialProbs?.[originalIndex] ?? defaultPct
+          )
+        }
       } else if (formState.outcomeType === 'POLL') {
         const pollAnswers = formState.answers.filter((a) => a.trim().length > 0)
         // Add "See results" option if enabled
@@ -1197,6 +1230,15 @@ export function NewContractPanel(props: {
                 }
               }
             }}
+            useCustomInitialProbs={formState.useCustomInitialProbs}
+            initialProbs={formState.initialProbs}
+            onToggleUseCustomInitialProbs={() =>
+              updateField(
+                'useCustomInitialProbs',
+                !formState.useCustomInitialProbs
+              )
+            }
+            onEditInitialProbs={(probs) => updateField('initialProbs', probs)}
             onToggleShouldAnswersSumToOne={() => {
               const newValue = !formState.shouldAnswersSumToOne
               updateField('shouldAnswersSumToOne', newValue)

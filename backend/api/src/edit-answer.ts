@@ -1,5 +1,6 @@
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { isUserBanned } from 'common/ban-utils'
+import { isMultiCpmm } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { HOUR_MS } from 'common/util/time'
@@ -38,7 +39,7 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
 
-  if (contract.mechanism !== 'cpmm-multi-1')
+  if (!isMultiCpmm(contract))
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
 
   const { closeTime } = contract
