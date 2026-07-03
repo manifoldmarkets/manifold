@@ -38,6 +38,7 @@ import {
   leftJoin,
   where,
 } from './supabase/sql-builder'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -242,7 +243,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     where('c.resolution_time is null'),
     where('(a is null or a.resolution_time is null)'),
     where(
-      `case when c.mechanism in ('cpmm-multi-1', 'cpmm-multi-2') then ucm.answer_id is not null else true end`
+      `case when c.mechanism in ${MULTI_CPMM_MECHANISMS_SQL} then ucm.answer_id is not null else true end`
     ),
   ]
   const metricsSql = renderSql(

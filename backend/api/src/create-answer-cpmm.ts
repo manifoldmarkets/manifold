@@ -1,5 +1,9 @@
 import { followContractInternal } from 'api/follow-contract'
-import { getUnfilledBetsAndUserBalances, updateMakers } from 'api/helpers/bets'
+import {
+  getUnfilledBets,
+  getUnfilledBetsAndUserBalances,
+  updateMakers,
+} from 'api/helpers/bets'
 import { Answer, getMaximumAnswers } from 'common/answer'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
@@ -7,6 +11,7 @@ import {
   addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmLiquidity,
   getCpmmProbability,
+  pForProbability,
 } from 'common/calculate-cpmm'
 import {
   CPMMMultiContract,
@@ -63,6 +68,8 @@ import { broadcastUpdatedMetrics } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { redeemShares } from './redeem-shares'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> =
   onlyUsersWhoCanPerformAction('createAnswer', async (props, auth) => {
     const { contractId, text } = props
@@ -514,14 +521,10 @@ async function createAnswerAndSumAnswersToOneV2(
   const targetProb = probOther / 2 // A and Other' each take half of Other's prob mass
   const a = answerCost / 2 // symmetric: split the added mana 50/50 (GP18e: the 1 free DOF)
 
-  // p that makes pool (Y,N) display probability q (GP6a).
-  const weightFor = (pool: { YES: number; NO: number }, q: number) =>
-    (q * pool.YES) / (q * pool.YES + (1 - q) * pool.NO)
-
   const newAnswerPool = { YES: Yo + a, NO: a }
   const newOtherPool = { YES: Yo + a, NO: a }
-  const newAnswerP = weightFor(newAnswerPool, targetProb)
-  const newOtherP = weightFor(newOtherPool, targetProb)
+  const newAnswerP = pForProbability(newAnswerPool, targetProb)
+  const newOtherP = pForProbability(newOtherPool, targetProb)
 
   const n = answers.length
   newAnswer = {
@@ -579,14 +582,13 @@ async function createAnswerAndSumAnswersToOneV2(
     await bulkInsertBets(pgTrans, poolNoBets, metrics)
   }
 
-  // Cancel Other's resting limit orders (priced at the old probability).
-  const { unfilledBets } = await getUnfilledBetsAndUserBalances(
+  // Cancel Other's resting limit orders (priced at the old probability). Fetch just
+  // that answer's unfilled bets — the v2 split doesn't move any listed price, so the
+  // whole-contract balances/metrics load the v1 path needs is pure overhead here.
+  const ordersToCancel = await getUnfilledBets(
     pgTrans,
-    contract,
-    user.id
-  )
-  const ordersToCancel = unfilledBets.filter(
-    (b) => b.answerId === otherAnswer.id
+    contract.id,
+    otherAnswer.id
   )
   await cancelLimitOrders(pgTrans, ordersToCancel)
 }

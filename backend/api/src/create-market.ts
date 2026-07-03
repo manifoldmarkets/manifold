@@ -76,6 +76,8 @@ import {
 import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(

@@ -16,6 +16,8 @@ import {
 import { Answer } from './answer'
 import { MarketContract, MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { addObjects } from 'common/util/object'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
 export const CPMM_ARBITRAGE_ERROR_PREFIX =
   'calculateAmountToBuySharesFixedP only works for p = 0.5, got '
 export type CpmmState = {
@@ -216,17 +218,11 @@ export function calculateCpmmAmountToBuySharesFixedP(
     low = -otherPool * (1 - 1e-9)
     high = 0
   }
-  for (let i = 0; i < 50; i++) {
-    const mid = (low + high) / 2
-    if (mid === low || mid === high) break
-    const sharesForMid = calculateCpmmShares(state.pool, state.p, mid, outcome)
-    if (sharesForMid < shares) {
-      low = mid
-    } else {
-      high = mid
-    }
-  }
-  return (low + high) / 2
+  // calculateCpmmShares is monotone increasing in the amount, so the signed shares
+  // error is a monotone comparator (binarySearch also fail-fasts on NaN).
+  return binarySearch(low, high, (mid) =>
+    calculateCpmmShares(state.pool, state.p, mid, outcome) - shares
+  )
 }
 
 export const computeFills = (
@@ -878,7 +874,7 @@ export function cpmmMulti2SumToOnePools(
   return q.map((qi, i) => {
     const poolNo = N[i]
     const poolYes = poolNo + D
-    const p = (qi * poolYes) / (qi * poolYes + (1 - qi) * poolNo)
+    const p = pForProbability({ YES: poolYes, NO: poolNo }, qi)
     return { poolYes, poolNo, p, prob: qi }
   })
 }
@@ -892,6 +888,18 @@ export function cpmmMulti2SumToOnePools(
 // sanity directly (no duplicated algebra to drift). The small margin keeps p (and via
 // re-pricing, reserves) representably far from {0,1} — float64 underflows exact-boundary
 // states (GP19b caveat).
+// The p that makes pool (Y, N) display probability q — the GP6a weight
+// p(q) = qY / (qY + (1 - q)N), the inverse of getCpmmProbability in p. Used by v2
+// creation, the whole-market add re-price, and the "Other" split. If p ever needs
+// clamping away from {0,1} (float64 representability, GP19b caveat), this is the
+// single home for it.
+export function pForProbability(
+  pool: { YES: number; NO: number },
+  q: number
+) {
+  return (q * pool.YES) / (q * pool.YES + (1 - q) * pool.NO)
+}
+
 const CPMM_MULTI_2_SANITY_EPS = 1e-9
 const isSanePool = (x: { poolYes: number; poolNo: number; p: number }) =>
   x.poolYes > 0 &&
@@ -954,8 +962,7 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
       NO: pool.NO + delta[i].poolNo,
     }
     // Re-price p so prob(newPool, newP) == prob (unique; same form as creation's p).
-    const newP =
-      (prob * newPool.YES) / (prob * newPool.YES + (1 - prob) * newPool.NO)
+    const newP = pForProbability(newPool, prob)
     const liquidity =
       getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
     result[id] = { pool: newPool, p: newP, liquidity }

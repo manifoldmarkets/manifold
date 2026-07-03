@@ -27,6 +27,8 @@ import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
+
 export const drizzleLiquidity = async () => {
   const pg = createSupabaseDirectClient()
 
@@ -180,8 +182,14 @@ const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
     // into both reserves, float p to hold its probability — no discarded shares, prob preserved).
     // cpmm-multi-1 stays on the frozen lossy fixed-p add (which pins p = 0.5 and clobbers prob to
     // N/(Y+N)). Drizzle only deepens — it never converts (that's the explicit user addLiquidity).
-    const contract = await getContract(tx, answer.contractId)
-    const isV2 = contract?.mechanism === 'cpmm-multi-2'
+    // Read just the mechanism column, but INSIDE the tx (a v1->v2 conversion can flip it; a
+    // stale pre-job read could apply the lossy v1 add to a converted market) — the win over
+    // getContract is skipping the whole data-blob fetch+convert once per subsidized answer.
+    const row = await tx.oneOrNone<{ mechanism: string }>(
+      `select mechanism from contracts where id = $1`,
+      [answer.contractId]
+    )
+    const isV2 = row?.mechanism === 'cpmm-multi-2'
 
     const { newPool, newP } = isV2
       ? addCpmmLiquidity(pool, answer.p, amount)

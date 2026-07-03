@@ -11,10 +11,11 @@
 // basket leak (calc-layer); it would have caught it (self-verified below).
 //
 // Scenario shapes are drawn from the pairwise covering array
-// (tasks/cpmm_multi_2/covering-array.txt). This file covers the rows whose ops are calc-layer
-// (create, single/multibet buy, whole-market add-liquidity, resolve). DEFERRED to the next
-// increment / the instance harness: trade=sell, limits!=none, liq_target=single_outcome
-// (per-answer addLiquidity not yet built for v2).
+// (tasks/cpmm_multi_2/covering-array.txt). Coverage now spans the calc layer end to end:
+// create (sum-to-one + independent Set), single/multibet buy, resting limit makers, sells
+// (partial / sell-all round-trip), whole-market AND per-answer add-liquidity, resolve.
+// Remaining gaps live in the instance harness (validate_lifecycle.py), not here: real
+// API/DB plumbing, drizzle scheduling, and the v1->v2 conversion lifecycle.
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import { LimitBet } from './bet'
@@ -25,6 +26,7 @@ import {
   calculateCpmmMultiSumsToOneSale,
   calculateCpmmPurchase,
   calculateCpmmSale,
+  cpmmMulti2SumToOnePools,
   getCpmmProbability,
 } from './calculate-cpmm'
 import {
@@ -40,27 +42,9 @@ import {
 import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
 
-// --- creation pools (replicated from new-contract.ts so the test is self-contained) --------
-function sumToOnePools(q: number[], ante: number) {
-  const n = q.length
-  if (n < 2) return q.map((qi) => ({ poolYes: ante, poolNo: ante, p: qi }))
-  const sqrtC = q.map((qi) => Math.sqrt(qi * (1 - qi)))
-  const meanSqrtC = sqrtC.reduce((s, x) => s + x, 0) / n
-  const D0 = (ante * (n - 2)) / (2 * (n - 1))
-  const Wbar = (ante * n) / (4 * (n - 1))
-  const N = q.map((qi, i) => {
-    const Wi = (Wbar * sqrtC[i]) / meanSqrtC
-    const b = D0 - Wi
-    return (-b + Math.sqrt(b * b + 4 * Wi * qi * D0)) / 2
-  })
-  const D = ante - N.reduce((s, x) => s + x, 0)
-  return q.map((qi, i) => {
-    const poolNo = N[i]
-    const poolYes = poolNo + D
-    const p = (qi * poolYes) / (qi * poolYes + (1 - qi) * poolNo)
-    return { poolYes, poolNo, p }
-  })
-}
+// --- creation pools: the REAL production construction (was a local replica; a drifted
+// copy would validate the copy, not the shipping code) ------------------------------
+const sumToOnePools = cpmmMulti2SumToOnePools
 
 function setPools(q: number[], ante: number) {
   const L = ante / q.length

@@ -117,6 +117,8 @@ export function calculateCpmmMultiArbitrageYesBets(
       sumBy(
         result.newBetResults.map((r) => r.takers),
         'amount'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
       ),
       0
     )
@@ -512,7 +514,7 @@ function calculateCpmmMultiArbitrageBetsYesV2(
       { g, betAmount, n, m }
     )
   }
-  const { yesBetResults, noBetResults, eta, net } = solved
+  const { yesBetResults, noBetResults, eta } = solved
 
   // Redemption fills (mirrors the single-answer path): the NO-in-others legs are internal
   // arbitrage that nets to zero mana/shares; the redemption credit flows to the basket YES legs.
@@ -546,7 +548,6 @@ function calculateCpmmMultiArbitrageBetsYesV2(
       fees: noFees,
     })
   }
-  void net
 
   const updatedAnswers = initialAnswers.map((answer) => {
     const r =

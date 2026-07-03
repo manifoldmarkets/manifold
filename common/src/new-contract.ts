@@ -36,6 +36,8 @@ export function getNewContract(
   props: Pick<
     Contract,
     | 'id'
+
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
     | 'slug'
     | 'question'
     | 'description'
@@ -463,6 +465,25 @@ function createAnswers(
 ) {
   const { colors, shortTexts, imageUrls, midpoints, initialProbs } = options
   const ids = answers.map(() => randomString())
+  const now = Date.now()
+
+  // Mechanism-independent Answer fields; each branch below supplies only the
+  // pool shape (poolYes/poolNo/p/prob/totalLiquidity) and isOther.
+  const baseAnswer = (i: number, text: string) => ({
+    id: ids[i],
+    index: i,
+    contractId,
+    userId,
+    text,
+    createdTime: now,
+    color: colors?.[i],
+    shortText: shortTexts?.[i],
+    imageUrl: imageUrls?.[i],
+    subsidyPool: 0,
+    probChanges: { day: 0, week: 0, month: 0 },
+    midpoint: midpoints?.[i],
+    volume: 0,
+  })
 
   // cpmm-multi-2: per-answer initial probs, dialed to target via each answer's
   // own `p`. Two regimes (see tasks/cpmm_multi_2/creation-liquidity-findings.md,
@@ -482,7 +503,6 @@ function createAnswers(
   if (initialProbs && initialProbs.length > 0) {
     const n = answers.length
     const sum = initialProbs.reduce((s, x) => s + x, 0)
-    const now = Date.now()
     const normalized = initialProbs.map((x) => x / sum)
     // GP19a backstop (API layer already 400s): the √variance construction is not
     // total; never persist an insane pool.
@@ -501,15 +521,7 @@ function createAnswers(
     return answers.map((text, i) => {
       const { poolYes, poolNo, p, prob } = pools[i]
       const answer: Answer = removeUndefinedProps({
-        id: ids[i],
-        index: i,
-        contractId,
-        userId,
-        text,
-        createdTime: now,
-        color: colors?.[i],
-        shortText: shortTexts?.[i],
-        imageUrl: imageUrls?.[i],
+        ...baseAnswer(i, text),
         poolYes,
         poolNo,
         p,
@@ -518,11 +530,7 @@ function createAnswers(
         // p=0.5 special case √(Y·N), which understates depth on the √variance asymmetric v2 pools
         // (Y_i≠N_i, p_i≠0.5). Balanced Set pools (Y=N) give the same value either way.
         totalLiquidity: getCpmmLiquidity({ YES: poolYes, NO: poolNo }, p),
-        subsidyPool: 0,
         isOther: false,
-        probChanges: { day: 0, week: 0, month: 0 },
-        midpoint: midpoints?.[i],
-        volume: 0,
       })
       return answer
     })
@@ -550,34 +558,18 @@ function createAnswers(
     // poolNo = ante * (prob ** 2 / (1 - prob))
   }
 
-  const now = Date.now()
-
   return answers.map((text, i) => {
-    const id = ids[i]
     const answer: Answer = removeUndefinedProps({
-      id,
-      index: i,
-      contractId,
-      userId,
-      text,
-      createdTime: now,
-      color: colors?.[i],
-      shortText: shortTexts?.[i],
-      imageUrl: imageUrls?.[i],
-
+      ...baseAnswer(i, text),
       poolYes,
       poolNo,
       p: 0.5, // cpmm-multi-1 / cpmm-multi-2-at-uniform-init; per-answer p set on v2 creation (PR2c)
       prob,
       totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
-      subsidyPool: 0,
       isOther:
         shouldAnswersSumToOne &&
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
-      probChanges: { day: 0, week: 0, month: 0 },
-      midpoint: midpoints?.[i],
-      volume: 0,
     })
     return answer
   })

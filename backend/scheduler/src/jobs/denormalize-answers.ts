@@ -7,6 +7,7 @@ import {
 import { getAnswersForContracts } from 'common/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 export async function denormalizeAnswers() {
   const pg = createSupabaseDirectClient()
@@ -17,7 +18,7 @@ export async function denormalizeAnswers() {
     `
         select id from contracts
         where last_updated_time > $1
-        and mechanism in ('cpmm-multi-1', 'cpmm-multi-2')
+        and mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
         `,
     [oneMinuteAgo.toISOString()],
     (r) => r.id as string

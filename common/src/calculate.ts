@@ -407,7 +407,7 @@ export const getContractBetMetricsPerAnswerWithoutLoans = (
         const passedAnswer = !!answer
         if (isMultiCpmm(contract) && !passedAnswer) {
           console.log(
-            `answer with id ${bets[0].answerId} not found, but is required for cpmm-multi-1 contract: ${contract.id}`
+            `answer with id ${bets[0].answerId} not found, but is required for multi-choice cpmm contract: ${contract.id}`
           )
         } else {
           periodMetrics = Object.fromEntries(

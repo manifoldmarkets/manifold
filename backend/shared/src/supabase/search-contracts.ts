@@ -26,6 +26,7 @@ import {
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const DEFAULT_THRESHOLD = 1000
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
@@ -396,11 +397,11 @@ function getSearchContractWhereSQL(args: {
   const liquidityFilter = liquidity
     ? `(
     CASE
-        WHEN mechanism in ('cpmm-multi-1', 'cpmm-multi-2') AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
+        WHEN mechanism in ${MULTI_CPMM_MECHANISMS_SQL} AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
         THEN (coalesce((contracts.data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(contracts.data->'answers'))
         ELSE coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
     END
-  ) >= case when mechanism in ('cpmm-multi-1', 'cpmm-multi-2') then ${answerLiquidity} else ${liquidity} end`
+  ) >= case when mechanism in ${MULTI_CPMM_MECHANISMS_SQL} then ${answerLiquidity} else ${liquidity} end`
     : ''
   const deletedFilter = `deleted = false`
 

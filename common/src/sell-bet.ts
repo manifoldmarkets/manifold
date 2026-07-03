@@ -36,7 +36,9 @@ export const getCpmmSellBetInfo = (
   answer?: Answer
 ) => {
   if (isMultiCpmm(contract) && !answer) {
-    throw new Error('getCpmmSellBetInfo: answer required for cpmm-multi-1')
+    throw new Error(
+      'getCpmmSellBetInfo: answer required for multi-choice cpmm contracts'
+    )
   }
 
   const startCpmmState =
@@ -277,7 +279,9 @@ export const getSaleResult = (
   answer?: Answer
 ) => {
   if (isMultiCpmm(contract) && !answer)
-    throw new Error('getSaleResult: answer must be defined for cpmm-multi-1')
+    throw new Error(
+      'getSaleResult: answer must be defined for multi-choice cpmm contracts'
+    )
 
   const initialProb = answer
     ? answer.prob
