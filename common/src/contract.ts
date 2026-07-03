@@ -185,6 +185,18 @@ export const NO_CLOSE_TIME_TYPES: OutcomeType[] = NON_BETTING_OUTCOMES.concat([
  * Implemented as a set of cpmm-1 binary contracts, one for each answer.
  * The mechanism is stored among the contract's answers, which each
  * reference this contract id.
+ *
+ * Reserved cpmm-multi-2 semantics (declared now, not yet reachable): a
+ * shouldAnswersSumToOne=true answer MAY in the future be individually
+ * resolved NO while the market stays open (that answer's
+ * `Answer.resolution` set, siblings still unresolved), with probabilities
+ * summing to 1 over the *unresolved* answers. No code path creates this
+ * state today — resolution of linked markets remains whole-market-only —
+ * but integrators adding cpmm-multi-2 support should not assume
+ * "shouldAnswersSumToOne ⇒ answers are never individually resolved".
+ * (`Answer.resolution` already exists and is populated today for
+ * independent markets.) cpmm-multi-1 keeps the whole-market-only
+ * guarantee unchanged.
  */
 export type CPMMMulti = {
   mechanism: 'cpmm-multi-1' | 'cpmm-multi-2'
