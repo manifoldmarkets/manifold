@@ -45,7 +45,8 @@ export function SportsVersusBetDialog({
     let cancelled = false
     getContract(db, contractId)
       .then(async (c) => {
-        if (cancelled || !c || c.mechanism !== 'cpmm-multi-1') return
+        // isMultiCpmm: a converted cpmm-multi-2 game would otherwise render a silent null.
+        if (cancelled || !c || !isMultiCpmm(c)) return
         const answerMap = await getAnswersForContracts(db, [c.id])
         if (cancelled) return
         const multi = c as CPMMMultiContract

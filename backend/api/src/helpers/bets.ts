@@ -326,7 +326,10 @@ export const lockContractAndGetBetData = async (
   const results = await pgTrans.multi(queries)
   const contract = convertContract(results[0][0]) as MarketContract
   const answers = results[1].map(convertAnswer)
-  if (contract.mechanism === 'cpmm-multi-1')
+  // isMultiCpmm, matching the pre-transaction read above — the in-transaction locked
+  // re-read must merge the fresh SQL answers for BOTH multi mechanisms, or a
+  // cpmm-multi-2 bet executes against the stale denormalized blob answers.
+  if (isMultiCpmm(contract))
     contract.answers = sortBy(
       uniqBy([...answers, ...contract.answers], 'id'),
       'index'
