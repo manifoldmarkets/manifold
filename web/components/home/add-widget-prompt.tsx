@@ -15,24 +15,33 @@ const CARD =
   'relative overflow-hidden select-none rounded-2xl bg-gradient-to-br ' +
   'from-orange-400 to-orange-600 p-2.5 text-white shadow-md'
 
-// Faint Manifold crane in the bottom-right, matching the real widget's
-// watermark (the native Shell draws the crane there at low opacity).
-function CraneMark() {
+// Mani, the widget mascot: faceted crane head peeking from the bottom-right
+// corner (matches ManiView / mani-svg.ts on the real widgets).
+function MiniMani({ className }: { className?: string }) {
   return (
-    <img
-      src="/logo-white.svg"
-      alt=""
+    <svg
+      viewBox="0 0 110 126"
       aria-hidden
-      className="pointer-events-none absolute bottom-1 right-1 h-14 w-14 opacity-25"
-    />
+      className={`pointer-events-none absolute -bottom-1 -right-1 drop-shadow ${
+        className ?? 'h-14 w-12'
+      }`}
+    >
+      <polygon points="100,140 114,140 104,68 94,70" fill="#4F3FD6" />
+      <polygon points="78,140 100,140 94,70 80,74" fill="#6C5CE7" />
+      <polygon points="50,36 92,30 102,66 66,74" fill="#8B7BF7" />
+      <polygon points="66,74 102,66 94,70 80,74" fill="#5B4BE0" />
+      <polygon points="54,48 64,70 8,62" fill="#3B2FB8" />
+      <circle cx="78" cy="50" r="7" fill="#fff" />
+      <circle cx="75" cy="51" r="3.2" fill="#1c1633" />
+    </svg>
   )
 }
 
-// 2x2: compact streak-only widget (flame + streak, like the small layout).
+// 2x2: compact streak widget — streak top-left, Mani bottom-right.
 function PreviewSmall() {
   return (
     <div className={CARD} style={{ width: 96, height: 96 }}>
-      <CraneMark />
+      <MiniMani />
       <div className="relative">
         <Row className="items-center gap-1">
           <span className="text-2xl leading-none drop-shadow">🔥</span>
@@ -46,12 +55,12 @@ function PreviewSmall() {
   )
 }
 
-// iOS medium: streak column | divider | quest checklist, mirroring the SwiftUI
-// medium's left/right split (Android's medium stacks quests full-width instead).
+// iOS medium: streak column | divider | quest checklist, with Mani in the
+// corner — mirrors the SwiftUI medium (Android stacks quests full-width).
 function PreviewMediumIOS() {
   return (
     <div className={CARD} style={{ width: 208, height: 96 }}>
-      <CraneMark />
+      <MiniMani className="h-12 w-10" />
       <Row className="relative h-full items-stretch gap-2">
         <Col className="justify-center">
           <Row className="items-center gap-1">
@@ -63,7 +72,7 @@ function PreviewMediumIOS() {
           </div>
         </Col>
         <div className="w-px shrink-0 bg-white/25" />
-        <Col className="min-w-0 flex-1 justify-center gap-1 text-[10px] font-semibold">
+        <Col className="min-w-0 flex-1 justify-start gap-1 pt-1 text-[10px] font-semibold">
           <Row className="items-center justify-between gap-1">
             <span className="truncate">✅ Share a market</span>
             <span className="opacity-90">+M5</span>
@@ -78,11 +87,11 @@ function PreviewMediumIOS() {
   )
 }
 
-// 2x3: taller widget that also shows the quest checklist above the streak.
+// 2x3: taller widget — quest checklist up top, streak below, Mani bottom-right.
 function PreviewTall() {
   return (
     <div className={CARD} style={{ width: 150 }}>
-      <CraneMark />
+      <MiniMani />
       <div className="relative">
         <Row className="items-center justify-between text-[10px] font-semibold">
           <span>✅ Share a market</span>

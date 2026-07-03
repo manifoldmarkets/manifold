@@ -403,12 +403,52 @@ private let maniGrey = ManiPalette(
 private let maniInk = rgb(42, 34, 88)   // brows/lids on the purple body
 private let maniPupil = rgb(28, 22, 51)
 
+// Where Mani sits on the quest-medium. The core streak/quest UI never moves —
+// Mani occupies the leftover space, and only the hook text shifts around him.
+// Rotates daily like the poses; the top-peek overrides everything in the red
+// tier (the last-hours "please bet" special).
+enum ManiPlacement {
+  case rightCorner // bottom-right of the quest column, side of the hook
+  case centerLeft  // at the divider, facing the streak column
+  case centerRight // at the divider, facing the quest list
+  case centerFront // at the divider, staring straight at you
+  case topPeek     // hanging down from the top edge next to the flame
+}
+
+func maniPlacement(state: StreakState, remaining: TimeInterval,
+                   streak: Int, day: Int) -> ManiPlacement {
+  if state == .pending && remaining <= 4 * 3600 { return .topPeek }
+  let slots: [ManiPlacement] = [.rightCorner, .centerLeft, .centerRight, .centerFront]
+  // Offset the roll so placement doesn't always pair with the same pose.
+  return slots[(day + streak + 3) % slots.count]
+}
+
+// How the crane is drawn: side profile (left = authored, right = mirrored),
+// front-facing (symmetric head, two eyes), or hanging from the top edge
+// (always the sweaty top-peek — it only appears in the red tier).
+enum ManiOrientation { case left, right, front, hangTop }
+
 struct ManiView: View {
   let pose: ManiPose
+  var orientation: ManiOrientation = .left
 
   var body: some View {
-    Canvas { ctx, size in
+    Canvas { rawCtx, size in
       let s = min(size.width / 120, size.height / 140)
+      // Shape drawing happens on a (possibly mirrored/flipped) copy; text
+      // accents always draw un-mirrored on rawCtx at mapped coordinates so
+      // glyphs never render backwards.
+      var ctx = rawCtx
+      switch orientation {
+      case .right:
+        ctx.translateBy(x: size.width, y: 0)
+        ctx.scaleBy(x: -1, y: 1)
+      case .hangTop:
+        ctx.translateBy(x: 0, y: size.height)
+        ctx.scaleBy(x: 1, y: -1)
+      case .left, .front:
+        break
+      }
       let pal: ManiPalette = {
         switch pose {
         case .icy, .shivering: return maniIce
@@ -446,18 +486,159 @@ struct ManiView: View {
       }
       func glyphText(_ str: String, _ x: Double, _ y: Double, _ fontSize: Double,
                      _ color: Color, bold: Bool = false) {
-        ctx.draw(Text(str)
-                   .font(.system(size: fontSize * s, weight: bold ? .heavy : .regular))
-                   .foregroundColor(color),
-                 at: pt(x, y))
+        // Always drawn on the untransformed context (mirrored text reads
+        // backwards); for the mirrored orientation, mirror the anchor instead.
+        let p = orientation == .right ? CGPoint(x: (120 - x) * s, y: y * s) : pt(x, y)
+        rawCtx.draw(Text(str)
+                      .font(.system(size: fontSize * s, weight: bold ? .heavy : .regular))
+                      .foregroundColor(color),
+                    at: p)
       }
 
-      // Body (shared): neck shade, neck, head, jaw, beak.
+      // Two symmetric eyes for the front-facing head (centres 45/75, y 45).
+      func frontEyes(_ r: Double = 5.5, pupilDX: Double = 0, pupilR: Double = 2.6) {
+        for ex in [45.0, 75.0] {
+          circle(ex, 45, r, .white)
+          if pupilR > 0 { circle(ex + pupilDX, 46, pupilR, maniPupil) }
+        }
+      }
+
+      // Face for the front-facing orientation — every pose, symmetric.
+      func frontFace() {
+        switch pose {
+        case .happyClassic, .party:
+          quad(37, 46, 45, 38, 53, 46, 4, .white)
+          quad(67, 46, 75, 38, 83, 46, 4, .white)
+          if pose == .party {
+            poly([(60, 6), (74, 25), (45, 28)], rgb(255, 92, 138))
+            circle(60, 6, 3.5, .white)
+            circle(34, 18, 2, rgb(255, 210, 77))
+            circle(90, 14, 2, rgb(143, 220, 255))
+            circle(84, 28, 2, rgb(255, 179, 199))
+          }
+        case .smug:
+          for ex in [45.0, 75.0] {
+            var half = Path()
+            half.move(to: pt(ex - 6, 45))
+            half.addArc(center: pt(ex, 45), radius: 6 * s,
+                        startAngle: .degrees(180), endAngle: .degrees(0),
+                        clockwise: true)
+            half.closeSubpath()
+            ctx.fill(half, with: .color(.white))
+            circle(ex, 46.5, 2.2, maniPupil)
+          }
+          line(38, 41, 52, 41, 3, maniInk)
+          line(68, 41, 82, 41, 3, maniInk)
+        case .starstruck:
+          for ex in [45.0, 75.0] {
+            poly([(ex, 38), (ex + 2.5, 43), (ex + 8, 45), (ex + 2.5, 47),
+                  (ex, 53), (ex - 2.5, 47), (ex - 8, 45), (ex - 2.5, 43)],
+                 rgb(255, 210, 77))
+          }
+          glyphText("✦", 96, 20, 12, rgb(255, 232, 145))
+        case .fireEye:
+          frontEyes(7, pupilR: 0)
+          for ex in [45.0, 75.0] {
+            var flame = Path()
+            flame.move(to: pt(ex, 39.5))
+            flame.addQuadCurve(to: pt(ex, 51), control: pt(ex - 4.5, 46))
+            flame.addQuadCurve(to: pt(ex, 39.5), control: pt(ex + 4.5, 46))
+            ctx.fill(flame, with: .color(rgb(255, 138, 61)))
+          }
+          quad(36, 34, 45, 28, 54, 33, 3.5, maniInk)
+          quad(66, 33, 75, 28, 84, 34, 3.5, maniInk)
+        case .watching:
+          frontEyes()
+        case .sideEye:
+          frontEyes(pupilDX: -2.8)
+        case .quizzical:
+          frontEyes()
+          quad(36, 34, 45, 28, 54, 34, 3.5, maniInk)
+        case .sweating:
+          frontEyes(5, pupilR: 2.4)
+          line(38, 36, 53, 39, 3.5, maniInk)
+          line(67, 39, 82, 36, 3.5, maniInk)
+          var drop = Path()
+          drop.move(to: pt(93, 30))
+          drop.addQuadCurve(to: pt(93, 42), control: pt(99, 38))
+          drop.addQuadCurve(to: pt(93, 30), control: pt(87, 38))
+          ctx.fill(drop, with: .color(rgb(159, 214, 255)))
+        case .alarmed:
+          frontEyes(7.5, pupilR: 2)
+          glyphText("!", 98, 24, 15, .white, bold: true)
+        case .madClassic:
+          frontEyes(5.5, pupilR: 2.6)
+          line(37, 35, 53, 41, 4, maniInk)
+          line(83, 35, 67, 41, 4, maniInk)
+        case .fuming:
+          line(39, 46, 52, 44, 4, .white)
+          line(68, 44, 81, 46, 4, .white)
+          line(37, 35, 53, 41, 4, maniInk)
+          line(83, 35, 67, 41, 4, maniInk)
+          glyphText("💢", 96, 24, 14, .white)
+        case .disappointed:
+          frontEyes(5.5, pupilR: 2.4)
+          line(39, 40, 52, 40, 3.5, maniInk)
+          line(68, 40, 81, 40, 3.5, maniInk)
+        case .icy:
+          frontEyes(5, pupilR: 2.4)
+          glyphText("❄", 97, 20, 14, rgb(223, 242, 255))
+        case .shivering:
+          frontEyes(5, pupilR: 2.4)
+          quad(24, 40, 19, 45, 24, 50, 2.5, rgb(223, 242, 255))
+          quad(96, 40, 101, 45, 96, 50, 2.5, rgb(223, 242, 255))
+        case .asleep:
+          line(39, 45, 51, 45, 3.5, .white)
+          line(69, 45, 81, 45, 3.5, .white)
+          glyphText("z", 95, 26, 12, rgb(207, 207, 218), bold: true)
+          glyphText("z", 103, 17, 9, rgb(181, 181, 194), bold: true)
+        }
+      }
+
+      // Fixed sweaty face for the hanging top-peek (red tier only), drawn on
+      // the untransformed context so it reads upright on the flipped head.
+      func hangFace() {
+        rawCtx.fill(Path(ellipseIn: CGRect(x: (78 - 6) * s, y: (88 - 6) * s,
+                                           width: 12 * s, height: 12 * s)),
+                    with: .color(.white))
+        rawCtx.fill(Path(ellipseIn: CGRect(x: (76 - 2.8) * s, y: (90 - 2.8) * s,
+                                           width: 5.6 * s, height: 5.6 * s)),
+                    with: .color(maniPupil))
+        var brow = Path()
+        brow.move(to: pt(66, 102))
+        brow.addLine(to: pt(90, 98))
+        rawCtx.stroke(brow, with: .color(maniInk),
+                      style: StrokeStyle(lineWidth: 4 * s, lineCap: .round))
+        var drop = Path()
+        drop.move(to: pt(95, 106))
+        drop.addQuadCurve(to: pt(95, 118), control: pt(101, 114))
+        drop.addQuadCurve(to: pt(95, 106), control: pt(89, 114))
+        rawCtx.fill(drop, with: .color(rgb(159, 214, 255)))
+      }
+
+      if orientation == .front {
+        // Front-facing body: symmetric head, centred beak, two eyes.
+        poly([(44, 140), (76, 140), (72, 72), (48, 72)], pal.neck)
+        poly([(64, 140), (76, 140), (72, 72), (64, 73)], pal.neckShade)
+        poly([(34, 34), (86, 34), (92, 64), (60, 78), (28, 64)], pal.head)
+        poly([(28, 64), (60, 78), (92, 64), (88, 70), (60, 84), (32, 70)], pal.jaw)
+        poly([(52, 50), (68, 50), (60, 68)], pal.beak)
+        frontFace()
+        return
+      }
+
+      // Side-profile body (mirrored for .right, flipped for .hangTop): neck
+      // shade, neck, head, jaw, beak.
       poly([(100, 140), (114, 140), (104, 68), (94, 70)], pal.neckShade)
       poly([(78, 140), (100, 140), (94, 70), (80, 74)], pal.neck)
       poly([(50, 36), (92, 30), (102, 66), (66, 74)], pal.head)
       poly([(66, 74), (102, 66), (94, 70), (80, 74)], pal.jaw)
       poly([(54, 48), (64, 70), (8, 62)], pal.beak)
+
+      if orientation == .hangTop {
+        hangFace()
+        return
+      }
 
       // Face per pose.
       switch pose {
@@ -584,16 +765,20 @@ struct StreakWidgetEntryView: View {
                 .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
             }
           case .systemMedium:
-            // Without quest rows the medium goes full mascot: a bigger Mani
-            // owns the right side (the quest checklist takes that spot once
-            // quest data is synced).
-            ZStack(alignment: .bottomTrailing) {
+            // Without quest rows the medium goes full mascot (big Mani owns
+            // the right side). With quests, the core UI never moves — Mani
+            // slots into the leftover space per `placement`.
+            ZStack {
               gradientFor(state: entry.state, streak: entry.streak)
               if entry.quests.isEmpty {
                 ManiView(pose: pose)
                   .frame(width: 132, height: 154)
+                  .frame(maxWidth: .infinity, maxHeight: .infinity,
+                         alignment: .bottomTrailing)
                   .offset(x: 10, y: 14)
                   .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+              } else {
+                mediumQuestMani
               }
             }
           default:
@@ -785,6 +970,41 @@ struct StreakWidgetEntryView: View {
     maniPose(state: entry.state, loggedIn: entry.loggedIn,
              remaining: entry.resetDate.timeIntervalSince(entry.date),
              streak: entry.streak, day: pacificDayOfYear(entry.date))
+  }
+
+  // Where Mani sits on the quest-medium today.
+  private var placement: ManiPlacement {
+    maniPlacement(state: entry.state,
+                  remaining: entry.resetDate.timeIntervalSince(entry.date),
+                  streak: entry.streak, day: pacificDayOfYear(entry.date))
+  }
+
+  // Mani on the quest-medium, drawn in the container background so he bleeds
+  // off the edges. Geometry constants assume the fixed layout: 92pt streak
+  // column + divider at ~124pt from the leading edge.
+  @ViewBuilder private var mediumQuestMani: some View {
+    switch placement {
+    case .rightCorner:
+      ManiView(pose: pose)
+        .frame(width: 88, height: 103)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .offset(x: 8, y: 14)
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+    case .centerLeft, .centerRight, .centerFront:
+      ManiView(pose: pose,
+               orientation: placement == .centerLeft ? .left
+                 : placement == .centerRight ? .right : .front)
+        .frame(width: 84, height: 98)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        .offset(x: 96, y: 14)
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+    case .topPeek:
+      ManiView(pose: pose, orientation: .hangTop)
+        .frame(width: 74, height: 86)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .offset(x: 48, y: -10)
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+    }
   }
 
   // The streak glyph on home families. Lit = 🔥, frozen = 🧊 (with a dark halo
@@ -1023,7 +1243,11 @@ struct StreakWidgetEntryView: View {
             questRow(q)
           }
           Spacer(minLength: 0)
+          // Only the hook text moves for Mani — never the quests or streak.
           bottomHookRow
+            .padding(.trailing, placement == .rightCorner ? 74 : 0)
+            .padding(.leading,
+                     [.centerLeft, .centerRight, .centerFront].contains(placement) ? 44 : 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       } else {
@@ -1034,14 +1258,12 @@ struct StreakWidgetEntryView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
   }
 
-  // Bigger logo + rotating daily hook (medium widget).
+  // Rotating daily hook (quest medium). The crane logo that used to sit here
+  // is gone — Mani lives somewhere on the widget every day and IS the brand.
   private var bottomHookRow: some View {
-    HStack(spacing: 9) {
-      logo(34)
-      Text(hookText(state: entry.state, date: entry.date))
-        .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
-        .lineLimit(2).minimumScaleFactor(0.75)
-    }
+    Text(hookText(state: entry.state, date: entry.date))
+      .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+      .lineLimit(2).minimumScaleFactor(0.75)
   }
 
   // Supporter-tier capsule ("PRO ×2") above the quest rewards: a metallic
