@@ -1,5 +1,6 @@
 import { Answer } from './answer'
 import {
+  cpmmMulti2SumToOneFeasible,
   cpmmMulti2SumToOnePools,
   getCpmmLiquidity,
   getMultiCpmmLiquidity,
@@ -482,11 +483,16 @@ function createAnswers(
     const n = answers.length
     const sum = initialProbs.reduce((s, x) => s + x, 0)
     const now = Date.now()
+    const normalized = initialProbs.map((x) => x / sum)
+    // GP19a backstop (API layer already 400s): the √variance construction is not
+    // total; never persist an insane pool.
+    if (shouldAnswersSumToOne && !cpmmMulti2SumToOneFeasible(normalized)) {
+      throw new Error(
+        'Infeasible sum-to-one initialProbs (GP19a): no sane pool realization exists.'
+      )
+    }
     const pools = shouldAnswersSumToOne
-      ? cpmmMulti2SumToOnePools(
-          initialProbs.map((x) => x / sum),
-          ante
-        )
+      ? cpmmMulti2SumToOnePools(normalized, ante)
       : initialProbs.map((x) => {
           const L = ante / n
           const prob = x / 100

@@ -874,6 +874,29 @@ export function cpmmMulti2SumToOnePools(
   })
 }
 
+// GP19a creation-feasibility guard. The √variance construction above is NOT total: for
+// skewed many-answer prob vectors (first possible at n = 21; e.g. n = 30 with a 0.90
+// dominant answer) the funding term D goes negative enough that some poolYes < 0 and
+// p ∉ (0,1). Exact characterization (GP19a, proofs/sanity_closure.py): sane ⟺
+// Σⱼ Nⱼ(q,1) − minᵢ Nᵢ(q,1) < 1. The construction is homogeneous degree-1 in ante, so
+// feasibility depends only on q — we test by constructing at ante = 1 and checking
+// sanity directly (no duplicated algebra to drift). The small margin keeps p (and via
+// re-pricing, reserves) representably far from {0,1} — float64 underflows exact-boundary
+// states (GP19b caveat).
+const CPMM_MULTI_2_SANITY_EPS = 1e-9
+const isSanePool = (x: { poolYes: number; poolNo: number; p: number }) =>
+  x.poolYes > 0 &&
+  x.poolNo > 0 &&
+  x.p > CPMM_MULTI_2_SANITY_EPS &&
+  x.p < 1 - CPMM_MULTI_2_SANITY_EPS
+
+export function cpmmMulti2SumToOneFeasible(q: number[]) {
+  return cpmmMulti2SumToOnePools(q, 1).every(isSanePool)
+}
+
+const isSanePoolYesNo = (pool: { YES: number; NO: number }, p: number) =>
+  isSanePool({ poolYes: pool.YES, poolNo: pool.NO, p })
+
 // cpmm-multi-2: lossless whole-market liquidity add — √variance MERGE rule (GP17).
 //
 // v1 (addCpmmMultiLiquidityAnswersSumToOne, above) pins p = 0.5 and DISCARDS shares to hold each
@@ -928,6 +951,29 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
       getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
     result[id] = { pool: newPool, p: newP, liquidity }
   })
+
+  // GP19c guard: a sane TRADED market can sit at creation-infeasible probs, where the
+  // √variance delta has dY_i < 0 on some answers and a large enough add drives a merged
+  // poolYes < 0 (p ∉ (0,1)) — the critical total is A*(state) = min_{i: dY_i<0}
+  // Y_i/|dY_i(q,1)|, and drizzle accumulates to the same bound (homogeneity — dripping
+  // does not evade it). Rather than cap or reject (drizzle must never brick), fall back
+  // to the unconditionally-sane allocation: split the amount equally as per-answer
+  // lossless adds (GP19e: floated p is the GP6a weight — sane and prob-preserving for
+  // ANY positive reserves; this is exactly the shipped per-answer addLiquidity op, so
+  // conservation is inherited). The √variance shape is an optimization, not an
+  // invariant; on the GP19a-feasible set the merge is unconditionally sane (A* = ∞) and
+  // this fallback never engages.
+  const merged = answerIds.map((id) => result[id])
+  if (!merged.every((x) => isSanePoolYesNo(x.pool, x.p))) {
+    const equalAmount = amount / answerIds.length
+    answerIds.forEach((id) => {
+      const { pool, p } = poolsByAnswer[id]
+      const { newPool, newP } = addCpmmLiquidity(pool, p, equalAmount)
+      const liquidity =
+        getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
+      result[id] = { pool: newPool, p: newP, liquidity }
+    })
+  }
   return result
 }
 

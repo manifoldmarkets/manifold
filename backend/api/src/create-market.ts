@@ -41,7 +41,8 @@ import { Row } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { camelCase, first } from 'lodash'
+import { camelCase, first, sum } from 'lodash'
+import { cpmmMulti2SumToOneFeasible } from 'common/calculate-cpmm'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -573,6 +574,20 @@ function validateMarketBody(body: Body) {
           400,
           'initialProbs must have exactly one probability per answer.'
         )
+      // GP19a feasibility: the sum-to-one √variance construction is not total — a
+      // skewed many-answer vector (possible from n = 21 up; e.g. 30 answers with a 90%
+      // favorite) has no sane pool realization (poolYes < 0, p ∉ (0,1)). Reject with a
+      // clear 400 here; the construction in new-contract.ts also throws as a backstop.
+      if (shouldAnswersSumToOne) {
+        const total = sum(initialProbs)
+        if (!cpmmMulti2SumToOneFeasible(initialProbs.map((x) => x / total)))
+          throw new APIError(
+            400,
+            'initialProbs are too extreme for this many answers: no valid sum-to-one ' +
+              'pool exists for this probability vector. Moderate the most extreme ' +
+              'probabilities (or use fewer answers) and try again.'
+          )
+      }
     }
     // Unfortunately this is a requirement because if we don't add an answer,
     // then the market creation cost will just be lost. If we just set totalLiquidity to 0,
