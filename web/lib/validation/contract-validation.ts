@@ -45,6 +45,17 @@ const MAX_DESCRIPTION_LENGTH = 16000
 const MIN_ANSWERS = 2
 const MIN_BOUNTY = 100
 
+// Midpoints are AI-generated after the answers; missing or non-finite entries
+// mean generation hasn't completed (or failed) for the current answer set.
+// Shared by the MULTI_NUMERIC and DATE cases — keep their semantics identical.
+const midpointsPending = (
+  midpoints: number[] | undefined,
+  nonEmptyAnswerCount: number
+) =>
+  !midpoints ||
+  midpoints.length < nonEmptyAnswerCount ||
+  midpoints.some((m) => !Number.isFinite(m))
+
 export function validateContractForm(
   state: ContractFormState
 ): ValidationResult {
@@ -157,6 +168,9 @@ export function validateContractForm(
     case 'MULTI_NUMERIC':
       if (min === undefined || max === undefined) {
         errors.range = 'Min and max values are required'
+      } else if (!Number.isFinite(min) || !Number.isFinite(max)) {
+        // Also catches null from JSON round-trips, which slips past === undefined
+        errors.range = 'Min and max must be finite numbers'
       } else if (min >= max) {
         errors.range = 'Max must be greater than min'
       }
@@ -166,12 +180,7 @@ export function validateContractForm(
       } else {
         const nonEmptyAnswers = answers.filter((a) => a.trim().length > 0)
 
-        // Check midpoints are generated and match the number of non-empty answers
-        if (
-          !state.midpoints ||
-          state.midpoints.length < nonEmptyAnswers.length ||
-          state.midpoints.some((m) => !Number.isFinite(m))
-        ) {
+        if (midpointsPending(state.midpoints, nonEmptyAnswers.length)) {
           errors.answers = 'Please wait for numeric buckets to generate'
         } else if (nonEmptyAnswers.length < MIN_ANSWERS) {
           errors.answers = `At least ${MIN_ANSWERS} non-empty answers are required`
@@ -190,12 +199,7 @@ export function validateContractForm(
       } else {
         const nonEmptyAnswers = answers.filter((a) => a.trim().length > 0)
 
-        // Check midpoints are generated and match the number of non-empty answers
-        if (
-          !state.midpoints ||
-          state.midpoints.length < nonEmptyAnswers.length ||
-          state.midpoints.some((m) => !Number.isFinite(m))
-        ) {
+        if (midpointsPending(state.midpoints, nonEmptyAnswers.length)) {
           errors.answers = 'Please wait for date buckets to generate'
         } else if (nonEmptyAnswers.length < MIN_ANSWERS) {
           errors.answers = `At least ${MIN_ANSWERS} non-empty answers are required`
@@ -206,6 +210,8 @@ export function validateContractForm(
     case 'PSEUDO_NUMERIC':
       if (min === undefined || max === undefined) {
         errors.range = 'Min and max values are required'
+      } else if (!Number.isFinite(min) || !Number.isFinite(max)) {
+        errors.range = 'Min and max must be finite numbers'
       } else if (min >= max) {
         errors.range = 'Max must be greater than min'
       } else if (max - min < 0.01) {
@@ -226,6 +232,8 @@ export function validateContractForm(
     case 'NUMBER':
       if (min === undefined || max === undefined) {
         errors.range = 'Min and max values are required'
+      } else if (!Number.isFinite(min) || !Number.isFinite(max)) {
+        errors.range = 'Min and max must be finite numbers'
       } else if (min >= max) {
         errors.range = 'Max must be greater than min'
       }

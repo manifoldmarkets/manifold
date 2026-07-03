@@ -10,7 +10,7 @@ import { WEEK_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { debounce } from 'lodash'
 import Router from 'next/router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaQuestion, FaUsers } from 'react-icons/fa'
 import { compareTwoStrings } from 'string-similarity'
@@ -186,6 +186,10 @@ export function NewContractPanel(props: {
   // Error tracking for field-level validation
   const [submitAttemptCount, setSubmitAttemptCount] = useState(0)
   const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({})
+
+  // Bumped when a draft is loaded so in-flight midpoint regenerations
+  // started against the previous form are discarded when they resolve
+  const loadGenerationRef = useRef(0)
 
   // Create description editor with dynamic placeholder based on market type
   const getDescriptionPlaceholder = () => {
@@ -378,6 +382,16 @@ export function NewContractPanel(props: {
 
     setIsSavingDraft(true)
     try {
+      // Non-finite numbers become null over JSON and fail schema validation;
+      // midpoints are only useful on restore if they line up with the answers
+      const nonEmptyAnswers = formState.answers.filter(
+        (a) => a.trim().length > 0
+      )
+      const midpoints = formState.midpoints ?? []
+      const midpointsAreUsable =
+        midpoints.length > 0 &&
+        midpoints.length === nonEmptyAnswers.length &&
+        midpoints.every((m) => Number.isFinite(m))
       const draft = {
         question: formState.question,
         description: formState.description,
@@ -387,15 +401,23 @@ export function NewContractPanel(props: {
         closeHoursMinutes: formState.closeHoursMinutes,
         visibility: formState.visibility,
         selectedGroups: formState.selectedGroups,
-        min: formState.min,
-        max: formState.max,
+        min: Number.isFinite(formState.min) ? formState.min : undefined,
+        max: Number.isFinite(formState.max) ? formState.max : undefined,
         minString: formState.minString,
         maxString: formState.maxString,
         unit: formState.unit,
-        midpoints: formState.midpoints,
+        midpoints: midpointsAreUsable ? midpoints : undefined,
+        shouldAnswersSumToOne: formState.shouldAnswersSumToOne,
+        addAnswersMode: formState.addAnswersMode,
+        probability: formState.probability,
+        neverCloses: formState.neverCloses,
+        liquidityTier: formState.liquidityTier,
+        includeSeeResults: formState.includeSeeResults,
+        pollType: formState.pollType,
+        maxSelections: formState.maxSelections,
         savedAt: Date.now(),
       }
-      await api('save-market-draft', { data: draft as any })
+      await api('save-market-draft', { data: draft })
       toast.success('Draft saved')
       await loadDrafts()
     } catch (error) {
@@ -408,23 +430,82 @@ export function NewContractPanel(props: {
 
   const loadDraftFromDb = async (draft: MarketDraft) => {
     try {
-      setFormState({
-        ...formState,
-        question: draft.data.question,
-        description: draft.data.description,
-        outcomeType: draft.data.outcomeType as any,
-        answers: draft.data.answers,
-        closeDate: draft.data.closeDate,
-        closeHoursMinutes: draft.data.closeHoursMinutes,
-        visibility: draft.data.visibility,
-        selectedGroups: draft.data.selectedGroups,
-        min: draft.data.min,
-        max: draft.data.max,
-        minString: draft.data.minString ?? '',
-        maxString: draft.data.maxString ?? '',
-        unit: draft.data.unit ?? '',
-        midpoints: draft.data.midpoints ?? [],
-      })
+      const d = draft.data
+
+      // Drop any in-flight/pending midpoint regeneration from the pre-load form
+      // so its result can't overwrite the restored draft
+      loadGenerationRef.current++
+      debouncedRegenerateNumericMidpoints.cancel()
+      debouncedRegenerateDateMidpoints.cancel()
+
+      const draftAnswers = d.answers ?? []
+      const nonEmptyAnswers = draftAnswers.filter((a) => a.trim().length > 0)
+      const isNumericDraft =
+        d.outcomeType === 'MULTI_NUMERIC' || d.outcomeType === 'DATE'
+      // Restore midpoints only when they line up with the draft's answers;
+      // otherwise leave them empty so they regenerate instead of mispairing
+      const finiteMidpoints = (d.midpoints ?? []).filter((m) =>
+        Number.isFinite(m)
+      )
+      const draftMidpoints =
+        nonEmptyAnswers.length > 0 &&
+        finiteMidpoints.length === nonEmptyAnswers.length
+          ? finiteMidpoints
+          : []
+
+      setFormState((prev) => ({
+        ...prev,
+        question: d.question,
+        description: d.description,
+        outcomeType: d.outcomeType,
+        answers: draftAnswers,
+        closeDate: d.closeDate,
+        closeHoursMinutes: d.closeHoursMinutes,
+        visibility: d.visibility,
+        selectedGroups: d.selectedGroups,
+        // Drafts saved before these fields existed fall back to the session's
+        // values (the pre-persistence behavior) instead of wiping them
+        min: d.min ?? prev.min,
+        max: d.max ?? prev.max,
+        minString: d.minString ?? prev.minString,
+        maxString: d.maxString ?? prev.maxString,
+        unit: d.unit ?? prev.unit,
+        midpoints: isNumericDraft ? draftMidpoints : prev.midpoints,
+        shouldAnswersSumToOne:
+          d.shouldAnswersSumToOne ?? prev.shouldAnswersSumToOne,
+        addAnswersMode: d.addAnswersMode ?? prev.addAnswersMode,
+        probability: d.probability ?? prev.probability,
+        neverCloses: d.neverCloses ?? prev.neverCloses,
+        liquidityTier: d.liquidityTier ?? prev.liquidityTier,
+        includeSeeResults: d.includeSeeResults ?? prev.includeSeeResults,
+        pollType: d.pollType ?? prev.pollType,
+        maxSelections: d.maxSelections ?? prev.maxSelections,
+      }))
+
+      // The range caches belong to the pre-load form; reset them and seed the
+      // draft's own mode so the sum-to-one toggle can't substitute stale data
+      const emptyCache = { answers: [], midpoints: [] }
+      setNumericBuckets(emptyCache)
+      setNumericThresholds(emptyCache)
+      setDateBuckets(emptyCache)
+      setDateThresholds(emptyCache)
+      if (isNumericDraft && draftMidpoints.length > 0) {
+        const cache = { answers: draftAnswers, midpoints: draftMidpoints }
+        const sumsToOne =
+          d.shouldAnswersSumToOne ?? formState.shouldAnswersSumToOne
+        if (d.outcomeType === 'MULTI_NUMERIC') {
+          if (sumsToOne) setNumericBuckets(cache)
+          else setNumericThresholds(cache)
+        } else {
+          if (sumsToOne) setDateBuckets(cache)
+          else setDateThresholds(cache)
+        }
+      }
+
+      // Error snapshots from the pre-load form no longer apply
+      setFieldErrors({})
+      setSubmitAttemptCount(0)
+
       if (draft.data.description && descriptionEditor) {
         descriptionEditor.commands.setContent(draft.data.description)
       }
@@ -651,6 +732,7 @@ export function NewContractPanel(props: {
     if (answers.every((a) => a.trim() === '')) return
 
     try {
+      const generation = loadGenerationRef.current
       const result = await api('regenerate-date-midpoints', {
         question: formState.question,
         answers,
@@ -661,6 +743,8 @@ export function NewContractPanel(props: {
           : '',
         tab: formState.shouldAnswersSumToOne ? 'buckets' : 'thresholds',
       })
+      // A draft was loaded while this was in flight; its midpoints win
+      if (generation !== loadGenerationRef.current) return
 
       updateField('midpoints', result.midpoints)
 
@@ -698,6 +782,7 @@ export function NewContractPanel(props: {
     if (answers.every((a) => a.trim() === '')) return
 
     try {
+      const generation = loadGenerationRef.current
       const result = await api('regenerate-numeric-midpoints', {
         question: formState.question,
         answers,
@@ -709,6 +794,8 @@ export function NewContractPanel(props: {
           : '',
         tab: formState.shouldAnswersSumToOne ? 'buckets' : 'thresholds',
       })
+      // A draft was loaded while this was in flight; its midpoints win
+      if (generation !== loadGenerationRef.current) return
 
       updateField('midpoints', result.midpoints)
 
