@@ -100,6 +100,18 @@ export function getInitialAnswerProbability(
     return 0.5
   } else {
     if (contract.addAnswersMode === 'DISABLED') {
+      // cpmm-multi-2: creation probs can be custom (not uniform) and are not
+      // stored. Best available baseline is the pool-implied prob — exact for an
+      // untraded answer (pool untouched since creation); for a traded answer it
+      // only anchors the short pre-first-trade chart segment. (A converted v1
+      // market that traded before converting gets its current rather than 1/n
+      // here — same cosmetic class.) v1 keeps the exact uniform baseline.
+      if (contract.mechanism === 'cpmm-multi-2') {
+        return getCpmmProbability(
+          { YES: answer.poolYes, NO: answer.poolNo },
+          answerP(answer)
+        )
+      }
       return 1 / contract.answers.length
     } else {
       const answers = contract.answers

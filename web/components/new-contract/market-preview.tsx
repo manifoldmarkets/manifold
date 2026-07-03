@@ -40,7 +40,10 @@ import { Modal } from '../layout/modal'
 import { ContractTopicsList } from '../topics/contract-topics-list'
 import { TopicTag } from '../topics/topic-tag'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { ProbabilitySlider } from '../widgets/probability-input'
+import {
+  ProbabilityInput,
+  ProbabilitySlider,
+} from '../widgets/probability-input'
 import ShortToggle from '../widgets/short-toggle'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 import {
@@ -140,9 +143,9 @@ export function MarketPreview(props: {
   onReplaceQuestionText?: (original: string, replacement: string) => void
   // cpmm-multi-2: custom per-answer initial probabilities (MULTIPLE_CHOICE).
   useCustomInitialProbs?: boolean
-  initialProbs?: number[]
+  initialProbs?: (number | undefined)[]
   onToggleUseCustomInitialProbs?: () => void
-  onEditInitialProbs?: (probs: number[]) => void
+  onEditInitialProbs?: (probs: (number | undefined)[]) => void
 }) {
   const {
     data,
@@ -278,10 +281,13 @@ export function MarketPreview(props: {
       : 0
     : 50
 
-  // Set one answer's raw initial-probability percentage, filling any unset
-  // entries with the default so the array stays answer-aligned.
-  const setInitialProb = (i: number, value: number) => {
-    const next = answers.map((_, idx) => initialProbs?.[idx] ?? defaultInitialPct)
+  // Set one answer's raw initial-probability percentage. The array stays
+  // answer-aligned; a cleared input stores an undefined hole (every consumer —
+  // sum display, preview, payload — defaults it per answer).
+  const setInitialProb = (i: number, value: number | undefined) => {
+    const next: (number | undefined)[] = answers.map(
+      (_, idx) => initialProbs?.[idx]
+    )
     next[i] = value
     onEditInitialProbs?.(next)
   }
@@ -948,6 +954,7 @@ export function MarketPreview(props: {
                 <ShortToggle
                   on={useCustomInitialProbs}
                   setOn={() => onToggleUseCustomInitialProbs?.()}
+                  ariaLabel="Custom initial probabilities"
                 />
                 <Row className="text-ink-700 items-center gap-1.5 text-sm">
                   <span>Custom initial probabilities</span>
@@ -972,24 +979,18 @@ export function MarketPreview(props: {
                     <Row className="hidden items-center gap-3 sm:flex">
                       {/* Probability - Prominent on left like real markets */}
                       {customProbsActive && isEditable ? (
-                        <Row className="items-center gap-0.5">
-                          <Input
-                            type="number"
-                            min={1}
-                            max={99}
-                            value={
-                              initialProbs?.[i] ??
-                              Math.round(defaultInitialPct * 10) / 10
-                            }
-                            onChange={(e) =>
-                              setInitialProb(i, Number(e.target.value))
-                            }
-                            className="!h-8 w-16 !text-base"
-                          />
-                          <span className="text-ink-700 text-lg font-semibold">
-                            %
-                          </span>
-                        </Row>
+                        <ProbabilityInput
+                          prob={
+                            initialProbs?.[i] !== undefined
+                              ? Math.round(initialProbs[i]!)
+                              : undefined
+                          }
+                          onChange={(newProb) => setInitialProb(i, newProb)}
+                          placeholder={`${Math.round(defaultInitialPct)}`}
+                          ariaLabel={`Initial probability for answer ${i + 1}`}
+                          className="w-20"
+                          inputClassName="!h-8 !pr-8 !text-base"
+                        />
                       ) : (
                         <span className="text-ink-700 min-w-[3rem] text-lg font-semibold">
                           {Math.round(mcProbs[i] * 100)}%
@@ -1103,24 +1104,18 @@ export function MarketPreview(props: {
                     <Row className="items-center gap-2 sm:hidden">
                       {/* Probability - on the left, smaller */}
                       {customProbsActive && isEditable ? (
-                        <Row className="shrink-0 items-center gap-0.5">
-                          <Input
-                            type="number"
-                            min={1}
-                            max={99}
-                            value={
-                              initialProbs?.[i] ??
-                              Math.round(defaultInitialPct * 10) / 10
-                            }
-                            onChange={(e) =>
-                              setInitialProb(i, Number(e.target.value))
-                            }
-                            className="!h-7 w-14 !text-sm"
-                          />
-                          <span className="text-ink-700 text-sm font-semibold">
-                            %
-                          </span>
-                        </Row>
+                        <ProbabilityInput
+                          prob={
+                            initialProbs?.[i] !== undefined
+                              ? Math.round(initialProbs[i]!)
+                              : undefined
+                          }
+                          onChange={(newProb) => setInitialProb(i, newProb)}
+                          placeholder={`${Math.round(defaultInitialPct)}`}
+                          ariaLabel={`Initial probability for answer ${i + 1}`}
+                          className="w-16 shrink-0"
+                          inputClassName="!h-7 !pr-7 !text-sm"
+                        />
                       ) : (
                         <span className="text-ink-700 shrink-0 text-sm font-semibold">
                           {Math.round(mcProbs[i] * 100)}%

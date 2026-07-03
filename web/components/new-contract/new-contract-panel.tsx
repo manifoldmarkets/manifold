@@ -115,8 +115,8 @@ export function NewContractPanel(props: {
     liquidityTier: 100, // Default to tier 0 (100 mana)
     shouldAnswersSumToOne: params?.shouldAnswersSumToOne ?? true,
     addAnswersMode: params?.addAnswersMode || 'DISABLED',
-    useCustomInitialProbs: false,
-    initialProbs: [],
+    useCustomInitialProbs: (params?.initialProbs?.length ?? 0) > 0,
+    initialProbs: params?.initialProbs ?? [],
     probability: 50,
     min: params?.min,
     max: params?.max,

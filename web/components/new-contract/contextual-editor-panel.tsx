@@ -34,7 +34,8 @@ export type FormState = {
   // useCustomInitialProbs toggles the feature; initialProbs holds raw
   // percentages index-aligned to `answers` (missing entries default to equal).
   useCustomInitialProbs?: boolean
-  initialProbs?: number[]
+  // May contain undefined holes (a cleared input); consumers default per answer.
+  initialProbs?: (number | undefined)[]
   probability?: number
   min?: number
   max?: number
