@@ -302,14 +302,15 @@ d('other-split domain probe (cpmm-multi-2 v2)', () => {
   })
 
   // ------------------------------------------------------------------ edge 5
-  it('5. no guard: math happily splits an Other already at/below 0.02', () => {
-    // Static finding (see report): verifyContract (create-answer-cpmm.ts
-    // lines 80-110) checks token/mechanism/closeTime/addAnswersMode only;
-    // createAnswerCpmmMain checks balance (line 129) and maxAnswers
-    // (line 141). No probOther / MIN_CPMM_PROB check exists on the v2 path.
-    // Here: confirm the math itself raises no error and emits valid-looking
-    // (finite, tradeable) sub-floor answers — i.e. nothing downstream of the
-    // handler would stop it either.
+  it('5. math below the floor: splits stay finite/tradeable (guard is policy, upstream)', () => {
+    // HISTORY: this test originally documented a MISSING guard — nothing on the
+    // v2 path blocked splitting an Other already below MIN_CPMM_PROB. The GP19d
+    // guard now exists at the handler (create-answer-cpmm.ts: reject when
+    // probOther < 2*MIN_CPMM_PROB), so sub-floor splits are unreachable via the
+    // API. This test remains as defense-in-depth documentation: the MATH itself
+    // is total (GP19d — split sanity never breaks strictly), so if the policy
+    // guard were ever bypassed the failure mode is zombie sub-floor answers,
+    // not NaN/corruption.
     const rows: any[] = []
     for (const q of [0.02, 0.011, 0.0101, 0.005, 0.002]) {
       const pool = poolAtProb(q, 0.5, 100)
@@ -323,7 +324,7 @@ d('other-split domain probe (cpmm-multi-2 v2)', () => {
         p: f(r.newAnswer.p, 8),
         tradeMathOk: t.ok,
       })
-      expect(t.ok).toBe(true) // no throw, no NaN — GUARD MISSING upstream
+      expect(t.ok).toBe(true) // no throw, no NaN — the math is total below the floor
     }
     console.table(rows)
     expect(rows.every((r) => r.tradeMathOk)).toBe(true)

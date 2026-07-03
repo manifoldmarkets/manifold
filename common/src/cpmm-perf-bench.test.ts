@@ -10,6 +10,13 @@
 //
 // Run with:  cd common && BENCH=1 npx jest cpmm-perf-bench --silent=false
 // Skipped (describe.skip) in normal test runs so it doesn't slow the suite.
+//
+// Headline (shallow-pool fixtures, single core): the v2 bisection itself is
+// negligible (~µs), but the full v2 multi-buy solve is ~7-10x v1 wall-clock
+// (~160ms at n=10, ~1-1.7s at n=50) — the cost is the per-probe computeFills
+// sweeps, not the outer search. A perf pass gates the creation flag flip, not
+// this PR (creation is kill-switched off). Kept in-tree (not in the evidence
+// repo) so the numbers stay reproducible against the code they measure.
 
 import { Answer } from './answer'
 import { LimitBet } from './bet'
