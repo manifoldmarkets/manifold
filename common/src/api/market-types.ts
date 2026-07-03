@@ -70,6 +70,15 @@ export type LiteMarket = {
   sportsStartTimestamp?: string
   sportsEventId?: string
   sportsLeague?: string
+
+  // Perp markets only (mechanism 'perp'). Exposed so clients (and the perp
+  // market page's live poll) can track price/pools without bespoke endpoints.
+  oraclePrice?: number
+  oraclePriceTime?: number
+  poolLong?: number
+  poolShort?: number
+  fundingRate?: number
+  maxLeverage?: number
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -199,6 +208,18 @@ export function toLiteMarket(
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+
+    // Perp props (only present on perp markets).
+    ...(contract.mechanism === 'perp'
+      ? {
+          oraclePrice: contract.oraclePrice,
+          oraclePriceTime: contract.oraclePriceTime,
+          poolLong: contract.poolLong,
+          poolShort: contract.poolShort,
+          fundingRate: contract.fundingRate,
+          maxLeverage: contract.maxLeverage,
+        }
+      : {}),
 
     // Manifold love props.
     loverUserId1,

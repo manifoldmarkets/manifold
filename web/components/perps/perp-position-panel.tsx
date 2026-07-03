@@ -23,8 +23,15 @@ type Position = {
   liquidationPrice: number
 }
 
-export const PerpPositionPanel = (props: { contract: PerpContract }) => {
-  const { contract } = props
+export const PerpPositionPanel = (props: {
+  contract: PerpContract
+  // Called after closing a position so the page re-polls pools immediately.
+  onAction?: () => void
+  // Bumped by the parent after any trade elsewhere on the page (e.g. the bet
+  // panel) so this panel refetches without waiting for the next poll tick.
+  refreshKey?: number
+}) => {
+  const { contract, onAction, refreshKey } = props
   const user = useUser()
   const [positions, setPositions] = useState<Position[]>([])
   const [closing, setClosing] = useState<'long' | 'short' | null>(null)
@@ -45,7 +52,7 @@ export const PerpPositionPanel = (props: { contract: PerpContract }) => {
     return () => {
       cancelled = true
     }
-  }, [contract.id, user?.id, refresh])
+  }, [contract.id, user?.id, refresh, refreshKey])
 
   if (!user) return null
   if (!positions.length) return null
@@ -63,6 +70,8 @@ export const PerpPositionPanel = (props: { contract: PerpContract }) => {
         )} (PnL ${formatMoney(res.pnl)})`
       )
       setRefresh((r) => r + 1)
+      // Pools changed; let the page re-poll the contract immediately.
+      onAction?.()
     } catch (err: any) {
       toast.error(err?.message ?? 'Close failed')
     } finally {
@@ -110,8 +119,7 @@ const PositionCard = (props: {
     } as PerpPosition,
     markPrice
   )
-  const pnlPct =
-    p.originalCostBasis > 0 ? (pnl / p.originalCostBasis) * 100 : 0
+  const pnlPct = p.originalCostBasis > 0 ? (pnl / p.originalCostBasis) * 100 : 0
 
   const isLong = p.direction === 'long'
   const accentBar = isLong ? 'bg-teal-500' : 'bg-red-500'

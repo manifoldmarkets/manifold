@@ -36,8 +36,16 @@ const getLeverageMarks = (maxLeverage: number) => {
   return marks
 }
 
-export const PerpBetPanel = (props: { contract: PerpContract }) => {
-  const { contract } = props
+export const PerpBetPanel = (props: {
+  contract: PerpContract
+  // Called after a successful trade so the page re-polls positions/pools
+  // immediately instead of waiting for the next 15s tick.
+  onTrade?: () => void
+  // Bumped by the parent's refresh(); re-fetches the user's open direction so
+  // this panel stays consistent with actions taken elsewhere on the page.
+  refreshKey?: number
+}) => {
+  const { contract, onTrade, refreshKey } = props
   const user = useUser()
 
   const [direction, setDirection] = useState<'long' | 'short'>('long')
@@ -73,7 +81,7 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
     return () => {
       cancelled = true
     }
-  }, [user?.id, contract.id])
+  }, [user?.id, contract.id, refreshKey])
 
   const price = Number(contract.oraclePrice)
   const priceDecimals = inferPriceDecimals([
@@ -132,6 +140,9 @@ export const PerpBetPanel = (props: { contract: PerpContract }) => {
         )}`
       )
       setOpenDirection(direction)
+      // Reflect the trade everywhere on the page (position panel, pools,
+      // funding) immediately - not on the next poll tick.
+      onTrade?.()
     } catch (err: any) {
       toast.error(err?.message ?? 'Trade failed')
     } finally {

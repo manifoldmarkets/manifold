@@ -15,40 +15,55 @@ import { PerpPositionPanel } from './perp-position-panel'
 // the per-period rate stored on the contract annualizes as rate * 24 * 365.
 const FUNDING_PERIODS_PER_YEAR = 24 * 365
 
-// Poll cadence for the live oracle price. Matches the scheduler's fast tick;
+// Poll cadence for live market data. Matches the scheduler's fast tick;
 // there are no websocket broadcasts for oracle updates (the engine runs in
 // the scheduler process, not the API's socket server), so the page polls.
-const PRICE_POLL_MS = 15_000
+const POLL_MS = 15_000
 
-// Overlay the latest oracle point onto the SSR contract so the price header,
-// bet panel, and position PnL track the feed without a page reload. Never
-// rewind: an older cached response must not beat the SSR snapshot.
-const useLiveOraclePrice = (contract: PerpContract) => {
-  const [latest, setLatest] = useState<{ price: number; ts: number } | null>(
-    null
-  )
+// Overlay live perp fields (oracle price, pools, funding) onto the SSR
+// contract so every number on the page tracks the feed without a reload.
+// Returns a refresh() that re-polls immediately and bumps refreshKey — call
+// it after any trade/close so the user's own action is reflected instantly.
+// Never rewind the price: a cached response must not beat a newer snapshot.
+const useLivePerpContract = (ssrContract: PerpContract) => {
+  const [live, setLive] = useState<Partial<PerpContract> | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+
   useEffect(() => {
     let cancelled = false
-    const tick = () =>
-      api('get-oracle-price', { feedId: contract.oracleFeedId })
-        .then((res) => {
-          if (!cancelled && res.latest) setLatest(res.latest)
+    const poll = () =>
+      api('market/:id', { id: ssrContract.id, lite: true })
+        .then((m: any) => {
+          if (cancelled || m.oraclePrice == null) return
+          setLive((prev) =>
+            (m.oraclePriceTime ?? 0) < (prev?.oraclePriceTime ?? 0)
+              ? prev
+              : {
+                  oraclePrice: m.oraclePrice,
+                  oraclePriceTime: m.oraclePriceTime,
+                  poolLong: m.poolLong,
+                  poolShort: m.poolShort,
+                  fundingRate: m.fundingRate,
+                }
+          )
         })
         .catch(() => {})
-    tick()
-    const id = setInterval(tick, PRICE_POLL_MS)
+    poll()
+    const id = setInterval(poll, POLL_MS)
     return () => {
       cancelled = true
       clearInterval(id)
     }
-  }, [contract.oracleFeedId])
+    // refreshKey in deps: refresh() restarts the interval with an immediate poll.
+  }, [ssrContract.id, refreshKey])
 
-  if (!latest || latest.ts <= (contract.oraclePriceTime ?? 0)) return contract
-  return {
-    ...contract,
-    oraclePrice: latest.price,
-    oraclePriceTime: latest.ts,
-  }
+  const refresh = () => setRefreshKey((k) => k + 1)
+
+  const contract =
+    live && (live.oraclePriceTime ?? 0) >= (ssrContract.oraclePriceTime ?? 0)
+      ? { ...ssrContract, ...live }
+      : ssrContract
+  return { contract, refresh, refreshKey }
 }
 
 // Exchange-style tick flash: returns 'up' | 'down' for ~700ms after the
@@ -67,7 +82,7 @@ const useTickFlash = (value: number) => {
 }
 
 export const PerpOverview = (props: { contract: PerpContract }) => {
-  const contract = useLiveOraclePrice(props.contract)
+  const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
   const [chartMode, setChartMode] = useState<'price' | 'funding'>('price')
 
   const price = Number(contract.oraclePrice)
@@ -132,8 +147,16 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
 
       <PerpChart contract={contract} mode={chartMode} />
 
-      <PerpBetPanel contract={contract} />
-      <PerpPositionPanel contract={contract} />
+      <PerpBetPanel
+        contract={contract}
+        onTrade={refresh}
+        refreshKey={refreshKey}
+      />
+      <PerpPositionPanel
+        contract={contract}
+        onAction={refresh}
+        refreshKey={refreshKey}
+      />
     </Col>
   )
 }
