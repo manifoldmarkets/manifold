@@ -9,6 +9,7 @@ import {
 import type { WidgetInfo } from 'react-native-android-widget'
 import type { NativeQuestData, NativeStreakData } from 'common/native-message'
 import { CRANE_DATA_URI } from './crane-data'
+import { maniSvg, pickManiPose } from './mani-svg'
 
 // Android home-screen streak widget. This is the platform-mirror of the iOS
 // SwiftUI widget (native/targets/widget/index.swift): same state machine, same
@@ -191,15 +192,6 @@ function hookText(state: StreakState, now: Date): string {
   return hooks[day % hooks.length]
 }
 
-// Short, single-line caption for the bottom of a tall small widget. The medium's
-// hookText() wraps to 2-3 lines, which overflows a narrow tall cell under the big
-// milestone hero — so the tall layout uses these punchy one-liners instead.
-function tallBottomText(state: StreakState): string {
-  if (state === 'frozen') return 'Streak saved 🧊'
-  if (state === 'loggedOut') return 'Predict daily 🔥'
-  return 'Locked in 🔥' // lit
-}
-
 // MARK: - Palette (exact match to index.swift gradient stops)
 
 type Gradient = {
@@ -253,7 +245,6 @@ function gradientFor(state: StreakState, streak: number): Gradient {
 
 const WHITE = '#FFFFFF'
 const WHITE_85 = 'rgba(255, 255, 255, 0.85)'
-const WHITE_90 = 'rgba(255, 255, 255, 0.9)'
 const WHITE_22 = 'rgba(255, 255, 255, 0.22)'
 const WHITE_55 = 'rgba(255, 255, 255, 0.55)'
 const WHITE_45 = 'rgba(255, 255, 255, 0.45)'
@@ -312,18 +303,23 @@ function GlyphWidget({ state, size }: { state: StreakState; size: number }) {
 
 // MARK: - Layouts
 
-// Shared shell: gradient background + faint crane watermark (bottom-right) +
-// tap-to-open. Content stacks on top via OverlapWidget (gradient → crane →
-// content). Mirrors the iOS containerBackground (gradient + crane watermark).
+// Shared shell: gradient background + bottom-right brand element + tap-to-open.
+// The brand element is either the faint crane watermark or (small widgets)
+// Mani the mascot — an SVG whose mood tracks the streak state (see mani-svg.ts;
+// mirrors ManiView on iOS). Content stacks on top via OverlapWidget
+// (gradient → crane/mascot → content).
 function Shell({
   gradient,
   craneSize,
+  mascot,
   clickData,
   frame,
   children,
 }: {
   gradient: Gradient
   craneSize: number
+  // When set, replaces the crane watermark: { svg, width, height }.
+  mascot?: { svg: string; width: number; height: number }
   clickData?: Record<string, unknown>
   frame?: `#${string}`
   children: any
@@ -347,12 +343,19 @@ function Shell({
           alignItems: 'flex-end',
         }}
       >
-        <ImageWidget
-          image={CRANE_DATA_URI}
-          imageWidth={craneSize}
-          imageHeight={craneSize}
-          style={{ marginRight: 2, marginBottom: 4 }}
-        />
+        {mascot ? (
+          <SvgWidget
+            svg={mascot.svg}
+            style={{ width: mascot.width, height: mascot.height }}
+          />
+        ) : (
+          <ImageWidget
+            image={CRANE_DATA_URI}
+            imageWidth={craneSize}
+            imageHeight={craneSize}
+            style={{ marginRight: 2, marginBottom: 4 }}
+          />
+        )}
       </FlexWidget>
       {children}
     </OverlapWidget>
@@ -401,46 +404,50 @@ function MilestoneBadge({ big }: { big?: boolean }) {
 function SmallWidget({
   state,
   data,
+  now,
   isTall,
-  showCountdown,
   clickData,
 }: {
   state: StreakState
   data: NativeStreakData | null
+  now: Date
   isTall?: boolean
-  showCountdown?: boolean
   clickData?: Record<string, unknown>
 }) {
-  // On the square, showing the live countdown means top-anchoring the hero and
-  // dropping the "day streak" label, so the native bottom-left Chronometer has
-  // clear space (the tall already top-anchors, so it keeps its label + room).
-  const squareCountdown = !!showCountdown && !isTall
+  // Content pins to the TOP in every state: Mani owns the bottom-right corner
+  // and the native countdown Chronometer the bottom-left (when shown), so the
+  // hero never collides with either. Mirrors the iOS small layout.
   const contentStyle = {
     height: 'match_parent' as const,
     width: 'match_parent' as const,
     flexDirection: 'column' as const,
-    justifyContent: (isTall
-      ? 'space-between'
-      : squareCountdown
-      ? 'flex-start'
-      : 'center') as 'space-between' | 'flex-start' | 'center',
+    justifyContent: 'flex-start' as const,
     alignItems: 'flex-start' as const,
     padding: isTall ? 14 : 8,
   }
-  // Bottom caption on tall cells — a short one-liner that anchors the lower half
-  // so the hero isn't marooned mid-cell. Skipped in pending/frozen (the live
-  // countdown Chronometer owns the bottom-left there) and when not tall.
-  const bottomHook =
-    isTall && state !== 'pending' && state !== 'frozen' ? (
-      <TextWidget
-        text={tallBottomText(state)}
-        maxLines={1}
-        style={{ fontSize: 14, fontWeight: 'bold', color: WHITE_90, marginTop: 8 }}
-      />
-    ) : null
+  // Mani the mascot (see mani-svg.ts): mood from state + time-to-reset, pose
+  // rotated daily. Replaces the crane watermark AND the old tall-cell bottom
+  // caption — Mani fills that space now.
+  const mascot = {
+    svg: maniSvg(
+      pickManiPose(
+        state,
+        msUntilPacificReset(now),
+        data?.streak ?? 0,
+        pacificDayOfYear(now)
+      )
+    ),
+    width: isTall ? 86 : 72,
+    height: isTall ? 100 : 84,
+  }
   if (state === 'loggedOut' || !data) {
     return (
-      <Shell gradient={GREY} craneSize={84} clickData={clickData}>
+      <Shell
+        gradient={GREY}
+        craneSize={84}
+        mascot={mascot}
+        clickData={clickData}
+      >
         <FlexWidget style={contentStyle}>
           <FlexWidget
             style={{ flexDirection: 'column', alignItems: 'flex-start' }}
@@ -456,7 +463,6 @@ function SmallWidget({
               style={{ fontSize: 12, fontWeight: '600', color: WHITE_85, marginTop: 2 }}
             />
           </FlexWidget>
-          {bottomHook}
         </FlexWidget>
       </Shell>
     )
@@ -471,6 +477,7 @@ function SmallWidget({
     <Shell
       gradient={gradientFor(state, data.streak)}
       craneSize={84}
+      mascot={mascot}
       clickData={clickData}
       frame={isTall && milestone ? FRAME_GOLD : undefined}
     >
@@ -483,7 +490,10 @@ function SmallWidget({
           }}
         >
           {/* Flame to the LEFT of the number on every small size (square + tall)
-              so the streak line reads the same across the whole widget family. */}
+              so the streak line reads the same across the whole widget family.
+              NO plain 🏆 on the square (iOS parity: it over-crowded the row at
+              3+ digits; the gold gradient + Mani's starstruck/party poses carry
+              the milestone). The tall keeps its ✨🏆 badge — it has the room. */}
           <FlexWidget
             style={{
               width: 'match_parent',
@@ -504,29 +514,20 @@ function SmallWidget({
                 ...(milestone ? MILESTONE_SHADOW : NUMBER_SHADOW),
               }}
             />
-            {milestone ? <FlexWidget style={{ flex: 1 }} /> : null}
-            {milestone ? (
-              isTall ? (
-                <MilestoneBadge big />
-              ) : (
-                <TextWidget text="🏆" style={{ fontSize: 20 }} />
-              )
-            ) : null}
+            {milestone && isTall ? <FlexWidget style={{ flex: 1 }} /> : null}
+            {milestone && isTall ? <MilestoneBadge big /> : null}
           </FlexWidget>
-          {squareCountdown ? null : (
-            <TextWidget
-              text={streakLabel(state, data.freezesLeft)}
-              maxLines={1}
-              style={{
-                fontSize: isTall ? 14 : 12,
-                fontWeight: '600',
-                color: WHITE_85,
-                marginTop: isTall ? 2 : 1,
-              }}
-            />
-          )}
+          <TextWidget
+            text={streakLabel(state, data.freezesLeft)}
+            maxLines={1}
+            style={{
+              fontSize: isTall ? 14 : 12,
+              fontWeight: '600',
+              color: WHITE_85,
+              marginTop: isTall ? 2 : 1,
+            }}
+          />
         </FlexWidget>
-        {bottomHook}
       </FlexWidget>
     </Shell>
   )
@@ -954,8 +955,8 @@ export function StreakWidget({
     <SmallWidget
       state={state}
       data={previewData}
+      now={now}
       isTall={isTall}
-      showCountdown={showCountdown}
       clickData={clickData}
     />
   )
