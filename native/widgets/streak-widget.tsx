@@ -206,7 +206,7 @@ function effectiveQuests(
 // bare. Mirrors litCaption() in index.swift.
 function litCaption(now: Date, streak: number): string {
   const lines = [
-    'See you tomorrow 🔥',
+    'See you tomorrow',
     'Streak secured',
     'Another one 📈',
     'Nice.',
@@ -242,7 +242,7 @@ function pacificDayOfYear(now: Date): number {
 
 // Rotating daily nudge on the medium widget. Mirrors hookText() in index.swift.
 function hookText(state: StreakState, now: Date): string {
-  if (state === 'lit') return 'See you tomorrow 🔥'
+  if (state === 'lit') return 'See you tomorrow'
   if (state === 'frozen') return 'Saved by a freeze 🧊'
   const day = pacificDayOfYear(now)
   const pct = 55 + ((day * 7) % 40) // 55–94, deterministic by day

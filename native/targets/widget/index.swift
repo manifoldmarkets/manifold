@@ -174,7 +174,7 @@ func pacificDayOfYear(_ date: Date) -> Int {
 
 func hookText(state: StreakState, date: Date) -> String {
   switch state {
-  case .lit:    return "See you tomorrow 🔥"
+  case .lit:    return "See you tomorrow"
   case .frozen: return "Saved by a freeze 🧊"
   case .pending: break
   }
@@ -375,7 +375,7 @@ func streakLabel(state: StreakState, freezesLeft: Int) -> String {
 // timer occupies while pending, so the done-state never feels bare.
 func litCaption(date: Date, streak: Int) -> String {
   let lines = [
-    "See you tomorrow 🔥",
+    "See you tomorrow",
     "Streak secured",
     "Another one 📈",
     "Nice.",
