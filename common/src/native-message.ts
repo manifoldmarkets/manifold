@@ -87,6 +87,14 @@ export type NativeQuestItem = {
 export type NativeQuestData = {
   quests: NativeQuestItem[]
   updatedAt: number
+  // Supporter-tier badge shown above the quest rewards ("PRO ×2"), present
+  // only when the user has a paid multiplier. Display-ready so tier renames
+  // don't need an app update; `color` picks the widget's metallic gradient.
+  tier?: {
+    label: string // e.g. 'PLUS' | 'PRO' | 'PREMIUM'
+    multiplier: number // e.g. 1.5 | 2 | 3
+    color: 'silver' | 'indigo' | 'amber'
+  }
 }
 
 export type MesageTypeMap = {

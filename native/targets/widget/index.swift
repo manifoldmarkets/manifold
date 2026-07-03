@@ -79,9 +79,19 @@ struct QuestSnapshot: Decodable {
   let period: String
 }
 
+// Supporter-tier badge ("PRO ×2") shown above the quest rewards. Absent for
+// non-paying users and legacy blobs. Display-ready from the web (label/colour)
+// so tier renames don't need an app update.
+struct QuestTierBadge: Decodable {
+  let label: String
+  let multiplier: Double
+  let color: String // 'silver' | 'indigo' | 'amber'
+}
+
 struct QuestPayload: Decodable {
   let quests: [QuestSnapshot]
   let updatedAt: Double? // ms-epoch snapshot time; absent in legacy blobs
+  let tier: QuestTierBadge?
 }
 
 func loadQuestData() -> QuestPayload? {
@@ -197,6 +207,7 @@ struct StreakEntry: TimelineEntry {
   let resetDate: Date
   let state: StreakState
   let quests: [QuestItem]
+  let tierBadge: QuestTierBadge?
   let freezesLeft: Int
   let loggedIn: Bool
 }
@@ -209,7 +220,8 @@ struct Provider: TimelineProvider {
       QuestItem(title: "Create a market", rewardMana: 100, done: false),
     ]
     return StreakEntry(date: Date(), streak: 7, resetDate: nextPacificReset(after: Date()),
-                       state: .lit, quests: sample, freezesLeft: 2, loggedIn: true)
+                       state: .lit, quests: sample, tierBadge: nil, freezesLeft: 2,
+                       loggedIn: true)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
@@ -245,7 +257,8 @@ struct Provider: TimelineProvider {
   private func trivialEntry() -> StreakEntry {
     let now = Date()
     return StreakEntry(date: now, streak: 0, resetDate: now.addingTimeInterval(3600),
-                       state: .pending, quests: [], freezesLeft: 0, loggedIn: false)
+                       state: .pending, quests: [], tierBadge: nil, freezesLeft: 0,
+                       loggedIn: false)
   }
 
   // Entry as of `date` from the App Group snapshot (works for future same-day
@@ -255,11 +268,13 @@ struct Provider: TimelineProvider {
     let reset0 = nextPacificReset(after: date)
     guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else {
       return StreakEntry(date: date, streak: 0, resetDate: reset0, state: .pending,
-                         quests: [], freezesLeft: 0, loggedIn: false)
+                         quests: [], tierBadge: nil, freezesLeft: 0, loggedIn: false)
     }
+    let qp = loadQuestData()
     return StreakEntry(date: date, streak: d.streak, resetDate: reset0,
                        state: computeState(d, now: date),
-                       quests: questItems(loadQuestData(), at: date),
+                       quests: questItems(qp, at: date),
+                       tierBadge: qp?.tier,
                        freezesLeft: d.freezesLeft, loggedIn: true)
   }
 }
@@ -998,6 +1013,12 @@ struct StreakWidgetEntryView: View {
         Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
 
         VStack(alignment: .leading, spacing: 7) {
+          if let badge = entry.tierBadge {
+            HStack {
+              Spacer(minLength: 0)
+              tierCapsule(badge)
+            }
+          }
           ForEach(Array(entry.quests.enumerated()), id: \.offset) { _, q in
             questRow(q)
           }
@@ -1021,6 +1042,37 @@ struct StreakWidgetEntryView: View {
         .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
         .lineLimit(2).minimumScaleFactor(0.75)
     }
+  }
+
+  // Supporter-tier capsule ("PRO ×2") above the quest rewards: a metallic
+  // sheen (light → deep → light gradient + a bright rim) in the tier's brand
+  // colour — silver for Plus, indigo for Pro, gold for Premium.
+  private func tierCapsule(_ b: QuestTierBadge) -> some View {
+    let mult = b.multiplier.truncatingRemainder(dividingBy: 1) == 0
+      ? "\(Int(b.multiplier))"
+      : String(format: "%.1f", b.multiplier)
+    let (colors, fg): ([Color], Color) = {
+      switch b.color {
+      case "amber":
+        return ([rgb(255, 233, 168), rgb(217, 138, 6), rgb(255, 210, 77)],
+                rgb(74, 46, 0))
+      case "silver":
+        return ([rgb(242, 242, 247), rgb(174, 178, 188), rgb(227, 227, 234)],
+                rgb(58, 58, 68))
+      default: // indigo (Pro)
+        return ([rgb(185, 195, 255), rgb(79, 70, 229), rgb(139, 147, 248)],
+                .white)
+      }
+    }()
+    return Text("\(b.label) ×\(mult)")
+      .font(.system(size: 10, weight: .heavy))
+      .foregroundColor(fg)
+      .padding(.horizontal, 7).padding(.vertical, 3)
+      .background(
+        Capsule().fill(LinearGradient(colors: colors,
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing)))
+      .overlay(Capsule().strokeBorder(.white.opacity(0.45), lineWidth: 0.5))
   }
 
   private func questRow(_ q: QuestItem) -> some View {

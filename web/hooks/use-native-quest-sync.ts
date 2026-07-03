@@ -3,7 +3,11 @@ import { QUEST_DETAILS, QuestType } from 'common/quest'
 import { NativeQuestItem } from 'common/native-message'
 import { getQuestScores } from 'common/supabase/set-scores'
 import { getEffectiveTier } from 'common/user'
-import { getEffectiveBonusMultiplier } from 'common/supporter-config'
+import {
+  getEffectiveBonusMultiplier,
+  SUPPORTER_TIERS,
+  SupporterTier,
+} from 'common/supporter-config'
 import { db } from 'web/lib/supabase/db'
 import { nativeSetQuests } from 'web/lib/native/native-messages'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
@@ -22,6 +26,14 @@ const WIDGET_QUESTS: {
   { type: 'MARKETS_CREATED', title: 'Create a market', period: 'weekly' },
 ]
 
+// Metallic capsule colour family per paid tier (Plus silver / Pro indigo /
+// Premium gold), matching each tier's brand colour in SUPPORTER_TIERS.
+const TIER_BADGE_COLOR: Record<SupporterTier, 'silver' | 'indigo' | 'amber'> = {
+  basic: 'silver',
+  plus: 'indigo',
+  premium: 'amber',
+}
+
 // Native-only: push the (binary) quest completion to the streak widget. Runs once
 // when the user is known, and again whenever the native app foregrounds (the
 // 'refreshQuests' message), so completing a quest reaches the widget without a
@@ -34,9 +46,15 @@ export const useNativeQuestSync = (
   const user = useUser()
   // Supporter tiers earn multiplied quest rewards — mirror the quests modal so
   // the widget shows what the user will actually receive (e.g. PRO = 2x).
-  const questMultiplier = user
-    ? getEffectiveBonusMultiplier(getEffectiveTier(user), 'quest')
+  const effectiveTier = user ? getEffectiveTier(user) : undefined
+  const questMultiplier = effectiveTier
+    ? getEffectiveBonusMultiplier(effectiveTier, 'quest')
     : 1
+  // Paid tiers also get a metallic badge above the rewards ("PRO ×2").
+  const supporterTier =
+    effectiveTier && effectiveTier in SUPPORTER_TIERS
+      ? (effectiveTier as SupporterTier)
+      : undefined
 
   const syncQuests = useEvent(async () => {
     if (!isNative || !userId) return
@@ -52,7 +70,19 @@ export const useNativeQuestSync = (
           period: q.period,
         }
       })
-      nativeSetQuests({ quests, updatedAt: Date.now() })
+      nativeSetQuests({
+        quests,
+        updatedAt: Date.now(),
+        ...(supporterTier
+          ? {
+              tier: {
+                label: SUPPORTER_TIERS[supporterTier].name.toUpperCase(),
+                multiplier: questMultiplier,
+                color: TIER_BADGE_COLOR[supporterTier],
+              },
+            }
+          : {}),
+      })
     } catch (e) {
       console.error('Error syncing quests to widget', e)
     }

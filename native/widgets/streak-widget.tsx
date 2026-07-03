@@ -81,6 +81,60 @@ function msUntilPacificReset(now: Date): number {
 // "not done" — the safe state. Mirrors questItems() in index.swift.
 
 type WidgetQuest = { title: string; rewardMana: number; done: boolean }
+type TierBadge = NonNullable<NativeQuestData['tier']>
+
+// Metallic capsule gradients for the supporter badge ("PRO ×2") above the
+// quest rewards — silver for Plus, indigo for Pro, gold for Premium. Two-stop
+// diagonal (the lib's gradients are 2-stop) reads as a sheen.
+const TIER_BADGE_STYLE: Record<
+  TierBadge['color'],
+  { gradient: Gradient; fg: `#${string}` }
+> = {
+  silver: {
+    gradient: { from: '#E9E9F0', to: '#9CA0A8', orientation: 'TL_BR' },
+    fg: '#33333A',
+  },
+  indigo: {
+    gradient: { from: '#818CF8', to: '#4338CA', orientation: 'TL_BR' },
+    fg: '#FFFFFF',
+  },
+  amber: {
+    gradient: { from: '#FFD98A', to: '#C97D06', orientation: 'TL_BR' },
+    fg: '#4A2E00',
+  },
+}
+
+function TierBadgeWidget({ tier }: { tier: TierBadge }) {
+  const style = TIER_BADGE_STYLE[tier.color] ?? TIER_BADGE_STYLE.indigo
+  const mult =
+    tier.multiplier % 1 === 0
+      ? String(tier.multiplier)
+      : tier.multiplier.toFixed(1)
+  return (
+    <FlexWidget
+      style={{
+        width: 'match_parent',
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginBottom: 4,
+      }}
+    >
+      <FlexWidget
+        style={{
+          backgroundGradient: style.gradient,
+          borderRadius: 9,
+          paddingHorizontal: 7,
+          paddingVertical: 2,
+        }}
+      >
+        <TextWidget
+          text={`${tier.label} ×${mult}`}
+          style={{ fontSize: 10, fontWeight: '900', color: style.fg }}
+        />
+      </FlexWidget>
+    </FlexWidget>
+  )
+}
 
 // Weekday in LA, 0=Sun … 6=Sat.
 function pacificWeekday(now: Date): number {
@@ -587,6 +641,7 @@ function MediumWidget({
   data,
   now,
   quests,
+  tier,
   showCountdown,
   isTallMedium,
   clickData,
@@ -595,6 +650,7 @@ function MediumWidget({
   data: NativeStreakData | null
   now: Date
   quests: WidgetQuest[]
+  tier?: TierBadge
   showCountdown?: boolean
   isTallMedium?: boolean
   clickData?: Record<string, unknown>
@@ -662,6 +718,7 @@ function MediumWidget({
           <FlexWidget
             style={{ width: 'match_parent', flexDirection: 'column' }}
           >
+            {tier ? <TierBadgeWidget tier={tier} /> : null}
             {quests.map((q, i) => (
               <QuestRow key={i} quest={q} large={isTallMedium} />
             ))}
@@ -948,6 +1005,7 @@ export function StreakWidget({
       data={previewData}
       now={now}
       quests={quests}
+      tier={(FORCE_QUESTS ?? questData)?.tier}
       showCountdown={showCountdown}
       // Tall enough to have vertical slack (content needs ~135dp). Below this the
       // cell is "short-wide" and the compact space-between layout fills it.
