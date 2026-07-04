@@ -17,7 +17,9 @@ import {
   BALANCE_CHANGE_TYPE_LABELS,
   BetBalanceChange,
   isBetChange,
+  isPerpChange,
   isTxnChange,
+  PerpBalanceChange,
   TxnBalanceChange,
 } from 'common/balance-change'
 import Link from 'next/link'
@@ -385,6 +387,14 @@ function RenderBalanceChanges(props: {
               token={change.contract.token}
             />
           )
+        } else if (isPerpChange(change)) {
+          return (
+            <PerpBalanceChangeRow
+              key={change.key}
+              change={change}
+              avatarSize={avatarSize}
+            />
+          )
         } else if (isTxnChange(change)) {
           return (
             <TxnBalanceChangeRow
@@ -542,6 +552,58 @@ const BetBalanceChangeRow = (props: {
             </>
           )}{' '}
           {customFormatTime(change.createdTime)}
+        </Row>
+      </Col>
+    </Row>
+  )
+}
+
+// Ledger annotation for a perp liquidation: amount is always 0 (the margin
+// left the balance at open), so no running-balance figure is shown — the row
+// records that the deposited margin became a permanent loss at this moment.
+const PerpBalanceChangeRow = (props: {
+  change: PerpBalanceChange
+  avatarSize: 'sm' | 'md'
+}) => {
+  const { change, avatarSize } = props
+  const { contract, description } = change
+  return (
+    <Row className={'gap-2'}>
+      <Col className={'mt-0.5'}>
+        <ChangeIcon
+          avatarSize={avatarSize}
+          slug={
+            contract.slug
+              ? contractPathWithoutContract(
+                  contract.creatorUsername,
+                  contract.slug
+                )
+              : undefined
+          }
+          symbol={'💥'}
+          className={'bg-scarlet-400'}
+        />
+      </Col>
+      <Col className={'w-full'}>
+        <Row className={'justify-between'}>
+          {contract.slug ? (
+            <Link
+              href={contractPathWithoutContract(
+                contract.creatorUsername,
+                contract.slug
+              )}
+              className={clsx('line-clamp-2', linkClass)}
+            >
+              {contract.question}
+            </Link>
+          ) : (
+            <div className={'line-clamp-2'}>{contract.question}</div>
+          )}
+        </Row>
+        <Row className={'text-ink-600 justify-between text-sm'}>
+          <div className={'text-scarlet-600 line-clamp-2'}>
+            {BALANCE_CHANGE_TYPE_LABELS.perp_liquidation}: {description}
+          </div>
         </Row>
       </Col>
     </Row>

@@ -4,9 +4,12 @@ import { Bet } from 'common/bet'
 import { orderBy } from 'lodash'
 import {
   BetBalanceChange,
+  PerpBalanceChange,
   TxnBalanceChange,
   BET_BALANCE_CHANGE_TYPES,
 } from 'common/balance-change'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { formatMoney } from 'common/util/format'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
@@ -26,8 +29,9 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   const fetchBets = !changeType || isBetType
   const fetchTxns = !changeType || !isBetType
   const fetchLiquidity = !changeType || changeType === 'ADD_SUBSIDY'
+  const fetchPerp = !changeType || changeType === 'perp_liquidation'
 
-  const [betBalanceChanges, txnBalanceChanges, liquidityChanges] =
+  const [betBalanceChanges, txnBalanceChanges, liquidityChanges, perpChanges] =
     await Promise.all([
       fetchBets ? getBetBalanceChanges(before, after, userId) : [],
       fetchTxns
@@ -39,10 +43,16 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
           )
         : [],
       fetchLiquidity ? getLiquidityBalanceChanges(before, after, userId) : [],
+      fetchPerp ? getPerpBalanceChanges(before, after, userId) : [],
     ])
 
   let allChanges = orderBy(
-    [...betBalanceChanges, ...txnBalanceChanges, ...liquidityChanges],
+    [
+      ...betBalanceChanges,
+      ...txnBalanceChanges,
+      ...liquidityChanges,
+      ...perpChanges,
+    ],
     (change) => change.createdTime,
     'desc'
   )
@@ -50,6 +60,57 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
     allChanges = allChanges.filter((c) => c.type === changeType)
   }
   return allChanges.slice(offset, offset + limit)
+}
+
+// Ledger annotations for perp liquidations. No mana moves at liquidation
+// (margin left the balance at open), so amount is 0 — the row makes the loss
+// visible in the ledger on the day it became permanent.
+const getPerpBalanceChanges = async (
+  before: number | undefined,
+  after: number,
+  userId: string
+) => {
+  const pg = createSupabaseDirectClient()
+  return await pg.map(
+    `select e.id, e.ts, e.direction, e.size_delta, e.original_cost_basis_delta,
+            e.oracle_price,
+            c.question, c.slug, c.visibility, c.token,
+            c.data->>'creatorUsername' as creator_username
+     from contract_perp_events e
+     join contracts c on c.id = e.contract_id
+     where e.user_id = $3
+       and e.event_type = 'liquidation'
+       and ($1 is null or e.ts < millis_to_ts($1))
+       and e.ts >= millis_to_ts($2)
+     order by e.ts desc`,
+    [before, after, userId],
+    (r): PerpBalanceChange => {
+      const margin = Math.abs(Number(r.original_cost_basis_delta))
+      const size = Math.abs(Number(r.size_delta))
+      const price = Number(r.oracle_price)
+      const leverage = margin > 0 ? Math.round(size / margin) : 0
+      const isPublic = r.visibility === 'public'
+      return {
+        key: `perp-liquidation-${r.id}`,
+        type: 'perp_liquidation',
+        amount: 0,
+        createdTime: new Date(r.ts).getTime(),
+        description: `${leverage >= 2 ? `${leverage}× ` : ''}${
+          r.direction
+        } liquidated at ${formatPrice(
+          price,
+          inferPriceDecimals([price])
+        )} — ${formatMoney(margin)} margin forfeited to the pool`,
+        contract: {
+          question: isPublic ? r.question : '[unlisted question]',
+          visibility: r.visibility,
+          slug: isPublic ? r.slug : '',
+          creatorUsername: r.creator_username,
+          token: r.token,
+        },
+      }
+    }
+  )
 }
 
 const getTxnBalanceChanges = async (
