@@ -1,8 +1,9 @@
 import { sortBy } from 'lodash'
 import clsx from 'clsx'
 import { useState } from 'react'
+import Link from 'next/link'
 import { Answer } from 'common/answer'
-import { Contract, CPMMMultiContract } from 'common/contract'
+import { Contract, contractPath, CPMMMultiContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -156,16 +157,52 @@ function HouseDistrictRow(props: {
     <>
       <Modal
         open={outcome != undefined}
-        setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
+        setOpen={(open) => !open && setOutcome(undefined)}
         className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
       >
-        <AnswerCpmmBetPanel
-          answer={answer}
-          contract={contract}
-          outcome={outcome}
-          closePanel={() => setOutcome(undefined)}
-          alwaysShowOutcomeSwitcher
-        />
+        <Col className="w-full gap-3">
+          {/* Spell out what a bet means. The underlying market asks "will a
+              Democrat win this district?", so on this answer YES = Democrat wins
+              and NO = Republican wins — otherwise the panel just says the raw
+              answer text (e.g. "Texas 34"), which is unclear. Also link out to
+              the full market. */}
+          <Col className="gap-1">
+            <div className="text-lg font-semibold">
+              Will a Democrat win {state}-{label}?
+            </div>
+            <Row className="text-ink-600 items-center gap-x-3 text-sm">
+              <span>
+                <span className="font-semibold" style={{ color: DEM_COLOR }}>
+                  Yes
+                </span>{' '}
+                = Democrat wins
+              </span>
+              <span className="text-ink-300">·</span>
+              <span>
+                <span className="font-semibold" style={{ color: REP_COLOR }}>
+                  No
+                </span>{' '}
+                = Republican wins
+              </span>
+            </Row>
+            <Link
+              href={contractPath(contract)}
+              onClick={() =>
+                track('click house district market', { state, district: label })
+              }
+              className="text-primary-600 hover:text-primary-700 w-fit text-sm hover:underline"
+            >
+              View full market →
+            </Link>
+          </Col>
+          <AnswerCpmmBetPanel
+            answer={answer}
+            contract={contract}
+            outcome={outcome}
+            closePanel={() => setOutcome(undefined)}
+            alwaysShowOutcomeSwitcher
+          />
+        </Col>
       </Modal>
 
       <button
