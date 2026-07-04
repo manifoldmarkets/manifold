@@ -32,10 +32,17 @@ export const notifyPerpOracleResult = async (
     })
   }
   for (const adj of result.adlAdjusted) {
+    // adj.position is the post-ADL position; reconstruct the pre-ADL size so
+    // the notification can show the before -> after change.
+    const sizeAfter = adj.position.size
+    const sizeBefore =
+      adj.scaleFactor > 0 ? sizeAfter / adj.scaleFactor : sizeAfter
     await createPerpAdlNotification(pg, contract, adj.position.userId, {
       direction: adj.position.direction,
       scaleFactor: adj.scaleFactor,
       oraclePrice,
+      sizeBefore,
+      sizeAfter,
     })
   }
 }
@@ -113,6 +120,8 @@ export const createPerpAdlNotification = async (
     direction: 'long' | 'short'
     scaleFactor: number
     oraclePrice: number
+    sizeBefore?: number
+    sizeAfter?: number
   }
 ) => {
   const privateUser = await getPrivateUser(userId)
@@ -122,6 +131,18 @@ export const createPerpAdlNotification = async (
     'perp_adl'
   )
   if (!sendToBrowser) return
+
+  // "Auto-deleveraged by 85.7%" is opaque to a normal user. Say what
+  // happened, to which market, by how much, and why - and that their cost
+  // basis is untouched (only the claim on future profit was scaled).
+  const cutPct = ((1 - data.scaleFactor) * 100).toFixed(1)
+  const sizes =
+    data.sizeBefore != null && data.sizeAfter != null
+      ? ` (${formatMoney(data.sizeBefore)} -> ${formatMoney(
+          data.sizeAfter
+        )} notional)`
+      : ''
+  const sourceText = `Your ${data.direction} on ${contract.question} was reduced ${cutPct}%${sizes} to stay payable: your unrealized profit exceeded what the other side's pool can pay. Your cost basis is unchanged.`
 
   const notification: Notification = {
     id: nanoid(6),
@@ -141,10 +162,7 @@ export const createPerpAdlNotification = async (
     sourceUserAvatarUrl: contract.creatorAvatarUrl ?? MANIFOLD_AVATAR_URL,
     sourceSlug: contract.slug,
     sourceTitle: contract.question,
-    sourceText: `Your ${data.direction} position was auto-deleveraged by ${(
-      (1 - data.scaleFactor) *
-      100
-    ).toFixed(1)}%`,
+    sourceText,
     data: data as any,
   }
   await insertNotificationToSupabase(notification, pg)
