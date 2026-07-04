@@ -36,10 +36,15 @@ export const PerpPositionPanel = (props: {
   const [positions, setPositions] = useState<Position[]>([])
   const [closing, setClosing] = useState<'long' | 'short' | null>(null)
   const [refresh, setRefresh] = useState(0)
+  // Terminal events (closes/liquidations) for the tombstone section: a
+  // liquidated position must NOT silently vanish from the page ("I have no
+  // idea what happened except that I lost").
+  const [pastEvents, setPastEvents] = useState<PerpHistoryEvent[]>([])
 
   useEffect(() => {
     if (!user) {
       setPositions([])
+      setPastEvents([])
       return
     }
     let cancelled = false
@@ -49,13 +54,29 @@ export const PerpPositionPanel = (props: {
     }).then((p) => {
       if (!cancelled) setPositions(p)
     })
+    api('get-perp-events', {
+      contractId: contract.id,
+      userId: user.id,
+      limit: 20,
+    })
+      .then((events) => {
+        if (cancelled) return
+        setPastEvents(
+          events
+            .filter(
+              (e) => e.eventType === 'close' || e.eventType === 'liquidation'
+            )
+            .slice(0, 5)
+        )
+      })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
   }, [contract.id, user?.id, refresh, refreshKey])
 
   if (!user) return null
-  if (!positions.length) return null
+  if (!positions.length && !pastEvents.length) return null
 
   const close = async (direction: 'long' | 'short') => {
     setClosing(direction)
@@ -91,6 +112,95 @@ export const PerpPositionPanel = (props: {
           anyClosing={closing !== null}
         />
       ))}
+      {pastEvents.length > 0 && <PositionHistory events={pastEvents} />}
+    </Col>
+  )
+}
+
+type PerpHistoryEvent = {
+  id: number
+  ts: number
+  eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+  direction: 'long' | 'short' | null
+  sizeDelta: number
+  originalCostBasisDelta: number
+  oraclePrice: number
+  payout: number | null
+  pnl: number | null
+}
+
+// Tombstones for closed/liquidated positions, so the outcome of a position
+// stays visible on the market page instead of the position just vanishing.
+const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
+  const { events } = props
+  return (
+    <Col className="border-ink-200 bg-canvas-0 gap-2 rounded-lg border p-3">
+      <span className="text-ink-500 text-xs font-semibold uppercase">
+        Your position history
+      </span>
+      {events.map((e) => {
+        const decimals = inferPriceDecimals([e.oraclePrice])
+        const at = new Date(e.ts).toLocaleString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+        if (e.eventType === 'liquidation') {
+          // originalCostBasisDelta is negative on liquidation; the loss is
+          // the full margin that was forfeited to the pool.
+          const lost = Math.abs(e.originalCostBasisDelta)
+          return (
+            <Row
+              key={e.id}
+              className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
+            >
+              <span className="text-scarlet-600 font-semibold">
+                💥 Liquidated {e.direction}
+              </span>
+              <span className="text-scarlet-600 font-semibold tabular-nums">
+                −{formatMoney(lost)} margin
+              </span>
+              <span className="text-ink-500 tabular-nums">
+                at {formatPrice(e.oraclePrice, decimals)}
+              </span>
+              <span className="text-ink-400 text-xs">{at}</span>
+            </Row>
+          )
+        }
+        // close
+        const pnl = e.pnl ?? 0
+        return (
+          <Row
+            key={e.id}
+            className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
+          >
+            <span className="text-ink-700 font-medium">
+              Closed {e.direction}
+            </span>
+            <span className="text-ink-700 tabular-nums">
+              payout {formatMoney(e.payout ?? 0)}
+            </span>
+            <span
+              className={clsx(
+                'font-semibold tabular-nums',
+                pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+              )}
+            >
+              {pnl >= 0 ? '+' : ''}
+              {formatMoney(pnl)}
+            </span>
+            <span className="text-ink-500 tabular-nums">
+              at {formatPrice(e.oraclePrice, decimals)}
+            </span>
+            <span className="text-ink-400 text-xs">{at}</span>
+          </Row>
+        )
+      })}
+      <span className="text-ink-400 text-xs">
+        Liquidation forfeits a position's margin to the pool that pays winning
+        positions.
+      </span>
     </Col>
   )
 }
