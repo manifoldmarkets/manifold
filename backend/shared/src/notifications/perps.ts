@@ -1,8 +1,10 @@
 import { PerpContract } from 'common/contract'
 import { Notification } from 'common/notification'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { getPrivateUser } from 'shared/utils'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { MANIFOLD_AVATAR_URL } from 'common/user'
+import { formatMoney } from 'common/util/format'
 import { nanoid } from 'common/util/random'
 import type { OracleUpdateResult } from 'shared/perps/engine'
 import { SupabaseDirectClient } from 'shared/supabase/init'
@@ -59,6 +61,25 @@ export const createPerpLiquidationNotification = async (
   )
   if (!sendToBrowser) return
 
+  // Lead with the money. The one number a liquidated trader cares about is
+  // how much margin they lost; price context explains why. (QA feedback:
+  // "no idea what happened except that I lost".)
+  const leverage =
+    data.originalCostBasis > 0 ? data.size / data.originalCostBasis : 0
+  const levText = leverage >= 1.5 ? `${Math.round(leverage)}× ` : ''
+  const decimals = inferPriceDecimals([data.oraclePrice, data.liquidationPrice])
+  const sourceText = `Liquidated: your ${levText}${
+    data.direction
+  } on ${contract.question} lost its ${formatMoney(
+    data.originalCostBasis
+  )} margin. The price hit ${formatPrice(
+    data.oraclePrice,
+    decimals
+  )}, past your liquidation price of ${formatPrice(
+    data.liquidationPrice,
+    decimals
+  )}.`
+
   const notification: Notification = {
     id: nanoid(6),
     userId,
@@ -77,7 +98,7 @@ export const createPerpLiquidationNotification = async (
     sourceUserAvatarUrl: contract.creatorAvatarUrl ?? MANIFOLD_AVATAR_URL,
     sourceSlug: contract.slug,
     sourceTitle: contract.question,
-    sourceText: `Your ${data.direction} position was liquidated at ${data.oraclePrice}`,
+    sourceText,
     data: data as any,
   }
   await insertNotificationToSupabase(notification, pg)
