@@ -365,10 +365,12 @@ func gradientFor(state: StreakState, streak: Int) -> LinearGradient {
   return flameGradient
 }
 
-// The label under the number — "day streak", except when a freeze saved the
-// day, where the freeze count takes its place (one line, never two).
-func streakLabel(state: StreakState, freezesLeft: Int) -> String {
-  state == .frozen ? "Frozen · \(freezesLeft) left" : "day streak"
+// The line under the streak count. "day streak" is GONE (design review: the
+// flame + number already say it) — the freeze inventory lives here instead:
+// remaining count while frozen, owned count otherwise, nothing when zero.
+func freezeLine(state: StreakState, freezesLeft: Int) -> String? {
+  if state == .frozen { return "Frozen · \(freezesLeft) left" }
+  return freezesLeft > 0 ? "🧊 ×\(freezesLeft)" : nil
 }
 
 // Short rotating caption for the LIT small widget — fills the corner the
@@ -1519,10 +1521,12 @@ struct StreakWidgetEntryView: View {
           .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                   radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
       }
-      Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
-        .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
-        .lineLimit(1).minimumScaleFactor(0.6)
-        .padding(.top, 2)
+      if let line = freezeLine(state: entry.state, freezesLeft: entry.freezesLeft) {
+        Text(line)
+          .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
+          .lineLimit(1).minimumScaleFactor(0.6)
+          .padding(.top, 2)
+      }
       Spacer(minLength: 4)
       if showTimer {
         countdown(weight: .bold).font(.system(size: 16))
@@ -1581,10 +1585,12 @@ struct StreakWidgetEntryView: View {
             .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                     radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
         }
-        Text(streakLabel(state: entry.state, freezesLeft: entry.freezesLeft))
-          .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
-          .lineLimit(1).minimumScaleFactor(0.6)
-          .padding(.top, 2)
+        if let line = freezeLine(state: entry.state, freezesLeft: entry.freezesLeft) {
+          Text(line)
+            .font(.system(size: 12, weight: .semibold)).foregroundColor(.white.opacity(0.85))
+            .lineLimit(1).minimumScaleFactor(0.6)
+            .padding(.top, 2)
+        }
         if entry.state != .lit {
           countdown(weight: .bold).font(.system(size: 16)).padding(.top, 3)
         } else if !hasQuests {
@@ -1592,16 +1598,6 @@ struct StreakWidgetEntryView: View {
             .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
             .lineLimit(2).minimumScaleFactor(0.75)
             .padding(.top, 4)
-        }
-        // The freeze safety-net readout (skipped while frozen — the label
-        // already carries the count there — and when they own none). Lit
-        // shows JUST this under the label — clean, per design review.
-        if hasQuests && entry.state != .frozen && entry.freezesLeft > 0 {
-          Text("🧊 ×\(entry.freezesLeft)")
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundColor(.white.opacity(0.85))
-            .lineLimit(1)
-            .padding(.top, 2)
         }
         Spacer(minLength: 0)
       }

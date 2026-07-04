@@ -47,9 +47,7 @@ function PreviewSmall() {
           <span className="text-2xl leading-none drop-shadow">🔥</span>
           <span className="text-2xl font-black leading-none">5</span>
         </Row>
-        <div className="mt-1 text-[10px] font-semibold opacity-90">
-          day streak
-        </div>
+        <div className="mt-1 text-[10px] font-semibold opacity-90">🧊 ×2</div>
       </div>
     </div>
   )
@@ -67,9 +65,7 @@ function PreviewMediumIOS() {
             <span className="text-2xl leading-none drop-shadow">🔥</span>
             <span className="text-2xl font-black leading-none">5</span>
           </Row>
-          <div className="mt-1 text-[10px] font-semibold opacity-90">
-            day streak
-          </div>
+          <div className="mt-1 text-[10px] font-semibold opacity-90">🧊 ×2</div>
         </Col>
         <div className="w-px shrink-0 bg-white/25" />
         <Col className="min-w-0 flex-1 justify-start gap-1 pt-1 text-[10px] font-semibold">
@@ -105,7 +101,7 @@ function PreviewTall() {
           <span className="text-2xl leading-none drop-shadow">🔥</span>
           <span className="text-3xl font-black leading-none">5</span>
         </Row>
-        <div className="text-[10px] font-semibold opacity-90">day streak</div>
+        <div className="text-[10px] font-semibold opacity-90">🧊 ×2</div>
       </div>
     </div>
   )
