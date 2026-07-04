@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import {
@@ -22,7 +23,7 @@ import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Modal } from 'web/components/layout/modal'
+import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -274,8 +275,13 @@ export function BanModal({
   const anyBanSelected = Object.values(banTypes).some((v) => v)
 
   return (
-    <Modal open={isOpen} setOpen={onClose}>
-      <Col className="bg-canvas-0 max-w-2xl gap-4 rounded-md p-6">
+    <Modal
+      open={isOpen}
+      setOpen={onClose}
+      size="lg"
+      className="bg-canvas-0 rounded-md"
+    >
+      <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'gap-4 p-6')}>
         <Title>Ban User: {user.name}</Title>
 
         {/* Bonus Eligibility Section */}
