@@ -9,6 +9,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { useHasHover } from 'web/hooks/use-has-hover'
 import {
   EmptyStateContract,
   StateContract,
@@ -68,6 +69,14 @@ export function HomepageMap(props: {
     undefined
   )
 
+  // On touch devices (iOS especially), hover is emulated on tap: the first tap
+  // fires mouseenter and gets swallowed as a hover-reveal, so the detail panel
+  // appears off hoveredState without a click ever pinning targetState. A follow
+  // -up tap then fires mouseleave, collapsing the panel just as the user tries
+  // to hit a bet button. Ignore hover on no-hover devices so taps drive
+  // selection through targetState alone, which fires reliably.
+  const hasHover = useHasHover()
+
   function handleClick(newTargetState: string | undefined) {
     if (targetState && newTargetState == targetState) {
       setTargetState(undefined)
@@ -77,11 +86,11 @@ export function HomepageMap(props: {
   }
 
   function onMouseEnter(hoverState: string) {
-    setHoveredState(hoverState)
+    if (hasHover) setHoveredState(hoverState)
   }
 
   function onMouseLeave() {
-    setHoveredState(undefined)
+    if (hasHover) setHoveredState(undefined)
   }
 
   // The state whose detail (and candidate card) is shown: hover takes priority,
