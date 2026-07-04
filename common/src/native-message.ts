@@ -76,8 +76,9 @@ export type NativeStreakData = {
   lastStreakFreezeTime: number // 0 if no freeze ever used
   freezesLeft: number // == user.streakForgiveness
   updatedAt: number // when this snapshot was taken
-  // Today's streak bonus with the tier's streak multiplier applied — shown on
-  // the widget as "+M50 / day". Optional so legacy blobs stay decodable.
+  // Today's streak bonus with the tier's streak multiplier applied. Data-only
+  // for now (the "+M/day" display was cut in design review — kept for future
+  // use). Optional so legacy blobs stay decodable.
   streakBonus?: number
 }
 

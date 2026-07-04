@@ -30,25 +30,38 @@ import {
 
 type StreakState = 'lit' | 'pending' | 'frozen' | 'loggedOut'
 
-// Most recent midnight America/Los_Angeles, in epoch ms (the streak "today"
-// boundary the backend uses). Derived from the LA wall-clock time at `now` so it
-// is DST-correct without a timezone library: subtract however many ms `now` is
-// past LA-midnight in wall-clock terms.
-function pacificStartOfDayMs(now: Date): number {
+// How many ms past LA-midnight the LA wall clock reads at `at`.
+function laWallClockMsPastMidnight(at: Date): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
-  }).formatToParts(now)
+  }).formatToParts(at)
   const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0)
   // '24' can appear for midnight in some engines; normalize to 0.
   const h = get('hour') % 24
   const m = get('minute')
   const s = get('second')
-  const msPastMidnight = ((h * 60 + m) * 60 + s) * 1000 + now.getMilliseconds()
-  return now.getTime() - msPastMidnight
+  return ((h * 60 + m) * 60 + s) * 1000 + at.getMilliseconds()
+}
+
+// Most recent midnight America/Los_Angeles, in epoch ms (the streak "today"
+// boundary the backend uses). First pass: subtract however many ms `now` is
+// past LA-midnight in wall-clock terms. On the two DST-transition days
+// wall-clock ms ≠ elapsed ms, so that candidate lands ±1h off — the second
+// pass reads the LA wall clock AT the candidate and nudges it home (exactly 0,
+// a no-op, on the other 363 days). Mirrors pacificStartOfDay() in index.swift,
+// which gets DST handling from Calendar for free.
+function pacificStartOfDayMs(now: Date): number {
+  let start = now.getTime() - laWallClockMsPastMidnight(now)
+  const drift = laWallClockMsPastMidnight(new Date(start))
+  if (drift !== 0) {
+    const halfDay = 12 * 60 * 60 * 1000
+    start += drift > halfDay ? 24 * 60 * 60 * 1000 - drift : -drift
+  }
+  return start
 }
 
 function computeState(d: NativeStreakData | null, now: Date): StreakState {
@@ -67,12 +80,17 @@ function computeState(d: NativeStreakData | null, now: Date): StreakState {
 }
 
 // Milliseconds from now until the next midnight America/Los_Angeles (the streak
-// reset). Drives the live countdown Chronometer in the pending state. (+24h from
-// the most-recent midnight can be off by an hour on the two DST-change days; the
-// app-open re-render corrects it — fine for a countdown.)
+// reset). Drives the live countdown Chronometer in the pending state. The next
+// midnight is found as the start-of-day ~26h ahead, so it's exact even when
+// today is 23/25h long (DST). Returns 0 when LA time can't be computed —
+// callers treat 0 as "don't show a countdown" (a Chronometer started at zero
+// would tick negative until the next re-render).
 function msUntilPacificReset(now: Date): number {
   try {
-    const nextMidnight = pacificStartOfDayMs(now) + 24 * 60 * 60 * 1000
+    const startMs = pacificStartOfDayMs(now)
+    const nextMidnight = pacificStartOfDayMs(
+      new Date(startMs + 26 * 60 * 60 * 1000)
+    )
     return Math.max(0, nextMidnight - now.getTime())
   } catch {
     return 0
@@ -586,6 +604,11 @@ function SmallWidget({
       craneSize={84}
       mascot={mascot}
       clickData={clickData}
+      // NOTE: frame wraps the shell in an outer FlexWidget, which becomes the
+      // ROOT — and the patched Chronometer reads {showCountdown} from the
+      // root's clickActionData. Safe today only because frame ⇒ lit milestone
+      // and countdown ⇒ pending/frozen never coincide; a framed countdown
+      // state would silently lose its timer.
       frame={isTall && milestone ? FRAME_GOLD : undefined}
     >
       <FlexWidget style={contentStyle}>
@@ -749,10 +772,10 @@ function MediumWidget({
   }
   const milestone = isGoldMilestone(state, data.streak)
   // Quest panel (Layout B): full-width quest checklist on TOP, streak on the
-  // BOTTOM. In pending/frozen the live countdown Chronometer overlays the
-  // bottom-left — clear here because the streak sits bottom-RIGHT and drops its
-  // label to make way; lit has no timer, so the streak goes bottom-left with its
-  // full label. This frees the corner the live ticker needs (no rebuild).
+  // BOTTOM-LEFT. In pending/frozen the live countdown Chronometer overlays the
+  // bottom-left corner — the (possibly empty) freeze line under the streak
+  // number renders transparent then, reserving exactly the spot the native
+  // ticker lands on (see the transparent-line trick below).
   if (quests.length > 0) {
     return (
       <Shell
@@ -1117,16 +1140,18 @@ export function StreakWidget({
   // a freeze covered today but the day still isn't "done"). The native Chronometer
   // is hard-anchored bottom-left (see the patch), so it only fits where that
   // corner is clear: the tall + square (hero top-anchored), and the medium quest
-  // panel (Layout B — streak sits bottom-right). The plain (no-quest) medium can't
-  // host it, so it's left off there.
+  // panel (Layout B — the streak block's freeze line renders transparent there
+  // to reserve the ticker's spot). The plain (no-quest) medium can't host it, so
+  // it's left off there. Requires a computable reset time (countdownMs > 0):
+  // starting the Chronometer at zero would tick negative until the next render.
+  const countdownMs = FORCE_COUNTDOWN_MS ?? msUntilPacificReset(now)
   const showCountdown =
     (state === 'pending' || state === 'frozen') &&
+    countdownMs > 0 &&
     (isTall || isSquare || mediumHasQuests)
   const clickData = {
     showCountdown,
-    countdownMs: showCountdown
-      ? FORCE_COUNTDOWN_MS ?? msUntilPacificReset(now)
-      : 0,
+    countdownMs: showCountdown ? countdownMs : 0,
   }
   return isMedium ? (
     <MediumWidget

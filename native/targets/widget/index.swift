@@ -42,7 +42,8 @@ struct StreakData: Decodable {
   let lastBetTime: Double
   let lastStreakFreezeTime: Double
   let freezesLeft: Int
-  // Daily streak bonus with the tier multiplier applied ("+M50 / day").
+  // Daily streak bonus with the tier multiplier applied. Data-only: the
+  // "+M/day" line was cut in design review; kept for future display use.
   // nil when the blob predates the field — the widget falls back gracefully.
   let streakBonus: Int?
 
@@ -281,6 +282,13 @@ struct Provider: TimelineProvider {
         let boundary = first.resetDate.addingTimeInterval(-hoursLeft * 3600)
         if boundary > now { entries.append(currentEntry(boundary)) }
       }
+    }
+    if first.loggedIn {
+      // Pre-rendered entry at the reset itself: the day flip (lit → pending,
+      // countdown restart, quest reset) must not depend on the .after() reload,
+      // which iOS can defer under refresh budget / Low Power Mode. Switching to
+      // an already-delivered entry happens exactly on time.
+      entries.append(currentEntry(first.resetDate))
     }
     completion(Timeline(entries: entries, policy: .after(first.resetDate)))
   }
@@ -1163,9 +1171,9 @@ struct StreakWidgetEntryView: View {
     }
   }
 
-  // Lock screen — circular: ring fills white once you've bet today; crane (nil-safe)
-  // or ice in the middle. NO AccessoryWidgetBackground (the suspected culprit) —
-  // everything here is standard SwiftUI.
+  // Lock screen — circular: ring fills white once you've bet today; flame or ice
+  // in the middle. Emoji + vector ONLY — a UIImage here is the proven
+  // infinite-shimmer culprit on lock accessories (see the live accessories below).
   private var simpleCircular: some View {
     let d = snapshot()
     let state = d.map { computeState($0, now: Date()) } ?? .pending
@@ -1175,7 +1183,7 @@ struct StreakWidgetEntryView: View {
         Text("🧊").font(.system(size: 38)).opacity(0.32)
         circularFrost
       } else {
-        logo(44, opacity: 0.18)
+        Text("🔥").font(.system(size: 38)).opacity(0.18)
       }
       Text(d.map { "\($0.streak)" } ?? "0")
         .font(.system(size: 22, weight: .bold)).lineLimit(1).minimumScaleFactor(0.4).padding(3)
