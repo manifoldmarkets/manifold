@@ -7,9 +7,17 @@ import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
+import {
+  capitalize,
+  groupBy,
+  minBy,
+  orderBy,
+  range,
+  sample,
+  uniqBy,
+} from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
@@ -380,29 +388,40 @@ export function Search(props: SearchProps) {
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
-  const answersWithChanges = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
-      ? orderBy(
-          c.answers.filter((a) => Math.abs(a.probChanges.day) > 0.02),
-          (a) => Math.abs(a.probChanges.day),
-          'desc'
-        ).slice(0, 2)
-      : []
+  const answersWithChanges = useMemo(
+    () =>
+      contracts?.flatMap((c) =>
+        c.mechanism === 'cpmm-multi-1'
+          ? orderBy(
+              c.answers.filter((a) => Math.abs(a.probChanges.day) > 0.02),
+              (a) => Math.abs(a.probChanges.day),
+              'desc'
+            ).slice(0, 2)
+          : []
+      ),
+    [contracts]
   )
 
-  const answersMatchingQuery = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
-      ? c.answers
-          .filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
-          .slice(0, 2)
-      : []
+  const answersMatchingQuery = useMemo(
+    () =>
+      contracts?.flatMap((c) =>
+        c.mechanism === 'cpmm-multi-1'
+          ? c.answers
+              .filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
+              .slice(0, 2)
+          : []
+      ),
+    [contracts, query]
   )
-  const answersByContractId =
-    answersWithChanges && filter === 'news'
-      ? groupBy(answersWithChanges, 'contractId')
-      : query !== ''
-      ? groupBy(answersMatchingQuery, 'contractId')
-      : undefined
+  const answersByContractId = useMemo(
+    () =>
+      answersWithChanges && filter === 'news'
+        ? groupBy(answersWithChanges, 'contractId')
+        : query !== ''
+        ? groupBy(answersMatchingQuery, 'contractId')
+        : undefined,
+    [answersWithChanges, answersMatchingQuery, filter, query]
+  )
   const emptyContractsState =
     props.emptyState ??
     (filter !== 'all' ||
@@ -847,7 +866,7 @@ export function Search(props: SearchProps) {
         )}
 
         {!contracts && !posts ? (
-          <LoadingContractResults />
+          <LoadingContractResults count={8} className="min-h-screen" />
         ) : contracts?.length === 0 && posts?.length === 0 ? (
           emptyContractsState
         ) : (
@@ -863,6 +882,7 @@ export function Search(props: SearchProps) {
                 hideAvatars={hideAvatars}
                 hideActions={hideActions}
                 hasBets={hasBets}
+                disableLiveUpdates={!user}
               />
             ) : null}
             <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
@@ -899,12 +919,16 @@ const NoResults = () => {
   )
 }
 
-export const LoadingContractResults = () => {
+export const LoadingContractResults = (props?: {
+  count?: number
+  className?: string
+}) => {
+  const { count = 3, className } = props ?? {}
   return (
-    <Col className="w-full">
-      <LoadingContractRow />
-      <LoadingContractRow />
-      <LoadingContractRow />
+    <Col className={clsx('w-full', className)}>
+      {range(count).map((i) => (
+        <LoadingContractRow key={i} />
+      ))}
     </Col>
   )
 }
