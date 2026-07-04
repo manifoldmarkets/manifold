@@ -49,8 +49,11 @@ export function LoadMoreUntilNotVisible(props: {
   return (
     <div className="relative">
       <VisibilityObserver
-        // Loads more as soon as one screen height of content is left.
-        className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+        // Prefetch ~2 screens of content ahead of the viewport so the appended
+        // page lands off-screen. Otherwise, on a slow connection the user scrolls
+        // to the bottom before the page arrives, and inserting it shoves the
+        // in-viewport footer/skeleton down — a major source of feed CLS.
+        className="pointer-events-none absolute bottom-0 h-[200vh] w-full select-none"
         onVisibilityUpdated={onVisibilityUpdated}
       />
     </div>

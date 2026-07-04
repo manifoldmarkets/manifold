@@ -347,6 +347,7 @@ export function Search(props: SearchProps) {
     users,
     topics,
     loading,
+    loadingMore,
     shouldLoadMore,
     loadMoreContracts,
     refreshContracts,
@@ -886,7 +887,11 @@ export function Search(props: SearchProps) {
               />
             ) : null}
             <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
-            {shouldLoadMore && <LoadingContractResults />}
+            {shouldLoadMore && (
+              <LoadingContractResults
+                count={loadingMore ? CONTRACTS_PER_SEARCH_PAGE : 3}
+              />
+            )}
             {!shouldLoadMore && (
               <NoMoreResults params={searchParams} onChange={onChange} />
             )}
@@ -988,6 +993,7 @@ export const useSearchResults = (props: {
     `${persistPrefix}-supabase-contract-search`
   )
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [lastSearchParams, setLastSearchParams] =
     usePersistentInMemoryState<SearchParams | null>(
       null,
@@ -1283,8 +1289,16 @@ export const useSearchResults = (props: {
     users: state.users,
     topics: state.topics,
     loading,
+    loadingMore,
     shouldLoadMore: state.shouldLoadMore,
-    loadMoreContracts: () => querySearchResults(false, true),
+    loadMoreContracts: async () => {
+      setLoadingMore(true)
+      try {
+        return await querySearchResults(false, true)
+      } finally {
+        setLoadingMore(false)
+      }
+    },
     refreshContracts: () => querySearchResults(true, true),
     posts: state.posts,
   }
