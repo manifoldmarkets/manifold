@@ -46,10 +46,13 @@ struct StreakData: Decodable {
   // "+M/day" line was cut in design review; kept for future display use.
   // nil when the blob predates the field — the widget falls back gracefully.
   let streakBonus: Int?
+  // ms-epoch snapshot time; 0 for legacy blobs. Used to bound the overnight
+  // freeze prediction to a single missed day (see predictOvernight).
+  let updatedAt: Double
 
   enum CodingKeys: String, CodingKey {
     case loggedIn, streak, lastBetTime, lastStreakFreezeTime, freezesLeft
-    case streakBonus
+    case streakBonus, updatedAt
   }
 
   init(from decoder: Decoder) throws {
@@ -65,6 +68,21 @@ struct StreakData: Decodable {
       (try? c.decode(Double.self, forKey: .lastStreakFreezeTime)) ?? 0
     freezesLeft = (try? c.decode(Int.self, forKey: .freezesLeft)) ?? 0
     streakBonus = try? c.decode(Int.self, forKey: .streakBonus)
+    updatedAt = (try? c.decode(Double.self, forKey: .updatedAt)) ?? 0
+  }
+
+  // Memberwise init (the custom Decodable init suppresses the synthesized one) so
+  // predictOvernight can return an adjusted copy.
+  init(loggedIn: Bool, streak: Int, lastBetTime: Double,
+       lastStreakFreezeTime: Double, freezesLeft: Int, streakBonus: Int?,
+       updatedAt: Double) {
+    self.loggedIn = loggedIn
+    self.streak = streak
+    self.lastBetTime = lastBetTime
+    self.lastStreakFreezeTime = lastStreakFreezeTime
+    self.freezesLeft = freezesLeft
+    self.streakBonus = streakBonus
+    self.updatedAt = updatedAt
   }
 }
 
@@ -163,6 +181,34 @@ func computeState(_ d: StreakData, now: Date) -> StreakState {
   if d.lastBetTime > 0 && d.lastBetTime >= startMs { return .lit }
   if d.lastStreakFreezeTime > 0 && d.lastStreakFreezeTime >= startMs { return .frozen }
   return .pending
+}
+
+// The backend's midnight-PT cron (backend reset-betting-streaks) deterministically
+// consumes one freeze for anyone with a streak + a freeze left who didn't bet the
+// day that just ended. A widget that hasn't re-synced since that rollover would
+// otherwise show a stale "pending", so we replay that single step locally and
+// return an adjusted snapshot (state derives to frozen, freeze count −1). On iOS
+// this fires at the midnight timeline entry emitted by getTimeline.
+//
+// Streak-PRESERVING case only (has a freeze → frozen); the streak-LOST case is
+// left to a real sync. Bounded to one missed day (snapshot synced during the day
+// that just ended) so it never compounds. Mirrors predictOvernight() in
+// streak-widget.tsx.
+func predictOvernight(_ d: StreakData, now: Date) -> StreakData {
+  guard d.loggedIn, d.streak > 0, d.freezesLeft > 0 else { return d }
+  let todayStart = pacificStartOfDay(now).timeIntervalSince1970 * 1000
+  let yesterdayStart = pacificStartOfDay(
+    pacificStartOfDay(now).addingTimeInterval(-1)
+  ).timeIntervalSince1970 * 1000
+  let syncedYesterday = d.updatedAt >= yesterdayStart && d.updatedAt < todayStart
+  let missedYesterday = d.lastBetTime < yesterdayStart
+  guard syncedYesterday && missedYesterday else { return d }
+  return StreakData(
+    loggedIn: d.loggedIn, streak: d.streak, lastBetTime: d.lastBetTime,
+    lastStreakFreezeTime: todayStart, // → computeState returns .frozen
+    freezesLeft: d.freezesLeft - 1, streakBonus: d.streakBonus,
+    updatedAt: d.updatedAt // unchanged: a prediction, not a real sync
+  )
 }
 
 func pacificDayOfYear(_ date: Date) -> Int {
@@ -305,11 +351,14 @@ struct Provider: TimelineProvider {
   // yet → the logged-out invite.
   private func currentEntry(_ date: Date) -> StreakEntry {
     let reset0 = nextPacificReset(after: date)
-    guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else {
+    guard let raw = loadStreakData(), raw.loggedIn, raw.streak > 0 else {
       return StreakEntry(date: date, streak: 0, resetDate: reset0, state: .pending,
                          quests: [], tierBadge: nil, freezesLeft: 0, loggedIn: false,
                          betHour: nil)
     }
+    // Replay a server-side overnight freeze if we haven't re-synced since the
+    // rollover, so a frozen streak shows as frozen instead of stale pending.
+    let d = predictOvernight(raw, now: date)
     let qp = loadQuestData()
     let betHour = d.lastBetTime > 0
       ? Calendar.current.component(.hour,

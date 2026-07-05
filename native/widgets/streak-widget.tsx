@@ -54,7 +54,7 @@ function laWallClockMsPastMidnight(at: Date): number {
 // pass reads the LA wall clock AT the candidate and nudges it home (exactly 0,
 // a no-op, on the other 363 days). Mirrors pacificStartOfDay() in index.swift,
 // which gets DST handling from Calendar for free.
-function pacificStartOfDayMs(now: Date): number {
+export function pacificStartOfDayMs(now: Date): number {
   let start = now.getTime() - laWallClockMsPastMidnight(now)
   const drift = laWallClockMsPastMidnight(new Date(start))
   if (drift !== 0) {
@@ -77,6 +77,46 @@ function computeState(d: NativeStreakData | null, now: Date): StreakState {
     // layout (the iOS "infinite shimmer" failure mode). Default to pending.
     return 'pending'
   }
+}
+
+// The backend's midnight-PT cron (backend reset-betting-streaks) deterministically
+// consumes one freeze for anyone who has a streak, has a freeze left, and didn't
+// bet the day that just ended — setting lastStreakFreezeTime and decrementing
+// streakForgiveness. A widget that hasn't re-synced since that rollover would
+// otherwise keep showing a stale "pending", so we replay that single step locally
+// and return an adjusted snapshot (state derives to frozen, freeze count -1).
+//
+// Only the streak-PRESERVING outcome is predicted (has a freeze -> frozen). The
+// streak-LOST case (out of freezes) is deliberately left to a real sync — falsely
+// telling someone their streak died is the costliest thing to get wrong. Guarded
+// to a single missed day (snapshot was synced during the day that just ended) so
+// it never compounds across multiple nights of a long-stale snapshot; anything
+// staler falls through to the real data + the headless fetch. Mirrors
+// predictOvernight() in index.swift.
+export function predictOvernight(
+  d: NativeStreakData | null,
+  now: Date
+): NativeStreakData | null {
+  if (!d || !d.loggedIn || d.streak <= 0 || d.freezesLeft <= 0) return d
+  try {
+    const todayStart = pacificStartOfDayMs(now)
+    const yesterdayStart = pacificStartOfDayMs(new Date(todayStart - 1))
+    const syncedYesterday =
+      d.updatedAt >= yesterdayStart && d.updatedAt < todayStart
+    const missedYesterday = d.lastBetTime < yesterdayStart
+    if (syncedYesterday && missedYesterday) {
+      return {
+        ...d,
+        freezesLeft: d.freezesLeft - 1,
+        lastStreakFreezeTime: todayStart, // -> computeState returns 'frozen'
+        // updatedAt intentionally unchanged: this is a prediction, not a real
+        // sync, so the headless fetch gate still knows to confirm/correct it.
+      }
+    }
+  } catch {
+    // Predictions never break a render — fall back to the raw snapshot.
+  }
+  return d
 }
 
 // Milliseconds from now until the next midnight America/Los_Angeles (the streak
@@ -1136,7 +1176,11 @@ export function StreakWidget({
           updatedAt: now.getTime(),
         }
       : data
-  const state = FORCE_STATE ?? computeState(previewData, now)
+  // Replay the deterministic overnight freeze if we haven't re-synced since the
+  // midnight rollover, so a frozen streak shows as frozen (not stale pending)
+  // even with the app closed. No-op in the common (already-fresh) case.
+  const effectiveData = predictOvernight(previewData, now)
+  const state = FORCE_STATE ?? computeState(effectiveData, now)
   // Pick layout by cell shape: wide -> medium (hook), short/wide -> compact
   // (flame beside number, e.g. a Pixel 2x1), tall/narrow -> the top-anchored
   // small (hero up top, hook/countdown filling the bottom), else the square
@@ -1167,7 +1211,7 @@ export function StreakWidget({
   return isMedium ? (
     <MediumWidget
       state={state}
-      data={previewData}
+      data={effectiveData}
       now={now}
       quests={quests}
       tier={(FORCE_QUESTS ?? questData)?.tier}
@@ -1178,11 +1222,11 @@ export function StreakWidget({
       clickData={clickData}
     />
   ) : isShort ? (
-    <CompactWidget state={state} data={previewData} clickData={clickData} />
+    <CompactWidget state={state} data={effectiveData} clickData={clickData} />
   ) : (
     <SmallWidget
       state={state}
-      data={previewData}
+      data={effectiveData}
       now={now}
       cellWidth={widgetInfo.width}
       allQuestsDone={quests.length > 0 && quests.every((q) => q.done)}

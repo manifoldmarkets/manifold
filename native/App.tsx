@@ -9,7 +9,6 @@ import {
   NativeStreakData,
   nativeToWebMessage,
   nativeToWebMessageType,
-  streakBonusPerDay,
   webToNativeMessage,
 } from 'common/native-message'
 import { NativeShareData } from 'common/native-share-data'
@@ -32,6 +31,7 @@ import { checkLocationPermission, getLocation } from 'lib/location'
 import {
   clearQuestWidget,
   clearStreakWidget,
+  fetchStreakSnapshot,
   writeQuestWidget,
   writeStreakWidget,
 } from 'lib/streak-widget'
@@ -106,26 +106,8 @@ const App = () => {
   // user/by-id response. (The 'setStreak'/'setQuests' webview messages provide
   // fresher live updates, but only once the web changes are deployed.)
   const syncStreakFromApi = async (userId: string) => {
-    try {
-      const res = await fetch(
-        `https://${CONFIGS[ENV].apiEndpoint}/v0/user/by-id/${userId}`
-      )
-      if (!res.ok) return
-      const u = await res.json()
-      writeStreakWidget({
-        loggedIn: true,
-        streak: u.currentBettingStreak ?? 0,
-        lastBetTime: u.lastBetTime ?? 0,
-        lastStreakFreezeTime: u.lastStreakFreezeTime ?? 0,
-        freezesLeft: u.streakForgiveness ?? 0,
-        // Same formula/multiplier as the web push — the public user object
-        // carries the tier fields, so both paths agree.
-        streakBonus: streakBonusPerDay(u),
-        updatedAt: Date.now(),
-      })
-    } catch (e) {
-      log('Error syncing streak from API', e)
-    }
+    const snapshot = await fetchStreakSnapshot(CONFIGS[ENV].apiEndpoint, userId)
+    if (snapshot) writeStreakWidget(snapshot)
   }
 
   // Re-sync the streak widget whenever the app is backgrounded or re-activated —

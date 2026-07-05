@@ -1,5 +1,9 @@
 import { ExtensionStorage } from '@bacons/apple-targets'
-import { NativeQuestData, NativeStreakData } from 'common/native-message'
+import {
+  NativeQuestData,
+  NativeStreakData,
+  streakBonusPerDay,
+} from 'common/native-message'
 import { Platform } from 'react-native'
 import { log } from 'components/logger'
 
@@ -65,6 +69,43 @@ export const writeQuestWidget = (data: NativeQuestData) => {
     ExtensionStorage.reloadWidget(WIDGET_KIND)
   } catch (e) {
     log('Error writing quest widget data', e)
+  }
+}
+
+// Fetches the user's streak from the public user/by-id API and maps it to a
+// widget snapshot. Shared by the app's foreground sync (App.tsx) and the Android
+// headless widget task, so the field mapping + streak-bonus formula live in one
+// place. Returns null on any failure (offline, non-200, bad JSON, timeout) — the
+// caller keeps the existing snapshot. The timeout matters for the headless task:
+// a hung request would otherwise stall the widget redraw.
+export async function fetchStreakSnapshot(
+  apiEndpoint: string,
+  userId: string,
+  timeoutMs = 6000
+): Promise<NativeStreakData | null> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(
+      `https://${apiEndpoint}/v0/user/by-id/${userId}`,
+      { signal: controller.signal }
+    )
+    if (!res.ok) return null
+    const u = await res.json()
+    return {
+      loggedIn: true,
+      streak: u.currentBettingStreak ?? 0,
+      lastBetTime: u.lastBetTime ?? 0,
+      lastStreakFreezeTime: u.lastStreakFreezeTime ?? 0,
+      freezesLeft: u.streakForgiveness ?? 0,
+      streakBonus: streakBonusPerDay(u),
+      updatedAt: Date.now(),
+    }
+  } catch (e) {
+    log('Error fetching streak snapshot', e)
+    return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
