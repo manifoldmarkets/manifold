@@ -62,6 +62,38 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   return allChanges.slice(offset, offset + limit)
 }
 
+// Balance-log subtitle for perp txns, synthesized from the typed txn data so
+// the row reads like the bet rows ("Opened 5× long — Ṁ100 margin at 62,001").
+const perpTxnDescription = (txn: Txn): string | undefined => {
+  const d = txn.data as any
+  if (!d) return undefined
+  const px = (v: number) => formatPrice(v, inferPriceDecimals([v]))
+  if (txn.category === 'PERP_OPEN_MARGIN') {
+    const lev = Math.round(d.leverage) >= 2 ? `${Math.round(d.leverage)}× ` : ''
+    return `Opened ${lev}${d.direction} — ${formatMoney(
+      txn.amount
+    )} margin at ${px(d.entryPrice)}`
+  }
+  if (txn.category === 'PERP_CLOSE_PAYOUT') {
+    const verb =
+      d.reason === 'flip'
+        ? 'Flipped out of'
+        : d.reason === 'resolve'
+        ? 'Settled'
+        : 'Closed'
+    const pnl = Number(d.pnl ?? 0)
+    return `${verb} ${d.direction} at ${px(d.closePrice)} — PnL ${
+      pnl >= 0 ? '+' : ''
+    }${formatMoney(pnl)}`
+  }
+  if (txn.category === 'PERP_RESOLVE_RESIDUAL') {
+    return `Residual pools returned to creator (settled at ${px(
+      d.finalPrice
+    )})`
+  }
+  return undefined
+}
+
 // Ledger annotations for perp liquidations. No mana moves at liquidation
 // (margin left the balance at open), so amount is 0 — the row makes the loss
 // visible in the ledger on the day it became permanent.
@@ -158,7 +190,7 @@ const getTxnBalanceChanges = async (
       token: txn.token,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
-      description: txn.description,
+      description: txn.description ?? perpTxnDescription(txn),
       contract: contract
         ? {
             question:

@@ -649,6 +649,9 @@ const TxnBalanceChangeRow = (props: {
     CASH_OUT: 'bg-amber-500',
     CONTRACT_BOOST_PURCHASE: 'bg-scarlet-400',
     ADD_SUBSIDY: 'bg-red-100',
+    PERP_OPEN_MARGIN: 'bg-indigo-400',
+    PERP_CLOSE_PAYOUT: 'bg-teal-400',
+    PERP_RESOLVE_RESIDUAL: 'bg-yellow-200',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     PUSH_NOTIFICATION_BONUS: 'bg-pink-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
@@ -687,6 +690,12 @@ const TxnBalanceChangeRow = (props: {
               '🚀'
             ) : type === 'ADD_SUBSIDY' ? (
               '💧'
+            ) : type === 'PERP_OPEN_MARGIN' ? (
+              '📈'
+            ) : type === 'PERP_CLOSE_PAYOUT' ? (
+              '💰'
+            ) : type === 'PERP_RESOLVE_RESIDUAL' ? (
+              '🏦'
             ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ||
               type === 'PRODUCE_SPICE' ? (
               '🎉'
