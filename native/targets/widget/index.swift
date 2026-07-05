@@ -424,18 +424,40 @@ func gradientFor(state: StreakState, streak: Int) -> LinearGradient {
 
 // The line under the streak count. "day streak" is GONE (design review: the
 // flame + number already say it) — the freeze inventory lives here instead:
-// remaining count while frozen, owned count otherwise. ×0 stays VISIBLE (in
-// the countdown's urgency red via freezeLineColor) — running out is exactly
-// what the user needs to see. Mirrors freezeLine() in streak-widget.tsx.
+// remaining count while frozen, owned count otherwise. Rendered by
+// freezeLineView. Mirrors freezeLine() in streak-widget.tsx.
 func freezeLine(state: StreakState, freezesLeft: Int) -> String {
   if state == .frozen { return "Frozen · \(freezesLeft) left" }
   return "🧊 ×\(freezesLeft)"
 }
 
-func freezeLineColor(state: StreakState, freezesLeft: Int) -> Color {
-  return state != .frozen && freezesLeft == 0
-    ? Color(red: 1.0, green: 0.361, blue: 0.361) // countdown red #FF5C5C
-    : .white.opacity(0.85)
+// Solid alert red for the out-of-freezes warning pill (#FF4D4D). A flat red text
+// was unreadable on the lit orange gradient; a filled pill controls its own
+// contrast, so it stays legible + stands out on grey, orange, AND blue.
+private let freezeZeroBg = Color(red: 1.0, green: 0.302, blue: 0.302)
+
+// The freeze inventory line. At zero freezes it becomes a red warning pill (white
+// text) so "you're out" reads clearly on any state background; above zero it's the
+// plain muted line. Mirrors <FreezeLine> in streak-widget.tsx.
+@ViewBuilder
+func freezeLineView(state: StreakState, freezesLeft: Int,
+                    fontSize: CGFloat = 12) -> some View {
+  let text = freezeLine(state: state, freezesLeft: freezesLeft)
+  if freezesLeft <= 0 {
+    Text(text)
+      .font(.system(size: fontSize, weight: .bold)).foregroundColor(.white)
+      .lineLimit(1).minimumScaleFactor(0.6)
+      .padding(.horizontal, 7).padding(.vertical, 2)
+      .background(Capsule().fill(freezeZeroBg))
+      // Light outline so the red pill separates from the warm lit-orange
+      // gradient too (it already pops on grey/blue).
+      .overlay(Capsule().stroke(.white.opacity(0.92), lineWidth: 1.5))
+  } else {
+    Text(text)
+      .font(.system(size: fontSize, weight: .semibold))
+      .foregroundColor(.white.opacity(0.85))
+      .lineLimit(1).minimumScaleFactor(0.6)
+  }
 }
 
 // Short rotating caption for the LIT small widget — fills the corner the
@@ -1586,11 +1608,7 @@ struct StreakWidgetEntryView: View {
           .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                   radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
       }
-      Text(freezeLine(state: entry.state, freezesLeft: entry.freezesLeft))
-        .font(.system(size: 12, weight: .semibold))
-        .foregroundColor(freezeLineColor(state: entry.state,
-                                         freezesLeft: entry.freezesLeft))
-        .lineLimit(1).minimumScaleFactor(0.6)
+      freezeLineView(state: entry.state, freezesLeft: entry.freezesLeft)
         .padding(.top, 2)
       Spacer(minLength: 4)
       if showTimer {
@@ -1650,11 +1668,7 @@ struct StreakWidgetEntryView: View {
             .shadow(color: milestone ? milestoneNumberShadow : numberShadow,
                     radius: milestone ? 5.5 : 3.5, x: 0, y: 2)
         }
-        Text(freezeLine(state: entry.state, freezesLeft: entry.freezesLeft))
-          .font(.system(size: 12, weight: .semibold))
-          .foregroundColor(freezeLineColor(state: entry.state,
-                                           freezesLeft: entry.freezesLeft))
-          .lineLimit(1).minimumScaleFactor(0.6)
+        freezeLineView(state: entry.state, freezesLeft: entry.freezesLeft)
           .padding(.top, 2)
         if entry.state != .lit {
           countdown(weight: .bold).font(.system(size: 16)).padding(.top, 3)

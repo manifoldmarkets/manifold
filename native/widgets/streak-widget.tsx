@@ -368,21 +368,83 @@ function isGoldMilestone(state: StreakState, streak: number): boolean {
 
 // The line under the streak count. "day streak" is GONE (design review: the
 // flame + number already say it) — the freeze inventory lives here instead:
-// remaining count while frozen, owned count otherwise. ×0 stays VISIBLE (in
-// the countdown's urgency red via freezeLineColor) — running out is exactly
-// what the user needs to see. Mirrors freezeLine() in index.swift.
+// remaining count while frozen, owned count otherwise. Rendered by <FreezeLine>.
+// Mirrors freezeLine() in index.swift.
 function freezeLine(state: StreakState, freezesLeft: number): string {
   if (state === 'frozen') return `Frozen · ${freezesLeft} left`
   return `🧊 ×${freezesLeft}`
 }
 
-// Matches react-native-android-widget's ColorProp union (not exported from the
-// package root, so restated here).
-type ColorProp = `#${string}` | `rgba(${number}, ${number}, ${number}, ${number})`
+// Solid alert red for the out-of-freezes warning pill. A flat red *text* was
+// unreadable on the lit orange gradient (and invisible as a signal on frozen
+// blue); a filled pill controls its own contrast, so white text on it stays
+// legible and stands out on grey, orange, AND blue.
+const FREEZE_ZERO_BG = '#FF4D4D'
 
-function freezeLineColor(state: StreakState, freezesLeft: number): ColorProp {
-  // #FF5C5C = the countdown Chronometer's red tier (see the patch).
-  return state !== 'frozen' && freezesLeft === 0 ? '#FF5C5C' : WHITE_85
+// The freeze inventory line. At zero freezes it becomes a red warning pill
+// (white text) so "you're out" reads clearly on any state background; above zero
+// it's the plain muted line. `reserved` renders it fully transparent to hold the
+// native Chronometer's slot open (quest panel only). Mirrors freezeLineView() in
+// index.swift.
+function FreezeLine({
+  state,
+  freezesLeft,
+  fontSize,
+  marginTop = 0,
+  reserved = false,
+}: {
+  state: StreakState
+  freezesLeft: number
+  fontSize: number
+  marginTop?: number
+  reserved?: boolean
+}) {
+  const text = freezeLine(state, freezesLeft)
+  if (reserved) {
+    return (
+      <TextWidget
+        text={text}
+        maxLines={1}
+        style={{
+          fontSize,
+          fontWeight: '600',
+          color: 'rgba(255, 255, 255, 0)',
+          marginTop,
+        }}
+      />
+    )
+  }
+  if (freezesLeft <= 0) {
+    return (
+      <FlexWidget
+        style={{
+          flexDirection: 'row',
+          backgroundColor: FREEZE_ZERO_BG,
+          // Light outline so the red pill separates from the warm lit-orange
+          // gradient too (it already pops on grey/blue).
+          borderWidth: 1.5,
+          borderColor: 'rgba(255, 255, 255, 0.92)',
+          borderRadius: 9,
+          paddingHorizontal: 7,
+          paddingVertical: 2,
+          marginTop,
+        }}
+      >
+        <TextWidget
+          text={text}
+          maxLines={1}
+          style={{ fontSize, fontWeight: '700', color: WHITE }}
+        />
+      </FlexWidget>
+    )
+  }
+  return (
+    <TextWidget
+      text={text}
+      maxLines={1}
+      style={{ fontSize, fontWeight: '600', color: WHITE_85, marginTop }}
+    />
+  )
 }
 
 // Gradient by state, escalating to gold once lit and past a milestone. Frozen and
@@ -697,15 +759,11 @@ function SmallWidget({
             {milestone && isTall ? <FlexWidget style={{ flex: 1 }} /> : null}
             {milestone && isTall ? <MilestoneBadge big /> : null}
           </FlexWidget>
-          <TextWidget
-            text={freezeLine(state, data.freezesLeft)}
-            maxLines={1}
-            style={{
-              fontSize: isTall ? 14 : 12,
-              fontWeight: '600',
-              color: freezeLineColor(state, data.freezesLeft),
-              marginTop: isTall ? 2 : 1,
-            }}
+          <FreezeLine
+            state={state}
+            freezesLeft={data.freezesLeft}
+            fontSize={isTall ? 14 : 12}
+            marginTop={isTall ? 2 : 1}
           />
         </FlexWidget>
         {state === 'lit' ? (
@@ -887,17 +945,12 @@ function MediumWidget({
             {/* The freeze line sits under the number — in the exact spot the
                 live timer occupies (they never show together), so it renders
                 transparent while the timer ticks to reserve the position. */}
-            <TextWidget
-              text={freezeLine(state, data.freezesLeft)}
-              maxLines={1}
-              style={{
-                fontSize: isTallMedium ? 14 : 12,
-                fontWeight: '600',
-                color: showCountdown
-                  ? 'rgba(255, 255, 255, 0)'
-                  : freezeLineColor(state, data.freezesLeft),
-                marginTop: 1,
-              }}
+            <FreezeLine
+              state={state}
+              freezesLeft={data.freezesLeft}
+              fontSize={isTallMedium ? 14 : 12}
+              marginTop={1}
+              reserved={showCountdown}
             />
           </FlexWidget>
         </FlexWidget>
@@ -950,15 +1003,11 @@ function MediumWidget({
               ...(milestone ? MILESTONE_SHADOW : NUMBER_SHADOW),
             }}
           />
-          <TextWidget
-            text={freezeLine(state, data.freezesLeft)}
-            maxLines={1}
-            style={{
-              fontSize: 12,
-              fontWeight: '600',
-              color: freezeLineColor(state, data.freezesLeft),
-              marginTop: 1,
-            }}
+          <FreezeLine
+            state={state}
+            freezesLeft={data.freezesLeft}
+            fontSize={12}
+            marginTop={1}
           />
         </FlexWidget>
 
@@ -1064,15 +1113,7 @@ function CompactWidget({
               <TextWidget text="🏆" style={{ fontSize: 17, marginLeft: 6 }} />
             ) : null}
           </FlexWidget>
-          <TextWidget
-            text={freezeLine(state, data.freezesLeft)}
-            maxLines={1}
-            style={{
-              fontSize: 11,
-              fontWeight: '600',
-              color: freezeLineColor(state, data.freezesLeft),
-            }}
-          />
+          <FreezeLine state={state} freezesLeft={data.freezesLeft} fontSize={11} />
         </FlexWidget>
       </FlexWidget>
     </Shell>
