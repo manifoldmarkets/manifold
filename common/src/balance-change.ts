@@ -88,6 +88,9 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
 > = {
   // Perp types
   perp_liquidation: 'Position liquidated',
+  PERP_OPEN_MARGIN: 'Opened position',
+  PERP_CLOSE_PAYOUT: 'Closed position',
+  PERP_RESOLVE_RESIDUAL: 'Perp resolved (residual pools)',
   // Bet types
   create_bet: 'Buy shares',
   sell_shares: 'Sell shares',

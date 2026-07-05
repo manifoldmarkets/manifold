@@ -74,6 +74,9 @@ type AnyTxnType =
   | ShopRefund
   | MembershipPayment
   | PreKycBonus
+  | PerpOpenMargin
+  | PerpClosePayout
+  | PerpResolveResidual
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -593,6 +596,50 @@ type RemoveSubsidy = {
   token: 'M$' | 'CASH'
 }
 
+// Perp (ManiPerp) cash movements. The txns ledger records only mana that
+// actually moves: margin in at open, payout out at close/flip/resolve, and
+// the residual pools to the creator at resolution. Liquidation/ADL/funding
+// move NO user mana (claims are scaled or extinguished; the margin stays in
+// the pools) and are deliberately absent here — the authoritative record of
+// those is the append-only contract_perp_events log. Invariant this
+// preserves: sum(txns into contract) - sum(txns out) = poolLong + poolShort.
+type PerpOpenMargin = {
+  category: 'PERP_OPEN_MARGIN'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+  data: {
+    direction: 'long' | 'short'
+    leverage: number
+    sizeDelta: number
+    entryPrice: number
+  }
+}
+
+type PerpClosePayout = {
+  category: 'PERP_CLOSE_PAYOUT'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    direction: 'long' | 'short'
+    pnl: number
+    entryPrice: number
+    closePrice: number
+    reason: 'close' | 'flip' | 'resolve'
+  }
+}
+
+type PerpResolveResidual = {
+  category: 'PERP_RESOLVE_RESIDUAL'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    finalPrice: number
+  }
+}
+
 type ReclaimMana = {
   category: 'RECLAIM_MANA'
   fromType: 'USER'
@@ -761,6 +808,9 @@ type MembershipPayment = {
 
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
+export type PerpOpenMarginTxn = Txn & PerpOpenMargin
+export type PerpClosePayoutTxn = Txn & PerpClosePayout
+export type PerpResolveResidualTxn = Txn & PerpResolveResidual
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink

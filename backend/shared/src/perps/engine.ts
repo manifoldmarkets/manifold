@@ -226,10 +226,12 @@ export const openOrAddPosition = async (
     let workingState: PerpState = state
     let closeEvent: PerpEvent | undefined
     let closePayout = 0
+    let closePnl = 0
     if (existingOpposite) {
       const closeRes = closePositionMath(workingState, existingOpposite, price)
       workingState = closeRes.state
       closePayout = closeRes.payout
+      closePnl = closeRes.pnl
       closeEvent = asEvent(contract, {
         userId,
         eventType: 'close',
@@ -314,37 +316,47 @@ export const openOrAddPosition = async (
     // Credit the close payout (if any) back to the user. Must run before the
     // open-debit so the user's balance reflects the freed margin if they're
     // re-using it to fund the new position.
-    if (closePayout > 0) {
+    if (closePayout > 0 && existingOpposite) {
       await runTxnOutsideBetQueue(
         pgTrans,
         {
-          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          category: 'PERP_CLOSE_PAYOUT',
           fromId: contractId,
           fromType: 'CONTRACT',
           toId: userId,
           toType: 'USER',
           amount: closePayout,
           token: 'M$',
-          data: {},
+          data: {
+            direction: existingOpposite.direction,
+            pnl: closePnl,
+            entryPrice: existingOpposite.entryPrice,
+            closePrice: price,
+            reason: 'flip',
+          },
         },
         true
       )
     }
 
-    // Debit user balance via a txn. `ADD_SUBSIDY` is the USER→CONTRACT category
-    // that matches what actually happens here (trader margin enters a pool),
-    // and keeps perp opens distinguishable from CPMM ante deposits in audit
-    // tooling.
+    // Debit the margin. Dedicated category so perp margin is distinguishable
+    // from real liquidity subsidies in audit/stats tooling.
     await runTxnOutsideBetQueue(
       pgTrans,
       {
-        category: 'ADD_SUBSIDY',
+        category: 'PERP_OPEN_MARGIN',
         fromId: userId,
         fromType: 'USER',
         toId: contractId,
         toType: 'CONTRACT',
         amount: mana,
         token: 'M$',
+        data: {
+          direction,
+          leverage,
+          sizeDelta: open.deltaSize,
+          entryPrice: open.position.entryPrice,
+        },
       },
       true
     )
@@ -444,14 +456,20 @@ export const closePosition = async (
       await runTxnOutsideBetQueue(
         pgTrans,
         {
-          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          category: 'PERP_CLOSE_PAYOUT',
           fromId: contractId,
           fromType: 'CONTRACT',
           toId: userId,
           toType: 'USER',
           amount: result.payout,
           token: 'M$',
-          data: {},
+          data: {
+            direction,
+            pnl: result.pnl,
+            entryPrice: position.entryPrice,
+            closePrice: price,
+            reason: 'close',
+          },
         },
         true
       )
@@ -884,14 +902,20 @@ export const resolvePerp = async (
         await runTxnOutsideBetQueue(
           pgTrans,
           {
-            category: 'CONTRACT_RESOLUTION_PAYOUT',
+            category: 'PERP_CLOSE_PAYOUT',
             fromId: contractId,
             fromType: 'CONTRACT',
             toId: p.userId,
             toType: 'USER',
             amount: res.payout,
             token: 'M$',
-            data: {},
+            data: {
+              direction: p.direction,
+              pnl: res.pnl,
+              entryPrice: p.entryPrice,
+              closePrice: finalPrice,
+              reason: 'resolve',
+            },
           },
           true
         )
@@ -904,14 +928,14 @@ export const resolvePerp = async (
       await runTxnOutsideBetQueue(
         pgTrans,
         {
-          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          category: 'PERP_RESOLVE_RESIDUAL',
           fromId: contractId,
           fromType: 'CONTRACT',
           toId: contract.creatorId,
           toType: 'USER',
           amount: residualPayout,
           token: 'M$',
-          data: {},
+          data: { finalPrice },
         },
         true
       )
