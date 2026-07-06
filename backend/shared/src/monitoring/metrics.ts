@@ -79,6 +79,10 @@ export const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  'bet/contract_agg_flush': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'app/contract_view_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',

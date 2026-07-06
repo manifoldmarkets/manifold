@@ -5,6 +5,7 @@ import { LOCAL_DEV, LOCAL_ONLY, log } from 'shared/utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 import { initCaches } from 'shared/init-caches'
 import { listen as webSocketListen } from 'shared/websockets/server'
+import { flushAllContractAggregates } from './helpers/contract-aggregate-buffer'
 import { app } from './app'
 
 if (!LOCAL_ONLY) {
@@ -64,6 +65,18 @@ const startupProcess = async () => {
   if (!process.env.READ_ONLY) {
     webSocketListen(httpServer, '/ws')
     log.info('Web socket server listening on /ws')
+
+    // Flush any buffered contract aggregates before a planned restart so the
+    // debounce window can't drop deltas (see contract-aggregate-buffer).
+    const flushOnExit = (signal: string) => async () => {
+      log(`Received ${signal}; flushing contract aggregates before exit.`)
+      await flushAllContractAggregates().catch((err) =>
+        log.error('Failed flushing contract aggregates on exit', { err })
+      )
+      process.exit(0)
+    }
+    process.once('SIGTERM', flushOnExit('SIGTERM'))
+    process.once('SIGINT', flushOnExit('SIGINT'))
   }
 
   log('Server started successfully')

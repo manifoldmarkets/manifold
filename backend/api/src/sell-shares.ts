@@ -16,6 +16,7 @@ import { randomString } from 'common/util/random'
 import { isEqual, keyBy } from 'lodash'
 import { trackPublicAuditBetEvent } from 'shared/audit-events'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
+import { getPoolDepToken } from 'api/helpers/answer-bet-parallelism'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   getLoanTrackingRows,
@@ -123,7 +124,17 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     throwErrorIfNotAdmin(auth.uid)
   }
   const userId = sellForUserId || auth.uid
-  const fullDeps = [userId, contractId, ...(deps ?? [])]
+  // The pool token mutually excludes this sell from bets on the same answer:
+  // sells write the same pool rows, and bets on independent answers run at READ
+  // COMMITTED, so exclusion must come from the queue (see getPoolDepToken). The
+  // coarse contractId token keeps sells serialized with other sells and with
+  // multi-answer ops.
+  const fullDeps = [
+    userId,
+    contractId,
+    getPoolDepToken(contractId, props.answerId),
+    ...(deps ?? []),
+  ]
   return await betsQueue.enqueueFn(
     () => sellSharesMain(props, auth, req),
     fullDeps
