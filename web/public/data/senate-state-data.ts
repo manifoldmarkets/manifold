@@ -139,7 +139,7 @@ export const senate2024: StateElectionMarket[] = [
   },
 ]
 
-// 2026 midterm Senate races (Class 2 seats + the OH/VA specials). These are
+// 2026 midterm Senate races (Class 2 seats + the OH/VA/FL specials). These are
 // community-created "which party will win" markets — the best-trafficked
 // party-outcome market per state as of the 2026 rebuild. Answer labels vary
 // across creators ("Democrats" / "Democratic party" / "Democratic"); the map's
@@ -150,6 +150,9 @@ export const senate2026: StateElectionMarket[] = [
   { state: 'AR', slug: 'what-party-will-win-the-2026-arkans' },
   { state: 'CO', slug: 'which-party-will-win-the-2026-color' },
   { state: 'DE', slug: 'which-party-will-win-the-2026-delaw' },
+  // FL: special election for Marco Rubio's seat (Ashley Moody appointed).
+  // Binary market — YES = Republican wins, which getPartyProbs handles.
+  { state: 'FL', slug: 'will-a-republican-win-the-us-senate' },
   { state: 'GA', slug: 'which-party-will-win-the-2026-us-se' },
   { state: 'ID', slug: 'which-party-will-win-the-2026-idaho' },
   { state: 'IL', slug: 'which-party-will-win-the-2026-illin' },
@@ -354,13 +357,6 @@ export const currentSenate2026: CurrentSenateState[] = [
     party2: 'Democrat',
   },
   {
-    state: 'FL',
-    name1: 'Rick Scott',
-    party1: 'Republican',
-    name2: 'Ashley Moody',
-    party2: 'Republican',
-  },
-  {
     state: 'HI',
     name1: 'Brian Schatz',
     party1: 'Democrat',
@@ -462,6 +458,7 @@ export const senateHeldSeats2026: Record<
   AR: { name: 'John Boozman', party: 'Republican' },
   CO: { name: 'Michael Bennet', party: 'Democrat' },
   DE: { name: 'Lisa Blunt Rochester', party: 'Democrat' },
+  FL: { name: 'Rick Scott', party: 'Republican' },
   GA: { name: 'Raphael Warnock', party: 'Democrat' },
   ID: { name: 'Mike Crapo', party: 'Republican' },
   IL: { name: 'Tammy Duckworth', party: 'Democrat' },
