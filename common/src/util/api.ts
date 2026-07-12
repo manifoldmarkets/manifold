@@ -2,6 +2,7 @@ import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { APIError, ErrorCode, getApiUrl } from 'common/api/utils'
 import { forEach } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
+import { getInstanceSubdomainFromHostname } from 'common/util/instance-subdomain'
 import { User } from 'firebase/auth'
 
 // LOCAL_ONLY mode: set a user ID that will be sent as X-Local-User header.
@@ -60,6 +61,16 @@ export async function baseApiCall(
   const actualUrl = method === 'POST' ? url : appendQuery(url, params)
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+  }
+  // Tell the backend which private Manifold instance (if any) this request
+  // is for, based on the subdomain the page was loaded from. web/proxy.ts
+  // sets the same header for requests proxied through Next.js; this covers
+  // client-side calls that go straight to the API.
+  if (typeof window !== 'undefined') {
+    const instanceSubdomain = getInstanceSubdomainFromHostname(
+      window.location.hostname
+    )
+    if (instanceSubdomain) headers['X-Manifold-Instance'] = instanceSubdomain
   }
   if (localOnlyUserId) {
     headers['X-Local-User'] = localOnlyUserId

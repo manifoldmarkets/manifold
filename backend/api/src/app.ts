@@ -11,6 +11,7 @@ import { withMonitoringContext } from 'shared/monitoring/context'
 import { log, metrics } from 'shared/utils'
 import { typedEndpoint } from './helpers/endpoint'
 import { ipRateLimitMiddleware } from './helpers/rate-limit'
+import { tenantContextMiddleware } from './helpers/tenant-context'
 import { handleMcpRequest } from './mcp'
 import { MINUTE_MS } from 'common/util/time'
 import { addOldRoutes } from './old-routes'
@@ -112,6 +113,7 @@ app.get('/healthz/ready', healthzReady)
 
 app.use(compression())
 app.use(requestMonitoring)
+app.use(tenantContextMiddleware)
 
 app.options('*', allowCorsUnrestricted)
 
