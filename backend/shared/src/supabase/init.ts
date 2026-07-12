@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'async_hooks'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { createClient } from 'common/supabase/utils'
@@ -9,6 +10,75 @@ import { getMonitoringContext } from 'shared/monitoring/context'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
 import { LOCAL_ONLY, isProd, log, metrics } from '../utils'
 export { type SupabaseClient } from 'common/supabase/utils'
+
+// Carries the current request's private-instance schema (if any), set by
+// the tenant-resolution middleware in backend/api/src/helpers/tenant-context.ts.
+// createSupabaseDirectClient() consults this to scope every query to that
+// instance's schema instead of `public`, without every call site needing to
+// know or care that tenancy exists.
+export const tenantSchemaStorage = new AsyncLocalStorage<{ schema: string }>()
+
+// Methods that run a single query against the pool. Each one, when a tenant
+// is active, gets rewritten into a one-off task that first sets search_path
+// and then runs the query — both on the same pooled connection.
+const SCOPED_QUERY_METHODS = [
+  'query',
+  'none',
+  'one',
+  'oneOrNone',
+  'many',
+  'manyOrNone',
+  'any',
+  'result',
+  'map',
+  'each',
+  'func',
+  'proc',
+  'multi',
+  'multiResult',
+] as const
+
+// Methods that already pin a single connection for their whole callback —
+// just need search_path set once as the first statement inside them.
+const SCOPED_TRANSACTION_METHODS = ['tx', 'task', 'txIf', 'taskIf'] as const
+
+function withTenantScoping<T extends object>(client: T): T {
+  return new Proxy(client, {
+    get(target, prop, receiver) {
+      const orig = Reflect.get(target, prop, receiver)
+      if (typeof orig !== 'function') return orig
+      const name = prop as string
+
+      if ((SCOPED_QUERY_METHODS as readonly string[]).includes(name)) {
+        return (...args: any[]) => {
+          const ctx = tenantSchemaStorage.getStore()
+          if (!ctx) return orig.apply(target, args)
+          return (target as any).task((t: any) =>
+            t
+              .none('SET search_path TO $1~, public', [ctx.schema])
+              .then(() => t[name](...args))
+          )
+        }
+      }
+
+      if ((SCOPED_TRANSACTION_METHODS as readonly string[]).includes(name)) {
+        return (...callArgs: any[]) => {
+          const ctx = tenantSchemaStorage.getStore()
+          if (!ctx) return orig.apply(target, callArgs)
+          const cb = callArgs[callArgs.length - 1]
+          const rest = callArgs.slice(0, -1)
+          const scopedCb = async (t: any) => {
+            await t.none('SET search_path TO $1~, public', [ctx.schema])
+            return cb(t)
+          }
+          return orig.apply(target, [...rest, scopedCb])
+        }
+      }
+
+      return orig.bind(target)
+    },
+  })
+}
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
@@ -191,7 +261,7 @@ export function createSupabaseDirectClient(opts?: {
     metrics.set('pg/pool_connections', pool.totalCount, { state: 'total' })
   }, METRICS_INTERVAL_MS)
 
-  pgpDirect = client
+  pgpDirect = withTenantScoping(client)
   return pgpDirect
 }
 
