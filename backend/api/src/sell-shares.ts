@@ -160,6 +160,11 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     isApi,
     !!sellForUserId
   )
+  const contractMetric = contractMetrics.find(
+    (m) => m.answerId == answerId && m.userId === uid
+  )
+  if (!contractMetric)
+    throw new APIError(403, `You don't have any ${outcome} shares to sell.`)
   const simulatedResult = calculateSellResult(
     contract,
     answers,
@@ -168,7 +173,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    contractMetrics.find((m) => m.answerId == answerId && m.userId === uid)!
+    contractMetric
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
@@ -207,7 +212,9 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
 
     const userMetric = contractMetrics.find(
       (m) => m.answerId == answerId && m.userId === uid
-    )!
+    )
+    if (!userMetric)
+      throw new APIError(403, `You don't have any ${outcome} shares to sell.`)
 
     // Capture margin loan before selling for loan tracking update
     const marginLoanBefore = userMetric.marginLoan ?? 0
