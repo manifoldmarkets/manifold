@@ -1,0 +1,27 @@
+import { ImageResponse } from '@vercel/og'
+
+type ImageResponseOptions = ConstructorParameters<typeof ImageResponse>[1]
+import { NextRequest } from 'next/server'
+import { OgElection, OgElectionProps } from 'web/components/og/og-election'
+import { classToTw } from 'web/components/og/utils'
+import { getCardOptions } from './market'
+
+export const config = { runtime: 'edge' }
+
+export default async function handler(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const options = await getCardOptions()
+    const ogElectionProps = Object.fromEntries(
+      searchParams.entries()
+    ) as OgElectionProps
+    const image = OgElection(ogElectionProps)
+
+    return new ImageResponse(classToTw(image), options as ImageResponseOptions)
+  } catch (e: any) {
+    console.log(`${e.message}`)
+    return new Response(`Failed to generate the image`, {
+      status: 500,
+    })
+  }
+}
