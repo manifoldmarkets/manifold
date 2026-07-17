@@ -4,11 +4,16 @@ import { DATA } from 'web/components/usa-map/usa-map-data'
 export type OgElectionProps = {
   // Compact per-state shading from getSenateOgFills: "AL:9d3336,AK:r,...".
   fills?: string
+  // Republican % (0-100) in the Senate-control market, from
+  // getSenateControlRepPct. Drives the headline and the party bar.
+  rep?: string
 }
 
-// These mirror the interactive map's constants (usa-map.tsx / usa-state.tsx),
-// which can't be imported here without dragging client components and hooks
-// into the edge bundle.
+// These mirror the interactive map's constants (usa-map.tsx / usa-state.tsx /
+// state-election-map.tsx), which can't be imported here without dragging
+// client components and hooks into the edge bundle.
+const DEM_COLOR = '#5671ba'
+const REP_COLOR = '#c25555'
 const DEFAULT_STATE_FILL = '#e7dfe6'
 const PATTERN_SIZE = 8
 const CROSSHATCH = {
@@ -66,8 +71,47 @@ function buildMapDataUri(fills: Record<string, string>) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
+// Leads with the market's actual story ("Republicans 71% to keep the Senate")
+// rather than restating the question. Republicans hold the chamber going into
+// 2026, hence keep/flip phrasing; within a few points it's called a coin flip.
+function Headline(props: { repPct: number | undefined }) {
+  const { repPct } = props
+  if (repPct === undefined) {
+    return (
+      <div className="mt-1 flex text-3xl text-gray-900">
+        Who wins the Senate in 2026?
+      </div>
+    )
+  }
+  if (repPct >= 47 && repPct <= 53) {
+    return (
+      <div className="mt-1 flex text-3xl text-gray-900">
+        The Senate is a coin flip
+      </div>
+    )
+  }
+  const repLeads = repPct > 53
+  return (
+    <div className="mt-1 flex flex-row text-3xl text-gray-900">
+      <span style={{ color: repLeads ? REP_COLOR : DEM_COLOR }}>
+        {repLeads ? `Republicans ${repPct}%` : `Democrats ${100 - repPct}%`}
+      </span>
+      <span>
+        {repLeads ? '\u00A0to keep the Senate' : '\u00A0to flip the Senate'}
+      </span>
+    </div>
+  )
+}
+
+function parseRepPct(rep: string | undefined) {
+  if (rep === undefined || !/^\d{1,3}$/.test(rep)) return undefined
+  const pct = parseInt(rep)
+  return pct <= 100 ? pct : undefined
+}
+
 export function OgElection(props: OgElectionProps) {
   const mapSrc = buildMapDataUri(parseFills(props.fills))
+  const repPct = parseRepPct(props.rep)
 
   return (
     <div className="flex h-full w-full flex-col bg-white px-6 py-3">
@@ -86,12 +130,23 @@ export function OgElection(props: OgElectionProps) {
         </span>
       </div>
 
-      <div className="mt-1 flex text-2xl text-gray-900">
-        Which party will win the Senate?
-      </div>
+      <Headline repPct={repPct} />
+
+      {repPct !== undefined && (
+        <div className="mt-2 flex h-3 w-full flex-row overflow-hidden rounded-full">
+          <div
+            className="flex h-full"
+            style={{ width: `${100 - repPct}%`, backgroundColor: DEM_COLOR }}
+          />
+          <div
+            className="flex h-full"
+            style={{ width: `${repPct}%`, backgroundColor: REP_COLOR }}
+          />
+        </div>
+      )}
 
       <div className="flex w-full flex-1 items-center justify-center">
-        <img src={mapSrc} width={340} height={210} alt="" />
+        <img src={mapSrc} width={310} height={192} alt="" />
       </div>
     </div>
   )
