@@ -1,4 +1,3 @@
-import { buildOgUrl } from 'common/util/og'
 import { OgElection } from 'web/components/og/og-election'
 import {
   getSenateControlRepPct,
@@ -37,12 +36,14 @@ export default function OGTestPage(props: {
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center">
       <div className="text-ink-900 mb-2 mt-6 text-xl">social preview image</div>
+      {/* Relative URL (unlike the other og-test pages) so this also works on
+          Vercel preview deploys, where the real endpoint can be smoke-tested
+          before merging. */}
       <img
-        src={buildOgUrl(
-          { fills, ...(rep !== undefined && { rep }) },
-          'election',
-          'http://localhost:3000'
-        )}
+        src={`/api/og/election?${new URLSearchParams({
+          fills,
+          ...(rep !== undefined && { rep }),
+        })}`}
         height={315}
         width={600}
         alt=""
