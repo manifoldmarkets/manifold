@@ -26,7 +26,10 @@ import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { BubblePercentChange } from '../candidates-panel/candidate-bar'
+import {
+  BubblePercentChange,
+  PercentChangeToday,
+} from '../candidates-panel/candidate-bar'
 import { BinaryUserPosition } from '../candidates-panel/candidates-user-position'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
 import { sliderColors } from 'web/components/widgets/slider'
@@ -42,6 +45,124 @@ const politicsBinaryPseudonym = {
     pseudonymName: 'HARRIS',
     pseudonymColor: 'azure' as keyof typeof sliderColors,
   },
+}
+
+const statePartyBinaryPseudonym = {
+  YES: {
+    pseudonymName: 'Republican',
+    pseudonymColor: 'sienna' as keyof typeof sliderColors,
+  },
+  NO: {
+    pseudonymName: 'Democratic',
+    pseudonymColor: 'azure' as keyof typeof sliderColors,
+  },
+}
+
+// Party bars for a binary state market (e.g. the FL Senate special, "Will a
+// Republican win ...?"). YES = Republican, NO = Democratic — the same
+// convention getPartyProbs uses to color the map.
+export function StateBinaryPartyPanel(props: { contract: BinaryContract }) {
+  const { contract } = props
+  const user = useUser()
+
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
+  const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
+
+  return (
+    <Col className="gap-2">
+      {(['YES', 'NO'] as const).map((outcome) => (
+        <StateBinaryPartyBar
+          key={outcome}
+          contract={contract}
+          outcome={outcome}
+          userBets={userBets}
+          user={user}
+          showPosition={sharesOutcome === outcome}
+        />
+      ))}
+    </Col>
+  )
+}
+
+function StateBinaryPartyBar(props: {
+  contract: BinaryContract
+  outcome: 'YES' | 'NO'
+  userBets?: Bet[]
+  user?: User | null
+  showPosition: boolean
+}) {
+  const { contract, outcome, userBets, user, showPosition } = props
+  const { resolution } = contract
+
+  const isRep = outcome === 'YES'
+  const partyName = isRep ? 'Republican Party' : 'Democratic Party'
+  const repProb = getDisplayProbability(contract)
+  const prob = isRep ? repProb : 1 - repProb
+  const resolvedProb =
+    resolution === 'YES'
+      ? isRep
+        ? 1
+        : 0
+      : resolution === 'NO'
+      ? isRep
+        ? 0
+        : 1
+      : resolution === 'MKT'
+      ? prob
+      : undefined
+  const probChange = isRep
+    ? contract.probChanges.day
+    : -contract.probChanges.day
+
+  return (
+    <AnswerBar
+      color={getPartyColor(partyName)}
+      prob={prob}
+      resolvedProb={resolvedProb}
+      className={clsx('cursor-pointer py-1.5')}
+      label={
+        <Row className="relative h-8">
+          <Col>
+            <CreatorAndAnswerLabel
+              text={partyName}
+              createdTime={contract.createdTime}
+              className={clsx('items-center !leading-none')}
+            />
+            {!resolution && showPosition && user && !!userBets && (
+              <BinaryUserPosition
+                contract={contract}
+                userBets={userBets}
+                user={user}
+                className="text-ink-700 dark:text-ink-800 text-left text-xs hover:underline"
+                binaryPseudonym={statePartyBinaryPseudonym}
+              />
+            )}
+          </Col>
+        </Row>
+      }
+      end={
+        <Row className={'items-center gap-1 sm:gap-2'}>
+          <div className="relative">
+            <div className="text-lg font-bold">{formatPercent(prob)}</div>
+            <PercentChangeToday
+              probChange={probChange}
+              className="absolute right-1 top-6 whitespace-nowrap text-xs"
+            />
+          </div>
+          <BinaryBetButton
+            contract={contract}
+            initialOutcome={outcome}
+            binaryPseudonym={statePartyBinaryPseudonym}
+          />
+        </Row>
+      }
+    />
+  )
 }
 
 // just the bars
