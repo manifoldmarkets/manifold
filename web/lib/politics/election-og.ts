@@ -1,6 +1,9 @@
 import { getDisplayProbability } from 'common/calculate'
 import { BinaryContract, Contract } from 'common/contract'
-import { probToColor } from 'web/components/usa-map/state-election-map'
+import {
+  getPartyProbs,
+  probToColor,
+} from 'web/components/usa-map/state-election-map'
 import { DATA } from 'web/components/usa-map/usa-map-data'
 import {
   currentSenate2026,
@@ -8,17 +11,30 @@ import {
 } from 'web/public/data/senate-state-data'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 
-// The Republican side of the Senate-control market (YES = Republicans, same
-// convention as BalanceOfPowerPanel), as a rounded percent for the OG
-// headline. Undefined when the market is missing or not binary — the card
-// falls back to a question headline.
-export function getSenateControlRepPct(
+// The Republican side of a chamber-control market (YES = Republicans, same
+// convention as BalanceOfPowerPanel), as a rounded percent for an OG stat
+// row. Undefined when the market is missing or not binary — the card drops
+// that row.
+export function getControlRepPct(
   contract: Contract | null
 ): string | undefined {
   if (!contract || contract.mechanism !== 'cpmm-1') return undefined
   return Math.round(
     getDisplayProbability(contract as BinaryContract) * 100
   ).toString()
+}
+
+// Democratic/Republican percents in the 2028 presidency party market (they may
+// not sum to 100 — the remainder is other parties, shown gray on the bar).
+export function getWhiteHouse2028Probs(
+  contract: Contract | null
+): { whDem: string; whRep: string } | undefined {
+  const probs = getPartyProbs(contract)
+  if (!probs) return undefined
+  return {
+    whDem: Math.round(probs.dem * 100).toString(),
+    whRep: Math.round(probs.rep * 100).toString(),
+  }
 }
 
 // Encodes the Senate map's per-state shading into a compact string
