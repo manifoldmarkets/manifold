@@ -72,8 +72,9 @@ function buildMapDataUri(fills: Record<string, string>) {
 }
 
 // Leads with the market's actual story ("Republicans 71% to keep the Senate")
-// rather than restating the question. Republicans hold the chamber going into
-// 2026, hence keep/flip phrasing; within a few points it's called a coin flip.
+// rather than restating the question, always quoting the leader's exact odds —
+// even near 50/50, the number is the story. Republicans hold the chamber going
+// into 2026, hence keep/flip phrasing; a dead-even 50 reads as keep.
 function Headline(props: { repPct: number | undefined }) {
   const { repPct } = props
   if (repPct === undefined) {
@@ -83,14 +84,7 @@ function Headline(props: { repPct: number | undefined }) {
       </div>
     )
   }
-  if (repPct >= 47 && repPct <= 53) {
-    return (
-      <div className="mt-1 flex text-3xl text-gray-900">
-        The Senate is a coin flip
-      </div>
-    )
-  }
-  const repLeads = repPct > 53
+  const repLeads = repPct >= 50
   return (
     <div className="mt-1 flex flex-row text-3xl text-gray-900">
       <span style={{ color: repLeads ? REP_COLOR : DEM_COLOR }}>
