@@ -28,6 +28,7 @@ Use the test pages to preview OG images:
 
 - `/og-test/[username]/[contractSlug]` - Preview market OG images
 - `/og-test/topic/[topicSlug]` - Preview topic OG images
+- `/og-test/election` - Preview the elections page (Senate map) OG image
 
 ## Component Structure
 
