@@ -105,3 +105,33 @@ export type JobSeekerInterest = {
   createdTime: number
   updatedTime: number
 }
+
+// Admin-only views for /admin/jobs — the recruiting roster with account stats.
+export type JobSeekerAdminRow = {
+  userId: string
+  username: string
+  name: string
+  isBot: boolean
+  joinedTime: number
+  lastBetTime: number | null
+  profit: number | null
+  portfolio: number | null
+  // 1-based position by all-time profit across all users with portfolios
+  overallRank: number | null
+  skills: JobSkill[]
+  interests: JobInterest[]
+  region: JobRegion | null
+  registeredTime: number
+}
+
+export type JobSeekerTopicProfit = {
+  topic: string
+  profit: number
+}
+
+export type JobSeekerTopicRank = {
+  userId: string
+  username: string
+  rank: number
+  profit: number
+}
