@@ -131,7 +131,5 @@ export type JobSeekerTopicProfit = {
 
 export type JobSeekerTopicRank = {
   userId: string
-  username: string
   rank: number
-  profit: number
 }

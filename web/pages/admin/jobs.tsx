@@ -1,12 +1,11 @@
 import { useState } from 'react'
 
+import { formatJustDateShort } from 'client-common/lib/time'
 import {
   JOB_INTEREST_LABELS,
   JOB_REGION_LABELS,
   JOB_SKILL_LABELS,
   JobSeekerAdminRow,
-  JobSeekerTopicProfit,
-  JobSeekerTopicRank,
 } from 'common/job-seeker'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -18,7 +17,6 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
 
 export default function AdminJobsPage() {
   const user = useUser()
@@ -133,7 +131,7 @@ function SeekerRow(props: {
               user={{ id: s.userId, username: s.username, name: s.name }}
             />
             {s.isBot && (
-              <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
+              <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
                 bot
               </span>
             )}
@@ -149,10 +147,12 @@ function SeekerRow(props: {
           {s.portfolio === null ? '—' : formatMoney(s.portfolio)}
         </td>
         <td className="text-ink-600 whitespace-nowrap px-3 py-2 text-sm">
-          {formatDate(s.joinedTime)}
+          {formatJustDateShort(s.joinedTime)}
         </td>
         <td className="text-ink-600 whitespace-nowrap px-3 py-2 text-sm">
-          {s.lastBetTime === null ? 'never' : formatDate(s.lastBetTime)}
+          {s.lastBetTime === null
+            ? 'never'
+            : formatJustDateShort(s.lastBetTime)}
         </td>
         <td className="text-ink-600 whitespace-nowrap px-3 py-2 text-sm">
           {s.region ? JOB_REGION_LABELS[s.region] : '—'}
@@ -185,26 +185,14 @@ function SeekerRow(props: {
 
 function TopicsPanel(props: { userId: string }) {
   const { userId } = props
-  const { data } = useAPIGetter('get-job-seeker-topics', { userId })
-  const [rankByTopic, setRankByTopic] = useState<
-    Record<
-      string,
-      { participants: number; ranks: JobSeekerTopicRank[] } | 'loading'
-    >
-  >({})
-
-  const loadRank = async (topic: string) => {
-    setRankByTopic((cur) => ({ ...cur, [topic]: 'loading' }))
-    try {
-      const res = await api('get-job-seeker-topic-rank', { topic })
-      setRankByTopic((cur) => ({ ...cur, [topic]: res }))
-    } catch {
-      setRankByTopic((cur) => {
-        const { [topic]: _, ...rest } = cur
-        return rest
-      })
-    }
-  }
+  // Keyed per user: the hook's data slot defaults to the path alone, which
+  // would leak the previously expanded seeker's topics into this panel.
+  const { data } = useAPIGetter(
+    'get-job-seeker-topics',
+    { userId },
+    undefined,
+    `get-job-seeker-topics-${userId}`
+  )
 
   if (data === undefined) return <LoadingIndicator size="sm" />
   if (data.topics.length === 0)
@@ -216,34 +204,66 @@ function TopicsPanel(props: { userId: string }) {
         Top topics by profit — click for site-wide rank
       </span>
       <Row className="flex-wrap gap-2">
-        {data.topics.map((t: JobSeekerTopicProfit) => {
-          const rank = rankByTopic[t.topic]
-          const mine =
-            rank && rank !== 'loading'
-              ? rank.ranks.find((r) => r.userId === userId)
-              : undefined
-          return (
-            <button
-              key={t.topic}
-              onClick={() => !rank && loadRank(t.topic)}
-              className="bg-canvas-0 border-ink-200 hover:border-primary-400 rounded-full border px-2.5 py-1 text-xs"
-            >
-              <span className="text-ink-700 font-medium">{t.topic}</span>{' '}
-              <span className="text-ink-500">{formatMoney(t.profit)}</span>
-              {rank === 'loading' && (
-                <span className="text-ink-400"> · ranking…</span>
-              )}
-              {mine && rank !== 'loading' && rank && (
-                <span className="text-primary-600 font-semibold">
-                  {' '}
-                  · #{mine.rank} of {rank.participants.toLocaleString()}
-                </span>
-              )}
-            </button>
-          )
-        })}
+        {data.topics.map((t) => (
+          <TopicRankChip
+            key={t.topic}
+            topic={t.topic}
+            profit={t.profit}
+            userId={userId}
+          />
+        ))}
       </Row>
     </Col>
+  )
+}
+
+// Rank responses are per-topic, not per-seeker, so they're cached under a
+// topic-keyed slot shared by every row and kept across expand/collapse —
+// the multi-second aggregation runs once per topic per session.
+function TopicRankChip(props: {
+  topic: string
+  profit: number
+  userId: string
+}) {
+  const { topic, profit, userId } = props
+  const [clicked, setClicked] = useState(false)
+  const { data, error, loading, refresh } = useAPIGetter(
+    'get-job-seeker-topic-rank',
+    { topic },
+    undefined,
+    `get-job-seeker-topic-rank-${topic}`,
+    clicked
+  )
+  const mine = data?.ranks.find((r) => r.userId === userId)
+
+  return (
+    <button
+      onClick={() => {
+        if (!clicked) setClicked(true)
+        else if (error) refresh()
+      }}
+      className="bg-canvas-0 border-ink-200 hover:border-primary-400 rounded-full border px-2.5 py-1 text-xs"
+    >
+      <span className="text-ink-700 font-medium">{topic}</span>{' '}
+      <span className="text-ink-500">{formatMoney(profit)}</span>
+      {loading && <span className="text-ink-400"> · ranking…</span>}
+      {error && !loading && (
+        <span className="text-scarlet-500" title={error.message}>
+          {' '}
+          · failed — click to retry
+        </span>
+      )}
+      {data &&
+        !loading &&
+        (mine ? (
+          <span className="text-primary-600 font-semibold">
+            {' '}
+            · #{mine.rank} of {data.participants.toLocaleString()}
+          </span>
+        ) : (
+          <span className="text-ink-400"> · not ranked</span>
+        ))}
+    </button>
   )
 }
 
@@ -274,17 +294,9 @@ function ChipList(props: { items: string[] }) {
 function SummaryCard(props: { label: string; value: number }) {
   const { label, value } = props
   return (
-    <div className="bg-canvas-50 border-canvas-200 rounded-lg border px-4 py-3">
+    <div className="bg-canvas-50 border-canvas-100 rounded-lg border px-4 py-3">
       <div className="text-ink-500 text-xs font-medium">{label}</div>
       <div className="text-ink-900 text-xl font-bold">{value}</div>
     </div>
   )
-}
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
 }
