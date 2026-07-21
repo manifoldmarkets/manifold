@@ -93,7 +93,7 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
   }
 }
 
-async function getStateContracts(
+export async function getStateContracts(
   getContract: (slug: string) => Promise<Contract | null>,
   stateSlugs: StateElectionMarket[]
 ): Promise<MapContractsDictionary> {

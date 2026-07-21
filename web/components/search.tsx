@@ -576,20 +576,6 @@ export function Search(props: SearchProps) {
                   </button>
                 )}
                 <Link
-                  href="/sports/world-cup-2026"
-                  onClick={() =>
-                    track('select search topic', { topic: 'world-cup-2026' })
-                  }
-                  className={clsx(
-                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium text-white',
-                    'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500',
-                    'shadow-sm shadow-purple-500/30 ring-1 ring-white/20',
-                    'transition-all hover:brightness-110'
-                  )}
-                >
-                  ⚽ World Cup
-                </Link>
-                <Link
                   href="/election"
                   onClick={() =>
                     track('select search topic', { topic: 'midterms-2026' })
@@ -678,6 +664,7 @@ export function Search(props: SearchProps) {
                   ? 'Search'
                   : 'Search questions, users, topics, and posts'
               }
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: only true when opening the search popover, where focusing the input is expected
               autoFocus={autoFocus}
               loading={loading}
               inputId={searchInputId}

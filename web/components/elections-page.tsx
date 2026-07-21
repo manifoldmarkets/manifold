@@ -13,6 +13,11 @@ import { ContractsTable } from './contract/contracts-table'
 import { Search } from './search'
 import { FilterPill } from './search/filter-pills'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
+import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { referralQuery } from 'common/util/share'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 // Kept for legacy political market panels that still reference it.
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
@@ -20,13 +25,16 @@ export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
 
 // Topic tags for the bottom feed, so visitors can sort the election markets by
 // race/subject from this page. Each slug is a real Manifold group with a healthy
-// number of open markets (verified against prod).
+// number of open markets (verified against prod). The first entry is the default
+// view: the 2026 Midterms tag — tightly scoped to this page's focus, rather than
+// the much broader "us-politics", which pulled in a lot of off-topic markets.
 const ELECTION_FEED_TOPICS = [
-  { slug: 'us-politics', label: 'All politics' },
+  { slug: '2026-midterms', label: '2026 Midterms' },
   { slug: '2026-us-congressional-elections', label: '2026 Congress' },
   { slug: '2028-us-presidential-election-6tdsp26zly', label: '2028 President' },
   { slug: 'us-senate', label: 'Senate' },
   { slug: 'donald-trump', label: 'Trump' },
+  { slug: 'us-politics', label: 'All politics' },
   { slug: 'elections', label: 'All elections' },
 ]
 
@@ -66,6 +74,18 @@ export function USElectionsPage(
 
   const [feedTopic, setFeedTopic] = useState(ELECTION_FEED_TOPICS[0])
 
+  const user = useUser()
+  // Capture an incoming ?r= referral when a logged-out visitor lands here from
+  // a shared link (the trending dashboard also does this, but do it at the page
+  // level so it works even when trending is absent).
+  useSaveReferral(user)
+
+  // Share the page itself, tagged with the sharer's referral code so sign-ups
+  // from the link are credited.
+  const shareUrl = `https://${ENV_CONFIG.domain}/election${
+    user?.username ? referralQuery(user.username) : ''
+  }`
+
   const trending =
     trendingDashboard.state == 'not found' ? null : (
       <Col className="gap-2">
@@ -101,6 +121,16 @@ export function USElectionsPage(
             Live prediction market odds on US elections
           </div>
         </Col>
+        <CopyLinkOrShareButton
+          url={shareUrl}
+          eventTrackingName="share elections page"
+          tooltip="Share this page"
+          color="gray-outline"
+          size="sm"
+          className="ml-auto shrink-0 gap-1.5"
+        >
+          Share
+        </CopyLinkOrShareButton>
       </Row>
 
       {/* 2026 Midterms — the balance-of-power levers and the race map together

@@ -43,6 +43,11 @@ export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 // mana a fully-verified new user receives is PRE_KYC_STARTING_BALANCE + STARTING_BALANCE.
 export const PRE_KYC_STARTING_BALANCE = 500
 export const STARTING_BALANCE = 500
+// Also the dedupe key for the verification bonus txn: the SIGNUP_BONUS
+// category is shared with the next-day signup bonus, so payment checks must
+// match on this description too, not category alone.
+export const VERIFIED_SIGNUP_BONUS_DESCRIPTION =
+  'Signup bonus (identity verified)'
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000

@@ -188,7 +188,7 @@ export function SenateCurrentCard(props: {
         </span>
         <span
           className={
-            party1 == 'Republican' ? 'text-sienna-700' : 'text-azure-700'
+            party2 == 'Republican' ? 'text-sienna-700' : 'text-azure-700'
           }
         >
           <span className="font-semibold">{name2}</span>, <span>{party2}</span>
