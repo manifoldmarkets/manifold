@@ -256,6 +256,19 @@ it also needs the perp txn-category commits.
   `common/src/perps/chart-projections.ts` (15 tests, incl. invariants that the personal
   break-even path reproduces `applyFunding` exactly). Not yet browser-QA'd.
 
+### Later 2026-07-21: scheduler deployed; chart iteration QA'd live
+
+- Tod deployed the dev scheduler — perps jobs now run autonomously (15s ticks
+  confirmed; local loop retired). Second funding cycle observed on schedule.
+- BTC feed's 4.6-day hole backfilled (90d of hourly Coinbase closes) after the
+  chart rendered it as one giant bridge line. Chart hardened so outages can't
+  do that again: line breaks across gaps, vol excludes outage returns, live
+  ticks append client-side, x/y axes labeled, timeframe selector (client-side
+  v1 — server `since` + bucketing needs the API redeploy), responsive width.
+- Full logged-in trade lifecycle QA'd in-browser: open → You-chip + entry/BE
+  lines appear (liq far below correctly clipped, domain not crushed) → close →
+  tombstone + overlays clear. Balance deltas exact.
+
 ### Scheduler deploy to dev — prepared, not executed
 
 `backend/scheduler/deploy-scheduler-windows.sh dev` is the path (build → local Docker
