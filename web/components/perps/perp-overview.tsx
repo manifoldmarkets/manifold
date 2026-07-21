@@ -145,7 +145,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         </Row>
       </Row>
 
-      <PerpChart contract={contract} mode={chartMode} />
+      <PerpChart contract={contract} mode={chartMode} refreshKey={refreshKey} />
 
       <PerpBetPanel
         contract={contract}

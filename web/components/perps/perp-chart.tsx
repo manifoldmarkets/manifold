@@ -1,10 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { line } from 'd3-shape'
 import { PerpContract } from 'common/contract'
+import { computeFundingRate } from 'common/perps/amm'
+import {
+  carryNeutralPath,
+  clusterLiquidationBands,
+  LiquidationBand,
+  personalBreakEvenPath,
+  ProjectionPoint,
+  projectionHorizonMs,
+  realizedVolPerSqrtMs,
+  volConePaths,
+} from 'common/perps/chart-projections'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
+import { useUser } from 'web/hooks/use-user'
 
 type Point = { ts: number; value: number }
 
@@ -13,16 +30,62 @@ type Point = { ts: number; value: number }
 // perp-overview.tsx.
 const FUNDING_PERIODS_PER_YEAR = 24 * 365
 
+type OpenPosition = {
+  userId: string
+  direction: 'long' | 'short'
+  size: number
+  costBasis: number
+  originalCostBasis: number
+  entryPrice: number
+  leverage: number
+  liquidationPrice: number
+}
+
+// Forward-projection overlays on the price chart. The price is an external
+// oracle, so none of these are forecasts: carry is the funding break-even
+// hurdle, the cone is the feed's own realized volatility, and the rest are
+// position levels. Toggles persist across markets for the session.
+type OverlayKey = 'carry' | 'cone' | 'liqs' | 'you'
+type OverlayToggles = { [k in OverlayKey]: boolean }
+const DEFAULT_OVERLAYS: OverlayToggles = {
+  carry: true,
+  cone: true,
+  liqs: false,
+  you: true,
+}
+
+type OverlayGeometry = {
+  now: number
+  horizon: number
+  carry: ProjectionPoint[]
+  cone: { upper: ProjectionPoint[]; lower: ProjectionPoint[] } | null
+  liqBands: LiquidationBand[]
+  yours: {
+    direction: 'long' | 'short'
+    entryPrice: number
+    liquidationPrice: number
+    breakEven: ProjectionPoint[]
+  }[]
+}
+
 export const PerpChart = (props: {
   contract: PerpContract
   mode: 'price' | 'funding'
   height?: number
+  // Bumped by the parent after any trade so position overlays refetch.
+  refreshKey?: number
 }) => {
-  const { contract, mode, height = 240 } = props
+  const { contract, mode, height = 240, refreshKey } = props
+  const user = useUser()
   const [oraclePoints, setOraclePoints] = useState<Point[]>([])
   const [fundingPoints, setFundingPoints] = useState<Point[]>([])
+  const [allPositions, setAllPositions] = useState<OpenPosition[]>([])
   const [loading, setLoading] = useState(true)
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
+  const [overlays, setOverlays] = usePersistentInMemoryState<OverlayToggles>(
+    DEFAULT_OVERLAYS,
+    'perp-chart-overlays'
+  )
   const svgRef = useRef<SVGSVGElement | null>(null)
 
   useEffect(() => {
@@ -65,18 +128,105 @@ export const PerpChart = (props: {
     }
   }, [contract.id, mode])
 
+  // All open positions: liquidation bands cluster everyone's liq prices, and
+  // the user's own rows drive the your-position lines.
+  useEffect(() => {
+    let cancelled = false
+    api('get-perp-positions', { contractId: contract.id })
+      .then((rows) => {
+        if (cancelled) return
+        setAllPositions(rows.filter((r) => r.size > 0))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [contract.id, refreshKey])
+
+  const userPositions = useMemo(
+    () => (user ? allPositions.filter((p) => p.userId === user.id) : []),
+    [allPositions, user?.id]
+  )
+
+  // Live rate from the current pools, not the hourly-refreshed
+  // contract.fundingRate — same rationale as perp-overview.tsx.
+  const liveFundingRate = computeFundingRate(
+    contract.poolLong,
+    contract.poolShort,
+    contract.fundingSensitivity,
+    contract.maxFundingRate
+  )
+
   const points = mode === 'price' ? oraclePoints : fundingPoints
   const width = 720
+
+  const overlayGeom = useMemo((): OverlayGeometry | null => {
+    if (mode !== 'price' || oraclePoints.length < 2) return null
+    const price = Number(contract.oraclePrice)
+    if (!Number.isFinite(price) || price <= 0) return null
+    const showYou = overlays.you && userPositions.length > 0
+    if (!overlays.carry && !overlays.cone && !overlays.liqs && !showYou) {
+      return null
+    }
+
+    const xs = oraclePoints.map((p) => p.ts)
+    const maxTs = Math.max(...xs)
+    // Clamp against client/server clock skew so the projection anchor never
+    // lands left of the last tick.
+    const now = Math.max(Date.now(), maxTs)
+    const horizon = projectionHorizonMs(maxTs - Math.min(...xs))
+
+    const carry = overlays.carry
+      ? carryNeutralPath(price, liveFundingRate, now, horizon)
+      : []
+    const sigma = overlays.cone ? realizedVolPerSqrtMs(oraclePoints) : null
+    const cone = sigma != null ? volConePaths(price, sigma, now, horizon) : null
+
+    const ys = oraclePoints.map((p) => p.value)
+    const histRange = Math.max(...ys) - Math.min(...ys) || price * 0.02 || 1
+    const liqBands = overlays.liqs
+      ? clusterLiquidationBands(allPositions, histRange * 0.02)
+      : []
+    const yours = showYou
+      ? userPositions.map((p) => ({
+          direction: p.direction,
+          entryPrice: p.entryPrice,
+          liquidationPrice: p.liquidationPrice,
+          breakEven: personalBreakEvenPath(
+            p,
+            liveFundingRate,
+            contract.poolLong,
+            contract.poolShort,
+            now,
+            horizon
+          ),
+        }))
+      : []
+    return { now, horizon, carry, cone, liqBands, yours }
+  }, [
+    mode,
+    oraclePoints,
+    overlays,
+    allPositions,
+    userPositions,
+    liveFundingRate,
+    contract.oraclePrice,
+    contract.poolLong,
+    contract.poolShort,
+  ])
 
   const { xScale, yScale, path } = useMemo(() => {
     if (!points.length) return { xScale: null, yScale: null, path: '' }
     const xs = points.map((p) => p.ts)
     const ys = points.map((p) => p.value)
+    const xMax = overlayGeom
+      ? overlayGeom.now + overlayGeom.horizon
+      : Math.max(...xs)
     const x = scaleTime()
-      .domain([Math.min(...xs), Math.max(...xs)])
+      .domain([Math.min(...xs), Math.max(xMax, Math.max(...xs))])
       .range([40, width - 10])
-    const yMin = Math.min(...ys)
-    const yMax = Math.max(...ys)
+    let yMin = Math.min(...ys)
+    let yMax = Math.max(...ys)
     // Flat series need a synthetic pad, but the fallback must match the
     // data's units: ±1 is fine for prices, while funding rates are raw
     // per-hour fractions (~1e-5), where a ±1 pad renders the axis as
@@ -85,6 +235,38 @@ export const PerpChart = (props: {
       mode === 'funding'
         ? Math.max(Math.abs(yMax), Math.abs(yMin)) * 0.5 || 1e-5
         : 1
+    if (overlayGeom) {
+      // Grow the domain to fit the projections, but never past 1.25× the
+      // history's own range beyond its bounds — a steep carry line exits
+      // through the top of the clip area instead of crushing the price
+      // history (exiting the chart IS the "huge hurdle" signal).
+      const range = yMax - yMin || flatPad
+      const capLo = yMin - 1.25 * range
+      const capHi = yMax + 1.25 * range
+      const clamped: number[] = []
+      for (const p of overlayGeom.carry) clamped.push(p.value)
+      if (overlayGeom.cone) {
+        const { upper, lower } = overlayGeom.cone
+        clamped.push(upper[upper.length - 1].value)
+        clamped.push(lower[lower.length - 1].value)
+      }
+      for (const yr of overlayGeom.yours) {
+        clamped.push(yr.entryPrice)
+        for (const p of yr.breakEven) clamped.push(p.value)
+        // Liquidation levels only stretch the domain when already close —
+        // a 1× position's liq at zero shouldn't flatten the whole chart.
+        if (yr.liquidationPrice >= capLo && yr.liquidationPrice <= capHi) {
+          yMin = Math.min(yMin, yr.liquidationPrice)
+          yMax = Math.max(yMax, yr.liquidationPrice)
+        }
+      }
+      for (const v of clamped) {
+        if (!Number.isFinite(v)) continue
+        const c = Math.min(Math.max(v, capLo), capHi)
+        yMin = Math.min(yMin, c)
+        yMax = Math.max(yMax, c)
+      }
+    }
     const pad = (yMax - yMin) * 0.1 || flatPad
     const y = scaleLinear()
       .domain([yMin - pad, yMax + pad])
@@ -93,7 +275,7 @@ export const PerpChart = (props: {
       .x((p) => x(p.ts))
       .y((p) => y(p.value))
     return { xScale: x, yScale: y, path: l(points) ?? '' }
-  }, [points, height, mode])
+  }, [points, height, mode, overlayGeom])
 
   if (loading) {
     return (
@@ -156,86 +338,352 @@ export const PerpChart = (props: {
   const nearLeftEdge = tooltipLeftPct < 20
   const nearRightEdge = tooltipLeftPct > 80
 
+  const toggleOverlay = (key: OverlayKey) =>
+    setOverlays((prev) => ({ ...prev, [key]: !prev[key] }))
+
+  const toOverlayPath = (pts: ProjectionPoint[]) =>
+    line<ProjectionPoint>()
+      .x((p) => xScale(p.ts))
+      .y((p) => yScale(p.value))(pts) ?? ''
+
+  const coneAreaPath = (cone: NonNullable<OverlayGeometry['cone']>) => {
+    const px = (p: ProjectionPoint) => `${xScale(p.ts)},${yScale(p.value)}`
+    const upper = cone.upper.map(px)
+    const lowerBack = [...cone.lower].reverse().map(px)
+    return `M${upper.join('L')}L${lowerBack.join('L')}Z`
+  }
+
+  const nowX = overlayGeom ? xScale(overlayGeom.now) : 0
+  const clipId = `perp-chart-clip-${contract.id}`
+
   return (
-    <div className="relative" style={{ height }}>
-      <svg
-        ref={svgRef}
-        width="100%"
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        onMouseMove={onMouseMove}
-        onMouseLeave={() => setHoverIdx(null)}
-      >
-        {yTicks.map((t) => (
-          <g key={t}>
-            <line
-              x1={40}
-              x2={width - 10}
-              y1={yScale(t)}
-              y2={yScale(t)}
-              stroke="currentColor"
-              strokeOpacity={0.08}
+    <Col className="gap-1.5">
+      {mode === 'price' && (
+        <Row className="flex-wrap items-center gap-1.5">
+          <OverlayChip
+            active={overlays.carry}
+            onClick={() => toggleOverlay('carry')}
+            label={`Carry ${formatAnnualRate(liveFundingRate)}`}
+            tooltip="Funding break-even, not a price forecast. A long profits after carry only if the price beats this line; below it, shorts come out ahead. The slope is the current funding rate — steep means one side is crowded."
+            swatch={<CarrySwatch />}
+          />
+          <OverlayChip
+            active={overlays.cone}
+            onClick={() => toggleOverlay('cone')}
+            label="Vol cone"
+            tooltip="±1σ range implied by this feed's recent realized volatility. A carry hurdle outside the cone is a strong signal to fade the crowd."
+            swatch={<ConeSwatch />}
+          />
+          {allPositions.length > 0 && (
+            <OverlayChip
+              active={overlays.liqs}
+              onClick={() => toggleOverlay('liqs')}
+              label="Liq levels"
+              tooltip="Price levels where open positions would be liquidated. Thicker bands = more notional at risk there."
+              swatch={<LiqSwatch />}
             />
-            <text
-              x={4}
-              y={yScale(t) + 4}
-              fontSize={10}
-              fill="currentColor"
-              opacity={0.6}
-            >
-              {formatTick(t, mode, priceDecimals)}
-            </text>
-          </g>
-        ))}
-        <path
-          d={path}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          className="text-primary-500"
-        />
-        {hovered && (
-          <g className="text-primary-500 pointer-events-none">
-            <line
-              x1={hoveredX}
-              x2={hoveredX}
-              y1={10}
-              y2={height - 20}
-              stroke="currentColor"
-              strokeOpacity={0.4}
-              strokeDasharray="3 3"
+          )}
+          {userPositions.length > 0 && (
+            <OverlayChip
+              active={overlays.you}
+              onClick={() => toggleOverlay('you')}
+              label="You"
+              tooltip="Your entry (solid), liquidation (dotted amber), and personal funding break-even (dashed). Funding is charged on margin, so higher leverage flattens your personal carry hurdle."
+              swatch={<YouSwatch />}
             />
-            <circle
-              cx={hoveredX}
-              cy={hoveredY}
-              r={3.5}
-              fill="currentColor"
-              stroke="white"
-              strokeWidth={1}
-            />
-          </g>
-        )}
-      </svg>
-      {hovered && (
-        <div
-          className="bg-canvas-0 border-ink-200 pointer-events-none absolute top-2 whitespace-nowrap rounded-md border px-2 py-1 text-xs shadow-sm"
-          style={{
-            left: `${tooltipLeftPct}%`,
-            transform: nearLeftEdge
-              ? 'translateX(8px)'
-              : nearRightEdge
-              ? 'translateX(calc(-100% - 8px))'
-              : 'translateX(-50%)',
-          }}
-        >
-          <div className="text-ink-500">{formatHoverDate(hovered.ts)}</div>
-          <div className="text-ink-900 font-semibold tabular-nums">
-            {formatHoverValue(hovered.value, mode, priceDecimals)}
-          </div>
-        </div>
+          )}
+        </Row>
       )}
-    </div>
+      <div className="relative" style={{ height }}>
+        <svg
+          ref={svgRef}
+          width="100%"
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          onMouseMove={onMouseMove}
+          onMouseLeave={() => setHoverIdx(null)}
+        >
+          {yTicks.map((t) => (
+            <g key={t}>
+              <line
+                x1={40}
+                x2={width - 10}
+                y1={yScale(t)}
+                y2={yScale(t)}
+                stroke="currentColor"
+                strokeOpacity={0.08}
+              />
+              <text
+                x={4}
+                y={yScale(t) + 4}
+                fontSize={10}
+                fill="currentColor"
+                opacity={0.6}
+              >
+                {formatTick(t, mode, priceDecimals)}
+              </text>
+            </g>
+          ))}
+          {overlayGeom && (
+            <>
+              <defs>
+                <clipPath id={clipId}>
+                  <rect x={40} y={10} width={width - 50} height={height - 30} />
+                </clipPath>
+              </defs>
+              {/* Future zone: everything right of "now" is projection. */}
+              <g className="text-ink-500">
+                <rect
+                  x={nowX}
+                  y={10}
+                  width={Math.max(0, width - 10 - nowX)}
+                  height={height - 30}
+                  fill="currentColor"
+                  fillOpacity={0.03}
+                />
+                <line
+                  x1={nowX}
+                  x2={nowX}
+                  y1={10}
+                  y2={height - 20}
+                  stroke="currentColor"
+                  strokeOpacity={0.15}
+                />
+              </g>
+              <g clipPath={`url(#${clipId})`}>
+                {overlayGeom.cone && (
+                  <g className="text-ink-500">
+                    <path
+                      d={coneAreaPath(overlayGeom.cone)}
+                      fill="currentColor"
+                      fillOpacity={0.06}
+                    />
+                    <path
+                      d={toOverlayPath(overlayGeom.cone.upper)}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeOpacity={0.25}
+                      strokeWidth={1}
+                    />
+                    <path
+                      d={toOverlayPath(overlayGeom.cone.lower)}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeOpacity={0.25}
+                      strokeWidth={1}
+                    />
+                  </g>
+                )}
+                {overlayGeom.liqBands.map((b, i) => (
+                  <line
+                    key={i}
+                    x1={nowX}
+                    x2={width - 10}
+                    y1={yScale(b.price)}
+                    y2={yScale(b.price)}
+                    stroke="currentColor"
+                    strokeOpacity={0.3}
+                    strokeWidth={2 + 5 * Math.sqrt(b.weight)}
+                    className="text-amber-500"
+                  />
+                ))}
+                {overlayGeom.carry.length > 0 && (
+                  <path
+                    d={toOverlayPath(overlayGeom.carry)}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.7}
+                    className="text-ink-600"
+                  />
+                )}
+                {overlayGeom.yours.map((yr) => (
+                  <g
+                    key={yr.direction}
+                    className={
+                      yr.direction === 'long'
+                        ? 'text-teal-500'
+                        : 'text-scarlet-500'
+                    }
+                  >
+                    <line
+                      x1={nowX}
+                      x2={width - 10}
+                      y1={yScale(yr.entryPrice)}
+                      y2={yScale(yr.entryPrice)}
+                      stroke="currentColor"
+                      strokeOpacity={0.8}
+                      strokeWidth={1}
+                    />
+                    <line
+                      x1={nowX}
+                      x2={width - 10}
+                      y1={yScale(yr.liquidationPrice)}
+                      y2={yScale(yr.liquidationPrice)}
+                      stroke="currentColor"
+                      strokeOpacity={0.9}
+                      strokeWidth={1.25}
+                      strokeDasharray="2 3"
+                      className="text-amber-500"
+                    />
+                    {yr.breakEven.length > 0 && (
+                      <path
+                        d={toOverlayPath(yr.breakEven)}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.25}
+                        strokeDasharray="6 4"
+                        strokeOpacity={0.65}
+                      />
+                    )}
+                  </g>
+                ))}
+              </g>
+            </>
+          )}
+          <path
+            d={path}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            className="text-primary-500"
+          />
+          {hovered && (
+            <g className="text-primary-500 pointer-events-none">
+              <line
+                x1={hoveredX}
+                x2={hoveredX}
+                y1={10}
+                y2={height - 20}
+                stroke="currentColor"
+                strokeOpacity={0.4}
+                strokeDasharray="3 3"
+              />
+              <circle
+                cx={hoveredX}
+                cy={hoveredY}
+                r={3.5}
+                fill="currentColor"
+                stroke="white"
+                strokeWidth={1}
+              />
+            </g>
+          )}
+        </svg>
+        {hovered && (
+          <div
+            className="bg-canvas-0 border-ink-200 pointer-events-none absolute top-2 whitespace-nowrap rounded-md border px-2 py-1 text-xs shadow-sm"
+            style={{
+              left: `${tooltipLeftPct}%`,
+              transform: nearLeftEdge
+                ? 'translateX(8px)'
+                : nearRightEdge
+                ? 'translateX(calc(-100% - 8px))'
+                : 'translateX(-50%)',
+            }}
+          >
+            <div className="text-ink-500">{formatHoverDate(hovered.ts)}</div>
+            <div className="text-ink-900 font-semibold tabular-nums">
+              {formatHoverValue(hovered.value, mode, priceDecimals)}
+            </div>
+          </div>
+        )}
+      </div>
+    </Col>
   )
+}
+
+const OverlayChip = (props: {
+  active: boolean
+  onClick: () => void
+  label: string
+  tooltip: string
+  swatch: ReactNode
+}) => {
+  const { active, onClick, label, tooltip, swatch } = props
+  return (
+    <Tooltip text={tooltip}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={clsx(
+          'flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors',
+          active
+            ? 'border-primary-300 bg-primary-100 text-ink-800'
+            : 'border-ink-200 text-ink-400 hover:text-ink-600'
+        )}
+      >
+        {swatch}
+        <span className="whitespace-nowrap tabular-nums">{label}</span>
+      </button>
+    </Tooltip>
+  )
+}
+
+const CarrySwatch = () => (
+  <svg width={16} height={8} className="text-ink-600 shrink-0">
+    <line
+      x1={0}
+      y1={4}
+      x2={16}
+      y2={4}
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeDasharray="4 2.5"
+    />
+  </svg>
+)
+
+const ConeSwatch = () => (
+  <svg width={16} height={8} className="text-ink-500 shrink-0">
+    <path d="M0 4 L16 0.5 L16 7.5 Z" fill="currentColor" fillOpacity={0.3} />
+  </svg>
+)
+
+const LiqSwatch = () => (
+  <svg width={16} height={8} className="shrink-0 text-amber-500">
+    <line
+      x1={0}
+      y1={4}
+      x2={16}
+      y2={4}
+      stroke="currentColor"
+      strokeWidth={3}
+      strokeOpacity={0.5}
+    />
+  </svg>
+)
+
+const YouSwatch = () => (
+  <svg width={16} height={8} className="shrink-0">
+    <line
+      x1={0}
+      y1={2.5}
+      x2={16}
+      y2={2.5}
+      className="text-teal-500"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    />
+    <line
+      x1={0}
+      y1={5.5}
+      x2={16}
+      y2={5.5}
+      className="text-amber-500"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeDasharray="2 2"
+    />
+  </svg>
+)
+
+const formatAnnualRate = (rate: number) => {
+  if (!Number.isFinite(rate)) return '—'
+  const pct = rate * FUNDING_PERIODS_PER_YEAR * 100
+  const sign = pct > 0 ? '+' : ''
+  return `${sign}${pct.toFixed(Math.abs(pct) >= 100 ? 0 : 1)}%/yr`
 }
 
 const formatTick = (
