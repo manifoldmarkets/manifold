@@ -11,6 +11,25 @@ import { sortBy, sumBy } from 'lodash'
 import { HOUR_MS, DAY_MS } from '../util/time'
 import { PerpDirection } from './position'
 
+/**
+ * Interval above which a sampling gap is a data outage rather than natural
+ * cadence: 12× the median interval, floored at 3 hours. The floor keeps
+ * mixed-density series (15s live ticks + hourly backfill) connected, while
+ * multi-day outages — the case that renders as a fake straight bridge across
+ * dead time — still break. Daily feeds get 12 days, so weekend-ish gaps in
+ * slow feeds don't fragment the line.
+ */
+export const gapThresholdMs = (points: { ts: number }[]): number => {
+  const dts: number[] = []
+  for (let i = 1; i < points.length; i++) {
+    const dt = points[i].ts - points[i - 1].ts
+    if (dt > 0) dts.push(dt)
+  }
+  if (!dts.length) return Infinity
+  const median = sortBy(dts)[Math.floor(dts.length / 2)]
+  return Math.max(12 * median, 3 * HOUR_MS)
+}
+
 export type ProjectionPoint = { ts: number; value: number }
 
 // Mirrors FUNDING_PERIOD_MS in backend/shared/src/perps/engine.ts (web and
@@ -63,11 +82,15 @@ export const carryNeutralPath = (
 /**
  * Realized volatility of the feed as σ per √ms: the square root of total
  * squared log-return per unit of elapsed time. Irregular sampling is fine —
- * each return contributes its own interval to the denominator. Returns null
- * when there aren't enough clean samples to be meaningful.
+ * each return contributes its own interval to the denominator. Returns
+ * spanning more than `maxGapMs` (data outages) are excluded: a single
+ * multi-day gap would otherwise dominate the elapsed-time denominator with
+ * one noisy sample. Returns null when there aren't enough clean samples to
+ * be meaningful.
  */
 export const realizedVolPerSqrtMs = (
-  points: ProjectionPoint[]
+  points: ProjectionPoint[],
+  maxGapMs = Infinity
 ): number | null => {
   let sumSq = 0
   let sumDt = 0
@@ -76,7 +99,8 @@ export const realizedVolPerSqrtMs = (
     const prev = points[i - 1]
     const curr = points[i]
     const dt = curr.ts - prev.ts
-    if (!(dt > 0) || !(prev.value > 0) || !(curr.value > 0)) continue
+    if (!(dt > 0) || dt > maxGapMs) continue
+    if (!(prev.value > 0) || !(curr.value > 0)) continue
     const r = Math.log(curr.value / prev.value)
     if (!Number.isFinite(r)) continue
     sumSq += r * r

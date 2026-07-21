@@ -7,6 +7,7 @@ import {
   carryNeutralPath,
   clusterLiquidationBands,
   FUNDING_PERIOD_MS,
+  gapThresholdMs,
   personalBreakEvenPath,
   projectionHorizonMs,
   realizedVolPerSqrtMs,
@@ -78,6 +79,17 @@ describe('realizedVolPerSqrtMs', () => {
     expect(sigma!).toBeCloseTo(Math.sqrt((r * r) / 1000), 10)
   })
 
+  it('excludes returns spanning longer than maxGapMs', () => {
+    // 20 flat points at 1s cadence, then a 4-day outage, then a big jump.
+    const points = Array.from({ length: 20 }, (_, i) => ({
+      ts: i * 1000,
+      value: 100,
+    }))
+    points.push({ ts: 20_000 + 4 * 24 * 3600 * 1000, value: 150 })
+    expect(realizedVolPerSqrtMs(points)).toBeGreaterThan(0)
+    expect(realizedVolPerSqrtMs(points, 60_000)).toBe(0)
+  })
+
   it('skips zero/negative prices and non-positive intervals', () => {
     const points = [
       { ts: 0, value: 100 },
@@ -89,6 +101,29 @@ describe('realizedVolPerSqrtMs', () => {
       })),
     ]
     expect(realizedVolPerSqrtMs(points)).toBe(0)
+  })
+})
+
+describe('gapThresholdMs', () => {
+  const series = (dts: number[]) => {
+    const pts = [{ ts: 0 }]
+    for (const dt of dts) pts.push({ ts: pts[pts.length - 1].ts + dt })
+    return pts
+  }
+
+  it('floors at 3 hours so mixed 15s/hourly density stays connected', () => {
+    const fifteenSec = series(Array.from({ length: 50 }, () => 15_000))
+    expect(gapThresholdMs(fifteenSec)).toBe(3 * 3600 * 1000)
+  })
+
+  it('scales to 12x median for slow feeds', () => {
+    const daily = series(Array.from({ length: 10 }, () => 24 * 3600 * 1000))
+    expect(gapThresholdMs(daily)).toBe(12 * 24 * 3600 * 1000)
+  })
+
+  it('returns Infinity when there are no intervals', () => {
+    expect(gapThresholdMs([{ ts: 0 }])).toBe(Infinity)
+    expect(gapThresholdMs([])).toBe(Infinity)
   })
 })
 
