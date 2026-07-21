@@ -18,11 +18,16 @@ import { PerpPosition } from './position'
 const NOW = 1_700_000_000_000
 
 describe('projectionHorizonMs', () => {
-  it('floors at two funding periods and scales with history span', () => {
-    expect(projectionHorizonMs(0)).toBe(2 * FUNDING_PERIOD_MS)
-    expect(projectionHorizonMs(FUNDING_PERIOD_MS)).toBe(2 * FUNDING_PERIOD_MS)
+  it('scales with history span, floored at 30 minutes', () => {
     const tenDays = 10 * 24 * FUNDING_PERIOD_MS
     expect(projectionHorizonMs(tenDays)).toBeCloseTo(tenDays * 0.28)
+    // 0.28 × 90min ≈ 25min — below the floor, and the 90min span allows it.
+    expect(projectionHorizonMs(90 * 60 * 1000)).toBe(30 * 60 * 1000)
+  })
+
+  it('never projects further ahead than the visible history', () => {
+    expect(projectionHorizonMs(FUNDING_PERIOD_MS)).toBe(30 * 60 * 1000)
+    expect(projectionHorizonMs(10 * 60 * 1000)).toBe(10 * 60 * 1000)
   })
 
   it('caps at a year and survives garbage input', () => {
