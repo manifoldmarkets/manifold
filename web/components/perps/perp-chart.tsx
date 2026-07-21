@@ -17,11 +17,13 @@ import {
   volConePaths,
 } from 'common/perps/chart-projections'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { useUser } from 'web/hooks/use-user'
 
 type Point = { ts: number; value: number }
@@ -53,6 +55,18 @@ const DEFAULT_OVERLAYS: OverlayToggles = {
   cone: true,
   liqs: false,
   you: true,
+}
+
+// Client-side windowing over the fetched series (v1): the deployed API has
+// no `since` param yet, so frames slice what is already loaded. Upgrade to
+// server-side since + bucketing when the API grows support.
+type Timeframe = '1H' | '6H' | '1D' | 'ALL'
+const TIMEFRAMES: Timeframe[] = ['1H', '6H', '1D', 'ALL']
+const TIMEFRAME_MS: { [k in Timeframe]: number } = {
+  '1H': HOUR_MS,
+  '6H': 6 * HOUR_MS,
+  '1D': DAY_MS,
+  ALL: Infinity,
 }
 
 type OverlayGeometry = {
@@ -88,7 +102,15 @@ export const PerpChart = (props: {
     DEFAULT_OVERLAYS,
     'perp-chart-overlays'
   )
+  const [timeframe, setTimeframe] = usePersistentInMemoryState<Timeframe>(
+    'ALL',
+    'perp-chart-timeframe'
+  )
   const svgRef = useRef<SVGSVGElement | null>(null)
+  // Responsive: viewBox width tracks the container so axis text renders at
+  // its nominal size on every screen instead of scaling down to ~6px at
+  // phone widths.
+  const { elemRef: containerRef, width: measuredWidth } = useMeasureSize()
 
   // Live rate from the current pools, not the hourly-refreshed
   // contract.fundingRate — same rationale as perp-overview.tsx.
@@ -188,11 +210,32 @@ export const PerpChart = (props: {
     return fresh.length ? [...oraclePoints, ...fresh] : oraclePoints
   }, [oraclePoints, livePoints])
 
-  const points = mode === 'price' ? priceSeries : fundingPoints
-  const width = 720
+  // A frame is offered only when it would show at least 2 points; the
+  // selection falls back to All rather than rendering an empty chart.
+  const frameCounts = useMemo(() => {
+    const now = Date.now()
+    const counts = {} as { [k in Timeframe]: number }
+    for (const f of TIMEFRAMES) {
+      counts[f] =
+        f === 'ALL'
+          ? priceSeries.length
+          : priceSeries.filter((p) => p.ts >= now - TIMEFRAME_MS[f]).length
+    }
+    return counts
+  }, [priceSeries])
+  const activeFrame = frameCounts[timeframe] >= 2 ? timeframe : 'ALL'
+
+  const windowedSeries = useMemo(() => {
+    if (activeFrame === 'ALL') return priceSeries
+    const cutoff = Date.now() - TIMEFRAME_MS[activeFrame]
+    return priceSeries.filter((p) => p.ts >= cutoff)
+  }, [priceSeries, activeFrame])
+
+  const points = mode === 'price' ? windowedSeries : fundingPoints
+  const width = Math.max(320, measuredWidth ?? 720)
 
   const overlayGeom = useMemo((): OverlayGeometry | null => {
-    if (mode !== 'price' || priceSeries.length < 2) return null
+    if (mode !== 'price' || windowedSeries.length < 2) return null
     const price = Number(contract.oraclePrice)
     if (!Number.isFinite(price) || price <= 0) return null
     const showYou = overlays.you && userPositions.length > 0
@@ -200,7 +243,7 @@ export const PerpChart = (props: {
       return null
     }
 
-    const xs = priceSeries.map((p) => p.ts)
+    const xs = windowedSeries.map((p) => p.ts)
     const maxTs = Math.max(...xs)
     // Clamp against client/server clock skew so the projection anchor never
     // lands left of the last tick.
@@ -210,14 +253,16 @@ export const PerpChart = (props: {
     const carry = overlays.carry
       ? carryNeutralPath(price, liveFundingRate, now, horizon)
       : []
-    // Outage gaps are excluded from the vol estimate — one multi-day gap
-    // would otherwise swamp the elapsed-time denominator.
+    // The vol estimate uses the FULL fetched series, not the visible
+    // window — a 1H frame shouldn't produce a jumpier cone than All —
+    // with outage gaps excluded so a multi-day hole can't swamp the
+    // elapsed-time denominator.
     const sigma = overlays.cone
       ? realizedVolPerSqrtMs(priceSeries, gapThresholdMs(priceSeries))
       : null
     const cone = sigma != null ? volConePaths(price, sigma, now, horizon) : null
 
-    const ys = priceSeries.map((p) => p.value)
+    const ys = windowedSeries.map((p) => p.value)
     const histRange = Math.max(...ys) - Math.min(...ys) || price * 0.02 || 1
     const liqBands = overlays.liqs
       ? clusterLiquidationBands(allPositions, histRange * 0.02)
@@ -240,6 +285,7 @@ export const PerpChart = (props: {
     return { now, horizon, carry, cone, liqBands, yours }
   }, [
     mode,
+    windowedSeries,
     priceSeries,
     overlays,
     allPositions,
@@ -326,7 +372,7 @@ export const PerpChart = (props: {
       .x((p) => x(p.ts))
       .y((p) => y(p.value))
     return { xScale: x, yScale: y, path: l(renderPoints) ?? '' }
-  }, [points, height, mode, overlayGeom])
+  }, [points, height, width, mode, overlayGeom])
 
   if (loading) {
     return (
@@ -370,13 +416,20 @@ export const PerpChart = (props: {
 
   // Convert a mouse event's client x to the nearest data point index. We
   // map client x into viewBox coords using the SVG's bounding rect; the
-  // viewBox has fixed width=720, so one clientX px maps to (720 / rectWidth)
-  // viewBox units.
+  // viewBox width tracks the measured container, so the ratio is ~1 except
+  // for the first frame before measurement.
   const onMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = svgRef.current
     if (!svg) return
     const rect = svg.getBoundingClientRect()
     const vbX = ((e.clientX - rect.left) / rect.width) * width
+    // The projection zone has no data to inspect — hovering there would
+    // just pin the crosshair to the last real point, which reads as the
+    // projection being "worth" that value. Hide it instead.
+    if (overlayGeom && vbX > xScale(overlayGeom.now) + 8) {
+      setHoverIdx(null)
+      return
+    }
     // Bisect by x-pixel of each point.
     let closest = 0
     let bestDist = Infinity
@@ -455,9 +508,28 @@ export const PerpChart = (props: {
               swatch={<YouSwatch />}
             />
           )}
+          <Row className="ml-auto gap-0.5">
+            {TIMEFRAMES.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setTimeframe(f)}
+                disabled={frameCounts[f] < 2}
+                className={clsx(
+                  'rounded px-1.5 py-0.5 text-xs tabular-nums transition-colors',
+                  activeFrame === f
+                    ? 'bg-ink-200 text-ink-900 font-semibold'
+                    : 'text-ink-500 hover:text-ink-800',
+                  frameCounts[f] < 2 && 'cursor-not-allowed opacity-40'
+                )}
+              >
+                {f === 'ALL' ? 'All' : f}
+              </button>
+            ))}
+          </Row>
         </Row>
       )}
-      <div className="relative" style={{ height }}>
+      <div className="relative" style={{ height }} ref={containerRef}>
         <svg
           ref={svgRef}
           width="100%"
@@ -666,6 +738,17 @@ export const PerpChart = (props: {
           </div>
         )}
       </div>
+      {/* fundingPoints carries a synthetic now-anchor, so length 1 = no real
+          events. A near-empty funding chart reads as broken without context. */}
+      {mode === 'funding' && fundingPoints.length <= 3 && (
+        <span className="text-ink-400 text-xs">
+          {fundingPoints.length <= 1
+            ? 'No funding events yet — the first lands on the next hourly run.'
+            : `Funding runs hourly — first event ${formatHoverDate(
+                fundingPoints[0].ts
+              )}. History fills in from here.`}
+        </span>
+      )}
     </Col>
   )
 }
