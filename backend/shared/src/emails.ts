@@ -16,6 +16,10 @@ import {
 } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
+import {
+  isSensitiveQuestion,
+  pickSubjectQuestion,
+} from 'shared/helpers/email-subject-safety'
 import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
 import {
@@ -537,13 +541,32 @@ export const sendInterestingMarketsEmail = async (
 
   const firstName = userName.split(' ')[0]
 
+  const shownContracts = contractsToSend.slice(0, 6)
+  const subjectQuestion = pickSubjectQuestion(
+    shownContracts.map((c) => c.question)
+  )
+  const subject = subjectQuestion
+    ? `${subjectQuestion} & 5 more interesting markets on Manifold`
+    : `6 interesting markets on Manifold this week`
+
+  // Shown in the inbox preview / push notification via a hidden preheader
+  // div in the template, so it is screened like the subject.
+  const previewQuestions = shownContracts
+    .map((c) => c.question)
+    .filter((q) => !isSensitiveQuestion(q))
+  const previewText =
+    previewQuestions.length > 0
+      ? previewQuestions.join(' · ')
+      : 'Six markets picked for you this week'
+
   await sendTemplateEmail(
     privateUser.email,
-    `${contractsToSend[0].question} & 5 more interesting markets on Manifold`,
+    subject,
     'interesting-markets',
     {
       name: firstName,
       unsubscribeUrl,
+      previewText,
       question1Title: contractsToSend[0].question,
       question1Link: contractUrl(contractsToSend[0]),
       question1ImgSrc: imageSourceUrl(contractsToSend[0]),
@@ -586,6 +609,17 @@ export const sendBonusWithInterestingMarketsEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
+  // Shown in the inbox preview / push notification via a hidden preheader
+  // div in the template, so it is screened like the subject.
+  const previewQuestions = contractsToSend
+    .slice(0, 6)
+    .map((c) => c.question)
+    .filter((q) => !isSensitiveQuestion(q))
+  const previewText =
+    previewQuestions.length > 0
+      ? previewQuestions.join(' · ')
+      : 'Six markets picked for you this week'
+
   await sendTemplateEmail(
     privateUser.email,
     `Interesting questions on Manifold + ${bonusAmount} bonus mana`,
@@ -593,6 +627,7 @@ export const sendBonusWithInterestingMarketsEmail = async (
     {
       name: firstName,
       unsubscribeUrl,
+      previewText,
       bonusAmount: formatMoney(bonusAmount),
       question1Title: contractsToSend[0].question,
       question1Link: contractUrl(contractsToSend[0]),
