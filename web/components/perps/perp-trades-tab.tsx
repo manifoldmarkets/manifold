@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { formatMoney } from 'common/util/format'
@@ -10,6 +10,7 @@ import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-obser
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { api } from 'web/lib/api/api'
+import { POSITIONS_POLL_MS as POLL_MS } from './use-perp-positions'
 
 type Event = {
   id: number
@@ -39,24 +40,47 @@ export const PerpTradesTab = (props: {
   const [events, setEvents] = useState<Event[] | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const initializedRef = useRef(false)
 
+  // Poll the first page so new trades stream in while the tab is open (this
+  // used to fetch exactly once — the tab froze until a full page reload).
+  // New events have larger ids and come newest-first, so polling merges by
+  // prepending unseen rows without disturbing pagination.
   useEffect(() => {
     let cancelled = false
-    api('get-perp-events', {
-      contractId: contract.id,
-      limit: PAGE_SIZE,
-    }).then((rows) => {
-      if (cancelled) return
-      setEvents(rows)
-      setHasMore(rows.length === PAGE_SIZE)
-      // Count is a lower bound while pagination is in progress; updated as we
-      // load more. Good enough for the tab title in v1.
-      setTotalTrades?.(rows.length)
-    })
+    initializedRef.current = false
+    const load = () =>
+      api('get-perp-events', {
+        contractId: contract.id,
+        limit: PAGE_SIZE,
+      })
+        .then((rows) => {
+          if (cancelled) return
+          if (!initializedRef.current) {
+            initializedRef.current = true
+            setHasMore(rows.length === PAGE_SIZE)
+          }
+          setEvents((prev) => {
+            if (!prev) return rows
+            const known = new Set(prev.map((e) => e.id))
+            const unseen = rows.filter((r) => !known.has(r.id))
+            return unseen.length ? [...unseen, ...prev] : prev
+          })
+        })
+        .catch(() => {})
+    load()
+    const id = setInterval(load, POLL_MS)
     return () => {
       cancelled = true
+      clearInterval(id)
     }
   }, [contract.id])
+
+  // Count is a lower bound while pagination is in progress. Good enough for
+  // the tab title in v1.
+  useEffect(() => {
+    if (events) setTotalTrades?.(events.length)
+  }, [events?.length])
 
   const loadMore = async () => {
     if (!events || !hasMore || loadingMore) return false
@@ -74,7 +98,6 @@ export const PerpTradesTab = (props: {
       }
       setEvents((prev) => (prev ? [...prev, ...more] : more))
       setHasMore(more.length === PAGE_SIZE)
-      setTotalTrades?.(events.length + more.length)
       return true
     } finally {
       setLoadingMore(false)
@@ -83,9 +106,7 @@ export const PerpTradesTab = (props: {
 
   if (!events) return <LoadingIndicator />
   if (events.length === 0)
-    return (
-      <div className="text-ink-500 p-4 text-sm">No trades yet.</div>
-    )
+    return <div className="text-ink-500 p-4 text-sm">No trades yet.</div>
 
   const priceDecimals = inferPriceDecimals([
     Number(contract.oraclePrice),
@@ -167,11 +188,9 @@ const EventRow = (props: { event: Event; priceDecimals: number }) => {
           />
         </Row>
       </Col>
-      <Col className="items-end shrink-0 text-sm">
+      <Col className="shrink-0 items-end text-sm">
         {marginOrPayout != null && (
-          <span className="text-ink-900">
-            {formatMoney(marginOrPayout)}
-          </span>
+          <span className="text-ink-900">{formatMoney(marginOrPayout)}</span>
         )}
         {isExit && event.pnl != null && (
           <span className={event.pnl >= 0 ? 'text-teal-600' : 'text-red-600'}>

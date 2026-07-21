@@ -22,8 +22,7 @@ import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Slider, sliderColors } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
-
-type OpenPosition = { direction: 'long' | 'short' }
+import { PerpPositionRow } from './use-perp-positions'
 
 // Tick labels rendered under the leverage slider. Kept sparse so the first
 // few marks don't pile on top of each other at narrow widths — the slider
@@ -41,11 +40,12 @@ export const PerpBetPanel = (props: {
   // Called after a successful trade so the page re-polls positions/pools
   // immediately instead of waiting for the next 15s tick.
   onTrade?: () => void
-  // Bumped by the parent's refresh(); re-fetches the user's open direction so
-  // this panel stays consistent with actions taken elsewhere on the page.
-  refreshKey?: number
+  // Shared polled positions from the parent (usePerpPositions) — the user's
+  // open direction derives from these, so this panel stays consistent with
+  // actions taken anywhere without its own fetch. Null while loading.
+  positions?: PerpPositionRow[] | null
 }) => {
-  const { contract, onTrade, refreshKey } = props
+  const { contract, onTrade, positions } = props
   const user = useUser()
 
   const [direction, setDirection] = useState<'long' | 'short'>('long')
@@ -54,34 +54,17 @@ export const PerpBetPanel = (props: {
   const [leverage, setLeverage] = useState<number>(2)
   const [submitting, setSubmitting] = useState(false)
   const [amountError, setAmountError] = useState<string | undefined>(undefined)
-  const [openDirection, setOpenDirection] = useState<'long' | 'short' | null>(
-    null
-  )
 
+  const openDirection = useMemo(() => {
+    if (!user || !positions) return null
+    return positions.find((p) => p.userId === user.id)?.direction ?? null
+  }, [positions, user?.id])
+
+  // Preselect the held side, so "add to position" is the default action when
+  // one exists (one-way mode: opening the opposite side is a flip).
   useEffect(() => {
-    let cancelled = false
-    if (!user) {
-      setOpenDirection(null)
-      return
-    }
-    api('get-perp-positions', { contractId: contract.id, userId: user.id })
-      .then((positions: OpenPosition[]) => {
-        if (cancelled) return
-        const open = positions[0]
-        if (open) {
-          setOpenDirection(open.direction)
-          setDirection(open.direction)
-        } else {
-          setOpenDirection(null)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setOpenDirection(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [user?.id, contract.id, refreshKey])
+    if (openDirection) setDirection(openDirection)
+  }, [openDirection])
 
   const price = Number(contract.oraclePrice)
   const priceDecimals = inferPriceDecimals([
@@ -139,9 +122,9 @@ export const PerpBetPanel = (props: {
           priceDecimals
         )}`
       )
-      setOpenDirection(direction)
       // Reflect the trade everywhere on the page (position panel, pools,
-      // funding) immediately - not on the next poll tick.
+      // funding, this panel's open direction) immediately — onTrade bumps
+      // the parent's refreshKey, which refetches positions cache-bypassed.
       onTrade?.()
     } catch (err: any) {
       toast.error(err?.message ?? 'Trade failed')

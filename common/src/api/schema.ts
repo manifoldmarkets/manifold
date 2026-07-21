@@ -1118,7 +1118,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // NOT the default 5s+swr cache: the API sits behind an edge cache that
+    // serves stale-while-revalidate regardless of client no-cache, so a
+    // trader's own just-placed position can vanish from refetches for ~15s.
+    // Positions are correctness-critical right after a trade.
+    cache: 'no-cache',
     returns: [] as {
       userId: string
       direction: 'long' | 'short'
@@ -1145,7 +1149,10 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // See get-perp-positions: edge-cache staleness makes fresh closes /
+    // liquidations lag their tombstones. Funding events and oracle series
+    // keep the default cache — append-only data where 5-15s is harmless.
+    cache: 'no-cache',
     returns: [] as {
       id: number
       ts: number

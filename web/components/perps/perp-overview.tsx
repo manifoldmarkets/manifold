@@ -10,6 +10,7 @@ import { api } from 'web/lib/api/api'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
 import { PerpPositionPanel } from './perp-position-panel'
+import { scheduleFreshBurst, usePerpPositions } from './use-perp-positions'
 
 // Funding events fire hourly in the engine (FUNDING_PERIOD_MS = HOUR_MS), so
 // the per-period rate stored on the contract annualizes as rate * 24 * 365.
@@ -20,19 +21,28 @@ const FUNDING_PERIODS_PER_YEAR = 24 * 365
 // the scheduler process, not the API's socket server), so the page polls.
 const POLL_MS = 15_000
 
-// Overlay live perp fields (oracle price, pools, funding) onto the SSR
-// contract so every number on the page tracks the feed without a reload.
+// Overlay live perp fields (oracle price, pools, funding, volume) onto the
+// SSR contract so every number on the page tracks the feed without a reload.
 // Returns a refresh() that re-polls immediately and bumps refreshKey — call
 // it after any trade/close so the user's own action is reflected instantly.
-// Never rewind the price: a cached response must not beat a newer snapshot.
-const useLivePerpContract = (ssrContract: PerpContract) => {
+// The post-trade poll bypasses the browser cache: market/:id is served with
+// max-age + stale-while-revalidate, so a cached response can legally carry
+// the pre-trade pools for several seconds. Never rewind the price: a cached
+// response must not beat a newer snapshot.
+// Exported for the perp tabs (holders/trades), which mount outside this
+// component but want the same liveness.
+export const useLivePerpContract = (ssrContract: PerpContract) => {
   const [live, setLive] = useState<Partial<PerpContract> | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    const poll = () =>
-      api('market/:id', { id: ssrContract.id, lite: true })
+    const poll = (fresh: boolean) =>
+      api(
+        'market/:id',
+        { id: ssrContract.id, lite: true },
+        fresh ? { cache: 'no-store' } : undefined
+      )
         .then((m: any) => {
           if (cancelled || m.oraclePrice == null) return
           setLive((prev) =>
@@ -44,17 +54,27 @@ const useLivePerpContract = (ssrContract: PerpContract) => {
                   poolLong: m.poolLong,
                   poolShort: m.poolShort,
                   fundingRate: m.fundingRate,
+                  volume: m.volume,
+                  uniqueBettorCount: m.uniqueBettorCount,
                 }
           )
         })
         .catch(() => {})
-    poll()
-    const id = setInterval(poll, POLL_MS)
+    // Post-trade: burst past the edge cache's stale window (see
+    // scheduleFreshBurst) so pools/funding reflect the trade promptly. The
+    // never-rewind guard above drops any stale copy that arrives late.
+    const cancelBurst =
+      refreshKey > 0
+        ? scheduleFreshBurst(() => poll(true))
+        : (poll(false), undefined)
+    const id = setInterval(() => poll(false), POLL_MS)
     return () => {
       cancelled = true
+      cancelBurst?.()
       clearInterval(id)
     }
-    // refreshKey in deps: refresh() restarts the interval with an immediate poll.
+    // refreshKey in deps: refresh() restarts the interval with an immediate
+    // cache-bypassing poll.
   }, [ssrContract.id, refreshKey])
 
   const refresh = () => setRefreshKey((k) => k + 1)
@@ -84,6 +104,10 @@ const useTickFlash = (value: number) => {
 export const PerpOverview = (props: { contract: PerpContract }) => {
   const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
   const [chartMode, setChartMode] = useState<'price' | 'funding'>('price')
+  // Single polled positions source shared by the chart overlays, position
+  // panel, and bet panel — one request instead of three, and every consumer
+  // sees cross-user changes on the poll rather than only on own-trades.
+  const positions = usePerpPositions(contract.id, refreshKey)
 
   const price = Number(contract.oraclePrice)
   const flash = useTickFlash(price)
@@ -145,17 +169,18 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         </Row>
       </Row>
 
-      <PerpChart contract={contract} mode={chartMode} refreshKey={refreshKey} />
+      <PerpChart contract={contract} mode={chartMode} positions={positions} />
 
       <PerpBetPanel
         contract={contract}
         onTrade={refresh}
-        refreshKey={refreshKey}
+        positions={positions}
       />
       <PerpPositionPanel
         contract={contract}
         onAction={refresh}
         refreshKey={refreshKey}
+        positions={positions}
       />
     </Col>
   )

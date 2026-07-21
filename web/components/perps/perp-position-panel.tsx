@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { getUserFacingPnl } from 'common/perps/pnl'
@@ -11,6 +11,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
+import { PerpPositionRow, scheduleFreshBurst } from './use-perp-positions'
 
 type Position = {
   userId: string
@@ -28,12 +29,30 @@ export const PerpPositionPanel = (props: {
   // Called after closing a position so the page re-polls pools immediately.
   onAction?: () => void
   // Bumped by the parent after any trade elsewhere on the page (e.g. the bet
-  // panel) so this panel refetches without waiting for the next poll tick.
+  // panel) so the tombstone events refetch without waiting for a poll tick.
   refreshKey?: number
+  // Shared polled positions from the parent (usePerpPositions). Null while
+  // loading.
+  positions?: PerpPositionRow[] | null
 }) => {
   const { contract, onAction, refreshKey } = props
   const user = useUser()
-  const [positions, setPositions] = useState<Position[]>([])
+  // Optimistic close: the API confirmed the close, but the shared positions
+  // refetch can lag behind an edge cache for several seconds — don't keep
+  // rendering a position we know is gone. Keyed by close time vs the row's
+  // openedTime so a position re-opened moments later isn't hidden.
+  const [closedAt, setClosedAt] = useState<{ [dir: string]: number }>({})
+  const positions = useMemo(
+    () =>
+      user && props.positions
+        ? props.positions.filter(
+            (p) =>
+              p.userId === user.id &&
+              !(closedAt[p.direction] && p.openedTime < closedAt[p.direction])
+          )
+        : [],
+    [props.positions, user?.id, closedAt]
+  )
   const [closing, setClosing] = useState<'long' | 'short' | null>(null)
   const [refresh, setRefresh] = useState(0)
   // Terminal events (closes/liquidations) for the tombstone section: a
@@ -43,35 +62,39 @@ export const PerpPositionPanel = (props: {
 
   useEffect(() => {
     if (!user) {
-      setPositions([])
       setPastEvents([])
       return
     }
     let cancelled = false
-    api('get-perp-positions', {
-      contractId: contract.id,
-      userId: user.id,
-    }).then((p) => {
-      if (!cancelled) setPositions(p)
-    })
-    api('get-perp-events', {
-      contractId: contract.id,
-      userId: user.id,
-      limit: 20,
-    })
-      .then((events) => {
-        if (cancelled) return
-        setPastEvents(
-          events
-            .filter(
-              (e) => e.eventType === 'close' || e.eventType === 'liquidation'
-            )
-            .slice(0, 5)
-        )
-      })
-      .catch(() => {})
+    // After an action on this page, refetch cache-bypassed and burst past
+    // the edge cache's stale window — otherwise a fresh close's tombstone
+    // lags several seconds behind the toast.
+    const fresh = (refresh ?? 0) > 0 || (refreshKey ?? 0) > 0
+    const load = () =>
+      api(
+        'get-perp-events',
+        {
+          contractId: contract.id,
+          userId: user.id,
+          limit: 20,
+        },
+        fresh ? { cache: 'no-store' } : undefined
+      )
+        .then((events) => {
+          if (cancelled) return
+          setPastEvents(
+            events
+              .filter(
+                (e) => e.eventType === 'close' || e.eventType === 'liquidation'
+              )
+              .slice(0, 5)
+          )
+        })
+        .catch(() => {})
+    const cancelBurst = fresh ? scheduleFreshBurst(load) : (load(), undefined)
     return () => {
       cancelled = true
+      cancelBurst?.()
     }
   }, [contract.id, user?.id, refresh, refreshKey])
 
@@ -90,6 +113,7 @@ export const PerpPositionPanel = (props: {
           res.payout
         )} (PnL ${formatMoney(res.pnl)})`
       )
+      setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
       setRefresh((r) => r + 1)
       // Pools changed; let the page re-poll the contract immediately.
       onAction?.()

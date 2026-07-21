@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { orderBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { PerpContract } from 'common/contract'
 import { getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
@@ -12,42 +12,25 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
+import { useLivePerpContract } from './perp-overview'
+import { PerpPositionRow, usePerpPositions } from './use-perp-positions'
 
-type Holder = {
-  userId: string
-  direction: 'long' | 'short'
-  size: number
-  costBasis: number
-  originalCostBasis: number
-  entryPrice: number
-  leverage: number
-  liquidationPrice: number
-  openedTime: number
-  updatedTime: number
-  userName: string | null
-  username: string | null
-  avatarUrl: string | null
-}
+type Holder = PerpPositionRow
 
 export const PerpHoldersTab = (props: {
   contract: PerpContract
   setTotalHolders?: (n: number) => void
 }) => {
-  const { contract, setTotalHolders } = props
-  const [holders, setHolders] = useState<Holder[] | null>(null)
+  const { setTotalHolders } = props
+  // Tabs mount with the SSR contract, outside PerpOverview's live overlay —
+  // poll here too so mark price / PnL / positions track the market instead
+  // of freezing at page-load values (they used to fetch exactly once).
+  const { contract } = useLivePerpContract(props.contract)
+  const holders = usePerpPositions(contract.id)
 
   useEffect(() => {
-    let cancelled = false
-    api('get-perp-positions', { contractId: contract.id }).then((rows) => {
-      if (cancelled) return
-      setHolders(rows)
-      setTotalHolders?.(rows.length)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [contract.id])
+    if (holders) setTotalHolders?.(holders.length)
+  }, [holders, setTotalHolders])
 
   if (!holders) return <LoadingIndicator />
   if (holders.length === 0)
@@ -71,11 +54,7 @@ export const PerpHoldersTab = (props: {
   // user-facing PnL (includes funding, excludes ADL haircut from the
   // original-margin baseline) — this matches what shows on profile pages.
   const orderByPnl = (hs: Holder[]) =>
-    orderBy(
-      hs,
-      (h) => getUserFacingPnlForHolder(h, price, contract.id),
-      'desc'
-    )
+    orderBy(hs, (h) => getUserFacingPnlForHolder(h, price, contract.id), 'desc')
 
   return (
     <Row className="gap-1">

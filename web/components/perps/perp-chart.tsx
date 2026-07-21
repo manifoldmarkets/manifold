@@ -87,15 +87,16 @@ export const PerpChart = (props: {
   contract: PerpContract
   mode: 'price' | 'funding'
   height?: number
-  // Bumped by the parent after any trade so position overlays refetch.
-  refreshKey?: number
+  // Shared polled positions from the parent (usePerpPositions): liquidation
+  // bands cluster everyone's liq prices, and the user's own rows drive the
+  // your-position lines. Null while loading.
+  positions?: OpenPosition[] | null
 }) => {
-  const { contract, mode, height = 240, refreshKey } = props
+  const { contract, mode, height = 240, positions } = props
   const user = useUser()
   const [oraclePoints, setOraclePoints] = useState<Point[]>([])
   const [fundingPoints, setFundingPoints] = useState<Point[]>([])
   const [livePoints, setLivePoints] = useState<Point[]>([])
-  const [allPositions, setAllPositions] = useState<OpenPosition[]>([])
   const [loading, setLoading] = useState(true)
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
   const [overlays, setOverlays] = usePersistentInMemoryState<OverlayToggles>(
@@ -161,21 +162,7 @@ export const PerpChart = (props: {
     }
   }, [contract.id, mode])
 
-  // All open positions: liquidation bands cluster everyone's liq prices, and
-  // the user's own rows drive the your-position lines.
-  useEffect(() => {
-    let cancelled = false
-    api('get-perp-positions', { contractId: contract.id })
-      .then((rows) => {
-        if (cancelled) return
-        setAllPositions(rows.filter((r) => r.size > 0))
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [contract.id, refreshKey])
-
+  const allPositions = useMemo(() => positions ?? [], [positions])
   const userPositions = useMemo(
     () => (user ? allPositions.filter((p) => p.userId === user.id) : []),
     [allPositions, user?.id]
