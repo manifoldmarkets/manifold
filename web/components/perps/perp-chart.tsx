@@ -8,6 +8,7 @@ import { computeFundingRate } from 'common/perps/amm'
 import {
   carryNeutralPath,
   clusterLiquidationBands,
+  gapThresholdMs,
   LiquidationBand,
   personalBreakEvenPath,
   ProjectionPoint,
@@ -79,6 +80,7 @@ export const PerpChart = (props: {
   const user = useUser()
   const [oraclePoints, setOraclePoints] = useState<Point[]>([])
   const [fundingPoints, setFundingPoints] = useState<Point[]>([])
+  const [livePoints, setLivePoints] = useState<Point[]>([])
   const [allPositions, setAllPositions] = useState<OpenPosition[]>([])
   const [loading, setLoading] = useState(true)
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
@@ -87,6 +89,15 @@ export const PerpChart = (props: {
     'perp-chart-overlays'
   )
   const svgRef = useRef<SVGSVGElement | null>(null)
+
+  // Live rate from the current pools, not the hourly-refreshed
+  // contract.fundingRate — same rationale as perp-overview.tsx.
+  const liveFundingRate = computeFundingRate(
+    contract.poolLong,
+    contract.poolShort,
+    contract.fundingSensitivity,
+    contract.maxFundingRate
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -115,10 +126,10 @@ export const PerpChart = (props: {
             ts: p.ts,
             value: p.fundingRate,
           }))
-          // Anchor the last point to "now" with the current rate so the chart
-          // doesn't drop off before the next funding tick.
-          const currentRate = (contract as any).fundingRate ?? 0
-          series.push({ ts: Date.now(), value: currentRate })
+          // Anchor the last point to "now" with the live rate (computed from
+          // the current pools, matching the header) so the chart doesn't
+          // drop off before the next funding tick.
+          series.push({ ts: Date.now(), value: liveFundingRate })
           setFundingPoints(series)
         })
         .finally(() => !cancelled && setLoading(false))
@@ -148,20 +159,40 @@ export const PerpChart = (props: {
     [allPositions, user?.id]
   )
 
-  // Live rate from the current pools, not the hourly-refreshed
-  // contract.fundingRate — same rationale as perp-overview.tsx.
-  const liveFundingRate = computeFundingRate(
-    contract.poolLong,
-    contract.poolShort,
-    contract.fundingSensitivity,
-    contract.maxFundingRate
-  )
+  // Live tick append: the polled contract (useLivePerpContract upstream)
+  // carries a fresh oraclePrice every ~15s, but the series is fetched once
+  // on mount — without this the header price moves while the chart line
+  // stays frozen at load time.
+  useEffect(() => {
+    setLivePoints([])
+  }, [contract.id])
+  useEffect(() => {
+    const ts = contract.oraclePriceTime
+    const price = Number(contract.oraclePrice)
+    if (!ts || !Number.isFinite(price) || price <= 0) return
+    setLivePoints((prev) => {
+      const last = prev[prev.length - 1]
+      if (last && ts <= last.ts) return prev
+      const next = [...prev, { ts, value: price }]
+      // Bound growth over a long-lived tab; older ticks are already covered
+      // by the fetched series on the next mount/refetch.
+      return next.length > 2000 ? next.slice(-1000) : next
+    })
+  }, [contract.oraclePriceTime, contract.oraclePrice])
 
-  const points = mode === 'price' ? oraclePoints : fundingPoints
+  // Price series = fetched history + live ticks that arrived after it.
+  const priceSeries = useMemo(() => {
+    if (!oraclePoints.length) return oraclePoints
+    const lastFetched = oraclePoints[oraclePoints.length - 1].ts
+    const fresh = livePoints.filter((p) => p.ts > lastFetched)
+    return fresh.length ? [...oraclePoints, ...fresh] : oraclePoints
+  }, [oraclePoints, livePoints])
+
+  const points = mode === 'price' ? priceSeries : fundingPoints
   const width = 720
 
   const overlayGeom = useMemo((): OverlayGeometry | null => {
-    if (mode !== 'price' || oraclePoints.length < 2) return null
+    if (mode !== 'price' || priceSeries.length < 2) return null
     const price = Number(contract.oraclePrice)
     if (!Number.isFinite(price) || price <= 0) return null
     const showYou = overlays.you && userPositions.length > 0
@@ -169,7 +200,7 @@ export const PerpChart = (props: {
       return null
     }
 
-    const xs = oraclePoints.map((p) => p.ts)
+    const xs = priceSeries.map((p) => p.ts)
     const maxTs = Math.max(...xs)
     // Clamp against client/server clock skew so the projection anchor never
     // lands left of the last tick.
@@ -179,10 +210,14 @@ export const PerpChart = (props: {
     const carry = overlays.carry
       ? carryNeutralPath(price, liveFundingRate, now, horizon)
       : []
-    const sigma = overlays.cone ? realizedVolPerSqrtMs(oraclePoints) : null
+    // Outage gaps are excluded from the vol estimate — one multi-day gap
+    // would otherwise swamp the elapsed-time denominator.
+    const sigma = overlays.cone
+      ? realizedVolPerSqrtMs(priceSeries, gapThresholdMs(priceSeries))
+      : null
     const cone = sigma != null ? volConePaths(price, sigma, now, horizon) : null
 
-    const ys = oraclePoints.map((p) => p.value)
+    const ys = priceSeries.map((p) => p.value)
     const histRange = Math.max(...ys) - Math.min(...ys) || price * 0.02 || 1
     const liqBands = overlays.liqs
       ? clusterLiquidationBands(allPositions, histRange * 0.02)
@@ -205,7 +240,7 @@ export const PerpChart = (props: {
     return { now, horizon, carry, cone, liqBands, yours }
   }, [
     mode,
-    oraclePoints,
+    priceSeries,
     overlays,
     allPositions,
     userPositions,
@@ -271,10 +306,26 @@ export const PerpChart = (props: {
     const y = scaleLinear()
       .domain([yMin - pad, yMax + pad])
       .range([height - 20, 10])
-    const l = line<Point>()
+    // Break the line across data outages instead of drawing a fake straight
+    // bridge over dead time (a stopped scheduler once left a 4.6-day gap
+    // that rendered as one diagonal line swallowing the whole chart).
+    const gapMs = mode === 'price' ? gapThresholdMs(points) : Infinity
+    const renderPoints: (Point & { gap?: boolean })[] = []
+    for (let i = 0; i < points.length; i++) {
+      if (i > 0 && points[i].ts - points[i - 1].ts > gapMs) {
+        renderPoints.push({
+          ts: (points[i - 1].ts + points[i].ts) / 2,
+          value: NaN,
+          gap: true,
+        })
+      }
+      renderPoints.push(points[i])
+    }
+    const l = line<Point & { gap?: boolean }>()
+      .defined((p) => !p.gap)
       .x((p) => x(p.ts))
       .y((p) => y(p.value))
-    return { xScale: x, yScale: y, path: l(points) ?? '' }
+    return { xScale: x, yScale: y, path: l(renderPoints) ?? '' }
   }, [points, height, mode, overlayGeom])
 
   if (loading) {
@@ -304,6 +355,18 @@ export const PerpChart = (props: {
   // "39.0000"; for funding we annualize as a percentage with 2 decimals.
   const priceDecimals =
     mode === 'price' ? inferPriceDecimals(points.map((p) => p.value)) : 0
+  // Axis labels follow the tick STEP, not the price magnitude — gridlines
+  // 1,000 apart labelled "66,000.00" are pure noise.
+  const yTickDecimals =
+    mode === 'price' && yTicks.length > 1
+      ? stepDecimals(Math.abs(yTicks[1] - yTicks[0]))
+      : priceDecimals
+  const [domainStart, domainEnd] = xScale.domain()
+  const domainSpanMs = domainEnd.getTime() - domainStart.getTime()
+  // Keep centered labels clear of the y-axis gutter and the right edge.
+  const xTicks = xScale
+    .ticks(5)
+    .filter((t) => xScale(t) >= 60 && xScale(t) <= width - 36)
 
   // Convert a mouse event's client x to the nearest data point index. We
   // map client x into viewBox coords using the SVG's bounding rect; the
@@ -420,9 +483,22 @@ export const PerpChart = (props: {
                 fill="currentColor"
                 opacity={0.6}
               >
-                {formatTick(t, mode, priceDecimals)}
+                {formatTick(t, mode, yTickDecimals)}
               </text>
             </g>
+          ))}
+          {xTicks.map((t) => (
+            <text
+              key={t.getTime()}
+              x={xScale(t)}
+              y={height - 5}
+              fontSize={10}
+              textAnchor="middle"
+              fill="currentColor"
+              opacity={0.6}
+            >
+              {formatXTick(t, domainSpanMs)}
+            </text>
           ))}
           {overlayGeom && (
             <>
@@ -603,7 +679,8 @@ const OverlayChip = (props: {
 }) => {
   const { active, onClick, label, tooltip, swatch } = props
   return (
-    <Tooltip text={tooltip}>
+    // Below the chip, so the tooltip doesn't cover the price header above.
+    <Tooltip text={tooltip} placement="bottom">
       <button
         type="button"
         onClick={onClick}
@@ -684,6 +761,21 @@ const formatAnnualRate = (rate: number) => {
   const pct = rate * FUNDING_PERIODS_PER_YEAR * 100
   const sign = pct > 0 ? '+' : ''
   return `${sign}${pct.toFixed(Math.abs(pct) >= 100 ? 0 : 1)}%/yr`
+}
+
+// Decimals needed to distinguish axis ticks `step` apart: 0 for steps >= 1,
+// else just enough to render the step's leading digit.
+const stepDecimals = (step: number) => {
+  if (!Number.isFinite(step) || step <= 0) return 0
+  if (step >= 1) return 0
+  return Math.min(6, Math.ceil(-Math.log10(step)))
+}
+
+const formatXTick = (d: Date, spanMs: number) => {
+  const day = dayjs(d)
+  if (spanMs <= 48 * 60 * 60 * 1000) return day.format('h:mm A')
+  if (spanMs <= 300 * 24 * 60 * 60 * 1000) return day.format('MMM D')
+  return day.format("MMM 'YY")
 }
 
 const formatTick = (
