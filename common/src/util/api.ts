@@ -51,11 +51,19 @@ function appendQuery(url: string, props: Record<string, any>) {
   return `${base}?${params.toString()}`
 }
 
+export type BaseApiCallOptions = {
+  // Browser fetch cache mode. Pass 'no-store' on a refetch that follows a
+  // mutation: cached GET endpoints (max-age + stale-while-revalidate) can
+  // otherwise legally serve the pre-mutation state for several seconds.
+  cache?: RequestCache
+}
+
 export async function baseApiCall(
   url: string,
   method: 'POST' | 'PUT' | 'GET',
   params: any,
-  user: User | null
+  user: User | null,
+  options?: BaseApiCallOptions
 ) {
   const actualUrl = method === 'POST' ? url : appendQuery(url, params)
   const headers: HeadersInit = {
@@ -70,6 +78,7 @@ export async function baseApiCall(
   const req = new Request(actualUrl, {
     headers,
     method: method,
+    cache: options?.cache,
     body:
       params == null || method === 'GET' ? undefined : JSON.stringify(params),
   })
