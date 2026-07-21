@@ -34,8 +34,11 @@ case $ENV in
         NEXT_PUBLIC_FIREBASE_ENV=PROD
         # Private Memorystore instance. Passed at the container level so both
         # the main API process and PM2 read replicas inherit it.
-        REDIS_URL=redis://10.215.204.211:6379
-        DISABLE_REDIS_CACHE=false
+        # Disabled since we scaled back down to one instance.
+        # REDIS_URL=redis://10.215.204.211:6379
+        # DISABLE_REDIS_CACHE=false
+        REDIS_URL=
+        DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=mantic-markets
         MACHINE_TYPE=c2-standard-4 ;;
     *)
