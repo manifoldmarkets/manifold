@@ -1,11 +1,11 @@
 import { log } from 'shared/utils'
-import { models, promptClaudeParsingJson } from './claude'
+import { models, promptGeminiParsingJson } from './gemini'
 
 // Screens market titles before they are used in email subject lines and
 // inbox preview text. Markets about violent or tragic events are fine to
 // include in the email body, but should not headline a push notification.
 // Over-blocking is cheap (the next market's title is used instead), so this
-// list errs broad. It is the floor and the fallback: the Haiku classifier
+// list errs broad. It is the floor and the fallback: the Gemini classifier
 // below can only add sensitivity on top of it, never clear a keyword flag.
 const SENSITIVE_TITLE_PATTERNS = [
   /\bshoot(ing|ings|er|ers|out)?s?\b/i,
@@ -59,7 +59,7 @@ const isVerdictEntry = (v: unknown): v is { id: string; sensitive: boolean } =>
 
 // Returns a contract id -> isSensitive map for exactly the requested
 // contracts. Verdict = keyword screen OR LLM verdict. On any LLM failure or
-// timeout (including a missing ANTHROPIC_API_KEY), falls back to
+// timeout (including a missing GEMINI_API_KEY), falls back to
 // keyword-only verdicts — an email must never fail or block on this.
 export const classifyQuestionSensitivity = async (
   contracts: { id: string; question: string }[]
@@ -86,9 +86,10 @@ export const classifyQuestionSensitivity = async (
       )
     })
     const response = await Promise.race([
-      promptClaudeParsingJson<unknown>(prompt, {
-        model: models.haiku,
+      promptGeminiParsingJson<unknown>(prompt, {
+        model: models.flash,
         system: CLASSIFY_SYSTEM_PROMPT,
+        thinkingLevel: 'minimal',
       }),
       timeout,
     ]).finally(() => clearTimeout(timer))
@@ -102,6 +103,7 @@ export const classifyQuestionSensitivity = async (
       : []
 
     const uncachedIds = new Set(uncached.map((c) => c.id))
+    const answeredIds: string[] = []
     for (const { id, sensitive } of llmVerdicts) {
       if (!uncachedIds.has(id)) continue
       // Union: the LLM can only add sensitivity, never clear a keyword flag.
@@ -111,7 +113,12 @@ export const classifyQuestionSensitivity = async (
       // not cached, so they get retried on the next call.
       if (sensitivityCache.size > 20_000) sensitivityCache.clear()
       sensitivityCache.set(id, final)
+      answeredIds.push(id)
     }
+    log('Classified email question sensitivity', {
+      classified: answeredIds.length,
+      flagged: answeredIds.filter((id) => verdicts.get(id)),
+    })
   } catch (error) {
     log.warn('Sensitivity classification failed; using keyword verdicts', {
       error: error instanceof Error ? error.message : String(error),
