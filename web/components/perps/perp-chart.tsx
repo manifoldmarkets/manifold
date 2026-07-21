@@ -8,11 +8,13 @@ import { computeFundingRate } from 'common/perps/amm'
 import {
   carryNeutralPath,
   clusterLiquidationBands,
+  FUNDING_PERIOD_MS,
   gapThresholdMs,
   LiquidationBand,
+  nextFundingTimes,
   personalBreakEvenPath,
   ProjectionPoint,
-  projectionHorizonMs,
+  projectionHorizonWithFunding,
   realizedVolPerSqrtMs,
   volConePaths,
 } from 'common/perps/chart-projections'
@@ -48,11 +50,15 @@ type OpenPosition = {
 // oracle, so none of these are forecasts: carry is the funding break-even
 // hurdle, the cone is the feed's own realized volatility, and the rest are
 // position levels. Toggles persist across markets for the session.
+// Calm by default: hold-cost line (with funding-event markers) and your own
+// levels. The vol cone and crowd liquidation bands are analyst tools —
+// opt-in, so a first-time visitor sees price, funding mechanics, and
+// nothing else.
 type OverlayKey = 'carry' | 'cone' | 'liqs' | 'you'
 type OverlayToggles = { [k in OverlayKey]: boolean }
 const DEFAULT_OVERLAYS: OverlayToggles = {
   carry: true,
-  cone: true,
+  cone: false,
   liqs: false,
   you: true,
 }
@@ -73,6 +79,8 @@ type OverlayGeometry = {
   now: number
   horizon: number
   carry: ProjectionPoint[]
+  // Upcoming hourly funding transfers, positioned on the carry line.
+  fundingMarks: ProjectionPoint[]
   cone: { upper: ProjectionPoint[]; lower: ProjectionPoint[] } | null
   liqBands: LiquidationBand[]
   yours: {
@@ -235,11 +243,33 @@ export const PerpChart = (props: {
     // Clamp against client/server clock skew so the projection anchor never
     // lands left of the last tick.
     const now = Math.max(Date.now(), maxTs)
-    const horizon = projectionHorizonMs(maxTs - Math.min(...xs))
+    // The projection prefers ending just past the next two hourly funding
+    // events, so the hold-cost line answers a concrete question ("what does
+    // holding through the next transfers cost?") instead of extending an
+    // arbitrary fraction of the window.
+    const fundingTimes = nextFundingTimes(contract.lastFundingTime, now, 8)
+    const horizon = projectionHorizonWithFunding(
+      maxTs - Math.min(...xs),
+      now,
+      fundingTimes
+    )
 
     const carry = overlays.carry
       ? carryNeutralPath(price, liveFundingRate, now, horizon)
       : []
+    // Diamonds where the upcoming funding transfers land on the line —
+    // only when the horizon spans few enough periods that each diamond
+    // reads as an event; on long projections they'd bunch into dust.
+    const fundingMarks =
+      carry.length > 0 && horizon <= 8 * FUNDING_PERIOD_MS
+        ? fundingTimes
+            .filter((t) => t <= now + horizon)
+            .map((t) => ({
+              ts: t,
+              value:
+                price * (1 + liveFundingRate * ((t - now) / FUNDING_PERIOD_MS)),
+            }))
+        : []
     // The vol estimate uses the FULL fetched series, not the visible
     // window — a 1H frame shouldn't produce a jumpier cone than All —
     // with outage gaps excluded so a multi-day hole can't swamp the
@@ -269,7 +299,7 @@ export const PerpChart = (props: {
           ),
         }))
       : []
-    return { now, horizon, carry, cone, liqBands, yours }
+    return { now, horizon, carry, fundingMarks, cone, liqBands, yours }
   }, [
     mode,
     windowedSeries,
@@ -281,6 +311,7 @@ export const PerpChart = (props: {
     contract.oraclePrice,
     contract.poolLong,
     contract.poolShort,
+    contract.lastFundingTime,
   ])
 
   const { xScale, yScale, path } = useMemo(() => {
@@ -466,23 +497,23 @@ export const PerpChart = (props: {
           <OverlayChip
             active={overlays.carry}
             onClick={() => toggleOverlay('carry')}
-            label={`Carry ${formatAnnualRate(liveFundingRate)}`}
-            tooltip="Funding break-even, not a price forecast. A long profits after carry only if the price beats this line; below it, shorts come out ahead. The slope is the current funding rate — steep means one side is crowded."
+            label="Hold cost"
+            tooltip="Where the price would have to move for a position opened now to break even on funding alone — not a price forecast. Diamonds mark the upcoming hourly funding transfers. Finish above the line and longs came out ahead; below it, shorts did."
             swatch={<CarrySwatch />}
           />
           <OverlayChip
             active={overlays.cone}
             onClick={() => toggleOverlay('cone')}
-            label="Vol cone"
-            tooltip="±1σ range implied by this feed's recent realized volatility. A carry hurdle outside the cone is a strong signal to fade the crowd."
+            label="Typical range"
+            tooltip="How far this feed typically moves, from its recent volatility (±1σ). If the hold-cost line escapes this range, funding dominates the odds."
             swatch={<ConeSwatch />}
           />
           {allPositions.length > 0 && (
             <OverlayChip
               active={overlays.liqs}
               onClick={() => toggleOverlay('liqs')}
-              label="Liq levels"
-              tooltip="Price levels where open positions would be liquidated. Thicker bands = more notional at risk there."
+              label="Liquidations"
+              tooltip="Price levels where open positions would be liquidated. Thicker bands = more money at risk there."
               swatch={<LiqSwatch />}
             />
           )}
@@ -633,6 +664,21 @@ export const PerpChart = (props: {
                     className="text-ink-600"
                   />
                 )}
+                {overlayGeom.fundingMarks.map((m) => (
+                  <rect
+                    key={m.ts}
+                    x={-3}
+                    y={-3}
+                    width={6}
+                    height={6}
+                    transform={`translate(${xScale(m.ts)} ${yScale(
+                      m.value
+                    )}) rotate(45)`}
+                    fill="currentColor"
+                    fillOpacity={0.85}
+                    className="text-ink-600"
+                  />
+                ))}
                 {overlayGeom.yours.map((yr) => (
                   <g
                     key={yr.direction}
@@ -825,13 +871,6 @@ const YouSwatch = () => (
     />
   </svg>
 )
-
-const formatAnnualRate = (rate: number) => {
-  if (!Number.isFinite(rate)) return '—'
-  const pct = rate * FUNDING_PERIODS_PER_YEAR * 100
-  const sign = pct > 0 ? '+' : ''
-  return `${sign}${pct.toFixed(Math.abs(pct) >= 100 ? 0 : 1)}%/yr`
-}
 
 // Decimals needed to distinguish axis ticks `step` apart: 0 for steps >= 1,
 // else just enough to render the step's leading digit.

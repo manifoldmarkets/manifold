@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
+import { nextFundingTimes } from 'common/perps/chart-projections'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -56,6 +58,11 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
                   fundingRate: m.fundingRate,
                   volume: m.volume,
                   uniqueBettorCount: m.uniqueBettorCount,
+                  // Keeps the next-funding countdown honest after an
+                  // on-page funding event. Missing on older API builds.
+                  ...(m.lastFundingTime != null
+                    ? { lastFundingTime: m.lastFundingTime }
+                    : {}),
                 }
           )
         })
@@ -143,7 +150,10 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
               {formatPrice(price, priceDecimals)}
             </div>
           </Col>
-          <FundingRateColumn rate={liveFundingRate} />
+          <FundingRateColumn
+            rate={liveFundingRate}
+            lastFundingTime={contract.lastFundingTime}
+          />
         </Row>
         <Row className="border-ink-200 overflow-hidden rounded-md border">
           <button
@@ -186,8 +196,11 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   )
 }
 
-const FundingRateColumn = (props: { rate: number | undefined }) => {
-  const { rate } = props
+const FundingRateColumn = (props: {
+  rate: number | undefined
+  lastFundingTime: number | undefined
+}) => {
+  const { rate, lastFundingTime } = props
   // No funding event has fired yet (brand-new contract): show a placeholder
   // so the column still aligns with Oracle price, rather than collapsing
   // the row layout.
@@ -200,15 +213,19 @@ const FundingRateColumn = (props: { rate: number | undefined }) => {
     )
   }
 
+  // Funding is an HOURLY cash flow viewed on an hours-scale chart — lead
+  // with the per-hour rate and who pays whom. The annualized number reads
+  // as apocalyptic (±500%/yr) while the per-hour reality is a rounding
+  // error; it lives in the tooltip for the finance-brained.
+  const hourlyPct = rate * 100
   const annualPct = rate * FUNDING_PERIODS_PER_YEAR * 100
-  const hourlyPct = Math.abs(rate) * 100
   const sign = rate > 0 ? '+' : ''
-  const payerText =
-    rate > 0
-      ? `Longs pay shorts ${hourlyPct.toFixed(4)}%/hour.`
-      : rate < 0
-      ? `Shorts pay longs ${hourlyPct.toFixed(4)}%/hour.`
-      : 'No funding transfer this period.'
+  const directionText =
+    rate > 0 ? 'longs pay shorts' : rate < 0 ? 'shorts pay longs' : 'balanced'
+  const nextEvent = nextFundingTimes(lastFundingTime, Date.now(), 1)[0]
+  const minsToNext = nextEvent
+    ? Math.max(1, Math.ceil((nextEvent - Date.now()) / MINUTE_MS))
+    : null
   const color =
     rate > 0
       ? 'text-scarlet-600 dark:text-scarlet-400'
@@ -220,8 +237,14 @@ const FundingRateColumn = (props: { rate: number | undefined }) => {
     <Tooltip
       text={
         <div className="max-w-[18rem] text-left">
-          <div className="font-medium">Annualized funding rate.</div>
-          <div className="text-ink-200 mt-1 text-xs">{payerText}</div>
+          <div className="font-medium">
+            Every hour, the crowded side pays the thin side this fraction of its
+            margin.
+          </div>
+          <div className="text-ink-200 mt-1 text-xs">
+            Annualized: {sign}
+            {annualPct.toFixed(0)}%/yr.
+          </div>
         </div>
       }
     >
@@ -229,7 +252,12 @@ const FundingRateColumn = (props: { rate: number | undefined }) => {
         <div className="text-ink-500 text-sm">Funding</div>
         <div className={`text-3xl font-semibold tabular-nums ${color}`}>
           {sign}
-          {annualPct.toFixed(2)}%
+          {hourlyPct.toFixed(3)}%
+          <span className="text-ink-400 text-base font-normal">/hr</span>
+        </div>
+        <div className="text-ink-500 text-xs">
+          {directionText}
+          {minsToNext != null && ` · next in ${minsToNext}m`}
         </div>
       </Col>
     </Tooltip>
