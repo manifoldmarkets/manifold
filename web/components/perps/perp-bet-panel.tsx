@@ -13,6 +13,7 @@ import {
   computeFundingRate,
   liquidationPrice as computeLiquidationPrice,
 } from 'common/perps/amm'
+import { fundingPerPeriod } from 'common/perps/pnl'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -84,9 +85,17 @@ export const PerpBetPanel = (props: {
     contract.fundingSensitivity,
     contract.maxFundingRate
   )
-  // Sign matters to the user: +ve rate → longs pay shorts → a long pays this
-  // fraction of notional per period. Short sees the opposite sign.
-  const userFundingRate = direction === 'long' ? fundingRate : -fundingRate
+  // Signed mana per hour for the position being configured (+ = earns).
+  // fundingPerPeriod mirrors applyFunding exactly — in particular the
+  // RECEIVING side earns the transfer re-based on its own pool (f·L/S),
+  // which at imbalanced pools is far more than rate × margin.
+  const fundingManaPerHour = fundingPerPeriod(
+    { direction, size: notional, costBasis: marginAmount, entryPrice: price },
+    price,
+    fundingRate,
+    contract.poolLong,
+    contract.poolShort
+  )
 
   const isAdd = openDirection === direction
   // Flipping: user holds a position in the opposite direction, and we'll
@@ -232,7 +241,7 @@ export const PerpBetPanel = (props: {
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
         marketFundingRate={fundingRate}
-        userFundingRate={userFundingRate}
+        fundingManaPerHour={fundingManaPerHour}
       />
 
       <Button
@@ -343,10 +352,9 @@ const LeverageSlider = (props: {
 // Profit tiers shown in the scenario ladder: each is a +r return on margin.
 const RETURN_TIERS = [0.25, 0.5, 1] as const
 
-// Funding charged per period is f × costBasis (≈ margin at open), not ×
-// notional (see applyFunding in amm.ts). Adaptive precision so sub-cent
-// hourly amounts don't collapse to "0.00".
-const formatFundingPerHour = (absPerHour: number) => {
+// Adaptive precision so sub-cent hourly funding amounts don't collapse to
+// "0.00". Shared with the position card's funding row.
+export const formatFundingPerHour = (absPerHour: number) => {
   const m = ENV_CONFIG.moneyMoniker
   if (!(absPerHour > 0)) return `${m}0`
   const body =
@@ -367,9 +375,9 @@ const StatsGrid = (props: {
   // Market rate (positive = longs pay shorts), mirrors the Funding column in
   // the overview header.
   marketFundingRate: number
-  // Same rate from this user's perspective (positive = this user pays).
+  // Signed mana/hr for this configuration (positive = the user earns).
   // Drives row color so a payer reads red, a receiver reads teal.
-  userFundingRate: number
+  fundingManaPerHour: number
 }) => {
   const {
     direction,
@@ -380,7 +388,7 @@ const StatsGrid = (props: {
     liqPrice,
     priceDecimals,
     marketFundingRate,
-    userFundingRate,
+    fundingManaPerHour,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
@@ -402,12 +410,11 @@ const StatsGrid = (props: {
     : []
 
   const hourlyPct = marketFundingRate * 100
-  const fundingPerHour = userFundingRate * margin // > 0 ⇒ user pays
-  const paysFunding = fundingPerHour > 0
-  const earnsFunding = fundingPerHour < 0
+  const paysFunding = fundingManaPerHour < 0
+  const earnsFunding = fundingManaPerHour > 0
   const fundingValue = `${
     paysFunding ? '-' : earnsFunding ? '+' : ''
-  }${formatFundingPerHour(Math.abs(fundingPerHour))}/hr · ${
+  }${formatFundingPerHour(Math.abs(fundingManaPerHour))}/hr · ${
     hourlyPct >= 0 ? '+' : ''
   }${hourlyPct.toFixed(3)}%`
 

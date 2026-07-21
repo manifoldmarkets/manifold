@@ -107,6 +107,7 @@ export const PerpChart = (props: {
   const [livePoints, setLivePoints] = useState<Point[]>([])
   const [loading, setLoading] = useState(true)
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
+  const [hoveredMark, setHoveredMark] = useState<ProjectionPoint | null>(null)
   const [overlays, setOverlays] = usePersistentInMemoryState<OverlayToggles>(
     DEFAULT_OVERLAYS,
     'perp-chart-overlays'
@@ -183,6 +184,11 @@ export const PerpChart = (props: {
   useEffect(() => {
     setLivePoints([])
   }, [contract.id])
+  // Funding markers can move or vanish when the geometry recomputes;
+  // mouseleave won't fire on an unmounted node, so clear the tooltip here.
+  useEffect(() => {
+    setHoveredMark(null)
+  }, [mode, contract.id, timeframe])
   useEffect(() => {
     const ts = contract.oraclePriceTime
     const price = Number(contract.oraclePrice)
@@ -665,19 +671,32 @@ export const PerpChart = (props: {
                   />
                 )}
                 {overlayGeom.fundingMarks.map((m) => (
-                  <rect
+                  <g
                     key={m.ts}
-                    x={-3}
-                    y={-3}
-                    width={6}
-                    height={6}
-                    transform={`translate(${xScale(m.ts)} ${yScale(
-                      m.value
-                    )}) rotate(45)`}
-                    fill="currentColor"
-                    fillOpacity={0.85}
-                    className="text-ink-600"
-                  />
+                    onMouseEnter={() => setHoveredMark(m)}
+                    onMouseLeave={() => setHoveredMark(null)}
+                  >
+                    {/* Oversized invisible hit area — a 6px diamond is not a
+                        hover target. */}
+                    <circle
+                      cx={xScale(m.ts)}
+                      cy={yScale(m.value)}
+                      r={11}
+                      fill="transparent"
+                    />
+                    <rect
+                      x={-3}
+                      y={-3}
+                      width={6}
+                      height={6}
+                      transform={`translate(${xScale(m.ts)} ${yScale(
+                        m.value
+                      )}) rotate(45)`}
+                      fill="currentColor"
+                      fillOpacity={0.85}
+                      className="text-ink-600"
+                    />
+                  </g>
                 ))}
                 {overlayGeom.yours.map((yr) => (
                   <g
@@ -767,6 +786,29 @@ export const PerpChart = (props: {
             <div className="text-ink-500">{formatHoverDate(hovered.ts)}</div>
             <div className="text-ink-900 font-semibold tabular-nums">
               {formatHoverValue(hovered.value, mode, priceDecimals)}
+            </div>
+          </div>
+        )}
+        {hoveredMark && (
+          <div
+            className="bg-canvas-0 border-ink-200 pointer-events-none absolute top-2 whitespace-nowrap rounded-md border px-2 py-1 text-xs shadow-sm"
+            style={{
+              left: `${(xScale(hoveredMark.ts) / width) * 100}%`,
+              transform:
+                xScale(hoveredMark.ts) / width > 0.8
+                  ? 'translateX(calc(-100% - 8px))'
+                  : 'translateX(-50%)',
+            }}
+          >
+            <div className="text-ink-900 font-semibold">Funding transfer</div>
+            <div className="text-ink-500">
+              {formatHoverDate(hoveredMark.ts)} ·{' '}
+              {liveFundingRate > 0
+                ? 'longs pay shorts'
+                : liveFundingRate < 0
+                ? 'shorts pay longs'
+                : 'balanced'}{' '}
+              {(Math.abs(liveFundingRate) * 100).toFixed(3)}% of margin
             </div>
           </div>
         )}

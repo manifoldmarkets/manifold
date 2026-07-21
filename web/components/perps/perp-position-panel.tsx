@@ -2,8 +2,11 @@ import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
-import { getUserFacingPnl } from 'common/perps/pnl'
+import { computeFundingRate } from 'common/perps/amm'
+import { nextFundingTimes } from 'common/perps/chart-projections'
+import { fundingPerPeriod, getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
+import { MINUTE_MS } from 'common/util/time'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -11,6 +14,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
+import { formatFundingPerHour } from './perp-bet-panel'
 import { PerpPositionRow, scheduleFreshBurst } from './use-perp-positions'
 
 type Position = {
@@ -260,6 +264,32 @@ const PositionCard = (props: {
   const accentText = isLong ? 'text-teal-600' : 'text-red-600'
   const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-red-600'
 
+  // What the next hourly funding transfer does to this position, in mana
+  // (+ = you receive). Uses the live pool-derived rate, and the exact
+  // applyFunding scaling — a receiver on the thin side earns the transfer
+  // re-based on its own pool, not just rate × margin.
+  const liveFundingRate = computeFundingRate(
+    contract.poolLong,
+    contract.poolShort,
+    contract.fundingSensitivity,
+    contract.maxFundingRate
+  )
+  const fundingMana = fundingPerPeriod(
+    p,
+    markPrice,
+    liveFundingRate,
+    contract.poolLong,
+    contract.poolShort
+  )
+  const nextFunding = nextFundingTimes(
+    contract.lastFundingTime,
+    Date.now(),
+    1
+  )[0]
+  const minsToFunding = nextFunding
+    ? Math.max(1, Math.ceil((nextFunding - Date.now()) / MINUTE_MS))
+    : null
+
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
     ? (markPrice - p.liquidationPrice) / markPrice
@@ -331,6 +361,27 @@ const PositionCard = (props: {
             }
           />
         </div>
+
+        {fundingMana !== 0 && (
+          <Row className="-mt-1 items-baseline justify-between text-sm">
+            <span className="text-ink-500">Funding</span>
+            <span
+              className={clsx(
+                'tabular-nums',
+                fundingMana > 0 ? 'text-teal-600' : 'text-red-600'
+              )}
+            >
+              {fundingMana > 0 ? 'earning ' : 'paying '}
+              {formatFundingPerHour(Math.abs(fundingMana))}/hr
+              {minsToFunding != null && (
+                <span className="text-ink-400">
+                  {' '}
+                  · next in {minsToFunding}m
+                </span>
+              )}
+            </span>
+          </Row>
+        )}
 
         <Button
           color="gray-outline"
