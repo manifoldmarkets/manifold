@@ -16,10 +16,7 @@ import {
 } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import {
-  isSensitiveQuestion,
-  pickSubjectQuestion,
-} from 'shared/helpers/email-subject-safety'
+import { classifyQuestionSensitivity } from 'shared/helpers/email-subject-safety'
 import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
 import {
@@ -542,21 +539,21 @@ export const sendInterestingMarketsEmail = async (
   const firstName = userName.split(' ')[0]
 
   const shownContracts = contractsToSend.slice(0, 6)
-  const subjectQuestion = pickSubjectQuestion(
-    shownContracts.map((c) => c.question)
+  const sensitiveById = await classifyQuestionSensitivity(
+    shownContracts.map((c) => ({ id: c.id, question: c.question }))
   )
-  const subject = subjectQuestion
-    ? `${subjectQuestion} & 5 more interesting markets on Manifold`
-    : `6 interesting markets on Manifold this week`
-
+  const safeQuestions = shownContracts
+    .filter((c) => !sensitiveById.get(c.id))
+    .map((c) => c.question)
+  const subject =
+    safeQuestions.length > 0
+      ? `${safeQuestions[0]} & 5 more interesting markets on Manifold`
+      : `6 interesting markets on Manifold this week`
   // Shown in the inbox preview / push notification via a hidden preheader
   // div in the template, so it is screened like the subject.
-  const previewQuestions = shownContracts
-    .map((c) => c.question)
-    .filter((q) => !isSensitiveQuestion(q))
   const previewText =
-    previewQuestions.length > 0
-      ? previewQuestions.join(' · ')
+    safeQuestions.length > 0
+      ? safeQuestions.join(' · ')
       : 'Six markets picked for you this week'
 
   await sendTemplateEmail(
@@ -611,13 +608,16 @@ export const sendBonusWithInterestingMarketsEmail = async (
 
   // Shown in the inbox preview / push notification via a hidden preheader
   // div in the template, so it is screened like the subject.
-  const previewQuestions = contractsToSend
-    .slice(0, 6)
+  const shownContracts = contractsToSend.slice(0, 6)
+  const sensitiveById = await classifyQuestionSensitivity(
+    shownContracts.map((c) => ({ id: c.id, question: c.question }))
+  )
+  const safeQuestions = shownContracts
+    .filter((c) => !sensitiveById.get(c.id))
     .map((c) => c.question)
-    .filter((q) => !isSensitiveQuestion(q))
   const previewText =
-    previewQuestions.length > 0
-      ? previewQuestions.join(' · ')
+    safeQuestions.length > 0
+      ? safeQuestions.join(' · ')
       : 'Six markets picked for you this week'
 
   await sendTemplateEmail(
