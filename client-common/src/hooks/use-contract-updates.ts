@@ -5,11 +5,13 @@ import { Answer } from 'common/answer'
 import { uniqBy } from 'lodash'
 export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
   initial: C,
-  setContract: (value: SetStateAction<C>) => void
+  setContract: (value: SetStateAction<C>) => void,
+  enabled = true
 ) => {
   useApiSubscription({
     topics: [`contract/${initial.id}/new-answer`],
-    enabled: 'mechanism' in initial && initial.mechanism === 'cpmm-multi-1',
+    enabled:
+      enabled && 'mechanism' in initial && initial.mechanism === 'cpmm-multi-1',
     onBroadcast: ({ data }) => {
       setContract((contract) => {
         return {
@@ -28,7 +30,8 @@ export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
 
   useApiSubscription({
     topics: [`contract/${initial.id}/updated-answers`],
-    enabled: 'mechanism' in initial && initial.mechanism === 'cpmm-multi-1',
+    enabled:
+      enabled && 'mechanism' in initial && initial.mechanism === 'cpmm-multi-1',
     onBroadcast: ({ data }) => {
       const newAnswerUpdates = data.answers as (Partial<Answer> & {
         id: string
@@ -70,6 +73,7 @@ export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
 
   useApiSubscription({
     topics: [`contract/${initial.id}`],
+    enabled,
     onBroadcast: ({ data }) => {
       setContract((contract) => {
         return { ...contract, ...(data.contract as C) }

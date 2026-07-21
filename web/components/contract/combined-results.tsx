@@ -3,7 +3,7 @@ import { Contract } from 'common/contract'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
 import { sortBy } from 'lodash'
-import { Key } from 'react'
+import { Key, useMemo } from 'react'
 import { PostRow } from '../posts/post-row'
 import {
   SearchParams,
@@ -30,6 +30,7 @@ type CombinedResultsProps = {
   hideAvatars?: boolean
   hideActions?: boolean
   hasBets?: boolean
+  disableLiveUpdates?: boolean
 }
 
 // Type guard to check if an item is a Contract
@@ -53,7 +54,22 @@ export function CombinedResults(props: CombinedResultsProps) {
     hideAvatars,
     hideActions,
     hasBets,
+    disableLiveUpdates,
   } = props
+
+  // Define columns for ContractRow, similar to how ContractsTable did.
+  // Memoized so the array ref is stable and ContractRow's memo can skip re-renders.
+  const contractDisplayColumns = useMemo(
+    () =>
+      buildArray([
+        !hasBets && boostedColumn,
+        traderColumn,
+        liquidityColumn,
+        probColumn,
+        !hideActions && actionColumn,
+      ]),
+    [hasBets, hideActions]
+  )
 
   const sort =
     searchParams[TOPIC_FILTER_KEY] === 'recent'
@@ -69,15 +85,6 @@ export function CombinedResults(props: CombinedResultsProps) {
         })
       : [...contracts, ...posts]
   if (!combinedItems.length) return null
-
-  // Define columns for ContractRow, similar to how ContractsTable did
-  const contractDisplayColumns = buildArray([
-    !hasBets && boostedColumn,
-    traderColumn,
-    liquidityColumn,
-    probColumn,
-    !hideActions && actionColumn,
-  ])
 
   return (
     <>
@@ -95,6 +102,7 @@ export function CombinedResults(props: CombinedResultsProps) {
               hideAvatar={hideAvatars}
               columns={contractDisplayColumns} // Pass the defined columns
               showPosition={hasBets}
+              disableLiveUpdates={disableLiveUpdates}
             />
           )
         } else if (isPost(item)) {
