@@ -211,8 +211,10 @@ export const PerpChart = (props: {
     return fresh.length ? [...oraclePoints, ...fresh] : oraclePoints
   }, [oraclePoints, livePoints])
 
-  // A frame is offered only when it would show at least 2 points; the
-  // selection falls back to All rather than rendering an empty chart.
+  // A frame is offered only when it would show enough points to draw a
+  // real line — a 30-min feed has 2-3 points in an hour, and a two-point
+  // "chart" is junk. Selection falls back to All when starved.
+  const MIN_FRAME_POINTS = 4
   const frameCounts = useMemo(() => {
     const now = Date.now()
     const counts = {} as { [k in Timeframe]: number }
@@ -224,7 +226,10 @@ export const PerpChart = (props: {
     }
     return counts
   }, [priceSeries])
-  const activeFrame = frameCounts[timeframe] >= 2 ? timeframe : 'ALL'
+  const activeFrame =
+    timeframe === 'ALL' || frameCounts[timeframe] >= MIN_FRAME_POINTS
+      ? timeframe
+      : 'ALL'
 
   const windowedSeries = useMemo(() => {
     if (activeFrame === 'ALL') return priceSeries
@@ -538,13 +543,15 @@ export const PerpChart = (props: {
                 key={f}
                 type="button"
                 onClick={() => setTimeframe(f)}
-                disabled={frameCounts[f] < 2}
+                disabled={f !== 'ALL' && frameCounts[f] < MIN_FRAME_POINTS}
                 className={clsx(
                   'rounded px-1.5 py-0.5 text-xs tabular-nums transition-colors',
                   activeFrame === f
                     ? 'bg-ink-200 text-ink-900 font-semibold'
                     : 'text-ink-500 hover:text-ink-800',
-                  frameCounts[f] < 2 && 'cursor-not-allowed opacity-40'
+                  f !== 'ALL' &&
+                    frameCounts[f] < MIN_FRAME_POINTS &&
+                    'cursor-not-allowed opacity-40'
                 )}
               >
                 {f === 'ALL' ? 'All' : f}
@@ -670,34 +677,53 @@ export const PerpChart = (props: {
                     className="text-ink-600"
                   />
                 )}
-                {overlayGeom.fundingMarks.map((m) => (
-                  <g
-                    key={m.ts}
-                    onMouseEnter={() => setHoveredMark(m)}
-                    onMouseLeave={() => setHoveredMark(null)}
-                  >
-                    {/* Oversized invisible hit area — a 6px diamond is not a
-                        hover target. */}
-                    <circle
-                      cx={xScale(m.ts)}
-                      cy={yScale(m.value)}
-                      r={11}
-                      fill="transparent"
-                    />
-                    <rect
-                      x={-3}
-                      y={-3}
-                      width={6}
-                      height={6}
-                      transform={`translate(${xScale(m.ts)} ${yScale(
-                        m.value
-                      )}) rotate(45)`}
-                      fill="currentColor"
-                      fillOpacity={0.85}
-                      className="text-ink-600"
-                    />
-                  </g>
-                ))}
+                {overlayGeom.fundingMarks.map((m) => {
+                  const isHovered = hoveredMark?.ts === m.ts
+                  const half = isHovered ? 4.5 : 3
+                  return (
+                    <g
+                      key={m.ts}
+                      className="cursor-help"
+                      onMouseEnter={() => setHoveredMark(m)}
+                      onMouseLeave={() => setHoveredMark(null)}
+                    >
+                      {/* Oversized invisible hit area — a 6px diamond is
+                          not a hover target. */}
+                      <circle
+                        cx={xScale(m.ts)}
+                        cy={yScale(m.value)}
+                        r={11}
+                        fill="transparent"
+                      />
+                      {/* Halo ring signals "this responds to you". */}
+                      {isHovered && (
+                        <circle
+                          cx={xScale(m.ts)}
+                          cy={yScale(m.value)}
+                          r={8}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeOpacity={0.35}
+                          className="text-primary-600"
+                        />
+                      )}
+                      <rect
+                        x={-half}
+                        y={-half}
+                        width={half * 2}
+                        height={half * 2}
+                        transform={`translate(${xScale(m.ts)} ${yScale(
+                          m.value
+                        )}) rotate(45)`}
+                        fill="currentColor"
+                        fillOpacity={isHovered ? 1 : 0.85}
+                        className={
+                          isHovered ? 'text-primary-600' : 'text-ink-600'
+                        }
+                      />
+                    </g>
+                  )
+                })}
                 {overlayGeom.yours.map((yr) => (
                   <g
                     key={yr.direction}

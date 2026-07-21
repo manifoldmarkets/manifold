@@ -87,11 +87,9 @@ export const PerpPositionPanel = (props: {
         .then((events) => {
           if (cancelled) return
           setPastEvents(
-            events
-              .filter(
-                (e) => e.eventType === 'close' || e.eventType === 'liquidation'
-              )
-              .slice(0, 5)
+            events.filter(
+              (e) => e.eventType === 'close' || e.eventType === 'liquidation'
+            )
           )
         })
         .catch(() => {})
@@ -159,13 +157,29 @@ type PerpHistoryEvent = {
 
 // Tombstones for closed/liquidated positions, so the outcome of a position
 // stays visible on the market page instead of the position just vanishing.
+// Shows the 5 most recent by default with an explicit count — an unlabeled
+// short list reads as "this is everything".
+const HISTORY_PREVIEW_COUNT = 5
+
 const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
-  const { events } = props
+  const { events: allEvents } = props
+  const [expanded, setExpanded] = useState(false)
+  const events = expanded
+    ? allEvents
+    : allEvents.slice(0, HISTORY_PREVIEW_COUNT)
+  const hasMore = allEvents.length > HISTORY_PREVIEW_COUNT
   return (
     <Col className="border-ink-200 bg-canvas-0 gap-2 rounded-lg border p-3">
-      <span className="text-ink-500 text-xs font-semibold uppercase">
-        Your position history
-      </span>
+      <Row className="items-baseline justify-between">
+        <span className="text-ink-500 text-xs font-semibold uppercase">
+          Your position history
+        </span>
+        <span className="text-ink-400 text-xs">
+          {hasMore && !expanded
+            ? `last ${events.length} of ${allEvents.length}`
+            : `last ${events.length}`}
+        </span>
+      </Row>
       {events.map((e) => {
         const decimals = inferPriceDecimals([e.oraclePrice])
         const at = new Date(e.ts).toLocaleString(undefined, {
@@ -225,6 +239,15 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
           </Row>
         )
       })}
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="text-primary-600 hover:text-primary-700 self-start text-xs font-medium"
+        >
+          {expanded ? 'Show fewer' : `Show all ${allEvents.length}`}
+        </button>
+      )}
       <span className="text-ink-400 text-xs">
         Liquidation forfeits a position's margin to the pool that pays winning
         positions.
@@ -289,6 +312,12 @@ const PositionCard = (props: {
   const minsToFunding = nextFunding
     ? Math.max(1, Math.ceil((nextFunding - Date.now()) / MINUTE_MS))
     : null
+  // Funding as a daily fraction of the user's original margin — the erosion
+  // (or accrual) rate is what makes an hourly Ṁ figure interpretable.
+  const fundingDailyPct =
+    p.originalCostBasis > 0
+      ? ((Math.abs(fundingMana) * 24) / p.originalCostBasis) * 100
+      : 0
 
   // Distance to liquidation as a percentage of mark — useful risk signal.
   const distToLiq = isLong
@@ -373,6 +402,16 @@ const PositionCard = (props: {
             >
               {fundingMana > 0 ? 'earning ' : 'paying '}
               {formatFundingPerHour(Math.abs(fundingMana))}/hr
+              {fundingDailyPct >= 0.05 && (
+                <span className="text-ink-400">
+                  {' '}
+                  (
+                  {fundingDailyPct >= 10
+                    ? fundingDailyPct.toFixed(0)
+                    : fundingDailyPct.toFixed(1)}
+                  %/day of margin)
+                </span>
+              )}
               {minsToFunding != null && (
                 <span className="text-ink-400">
                   {' '}
@@ -381,6 +420,16 @@ const PositionCard = (props: {
               )}
             </span>
           </Row>
+        )}
+
+        {distToLiq < 0.05 && (
+          <div className="bg-scarlet-50 text-scarlet-600 rounded-md px-2.5 py-1.5 text-xs font-medium">
+            {distToLiq > 0
+              ? `A ${(distToLiq * 100).toFixed(
+                  1
+                )}% move against you liquidates this position — the remaining margin is forfeited to the pool.`
+              : 'This position is at its liquidation price — the next adverse tick liquidates it and forfeits the remaining margin.'}
+          </div>
         )}
 
         <Button
