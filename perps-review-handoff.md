@@ -204,7 +204,68 @@ Windows: eslint enforces CRLF on disk; husky pre-commit lints whole staged files
 pre-existing jsx-a11y errors in touched files must be fixed (we fixed several); use
 `git commit -F <file>` for multi-line messages.
 
-## 9. Key files
+## 9. Addendum — 2026-07-21 session (funding verified; chart overlays; main merged)
+
+### Funding — VERIFIED on dev (§5 item 1 is done)
+
+Ran `update-perps` manually twice (new script `backend/scripts/run-update-perps-once.ts`,
+after freshening feeds via the tick loop + new `refresh-daily-oracles-once.ts`):
+
+- **Exactly one funding event per live market** with a fresh feed (BTC, UK carbon, ECI,
+  Trump). Second run immediately after: **zero new events** — the double-run guard holds.
+- **Direction correct everywhere.** Short-heavy pools (BTC 23.6k/305k → rate −0.000544;
+  UK; ECI) transferred pool mana short→long and scaled short positions down / longs up.
+  Long-heavy Trump (+0.0000283) had its two longs pay. Note the handoff's earlier
+  "long-heavy BTC → longs pay" is stale — the Ṁ28M short's forfeited margin flipped BTC
+  short-heavy.
+- Per-user `funding` events landed with per-position deltas matching `applyFunding`.
+- `manifold-daus` (feed stale 41 days) was skipped with the `[update-perps] ... is stale`
+  log.error — the alert path works.
+- **New finding:** the 15s tick and `update-perps` collide under SERIALIZABLE — several
+  SSI 40001 aborts ("canceled on identification as a pivot") during the run.
+  `runTransactionWithRetries` absorbed them and the DB shows exactly-once effects, but
+  each abort dumps a huge `pgPromise background error` object (full pg client state)
+  into the logs. Worth a log-hygiene fix before prod, and the GCP alert (§5 item 8)
+  should not page on 40001 noise.
+
+### Armed BTC scenarios (§3) — both fired organically
+
+- The Ṁ28M 100× short **liquidated 2026-07-03 20:35 UTC** at 62,613.1 (liq level
+  62,608.70). Margin Ṁ280k forfeited to the short pool — that's why `poolShort` ≈ 305k.
+- Devzy's 100× long liquidated 2026-07-06 at 61,332. ADL never fired (no profitable
+  winners against a drained side at the time). **Notification delivery for both is still
+  unverified** — check the notification rows/UI for those two events (§5 items 2–3 remain).
+
+### Suspicious: closes at a 4.6-day-stale price (freshness gate?)
+
+On 2026-07-21 00:50–00:55 UTC, six BTC positions were closed at exactly 64,480.715 —
+the July-16 cached price (feed had been dead 4.6 days; BTC maxAge is 5 min). The
+freshness gate should 400 closes on a stale feed. Most likely the deployed dev API
+predates the `PERPS_SKIP_ORACLE_FRESHNESS=false` flip (or a local API ran with the
+skip flag). Either way: **redeploy the dev API from this branch** before further QA —
+it also needs the perp txn-category commits.
+
+### Branch + chart work
+
+- **Merged `origin/main`** (13 commits, clean, no conflicts) so a dev deploy of either
+  container carries main's KYC dedupe fix, Gemini migration, and sell-shares guard.
+- **Chart overlay family** shipped in `web/components/perps/perp-chart.tsx`: dashed
+  carry-neutral (funding break-even) line, ±1σ realized-vol cone, crowd liquidation
+  bands, and your-position lines (entry / liq / personal break-even), behind persistent
+  legend toggles. Projection math is pure and unit-tested in
+  `common/src/perps/chart-projections.ts` (15 tests, incl. invariants that the personal
+  break-even path reproduces `applyFunding` exactly). Not yet browser-QA'd.
+
+### Scheduler deploy to dev — prepared, not executed
+
+`backend/scheduler/deploy-scheduler-windows.sh dev` is the path (build → local Docker
+image → Artifact Registry → `update-container` on the `scheduler` VM in
+`dev-mantic-markets`). Docker + gcloud auth verified working on this box. Not run in
+this session (needs interactive approval). Once deployed, dev runs perps jobs
+autonomously — remember the standing caveat: any later main-branch scheduler deploy
+silently displaces the perps jobs again (June's 19-day freeze).
+
+## 10. Key files
 
 | Area | Files |
 |---|---|
