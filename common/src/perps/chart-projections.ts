@@ -84,13 +84,12 @@ export const nextFundingTimes = (
 }
 
 /**
- * Projection horizon that prefers ending just past the next TWO funding
- * events (so the carry line answers "what does holding through the next
- * couple of funding transfers cost?"), falling back to one event. The
- * horizon may run up to 25% past the visible history — on a 1-hour window
- * the next event can be up to an hour away, and showing WHERE funding
- * lands is the point of the line — but no further, so the future zone
- * never dominates. When even one event doesn't fit — or on long windows
+ * Projection horizon that prefers ending just past upcoming funding events.
+ * TWO events only when the window has real headroom (half the span) — on a
+ * 1-hour view a two-event horizon would hand most of the chart to empty
+ * future. ONE event may run up to 25% past the window: showing WHERE the
+ * next funding lands is the point of the line, and hour-boundary events sit
+ * up to an hour out. When even one event doesn't fit — or on long windows
  * where the proportional horizon already covers many periods — the
  * proportional rule applies.
  */
@@ -102,10 +101,14 @@ export const projectionHorizonWithFunding = (
   const prop = projectionHorizonMs(historySpanMs)
   if (!Number.isFinite(historySpanMs) || historySpanMs <= 0) return prop
   const pad = 6 * MINUTE_MS
-  for (const t of [fundingTimes[1], fundingTimes[0]]) {
+  const candidates: [number | undefined, number][] = [
+    [fundingTimes[1], historySpanMs * 0.5],
+    [fundingTimes[0], historySpanMs * 1.25],
+  ]
+  for (const [t, allowance] of candidates) {
     if (t == null) continue
     const h = t - now + pad
-    if (h > 0 && h <= historySpanMs * 1.25) return Math.max(h, prop)
+    if (h > 0 && h <= allowance) return Math.max(h, prop)
   }
   return prop
 }

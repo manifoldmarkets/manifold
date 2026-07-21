@@ -391,35 +391,31 @@ const PositionCard = (props: {
           />
         </div>
 
+        {/* One left-aligned sentence — a lone "Funding" label with a
+            paragraph-length value right-aligned across the card read as two
+            disconnected columns. */}
         {fundingMana !== 0 && (
-          <Row className="-mt-1 items-baseline justify-between text-sm">
-            <span className="text-ink-500">Funding</span>
+          <div className="-mt-1 text-sm">
             <span
               className={clsx(
                 'tabular-nums',
                 fundingMana > 0 ? 'text-teal-600' : 'text-red-600'
               )}
             >
-              {fundingMana > 0 ? 'earning ' : 'paying '}
-              {formatFundingPerHour(Math.abs(fundingMana))}/hr
-              {fundingDailyPct >= 0.05 && (
-                <span className="text-ink-400">
-                  {' '}
-                  (
-                  {fundingDailyPct >= 10
-                    ? fundingDailyPct.toFixed(0)
-                    : fundingDailyPct.toFixed(1)}
-                  %/day of margin)
-                </span>
-              )}
-              {minsToFunding != null && (
-                <span className="text-ink-400">
-                  {' '}
-                  · next in {minsToFunding}m
-                </span>
-              )}
+              {fundingMana > 0 ? 'Earning ' : 'Paying '}
+              {formatFundingPerHour(Math.abs(fundingMana))}/hr{' '}
+              {fundingMana > 0 ? 'from funding' : 'in funding'}
             </span>
-          </Row>
+            <span className="text-ink-400">
+              {fundingDailyPct >= 0.05 &&
+                ` (${
+                  fundingDailyPct >= 10
+                    ? fundingDailyPct.toFixed(0)
+                    : fundingDailyPct.toFixed(1)
+                }%/day of margin)`}
+              {minsToFunding != null && ` · next in ${minsToFunding}m`}
+            </span>
+          </div>
         )}
 
         {distToLiq < 0.05 && (

@@ -102,6 +102,17 @@ describe('projectionHorizonWithFunding', () => {
     )
   })
 
+  it('never shows two events on a 1-hour window, even near the boundary', () => {
+    // Next event 5min out: the old rule would fit BOTH events (71min ≤
+    // 75min) and eat the chart with future. Two events need half-span
+    // headroom, so this falls through to one event, floored by the
+    // proportional horizon.
+    const nearBoundary = [now + 5 * 60 * 1000, now + 65 * 60 * 1000]
+    expect(projectionHorizonWithFunding(HOUR, now, nearBoundary)).toBe(
+      projectionHorizonMs(HOUR)
+    )
+  })
+
   it('keeps the proportional horizon on long windows and empty inputs', () => {
     const fiveDays = 5 * 24 * HOUR
     // Proportional (0.28 × span) exceeds the two-event horizon.

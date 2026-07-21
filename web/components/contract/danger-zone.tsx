@@ -82,6 +82,10 @@ export function DangerZone(props: {
   const canResolve =
     !isResolved &&
     outcomeType !== 'STONK' &&
+    // Perps are perpetual: no user-facing resolution flow. Winding one down
+    // (settle everyone at oracle price) is a rare admin operation done via
+    // the API — a Resolve button here is just a footgun.
+    outcomeType !== 'PERP' &&
     mechanism !== 'none' &&
     (token === 'CASH' ? isSweepstakesTrusted : isCreator || isAdmin || isMod)
 
