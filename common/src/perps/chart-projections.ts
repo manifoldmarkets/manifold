@@ -56,6 +56,61 @@ export const projectionHorizonMs = (historySpanMs: number) => {
 }
 
 /**
+ * Times of the next `count` funding events. The scheduler's update-perps job
+ * runs at each top of the hour (wall-clock, timezone-agnostic on epoch ms)
+ * and funds a market when at least one period minus a minute of slack has
+ * elapsed since its last funding event — so events land on hour boundaries,
+ * and a boundary too soon after the last event is skipped. Works from a
+ * stale lastFundingTime too: boundaries after `now` still qualify, so a
+ * missed scheduler run self-corrects to the next hour.
+ */
+export const nextFundingTimes = (
+  lastFundingTime: number | undefined,
+  now: number,
+  count: number
+): number[] => {
+  if (!Number.isFinite(now) || count <= 0) return []
+  const gateOk = (t: number) =>
+    !lastFundingTime || t - lastFundingTime >= FUNDING_PERIOD_MS - MINUTE_MS
+  const times: number[] = []
+  let t = Math.floor(now / HOUR_MS) * HOUR_MS + HOUR_MS
+  // The gate can skip at most one boundary, so a small scan bound suffices.
+  const limit = now + (count + 2) * HOUR_MS
+  while (times.length < count && t <= limit) {
+    if (gateOk(t)) times.push(t)
+    t += HOUR_MS
+  }
+  return times
+}
+
+/**
+ * Projection horizon that prefers ending just past the next TWO funding
+ * events (so the carry line answers "what does holding through the next
+ * couple of funding transfers cost?"), falling back to one event. The
+ * horizon may run up to 25% past the visible history — on a 1-hour window
+ * the next event can be up to an hour away, and showing WHERE funding
+ * lands is the point of the line — but no further, so the future zone
+ * never dominates. When even one event doesn't fit — or on long windows
+ * where the proportional horizon already covers many periods — the
+ * proportional rule applies.
+ */
+export const projectionHorizonWithFunding = (
+  historySpanMs: number,
+  now: number,
+  fundingTimes: number[]
+): number => {
+  const prop = projectionHorizonMs(historySpanMs)
+  if (!Number.isFinite(historySpanMs) || historySpanMs <= 0) return prop
+  const pad = 6 * MINUTE_MS
+  for (const t of [fundingTimes[1], fundingTimes[0]]) {
+    if (t == null) continue
+    const h = t - now + pad
+    if (h > 0 && h <= historySpanMs * 1.25) return Math.max(h, prop)
+  }
+  return prop
+}
+
+/**
  * Carry-neutral path: where the price must be at time t for a 1× long opened
  * now to break even on funding alone — P·(1 + f·periods), f signed (+ve =
  * longs pay, so the hurdle rises). Above the line, longs net-win after carry;

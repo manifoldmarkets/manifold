@@ -8,8 +8,10 @@ import {
   clusterLiquidationBands,
   FUNDING_PERIOD_MS,
   gapThresholdMs,
+  nextFundingTimes,
   personalBreakEvenPath,
   projectionHorizonMs,
+  projectionHorizonWithFunding,
   realizedVolPerSqrtMs,
   volConePaths,
 } from './chart-projections'
@@ -35,6 +37,80 @@ describe('projectionHorizonMs', () => {
     expect(projectionHorizonMs(tenYears)).toBe(365 * 24 * FUNDING_PERIOD_MS)
     expect(projectionHorizonMs(NaN)).toBe(2 * FUNDING_PERIOD_MS)
     expect(projectionHorizonMs(-5)).toBe(2 * FUNDING_PERIOD_MS)
+  })
+})
+
+describe('nextFundingTimes', () => {
+  const HOUR = 60 * 60 * 1000
+  // An exact hour boundary for readable arithmetic.
+  const H0 = Math.floor(NOW / HOUR) * HOUR
+
+  it('lands on hour boundaries after a normal event', () => {
+    // Event fired seconds after the H0 cron run; the H0+1h boundary has
+    // ~59m57s elapsed, which passes the gate (period minus 1min slack).
+    const last = H0 + 3_000
+    expect(nextFundingTimes(last, H0 + 30_000, 2)).toEqual([
+      H0 + HOUR,
+      H0 + 2 * HOUR,
+    ])
+  })
+
+  it('skips a boundary that lands too soon after an off-schedule event', () => {
+    // Manual mid-hour run at H0+30m: the H0+1h boundary is only 30m later,
+    // below the gate, so the first real event is H0+2h.
+    const last = H0 + 30 * 60 * 1000
+    expect(nextFundingTimes(last, last + 5 * 60 * 1000, 2)).toEqual([
+      H0 + 2 * HOUR,
+      H0 + 3 * HOUR,
+    ])
+  })
+
+  it('self-corrects when lastFundingTime is stale or missing', () => {
+    const now = H0 + 10 * 60 * 1000
+    // Scheduler was down for a day: every future boundary qualifies.
+    expect(nextFundingTimes(H0 - 24 * HOUR, now, 1)).toEqual([H0 + HOUR])
+    expect(nextFundingTimes(undefined, now, 1)).toEqual([H0 + HOUR])
+  })
+})
+
+describe('projectionHorizonWithFunding', () => {
+  const HOUR = 60 * 60 * 1000
+  const PAD = 6 * 60 * 1000
+  const H0 = Math.floor(NOW / HOUR) * HOUR
+  const now = H0 + 20 * 60 * 1000 // :20 past the hour
+  const events = [H0 + HOUR, H0 + 2 * HOUR] // in 40min and 1h40m
+
+  it('extends past two funding events when the window allows', () => {
+    const sixHours = 6 * HOUR
+    expect(projectionHorizonWithFunding(sixHours, now, events)).toBe(
+      events[1] - now + PAD
+    )
+  })
+
+  it('falls back to one event when two do not fit the window', () => {
+    const oneHour = HOUR
+    expect(projectionHorizonWithFunding(oneHour, now, events)).toBe(
+      events[0] - now + PAD
+    )
+  })
+
+  it('lets the next event run up to 25% past the window (half-hour-offset timezones)', () => {
+    // Event 58min out on a 1h window: 64min horizon ≤ 75min allowance.
+    const lateEvent = [now + 58 * 60 * 1000, now + 118 * 60 * 1000]
+    expect(projectionHorizonWithFunding(HOUR, now, lateEvent)).toBe(
+      58 * 60 * 1000 + PAD
+    )
+  })
+
+  it('keeps the proportional horizon on long windows and empty inputs', () => {
+    const fiveDays = 5 * 24 * HOUR
+    // Proportional (0.28 × span) exceeds the two-event horizon.
+    expect(projectionHorizonWithFunding(fiveDays, now, events)).toBe(
+      projectionHorizonMs(fiveDays)
+    )
+    expect(projectionHorizonWithFunding(6 * HOUR, now, [])).toBe(
+      projectionHorizonMs(6 * HOUR)
+    )
   })
 })
 
