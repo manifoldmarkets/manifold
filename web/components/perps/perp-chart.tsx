@@ -135,12 +135,14 @@ export const PerpChart = (props: {
     let cancelled = false
     setLoading(true)
     setHoverIdx(null)
-    // No `since` filter: backend returns the most recent `limit` points.
-    // 1000 points ≈ 3 years at daily cadence, plenty for the chart view.
+    // Backend returns the most recent `limit` points; 5000 is the schema
+    // max. At 30-min cadence that's ~3.5 months of history (a 1000-point
+    // fetch cut slow feeds off at ~3 weeks), and at 15s it stretches the
+    // fast-feed window to ~20h, which feeds the 6H/1D frames properly.
     if (mode === 'price') {
       api('get-oracle-price-series', {
         feedId: contract.oracleFeedId,
-        limit: 1000,
+        limit: 5000,
       })
         .then((res) => {
           if (cancelled) return
