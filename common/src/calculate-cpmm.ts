@@ -504,7 +504,9 @@ export function calculateCpmmMultiSumsToOneSale(
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees
 ) {
-  if (Math.round(shares) < 0) {
+  // Math.round(shares) < 0 let dust and small-negative amounts through (they
+  // round to 0/-0); an epsilon compare rejects any non-positive sale.
+  if (floatingLesserEqual(shares, 0)) {
     throw new Error('Cannot sell non-positive shares')
   }
 
@@ -634,7 +636,9 @@ export function calculateCpmmSale(
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
-  if (Math.round(shares) < 0) {
+  // Math.round(shares) < 0 let dust and small-negative amounts through (they
+  // round to 0/-0); an epsilon compare rejects any non-positive sale.
+  if (floatingLesserEqual(shares, 0)) {
     throw new Error('Cannot sell non-positive shares')
   }
 
