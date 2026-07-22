@@ -10,6 +10,7 @@ import { LimitBet } from 'common/bet'
 import { MS_PER_DAY } from 'common/loans'
 import { MarketContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { CPMM_ARBITRAGE_ERROR_PREFIX } from 'common/calculate-cpmm'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { floatingLesserEqual } from 'common/util/math'
 import { randomString } from 'common/util/random'
@@ -95,9 +96,9 @@ const calculateSellResult = (
         'Cannot bet until at least two answers are added.'
       )
 
-    return {
-      newP: 0.5,
-      ...getCpmmMultiSellBetInfo(
+    let multiSellInfo
+    try {
+      multiSellInfo = getCpmmMultiSellBetInfo(
         contract,
         answers,
         answer,
@@ -107,7 +108,46 @@ const calculateSellResult = (
         unfilledBets,
         balanceByUserId,
         loanPaid
-      ),
+      )
+    } catch (e) {
+      // On a NaN-probability failure in the sum-to-one arbitrage, log the full
+      // read-time pool state for diagnosis, then rethrow unchanged.
+      if (
+        e instanceof Error &&
+        e.message.startsWith(CPMM_ARBITRAGE_ERROR_PREFIX)
+      ) {
+        log.error('Sell arbitrage failed on degenerate pool state', {
+          contractId: contract.id,
+          mechanism: contract.mechanism,
+          answerId,
+          outcome,
+          requestedShares: shares,
+          soldShares,
+          maxShares,
+          userTotalShares: sharesByOutcome,
+          unfilledBetCount: unfilledBets.length,
+          error: e.message,
+          answers: answers.map((a) => ({
+            id: a.id,
+            poolYes: a.poolYes,
+            poolNo: a.poolNo,
+            prob: a.prob,
+            resolution: a.resolution,
+            totalLiquidity: a.totalLiquidity,
+            degenerate:
+              !(a.poolYes > 0) ||
+              !(a.poolNo > 0) ||
+              !isFinite(a.poolYes) ||
+              !isFinite(a.poolNo),
+          })),
+        })
+      }
+      throw e
+    }
+
+    return {
+      newP: 0.5,
+      ...multiSellInfo,
     }
   }
 }
