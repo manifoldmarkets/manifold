@@ -41,21 +41,22 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   if (contract.mechanism !== 'cpmm-multi-1')
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
 
+  const isModOrAdmin = isAdminId(auth.uid) || isModId(auth.uid)
+
   const { closeTime } = contract
-  if (closeTime && Date.now() > closeTime)
+  if (closeTime && Date.now() > closeTime && !isModOrAdmin)
     throw new APIError(403, 'Cannot edit answer after market closes')
 
   const answer = await getAnswer(pg, answerId)
   if (!answer) throw new APIError(404, 'Answer not found')
 
-  if (answer.resolution)
+  if (answer.resolution && !isModOrAdmin)
     throw new APIError(403, 'Cannot edit answer that is already resolved')
 
   if (
     answer.userId === auth.uid &&
     answer.userId !== contract.creatorId &&
-    !isModId(auth.uid) &&
-    !isAdminId(auth.uid) &&
+    !isModOrAdmin &&
     answer.createdTime < Date.now() - HOUR_MS
   )
     throw new APIError(
@@ -66,8 +67,7 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   if (
     answer.userId !== auth.uid &&
     contract.creatorId !== auth.uid &&
-    !isAdminId(auth.uid) &&
-    !isModId(auth.uid)
+    !isModOrAdmin
   )
     throw new APIError(403, 'Contract owner, mod, or answer owner required')
 
