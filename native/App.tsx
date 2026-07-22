@@ -1,10 +1,12 @@
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Clipboard from '@react-native-clipboard/clipboard'
 import * as Sentry from '@sentry/react-native'
-import { EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
+import { CONFIGS, EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import {
   MesageTypeMap,
+  NativeQuestData,
+  NativeStreakData,
   nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
@@ -26,9 +28,23 @@ import * as WebBrowser from 'expo-web-browser'
 import { User as FirebaseUser } from 'firebase/auth'
 import { clearData, getData, storeData } from 'lib/auth'
 import { checkLocationPermission, getLocation } from 'lib/location'
+import {
+  clearQuestWidget,
+  clearStreakWidget,
+  fetchStreakSnapshot,
+  writeQuestWidget,
+  writeStreakWidget,
+} from 'lib/streak-widget'
 import { useIsConnected } from 'lib/use-is-connected'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { BackHandler, Platform, Share, StyleSheet } from 'react-native'
+import {
+  AppState,
+  BackHandler,
+  NativeModules,
+  Platform,
+  Share,
+  StyleSheet,
+} from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import WebView from 'react-native-webview'
 import { app, auth, ENV } from './init'
@@ -84,12 +100,41 @@ const App = () => {
   // Auth.currentUser didn't update, so we track the state manually
   auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
 
+  // Fetches the user's streak straight from the public API and mirrors it into
+  // the App Group for the home/lock-screen widget. This works against prod
+  // without any web deploy — the streak fields are on the unauthenticated
+  // user/by-id response. (The 'setStreak'/'setQuests' webview messages provide
+  // fresher live updates, but only once the web changes are deployed.)
+  const syncStreakFromApi = async (userId: string) => {
+    const snapshot = await fetchStreakSnapshot(CONFIGS[ENV].apiEndpoint, userId)
+    if (snapshot) writeStreakWidget(snapshot)
+  }
+
+  // Re-sync the streak widget whenever the app is backgrounded or re-activated —
+  // most importantly, right after a bet when the user swipes to the home screen
+  // to look at the widget. Uses the public-API sync above, so the widget updates
+  // promptly against prod even before the web `setStreak` live-message ships.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if ((next === 'background' || next === 'active') && fbUser?.uid) {
+        syncStreakFromApi(fbUser.uid)
+        // Quest scores aren't on the public API the streak sync uses, so ask the
+        // webview to re-fetch + re-push them. Lets a completed quest reach the
+        // widget on the next foreground without a full reload.
+        communicateWithWebview('refreshQuests', {})
+      }
+    })
+    return () => sub.remove()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fbUser?.uid])
+
   const signInUserFromStorage = async () => {
     const user = await getData<FirebaseUser>('user')
     if (!user) return
     log('Got user from storage:', user.email)
     setFbUser(user)
     sendWebviewAuthInfo(user)
+    if (user.uid) syncStreakFromApi(user.uid)
     await setFirebaseUserViaJson(user, app)
   }
 
@@ -368,6 +413,22 @@ const App = () => {
       })
     } else if (type === 'signOut') {
       await signOutUsers('Error on sign out')
+    } else if (type === 'setStreak') {
+      // Mirror the streak snapshot into the shared App Group for the widget.
+      writeStreakWidget(payload as NativeStreakData)
+    } else if (type === 'setQuests') {
+      writeQuestWidget(payload as NativeQuestData)
+    } else if (type === 'pinStreakWidget') {
+      // Android only: show the system "add widget to home screen" dialog via our
+      // native module. No-op on iOS (no such API) and on older builds that
+      // predate the module (NativeModules.WidgetPin is then undefined).
+      if (Platform.OS === 'android' && NativeModules.WidgetPin?.pinStreakWidget) {
+        try {
+          await NativeModules.WidgetPin.pinStreakWidget()
+        } catch (e) {
+          log('pinStreakWidget failed', e)
+        }
+      }
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
@@ -379,6 +440,8 @@ const App = () => {
           // We don't actually use the firebase auth for anything right now, but in case we do in the future...
           await setFirebaseUserViaJson(fbUser, app)
           await storeData('user', fbUser)
+          // Refresh the streak widget from the API on each (re)auth / app open.
+          if (fbUser.uid) syncStreakFromApi(fbUser.uid)
         }
       } catch (e) {
         log('error signing in users', e)
@@ -453,6 +516,8 @@ const App = () => {
       log(errorMessage, err)
     }
     setFbUser(null)
+    clearStreakWidget()
+    clearQuestWidget()
     await clearData('user').catch((err) => {
       log('Error clearing user data', err)
     })
