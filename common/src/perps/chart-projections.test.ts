@@ -32,9 +32,9 @@ describe('projectionHorizonMs', () => {
     expect(projectionHorizonMs(10 * 60 * 1000)).toBe(10 * 60 * 1000)
   })
 
-  it('caps at a year and survives garbage input', () => {
+  it('caps at 60 days and survives garbage input', () => {
     const tenYears = 3650 * 24 * FUNDING_PERIOD_MS
-    expect(projectionHorizonMs(tenYears)).toBe(365 * 24 * FUNDING_PERIOD_MS)
+    expect(projectionHorizonMs(tenYears)).toBe(60 * 24 * FUNDING_PERIOD_MS)
     expect(projectionHorizonMs(NaN)).toBe(2 * FUNDING_PERIOD_MS)
     expect(projectionHorizonMs(-5)).toBe(2 * FUNDING_PERIOD_MS)
   })

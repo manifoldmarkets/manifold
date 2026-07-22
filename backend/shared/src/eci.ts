@@ -33,7 +33,10 @@ export const parseEciCsv = (csvText: string): EciModel[] => {
     .filter(
       (m) =>
         !!m.modelVersion &&
+        // Strictly positive: a blank "ECI Score" cell parses as Number('')
+        // = 0, which would poison the early frontier with 0.00 days.
         isFinite(m.score) &&
+        m.score > 0 &&
         /^\d{4}-\d{2}-\d{2}$/.test(m.releaseDate)
     )
 }

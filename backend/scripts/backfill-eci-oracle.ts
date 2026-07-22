@@ -12,7 +12,9 @@ import { runScript } from './run-script'
 // Backfill the `eci-frontier` oracle feed: one point per day, where the value
 // is the max ECI score across models released on or before that day. Seeds
 // the market chart with the step-function history of frontier capability.
-const BACKFILL_START = '2025-01-01'
+// Start of the ChatGPT era: the ramp from there to today IS this market's
+// story, and at daily cadence the chart's 5000-point fetch holds it easily.
+const BACKFILL_START = '2023-01-01'
 
 if (require.main === module)
   runScript(async ({ pg }) => {

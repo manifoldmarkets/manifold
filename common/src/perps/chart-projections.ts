@@ -40,9 +40,11 @@ export const FUNDING_PERIOD_MS = HOUR_MS
  * How far past "now" the projection zone extends: a fixed fraction of the
  * visible history, so the future occupies ~1/5 of the chart regardless of
  * feed cadence. Floored at 30 minutes so the zone stays drawable on short
- * windows, but never longer than the visible history itself (a 1-hour
- * timeframe should not be two-thirds empty future), and capped at a year
- * for long daily series.
+ * windows, never longer than the visible history itself (a 1-hour
+ * timeframe should not be two-thirds empty future), and capped at 60 days:
+ * projecting today's funding rate a year out compounds a rate that will
+ * certainly have changed into a dramatic slope — on ECI's multi-year
+ * staircase it drew a "crash" a monotone index cannot have.
  */
 export const projectionHorizonMs = (historySpanMs: number) => {
   if (!Number.isFinite(historySpanMs) || historySpanMs <= 0) {
@@ -51,7 +53,7 @@ export const projectionHorizonMs = (historySpanMs: number) => {
   return Math.min(
     Math.max(historySpanMs * 0.28, 30 * MINUTE_MS),
     historySpanMs,
-    365 * DAY_MS
+    60 * DAY_MS
   )
 }
 
