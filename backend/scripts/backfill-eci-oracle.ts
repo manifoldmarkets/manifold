@@ -21,17 +21,23 @@ if (require.main === module)
     const models = await fetchEciModels()
     log(`fetched ${models.length} models from Epoch`)
 
-    const from = dayjs.tz(BACKFILL_START, 'America/Los_Angeles').startOf('day')
-    const to = dayjs.tz(dayjs(), 'America/Los_Angeles').startOf('day')
-
+    // Iterate CALENDAR dates and stamp each day fresh: dayjs.tz + add(1,
+    // 'day') adds 24 UTC hours, so a loop started in PST drifts to 1 AM
+    // once PDT begins, colliding with the daily job's correct stamps.
+    const today = dayjs.tz(dayjs(), 'America/Los_Angeles').format('YYYY-MM-DD')
     const points: { ts: number; price: number }[] = []
     for (
-      let day = from;
-      day.isBefore(to) || day.isSame(to);
-      day = day.add(1, 'day')
+      let d = dayjs.utc(BACKFILL_START);
+      !d.isAfter(dayjs.utc(today));
+      d = d.add(1, 'day')
     ) {
-      const frontier = eciFrontierOnDate(models, day.format('YYYY-MM-DD'))
-      if (frontier != null) points.push({ ts: day.valueOf(), price: frontier })
+      const dateStr = d.format('YYYY-MM-DD')
+      const frontier = eciFrontierOnDate(models, dateStr)
+      if (frontier != null)
+        points.push({
+          ts: dayjs.tz(dateStr, 'America/Los_Angeles').valueOf(),
+          price: frontier,
+        })
     }
 
     log(`computed ${points.length} daily frontier points`)

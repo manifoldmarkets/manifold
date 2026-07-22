@@ -89,27 +89,30 @@ export const computeRollingAverages = (
     .map((p) => ({ endDate: p.end_date, pct: getApprovePct(p) }))
     .filter((p): p is { endDate: string; pct: number } => p.pct != null)
 
-  const from = dayjs.tz(fromDay, 'America/Los_Angeles').startOf('day')
-  const to = dayjs.tz(toDay, 'America/Los_Angeles').startOf('day')
+  // Iterate CALENDAR dates and derive each day's timestamp fresh:
+  // dayjs.tz(...).add(1, 'day') adds 24 UTC hours, so a loop started in PST
+  // drifts to 1 AM once PDT begins — every summer stamp landed an hour off
+  // midnight and collided with the correctly-stamped daily-job rows.
+  // Window membership compares ISO date strings, which is DST-proof.
   const points: { ts: number; price: number }[] = []
-
   for (
-    let day = from;
-    day.isBefore(to) || day.isSame(to);
-    day = day.add(1, 'day')
+    let d = dayjs.utc(fromDay);
+    !d.isAfter(dayjs.utc(toDay));
+    d = d.add(1, 'day')
   ) {
-    const windowStart = day.subtract(windowDays - 1, 'day')
-    const inWindow = pollsWithPct.filter((p) => {
-      const end = dayjs.tz(p.endDate, 'America/Los_Angeles').startOf('day')
-      return (
-        (end.isAfter(windowStart) || end.isSame(windowStart)) &&
-        (end.isBefore(day) || end.isSame(day))
-      )
-    })
+    const dateStr = d.format('YYYY-MM-DD')
+    const windowStartStr = d
+      .subtract(windowDays - 1, 'day')
+      .format('YYYY-MM-DD')
+    const inWindow = pollsWithPct.filter(
+      (p) => p.endDate >= windowStartStr && p.endDate <= dateStr
+    )
     if (inWindow.length === 0) continue
-    const avg =
-      inWindow.reduce((sum, p) => sum + p.pct, 0) / inWindow.length
-    points.push({ ts: day.valueOf(), price: avg })
+    const avg = inWindow.reduce((sum, p) => sum + p.pct, 0) / inWindow.length
+    points.push({
+      ts: dayjs.tz(dateStr, 'America/Los_Angeles').valueOf(),
+      price: avg,
+    })
   }
 
   return points
