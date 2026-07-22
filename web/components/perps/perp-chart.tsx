@@ -63,15 +63,19 @@ const DEFAULT_OVERLAYS: OverlayToggles = {
   you: true,
 }
 
-// Client-side windowing over the fetched series (v1): the deployed API has
-// no `since` param yet, so frames slice what is already loaded. Upgrade to
-// server-side since + bucketing when the API grows support.
-type Timeframe = '1H' | '6H' | '1D' | 'ALL'
-const TIMEFRAMES: Timeframe[] = ['1H', '6H', '1D', 'ALL']
+// Client-side windowing over the fetched series (v1): frames slice what is
+// already loaded (5000 points). Upgrade to server-side since + bucketing
+// when the API redeploys. 1W/1M matter for slow feeds: on a 30-min feed the
+// All view spans months of dense texture, and the readable view — each
+// day's wave distinct — lives at the weeks scale.
+type Timeframe = '1H' | '6H' | '1D' | '1W' | '1M' | 'ALL'
+const TIMEFRAMES: Timeframe[] = ['1H', '6H', '1D', '1W', '1M', 'ALL']
 const TIMEFRAME_MS: { [k in Timeframe]: number } = {
   '1H': HOUR_MS,
   '6H': 6 * HOUR_MS,
   '1D': DAY_MS,
+  '1W': 7 * DAY_MS,
+  '1M': 30 * DAY_MS,
   ALL: Infinity,
 }
 
