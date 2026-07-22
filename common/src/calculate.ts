@@ -198,6 +198,16 @@ export function calculateTotalSpentAndShares(
     }
   }
 
+  // Arb/round-trip fills leave nano-share residue (e.g. -4.44e-16) that never
+  // clears; a later "sell all" then feeds a non-positive amount into the arb and
+  // throws. Snap sub-EPSILON positions to exactly zero, matching how the rest of
+  // the metrics treat them as no holding.
+  for (const outcome of Object.keys(totalShares)) {
+    if (floatingEqual(totalShares[outcome] ?? 0, 0)) {
+      totalShares[outcome] = 0
+    }
+  }
+
   return { totalSpent, totalShares }
 }
 
