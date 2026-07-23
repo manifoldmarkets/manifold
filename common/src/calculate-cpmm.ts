@@ -504,9 +504,12 @@ export function calculateCpmmMultiSumsToOneSale(
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees
 ) {
-  // Math.round(shares) < 0 let dust and small-negative amounts through (they
-  // round to 0/-0); an epsilon compare rejects any non-positive sale.
-  if (floatingLesserEqual(shares, 0)) {
+  // Snap floating-point dust (e.g. -4.44e-16) to an exact zero no-op so it
+  // can't invert the arbitrage binary search into NaN. Zero must stay legal:
+  // the sell panel previews with 0 shares while its input is empty.
+  if (floatingEqual(shares, 0)) {
+    shares = 0
+  } else if (shares < 0) {
     throw new Error('Cannot sell non-positive shares')
   }
 
@@ -636,9 +639,12 @@ export function calculateCpmmSale(
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
-  // Math.round(shares) < 0 let dust and small-negative amounts through (they
-  // round to 0/-0); an epsilon compare rejects any non-positive sale.
-  if (floatingLesserEqual(shares, 0)) {
+  // Snap floating-point dust (e.g. -4.44e-16) to an exact zero no-op so it
+  // can't invert the arbitrage binary search into NaN. Zero must stay legal:
+  // the sell panel previews with 0 shares while its input is empty.
+  if (floatingEqual(shares, 0)) {
+    shares = 0
+  } else if (shares < 0) {
     throw new Error('Cannot sell non-positive shares')
   }
 
