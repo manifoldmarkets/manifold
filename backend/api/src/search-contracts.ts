@@ -97,7 +97,7 @@ const search = async (
     filter !== 'news' &&
     !term &&
     !topicSlugForGroupIdLookup &&
-    !groupIds &&
+    !groupIds.length &&
     (sort === 'score' || sort === 'freshness-score') &&
     (token === 'MANA' || token === 'ALL') &&
     !isRecent
