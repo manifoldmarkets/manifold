@@ -4,6 +4,7 @@ import {
   PERPS_SKIP_ORACLE_FRESHNESS,
 } from 'common/envs/constants'
 import { mapAsync } from 'common/util/promise'
+import { MINUTE_MS } from 'common/util/time'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import {
@@ -92,7 +93,12 @@ const updateOnePerp = async (contract: PerpContract) => {
       await notifyPerpOracleResult(pg, contract, latest.price, oracleResult)
     }
 
-    // Cheap prefilter; the authoritative gate is inside runFunding.
+    // Cheap prefilter; the authoritative gate is inside runFunding. Must
+    // use the engine's exact tolerance: cron fires at :00 sharp, so this
+    // run starts a few hundred ms EARLIER in the second than the last
+    // event's commit stamp about half the time — a full-period comparison
+    // here silently skips those hours (observed on dev: 16:00:01.104 event,
+    // 17:00:00.822 run, elapsed 3,599,780ms, no funding written).
     const lastFunding = await pg.oneOrNone<{ ts: string }>(
       `select ts from contract_perp_funding_events
        where contract_id = $1 order by ts desc limit 1`,
@@ -101,7 +107,7 @@ const updateOnePerp = async (contract: PerpContract) => {
     const lastFundingMs = lastFunding
       ? new Date(lastFunding.ts).getTime()
       : 0
-    if (now - lastFundingMs >= FUNDING_PERIOD_MS) {
+    if (now - lastFundingMs >= FUNDING_PERIOD_MS - MINUTE_MS) {
       await runFunding(contract.id, now, oracleResult)
     }
   } catch (err) {
