@@ -1,4 +1,4 @@
-import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 import { fetchBtcUsdSpot } from './btc-price'
 import {
@@ -59,13 +59,20 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 2 * HOUR_MS,
     fetchLatest: fetchUkGridCarbonActual,
   },
+  // Daily feeds use a 26h threshold (one missed daily run + slack) rather
+  // than a lazy 3d: the hourly update-perps job turns feed staleness into
+  // ERROR log lines, and the GCP presence alert pages on those. GCP's
+  // metric-absence conditions cap at 23h30m, so a daily heartbeat cannot be
+  // absence-monitored directly — this staleness path is the daily-job
+  // dead-man switch. (Markets' own maxOraclePriceAgeMs can still be larger;
+  // trading tolerance and alerting are separate thresholds.)
   {
     id: TRUMP_APPROVAL_FEED_ID,
     description: '14-day rolling Trump approval average (VoteHub polls)',
     cadence: 'daily',
     minPrice: 10,
     maxPrice: 90,
-    staleAfterMs: 3 * DAY_MS,
+    staleAfterMs: 26 * HOUR_MS,
   },
   {
     id: ECI_FRONTIER_FEED_ID,
@@ -73,7 +80,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'daily',
     minPrice: 100,
     maxPrice: 250,
-    staleAfterMs: 3 * DAY_MS,
+    staleAfterMs: 26 * HOUR_MS,
   },
 ]
 
