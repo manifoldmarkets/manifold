@@ -381,7 +381,9 @@ rounds across all four markets.
    full-period comparison ratchets into recurring skips. One line: prefilter now uses
    the engine's tolerance. **Needs scheduler redeploy.** Note: a single skip's gap is
    1h59m59.8s — just under the 2h funding-heartbeat absence alert, so it never paged;
-   consider tightening to ~90m post-redeploy.
+   consider tightening to ~90m post-redeploy. Cadence watched live through the
+   session confirms the alternating pattern on the deployed binary: 15:00 ✓ 16:00 ✓
+   17:00 ✗ 18:00 ✓ 19:00 ✗.
 
 **Verified end-to-end this session:**
 
@@ -402,10 +404,28 @@ rounds across all four markets.
   18:00 expected to fire even pre-redeploy (post-skip elapsed ≈ 2h).
 - UK carbon feed now publishes HOURLY (was 30-min) and can arrive late (17:00 reading
   landed ~17:10); the cadence probe adapts without code changes.
-- Perp notifications for Marketing: none exist yet — a real liquidation trap is armed
-  (100× short @ 77 on UK carbon, liq 77.770, morning intensity ramp ahead) to verify
-  the notification render fix live; prior 100× long banked +Ṁ166 on the 66→77 jump
-  instead of liquidating.
+- **Liquidation + notification verified live end-to-end** (was the last untested
+  money path): armed a real 100× short @ 77 on UK carbon (after the first trap, a
+  100× long, banked +Ṁ166 on the 66→77 jump instead of liquidating); the 19:00
+  reading spiked 71→79 through the 77.770 liq price. Engine wrote the liquidation
+  (full notional, margin forfeited), the perp_liquidation notification composed
+  correctly ("Liquidated: your 100× short ... lost its Ṁ10 margin. The price hit
+  79.000, past your liquidation price of 77.770.") and RENDERS in /notifications
+  (bolt icon, top of list) — the 4c41b908a blank-row fix holds. Position card
+  removed; history shows the "💥 Liquidated short −Ṁ10 margin at 79" tombstone.
+  Correctly NO balance-log row (margin left the balance at open). Note: UK carbon's
+  late publication (~10 min past the hour) means the liq executed ~19:10 against the
+  19:00-stamped price — inherent to the feed, fine.
+- Funding charge verified against my own open positions at 18:00: BTC long charged
+  exactly the displayed −Ṁ0.0019, UK short −Ṁ0.0006 (crowded side), Devzy −Ṁ193.75.
+  Position-level Ṁ/hr in the card is rate × position value (margin+uPnL) — coherent
+  with the %/day-of-margin copy.
+- Bet-panel input edge cases: margin 0 → submit disabled; negative input sanitizes
+  to positive; margin > balance → submit disabled but SILENTLY (polish: add an
+  "insufficient balance" hint). Portfolio Trades tab renders open perps (value,
+  position, % incl. realized); closed ones drop off the Open filter correctly.
+- All test positions closed at session end; Marketing net +Ṁ157 (the +166 win, −10
+  liquidated margin, dust elsewhere) — balances reconcile at every step.
 
 **Design items for Tod (deliberately unchanged):**
 
