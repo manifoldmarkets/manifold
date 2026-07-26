@@ -1227,7 +1227,9 @@ struct StreakWidgetEntryView: View {
 
   private func snapshot() -> StreakData? {
     guard let d = loadStreakData(), d.loggedIn, d.streak > 0 else { return nil }
-    return d
+    // Same overnight-freeze replay the entry path applies (currentEntry), so the
+    // triage fallback doesn't silently disagree with the live widget.
+    return predictOvernight(d, now: Date())
   }
 
   // State-based gradient (pure SwiftUI; the same palette as the full design).
