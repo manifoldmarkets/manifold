@@ -357,6 +357,74 @@ per-user adl events with sizeDelta). The deeper issue remains the open-notional 
   binary was the suspect).
 - Prod rollout protocol (§6).
 
+### 2026-07-27 dev QA loop (commits `4c59dfda7`, `846752c7d`)
+
+Full logged-in trade-lifecycle QA against the redeployed dev API/scheduler, three
+rounds across all four markets.
+
+**Fixed and pushed (bug fixes only, per Tod's ground rule):**
+
+1. `4c59dfda7` chart frame gating: frameCounts read the loaded (bucketed) series, so
+   the All view's 2h buckets disabled 1H/6H on a 15s feed; and the fetch keyed on the
+   raw selection while display fell back to All, stranding slow markets on near-empty
+   windows when a frame persisted from a fast one. Now an 8-point raw probe measures
+   the feed's true cadence (median dt) and a frame is offered when window/cadence ≥ 4;
+   the fallback (activeFrame) drives fetch AND display. maxOraclePriceAgeMs was
+   rejected as proxy (UK 3h vs 30-min cadence, ECI 72h). Rebased onto the 1D-landing
+   commit; kept its starved-fetch All fallback as an outage guard. Verified per-market:
+   BTC all frames, UK −1H, ECI/Trump −1H/6H/1D.
+2. `846752c7d` hourly funding silently skipped ~alternate hours: caught live — 17:00
+   run wrote NO funding for any market (16:00 ran at :01.098, elapsed 3,600,075ms →
+   fired; 17:00 ran at :00.822, elapsed 3,599,780ms → skipped). The scheduler's
+   prefilter compared against full FUNDING_PERIOD_MS while the engine gate tolerates
+   period−1min precisely for this jitter; each firing stamps a later event ts, so
+   full-period comparison ratchets into recurring skips. One line: prefilter now uses
+   the engine's tolerance. **Needs scheduler redeploy.** Note: a single skip's gap is
+   1h59m59.8s — just under the 2h funding-heartbeat absence alert, so it never paged;
+   consider tightening to ~90m post-redeploy.
+
+**Verified end-to-end this session:**
+
+- Post-trade UI latency on the no-cache API: open 0.9–1.6s, add 0.9s, flip 0.95–1.6s,
+  close 0.35–0.65s optimistic / 1.2s confirmed — the old ~3.4s CF ceiling is gone.
+- Lifecycle on all four markets (open/add/flip/close); flip via UI (was still-open).
+- Balance log renders perp txn categories ("Opened 100× long — Ṁ10 margin at 66",
+  "Flipped out of long — PnL +Ṁ0", running balances); sidebar balance decrements live.
+- Position card: danger banner appears at 1.0%-away and clears at 15.1%-away;
+  +Ṁ166/+1666.67% PnL renders; paying AND earning funding sentences correct, receiver
+  rate pool-ratio-scaled; "next in Xm" countdowns consistent with diamonds.
+- Trades/Holders tabs live-merge (fresh trades <1min); diamond hover tooltip intact
+  post-merge; Show all/fewer; profit scenarios (return-on-margin semantics check out);
+  mobile 390px pass on the market page (layout holds, axes readable).
+- Cross-market frame persistence: 1H from BTC → ECI falls back to All, highlighted
+  AND fetched directly (single request).
+- Funding cadence live-watched: 15:00 ✓, 16:00 ✓, 17:00 ✗ (root-caused above);
+  18:00 expected to fire even pre-redeploy (post-skip elapsed ≈ 2h).
+- UK carbon feed now publishes HOURLY (was 30-min) and can arrive late (17:00 reading
+  landed ~17:10); the cadence probe adapts without code changes.
+- Perp notifications for Marketing: none exist yet — a real liquidation trap is armed
+  (100× short @ 77 on UK carbon, liq 77.770, morning intensity ramp ahead) to verify
+  the notification render fix live; prior 100× long banked +Ṁ166 on the 66→77 jump
+  instead of liquidating.
+
+**Design items for Tod (deliberately unchanged):**
+
+1. Carry-line proportional horizon (`max(h, prop)` in projectionHorizonWithFunding):
+   All = ~31-day +15% dashed climb; ECI 1W = ~2-day climb on a flat staircase. Options:
+   funding-event horizon whenever events fit, or cap prop on frames beyond 1D.
+2. Funding tab: line interpolates straight across the 5-day scheduler-dead gap and
+   y-axis is annualized % — both fold into the agreed bar-chart rework.
+3. Header "longs pay shorts" with ZERO short holders: transfer accrues to the short
+   pool (backs future shorts — Devzy pays Ṁ194/hr into an empty side on BTC).
+   Coherent mechanically; copy could say "pays the short pool".
+4. Trades tab aggregate ADL rows: "anon was auto-deleveraged on @ 66,902.17" —
+   dangling "on" (aggregate events carry no direction); per-user adl rows still absent.
+5. Balance-log polish: payout Ṁ9.9975 renders "+Ṁ9" (truncated, not rounded);
+   add-to renders as "Opened 2× long" (Trades tab does distinguish "added to").
+6. Position history caption shows "last 1" when every row already fits (hide ≤ 5).
+7. Pre-existing, not perps: /notifications fires markallnotifications 3× before the
+   auth token is ready → 401s + dev-overlay noise; self-heals with a later 200.
+
 ## 10. Key files
 
 | Area | Files |
