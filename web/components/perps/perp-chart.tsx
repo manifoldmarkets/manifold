@@ -63,11 +63,15 @@ const DEFAULT_OVERLAYS: OverlayToggles = {
   you: true,
 }
 
-// Client-side windowing over the fetched series (v1): frames slice what is
-// already loaded (5000 points). Upgrade to server-side since + bucketing
-// when the API redeploys. 1W/1M matter for slow feeds: on a 30-min feed the
-// All view spans months of dense texture, and the readable view — each
-// day's wave distinct — lives at the weeks scale.
+// Each frame fetches its own window server-side. Short frames take raw
+// points; longer frames downsample via bucketSeconds (last point per
+// bucket) so a 15s feed's week/month views aren't truncated to "the last
+// two days" by the 5000-point response cap. Bucket sizes keep every frame
+// comfortably under the cap: 1D 24h/30s=2880, 1W 7d/5min=2016,
+// 1M 30d/20min=2160, All 2h buckets=up to ~13 months. 1W/1M matter for
+// slow feeds: on a 30-min feed the readable view — each day's wave
+// distinct — lives at the weeks scale (buckets ≥ cadence pass points
+// through untouched).
 type Timeframe = '1H' | '6H' | '1D' | '1W' | '1M' | 'ALL'
 const TIMEFRAMES: Timeframe[] = ['1H', '6H', '1D', '1W', '1M', 'ALL']
 const TIMEFRAME_MS: { [k in Timeframe]: number } = {
@@ -77,6 +81,16 @@ const TIMEFRAME_MS: { [k in Timeframe]: number } = {
   '1W': 7 * DAY_MS,
   '1M': 30 * DAY_MS,
   ALL: Infinity,
+}
+const TIMEFRAME_FETCH: {
+  [k in Timeframe]: { windowMs?: number; bucketSeconds?: number }
+} = {
+  '1H': { windowMs: HOUR_MS },
+  '6H': { windowMs: 6 * HOUR_MS },
+  '1D': { windowMs: DAY_MS, bucketSeconds: 30 },
+  '1W': { windowMs: 7 * DAY_MS, bucketSeconds: 300 },
+  '1M': { windowMs: 30 * DAY_MS, bucketSeconds: 1200 },
+  ALL: { bucketSeconds: 7200 },
 }
 
 type OverlayGeometry = {
@@ -139,14 +153,13 @@ export const PerpChart = (props: {
     let cancelled = false
     setLoading(true)
     setHoverIdx(null)
-    // Backend returns the most recent `limit` points; 5000 is the schema
-    // max. At 30-min cadence that's ~3.5 months of history (a 1000-point
-    // fetch cut slow feeds off at ~3 weeks), and at 15s it stretches the
-    // fast-feed window to ~20h, which feeds the 6H/1D frames properly.
     if (mode === 'price') {
+      const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[timeframe]
       api('get-oracle-price-series', {
         feedId: contract.oracleFeedId,
         limit: 5000,
+        since: windowMs ? Date.now() - windowMs : undefined,
+        bucketSeconds,
       })
         .then((res) => {
           if (cancelled) return
@@ -175,7 +188,9 @@ export const PerpChart = (props: {
     return () => {
       cancelled = true
     }
-  }, [contract.id, mode])
+    // timeframe drives the price fetch window; the funding fetch ignores it
+    // (a redundant 1000-row refetch on frame change is harmless).
+  }, [contract.id, mode, timeframe])
 
   const allPositions = useMemo(() => positions ?? [], [positions])
   const userPositions = useMemo(

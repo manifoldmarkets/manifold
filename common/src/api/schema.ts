@@ -1089,6 +1089,11 @@ export const API = (_apiTypeCheck = {
         feedId: z.string().min(1),
         since: z.coerce.number().int().optional(),
         limit: z.coerce.number().int().positive().max(5000).optional(),
+        // Server-side downsampling: return the last point of each
+        // `bucketSeconds` bucket instead of raw rows. A 15s feed emits ~5k
+        // points/day, so week+ windows must bucket or the `limit` cap turns
+        // every timeframe into "the last two days".
+        bucketSeconds: z.coerce.number().int().positive().max(86400).optional(),
       })
       .strict(),
   },
