@@ -278,6 +278,68 @@ this session (needs interactive approval). Once deployed, dev runs perps jobs
 autonomously — remember the standing caveat: any later main-branch scheduler deploy
 silently displaces the perps jobs again (June's 19-day freeze).
 
+## 9b. Addendum — 2026-07-26 session (scheduler was dead 5 days; drill green; burst fix)
+
+### INCIDENT: dev scheduler crash-looped since ~2026-07-21 — fixed, needs redeploy
+
+- Symptom found via DB: funding ran once ever (07-21 07:03 UTC) then never; ECI + Trump
+  daily feeds frozen at 07-21; yet BTC ticked healthily every ~30s the whole time.
+- Root cause (GCP logs): `Error: Cannot find module 'fflate'` at boot via
+  `shared/lib/eci.js` ← `jobs/update-eci.js` — container crash-looped every ~60s.
+  fflate was only in `backend/shared/package.json`; **each service image installs its
+  own manifest**, so shared deps must be duplicated into `backend/api/package.json` +
+  `backend/scheduler/package.json` (the `@google/genai` pattern). Fixed in `b5e90dfe2`.
+- The healthy-looking BTC ticks came from a `run-oracle-tick-loop.ts` still running on
+  another machine — kill it once the scheduler is redeployed.
+- **Action: redeploy the dev scheduler from this branch** (API redeploy alone fixes
+  nothing here). And the planned GCP alerting must include **absence alerts** (no
+  funding event in >2h, no daily oracle point in >26h) — a crash-looping process never
+  emits the log.error lines a presence-alert would page on.
+
+### Scratch drill — §5 items 2–6 now VERIFIED (22/22 checks)
+
+New `backend/scripts/perp-scratch-drill.ts` (repeatable; unregistered scratch feeds, so
+live tickers can't interfere; creates unlisted throwaway markets and resolves them):
+forced liquidation fires + notification content correct; engineered ADL scales only the
+profitable winner, cost basis untouched, only scaled users notified; resolve settles at
+oracle, residual to creator, double-resolve and trade-after-resolve blocked; freshness
+gate blocks opens AND closes; concurrency (below). Run with
+`NEXT_PUBLIC_FIREBASE_ENV=DEV` or admin checks resolve against prod ids.
+
+### Concurrency finding + fix
+
+6 parallel ops on one contract chain-aborted (40001: each advisory-lock waiter's
+SERIALIZABLE snapshot predates the winner's commit) and the default 3 retries exhausted
+— 2 of 6 ops failed back to the user. Pools stayed exactly consistent (failed attempts
+write nothing): an availability bug, not an integrity bug. Fixes: engine transactions
+now retry 8× (`runPerpTransaction`), backoff gained jitter, and the pgPromise handler
+logs 40001 as a one-line warn instead of dumping full client state at ERROR (so GCP
+alerts won't page on expected contention). Drill burst needed 5 attempts to settle.
+Real fix candidates for post-launch: in-process per-contract trade queue (CPMM-style)
+or dropping to read-committed under the advisory lock.
+
+### ADL grind observation (risk #2, third demonstration)
+
+Genzy's Ṁ1M-margin 100× BTC long (Ṁ100M notional) was ADL-shaved on **55 consecutive
+ticks** on 07-21 as price hovered above entry — position ground from 100M to 26.5M
+notional while the pool couldn't cover its profit. Consequences addressed: the user got
+55 notifications (now throttled to one per user/contract/hour); the per-tick aggregate
+`adl` event rows defeat the engine's no-change fast path while active (acceptable — ADL
+IS a position change — but note the event log has NO per-user row for the scaling, so a
+position's size history can't be reconstructed from events alone; candidate fix: emit
+per-user adl events with sizeDelta). The deeper issue remains the open-notional gate
+(§4 risk 2) — this is now the third giga-position to sail through it.
+
+### Still open after this session
+
+- Scheduler redeploy (above) + GCP alerts (presence + absence).
+- Flip path via UI; mobile pass (need a browser/human).
+- Trump market decision (April market: keep vs recreate).
+- The six stale-price closes from 07-21 — re-verify closes 400 once the redeployed API
+  is confirmed on this branch (the engine-level gate passed the drill; the deployed
+  binary was the suspect).
+- Prod rollout protocol (§6).
+
 ## 10. Key files
 
 | Area | Files |
