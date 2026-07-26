@@ -92,6 +92,16 @@ const TIMEFRAME_FETCH: {
   '1M': { windowMs: 30 * DAY_MS, bucketSeconds: 1200 },
   ALL: { bucketSeconds: 7200 },
 }
+// A frame is offered only when it would show enough points to draw a real
+// line — a 30-min feed has 2-3 points in an hour, and a two-point "chart"
+// is junk. Selection falls back to All when starved.
+const MIN_FRAME_POINTS = 4
+// 1D is the landing frame: today's wave with live ticks visible, and a
+// projection horizon (span × 0.28 ≈ 6.7h) short enough that the funding
+// diamonds draw on the hold-cost line. On All the horizon spans weeks and
+// the diamond guard (rightly) suppresses them; slow feeds that starve a
+// one-day window fall back to All automatically.
+const DEFAULT_TIMEFRAME: Timeframe = '1D'
 
 type OverlayGeometry = {
   now: number
@@ -131,7 +141,7 @@ export const PerpChart = (props: {
     'perp-chart-overlays'
   )
   const [timeframe, setTimeframe] = usePersistentInMemoryState<Timeframe>(
-    'ALL',
+    DEFAULT_TIMEFRAME,
     'perp-chart-timeframe'
   )
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -154,16 +164,27 @@ export const PerpChart = (props: {
     setLoading(true)
     setHoverIdx(null)
     if (mode === 'price') {
-      const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[timeframe]
-      api('get-oracle-price-series', {
-        feedId: contract.oracleFeedId,
-        limit: 5000,
-        since: windowMs ? Date.now() - windowMs : undefined,
-        bucketSeconds,
-      })
-        .then((res) => {
+      const fetchSeries = (frame: Timeframe) => {
+        const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[frame]
+        return api('get-oracle-price-series', {
+          feedId: contract.oracleFeedId,
+          limit: 5000,
+          since: windowMs ? Date.now() - windowMs : undefined,
+          bucketSeconds,
+        })
+      }
+      fetchSeries(timeframe)
+        .then(async (res) => {
+          // A slow feed starves narrow windows (a daily feed has 1-2 points
+          // in a day). activeFrame falls back to All for DISPLAY, so the
+          // FETCH must fall back too or the fallback frame has nothing to
+          // draw.
+          const points =
+            res.length < MIN_FRAME_POINTS && timeframe !== 'ALL'
+              ? await fetchSeries('ALL')
+              : res
           if (cancelled) return
-          setOraclePoints(res.map((p) => ({ ts: p.ts, value: p.price })))
+          setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
         })
         .finally(() => !cancelled && setLoading(false))
     } else {
@@ -232,10 +253,6 @@ export const PerpChart = (props: {
     return fresh.length ? [...oraclePoints, ...fresh] : oraclePoints
   }, [oraclePoints, livePoints])
 
-  // A frame is offered only when it would show enough points to draw a
-  // real line — a 30-min feed has 2-3 points in an hour, and a two-point
-  // "chart" is junk. Selection falls back to All when starved.
-  const MIN_FRAME_POINTS = 4
   const frameCounts = useMemo(() => {
     const now = Date.now()
     const counts = {} as { [k in Timeframe]: number }
