@@ -2,12 +2,17 @@ import { BTC_USD_FEED_ID, upsertOraclePrices } from 'shared/oracle'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
-// Backfill the `btc-usd` oracle feed with 90 days of hourly closes from the
-// public Coinbase Exchange candles API (300 candles max per request, no
-// auth). Each candle is recorded at its CLOSE time. The live feed then takes
-// over at 15s cadence via update-oracle-feeds.
-const DAYS = 90
-const GRANULARITY_S = 3600
+// Backfill the `btc-usd` oracle feed with closes from the public Coinbase
+// Exchange candles API (300 candles max per request, no auth). Each candle
+// is recorded at its CLOSE time. The live feed then takes over at 15s
+// cadence via update-oracle-feeds.
+//
+// Args: [days] [granularitySeconds] — defaults 90 days of hourly candles.
+// For patching a short outage window at finer resolution, e.g. the last
+// ~70 minutes with 5-minute candles: `ts-node backfill-btc-oracle.ts 0.05 300`
+// (granularity must be one Coinbase supports: 60/300/900/3600/21600/86400).
+const DAYS = Number(process.argv[2]) || 90
+const GRANULARITY_S = Number(process.argv[3]) || 3600
 const CANDLES_PER_REQ = 300
 
 type Candle = [
