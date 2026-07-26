@@ -15,9 +15,12 @@ import {
   basicSearchSQL,
   getForYouSQL,
   getSearchContractSQL,
+  getSemanticSearchContractSQL,
   SearchTypes,
   sortFields,
 } from 'shared/supabase/search-contracts'
+import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import { cacheGetJson, cacheSetJson } from 'shared/redis/cache'
 import { getPrivateUser, log } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -196,7 +199,7 @@ const search = async (
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
 
-    return orderBy(
+    const lexicalResults = orderBy(
       uniqBy(
         [
           ...contractsWithStopwords, // most obviously relevant
@@ -208,7 +211,91 @@ const search = async (
       (c) => sortFields[sort].sortCallback(c),
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
+
+    const semanticResults = await semanticFallback({
+      ...props,
+      term: cleanTerm,
+      uid: userId,
+      groupId,
+      groupIds,
+      isPrizeMarket,
+      lexicalResults,
+      pg,
+    })
+
+    // Appended in similarity order rather than merged into the sort: these
+    // matched no keyword, so ordering them by importance would float a weak
+    // association above a strong one.
+    return [...lexicalResults, ...semanticResults]
   }
+}
+
+// Below this many lexical hits, the page is effectively a dead end, so it is
+// worth spending an embedding call to fill it.
+const SEMANTIC_FALLBACK_MIN_RESULTS = 5
+// Single characters and pairs are prefix-typing, not a failed search.
+const SEMANTIC_FALLBACK_MIN_TERM_LENGTH = 3
+// The embedding of a given string never changes; this only avoids re-paying
+// the ~100ms OpenAI round-trip on repeated searches. ~30KB per entry, so keep
+// the ttl short enough that one-off queries age out.
+const QUERY_EMBEDDING_CACHE_TTL_S = 24 * 60 * 60
+const queryEmbeddingCacheKey = (term: string) =>
+  `search-embedding:${term.toLowerCase()}`
+
+type SemanticSearchArgs = Parameters<typeof getSemanticSearchContractSQL>[0]
+
+const semanticFallback = async (
+  props: Omit<
+    SemanticSearchArgs,
+    'embedding' | 'privateUser' | 'excludeContractIds'
+  > & {
+    term: string
+    lexicalResults: Contract[]
+    pg: SupabaseDirectClient
+  }
+) => {
+  const { term, uid, limit, offset, lexicalResults, pg } = props
+  if (
+    offset > 0 ||
+    term.length < SEMANTIC_FALLBACK_MIN_TERM_LENGTH ||
+    lexicalResults.length >= SEMANTIC_FALLBACK_MIN_RESULTS
+  ) {
+    return []
+  }
+
+  const cacheKey = queryEmbeddingCacheKey(term)
+  let embedding = await cacheGetJson<number[]>(cacheKey)
+  if (embedding === undefined) {
+    embedding = await generateEmbeddings(term)
+    // No key configured, or OpenAI is down. A search with no results is a
+    // worse page, not a broken one — leave it as it was.
+    if (!embedding) return []
+    await cacheSetJson(cacheKey, embedding, QUERY_EMBEDDING_CACHE_TTL_S)
+  }
+
+  const privateUser = uid ? (await getPrivateUser(uid, pg)) ?? undefined : undefined
+  const results = await pg
+    .map(
+      getSemanticSearchContractSQL({
+        ...props,
+        embedding,
+        privateUser,
+        limit: limit - lexicalResults.length,
+        excludeContractIds: lexicalResults.map((c) => c.id),
+      }),
+      [],
+      convertContract
+    )
+    .catch((e) => {
+      log.error(`Semantic search fallback failed for term: ${term}`, e)
+      return [] as Contract[]
+    })
+
+  log(`Semantic fallback for "${term}"`, {
+    lexicalHits: lexicalResults.length,
+    semanticHits: results.length,
+  })
+  return results
 }
 
 const getAllSubTopicsForParentTopicIds = async (

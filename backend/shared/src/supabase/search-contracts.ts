@@ -240,6 +240,86 @@ export type SearchTypes =
   | 'prefix'
   | 'answer'
 
+// Full-text search finds nothing unless the user guesses a word that is
+// literally in the question, so a near miss lands on "only nothingness"
+// while a well-matched market sits one synonym away. Every open market
+// already has an embedding (contract_embeddings, kept current on create and
+// used by the related-markets rail), so the miss can be answered instead of
+// rendered as a dead end.
+//
+// Deliberately lower than TOPIC_SIMILARITY_THRESHOLD (0.5), which compares
+// two full questions. A search term is much shorter than the questions it is
+// being compared against, which drags cosine similarity down for matches that
+// are perfectly good. NOT yet validated against real query embeddings — check
+// this against live searches in dev before trusting the number.
+export const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.35
+// Over-fetch from the index, then let the normal filters cut it down, the
+// same way close_contract_embeddings does with match_count + 500.
+const SEMANTIC_SEARCH_OVERFETCH = 200
+
+// Shared by the lexical and semantic paths so a topic-scoped search can't
+// come back with out-of-topic results from one of them.
+const groupsFilterSql = (args: {
+  groupId?: string
+  groupIds?: string[]
+  token: TokenInputType
+}) => {
+  const { groupId, groupIds, token } = args
+  return (
+    (groupIds?.length || groupId) &&
+    where(
+      `
+    exists (
+      select 1 from group_contracts gc
+      where ${
+        token === 'CASH'
+          ? "gc.contract_id = contracts.data->>'siblingContractId'"
+          : 'gc.contract_id = contracts.id'
+      }
+      and gc.group_id = any($1)
+    )`,
+      [filterDefined([groupId, ...(groupIds ?? [])])]
+    )
+  )
+}
+
+/**
+ * Nearest markets to an already-computed query embedding, run through the
+ * same filters as a normal search so status/type/token/blocks still hold.
+ */
+export function getSemanticSearchContractSQL(
+  args: SharedSearchArgs & {
+    embedding: number[]
+    groupId?: string
+    groupIds?: string[]
+    privateUser?: PrivateUser
+    excludeContractIds?: string[]
+  }
+) {
+  const { embedding, limit, privateUser, excludeContractIds } = args
+  return renderSql(
+    select(contractColumnsToSelectWithPrefix('contracts')),
+    from(
+      `search_contract_embeddings($1::vector, $2, $3) as se`,
+      [
+        // pgvector parses its literal from a JSON-shaped array string.
+        JSON.stringify(embedding),
+        SEMANTIC_SEARCH_SIMILARITY_THRESHOLD,
+        SEMANTIC_SEARCH_OVERFETCH,
+      ]
+    ),
+    join('contracts on contracts.id = se.contract_id'),
+    groupsFilterSql(args),
+    getSearchContractWhereSQL({ ...args, hideStonks: true }),
+    privateUser && privateUserBlocksSql(privateUser),
+    // Already-returned lexical hits, so the tail can't repeat the head.
+    (excludeContractIds?.length ?? 0) > 0 &&
+      where(`contracts.id <> all(array[$1])`, [excludeContractIds]),
+    orderBy('se.similarity desc'),
+    lim(limit)
+  )
+}
+
 export function getSearchContractSQL(
   args: SharedSearchArgs & {
     term: string
@@ -285,21 +365,7 @@ export function getSearchContractSQL(
     where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
-  const groupsFilter =
-    (groupIds?.length || groupId) &&
-    where(
-      `
-    exists (
-      select 1 from group_contracts gc
-      where ${
-        token === 'CASH'
-          ? "gc.contract_id = contracts.data->>'siblingContractId'"
-          : 'gc.contract_id = contracts.id'
-      }
-      and gc.group_id = any($1)
-    )`,
-      [filterDefined([groupId, ...(groupIds ?? [])])]
-    )
+  const groupsFilter = groupsFilterSql({ groupId, groupIds, token })
 
   // Recent movements filter
   const newsFilter =
