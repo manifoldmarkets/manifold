@@ -1,6 +1,6 @@
 import { Contract, isSportsContract } from 'common/contract'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
-import { GROUP_SCORE_PRIOR } from 'common/feed'
+import { GROUP_SCORE_PRIOR, nicheBlendTopicScoreSql } from 'common/feed'
 import { getPerpBackingPool } from 'common/perps/amm'
 import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
@@ -142,7 +142,9 @@ export async function getForYouSQL(
       orderBy(`case
       when bool_or(contracts.boosted) then avg(contracts.${sortByScore})
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})
+      then power(${nicheBlendTopicScoreSql(
+        `coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR})`
+      )}, ${GROUP_SCORE_POWER}) * avg(contracts.${sortByScore})
       else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
