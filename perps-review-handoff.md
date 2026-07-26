@@ -330,6 +330,23 @@ position's size history can't be reconstructed from events alone; candidate fix:
 per-user adl events with sizeDelta). The deeper issue remains the open-notional gate
 (§4 risk 2) — this is now the third giga-position to sail through it.
 
+### 2026-07-27 follow-ups (commit `4c41b908a`)
+
+- Scheduler redeployed with the fflate fix; funding verified autonomous (exactly one
+  event per market at 15:00:01 UTC, guard held against the live tick). GCP alerting live
+  on dev: error-presence policy + funding-heartbeat 2h absence policy (email channel to
+  Tod). Daily-job dead-man switch = daily feeds' staleAfterMs 3d→26h (GCP absence
+  conditions cap at 23h30m, so the hourly job's staleness ERROR lines carry it).
+- Two QA finds fixed: (1) perp_liquidation/perp_adl notifications rendered as BLANK rows
+  — NotificationItem's legacy contract/updated suppressor (`return null`) ate them
+  before any fallback; new PerpEngineNotification branch renders the backend sourceText.
+  (2) Chart showed ~2 days on every timeframe — the 5000-point response cap vs ~5k
+  writes/day on a 15s feed; get-oracle-price-series now takes `bucketSeconds`
+  (last-point-per-bucket, real ts, gaps preserved) and the chart fetches per-frame
+  windows (1M verified: 1.35d → 29.99d). **DEPLOY ORDER: API before/with web** — the
+  schema is .strict(), so an old API 400s the new bucketSeconds param, and the Vercel
+  branch preview auto-deploys web on push.
+
 ### Still open after this session
 
 - Scheduler redeploy (above) + GCP alerts (presence + absence).
