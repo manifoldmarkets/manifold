@@ -33,6 +33,58 @@ type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
+// --- Stale-seen suppression (For You only) ------------------------------
+// Nothing is hidden for longer than this. Past it a market is fair game
+// again even if it has been completely quiet, so the shelf can never
+// permanently empty out.
+const SEEN_MEMORY_WINDOW = '7 days'
+// Views younger than this don't count yet. This is what makes going back
+// safe: scroll browse, open the 4th market, hit back — every card you
+// scrolled past is still inside the grace period, so the page you return
+// to looks like the page you left. It also keeps "load more" honest, since
+// paging with a shifting offset over a set that's shrinking underneath you
+// silently skips rows.
+const SEEN_GRACE_PERIOD = '1 hour'
+// Matches PROB_CHANGE_THRESHOLD in feed-market-movement-display.ts: the same
+// move that earns a card its movement badge also earns it another look.
+const SEEN_PROB_MOVE_THRESHOLD = 0.05
+
+/**
+ * Drops markets the user has already looked at and that have gone quiet since.
+ *
+ * Browse ranks on score alone, so the same top markets greet you every visit.
+ * But "seen" is a weak signal and over-trusting it is worse than repetition,
+ * so this only fires in the narrow band where repetition is genuinely stale:
+ * seen, long enough ago to be a separate visit, recently enough to still
+ * remember, and nothing has happened since.
+ *
+ * A view here means the card was ≥90% in the viewport (useIsVisible in
+ * feed-contract-card.tsx) or the market page was opened — not merely that the
+ * card was somewhere on a page that loaded. Promoted impressions are excluded
+ * deliberately: an ad scrolling past is not the user choosing to look at
+ * something.
+ *
+ * Resurfacing is driven by new comments and by significant price movement,
+ * not by last_bet_time — on an active market bets land continuously, so
+ * keying on them would make this a no-op exactly where repetition is worst.
+ */
+const staleSeenMarketsSql = (userId: string) =>
+  where(
+    `not exists (
+      select 1 from user_contract_views ucv
+      where ucv.user_id = $1
+        and ucv.contract_id = contracts.id
+        and greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+            between now() - interval '${SEEN_MEMORY_WINDOW}'
+                and now() - interval '${SEEN_GRACE_PERIOD}'
+        and coalesce(contracts.last_comment_time, contracts.created_time)
+            <= greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+        and abs(coalesce((contracts.data->'probChanges'->>'day')::numeric, 0))
+            <= ${SEEN_PROB_MOVE_THRESHOLD}
+    )`,
+    [userId]
+  )
+
 type SharedSearchArgs = {
   filter: string
   contractType: string
@@ -117,6 +169,7 @@ export async function getForYouSQL(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
       ),
+      staleSeenMarketsSql(userId),
       privateUserBlocksSql(privateUser),
       withClause(
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
