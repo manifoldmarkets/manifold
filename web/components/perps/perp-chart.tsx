@@ -19,6 +19,7 @@ import {
   volConePaths,
 } from 'common/perps/chart-projections'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { median } from 'common/util/math'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
@@ -92,9 +93,10 @@ const TIMEFRAME_FETCH: {
   '1M': { windowMs: 30 * DAY_MS, bucketSeconds: 1200 },
   ALL: { bucketSeconds: 7200 },
 }
-// A frame is offered only when it would show enough points to draw a real
-// line — a 30-min feed has 2-3 points in an hour, and a two-point "chart"
-// is junk. Selection falls back to All when starved.
+// A frame needs enough points to draw a real line — a 30-min feed has 2-3
+// points in an hour, and a two-point "chart" is junk. Cadence gating (in
+// the component) keeps such frames unselectable; the fetch-time fallback
+// covers data gaps the cadence can't predict.
 const MIN_FRAME_POINTS = 4
 // 1D is the landing frame: today's wave with live ticks visible, and a
 // projection horizon (span × 0.28 ≈ 6.7h) short enough that the funding
@@ -144,6 +146,37 @@ export const PerpChart = (props: {
     DEFAULT_TIMEFRAME,
     'perp-chart-timeframe'
   )
+  // The feed's true tick cadence, probed from its most recent raw points.
+  // Frames fetch server-side windows, so eligibility can't be read off the
+  // loaded (bucketed) series, and maxOraclePriceAgeMs is no proxy — it
+  // carries hours of slack on slow feeds. One tiny raw fetch per contract
+  // answers it exactly.
+  const [cadenceMs, setCadenceMs] = useState<number | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    setCadenceMs(null)
+    api('get-oracle-price-series', { feedId: contract.oracleFeedId, limit: 8 })
+      .then((res) => {
+        if (cancelled || res.length < 2) return
+        const dts = res.slice(1).map((p, i) => p.ts - res[i].ts)
+        const m = median(dts)
+        if (Number.isFinite(m) && m > 0) setCadenceMs(m)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [contract.oracleFeedId])
+  // A frame is offered only when the feed's cadence puts enough points in
+  // its window to draw a real line — a 30-min feed has 2-3 points in an
+  // hour, and a two-point "chart" is junk. Until the probe answers (or if
+  // it fails) only All is offered. The fetch below keys on the fallback,
+  // not the raw selection, so a frame persisted from a faster market never
+  // strands a slow one on a near-empty window.
+  const frameEligible = (f: Timeframe) =>
+    f === 'ALL' ||
+    (cadenceMs != null && TIMEFRAME_MS[f] / cadenceMs >= MIN_FRAME_POINTS)
+  const activeFrame = frameEligible(timeframe) ? timeframe : 'ALL'
   const svgRef = useRef<SVGSVGElement | null>(null)
   // Responsive: viewBox width tracks the container so axis text renders at
   // its nominal size on every screen instead of scaling down to ~6px at
@@ -173,14 +206,15 @@ export const PerpChart = (props: {
           bucketSeconds,
         })
       }
-      fetchSeries(timeframe)
+      fetchSeries(activeFrame)
         .then(async (res) => {
-          // A slow feed starves narrow windows (a daily feed has 1-2 points
-          // in a day). activeFrame falls back to All for DISPLAY, so the
-          // FETCH must fall back too or the fallback frame has nothing to
-          // draw.
+          // Cadence gating keeps systematically-starved frames unselectable,
+          // but a data gap (feed outage, freshly created feed) can still
+          // empty an eligible window. Refetching All keeps the series
+          // populated so the All view — and the sparse window itself —
+          // still have something honest to draw.
           const points =
-            res.length < MIN_FRAME_POINTS && timeframe !== 'ALL'
+            res.length < MIN_FRAME_POINTS && activeFrame !== 'ALL'
               ? await fetchSeries('ALL')
               : res
           if (cancelled) return
@@ -209,9 +243,9 @@ export const PerpChart = (props: {
     return () => {
       cancelled = true
     }
-    // timeframe drives the price fetch window; the funding fetch ignores it
-    // (a redundant 1000-row refetch on frame change is harmless).
-  }, [contract.id, mode, timeframe])
+    // activeFrame drives the price fetch window; the funding fetch ignores
+    // it (a redundant 1000-row refetch on frame change is harmless).
+  }, [contract.id, mode, activeFrame])
 
   const allPositions = useMemo(() => positions ?? [], [positions])
   const userPositions = useMemo(
@@ -230,7 +264,7 @@ export const PerpChart = (props: {
   // mouseleave won't fire on an unmounted node, so clear the tooltip here.
   useEffect(() => {
     setHoveredMark(null)
-  }, [mode, contract.id, timeframe])
+  }, [mode, contract.id, activeFrame])
   useEffect(() => {
     const ts = contract.oraclePriceTime
     const price = Number(contract.oraclePrice)
@@ -252,22 +286,6 @@ export const PerpChart = (props: {
     const fresh = livePoints.filter((p) => p.ts > lastFetched)
     return fresh.length ? [...oraclePoints, ...fresh] : oraclePoints
   }, [oraclePoints, livePoints])
-
-  const frameCounts = useMemo(() => {
-    const now = Date.now()
-    const counts = {} as { [k in Timeframe]: number }
-    for (const f of TIMEFRAMES) {
-      counts[f] =
-        f === 'ALL'
-          ? priceSeries.length
-          : priceSeries.filter((p) => p.ts >= now - TIMEFRAME_MS[f]).length
-    }
-    return counts
-  }, [priceSeries])
-  const activeFrame =
-    timeframe === 'ALL' || frameCounts[timeframe] >= MIN_FRAME_POINTS
-      ? timeframe
-      : 'ALL'
 
   const windowedSeries = useMemo(() => {
     if (activeFrame === 'ALL') return priceSeries
@@ -581,15 +599,13 @@ export const PerpChart = (props: {
                 key={f}
                 type="button"
                 onClick={() => setTimeframe(f)}
-                disabled={f !== 'ALL' && frameCounts[f] < MIN_FRAME_POINTS}
+                disabled={!frameEligible(f)}
                 className={clsx(
                   'rounded px-1.5 py-0.5 text-xs tabular-nums transition-colors',
                   activeFrame === f
                     ? 'bg-ink-200 text-ink-900 font-semibold'
                     : 'text-ink-500 hover:text-ink-800',
-                  f !== 'ALL' &&
-                    frameCounts[f] < MIN_FRAME_POINTS &&
-                    'cursor-not-allowed opacity-40'
+                  !frameEligible(f) && 'cursor-not-allowed opacity-40'
                 )}
               >
                 {f === 'ALL' ? 'All' : f}
