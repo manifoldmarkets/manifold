@@ -62,6 +62,18 @@ type LoadedState = {
   state: PerpState
 }
 
+// All engine writers on one contract serialize on the advisory lock, but each
+// waiter's SERIALIZABLE snapshot predates the winner's commit, so contended
+// transactions abort with 40001 on wake-up and must retry. Under a burst
+// (concurrent trades + the 15s tick) the default 3 attempts demonstrably
+// exhaust: the QA drill lost 2 of 6 parallel ops. 8 attempts with the
+// jittered backoff in transactWithRetries absorbs bursts; integrity is
+// unaffected either way (failed attempts write nothing).
+const PERP_TX_MAX_ATTEMPTS = 8
+const runPerpTransaction = <T>(
+  fn: (pgTrans: SupabaseTransaction) => Promise<T>
+): Promise<T> => runTransactionWithRetries(fn, PERP_TX_MAX_ATTEMPTS)
+
 const buildState = (
   contract: PerpContract,
   positions: PerpPosition[]
@@ -167,7 +179,7 @@ export const openOrAddPosition = async (
   if (user.balance < mana)
     throw new APIError(403, `Insufficient balance: needed ${mana}`)
 
-  return runTransactionWithRetries(async (pgTrans) => {
+  return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
     if (leverage > contract.maxLeverage)
@@ -398,7 +410,7 @@ export const closePosition = async (
   userId: string,
   direction: PerpDirection
 ) => {
-  return runTransactionWithRetries(async (pgTrans) => {
+  return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const position = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
@@ -610,7 +622,7 @@ export const runOracleUpdate = async (
   newPrice: number,
   ts: number
 ): Promise<OracleUpdateResult | null> => {
-  return runTransactionWithRetries(async (pgTrans) => {
+  return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
     if (newPrice <= 0) throw new APIError(400, 'invalid oracle price')
@@ -715,7 +727,7 @@ export const runFunding = async (
    */
   priorOracleResult?: OracleUpdateResult | null
 ): Promise<PerpFundingEvent | null> => {
-  return runTransactionWithRetries(async (pgTrans) => {
+  return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
     // Cadence gate lives INSIDE the advisory lock: the scheduler's own check
@@ -852,7 +864,7 @@ export const resolvePerp = async (
   // Single-transaction resolution: apply liquidation + ADL + close-all +
   // residual-to-creator + mark-resolved in one atomic step, so traders can't
   // sneak trades between the "final oracle update" and the settle.
-  return runTransactionWithRetries(async (pgTrans) => {
+  return runPerpTransaction(async (pgTrans) => {
     const { contract, state: loaded } = await loadStateForUpdate(
       pgTrans,
       contractId

@@ -132,6 +132,21 @@ export const createPerpAdlNotification = async (
   )
   if (!sendToBrowser) return
 
+  // Throttle: while price grinds along the ADL boundary, every tick re-shaves
+  // the same position — one dev position got 55 notifications in an
+  // afternoon. One per user/contract/hour is signal; the rest is spam. The
+  // position panel still shows the live size.
+  const recent = await pg.oneOrNone(
+    `select 1 from user_notifications
+     where user_id = $1
+       and data->>'reason' = 'perp_adl'
+       and data->>'sourceContractId' = $2
+       and ((data->>'createdTime')::bigint) > $3
+     limit 1`,
+    [userId, contract.id, Date.now() - 60 * 60 * 1000]
+  )
+  if (recent) return
+
   // "Auto-deleveraged by 85.7%" is opaque to a normal user. Say what
   // happened, to which market, by how much, and why - and that their cost
   // basis is untouched (only the claim on future profit was scaled).

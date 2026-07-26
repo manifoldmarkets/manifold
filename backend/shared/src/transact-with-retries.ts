@@ -7,10 +7,11 @@ import {
 import { log } from 'shared/monitoring/log'
 
 export const runTransactionWithRetries = async <T>(
-  callback: (trans: SupabaseTransaction) => Promise<T>
+  callback: (trans: SupabaseTransaction) => Promise<T>,
+  maxAttempts = 3
 ) => {
   const pg = createSupabaseDirectClient()
-  return transactWithRetries(pg, 3, callback)
+  return transactWithRetries(pg, maxAttempts, callback)
 }
 
 async function transactWithRetries<T>(
@@ -34,8 +35,10 @@ async function transactWithRetries<T>(
         throw error
       }
 
-      // Exponential backoff
-      const delay = Math.min(100 * Math.pow(2, attempt - 1), 5000)
+      // Exponential backoff with jitter: without jitter, transactions that
+      // aborted together retry together and re-collide in lockstep.
+      const delay =
+        Math.min(100 * Math.pow(2, attempt - 1), 5000) * (0.5 + Math.random())
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
