@@ -1,4 +1,4 @@
-import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
+import { calculateUserTopicInterestsWithCatchUp } from 'shared/calculate-user-topic-interests'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { downsamplePortfolioHistory } from 'shared/downsample-portfolio-history'
@@ -278,7 +278,7 @@ export function createJobs() {
     createJob(
       'calculate-user-topic-interests',
       '0 0 4 * * *', // daily at 4:00 AM LA
-      () => calculateUserTopicInterests()
+      () => calculateUserTopicInterestsWithCatchUp()
     ),
     createJob(
       'update-stats',
