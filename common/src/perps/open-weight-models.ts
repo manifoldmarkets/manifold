@@ -691,10 +691,19 @@ export const computeOpenWeightShare = (
   }
 }
 
-/** Tolerant of junk: a malformed count contributes 0 rather than throwing. */
+/**
+ * Tolerant of junk: a malformed count contributes 0 rather than throwing.
+ *
+ * A fractional value is truncated rather than rejected. If the upstream
+ * format ever drifts to `"1542145933359.0"`, rejecting would zero SOME rows
+ * and keep others, silently skewing the index toward whichever side still
+ * parsed — a wrong number is far worse here than a rounded one. Rejecting
+ * everything is safe by comparison (share goes null, the job logs and skips).
+ */
 const parseTokens = (raw: string): bigint => {
-  if (typeof raw !== 'string' || !/^\d+$/.test(raw.trim())) return 0n
-  return BigInt(raw.trim())
+  if (typeof raw !== 'string') return 0n
+  const m = /^(\d+)(?:\.\d+)?$/.exec(raw.trim())
+  return m ? BigInt(m[1]) : 0n
 }
 
 /** The classification list, shaped for display. Open models first. */

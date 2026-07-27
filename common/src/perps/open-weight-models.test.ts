@@ -117,6 +117,16 @@ describe('computeOpenWeightShare', () => {
     ]
     expect(computeOpenWeightShare(rows).share).toBeCloseTo(0)
   })
+
+  it('truncates a fractional count rather than dropping the row', () => {
+    // Format drift that zeroed only SOME rows would silently skew the index
+    // toward whichever side still parsed.
+    const rows = [
+      row('2026-07-26', OPEN, '300.7'),
+      row('2026-07-26', CLOSED, '100'),
+    ]
+    expect(computeOpenWeightShare(rows).share).toBeCloseTo(75)
+  })
 })
 
 describe('window dates', () => {
@@ -139,9 +149,9 @@ describe('window dates', () => {
     expect(openWeightWindowRange(justAfter).endDate).toBe('2026-07-28')
     // The range is always exactly `days` wide in whole UTC days.
     const r = openWeightWindowRange(justAfter)
-    expect(
-      (Date.parse(r.endDate) - Date.parse(r.startDate)) / DAY_MS
-    ).toBe(OPEN_WEIGHT_WINDOW_DAYS)
+    expect((Date.parse(r.endDate) - Date.parse(r.startDate)) / DAY_MS).toBe(
+      OPEN_WEIGHT_WINDOW_DAYS
+    )
   })
 
   it('picks up a partial current day automatically if one ever appears', () => {
