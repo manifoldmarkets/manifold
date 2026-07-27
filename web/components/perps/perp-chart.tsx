@@ -528,10 +528,23 @@ export const PerpChart = (props: {
       : priceDecimals
   const [domainStart, domainEnd] = xScale.domain()
   const domainSpanMs = domainEnd.getTime() - domainStart.getTime()
-  // Keep centered labels clear of the y-axis gutter and the right edge.
-  const xTicks = xScale
-    .ticks(5)
-    .filter((t) => xScale(t) >= 60 && xScale(t) <= width - 36)
+  const projectionEnd = overlayGeom
+    ? new Date(overlayGeom.now + overlayGeom.horizon)
+    : null
+  const projectionEndX = projectionEnd ? xScale(projectionEnd) : null
+  // Keep centered labels clear of the y-axis gutter and the right edge. When
+  // the price chart extends into the future, reserve the far-right label for
+  // the exact projection endpoint: D3's "nice" ticks do not guarantee that
+  // an arbitrary domain endpoint is included.
+  const projectionLabelReserve = width < 480 ? 100 : 84
+  const xTicks = xScale.ticks(5).filter((t) => {
+    const x = xScale(t)
+    return (
+      x >= 60 &&
+      x <= width - 36 &&
+      (projectionEndX == null || projectionEndX - x >= projectionLabelReserve)
+    )
+  })
 
   // Convert a mouse event's client x to the nearest data point index. We
   // map client x into viewBox coords using the SVG's bounding rect; the
@@ -721,6 +734,29 @@ export const PerpChart = (props: {
               {formatXTick(t, domainSpanMs)}
             </text>
           ))}
+          {projectionEnd && projectionEndX != null && (
+            <g>
+              <line
+                x1={projectionEndX}
+                x2={projectionEndX}
+                y1={height - 20}
+                y2={height - 16}
+                stroke="currentColor"
+                strokeOpacity={0.45}
+              />
+              <text
+                x={projectionEndX}
+                y={height - 5}
+                fontSize={10}
+                fontWeight={600}
+                textAnchor="end"
+                fill="currentColor"
+                opacity={0.8}
+              >
+                {formatProjectionEndTick(projectionEnd, domainSpanMs)}
+              </text>
+            </g>
+          )}
           {overlayGeom && (
             <>
               <defs>
@@ -1168,6 +1204,13 @@ const formatXTick = (d: Date, spanMs: number) => {
   const day = dayjs(d)
   if (spanMs <= 48 * 60 * 60 * 1000) return day.format('h:mm A')
   if (spanMs <= 300 * 24 * 60 * 60 * 1000) return day.format('MMM D')
+  return day.format("MMM 'YY")
+}
+
+const formatProjectionEndTick = (d: Date, spanMs: number) => {
+  const day = dayjs(d)
+  if (spanMs <= 48 * HOUR_MS) return day.format('MMM D, h:mm A')
+  if (spanMs <= 300 * DAY_MS) return day.format('MMM D')
   return day.format("MMM 'YY")
 }
 
