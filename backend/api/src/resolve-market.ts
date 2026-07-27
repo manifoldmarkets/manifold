@@ -1,6 +1,11 @@
 import { sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { Contract, MarketContract, MultiContract } from 'common/contract'
+import {
+  Contract,
+  MarketContract,
+  MultiContract,
+  PerpContract,
+} from 'common/contract'
 import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
@@ -16,14 +21,18 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
 import { SWEEPSTAKES_MOD_IDS } from 'common/envs/constants'
+import { notifyPerpAdlResult } from 'shared/notifications/perps'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> =
-  onlyUsersWhoCanPerformAction('resolveMarket', async (props, auth, request) => {
-    return await betsQueue.enqueueFnFirst(
-      () => resolveMarketMain(props, auth, request),
-      [props.contractId, auth.uid]
-    )
-  })
+  onlyUsersWhoCanPerformAction(
+    'resolveMarket',
+    async (props, auth, request) => {
+      return await betsQueue.enqueueFnFirst(
+        () => resolveMarketMain(props, auth, request),
+        [props.contractId, auth.uid]
+      )
+    }
+  )
 
 export const resolveMarketMain: APIHandler<
   'market/:contractId/resolve'
@@ -52,10 +61,17 @@ export const resolveMarketMain: APIHandler<
     if (contract.isResolved)
       throw new APIError(403, 'Contract already resolved')
     const { resolvePerp } = await import('shared/perps/engine')
-    await resolvePerp(contractId, auth.uid)
+    const result = await resolvePerp(contractId, auth.uid)
     return {
       result: { message: 'success' },
-      continue: async () => {},
+      continue: async () => {
+        await notifyPerpAdlResult(
+          db,
+          contract as PerpContract,
+          result.finalPrice,
+          result
+        )
+      },
     }
   }
 

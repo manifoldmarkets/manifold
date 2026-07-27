@@ -3,7 +3,10 @@ import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
 import { mapAsync } from 'common/util/promise'
 import { DAY_MS } from 'common/util/time'
-import { notifyPerpOracleResult } from 'shared/notifications/perps'
+import {
+  notifyPerpAdlResult,
+  notifyPerpOracleResult,
+} from 'shared/notifications/perps'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import {
   getLatestOraclePriceForFeed,
@@ -69,7 +72,9 @@ const updateOnePerp = async (contract: PerpContract) => {
     if (staleAge > alertThreshold) {
       if (staleAge > 7 * DAY_MS) {
         log.warn(
-          `[update-perps] ${contract.slug}: feed ${contract.oracleFeedId} dead for ${Math.round(
+          `[update-perps] ${contract.slug}: feed ${
+            contract.oracleFeedId
+          } dead for ${Math.round(
             staleAge / DAY_MS
           )}d — resolve the market or revive the feed`
         )
@@ -120,7 +125,15 @@ const updateOnePerp = async (contract: PerpContract) => {
         fundingPeriodMs: getFundingPeriodMs(contract),
       })
     ) {
-      await runFunding(contract.id, now, oracleResult)
+      const fundingResult = await runFunding(contract.id, now, oracleResult)
+      if (fundingResult) {
+        await notifyPerpAdlResult(
+          pg,
+          contract,
+          fundingResult.fundingEvent.oraclePrice,
+          fundingResult
+        )
+      }
     }
   } catch (err) {
     log.error(`[update-perps] error updating ${contract.slug}: ${err}`)

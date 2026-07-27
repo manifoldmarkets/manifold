@@ -627,7 +627,7 @@ export const createPerpSchema = z.object({
   groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   oracleFeedId: z.string().min(1).max(200),
   maxLeverage: z.number().gt(1).lte(100),
-  maxFundingRate: z.number().gt(0).lte(1),
+  maxFundingRate: z.number().gt(0).lt(1),
   fundingSensitivity: z.number().gt(0).lte(100),
   maxOraclePriceAgeMs: z.number().int().positive(),
   subsidyLong: z.number().gt(0),

@@ -6,7 +6,10 @@ import { getNotificationDestinationsForUser } from 'common/user-notification-pre
 import { MANIFOLD_AVATAR_URL } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { nanoid } from 'common/util/random'
-import type { OracleUpdateResult } from 'shared/perps/engine'
+import type {
+  AdlNotificationResult,
+  OracleUpdateResult,
+} from 'shared/perps/engine'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 
@@ -31,18 +34,34 @@ export const notifyPerpOracleResult = async (
       originalCostBasis: liq.originalCostBasis,
     })
   }
+  await notifyPerpAdlResult(pg, contract, oraclePrice, result)
+}
+
+export const notifyPerpAdlResult = async (
+  pg: SupabaseDirectClient,
+  contract: PerpContract,
+  oraclePrice: number,
+  result: AdlNotificationResult
+) => {
   for (const adj of result.adlAdjusted) {
-    // adj.position is the post-ADL position; reconstruct the pre-ADL size so
-    // the notification can show the before -> after change.
     const sizeAfter = adj.position.size
-    const sizeBefore =
-      adj.scaleFactor > 0 ? sizeAfter / adj.scaleFactor : sizeAfter
+    const sizeBefore = adj.previousPosition.size
     await createPerpAdlNotification(pg, contract, adj.position.userId, {
       direction: adj.position.direction,
       scaleFactor: adj.scaleFactor,
       oraclePrice,
       sizeBefore,
       sizeAfter,
+    })
+  }
+  for (const { position, payout } of result.adlSettled) {
+    await createPerpAdlNotification(pg, contract, position.userId, {
+      direction: position.direction,
+      scaleFactor: 0,
+      oraclePrice,
+      sizeBefore: position.size,
+      sizeAfter: 0,
+      settlementPayout: payout,
     })
   }
 }
@@ -75,9 +94,9 @@ export const createPerpLiquidationNotification = async (
     data.originalCostBasis > 0 ? data.size / data.originalCostBasis : 0
   const levText = leverage >= 1.5 ? `${Math.round(leverage)}× ` : ''
   const decimals = inferPriceDecimals([data.oraclePrice, data.liquidationPrice])
-  const sourceText = `Liquidated: your ${levText}${
-    data.direction
-  } on ${contract.question} lost its ${formatMoney(
+  const sourceText = `Liquidated: your ${levText}${data.direction} on ${
+    contract.question
+  } lost its ${formatMoney(
     data.originalCostBasis
   )} margin. The price hit ${formatPrice(
     data.oraclePrice,
@@ -122,6 +141,7 @@ export const createPerpAdlNotification = async (
     oraclePrice: number
     sizeBefore?: number
     sizeAfter?: number
+    settlementPayout?: number
   }
 ) => {
   const privateUser = await getPrivateUser(userId)
@@ -136,16 +156,18 @@ export const createPerpAdlNotification = async (
   // the same position — one dev position got 55 notifications in an
   // afternoon. One per user/contract/hour is signal; the rest is spam. The
   // position panel still shows the live size.
-  const recent = await pg.oneOrNone(
-    `select 1 from user_notifications
-     where user_id = $1
-       and data->>'reason' = 'perp_adl'
-       and data->>'sourceContractId' = $2
-       and ((data->>'createdTime')::bigint) > $3
-     limit 1`,
-    [userId, contract.id, Date.now() - 60 * 60 * 1000]
-  )
-  if (recent) return
+  if (data.settlementPayout == null) {
+    const recent = await pg.oneOrNone(
+      `select 1 from user_notifications
+       where user_id = $1
+         and data->>'reason' = 'perp_adl'
+         and data->>'sourceContractId' = $2
+         and ((data->>'createdTime')::bigint) > $3
+       limit 1`,
+      [userId, contract.id, Date.now() - 60 * 60 * 1000]
+    )
+    if (recent) return
+  }
 
   // "Auto-deleveraged by 85.7%" is opaque to a normal user. Say what
   // happened, to which market, by how much, and why - and that their cost
@@ -157,7 +179,14 @@ export const createPerpAdlNotification = async (
           data.sizeAfter
         )} notional)`
       : ''
-  const sourceText = `Your ${data.direction} on ${contract.question} was reduced ${cutPct}%${sizes} to stay payable: your unrealized profit exceeded what the other side's pool can pay. Your cost basis is unchanged.`
+  const sourceText =
+    data.settlementPayout != null
+      ? `Your ${data.direction} on ${
+          contract.question
+        } was fully auto-deleveraged${sizes} to stay payable. The position is closed and its ${formatMoney(
+          data.settlementPayout
+        )} remaining margin was returned to your balance.`
+      : `Your ${data.direction} on ${contract.question} was reduced ${cutPct}%${sizes} to stay payable: your unrealized profit exceeded what the other side's pool can pay. Your cost basis is unchanged.`
 
   const notification: Notification = {
     id: nanoid(6),

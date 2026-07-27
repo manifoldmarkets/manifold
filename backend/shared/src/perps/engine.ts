@@ -9,8 +9,11 @@ import { APIError } from 'common/api/utils'
 import { PerpContract } from 'common/contract'
 import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import {
+  AdlSettlement,
   applyADL,
-  applyFunding,
+  applyFundingWithSolvency,
+  assertPerpFundingConfig,
+  assertPerpStateSolvent,
   closePosition as closePositionMath,
   computeFundingRate,
   getLeverage,
@@ -243,6 +246,7 @@ export const openOrAddPosition = async (
     if (existingOpposite) {
       const closeRes = closePositionMath(workingState, existingOpposite, price)
       workingState = closeRes.state
+      assertPerpStateSolvent(workingState, price)
       closePayout = closeRes.payout
       closePnl = closeRes.pnl
       closeEvent = asEvent(contract, {
@@ -442,6 +446,7 @@ export const closePosition = async (
 
     const price = contract.oraclePrice
     const result = closePositionMath(state, position, price)
+    assertPerpStateSolvent(result.state, price)
 
     const event: PerpEvent = asEvent(contract, {
       userId,
@@ -520,19 +525,162 @@ export const closePosition = async (
 // -----------------------------------------------------------------------
 
 export type AdlAdjustedPosition = {
+  previousPosition: PerpPosition
   position: PerpPosition
   scaleFactor: number
 }
 
+export type AdlSettledPosition = AdlSettlement
+
+export type AdlNotificationResult = {
+  adlAdjusted: AdlAdjustedPosition[]
+  adlSettled: AdlSettledPosition[]
+}
+
 export type OracleUpdateResult = {
   liquidated: PerpPosition[]
-  adlAdjusted: AdlAdjustedPosition[]
+  adlAdjusted: AdlNotificationResult['adlAdjusted']
+  adlSettled: AdlNotificationResult['adlSettled']
   adlFactorLong: number
   adlFactorShort: number
   poolLongBefore: number
   poolLongAfter: number
   poolShortBefore: number
   poolShortAfter: number
+}
+
+const collectAdlAdjusted = (
+  before: PerpPosition[],
+  after: PerpPosition[],
+  adlFactorLong: number,
+  adlFactorShort: number
+) => {
+  const adjusted: AdlAdjustedPosition[] = []
+  const beforeByKey = new Map(
+    before.map((p) => [`${p.userId}:${p.direction}`, p])
+  )
+  for (const post of after) {
+    const pre = beforeByKey.get(`${post.userId}:${post.direction}`)
+    if (!pre || pre.size <= 0 || post.size <= 0) continue
+    const factor = post.direction === 'long' ? adlFactorLong : adlFactorShort
+    if (factor < 1 && post.size < pre.size) {
+      adjusted.push({
+        previousPosition: pre,
+        position: post,
+        scaleFactor: factor,
+      })
+    }
+  }
+  return adjusted
+}
+
+const buildAdlEvents = (
+  contract: PerpContract,
+  adjusted: AdlAdjustedPosition[],
+  settled: AdlSettledPosition[],
+  adlFactorLong: number,
+  adlFactorShort: number,
+  ts: number,
+  oraclePrice: number
+) => {
+  const userEvents: PerpEvent[] = [
+    ...adjusted.map(
+      ({ previousPosition: before, position: after, scaleFactor }) =>
+        asEvent(contract, {
+          userId: after.userId,
+          eventType: 'adl',
+          direction: after.direction,
+          leverage: after.leverage,
+          sizeDelta: after.size - before.size,
+          costBasisDelta: after.costBasis - before.costBasis,
+          originalCostBasisDelta: 0,
+          data: {
+            adlFactor: scaleFactor,
+            sizeBefore: before.size,
+            sizeAfter: after.size,
+          },
+          ts,
+          oraclePrice,
+        })
+    ),
+    ...settled.map(({ position, payout }) =>
+      asEvent(contract, {
+        userId: position.userId,
+        eventType: 'adl',
+        direction: position.direction,
+        leverage: 0,
+        sizeDelta: -position.size,
+        costBasisDelta: -position.costBasis,
+        originalCostBasisDelta: -position.originalCostBasis,
+        data: {
+          adlFactor: 0,
+          sizeBefore: position.size,
+          sizeAfter: 0,
+          payout,
+          reason: 'factor-zero-settlement',
+        },
+        ts,
+        oraclePrice,
+      })
+    ),
+  ]
+
+  if (adlFactorLong >= 1 && adlFactorShort >= 1) return userEvents
+
+  return [
+    ...userEvents,
+    asEvent(contract, {
+      userId: null,
+      eventType: 'adl',
+      direction: null,
+      leverage: null,
+      sizeDelta: 0,
+      costBasisDelta: 0,
+      originalCostBasisDelta: 0,
+      data: {
+        adlFactorLong,
+        adlFactorShort,
+        affectedUserIds: [
+          ...adjusted.map((a) => a.position.userId),
+          ...settled.map((s) => s.position.userId),
+        ],
+        settledUserIds: settled.map((s) => s.position.userId),
+      },
+      ts,
+      oraclePrice,
+    }),
+  ]
+}
+
+const payAdlSettlements = async (
+  pgTrans: SupabaseTransaction,
+  contractId: string,
+  oraclePrice: number,
+  settled: AdlSettledPosition[]
+) => {
+  for (const { position, payout } of settled) {
+    if (payout <= 0) continue
+    await runTxnOutsideBetQueue(
+      pgTrans,
+      {
+        category: 'PERP_CLOSE_PAYOUT',
+        fromId: contractId,
+        fromType: 'CONTRACT',
+        toId: position.userId,
+        toType: 'USER',
+        amount: payout,
+        token: 'M$',
+        data: {
+          direction: position.direction,
+          pnl: 0,
+          entryPrice: position.entryPrice,
+          closePrice: oraclePrice,
+          reason: 'adl',
+        },
+      },
+      true
+    )
+  }
 }
 
 /**
@@ -550,6 +698,7 @@ const applyOracleUpdate = (
   const liqRes = processLiquidations(state, newPrice)
   const adlRes = applyADL(liqRes.state, newPrice)
   const finalState = adlRes.state
+  assertPerpStateSolvent(finalState, newPrice)
 
   const events: PerpEvent[] = []
 
@@ -575,51 +724,29 @@ const applyOracleUpdate = (
     )
   }
 
-  // Identify the exact positions whose size was scaled down by ADL (only
-  // profitable positions on the winning side are touched).
-  const adlAdjusted: AdlAdjustedPosition[] = []
-  const preByKey = new Map(
-    state.positions.map((p) => [`${p.userId}:${p.direction}`, p])
+  const adlAdjusted = collectAdlAdjusted(
+    liqRes.state.positions,
+    finalState.positions,
+    adlRes.adlFactorLong,
+    adlRes.adlFactorShort
   )
-  for (const post of finalState.positions) {
-    const pre = preByKey.get(`${post.userId}:${post.direction}`)
-    if (!pre || pre.size <= 0 || post.size <= 0) continue
-    const factor =
-      post.direction === 'long' ? adlRes.adlFactorLong : adlRes.adlFactorShort
-    if (factor >= 1) continue
-    // A liquidation also shrinks the position, but those appear as size 0
-    // in finalState and are filtered above; remaining shrinks are ADL only.
-    if (post.size < pre.size) {
-      adlAdjusted.push({ position: post, scaleFactor: factor })
-    }
-  }
-
-  if (adlRes.adlFactorLong < 1 || adlRes.adlFactorShort < 1) {
-    events.push(
-      asEvent(contract, {
-        userId: null,
-        eventType: 'adl',
-        direction: null,
-        leverage: null,
-        sizeDelta: 0,
-        costBasisDelta: 0,
-        originalCostBasisDelta: 0,
-        data: {
-          adlFactorLong: adlRes.adlFactorLong,
-          adlFactorShort: adlRes.adlFactorShort,
-          affectedUserIds: adlAdjusted.map((a) => a.position.userId),
-        },
-        ts,
-        oraclePrice: newPrice,
-      })
-    )
-  }
+  const adlEvents = buildAdlEvents(
+    contract,
+    adlAdjusted,
+    adlRes.settled,
+    adlRes.adlFactorLong,
+    adlRes.adlFactorShort,
+    ts,
+    newPrice
+  )
+  events.push(...adlEvents)
 
   return {
     finalState,
     events,
     liquidated: liqRes.liquidated,
     adlAdjusted,
+    adlSettled: adlRes.settled,
     adlFactorLong: adlRes.adlFactorLong,
     adlFactorShort: adlRes.adlFactorShort,
   }
@@ -677,6 +804,7 @@ export const runOracleUpdate = async (
       return {
         liquidated: [],
         adlAdjusted: [],
+        adlSettled: [],
         adlFactorLong: 1,
         adlFactorShort: 1,
         poolLongBefore,
@@ -692,6 +820,8 @@ export const runOracleUpdate = async (
         ...applied.finalState.positions.map((p) => p.userId),
       ])
     )
+
+    await payAdlSettlements(pgTrans, contractId, newPrice, applied.adlSettled)
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -713,6 +843,7 @@ export const runOracleUpdate = async (
     return {
       liquidated: applied.liquidated,
       adlAdjusted: applied.adlAdjusted,
+      adlSettled: applied.adlSettled,
       adlFactorLong: applied.adlFactorLong,
       adlFactorShort: applied.adlFactorShort,
       poolLongBefore,
@@ -727,6 +858,10 @@ export const runOracleUpdate = async (
 // funding
 // -----------------------------------------------------------------------
 
+export type FundingUpdateResult = AdlNotificationResult & {
+  fundingEvent: PerpFundingEvent
+}
+
 export const runFunding = async (
   contractId: string,
   ts: number,
@@ -736,7 +871,7 @@ export const runFunding = async (
    * periods with liquidations/ADL.
    */
   priorOracleResult?: OracleUpdateResult | null
-): Promise<PerpFundingEvent | null> => {
+): Promise<FundingUpdateResult | null> => {
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
@@ -767,6 +902,14 @@ export const runFunding = async (
       return null
     }
 
+    // Persisted legacy contracts did not necessarily pass today's creation
+    // schema. Do not clamp an invalid cap: that would silently rewrite the
+    // economics users entered under. Abort this atomic funding tick before
+    // any pool, position, event, or balance mutation instead.
+    assertPerpFundingConfig({
+      fundingSensitivity: contract.fundingSensitivity,
+      maxFundingRate: contract.maxFundingRate,
+    })
     const fundingRate = computeFundingRate(
       state.pool.L,
       state.pool.S,
@@ -777,8 +920,39 @@ export const runFunding = async (
     const poolLongBefore = state.pool.L
     const poolShortBefore = state.pool.S
 
-    const next = applyFunding(state, fundingRate)
+    // Funding scales the receiving side's existing mark-to-market PnL. Apply
+    // ADL again at the unchanged oracle price and fail closed on any invalid
+    // or under-solvent result before constructing persistence queries.
+    const fundingResult = applyFundingWithSolvency(
+      state,
+      fundingRate,
+      contract.oraclePrice
+    )
+    const next = fundingResult.state
+    const fundedState = fundingResult.fundedState
     const { upserts, deletes } = diffForWrite(state.positions, next.positions)
+    const adlAdjusted = collectAdlAdjusted(
+      fundedState.positions,
+      next.positions,
+      fundingResult.adlFactorLong,
+      fundingResult.adlFactorShort
+    )
+    const adlEvents = buildAdlEvents(
+      contract,
+      adlAdjusted,
+      fundingResult.settled,
+      fundingResult.adlFactorLong,
+      fundingResult.adlFactorShort,
+      ts,
+      contract.oraclePrice
+    )
+
+    // The hourly cycle can apply ADL once for the oracle move and again for
+    // funding. Factors compose multiplicatively for the cycle annotation.
+    const adlFactorLong =
+      (priorOracleResult?.adlFactorLong ?? 1) * fundingResult.adlFactorLong
+    const adlFactorShort =
+      (priorOracleResult?.adlFactorShort ?? 1) * fundingResult.adlFactorShort
 
     const fundingEvent: PerpFundingEvent = {
       contractId,
@@ -790,8 +964,8 @@ export const runFunding = async (
       poolShortAfter: next.pool.S,
       fundingRate,
       numLiquidations: priorOracleResult?.liquidated.length ?? 0,
-      adlFactorLong: priorOracleResult?.adlFactorLong ?? 1,
-      adlFactorShort: priorOracleResult?.adlFactorShort ?? 1,
+      adlFactorLong,
+      adlFactorShort,
     }
 
     const contractPatch = removeUndefinedProps({
@@ -799,14 +973,17 @@ export const runFunding = async (
       poolShort: next.pool.S,
       lastFundingTime: ts,
       fundingRate,
+      lastUpdatedTime: adlEvents.length > 0 ? ts : undefined,
     })
 
     const affectedUsers = Array.from(
       new Set(state.positions.map((p) => p.userId))
     )
 
-    // Per-user funding event rows for PnL attribution/audit trail.
-    const perUserEvents: PerpEvent[] = next.positions
+    // Keep the funding transition and any immediately-required ADL as
+    // separate per-user events. Combining their size deltas would make a
+    // receiver's funding bonus look like a single unexplained exposure cut.
+    const perUserFundingEvents: PerpEvent[] = fundedState.positions
       .filter((p) => p.size > 0)
       .map((p) => {
         const before = state.positions.find(
@@ -821,12 +998,22 @@ export const runFunding = async (
           sizeDelta: p.size - before.size,
           costBasisDelta: p.costBasis - before.costBasis,
           originalCostBasisDelta: 0,
-          data: { fundingRate },
+          data: {
+            fundingRate,
+          },
           ts,
           oraclePrice: contract.oraclePrice,
         })
       })
       .filter(Boolean) as PerpEvent[]
+    const perUserEvents = [...perUserFundingEvents, ...adlEvents]
+
+    await payAdlSettlements(
+      pgTrans,
+      contractId,
+      contract.oraclePrice,
+      fundingResult.settled
+    )
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -846,7 +1033,11 @@ export const runFunding = async (
       ].join(';\n')
     )
 
-    return fundingEvent
+    return {
+      fundingEvent,
+      adlAdjusted,
+      adlSettled: fundingResult.settled,
+    }
   })
 }
 
@@ -857,15 +1048,17 @@ export const runFunding = async (
 export const resolvePerp = async (
   contractId: string,
   resolverId: string
-): Promise<{
-  closedPositions: {
-    userId: string
-    direction: PerpDirection
-    payout: number
-  }[]
-  residualPayout: number
-  finalPrice: number
-}> => {
+): Promise<
+  {
+    closedPositions: {
+      userId: string
+      direction: PerpDirection
+      payout: number
+    }[]
+    residualPayout: number
+    finalPrice: number
+  } & AdlNotificationResult
+> => {
   // Pull latest oracle price (outside lock to minimize lock window).
   const pg = createSupabaseDirectClient()
   const contractRow = await pg.oneOrNone<{ data: PerpContract }>(
@@ -901,14 +1094,20 @@ export const resolvePerp = async (
       userId: string
       direction: PerpDirection
       payout: number
-    }[] = []
+    }[] = applied.adlSettled.map(({ position, payout }) => ({
+      userId: position.userId,
+      direction: position.direction,
+      payout,
+    }))
 
     let runningState = applied.finalState
     const now = Date.now()
+    await payAdlSettlements(pgTrans, contractId, finalPrice, applied.adlSettled)
     for (const p of applied.finalState.positions) {
       if (p.size <= 0) continue
       const res = closePositionMath(runningState, p, finalPrice)
       runningState = res.state
+      assertPerpStateSolvent(runningState, finalPrice)
       closedPositions.push({
         userId: p.userId,
         direction: p.direction,
@@ -1017,7 +1216,13 @@ export const resolvePerp = async (
       ].join(';\n')
     )
 
-    return { closedPositions, residualPayout, finalPrice }
+    return {
+      closedPositions,
+      residualPayout,
+      finalPrice,
+      adlAdjusted: applied.adlAdjusted,
+      adlSettled: applied.adlSettled,
+    }
   })
 }
 

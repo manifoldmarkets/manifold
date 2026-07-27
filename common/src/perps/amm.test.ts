@@ -1,6 +1,9 @@
 import {
   applyADL,
   applyFunding,
+  applyFundingWithSolvency,
+  assertPerpFundingConfig,
+  assertPerpStateSolvent,
   closePosition,
   computeFundingRate,
   getPerpBackingPool,
@@ -103,6 +106,61 @@ describe('funding', () => {
     expect(computeFundingRate(0, 500, 1, 0.01)).toBe(0)
   })
 
+  it('stays finite and below the cap for extreme finite pool ratios', () => {
+    const cap = 1 - Number.EPSILON
+    const longDominant = computeFundingRate(
+      Number.MAX_VALUE,
+      Number.MIN_VALUE,
+      1,
+      cap
+    )
+    const shortDominant = computeFundingRate(
+      Number.MIN_VALUE,
+      Number.MAX_VALUE,
+      1,
+      cap
+    )
+
+    expect(Number.isFinite(longDominant)).toBe(true)
+    expect(Number.isFinite(shortDominant)).toBe(true)
+    expect(longDominant).toBe(cap)
+    expect(shortDominant).toBe(-cap)
+    expect(Math.abs(longDominant)).toBeLessThan(1)
+    expect(Math.abs(shortDominant)).toBeLessThan(1)
+  })
+
+  it('fails closed on invalid persisted funding configuration', () => {
+    expect(() =>
+      assertPerpFundingConfig({
+        fundingSensitivity: 1,
+        maxFundingRate: 1 - Number.EPSILON,
+      })
+    ).not.toThrow()
+
+    for (const maxFundingRate of [0, 1, Number.POSITIVE_INFINITY, Number.NaN]) {
+      expect(() =>
+        assertPerpFundingConfig({
+          fundingSensitivity: 1,
+          maxFundingRate,
+        })
+      ).toThrow('max funding rate must be finite and in (0, 1)')
+    }
+
+    for (const fundingSensitivity of [
+      0,
+      -1,
+      Number.POSITIVE_INFINITY,
+      Number.NaN,
+    ]) {
+      expect(() =>
+        assertPerpFundingConfig({
+          fundingSensitivity,
+          maxFundingRate: 0.01,
+        })
+      ).toThrow('funding sensitivity must be finite and positive')
+    }
+  })
+
   it('applyFunding conserves total pool and scales both sides', () => {
     const long = makePosition({
       direction: 'long',
@@ -146,6 +204,268 @@ describe('funding', () => {
     expect(applyFunding(state, 0.005)).toBe(state)
     const balanced: PerpState = { pool: { L: 10, S: 10 }, positions: [] }
     expect(applyFunding(balanced, 0)).toBe(balanced)
+  })
+
+  it('ADLs the profitable receiver after funding to preserve solvency', () => {
+    const short = makePosition({
+      direction: 'short',
+      size: 2000,
+      costBasis: 100,
+      entryPrice: 200,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 500 },
+      positions: [short],
+    }
+
+    // Before funding the short has 1000 profit backed by exactly 1000 L.
+    expect(solvencyFactor('short', state, 100)).toBeCloseTo(1, 12)
+
+    // Funding alone moves 5 mana out of L and scales the short's profit up to
+    // 1010, so an immediate close would overdraw L by 15 mana.
+    const fundedOnly = applyFunding(state, 0.005)
+    expect(solvencyFactor('short', fundedOnly, 100)).toBeLessThan(1)
+    expect(
+      closePosition(fundedOnly, fundedOnly.positions[0], 100).state.pool.L
+    ).toBeLessThan(0)
+
+    const corrected = applyFundingWithSolvency(state, 0.005, 100)
+    expect(corrected.adlFactorLong).toBe(1)
+    expect(corrected.adlFactorShort).toBeCloseTo(995 / 1010, 12)
+    expect(corrected.state.pool).toEqual({ L: 995, S: 505 })
+    expect(solvencyFactor('short', corrected.state, 100)).toBeCloseTo(1, 12)
+    expect(() => assertPerpStateSolvent(corrected.state, 100)).not.toThrow()
+
+    // ADL preserves the funding-adjusted margin and only trims exposure.
+    const correctedShort = corrected.state.positions[0]
+    expect(correctedShort.costBasis).toBeCloseTo(101, 12)
+    expect(correctedShort.size).toBeCloseTo(1990, 12)
+
+    const closed = closePosition(corrected.state, correctedShort, 100)
+    expect(closed.state.pool.L).toBeCloseTo(0, 10)
+    expect(closed.state.pool.S).toBeCloseTo(404, 10)
+    expect(
+      closed.payout + closed.state.pool.L + closed.state.pool.S
+    ).toBeCloseTo(1500, 10)
+  })
+
+  it('settles retained margin when an oracle move requires factor-zero ADL', () => {
+    const profitableLong = makePosition({
+      direction: 'long',
+      size: 1000,
+      costBasis: 1000,
+      entryPrice: 50,
+    })
+    const newlyProfitableShort = makePosition({
+      userId: 'u2',
+      direction: 'short',
+      size: 100,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 1100 },
+      positions: [profitableLong, newlyProfitableShort],
+    }
+
+    // At 100 the state is exactly solvent. At 99 the long is still
+    // profitable, so all of L remains reserved for its margin while the
+    // short gains a positive profit claim: its ADL factor is exactly zero.
+    expect(() => assertPerpStateSolvent(state, 100)).not.toThrow()
+    const liquidated = processLiquidations(state, 99)
+    expect(liquidated.liquidated).toEqual([])
+    const corrected = applyADL(liquidated.state, 99)
+
+    expect(corrected.adlFactorShort).toBe(0)
+    expect(corrected.settled).toEqual([
+      { position: newlyProfitableShort, payout: 100 },
+    ])
+    expect(corrected.state.positions).toEqual([profitableLong])
+    expect(corrected.state.pool).toEqual({ L: 1000, S: 1000 })
+    expect(() => assertPerpStateSolvent(corrected.state, 99)).not.toThrow()
+    expect(
+      corrected.state.pool.L +
+        corrected.state.pool.S +
+        corrected.settled[0].payout
+    ).toBe(state.pool.L + state.pool.S)
+  })
+
+  it('does not silently repair insolvency during a funding event', () => {
+    const flatLong = makePosition({
+      direction: 'long',
+      size: 999.999999,
+      costBasis: 999.999999,
+      entryPrice: 100,
+    })
+    const winningShort = makePosition({
+      userId: 'u2',
+      direction: 'short',
+      size: 100,
+      costBasis: 100,
+      entryPrice: 200,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 500 },
+      positions: [flatLong, winningShort],
+    }
+
+    expect(() => applyFundingWithSolvency(state, 0, 100)).toThrow(
+      'short solvency factor'
+    )
+  })
+
+  it('fails closed on non-finite or negative funding state', () => {
+    const valid: PerpState = { pool: { L: 100, S: 100 }, positions: [] }
+    expect(() =>
+      applyFundingWithSolvency(
+        { ...valid, pool: { L: Number.NaN, S: 100 } },
+        0.001,
+        100
+      )
+    ).toThrow('long pool must be finite')
+    expect(() =>
+      applyFundingWithSolvency(valid, Number.POSITIVE_INFINITY, 100)
+    ).toThrow('funding rate must be finite')
+    expect(() =>
+      applyFundingWithSolvency(
+        { ...valid, pool: { L: -1, S: 100 } },
+        0.001,
+        100
+      )
+    ).toThrow('pools must be non-negative')
+  })
+
+  it('preserves pool value and close solvency across randomized states', () => {
+    let seed = 0x5eed1234
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 2 ** 32
+    }
+
+    for (let i = 0; i < 500; i++) {
+      const price = 100
+      const dominantLong = random() < 0.5
+      const dominantPool = 500 + random() * 9500
+      const minorityPool = dominantPool * (0.2 + random() * 0.7)
+      const flatCost = dominantPool * (0.05 + random() * 0.45)
+      const availableCover = dominantPool - flatCost
+      const preFundingFactor = 1.000001 + random() * 0.02
+      const winnerProfit = availableCover / preFundingFactor
+      const winnerCost = minorityPool * (0.05 + random() * 0.4)
+
+      const flat = makePosition({
+        userId: `flat-${i}`,
+        direction: dominantLong ? 'long' : 'short',
+        size: flatCost,
+        costBasis: flatCost,
+        entryPrice: price,
+      })
+      const winner = makePosition({
+        userId: `winner-${i}`,
+        direction: dominantLong ? 'short' : 'long',
+        size: dominantLong ? 2 * winnerProfit : winnerProfit,
+        costBasis: winnerCost,
+        entryPrice: dominantLong ? 200 : 50,
+      })
+      const state: PerpState = {
+        pool: dominantLong
+          ? { L: dominantPool, S: minorityPool }
+          : { L: minorityPool, S: dominantPool },
+        positions: [flat, winner],
+      }
+      assertPerpStateSolvent(state, price)
+
+      const fundingRate = computeFundingRate(
+        state.pool.L,
+        state.pool.S,
+        0.5 + random() * 2,
+        0.001 + random() * 0.049
+      )
+      const corrected = applyFundingWithSolvency(state, fundingRate, price)
+
+      expect(() => assertPerpStateSolvent(corrected.state, price)).not.toThrow()
+      expect(corrected.settled).toEqual([])
+      expect(Number.isFinite(corrected.state.pool.L)).toBe(true)
+      expect(Number.isFinite(corrected.state.pool.S)).toBe(true)
+      expect(corrected.state.pool.L).toBeGreaterThanOrEqual(0)
+      expect(corrected.state.pool.S).toBeGreaterThanOrEqual(0)
+      expect(corrected.state.pool.L + corrected.state.pool.S).toBeCloseTo(
+        state.pool.L + state.pool.S,
+        8
+      )
+
+      // Aggregate solvency must hold independently of close ordering.
+      for (const positions of [
+        corrected.state.positions,
+        [...corrected.state.positions].reverse(),
+      ]) {
+        let closingState = corrected.state
+        let totalPayout = 0
+        for (const position of positions) {
+          const closed = closePosition(closingState, position, price)
+          closingState = closed.state
+          totalPayout += closed.payout
+          expect(closingState.pool.L).toBeGreaterThanOrEqual(0)
+          expect(closingState.pool.S).toBeGreaterThanOrEqual(0)
+        }
+        expect(
+          totalPayout + closingState.pool.L + closingState.pool.S
+        ).toBeCloseTo(state.pool.L + state.pool.S, 8)
+      }
+    }
+  })
+
+  it('clamps only floating-point close dust and keeps later funding live', () => {
+    const price = 45.626853816211224
+    const winners = [
+      makePosition({
+        userId: 'u0',
+        direction: 'short',
+        size: 4759.190316135551,
+        costBasis: 564.7710346667371,
+        originalCostBasis: 560.9697526622564,
+        entryPrice: 100,
+      }),
+      makePosition({
+        userId: 'u2',
+        direction: 'short',
+        size: 3551.855731290487,
+        costBasis: 624.5039193480568,
+        originalCostBasis: 620.3005955856294,
+        entryPrice: 100,
+      }),
+      makePosition({
+        userId: 'u4',
+        direction: 'short',
+        size: 126.30030505174204,
+        costBasis: 46.369980919038426,
+        originalCostBasis: 46.05788032747805,
+        entryPrice: 100,
+      }),
+    ]
+    const losingShort = makePosition({
+      userId: 'loser',
+      direction: 'short',
+      size: 20,
+      costBasis: 10,
+      entryPrice: 40,
+    })
+    let state: PerpState = {
+      pool: { L: 4587.650666265313, S: 2038.7567534218244 },
+      positions: [...winners, losingShort],
+    }
+    expect(() => assertPerpStateSolvent(state, price)).not.toThrow()
+
+    for (const winner of winners) {
+      state = closePosition(state, winner, price).state
+    }
+
+    // Straight IEEE-754 subtraction leaves L=-1.19e-12 here. Persisting that
+    // value would make the next strict funding validation fail even though
+    // the market paid exactly its aggregate obligation.
+    expect(state.pool.L).toBe(0)
+    expect(state.positions).toEqual([losingShort])
+    expect(() => applyFundingWithSolvency(state, 0, price)).not.toThrow()
   })
 })
 
@@ -355,6 +675,23 @@ describe('solvencyFactor', () => {
   it('is Infinity when the side has no unrealized profit', () => {
     const state: PerpState = { pool: { L: 100, S: 100 }, positions: [] }
     expect(solvencyFactor('long', state, 100)).toBe(Infinity)
+  })
+
+  it('is negative Infinity when reserves are deficient without side profit', () => {
+    const short = makePosition({
+      direction: 'short',
+      size: 100,
+      costBasis: 100,
+      entryPrice: 100,
+    })
+    const state: PerpState = {
+      pool: { L: 100, S: 99 },
+      positions: [short],
+    }
+    expect(solvencyFactor('long', state, 100)).toBe(-Infinity)
+    expect(() => assertPerpStateSolvent(state, 100)).toThrow(
+      'long solvency factor'
+    )
   })
 
   it('matches the ADL scale when profit exceeds available cover', () => {

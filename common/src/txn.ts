@@ -600,9 +600,10 @@ type RemoveSubsidy = {
 // actually moves: margin in at open, payout out at close/flip/resolve, and
 // the residual pools to the creator at resolution. Liquidation/ADL/funding
 // move NO user mana (claims are scaled or extinguished; the margin stays in
-// the pools) and are deliberately absent here — the authoritative record of
-// those is the append-only contract_perp_events log. Invariant this
-// preserves: sum(txns into contract) - sum(txns out) = poolLong + poolShort.
+// the pools) and are deliberately absent here — except factor-zero ADL, which
+// closes the exposure and refunds its retained margin. The authoritative
+// transition record is the append-only contract_perp_events log. Invariant:
+// sum(txns into contract) - sum(txns out) = poolLong + poolShort.
 type PerpOpenMargin = {
   category: 'PERP_OPEN_MARGIN'
   fromType: 'USER'
@@ -626,7 +627,7 @@ type PerpClosePayout = {
     pnl: number
     entryPrice: number
     closePrice: number
-    reason: 'close' | 'flip' | 'resolve'
+    reason: 'close' | 'flip' | 'resolve' | 'adl'
   }
 }
 

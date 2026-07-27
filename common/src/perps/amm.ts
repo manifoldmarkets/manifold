@@ -14,6 +14,13 @@ export type PerpState = {
   positions: PerpPosition[]
 }
 
+export type AdlSettlement = {
+  /** Position immediately before the factor-zero ADL. */
+  position: PerpPosition
+  /** Remaining margin returned to the user from the position's own pool. */
+  payout: number
+}
+
 /** Current mana available across both sides to back position payouts. */
 export const getPerpBackingPool = (poolLong: number, poolShort: number) => {
   if (
@@ -26,6 +33,22 @@ export const getPerpBackingPool = (poolLong: number, poolShort: number) => {
   }
   const total = poolLong + poolShort
   return Number.isFinite(total) ? total : 0
+}
+
+/**
+ * Floating-point subtraction can leave a pool a few ulps below zero after a
+ * fully-backed payout. Clamp only that representational dust; a material
+ * deficit remains negative so the engine's solvency checks still fail closed.
+ */
+const poolAfterDebit = (pool: number, debit: number) => {
+  const next = pool - debit
+  if (next >= 0) return next === 0 ? 0 : next
+
+  const scale = Math.max(1, Math.abs(pool), Math.abs(debit))
+  // The absolute cap prevents a huge corrupted pool from turning a
+  // scale-relative tolerance into a meaningful amount of mana.
+  const tolerance = Math.min(1e-6, 128 * Number.EPSILON * scale)
+  return next >= -tolerance ? 0 : next
 }
 
 // -------- core position math --------
@@ -90,10 +113,58 @@ export const computeFundingRate = (
   k: number,
   fMax: number
 ) => {
+  // Keep this display/shared helper total: the engine separately rejects an
+  // invalid contract configuration before applying funding. Returning zero
+  // here prevents corrupt legacy data from turning a React render into NaN.
+  if (
+    !Number.isFinite(L) ||
+    !Number.isFinite(S) ||
+    !Number.isFinite(k) ||
+    !Number.isFinite(fMax) ||
+    k <= 0 ||
+    fMax <= 0
+  )
+    return 0
   if (L <= 0 || S <= 0) return 0
   if (L === S) return 0
-  if (L > S) return imbalance(L / S, k) * fMax
-  return -imbalance(S / L, k) * fMax
+
+  // Algebraically equivalent to imbalance(high / low, k), but normalizing
+  // low by high avoids an overflowing high / low ratio for extreme yet valid
+  // finite pools:
+  //   (r - 1) / (r - 1 + k)
+  //   = (1 - low/high) / (1 - low/high + k * low/high)
+  const high = Math.max(L, S)
+  const low = Math.min(L, S)
+  const lowOverHigh = low / high
+  const gap = 1 - lowOverHigh
+  const denominator = gap + k * lowOverHigh
+  const fraction = denominator > 0 ? gap / denominator : 0
+  const magnitude = fraction * fMax
+  if (!Number.isFinite(magnitude) || magnitude === 0) return 0
+  return L > S ? magnitude : -magnitude
+}
+
+/**
+ * Runtime guard for persisted contract economics.
+ *
+ * New contracts are schema-validated, but old rows bypass that schema. A
+ * funding cap of 1 could erase the paying side in one tick, creating
+ * zero-margin positions and an unpayable transition. Fail closed instead of
+ * silently clamping and changing the contract's stated economics.
+ */
+export const assertPerpFundingConfig = (config: {
+  fundingSensitivity: number
+  maxFundingRate: number
+}) => {
+  const { fundingSensitivity, maxFundingRate } = config
+  if (!Number.isFinite(fundingSensitivity) || fundingSensitivity <= 0)
+    throw new Error('funding sensitivity must be finite and positive')
+  if (
+    !Number.isFinite(maxFundingRate) ||
+    maxFundingRate <= 0 ||
+    maxFundingRate >= 1
+  )
+    throw new Error('max funding rate must be finite and in (0, 1)')
 }
 
 /**
@@ -194,18 +265,30 @@ export const processLiquidations = (state: PerpState, price: number) => {
  */
 export const applyADL = (state: PerpState, price: number) => {
   const { L, S } = state.pool
-  const longs = state.positions.filter((p) => p.direction === 'long' && p.size > 0)
-  const shorts = state.positions.filter((p) => p.direction === 'short' && p.size > 0)
+  const longs = state.positions.filter(
+    (p) => p.direction === 'long' && p.size > 0
+  )
+  const shorts = state.positions.filter(
+    (p) => p.direction === 'short' && p.size > 0
+  )
 
   const profit = (p: PerpPosition) => getUnrealizedEquity(p, price)
 
-  const EL = longs.filter((p) => profit(p) > 0).reduce((s, p) => s + profit(p), 0)
+  const EL = longs
+    .filter((p) => profit(p) > 0)
+    .reduce((s, p) => s + profit(p), 0)
   const ES = shorts
     .filter((p) => profit(p) > 0)
     .reduce((s, p) => s + profit(p), 0)
 
-  const CS = shorts.reduce((s, p) => s + Math.min(p.costBasis, getPositionValue(p, price)), 0)
-  const CL = longs.reduce((s, p) => s + Math.min(p.costBasis, getPositionValue(p, price)), 0)
+  const CS = shorts.reduce(
+    (s, p) => s + Math.min(p.costBasis, getPositionValue(p, price)),
+    0
+  )
+  const CL = longs.reduce(
+    (s, p) => s + Math.min(p.costBasis, getPositionValue(p, price)),
+    0
+  )
 
   const sL = EL > 0 ? (S - CS) / EL : 1
   const sS = ES > 0 ? (L - CL) / ES : 1
@@ -213,36 +296,64 @@ export const applyADL = (state: PerpState, price: number) => {
   const adlFactorLong = sL < 1 ? Math.max(sL, 0) : 1
   const adlFactorShort = sS < 1 ? Math.max(sS, 0) : 1
 
-  const positions = state.positions.map((p) => {
-    if (p.size <= 0) return p
-    const π = profit(p)
-    if (p.direction === 'long' && sL < 1 && π > 0) {
-      const size = adlFactorLong * p.size
-      const leverage = getLeverage(size, p.costBasis)
-      return {
-        ...p,
-        size,
-        leverage,
-        liquidationPrice: liquidationPrice('long', p.entryPrice, leverage),
+  const settled: AdlSettlement[] = []
+  const positions = state.positions
+    .map((p) => {
+      if (p.size <= 0) return p
+      const π = profit(p)
+      const factor = p.direction === 'long' ? adlFactorLong : adlFactorShort
+
+      // A zero ADL factor extinguishes all future exposure but must not
+      // extinguish the user's retained margin. Settle that margin from the
+      // position's own pool and remove the position explicitly; engine
+      // callers mirror the pool debit with a user payout transaction.
+      if (factor === 0 && π > 0) {
+        settled.push({ position: p, payout: p.costBasis })
+        return null
       }
-    }
-    if (p.direction === 'short' && sS < 1 && π > 0) {
-      const size = adlFactorShort * p.size
-      const leverage = getLeverage(size, p.costBasis)
-      return {
-        ...p,
-        size,
-        leverage,
-        liquidationPrice: liquidationPrice('short', p.entryPrice, leverage),
+
+      if (p.direction === 'long' && sL < 1 && π > 0) {
+        const size = adlFactorLong * p.size
+        const leverage = getLeverage(size, p.costBasis)
+        return {
+          ...p,
+          size,
+          leverage,
+          liquidationPrice: liquidationPrice('long', p.entryPrice, leverage),
+        }
       }
-    }
-    return p
-  })
+      if (p.direction === 'short' && sS < 1 && π > 0) {
+        const size = adlFactorShort * p.size
+        const leverage = getLeverage(size, p.costBasis)
+        return {
+          ...p,
+          size,
+          leverage,
+          liquidationPrice: liquidationPrice('short', p.entryPrice, leverage),
+        }
+      }
+      return p
+    })
+    .filter((p): p is PerpPosition => p != null)
+
+  const longSettlementPayout = settled
+    .filter((s) => s.position.direction === 'long')
+    .reduce((sum, s) => sum + s.payout, 0)
+  const shortSettlementPayout = settled
+    .filter((s) => s.position.direction === 'short')
+    .reduce((sum, s) => sum + s.payout, 0)
 
   return {
-    state: { pool: state.pool, positions },
+    state: {
+      pool: {
+        L: poolAfterDebit(L, longSettlementPayout),
+        S: poolAfterDebit(S, shortSettlementPayout),
+      },
+      positions,
+    },
     adlFactorLong,
     adlFactorShort,
+    settled,
   }
 }
 
@@ -373,8 +484,14 @@ export const closePosition = (
   return {
     state: {
       pool: {
-        L: state.pool.L + poolLongDelta,
-        S: state.pool.S + poolShortDelta,
+        L:
+          poolLongDelta < 0
+            ? poolAfterDebit(state.pool.L, -poolLongDelta)
+            : state.pool.L + poolLongDelta,
+        S:
+          poolShortDelta < 0
+            ? poolAfterDebit(state.pool.S, -poolShortDelta)
+            : state.pool.S + poolShortDelta,
       },
       positions,
     },
@@ -408,6 +525,126 @@ export const solvencyFactor = (
   const E = state.positions
     .filter((p) => p.direction === side && p.size > 0)
     .reduce((s, p) => s + Math.max(getUnrealizedEquity(p, price), 0), 0)
-  if (E <= 0) return Infinity
-  return (opposing - C) / E
+  const availableCover = opposing - C
+  if (E <= 0) return availableCover >= 0 ? Infinity : -Infinity
+  return availableCover / E
+}
+
+/**
+ * Relative tolerance for the post-correction solvency ratio. ADL targets
+ * exactly 1, so a small allowance is needed for floating-point division.
+ */
+export const PERP_SOLVENCY_FACTOR_TOLERANCE = 1e-12
+
+const assertFiniteNumber = (label: string, value: number) => {
+  if (!Number.isFinite(value)) throw new Error(`${label} must be finite`)
+}
+
+const assertPerpStateNumbers = (state: PerpState, price: number) => {
+  assertFiniteNumber('oracle price', price)
+  if (price <= 0) throw new Error('oracle price must be positive')
+
+  const { L, S } = state.pool
+  assertFiniteNumber('long pool', L)
+  assertFiniteNumber('short pool', S)
+  if (L < 0 || S < 0) throw new Error('perp pools must be non-negative')
+  assertFiniteNumber('total pool', L + S)
+
+  state.positions.forEach((position, index) => {
+    const prefix = `position ${index}`
+    assertFiniteNumber(`${prefix} size`, position.size)
+    assertFiniteNumber(`${prefix} cost basis`, position.costBasis)
+    assertFiniteNumber(
+      `${prefix} original cost basis`,
+      position.originalCostBasis
+    )
+    assertFiniteNumber(`${prefix} entry price`, position.entryPrice)
+    assertFiniteNumber(`${prefix} leverage`, position.leverage)
+    assertFiniteNumber(`${prefix} liquidation price`, position.liquidationPrice)
+    assertFiniteNumber(`${prefix} opened time`, position.openedTime)
+    assertFiniteNumber(`${prefix} updated time`, position.updatedTime)
+
+    if (
+      position.size < 0 ||
+      position.costBasis < 0 ||
+      position.originalCostBasis < 0
+    )
+      throw new Error(`${prefix} amounts must be non-negative`)
+    if (position.entryPrice <= 0)
+      throw new Error(`${prefix} entry price must be positive`)
+
+    if (position.size === 0) {
+      if (position.costBasis !== 0 || position.leverage !== 0)
+        throw new Error(`${prefix} has margin without active exposure`)
+    } else if (position.costBasis <= 0 || position.leverage <= 0) {
+      throw new Error(`${prefix} active exposure must have positive margin`)
+    }
+  })
+}
+
+/**
+ * Fail closed before a PERP state is persisted or used for payouts.
+ *
+ * Positive Infinity is the valid no-profit case. Negative Infinity means the
+ * opposing pool cannot even reserve the other side's current position values.
+ */
+export const assertPerpStateSolvent = (
+  state: PerpState,
+  price: number,
+  tolerance = PERP_SOLVENCY_FACTOR_TOLERANCE
+) => {
+  if (!Number.isFinite(tolerance) || tolerance < 0 || tolerance >= 1)
+    throw new Error('solvency tolerance must be finite and in [0, 1)')
+
+  assertPerpStateNumbers(state, price)
+
+  for (const side of ['long', 'short'] as const) {
+    const factor = solvencyFactor(side, state, price)
+    if (factor === Infinity) continue
+    if (!Number.isFinite(factor))
+      throw new Error(`${side} solvency factor must be finite or +Infinity`)
+    if (factor < 1 - tolerance)
+      throw new Error(
+        `${side} solvency factor ${factor} is below ${1 - tolerance}`
+      )
+  }
+}
+
+/**
+ * Immediate funding-safety containment.
+ *
+ * Funding can increase a receiving side's existing mark-to-market profit.
+ * Re-run ADL at the unchanged oracle price, then validate the corrected state
+ * before the caller builds any persistence queries.
+ *
+ * A factor-zero ADL explicitly settles the position's retained cost basis
+ * from its own pool. Callers must mirror each returned settlement with the
+ * corresponding user payout before persisting the reduced pool.
+ */
+export const applyFundingWithSolvency = (
+  state: PerpState,
+  fundingRate: number,
+  price: number
+) => {
+  assertFiniteNumber('funding rate', fundingRate)
+  if (Math.abs(fundingRate) >= 1)
+    throw new Error('absolute funding rate must be below 1')
+  // Funding must not silently repair and misattribute an insolvency left by
+  // an earlier oracle transition. Its input is expected to be the fully
+  // liquidated/ADL-corrected state from the immediately preceding tick.
+  assertPerpStateSolvent(state, price)
+
+  const funded = applyFunding(state, fundingRate)
+  assertPerpStateNumbers(funded, price)
+
+  const corrected = applyADL(funded, price)
+
+  if (
+    !Number.isFinite(corrected.adlFactorLong) ||
+    !Number.isFinite(corrected.adlFactorShort)
+  )
+    throw new Error('funding ADL factors must be finite')
+
+  assertPerpStateSolvent(corrected.state, price)
+  return { ...corrected, fundedState: funded }
 }

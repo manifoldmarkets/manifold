@@ -1,4 +1,29 @@
-import { LiteMarket, toUltraLiteMarket } from './market-types'
+import { createPerpSchema, LiteMarket, toUltraLiteMarket } from './market-types'
+
+describe('createPerpSchema', () => {
+  const validPerp = {
+    question: 'Test perpetual',
+    oracleFeedId: 'test-feed',
+    maxLeverage: 10,
+    maxFundingRate: 0.01,
+    fundingSensitivity: 1,
+    maxOraclePriceAgeMs: 60_000,
+    subsidyLong: 100,
+    subsidyShort: 100,
+  }
+
+  it('requires the per-period funding cap to be strictly below one', () => {
+    expect(
+      createPerpSchema.safeParse({
+        ...validPerp,
+        maxFundingRate: 1 - Number.EPSILON,
+      }).success
+    ).toBe(true)
+    expect(
+      createPerpSchema.safeParse({ ...validPerp, maxFundingRate: 1 }).success
+    ).toBe(false)
+  })
+})
 
 describe('toUltraLiteMarket', () => {
   it('exposes finite perp price and current backing without a liquidity tier', () => {
