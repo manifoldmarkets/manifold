@@ -1,17 +1,15 @@
-import { PerpContract } from 'common/contract'
-import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { upsertOraclePrices } from 'shared/oracle'
 import {
   ORACLE_FEEDS,
   OracleFeedDef,
   validateOraclePoint,
 } from 'shared/oracle-feeds'
-import { runOracleUpdate } from 'shared/perps/engine'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 // The fast oracle tick (every 15s, modeled on sports-live). For each `fast`
 // feed in the registry:
@@ -102,28 +100,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
 
     // Apply to live perps on this feed. runOracleUpdate takes the
     // per-contract advisory lock and no-ops cheaply when nothing changed.
-    const rows = await pg.manyOrNone<{ data: PerpContract }>(
-      `select data from contracts
-       where mechanism = 'perp'
-         and resolution_time is null
-         and data->>'oracleFeedId' = $1`,
-      [feed.id]
-    )
-    for (const { data: contract } of rows) {
-      if (
-        (contract.oraclePriceTime ?? 0) >= latestPoint.ts &&
-        contract.oraclePrice === latestPoint.price
-      )
-        continue
-      const result = await runOracleUpdate(
-        contract.id,
-        latestPoint.price,
-        latestPoint.ts
-      )
-      if (result) {
-        await notifyPerpOracleResult(pg, contract, latestPoint.price, result)
-      }
-    }
+    await applyOraclePointToLivePerps(pg, feed.id, latestPoint)
   } catch (err) {
     log.error(`[oracle-feeds] ${feed.id}: tick failed — ${err}`)
   }

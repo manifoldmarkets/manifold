@@ -10,6 +10,7 @@ import {
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 // Open-weight token share on OpenRouter. Runs HOURLY, despite the feed's
 // `cadence: 'daily'` (which only means "written by its own job, not the 15s
@@ -97,6 +98,7 @@ export const updateOpenRouterShare = async () => {
   }
 
   await upsertOraclePrices(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, [point])
+  await applyOraclePointToLivePerps(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, point)
   log(
     `[openrouter] upserted ${result.share.toFixed(3)}% open-weight share ` +
       `over ${result.dates[0]}..${result.dates[result.dates.length - 1]} ` +

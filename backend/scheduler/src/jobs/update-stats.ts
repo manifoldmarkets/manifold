@@ -34,6 +34,7 @@ import { buildArray } from 'common/util/array'
 import { type Tables } from 'common/supabase/utils'
 import { recalculateAllUserPortfolios } from 'shared/mana-supply'
 import { MANIFOLD_DAU_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 interface StatEvent {
   id: string
@@ -329,6 +330,16 @@ export const updateActivityStats = async (
       price: viewers.viewer_count,
     }))
   )
+  const latestDau = dailyViewers[dailyViewers.length - 1]
+  if (latestDau) {
+    await applyOraclePointToLivePerps(pg, MANIFOLD_DAU_FEED_ID, {
+      ts: dayjs
+        .tz(latestDau.day, 'America/Los_Angeles')
+        .startOf('day')
+        .valueOf(),
+      price: latestDau.viewer_count,
+    })
+  }
 
   log('upsert bets counts and totals')
   await bulkUpsertStats(

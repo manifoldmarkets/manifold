@@ -12,6 +12,7 @@ import {
 } from 'shared/trump-approval'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 // Fetch enough poll history to fully cover today's trailing window, plus a
 // safety buffer for long fielding periods (some polls span 2+ weeks).
@@ -37,7 +38,9 @@ export const updateTrumpApproval = async () => {
   const polls = await fetchTrumpApprovalPolls(fetchStart)
   const points = computeRollingAverages(polls, today, today)
   if (points.length === 0) {
-    log(`no polls in trailing ${TRUMP_APPROVAL_WINDOW_DAYS}-day window; skipping`)
+    log(
+      `no polls in trailing ${TRUMP_APPROVAL_WINDOW_DAYS}-day window; skipping`
+    )
     return
   }
   const [point] = points
@@ -47,5 +50,6 @@ export const updateTrumpApproval = async () => {
     )} (${new Date(point.ts).toISOString()})`
   )
   await upsertOraclePrices(pg, TRUMP_APPROVAL_FEED_ID, [point])
+  await applyOraclePointToLivePerps(pg, TRUMP_APPROVAL_FEED_ID, point)
   log(`upserted 1 ${TRUMP_APPROVAL_FEED_ID} oracle point for ${today}`)
 }

@@ -9,6 +9,7 @@ import { ECI_FRONTIER_FEED_ID, upsertOraclePrices } from 'shared/oracle'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 // Daily ECI-frontier oracle point (same shape as update-trump-approval).
 // Writes exactly one point, for today, even when the frontier is unchanged —
@@ -37,5 +38,6 @@ export const updateEci = async () => {
   }
 
   await upsertOraclePrices(pg, ECI_FRONTIER_FEED_ID, [point])
+  await applyOraclePointToLivePerps(pg, ECI_FRONTIER_FEED_ID, point)
   log(`[eci] upserted frontier ${frontier.toFixed(2)} for ${todayStr}`)
 }
