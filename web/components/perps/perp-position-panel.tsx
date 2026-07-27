@@ -174,11 +174,15 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
         <span className="text-ink-500 text-xs font-semibold uppercase">
           Your position history
         </span>
-        <span className="text-ink-400 text-xs">
-          {hasMore && !expanded
-            ? `last ${events.length} of ${allEvents.length}`
-            : `last ${events.length}`}
-        </span>
+        {/* Caption only when rows are actually held back — "last 1" on a
+            complete one-row list reads as if something is hidden. */}
+        {hasMore && (
+          <span className="text-ink-400 text-xs">
+            {expanded
+              ? `all ${allEvents.length}`
+              : `last ${events.length} of ${allEvents.length}`}
+          </span>
+        )}
       </Row>
       {events.map((e) => {
         const decimals = inferPriceDecimals([e.oraclePrice])
