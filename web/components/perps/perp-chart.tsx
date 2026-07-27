@@ -29,12 +29,15 @@ import { api } from 'web/lib/api/api'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { useUser } from 'web/hooks/use-user'
 
-type Point = { ts: number; value: number }
-
-// Funding events fire hourly in the engine (FUNDING_PERIOD_MS = HOUR_MS), so
-// the per-period rate annualizes as rate * 24 * 365. Mirrors the constant in
-// perp-overview.tsx.
-const FUNDING_PERIODS_PER_YEAR = 24 * 365
+// numLiquidations / ghost only carry meaning in funding mode: liq counts
+// annotate a transfer's bar, and the ghost is the current hour accruing at
+// the live rate (not yet a transfer). Price mode ignores both.
+type Point = {
+  ts: number
+  value: number
+  numLiquidations?: number
+  ghost?: boolean
+}
 
 type OpenPosition = {
   userId: string
@@ -228,15 +231,13 @@ export const PerpChart = (props: {
       })
         .then((res) => {
           if (cancelled) return
-          const series = res.map((p) => ({
-            ts: p.ts,
-            value: p.fundingRate,
-          }))
-          // Anchor the last point to "now" with the live rate (computed from
-          // the current pools, matching the header) so the chart doesn't
-          // drop off before the next funding tick.
-          series.push({ ts: Date.now(), value: liveFundingRate })
-          setFundingPoints(series)
+          setFundingPoints(
+            res.map((p) => ({
+              ts: p.ts,
+              value: p.fundingRate,
+              numLiquidations: p.numLiquidations,
+            }))
+          )
         })
         .finally(() => !cancelled && setLoading(false))
     }
@@ -293,7 +294,19 @@ export const PerpChart = (props: {
     return priceSeries.filter((p) => p.ts >= cutoff)
   }, [priceSeries, activeFrame])
 
-  const points = mode === 'price' ? windowedSeries : fundingPoints
+  // Funding renders as one bar per hourly transfer plus a ghost bar at
+  // "now": the current hour accruing at the live pool rate (replaces the
+  // old synthetic line anchor). Gaps stay visibly empty — a dead scheduler
+  // must not interpolate into a confident diagonal.
+  const fundingBars = useMemo(() => {
+    if (mode !== 'funding') return fundingPoints
+    return [
+      ...fundingPoints,
+      { ts: Date.now(), value: liveFundingRate, ghost: true },
+    ]
+  }, [mode, fundingPoints, liveFundingRate])
+
+  const points = mode === 'price' ? windowedSeries : fundingBars
   const width = Math.max(320, measuredWidth ?? 720)
 
   const overlayGeom = useMemo((): OverlayGeometry | null => {
@@ -393,6 +406,12 @@ export const PerpChart = (props: {
       .range([40, width - 10])
     let yMin = Math.min(...ys)
     let yMax = Math.max(...ys)
+    if (mode === 'funding') {
+      // Bars grow from a zero baseline, so zero must be in the domain even
+      // when every rate shares a sign.
+      yMin = Math.min(yMin, 0)
+      yMax = Math.max(yMax, 0)
+    }
     // Flat series need a synthetic pad, but the fallback must match the
     // data's units: ±1 is fine for prices, while funding rates are raw
     // per-hour fractions (~1e-5), where a ±1 pad renders the axis as
@@ -556,6 +575,21 @@ export const PerpChart = (props: {
 
   const nowX = overlayGeom ? xScale(overlayGeom.now) : 0
   const clipId = `perp-chart-clip-${contract.id}`
+
+  // Bars fill ~2/3 of an hourly slot, clamped so dense multi-week views
+  // stay readable (≥1.5px) and sparse ones don't turn into slabs (≤9px).
+  const barW =
+    mode === 'funding'
+      ? Math.max(
+          1.5,
+          Math.min(
+            9,
+            (xScale(domainStart.getTime() + HOUR_MS) -
+              xScale(domainStart.getTime())) *
+              0.65
+          )
+        )
+      : 0
 
   // Cumulative funding pinned to the carry line's endpoint — the answer to
   // "what does holding to here cost". Rendered only where the per-event
@@ -841,13 +875,62 @@ export const PerpChart = (props: {
               </g>
             </>
           )}
-          <path
-            d={path}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            className="text-primary-500"
-          />
+          {mode === 'price' ? (
+            <path
+              d={path}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              className="text-primary-500"
+            />
+          ) : (
+            <g>
+              {/* Zero baseline: transfer direction is read off it. */}
+              <line
+                x1={40}
+                x2={width - 10}
+                y1={yScale(0)}
+                y2={yScale(0)}
+                stroke="currentColor"
+                strokeOpacity={0.25}
+              />
+              {points.map((p) => {
+                const x = xScale(p.ts)
+                const y0 = yScale(0)
+                const y1 = yScale(p.value)
+                const top = Math.min(y0, y1)
+                const h = Math.max(1, Math.abs(y1 - y0))
+                const isHovered = hovered?.ts === p.ts
+                return (
+                  <g
+                    key={p.ts}
+                    className={p.ghost ? 'text-ink-400' : 'text-primary-500'}
+                  >
+                    <rect
+                      x={x - barW / 2}
+                      y={top}
+                      width={barW}
+                      height={h}
+                      fill="currentColor"
+                      fillOpacity={p.ghost ? 0.2 : isHovered ? 1 : 0.75}
+                      stroke={p.ghost ? 'currentColor' : undefined}
+                      strokeDasharray={p.ghost ? '2 2' : undefined}
+                      strokeOpacity={p.ghost ? 0.7 : undefined}
+                    />
+                    {(p.numLiquidations ?? 0) > 0 && (
+                      <circle
+                        cx={x}
+                        cy={top - 4}
+                        r={2.5}
+                        fill="currentColor"
+                        className="text-amber-500"
+                      />
+                    )}
+                  </g>
+                )
+              })}
+            </g>
+          )}
           {carryEnd && (
             <g className="text-ink-600">
               <text
@@ -909,10 +992,30 @@ export const PerpChart = (props: {
                 : 'translateX(-50%)',
             }}
           >
-            <div className="text-ink-500">{formatHoverDate(hovered.ts)}</div>
+            <div className="text-ink-500">
+              {formatHoverDate(hovered.ts)}
+              {hovered.ghost ? ' · this hour, accruing' : ''}
+            </div>
             <div className="text-ink-900 font-semibold tabular-nums">
               {formatHoverValue(hovered.value, mode, priceDecimals)}
             </div>
+            {mode === 'funding' && (
+              <div className="text-ink-500">
+                {hovered.value > 0
+                  ? 'longs pay shorts'
+                  : hovered.value < 0
+                  ? 'shorts pay longs'
+                  : 'balanced'}
+                {hovered.value !== 0 &&
+                  ` · ≈${(Math.abs(hovered.value) * 24 * 100).toFixed(2)}%/day`}
+              </div>
+            )}
+            {mode === 'funding' && (hovered.numLiquidations ?? 0) > 0 && (
+              <div className="text-amber-600">
+                {hovered.numLiquidations} liquidation
+                {(hovered.numLiquidations ?? 0) > 1 ? 's' : ''} this period
+              </div>
+            )}
           </div>
         )}
         {hoveredMark && (
@@ -939,15 +1042,11 @@ export const PerpChart = (props: {
           </div>
         )}
       </div>
-      {/* fundingPoints carries a synthetic now-anchor, so length 1 = no real
-          events. A near-empty funding chart reads as broken without context. */}
-      {mode === 'funding' && fundingPoints.length <= 3 && (
+      {mode === 'funding' && (
         <span className="text-ink-400 text-xs">
-          {fundingPoints.length <= 1
+          {fundingPoints.length === 0
             ? 'No funding events yet — the first lands on the next hourly run.'
-            : `Funding runs hourly — first event ${formatHoverDate(
-                fundingPoints[0].ts
-              )}. History fills in from here.`}
+            : 'One bar per hourly transfer, % of margin. Above zero: longs pay shorts · below: shorts pay longs. Dashed bar = current hour, still accruing. Gaps are hours where the scheduler was down.'}
         </span>
       )}
     </Col>
@@ -1061,10 +1160,11 @@ const formatTick = (
   priceDecimals: number
 ) => {
   if (mode === 'funding') {
-    const annualPct = v * FUNDING_PERIODS_PER_YEAR * 100
-    return `${annualPct.toFixed(
-      annualPct >= 100 || annualPct <= -100 ? 0 : 1
-    )}%`
+    // Per-hour percent, trailing zeros trimmed — the chart is read in
+    // hours, so hourly units it is (an annualized axis on an hourly bar
+    // chart was the old chart's core sin).
+    const trimmed = (v * 100).toFixed(3).replace(/\.?0+$/, '')
+    return `${trimmed === '' || trimmed === '-' ? '0' : trimmed}%`
   }
   return formatPrice(v, priceDecimals)
 }
@@ -1075,9 +1175,8 @@ const formatHoverValue = (
   priceDecimals: number
 ) => {
   if (mode === 'funding') {
-    const annualPct = v * FUNDING_PERIODS_PER_YEAR * 100
-    const sign = annualPct > 0 ? '+' : ''
-    return `${sign}${annualPct.toFixed(2)}% APR`
+    const pct = v * 100
+    return `${pct > 0 ? '+' : ''}${pct.toFixed(3)}%/hr of margin`
   }
   // For price mode, bump decimals slightly for the hover readout so tiny
   // movements are visible even on coarse-scale axes.
