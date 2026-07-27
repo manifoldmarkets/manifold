@@ -51,7 +51,7 @@ import {
 import { buildPerpUserContractMetricsQuery } from './user-contract-metrics'
 import { log } from 'shared/utils'
 import { getUser } from 'shared/utils'
-import { HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
 
 // -----------------------------------------------------------------------
 // helpers
@@ -654,7 +654,7 @@ export const runOracleUpdate = async (
     // sub-minute oracle tick rebuilds user_contract_metrics for every holder
     // on every price move. Metric rows DO embed unrealized PnL at the oracle
     // price, but runFunding rebuilds them for all holders unconditionally, so
-    // they stay at worst FUNDING_PERIOD_MS stale — the pre-fast-tick cadence.
+    // they stay at worst one funding period stale — the pre-fast-tick cadence.
     if (
       upserts.length === 0 &&
       deletes.length === 0 &&
@@ -733,15 +733,26 @@ export const runFunding = async (
     // Cadence gate lives INSIDE the advisory lock: the scheduler's own check
     // runs unlocked, so two overlapping ticks (fine hourly, likely at fast
     // tick rates) could both decide to fund and double-haircut positions.
-    // The one-minute tolerance stops scheduler jitter from skipping a period.
+    // Same predicate as the scheduler prefilter by construction — both call
+    // shouldApplyFunding (common/perps/funding): period elapsed minus the
+    // jitter slack, AND a new oracle price since the last event. For the
+    // oracle side this passes the contract's own oraclePriceTime, which
+    // runOracleUpdate committed just before this runs — the freshest view
+    // available under the lock.
     const lastFunding = await pgTrans.oneOrNone<{ ts: string }>(
       `select ts from contract_perp_funding_events
        where contract_id = $1 order by ts desc limit 1`,
       [contractId]
     )
     if (
-      lastFunding &&
-      ts - new Date(lastFunding.ts).getTime() < FUNDING_PERIOD_MS - MINUTE_MS
+      !shouldApplyFunding({
+        now: ts,
+        lastFundingTime: lastFunding
+          ? new Date(lastFunding.ts).getTime()
+          : undefined,
+        latestOracleTime: contract.oraclePriceTime,
+        fundingPeriodMs: getFundingPeriodMs(contract),
+      })
     ) {
       return null
     }
@@ -1000,7 +1011,9 @@ export const getLatestOraclePriceForFeed = async (feedId: string) => {
   return getLatestOraclePrice(pg, feedId)
 }
 
-export const FUNDING_PERIOD_MS = HOUR_MS
+// Funding cadence (FUNDING_PERIOD_MS, getFundingPeriodMs, shouldApplyFunding)
+// lives in common/perps/funding — one module for the engine, the scheduler
+// prefilter, and the web projections, so the gates can't drift apart.
 
 // Re-exports used by callers.
 export {

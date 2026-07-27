@@ -3,12 +3,12 @@ import {
   PERPS_ENABLED,
   PERPS_SKIP_ORACLE_FRESHNESS,
 } from 'common/envs/constants'
+import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
 import { mapAsync } from 'common/util/promise'
-import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import {
-  FUNDING_PERIOD_MS,
   getLatestOraclePriceForFeed,
   runFunding,
   runOracleUpdate,
@@ -24,9 +24,10 @@ import { log } from 'shared/utils'
 //      For fast-feed contracts the 15s tick has usually done this already,
 //      in which case the engine's no-change fast path makes it a cheap no-op.
 //   3. runFunding -> applies funding event, emits per-user funding events.
-//      The authoritative once-per-FUNDING_PERIOD_MS gate lives inside
-//      runFunding (under the advisory lock); the check here is only a cheap
-//      prefilter.
+//      The authoritative once-per-period gate lives inside runFunding
+//      (under the advisory lock); the check here is only a cheap prefilter.
+//      Both are the same shouldApplyFunding predicate from
+//      common/perps/funding, so they cannot drift apart.
 //   4. Emit per-user liquidation/ADL notifications.
 // Each perp is processed under its own advisory lock inside the engine, so
 // this scheduler is safe to run concurrently with open/close API calls and
@@ -103,21 +104,28 @@ const updateOnePerp = async (contract: PerpContract) => {
       await notifyPerpOracleResult(pg, contract, latest.price, oracleResult)
     }
 
-    // Cheap prefilter; the authoritative gate is inside runFunding. Must
-    // use the engine's exact tolerance: cron fires at :00 sharp, so this
-    // run starts a few hundred ms EARLIER in the second than the last
-    // event's commit stamp about half the time — a full-period comparison
-    // here silently skips those hours (observed on dev: 16:00:01.104 event,
-    // 17:00:00.822 run, elapsed 3,599,780ms, no funding written).
+    // Cheap prefilter; the authoritative gate is inside runFunding. Both
+    // call the same shouldApplyFunding — the tolerances CANNOT differ (a
+    // hand-rolled full-period comparison here once silently skipped
+    // alternate hours; see the predicate's docs for the observed case).
+    // The oracle side passes the feed's latest ts; by this point
+    // runOracleUpdate has applied it, so a pass here implies the engine's
+    // view (contract.oraclePriceTime) is the same or newer.
     const lastFunding = await pg.oneOrNone<{ ts: string }>(
       `select ts from contract_perp_funding_events
        where contract_id = $1 order by ts desc limit 1`,
       [contract.id]
     )
-    const lastFundingMs = lastFunding
-      ? new Date(lastFunding.ts).getTime()
-      : 0
-    if (now - lastFundingMs >= FUNDING_PERIOD_MS - MINUTE_MS) {
+    if (
+      shouldApplyFunding({
+        now,
+        lastFundingTime: lastFunding
+          ? new Date(lastFunding.ts).getTime()
+          : undefined,
+        latestOracleTime: latest.ts,
+        fundingPeriodMs: getFundingPeriodMs(contract),
+      })
+    ) {
       await runFunding(contract.id, now, oracleResult)
     }
   } catch (err) {

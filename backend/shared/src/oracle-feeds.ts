@@ -1,4 +1,4 @@
-import { HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 import { fetchBtcUsdSpot } from './btc-price'
 import {
@@ -35,6 +35,13 @@ export type OracleFeedDef = {
   /** Feed is considered unhealthy when its latest point is older than this.
    * Doubles as the floor for a market's maxOraclePriceAgeMs at create time. */
   staleAfterMs: number
+  /** Expected interval between genuinely NEW values — not the poll cadence
+   * (UK carbon polls every 15s but NESO settles a value every 30min), and
+   * not staleAfterMs (a deliberately looser health threshold). create-perp
+   * derives a market's frozen funding period from this:
+   * max(1h, updatePeriodMs). Getting it wrong on a daily feed reintroduces
+   * the open-before-the-tick funding dodge, so when in doubt, err longer. */
+  updatePeriodMs: number
   fetchLatest?: () => Promise<{ ts: number; price: number } | null>
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
@@ -54,6 +61,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     maxPrice: 10_000_000,
     maxJumpFrac: 0.1,
     staleAfterMs: 2 * MINUTE_MS,
+    updatePeriodMs: 15_000,
     fetchLatest: fetchBtcUsdSpot,
   },
   {
@@ -64,6 +72,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     maxPrice: 600,
     // Actuals land one settlement block behind, occasionally later.
     staleAfterMs: 2 * HOUR_MS,
+    updatePeriodMs: 30 * MINUTE_MS,
     fetchRecent: fetchUkGridCarbonRecent,
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
@@ -80,6 +89,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     minPrice: 10,
     maxPrice: 90,
     staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
   },
   {
     id: ECI_FRONTIER_FEED_ID,
@@ -88,6 +98,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     minPrice: 100,
     maxPrice: 250,
     staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
   },
 ]
 

@@ -8,6 +8,7 @@ import {
 } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
+import { HOUR_MS } from 'common/util/time'
 import { slugify } from 'common/util/slugify'
 import { camelCase, first } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
@@ -66,14 +67,41 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       `No oracle price data for feed "${oracleFeedId}" — have an internal service write to oracle_prices first.`
     )
 
+  // The registry is where a feed's cadence lives, and the funding period is
+  // derived from it — a market on an unregistered feed would have no basis
+  // for its funding cadence (this used to be allowed; any oracle_prices row
+  // sufficed).
+  const feedDef = getOracleFeed(oracleFeedId)
+  if (!feedDef)
+    throw new APIError(
+      400,
+      `Feed "${oracleFeedId}" is not in the oracle feed registry — add an OracleFeedDef in backend/shared/src/oracle-feeds.ts first.`
+    )
+
   // A maxOraclePriceAgeMs below the feed's normal update interval would
   // freeze trading between perfectly healthy updates.
-  const feedDef = getOracleFeed(oracleFeedId)
-  if (feedDef && maxOraclePriceAgeMs < feedDef.staleAfterMs)
+  if (maxOraclePriceAgeMs < feedDef.staleAfterMs)
     throw new APIError(
       400,
       `maxOraclePriceAgeMs ${maxOraclePriceAgeMs} is below feed "${oracleFeedId}" expected update interval (${feedDef.staleAfterMs}ms)`
     )
+
+  // Funding must never fire more often than the market actually moves, and
+  // the hourly scheduler job can't honour a sub-hour period anyway — so the
+  // period is max(1h, feed cadence), frozen on the contract at create time
+  // rather than recomputed from the registry (a later cadence change must
+  // not silently rewrite the economics of open positions). Assert the input
+  // instead of trusting the arithmetic: a zero/absent updatePeriodMs would
+  // produce a config that lies about itself.
+  if (
+    !Number.isFinite(feedDef.updatePeriodMs) ||
+    feedDef.updatePeriodMs <= 0
+  )
+    throw new APIError(
+      500,
+      `Feed "${oracleFeedId}" has an invalid updatePeriodMs (${feedDef.updatePeriodMs}) — fix the OracleFeedDef.`
+    )
+  const fundingPeriodMs = Math.max(HOUR_MS, feedDef.updatePeriodMs)
 
   // Resolve topic tags up front so a bad group id fails before any writes.
   // Admin-only endpoint, so no per-group permission checks needed.
@@ -109,6 +137,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       maxFundingRate,
       fundingSensitivity,
       maxOraclePriceAgeMs,
+      fundingPeriodMs,
       poolLong: subsidyLong,
       poolShort: subsidyShort,
       initialSubsidy: totalSubsidy,
