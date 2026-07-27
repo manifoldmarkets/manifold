@@ -2,6 +2,7 @@ import {
   OPEN_WEIGHT_WINDOW_DAYS,
   computeOpenWeightShare,
   utcDateString,
+  validateOpenWeightPublication,
 } from 'common/perps/open-weight-models'
 import { DAY_MS } from 'common/util/time'
 import { fetchOpenRouterRankings } from 'shared/openrouter-tokens'
@@ -44,6 +45,12 @@ if (require.main === module)
       log.error('no OPENROUTER_API_KEY — cannot backfill')
       return
     }
+    if (!rankings.asOf) {
+      log.error(
+        'OpenRouter response has no valid meta.as_of — aborting backfill'
+      )
+      return
+    }
     log(`fetched ${rankings.rows.length} rows (as_of ${rankings.asOf})`)
 
     // Bucket rows by date once; recomputing the filter per day is O(n^2) over
@@ -56,29 +63,32 @@ if (require.main === module)
     )
 
     const points: { ts: number; price: number }[] = []
-    const unclassifiedSeen = new Set<string>()
+    const rejections: string[] = []
     // Start once a full window is available, so no point is computed from a
     // short window (which would read as a spike at the left edge).
     for (let i = OPEN_WEIGHT_WINDOW_DAYS - 1; i < dates.length; i++) {
       const window = dates.slice(i - OPEN_WEIGHT_WINDOW_DAYS + 1, i + 1)
       const rows = window.flatMap((d) => byDate[d])
       const result = computeOpenWeightShare(rows)
-      if (result.share == null) continue
-      for (const u of result.unclassified) unclassifiedSeen.add(u)
+      const publication = validateOpenWeightPublication(result)
+      if (!publication.ok) {
+        rejections.push(`${dates[i]}: ${publication.reason}`)
+        continue
+      }
       points.push({
         ts: Date.parse(`${dates[i]}T00:00:00.000Z`) + DAY_MS,
-        price: result.share,
+        price: publication.share,
       })
     }
 
-    if (unclassifiedSeen.size > 0)
+    if (rejections.length > 0) {
       log.error(
-        `models excluded from history (not in the classification list): ${Array.from(
-          unclassifiedSeen
-        )
-          .sort()
-          .join(', ')}`
+        `unsafe OpenRouter history — aborting without inserts:\n${rejections
+          .slice(0, 20)
+          .join('\n')}`
       )
+      return
+    }
 
     log(`computed ${points.length} daily trailing-window points`)
     if (points.length > 0) {

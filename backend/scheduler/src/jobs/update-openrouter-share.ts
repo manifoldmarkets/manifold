@@ -1,6 +1,8 @@
 import {
   computeOpenWeightShare,
+  OPEN_WEIGHT_LIST_VERSION,
   openWeightWindowRange,
+  validateOpenWeightPublication,
 } from 'common/perps/open-weight-models'
 import { fetchOpenRouterRankings } from 'shared/openrouter-tokens'
 import {
@@ -43,35 +45,21 @@ export const updateOpenRouterShare = async () => {
   const { startDate, endDate } = openWeightWindowRange(now)
   const rankings = await fetchOpenRouterRankings(startDate, endDate)
   if (!rankings) return // no key configured; already warned
+  if (!rankings.asOf) {
+    log.error('[openrouter] response has no valid meta.as_of — skipping')
+    return
+  }
 
   const result = computeOpenWeightShare(rankings.rows)
-  if (result.share == null) {
+  const publication = validateOpenWeightPublication(result)
+  if (!publication.ok) {
     log.error(
-      `[openrouter] no classified tokens in ${startDate}..${endDate} — skipping`
+      `[openrouter] unsafe index payload — ${publication.reason}; skipping publication`
     )
     return
   }
 
-  // Rule 2: a model we can't classify is excluded from both sides. That keeps
-  // the index honest automatically, but it also means the denominator quietly
-  // shrinks — so this is an ERROR, not a warning. Someone has to add it to
-  // common/perps/open-weight-models.ts.
-  if (result.unclassified.length > 0)
-    log.error(
-      `[openrouter] unclassified model(s) excluded from the index: ${result.unclassified.join(
-        ', '
-      )} — add them to common/perps/open-weight-models.ts`
-    )
-
-  // The classified total must be strictly below the payload total, because
-  // `other` is always present and never classified. If they ever match,
-  // `other` has leaked into the denominator.
-  if (result.classifiedTokens >= result.payloadTokens)
-    log.error(
-      `[openrouter] classified tokens (${result.classifiedTokens}) >= payload total (${result.payloadTokens}) — the "other" row may have leaked into the denominator`
-    )
-
-  const point = { ts: now, price: result.share }
+  const point = { ts: now, price: publication.share }
   const feed = getOracleFeed(OPENROUTER_OPEN_WEIGHT_FEED_ID)
   // Fetch the previous point so the registry's jump guard is actually armed —
   // a sudden multi-point move here means a classification change, not news.
@@ -91,7 +79,9 @@ export const updateOpenRouterShare = async () => {
     : null
   if (rejection) {
     log.error(
-      `[openrouter] rejected share ${result.share.toFixed(3)} — ${rejection}`
+      `[openrouter] rejected share ${publication.share.toFixed(
+        3
+      )} — ${rejection}`
     )
     return
   }
@@ -99,8 +89,10 @@ export const updateOpenRouterShare = async () => {
   await insertOraclePrices(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, [point])
   await applyOraclePointToLivePerps(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, point)
   log(
-    `[openrouter] inserted ${result.share.toFixed(3)}% open-weight share ` +
+    `[openrouter] inserted ${publication.share.toFixed(
+      3
+    )}% open-weight share ` +
       `over ${result.dates[0]}..${result.dates[result.dates.length - 1]} ` +
-      `(${result.dates.length}d, as_of ${rankings.asOf ?? 'unknown'})`
+      `(${result.dates.length}d, as_of ${rankings.asOf}, classification ${OPEN_WEIGHT_LIST_VERSION})`
   )
 }

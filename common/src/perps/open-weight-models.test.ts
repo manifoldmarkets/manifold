@@ -9,6 +9,7 @@ import {
   newestWindowDates,
   openWeightWindowRange,
   utcDateString,
+  validateOpenWeightPublication,
 } from './open-weight-models'
 
 const row = (
@@ -109,12 +110,14 @@ describe('computeOpenWeightShare', () => {
     expect(computeOpenWeightShare([]).share).toBeNull()
   })
 
-  it('treats a malformed token count as zero instead of throwing', () => {
+  it('fails closed when any token count is malformed', () => {
     const rows = [
       row('2026-07-26', OPEN, 'not-a-number'),
       row('2026-07-26', CLOSED, 100),
     ]
-    expect(computeOpenWeightShare(rows).share).toBeCloseTo(0)
+    const result = computeOpenWeightShare(rows)
+    expect(result.share).toBeNull()
+    expect(result.invalidTokenRows).toEqual([`2026-07-26:${OPEN}`])
   })
 
   it('truncates a fractional count rather than dropping the row', () => {
@@ -125,6 +128,66 @@ describe('computeOpenWeightShare', () => {
       row('2026-07-26', CLOSED, '100'),
     ]
     expect(computeOpenWeightShare(rows).share).toBeCloseTo(75)
+  })
+})
+
+describe('publication validation', () => {
+  const completeWindow = () => {
+    const rows: RankingRow[] = []
+    for (let day = 20; day <= 26; day++) {
+      const date = `2026-07-${day}`
+      rows.push(row(date, OPEN, 600))
+      rows.push(row(date, CLOSED, 400))
+      rows.push(row(date, 'other', 1000))
+    }
+    return rows
+  }
+
+  it('accepts a complete, classified payload with `other` present', () => {
+    const result = computeOpenWeightShare(completeWindow())
+    expect(validateOpenWeightPublication(result)).toEqual({
+      ok: true,
+      share: 60,
+    })
+  })
+
+  it('rejects unknown models instead of publishing a shrunken denominator', () => {
+    const rows = completeWindow()
+    rows.push(row('2026-07-26', 'newlab/unknown', 1000))
+    const validation = validateOpenWeightPublication(
+      computeOpenWeightShare(rows)
+    )
+    expect(validation.ok).toBe(false)
+    if (!validation.ok)
+      expect(validation.reason).toContain('unclassified models')
+  })
+
+  it('rejects short, gapped, and missing-other windows', () => {
+    const short = completeWindow().filter((row) => row.date !== '2026-07-20')
+    expect(
+      validateOpenWeightPublication(computeOpenWeightShare(short)).ok
+    ).toBe(false)
+
+    const gapped = completeWindow().filter((row) => row.date !== '2026-07-23')
+    gapped.push(row('2026-07-27', OPEN, 600))
+    gapped.push(row('2026-07-27', CLOSED, 400))
+    gapped.push(row('2026-07-27', 'other', 1000))
+    const gapValidation = validateOpenWeightPublication(
+      computeOpenWeightShare(gapped)
+    )
+    expect(gapValidation.ok).toBe(false)
+    if (!gapValidation.ok)
+      expect(gapValidation.reason).toContain('non-consecutive')
+
+    const noOther = completeWindow().filter(
+      (row) => row.model_permaslug !== 'other'
+    )
+    const otherValidation = validateOpenWeightPublication(
+      computeOpenWeightShare(noOther)
+    )
+    expect(otherValidation.ok).toBe(false)
+    if (!otherValidation.ok)
+      expect(otherValidation.reason).toContain('no excluded `other`')
   })
 })
 

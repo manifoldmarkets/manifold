@@ -586,6 +586,10 @@ export type OpenWeightShareResult = {
   dates: string[]
   /** Permaslugs seen in the window with no entry in the list. */
   unclassified: string[]
+  /** Rows in the window whose token count could not be parsed. */
+  invalidTokenRows: string[]
+  /** True when `other` or another excluded row is present in the payload. */
+  hasExcludedPayload: boolean
   /** Token counts, as doubles — display/telemetry only, never the divisor. */
   openTokens: number
   classifiedTokens: number
@@ -651,9 +655,14 @@ export const computeOpenWeightShare = (
   let classifiedTokens = 0n
   let payloadTokens = 0n
   const unclassifiedSet: Record<string, true> = {}
+  const invalidTokenRowSet: Record<string, true> = {}
 
   for (const row of rows) {
     const tokens = parseTokens(row.total_tokens)
+    if (tokens == null) {
+      invalidTokenRowSet[`${row.date}:${row.model_permaslug}`] = true
+      continue
+    }
     payloadTokens += tokens
 
     // Rule 1: `other` is unclassifiable by construction — never in the
@@ -672,30 +681,98 @@ export const computeOpenWeightShare = (
     if (classification.open) openTokens += tokens
   }
 
+  const invalidTokenRows = Object.keys(invalidTokenRowSet).sort()
+  const share =
+    classifiedTokens > 0n && invalidTokenRows.length === 0
+      ? Number(
+          (openTokens * 100n * OPEN_WEIGHT_SHARE_SCALE) / classifiedTokens
+        ) / Number(OPEN_WEIGHT_SHARE_SCALE)
+      : null
+
   return {
-    share:
-      classifiedTokens > 0n
-        ? (100 * Number(openTokens)) / Number(classifiedTokens)
-        : null,
+    share,
     dates,
     unclassified: Object.keys(unclassifiedSet).sort(),
-    openTokens: Number(openTokens),
-    classifiedTokens: Number(classifiedTokens),
-    payloadTokens: Number(payloadTokens),
+    invalidTokenRows,
+    hasExcludedPayload: payloadTokens > classifiedTokens,
+    openTokens: finiteBigIntTelemetry(openTokens),
+    classifiedTokens: finiteBigIntTelemetry(classifiedTokens),
+    payloadTokens: finiteBigIntTelemetry(payloadTokens),
   }
 }
 
+const OPEN_WEIGHT_SHARE_SCALE = 1_000_000_000n
+
+const finiteBigIntTelemetry = (value: bigint) => {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : Number.MAX_VALUE
+}
+
 /**
- * Tolerant of junk: a malformed count contributes 0 rather than throwing.
- *
- * A fractional value is truncated rather than rejected. If the upstream
- * format ever drifts to `"1542145933359.0"`, rejecting would zero SOME rows
- * and keep others, silently skewing the index toward whichever side still
- * parsed — a wrong number is far worse here than a rounded one. Rejecting
- * everything is safe by comparison (share goes null, the job logs and skips).
+ * Fractional counts are truncated because OpenRouter may serialize an integer
+ * aggregate with a decimal suffix. Any other malformed count returns null so
+ * the whole observation can fail closed instead of zeroing only one side.
  */
-const parseTokens = (raw: string): bigint => {
-  if (typeof raw !== 'string') return 0n
+const parseTokens = (raw: string): bigint | null => {
+  if (typeof raw !== 'string') return null
   const m = /^(\d+)(?:\.\d+)?$/.exec(raw.trim())
-  return m ? BigInt(m[1]) : 0n
+  return m ? BigInt(m[1]) : null
+}
+
+export type OpenWeightPublicationValidation =
+  | { ok: true; share: number }
+  | { ok: false; reason: string }
+
+/**
+ * Fail-closed publication gate shared by the live writer and backfill.
+ * Computing a diagnostic share is useful, but it is not enough to make that
+ * share safe to expose as an executable oracle price.
+ */
+export const validateOpenWeightPublication = (
+  result: OpenWeightShareResult,
+  expectedDays = OPEN_WEIGHT_WINDOW_DAYS
+): OpenWeightPublicationValidation => {
+  if (result.invalidTokenRows.length > 0)
+    return {
+      ok: false,
+      reason: `malformed token count rows: ${result.invalidTokenRows.join(
+        ', '
+      )}`,
+    }
+  if (result.unclassified.length > 0)
+    return {
+      ok: false,
+      reason: `unclassified models: ${result.unclassified.join(', ')}`,
+    }
+  if (result.dates.length !== expectedDays)
+    return {
+      ok: false,
+      reason: `incomplete window: expected ${expectedDays} days, got ${result.dates.length}`,
+    }
+  for (let i = 1; i < result.dates.length; i++) {
+    const previous = Date.parse(result.dates[i - 1])
+    const current = Date.parse(result.dates[i])
+    if (
+      !Number.isFinite(previous) ||
+      !Number.isFinite(current) ||
+      current - previous !== DAY_MS
+    )
+      return {
+        ok: false,
+        reason: `non-consecutive window dates: ${result.dates.join(', ')}`,
+      }
+  }
+  if (!result.hasExcludedPayload)
+    return {
+      ok: false,
+      reason: 'payload has no excluded `other` tokens',
+    }
+  if (
+    result.share == null ||
+    !Number.isFinite(result.share) ||
+    result.share < 0 ||
+    result.share > 100
+  )
+    return { ok: false, reason: `invalid share ${result.share}` }
+  return { ok: true, share: result.share }
 }

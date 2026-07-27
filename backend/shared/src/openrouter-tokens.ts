@@ -59,37 +59,58 @@ export const fetchOpenRouterRankings = async (
       `OpenRouter rankings ${startDate}..${endDate}: ${res.status} ${res.statusText}`
     )
 
-  const body = (await res.json()) as {
-    data?: unknown
-    meta?: { as_of?: string }
-  }
-  const rows = parseRankingRows(body.data)
+  const body = (await res.json()) as unknown
+  if (!body || typeof body !== 'object')
+    throw new Error('OpenRouter rankings response is not an object')
+
+  const data = 'data' in body ? body.data : undefined
+  const rawMeta = 'meta' in body ? body.meta : undefined
+  const rawAsOf =
+    rawMeta && typeof rawMeta === 'object' && 'as_of' in rawMeta
+      ? rawMeta.as_of
+      : undefined
+  const asOf =
+    typeof rawAsOf === 'string' &&
+    rawAsOf.trim().length > 0 &&
+    Number.isFinite(Date.parse(rawAsOf))
+      ? rawAsOf
+      : null
+  const rows = parseRankingRows(data)
   log(
     `[openrouter] fetched ${rows.length} rows for ${startDate}..${endDate}` +
-      ` (as_of ${body.meta?.as_of ?? 'unknown'})`
+      ` (as_of ${asOf ?? 'unknown'})`
   )
-  return { rows, asOf: body.meta?.as_of ?? null }
+  return { rows, asOf }
 }
 
-/** Keep only well-formed rows; a shape change should shrink the payload
- * loudly rather than poison the sum with NaN. */
+/** Reject the whole payload on shape drift. Silently dropping only malformed
+ * rows would bias the executable index toward whichever side still parsed. */
 export const parseRankingRows = (data: unknown): RankingRow[] => {
-  if (!Array.isArray(data)) return []
-  return data
-    .filter(
-      (r): r is RankingRow =>
-        !!r &&
-        typeof r.date === 'string' &&
-        /^\d{4}-\d{2}-\d{2}$/.test(r.date) &&
-        typeof r.model_permaslug === 'string' &&
-        !!r.model_permaslug &&
-        typeof r.total_tokens === 'string'
+  if (!Array.isArray(data))
+    throw new Error('OpenRouter rankings payload data is not an array')
+
+  return data.map((row, index) => {
+    if (
+      !row ||
+      typeof row !== 'object' ||
+      !('date' in row) ||
+      typeof row.date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(row.date) ||
+      !('model_permaslug' in row) ||
+      typeof row.model_permaslug !== 'string' ||
+      row.model_permaslug.length === 0 ||
+      !('total_tokens' in row) ||
+      typeof row.total_tokens !== 'string' ||
+      !/^\d+(?:\.\d+)?$/.test(row.total_tokens.trim())
     )
-    .map((r) => ({
-      date: r.date,
-      model_permaslug: r.model_permaslug,
-      total_tokens: r.total_tokens,
-    }))
+      throw new Error(`Malformed OpenRouter rankings row at index ${index}`)
+
+    return {
+      date: row.date,
+      model_permaslug: row.model_permaslug,
+      total_tokens: row.total_tokens,
+    }
+  })
 }
 
 /**
