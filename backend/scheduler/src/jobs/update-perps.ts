@@ -4,7 +4,7 @@ import {
   PERPS_SKIP_ORACLE_FRESHNESS,
 } from 'common/envs/constants'
 import { mapAsync } from 'common/util/promise'
-import { MINUTE_MS } from 'common/util/time'
+import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import {
@@ -62,18 +62,28 @@ const updateOnePerp = async (contract: PerpContract) => {
     }
     // Alert at the earlier of the feed's health threshold and the market's
     // tolerance — a live market heading toward a freeze is an incident.
-    // log.error feeds GCP log-based alerting.
+    // log.error feeds GCP log-based alerting. But a feed dead for over a
+    // week is no longer an incident, it's a lifecycle decision being
+    // ignored (the manifold-daus zombie emailed hourly for weeks): drop to
+    // WARN with a nag so the alert channel stays meaningful.
     const feedDef = getOracleFeed(contract.oracleFeedId)
     const alertThreshold = Math.min(
       contract.maxOraclePriceAgeMs,
       feedDef?.staleAfterMs ?? Infinity
     )
-    if (now - latest.ts > alertThreshold) {
-      log.error(
-        `[update-perps] ${contract.slug}: feed ${
-          contract.oracleFeedId
-        } is stale (age ${now - latest.ts}ms > ${alertThreshold}ms)`
-      )
+    const staleAge = now - latest.ts
+    if (staleAge > alertThreshold) {
+      if (staleAge > 7 * DAY_MS) {
+        log.warn(
+          `[update-perps] ${contract.slug}: feed ${contract.oracleFeedId} dead for ${Math.round(
+            staleAge / DAY_MS
+          )}d — resolve the market or revive the feed`
+        )
+      } else {
+        log.error(
+          `[update-perps] ${contract.slug}: feed ${contract.oracleFeedId} is stale (age ${staleAge}ms > ${alertThreshold}ms)`
+        )
+      }
     }
     // Only skip the engine when the price exceeds what the MARKET tolerates;
     // an unhealthy-but-tolerable price should still apply.
