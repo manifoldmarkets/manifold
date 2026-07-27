@@ -3,6 +3,7 @@ import {
   applyFunding,
   closePosition,
   computeFundingRate,
+  getPerpBackingPool,
   getUnrealizedEquity,
   imbalance,
   isLiquidated,
@@ -13,6 +14,18 @@ import {
   solvencyFactor,
 } from './amm'
 import { PerpDirection, PerpPosition } from './position'
+
+describe('getPerpBackingPool', () => {
+  it('adds the current long and short backing pools', () => {
+    expect(getPerpBackingPool(125, 75)).toBe(200)
+  })
+
+  it('does not surface corrupt pool values as market backing', () => {
+    expect(getPerpBackingPool(NaN, 75)).toBe(0)
+    expect(getPerpBackingPool(125, Infinity)).toBe(0)
+    expect(getPerpBackingPool(-1, 75)).toBe(0)
+  })
+})
 
 const makePosition = (
   overrides: Partial<PerpPosition> & {

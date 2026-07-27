@@ -36,6 +36,7 @@ import { ContractMinibar } from '../charts/minibar'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 import { UserHovercard } from '../user/user-hovercard'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
@@ -502,7 +503,7 @@ export function ContractStatusLabel(props: {
       return <span className="text-fuchsia-500/70">POLL</span>
     }
     case 'PERP': {
-      const price = Number((contract as any).oraclePrice)
+      const price = Number(contract.oraclePrice)
       // Endpoints that slim contracts may omit oraclePrice; show a dash
       // rather than a fake "0.0000".
       if (!Number.isFinite(price)) {
@@ -563,6 +564,9 @@ function ContractQuestion(props: {
           </span>
         )}
         <VisibilityIcon className="mr-1" contract={contract} />
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {removeEmojis(contract.question)}
       </span>
     </Row>

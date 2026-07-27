@@ -1,5 +1,6 @@
 import { ChatIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
+import { getPerpBackingPool } from 'common/perps/amm'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'common/util/formatNumber'
 import { Row } from '../layout/row'
@@ -116,9 +117,13 @@ export const liquidityColumn = {
     const { contract } = props
 
     const hasAnswers = contract.mechanism === 'cpmm-multi-1'
+    const isPerp = contract.mechanism === 'perp'
     const isCashContract = contract.token === 'CASH'
-    const totalLiquidity =
-      'totalLiquidity' in contract ? contract.totalLiquidity : 0
+    const totalLiquidity = isPerp
+      ? getPerpBackingPool(contract.poolLong, contract.poolShort)
+      : 'totalLiquidity' in contract
+      ? contract.totalLiquidity
+      : 0
     const liquidityTier = hasAnswers
       ? getTierIndexFromLiquidityAndAnswers(
           totalLiquidity,
@@ -131,7 +136,9 @@ export const liquidityColumn = {
       : totalLiquidity
     return (
       <Tooltip
-        text={`Total liquidity: ${formatWithToken({
+        text={`${
+          isPerp ? 'Current backing pool' : 'Total liquidity'
+        }: ${formatWithToken({
           amount: totalLiquidity,
           token: isCashContract ? 'CASH' : 'M$',
         })} ${

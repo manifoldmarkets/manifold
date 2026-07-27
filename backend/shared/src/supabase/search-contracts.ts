@@ -398,6 +398,8 @@ function getSearchContractWhereSQL(args: {
     CASE
         WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
         THEN (coalesce((contracts.data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(contracts.data->'answers'))
+        WHEN mechanism = 'perp'
+        THEN (coalesce((contracts.data->>'poolLong')::numeric, 0) + coalesce((contracts.data->>'poolShort')::numeric, 0))
         ELSE coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
     END
   ) >= case when mechanism = 'cpmm-multi-1' then ${answerLiquidity} else ${liquidity} end`

@@ -14,6 +14,20 @@ export type PerpState = {
   positions: PerpPosition[]
 }
 
+/** Current mana available across both sides to back position payouts. */
+export const getPerpBackingPool = (poolLong: number, poolShort: number) => {
+  if (
+    !Number.isFinite(poolLong) ||
+    !Number.isFinite(poolShort) ||
+    poolLong < 0 ||
+    poolShort < 0
+  ) {
+    return 0
+  }
+  const total = poolLong + poolShort
+  return Number.isFinite(total) ? total : 0
+}
+
 // -------- core position math --------
 
 export const getLeverage = (size: number, costBasis: number) =>

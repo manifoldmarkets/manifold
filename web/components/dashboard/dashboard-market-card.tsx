@@ -8,6 +8,7 @@ import {
   MultiNumericContract,
   contractPath,
 } from 'common/contract'
+import { getPerpBackingPool } from 'common/perps/amm'
 import { PollOption } from 'common/poll-option'
 import { shortFormatNumber } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
@@ -38,6 +39,8 @@ import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
+import { ClickFrame } from '../widgets/click-frame'
 
 type MarketMeta = {
   label: string
@@ -85,6 +88,12 @@ function marketMeta(outcomeType: string): MarketMeta {
         badgeClass:
           'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300',
       }
+    case 'PERP':
+      return {
+        label: 'Perpetual',
+        badgeClass:
+          'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300',
+      }
     default:
       return { label: 'Market', badgeClass: 'bg-ink-100 text-ink-500' }
   }
@@ -124,6 +133,7 @@ export function DashboardMarketCard({
   const isMultiNumericChart =
     contract.outcomeType === 'MULTI_NUMERIC' || contract.outcomeType === 'DATE'
   const isPoll = contract.outcomeType === 'POLL'
+  const perpContract = contract.outcomeType === 'PERP' ? contract : null
 
   const cpmmContract = isBinary ? (contract as CPMMContract) : null
   const binaryContract = isBinary ? (contract as BinaryContract) : null
@@ -134,10 +144,11 @@ export function DashboardMarketCard({
 
   const binaryProb = cpmmContract ? Math.round(cpmmContract.prob * 100) : null
   const resolved = !!contract.resolution
-  const liquidity =
-    'totalLiquidity' in contract
-      ? (contract as CPMMContract).totalLiquidity ?? 0
-      : 0
+  const liquidity = perpContract
+    ? getPerpBackingPool(perpContract.poolLong, perpContract.poolShort)
+    : 'totalLiquidity' in contract
+    ? (contract as CPMMContract).totalLiquidity ?? 0
+    : 0
   const status = statusLabel(contract)
   const contractUrl = contractPath(contract)
 
@@ -214,17 +225,16 @@ export function DashboardMarketCard({
   const hasAny = hasPositions || hasOrders
 
   return (
-    <div
+    <ClickFrame
       className="bg-canvas-50 border-ink-200 hover:border-primary-300 flex h-[340px] cursor-pointer flex-col rounded-xl border transition-colors"
       onClick={() => Router.push(contractUrl)}
+      role="link"
+      ariaLabel={contract.question}
     >
       {/* Creator row + type badge */}
       <Row className="items-center gap-2 px-5 pt-5">
         <UserHovercard userId={contract.creatorId} className="min-w-0 flex-1">
-          <Row
-            className="text-ink-500 items-center gap-1.5"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <Row className="stop-prop text-ink-500 items-center gap-1.5">
             <Avatar
               size="xs"
               avatarUrl={creator?.avatarUrl ?? contract.creatorAvatarUrl}
@@ -287,7 +297,7 @@ export function DashboardMarketCard({
                     </span>
                     <span className="text-ink-400 text-[11px]">chance</span>
                   </Row>
-                  <div className="-mt-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="stop-prop -mt-3">
                     <BetButton
                       contract={binaryContract}
                       user={user}
@@ -312,7 +322,7 @@ export function DashboardMarketCard({
         )}
 
         {multiContract && (
-          <div onClick={(e) => e.stopPropagation()}>
+          <div className="stop-prop">
             <SimpleAnswerBars contract={multiContract} maxAnswers={3} />
           </div>
         )}
@@ -364,6 +374,19 @@ export function DashboardMarketCard({
                 +{pollOptions.length - 5} more
               </span>
             )}
+          </Col>
+        )}
+
+        {perpContract && (
+          <Col className="h-full gap-0">
+            <Row className="items-baseline gap-1.5 pb-2">
+              <ContractStatusLabel
+                contract={perpContract}
+                className="text-ink-900 text-2xl font-bold"
+              />
+              <span className="text-ink-400 text-xs">oracle price</span>
+            </Row>
+            <FeedPerpPriceSparkline contract={perpContract} />
           </Col>
         )}
       </div>
@@ -420,6 +443,6 @@ export function DashboardMarketCard({
           </Tooltip>
         )}
       </Row>
-    </div>
+    </ClickFrame>
   )
 }
