@@ -45,8 +45,9 @@ export const PerpPositionPanel = (props: {
   // Shared polled positions from the parent (usePerpPositions). Null while
   // loading.
   positions?: PerpPositionRow[] | null
+  oracleTradingPaused?: boolean
 }) => {
-  const { contract, onAction, refreshKey } = props
+  const { contract, onAction, refreshKey, oracleTradingPaused = false } = props
   const user = useUser()
   // Optimistic close: the API confirmed the close, but the shared positions
   // refetch can lag behind an edge cache for several seconds — don't keep
@@ -118,6 +119,10 @@ export const PerpPositionPanel = (props: {
   if (!positions.length && !pastEvents.length) return null
 
   const close = async (direction: 'long' | 'short') => {
+    if (oracleTradingPaused) {
+      toast.error('Closing is paused until the oracle publishes a fresh price')
+      return
+    }
     setClosing(direction)
     try {
       const position = positions.find((p) => p.direction === direction)
@@ -174,6 +179,7 @@ export const PerpPositionPanel = (props: {
           onClose={() => close(p.direction)}
           closing={closing === p.direction}
           anyClosing={closing !== null}
+          oracleTradingPaused={oracleTradingPaused}
         />
       ))}
       {pastEvents.length > 0 && <PositionHistory events={pastEvents} />}
@@ -325,8 +331,16 @@ const PositionCard = (props: {
   onClose: () => void
   closing: boolean
   anyClosing: boolean
+  oracleTradingPaused: boolean
 }) => {
-  const { position: p, contract, onClose, closing, anyClosing } = props
+  const {
+    position: p,
+    contract,
+    onClose,
+    closing,
+    anyClosing,
+    oracleTradingPaused,
+  } = props
   const markPrice = Number(contract.oraclePrice)
   const priceDecimals = inferPriceDecimals([
     markPrice,
@@ -503,11 +517,13 @@ const PositionCard = (props: {
           color="gray-outline"
           onClick={onClose}
           loading={closing}
-          disabled={anyClosing}
+          disabled={anyClosing || oracleTradingPaused}
           size="md"
           className="w-full"
         >
-          Close position @ {formatPrice(markPrice, priceDecimals)}
+          {oracleTradingPaused
+            ? 'Close paused — waiting for oracle'
+            : `Close position @ ${formatPrice(markPrice, priceDecimals)}`}
         </Button>
       </Col>
     </Col>

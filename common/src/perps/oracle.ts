@@ -7,6 +7,47 @@ export type OraclePoint = {
 
 export const MAX_ORACLE_FUTURE_SKEW_MS = 5 * MINUTE_MS
 
+export type OracleFreshness = {
+  status: 'fresh' | 'stale' | 'unknown'
+  /** Non-negative age for display and diagnostics; null when inputs are invalid. */
+  ageMs: number | null
+}
+
+/**
+ * Classify the executable price cached on a PERP contract.
+ *
+ * Missing/invalid timestamps and invalid market tolerances are `unknown`, not
+ * fresh: callers must pause execution when status is anything but `fresh`.
+ * Future timestamps within the ingestion skew allowance have age zero.
+ */
+export const getOracleFreshness = (
+  oraclePriceTime: number | undefined,
+  maxAgeMs: number,
+  now = Date.now()
+): OracleFreshness => {
+  if (
+    typeof oraclePriceTime !== 'number' ||
+    !Number.isFinite(oraclePriceTime) ||
+    oraclePriceTime <= 0 ||
+    !Number.isFinite(maxAgeMs) ||
+    maxAgeMs <= 0 ||
+    !Number.isFinite(now) ||
+    now <= 0
+  ) {
+    return { status: 'unknown', ageMs: null }
+  }
+
+  const rawAgeMs = now - oraclePriceTime
+  if (!Number.isFinite(rawAgeMs) || rawAgeMs < -MAX_ORACLE_FUTURE_SKEW_MS) {
+    return { status: 'unknown', ageMs: null }
+  }
+  const ageMs = Math.max(rawAgeMs, 0)
+  return {
+    status: rawAgeMs > maxAgeMs ? 'stale' : 'fresh',
+    ageMs,
+  }
+}
+
 /**
  * Scale-independent endpoint movement for ranking numeric oracle markets.
  * Invalid persisted values contribute no movement instead of surfacing NaN.

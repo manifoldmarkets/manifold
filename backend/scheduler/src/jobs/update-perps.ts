@@ -1,6 +1,7 @@
 import { PerpContract } from 'common/contract'
 import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
+import { getOracleFreshness } from 'common/perps/oracle'
 import { mapAsync } from 'common/util/promise'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -88,7 +89,8 @@ const updateOnePerp = async (contract: PerpContract) => {
     // an unhealthy-but-tolerable price should still apply.
     if (
       !PERPS_SKIP_ORACLE_FRESHNESS &&
-      now - latest.ts > contract.maxOraclePriceAgeMs
+      getOracleFreshness(latest.ts, contract.maxOraclePriceAgeMs, now)
+        .status !== 'fresh'
     ) {
       return
     }

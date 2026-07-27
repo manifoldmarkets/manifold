@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
+import { fromNow } from 'client-common/lib/time'
 import { PerpContract } from 'common/contract'
+import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import { computeFundingRate } from 'common/perps/amm'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
@@ -13,6 +15,7 @@ import {
   formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
+import { getOracleFreshness } from 'common/perps/oracle'
 import { YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -29,6 +32,7 @@ import { scheduleFreshBurst, usePerpPositions } from './use-perp-positions'
 // there are no websocket broadcasts for oracle updates (the engine runs in
 // the scheduler process, not the API's socket server), so the page polls.
 const POLL_MS = 15_000
+const MAX_TIMEOUT_MS = 2_147_483_647
 
 // Overlay live perp fields (oracle price, pools, funding, volume) onto the
 // SSR contract so every number on the page tracks the feed without a reload.
@@ -127,6 +131,35 @@ const useTickFlash = (value: number) => {
   return flash
 }
 
+const useOracleFreshness = (contract: PerpContract) => {
+  const [now, setNow] = useState<number | null>(null)
+
+  useEffect(() => {
+    const update = () => setNow(Date.now())
+    update()
+    const staleAt =
+      (contract.oraclePriceTime ?? Number.NaN) + contract.maxOraclePriceAgeMs
+    const delay = staleAt - Date.now()
+    const timeout =
+      Number.isFinite(delay) && delay >= 0
+        ? setTimeout(update, Math.min(delay + 1, MAX_TIMEOUT_MS))
+        : undefined
+    const interval = setInterval(update, POLL_MS)
+    return () => {
+      if (timeout !== undefined) clearTimeout(timeout)
+      clearInterval(interval)
+    }
+  }, [contract.oraclePriceTime, contract.maxOraclePriceAgeMs])
+
+  return now == null
+    ? null
+    : getOracleFreshness(
+        contract.oraclePriceTime,
+        contract.maxOraclePriceAgeMs,
+        now
+      )
+}
+
 export const PerpOverview = (props: { contract: PerpContract }) => {
   const { contract, refresh, refreshKey } = useLivePerpContract(props.contract)
   const [chartMode, setChartMode] = useState<'price' | 'funding'>('price')
@@ -156,6 +189,11 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
     contract.fundingSensitivity,
     contract.maxFundingRate
   )
+  const oracleFreshness = useOracleFreshness(contract)
+  const oracleTradingPaused =
+    !PERPS_SKIP_ORACLE_FRESHNESS &&
+    oracleFreshness != null &&
+    oracleFreshness.status !== 'fresh'
 
   return (
     <Col className="gap-4">
@@ -214,6 +252,26 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         </Row>
       </Row>
 
+      {!contract.isResolved && oracleTradingPaused && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
+        >
+          <div className="font-semibold">
+            {oracleFreshness.status === 'stale'
+              ? 'Oracle update delayed'
+              : 'Oracle update unavailable'}
+          </div>
+          Trading and position closes are paused to prevent execution at an
+          outdated price.{' '}
+          {oracleFreshness.ageMs != null &&
+          typeof contract.oraclePriceTime === 'number'
+            ? `The last update arrived ${fromNow(contract.oraclePriceTime)}. `
+            : 'No valid update timestamp is available. '}
+          They resume automatically after the next valid update.
+        </div>
+      )}
+
       <PerpChart contract={contract} mode={chartMode} positions={positions} />
       {/* Source credit for the feed — kept out of the market description so a
           licence credit can't be edited away. See
@@ -242,6 +300,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           contract={contract}
           onTrade={refresh}
           positions={positions}
+          oracleTradingPaused={oracleTradingPaused}
         />
       )}
       <PerpPositionPanel
@@ -249,6 +308,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         onAction={refresh}
         refreshKey={refreshKey}
         positions={positions}
+        oracleTradingPaused={oracleTradingPaused}
       />
     </Col>
   )

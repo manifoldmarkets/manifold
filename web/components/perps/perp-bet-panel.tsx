@@ -55,8 +55,9 @@ export const PerpBetPanel = (props: {
   // open direction derives from these, so this panel stays consistent with
   // actions taken anywhere without its own fetch. Null while loading.
   positions?: PerpPositionRow[] | null
+  oracleTradingPaused?: boolean
 }) => {
-  const { contract, onTrade, positions } = props
+  const { contract, onTrade, positions, oracleTradingPaused = false } = props
   const user = useUser()
 
   const [direction, setDirection] = useState<'long' | 'short'>('long')
@@ -153,6 +154,10 @@ export const PerpBetPanel = (props: {
     )
 
   const onSubmit = async () => {
+    if (oracleTradingPaused) {
+      toast.error('Trading is paused until the oracle publishes a fresh price')
+      return
+    }
     if (!user) {
       toast.error('Sign in to trade')
       return
@@ -256,6 +261,7 @@ export const PerpBetPanel = (props: {
             color="green"
             size="xl"
             onClick={() => onPickDirection('long')}
+            disabled={oracleTradingPaused}
             className="flex-1 px-2 sm:px-6"
           >
             Long
@@ -265,6 +271,7 @@ export const PerpBetPanel = (props: {
             color="red"
             size="xl"
             onClick={() => onPickDirection('short')}
+            disabled={oracleTradingPaused}
             className="flex-1 px-2 sm:px-6"
           >
             Short
@@ -372,12 +379,15 @@ export const PerpBetPanel = (props: {
           !!amountError ||
           !margin ||
           margin <= 0 ||
-          exceedsCapacity
+          exceedsCapacity ||
+          oracleTradingPaused
         }
         size="lg"
         className="w-full"
       >
-        {submitLabel}
+        {oracleTradingPaused
+          ? 'Trading paused — waiting for oracle'
+          : submitLabel}
       </Button>
     </Col>
   )

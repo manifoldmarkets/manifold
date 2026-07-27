@@ -144,6 +144,11 @@ seed chart history before market creation.
 Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
 `[update-perps]` — wire GCP log-based alerting to those.
 
+Trading and closes share `getOracleFreshness` from
+`common/src/perps/oracle.ts`. A stale price, missing timestamp, or invalid
+freshness limit pauses both paths until a valid update arrives; the market page
+uses the same predicate to show the pause and disable open/close actions.
+
 ## Integration points (grep for these to find everything)
 
 - `outcomeType === 'PERP'` — UI switch branches.

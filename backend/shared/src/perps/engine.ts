@@ -38,6 +38,7 @@ import {
 } from 'common/perps/position'
 import {
   decideOracleTransition,
+  getOracleFreshness,
   OraclePoint,
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
@@ -76,6 +77,25 @@ import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
 type LoadedState = {
   contract: PerpContract
   state: PerpState
+}
+
+const assertFreshOracleForTrading = (contract: PerpContract, now: number) => {
+  if (PERPS_SKIP_ORACLE_FRESHNESS) return
+  const freshness = getOracleFreshness(
+    contract.oraclePriceTime,
+    contract.maxOraclePriceAgeMs,
+    now
+  )
+  if (freshness.status === 'fresh') return
+
+  const detail =
+    freshness.status === 'stale' && freshness.ageMs != null
+      ? `Oracle feed is stale (age ${freshness.ageMs}ms > ${contract.maxOraclePriceAgeMs}ms)`
+      : 'Oracle feed freshness is unavailable'
+  throw new APIError(
+    400,
+    `${detail} — trading is paused until the next valid update`
+  )
 }
 
 // All engine writers on one contract serialize on the advisory lock, but each
@@ -431,19 +451,7 @@ export const openOrAddPosition = async (
         `Leverage ${leverage} exceeds max ${contract.maxLeverage}`
       )
 
-    // Oracle freshness.
-    if (
-      !PERPS_SKIP_ORACLE_FRESHNESS &&
-      contract.oraclePriceTime &&
-      now - contract.oraclePriceTime > contract.maxOraclePriceAgeMs
-    ) {
-      throw new APIError(
-        400,
-        `Oracle feed is stale (age ${now - contract.oraclePriceTime}ms > ${
-          contract.maxOraclePriceAgeMs
-        }ms)`
-      )
-    }
+    assertFreshOracleForTrading(contract, now)
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 
@@ -745,22 +753,10 @@ export const closePosition = async (
       )
     }
 
-    // Oracle freshness: a stale feed would let a user cherry-pick a favorable
-    // cached price after watching the real market move. Mirror the open-side
-    // check here so both sides of the trade use the same guardrail.
+    // A stale feed would let a user cherry-pick a favorable cached price after
+    // watching the real market move. Opens and closes share one predicate.
     const now = Date.now()
-    if (
-      !PERPS_SKIP_ORACLE_FRESHNESS &&
-      contract.oraclePriceTime &&
-      now - contract.oraclePriceTime > contract.maxOraclePriceAgeMs
-    ) {
-      throw new APIError(
-        400,
-        `Oracle feed is stale (age ${now - contract.oraclePriceTime}ms > ${
-          contract.maxOraclePriceAgeMs
-        }ms) — try again after the next update`
-      )
-    }
+    assertFreshOracleForTrading(contract, now)
 
     await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
 

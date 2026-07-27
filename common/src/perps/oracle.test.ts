@@ -1,12 +1,51 @@
 import {
   MAX_ORACLE_FUTURE_SKEW_MS,
   decideOracleTransition,
+  getOracleFreshness,
   getOracleLogPriceChange,
   validateBasicOraclePoint,
 } from './oracle'
 
 const NOW = 2_000_000
 const current = { ts: 1_000_000, price: 100 }
+
+describe('getOracleFreshness', () => {
+  it('is fresh through the configured boundary and stale immediately after', () => {
+    expect(getOracleFreshness(1_000_000, 1_000_000, NOW)).toEqual({
+      status: 'fresh',
+      ageMs: 1_000_000,
+    })
+    expect(getOracleFreshness(999_999, 1_000_000, NOW)).toEqual({
+      status: 'stale',
+      ageMs: 1_000_001,
+    })
+  })
+
+  it('treats a future point as age zero', () => {
+    expect(getOracleFreshness(NOW + 1_000, 60_000, NOW)).toEqual({
+      status: 'fresh',
+      ageMs: 0,
+    })
+  })
+
+  it.each([
+    [undefined, 60_000, NOW],
+    [0, 60_000, NOW],
+    [Number.NaN, 60_000, NOW],
+    [NOW, 0, NOW],
+    [NOW, Number.POSITIVE_INFINITY, NOW],
+    [NOW, 60_000, Number.NaN],
+    [NOW + MAX_ORACLE_FUTURE_SKEW_MS + 1, 60_000, NOW],
+  ])(
+    'pauses on invalid freshness inputs %#',
+    (oraclePriceTime, maxAgeMs, now) => {
+      expect(getOracleFreshness(oraclePriceTime, maxAgeMs, now)).toEqual({
+        status: 'unknown',
+        ageMs: null,
+      })
+    }
+  )
+})
 
 describe('getOracleLogPriceChange', () => {
   it('measures endpoint movement independently of the feed scale', () => {
