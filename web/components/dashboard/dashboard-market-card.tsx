@@ -194,6 +194,29 @@ export function DashboardMarketCard({
           prob: Math.round(b.limitProb * 100),
           amount: b.orderAmount - b.amount,
         }))
+    } else if (perpContract) {
+      const metric = allMetrics.find((m) => m.answerId === null)
+      const longSize = metric?.totalShares.LONG ?? 0
+      const shortSize = metric?.totalShares.SHORT ?? 0
+      const positionValue = metric?.payout ?? Number.NaN
+      const profit = metric?.profit ?? Number.NaN
+      const hasFinitePosition =
+        metric?.hasShares &&
+        Number.isFinite(longSize) &&
+        Number.isFinite(shortSize) &&
+        Number.isFinite(positionValue) &&
+        Number.isFinite(profit) &&
+        (longSize > 0 || shortSize > 0)
+
+      if (hasFinitePosition) {
+        positions = [
+          {
+            name: longSize > 0 ? 'Long' : 'Short',
+            amount: Math.max(positionValue, 0),
+            profit,
+          },
+        ]
+      }
     } else if (isNumericBuckets) {
       const bucketMetrics = allMetrics.filter(
         (m) => m.answerId !== null && m.hasShares
