@@ -1,8 +1,5 @@
 import { PerpContract } from 'common/contract'
-import {
-  PERPS_ENABLED,
-  PERPS_SKIP_ORACLE_FRESHNESS,
-} from 'common/envs/constants'
+import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
 import { mapAsync } from 'common/util/promise'
 import { DAY_MS } from 'common/util/time'
@@ -33,10 +30,6 @@ import { log } from 'shared/utils'
 // this scheduler is safe to run concurrently with open/close API calls and
 // with the fast tick.
 export const updatePerps = async () => {
-  if (!PERPS_ENABLED) {
-    log('perps disabled, skipping update-perps')
-    return
-  }
   const pg = createSupabaseDirectClient()
 
   const rows = await pg.manyOrNone<{ data: PerpContract }>(

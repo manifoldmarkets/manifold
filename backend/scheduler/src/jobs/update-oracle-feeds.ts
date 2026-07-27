@@ -1,5 +1,4 @@
 import { PerpContract } from 'common/contract'
-import { PERPS_ENABLED } from 'common/envs/constants'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { upsertOraclePrices } from 'shared/oracle'
 import {
@@ -27,7 +26,6 @@ import { log } from 'shared/utils'
 // Croner's `protect` skips a firing while the previous one still runs, so a
 // slow upstream can't stack ticks.
 export async function updateOracleFeeds() {
-  if (!PERPS_ENABLED) return
   const pg = createSupabaseDirectClient()
   const fastFeeds = ORACLE_FEEDS.filter((f) => f.cadence === 'fast')
   await Promise.all(fastFeeds.map((feed) => tickOneFeed(pg, feed)))
