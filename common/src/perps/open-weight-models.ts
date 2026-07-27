@@ -4,10 +4,11 @@ import { DAY_MS } from '../util/time'
 // OpenRouter's top-50 models went to models whose weights the public can
 // download.
 //
-// This file is the published methodology, not an implementation detail. It
-// lives in `common` (a leaf package) precisely so `web` can render the same
-// classification list the oracle scores against — a settlement source nobody
-// can inspect is a settlement source people dispute.
+// This file is the published methodology, not an implementation detail — a
+// settlement source nobody can inspect is a settlement source people dispute.
+// It lives in `common` (a leaf package) so the list the oracle scores against
+// is one auditable artifact, and so a UI that wants to surface it later can
+// read it directly rather than keeping a copy that drifts.
 //
 // THE TEST: are the weights downloadable by the public?
 //   downloadable -> open.  API-only -> closed.
@@ -48,14 +49,7 @@ import { DAY_MS } from '../util/time'
 // a versioned list rather than a live lookup: the index definition must not
 // change silently when a third party edits a metadata field.
 
-/**
- * Feed id. Lives in `common` rather than `backend/shared/src/oracle.ts` (which
- * re-exports it) because `web` needs it to decide when to render this
- * methodology, and web must never import from backend.
- */
-export const OPENROUTER_OPEN_WEIGHT_FEED_ID = 'openrouter-open-weight-share'
-
-/** Bump when the map changes. Rendered on the market page. */
+/** Bump when the map changes. */
 export const OPEN_WEIGHT_LIST_VERSION = '2026-07-27'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
@@ -64,8 +58,8 @@ export const OPEN_WEIGHT_WINDOW_DAYS = 7
 /**
  * OpenRouter aggregates everything outside the top 50 into a single row under
  * this key. It cannot be classified, so it is excluded from the denominator —
- * the index is defined over the top 50 and says so on the market page. We do
- * not estimate it.
+ * the index is defined over the top 50, and the market description must say
+ * so. We do not estimate it.
  */
 export const OTHER_MODEL_KEY = 'other'
 
@@ -705,15 +699,3 @@ const parseTokens = (raw: string): bigint => {
   const m = /^(\d+)(?:\.\d+)?$/.exec(raw.trim())
   return m ? BigInt(m[1]) : 0n
 }
-
-/** The classification list, shaped for display. Open models first. */
-export const openWeightModelList = () =>
-  Object.entries(OPEN_WEIGHT_MODELS)
-    .map(([permaslug, c]) => ({ permaslug, ...c }))
-    .sort((a, b) =>
-      a.open === b.open
-        ? a.permaslug.localeCompare(b.permaslug)
-        : a.open
-        ? -1
-        : 1
-    )

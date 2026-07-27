@@ -13,7 +13,6 @@ import {
   formatPrice,
   inferPriceDecimals,
 } from 'common/perps/format'
-import { OPENROUTER_OPEN_WEIGHT_FEED_ID } from 'common/perps/open-weight-models'
 import { YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -22,7 +21,6 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { api } from 'web/lib/api/api'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
-import { PerpOpenRouterMethodology } from './perp-openrouter-methodology'
 import { PerpPositionPanel } from './perp-position-panel'
 import { scheduleFreshBurst, usePerpPositions } from './use-perp-positions'
 
@@ -201,12 +199,6 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         refreshKey={refreshKey}
         positions={positions}
       />
-      {/* Feed-specific: the OpenRouter dataset terms require the attribution
-          to render wherever the data is republished, and the proxy has to be
-          named where people are actually trading it. */}
-      {contract.oracleFeedId === OPENROUTER_OPEN_WEIGHT_FEED_ID && (
-        <PerpOpenRouterMethodology oraclePriceTime={contract.oraclePriceTime} />
-      )}
     </Col>
   )
 }

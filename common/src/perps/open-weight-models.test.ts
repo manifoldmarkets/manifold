@@ -7,7 +7,6 @@ import {
   classifyModel,
   computeOpenWeightShare,
   newestWindowDates,
-  openWeightModelList,
   openWeightWindowRange,
   utcDateString,
 } from './open-weight-models'
@@ -187,12 +186,5 @@ describe('the published list', () => {
       if (c.open) expect(`${slug}:${c.weights ?? ''}`).toMatch(/.+\/.+/)
       else expect(c.weights).toBeUndefined()
     }
-  })
-
-  it('lists open models first for display', () => {
-    const list = openWeightModelList()
-    expect(list.length).toBe(Object.keys(OPEN_WEIGHT_MODELS).length)
-    expect(list[0].open).toBe(true)
-    expect(list[list.length - 1].open).toBe(false)
   })
 })
