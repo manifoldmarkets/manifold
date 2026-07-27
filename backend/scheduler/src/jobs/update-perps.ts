@@ -98,7 +98,8 @@ const updateOnePerp = async (contract: PerpContract) => {
     const oracleResult = await runOracleUpdate(
       contract.id,
       latest.price,
-      latest.ts
+      latest.ts,
+      latest.sourceTs
     )
     if (oracleResult) {
       await notifyPerpOracleResult(pg, contract, latest.price, oracleResult)

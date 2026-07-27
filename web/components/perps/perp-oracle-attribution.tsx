@@ -7,21 +7,10 @@ import { getOracleAttribution } from 'common/perps/oracle-attribution'
 // to be something an edit to the description cannot remove. Anything that
 // must always be there shouldn't live in a free-text field.
 
-// Deterministic UTC — toLocaleString would disagree between the server render
-// and the client's timezone and break hydration.
-const formatUtc = (ts: number) => {
-  const d = new Date(ts)
-  const p = (n: number) => String(n).padStart(2, '0')
-  return (
-    `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ` +
-    `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} UTC`
-  )
-}
-
 export const PerpOracleAttribution = (props: {
   feedId: string | undefined
-  /** ts of the latest oracle point, for feeds whose terms want an as-of. */
-  asOfTime?: number
+  /** Provider-declared source timestamp, not Manifold's observation time. */
+  asOfTime?: number | null
 }) => {
   const { feedId, asOfTime } = props
   const attribution = getOracleAttribution(feedId)
@@ -30,6 +19,10 @@ export const PerpOracleAttribution = (props: {
   if (!attribution) return null
 
   const { source, url, licence, showAsOf } = attribution
+  const validAsOfTime =
+    typeof asOfTime === 'number' && Number.isFinite(asOfTime) && asOfTime > 0
+      ? asOfTime
+      : null
 
   return (
     <div className="text-ink-400 text-xs">
@@ -47,7 +40,10 @@ export const PerpOracleAttribution = (props: {
         source
       )}
       {licence && ` (${licence})`}
-      {showAsOf && asOfTime ? ` · as of ${formatUtc(asOfTime)}` : ''}
+      {showAsOf &&
+        (validAsOfTime == null
+          ? ', source as-of unavailable.'
+          : `, as of ${new Date(validAsOfTime).toISOString()}.`)}
     </div>
   )
 }

@@ -1074,7 +1074,12 @@ export const API = (_apiTypeCheck = {
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as {
-      latest: { feedId: string; price: number; ts: number } | null
+      latest: {
+        feedId: string
+        price: number
+        ts: number
+        sourceTs?: number
+      } | null
     },
     props: z.object({ feedId: z.string().min(1) }).strict(),
   },
@@ -1132,6 +1137,9 @@ export const API = (_apiTypeCheck = {
       .object({
         feedId: z.string().min(1).max(200),
         ts: z.number().int().positive(),
+        // Provider-declared source data timestamp. Required by the writer for
+        // feeds whose attribution terms include an as-of time.
+        sourceTs: z.number().int().positive().optional(),
         // The engine divides by entry prices and treats <= 0 as invalid;
         // reject junk at the door rather than poisoning the feed.
         price: z.number().finite().positive(),

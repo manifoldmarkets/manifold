@@ -28,6 +28,7 @@ type FeedSnapshot = {
   feedId: string
   latestTs: number
   latestPrice: number
+  sourceTs?: number
   oldestTs: number
   pointCount: number
 }
@@ -134,19 +135,37 @@ if (require.main === module)
           row.present ? relation : `${relation} is missing`
         )
       }
+      const sourceTimestampColumn = await pg.one<{ present: boolean }>(
+        `select exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'oracle_prices'
+             and column_name = 'source_ts'
+         ) as present`
+      )
+      report(
+        sourceTimestampColumn.present ? 'PASS' : 'FAIL',
+        'oracle source timestamp column',
+        sourceTimestampColumn.present
+          ? 'public.oracle_prices.source_ts is installed'
+          : 'oracle source timestamp migration is missing'
+      )
       const trigger = await pg.one<{ present: boolean }>(
         `select exists (
-           select 1 from pg_trigger
+           select 1
+           from pg_trigger
            where tgname = 'oracle_prices_no_update'
              and not tgisinternal
+             and pg_get_functiondef(tgfoid) like '%source_ts%'
          ) as present`
       )
       report(
         trigger.present ? 'PASS' : 'FAIL',
         'immutable oracle trigger',
         trigger.present
-          ? 'oracle_prices_no_update is installed'
-          : 'append-only migration is missing'
+          ? 'oracle_prices_no_update protects price and source metadata'
+          : 'append-only source metadata migration is missing'
       )
       const relatedPerps = await pg.one<{ present: boolean }>(
         `select coalesce(
@@ -174,6 +193,7 @@ if (require.main === module)
         feed_id: string
         latest_ts: string
         latest_price: number | string
+        latest_source_ts: string | null
         oldest_ts: string
         point_count: number | string
       }>(
@@ -181,6 +201,7 @@ if (require.main === module)
            latest.feed_id,
            latest.ts as latest_ts,
            latest.price as latest_price,
+           latest.source_ts as latest_source_ts,
            stats.oldest_ts,
            stats.point_count
          from oracle_prices latest
@@ -199,6 +220,9 @@ if (require.main === module)
           feedId: row.feed_id,
           latestTs: new Date(row.latest_ts).getTime(),
           latestPrice: Number(row.latest_price),
+          ...(row.latest_source_ts == null
+            ? {}
+            : { sourceTs: new Date(row.latest_source_ts).getTime() }),
           oldestTs: new Date(row.oldest_ts).getTime(),
           pointCount: Number(row.point_count),
         })
@@ -223,6 +247,21 @@ if (require.main === module)
         if (rejection) {
           report('FAIL', `feed ${market.feedId}`, rejection)
           continue
+        }
+        if (market.requiresSourceAsOf) {
+          const sourceTimestampReady =
+            snapshot.sourceTs != null &&
+            Number.isFinite(snapshot.sourceTs) &&
+            snapshot.sourceTs > 0
+          report(
+            sourceTimestampReady ? 'PASS' : 'FAIL',
+            `feed ${market.feedId} source attribution`,
+            sourceTimestampReady
+              ? `provider data as of ${new Date(
+                  snapshot.sourceTs as number
+                ).toISOString()}`
+              : 'latest point has no valid provider source timestamp'
+          )
         }
         const freshness = getOracleFreshness(
           snapshot.latestTs,
@@ -411,6 +450,22 @@ if (require.main === module)
           )
 
         const latest = feedSnapshots.get(contract.oracleFeedId)
+        if (definition?.requiresSourceAsOf) {
+          const sourceTimestampReady =
+            contract.oracleSourceTime != null &&
+            Number.isFinite(contract.oracleSourceTime) &&
+            contract.oracleSourceTime > 0 &&
+            latest?.sourceTs === contract.oracleSourceTime
+          report(
+            sourceTimestampReady ? 'PASS' : 'FAIL',
+            `market ${contract.slug} source attribution`,
+            sourceTimestampReady
+              ? `provider data as of ${new Date(
+                  contract.oracleSourceTime as number
+                ).toISOString()}`
+              : 'contract cache is missing or trails the latest provider source timestamp'
+          )
+        }
         if (
           latest &&
           (contract.oraclePriceTime ?? 0) < latest.latestTs &&

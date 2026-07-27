@@ -72,7 +72,11 @@ describe('validateBasicOraclePoint', () => {
   it('accepts a finite positive point within the clock-skew allowance', () => {
     expect(
       validateBasicOraclePoint(
-        { ts: NOW + MAX_ORACLE_FUTURE_SKEW_MS, price: 100 },
+        {
+          ts: NOW + MAX_ORACLE_FUTURE_SKEW_MS,
+          price: 100,
+          sourceTs: NOW + MAX_ORACLE_FUTURE_SKEW_MS,
+        },
         NOW
       )
     ).toBeNull()
@@ -84,6 +88,16 @@ describe('validateBasicOraclePoint', () => {
     [{ ts: NOW + MAX_ORACLE_FUTURE_SKEW_MS + 1, price: 100 }, 'in the future'],
     [{ ts: NOW, price: Number.POSITIVE_INFINITY }, 'non-positive price'],
     [{ ts: NOW, price: 0 }, 'non-positive price'],
+    [{ ts: NOW, price: 100, sourceTs: Number.NaN }, 'source timestamp'],
+    [{ ts: NOW, price: 100, sourceTs: 0 }, 'source timestamp'],
+    [
+      {
+        ts: NOW,
+        price: 100,
+        sourceTs: NOW + MAX_ORACLE_FUTURE_SKEW_MS + 1,
+      },
+      'source timestamp',
+    ],
   ])('rejects an invalid point %#', (point, message) => {
     expect(validateBasicOraclePoint(point, NOW)).toContain(message)
   })
@@ -119,6 +133,35 @@ describe('normalizeOraclePointBatch', () => {
       expect.objectContaining({
         ok: false,
         reason: expect.stringContaining('conflicting prices'),
+      })
+    )
+  })
+
+  it('enriches exact redelivery with source metadata deterministically', () => {
+    const point = { ts: 2, price: 102, sourceTs: 1 }
+    expect(
+      normalizeOraclePointBatch([
+        { ts: 2, price: 102 },
+        point,
+        { ts: 2, price: 102 },
+      ])
+    ).toEqual({ ok: true, points: [point] })
+    expect(normalizeOraclePointBatch([point, { ts: 2, price: 102 }])).toEqual({
+      ok: true,
+      points: [point],
+    })
+  })
+
+  it('rejects conflicting source metadata at one immutable timestamp', () => {
+    expect(
+      normalizeOraclePointBatch([
+        { ts: 2, price: 102, sourceTs: 1 },
+        { ts: 2, price: 102, sourceTs: 2 },
+      ])
+    ).toEqual(
+      expect.objectContaining({
+        ok: false,
+        reason: expect.stringContaining('conflicting source timestamps'),
       })
     )
   })
@@ -166,6 +209,31 @@ describe('decideOracleTransition', () => {
       expect.objectContaining({
         action: 'reject',
         reason: expect.stringContaining('conflicts'),
+      })
+    )
+  })
+
+  it('applies source metadata once without allowing it to be erased', () => {
+    const sourceTs = current.ts - 100
+    expect(
+      decideOracleTransition(current, { ...current, sourceTs }, NOW)
+    ).toEqual({ action: 'apply' })
+    expect(
+      decideOracleTransition({ ...current, sourceTs }, { ...current }, NOW)
+    ).toEqual({ action: 'ignore', reason: 'duplicate' })
+  })
+
+  it('rejects conflicting source metadata at one immutable timestamp', () => {
+    expect(
+      decideOracleTransition(
+        { ...current, sourceTs: current.ts - 100 },
+        { ...current, sourceTs: current.ts - 50 },
+        NOW
+      )
+    ).toEqual(
+      expect.objectContaining({
+        action: 'reject',
+        reason: expect.stringContaining('source timestamp'),
       })
     )
   })

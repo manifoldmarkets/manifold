@@ -19,7 +19,7 @@ export const advisoryLockQuery = (contractId: string) =>
 
 export const selectLatestOraclePriceQuery = (feedId: string) =>
   pgp.as.format(
-    `select ts, price from oracle_prices where feed_id = $1
+    `select ts, price, source_ts from oracle_prices where feed_id = $1
      order by ts desc limit 1`,
     [feedId]
   )
@@ -140,11 +140,7 @@ export const insertFundingEventQuery = (fe: PerpFundingEvent) => {
     adl_factor_long: fe.adlFactorLong,
     adl_factor_short: fe.adlFactorShort,
   }
-  return bulkInsertQuery(
-    'contract_perp_funding_events',
-    [row],
-    false
-  )
+  return bulkInsertQuery('contract_perp_funding_events', [row], false)
 }
 
 // Merges fields into `contracts.data` jsonb. Works for any keys and is

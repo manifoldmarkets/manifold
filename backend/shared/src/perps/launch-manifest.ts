@@ -1,4 +1,5 @@
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
+import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 import {
   BTC_USD_FEED_ID,
@@ -13,6 +14,8 @@ export type PerpLaunchMarketDefinition = {
   feedId: string
   question: string
   oracleBehavior: 'continuous-public' | 'batched-public' | 'scheduled-step'
+  /** Whether the provider's terms require its dataset-level as-of timestamp. */
+  requiresSourceAsOf: boolean
   gameDesign: string
   latencyArbitrageRisk: string
   recommended: {
@@ -43,6 +46,7 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     feedId: BTC_USD_FEED_ID,
     question: 'Bitcoin price (USD)',
     oracleBehavior: 'continuous-public',
+    requiresSourceAsOf: false,
     gameDesign:
       'Genuinely two-sided and continuously moving; the strongest fit in the launch set.',
     latencyArbitrageRisk:
@@ -61,6 +65,7 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     feedId: UK_GRID_CARBON_FEED_ID,
     question: 'UK grid carbon intensity (gCO₂/kWh)',
     oracleBehavior: 'batched-public',
+    requiresSourceAsOf: false,
     gameDesign:
       'Oscillating and mean-reverting with coherent long and short theses; public forecasts reward informed trading.',
     latencyArbitrageRisk:
@@ -79,6 +84,7 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     feedId: TRUMP_APPROVAL_FEED_ID,
     question: 'Trump approval rating',
     oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: false,
     gameDesign:
       'Two-sided political exposure, but the 14-day average is slow and often unchanged between poll releases.',
     latencyArbitrageRisk:
@@ -97,6 +103,7 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     feedId: OPENROUTER_OPEN_WEIGHT_FEED_ID,
     question: 'Open-weight AI token share on OpenRouter (%)',
     oracleBehavior: 'scheduled-step',
+    requiresSourceAsOf: true,
     gameDesign:
       'The trailing share can rise or fall and has coherent AI-adoption theses, unlike the monotone ECI frontier.',
     latencyArbitrageRisk:
@@ -167,6 +174,13 @@ export const getPerpLaunchManifestErrors = () => {
     }
     if (!feed.marketCreationEnabled)
       errors.push(`${market.feedId} is disabled for market creation`)
+    if (
+      market.requiresSourceAsOf !==
+      (getOracleAttribution(market.feedId)?.showAsOf === true)
+    )
+      errors.push(
+        `${market.feedId} source-as-of requirement disagrees with its attribution metadata`
+      )
     if (
       !Number.isFinite(market.recommended.maxLeverage) ||
       market.recommended.maxLeverage <= 1 ||

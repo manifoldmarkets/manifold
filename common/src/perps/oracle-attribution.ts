@@ -40,7 +40,7 @@ export type OracleAttribution = {
 
 export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   'openrouter-open-weight-share': {
-    source: 'OpenRouter',
+    source: 'OpenRouter (openrouter.ai/rankings)',
     url: 'https://openrouter.ai/rankings',
     showAsOf: true,
   },

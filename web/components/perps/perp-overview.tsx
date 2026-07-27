@@ -70,6 +70,7 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
               : {
                   oraclePrice: m.oraclePrice,
                   oraclePriceTime: m.oraclePriceTime,
+                  oracleSourceTime: m.oracleSourceTime,
                   poolLong: m.poolLong,
                   poolShort: m.poolShort,
                   fundingRate: m.fundingRate,
@@ -283,7 +284,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           earlier inside PerpChart. */}
       <PerpOracleAttribution
         feedId={contract.oracleFeedId}
-        asOfTime={contract.oraclePriceTime}
+        asOfTime={contract.oracleSourceTime}
       />
 
       {contract.isResolved ? (

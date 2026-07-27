@@ -4,19 +4,26 @@ import { APIHandler } from './helpers/endpoint'
 export const getOraclePrice: APIHandler<'get-oracle-price'> = async (body) => {
   const { feedId } = body
   const pg = createSupabaseDirectClient()
-  const row = await pg.oneOrNone<{ ts: string; price: number | string }>(
-    `select ts, price from oracle_prices
+  const row = await pg.oneOrNone<{
+    ts: string
+    price: number | string
+    source_ts: string | null
+  }>(
+    `select ts, price, source_ts from oracle_prices
      where feed_id = $1
      order by ts desc
      limit 1`,
     [feedId]
   )
   if (!row) return { latest: null }
+  const sourceTs =
+    row.source_ts == null ? undefined : new Date(row.source_ts).getTime()
   return {
     latest: {
       feedId,
       price: Number(row.price),
       ts: new Date(row.ts).getTime(),
+      ...(sourceTs == null ? {} : { sourceTs }),
     },
   }
 }

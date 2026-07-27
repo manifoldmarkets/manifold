@@ -59,7 +59,11 @@ export const updateOpenRouterShare = async () => {
     return
   }
 
-  const point = { ts: now, price: publication.share }
+  const point = {
+    ts: now,
+    price: publication.share,
+    sourceTs: Date.parse(rankings.asOf),
+  }
   const feed = getOracleFeed(OPENROUTER_OPEN_WEIGHT_FEED_ID)
   // Fetch the previous point so the registry's jump guard is actually armed —
   // a sudden multi-point move here means a classification change, not news.

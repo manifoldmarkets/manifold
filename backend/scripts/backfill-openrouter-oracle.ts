@@ -26,9 +26,9 @@ import { runScript } from './run-script'
 //  - Historical points are classified with the CURRENT list. Reconstructing
 //    "what we would have thought at the time" is not possible, and the
 //    alternative (retroactive reclassification) rewrites settled history.
-//  - Re-running this after the classification list changes WILL rewrite these
-//    points, since day-boundary timestamps are stable. That is fine before a
-//    market exists and is not fine after one does. Don't re-run it live.
+//  - Re-running this after the classification list changes will NOT rewrite
+//    the stable day-boundary points: published history is append-only. A new
+//    methodology therefore needs a new feed id rather than a live rerun.
 //
 // OpenRouter caps a single request at 366 days, which comfortably covers a
 // year of chart history in one call.
@@ -62,7 +62,8 @@ if (require.main === module)
       `covering ${dates.length} days: ${dates[0]}..${dates[dates.length - 1]}`
     )
 
-    const points: { ts: number; price: number }[] = []
+    const sourceTs = Date.parse(rankings.asOf)
+    const points: { ts: number; price: number; sourceTs: number }[] = []
     const rejections: string[] = []
     // Start once a full window is available, so no point is computed from a
     // short window (which would read as a spike at the left edge).
@@ -78,6 +79,7 @@ if (require.main === module)
       points.push({
         ts: Date.parse(`${dates[i]}T00:00:00.000Z`) + DAY_MS,
         price: publication.share,
+        sourceTs,
       })
     }
 

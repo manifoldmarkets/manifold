@@ -50,6 +50,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-sparkline'
 import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { PerpOracleAttribution } from 'web/components/perps/perp-oracle-attribution'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -471,7 +472,7 @@ function PerpEmbedBody(props: {
     <Col className="h-full min-h-0 justify-center gap-1">
       <FeedPerpPriceSparkline
         contract={contract}
-        height={Math.max(64, height - 32)}
+        height={Math.max(64, height - 48)}
         className="my-0 min-h-0"
         emptyState={
           <div className="text-ink-400 flex min-h-[64px] flex-1 items-center justify-center text-center text-sm">
@@ -479,14 +480,20 @@ function PerpEmbedBody(props: {
           </div>
         }
       />
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        className="text-primary-700 hover:text-primary-800 self-end text-sm font-medium hover:underline"
-      >
-        Open market to trade →
-      </a>
+      <Row className="w-full items-end justify-between gap-2">
+        <PerpOracleAttribution
+          feedId={contract.oracleFeedId}
+          asOfTime={contract.oracleSourceTime}
+        />
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium hover:underline"
+        >
+          Open market to trade →
+        </a>
+      </Row>
     </Col>
   )
 }

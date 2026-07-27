@@ -148,12 +148,20 @@ const loadStateForUpdate = async (
 const getLatestOraclePrice = async (
   pgTrans: Pick<SupabaseDirectClient, 'oneOrNone'>,
   feedId: string
-): Promise<{ price: number; ts: number } | null> => {
-  const row = await pgTrans.oneOrNone<{ ts: string; price: number | string }>(
-    selectLatestOraclePriceQuery(feedId)
-  )
+): Promise<OraclePoint | null> => {
+  const row = await pgTrans.oneOrNone<{
+    ts: string
+    price: number | string
+    source_ts: string | null
+  }>(selectLatestOraclePriceQuery(feedId))
   if (!row) return null
-  return { price: Number(row.price), ts: new Date(row.ts).getTime() }
+  const sourceTs =
+    row.source_ts == null ? undefined : new Date(row.source_ts).getTime()
+  return {
+    price: Number(row.price),
+    ts: new Date(row.ts).getTime(),
+    ...(sourceTs == null ? {} : { sourceTs }),
+  }
 }
 
 const asEvent = (
@@ -1106,18 +1114,20 @@ const applyOracleUpdate = (
 export const runOracleUpdate = async (
   contractId: string,
   newPrice: number,
-  ts: number
+  ts: number,
+  sourceTs?: number
 ): Promise<OracleUpdateResult | null> => {
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
-    const incomingPoint = { price: newPrice, ts }
+    const incomingPoint = { price: newPrice, ts, sourceTs }
     const currentPoint =
       contract.oraclePriceTime == null
         ? null
         : {
             price: contract.oraclePrice,
             ts: contract.oraclePriceTime,
+            sourceTs: contract.oracleSourceTime ?? undefined,
           }
     const decision = decideOracleTransition(currentPoint, incomingPoint)
     if (decision.action === 'reject')
@@ -1142,6 +1152,9 @@ export const runOracleUpdate = async (
       poolShort: applied.finalState.pool.S,
       oraclePrice: newPrice,
       oraclePriceTime: ts,
+      // null deliberately clears metadata if a newer point does not carry it;
+      // retaining the previous point's source time would misattribute data.
+      oracleSourceTime: sourceTs ?? null,
       // Price polling is infrastructure activity, not user activity. Only a
       // liquidation/ADL transition should refresh discovery freshness.
       lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
@@ -1459,6 +1472,7 @@ export const resolvePerp = async (
     const cachedPoint: OraclePoint = {
       price: contract.oraclePrice,
       ts: contract.oraclePriceTime ?? 0,
+      sourceTs: contract.oracleSourceTime ?? undefined,
     }
     const cachedRejection = validateBasicOraclePoint(cachedPoint)
     if (cachedRejection)
@@ -1480,7 +1494,11 @@ export const resolvePerp = async (
       )
 
     const finalPoint = decision.action === 'apply' ? latest : cachedPoint
-    const { price: finalPrice, ts: oracleTs } = finalPoint
+    const {
+      price: finalPrice,
+      ts: oracleTs,
+      sourceTs: oracleSourceTime,
+    } = finalPoint
     const applied = applyOracleUpdate(contract, loaded, finalPrice, oracleTs)
 
     const events: PerpEvent[] = [...applied.events]
@@ -1589,6 +1607,7 @@ export const resolvePerp = async (
       poolShort: 0,
       oraclePrice: finalPrice,
       oraclePriceTime: oracleTs,
+      oracleSourceTime: oracleSourceTime ?? null,
       isResolved: true,
       resolutionTime: now,
       resolverId,

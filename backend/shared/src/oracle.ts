@@ -1,3 +1,6 @@
+import { getOracleAttribution } from 'common/perps/oracle-attribution'
+import { OraclePoint, validateBasicOraclePoint } from 'common/perps/oracle'
+
 import { SupabaseDirectClient } from './supabase/init'
 import { bulkInsertQuery } from './supabase/utils'
 
@@ -15,14 +18,26 @@ export const OPENROUTER_OPEN_WEIGHT_FEED_ID = 'openrouter-open-weight-share'
 export const insertOraclePrices = async (
   pg: SupabaseDirectClient,
   feedId: string,
-  points: { ts: number; price: number }[]
+  points: readonly OraclePoint[]
 ) => {
   if (points.length === 0) return
-  const rows = points.map((point) => ({
-    feed_id: feedId,
-    ts: new Date(point.ts).toISOString(),
-    price: point.price,
-  }))
+  const requiresSourceTs = getOracleAttribution(feedId)?.showAsOf === true
+  const rows = points.map((point) => {
+    const rejection = validateBasicOraclePoint(point)
+    if (rejection)
+      throw new Error(`Refusing invalid ${feedId} oracle point: ${rejection}`)
+    if (requiresSourceTs && point.sourceTs == null)
+      throw new Error(
+        `Oracle feed ${feedId} requires a provider source timestamp for attribution`
+      )
+    return {
+      feed_id: feedId,
+      ts: new Date(point.ts).toISOString(),
+      price: point.price,
+      source_ts:
+        point.sourceTs == null ? null : new Date(point.sourceTs).toISOString(),
+    }
+  })
   const query = bulkInsertQuery('oracle_prices', rows, false)
   await pg.none(`${query} on conflict (feed_id, ts) do nothing`)
 }

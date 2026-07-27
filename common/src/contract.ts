@@ -319,6 +319,7 @@ export type PerpMechanism = {
   oracleFeedId: string // free-text; matches oracle_prices.feed_id
   oraclePrice: number // last applied P
   oraclePriceTime?: number // ts of last applied P
+  oracleSourceTime?: number | null // provider-declared source data as-of
   lastFundingTime?: number
   fundingRate?: number // last applied rate; +ve = longs pay
   resolvedOraclePrice?: number

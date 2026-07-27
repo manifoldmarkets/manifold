@@ -1,13 +1,13 @@
 import { PerpContract } from 'common/contract'
+import {
+  decideOracleTransition,
+  OraclePoint,
+  validateBasicOraclePoint,
+} from 'common/perps/oracle'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { runOracleUpdate } from 'shared/perps/engine'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-
-type OraclePoint = {
-  ts: number
-  price: number
-}
 
 /**
  * Apply a newly published oracle point to every live market on its feed.
@@ -22,14 +22,10 @@ export const applyOraclePointToLivePerps = async (
   feedId: string,
   point: OraclePoint
 ) => {
-  if (
-    !Number.isFinite(point.ts) ||
-    !Number.isFinite(point.price) ||
-    point.ts <= 0 ||
-    point.price <= 0
-  ) {
+  const pointRejection = validateBasicOraclePoint(point)
+  if (pointRejection) {
     throw new Error(
-      `Refusing to apply invalid ${feedId} oracle point ${point.price} @ ${point.ts}`
+      `Refusing to apply invalid ${feedId} oracle point: ${pointRejection}`
     )
   }
 
@@ -39,8 +35,9 @@ export const applyOraclePointToLivePerps = async (
   const stored = await pg.oneOrNone<{
     ts: string
     price: number | string
+    source_ts: string | null
   }>(
-    `select ts, price from oracle_prices
+    `select ts, price, source_ts from oracle_prices
      where feed_id = $1
        and ts = to_timestamp($2::double precision / 1000.0)`,
     [feedId, point.ts]
@@ -50,13 +47,28 @@ export const applyOraclePointToLivePerps = async (
       `Refusing to apply unpublished ${feedId} oracle point @ ${point.ts}`
     )
 
-  const persistedPoint = {
+  const persistedSourceTs =
+    stored.source_ts == null ? undefined : new Date(stored.source_ts).getTime()
+  const persistedPoint: OraclePoint = {
     ts: new Date(stored.ts).getTime(),
     price: Number(stored.price),
+    ...(persistedSourceTs == null ? {} : { sourceTs: persistedSourceTs }),
   }
-  if (persistedPoint.price !== point.price)
+  const persistedRejection = validateBasicOraclePoint(persistedPoint)
+  if (persistedRejection)
     throw new Error(
-      `Refusing to apply conflicting ${feedId} oracle point ${point.price} @ ${point.ts}; stored price is ${persistedPoint.price}`
+      `Refusing to apply invalid stored ${feedId} oracle point: ${persistedRejection}`
+    )
+  if (
+    persistedPoint.price !== point.price ||
+    (point.sourceTs != null && persistedPoint.sourceTs !== point.sourceTs)
+  )
+    throw new Error(
+      `Refusing to apply conflicting ${feedId} oracle point ${point.price} @ ${
+        point.ts
+      }; stored point is ${persistedPoint.price} with source timestamp ${
+        persistedPoint.sourceTs ?? 'missing'
+      }`
     )
 
   const rows = await pg.manyOrNone<{ data: PerpContract }>(
@@ -68,22 +80,26 @@ export const applyOraclePointToLivePerps = async (
   )
 
   for (const { data: contract } of rows) {
-    const appliedTime = contract.oraclePriceTime ?? 0
-    if (appliedTime >= persistedPoint.ts) {
-      if (
-        appliedTime === persistedPoint.ts &&
-        contract.oraclePrice !== persistedPoint.price
-      ) {
-        log.error(
-          `[oracle-feeds] ${
-            contract.slug
-          }: immutable point ${feedId} @ ${new Date(
-            persistedPoint.ts
-          ).toISOString()} conflicts with cached price ${
-            contract.oraclePrice
-          } (published ${persistedPoint.price})`
-        )
-      }
+    const currentPoint =
+      contract.oraclePriceTime == null
+        ? null
+        : {
+            ts: contract.oraclePriceTime,
+            price: contract.oraclePrice,
+            ...(contract.oracleSourceTime == null
+              ? {}
+              : { sourceTs: contract.oracleSourceTime }),
+          }
+    const decision = decideOracleTransition(currentPoint, persistedPoint)
+    if (decision.action === 'ignore') continue
+    if (decision.action === 'reject') {
+      log.error(
+        `[oracle-feeds] ${
+          contract.slug
+        }: immutable point ${feedId} @ ${new Date(
+          persistedPoint.ts
+        ).toISOString()} conflicts with its cached oracle (${decision.reason})`
+      )
       continue
     }
 
@@ -91,7 +107,8 @@ export const applyOraclePointToLivePerps = async (
       const result = await runOracleUpdate(
         contract.id,
         persistedPoint.price,
-        persistedPoint.ts
+        persistedPoint.ts,
+        persistedPoint.sourceTs
       )
       if (!result) continue
 

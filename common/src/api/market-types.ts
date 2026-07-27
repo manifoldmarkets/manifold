@@ -76,6 +76,7 @@ export type LiteMarket = {
   // market page's live poll) can track price/pools without bespoke endpoints.
   oraclePrice?: number
   oraclePriceTime?: number
+  oracleSourceTime?: number | null
   poolLong?: number
   poolShort?: number
   fundingRate?: number
@@ -217,6 +218,7 @@ export function toLiteMarket(
       ? {
           oraclePrice: contract.oraclePrice,
           oraclePriceTime: contract.oraclePriceTime,
+          oracleSourceTime: contract.oracleSourceTime,
           poolLong: contract.poolLong,
           poolShort: contract.poolShort,
           fundingRate: contract.fundingRate,

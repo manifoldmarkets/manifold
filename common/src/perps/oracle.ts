@@ -3,6 +3,12 @@ import { MINUTE_MS } from '../util/time'
 export type OraclePoint = {
   ts: number
   price: number
+  /**
+   * Provider-declared timestamp for the source dataset used to derive this
+   * observation. This is distinct from `ts`, which is when Manifold published
+   * the executable point.
+   */
+  sourceTs?: number
 }
 
 export type NormalizedOraclePointBatch =
@@ -84,6 +90,16 @@ export const validateBasicOraclePoint = (
     return `timestamp ${point.ts} is more than ${MAX_ORACLE_FUTURE_SKEW_MS}ms in the future`
   if (!Number.isFinite(point.price) || point.price <= 0)
     return `non-positive price ${point.price}`
+  if (
+    point.sourceTs != null &&
+    (!Number.isFinite(point.sourceTs) || point.sourceTs <= 0)
+  )
+    return `invalid source timestamp ${point.sourceTs}`
+  if (
+    point.sourceTs != null &&
+    point.sourceTs > now + MAX_ORACLE_FUTURE_SKEW_MS
+  )
+    return `source timestamp ${point.sourceTs} is more than ${MAX_ORACLE_FUTURE_SKEW_MS}ms in the future`
   return null
 }
 
@@ -113,6 +129,20 @@ export const normalizeOraclePointBatch = (
         reason: `timestamp ${point.ts} has conflicting prices ${previous.price} and ${point.price}`,
       }
     }
+    if (
+      previous.sourceTs != null &&
+      point.sourceTs != null &&
+      previous.sourceTs !== point.sourceTs
+    ) {
+      return {
+        ok: false,
+        reason: `timestamp ${point.ts} has conflicting source timestamps ${previous.sourceTs} and ${point.sourceTs}`,
+      }
+    }
+    // Make metadata enrichment independent of the input order while retaining
+    // an existing source timestamp when an exact redelivery omits it.
+    if (previous.sourceTs == null && point.sourceTs != null)
+      normalized[normalized.length - 1] = point
   }
 
   return { ok: true, points: normalized }
@@ -186,8 +216,23 @@ export const decideOracleTransition = (
 
   if (incoming.ts < current.ts) return { action: 'ignore', reason: 'stale' }
   if (incoming.ts > current.ts) return { action: 'apply' }
-  if (incoming.price === current.price)
+  if (incoming.price === current.price) {
+    if (
+      current.sourceTs != null &&
+      incoming.sourceTs != null &&
+      current.sourceTs !== incoming.sourceTs
+    )
+      return {
+        action: 'reject',
+        reason: `timestamp ${incoming.ts} conflicts with current source timestamp ${current.sourceTs} (incoming ${incoming.sourceTs})`,
+      }
+    // A rolling deploy can encounter an existing contract cache without the
+    // newly introduced source metadata. Apply the otherwise identical point
+    // once to enrich it. A metadata-free retry must never erase metadata.
+    if (current.sourceTs == null && incoming.sourceTs != null)
+      return { action: 'apply' }
     return { action: 'ignore', reason: 'duplicate' }
+  }
 
   return {
     action: 'reject',

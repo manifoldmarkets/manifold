@@ -7,6 +7,8 @@ import {
   nativeContractColumnsArray,
 } from 'common/contract'
 import { DEFAULT_CONVERSION_SCORE } from 'common/new-contract'
+import { validateBasicOraclePoint } from 'common/perps/oracle'
+import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { HOUR_MS } from 'common/util/time'
@@ -78,8 +80,12 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const pg = createSupabaseDirectClient()
 
   // Implicit feed existence check: at least one oracle_prices row must exist.
-  const oracle = await pg.oneOrNone<{ ts: string; price: number | string }>(
-    `select ts, price from oracle_prices where feed_id = $1
+  const oracle = await pg.oneOrNone<{
+    ts: string
+    price: number | string
+    source_ts: string | null
+  }>(
+    `select ts, price, source_ts from oracle_prices where feed_id = $1
      order by ts desc limit 1`,
     [oracleFeedId]
   )
@@ -87,6 +93,24 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     throw new APIError(
       400,
       `No oracle price data for feed "${oracleFeedId}" — have an internal service write to oracle_prices first.`
+    )
+  const oracleSourceTime =
+    oracle.source_ts == null ? undefined : new Date(oracle.source_ts).getTime()
+  const oraclePoint = {
+    ts: new Date(oracle.ts).getTime(),
+    price: Number(oracle.price),
+    ...(oracleSourceTime == null ? {} : { sourceTs: oracleSourceTime }),
+  }
+  const oracleRejection = validateBasicOraclePoint(oraclePoint)
+  if (oracleRejection)
+    throw new APIError(
+      500,
+      `Latest point for feed "${oracleFeedId}" is invalid: ${oracleRejection}`
+    )
+  if (getOracleAttribution(oracleFeedId)?.showAsOf && oracleSourceTime == null)
+    throw new APIError(
+      400,
+      `Feed "${oracleFeedId}" is missing the provider source timestamp required for attribution.`
     )
 
   // A maxOraclePriceAgeMs below the feed's normal update interval would
@@ -150,8 +174,9 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       poolShort: subsidyShort,
       initialSubsidy: totalSubsidy,
       oracleFeedId,
-      oraclePrice: Number(oracle.price),
-      oraclePriceTime: new Date(oracle.ts).getTime(),
+      oraclePrice: oraclePoint.price,
+      oraclePriceTime: oraclePoint.ts,
+      oracleSourceTime: oracleSourceTime ?? null,
     }
 
     const contract: Contract = removeUndefinedProps({
