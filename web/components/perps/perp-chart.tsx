@@ -294,11 +294,12 @@ export const PerpChart = (props: {
     return priceSeries.filter((p) => p.ts >= cutoff)
   }, [priceSeries, activeFrame])
 
-  // Funding renders as one bar per hourly transfer plus a ghost bar at
-  // "now": the current hour accruing at the live pool rate (replaces the
-  // old synthetic line anchor). Gaps stay visibly empty — a dead scheduler
-  // must not interpolate into a confident diagonal.
-  const fundingBars = useMemo(() => {
+  // Funding is the venue-standard line of hourly rates (Hyperliquid renders
+  // funding history the same way, in the same %/hr units), anchored to
+  // "now" at the live pool rate so the line doesn't stop at the last
+  // transfer. The ghost flag marks that anchor for the hover copy — it's
+  // the current hour accruing, not a transfer that happened.
+  const fundingSeries = useMemo(() => {
     if (mode !== 'funding') return fundingPoints
     return [
       ...fundingPoints,
@@ -306,7 +307,7 @@ export const PerpChart = (props: {
     ]
   }, [mode, fundingPoints, liveFundingRate])
 
-  const points = mode === 'price' ? windowedSeries : fundingBars
+  const points = mode === 'price' ? windowedSeries : fundingSeries
   const width = Math.max(320, measuredWidth ?? 720)
 
   const overlayGeom = useMemo((): OverlayGeometry | null => {
@@ -406,12 +407,6 @@ export const PerpChart = (props: {
       .range([40, width - 10])
     let yMin = Math.min(...ys)
     let yMax = Math.max(...ys)
-    if (mode === 'funding') {
-      // Bars grow from a zero baseline, so zero must be in the domain even
-      // when every rate shares a sign.
-      yMin = Math.min(yMin, 0)
-      yMax = Math.max(yMax, 0)
-    }
     // Flat series need a synthetic pad, but the fallback must match the
     // data's units: ±1 is fine for prices, while funding rates are raw
     // per-hour fractions (~1e-5), where a ±1 pad renders the axis as
@@ -458,8 +453,11 @@ export const PerpChart = (props: {
       .range([height - 20, 10])
     // Break the line across data outages instead of drawing a fake straight
     // bridge over dead time (a stopped scheduler once left a 4.6-day gap
-    // that rendered as one diagonal line swallowing the whole chart).
-    const gapMs = mode === 'price' ? gapThresholdMs(points) : Infinity
+    // that rendered as one diagonal line swallowing the whole chart). Both
+    // modes: the funding series interpolated a confident diagonal across
+    // the same 5-day outage. 12×median spacing keeps the pre-fix era's
+    // legitimate 2h skip-gaps connected while any half-day death breaks.
+    const gapMs = gapThresholdMs(points)
     const renderPoints: (Point & { gap?: boolean })[] = []
     for (let i = 0; i < points.length; i++) {
       if (i > 0 && points[i].ts - points[i - 1].ts > gapMs) {
@@ -576,20 +574,18 @@ export const PerpChart = (props: {
   const nowX = overlayGeom ? xScale(overlayGeom.now) : 0
   const clipId = `perp-chart-clip-${contract.id}`
 
-  // Bars fill ~2/3 of an hourly slot, clamped so dense multi-week views
-  // stay readable (≥1.5px) and sparse ones don't turn into slabs (≤9px).
-  const barW =
+  // Funding events stranded between two gap-breaks (or at the series edge
+  // next to one) draw no line segment at all — dev's single pre-outage
+  // event was invisible. Mirror the scale memo's gap threshold.
+  const fundingGapMs = mode === 'funding' ? gapThresholdMs(points) : 0
+  const isolatedFundingPoints =
     mode === 'funding'
-      ? Math.max(
-          1.5,
-          Math.min(
-            9,
-            (xScale(domainStart.getTime() + HOUR_MS) -
-              xScale(domainStart.getTime())) *
-              0.65
-          )
+      ? points.filter(
+          (p, i) =>
+            (i === 0 || p.ts - points[i - 1].ts > fundingGapMs) &&
+            (i === points.length - 1 || points[i + 1].ts - p.ts > fundingGapMs)
         )
-      : 0
+      : []
 
   // Cumulative funding pinned to the carry line's endpoint — the answer to
   // "what does holding to here cost". Rendered only where the per-event
@@ -875,62 +871,41 @@ export const PerpChart = (props: {
               </g>
             </>
           )}
-          {mode === 'price' ? (
-            <path
-              d={path}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
+          <path
+            d={path}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            className="text-primary-500"
+          />
+          {/* A transfer with dead time on both sides has no line segment to
+              live on — the gap-break isolates it — so render it as a dot
+              rather than letting it vanish. */}
+          {isolatedFundingPoints.map((p) => (
+            <circle
+              key={p.ts}
+              cx={xScale(p.ts)}
+              cy={yScale(p.value)}
+              r={2}
+              fill="currentColor"
               className="text-primary-500"
             />
-          ) : (
-            <g>
-              {/* Zero baseline: transfer direction is read off it. */}
-              <line
-                x1={40}
-                x2={width - 10}
-                y1={yScale(0)}
-                y2={yScale(0)}
-                stroke="currentColor"
-                strokeOpacity={0.25}
-              />
-              {points.map((p) => {
-                const x = xScale(p.ts)
-                const y0 = yScale(0)
-                const y1 = yScale(p.value)
-                const top = Math.min(y0, y1)
-                const h = Math.max(1, Math.abs(y1 - y0))
-                const isHovered = hovered?.ts === p.ts
-                return (
-                  <g
-                    key={p.ts}
-                    className={p.ghost ? 'text-ink-400' : 'text-primary-500'}
-                  >
-                    <rect
-                      x={x - barW / 2}
-                      y={top}
-                      width={barW}
-                      height={h}
-                      fill="currentColor"
-                      fillOpacity={p.ghost ? 0.2 : isHovered ? 1 : 0.75}
-                      stroke={p.ghost ? 'currentColor' : undefined}
-                      strokeDasharray={p.ghost ? '2 2' : undefined}
-                      strokeOpacity={p.ghost ? 0.7 : undefined}
-                    />
-                    {(p.numLiquidations ?? 0) > 0 && (
-                      <circle
-                        cx={x}
-                        cy={top - 4}
-                        r={2.5}
-                        fill="currentColor"
-                        className="text-amber-500"
-                      />
-                    )}
-                  </g>
-                )
-              })}
-            </g>
-          )}
+          ))}
+          {/* Transfers that liquidated positions get a marker on the line —
+              numLiquidations rides along in the API response. */}
+          {mode === 'funding' &&
+            points
+              .filter((p) => (p.numLiquidations ?? 0) > 0)
+              .map((p) => (
+                <circle
+                  key={p.ts}
+                  cx={xScale(p.ts)}
+                  cy={yScale(p.value)}
+                  r={2.5}
+                  fill="currentColor"
+                  className="text-amber-500"
+                />
+              ))}
           {carryEnd && (
             <g className="text-ink-600">
               <text
@@ -1046,7 +1021,7 @@ export const PerpChart = (props: {
         <span className="text-ink-400 text-xs">
           {fundingPoints.length === 0
             ? 'No funding events yet — the first lands on the next hourly run.'
-            : 'One bar per hourly transfer, % of margin. Above zero: longs pay shorts · below: shorts pay longs. Dashed bar = current hour, still accruing. Gaps are hours where the scheduler was down.'}
+            : 'Hourly funding rate, % of margin per hour. Positive: longs pay shorts · negative: shorts pay longs.'}
         </span>
       )}
     </Col>
