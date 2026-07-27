@@ -7,7 +7,7 @@ import {
   TRUMP_APPROVAL_FEED_ID,
   UK_GRID_CARBON_FEED_ID,
 } from './oracle'
-import { fetchUkGridCarbonActual } from './uk-grid-carbon'
+import { fetchUkGridCarbonRecent } from './uk-grid-carbon'
 
 // Registry of known oracle feeds. This is the single place that says how a
 // feed updates, what values are plausible, and when its silence is an
@@ -36,6 +36,13 @@ export type OracleFeedDef = {
    * Doubles as the floor for a market's maxOraclePriceAgeMs at create time. */
   staleAfterMs: number
   fetchLatest?: () => Promise<{ ts: number; price: number } | null>
+  /** All recently-finalized points, oldest first. Takes precedence over
+   * fetchLatest in the tick: sources that publish out of order (NESO batch
+   * settling) permanently lose interleaved points under a latest-only
+   * sampler, so the tick upserts the whole window (idempotent on ts).
+   * Points are bounds-checked only — the jump guard needs a well-ordered
+   * prev and doesn't apply to a batch. */
+  fetchRecent?: () => Promise<{ ts: number; price: number }[]>
 }
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
@@ -57,7 +64,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     maxPrice: 600,
     // Actuals land one settlement block behind, occasionally later.
     staleAfterMs: 2 * HOUR_MS,
-    fetchLatest: fetchUkGridCarbonActual,
+    fetchRecent: fetchUkGridCarbonRecent,
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into

@@ -65,3 +65,29 @@ export const fetchUkGridCarbonActual = async (): Promise<{
   const ts = Math.min(Date.parse(latest.to), now)
   return { ts, price: latest.intensity.actual as number }
 }
+
+// Every finalized block in the trailing window, oldest first. NESO settles
+// actuals late and in batches (observed from 2026-07-25): a batch can
+// finalize the 06:00→06:30 block AFTER the 06:30→07:00 block, so a
+// latest-only sampler permanently drops the interleaved block — the live
+// feed degraded to hourly while the source still had full 30-min data.
+// Upserting the whole window each tick is idempotent and self-healing.
+const RECENT_WINDOW_MS = 6 * 60 * 60 * 1000
+
+export const fetchUkGridCarbonRecent = async (): Promise<
+  { ts: number; price: number }[]
+> => {
+  const now = Date.now()
+  const blocks = await fetchIntensityBlocks(
+    toNesoIso(now - RECENT_WINDOW_MS),
+    toNesoIso(now)
+  )
+  return blocks
+    .filter((b) => b.intensity.actual != null && isFinite(b.intensity.actual))
+    .map((b) => ({
+      // Same clamp as above: only the newest block can lead wall time.
+      ts: Math.min(Date.parse(b.to), now),
+      price: b.intensity.actual as number,
+    }))
+    .sort((a, b) => a.ts - b.ts)
+}

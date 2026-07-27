@@ -45,7 +45,33 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       : null
 
     let latest = prev
-    if (feed.fetchLatest) {
+    if (feed.fetchRecent) {
+      // Batch sources publish out of order (NESO settles actuals in late
+      // batches), so upsert the whole window — idempotent on (feed_id, ts) —
+      // rather than sampling the newest point and permanently dropping any
+      // block that finalized after its successor. Row growth is bounded by
+      // the source's block cadence, not the tick rate, so shouldWrite's
+      // dedupe isn't needed here.
+      const points = await feed.fetchRecent()
+      const valid: { ts: number; price: number }[] = []
+      for (const point of points) {
+        const rejection = validateOraclePoint(feed, null, point)
+        if (rejection) {
+          log.error(
+            `[oracle-feeds] ${feed.id}: rejected ${point.price} @ ${new Date(
+              point.ts
+            ).toISOString()} — ${rejection}`
+          )
+        } else {
+          valid.push(point)
+        }
+      }
+      if (valid.length > 0) {
+        await upsertOraclePrices(pg, feed.id, valid)
+        const newest = valid[valid.length - 1]
+        if (!latest || newest.ts > latest.ts) latest = newest
+      }
+    } else if (feed.fetchLatest) {
       const point = await feed.fetchLatest()
       if (point) {
         const rejection = validateOraclePoint(feed, prev, point)
