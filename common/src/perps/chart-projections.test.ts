@@ -71,6 +71,28 @@ describe('nextFundingTimes', () => {
     expect(nextFundingTimes(H0 - 24 * HOUR, now, 1)).toEqual([H0 + HOUR])
     expect(nextFundingTimes(undefined, now, 1)).toEqual([H0 + HOUR])
   })
+
+  it('24h period: events land on hour boundaries a day apart, not consecutive hours', () => {
+    const DAY = 24 * HOUR
+    // Event fired seconds after the H0 run yesterday; the next lands on the
+    // H0+24h boundary, and the one after that a further day out — the gate
+    // must anchor on the previous predicted event, or every hourly boundary
+    // past the first would qualify against the day-old real event.
+    const last = H0 - DAY + 3_000
+    expect(nextFundingTimes(last, H0 - DAY + 30_000, 2, DAY)).toEqual([
+      H0,
+      H0 + DAY,
+    ])
+  })
+
+  it('24h period: a stale anchor catches up on the next boundary, then resumes daily', () => {
+    const DAY = 24 * HOUR
+    const now = H0 + 10 * 60 * 1000
+    expect(nextFundingTimes(H0 - 3 * DAY, now, 2, DAY)).toEqual([
+      H0 + HOUR,
+      H0 + HOUR + DAY,
+    ])
+  })
 })
 
 describe('projectionHorizonWithFunding', () => {
@@ -142,6 +164,14 @@ describe('carryNeutralPath', () => {
     expect(carryNeutralPath(NaN, 0.001, NOW, FUNDING_PERIOD_MS)).toEqual([])
     expect(carryNeutralPath(100, NaN, NOW, FUNDING_PERIOD_MS)).toEqual([])
     expect(carryNeutralPath(100, 0.001, NOW, 0)).toEqual([])
+  })
+
+  it('a 24h period accrues 1/24 the periods over the same horizon', () => {
+    const DAY = 24 * FUNDING_PERIOD_MS
+    const horizon = 10 * DAY
+    const daily = carryNeutralPath(100, 0.001, NOW, horizon, DAY)
+    // Ten days at one 0.1% event per day = ten periods, not 240.
+    expect(daily[1].value).toBeCloseTo(100 * (1 + 0.001 * 10))
   })
 })
 
@@ -352,6 +382,25 @@ describe('personalBreakEvenPath', () => {
     )
     // A receiving short's break-even drifts up — more room above entry.
     expect(path[1].value).toBeGreaterThan(path[0].value)
+  })
+
+  it('24h period: one applyFunding event equals one day of path, not one hour', () => {
+    const DAY = 24 * FUNDING_PERIOD_MS
+    const position = makePosition('long')
+    const [L, S, k, fMax] = [200, 100, 1, 0.001]
+    const f = computeFundingRate(L, S, k, fMax)
+
+    const path = personalBreakEvenPath(position, f, L, S, NOW, DAY, 1, DAY)
+    expect(path).toHaveLength(2)
+
+    const after = applyFunding(
+      { pool: { L, S }, positions: [position] },
+      f
+    ).positions[0]
+    expect(getPositionValue(after, path[1].value)).toBeCloseTo(
+      position.originalCostBasis,
+      8
+    )
   })
 
   it('starts at entry price when no funding has accrued', () => {

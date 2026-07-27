@@ -9,6 +9,7 @@
 
 import { sortBy, sumBy } from 'lodash'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from '../util/time'
+import { FUNDING_PERIOD_MS } from './funding'
 import { PerpDirection } from './position'
 
 /**
@@ -32,9 +33,11 @@ export const gapThresholdMs = (points: { ts: number }[]): number => {
 
 export type ProjectionPoint = { ts: number; value: number }
 
-// Mirrors FUNDING_PERIOD_MS in backend/shared/src/perps/engine.ts (web and
-// common cannot import backend). Funding cadence is hourly for every feed.
-export const FUNDING_PERIOD_MS = HOUR_MS
+// Funding cadence lives in ./funding (the engine imports the same module, so
+// there is no mirror to keep in sync). The default is hourly; contracts on
+// slower feeds carry their own fundingPeriodMs — every projection here takes
+// it as a trailing parameter so legacy call sites keep the hourly default.
+export { FUNDING_PERIOD_MS } from './funding'
 
 /**
  * How far past "now" the projection zone extends: a fixed fraction of the
@@ -46,9 +49,12 @@ export const FUNDING_PERIOD_MS = HOUR_MS
  * certainly have changed into a dramatic slope — on ECI's multi-year
  * staircase it drew a "crash" a monotone index cannot have.
  */
-export const projectionHorizonMs = (historySpanMs: number) => {
+export const projectionHorizonMs = (
+  historySpanMs: number,
+  fundingPeriodMs = FUNDING_PERIOD_MS
+) => {
   if (!Number.isFinite(historySpanMs) || historySpanMs <= 0) {
-    return 2 * FUNDING_PERIOD_MS
+    return 2 * fundingPeriodMs
   }
   return Math.min(
     Math.max(historySpanMs * 0.28, 30 * MINUTE_MS),
@@ -61,25 +67,37 @@ export const projectionHorizonMs = (historySpanMs: number) => {
  * Times of the next `count` funding events. The scheduler's update-perps job
  * runs at each top of the hour (wall-clock, timezone-agnostic on epoch ms)
  * and funds a market when at least one period minus a minute of slack has
- * elapsed since its last funding event — so events land on hour boundaries,
- * and a boundary too soon after the last event is skipped. Works from a
- * stale lastFundingTime too: boundaries after `now` still qualify, so a
- * missed scheduler run self-corrects to the next hour.
+ * elapsed since its last funding event — so events land on hour boundaries
+ * regardless of period length, and a boundary too soon after the previous
+ * event is skipped. Works from a stale lastFundingTime too: boundaries after
+ * `now` still qualify, so a missed scheduler run self-corrects to the next
+ * hour. For periods longer than an hour the engine additionally requires a
+ * new oracle price, which this prediction can't see — a late feed pushes the
+ * real event to a later boundary than projected here.
  */
 export const nextFundingTimes = (
   lastFundingTime: number | undefined,
   now: number,
-  count: number
+  count: number,
+  fundingPeriodMs = FUNDING_PERIOD_MS
 ): number[] => {
   if (!Number.isFinite(now) || count <= 0) return []
+  // Gate each boundary against the previous PREDICTED event, not just the
+  // last real one — with a 24h period, every hourly boundary after the first
+  // prediction would otherwise "qualify" against the day-old anchor.
+  let anchor = lastFundingTime
   const gateOk = (t: number) =>
-    !lastFundingTime || t - lastFundingTime >= FUNDING_PERIOD_MS - MINUTE_MS
+    !anchor || t - anchor >= fundingPeriodMs - MINUTE_MS
   const times: number[] = []
   let t = Math.floor(now / HOUR_MS) * HOUR_MS + HOUR_MS
-  // The gate can skip at most one boundary, so a small scan bound suffices.
-  const limit = now + (count + 2) * HOUR_MS
+  // The gate can skip at most one boundary per period, so events fit within
+  // count periods plus a little slack.
+  const limit = now + count * fundingPeriodMs + 2 * HOUR_MS
   while (times.length < count && t <= limit) {
-    if (gateOk(t)) times.push(t)
+    if (gateOk(t)) {
+      times.push(t)
+      anchor = t
+    }
     t += HOUR_MS
   }
   return times
@@ -127,12 +145,13 @@ export const carryNeutralPath = (
   price: number,
   fundingRatePerPeriod: number,
   now: number,
-  horizonMs: number
+  horizonMs: number,
+  fundingPeriodMs = FUNDING_PERIOD_MS
 ): ProjectionPoint[] => {
   if (!Number.isFinite(price) || price <= 0) return []
   if (!Number.isFinite(fundingRatePerPeriod)) return []
   if (!Number.isFinite(horizonMs) || horizonMs <= 0) return []
-  const periods = horizonMs / FUNDING_PERIOD_MS
+  const periods = horizonMs / fundingPeriodMs
   const end = price * (1 + fundingRatePerPeriod * periods)
   if (!Number.isFinite(end)) return []
   return [
@@ -273,7 +292,8 @@ export const personalBreakEvenPath = (
   poolShort: number,
   now: number,
   horizonMs: number,
-  steps = 24
+  steps = 24,
+  fundingPeriodMs = FUNDING_PERIOD_MS
 ): ProjectionPoint[] => {
   const { direction, size, costBasis, originalCostBasis, entryPrice } = position
   if (!(size > 0) || !(entryPrice > 0) || !(originalCostBasis >= 0)) return []
@@ -291,7 +311,7 @@ export const personalBreakEvenPath = (
     scale = direction === 'short' ? 1 + f : 1 + (-f * poolShort) / poolLong
   }
 
-  const totalPeriods = horizonMs / FUNDING_PERIOD_MS
+  const totalPeriods = horizonMs / fundingPeriodMs
   const path: ProjectionPoint[] = []
   for (let i = 0; i <= steps; i++) {
     const n = (totalPeriods * i) / steps

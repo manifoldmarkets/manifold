@@ -303,6 +303,11 @@ export type Perp = {
   maxFundingRate: number // f_max per period
   fundingSensitivity: number // k
   maxOraclePriceAgeMs: number // block trades if feed stale
+  // ms between funding events: max(1h, feed updatePeriodMs), derived at
+  // create time and frozen so later feed-registry changes can't rewrite the
+  // economics of open positions. Missing on pre-period contracts = hourly.
+  // Read via getFundingPeriodMs (common/perps/funding), never directly.
+  fundingPeriodMs?: number
   resolution?: 'MKT' | 'CANCEL'
 }
 
