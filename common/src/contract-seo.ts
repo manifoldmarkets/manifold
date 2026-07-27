@@ -7,6 +7,7 @@ import { getFormattedNumberExpectedValue } from 'common/number'
 import { sortAnswers } from './answer'
 import { getFormattedExpectedValue } from './multi-numeric'
 import { getFormattedExpectedDate } from './multi-date'
+import { formatPrice, inferPriceDecimals } from './perps/format'
 
 export const getContractOGProps = (
   contract: Contract
@@ -52,6 +53,7 @@ export const getContractOGProps = (
     outcomeType === 'BOUNTIED_QUESTION'
       ? formatMoneyNumberUSLocale(contract.bountyLeft)
       : undefined
+  const perpPrice = getFormattedPerpPrice(contract)
 
   return {
     question,
@@ -64,6 +66,8 @@ export const getContractOGProps = (
     resolution,
     topAnswer: topAnswer?.text,
     bountyLeft: bountyLeft,
+    ...(outcomeType === 'PERP' ? { outcomeType } : {}),
+    ...(perpPrice === undefined ? {} : { perpPrice }),
   }
 }
 
@@ -78,6 +82,8 @@ export type OgCardProps = {
   resolution?: string
   topAnswer?: string
   bountyLeft?: string // number
+  outcomeType?: 'PERP'
+  perpPrice?: string
   points?: string // base64ified points
 }
 
@@ -85,19 +91,39 @@ export function getSeoDescription(contract: Contract) {
   const { description: desc, resolution } = contract
 
   const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
+  const perpPrice = getFormattedPerpPrice(contract)
 
-  const prefix = resolution
-    ? `Resolved ${getResolvedValue(contract) || resolution}. `
-    : contract.outcomeType === 'BINARY'
-    ? `${formatPercent(getDisplayProbability(contract))} chance. `
-    : contract.outcomeType === 'PSEUDO_NUMERIC'
-    ? `${getFormattedMappedValue(
-        contract,
-        getDisplayProbability(contract)
-      )} expected. `
-    : ''
+  const prefix =
+    contract.outcomeType === 'PERP'
+      ? perpPrice === undefined
+        ? 'Perpetual market. '
+        : `Perpetual market. Oracle price: ${perpPrice}. `
+      : resolution
+      ? `Resolved ${getResolvedValue(contract) || resolution}. `
+      : contract.outcomeType === 'BINARY'
+      ? `${formatPercent(getDisplayProbability(contract))} chance. `
+      : contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? `${getFormattedMappedValue(
+          contract,
+          getDisplayProbability(contract)
+        )} expected. `
+      : ''
 
   return prefix + stringDesc
+}
+
+function getFormattedPerpPrice(contract: Contract) {
+  if (
+    contract.outcomeType !== 'PERP' ||
+    !Number.isFinite(contract.oraclePrice)
+  ) {
+    return undefined
+  }
+
+  return formatPrice(
+    contract.oraclePrice,
+    inferPriceDecimals([contract.oraclePrice])
+  )
 }
 
 function getResolvedValue(contract: Contract) {

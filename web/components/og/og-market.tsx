@@ -17,7 +17,10 @@ export function OgMarket(props: OgCardProps) {
     topAnswer,
     points,
     bountyLeft,
+    outcomeType,
+    perpPrice,
   } = props
+  const isPerp = outcomeType === 'PERP'
   const probabilityAsFloat = probability
     ? parseFloat(probability.replace('%', ''))
     : undefined
@@ -87,7 +90,7 @@ export function OgMarket(props: OgCardProps) {
         ) : showGraph ? (
           <div className="flex w-full shrink justify-center">
             <ProbGraph
-              color={numericValue ? '#14bbFF' : '#14b8a6'}
+              color={numericValue || isPerp ? '#14bbFF' : '#14b8a6'}
               data={data}
               height={70}
               aspectRatio={7.5}
@@ -98,38 +101,52 @@ export function OgMarket(props: OgCardProps) {
         ) : (
           <div className="flex h-8" />
         )}
-        {!topAnswer && (probability || numericValue || resolution) && (
-          <div className="absolute bottom-0 mb-4 mt-8 flex w-full flex-row justify-center self-center text-2xl text-white">
-            {probabilityAsFloat && !resolution ? (
-              <>
-                <div
-                  className={
-                    'mr-4 flex h-12 w-1/2 items-center justify-center rounded-lg bg-teal-500'
-                  }
-                >
-                  Yes {probabilityAsFloat.toFixed(0)}%
-                </div>
-                <div
-                  className={
-                    'flex h-12 w-1/2 items-center justify-center rounded-lg bg-red-500'
-                  }
-                >
-                  No {(100 - probabilityAsFloat).toFixed(0)}%
-                </div>
-              </>
-            ) : resolution ? (
-              <Resolution
-                resolution={resolution}
-                label={numericValue ?? probability}
-              />
-            ) : numericValue ? (
-              <EndValue value={numericValue} label="expected" />
-            ) : probability ? (
-              <EndValue value={probability} label="chance" />
-            ) : null}
-          </div>
-        )}
+        {!topAnswer &&
+          (isPerp || probability || numericValue || resolution) && (
+            <div className="absolute bottom-0 mb-4 mt-8 flex w-full flex-row justify-center self-center text-2xl text-white">
+              {isPerp ? (
+                <PerpValue price={perpPrice} />
+              ) : probabilityAsFloat && !resolution ? (
+                <>
+                  <div
+                    className={
+                      'mr-4 flex h-12 w-1/2 items-center justify-center rounded-lg bg-teal-500'
+                    }
+                  >
+                    Yes {probabilityAsFloat.toFixed(0)}%
+                  </div>
+                  <div
+                    className={
+                      'flex h-12 w-1/2 items-center justify-center rounded-lg bg-red-500'
+                    }
+                  >
+                    No {(100 - probabilityAsFloat).toFixed(0)}%
+                  </div>
+                </>
+              ) : resolution ? (
+                <Resolution
+                  resolution={resolution}
+                  label={numericValue ?? probability}
+                />
+              ) : numericValue ? (
+                <EndValue value={numericValue} label="expected" />
+              ) : probability ? (
+                <EndValue value={probability} label="chance" />
+              ) : null}
+            </div>
+          )}
       </div>
+    </div>
+  )
+}
+
+function PerpValue(props: { price?: string }) {
+  const { price } = props
+
+  return (
+    <div className="flex flex-col items-center justify-center text-black">
+      {price && <span className="text-3xl">{price}</span>}
+      <span className={price ? 'text-xl' : 'text-3xl'}>Perpetual market</span>
     </div>
   )
 }

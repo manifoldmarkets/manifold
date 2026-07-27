@@ -298,6 +298,10 @@ export type UltraLiteMarket = {
 
   probability?: number
   liquidityTier?: string
+  // Perp markets only. Omitted when the source value is not finite.
+  oraclePrice?: number
+  // Current perp backing capital (poolLong + poolShort).
+  backingPool?: number
   answers?: {
     id: string
     text: string
@@ -335,9 +339,14 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     url,
     createdTime,
   } = liteMarket
-  const tier = totalLiquidity
-    ? getTierIndexFromLiquidityAndAnswers(totalLiquidity, answers?.length ?? 0)
-    : undefined
+  const isPerp = outcomeType === 'PERP'
+  const tier =
+    !isPerp && totalLiquidity
+      ? getTierIndexFromLiquidityAndAnswers(
+          totalLiquidity,
+          answers?.length ?? 0
+        )
+      : undefined
   let liquidityTier = 'n/a'
   if (tier !== undefined) {
     if (tier === 0) {
@@ -350,6 +359,20 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
       liquidityTier = 'very high'
     }
   }
+  const oraclePrice =
+    isPerp && isFiniteNumber(liteMarket.oraclePrice)
+      ? liteMarket.oraclePrice
+      : undefined
+  const rawBackingPool =
+    isPerp &&
+    isFiniteNonNegativeNumber(liteMarket.poolLong) &&
+    isFiniteNonNegativeNumber(liteMarket.poolShort)
+      ? liteMarket.poolLong + liteMarket.poolShort
+      : undefined
+  const backingPool = isFiniteNumber(rawBackingPool)
+    ? rawBackingPool
+    : undefined
+
   return {
     id,
     url,
@@ -359,7 +382,12 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     answers,
     question,
     probability,
-    liquidityTier,
+    ...(isPerp
+      ? {
+          ...(oraclePrice === undefined ? {} : { oraclePrice }),
+          ...(backingPool === undefined ? {} : { backingPool }),
+        }
+      : { liquidityTier }),
     outcomeType,
     volume: Math.round(volume),
     volume24Hours: Math.round(volume24Hours),
@@ -372,6 +400,12 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     uniqueBettorCount,
   }
 }
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
+const isFiniteNonNegativeNumber = (value: unknown): value is number =>
+  isFiniteNumber(value) && value >= 0
 
 function augmentAnswerWithProbability(
   contract: MultiContract,
