@@ -4,17 +4,22 @@ import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
 import { nextFundingTimes } from 'common/perps/chart-projections'
+import { fundingPeriodUnit, getFundingPeriodMs } from 'common/perps/funding'
 import { fundingPerPeriod, getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
-import { MINUTE_MS } from 'common/util/time'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
+import { DAY_MS } from 'common/util/time'
+import {
+  formatCountdown,
+  formatPrice,
+  inferPriceDecimals,
+} from 'common/perps/format'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
-import { formatFundingPerHour } from './perp-bet-panel'
+import { formatFundingMana } from './perp-bet-panel'
 import { PerpPositionRow, scheduleFreshBurst } from './use-perp-positions'
 
 type Position = {
@@ -291,7 +296,7 @@ const PositionCard = (props: {
   const accentText = isLong ? 'text-teal-600' : 'text-red-600'
   const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-red-600'
 
-  // What the next hourly funding transfer does to this position, in mana
+  // What the next funding transfer does to this position, in mana
   // (+ = you receive). Uses the live pool-derived rate, and the exact
   // applyFunding scaling — a receiver on the thin side earns the transfer
   // re-based on its own pool, not just rate × margin.
@@ -308,19 +313,25 @@ const PositionCard = (props: {
     contract.poolLong,
     contract.poolShort
   )
+  const fundingPeriodMs = getFundingPeriodMs(contract)
   const nextFunding = nextFundingTimes(
     contract.lastFundingTime,
     Date.now(),
-    1
+    1,
+    fundingPeriodMs
   )[0]
-  const minsToFunding = nextFunding
-    ? Math.max(1, Math.ceil((nextFunding - Date.now()) / MINUTE_MS))
+  const fundingCountdown = nextFunding
+    ? formatCountdown(nextFunding - Date.now())
     : null
   // Funding as a daily fraction of the user's original margin — the erosion
-  // (or accrual) rate is what makes an hourly Ṁ figure interpretable.
+  // (or accrual) rate is what makes a per-period Ṁ figure interpretable.
+  // On a daily-period contract the factor is 1 and the parenthetical still
+  // earns its place: the headline is mana, this is % of margin.
   const fundingDailyPct =
     p.originalCostBasis > 0
-      ? ((Math.abs(fundingMana) * 24) / p.originalCostBasis) * 100
+      ? ((Math.abs(fundingMana) * (DAY_MS / fundingPeriodMs)) /
+          p.originalCostBasis) *
+        100
       : 0
 
   // Distance to liquidation as a percentage of mark — useful risk signal.
@@ -407,7 +418,8 @@ const PositionCard = (props: {
               )}
             >
               {fundingMana > 0 ? 'Earning ' : 'Paying '}
-              {formatFundingPerHour(Math.abs(fundingMana))}/hr{' '}
+              {formatFundingMana(Math.abs(fundingMana))}/
+              {fundingPeriodUnit(fundingPeriodMs)}{' '}
               {fundingMana > 0 ? 'from funding' : 'in funding'}
             </span>
             <span className="text-ink-400">
@@ -417,7 +429,7 @@ const PositionCard = (props: {
                     ? fundingDailyPct.toFixed(0)
                     : fundingDailyPct.toFixed(1)
                 }%/day of margin)`}
-              {minsToFunding != null && ` · next in ${minsToFunding}m`}
+              {fundingCountdown != null && ` · next in ${fundingCountdown}`}
             </span>
           </div>
         )}

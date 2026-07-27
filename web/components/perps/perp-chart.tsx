@@ -8,7 +8,6 @@ import { computeFundingRate } from 'common/perps/amm'
 import {
   carryNeutralPath,
   clusterLiquidationBands,
-  FUNDING_PERIOD_MS,
   gapThresholdMs,
   LiquidationBand,
   nextFundingTimes,
@@ -18,6 +17,11 @@ import {
   realizedVolPerSqrtMs,
   volConePaths,
 } from 'common/perps/chart-projections'
+import {
+  fundingPeriodNoun,
+  fundingPeriodUnit,
+  getFundingPeriodMs,
+} from 'common/perps/funding'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { median } from 'common/util/math'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
@@ -30,7 +34,7 @@ import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { useUser } from 'web/hooks/use-user'
 
 // numLiquidations / ghost only carry meaning in funding mode: liq counts
-// annotate a transfer's bar, and the ghost is the current hour accruing at
+// annotate a transfer, and the ghost is the current period accruing at
 // the live rate (not yet a transfer). Price mode ignores both.
 type Point = {
   ts: number
@@ -112,7 +116,7 @@ type OverlayGeometry = {
   now: number
   horizon: number
   carry: ProjectionPoint[]
-  // Upcoming hourly funding transfers, positioned on the carry line.
+  // Upcoming funding transfers, positioned on the carry line.
   fundingMarks: ProjectionPoint[]
   cone: { upper: ProjectionPoint[]; lower: ProjectionPoint[] } | null
   liqBands: LiquidationBand[]
@@ -186,7 +190,7 @@ export const PerpChart = (props: {
   // phone widths.
   const { elemRef: containerRef, width: measuredWidth } = useMeasureSize()
 
-  // Live rate from the current pools, not the hourly-refreshed
+  // Live rate from the current pools, not the per-funding-event-refreshed
   // contract.fundingRate — same rationale as perp-overview.tsx.
   const liveFundingRate = computeFundingRate(
     contract.poolLong,
@@ -194,6 +198,10 @@ export const PerpChart = (props: {
     contract.fundingSensitivity,
     contract.maxFundingRate
   )
+  // Frozen at create from the feed's cadence; hourly on legacy contracts.
+  // Everything time-denominated on this chart (projections, diamond gating,
+  // axis/hover units) keys off it.
+  const fundingPeriodMs = getFundingPeriodMs(contract)
 
   useEffect(() => {
     let cancelled = false
@@ -294,11 +302,12 @@ export const PerpChart = (props: {
     return priceSeries.filter((p) => p.ts >= cutoff)
   }, [priceSeries, activeFrame])
 
-  // Funding is the venue-standard line of hourly rates (Hyperliquid renders
-  // funding history the same way, in the same %/hr units), anchored to
-  // "now" at the live pool rate so the line doesn't stop at the last
-  // transfer. The ghost flag marks that anchor for the hover copy — it's
-  // the current hour accruing, not a transfer that happened.
+  // Funding is the venue-standard line of per-period rates (Hyperliquid
+  // renders funding history the same way, in the same %/hr units — ours are
+  // %/hr or %/day per the contract's period), anchored to "now" at the live
+  // pool rate so the line doesn't stop at the last transfer. The ghost flag
+  // marks that anchor for the hover copy — it's the current period accruing,
+  // not a transfer that happened.
   const fundingSeries = useMemo(() => {
     if (mode !== 'funding') return fundingPoints
     return [
@@ -324,11 +333,16 @@ export const PerpChart = (props: {
     // Clamp against client/server clock skew so the projection anchor never
     // lands left of the last tick.
     const now = Math.max(Date.now(), maxTs)
-    // The projection prefers ending just past the next two hourly funding
-    // events, so the hold-cost line answers a concrete question ("what does
-    // holding through the next transfers cost?") instead of extending an
-    // arbitrary fraction of the window.
-    const fundingTimes = nextFundingTimes(contract.lastFundingTime, now, 8)
+    // The projection prefers ending just past the next two funding events,
+    // so the hold-cost line answers a concrete question ("what does holding
+    // through the next transfers cost?") instead of extending an arbitrary
+    // fraction of the window.
+    const fundingTimes = nextFundingTimes(
+      contract.lastFundingTime,
+      now,
+      8,
+      fundingPeriodMs
+    )
     const horizon = projectionHorizonWithFunding(
       maxTs - Math.min(...xs),
       now,
@@ -336,19 +350,19 @@ export const PerpChart = (props: {
     )
 
     const carry = overlays.carry
-      ? carryNeutralPath(price, liveFundingRate, now, horizon)
+      ? carryNeutralPath(price, liveFundingRate, now, horizon, fundingPeriodMs)
       : []
     // Diamonds where the upcoming funding transfers land on the line —
     // only when the horizon spans few enough periods that each diamond
     // reads as an event; on long projections they'd bunch into dust.
     const fundingMarks =
-      carry.length > 0 && horizon <= 8 * FUNDING_PERIOD_MS
+      carry.length > 0 && horizon <= 8 * fundingPeriodMs
         ? fundingTimes
             .filter((t) => t <= now + horizon)
             .map((t) => ({
               ts: t,
               value:
-                price * (1 + liveFundingRate * ((t - now) / FUNDING_PERIOD_MS)),
+                price * (1 + liveFundingRate * ((t - now) / fundingPeriodMs)),
             }))
         : []
     // The vol estimate uses the FULL fetched series, not the visible
@@ -376,7 +390,9 @@ export const PerpChart = (props: {
             contract.poolLong,
             contract.poolShort,
             now,
-            horizon
+            horizon,
+            24,
+            fundingPeriodMs
           ),
         }))
       : []
@@ -393,6 +409,7 @@ export const PerpChart = (props: {
     contract.poolLong,
     contract.poolShort,
     contract.lastFundingTime,
+    fundingPeriodMs,
   ])
 
   const { xScale, yScale, path } = useMemo(() => {
@@ -409,7 +426,7 @@ export const PerpChart = (props: {
     let yMax = Math.max(...ys)
     // Flat series need a synthetic pad, but the fallback must match the
     // data's units: ±1 is fine for prices, while funding rates are raw
-    // per-hour fractions (~1e-5), where a ±1 pad renders the axis as
+    // per-period fractions (~1e-5), where a ±1 pad renders the axis as
     // ±876,000% annualized. Pad relative to the series' own magnitude.
     const flatPad =
       mode === 'funding'
@@ -601,9 +618,7 @@ export const PerpChart = (props: {
       ? overlayGeom.carry[overlayGeom.carry.length - 1]
       : null
   const carryEndPct = carryEnd
-    ? Math.abs(liveFundingRate) *
-      (overlayGeom!.horizon / FUNDING_PERIOD_MS) *
-      100
+    ? Math.abs(liveFundingRate) * (overlayGeom!.horizon / fundingPeriodMs) * 100
     : 0
 
   return (
@@ -614,7 +629,7 @@ export const PerpChart = (props: {
             active={overlays.carry}
             onClick={() => toggleOverlay('carry')}
             label="Hold cost"
-            tooltip="Where the price would have to move for a position opened now to break even on funding alone — not a price forecast. Diamonds mark the upcoming hourly funding transfers. Finish above the line and longs came out ahead; below it, shorts did."
+            tooltip="Where the price would have to move for a position opened now to break even on funding alone — not a price forecast. Diamonds mark the upcoming funding transfers. Finish above the line and longs came out ahead; below it, shorts did."
             swatch={<CarrySwatch />}
           />
           <OverlayChip
@@ -926,9 +941,10 @@ export const PerpChart = (props: {
                 % to here
                 <title>
                   Cumulative funding over this projection at today&apos;s rate (
-                  {(Math.abs(liveFundingRate) * 100).toFixed(3)}%/hr of margin).
-                  The rate floats hourly, so treat this as a yardstick, not a
-                  bill.
+                  {(Math.abs(liveFundingRate) * 100).toFixed(3)}%/
+                  {fundingPeriodUnit(fundingPeriodMs)} of margin). The rate
+                  floats every {fundingPeriodNoun(fundingPeriodMs)}, so treat
+                  this as a yardstick, not a bill.
                 </title>
               </text>
             </g>
@@ -969,10 +985,19 @@ export const PerpChart = (props: {
           >
             <div className="text-ink-500">
               {formatHoverDate(hovered.ts)}
-              {hovered.ghost ? ' · this hour, accruing' : ''}
+              {hovered.ghost
+                ? fundingPeriodMs === DAY_MS
+                  ? ' · today, accruing'
+                  : ' · this hour, accruing'
+                : ''}
             </div>
             <div className="text-ink-900 font-semibold tabular-nums">
-              {formatHoverValue(hovered.value, mode, priceDecimals)}
+              {formatHoverValue(
+                hovered.value,
+                mode,
+                priceDecimals,
+                fundingPeriodUnit(fundingPeriodMs)
+              )}
             </div>
             {mode === 'funding' && (
               <div className="text-ink-500">
@@ -982,7 +1007,12 @@ export const PerpChart = (props: {
                   ? 'shorts pay longs'
                   : 'balanced'}
                 {hovered.value !== 0 &&
-                  ` · ≈${(Math.abs(hovered.value) * 24 * 100).toFixed(2)}%/day`}
+                  fundingPeriodMs < DAY_MS &&
+                  ` · ≈${(
+                    Math.abs(hovered.value) *
+                    (DAY_MS / fundingPeriodMs) *
+                    100
+                  ).toFixed(2)}%/day`}
               </div>
             )}
             {mode === 'funding' && (hovered.numLiquidations ?? 0) > 0 && (
@@ -1020,8 +1050,20 @@ export const PerpChart = (props: {
       {mode === 'funding' && (
         <span className="text-ink-400 text-xs">
           {fundingPoints.length === 0
-            ? 'No funding events yet — the first lands on the next hourly run.'
-            : 'Hourly funding rate, % of margin per hour. Positive: longs pay shorts · negative: shorts pay longs.'}
+            ? `No funding events yet — the first lands ${
+                fundingPeriodMs === HOUR_MS
+                  ? 'on the next hourly run'
+                  : 'after the next oracle update'
+              }.`
+            : `${
+                fundingPeriodMs === DAY_MS
+                  ? 'Daily'
+                  : fundingPeriodMs === HOUR_MS
+                  ? 'Hourly'
+                  : 'Per-period'
+              } funding rate, % of margin per ${fundingPeriodNoun(
+                fundingPeriodMs
+              )}. Positive: longs pay shorts · negative: shorts pay longs.`}
         </span>
       )}
     </Col>
@@ -1135,9 +1177,9 @@ const formatTick = (
   priceDecimals: number
 ) => {
   if (mode === 'funding') {
-    // Per-hour percent, trailing zeros trimmed — the chart is read in
-    // hours, so hourly units it is (an annualized axis on an hourly bar
-    // chart was the old chart's core sin).
+    // Per-period percent, trailing zeros trimmed — the chart is read in the
+    // contract's own funding period (an annualized axis on an hourly chart
+    // was the old chart's core sin). The unit lives in the hover + caption.
     const trimmed = (v * 100).toFixed(3).replace(/\.?0+$/, '')
     return `${trimmed === '' || trimmed === '-' ? '0' : trimmed}%`
   }
@@ -1147,11 +1189,12 @@ const formatTick = (
 const formatHoverValue = (
   v: number,
   mode: 'price' | 'funding',
-  priceDecimals: number
+  priceDecimals: number,
+  fundingUnit: string
 ) => {
   if (mode === 'funding') {
     const pct = v * 100
-    return `${pct > 0 ? '+' : ''}${pct.toFixed(3)}%/hr of margin`
+    return `${pct > 0 ? '+' : ''}${pct.toFixed(3)}%/${fundingUnit} of margin`
   }
   // For price mode, bump decimals slightly for the hover readout so tiny
   // movements are visible even on coarse-scale axes.

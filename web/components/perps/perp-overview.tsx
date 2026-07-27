@@ -3,8 +3,17 @@ import clsx from 'clsx'
 import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
 import { nextFundingTimes } from 'common/perps/chart-projections'
-import { formatPrice, inferPriceDecimals } from 'common/perps/format'
-import { MINUTE_MS } from 'common/util/time'
+import {
+  fundingPeriodNoun,
+  fundingPeriodUnit,
+  getFundingPeriodMs,
+} from 'common/perps/funding'
+import {
+  formatCountdown,
+  formatPrice,
+  inferPriceDecimals,
+} from 'common/perps/format'
+import { YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -14,10 +23,6 @@ import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
 import { PerpPositionPanel } from './perp-position-panel'
 import { scheduleFreshBurst, usePerpPositions } from './use-perp-positions'
-
-// Funding events fire hourly in the engine (FUNDING_PERIOD_MS = HOUR_MS), so
-// the per-period rate stored on the contract annualizes as rate * 24 * 365.
-const FUNDING_PERIODS_PER_YEAR = 24 * 365
 
 // Poll cadence for live market data. Matches the scheduler's fast tick;
 // there are no websocket broadcasts for oracle updates (the engine runs in
@@ -124,8 +129,8 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   const priceDecimals = inferPriceDecimals([price])
 
   // Compute the funding rate live from the current pool balances rather than
-  // reading `contract.fundingRate`, which is only refreshed hourly by the
-  // scheduler. Without this, a user who just flipped the pool balance would
+  // reading `contract.fundingRate`, which the scheduler only refreshes at
+  // each funding event. Without this, a user who just flipped the pool balance would
   // still see the previous period's rate — often with the opposite sign —
   // until the next funding tick, which reads as "backwards".
   const liveFundingRate = computeFundingRate(
@@ -154,6 +159,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           <FundingRateColumn
             rate={liveFundingRate}
             lastFundingTime={contract.lastFundingTime}
+            fundingPeriodMs={getFundingPeriodMs(contract)}
           />
         </Row>
         <Row className="border-ink-200 overflow-hidden rounded-md border">
@@ -200,8 +206,9 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
 const FundingRateColumn = (props: {
   rate: number | undefined
   lastFundingTime: number | undefined
+  fundingPeriodMs: number
 }) => {
-  const { rate, lastFundingTime } = props
+  const { rate, lastFundingTime, fundingPeriodMs } = props
   // Client-only: the countdown is Date.now()-derived, so the server's
   // render goes stale by hydration time whenever a minute boundary passes
   // in between — a 1-in-60 hydration mismatch per hard load.
@@ -218,20 +225,23 @@ const FundingRateColumn = (props: {
     )
   }
 
-  // Funding is an HOURLY cash flow viewed on an hours-scale chart — lead
-  // with the per-hour rate and who pays whom. The annualized number reads
-  // as apocalyptic (±500%/yr) while the per-hour reality is a rounding
-  // error; it lives in the tooltip for the finance-brained.
-  const hourlyPct = rate * 100
-  const annualPct = rate * FUNDING_PERIODS_PER_YEAR * 100
+  // Funding is a per-period cash flow viewed on a chart read in the same
+  // units — lead with the per-period rate and who pays whom. The annualized
+  // number reads as apocalyptic (±500%/yr) while the per-period reality is
+  // a rounding error; it lives in the tooltip for the finance-brained.
+  const periodPct = rate * 100
+  const annualPct = rate * (YEAR_MS / fundingPeriodMs) * 100
   const sign = rate > 0 ? '+' : ''
   const directionText =
     rate > 0 ? 'longs pay shorts' : rate < 0 ? 'shorts pay longs' : 'balanced'
-  const nextEvent = nextFundingTimes(lastFundingTime, Date.now(), 1)[0]
-  const minsToNext =
-    isClient && nextEvent
-      ? Math.max(1, Math.ceil((nextEvent - Date.now()) / MINUTE_MS))
-      : null
+  const nextEvent = nextFundingTimes(
+    lastFundingTime,
+    Date.now(),
+    1,
+    fundingPeriodMs
+  )[0]
+  const countdown =
+    isClient && nextEvent ? formatCountdown(nextEvent - Date.now()) : null
   const color =
     rate > 0
       ? 'text-scarlet-600 dark:text-scarlet-400'
@@ -244,8 +254,8 @@ const FundingRateColumn = (props: {
       text={
         <div className="max-w-[18rem] text-left">
           <div className="font-medium">
-            Every hour, the crowded side pays the thin side this fraction of its
-            margin.
+            Every {fundingPeriodNoun(fundingPeriodMs)}, the crowded side pays
+            the thin side this fraction of its margin.
           </div>
           <div className="text-ink-200 mt-1 text-xs">
             Annualized: {sign}
@@ -258,12 +268,14 @@ const FundingRateColumn = (props: {
         <div className="text-ink-500 text-sm">Funding</div>
         <div className={`text-3xl font-semibold tabular-nums ${color}`}>
           {sign}
-          {hourlyPct.toFixed(3)}%
-          <span className="text-ink-400 text-base font-normal">/hr</span>
+          {periodPct.toFixed(3)}%
+          <span className="text-ink-400 text-base font-normal">
+            /{fundingPeriodUnit(fundingPeriodMs)}
+          </span>
         </div>
         <div className="text-ink-500 text-xs">
           {directionText}
-          {minsToNext != null && ` · next in ${minsToNext}m`}
+          {countdown != null && ` · next in ${countdown}`}
         </div>
       </Col>
     </Tooltip>

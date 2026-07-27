@@ -27,3 +27,16 @@ export const formatPrice = (value: number, decimals: number) => {
     maximumFractionDigits: decimals,
   })
 }
+
+/**
+ * Short countdown for "next funding in …": minutes under two hours (ceil,
+ * floored at 1m so it never shows "0m" while still pending), whole hours
+ * beyond. Daily-period contracts count down from 24h — "23h", not "1380m".
+ */
+export const formatCountdown = (ms: number): string => {
+  if (!Number.isFinite(ms)) return '—'
+  const MINUTE = 60_000
+  const HOUR = 60 * MINUTE
+  if (ms < 2 * HOUR) return `${Math.max(1, Math.ceil(ms / MINUTE))}m`
+  return `${Math.round(ms / HOUR)}h`
+}

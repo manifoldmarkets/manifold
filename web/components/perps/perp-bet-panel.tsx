@@ -13,6 +13,11 @@ import {
   computeFundingRate,
   liquidationPrice as computeLiquidationPrice,
 } from 'common/perps/amm'
+import {
+  fundingPeriodNoun,
+  fundingPeriodUnit,
+  getFundingPeriodMs,
+} from 'common/perps/funding'
 import { fundingPerPeriod } from 'common/perps/pnl'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
@@ -85,11 +90,11 @@ export const PerpBetPanel = (props: {
     contract.fundingSensitivity,
     contract.maxFundingRate
   )
-  // Signed mana per hour for the position being configured (+ = earns).
-  // fundingPerPeriod mirrors applyFunding exactly — in particular the
-  // RECEIVING side earns the transfer re-based on its own pool (f·L/S),
-  // which at imbalanced pools is far more than rate × margin.
-  const fundingManaPerHour = fundingPerPeriod(
+  // Signed mana per funding period for the position being configured
+  // (+ = earns). fundingPerPeriod mirrors applyFunding exactly — in
+  // particular the RECEIVING side earns the transfer re-based on its own
+  // pool (f·L/S), which at imbalanced pools is far more than rate × margin.
+  const fundingManaPerPeriod = fundingPerPeriod(
     { direction, size: notional, costBasis: marginAmount, entryPrice: price },
     price,
     fundingRate,
@@ -241,7 +246,8 @@ export const PerpBetPanel = (props: {
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
         marketFundingRate={fundingRate}
-        fundingManaPerHour={fundingManaPerHour}
+        fundingManaPerPeriod={fundingManaPerPeriod}
+        fundingPeriodMs={getFundingPeriodMs(contract)}
       />
 
       <Button
@@ -352,15 +358,15 @@ const LeverageSlider = (props: {
 // Profit tiers shown in the scenario ladder: each is a +r return on margin.
 const RETURN_TIERS = [0.25, 0.5, 1] as const
 
-// Adaptive precision so sub-cent hourly funding amounts don't collapse to
-// "0.00". Shared with the position card's funding row.
-export const formatFundingPerHour = (absPerHour: number) => {
+// Adaptive precision so sub-cent per-period funding amounts don't collapse
+// to "0.00". Shared with the position card's funding row.
+export const formatFundingMana = (absAmount: number) => {
   const m = ENV_CONFIG.moneyMoniker
-  if (!(absPerHour > 0)) return `${m}0`
+  if (!(absAmount > 0)) return `${m}0`
   const body =
-    absPerHour >= 0.01
-      ? absPerHour.toFixed(2)
-      : `${Number(absPerHour.toPrecision(2))}`
+    absAmount >= 0.01
+      ? absAmount.toFixed(2)
+      : `${Number(absAmount.toPrecision(2))}`
   return `${m}${body}`
 }
 
@@ -375,9 +381,12 @@ const StatsGrid = (props: {
   // Market rate (positive = longs pay shorts), mirrors the Funding column in
   // the overview header.
   marketFundingRate: number
-  // Signed mana/hr for this configuration (positive = the user earns).
-  // Drives row color so a payer reads red, a receiver reads teal.
-  fundingManaPerHour: number
+  // Signed mana per funding period for this configuration (positive = the
+  // user earns). Drives row color so a payer reads red, a receiver teal.
+  fundingManaPerPeriod: number
+  // The contract's frozen funding period — labels are per-hour on fast
+  // feeds, per-day on daily ones.
+  fundingPeriodMs: number
 }) => {
   const {
     direction,
@@ -388,7 +397,8 @@ const StatsGrid = (props: {
     liqPrice,
     priceDecimals,
     marketFundingRate,
-    fundingManaPerHour,
+    fundingManaPerPeriod,
+    fundingPeriodMs,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
@@ -409,14 +419,14 @@ const StatsGrid = (props: {
       })).filter((s) => Number.isFinite(s.price) && s.price > 0)
     : []
 
-  const hourlyPct = marketFundingRate * 100
-  const paysFunding = fundingManaPerHour < 0
-  const earnsFunding = fundingManaPerHour > 0
+  const periodPct = marketFundingRate * 100
+  const paysFunding = fundingManaPerPeriod < 0
+  const earnsFunding = fundingManaPerPeriod > 0
   const fundingValue = `${
     paysFunding ? '-' : earnsFunding ? '+' : ''
-  }${formatFundingPerHour(Math.abs(fundingManaPerHour))}/hr · ${
-    hourlyPct >= 0 ? '+' : ''
-  }${hourlyPct.toFixed(3)}%`
+  }${formatFundingMana(Math.abs(fundingManaPerPeriod))}/${fundingPeriodUnit(
+    fundingPeriodMs
+  )} · ${periodPct >= 0 ? '+' : ''}${periodPct.toFixed(3)}%`
 
   return (
     <Col className="bg-canvas-50 border-ink-200 gap-2 rounded-md border p-3 text-sm">
@@ -483,8 +493,12 @@ const StatsGrid = (props: {
               {(paysFunding || earnsFunding) && (
                 <span className="text-ink-400 text-xs leading-tight">
                   {paysFunding
-                    ? 'You pay funding — subtract it from the profit above for each hour you hold.'
-                    : 'You earn funding — add it to the profit above for each hour you hold.'}
+                    ? `You pay funding — subtract it from the profit above for each ${fundingPeriodNoun(
+                        fundingPeriodMs
+                      )} you hold.`
+                    : `You earn funding — add it to the profit above for each ${fundingPeriodNoun(
+                        fundingPeriodMs
+                      )} you hold.`}
                 </span>
               )}
             </>
