@@ -169,7 +169,13 @@ const EventRow = (props: { event: Event; priceDecimals: number }) => {
       </div>
       <Col className="min-w-0 flex-1">
         <Row className="flex-wrap items-center gap-1 text-sm">
-          <span className="text-ink-600">{EVENT_LABELS[event.eventType]}</span>
+          {/* Aggregate rows (per-tick ADL) carry no direction; drop the
+              trailing "on" so the label doesn't dangle before the price. */}
+          <span className="text-ink-600">
+            {event.direction
+              ? EVENT_LABELS[event.eventType]
+              : EVENT_LABELS[event.eventType].replace(/ on$/, '')}
+          </span>
           {event.direction && (
             <span className={clsx('font-semibold uppercase', dirColor)}>
               {event.direction}
