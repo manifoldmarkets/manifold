@@ -110,11 +110,19 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'daily',
     minPrice: 5,
     maxPrice: 95,
-    // Sized for hourly writes of a 7-day trailing window, where a genuine
-    // move is a fraction of a percent. Upstream publishes whole UTC days, so
-    // the real step lands once a day and is diluted ~7x by the window;
-    // anything past 5% is far likelier a classification bug than news.
-    maxJumpFrac: 0.05,
+    // Sized against 362 real day-transitions of backfilled history, not a
+    // guess. Legitimate daily steps peaked at 8.1% relative (2.7 points) —
+    // the fraction is largest when the index is LOW, since the absolute move
+    // is roughly level-independent. 0.05 would have rejected 18 of those 362
+    // legitimate rollovers, and a rejection is not self-healing: the next
+    // hour re-compares against the same stale point, so one bad rollover
+    // freezes the feed (stale alert at 3h, market frozen at 6h).
+    //
+    // This is a backstop, not the classification tripwire. An unclassified
+    // model already emits its own log.error from the job, on exactly the
+    // condition this would be proxying for, so the guard can afford to sit
+    // above the observed legitimate range instead of inside it.
+    maxJumpFrac: 0.1,
     staleAfterMs: 3 * HOUR_MS,
     // HOUR_MS, not DAY_MS. This drives the contract's frozen funding period
     // (max(1h, updatePeriodMs)), and hourly is what keeps holding a position
