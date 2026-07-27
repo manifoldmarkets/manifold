@@ -1,5 +1,7 @@
+import { sortBy, uniq } from 'lodash'
+
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
-import { getOracleFeed } from 'shared/oracle-feeds'
+import { getOracleFeed, ORACLE_FEEDS } from 'shared/oracle-feeds'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
 
@@ -12,10 +14,22 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
   const rows = await pg.manyOrNone<{ feed_id: string }>(
     `select distinct feed_id from oracle_prices order by feed_id asc`
   )
-  // A feed can have price rows without a registry entry (create-perp rejects
-  // those); surface null so the admin page can warn instead of guessing.
-  return rows.map((r) => ({
-    id: r.feed_id,
-    updatePeriodMs: getOracleFeed(r.feed_id)?.updatePeriodMs ?? null,
-  }))
+  // Include the registry independently of stored history: a disabled feed must
+  // remain blocked in the form even before its first point is written. Also
+  // retain price-only ids so the form can explain why they cannot back a
+  // market instead of silently hiding them.
+  const feedIds = sortBy(
+    uniq([
+      ...ORACLE_FEEDS.map((feed) => feed.id),
+      ...rows.map((r) => r.feed_id),
+    ])
+  )
+  return feedIds.map((id) => {
+    const feed = getOracleFeed(id)
+    return {
+      id,
+      updatePeriodMs: feed?.updatePeriodMs ?? null,
+      marketCreationEnabled: feed?.marketCreationEnabled ?? false,
+    }
+  })
 }

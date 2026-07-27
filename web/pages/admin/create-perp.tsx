@@ -40,7 +40,11 @@ export default function AdminCreatePerpPage() {
   })
   const [topics, setTopics] = useState<Group[]>([])
   const [knownFeeds, setKnownFeeds] = useState<
-    { id: string; updatePeriodMs: number | null }[]
+    {
+      id: string
+      updatePeriodMs: number | null
+      marketCreationEnabled: boolean
+    }[]
   >([])
   const [feedLatest, setFeedLatest] = useState<{
     feedId: string
@@ -92,10 +96,9 @@ export default function AdminCreatePerpPage() {
   // hours-per-year on a daily feed would understate the cap 24x (the engine
   // fires once a day, not hourly).
   const selectedFeed = knownFeeds.find((f) => f.id === form.oracleFeedId.trim())
+  const feedCreationDisabled = selectedFeed?.marketCreationEnabled === false
   const unregisteredFeed =
-    knownFeeds.length > 0 &&
-    !!selectedFeed &&
-    selectedFeed.updatePeriodMs == null
+    feedCreationDisabled && selectedFeed?.updatePeriodMs == null
   const fundingPeriodMs = selectedFeed?.updatePeriodMs
     ? Math.max(HOUR_MS, selectedFeed.updatePeriodMs)
     : HOUR_MS
@@ -118,6 +121,14 @@ export default function AdminCreatePerpPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (feedCreationDisabled) {
+      toast.error(
+        unregisteredFeed
+          ? 'This feed is not registered for perp market creation.'
+          : 'This feed is disabled for new perp markets.'
+      )
+      return
+    }
     setSubmitting(true)
     try {
       const res = await api('create-perp', {
@@ -180,14 +191,16 @@ export default function AdminCreatePerpPage() {
               placeholder="e.g. btc-usd"
             />
             <datalist id="known-oracle-feeds">
-              {knownFeeds.map((f) => (
-                <option key={f.id} value={f.id} />
-              ))}
+              {knownFeeds
+                .filter((f) => f.marketCreationEnabled)
+                .map((f) => (
+                  <option key={f.id} value={f.id} />
+                ))}
             </datalist>
             {feedLatest ? (
               <p
                 className={
-                  feedOlderThanMaxAge
+                  feedOlderThanMaxAge || feedCreationDisabled
                     ? 'mt-1 text-xs text-red-600'
                     : 'text-ink-500 mt-1 text-xs'
                 }
@@ -204,6 +217,12 @@ export default function AdminCreatePerpPage() {
               <p className="text-ink-500 mt-1 text-xs">
                 Must already exist in <code>oracle_prices</code>. Have an
                 internal service write a price before creating.
+              </p>
+            )}
+            {feedCreationDisabled && !unregisteredFeed && (
+              <p className="mt-1 text-xs text-red-600">
+                This feed is retained for runtime/history but is disabled for
+                new perp markets.
               </p>
             )}
           </div>
@@ -317,7 +336,11 @@ export default function AdminCreatePerpPage() {
           </label>
 
           <Col>
-            <Button type="submit" loading={submitting} disabled={submitting}>
+            <Button
+              type="submit"
+              loading={submitting}
+              disabled={submitting || feedCreationDisabled}
+            >
               Create perp
             </Button>
           </Col>

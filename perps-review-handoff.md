@@ -5,6 +5,13 @@ Branch: **`perps-launch`** (pushed). Everything below sits on top of Stephen's o
 companion docs are `perps-launch-plan.md` (repo root, original implementation plan) and
 `backend/shared/src/perps/README.md` (architecture).
 
+> **Launch decision (2026-07-28):** ECI is excluded from the launch set because
+> its running frontier is monotone non-decreasing and produces a structurally
+> one-sided perp. Keep its feed/scheduler/history, but do not create or announce
+> an ECI market. This is enforced by `marketCreationEnabled: false` in the
+> registry, the `create-perp` guard, and the admin picker. OpenRouter open-weight
+> share is the AI launch market instead.
+
 ## TL;DR for the reviewer
 
 - 11 perps commits on top of Stephen's branch: 3 from the rebase/infra pass
@@ -15,9 +22,10 @@ companion docs are `perps-launch-plan.md` (repo root, original implementation pl
   a profile endpoint that stripped every perp field. The unit tests cover the pure math
   only — **nothing catches integration bugs**. That is the meta-finding: please review
   the engine's DB-composition paths line-by-line, not just the AMM math.
-- Three of four launch markets exist on dev and are live-ticking. Funding has **never
-  run** for them (see Untested). Two engineered liquidation/ADL scenarios are armed on
-  the dev BTC market and will fire on their own with price movement.
+- Three markets from the original prototype set exist on dev and are
+  live-ticking; the ECI prototype is not a launch market. Funding has **never
+  run** for them (see Untested). Two engineered liquidation/ADL scenarios are
+  armed on the dev BTC market and will fire on their own with price movement.
 - Known design tension (deliberate, needs a team decision, not a silent fix): the
   solvency gate admits unlimited notional at open; ADL is the only backstop. A live
   Ṁ28M short vs a ~Ṁ28k long pool on dev demonstrates it.
@@ -28,7 +36,7 @@ companion docs are `perps-launch-plan.md` (repo root, original implementation pl
 |---|---|---|
 | Stephen's perps | (`origin/perps`, ~5.5k lines) | Parimutuel dual-pool perp AMM: pure math in `common/src/perps/amm.ts`, engine in `backend/shared/src/perps/engine.ts`, 4 DB tables, API endpoints, market page UI. Winners paid from the loser pool; ADL haircuts winners when it can't cover; hourly funding from crowded side to thin side. |
 | Merge + hygiene | `86b88590a`, `e3d45c3b5` | Merged main (gemini SDK migration etc.). Freshness flag flipped ON (`PERPS_SKIP_ORACLE_FRESHNESS=false`), input validation, funding double-run guard moved under the advisory lock, metrics fast path for sub-minute ticks, **19 AMM unit tests** (first tests for the money math). |
-| Oracle infra | `ce2e36e83` | Feed registry (`backend/shared/src/oracle-feeds.ts`) with bounds/jump-guard/staleness per feed; 15s scheduler job `update-oracle-feeds` (croner handles sub-minute; no separate worker needed); 3 launch feeds: `btc-usd` (median Coinbase/Kraken/Bitstamp), `uk-grid-carbon` (NESO 30-min actuals), `eci-frontier` (Epoch zip, daily); backfill scripts; `create-perp` now honors `groupIds` + generates embeddings + validates `maxOraclePriceAgeMs` ≥ feed staleness. |
+| Oracle infra | `ce2e36e83` | Feed registry (`backend/shared/src/oracle-feeds.ts`) with bounds/jump-guard/staleness per feed; 15s scheduler job `update-oracle-feeds` (croner handles sub-minute; no separate worker needed); launch feeds include `btc-usd` (median Coinbase/Kraken/Bitstamp) and `uk-grid-carbon` (NESO 30-min actuals); `eci-frontier` remains runtime-only and cannot back a new market; backfill scripts; `create-perp` now honors `groupIds` + generates embeddings + validates `maxOraclePriceAgeMs` ≥ feed staleness. |
 | Today's QA session | 8 commits below | Live testing against dev with a human trading through the UI. Bug fixes + UX to a "high-frequency instrument" standard. |
 
 ## 2. Today's commits (reasoning included)
@@ -36,7 +44,7 @@ companion docs are `perps-launch-plan.md` (repo root, original implementation pl
 | Commit | What | Why |
 |---|---|---|
 | `38164675f` | Bet panel: collapsible profit-scenario ladder (+25/50/100% → price needed → mana profit), funding cost in Ṁ/hr, log-scale leverage slider | Traders should quick-math "if it hits X in N hours I make Y minus funding" in their head. Funding shown on **margin, not notional** — matches `applyFunding` (see risk #4). Linear slider bunched 1×/5×/10× marks unreadably on 375px phones; leverage is perceived logarithmically. |
-| `cb3bef07b` | Admin create-perp form: per-side subsidy, topic selector, live feed-health preview, "create unlisted" | The form is the system of record for market creation and couldn't express the launch configs (ECI needs a 30k/10k short-skewed subsidy; topics were API-only). Feed-health preview kills the #1 admin footgun (creating against a stale/mistyped feed). |
+| `cb3bef07b` | Admin create-perp form: per-side subsidy, topic selector, live feed-health preview, "create unlisted" | The form is the system of record for market creation and couldn't express asymmetric launch configs; topics were API-only. Feed-health preview kills the #1 admin footgun (creating against a stale/mistyped feed). ECI is now excluded rather than compensated for with skewed subsidy. |
 | `e3b6146a8` | Form funding cap 100 → 8000 %/yr, show %/day | Launch config (0.001/hr ≈ 876%/yr ≈ 2.4%/day) literally couldn't be typed into the form. |
 | `e3bdef784` | **Engine fix: fast path used `.none()` on a `returning *` query** | pg-promise throws `QueryResultError(notEmpty)` when rows come back → **whole tick transaction rolled back** → every fast-feed perp froze at its creation price. Found live on dev: `oracle_prices` 15s-fresh while the contract never moved. One char fix (`.one()`), but see review focus #1. |
 | `e518e6cc8` | Market page: 15s poll of oracle price | The page had **no update mechanism** — no websocket topic, no poll. The engine runs in the scheduler process, so it can't reach the API's websocket server; polling is the pragmatic fix. |
@@ -55,7 +63,9 @@ scheduler job. Required for any dev testing while the deployed dev scheduler run
   `epoch-ai-capabilities-index-frontie` (10k long/30k short, CC-BY credit in
   description), `uk-grid-carbon-intensity-gco2kwh-pe` (10k/10k). All 100× max leverage,
   876%/yr funding cap, k=10. All have embeddings; **UK carbon is missing its topic tag**
-  (Science didn't attach — re-add via market page or API).
+  (Science didn't attach — re-add via market page or API). The ECI contract is
+  a historical dev prototype only: exclude it from launch QA datasets,
+  creation batches, and announcements.
 - **Not created**: the new Trump market. The April `trump-approval-rating` perp still
   exists with old params (k=1, 30h maxAge, live history incl. a 38× long). **Open
   decision**: keep it (has history) vs resolve + recreate with launch params.

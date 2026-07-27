@@ -24,6 +24,21 @@ import { convertUser } from 'common/supabase/users'
 import { getUser, htmlToRichText, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 
+export const requireOracleFeedForPerpCreation = (oracleFeedId: string) => {
+  const feedDef = getOracleFeed(oracleFeedId)
+  if (!feedDef)
+    throw new APIError(
+      400,
+      `Feed "${oracleFeedId}" is not in the oracle feed registry — add an OracleFeedDef in backend/shared/src/oracle-feeds.ts first.`
+    )
+  if (!feedDef.marketCreationEnabled)
+    throw new APIError(
+      400,
+      `Feed "${oracleFeedId}" is not enabled for perp market creation.`
+    )
+  return feedDef
+}
+
 export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   if (!PERPS_ENABLED) throw new APIError(403, 'Perps are disabled')
   throwErrorIfNotAdmin(auth.uid)
@@ -49,6 +64,11 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   if (totalSubsidy < 1)
     throw new APIError(400, 'Total subsidy must be at least 1 mana')
 
+  // Registry membership and the product capability are authoritative. Check
+  // them before database work so a runtime-only feed is rejected even when it
+  // has no price rows in the current environment.
+  const feedDef = requireOracleFeedForPerpCreation(oracleFeedId)
+
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
   if (user.balance < totalSubsidy)
@@ -66,17 +86,6 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     throw new APIError(
       400,
       `No oracle price data for feed "${oracleFeedId}" — have an internal service write to oracle_prices first.`
-    )
-
-  // The registry is where a feed's cadence lives, and the funding period is
-  // derived from it — a market on an unregistered feed would have no basis
-  // for its funding cadence (this used to be allowed; any oracle_prices row
-  // sufficed).
-  const feedDef = getOracleFeed(oracleFeedId)
-  if (!feedDef)
-    throw new APIError(
-      400,
-      `Feed "${oracleFeedId}" is not in the oracle feed registry — add an OracleFeedDef in backend/shared/src/oracle-feeds.ts first.`
     )
 
   // A maxOraclePriceAgeMs below the feed's normal update interval would

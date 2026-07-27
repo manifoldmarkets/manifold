@@ -24,6 +24,11 @@ import { fetchUkGridCarbonRecent } from './uk-grid-carbon'
 export type OracleFeedDef = {
   id: string
   description: string
+  /** Whether admins may create new perp markets on this feed. Required so
+   * every registry addition makes an explicit product decision. Disabling
+   * creation does not stop ingestion, health checks, or updates for existing
+   * contracts. */
+  marketCreationEnabled: boolean
   /** 'fast' feeds are fetched by the 15s tick; 'daily' feeds are written by
    * their own scheduler job and only health-checked. */
   cadence: 'fast' | 'daily'
@@ -57,6 +62,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: BTC_USD_FEED_ID,
     description: 'BTC/USD spot, median of Coinbase/Kraken/Bitstamp',
+    marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 1_000,
     maxPrice: 10_000_000,
@@ -68,6 +74,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: UK_GRID_CARBON_FEED_ID,
     description: 'GB grid carbon intensity (gCO2/kWh), NESO 30-min actuals',
+    marketCreationEnabled: true,
     cadence: 'fast',
     minPrice: 1,
     maxPrice: 600,
@@ -86,6 +93,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: TRUMP_APPROVAL_FEED_ID,
     description: '14-day rolling Trump approval average (VoteHub polls)',
+    marketCreationEnabled: true,
     cadence: 'daily',
     minPrice: 10,
     maxPrice: 90,
@@ -95,6 +103,10 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: ECI_FRONTIER_FEED_ID,
     description: 'Epoch Capabilities Index frontier (max ECI, released models)',
+    // The frontier is monotone non-decreasing by construction. As a perp it
+    // has a dominant long side, pins funding, and gives shorts no genuine
+    // directional thesis. Keep the feed for history/runtime use only.
+    marketCreationEnabled: false,
     cadence: 'daily',
     minPrice: 100,
     maxPrice: 250,
@@ -104,6 +116,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: OPENROUTER_OPEN_WEIGHT_FEED_ID,
     description: 'Open-weight share of top-50 model tokens on OpenRouter (%)',
+    marketCreationEnabled: true,
     // 'daily' here means "own scheduler job, health-checked only" — it does
     // NOT mean daily cadence. This job runs HOURLY, recomputing the trailing
     // 7-day window and appending a point stamped at write time.

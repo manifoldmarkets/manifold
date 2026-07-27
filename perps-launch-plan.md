@@ -6,8 +6,10 @@ the accepted answer for trending markets). All API endpoints below were verified
 
 > **STATUS 2026-07-03 — implemented on `perps-launch`** (branched off `origin/perps`,
 > merged with main): all of Phase 0 (0.1 merge, 0.2 hygiene incl. amm tests, 0.3 registry +
-> 15s tick + metrics fast path) and all feed adapters + daily jobs + backfill scripts for
-> ECI / BTC / UK carbon. One deviation: the BTC median uses **Bitstamp instead of Binance**
+> 15s tick + metrics fast path) and the feed adapters + jobs + backfill scripts for
+> ECI / BTC / UK carbon. ECI is retained as a runtime/history feed but is now explicitly
+> blocked from market creation; OpenRouter open-weight share replaces it in the launch set.
+> One deviation: the BTC median uses **Bitstamp instead of Binance**
 > (Binance geo-blocks US IPs, where prod GCP egress lands). Typecheck (web/api/scheduler),
 > lint, and the 171-test common suite are green.
 > **Remaining:** run the dev verification checklist below (needs dev DB + backfills + admin
@@ -16,12 +18,19 @@ the accepted answer for trending markets). All API endpoints below were verified
 
 **Launch set (day 1):**
 1. Trump approval rating (exists) — daily, politics anchor
-2. **Epoch Capabilities Index frontier** — daily/bursty, AI + grants angle
+2. **OpenRouter open-weight token share** — hourly, genuinely two-sided AI market
 3. **BTC/USD** — 15-second cadence, the fast flagship, free feeds
 4. **UK grid carbon intensity** — 30-min cadence, oscillating, climate angle
 
+**Explicit exclusion:** do not launch an Epoch Capabilities Index frontier
+market. The frontier is monotone non-decreasing and piecewise constant, so a
+perp on it has a dominant long direction, pins funding, and makes shorts funding
+bait rather than a coherent directional trade. The ECI adapter and history stay
+available for nonmarket/runtime use; `marketCreationEnabled: false` in the feed
+registry enforces this decision.
+
 Week-2 follow-ons: Adjacent partisan index (pending their cadence/licensing answer), oil
-(pending pay-or-Yahoo decision, see Market 3).
+(pending pay-or-Yahoo decision, see the deferred section below).
 
 ---
 
@@ -71,6 +80,7 @@ is disproven by existing precedent. Model the fast tick on `backend/scheduler/sr
 ```ts
 export type OracleFeed = {
   id: string
+  marketCreationEnabled: boolean // explicit product gate; false keeps runtime/history only
   fetchLatest: () => Promise<{ ts: number; price: number } | null>
   cadence: 'fast' | 'daily' // fast = polled by the fast tick
   minPrice: number          // hard sanity bounds; out-of-range points are dropped + alerted
@@ -108,7 +118,11 @@ correctly). Never add a "cheap price refresh" path that bumps `oraclePrice` with
 
 ---
 
-## Market 1 — Epoch Capabilities Index frontier (plan this first ✅)
+## Excluded feed — Epoch Capabilities Index frontier (not a launch market)
+
+This section documents the retained data adapter only. It is not part of the
+launch manifest, and `create-perp` rejects `eci-frontier` through the registry's
+`marketCreationEnabled: false` capability.
 
 **Oracle definition.** `feed_id: 'eci-frontier'`. Value = max ECI score across all models whose
 release date ≤ day D (a running frontier). Currently **161** (Claude Fable 5); scale runs
@@ -130,21 +144,26 @@ exactly on `trump-approval.ts` / `update-trump-approval.ts`:
 - Backfill script `backend/scripts/backfill-eci-oracle.ts`: compute the running frontier per day
   over the last ~18 months from release dates → seeds the chart.
 
-**Market config.** Question: "Epoch Capabilities Index — frontier AI capability score".
-`maxOraclePriceAgeMs`: 3 days. Subsidy: **skewed short** (e.g. 30k short / 10k long) — pools
-will go long-heavy on a monotonic index, and the short pool is what pays winners.
-`maxFundingRate`: small (≈0.001/hr ⇒ ~2.4%/day max) — tune in dev; funding IS the market here
-(longs pay to hold), say so in the description. Attribution: CC-BY requires
-"Data: Epoch AI Capabilities Index" with a link, in the market description.
-
-**Risks.** Step jumps gap through liquidation prices — fine in this engine (losers forfeit at
-most margin; no bad debt). Zip URL/schema drift — feed-health alert catches it. Manipulation:
-effectively none. Consider emailing Epoch — a live market on their index is good for both sides
-and for the grant story.
+**Why creation is blocked.** The oracle is a running maximum: it can stay flat
+or rise, but cannot fall. That makes the perp structurally long-only, drives
+funding toward its cap, turns shorts into funding bait, and introduces release
+gaps without a tradeable path. Pool skew or funding tuning cannot repair the
+underlying game design. Keep the feed, scheduler, and backfill for history or
+nonmarket uses; do not create or announce an ECI market.
 
 ---
 
-## Market 2 — BTC/USD (fast flagship)
+## Launch market — OpenRouter open-weight token share
+
+This replaces ECI as the AI launch market. The trailing seven-day share can
+move in both directions as open and closed models gain usage, so longs and
+shorts both have coherent theses. The implemented methodology, attribution,
+hourly cadence, backfill, and creation notes live in
+`perps-openrouter-feed-handoff.md`.
+
+---
+
+## Launch market — BTC/USD (fast flagship)
 
 **Oracle definition.** `feed_id: 'btc-usd'`. Median of three free, no-auth endpoints (all
 verified live today, quotes within 0.12% of each other):
@@ -163,8 +182,8 @@ non-issue at 4 req/min/source.
 `maxJumpFrac: 0.10` per tick. `staleAfterMs`: 2 min.
 
 **Market config.** Question: "Bitcoin price (USD)". `maxOraclePriceAgeMs`: 2 min. Subsidy: fat
-and symmetric (e.g. 25k/25k). This is the market that exercises the entire fast pipeline —
-it goes second so ECI (zero new infra) is banked first, but it's the launch centerpiece.
+and symmetric (e.g. 25k/25k). This is the market that exercises the entire fast
+pipeline and is the launch centerpiece.
 
 **Mechanism note.** Unbounded + trending = the funding-carry regime you've accepted: persistent
 long skew ⇒ longs continuously pay shorts ⇒ shorts are compensated for being structurally wrong.
@@ -172,7 +191,7 @@ Watch ADL frequency in dev; if winners get haircut often, raise subsidies, not t
 
 ---
 
-## Market 3 — Oil (WTI): recommend DEFER to week 2
+## Deferred follow-on — Oil (WTI)
 
 No good free real-time feed exists; BTC fills the "very liquid + fast" slot for free on day 1.
 Options when you pick it up:
@@ -191,7 +210,7 @@ fast-tick infra with zero new engine code, so deferring costs nothing structural
 
 ---
 
-## Market 4 — UK grid carbon intensity (the green one)
+## Launch market — UK grid carbon intensity (the green one)
 
 **Oracle definition.** `feed_id: 'uk-grid-carbon'`. Value = latest **actual** carbon intensity
 of the GB electricity grid in gCO₂/kWh.
@@ -227,12 +246,17 @@ Order matters — each step is independently commit-able:
 1. **Rebase onto main** + compile green (gemini SDK is the known conflict). Biggest unknown, do first.
 2. **Hygiene commits** (0.2: flag flip, groupIds+embeddings, price validation, funding guard) +
    **amm.ts test suite**.
-3. **Feeds registry + fast tick job + metrics fast path** (0.3). Then adapters: ECI (+ backfill
-   script), BTC, UK carbon.
+3. **Feeds registry + fast tick job + metrics fast path** (0.3). Then adapters:
+   BTC, UK carbon, and OpenRouter. Keep the ECI adapter/backfill for history,
+   but verify its registry entry remains disabled for market creation.
 4. **Dev verification checklist:**
-   - [ ] backfills run; charts render for all feeds
-   - [ ] create all 4 markets via `/admin/create-perp` with the configs above, tagged to topics
-     (proves the groupIds fix), verify they appear in topic browse + search (proves embeddings)
+   - [ ] backfills run; charts render for all launch feeds
+   - [ ] create the four launch markets — Trump approval, OpenRouter
+     open-weight share, BTC, and UK carbon — via `/admin/create-perp`, tagged
+     to topics (proves the groupIds fix); verify they appear in topic browse +
+     search (proves embeddings)
+   - [ ] verify `eci-frontier` is absent from the admin picker and rejected by
+     `create-perp`
    - [ ] trade long, add, flip, close on each — balances and event log correct
    - [ ] forced liquidation: open 50× position, write an adverse price via
      `internal-write-oracle-price`, next tick liquidates + notification fires
@@ -243,9 +267,11 @@ Order matters — each step is independently commit-able:
    - [ ] resolve a dev market: payouts + residual to creator; unresolve blocked
    - [ ] soak: 3 fast contracts on 15s ticks for ~1h; watch scheduler CPU + advisory-lock
      contention + contracts-table write volume
-5. **Prod rollout:** run the migration → deploy → create the 4 markets **unlisted** → self-trade
-   sanity pass on prod → flip to public + announce. (Cleaner than flag juggling —
-   `PERPS_ENABLED` is a hardcoded `true` on the branch; unlisted-first is the soft launch.)
+5. **Prod rollout:** run the migration → deploy → create only the four named
+   launch markets **unlisted** → self-trade sanity pass on prod → flip to
+   public + announce. Do not include ECI in the creation batch or announcement.
+   (Cleaner than flag juggling — `PERPS_ENABLED` is a hardcoded `true` on the
+   branch; unlisted-first is the soft launch.)
 
 ## Open items (not blocking day 1)
 - Adjacent.markets: confirm index update cadence + API pricing/licensing → week-2 elections-page perp.

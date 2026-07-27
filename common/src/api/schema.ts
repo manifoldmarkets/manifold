@@ -1101,12 +1101,18 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    // updatePeriodMs comes from the backend feed registry; null means the
-    // feed has price rows but no OracleFeedDef (create-perp rejects those).
+    // Registry metadata lets the admin page omit runtime-only feeds from its
+    // picker. null updatePeriodMs means the feed has price rows but no
+    // OracleFeedDef; false marketCreationEnabled means either unregistered or
+    // deliberately runtime-only (create-perp rejects both).
     // The admin create page needs it to convert an annual max funding rate
     // into the per-PERIOD fraction the engine stores — assuming hourly on a
     // daily feed would understate the cap 24x.
-    returns: [] as { id: string; updatePeriodMs: number | null }[],
+    returns: [] as {
+      id: string
+      updatePeriodMs: number | null
+      marketCreationEnabled: boolean
+    }[],
     props: z.object({}).strict(),
   },
   'internal-write-oracle-price': {

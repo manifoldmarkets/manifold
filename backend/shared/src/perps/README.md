@@ -58,8 +58,11 @@ Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
 ## Oracle feeds
 
 `backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence
-(`fast` | `daily`), sanity bounds, jump guard, and staleness threshold. Feed
-adapters live next to it:
+(`fast` | `daily`), sanity bounds, jump guard, staleness threshold, and the
+required `marketCreationEnabled` capability. Setting that capability to `false`
+keeps ingestion, scheduler health checks, and existing-contract updates running
+while both `create-perp` and the admin picker block new markets. Feed adapters
+live next to it:
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
@@ -69,6 +72,11 @@ adapters live next to it:
   models), parsed from Epoch's benchmark data zip (CC-BY — credit Epoch in
   market descriptions).
 - `trump-approval.ts` — 14-day rolling approval average (VoteHub).
+
+**ECI launch exclusion:** ECI remains a runtime/history feed, but its registry
+entry has `marketCreationEnabled: false`. The frontier is monotone
+non-decreasing, so it produces a structurally one-sided perp with pinned
+funding and no sound short thesis. Do not launch an ECI market.
 
 Backfill scripts (`backend/scripts/backfill-{eci,btc,uk-carbon,trump-approval}-oracle.ts`)
 seed chart history before market creation.
