@@ -2,7 +2,9 @@ import {
   BountiedQuestionContract,
   Contract,
   isMarketRanked,
+  PerpContract,
 } from 'common/contract'
+import { getOracleLogPriceChange } from 'common/perps/oracle'
 import { floatingEqual, logit } from 'common/util/math'
 import {
   DAY_MS,
@@ -12,7 +14,7 @@ import {
   WEEK_MS,
   YEAR_MS,
 } from 'common/util/time'
-import { clamp, sortBy } from 'lodash'
+import { clamp, sortBy, uniq } from 'lodash'
 import {
   SupabaseDirectClient,
   SupabaseDirectClientTimeout,
@@ -77,6 +79,11 @@ export async function calculateImportanceScore(
 
   const contracts = activeContracts.concat(previouslyActiveContractsFiltered)
   const contractIds = contracts.map((c) => c.id)
+  const perpDailyPriceChanges = await getPerpDailyPriceChanges(
+    pg,
+    contracts,
+    dayAgo
+  )
 
   log(
     `Found ${contracts.length} contracts to score`,
@@ -126,7 +133,8 @@ export async function calculateImportanceScore(
       todayTradersByContract[contract.id] ?? 0,
       hourAgoTradersByContract[contract.id] ?? 0,
       thisWeekTradersByContract[contract.id] ?? 0,
-      boosted
+      boosted,
+      perpDailyPriceChanges[contract.id] ?? 0
     )
 
     if (isNaN(dailyScore)) {
@@ -330,6 +338,43 @@ export const getContractVoters = async (
   )
 }
 
+export const getPerpDailyPriceChanges = async (
+  pg: SupabaseDirectClientTimeout,
+  contracts: Contract[],
+  cutoff: number
+) => {
+  const perps = contracts.filter(
+    (contract): contract is PerpContract => contract.mechanism === 'perp'
+  )
+  const feedIds = uniq(perps.map((contract) => contract.oracleFeedId))
+  if (feedIds.length === 0) return {} as Record<string, number>
+
+  const rows = await pg.manyOrNone<{
+    feed_id: string
+    price: number | string
+  }>(
+    `select distinct on (feed_id) feed_id, price
+     from oracle_prices
+     where feed_id = any($1)
+       and ts <= millis_to_ts($2)
+     order by feed_id, ts desc`,
+    [feedIds, cutoff]
+  )
+  const previousPriceByFeed = Object.fromEntries(
+    rows.map((row) => [row.feed_id, Number(row.price)])
+  )
+
+  return Object.fromEntries(
+    perps.map((contract) => [
+      contract.id,
+      getOracleLogPriceChange(
+        contract.oraclePrice,
+        previousPriceByFeed[contract.oracleFeedId]
+      ),
+    ])
+  )
+}
+
 export const computeContractScores = (
   now: number,
   contract: Contract,
@@ -339,7 +384,8 @@ export const computeContractScores = (
   tradersToday: number,
   traderHour: number,
   tradersWeek: number,
-  isBoosted: boolean
+  isBoosted: boolean,
+  perpDailyPriceChange = 0
 ) => {
   const todayScore = likesToday + tradersToday
   const thisWeekScore = likesWeek + tradersWeek
@@ -389,11 +435,15 @@ export const computeContractScores = (
     logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
   } else if (contract.mechanism === 'perp' && !wasCreatedToday) {
-    // Use pool imbalance (|funding rate|) as a cheap proxy for price activity
-    // — avoids a second DB hit in score-contracts. Scaled to log-odds so it
-    // composes with the same dailyScore formula as cpmm-1.
-    const fundingMagnitude = Math.abs((contract as any).fundingRate ?? 0)
-    logOddsChange = Math.min(fundingMagnitude * 4, 4)
+    // Numeric feeds have incomparable units, so use their scale-independent
+    // 24-hour endpoint log return. Funding imbalance is intentionally not a
+    // movement proxy: it can persist while the oracle is completely flat.
+    logOddsChange = Math.min(
+      Number.isFinite(perpDailyPriceChange)
+        ? Math.max(perpDailyPriceChange, 0)
+        : 0,
+      4
+    )
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
   }
 

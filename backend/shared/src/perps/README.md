@@ -164,6 +164,12 @@ The touched files outside this folder are:
   `web/components/perps/*`, `web/components/search.tsx`,
   `web/pages/admin/create-perp.tsx` — frontend surface.
 
+PERPs participate in ordinary importance/freshness ranking through committed
+24-hour margin volume and distinct recent traders. Daily-movers ranking uses
+the absolute 24-hour oracle log return, which is comparable across feeds with
+different units. Funding imbalance is not treated as movement, so a flat,
+one-sided market does not remain artificially elevated.
+
 ## Removal checklist
 
 1. Set `PERPS_ENABLED = false` to hide the admin page and reject new trades.

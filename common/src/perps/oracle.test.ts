@@ -1,11 +1,31 @@
 import {
   MAX_ORACLE_FUTURE_SKEW_MS,
   decideOracleTransition,
+  getOracleLogPriceChange,
   validateBasicOraclePoint,
 } from './oracle'
 
 const NOW = 2_000_000
 const current = { ts: 1_000_000, price: 100 }
+
+describe('getOracleLogPriceChange', () => {
+  it('measures endpoint movement independently of the feed scale', () => {
+    expect(getOracleLogPriceChange(110, 100)).toBeCloseTo(Math.log(1.1), 12)
+    expect(getOracleLogPriceChange(110_000, 100_000)).toBeCloseTo(
+      Math.log(1.1),
+      12
+    )
+    expect(getOracleLogPriceChange(100, 110)).toBeCloseTo(Math.log(1.1), 12)
+    expect(getOracleLogPriceChange(100, 100)).toBe(0)
+  })
+
+  it('returns zero for invalid persisted prices', () => {
+    expect(getOracleLogPriceChange(Number.NaN, 100)).toBe(0)
+    expect(getOracleLogPriceChange(100, Number.POSITIVE_INFINITY)).toBe(0)
+    expect(getOracleLogPriceChange(0, 100)).toBe(0)
+    expect(getOracleLogPriceChange(100, -1)).toBe(0)
+  })
+})
 
 describe('validateBasicOraclePoint', () => {
   it('accepts a finite positive point within the clock-skew allowance', () => {

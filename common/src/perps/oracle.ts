@@ -7,6 +7,28 @@ export type OraclePoint = {
 
 export const MAX_ORACLE_FUTURE_SKEW_MS = 5 * MINUTE_MS
 
+/**
+ * Scale-independent endpoint movement for ranking numeric oracle markets.
+ * Invalid persisted values contribute no movement instead of surfacing NaN.
+ */
+export const getOracleLogPriceChange = (
+  currentPrice: number,
+  previousPrice: number
+) => {
+  if (
+    !Number.isFinite(currentPrice) ||
+    !Number.isFinite(previousPrice) ||
+    currentPrice <= 0 ||
+    previousPrice <= 0
+  )
+    return 0
+
+  // Subtract logs instead of taking current / previous so two extreme but
+  // finite values cannot overflow or underflow the ratio first.
+  const change = Math.abs(Math.log(currentPrice) - Math.log(previousPrice))
+  return Number.isFinite(change) ? change : 0
+}
+
 export const validateBasicOraclePoint = (
   point: OraclePoint,
   now = Date.now()
