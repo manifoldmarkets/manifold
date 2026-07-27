@@ -1,6 +1,8 @@
 # PERP launch runbook
 
 This is the operational source of truth for the first public PERP rollout.
+`perps-launch-audit.md` is the companion integration review and current
+go/no-go status.
 `backend/shared/src/perps/launch-manifest.ts` is the executable source of truth
 for the four intended feeds and their conservative day-one settings. ECI is
 explicitly excluded in both places.
