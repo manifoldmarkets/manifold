@@ -8,6 +8,7 @@ import { LimitBet } from 'common/bet'
 import {
   BinaryContract,
   CPMMMultiContract,
+  getBinaryMCDisplayOutcome,
   getBinaryMCProb,
   isBinaryMulti,
   MultiContract,
@@ -30,16 +31,13 @@ import { Row } from '../layout/row'
 import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
 import {
   BinaryOutcomeLabel,
-  NoLabel,
   OutcomeLabel,
   PseudoNumericOutcomeLabel,
-  YesLabel,
 } from '../outcome-label'
 import { SizedContainer } from '../sized-container'
 import { UserHovercard } from '../user/user-hovercard'
 import { Avatar } from '../widgets/avatar'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
@@ -320,7 +318,7 @@ function OrderRow(props: {
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
             contract={contract}
-            outcome={outcome}
+            outcome={getBinaryMCDisplayOutcome(contract, bet.answerId, outcome)}
             truncate={'short'}
           />
         ) : (
@@ -686,7 +684,16 @@ function OrderBookRow(props: {
               : formatPercent(limitProb)}
           </span>
           <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={expanded}
             onClick={(e) => {
+              e.stopPropagation()
+              setExpanded((c) => !c)
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
               e.stopPropagation()
               setExpanded((c) => !c)
             }}

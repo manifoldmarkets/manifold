@@ -3,6 +3,7 @@ import { DisplayUser } from 'common/api/user-types'
 import { Bet, fill } from 'common/bet'
 import {
   Contract,
+  getBinaryMCDisplayOutcome,
   getBinaryMCProb,
   isBinaryMulti,
   MarketContract,
@@ -143,7 +144,11 @@ function BetTooltipContent(props: {
           {formatAmount(Math.abs(bet.orderAmount))}{' '}
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
-            outcome={bet.outcome}
+            outcome={getBinaryMCDisplayOutcome(
+              contract,
+              bet.answerId,
+              bet.outcome
+            )}
             answer={answer}
             contract={contract}
             truncate="short"
@@ -293,7 +298,7 @@ function BetActionText(props: { bet: Bet; contract: Contract }) {
       )}
       <OutcomeLabel
         pseudonym={getPseudonym(contract)}
-        outcome={outcome}
+        outcome={getBinaryMCDisplayOutcome(contract, answerId, outcome)}
         answer={answer}
         contract={contract}
         truncate="short"
@@ -768,7 +773,7 @@ export function BetStatusText(props: {
           )}{' '}
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
-            outcome={outcome}
+            outcome={getBinaryMCDisplayOutcome(contract, answerId, outcome)}
             answer={answer}
             contract={contract}
             truncate="short"
@@ -785,7 +790,7 @@ export function BetStatusText(props: {
           {orderAmount}{' '}
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
-            outcome={outcome}
+            outcome={getBinaryMCDisplayOutcome(contract, answerId, outcome)}
             answer={answer}
             contract={contract}
             truncate="short"

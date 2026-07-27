@@ -2,6 +2,7 @@ import { Bet } from 'common/bet'
 import {
   Contract,
   CPMMNumericContract,
+  getBinaryMCDisplayOutcome,
   getBinaryMCProb,
   isBinaryMulti,
 } from 'common/contract'
@@ -221,7 +222,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       <td className="font-medium">
         <OutcomeLabel
           pseudonym={getPseudonym(contract)}
-          outcome={outcome}
+          outcome={getBinaryMCDisplayOutcome(contract, bet.answerId, outcome)}
           contract={contract}
           truncate="short"
         />
@@ -250,6 +251,9 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
               <span>{getFormattedMappedValue(contract, probAfter)}</span>
             </span>
           ) : isBinaryMC ? (
+            // probBefore/probAfter belong to bet.answerId, so pairing them with
+            // the raw outcome already yields the price of the side that was
+            // bought — no answer-flip needed here, unlike the label above.
             <span className="inline-flex items-center gap-1">
               <span>{formatPercent(getBinaryMCProb(probBefore, outcome))}</span>
               <span className="text-ink-400">→</span>

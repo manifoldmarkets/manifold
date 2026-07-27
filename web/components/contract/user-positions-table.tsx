@@ -8,7 +8,11 @@ import {
   getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
+import {
+  combineContractMetrics,
+  ContractMetric,
+  flipContractMetricSides,
+} from 'common/contract-metric'
 import { getStonkDisplayShares } from 'common/stonk'
 import {
   convertContractMetricRows,
@@ -16,7 +20,7 @@ import {
   getOrderedContractMetricRowsForContractId,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { first, orderBy, partition, uniqBy } from 'lodash'
+import { first, orderBy, partition, uniqBy, values } from 'lodash'
 import { memo, ReactNode, useEffect, useState } from 'react'
 import { FaArrowTrendUp } from 'react-icons/fa6'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -49,6 +53,23 @@ import { Select } from '../widgets/select'
 
 const ROWS_PER_CALL = 50 // Number of items to fetch per backend call, per side
 const USER_TABLE_PAGE_SIZE = 20 // Number of items displayed per page in the UI
+
+// Restate the non-main answer's positions in the main answer's frame and fold
+// them into the main answer's, summing anyone who holds both.
+const mergeBinaryMCMetrics = (
+  mainMetrics: ContractMetric[],
+  otherMetrics: ContractMetric[],
+  mainAnswerId: string
+) => {
+  const byUserId: { [userId: string]: ContractMetric } = {}
+  const add = (cm: ContractMetric) => {
+    const existing = byUserId[cm.userId]
+    byUserId[cm.userId] = existing ? combineContractMetrics(existing, cm) : cm
+  }
+  mainMetrics.forEach(add)
+  otherMetrics.forEach((cm) => add(flipContractMetricSides(cm, mainAnswerId)))
+  return values(byUserId).filter((cm) => cm.hasShares)
+}
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
@@ -94,9 +115,18 @@ export const UserPositionsTable = memo(
       ? []
       : contract.answers
 
+    const mainBinaryMCAnswerId = getMainBinaryMCAnswer(contract)?.id
+    // A versus market is two sides of one bet, not two independent answers: a
+    // position on either answer belongs in this table. Track the other answer
+    // so we can pull it in and restate it in the main answer's frame.
+    const otherBinaryMCAnswerId =
+      mainBinaryMCAnswerId && !answer
+        ? answers.find((a) => a.id !== mainBinaryMCAnswerId)?.id
+        : undefined
+
     const [currentAnswerId, setCurrentAnswerId] = useState<string | undefined>(
       answers.length > 0
-        ? getMainBinaryMCAnswer(contract)?.id ??
+        ? mainBinaryMCAnswerId ??
             first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
         : undefined
     )
@@ -149,16 +179,29 @@ export const UserPositionsTable = memo(
           setHasMoreShares(true)
         }
       }
-      const rows = await getOrderedContractMetricRowsForContractId(
-        contractId,
-        db,
-        newSortBy === 'profit' ? undefined : answerIdForShares,
-        newSortBy,
-        ROWS_PER_CALL,
-        offsetToUse
-      )
+      const fetchRows = (answerId: string | undefined) =>
+        getOrderedContractMetricRowsForContractId(
+          contractId,
+          db,
+          answerId,
+          newSortBy,
+          ROWS_PER_CALL,
+          offsetToUse
+        ).then(convertContractMetricRows)
 
-      const newMetrics = convertContractMetricRows(rows)
+      // Profit ordering reads the summary rows, which already span every
+      // answer. Share ordering is per-answer, so a versus market has to fetch
+      // both sides and fold the non-main one in.
+      const newMetrics =
+        newSortBy === 'profit'
+          ? await fetchRows(undefined)
+          : mainBinaryMCAnswerId && otherBinaryMCAnswerId
+          ? mergeBinaryMCMetrics(
+              await fetchRows(mainBinaryMCAnswerId),
+              await fetchRows(otherBinaryMCAnswerId),
+              mainBinaryMCAnswerId
+            )
+          : await fetchRows(answerIdForShares)
 
       if (newSortBy === 'profit') {
         setContractMetricsOrderedByProfit((prev) =>
@@ -169,9 +212,9 @@ export const UserPositionsTable = memo(
         )
         setNextProfitOffset(offsetToUse + ROWS_PER_CALL)
         if (loadMore) {
-          if (rows.length === 0) setHasMoreProfit(false)
+          if (newMetrics.length === 0) setHasMoreProfit(false)
         } else {
-          setHasMoreProfit(rows.length > 0)
+          setHasMoreProfit(newMetrics.length > 0)
         }
       } else {
         setContractMetricsOrderedByShares((prev) =>
@@ -182,9 +225,9 @@ export const UserPositionsTable = memo(
         )
         setNextSharesOffset(offsetToUse + ROWS_PER_CALL)
         if (loadMore) {
-          if (rows.length === 0) setHasMoreShares(false)
+          if (newMetrics.length === 0) setHasMoreShares(false)
         } else {
-          setHasMoreShares(rows.length > 0)
+          setHasMoreShares(newMetrics.length > 0)
         }
       }
       setLoading(false)
@@ -195,15 +238,28 @@ export const UserPositionsTable = memo(
       updateContractMetrics(sortBy, currentAnswerId, false)
     }, []) // sortBy and currentAnswerId are stable initially from props/useState
 
-    // Fetch total counts for YES/NO labels (independent of paged positions)
+    // Fetch total counts for YES/NO labels (independent of paged positions).
+    // On a versus market each side is the main answer's holders plus the other
+    // answer's opposite holders, matching what mergeBinaryMCMetrics displays.
     useEffect(() => {
-      getContractMetricsCount(contractId, db, 'yes', currentAnswerId).then(
-        setTotalYesPositions
-      )
-      getContractMetricsCount(contractId, db, 'no', currentAnswerId).then(
-        setTotalNoPositions
-      )
-    }, [currentAnswerId, contractId])
+      const countSide = async (outcome: 'yes' | 'no') => {
+        const opposite = outcome === 'yes' ? 'no' : 'yes'
+        const [main, other] = await Promise.all([
+          getContractMetricsCount(contractId, db, outcome, currentAnswerId),
+          otherBinaryMCAnswerId
+            ? getContractMetricsCount(
+                contractId,
+                db,
+                opposite,
+                otherBinaryMCAnswerId
+              )
+            : 0,
+        ])
+        return (main ?? 0) + (other ?? 0)
+      }
+      countSide('yes').then(setTotalYesPositions)
+      countSide('no').then(setTotalNoPositions)
+    }, [currentAnswerId, contractId, otherBinaryMCAnswerId])
 
     // Fetch total positions for all answers (for multi-choice carousel/select)
     const getAllAnswerPositionCounts = async () => {
@@ -331,7 +387,10 @@ export const UserPositionsTable = memo(
     } else if (contract.mechanism === 'cpmm-multi-1') {
       return (
         <Col className={'w-full'}>
-          {!answer && answers.length < 4 && (
+          {/* A versus market's two answers are one bet, and both columns are
+              already labelled with them — picking between them here would just
+              hide half the holders. */}
+          {!answer && !mainBinaryMCAnswerId && answers.length < 4 && (
             <Carousel labelsParentClassName={'gap-1'}>
               {orderBy(
                 answers,
@@ -386,7 +445,7 @@ export const UserPositionsTable = memo(
                     </option>
                   ))}
                 </Select>
-              ) : (
+              ) : mainBinaryMCAnswerId ? null : ( // both sides are named on the columns below
                 <span className={'line-clamp-1 '}>
                   {answers.find((a) => a.id === currentAnswerId)?.text}
                 </span>
@@ -754,7 +813,13 @@ const PositionRow = memo(function PositionRow(props: {
           }
         }}
       >
-        <div onClick={(e) => e.stopPropagation()}>
+        {/* Wrapper only exists to keep clicks on the user link from toggling
+            the row; it isn't interactive itself. */}
+        <div
+          role="presentation"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
           <Row
             className={clsx(
               'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
@@ -855,7 +920,14 @@ const PositionRow = memo(function PositionRow(props: {
               ))}
           </Col>
           <div
+            role="button"
+            tabIndex={0}
             onClick={handleGraphTrades}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
+              handleGraphTrades()
+            }}
             className="text-primary-600 hover:bg-primary-100 flex w-fit cursor-pointer items-center gap-2 rounded-md py-1 text-sm font-medium transition-colors"
           >
             <FaArrowTrendUp className="h-4 w-4" />

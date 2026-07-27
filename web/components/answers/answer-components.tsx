@@ -6,16 +6,16 @@ import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
-  getMainBinaryMCAnswer,
   MultiContract,
   resolution,
   tradingAllowed,
 } from 'common/contract'
+import { getMaxSharesOutcome } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
-import { capitalize } from 'lodash'
+import { capitalize, maxBy } from 'lodash'
 import { ReactNode, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
@@ -42,7 +42,7 @@ import { AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { floatingEqual } from 'common/util/math'
-import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -362,29 +362,68 @@ export const BinaryMultiSellRow = (props: {
 }) => {
   const { contract, answer } = props
   const user = useUser()
-  const metric = useSavedContractMetrics(contract, answer.id)
-  const [open, setOpen] = useState(false)
   const otherAnswer = contract.answers.find((a) => a.id !== answer.id)!
-  const { totalShares, maxSharesOutcome } = metric ?? {
-    totalShares: { YES: 0, NO: 0 },
-    maxSharesOutcome: 'YES',
-  }
-  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
-  const sharesSum = totalShares?.[sharesOutcome ?? 'YES'] ?? 0
+  // The two answers are one position seen from either side, and the API lets a
+  // trader build it on either: YES on the other answer is the same side as NO
+  // on this one. Look at both so a position held on the non-main answer is
+  // still sellable, and sell it on the answer that actually holds the shares.
+  const metric = useSavedContractMetrics(contract, answer.id)
+  const otherMetric = useSavedContractMetrics(contract, otherAnswer.id)
+  const [open, setOpen] = useState(false)
 
-  if (!sharesOutcome || !user || contract.isResolved) return null
+  const sides = [
+    { sellAnswer: answer, flipped: false, metric },
+    { sellAnswer: otherAnswer, flipped: true, metric: otherMetric },
+  ].map((side) => {
+    const outcome = getMaxSharesOutcome(side.metric) as 'YES' | 'NO' | undefined
+    return {
+      ...side,
+      outcome,
+      shares: outcome ? side.metric?.totalShares?.[outcome] ?? 0 : 0,
+    }
+  })
+  const side = maxBy(sides, (s) => s.shares)
+
+  const sharesOutcome = side?.outcome
+  const sharesSum = side?.shares ?? 0
+  // The button reads in this answer's frame, so flip when the shares live on
+  // the other one.
+  const displayOutcome =
+    sharesOutcome && side?.flipped
+      ? sharesOutcome === 'YES'
+        ? 'NO'
+        : 'YES'
+      : sharesOutcome
+
+  if (!side || !sharesOutcome || !user || contract.isResolved) return null
+
+  const sellOtherAnswer = contract.answers.find(
+    (a) => a.id !== side.sellAnswer.id
+  )!
+  // Name the sides relative to the answer being sold, not to answers[0].
+  const sellPseudonym = {
+    YES: {
+      pseudonymName: side.sellAnswer.text,
+      pseudonymColor: getAnswerColor(side.sellAnswer),
+    },
+    NO: {
+      pseudonymName: sellOtherAnswer.text,
+      pseudonymColor: getAnswerColor(sellOtherAnswer),
+    },
+  }
+
   return (
     <Row className={'mt-2'}>
       {open && (
         <SellSharesModal
           contract={contract}
           user={user}
-          metric={metric}
+          metric={side.metric}
           shares={sharesSum}
           sharesOutcome={sharesOutcome}
           setOpen={setOpen}
-          answerId={getMainBinaryMCAnswer(contract)?.id}
-          binaryPseudonym={getPseudonym(contract)}
+          answerId={side.sellAnswer.id}
+          binaryPseudonym={sellPseudonym}
         />
       )}
       <Button
@@ -400,7 +439,7 @@ export const BinaryMultiSellRow = (props: {
         <Row className={'gap-1'}>
           Sell {Math.floor(sharesSum)}
           <OutcomeLabel
-            outcome={sharesOutcome}
+            outcome={displayOutcome as 'YES' | 'NO'}
             contract={contract}
             truncate={'short'}
             pseudonym={{

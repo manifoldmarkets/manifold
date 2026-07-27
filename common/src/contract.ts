@@ -420,6 +420,34 @@ export const getMainBinaryMCAnswer = (contract: Contract) =>
 export const getBinaryMCProb = (prob: number, outcome: 'YES' | 'NO' | string) =>
   outcome === 'YES' ? prob : 1 - prob
 
+// Versus markets render as two sides: answers[0] is the YES side, the other
+// answer is the NO side. Bets only follow that convention when they're placed
+// on answers[0] — the API accepts a bet on either answer, and betting NO on the
+// non-main answer is the same side as betting YES on the main one. Translate a
+// bet's stored (answerId, outcome) into the side the versus UI should show, so
+// an API bet on the non-main answer isn't labelled as its own opposite.
+export const getBinaryMCDisplayOutcome = (
+  contract: Contract,
+  answerId: string | null | undefined,
+  outcome: string
+) => {
+  const mainAnswer = getMainBinaryMCAnswer(contract)
+  if (!mainAnswer || !answerId || answerId === mainAnswer.id) return outcome
+  if (outcome === 'YES') return 'NO'
+  if (outcome === 'NO') return 'YES'
+  return outcome
+}
+
+// True when the answer is the non-main side of a versus market, i.e. its
+// positions and bets need flipping before the versus UI can show them.
+export const isFlippedBinaryMCAnswer = (
+  contract: Contract,
+  answerId: string | null | undefined
+) => {
+  const mainAnswer = getMainBinaryMCAnswer(contract)
+  return !!mainAnswer && !!answerId && answerId !== mainAnswer.id
+}
+
 export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))
 }
