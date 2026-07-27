@@ -65,9 +65,8 @@ export const PerpPositionPanel = (props: {
   )
   const [closing, setClosing] = useState<'long' | 'short' | null>(null)
   const [refresh, setRefresh] = useState(0)
-  // Terminal events (closes/liquidations) for the tombstone section: a
-  // liquidated position must NOT silently vanish from the page ("I have no
-  // idea what happened except that I lost").
+  // Terminal events for the tombstone section: a liquidated or fully
+  // auto-deleveraged position must NOT silently vanish from the page.
   const [pastEvents, setPastEvents] = useState<PerpHistoryEvent[]>([])
 
   useEffect(() => {
@@ -94,7 +93,10 @@ export const PerpPositionPanel = (props: {
           if (cancelled) return
           setPastEvents(
             events.filter(
-              (e) => e.eventType === 'close' || e.eventType === 'liquidation'
+              (e) =>
+                e.eventType === 'close' ||
+                e.eventType === 'liquidation' ||
+                (e.eventType === 'adl' && e.payout != null)
             )
           )
         })
@@ -232,6 +234,26 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
             </Row>
           )
         }
+        if (e.eventType === 'adl') {
+          return (
+            <Row
+              key={e.id}
+              className="flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm"
+            >
+              <span className="font-semibold text-amber-600 dark:text-amber-400">
+                Auto-deleveraged {e.direction}
+              </span>
+              <span className="text-ink-700 tabular-nums">
+                {formatMoney(e.payout ?? 0)} margin returned
+              </span>
+              <span className="text-ink-500 tabular-nums">
+                at {formatPrice(e.oraclePrice, decimals)}
+              </span>
+              <span className="text-ink-400 text-xs">{at}</span>
+            </Row>
+          )
+        }
+
         // close
         const pnl = e.pnl ?? 0
         return (
@@ -272,7 +294,8 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
       )}
       <span className="text-ink-400 text-xs">
         Liquidation forfeits a position's margin to the pool that pays winning
-        positions.
+        positions. Full auto-deleveraging closes excess winning exposure and
+        returns its remaining margin.
       </span>
     </Col>
   )

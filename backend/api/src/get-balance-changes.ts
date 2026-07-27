@@ -75,6 +75,11 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
     )} margin at ${px(d.entryPrice)}`
   }
   if (txn.category === 'PERP_CLOSE_PAYOUT') {
+    if (d.reason === 'adl') {
+      return `Auto-deleveraged ${d.direction} at ${px(
+        d.closePrice
+      )} — ${formatMoney(txn.amount)} margin returned`
+    }
     const verb =
       d.reason === 'flip'
         ? 'Flipped out of'
@@ -87,9 +92,7 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
     }${formatMoney(pnl)}`
   }
   if (txn.category === 'PERP_RESOLVE_RESIDUAL') {
-    return `Residual pools returned to creator (settled at ${px(
-      d.finalPrice
-    )})`
+    return `Residual pools returned to creator (settled at ${px(d.finalPrice)})`
   }
   return undefined
 }
