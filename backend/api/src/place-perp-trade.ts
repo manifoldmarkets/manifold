@@ -8,43 +8,42 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { getUser, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-export const placePerpTrade: APIHandler<'place-perp-trade'> = async (
-  body,
-  auth
-) => {
-  if (!PERPS_ENABLED) throw new APIError(403, 'Perps are disabled')
-  const { contractId, direction, mana, leverage } = body
-  const result = await openOrAddPosition(
-    contractId,
-    auth.uid,
-    direction,
-    mana,
-    leverage
-  )
+export const placePerpTrade: APIHandler<'place-perp-trade'> =
+  onlyUsersWhoCanPerformAction('trade', async (body, auth) => {
+    if (!PERPS_ENABLED) throw new APIError(403, 'Perps are disabled')
+    const { contractId, direction, mana, leverage } = body
+    const result = await openOrAddPosition(
+      contractId,
+      auth.uid,
+      direction,
+      mana,
+      leverage
+    )
 
-  if (result.isNewUniqueBettor) {
-    try {
-      await payUniqueBettorBonus(contractId, auth.uid)
-    } catch (err) {
-      log('perp unique bettor bonus failed (non-fatal):', err)
+    if (result.isNewUniqueBettor) {
+      try {
+        await payUniqueBettorBonus(contractId, auth.uid)
+      } catch (err) {
+        log('perp unique bettor bonus failed (non-fatal):', err)
+      }
     }
-  }
 
-  const { position } = result
-  return {
-    position: {
-      userId: position.userId,
-      direction: position.direction,
-      size: position.size,
-      costBasis: position.costBasis,
-      originalCostBasis: position.originalCostBasis,
-      entryPrice: position.entryPrice,
-      leverage: position.leverage,
-      liquidationPrice: position.liquidationPrice,
-    },
-  }
-}
+    const { position } = result
+    return {
+      position: {
+        userId: position.userId,
+        direction: position.direction,
+        size: position.size,
+        costBasis: position.costBasis,
+        originalCostBasis: position.originalCostBasis,
+        entryPrice: position.entryPrice,
+        leverage: position.leverage,
+        liquidationPrice: position.liquidationPrice,
+      },
+    }
+  })
 
 // Credit the contract creator a unique-bettor bonus when a new user opens
 // their first position on this perp. Kept out of the main engine tx so the

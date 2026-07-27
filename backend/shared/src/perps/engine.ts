@@ -6,8 +6,12 @@
 // This keeps the rest of place-bet / CPMM untouched.
 
 import { APIError } from 'common/api/utils'
+import { getUserBanMessage, isUserBanned } from 'common/ban-utils'
 import { PerpContract } from 'common/contract'
-import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
+import {
+  BANNED_TRADING_USER_IDS,
+  PERPS_SKIP_ORACLE_FRESHNESS,
+} from 'common/envs/constants'
 import {
   AdlSettlement,
   applyADL,
@@ -36,6 +40,7 @@ import {
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
 import { removeUndefinedProps } from 'common/util/object'
+import { UserBan } from 'common/user'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
   SupabaseDirectClient,
@@ -58,7 +63,6 @@ import {
 } from './queries'
 import { buildPerpUserContractMetricsQuery } from './user-contract-metrics'
 import { log } from 'shared/utils'
-import { getUser } from 'shared/utils'
 import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
 
 // -----------------------------------------------------------------------
@@ -180,16 +184,78 @@ export const openOrAddPosition = async (
   mana: number,
   leverage: number
 ) => {
-  if (mana <= 0) throw new APIError(400, 'mana must be positive')
-  if (leverage <= 0) throw new APIError(400, 'leverage must be positive')
-
-  const user = await getUser(userId)
-  if (!user) throw new APIError(404, `User ${userId} not found`)
-  if (user.balance < mana)
-    throw new APIError(403, `Insufficient balance: needed ${mana}`)
+  if (!Number.isFinite(mana) || mana <= 0)
+    throw new APIError(400, 'mana must be a finite positive number')
+  if (!Number.isFinite(leverage) || leverage <= 0)
+    throw new APIError(400, 'leverage must be a finite positive number')
 
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const now = Date.now()
+
+    // Match the authorization and market-state gates used by ordinary bets.
+    // These checks live inside the authoritative engine transaction so a
+    // script or future caller cannot bypass the HTTP endpoint's ban wrapper,
+    // and so a concurrent halt/close is observed before any margin moves.
+    const systemStatus = await pgTrans.oneOrNone<{ status: boolean }>(
+      `select status from system_trading_status where token = $1`,
+      [contract.token]
+    )
+    if (!systemStatus?.status) {
+      throw new APIError(
+        403,
+        `Trading with ${contract.token} is currently disabled.`
+      )
+    }
+
+    if (contract.closeTime && now > contract.closeTime)
+      throw new APIError(403, 'Trading is closed.')
+
+    const trader = await pgTrans.oneOrNone<{
+      id: string
+      balance: number
+      data: { userDeleted?: boolean } | null
+    }>(
+      `select id, balance, data
+       from users
+       where id = $1
+       for update`,
+      [userId]
+    )
+    if (!trader) throw new APIError(404, `User ${userId} not found`)
+    if (
+      trader.data?.userDeleted ||
+      BANNED_TRADING_USER_IDS.includes(trader.id)
+    ) {
+      throw new APIError(403, 'You are banned or deleted.')
+    }
+
+    const userBans = await pgTrans.manyOrNone<UserBan>(
+      `select *
+       from user_bans
+       where user_id = $1
+         and ended_at is null
+         and (end_time is null or end_time > now())`,
+      [userId]
+    )
+    if (isUserBanned(userBans, 'trading')) {
+      const message = getUserBanMessage(userBans, 'trading')
+      throw new APIError(
+        403,
+        message
+          ? `You are banned from trading. Reason: ${message}`
+          : 'You are banned from trading'
+      )
+    }
+
+    if (contract.creatorBannedFromBetting && userId === contract.creatorId) {
+      throw new APIError(
+        403,
+        'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
+      )
+    }
+    if (!Number.isFinite(trader.balance) || trader.balance < mana)
+      throw new APIError(403, `Insufficient balance: needed ${mana}`)
 
     if (leverage > contract.maxLeverage)
       throw new APIError(
@@ -198,7 +264,6 @@ export const openOrAddPosition = async (
       )
 
     // Oracle freshness.
-    const now = Date.now()
     if (
       !PERPS_SKIP_ORACLE_FRESHNESS &&
       contract.oraclePriceTime &&
