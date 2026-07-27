@@ -28,6 +28,7 @@ import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Slider, sliderColors } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
 import { PerpPositionRow } from './use-perp-positions'
 
 // Tick labels rendered under the leverage slider. Kept sparse so the first
@@ -136,12 +137,26 @@ export const PerpBetPanel = (props: {
           priceDecimals
         )}`
       )
+      track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        token: contract.token,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount: margin,
+        outcome: direction,
+        isLimitOrder: false,
+        boosted: contract.boosted,
+        leverage,
+        notional,
+        perpAction: isAdd ? 'add' : isFlip ? 'flip' : 'open',
+      })
       // Reflect the trade everywhere on the page (position panel, pools,
       // funding, this panel's open direction) immediately — onTrade bumps
       // the parent's refreshKey, which refetches positions cache-bypassed.
       onTrade?.()
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Trade failed')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Trade failed')
     } finally {
       setSubmitting(false)
     }
@@ -156,8 +171,19 @@ export const PerpBetPanel = (props: {
         marginAmount
       )}`
 
-  const onPickDirection = (d: 'long' | 'short') => {
+  const setDirectionWithTracking = (d: 'long' | 'short') => {
+    track('bet intent', {
+      location: 'bet panel',
+      option: d,
+      token: contract.token,
+      boosted: contract.boosted,
+      outcomeType: contract.outcomeType,
+    })
     setDirection(d)
+  }
+
+  const onPickDirection = (d: 'long' | 'short') => {
+    setDirectionWithTracking(d)
     setExpanded(true)
   }
 
@@ -193,7 +219,10 @@ export const PerpBetPanel = (props: {
   return (
     <Col className="bg-canvas-50 border-ink-200 gap-4 rounded-lg border p-4">
       <Row className="items-center justify-between">
-        <DirectionToggle direction={direction} onChange={setDirection} />
+        <DirectionToggle
+          direction={direction}
+          onChange={setDirectionWithTracking}
+        />
         <button
           type="button"
           onClick={() => setExpanded(false)}

@@ -19,6 +19,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
 import { formatFundingMana } from './perp-bet-panel'
 import { PerpPositionRow, scheduleFreshBurst } from './use-perp-positions'
 
@@ -111,6 +112,7 @@ export const PerpPositionPanel = (props: {
   const close = async (direction: 'long' | 'short') => {
     setClosing(direction)
     try {
+      const position = positions.find((p) => p.direction === direction)
       const res = await api('close-perp-position', {
         contractId: contract.id,
         direction,
@@ -120,12 +122,23 @@ export const PerpPositionPanel = (props: {
           res.payout
         )} (PnL ${formatMoney(res.pnl)})`
       )
+      track('sell shares', {
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        shares: position?.size,
+        outcome: direction,
+        token: contract.token,
+        perpAction: 'close',
+        payout: res.payout,
+        pnl: res.pnl,
+      })
       setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
       setRefresh((r) => r + 1)
       // Pools changed; let the page re-poll the contract immediately.
       onAction?.()
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Close failed')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Close failed')
     } finally {
       setClosing(null)
     }

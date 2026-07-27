@@ -156,6 +156,35 @@ async function getDailyBets(
   return bets as { day: string; values: StatBet[] }[]
 }
 
+async function getDailyPerpTrades(
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) {
+  const trades = await pg.manyOrNone(
+    `select
+      date_trunc('day', e.ts at time zone 'america/los_angeles')::date as day,
+      json_agg(json_build_object(
+        'ts', ts_to_millis(e.ts),
+        'userId', e.user_id,
+        'id', 'perp-' || e.id
+      )) as values
+    from contract_perp_events e
+    where
+      e.ts >= date_to_midnight_pt($1)
+      and e.ts < date_to_midnight_pt($2)
+      and e.user_id is not null
+      and e.event_type in ('open', 'add', 'close')
+      and e.data->>'reason' is distinct from 'flip'
+      and e.data->>'reason' is distinct from 'resolve-market'
+    group by day
+    order by day asc`,
+    [start, end]
+  )
+
+  return trades as { day: string; values: StatEvent[] }[]
+}
+
 async function getDailyViewers(
   pg: SupabaseDirectClient,
   start: string,
@@ -248,7 +277,17 @@ async function getDailyNewUsers(
         u.id,
         (u.data->>'bio') as bio,
         (u.data->'freeQuestionsCreated')::int as free_questions_created,
-        count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count_within_24h,
+        count(cb.bet_id) filter (where cb.bet_id is not null)
+          + (
+            select count(*)
+            from contract_perp_events e
+            where e.user_id = u.id
+              and e.ts >= u.created_time
+              and e.ts <= u.created_time + interval '24 hours'
+              and e.event_type in ('open', 'add', 'close')
+              and e.data->>'reason' is distinct from 'flip'
+              and e.data->>'reason' is distinct from 'resolve-market'
+          ) as bet_count_within_24h,
         count(d.id) filter (where d.id is not null) as dashboard_count,
         u.data->>'referredByUserId' as referrer_id
       from users u
@@ -295,13 +334,19 @@ export const updateActivityStats = async (
     .format('YYYY-MM-DD')
 
   log(`Fetching data for activity stats between ${startWithBuffer} and ${end}`)
-  const [dailyBets, dailyContracts, dailyComments, dailyViewers] =
-    await Promise.all([
-      getDailyBets(pg, startWithBuffer, end),
-      getDailyContracts(pg, startWithBuffer, end),
-      getDailyComments(pg, startWithBuffer, end),
-      getDailyViewers(pg, startWithBuffer, end),
-    ])
+  const [
+    dailyBets,
+    dailyPerpTrades,
+    dailyContracts,
+    dailyComments,
+    dailyViewers,
+  ] = await Promise.all([
+    getDailyBets(pg, startWithBuffer, end),
+    getDailyPerpTrades(pg, startWithBuffer, end),
+    getDailyContracts(pg, startWithBuffer, end),
+    getDailyComments(pg, startWithBuffer, end),
+    getDailyViewers(pg, startWithBuffer, end),
+  ])
   logMemory()
 
   log('upsert viewer counts')
@@ -372,7 +417,8 @@ export const updateActivityStats = async (
     }))
   )
 
-  // unique ids across contract, bet, and comment actions
+  // Unique ids across contract creation, ordinary bets, perp trades, and
+  // comments. Automated perp transitions are excluded in getDailyPerpTrades.
   const contractUsersByDay = Object.fromEntries(
     dailyContracts.map((contracts) => [
       contracts.day,
@@ -381,6 +427,12 @@ export const updateActivityStats = async (
   )
   const betUsersByDay = Object.fromEntries(
     dailyBets.map((bets) => [bets.day, bets.values.map((b) => b.userId)])
+  )
+  const perpTradeUsersByDay = Object.fromEntries(
+    dailyPerpTrades.map((trades) => [
+      trades.day,
+      trades.values.map((trade) => trade.userId),
+    ])
   )
   const commentUsersByDay = Object.fromEntries(
     dailyComments.map((comments) => [
@@ -394,6 +446,7 @@ export const updateActivityStats = async (
     const allIds = mergeWith(
       contractUsersByDay,
       betUsersByDay,
+      perpTradeUsersByDay,
       commentUsersByDay,
       (a, b) => (a && b ? a.concat(b) : a || b)
     )
@@ -414,8 +467,9 @@ export const updateActivityStats = async (
     )
   }
 
-  const contractBetOrCommentUniqueUsersByDay = mergeWith(
+  const activeUsersByDay = mergeWith(
     betUsersByDay,
+    perpTradeUsersByDay,
     contractUsersByDay,
     commentUsersByDay,
     (a, b) => {
@@ -426,9 +480,9 @@ export const updateActivityStats = async (
     }
   )
 
-  // stats using weird stricter dau calculation that only includes contracts, comments, users
+  // Stricter DAU includes market creation, comments, and user-initiated trades.
 
-  const dailyUserIds = Object.entries(contractBetOrCommentUniqueUsersByDay)
+  const dailyUserIds = Object.entries(activeUsersByDay)
     .map(([day, values]) => ({ day, values }))
     .sort((a, b) => a.day.localeCompare(b.day))
 
@@ -695,6 +749,19 @@ async function calculateTopicDaus(
       join group_contracts gc on c.id = gc.contract_id
       where b.created_time >= date_to_midnight_pt($1)
         and b.created_time < date_to_midnight_pt($2)
+      union
+      select
+        date_trunc('day', e.ts at time zone 'america/los_angeles')::date as day,
+        e.user_id,
+        gc.group_id
+      from contract_perp_events e
+      join group_contracts gc on e.contract_id = gc.contract_id
+      where e.ts >= date_to_midnight_pt($1)
+        and e.ts < date_to_midnight_pt($2)
+        and e.user_id is not null
+        and e.event_type in ('open', 'add', 'close')
+        and e.data->>'reason' is distinct from 'flip'
+        and e.data->>'reason' is distinct from 'resolve-market'
       union
       select 
         date_trunc('day', cc.created_time at time zone 'america/los_angeles')::date as day,

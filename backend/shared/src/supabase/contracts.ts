@@ -35,10 +35,17 @@ export const getUniqueBettorIds = async (
 ) => {
   const res = await pg.manyOrNone(
     `
-      select
-          distinct user_id
+      select distinct user_id
       from contract_bets
-        where contract_id = $1`,
+      where contract_id = $1
+
+      union
+
+      select user_id
+      from contract_perp_events
+      where contract_id = $1
+        and user_id is not null
+        and event_type in ('open', 'add', 'close')`,
     [contractId]
   )
   return res.map((r) => r.user_id as string)
@@ -230,6 +237,9 @@ export const getContractPrivacyWhereSQLFilter = (
      OR ${isAdminId(uid ?? '_')}
      OR exists(
          select 1 from contract_bets where contract_id = ${contractIdString} and user_id = '${uid}')
+     OR exists(
+         select 1 from contract_perp_events where contract_id = ${contractIdString} and user_id = '${uid}'
+           and event_type in ('open', 'add', 'close'))
      ))`
   return !!creatorId && !!uid && creatorId === uid
     ? ''

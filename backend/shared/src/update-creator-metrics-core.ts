@@ -138,18 +138,35 @@ const getCreatorTraders = async (
   userIds: string[],
   since: number
 ) => {
-  // Drive from the creators' contracts so we only read bets on those
-  // contracts (via the (contract_id, created_time) index), rather than
-  // materializing a distinct over every bet on the site since $2.
+  // Drive from the creators' contracts so we only read trades on those
+  // contracts, rather than materializing every recent trade on the site.
   return Object.fromEntries(
     await pg.map(
-      `select c.creator_id, count(distinct (cb.contract_id, cb.user_id))::int as total
-       from contracts as c
-          join contract_bets as cb on cb.contract_id = c.id
-            and cb.created_time >= $2
-       where c.creator_id in ($1:list)
-       and c.outcome_type != 'POLL' and c.outcome_type != 'BOUNTY'
-       group by c.creator_id`,
+      `with creator_trades as (
+         select c.creator_id, cb.contract_id, cb.user_id
+         from contracts as c
+         join contract_bets as cb on cb.contract_id = c.id
+           and cb.created_time >= $2
+         where c.creator_id in ($1:list)
+           and c.outcome_type != 'POLL'
+           and c.outcome_type != 'BOUNTY'
+
+         union all
+
+         select c.creator_id, e.contract_id, e.user_id
+         from contracts as c
+         join contract_perp_events as e on e.contract_id = c.id
+           and e.ts >= $2
+           and e.user_id is not null
+           and e.event_type in ('open', 'add', 'close')
+           and e.data->>'reason' is distinct from 'flip'
+           and e.data->>'reason' is distinct from 'resolve-market'
+         where c.creator_id in ($1:list)
+       )
+       select creator_id,
+         count(distinct (contract_id, user_id))::int as total
+       from creator_trades
+       group by creator_id`,
       [userIds, new Date(since).toISOString()],
       (r) => [r.creator_id as string, r.total as number]
     )
