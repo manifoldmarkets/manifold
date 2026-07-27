@@ -160,6 +160,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
           <FundingRateColumn
             rate={liveFundingRate}
             lastFundingTime={contract.lastFundingTime}
+            fundingStartTime={contract.createdTime}
             fundingPeriodMs={getFundingPeriodMs(contract)}
           />
         </Row>
@@ -219,9 +220,10 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
 const FundingRateColumn = (props: {
   rate: number | undefined
   lastFundingTime: number | undefined
+  fundingStartTime: number
   fundingPeriodMs: number
 }) => {
-  const { rate, lastFundingTime, fundingPeriodMs } = props
+  const { rate, lastFundingTime, fundingStartTime, fundingPeriodMs } = props
   // Client-only: the countdown is Date.now()-derived, so the server's
   // render goes stale by hydration time whenever a minute boundary passes
   // in between — a 1-in-60 hydration mismatch per hard load.
@@ -251,7 +253,8 @@ const FundingRateColumn = (props: {
     lastFundingTime,
     Date.now(),
     1,
-    fundingPeriodMs
+    fundingPeriodMs,
+    fundingStartTime
   )[0]
   const countdown =
     isClient && nextEvent ? formatCountdown(nextEvent - Date.now()) : null

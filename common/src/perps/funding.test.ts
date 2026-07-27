@@ -35,27 +35,76 @@ describe('shouldApplyFunding', () => {
   const base = {
     now: H0 + 24 * HOUR_MS,
     lastFundingTime: H0,
+    fundingStartTime: H0 - DAY_MS,
     latestOracleTime: H0 + 23 * HOUR_MS,
     fundingPeriodMs: DAY_MS,
   }
 
-  it('fires the first funding unconditionally', () => {
+  it('requires a complete first period from market creation', () => {
     expect(
-      shouldApplyFunding({ ...base, lastFundingTime: undefined })
+      shouldApplyFunding({
+        ...base,
+        now: H0 + DAY_MS - 1,
+        lastFundingTime: undefined,
+        fundingStartTime: H0,
+      })
+    ).toBe(false)
+    expect(
+      shouldApplyFunding({
+        ...base,
+        lastFundingTime: undefined,
+        fundingStartTime: H0,
+      })
     ).toBe(true)
-    expect(shouldApplyFunding({ ...base, lastFundingTime: 0 })).toBe(true)
+    expect(
+      shouldApplyFunding({
+        ...base,
+        lastFundingTime: 0,
+        fundingStartTime: H0,
+      })
+    ).toBe(true)
+  })
+
+  it('requires a new oracle point before the first slow-period funding', () => {
+    expect(
+      shouldApplyFunding({
+        ...base,
+        lastFundingTime: undefined,
+        fundingStartTime: H0,
+        latestOracleTime: H0,
+      })
+    ).toBe(false)
+    expect(
+      shouldApplyFunding({
+        ...base,
+        lastFundingTime: undefined,
+        fundingStartTime: H0,
+        latestOracleTime: H0 + 1,
+      })
+    ).toBe(true)
+  })
+
+  it('does not require an oracle anchor for a complete first hourly period', () => {
+    expect(
+      shouldApplyFunding({
+        ...base,
+        now: H0 + HOUR_MS,
+        lastFundingTime: undefined,
+        fundingStartTime: H0,
+        latestOracleTime: undefined,
+        fundingPeriodMs: HOUR_MS,
+      })
+    ).toBe(true)
   })
 
   it('period gate: blocks until period minus one minute of slack has elapsed', () => {
-    expect(
-      shouldApplyFunding({ ...base, now: H0 + 23 * HOUR_MS })
-    ).toBe(false)
+    expect(shouldApplyFunding({ ...base, now: H0 + 23 * HOUR_MS })).toBe(false)
     expect(
       shouldApplyFunding({ ...base, now: H0 + DAY_MS - 2 * MINUTE_MS })
     ).toBe(false)
-    expect(
-      shouldApplyFunding({ ...base, now: H0 + DAY_MS - 30_000 })
-    ).toBe(true)
+    expect(shouldApplyFunding({ ...base, now: H0 + DAY_MS - 30_000 })).toBe(
+      true
+    )
   })
 
   it('reproduces the live cron-jitter case that motivated the slack (846752c7d)', () => {
@@ -67,6 +116,7 @@ describe('shouldApplyFunding', () => {
       shouldApplyFunding({
         now: run,
         lastFundingTime: event,
+        fundingStartTime: H0 - HOUR_MS,
         latestOracleTime: run - 10_000,
         fundingPeriodMs: HOUR_MS,
       })
@@ -102,6 +152,7 @@ describe('shouldApplyFunding', () => {
       shouldApplyFunding({
         now: H0 + HOUR_MS + 800,
         lastFundingTime: fundingEvent,
+        fundingStartTime: H0 - HOUR_MS,
         latestOracleTime: H0, // block "to" = the boundary itself
         fundingPeriodMs: HOUR_MS,
       })
@@ -110,6 +161,7 @@ describe('shouldApplyFunding', () => {
       shouldApplyFunding({
         now: H0 + HOUR_MS + 800,
         lastFundingTime: fundingEvent,
+        fundingStartTime: H0 - HOUR_MS,
         latestOracleTime: H0 - 3 * HOUR_MS, // even a stalled feed
         fundingPeriodMs: HOUR_MS,
       })
@@ -134,6 +186,7 @@ describe('shouldApplyFunding', () => {
       shouldApplyFunding({
         now,
         lastFundingTime: H0 + 1_000,
+        fundingStartTime: H0 - HOUR_MS,
         latestOracleTime: now - 15_000,
         fundingPeriodMs: HOUR_MS,
       })
@@ -142,10 +195,18 @@ describe('shouldApplyFunding', () => {
 
   it('fails closed on garbage', () => {
     expect(shouldApplyFunding({ ...base, now: NaN })).toBe(false)
+    expect(shouldApplyFunding({ ...base, fundingStartTime: NaN })).toBe(false)
+    expect(shouldApplyFunding({ ...base, fundingStartTime: 0 })).toBe(false)
     expect(shouldApplyFunding({ ...base, fundingPeriodMs: NaN })).toBe(false)
     expect(shouldApplyFunding({ ...base, fundingPeriodMs: 0 })).toBe(false)
+    expect(shouldApplyFunding({ ...base, latestOracleTime: undefined })).toBe(
+      false
+    )
     expect(
-      shouldApplyFunding({ ...base, latestOracleTime: undefined })
+      shouldApplyFunding({
+        ...base,
+        latestOracleTime: Number.POSITIVE_INFINITY,
+      })
     ).toBe(false)
   })
 

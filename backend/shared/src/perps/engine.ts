@@ -910,6 +910,7 @@ export const runFunding = async (
         lastFundingTime: lastFunding
           ? new Date(lastFunding.ts).getTime()
           : undefined,
+        fundingStartTime: contract.createdTime,
         latestOracleTime: contract.oraclePriceTime,
         fundingPeriodMs: getFundingPeriodMs(contract),
       })

@@ -1,8 +1,4 @@
-import {
-  applyFunding,
-  computeFundingRate,
-  getPositionValue,
-} from './amm'
+import { applyFunding, computeFundingRate, getPositionValue } from './amm'
 import {
   carryNeutralPath,
   clusterLiquidationBands,
@@ -70,6 +66,14 @@ describe('nextFundingTimes', () => {
     // Scheduler was down for a day: every future boundary qualifies.
     expect(nextFundingTimes(H0 - 24 * HOUR, now, 1)).toEqual([H0 + HOUR])
     expect(nextFundingTimes(undefined, now, 1)).toEqual([H0 + HOUR])
+  })
+
+  it('projects the first event only after a complete period from creation', () => {
+    const created = H0 + 30_000
+    const now = H0 + 5 * 60 * 1000
+    expect(nextFundingTimes(undefined, now, 1, HOUR, created)).toEqual([
+      H0 + 2 * HOUR,
+    ])
   })
 
   it('24h period: events land on hour boundaries a day apart, not consecutive hours', () => {
@@ -344,10 +348,8 @@ describe('personalBreakEvenPath', () => {
     )
     expect(path).toHaveLength(2)
 
-    const after = applyFunding(
-      { pool: { L, S }, positions: [position] },
-      f
-    ).positions[0]
+    const after = applyFunding({ pool: { L, S }, positions: [position] }, f)
+      .positions[0]
     expect(getPositionValue(after, path[1].value)).toBeCloseTo(
       position.originalCostBasis,
       8
@@ -372,10 +374,8 @@ describe('personalBreakEvenPath', () => {
     )
     expect(path).toHaveLength(2)
 
-    const after = applyFunding(
-      { pool: { L, S }, positions: [position] },
-      f
-    ).positions[0]
+    const after = applyFunding({ pool: { L, S }, positions: [position] }, f)
+      .positions[0]
     expect(getPositionValue(after, path[1].value)).toBeCloseTo(
       position.originalCostBasis,
       8
@@ -393,10 +393,8 @@ describe('personalBreakEvenPath', () => {
     const path = personalBreakEvenPath(position, f, L, S, NOW, DAY, 1, DAY)
     expect(path).toHaveLength(2)
 
-    const after = applyFunding(
-      { pool: { L, S }, positions: [position] },
-      f
-    ).positions[0]
+    const after = applyFunding({ pool: { L, S }, positions: [position] }, f)
+      .positions[0]
     expect(getPositionValue(after, path[1].value)).toBeCloseTo(
       position.originalCostBasis,
       8

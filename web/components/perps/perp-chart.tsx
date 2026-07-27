@@ -395,7 +395,8 @@ export const PerpChart = (props: {
       contract.lastFundingTime,
       now,
       8,
-      fundingPeriodMs
+      fundingPeriodMs,
+      contract.createdTime
     )
     const horizon = projectionHorizonWithFunding(
       maxTs - Math.min(...xs),
@@ -1150,10 +1151,10 @@ export const PerpChart = (props: {
       {mode === 'funding' && (
         <span className="text-ink-400 text-xs">
           {fundingPoints.length === 0
-            ? `No funding events yet — the first lands ${
-                fundingPeriodMs === HOUR_MS
-                  ? 'on the next hourly run'
-                  : 'after the next oracle update'
+            ? `No funding events yet — the first can land after a full ${fundingPeriodNoun(
+                fundingPeriodMs
+              )} of trading${
+                fundingPeriodMs > HOUR_MS ? ' and a new oracle update' : ''
               }.`
             : `${
                 fundingPeriodMs === DAY_MS

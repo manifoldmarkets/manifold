@@ -354,7 +354,8 @@ const PositionCard = (props: {
     contract.lastFundingTime,
     Date.now(),
     1,
-    fundingPeriodMs
+    fundingPeriodMs,
+    contract.createdTime
   )[0]
   const fundingCountdown = nextFunding
     ? formatCountdown(nextFunding - Date.now())

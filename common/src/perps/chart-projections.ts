@@ -66,28 +66,31 @@ export const projectionHorizonMs = (
 /**
  * Times of the next `count` funding events. The scheduler's update-perps job
  * runs at each top of the hour (wall-clock, timezone-agnostic on epoch ms)
- * and funds a market when at least one period minus a minute of slack has
- * elapsed since its last funding event — so events land on hour boundaries
- * regardless of period length, and a boundary too soon after the previous
- * event is skipped. Works from a stale lastFundingTime too: boundaries after
- * `now` still qualify, so a missed scheduler run self-corrects to the next
- * hour. For periods longer than an hour the engine additionally requires a
- * new oracle price, which this prediction can't see — a late feed pushes the
- * real event to a later boundary than projected here.
+ * and funds a market when one period has elapsed from creation (first event),
+ * or one period minus a minute of cron jitter has elapsed since the previous
+ * event. Events therefore land on hour boundaries regardless of period
+ * length, and a boundary too soon after the relevant anchor is skipped.
+ * Works from a stale lastFundingTime too: boundaries after `now` still
+ * qualify, so a missed scheduler run self-corrects to the next hour. For
+ * periods longer than an hour the engine additionally requires a new oracle
+ * price, which this prediction can't see — a late feed pushes the real event
+ * to a later boundary than projected here.
  */
 export const nextFundingTimes = (
   lastFundingTime: number | undefined,
   now: number,
   count: number,
-  fundingPeriodMs = FUNDING_PERIOD_MS
+  fundingPeriodMs = FUNDING_PERIOD_MS,
+  fundingStartTime?: number
 ): number[] => {
   if (!Number.isFinite(now) || count <= 0) return []
   // Gate each boundary against the previous PREDICTED event, not just the
   // last real one — with a 24h period, every hourly boundary after the first
   // prediction would otherwise "qualify" against the day-old anchor.
-  let anchor = lastFundingTime
+  let anchor = lastFundingTime || fundingStartTime
+  let isFirstFunding = !lastFundingTime && fundingStartTime != null
   const gateOk = (t: number) =>
-    !anchor || t - anchor >= fundingPeriodMs - MINUTE_MS
+    !anchor || t - anchor >= fundingPeriodMs - (isFirstFunding ? 0 : MINUTE_MS)
   const times: number[] = []
   let t = Math.floor(now / HOUR_MS) * HOUR_MS + HOUR_MS
   // The gate can skip at most one boundary per period, so events fit within
@@ -97,6 +100,7 @@ export const nextFundingTimes = (
     if (gateOk(t)) {
       times.push(t)
       anchor = t
+      isFirstFunding = false
     }
     t += HOUR_MS
   }

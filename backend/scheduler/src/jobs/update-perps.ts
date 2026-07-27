@@ -121,6 +121,7 @@ const updateOnePerp = async (contract: PerpContract) => {
         lastFundingTime: lastFunding
           ? new Date(lastFunding.ts).getTime()
           : undefined,
+        fundingStartTime: contract.createdTime,
         latestOracleTime: latest.ts,
         fundingPeriodMs: getFundingPeriodMs(contract),
       })

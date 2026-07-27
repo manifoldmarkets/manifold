@@ -34,13 +34,13 @@ export const getFundingPeriodMs = (contract: {
 /**
  * Should a funding event fire now?
  *
- * 1. Period elapsed, minus one minute of slack. The slack is not slop: cron
- *    fires at :00 sharp, so a run often starts a few hundred ms EARLIER in
- *    the second than the previous event's commit stamp — a full-period
- *    comparison silently skips those periods (observed live: 16:00:01.104
- *    event, 17:00:00.822 run, elapsed 3,599,780ms, no funding written). The
- *    slack is absolute (scheduler jitter), not proportional, so it stays
- *    MINUTE_MS at a 24h period.
+ * 1. The first event requires a complete period from market creation. Later
+ *    events allow one minute of scheduler jitter: cron fires at :00 sharp,
+ *    so a run often starts a few hundred ms EARLIER in the second than the
+ *    previous event's commit stamp. A full-period comparison silently skips
+ *    those later events (observed live: 16:00:01.104 event, 17:00:00.822 run,
+ *    elapsed 3,599,780ms). The first event has no prior cron commit jitter,
+ *    and charging a full period minutes after creation would be unfair.
  *
  * 2. For periods LONGER than the scheduler's hourly funding cadence only:
  *    the oracle produced a new price since the last funding event. The
@@ -68,20 +68,44 @@ export const shouldApplyFunding = (args: {
   now: number
   /** ts of the last funding event; undefined/0 = never funded. */
   lastFundingTime: number | undefined
+  /** Market creation time; the first full holding period starts here. */
+  fundingStartTime: number
   /** ts of the newest oracle price known to the caller. */
   latestOracleTime: number | undefined
   fundingPeriodMs: number
 }): boolean => {
-  const { now, lastFundingTime, latestOracleTime, fundingPeriodMs } = args
+  const {
+    now,
+    lastFundingTime,
+    fundingStartTime,
+    latestOracleTime,
+    fundingPeriodMs,
+  } = args
   // Fail closed on garbage — a NaN comparison would silently never fund
   // (or always fund) depending on which branch it poisons.
   if (!Number.isFinite(now)) return false
+  if (!Number.isFinite(fundingStartTime) || fundingStartTime <= 0) return false
   if (!Number.isFinite(fundingPeriodMs) || fundingPeriodMs < HOUR_MS)
     return false
-  if (!lastFundingTime) return true
-  if (now - lastFundingTime < fundingPeriodMs - MINUTE_MS) return false
+  if (
+    lastFundingTime != null &&
+    lastFundingTime !== 0 &&
+    (!Number.isFinite(lastFundingTime) ||
+      lastFundingTime < fundingStartTime ||
+      lastFundingTime > now)
+  )
+    return false
+
+  const isFirstFunding = !lastFundingTime
+  const anchor = lastFundingTime || fundingStartTime
+  const jitterAllowance = isFirstFunding ? 0 : MINUTE_MS
+  if (now - anchor < fundingPeriodMs - jitterAllowance) return false
   if (fundingPeriodMs <= HOUR_MS) return true
-  return (latestOracleTime ?? 0) > lastFundingTime
+  return (
+    latestOracleTime != null &&
+    Number.isFinite(latestOracleTime) &&
+    latestOracleTime > anchor
+  )
 }
 
 /**
