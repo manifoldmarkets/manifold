@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { XIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
-import { HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { fundingPeriodNoun, fundingPeriodUnit } from 'common/perps/funding'
+import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -14,9 +15,6 @@ import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
-
-// Funding events run once per hour (FUNDING_PERIOD_MS = HOUR_MS in the engine).
-const HOURS_PER_YEAR = 24 * 365
 
 export default function AdminCreatePerpPage() {
   useRedirectIfSignedOut()
@@ -41,7 +39,9 @@ export default function AdminCreatePerpPage() {
     unlisted: false,
   })
   const [topics, setTopics] = useState<Group[]>([])
-  const [knownFeeds, setKnownFeeds] = useState<string[]>([])
+  const [knownFeeds, setKnownFeeds] = useState<
+    { id: string; updatePeriodMs: number | null }[]
+  >([])
   const [feedLatest, setFeedLatest] = useState<{
     feedId: string
     price: number
@@ -86,9 +86,23 @@ export default function AdminCreatePerpPage() {
 
   const subsidyTotal = form.subsidyLong + form.subsidyShort
 
-  // Convert annual % to per-hour fraction (the unit the engine stores).
+  // The engine stores maxFundingRate per FUNDING PERIOD, and the period is
+  // derived server-side from the feed's cadence: max(1h, updatePeriodMs).
+  // Mirror that derivation for the conversion — dividing an annual rate by
+  // hours-per-year on a daily feed would understate the cap 24x (the engine
+  // fires once a day, not hourly).
+  const selectedFeed = knownFeeds.find((f) => f.id === form.oracleFeedId.trim())
+  const unregisteredFeed =
+    knownFeeds.length > 0 &&
+    !!selectedFeed &&
+    selectedFeed.updatePeriodMs == null
+  const fundingPeriodMs = selectedFeed?.updatePeriodMs
+    ? Math.max(HOUR_MS, selectedFeed.updatePeriodMs)
+    : HOUR_MS
+
+  // Convert annual % to the per-period fraction the engine stores.
   const maxFundingRatePerPeriod =
-    form.maxFundingRateAnnualPct / 100 / HOURS_PER_YEAR
+    form.maxFundingRateAnnualPct / 100 / (YEAR_MS / fundingPeriodMs)
 
   const feedAgeMins = feedLatest
     ? Math.round((Date.now() - feedLatest.ts) / MINUTE_MS)
@@ -167,7 +181,7 @@ export default function AdminCreatePerpPage() {
             />
             <datalist id="known-oracle-feeds">
               {knownFeeds.map((f) => (
-                <option key={f} value={f} />
+                <option key={f.id} value={f.id} />
               ))}
             </datalist>
             {feedLatest ? (
@@ -178,9 +192,13 @@ export default function AdminCreatePerpPage() {
                     : 'text-ink-500 mt-1 text-xs'
                 }
               >
-                Latest point: {feedLatest.price} · {feedAgeMins} min ago
+                Latest point: {feedLatest.price} · {feedAgeMins} min ago ·
+                funding period {Math.round(fundingPeriodMs / HOUR_MS)}h (from
+                feed cadence)
                 {feedOlderThanMaxAge &&
                   ' — older than the max price age below; trading would be blocked until the feed updates'}
+                {unregisteredFeed &&
+                  ' — ⚠ not in the oracle feed registry; create will be rejected'}
               </p>
             ) : (
               <p className="text-ink-500 mt-1 text-xs">
@@ -237,15 +255,21 @@ export default function AdminCreatePerpPage() {
               onChange={(v) => update('maxFundingRateAnnualPct', v)}
               step={1}
               min={0.01}
-              // The engine caps the per-period rate at 1 (100%/hr). Skewed
-              // markets need real teeth (Kalshi caps at ~6%/day), so allow
-              // well past 100%/yr; the hint shows the per-hour/per-day cost.
+              // The engine caps the per-period rate at 1 (100%/period).
+              // Skewed markets need real teeth (Kalshi caps at ~6%/day), so
+              // allow well past 100%/yr; the hint shows the per-period cost.
               max={8000}
-              hint={`= ${(maxFundingRatePerPeriod * 100).toFixed(4)}%/hr, ${(
-                maxFundingRatePerPeriod *
-                24 *
-                100
-              ).toFixed(2)}%/day max`}
+              hint={`= ${(maxFundingRatePerPeriod * 100).toFixed(
+                4
+              )}%/${fundingPeriodUnit(fundingPeriodMs)} max${
+                fundingPeriodMs < DAY_MS
+                  ? `, ${(
+                      maxFundingRatePerPeriod *
+                      (DAY_MS / fundingPeriodMs) *
+                      100
+                    ).toFixed(2)}%/day`
+                  : ''
+              } — charged once per ${fundingPeriodNoun(fundingPeriodMs)}`}
             />
             <NumberInput
               label="Funding sensitivity (k)"

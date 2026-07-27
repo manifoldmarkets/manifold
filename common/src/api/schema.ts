@@ -1101,7 +1101,12 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    returns: [] as string[],
+    // updatePeriodMs comes from the backend feed registry; null means the
+    // feed has price rows but no OracleFeedDef (create-perp rejects those).
+    // The admin create page needs it to convert an annual max funding rate
+    // into the per-PERIOD fraction the engine stores — assuming hourly on a
+    // daily feed would understate the cap 24x.
+    returns: [] as { id: string; updatePeriodMs: number | null }[],
     props: z.object({}).strict(),
   },
   'internal-write-oracle-price': {
