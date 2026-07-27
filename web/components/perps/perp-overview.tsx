@@ -8,6 +8,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { useIsClient } from 'web/hooks/use-is-client'
 import { api } from 'web/lib/api/api'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
@@ -201,6 +202,10 @@ const FundingRateColumn = (props: {
   lastFundingTime: number | undefined
 }) => {
   const { rate, lastFundingTime } = props
+  // Client-only: the countdown is Date.now()-derived, so the server's
+  // render goes stale by hydration time whenever a minute boundary passes
+  // in between — a 1-in-60 hydration mismatch per hard load.
+  const isClient = useIsClient()
   // No funding event has fired yet (brand-new contract): show a placeholder
   // so the column still aligns with Oracle price, rather than collapsing
   // the row layout.
@@ -223,9 +228,10 @@ const FundingRateColumn = (props: {
   const directionText =
     rate > 0 ? 'longs pay shorts' : rate < 0 ? 'shorts pay longs' : 'balanced'
   const nextEvent = nextFundingTimes(lastFundingTime, Date.now(), 1)[0]
-  const minsToNext = nextEvent
-    ? Math.max(1, Math.ceil((nextEvent - Date.now()) / MINUTE_MS))
-    : null
+  const minsToNext =
+    isClient && nextEvent
+      ? Math.max(1, Math.ceil((nextEvent - Date.now()) / MINUTE_MS))
+      : null
   const color =
     rate > 0
       ? 'text-scarlet-600 dark:text-scarlet-400'
