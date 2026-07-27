@@ -67,7 +67,9 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'fast',
     minPrice: 1_000,
     maxPrice: 10_000_000,
-    maxJumpFrac: 0.1,
+    // No temporal jump guard: the adapter requires live agreement between
+    // independent exchanges, so legitimate discontinuous moves recover
+    // immediately after downtime instead of wedging against a stale point.
     staleAfterMs: 2 * MINUTE_MS,
     updatePeriodMs: 15_000,
     fetchLatest: fetchBtcUsdSpot,

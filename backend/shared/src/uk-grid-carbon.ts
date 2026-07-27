@@ -51,7 +51,7 @@ export const fetchUkGridCarbonActual = async (): Promise<{
   )
 
   const finalized = blocks.filter(
-    (b) => b.intensity.actual != null && isFinite(b.intensity.actual)
+    (b) => b.intensity.actual != null && Number.isFinite(b.intensity.actual)
   )
   if (finalized.length === 0) {
     log('[uk-grid-carbon] no finalized blocks in the last 24h')
@@ -83,7 +83,9 @@ export const fetchUkGridCarbonRecent = async (): Promise<
     toNesoIso(now)
   )
   return blocks
-    .filter((b) => b.intensity.actual != null && isFinite(b.intensity.actual))
+    .filter(
+      (b) => b.intensity.actual != null && Number.isFinite(b.intensity.actual)
+    )
     .map((b) => ({
       // Same clamp as above: only the newest block can lead wall time.
       ts: Math.min(Date.parse(b.to), now),

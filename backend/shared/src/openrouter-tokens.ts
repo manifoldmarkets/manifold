@@ -42,7 +42,9 @@ export const fetchOpenRouterRankings = async (
 ): Promise<OpenRouterRankings | null> => {
   const apiKey = process.env.OPENROUTER_API_KEY ?? ''
   if (!apiKey) {
-    log.warn('[openrouter] OPENROUTER_API_KEY not set — skipping')
+    log.error(
+      '[openrouter] OPENROUTER_API_KEY not set — launch feed cannot publish'
+    )
     return null
   }
 

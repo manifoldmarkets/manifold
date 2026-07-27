@@ -5,6 +5,10 @@ export type OraclePoint = {
   price: number
 }
 
+export type NormalizedOraclePointBatch =
+  | { ok: true; points: OraclePoint[] }
+  | { ok: false; reason: string }
+
 export const MAX_ORACLE_FUTURE_SKEW_MS = 5 * MINUTE_MS
 
 export type OracleFreshness = {
@@ -81,6 +85,73 @@ export const validateBasicOraclePoint = (
   if (!Number.isFinite(point.price) || point.price <= 0)
     return `non-positive price ${point.price}`
   return null
+}
+
+/**
+ * Sort and deduplicate a batch before publishing it into immutable history.
+ *
+ * Exact redelivery is harmless. Two prices for one timestamp are not: an
+ * `on conflict do nothing` insert would otherwise make the executable value
+ * depend on input order, and the losing value cannot be corrected in place.
+ * Reject the whole batch so the source can be investigated instead.
+ */
+export const normalizeOraclePointBatch = (
+  points: readonly OraclePoint[]
+): NormalizedOraclePointBatch => {
+  const sorted = [...points].sort((a, b) => a.ts - b.ts)
+  const normalized: OraclePoint[] = []
+
+  for (const point of sorted) {
+    const previous = normalized[normalized.length - 1]
+    if (!previous || previous.ts !== point.ts) {
+      normalized.push(point)
+      continue
+    }
+    if (previous.price !== point.price) {
+      return {
+        ok: false,
+        reason: `timestamp ${point.ts} has conflicting prices ${previous.price} and ${point.price}`,
+      }
+    }
+  }
+
+  return { ok: true, points: normalized }
+}
+
+/**
+ * Median of independently sourced positive values, provided at least one
+ * adjacent pair agrees within the configured relative spread.
+ *
+ * A median alone is unsafe with exactly two sources because one bad source
+ * can drag their midpoint arbitrarily. The agreement gate makes a two-source
+ * fallback usable while retaining the median's one-outlier resistance when
+ * three or more values are available.
+ */
+export const getConsensusMedian = (
+  values: readonly number[],
+  maxPairDivergenceFrac: number
+): number | null => {
+  if (!Number.isFinite(maxPairDivergenceFrac) || maxPairDivergenceFrac <= 0)
+    return null
+
+  const sorted = values
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b)
+  if (sorted.length < 2) return null
+
+  const hasAgreement = sorted.some(
+    (value, index) =>
+      index > 0 &&
+      (value - sorted[index - 1]) / sorted[index - 1] <= maxPairDivergenceFrac
+  )
+  if (!hasAgreement) return null
+
+  const middle = Math.floor(sorted.length / 2)
+  const consensus =
+    sorted.length % 2 === 1
+      ? sorted[middle]
+      : (sorted[middle - 1] + sorted[middle]) / 2
+  return Number.isFinite(consensus) && consensus > 0 ? consensus : null
 }
 
 export type OracleTransitionDecision =

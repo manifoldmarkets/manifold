@@ -76,7 +76,7 @@ export const updateOpenRouterShare = async () => {
           : null,
         point
       )
-    : null
+    : `missing OracleFeedDef for ${OPENROUTER_OPEN_WEIGHT_FEED_ID}`
   if (rejection) {
     log.error(
       `[openrouter] rejected share ${publication.share.toFixed(

@@ -35,8 +35,8 @@ export const updateTrumpApproval = async () => {
   const polls = await fetchTrumpApprovalPolls(fetchStart)
   const points = computeRollingAverages(polls, today, today)
   if (points.length === 0) {
-    log(
-      `no polls in trailing ${TRUMP_APPROVAL_WINDOW_DAYS}-day window; skipping`
+    log.error(
+      `[trump-approval] no polls in trailing ${TRUMP_APPROVAL_WINDOW_DAYS}-day window; skipping publication`
     )
     return
   }

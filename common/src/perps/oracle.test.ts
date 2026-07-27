@@ -1,8 +1,10 @@
 import {
   MAX_ORACLE_FUTURE_SKEW_MS,
   decideOracleTransition,
+  getConsensusMedian,
   getOracleFreshness,
   getOracleLogPriceChange,
+  normalizeOraclePointBatch,
   validateBasicOraclePoint,
 } from './oracle'
 
@@ -84,6 +86,56 @@ describe('validateBasicOraclePoint', () => {
     [{ ts: NOW, price: 0 }, 'non-positive price'],
   ])('rejects an invalid point %#', (point, message) => {
     expect(validateBasicOraclePoint(point, NOW)).toContain(message)
+  })
+})
+
+describe('normalizeOraclePointBatch', () => {
+  it('sorts points and removes exact timestamp redelivery', () => {
+    expect(
+      normalizeOraclePointBatch([
+        { ts: 3, price: 103 },
+        { ts: 1, price: 101 },
+        { ts: 2, price: 102 },
+        { ts: 2, price: 102 },
+      ])
+    ).toEqual({
+      ok: true,
+      points: [
+        { ts: 1, price: 101 },
+        { ts: 2, price: 102 },
+        { ts: 3, price: 103 },
+      ],
+    })
+  })
+
+  it('rejects a batch with two values for one immutable timestamp', () => {
+    expect(
+      normalizeOraclePointBatch([
+        { ts: 2, price: 102 },
+        { ts: 1, price: 101 },
+        { ts: 2, price: 999 },
+      ])
+    ).toEqual(
+      expect.objectContaining({
+        ok: false,
+        reason: expect.stringContaining('conflicting prices'),
+      })
+    )
+  })
+})
+
+describe('getConsensusMedian', () => {
+  it('uses the median after two sources confirm the level', () => {
+    expect(getConsensusMedian([100, 101, 10_000], 0.02)).toBe(101)
+    expect(getConsensusMedian([100, 101], 0.02)).toBe(100.5)
+  })
+
+  it('rejects unconfirmed, invalid, or insufficient values', () => {
+    expect(getConsensusMedian([100, 103, 107], 0.02)).toBeNull()
+    expect(
+      getConsensusMedian([Number.NaN, Number.POSITIVE_INFINITY, 100], 0.02)
+    ).toBeNull()
+    expect(getConsensusMedian([100, 101], 0)).toBeNull()
   })
 })
 

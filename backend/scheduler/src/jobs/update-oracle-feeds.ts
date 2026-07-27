@@ -1,3 +1,5 @@
+import { normalizeOraclePointBatch } from 'common/perps/oracle'
+
 import { insertOraclePrices } from 'shared/oracle'
 import {
   ORACLE_FEEDS,
@@ -63,9 +65,16 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
         }
       }
       if (valid.length > 0) {
-        await insertOraclePrices(pg, feed.id, valid)
-        const newest = valid[valid.length - 1]
-        if (!latest || newest.ts > latest.ts) latest = newest
+        const normalized = normalizeOraclePointBatch(valid)
+        if (!normalized.ok) {
+          log.error(
+            `[oracle-feeds] ${feed.id}: rejected ambiguous batch — ${normalized.reason}`
+          )
+        } else {
+          await insertOraclePrices(pg, feed.id, normalized.points)
+          const newest = normalized.points[normalized.points.length - 1]
+          if (newest && (!latest || newest.ts > latest.ts)) latest = newest
+        }
       }
     } else if (feed.fetchLatest) {
       const point = await feed.fetchLatest()
@@ -95,7 +104,12 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
       )
     }
 
-    if (!latest) return
+    if (!latest) {
+      log.error(
+        `[oracle-feeds] ${feed.id} has no published point after a successful tick`
+      )
+      return
+    }
     const latestPoint = latest
 
     // Apply to live perps on this feed. runOracleUpdate takes the
