@@ -639,9 +639,12 @@ export const placePerpTradeSchema = z.object({
   direction: z.enum(['long', 'short']),
   mana: z.number().gt(0),
   leverage: z.number().gt(0),
+  idempotencyKey: z.string().regex(randomStringRegex).length(10),
 })
 
 export const closePerpPositionSchema = z.object({
   contractId: z.string().min(1),
   direction: z.enum(['long', 'short']),
+  idempotencyKey: z.string().regex(randomStringRegex).length(10),
+  expectedOpenedTime: z.number().int().nonnegative(),
 })

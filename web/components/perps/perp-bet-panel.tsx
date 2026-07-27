@@ -5,7 +5,7 @@ import {
   XIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -21,6 +21,7 @@ import {
 import { fundingPerPeriod } from 'common/perps/pnl'
 import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -61,6 +62,10 @@ export const PerpBetPanel = (props: {
   const [leverage, setLeverage] = useState<number>(2)
   const [submitting, setSubmitting] = useState(false)
   const [amountError, setAmountError] = useState<string | undefined>(undefined)
+  const pendingTrade = useRef<{
+    fingerprint: string
+    idempotencyKey: string
+  } | null>(null)
 
   const openDirection = useMemo(() => {
     if (!user || !positions) return null
@@ -124,11 +129,18 @@ export const PerpBetPanel = (props: {
     }
     setSubmitting(true)
     try {
+      const fingerprint = [contract.id, direction, margin, leverage].join(':')
+      const request =
+        pendingTrade.current?.fingerprint === fingerprint
+          ? pendingTrade.current
+          : { fingerprint, idempotencyKey: randomString() }
+      pendingTrade.current = request
       const res = await api('place-perp-trade', {
         contractId: contract.id,
         direction,
         mana: margin,
         leverage,
+        idempotencyKey: request.idempotencyKey,
       })
       const verb = isAdd ? 'Added to' : isFlip ? 'Flipped to' : 'Opened'
       toast.success(
@@ -154,6 +166,7 @@ export const PerpBetPanel = (props: {
       // Reflect the trade everywhere on the page (position panel, pools,
       // funding, this panel's open direction) immediately — onTrade bumps
       // the parent's refreshKey, which refetches positions cache-bypassed.
+      pendingTrade.current = null
       onTrade?.()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Trade failed')

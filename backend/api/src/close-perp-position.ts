@@ -8,6 +8,12 @@ export const closePerpPosition: APIHandler<'close-perp-position'> = async (
   body,
   auth
 ) => {
-  const { contractId, direction } = body
-  return await closePosition(contractId, auth.uid, direction)
+  const { contractId, direction, idempotencyKey, expectedOpenedTime } = body
+  return await closePosition(
+    contractId,
+    auth.uid,
+    direction,
+    idempotencyKey,
+    expectedOpenedTime
+  )
 }

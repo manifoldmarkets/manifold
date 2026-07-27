@@ -11,11 +11,15 @@ explicit (see "Integration points" below).
 ## Files
 
 - `engine.ts` — the authoritative entry point. Exports:
-  - `openOrAddPosition(contractId, userId, direction, mana, leverage)` — opens a new
-    position or adds to an existing same-side position. Rejects opposite-side opens
-    (one-way mode). Returns `{ position, event, isNewUniqueBettor }`.
-  - `closePosition(contractId, userId, direction)` — closes a user's position at the
-    current oracle price, credits/debits mana, and writes a `close` event.
+
+  - `openOrAddPosition(contractId, userId, direction, mana, leverage, idempotencyKey?)`
+    — opens a new position or adds to an existing same-side position. An opposite-side
+    position is closed atomically before the new side opens. Returns
+    `{ position, event, isNewUniqueBettor }`.
+  - `closePosition(contractId, userId, direction, idempotencyKey?, expectedOpenedTime?)`
+    — closes a user's position at the current oracle price, credits/debits mana, and
+    writes a `close` event. The optional opening timestamp prevents a stale client
+    from closing a replacement position.
   - `runOracleUpdate(contract)` — applies liquidations + ADL at the latest oracle
     price. Called by the hourly scheduler.
   - `runFunding(contract)` — applies one funding period to all open positions.
@@ -54,6 +58,12 @@ Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
 - `GET /get-known-oracle-feeds` (admin) — autocomplete for the admin create page.
 - `POST /internal-write-oracle-price` (admin-authed, intended for bots) — writes a
   single `(feed_id, ts, price)` row idempotently.
+
+The web client sends a 10-character `idempotencyKey` with each open/add/flip or
+close. The key, request, and response snapshot are stored on the append-only
+event, and partial unique indexes ensure a retry cannot apply the balance
+mutation twice. API callers should reuse the same key after an ambiguous
+network failure and generate a new key only for a genuinely new action.
 
 ## Oracle feeds
 

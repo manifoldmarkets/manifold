@@ -13,13 +13,14 @@ import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 export const placePerpTrade: APIHandler<'place-perp-trade'> =
   onlyUsersWhoCanPerformAction('trade', async (body, auth) => {
     if (!PERPS_ENABLED) throw new APIError(403, 'Perps are disabled')
-    const { contractId, direction, mana, leverage } = body
+    const { contractId, direction, mana, leverage, idempotencyKey } = body
     const result = await openOrAddPosition(
       contractId,
       auth.uid,
       direction,
       mana,
-      leverage
+      leverage,
+      idempotencyKey
     )
 
     if (result.isNewUniqueBettor) {

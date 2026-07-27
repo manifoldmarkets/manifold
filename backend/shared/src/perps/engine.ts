@@ -40,6 +40,7 @@ import {
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
 import { removeUndefinedProps } from 'common/util/object'
+import { randomStringRegex } from 'common/util/random'
 import { UserBan } from 'common/user'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
@@ -144,6 +145,138 @@ const asEvent = (
   ...partial,
 })
 
+type StoredPerpEventRow = {
+  id: number | string
+  contract_id: string
+  user_id: string | null
+  event_type: string
+  ts: string
+  oracle_price: number | string | null
+  size_delta: number | string
+  cost_basis_delta: number | string
+  original_cost_basis_delta: number | string
+  direction: string | null
+  leverage: number | string | null
+  data: unknown
+}
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+
+const finiteNumber = (value: unknown, name: string): number => {
+  if (
+    (typeof value !== 'number' && typeof value !== 'string') ||
+    (typeof value === 'string' && value.trim() === '')
+  ) {
+    throw new APIError(500, `Invalid ${name} in PERP idempotency record`)
+  }
+  const number = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(number))
+    throw new APIError(500, `Invalid ${name} in PERP idempotency record`)
+  return number
+}
+
+const parseStoredPosition = (value: unknown): PerpPosition => {
+  const position = asRecord(value)
+  if (!position)
+    throw new APIError(500, 'Invalid position in PERP idempotency record')
+  if (
+    typeof position.userId !== 'string' ||
+    typeof position.contractId !== 'string' ||
+    (position.direction !== 'long' && position.direction !== 'short')
+  ) {
+    throw new APIError(500, 'Invalid position in PERP idempotency record')
+  }
+  return {
+    userId: position.userId,
+    contractId: position.contractId,
+    direction: position.direction,
+    size: finiteNumber(position.size, 'position size'),
+    costBasis: finiteNumber(position.costBasis, 'position cost basis'),
+    originalCostBasis: finiteNumber(
+      position.originalCostBasis,
+      'position original cost basis'
+    ),
+    entryPrice: finiteNumber(position.entryPrice, 'position entry price'),
+    leverage: finiteNumber(position.leverage, 'position leverage'),
+    liquidationPrice: finiteNumber(
+      position.liquidationPrice,
+      'position liquidation price'
+    ),
+    openedTime: finiteNumber(position.openedTime, 'position opened time'),
+    updatedTime: finiteNumber(position.updatedTime, 'position updated time'),
+  }
+}
+
+const rowToStoredEvent = (row: StoredPerpEventRow): PerpEvent => {
+  if (
+    row.event_type !== 'open' &&
+    row.event_type !== 'add' &&
+    row.event_type !== 'close'
+  ) {
+    throw new APIError(500, 'Invalid event type in PERP idempotency record')
+  }
+  const direction =
+    row.direction === 'long' || row.direction === 'short' ? row.direction : null
+  const ts = new Date(row.ts).getTime()
+  if (!Number.isFinite(ts))
+    throw new APIError(500, 'Invalid timestamp in PERP idempotency record')
+  return {
+    id: finiteNumber(row.id, 'event id'),
+    contractId: row.contract_id,
+    userId: row.user_id,
+    eventType: row.event_type,
+    ts,
+    oraclePrice: finiteNumber(row.oracle_price, 'event oracle price'),
+    sizeDelta: finiteNumber(row.size_delta, 'event size delta'),
+    costBasisDelta: finiteNumber(
+      row.cost_basis_delta,
+      'event cost basis delta'
+    ),
+    originalCostBasisDelta: finiteNumber(
+      row.original_cost_basis_delta,
+      'event original cost basis delta'
+    ),
+    direction,
+    leverage:
+      row.leverage === null
+        ? null
+        : finiteNumber(row.leverage, 'event leverage'),
+    data: asRecord(row.data) ?? undefined,
+  }
+}
+
+const getIdempotentEvent = async (
+  pgTrans: SupabaseTransaction,
+  contractId: string,
+  userId: string,
+  idempotencyKey: string,
+  eventTypes: ('open' | 'add' | 'close')[]
+) =>
+  pgTrans.oneOrNone<StoredPerpEventRow>(
+    `select id, contract_id, user_id, event_type, ts, oracle_price,
+            size_delta, cost_basis_delta, original_cost_basis_delta,
+            direction, leverage, data
+     from contract_perp_events
+     where contract_id = $1
+       and user_id = $2
+       and data->>'idempotencyKey' = $3
+       and event_type = any($4)
+     limit 1`,
+    [contractId, userId, idempotencyKey, eventTypes]
+  )
+
+const assertIdempotencyKey = (idempotencyKey: string | undefined) => {
+  if (
+    idempotencyKey !== undefined &&
+    (idempotencyKey.length !== 10 || !randomStringRegex.test(idempotencyKey))
+  ) {
+    throw new APIError(400, 'Invalid PERP idempotency key')
+  }
+}
+
 const diffForWrite = (
   before: PerpPosition[],
   after: PerpPosition[]
@@ -182,14 +315,46 @@ export const openOrAddPosition = async (
   userId: string,
   direction: PerpDirection,
   mana: number,
-  leverage: number
+  leverage: number,
+  idempotencyKey?: string
 ) => {
+  assertIdempotencyKey(idempotencyKey)
   if (!Number.isFinite(mana) || mana <= 0)
     throw new APIError(400, 'mana must be a finite positive number')
   if (!Number.isFinite(leverage) || leverage <= 0)
     throw new APIError(400, 'leverage must be a finite positive number')
 
   return runPerpTransaction(async (pgTrans) => {
+    if (idempotencyKey) {
+      const stored = await getIdempotentEvent(
+        pgTrans,
+        contractId,
+        userId,
+        idempotencyKey,
+        ['open', 'add']
+      )
+      if (stored) {
+        const data = asRecord(stored.data)
+        const request = asRecord(data?.request)
+        const response = asRecord(data?.response)
+        if (
+          request?.direction !== direction ||
+          finiteNumber(request.mana, 'request margin') !== mana ||
+          finiteNumber(request.leverage, 'request leverage') !== leverage
+        ) {
+          throw new APIError(
+            409,
+            'This PERP idempotency key was already used for a different trade'
+          )
+        }
+        return {
+          position: parseStoredPosition(response?.position),
+          event: rowToStoredEvent(stored),
+          isNewUniqueBettor: false,
+        }
+      }
+    }
+
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const now = Date.now()
 
@@ -378,6 +543,13 @@ export const openOrAddPosition = async (
         liquidationPrice: open.position.liquidationPrice,
         mana,
         leverage,
+        ...(idempotencyKey
+          ? {
+              idempotencyKey,
+              request: { direction, mana, leverage },
+              response: { position: open.position },
+            }
+          : {}),
       },
       ts: now,
       oraclePrice: price,
@@ -488,14 +660,70 @@ export const openOrAddPosition = async (
 export const closePosition = async (
   contractId: string,
   userId: string,
-  direction: PerpDirection
+  direction: PerpDirection,
+  idempotencyKey?: string,
+  expectedOpenedTime?: number
 ) => {
+  assertIdempotencyKey(idempotencyKey)
+  if (
+    expectedOpenedTime !== undefined &&
+    (!Number.isFinite(expectedOpenedTime) ||
+      !Number.isInteger(expectedOpenedTime) ||
+      expectedOpenedTime < 0)
+  ) {
+    throw new APIError(400, 'Invalid expected PERP position opening time')
+  }
+
   return runPerpTransaction(async (pgTrans) => {
+    if (idempotencyKey) {
+      const stored = await getIdempotentEvent(
+        pgTrans,
+        contractId,
+        userId,
+        idempotencyKey,
+        ['close']
+      )
+      if (stored) {
+        const data = asRecord(stored.data)
+        const request = asRecord(data?.request)
+        const response = asRecord(data?.response)
+        const storedExpectedOpenedTime =
+          request?.expectedOpenedTime === undefined
+            ? undefined
+            : finiteNumber(
+                request.expectedOpenedTime,
+                'expected position opening time'
+              )
+        if (
+          request?.direction !== direction ||
+          storedExpectedOpenedTime !== expectedOpenedTime
+        ) {
+          throw new APIError(
+            409,
+            'This PERP idempotency key was already used for a different close'
+          )
+        }
+        return {
+          payout: finiteNumber(response?.payout, 'close payout'),
+          pnl: finiteNumber(response?.pnl, 'close PnL'),
+        }
+      }
+    }
+
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
     const position = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
     )
     if (!position) throw new APIError(404, 'No open position to close')
+    if (
+      expectedOpenedTime !== undefined &&
+      position.openedTime !== expectedOpenedTime
+    ) {
+      throw new APIError(
+        409,
+        'This position changed after the page loaded. Refresh before closing it.'
+      )
+    }
 
     // Oracle freshness: a stale feed would let a user cherry-pick a favorable
     // cached price after watching the real market move. Mirror the open-side
@@ -532,6 +760,13 @@ export const closePosition = async (
         entryPrice: position.entryPrice,
         closePrice: price,
         originalCostBasis: position.originalCostBasis,
+        ...(idempotencyKey
+          ? {
+              idempotencyKey,
+              request: { direction, expectedOpenedTime },
+              response: { payout: result.payout, pnl: result.pnl },
+            }
+          : {}),
       },
       ts: now,
       oraclePrice: price,

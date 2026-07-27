@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
@@ -14,6 +14,7 @@ import {
   inferPriceDecimals,
 } from 'common/perps/format'
 import { formatMoney } from 'common/util/format'
+import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -64,6 +65,11 @@ export const PerpPositionPanel = (props: {
     [props.positions, user?.id, closedAt]
   )
   const [closing, setClosing] = useState<'long' | 'short' | null>(null)
+  const pendingCloses = useRef<
+    Partial<
+      Record<'long' | 'short', { fingerprint: string; idempotencyKey: string }>
+    >
+  >({})
   const [refresh, setRefresh] = useState(0)
   // Terminal events for the tombstone section: a liquidated or fully
   // auto-deleveraged position must NOT silently vanish from the page.
@@ -115,9 +121,20 @@ export const PerpPositionPanel = (props: {
     setClosing(direction)
     try {
       const position = positions.find((p) => p.direction === direction)
+      if (!position) throw new Error('Position is no longer open')
+      const fingerprint = [contract.id, direction, position.openedTime].join(
+        ':'
+      )
+      const request =
+        pendingCloses.current[direction]?.fingerprint === fingerprint
+          ? pendingCloses.current[direction]
+          : { fingerprint, idempotencyKey: randomString() }
+      pendingCloses.current[direction] = request
       const res = await api('close-perp-position', {
         contractId: contract.id,
         direction,
+        idempotencyKey: request.idempotencyKey,
+        expectedOpenedTime: position.openedTime,
       })
       toast.success(
         `Closed ${direction} — payout ${formatMoney(
@@ -137,6 +154,7 @@ export const PerpPositionPanel = (props: {
       })
       setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
       setRefresh((r) => r + 1)
+      delete pendingCloses.current[direction]
       // Pools changed; let the page re-poll the contract immediately.
       onAction?.()
     } catch (err: unknown) {
