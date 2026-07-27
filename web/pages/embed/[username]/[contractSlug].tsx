@@ -9,6 +9,7 @@ import {
 import {
   CPMMMultiContract,
   Contract,
+  PerpContract,
   contractPath,
   getMainBinaryMCAnswer,
   isBinaryMulti,
@@ -43,9 +44,12 @@ import {
 } from 'web/components/contract/contract-price'
 import { ContractSEO } from 'web/components/contract/contract-seo'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-sparkline'
+import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -283,6 +287,7 @@ function ContractSmolView(props: {
   const isPoll = outcomeType === 'POLL'
   const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
   const isDate = outcomeType === 'DATE'
+  const isPerp = outcomeType === 'PERP'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
   const user = useUser()
@@ -308,6 +313,9 @@ function ContractSmolView(props: {
           className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl lg:mb-4 lg:text-2xl"
           rel="noreferrer"
         >
+          {isPerp && (
+            <PerpMarketBadge className="mr-2 align-middle" label="Perpetual" />
+          )}
           {question}
         </a>
         {isBinary && (
@@ -340,6 +348,15 @@ function ContractSmolView(props: {
         {outcomeType === 'STONK' && (
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
+        {isPerp && (
+          <Col className="shrink-0 items-end gap-0">
+            <ContractStatusLabel
+              contract={contract}
+              className="text-ink-1000 text-2xl font-semibold sm:text-3xl"
+            />
+            <span className="text-ink-500 text-xs">oracle price</span>
+          </Col>
+        )}
       </Row>
       <div className="relative flex h-full min-h-0 w-full flex-1">
         {showQRCode && !showMultiChart && (
@@ -353,9 +370,11 @@ function ContractSmolView(props: {
             )}
           >
             {(w, h) =>
-              mainBinaryMCAnswer &&
-              contract.mechanism === 'cpmm-multi-1' &&
-              contract.outcomeType !== 'NUMBER' ? (
+              isPerp ? (
+                <PerpEmbedBody contract={contract} href={href} height={h} />
+              ) : mainBinaryMCAnswer &&
+                contract.mechanism === 'cpmm-multi-1' &&
+                contract.outcomeType !== 'NUMBER' ? (
                 <div className="flex h-full flex-col justify-center">
                   {showMultiChart && (
                     <div className="relative">
@@ -438,6 +457,36 @@ function ContractSmolView(props: {
           isCashContract={isCashContract}
         />
       </Row>
+    </Col>
+  )
+}
+
+function PerpEmbedBody(props: {
+  contract: PerpContract
+  href: string
+  height: number
+}) {
+  const { contract, href, height } = props
+  return (
+    <Col className="h-full min-h-0 justify-center gap-1">
+      <FeedPerpPriceSparkline
+        contract={contract}
+        height={Math.max(64, height - 32)}
+        className="my-0 min-h-0"
+        emptyState={
+          <div className="text-ink-400 flex min-h-[64px] flex-1 items-center justify-center text-center text-sm">
+            Price history will appear as the oracle feed updates.
+          </div>
+        }
+      />
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="text-primary-700 hover:text-primary-800 self-end text-sm font-medium hover:underline"
+      >
+        Open market to trade →
+      </a>
     </Col>
   )
 }
