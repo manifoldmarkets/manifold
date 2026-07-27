@@ -21,6 +21,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { api } from 'web/lib/api/api'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
+import { PerpOracleAttribution } from './perp-oracle-attribution'
 import { PerpPositionPanel } from './perp-position-panel'
 import { scheduleFreshBurst, usePerpPositions } from './use-perp-positions'
 
@@ -187,6 +188,18 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
       </Row>
 
       <PerpChart contract={contract} mode={chartMode} positions={positions} />
+      {/* Source credit for the feed — kept out of the market description so a
+          licence credit can't be edited away. See
+          common/perps/oracle-attribution.
+          Note: like everything below the price header on this page, this is
+          client-rendered, not in the SSR html. Fine for readers, but it does
+          mean the credit is absent for anything reading raw HTML. Fixing that
+          means restructuring the page, not moving this line — it renders no
+          earlier inside PerpChart. */}
+      <PerpOracleAttribution
+        feedId={contract.oracleFeedId}
+        asOfTime={contract.oraclePriceTime}
+      />
 
       <PerpBetPanel
         contract={contract}

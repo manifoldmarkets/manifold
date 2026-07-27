@@ -32,7 +32,6 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { useUser } from 'web/hooks/use-user'
-import { PerpOracleAttribution } from './perp-oracle-attribution'
 
 // numLiquidations / ghost only carry meaning in funding mode: liq counts
 // annotate a transfer, and the ghost is the current period accruing at
@@ -1067,13 +1066,6 @@ export const PerpChart = (props: {
               )}. Positive: longs pay shorts · negative: shorts pay longs.`}
         </span>
       )}
-      {/* Chart footnote, and for some feeds a licence obligation — see
-          common/perps/oracle-attribution. Lives here rather than in the
-          market description so it can't be edited away. */}
-      <PerpOracleAttribution
-        feedId={contract.oracleFeedId}
-        asOfTime={contract.oraclePriceTime}
-      />
     </Col>
   )
 }
