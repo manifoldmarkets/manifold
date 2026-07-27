@@ -636,10 +636,13 @@ export const executeNewBetResult = async (
   if (userUpdates.length) {
     // if negative balances, make sure the balance is higher than when they started
     for (const userUpdate of userUpdates) {
-      if (userUpdate.balance < -EPSILON) {
-        if (userUpdate.balance < balanceByUserId[userUpdate.id]) {
-          throw new APIError(403, 'Maker has insufficient balance.')
-        }
+      const startBalance = balanceByUserId[userUpdate.id]
+      if (
+        userUpdate.balance < -EPSILON &&
+        startBalance !== Number.MAX_SAFE_INTEGER &&
+        userUpdate.balance < startBalance
+      ) {
+        throw new APIError(403, 'Maker has insufficient balance.')
       }
     }
   }
