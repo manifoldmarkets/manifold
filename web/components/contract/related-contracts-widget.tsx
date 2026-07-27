@@ -15,6 +15,7 @@ import { track } from 'web/lib/service/analytics'
 import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { UserHovercard } from '../user/user-hovercard'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 
 export const SidebarRelatedContractsList = memo(function (props: {
   contracts: Contract[]
@@ -173,11 +174,14 @@ const SidebarRelatedContractCard = memo(function (props: {
           </Row>
         </UserHovercard>
 
-        <ContractStatusLabel
-          contract={contract}
-          chanceLabel
-          className="font-semibold"
-        />
+        <Row className="items-center gap-1">
+          {contract.outcomeType === 'PERP' && <PerpMarketBadge />}
+          <ContractStatusLabel
+            contract={contract}
+            chanceLabel
+            className="font-semibold"
+          />
+        </Row>
       </Row>
     </Link>
   )
@@ -259,6 +263,7 @@ const RelatedContractCard = memo(function (props: {
               {Math.round(probChange * 100)}% 1d
             </span>
           )}
+          {contract.outcomeType === 'PERP' && <PerpMarketBadge />}
           <ContractStatusLabel
             contract={contract}
             className="font-semibold"
