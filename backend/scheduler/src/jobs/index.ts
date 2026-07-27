@@ -61,6 +61,7 @@ import { updateStatsCore } from './update-stats'
 import { updatePerps } from './update-perps'
 import { updateOracleFeeds } from './update-oracle-feeds'
 import { updateEci } from './update-eci'
+import { updateOpenRouterShare } from './update-openrouter-share'
 import { updateTrumpApproval } from './update-trump-approval'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
@@ -187,6 +188,15 @@ export function createJobs() {
       'update-oracle-feeds',
       '*/15 * * * * *', // every 15 seconds (fast perp oracle tick)
       updateOracleFeeds
+    ),
+    createJob(
+      'update-openrouter-share',
+      // Hourly, not daily: each run appends a fresh-timestamped point for the
+      // trailing 7-day window (see the file header). At :50 so update-perps
+      // on the hour funds against a price minutes old rather than an hour.
+      // 24 calls/day against OpenRouter's 500/day account limit.
+      '0 50 * * * *',
+      updateOpenRouterShare
     ),
     // Daily jobs:
     createJob(

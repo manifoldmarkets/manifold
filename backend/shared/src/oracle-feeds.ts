@@ -4,6 +4,7 @@ import { fetchBtcUsdSpot } from './btc-price'
 import {
   BTC_USD_FEED_ID,
   ECI_FRONTIER_FEED_ID,
+  OPENROUTER_OPEN_WEIGHT_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
   UK_GRID_CARBON_FEED_ID,
 } from './oracle'
@@ -99,6 +100,30 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     maxPrice: 250,
     staleAfterMs: 26 * HOUR_MS,
     updatePeriodMs: DAY_MS,
+  },
+  {
+    id: OPENROUTER_OPEN_WEIGHT_FEED_ID,
+    description: 'Open-weight share of top-50 model tokens on OpenRouter (%)',
+    // 'daily' here means "own scheduler job, health-checked only" — it does
+    // NOT mean daily cadence. This job runs HOURLY, recomputing the trailing
+    // 7-day window and appending a point stamped at write time.
+    cadence: 'daily',
+    minPrice: 5,
+    maxPrice: 95,
+    // Sized for hourly writes of a 7-day trailing window, where a genuine
+    // move is a fraction of a percent. Upstream publishes whole UTC days, so
+    // the real step lands once a day and is diluted ~7x by the window;
+    // anything past 5% is far likelier a classification bug than news.
+    maxJumpFrac: 0.05,
+    staleAfterMs: 3 * HOUR_MS,
+    // HOUR_MS, not DAY_MS. This drives the contract's frozen funding period
+    // (max(1h, updatePeriodMs)), and hourly is what keeps holding a position
+    // continuously costly. Daily funding would be strictly worse here: the
+    // oracle-anchor gate that protects slow periods keys on a new POINT, not
+    // a new VALUE, and we write a point every hour — so a 24h period would
+    // free-run to an arbitrary time and let anyone flat at that instant pay
+    // nothing. See the §4 discussion in perps-openrouter-feed-handoff.md.
+    updatePeriodMs: HOUR_MS,
   },
 ]
 
