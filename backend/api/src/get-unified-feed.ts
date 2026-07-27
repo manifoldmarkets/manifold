@@ -128,7 +128,8 @@ async function fetchPersonalizedFeed(
   if (!hasCache) {
     const defaultContracts = await pg.map(
       `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts
-       where close_time > now()
+       where (close_time is null or close_time > now())
+         and resolution_time is null
          and visibility = 'public'
          and outcome_type != 'STONK'
          and outcome_type != 'BOUNTIED_QUESTION'
@@ -311,7 +312,8 @@ async function fetchTrendingFeed(
 ) {
   const contracts = await pg.map(
     `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts
-     where close_time > now()
+     where (close_time is null or close_time > now())
+       and resolution_time is null
        and visibility = 'public'
        and outcome_type != 'STONK'
        and outcome_type != 'BOUNTIED_QUESTION'
@@ -499,7 +501,6 @@ async function fetchBoostedContracts(
   return pg.map(
     `select ${contractColumnsToSelect} from contracts c
      where c.boosted = true
-       and c.close_time > now()
        and c.visibility = 'public'
        and is_valid_contract(c)
        ${blockedContractIds.length > 0 ? 'and c.id != ALL($1)' : ''}

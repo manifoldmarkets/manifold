@@ -68,7 +68,8 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
               and cc.data ->> 'replyToCommentId' is null
               and cc.data ->> 'betId' is null
               and cc.data ->> 'answerOutcome' is null
-              and c.close_time > now()
+              and (c.close_time is null or c.close_time > now())
+              and c.resolution_time is null
               and cc.user_id in (select follow_id
                                   from user_follows
                                   where user_id = $1)
@@ -105,7 +106,8 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
               and cc.data ->> 'replyToCommentId' is null
               and cc.data ->> 'betId' is null
               and cc.data ->> 'answerOutcome' is null
-              and c.close_time > now()
+              and (c.close_time is null or c.close_time > now())
+              and c.resolution_time is null
               and cc.likes > 0
               and ($3 is null or c.id not in ($3:list))
               and cc.comment_id not in (select comment_id
