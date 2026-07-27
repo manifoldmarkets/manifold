@@ -93,15 +93,16 @@ const loadStateForUpdate = async (
   const contractRow = await pgTrans.oneOrNone<{ data: PerpContract }>(
     selectContractForUpdateQuery(contractId)
   )
-  if (!contractRow)
-    throw new APIError(404, `Contract ${contractId} not found`)
+  if (!contractRow) throw new APIError(404, `Contract ${contractId} not found`)
   const contract = contractRow.data
   if (contract.mechanism !== 'perp')
     throw new APIError(400, `Contract ${contractId} is not a perp`)
   if (contract.isResolved)
     throw new APIError(400, `Contract ${contractId} is resolved`)
 
-  const positionRows = await pgTrans.any(selectPositionsForUpdateQuery(contractId))
+  const positionRows = await pgTrans.any(
+    selectPositionsForUpdateQuery(contractId)
+  )
   const positions = positionRows.map((r: any) => rowToPosition(r))
 
   return { contract, state: buildState(contract, positions) }
@@ -197,9 +198,9 @@ export const openOrAddPosition = async (
     ) {
       throw new APIError(
         400,
-        `Oracle feed is stale (age ${
-          now - contract.oraclePriceTime
-        }ms > ${contract.maxOraclePriceAgeMs}ms)`
+        `Oracle feed is stale (age ${now - contract.oraclePriceTime}ms > ${
+          contract.maxOraclePriceAgeMs
+        }ms)`
       )
     }
 
@@ -285,7 +286,10 @@ export const openOrAddPosition = async (
         `Post-trade solvency ${solv.toFixed(3)} < 1; try lower leverage or size`
       )
 
-    const { upserts, deletes } = diffForWrite(state.positions, open.state.positions)
+    const { upserts, deletes } = diffForWrite(
+      state.positions,
+      open.state.positions
+    )
 
     const event: PerpEvent = asEvent(contract, {
       userId,
@@ -305,17 +309,19 @@ export const openOrAddPosition = async (
       oraclePrice: price,
     })
 
-    // Count any auto-closed opposite notional toward volume so the market
-    // chart reflects the full round-trip (flip = close + open on one click).
-    const flipVolume = existingOpposite?.size ?? 0
+    // Cross-market discovery volume measures mana put at risk, matching the
+    // amount-based volume used by ordinary markets. Leveraged notional remains
+    // available in the event's sizeDelta, but counting it here would let a
+    // tiny 100x trade buy the same ranking weight as 100x the committed mana.
+    // A flip is a close plus an open, so count both margin legs.
+    const tradeVolume = mana + (existingOpposite?.originalCostBasis ?? 0)
     const contractPatch = removeUndefinedProps({
       poolLong: open.state.pool.L,
       poolShort: open.state.pool.S,
       lastBetTime: now,
       lastUpdatedTime: now,
-      volume: (contract.volume ?? 0) + mana * leverage + flipVolume,
-      volume24Hours:
-        (contract.volume24Hours ?? 0) + mana * leverage + flipVolume,
+      volume: (contract.volume ?? 0) + tradeVolume,
+      volume24Hours: (contract.volume24Hours ?? 0) + tradeVolume,
       // Only bump on a genuine first-time bettor. Previously this checked
       // `existingSame`, so a flip (existingOpposite set, existingSame unset)
       // would double-count the same user and drift the metadata used by
@@ -428,9 +434,9 @@ export const closePosition = async (
     ) {
       throw new APIError(
         400,
-        `Oracle feed is stale (age ${
-          now - contract.oraclePriceTime
-        }ms > ${contract.maxOraclePriceAgeMs}ms) — try again after the next update`
+        `Oracle feed is stale (age ${now - contract.oraclePriceTime}ms > ${
+          contract.maxOraclePriceAgeMs
+        }ms) — try again after the next update`
       )
     }
 
@@ -461,6 +467,8 @@ export const closePosition = async (
       poolShort: result.state.pool.S,
       lastBetTime: now,
       lastUpdatedTime: now,
+      volume: (contract.volume ?? 0) + position.originalCostBasis,
+      volume24Hours: (contract.volume24Hours ?? 0) + position.originalCostBasis,
     })
 
     // Credit user balance.
@@ -646,7 +654,9 @@ export const runOracleUpdate = async (
       poolShort: applied.finalState.pool.S,
       oraclePrice: newPrice,
       oraclePriceTime: nextOraclePriceTime,
-      lastUpdatedTime: ts,
+      // Price polling is infrastructure activity, not user activity. Only a
+      // liquidation/ADL transition should refresh discovery freshness.
+      lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
     })
 
     // Fast path: no liquidations and no ADL means no position changed, so
@@ -789,7 +799,6 @@ export const runFunding = async (
       poolShort: next.pool.S,
       lastFundingTime: ts,
       fundingRate,
-      lastUpdatedTime: ts,
     })
 
     const affectedUsers = Array.from(
@@ -849,7 +858,11 @@ export const resolvePerp = async (
   contractId: string,
   resolverId: string
 ): Promise<{
-  closedPositions: { userId: string; direction: PerpDirection; payout: number }[]
+  closedPositions: {
+    userId: string
+    direction: PerpDirection
+    payout: number
+  }[]
   residualPayout: number
   finalPrice: number
 }> => {
@@ -946,7 +959,10 @@ export const resolvePerp = async (
     }
 
     // Residual pool funds go to creator.
-    const residualPayout = Math.max(runningState.pool.L + runningState.pool.S, 0)
+    const residualPayout = Math.max(
+      runningState.pool.L + runningState.pool.S,
+      0
+    )
     if (residualPayout > 0) {
       await runTxnOutsideBetQueue(
         pgTrans,

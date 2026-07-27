@@ -20,7 +20,6 @@ import {
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { log, prefixedContractColumnsToSelect } from 'shared/utils'
 
-
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { convertPost } from 'common/top-level-post'
@@ -285,13 +284,26 @@ export const getContractTraders = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select cb.contract_id, count(distinct cb.user_id)::int as n
-       from contract_bets cb
-                join users u on cb.user_id = u.id
-       where cb.created_time >= millis_to_ts($1)
-         and u.is_bot = false
-          and cb.contract_id = ANY(ARRAY[$2])
-       group by cb.contract_id`,
+      `with user_trades as (
+         select contract_id, user_id
+         from contract_bets
+         where created_time >= millis_to_ts($1)
+           and contract_id = any($2)
+
+         union all
+
+         select contract_id, user_id
+         from contract_perp_events
+         where ts >= millis_to_ts($1)
+           and event_type in ('open', 'add', 'close')
+           and data->>'reason' is distinct from 'resolve-market'
+           and contract_id = any($2)
+       )
+       select ut.contract_id, count(distinct ut.user_id)::int as n
+       from user_trades ut
+       join users u on ut.user_id = u.id
+       where u.is_bot = false
+       group by ut.contract_id`,
       [since, inContractIds],
       (r) => [r.contract_id as string, r.n as number]
     )
@@ -332,7 +344,10 @@ export const computeContractScores = (
   const todayScore = likesToday + tradersToday
   const thisWeekScore = likesWeek + tradersWeek
   const wasCreatedToday = contract.createdTime > now - DAY_MS
-  const homePageScoreAdjustment = getActiveHomePageScoreAdjustment(contract, now)
+  const homePageScoreAdjustment = getActiveHomePageScoreAdjustment(
+    contract,
+    now
+  )
 
   const { createdTime, closeTime, isResolved, outcomeType, resolutionTime } =
     contract
@@ -518,10 +533,7 @@ export const computeContractScores = (
   }
 }
 
-const getActiveHomePageScoreAdjustment = (
-  contract: Contract,
-  now: number
-) => {
+const getActiveHomePageScoreAdjustment = (contract: Contract, now: number) => {
   const { homePageScoreAdjustment, homePageScoreAdjustmentExpiresAt } = contract
   if (homePageScoreAdjustment === undefined) return 0
   if (

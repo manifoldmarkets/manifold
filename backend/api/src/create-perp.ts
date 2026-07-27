@@ -6,6 +6,7 @@ import {
   PerpMechanism,
   nativeContractColumnsArray,
 } from 'common/contract'
+import { DEFAULT_CONVERSION_SCORE } from 'common/new-contract'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { HOUR_MS } from 'common/util/time'
@@ -93,10 +94,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   // not silently rewrite the economics of open positions). Assert the input
   // instead of trusting the arithmetic: a zero/absent updatePeriodMs would
   // produce a config that lies about itself.
-  if (
-    !Number.isFinite(feedDef.updatePeriodMs) ||
-    feedDef.updatePeriodMs <= 0
-  )
+  if (!Number.isFinite(feedDef.updatePeriodMs) || feedDef.updatePeriodMs <= 0)
     throw new APIError(
       500,
       `Feed "${oracleFeedId}" has an invalid updatePeriodMs (${feedDef.updatePeriodMs}) — fix the OracleFeedDef.`
@@ -183,7 +181,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       homePageScoreAdjustment: 0,
       dailyScore: 0,
       freshnessScore: 0,
-      conversionScore: 0,
+      conversionScore: DEFAULT_CONVERSION_SCORE,
       viewCount: 0,
       boosted: false,
       ...perp,
