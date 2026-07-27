@@ -75,10 +75,13 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
     )} margin at ${px(d.entryPrice)}`
   }
   if (txn.category === 'PERP_CLOSE_PAYOUT') {
+    const pnlNumber = Number(d.pnl ?? 0)
+    const pnl = Number.isFinite(pnlNumber) ? pnlNumber : 0
+    const pnlText = `${pnl >= 0 ? '+' : ''}${formatMoney(pnl)}`
     if (d.reason === 'adl') {
       return `Auto-deleveraged ${d.direction} at ${px(
         d.closePrice
-      )} — ${formatMoney(txn.amount)} margin returned`
+      )} — ${formatMoney(txn.amount)} margin returned, PnL ${pnlText}`
     }
     const verb =
       d.reason === 'flip'
@@ -86,10 +89,7 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
         : d.reason === 'resolve'
         ? 'Settled'
         : 'Closed'
-    const pnl = Number(d.pnl ?? 0)
-    return `${verb} ${d.direction} at ${px(d.closePrice)} — PnL ${
-      pnl >= 0 ? '+' : ''
-    }${formatMoney(pnl)}`
+    return `${verb} ${d.direction} at ${px(d.closePrice)} — PnL ${pnlText}`
   }
   if (txn.category === 'PERP_RESOLVE_RESIDUAL') {
     return `Residual pools returned to creator (settled at ${px(d.finalPrice)})`

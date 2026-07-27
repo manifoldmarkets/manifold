@@ -1,5 +1,5 @@
 import { applyFunding, computeFundingRate, getPositionValue } from './amm'
-import { fundingPerPeriod } from './pnl'
+import { fundingPerPeriod, getUserFacingPnlFromPayout } from './pnl'
 import { PerpPosition } from './position'
 
 const makePosition = (
@@ -63,5 +63,20 @@ describe('fundingPerPeriod', () => {
     expect(fundingPerPeriod(position, 55, f, L, 0)).toBe(0)
     // Deep underwater: value floors at 0 before and after funding.
     expect(fundingPerPeriod(position, 40, f, L, S)).toBe(0)
+  })
+})
+
+describe('getUserFacingPnlFromPayout', () => {
+  it('includes funding in realized profit and loss', () => {
+    expect(getUserFacingPnlFromPayout(115, 100)).toBe(15)
+    expect(getUserFacingPnlFromPayout(85, 100)).toBe(-15)
+    expect(getUserFacingPnlFromPayout(100, 100)).toBe(0)
+  })
+
+  it('returns zero instead of propagating invalid financial values', () => {
+    expect(getUserFacingPnlFromPayout(Number.NaN, 100)).toBe(0)
+    expect(getUserFacingPnlFromPayout(100, Number.POSITIVE_INFINITY)).toBe(0)
+    expect(getUserFacingPnlFromPayout(-1, 100)).toBe(0)
+    expect(getUserFacingPnlFromPayout(100, -1)).toBe(0)
   })
 })

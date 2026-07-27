@@ -36,6 +36,7 @@ import {
   PerpFundingEvent,
   PerpPosition,
 } from 'common/perps/position'
+import { getUserFacingPnlFromPayout } from 'common/perps/pnl'
 import {
   decideOracleTransition,
   getOracleFreshness,
@@ -486,12 +487,17 @@ export const openOrAddPosition = async (
     let closeEvent: PerpEvent | undefined
     let closePayout = 0
     let closePnl = 0
+    let closePricePnl = 0
     if (existingOpposite) {
       const closeRes = closePositionMath(workingState, existingOpposite, price)
       workingState = closeRes.state
       assertPerpStateSolvent(workingState, price)
       closePayout = closeRes.payout
-      closePnl = closeRes.pnl
+      closePnl = getUserFacingPnlFromPayout(
+        closeRes.payout,
+        existingOpposite.originalCostBasis
+      )
+      closePricePnl = closeRes.pnl
       closeEvent = asEvent(contract, {
         userId,
         eventType: 'close',
@@ -502,7 +508,8 @@ export const openOrAddPosition = async (
         originalCostBasisDelta: -existingOpposite.originalCostBasis,
         data: {
           payout: closeRes.payout,
-          pnl: closeRes.pnl,
+          pnl: closePnl,
+          pricePnl: closeRes.pnl,
           entryPrice: existingOpposite.entryPrice,
           closePrice: price,
           originalCostBasis: existingOpposite.originalCostBasis,
@@ -620,6 +627,7 @@ export const openOrAddPosition = async (
           data: {
             direction: existingOpposite.direction,
             pnl: closePnl,
+            pricePnl: closePricePnl,
             entryPrice: existingOpposite.entryPrice,
             closePrice: price,
             reason: 'flip',
@@ -731,9 +739,19 @@ export const closePosition = async (
             'This PERP idempotency key was already used for a different close'
           )
         }
+        const payout = finiteNumber(response?.payout, 'close payout')
+        const originalCostBasis =
+          typeof data?.originalCostBasis === 'number' &&
+          Number.isFinite(data.originalCostBasis) &&
+          data.originalCostBasis >= 0
+            ? data.originalCostBasis
+            : undefined
         return {
-          payout: finiteNumber(response?.payout, 'close payout'),
-          pnl: finiteNumber(response?.pnl, 'close PnL'),
+          payout,
+          pnl:
+            originalCostBasis === undefined
+              ? finiteNumber(response?.pnl, 'close PnL')
+              : getUserFacingPnlFromPayout(payout, originalCostBasis),
         }
       }
     }
@@ -763,6 +781,10 @@ export const closePosition = async (
     const price = contract.oraclePrice
     const result = closePositionMath(state, position, price)
     assertPerpStateSolvent(result.state, price)
+    const userPnl = getUserFacingPnlFromPayout(
+      result.payout,
+      position.originalCostBasis
+    )
 
     const event: PerpEvent = asEvent(contract, {
       userId,
@@ -774,7 +796,8 @@ export const closePosition = async (
       originalCostBasisDelta: -position.originalCostBasis,
       data: {
         payout: result.payout,
-        pnl: result.pnl,
+        pnl: userPnl,
+        pricePnl: result.pnl,
         entryPrice: position.entryPrice,
         closePrice: price,
         originalCostBasis: position.originalCostBasis,
@@ -782,7 +805,7 @@ export const closePosition = async (
           ? {
               idempotencyKey,
               request: { direction, expectedOpenedTime },
-              response: { payout: result.payout, pnl: result.pnl },
+              response: { payout: result.payout, pnl: userPnl },
             }
           : {}),
       },
@@ -813,7 +836,8 @@ export const closePosition = async (
           token: 'M$',
           data: {
             direction,
-            pnl: result.pnl,
+            pnl: userPnl,
+            pricePnl: result.pnl,
             entryPrice: position.entryPrice,
             closePrice: price,
             reason: 'close',
@@ -841,7 +865,7 @@ export const closePosition = async (
       ].join(';\n')
     )
 
-    return { payout: result.payout, pnl: result.pnl }
+    return { payout: result.payout, pnl: userPnl }
   })
 }
 
@@ -942,6 +966,8 @@ const buildAdlEvents = (
           sizeBefore: position.size,
           sizeAfter: 0,
           payout,
+          pnl: getUserFacingPnlFromPayout(payout, position.originalCostBasis),
+          originalCostBasis: position.originalCostBasis,
           reason: 'factor-zero-settlement',
         },
         ts,
@@ -997,7 +1023,7 @@ const payAdlSettlements = async (
         token: 'M$',
         data: {
           direction: position.direction,
-          pnl: 0,
+          pnl: getUserFacingPnlFromPayout(payout, position.originalCostBasis),
           entryPrice: position.entryPrice,
           closePrice: oraclePrice,
           reason: 'adl',
@@ -1478,6 +1504,10 @@ export const resolvePerp = async (
       const res = closePositionMath(runningState, p, finalPrice)
       runningState = res.state
       assertPerpStateSolvent(runningState, finalPrice)
+      const userPnl = getUserFacingPnlFromPayout(
+        res.payout,
+        p.originalCostBasis
+      )
       closedPositions.push({
         userId: p.userId,
         direction: p.direction,
@@ -1495,7 +1525,9 @@ export const resolvePerp = async (
           originalCostBasisDelta: -p.originalCostBasis,
           data: {
             payout: res.payout,
-            pnl: res.pnl,
+            pnl: userPnl,
+            pricePnl: res.pnl,
+            originalCostBasis: p.originalCostBasis,
             resolvedAt: finalPrice,
             reason: 'resolve-market',
           },
@@ -1517,7 +1549,8 @@ export const resolvePerp = async (
             token: 'M$',
             data: {
               direction: p.direction,
-              pnl: res.pnl,
+              pnl: userPnl,
+              pricePnl: res.pnl,
               entryPrice: p.entryPrice,
               closePrice: finalPrice,
               reason: 'resolve',

@@ -259,6 +259,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
           )
         }
         if (e.eventType === 'adl') {
+          const pnl = e.pnl ?? 0
           return (
             <Row
               key={e.id}
@@ -269,6 +270,15 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
               </span>
               <span className="text-ink-700 tabular-nums">
                 {formatMoney(e.payout ?? 0)} margin returned
+              </span>
+              <span
+                className={clsx(
+                  'font-semibold tabular-nums',
+                  pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                )}
+              >
+                PnL {pnl >= 0 ? '+' : ''}
+                {formatMoney(pnl)}
               </span>
               <span className="text-ink-500 tabular-nums">
                 at {formatPrice(e.oraclePrice, decimals)}

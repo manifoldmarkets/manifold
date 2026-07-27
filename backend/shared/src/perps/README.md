@@ -19,7 +19,9 @@ explicit (see "Integration points" below).
   - `closePosition(contractId, userId, direction, idempotencyKey?, expectedOpenedTime?)`
     — closes a user's position at the current oracle price, credits/debits mana, and
     writes a `close` event. The optional opening timestamp prevents a stale client
-    from closing a replacement position.
+    from closing a replacement position. Receipt/event `pnl` is settlement payout
+    minus original deposited margin, so it includes funding; `pricePnl` preserves
+    the paper's price-only π for diagnostics.
   - `runOracleUpdate(contract)` — applies liquidations + ADL at the latest oracle
     price. Called by the hourly scheduler.
   - `runFunding(contract)` — applies one funding period to all open positions.

@@ -54,6 +54,26 @@ export const getUnrealizedPnl = (position: PerpPosition, price: number) =>
 export const getUserFacingPnl = (position: PerpPosition, price: number) =>
   getPositionValue(position, price) - position.originalCostBasis
 
+/**
+ * Realized PnL shown on close receipts, history, and ledger rows. Settlement
+ * payout already contains every funding transfer, so compare it with the
+ * margin the user actually deposited rather than the funding-scaled basis.
+ */
+export const getUserFacingPnlFromPayout = (
+  payout: number,
+  originalCostBasis: number
+) => {
+  if (
+    !Number.isFinite(payout) ||
+    payout < 0 ||
+    !Number.isFinite(originalCostBasis) ||
+    originalCostBasis < 0
+  )
+    return 0
+  const pnl = payout - originalCostBasis
+  return Number.isFinite(pnl) ? pnl : 0
+}
+
 /** Percentage form, using originalCostBasis as the denominator. */
 export const getUserFacingPnlPercent = (
   position: PerpPosition,
