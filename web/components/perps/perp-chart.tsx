@@ -557,6 +557,25 @@ export const PerpChart = (props: {
   const nowX = overlayGeom ? xScale(overlayGeom.now) : 0
   const clipId = `perp-chart-clip-${contract.id}`
 
+  // Cumulative funding pinned to the carry line's endpoint — the answer to
+  // "what does holding to here cost". Rendered only where the per-event
+  // diamonds are suppressed: at short horizons the diamonds already say it
+  // and the cumulative sum is dust. Tod 2026-07-27: label the END with the
+  // cumulative amount so the long dashed climb reads as accrued cost, not a
+  // price forecast.
+  const carryEnd =
+    overlayGeom &&
+    overlayGeom.carry.length > 0 &&
+    overlayGeom.fundingMarks.length === 0 &&
+    liveFundingRate !== 0
+      ? overlayGeom.carry[overlayGeom.carry.length - 1]
+      : null
+  const carryEndPct = carryEnd
+    ? Math.abs(liveFundingRate) *
+      (overlayGeom!.horizon / FUNDING_PERIOD_MS) *
+      100
+    : 0
+
   return (
     <Col className="gap-1.5">
       {mode === 'price' && (
@@ -829,6 +848,33 @@ export const PerpChart = (props: {
             strokeWidth={1.5}
             className="text-primary-500"
           />
+          {carryEnd && (
+            <g className="text-ink-600">
+              <text
+                x={Math.min(xScale(carryEnd.ts) - 6, width - 14)}
+                y={Math.min(
+                  Math.max(yScale(carryEnd.value) - 8, 20),
+                  height - 26
+                )}
+                fontSize={10}
+                textAnchor="end"
+                fill="currentColor"
+                opacity={0.85}
+              >
+                {liveFundingRate > 0 ? 'longs' : 'shorts'} pay ≈
+                {carryEndPct < 1
+                  ? carryEndPct.toFixed(2)
+                  : carryEndPct.toFixed(1)}
+                % to here
+                <title>
+                  Cumulative funding over this projection at today&apos;s rate (
+                  {(Math.abs(liveFundingRate) * 100).toFixed(3)}%/hr of margin).
+                  The rate floats hourly, so treat this as a yardstick, not a
+                  bill.
+                </title>
+              </text>
+            </g>
+          )}
           {hovered && (
             <g className="text-primary-500 pointer-events-none">
               <line
