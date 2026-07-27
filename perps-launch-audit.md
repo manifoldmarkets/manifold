@@ -1,9 +1,10 @@
 # PERP launch integration audit
 
-Status: 2026-07-28  
-Branch: `perps-launch`  
-Operational source of truth: `perps-launch-runbook.md`  
-Executable launch definition: `backend/shared/src/perps/launch-manifest.ts`
+- Status: 2026-07-28
+- Branch: `perps-launch`
+- Operational source of truth: `perps-launch-runbook.md`
+- Executable launch definition:
+  `backend/shared/src/perps/launch-manifest.ts`
 
 This is the durable status document for the PERP launch review. It covers the
 existing Manifold product surfaces, discovery behavior, accounting and
