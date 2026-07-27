@@ -7,7 +7,7 @@ import { DAY_MS } from 'common/util/time'
 import { fetchOpenRouterRankings } from 'shared/openrouter-tokens'
 import {
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
-  upsertOraclePrices,
+  insertOraclePrices,
 } from 'shared/oracle'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
@@ -51,7 +51,9 @@ if (require.main === module)
     const byDate: Record<string, typeof rankings.rows> = {}
     for (const r of rankings.rows) (byDate[r.date] ??= []).push(r)
     const dates = Object.keys(byDate).sort()
-    log(`covering ${dates.length} days: ${dates[0]}..${dates[dates.length - 1]}`)
+    log(
+      `covering ${dates.length} days: ${dates[0]}..${dates[dates.length - 1]}`
+    )
 
     const points: { ts: number; price: number }[] = []
     const unclassifiedSeen = new Set<string>()
@@ -84,15 +86,19 @@ if (require.main === module)
       const last = points[points.length - 1]
       const prices = points.map((p) => p.price)
       log(
-        `first: ${new Date(first.ts).toISOString()} = ${first.price.toFixed(2)}%`
+        `first: ${new Date(first.ts).toISOString()} = ${first.price.toFixed(
+          2
+        )}%`
       )
-      log(`last:  ${new Date(last.ts).toISOString()} = ${last.price.toFixed(2)}%`)
+      log(
+        `last:  ${new Date(last.ts).toISOString()} = ${last.price.toFixed(2)}%`
+      )
       log(
         `range: ${Math.min(...prices).toFixed(2)}% .. ${Math.max(
           ...prices
         ).toFixed(2)}%`
       )
     }
-    await upsertOraclePrices(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, points)
+    await insertOraclePrices(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, points)
     log(`backfilled ${points.length} ${OPENROUTER_OPEN_WEIGHT_FEED_ID} points`)
   })

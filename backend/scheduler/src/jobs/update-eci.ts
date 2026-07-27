@@ -5,7 +5,7 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { eciFrontierOnDate, fetchEciModels } from 'shared/eci'
-import { ECI_FRONTIER_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { ECI_FRONTIER_FEED_ID, insertOraclePrices } from 'shared/oracle'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
@@ -29,15 +29,28 @@ export const updateEci = async () => {
     return
   }
 
-  const point = { ts: today.startOf('day').valueOf(), price: frontier }
+  const point = { ts: Date.now(), price: frontier }
   const feed = getOracleFeed(ECI_FRONTIER_FEED_ID)
-  const rejection = feed ? validateOraclePoint(feed, null, point) : null
+  const prev = await pg.oneOrNone<{ ts: string; price: number | string }>(
+    `select ts, price from oracle_prices where feed_id = $1
+     order by ts desc limit 1`,
+    [ECI_FRONTIER_FEED_ID]
+  )
+  const rejection = feed
+    ? validateOraclePoint(
+        feed,
+        prev
+          ? { ts: new Date(prev.ts).getTime(), price: Number(prev.price) }
+          : null,
+        point
+      )
+    : `missing OracleFeedDef for ${ECI_FRONTIER_FEED_ID}`
   if (rejection) {
     log.error(`[eci] rejected frontier point ${frontier} — ${rejection}`)
     return
   }
 
-  await upsertOraclePrices(pg, ECI_FRONTIER_FEED_ID, [point])
+  await insertOraclePrices(pg, ECI_FRONTIER_FEED_ID, [point])
   await applyOraclePointToLivePerps(pg, ECI_FRONTIER_FEED_ID, point)
-  log(`[eci] upserted frontier ${frontier.toFixed(2)} for ${todayStr}`)
+  log(`[eci] inserted frontier ${frontier.toFixed(2)} for ${todayStr}`)
 }

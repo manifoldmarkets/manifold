@@ -5,7 +5,7 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { log } from 'shared/utils'
-import { MANIFOLD_DAU_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { MANIFOLD_DAU_FEED_ID, insertOraclePrices } from 'shared/oracle'
 import { runScript } from './run-script'
 
 if (require.main === module)
@@ -22,6 +22,6 @@ if (require.main === module)
         .valueOf(),
       price: Number(r.dav),
     }))
-    await upsertOraclePrices(pg, MANIFOLD_DAU_FEED_ID, points)
+    await insertOraclePrices(pg, MANIFOLD_DAU_FEED_ID, points)
     log(`backfilled ${points.length} ${MANIFOLD_DAU_FEED_ID} oracle points`)
   })

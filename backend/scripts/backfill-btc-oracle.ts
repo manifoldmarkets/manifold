@@ -1,4 +1,4 @@
-import { BTC_USD_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { BTC_USD_FEED_ID, insertOraclePrices } from 'shared/oracle'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
@@ -25,7 +25,9 @@ type Candle = [
 ]
 
 const fetchCandles = async (startMs: number, endMs: number) => {
-  const url = new URL('https://api.exchange.coinbase.com/products/BTC-USD/candles')
+  const url = new URL(
+    'https://api.exchange.coinbase.com/products/BTC-USD/candles'
+  )
   url.searchParams.set('granularity', String(GRANULARITY_S))
   url.searchParams.set('start', new Date(startMs).toISOString())
   url.searchParams.set('end', new Date(endMs).toISOString())
@@ -55,13 +57,15 @@ if (require.main === module)
         if (isFinite(close) && close > 0)
           points.push({ ts: closeTimeMs, price: close })
       }
-      log(`fetched ${candles.length} candles ending ${new Date(to).toISOString()}`)
+      log(
+        `fetched ${candles.length} candles ending ${new Date(to).toISOString()}`
+      )
       // Public endpoint is rate-limited (~10 req/s); be polite.
       await new Promise((r) => setTimeout(r, 300))
     }
 
     points.sort((a, b) => a.ts - b.ts)
-    log(`upserting ${points.length} hourly closes`)
-    await upsertOraclePrices(pg, BTC_USD_FEED_ID, points)
+    log(`inserting ${points.length} hourly closes`)
+    await insertOraclePrices(pg, BTC_USD_FEED_ID, points)
     log(`backfilled ${points.length} ${BTC_USD_FEED_ID} oracle points`)
   })

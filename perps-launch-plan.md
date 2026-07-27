@@ -91,7 +91,7 @@ export type OracleFeed = {
 ```
 
 **New job `update-oracle-feeds`, `*/15 * * * * *` (every 15s):**
-1. For each `fast` feed: `fetchLatest` → sanity/jump check → `upsertOraclePrices` → for each
+1. For each `fast` feed: `fetchLatest` → sanity/jump check → `insertOraclePrices` → for each
    live perp on that feed, `runOracleUpdate(contractId, price, ts)`. Skip entirely if the price
    is unchanged from `contract.oraclePrice` (no-op ticks must not write).
 2. Feed health: if latest stored point is older than `staleAfterMs`, `log.error` every tick

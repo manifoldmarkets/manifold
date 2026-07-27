@@ -1,6 +1,6 @@
 import { createPerp } from 'api/create-perp'
 import { APIError } from 'common/api/utils'
-import { upsertOraclePrices } from 'shared/oracle'
+import { insertOraclePrices } from 'shared/oracle'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import {
   closePosition,
@@ -102,7 +102,7 @@ if (require.main === module)
     // ---------------- Phase B: forced liquidation ----------------
     log('=== B. forced liquidation + notification ===')
     const feedB = `drill-liq-${STAMP}`
-    await upsertOraclePrices(pg, feedB, [
+    await insertOraclePrices(pg, feedB, [
       { ts: Date.now() - 60_000, price: 100 },
       { ts: Date.now(), price: 100 },
     ])
@@ -114,7 +114,10 @@ if (require.main === module)
        where contract_id = $1 and user_id = $2 and direction = 'long'`,
       [m1, GENZY]
     )
-    check(!!posB && Number(posB.size) === 10000, 'B: 50x long opened (10k notional)')
+    check(
+      !!posB && Number(posB.size) === 10000,
+      'B: 50x long opened (10k notional)'
+    )
     check(
       !!posB && Math.abs(Number(posB.liquidation_price) - 98) < 1e-6,
       'B: liquidation price = 98'
@@ -127,10 +130,12 @@ if (require.main === module)
     )
 
     const tsB = Date.now()
-    await upsertOraclePrices(pg, feedB, [{ ts: tsB, price: 97.5 }])
+    await insertOraclePrices(pg, feedB, [{ ts: tsB, price: 97.5 }])
     const resB = await runOracleUpdate(m1, 97.5, tsB)
     check(
-      !!resB && resB.liquidated.length === 1 && resB.liquidated[0].userId === GENZY,
+      !!resB &&
+        resB.liquidated.length === 1 &&
+        resB.liquidated[0].userId === GENZY,
       'B: one liquidation, right user'
     )
     const poolAfterLiq = await pg.one(
@@ -173,7 +178,7 @@ if (require.main === module)
     // ---------------- Phase C: engineered ADL ----------------
     log('=== C. engineered ADL + notification ===')
     const feedC = `drill-adl-${STAMP}`
-    await upsertOraclePrices(pg, feedC, [{ ts: Date.now(), price: 100 }])
+    await insertOraclePrices(pg, feedC, [{ ts: Date.now(), price: 100 }])
     const m2 = await makeMarket('adl', feedC, {
       subsidyLong: 50,
       subsidyShort: 50,
@@ -183,7 +188,7 @@ if (require.main === module)
     await openOrAddPosition(m2, DEVZY, 'short', 100, 2) // 200 notional @ 100
 
     const tsC = Date.now()
-    await upsertOraclePrices(pg, feedC, [{ ts: tsC, price: 130 }])
+    await insertOraclePrices(pg, feedC, [{ ts: tsC, price: 130 }])
     const resC = await runOracleUpdate(m2, 130, tsC)
     // E_long = 0.3 * 10000 = 3000 > S - C_short. Expect factor << 1.
     check(
@@ -219,7 +224,9 @@ if (require.main === module)
       [GENZY, m2]
     )
     check(
-      !!adlNotif && adlNotif.text.includes('->') && adlNotif.text.includes('reduced'),
+      !!adlNotif &&
+        adlNotif.text.includes('->') &&
+        adlNotif.text.includes('reduced'),
       'C: ADL notification with before->after sizes',
       adlNotif?.text?.slice(0, 140) ?? 'no notification row'
     )
@@ -263,7 +270,7 @@ if (require.main === module)
     // ---------------- Phase E: freshness gate ----------------
     log('=== E. freshness gate (stale feed blocks open AND close) ===')
     const feedE = `drill-stale-${STAMP}`
-    await upsertOraclePrices(pg, feedE, [{ ts: Date.now(), price: 100 }])
+    await insertOraclePrices(pg, feedE, [{ ts: Date.now(), price: 100 }])
     const m3 = await makeMarket('stale-gate', feedE, {
       maxOraclePriceAgeMs: 15_000,
     })
@@ -289,7 +296,7 @@ if (require.main === module)
       [m1]
     )
     const tsF = Date.now()
-    await upsertOraclePrices(pg, feedB, [{ ts: tsF, price: 97.6 }])
+    await insertOraclePrices(pg, feedB, [{ ts: tsF, price: 97.6 }])
     const results = await Promise.allSettled([
       openOrAddPosition(m1, GENZY, 'long', 100, 3),
       openOrAddPosition(m1, GENZY, 'long', 100, 3), // concurrent add

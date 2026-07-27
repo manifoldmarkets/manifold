@@ -1,4 +1,4 @@
-import { upsertOraclePrices } from 'shared/oracle'
+import { insertOraclePrices } from 'shared/oracle'
 import {
   ORACLE_FEEDS,
   OracleFeedDef,
@@ -43,7 +43,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
     let latest = prev
     if (feed.fetchRecent) {
       // Batch sources publish out of order (NESO settles actuals in late
-      // batches), so upsert the whole window — idempotent on (feed_id, ts) —
+      // batches), so insert the whole window — idempotent on (feed_id, ts) —
       // rather than sampling the newest point and permanently dropping any
       // block that finalized after its successor. Row growth is bounded by
       // the source's block cadence, not the tick rate, so shouldWrite's
@@ -63,7 +63,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
         }
       }
       if (valid.length > 0) {
-        await upsertOraclePrices(pg, feed.id, valid)
+        await insertOraclePrices(pg, feed.id, valid)
         const newest = valid[valid.length - 1]
         if (!latest || newest.ts > latest.ts) latest = newest
       }
@@ -78,7 +78,7 @@ const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {
             ).toISOString()} — ${rejection}`
           )
         } else if (shouldWrite(feed, prev, point)) {
-          await upsertOraclePrices(pg, feed.id, [point])
+          await insertOraclePrices(pg, feed.id, [point])
           latest = point
         }
       }

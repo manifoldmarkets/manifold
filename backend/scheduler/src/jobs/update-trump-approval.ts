@@ -1,31 +1,28 @@
 import * as dayjs from 'dayjs'
-import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
+import * as utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-import { TRUMP_APPROVAL_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { TRUMP_APPROVAL_FEED_ID, insertOraclePrices } from 'shared/oracle'
+import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
+import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   computeRollingAverages,
   fetchTrumpApprovalPolls,
   TRUMP_APPROVAL_WINDOW_DAYS,
 } from 'shared/trump-approval'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 // Fetch enough poll history to fully cover today's trailing window, plus a
 // safety buffer for long fielding periods (some polls span 2+ weeks).
 const FETCH_LOOKBACK_DAYS = TRUMP_APPROVAL_WINDOW_DAYS + 14
 
-// Only ever writes a single oracle point, for today, using whatever polls are
-// available at run time. Past days are treated as immutable: perps have
-// already liquidated / funded / settled trades against those prices, and
-// silently revising them after the fact would desync the chart from the
-// engine's history. If a poll is late-reported with an end_date in a prior
-// day's window, that poll will still influence today's average (because it
-// falls inside today's trailing window) — we just don't retroactively change
-// prior days.
+// Writes one observation of today's rolling value, stamped when it becomes
+// available to the market. Corrections append another observation instead of
+// pretending the revised value was tradable from midnight or rewriting a
+// point that liquidations/funding may already have consumed.
 export const updateTrumpApproval = async () => {
   const pg = createSupabaseDirectClient()
 
@@ -43,13 +40,37 @@ export const updateTrumpApproval = async () => {
     )
     return
   }
-  const [point] = points
+
+  const [computedPoint] = points
+  const point = { ...computedPoint, ts: Date.now() }
+  const feed = getOracleFeed(TRUMP_APPROVAL_FEED_ID)
+  const prev = await pg.oneOrNone<{ ts: string; price: number | string }>(
+    `select ts, price from oracle_prices where feed_id = $1
+     order by ts desc limit 1`,
+    [TRUMP_APPROVAL_FEED_ID]
+  )
+  const rejection = feed
+    ? validateOraclePoint(
+        feed,
+        prev
+          ? { ts: new Date(prev.ts).getTime(), price: Number(prev.price) }
+          : null,
+        point
+      )
+    : `missing OracleFeedDef for ${TRUMP_APPROVAL_FEED_ID}`
+  if (rejection) {
+    log.error(
+      `[trump-approval] rejected ${point.price.toFixed(2)} — ${rejection}`
+    )
+    return
+  }
+
   log(
     `today's ${TRUMP_APPROVAL_WINDOW_DAYS}-day rolling Trump approval average: ${point.price.toFixed(
       2
     )} (${new Date(point.ts).toISOString()})`
   )
-  await upsertOraclePrices(pg, TRUMP_APPROVAL_FEED_ID, [point])
+  await insertOraclePrices(pg, TRUMP_APPROVAL_FEED_ID, [point])
   await applyOraclePointToLivePerps(pg, TRUMP_APPROVAL_FEED_ID, point)
-  log(`upserted 1 ${TRUMP_APPROVAL_FEED_ID} oracle point for ${today}`)
+  log(`inserted 1 ${TRUMP_APPROVAL_FEED_ID} oracle point for ${today}`)
 }

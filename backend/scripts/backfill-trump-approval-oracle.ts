@@ -5,7 +5,7 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { log } from 'shared/utils'
-import { TRUMP_APPROVAL_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { TRUMP_APPROVAL_FEED_ID, insertOraclePrices } from 'shared/oracle'
 import {
   computeRollingAverages,
   fetchTrumpApprovalPolls,
@@ -30,9 +30,7 @@ if (require.main === module)
       .tz(TRUMP_INAUGURATION_DATE, 'America/Los_Angeles')
       .add(TRUMP_APPROVAL_WINDOW_DAYS - 1, 'day')
       .format('YYYY-MM-DD')
-    const toDay = dayjs
-      .tz(dayjs(), 'America/Los_Angeles')
-      .format('YYYY-MM-DD')
+    const toDay = dayjs.tz(dayjs(), 'America/Los_Angeles').format('YYYY-MM-DD')
 
     const points = computeRollingAverages(polls, fromDay, toDay)
     log(
@@ -40,12 +38,16 @@ if (require.main === module)
     )
     if (points.length > 0) {
       log(
-        `first point: ${new Date(points[0].ts).toISOString()} = ${points[0].price.toFixed(2)}`
+        `first point: ${new Date(
+          points[0].ts
+        ).toISOString()} = ${points[0].price.toFixed(2)}`
       )
       log(
-        `last point: ${new Date(points[points.length - 1].ts).toISOString()} = ${points[points.length - 1].price.toFixed(2)}`
+        `last point: ${new Date(
+          points[points.length - 1].ts
+        ).toISOString()} = ${points[points.length - 1].price.toFixed(2)}`
       )
     }
-    await upsertOraclePrices(pg, TRUMP_APPROVAL_FEED_ID, points)
+    await insertOraclePrices(pg, TRUMP_APPROVAL_FEED_ID, points)
     log(`backfilled ${points.length} ${TRUMP_APPROVAL_FEED_ID} oracle points`)
   })

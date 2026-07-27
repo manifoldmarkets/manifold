@@ -5,7 +5,7 @@ import {
 import { fetchOpenRouterRankings } from 'shared/openrouter-tokens'
 import {
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
-  upsertOraclePrices,
+  insertOraclePrices,
 } from 'shared/oracle'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -20,12 +20,11 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 // point stamped at Date.now() — never at a day boundary. Three things follow
 // from that, and all three are load-bearing:
 //
-//  1. Nothing is ever overwritten. upsertOraclePrices conflicts on
-//     (feed_id, ts) and DOES UPDATE the price, so re-asserting a day-boundary
-//     timestamp would silently rewrite published history. A fresh ts per run
-//     makes every point an immutable measurement of what the window looked
-//     like at that instant. When OpenRouter restates an earlier day, the
-//     correction simply flows into the next point.
+//  1. Nothing is ever overwritten. insertOraclePrices leaves an existing
+//     (feed_id, ts) unchanged, and a fresh ts per run makes every point an
+//     immutable measurement of what the window looked like at that instant.
+//     When OpenRouter restates an earlier day, the correction simply flows
+//     into the next point.
 //  2. We pick up a new upstream day within an hour of it landing instead of
 //     at a fixed daily time, so the moment the index moves isn't a schedule
 //     anyone can read off a clock and front-run.
@@ -97,10 +96,10 @@ export const updateOpenRouterShare = async () => {
     return
   }
 
-  await upsertOraclePrices(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, [point])
+  await insertOraclePrices(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, [point])
   await applyOraclePointToLivePerps(pg, OPENROUTER_OPEN_WEIGHT_FEED_ID, point)
   log(
-    `[openrouter] upserted ${result.share.toFixed(3)}% open-weight share ` +
+    `[openrouter] inserted ${result.share.toFixed(3)}% open-weight share ` +
       `over ${result.dates[0]}..${result.dates[result.dates.length - 1]} ` +
       `(${result.dates.length}d, as_of ${rankings.asOf ?? 'unknown'})`
   )

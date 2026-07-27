@@ -1,5 +1,5 @@
 import { SupabaseDirectClient } from './supabase/init'
-import { bulkUpsert } from './supabase/utils'
+import { bulkInsertQuery } from './supabase/utils'
 
 export const MANIFOLD_DAU_FEED_ID = 'manifold-dau'
 export const TRUMP_APPROVAL_FEED_ID = 'trump-approval-rating'
@@ -8,19 +8,21 @@ export const BTC_USD_FEED_ID = 'btc-usd'
 export const UK_GRID_CARBON_FEED_ID = 'uk-grid-carbon'
 export const OPENROUTER_OPEN_WEIGHT_FEED_ID = 'openrouter-open-weight-share'
 
-// Upsert oracle price points for a feed. Idempotent on (feed_id, ts) — safe
-// to re-run with the same inputs. Timestamps are epoch millis; converted to
-// ISO strings so postgres can coerce to timestamptz.
-export const upsertOraclePrices = async (
+// Append oracle price points for a feed. Published history is immutable:
+// duplicate (feed_id, ts) values remain unchanged even if a source later
+// restates them. Timestamps are epoch millis; converted to ISO strings so
+// postgres can coerce them to timestamptz.
+export const insertOraclePrices = async (
   pg: SupabaseDirectClient,
   feedId: string,
   points: { ts: number; price: number }[]
 ) => {
   if (points.length === 0) return
-  const rows = points.map((p) => ({
+  const rows = points.map((point) => ({
     feed_id: feedId,
-    ts: new Date(p.ts).toISOString(),
-    price: p.price,
+    ts: new Date(point.ts).toISOString(),
+    price: point.price,
   }))
-  await bulkUpsert(pg, 'oracle_prices', ['feed_id', 'ts'], rows)
+  const query = bulkInsertQuery('oracle_prices', rows, false)
+  await pg.none(`${query} on conflict (feed_id, ts) do nothing`)
 }

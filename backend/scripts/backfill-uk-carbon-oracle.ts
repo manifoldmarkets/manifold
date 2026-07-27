@@ -1,4 +1,4 @@
-import { UK_GRID_CARBON_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { UK_GRID_CARBON_FEED_ID, insertOraclePrices } from 'shared/oracle'
 import { fetchIntensityBlocks, toNesoIso } from 'shared/uk-grid-carbon'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
@@ -27,11 +27,9 @@ if (require.main === module)
           ts: Math.min(Date.parse(b.to), now),
           price: b.intensity.actual as number,
         }))
-      await upsertOraclePrices(pg, UK_GRID_CARBON_FEED_ID, points)
+      await insertOraclePrices(pg, UK_GRID_CARBON_FEED_ID, points)
       total += points.length
-      log(
-        `chunk ending ${new Date(to).toISOString()}: ${points.length} blocks`
-      )
+      log(`chunk ending ${new Date(to).toISOString()}: ${points.length} blocks`)
       await new Promise((r) => setTimeout(r, 300))
     }
 

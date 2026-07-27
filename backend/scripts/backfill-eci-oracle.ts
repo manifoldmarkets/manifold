@@ -5,7 +5,7 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { eciFrontierOnDate, fetchEciModels } from 'shared/eci'
-import { ECI_FRONTIER_FEED_ID, upsertOraclePrices } from 'shared/oracle'
+import { ECI_FRONTIER_FEED_ID, insertOraclePrices } from 'shared/oracle'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
@@ -49,6 +49,6 @@ if (require.main === module)
       )
       log(`last: ${new Date(last.ts).toISOString()} = ${last.price.toFixed(2)}`)
     }
-    await upsertOraclePrices(pg, ECI_FRONTIER_FEED_ID, points)
+    await insertOraclePrices(pg, ECI_FRONTIER_FEED_ID, points)
     log(`backfilled ${points.length} ${ECI_FRONTIER_FEED_ID} oracle points`)
   })

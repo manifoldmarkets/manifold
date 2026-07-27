@@ -33,6 +33,32 @@ export const applyOraclePointToLivePerps = async (
     )
   }
 
+  // The database row is the published source of truth. INSERT ... DO NOTHING
+  // can lose a same-timestamp race, so never execute against the caller's value
+  // until it matches the immutable row that actually won.
+  const stored = await pg.oneOrNone<{
+    ts: string
+    price: number | string
+  }>(
+    `select ts, price from oracle_prices
+     where feed_id = $1
+       and ts = to_timestamp($2::double precision / 1000.0)`,
+    [feedId, point.ts]
+  )
+  if (!stored)
+    throw new Error(
+      `Refusing to apply unpublished ${feedId} oracle point @ ${point.ts}`
+    )
+
+  const persistedPoint = {
+    ts: new Date(stored.ts).getTime(),
+    price: Number(stored.price),
+  }
+  if (persistedPoint.price !== point.price)
+    throw new Error(
+      `Refusing to apply conflicting ${feedId} oracle point ${point.price} @ ${point.ts}; stored price is ${persistedPoint.price}`
+    )
+
   const rows = await pg.manyOrNone<{ data: PerpContract }>(
     `select data from contracts
      where mechanism = 'perp'
@@ -43,39 +69,46 @@ export const applyOraclePointToLivePerps = async (
 
   for (const { data: contract } of rows) {
     const appliedTime = contract.oraclePriceTime ?? 0
-    if (appliedTime >= point.ts) {
-      if (appliedTime === point.ts && contract.oraclePrice !== point.price) {
+    if (appliedTime >= persistedPoint.ts) {
+      if (
+        appliedTime === persistedPoint.ts &&
+        contract.oraclePrice !== persistedPoint.price
+      ) {
         log.error(
           `[oracle-feeds] ${
             contract.slug
           }: immutable point ${feedId} @ ${new Date(
-            point.ts
+            persistedPoint.ts
           ).toISOString()} conflicts with cached price ${
             contract.oraclePrice
-          } (published ${point.price})`
+          } (published ${persistedPoint.price})`
         )
       }
       continue
     }
 
     try {
-      const result = await runOracleUpdate(contract.id, point.price, point.ts)
+      const result = await runOracleUpdate(
+        contract.id,
+        persistedPoint.price,
+        persistedPoint.ts
+      )
       if (!result) continue
 
       try {
-        await notifyPerpOracleResult(pg, contract, point.price, result)
+        await notifyPerpOracleResult(pg, contract, persistedPoint.price, result)
       } catch (err) {
         // The price transition is already committed. Notification delivery
         // must not prevent the remaining contracts on this feed from updating.
         log.error(
-          `[oracle-feeds] ${contract.slug}: notifications failed after applying ${feedId} @ ${point.ts}: ${err}`
+          `[oracle-feeds] ${contract.slug}: notifications failed after applying ${feedId} @ ${persistedPoint.ts}: ${err}`
         )
       }
     } catch (err) {
       // One malformed/contended contract must not leave every other market on
       // the same feed trading against a stale cached price.
       log.error(
-        `[oracle-feeds] ${contract.slug}: failed to apply ${feedId} @ ${point.ts}: ${err}`
+        `[oracle-feeds] ${contract.slug}: failed to apply ${feedId} @ ${persistedPoint.ts}: ${err}`
       )
     }
   }
