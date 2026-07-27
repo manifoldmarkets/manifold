@@ -427,6 +427,52 @@ rounds across all four markets.
 - All test positions closed at session end; Marketing net +Ṁ157 (the +166 win, −10
   liquidated margin, dust elsewhere) — balances reconcile at every step.
 
+### 2026-07-27 morning: Tod's design-item verdicts + follow-up commits
+
+Scheduler redeploy (Tod, ~03:30 UTC) **verified over four consecutive live
+hours**: funding fired 04:00/05:00/06:00/07:00 on every market. Overnight
+forensics of the pre-deploy hours show the ratchet exactly as modeled — 21:00
+and 02:00 full skips, plus PARTIAL skips at 23:00/00:00 where per-market stamp
+drift split the four markets into two fire groups. Item closed.
+
+Commits (one per item, per Tod's revert-friendly ground rule):
+
+- `5e2d86c1c` trades-tab rows drop the dangling "on" when the event has no
+  direction (aggregate ADL rows: "was auto-deleveraged @ 66,902.17").
+- `d8915010d` position-history caption hidden when every row already fits
+  (no more "last 1"); expanded view says "all N".
+- `3795cbe20` **UK carbon feed root cause + fix**: NESO began settling
+  actuals late and in batches on 2026-07-25 — a batch can finalize a block
+  AFTER its successor, and the latest-only sampler permanently dropped the
+  interleaved ones (feed degraded 48→24 rows/day while the source stayed
+  complete). New `fetchRecent` on the feed registry: the tick upserts every
+  finalized block in a trailing 6h window (idempotent), engine still applies
+  only the newest. History healed via backfill rerun (Jul 25 back to 48/day).
+  **Takes effect on the next scheduler deploy** — until then the live feed
+  keeps sampling latest-only (holes self-heal on deploy via the 6h window +
+  the backfill can be rerun anytime). The feed source itself is fine — no
+  need to switch providers.
+
+Resolved with NO change (Tod's calls): zero-holder funding copy stays "longs
+pay shorts"; money display already uses sitewide `formatMoney` (its floor
+behavior IS the site convention — `getMoneyNumber`); insufficient-balance UI
+already shows "not enough funds" + red highlight (earlier QA note was wrong);
+Trump market will be recreated on prod anyway.
+
+Pending Tod one-liner (classifier blocked the gcloud write): tighten the
+funding-heartbeat absence alert 2h→90m — prepared policy JSON exists; command
+in the session notes. Rationale: with hourly cadence now guaranteed, any 90m
+silence is a real failure, and 2h sat just above a single skip's gap.
+
+**Perp wind-down protocol (proposed, for §6):** perps have no resolution
+cliff — resolve settles every position at the current oracle price, identical
+to what a close would pay (drill-verified; residual → creator; double-resolve
+and trade-after-resolve blocked; UI hides resolve for perps so it goes via
+API). Protocol: (1) announce the wind-down date in the description + a pinned
+comment ≥72h out, (2) stop promoting, (3) at the date, resolve via API as the
+creator. No close-only mode needed — holders lose nothing by being settled vs
+closing. For ECI, prefer a short window (revision risk).
+
 **Design items for Tod (deliberately unchanged):**
 
 1. Carry-line proportional horizon (`max(h, prop)` in projectionHorizonWithFunding):
