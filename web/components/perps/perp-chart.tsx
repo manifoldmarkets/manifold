@@ -158,18 +158,27 @@ export const PerpChart = (props: {
   // loaded (bucketed) series, and maxOraclePriceAgeMs is no proxy — it
   // carries hours of slack on slow feeds. One tiny raw fetch per contract
   // answers it exactly.
-  const [cadenceMs, setCadenceMs] = useState<number | null>(null)
+  // undefined = probe in flight; null = unavailable. Waiting for the probe
+  // prevents a persisted short frame from firing a wasteful All request
+  // before we know whether that frame is valid for this feed.
+  const [cadenceMs, setCadenceMs] = useState<number | null>()
   useEffect(() => {
     let cancelled = false
-    setCadenceMs(null)
+    setCadenceMs(undefined)
     api('get-oracle-price-series', { feedId: contract.oracleFeedId, limit: 8 })
       .then((res) => {
-        if (cancelled || res.length < 2) return
+        if (cancelled) return
+        if (res.length < 2) {
+          setCadenceMs(null)
+          return
+        }
         const dts = res.slice(1).map((p, i) => p.ts - res[i].ts)
         const m = median(dts)
-        if (Number.isFinite(m) && m > 0) setCadenceMs(m)
+        setCadenceMs(Number.isFinite(m) && m > 0 ? m : null)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setCadenceMs(null)
+      })
     return () => {
       cancelled = true
     }
@@ -182,7 +191,8 @@ export const PerpChart = (props: {
   // strands a slow one on a near-empty window.
   const frameEligible = (f: Timeframe) =>
     f === 'ALL' ||
-    (cadenceMs != null && TIMEFRAME_MS[f] / cadenceMs >= MIN_FRAME_POINTS)
+    (typeof cadenceMs === 'number' &&
+      TIMEFRAME_MS[f] / cadenceMs >= MIN_FRAME_POINTS)
   const activeFrame = frameEligible(timeframe) ? timeframe : 'ALL'
   const svgRef = useRef<SVGSVGElement | null>(null)
   // Responsive: viewBox width tracks the container so axis text renders at
@@ -202,12 +212,24 @@ export const PerpChart = (props: {
   // Everything time-denominated on this chart (projections, diamond gating,
   // axis/hover units) keys off it.
   const fundingPeriodMs = getFundingPeriodMs(contract)
+  const [chartNow, setChartNow] = useState(() => Date.now())
+  useEffect(() => {
+    setChartNow(Date.now())
+    const id = setInterval(() => setChartNow(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [contract.id])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setHoverIdx(null)
+    if (mode === 'price' && cadenceMs === undefined) {
+      return () => {
+        cancelled = true
+      }
+    }
     if (mode === 'price') {
+      setOraclePoints([])
       const fetchSeries = (frame: Timeframe) => {
         const { windowMs, bucketSeconds } = TIMEFRAME_FETCH[frame]
         return api('get-oracle-price-series', {
@@ -224,37 +246,69 @@ export const PerpChart = (props: {
           // empty an eligible window. Refetching All keeps the series
           // populated so the All view — and the sparse window itself —
           // still have something honest to draw.
-          const points =
-            res.length < MIN_FRAME_POINTS && activeFrame !== 'ALL'
-              ? await fetchSeries('ALL')
-              : res
+          const validPoints = res.filter(
+            (p) =>
+              Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0
+          )
+          const fellBack =
+            validPoints.length < MIN_FRAME_POINTS && activeFrame !== 'ALL'
+          const points = fellBack
+            ? (await fetchSeries('ALL')).filter(
+                (p) =>
+                  Number.isFinite(p.ts) &&
+                  Number.isFinite(p.price) &&
+                  p.price > 0
+              )
+            : validPoints
           if (cancelled) return
           setOraclePoints(points.map((p) => ({ ts: p.ts, value: p.price })))
+          // Keep the selected control honest: once the short window falls
+          // back to all history, label it All and stop re-filtering the
+          // fallback back into the same starved window.
+          if (fellBack) setTimeframe('ALL')
+        })
+        .catch(() => {
+          if (!cancelled) setOraclePoints([])
         })
         .finally(() => !cancelled && setLoading(false))
     } else {
+      setFundingPoints([])
       api('get-perp-funding-events', {
         contractId: contract.id,
-        limit: 1000,
+        limit: 5000,
       })
         .then((res) => {
           if (cancelled) return
           setFundingPoints(
-            res.map((p) => ({
-              ts: p.ts,
-              value: p.fundingRate,
-              numLiquidations: p.numLiquidations,
-            }))
+            res
+              .filter(
+                (p) => Number.isFinite(p.ts) && Number.isFinite(p.fundingRate)
+              )
+              .map((p) => ({
+                ts: p.ts,
+                value: p.fundingRate,
+                numLiquidations: p.numLiquidations,
+              }))
           )
+        })
+        .catch(() => {
+          if (!cancelled) setFundingPoints([])
         })
         .finally(() => !cancelled && setLoading(false))
     }
     return () => {
       cancelled = true
     }
-    // activeFrame drives the price fetch window; the funding fetch ignores
-    // it (a redundant 1000-row refetch on frame change is harmless).
-  }, [contract.id, mode, activeFrame])
+    // activeFrame/cadence drive the price fetch window. Funding ignores both;
+    // a redundant refetch when the cadence probe settles is harmless.
+  }, [
+    contract.id,
+    contract.oracleFeedId,
+    mode,
+    activeFrame,
+    cadenceMs,
+    setTimeframe,
+  ])
 
   const allPositions = useMemo(() => positions ?? [], [positions])
   const userPositions = useMemo(
@@ -290,7 +344,7 @@ export const PerpChart = (props: {
 
   // Price series = fetched history + live ticks that arrived after it.
   const priceSeries = useMemo(() => {
-    if (!oraclePoints.length) return oraclePoints
+    if (!oraclePoints.length) return livePoints
     const lastFetched = oraclePoints[oraclePoints.length - 1].ts
     const fresh = livePoints.filter((p) => p.ts > lastFetched)
     return fresh.length ? [...oraclePoints, ...fresh] : oraclePoints
@@ -298,9 +352,9 @@ export const PerpChart = (props: {
 
   const windowedSeries = useMemo(() => {
     if (activeFrame === 'ALL') return priceSeries
-    const cutoff = Date.now() - TIMEFRAME_MS[activeFrame]
+    const cutoff = chartNow - TIMEFRAME_MS[activeFrame]
     return priceSeries.filter((p) => p.ts >= cutoff)
-  }, [priceSeries, activeFrame])
+  }, [priceSeries, activeFrame, chartNow])
 
   // Funding is the venue-standard line of per-period rates (Hyperliquid
   // renders funding history the same way, in the same %/hr units — ours are
@@ -312,9 +366,9 @@ export const PerpChart = (props: {
     if (mode !== 'funding') return fundingPoints
     return [
       ...fundingPoints,
-      { ts: Date.now(), value: liveFundingRate, ghost: true },
+      { ts: chartNow, value: liveFundingRate, ghost: true },
     ]
-  }, [mode, fundingPoints, liveFundingRate])
+  }, [mode, fundingPoints, liveFundingRate, chartNow])
 
   const points = mode === 'price' ? windowedSeries : fundingSeries
   const width = Math.max(320, measuredWidth ?? 720)
@@ -332,7 +386,7 @@ export const PerpChart = (props: {
     const maxTs = Math.max(...xs)
     // Clamp against client/server clock skew so the projection anchor never
     // lands left of the last tick.
-    const now = Math.max(Date.now(), maxTs)
+    const now = Math.max(chartNow, maxTs)
     // The projection prefers ending just past the next two funding events,
     // so the hold-cost line answers a concrete question ("what does holding
     // through the next transfers cost?") instead of extending an arbitrary
@@ -410,6 +464,7 @@ export const PerpChart = (props: {
     contract.poolShort,
     contract.lastFundingTime,
     fundingPeriodMs,
+    chartNow,
   ])
 
   const { xScale, yScale, path } = useMemo(() => {
@@ -929,6 +984,15 @@ export const PerpChart = (props: {
             strokeWidth={1.5}
             className="text-primary-500"
           />
+          {mode === 'price' && points.length === 1 && (
+            <circle
+              cx={xScale(points[0].ts)}
+              cy={yScale(points[0].value)}
+              r={3}
+              fill="currentColor"
+              className="text-primary-500"
+            />
+          )}
           {/* A transfer with dead time on both sides has no line segment to
               live on — the gap-break isolates it — so render it as a dot
               rather than letting it vanish. */}
