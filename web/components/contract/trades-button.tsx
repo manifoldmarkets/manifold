@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Contract, BinaryContract } from 'common/contract'
+import { BinaryContract, Contract, PerpContract } from 'common/contract'
 import { useState } from 'react'
 
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -24,6 +24,8 @@ import { useBetsOnce } from 'client-common/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { BetsTabContent } from 'web/components/contract/bets-tab-content'
+import { PerpHoldersTab } from 'web/components/perps/perp-holders-tab'
+import { PerpTradesTab } from 'web/components/perps/perp-trades-tab'
 
 export function TradesButton(props: {
   contract: Contract
@@ -132,6 +134,8 @@ export function TradesModal(props: {
   const { contract, modalOpen, setModalOpen, answer } = props
 
   const isPoll = contract.outcomeType === 'POLL'
+  const perpContract =
+    contract.mechanism === 'perp' ? (contract as PerpContract) : null
 
   const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
     contract.id,
@@ -149,6 +153,8 @@ export function TradesModal(props: {
         <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
           {isPoll ? (
             <VotesModalContent contract={contract} />
+          ) : perpContract ? (
+            <PerpTradesModalContent contract={perpContract} />
           ) : (
             <BetsModalContent
               contract={contract}
@@ -165,6 +171,24 @@ export function TradesModal(props: {
         </div>
       )}
     </Modal>
+  )
+}
+
+function PerpTradesModalContent(props: { contract: PerpContract }) {
+  const { contract } = props
+  return (
+    <UncontrolledTabs
+      tabs={[
+        {
+          title: 'Holders',
+          content: <PerpHoldersTab contract={contract} />,
+        },
+        {
+          title: 'Recent Trades',
+          content: <PerpTradesTab contract={contract} />,
+        },
+      ]}
+    />
   )
 }
 
