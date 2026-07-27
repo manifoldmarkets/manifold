@@ -91,10 +91,12 @@ describe('shouldApplyFunding', () => {
     ).toBe(true)
   })
 
-  it('oracle anchor slack: a settlement block stamped just before the funding event still counts as new', () => {
-    // NESO block ends 17:00:00.000; funding event committed 17:00:00.822.
-    // At 18:00 that block is genuinely new data (it arrived after 17:00)
-    // even though its timestamp precedes the event stamp by under a second.
+  it('hourly periods are exempt from the oracle anchor — timestamp minutiae must never skip funding', () => {
+    // The anchor kills the PREDICTABLE dodge, which cannot exist when the
+    // period equals the scheduler's funding cadence: every hourly period
+    // contains expected price movement. A NESO block stamped 17:00:00.000
+    // against an event stamped 17:00:00.822 (or an hour-late feed) is
+    // timing noise, not a dodge — funding fires regardless.
     const fundingEvent = H0 + 822
     expect(
       shouldApplyFunding({
@@ -104,13 +106,24 @@ describe('shouldApplyFunding', () => {
         fundingPeriodMs: HOUR_MS,
       })
     ).toBe(true)
-    // But a price a full period old is not rescued by the slack.
     expect(
       shouldApplyFunding({
         now: H0 + HOUR_MS + 800,
         lastFundingTime: fundingEvent,
-        latestOracleTime: H0 - HOUR_MS,
+        latestOracleTime: H0 - 3 * HOUR_MS, // even a stalled feed
         fundingPeriodMs: HOUR_MS,
+      })
+    ).toBe(true)
+  })
+
+  it('slow periods use a strict anchor: a value stamped just before the last funding does not count', () => {
+    // Daily write landed seconds before yesterday's funding fired, nothing
+    // since — the feed produced nothing all period. The normal case has
+    // ~23h of margin, so strictness costs nothing there.
+    expect(
+      shouldApplyFunding({
+        ...base,
+        latestOracleTime: base.lastFundingTime - 15_000,
       })
     ).toBe(false)
   })

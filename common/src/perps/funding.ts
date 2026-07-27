@@ -32,7 +32,7 @@ export const getFundingPeriodMs = (contract: {
 }
 
 /**
- * Should a funding event fire now? Two conditions, both load-bearing:
+ * Should a funding event fire now?
  *
  * 1. Period elapsed, minus one minute of slack. The slack is not slop: cron
  *    fires at :00 sharp, so a run often starts a few hundred ms EARLIER in
@@ -42,21 +42,22 @@ export const getFundingPeriodMs = (contract: {
  *    slack is absolute (scheduler jitter), not proportional, so it stays
  *    MINUTE_MS at a 24h period.
  *
- * 2. The oracle produced a new price since the last funding event. Funding
- *    must coincide with price movement: a free-running timer on a daily feed
- *    drifts off the daily tick and eventually fires on an iteration where no
- *    new price was applied — reopening the open-just-before-the-tick dodge
- *    that per-contract periods exist to close. For fast feeds a new price
- *    lands almost every iteration, so the period gate does all the work —
- *    one rule, not a special case. Consequence: a dead feed means no funding
- *    (no movement, no carry); the stale-feed alerting in update-perps covers
- *    detection.
- *
- * The oracle comparison also gets MINUTE_MS of slack: data timestamps lag
- * wall clocks (a NESO settlement block ending 17:00:00.000 is newer data
- * than a funding event stamped 17:00:00.822), and without slack a feed
- * running >30min late skips alternate hours — the same flake shape the
- * period slack exists to prevent.
+ * 2. For periods LONGER than the scheduler's hourly funding cadence only:
+ *    the oracle produced a new price since the last funding event. The
+ *    anchor exists to kill the PREDICTABLE dodge — a free-running 24h timer
+ *    drifts off the daily tick until funding fires at a time the price
+ *    provably won't move, and sitting flat across it costs nothing. That
+ *    dodge only exists when funding can fire more often than the feed
+ *    produces values, which the period derivation (max(1h, cadence)) makes
+ *    impossible for hourly contracts: every hourly period contains expected
+ *    movement, so any skip there would be timestamp minutiae (a NESO block
+ *    stamped 17:00:00.000 vs an event stamped 17:00:00.822), not dodge
+ *    prevention — unpredictable timing noise is already friction enough.
+ *    For slow periods the comparison is strict with no slack: the normal
+ *    case has hours of margin, and a value stamped seconds before the last
+ *    funding with nothing since really is a feed that produced nothing all
+ *    period — no movement, no carry. update-perps' staleness alerting
+ *    covers detection.
  *
  * Callers pass their best view of the latest oracle timestamp: the engine
  * passes the contract's applied `oraclePriceTime`; the scheduler prefilter
@@ -79,7 +80,8 @@ export const shouldApplyFunding = (args: {
     return false
   if (!lastFundingTime) return true
   if (now - lastFundingTime < fundingPeriodMs - MINUTE_MS) return false
-  return (latestOracleTime ?? 0) > lastFundingTime - MINUTE_MS
+  if (fundingPeriodMs <= HOUR_MS) return true
+  return (latestOracleTime ?? 0) > lastFundingTime
 }
 
 /**

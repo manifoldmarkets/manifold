@@ -735,10 +735,10 @@ export const runFunding = async (
     // tick rates) could both decide to fund and double-haircut positions.
     // Same predicate as the scheduler prefilter by construction — both call
     // shouldApplyFunding (common/perps/funding): period elapsed minus the
-    // jitter slack, AND a new oracle price since the last event. For the
-    // oracle side this passes the contract's own oraclePriceTime, which
-    // runOracleUpdate committed just before this runs — the freshest view
-    // available under the lock.
+    // jitter slack, plus — for periods longer than hourly — a new oracle
+    // price since the last event. For the oracle side this passes the
+    // contract's own oraclePriceTime, which runOracleUpdate committed just
+    // before this runs — the freshest view available under the lock.
     const lastFunding = await pgTrans.oneOrNone<{ ts: string }>(
       `select ts from contract_perp_funding_events
        where contract_id = $1 order by ts desc limit 1`,

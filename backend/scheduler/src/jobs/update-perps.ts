@@ -108,9 +108,10 @@ const updateOnePerp = async (contract: PerpContract) => {
     // call the same shouldApplyFunding — the tolerances CANNOT differ (a
     // hand-rolled full-period comparison here once silently skipped
     // alternate hours; see the predicate's docs for the observed case).
-    // The oracle side passes the feed's latest ts; by this point
-    // runOracleUpdate has applied it, so a pass here implies the engine's
-    // view (contract.oraclePriceTime) is the same or newer.
+    // The oracle-anchor side (slow-period contracts only) passes the feed's
+    // latest ts; by this point runOracleUpdate has applied it, so a pass
+    // here implies the engine's view (contract.oraclePriceTime) is the same
+    // or newer.
     const lastFunding = await pg.oneOrNone<{ ts: string }>(
       `select ts from contract_perp_funding_events
        where contract_id = $1 order by ts desc limit 1`,
