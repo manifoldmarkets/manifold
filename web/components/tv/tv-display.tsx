@@ -4,6 +4,10 @@ import Link from 'next/link'
 import Router from 'next/router'
 
 import { Contract, tradingAllowed } from 'common/contract'
+import {
+  formatPrice as formatPerpPrice,
+  inferPriceDecimals as inferPerpPriceDecimals,
+} from 'common/perps/format'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { BinaryResolutionOrChance } from 'web/components/contract/contract-price'
@@ -24,6 +28,7 @@ import { ScheduleTVModal } from './schedule-tv-modal'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { UserBetsSummary } from '../bet/user-bet-summary'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 
 export function TVDisplay(props: {
   contract: Contract
@@ -40,6 +45,13 @@ export function TVDisplay(props: {
   const [showSettings, setShowSettings] = useState(false)
 
   const isBinary = contract.outcomeType === 'BINARY'
+  const perpContract = contract.outcomeType === 'PERP' ? contract : undefined
+  const perpPrice =
+    perpContract?.resolvedOraclePrice ?? perpContract?.oraclePrice
+  const formattedPerpPrice =
+    typeof perpPrice === 'number' && Number.isFinite(perpPrice)
+      ? formatPerpPrice(perpPrice, inferPerpPriceDecimals([perpPrice]))
+      : undefined
   const isMulti =
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
     contract.mechanism === 'cpmm-multi-1'
@@ -93,7 +105,7 @@ export function TVDisplay(props: {
 
           <Col className="mb-2 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
-              <Row className="gap-2 text-xl font-medium sm:text-2xl">
+              <Row className="items-center gap-2 text-xl font-medium sm:text-2xl">
                 <Link
                   href={`/${contract.creatorUsername}/${contract.slug}`}
                   target="_blank"
@@ -101,9 +113,22 @@ export function TVDisplay(props: {
                 >
                   {contract.question}
                 </Link>
+                {perpContract && <PerpMarketBadge label="Perpetual" />}
               </Row>
               {isBinary && (
                 <BinaryResolutionOrChance isCol contract={contract} />
+              )}
+              {perpContract && formattedPerpPrice && (
+                <Col className="shrink-0 items-end">
+                  <span className="text-ink-500 text-xs">
+                    {perpContract.resolvedOraclePrice == null
+                      ? 'Oracle price'
+                      : 'Settlement price'}
+                  </span>
+                  <span className="text-xl font-semibold sm:text-2xl">
+                    {formattedPerpPrice}
+                  </span>
+                </Col>
               )}
             </Row>
             {isMobile ? (
