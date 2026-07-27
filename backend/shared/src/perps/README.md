@@ -65,6 +65,19 @@ event, and partial unique indexes ensure a retry cannot apply the balance
 mutation twice. API callers should reuse the same key after an ambiguous
 network failure and generate a new key only for a genuinely new action.
 
+## Cash backing
+
+The M$ transaction ledger is the cash source of truth, while `poolLong` and
+`poolShort` describe how that cash is allocated between sides. Every
+cash-moving engine transition checks, before and after mutation:
+
+`net M$ txns into the contract = poolLong + poolShort`
+
+Only sub-millimana floating-point dust is tolerated. Creation, open/flip,
+close, factor-zero ADL, funding, and resolution fail atomically if the ledger
+and pools diverge. This is required because the generic transaction primitive
+does not maintain a balance column for `CONTRACT` senders.
+
 ## Oracle feeds
 
 `backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence

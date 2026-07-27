@@ -62,6 +62,7 @@ import {
   selectPositionsForUpdateQuery,
   upsertPositionsQuery,
 } from './queries'
+import { assertPerpEscrowBalance } from './escrow'
 import { buildPerpUserContractMetricsQuery } from './user-contract-metrics'
 import { log } from 'shared/utils'
 import { getFundingPeriodMs, shouldApplyFunding } from 'common/perps/funding'
@@ -442,6 +443,8 @@ export const openOrAddPosition = async (
       )
     }
 
+    await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+
     // Flip behavior: if the user has an existing opposite-side position, we
     // auto-close it at the oracle price first, in the same tx. This used to
     // throw a "close your long first" error; the parimutuel AMM doesn't need
@@ -625,6 +628,8 @@ export const openOrAddPosition = async (
       true
     )
 
+    await assertPerpEscrowBalance(pgTrans, contractId, open.state.pool)
+
     const newEvents = closeEvent ? [closeEvent, event] : [event]
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
@@ -742,6 +747,8 @@ export const closePosition = async (
       )
     }
 
+    await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+
     const price = contract.oraclePrice
     const result = closePositionMath(state, position, price)
     assertPerpStateSolvent(result.state, price)
@@ -804,6 +811,8 @@ export const closePosition = async (
         true
       )
     }
+
+    await assertPerpEscrowBalance(pgTrans, contractId, result.state.pool)
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -1136,7 +1145,17 @@ export const runOracleUpdate = async (
       ])
     )
 
+    if (applied.adlSettled.length > 0) {
+      await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+    }
     await payAdlSettlements(pgTrans, contractId, newPrice, applied.adlSettled)
+    if (applied.adlSettled.length > 0) {
+      await assertPerpEscrowBalance(
+        pgTrans,
+        contractId,
+        applied.finalState.pool
+      )
+    }
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -1226,6 +1245,8 @@ export const runFunding = async (
       fundingSensitivity: contract.fundingSensitivity,
       maxFundingRate: contract.maxFundingRate,
     })
+    await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+
     const fundingRate = computeFundingRate(
       state.pool.L,
       state.pool.S,
@@ -1330,6 +1351,7 @@ export const runFunding = async (
       contract.oraclePrice,
       fundingResult.settled
     )
+    await assertPerpEscrowBalance(pgTrans, contractId, next.pool)
 
     const metricsQuery = await buildPerpUserContractMetricsQuery(pgTrans, {
       contract: { ...contract, ...contractPatch } as PerpContract,
@@ -1383,6 +1405,7 @@ export const resolvePerp = async (
       pgTrans,
       contractId
     )
+    await assertPerpEscrowBalance(pgTrans, contractId, loaded.pool)
 
     // Select the immutable final feed point only after acquiring the same
     // contract lock used by trades and oracle ticks. Fetching it before the
@@ -1511,6 +1534,7 @@ export const resolvePerp = async (
         true
       )
     }
+    await assertPerpEscrowBalance(pgTrans, contractId, { L: 0, S: 0 })
 
     const contractPatch = removeUndefinedProps({
       poolLong: 0,

@@ -15,6 +15,7 @@ import { camelCase, first } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getOracleFeed } from 'shared/oracle-feeds'
+import { assertPerpEscrowBalance } from 'shared/perps/escrow'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
@@ -222,6 +223,10 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       amount: totalSubsidy,
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
+    })
+    await assertPerpEscrowBalance(tx, contract.id, {
+      L: subsidyLong,
+      S: subsidyShort,
     })
 
     const userRow = await tx.oneOrNone(
