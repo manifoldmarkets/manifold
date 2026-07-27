@@ -1,5 +1,14 @@
 # Perps launch plan — feeds, markets, and sequencing
 
+> **2026-07-28 audit note:** this is the historical implementation plan, not
+> the current release gate. Use `perps-launch-runbook.md` and
+> `backend/scripts/perp-launch-preflight.ts` for rollout. The earlier plan
+> treated zero-fee cached-oracle execution as a post-launch concern and assumed
+> hourly OpenRouter observations meant hourly price discovery. Both assumptions
+> are false: public sources can lead Manifold's executable cache, and OpenRouter
+> currently changes its underlying value roughly daily. Public launch now
+> requires explicit acceptance or mitigation of that latency-arbitrage risk.
+
 Written 2026-07-02. Scope: get `origin/perps` (tip `5f8fcf137`) release-ready with 4 launch
 markets on the **current parimutuel mechanism** (notion item 4 deferred — funding-as-carry is
 the accepted answer for trending markets). All API endpoints below were verified live today.
@@ -17,6 +26,7 @@ the accepted answer for trending markets). All API endpoints below were verified
 > `[update-perps]` log.error lines still need to be created in the GCP console.
 
 **Launch set (day 1):**
+
 1. Trump approval rating (exists) — daily, politics anchor
 2. **OpenRouter open-weight token share** — hourly, genuinely two-sided AI market
 3. **BTC/USD** — 15-second cadence, the fast flagship, free feeds
@@ -37,6 +47,7 @@ Week-2 follow-ons: Adjacent partisan index (pending their cadence/licensing answ
 ## Phase 0 — shared infra (do before any market)
 
 ### 0.1 Rebase `perps` onto `main` (~2.5 months stale)
+
 - Known conflict: `@google/generative-ai` → `@google/genai` SDK migration in
   `backend/shared/src/helpers/gemini.ts` + backend package manifests.
 - `backend/supabase/migrations/2026042201_add_perps.sql` — check no numbering collision with
@@ -45,6 +56,7 @@ Week-2 follow-ons: Adjacent partisan index (pending their cadence/licensing answ
   re-verify the PERP branches render after merge.
 
 ### 0.2 Hygiene fixes (small, all pre-launch)
+
 1. **`PERPS_SKIP_ORACLE_FRESHNESS` → `false`** (`common/src/envs/constants.ts`). For local dev,
    create test markets with huge `maxOraclePriceAgeMs` instead of flipping the constant.
 2. **`create-perp.ts`: honor `groupIds` + generate embeddings.** The schema accepts `groupIds`
@@ -66,7 +78,7 @@ Week-2 follow-ons: Adjacent partisan index (pending their cadence/licensing answ
    - open/close round-trip: payout accounting, pool deltas sum to zero vs user payouts
    - solvency gate: post-open `solvencyFactor >= 1` invariant
 6. Leverage cap stays 100 per the "leave gigaleverage" decision. Suggest the admin create form
-   *defaults* to 10 while allowing up to 100.
+   _defaults_ to 10 while allowing up to 100.
 
 ### 0.3 Oracle feeds registry + fast tick (supersedes notion items 2/3)
 
@@ -83,14 +95,15 @@ export type OracleFeed = {
   marketCreationEnabled: boolean // explicit product gate; false keeps runtime/history only
   fetchLatest: () => Promise<{ ts: number; price: number } | null>
   cadence: 'fast' | 'daily' // fast = polled by the fast tick
-  minPrice: number          // hard sanity bounds; out-of-range points are dropped + alerted
+  minPrice: number // hard sanity bounds; out-of-range points are dropped + alerted
   maxPrice: number
-  maxJumpFrac?: number      // reject points that jump > this fraction vs the last stored point
-  staleAfterMs: number      // feed-health alert threshold (also validates market's maxOraclePriceAgeMs at create)
+  maxJumpFrac?: number // reject points that jump > this fraction vs the last stored point
+  staleAfterMs: number // feed-health alert threshold (also validates market's maxOraclePriceAgeMs at create)
 }
 ```
 
 **New job `update-oracle-feeds`, `*/15 * * * * *` (every 15s):**
+
 1. For each `fast` feed: `fetchLatest` → sanity/jump check → `insertOraclePrices` → for each
    live perp on that feed, `runOracleUpdate(contractId, price, ts)`. Skip entirely if the price
    is unchanged from `contract.oraclePrice` (no-op ticks must not write).
@@ -136,6 +149,7 @@ to `backend/shared`.
 
 **Adapter.** `backend/shared/src/eci.ts` + `backend/scheduler/src/jobs/update-eci.ts`, modeled
 exactly on `trump-approval.ts` / `update-trump-approval.ts`:
+
 - fetch zip → extract CSV → parse → `frontier(today) = max(ECI Score where Release date ≤ today)`
 - sanity bounds: 140–220 initially
 - upsert ONE point for today; **never rewrite past days** (same immutability policy as Trump —
@@ -168,11 +182,11 @@ hourly cadence, backfill, and creation notes live in
 **Oracle definition.** `feed_id: 'btc-usd'`. Median of three free, no-auth endpoints (all
 verified live today, quotes within 0.12% of each other):
 
-| Source | Endpoint | Today |
-|---|---|---|
-| Coinbase | `GET https://api.coinbase.com/v2/prices/BTC-USD/spot` | 61,052 |
-| Kraken | `GET https://api.kraken.com/0/public/Ticker?pair=XBTUSD` (`.result.XXBTZUSD.c[0]`) | 61,056 |
-| Binance | `GET https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT` | 61,123 |
+| Source   | Endpoint                                                                           | Today  |
+| -------- | ---------------------------------------------------------------------------------- | ------ |
+| Coinbase | `GET https://api.coinbase.com/v2/prices/BTC-USD/spot`                              | 61,052 |
+| Kraken   | `GET https://api.kraken.com/0/public/Ticker?pair=XBTUSD` (`.result.XXBTZUSD.c[0]`) | 61,056 |
+| Binance  | `GET https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT`                   | 61,123 |
 
 Median-of-3; require ≥2 successful sources else skip the tick (never write a single-source
 point). Binance is USDT-quoted (~0.1% basis) — harmless inside a median. Rate limits are a
@@ -195,6 +209,7 @@ Watch ADL frequency in dev; if winners get haircut often, raise subsidies, not t
 
 No good free real-time feed exists; BTC fills the "very liquid + fast" slot for free on day 1.
 Options when you pick it up:
+
 - **Yahoo Finance (unofficial, free)** — verified working today:
   `GET https://query1.finance.yahoo.com/v8/finance/chart/CL=F?interval=1m&range=1h` with a
   browser `User-Agent` header → `chart.result[0].meta.regularMarketPrice` ($67.57, NYMEX,
@@ -252,21 +267,21 @@ Order matters — each step is independently commit-able:
 4. **Dev verification checklist:**
    - [ ] backfills run; charts render for all launch feeds
    - [ ] create the four launch markets — Trump approval, OpenRouter
-     open-weight share, BTC, and UK carbon — via `/admin/create-perp`, tagged
-     to topics (proves the groupIds fix); verify they appear in topic browse +
-     search (proves embeddings)
+         open-weight share, BTC, and UK carbon — via `/admin/create-perp`, tagged
+         to topics (proves the groupIds fix); verify they appear in topic browse +
+         search (proves embeddings)
    - [ ] verify `eci-frontier` is absent from the admin picker and rejected by
-     `create-perp`
+         `create-perp`
    - [ ] trade long, add, flip, close on each — balances and event log correct
    - [ ] forced liquidation: open 50× position, write an adverse price via
-     `internal-write-oracle-price`, next tick liquidates + notification fires
+         `internal-write-oracle-price`, next tick liquidates + notification fires
    - [ ] stale-feed drill: disable one feed's fetch → opens/closes blocked with the clear error,
-     `log.error` fires every tick
+         `log.error` fires every tick
    - [ ] funding: exactly one funding event per contract per hour while the 15s tick runs
-     (proves the double-run guard)
+         (proves the double-run guard)
    - [ ] resolve a dev market: payouts + residual to creator; unresolve blocked
    - [ ] soak: 3 fast contracts on 15s ticks for ~1h; watch scheduler CPU + advisory-lock
-     contention + contracts-table write volume
+         contention + contracts-table write volume
 5. **Prod rollout:** run the migration → deploy → create only the four named
    launch markets **unlisted** → self-trade sanity pass on prod → flip to
    public + announce. Do not include ECI in the creation batch or announcement.
@@ -274,6 +289,7 @@ Order matters — each step is independently commit-able:
    branch; unlisted-first is the soft launch.)
 
 ## Open items (not blocking day 1)
+
 - Adjacent.markets: confirm index update cadence + API pricing/licensing → week-2 elections-page perp.
 - Oil: pay vs Yahoo decision.
 - Per-second BTC (websocket ingestion) — only if 15s feels slow in practice; would be the first

@@ -29,9 +29,8 @@ export default function AdminCreatePerpPage() {
     maxFundingRateAnnualPct: 50,
     fundingSensitivity: 1,
     maxOraclePriceAgeHours: 6,
-    // Per-side creator subsidy. Skew these when flow is predictably one-sided
-    // (e.g. a monotonic-up index gets a fatter short pool, since the short
-    // pool pays long winners).
+    // Per-side creator subsidy. Start symmetric; observed flow and stress
+    // tests, not a structurally one-sided oracle, should justify any skew.
     subsidyLong: 500,
     subsidyShort: 500,
     // Prod rollout protocol: create unlisted, self-trade a sanity pass, then
@@ -44,6 +43,14 @@ export default function AdminCreatePerpPage() {
       id: string
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
+      description: string | null
+      launchLatencyRisk: string | null
+      launchRecommendation: {
+        maxLeverage: number
+        maxOraclePriceAgeMs: number
+        subsidyLong: number
+        subsidyShort: number
+      } | null
     }[]
   >([])
   const [feedLatest, setFeedLatest] = useState<{
@@ -146,8 +153,8 @@ export default function AdminCreatePerpPage() {
       })
       toast.success(`Created ${res.question}`)
       window.location.href = res.url
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to create perp')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create perp')
     } finally {
       setSubmitting(false)
     }
@@ -224,6 +231,26 @@ export default function AdminCreatePerpPage() {
                 This feed is retained for runtime/history but is disabled for
                 new perp markets.
               </p>
+            )}
+            {selectedFeed?.launchLatencyRisk && (
+              <div className="border-primary-300 bg-primary-50 text-ink-700 mt-2 rounded-md border p-3 text-xs">
+                <div className="font-semibold">
+                  Exact-price oracle latency risk
+                </div>
+                <p className="mt-1">{selectedFeed.launchLatencyRisk}</p>
+                {selectedFeed.launchRecommendation && (
+                  <p className="mt-1">
+                    Day-one recommendation: at most{' '}
+                    {selectedFeed.launchRecommendation.maxLeverage}× leverage,
+                    max oracle age{' '}
+                    {selectedFeed.launchRecommendation.maxOraclePriceAgeMs /
+                      HOUR_MS}
+                    h, backing M$
+                    {selectedFeed.launchRecommendation.subsidyLong} long / M$
+                    {selectedFeed.launchRecommendation.subsidyShort} short.
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
@@ -321,7 +348,7 @@ export default function AdminCreatePerpPage() {
               onChange={(v) => update('subsidyShort', v)}
               step={100}
               min={1}
-              hint={`Total ${subsidyTotal} paid by you at creation. Skew toward the side that will pay winners (e.g. fat short pool for a monotonic-up index).`}
+              hint={`Total ${subsidyTotal} paid by you at creation. Use symmetric pools for launch unless observed flow and stress tests support a deliberate skew.`}
             />
           </Row>
 

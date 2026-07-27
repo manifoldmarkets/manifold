@@ -118,14 +118,24 @@ live next to it:
   models), parsed from Epoch's benchmark data zip (CC-BY — credit Epoch in
   market descriptions).
 - `trump-approval.ts` — 14-day rolling approval average (VoteHub).
+- `openrouter-tokens.ts` — trailing seven-day open-weight share of classified
+  top-50 OpenRouter model traffic.
 
 **ECI launch exclusion:** ECI remains a runtime/history feed, but its registry
 entry has `marketCreationEnabled: false`. The frontier is monotone
 non-decreasing, so it produces a structurally one-sided perp with pinned
 funding and no sound short thesis. Do not launch an ECI market.
 
-Backfill scripts (`backend/scripts/backfill-{eci,btc,uk-carbon,trump-approval}-oracle.ts`)
-seed chart history before market creation.
+Backfill scripts
+(`backend/scripts/backfill-{btc,uk-carbon,trump-approval,openrouter}-oracle.ts`)
+seed chart history before market creation. ECI's separate retained-history
+backfill is not part of the launch batch.
+
+The executable launch set, conservative initial parameters, feed-specific game
+design notes, and oracle-latency risks live in
+`backend/shared/src/perps/launch-manifest.ts`. Run
+`backend/scripts/perp-launch-preflight.ts` at each rollout phase; the operational
+sequence and rollback are in `perps-launch-runbook.md`.
 
 ## Scheduler
 
@@ -141,7 +151,12 @@ seed chart history before market creation.
   contract. The once-per-`FUNDING_PERIOD_MS` funding gate lives INSIDE
   `runFunding`, under the advisory lock, so overlapping ticks can't
   double-fund.
-- `update-trump-approval.ts` / `update-eci.ts` write one daily point each.
+- `update-trump-approval.ts` writes one daily point.
+- `update-openrouter-share.ts` polls hourly. OpenRouter currently returns
+  complete UTC days, so most hourly observations repeat the same underlying
+  value; a fresh timestamp proves job liveness but does not create intraday
+  price discovery.
+- `update-eci.ts` remains scheduled for retained history/runtime use only.
 
 Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
 `[update-perps]` — wire GCP log-based alerting to those.

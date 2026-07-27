@@ -1112,6 +1112,14 @@ export const API = (_apiTypeCheck = {
       id: string
       updatePeriodMs: number | null
       marketCreationEnabled: boolean
+      description: string | null
+      launchLatencyRisk: string | null
+      launchRecommendation: {
+        maxLeverage: number
+        maxOraclePriceAgeMs: number
+        subsidyLong: number
+        subsidyShort: number
+      } | null
     }[],
     props: z.object({}).strict(),
   },

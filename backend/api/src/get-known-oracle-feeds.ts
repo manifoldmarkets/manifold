@@ -2,6 +2,7 @@ import { sortBy, uniq } from 'lodash'
 
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getOracleFeed, ORACLE_FEEDS } from 'shared/oracle-feeds'
+import { PERP_LAUNCH_MARKETS } from 'shared/perps/launch-manifest'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
 
@@ -26,10 +27,21 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
   )
   return feedIds.map((id) => {
     const feed = getOracleFeed(id)
+    const launch = PERP_LAUNCH_MARKETS.find((market) => market.feedId === id)
     return {
       id,
       updatePeriodMs: feed?.updatePeriodMs ?? null,
       marketCreationEnabled: feed?.marketCreationEnabled ?? false,
+      description: feed?.description ?? null,
+      launchLatencyRisk: launch?.latencyArbitrageRisk ?? null,
+      launchRecommendation: launch
+        ? {
+            maxLeverage: launch.recommended.maxLeverage,
+            maxOraclePriceAgeMs: launch.recommended.maxOraclePriceAgeMs,
+            subsidyLong: launch.recommended.subsidyLong,
+            subsidyShort: launch.recommended.subsidyShort,
+          }
+        : null,
     }
   })
 }

@@ -1,0 +1,194 @@
+import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
+
+import {
+  BTC_USD_FEED_ID,
+  ECI_FRONTIER_FEED_ID,
+  OPENROUTER_OPEN_WEIGHT_FEED_ID,
+  TRUMP_APPROVAL_FEED_ID,
+  UK_GRID_CARBON_FEED_ID,
+} from '../oracle'
+import { getOracleFeed } from '../oracle-feeds'
+
+export type PerpLaunchMarketDefinition = {
+  feedId: string
+  question: string
+  oracleBehavior: 'continuous-public' | 'batched-public' | 'scheduled-step'
+  gameDesign: string
+  latencyArbitrageRisk: string
+  recommended: {
+    maxLeverage: number
+    annualMaxFundingRate: number
+    fundingSensitivity: number
+    maxOraclePriceAgeMs: number
+    subsidyLong: number
+    subsidyShort: number
+  }
+  minimumHistory: {
+    spanMs: number
+    points: number
+  }
+}
+
+/**
+ * The intended public launch dataset. This is deliberately executable config,
+ * not a prose-only checklist: the preflight script checks the registry,
+ * database, scheduler, and active contracts against it.
+ *
+ * Recommendations are conservative day-one settings, not automatic creation
+ * instructions. The preflight warns when a market exceeds them so a reviewer
+ * has to make that risk decision explicitly.
+ */
+export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
+  {
+    feedId: BTC_USD_FEED_ID,
+    question: 'Bitcoin price (USD)',
+    oracleBehavior: 'continuous-public',
+    gameDesign:
+      'Genuinely two-sided and continuously moving; the strongest fit in the launch set.',
+    latencyArbitrageRisk:
+      'Exchange prices are visible before the 15-second poll reaches Manifold, so exact-price zero-fee execution can be picked off.',
+    recommended: {
+      maxLeverage: 5,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 2 * MINUTE_MS,
+      subsidyLong: 25_000,
+      subsidyShort: 25_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
+  },
+  {
+    feedId: UK_GRID_CARBON_FEED_ID,
+    question: 'UK grid carbon intensity (gCO₂/kWh)',
+    oracleBehavior: 'batched-public',
+    gameDesign:
+      'Oscillating and mean-reverting with coherent long and short theses; public forecasts reward informed trading.',
+    latencyArbitrageRisk:
+      'Finalized 30-minute actuals can be visible at NESO before the next Manifold poll, and the public forecast makes the direction partially anticipatable.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 3 * HOUR_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 * 2 },
+  },
+  {
+    feedId: TRUMP_APPROVAL_FEED_ID,
+    question: 'Trump approval rating',
+    oracleBehavior: 'scheduled-step',
+    gameDesign:
+      'Two-sided political exposure, but the 14-day average is slow and often unchanged between poll releases.',
+    latencyArbitrageRisk:
+      'The daily source update is public and the ingestion schedule is known, allowing a trader to open against the old cached value and close after the step without crossing a funding event.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 30 * HOUR_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+  {
+    feedId: OPENROUTER_OPEN_WEIGHT_FEED_ID,
+    question: 'Open-weight AI token share on OpenRouter (%)',
+    oracleBehavior: 'scheduled-step',
+    gameDesign:
+      'The trailing share can rise or fall and has coherent AI-adoption theses, unlike the monotone ECI frontier.',
+    latencyArbitrageRisk:
+      'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 6 * HOUR_MS,
+      subsidyLong: 10_000,
+      subsidyShort: 10_000,
+    },
+    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  },
+]
+
+export const PERP_LAUNCH_EXCLUDED_FEED_IDS = [ECI_FRONTIER_FEED_ID] as const
+
+export const PERP_LAUNCH_SCHEDULER_EXPECTATIONS = [
+  {
+    jobName: 'update-oracle-feeds',
+    maxEndAgeMs: 2 * MINUTE_MS,
+    maxRunMs: MINUTE_MS,
+  },
+  {
+    jobName: 'update-perps',
+    maxEndAgeMs: 2 * HOUR_MS,
+    maxRunMs: 30 * MINUTE_MS,
+  },
+  {
+    jobName: 'update-openrouter-share',
+    maxEndAgeMs: 3 * HOUR_MS,
+    maxRunMs: 30 * MINUTE_MS,
+  },
+  {
+    jobName: 'update-trump-approval',
+    maxEndAgeMs: 26 * HOUR_MS,
+    maxRunMs: 30 * MINUTE_MS,
+  },
+] as const
+
+export const getNominalAnnualFundingRate = (
+  fundingRatePerPeriod: number,
+  fundingPeriodMs: number
+) => {
+  if (
+    !Number.isFinite(fundingRatePerPeriod) ||
+    fundingRatePerPeriod <= 0 ||
+    !Number.isFinite(fundingPeriodMs) ||
+    fundingPeriodMs <= 0
+  )
+    return Number.NaN
+  const annualRate = fundingRatePerPeriod * (YEAR_MS / fundingPeriodMs)
+  return Number.isFinite(annualRate) ? annualRate : Number.NaN
+}
+
+export const getPerpLaunchManifestErrors = () => {
+  const errors: string[] = []
+  const feedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+  if (new Set(feedIds).size !== feedIds.length)
+    errors.push('launch manifest has duplicate feed ids')
+
+  for (const market of PERP_LAUNCH_MARKETS) {
+    const feed = getOracleFeed(market.feedId)
+    if (!feed) {
+      errors.push(`${market.feedId} is absent from the oracle registry`)
+      continue
+    }
+    if (!feed.marketCreationEnabled)
+      errors.push(`${market.feedId} is disabled for market creation`)
+    if (
+      !Number.isFinite(market.recommended.maxLeverage) ||
+      market.recommended.maxLeverage <= 1 ||
+      market.recommended.maxLeverage > 100
+    )
+      errors.push(`${market.feedId} has an invalid recommended leverage`)
+    if (
+      market.recommended.maxOraclePriceAgeMs < feed.staleAfterMs ||
+      !Number.isFinite(market.recommended.maxOraclePriceAgeMs)
+    )
+      errors.push(
+        `${market.feedId} recommended max oracle age is below its health threshold`
+      )
+  }
+
+  for (const feedId of PERP_LAUNCH_EXCLUDED_FEED_IDS) {
+    if (feedIds.includes(feedId))
+      errors.push(`${feedId} is both launched and explicitly excluded`)
+    const feed = getOracleFeed(feedId)
+    if (!feed) errors.push(`${feedId} exclusion has no registry entry`)
+    else if (feed.marketCreationEnabled)
+      errors.push(`${feedId} is excluded but still enabled for creation`)
+  }
+  return errors
+}
