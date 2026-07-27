@@ -1,4 +1,10 @@
-import { createPerpSchema, LiteMarket, toUltraLiteMarket } from './market-types'
+import { PerpContract } from 'common/contract'
+import {
+  createPerpSchema,
+  LiteMarket,
+  toLiteMarket,
+  toUltraLiteMarket,
+} from './market-types'
 
 describe('createPerpSchema', () => {
   const validPerp = {
@@ -111,6 +117,53 @@ describe('toUltraLiteMarket', () => {
       createdTime: '2023-11-14T22:13:20.000Z',
       uniqueBettorCount: 4,
     })
+  })
+})
+
+describe('toLiteMarket', () => {
+  it('exposes the live and final fields needed by the perp page poll', () => {
+    const contract = {
+      id: 'perp-id',
+      creatorId: 'creator-id',
+      creatorUsername: 'test',
+      creatorName: 'Test Creator',
+      createdTime: 1_700_000_000_000,
+      question: 'Test perpetual',
+      slug: 'test-perpetual',
+      outcomeType: 'PERP',
+      mechanism: 'perp',
+      volume: 100,
+      volume24Hours: 25,
+      isResolved: true,
+      resolution: 'MKT',
+      resolutionTime: 1_700_000_100_000,
+      resolverId: 'resolver-id',
+      uniqueBettorCount: 5,
+      oraclePrice: 42,
+      oraclePriceTime: 1_700_000_090_000,
+      poolLong: 0,
+      poolShort: 0,
+      fundingRate: 0.001,
+      lastFundingTime: 1_700_000_080_000,
+      maxLeverage: 10,
+      resolvedOraclePrice: 42,
+    } as unknown as PerpContract
+
+    expect(toLiteMarket(contract)).toEqual(
+      expect.objectContaining({
+        isResolved: true,
+        resolution: 'MKT',
+        resolutionTime: 1_700_000_100_000,
+        resolverId: 'resolver-id',
+        oraclePrice: 42,
+        oraclePriceTime: 1_700_000_090_000,
+        poolLong: 0,
+        poolShort: 0,
+        fundingRate: 0.001,
+        lastFundingTime: 1_700_000_080_000,
+        resolvedOraclePrice: 42,
+      })
+    )
   })
 })
 

@@ -97,6 +97,8 @@ export function getSeoDescription(contract: Contract) {
     contract.outcomeType === 'PERP'
       ? perpPrice === undefined
         ? 'Perpetual market. '
+        : contract.isResolved
+        ? `Perpetual market settled at ${perpPrice}. `
         : `Perpetual market. Oracle price: ${perpPrice}. `
       : resolution
       ? `Resolved ${getResolvedValue(contract) || resolution}. `
@@ -113,17 +115,18 @@ export function getSeoDescription(contract: Contract) {
 }
 
 function getFormattedPerpPrice(contract: Contract) {
-  if (
-    contract.outcomeType !== 'PERP' ||
-    !Number.isFinite(contract.oraclePrice)
-  ) {
+  if (contract.outcomeType !== 'PERP') {
     return undefined
   }
+  const price =
+    contract.isResolved &&
+    typeof contract.resolvedOraclePrice === 'number' &&
+    Number.isFinite(contract.resolvedOraclePrice)
+      ? contract.resolvedOraclePrice
+      : contract.oraclePrice
+  if (!Number.isFinite(price)) return undefined
 
-  return formatPrice(
-    contract.oraclePrice,
-    inferPriceDecimals([contract.oraclePrice])
-  )
+  return formatPrice(price, inferPriceDecimals([price]))
 }
 
 function getResolvedValue(contract: Contract) {

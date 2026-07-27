@@ -18,6 +18,21 @@ describe('perpetual market external metadata', () => {
     )
   })
 
+  it('describes a resolved perp using its immutable settlement price', () => {
+    const contract = getPerpContract(42.125, {
+      isResolved: true,
+      resolution: 'MKT',
+      resolvedOraclePrice: 41.5,
+    })
+
+    expect(getContractOGProps(contract)).toEqual(
+      expect.objectContaining({ perpPrice: '41.500' })
+    )
+    expect(getSeoDescription(contract)).toBe(
+      'Perpetual market settled at 41.500. Tracks the underlying asset.'
+    )
+  })
+
   it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
     'never serializes a non-finite oracle price (%s)',
     (oraclePrice) => {

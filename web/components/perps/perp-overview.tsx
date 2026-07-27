@@ -52,9 +52,15 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
         { id: ssrContract.id, lite: true },
         fresh ? { cache: 'no-store' } : undefined
       )
-        .then((m: any) => {
-          if (cancelled || m.oraclePrice == null) return
+        .then((m) => {
+          if (cancelled || m.outcomeType !== 'PERP' || m.oraclePrice == null)
+            return
+          const resolution =
+            m.resolution === 'MKT' || m.resolution === 'CANCEL'
+              ? m.resolution
+              : undefined
           setLive((prev) =>
+            ((ssrContract.isResolved || prev?.isResolved) && !m.isResolved) ||
             (m.oraclePriceTime ?? 0) < (prev?.oraclePriceTime ?? 0)
               ? prev
               : {
@@ -65,6 +71,12 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
                   fundingRate: m.fundingRate,
                   volume: m.volume,
                   uniqueBettorCount: m.uniqueBettorCount,
+                  isResolved: m.isResolved,
+                  resolution,
+                  resolutionTime: m.resolutionTime,
+                  resolverId: m.resolverId,
+                  resolvedOraclePrice: m.resolvedOraclePrice,
+                  lastUpdatedTime: m.lastUpdatedTime,
                   // Keeps the next-funding countdown honest after an
                   // on-page funding event. Missing on older API builds.
                   ...(m.lastFundingTime != null
@@ -123,7 +135,11 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
   // sees cross-user changes on the poll rather than only on own-trades.
   const positions = usePerpPositions(contract.id, refreshKey)
 
-  const price = Number(contract.oraclePrice)
+  const price = Number(
+    contract.isResolved
+      ? contract.resolvedOraclePrice ?? contract.oraclePrice
+      : contract.oraclePrice
+  )
   const flash = useTickFlash(price)
   // Single-sample inference: integer prices (e.g. DAU counts) show 0
   // decimals, fractional prices scale to their magnitude.
@@ -146,7 +162,9 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
       <Row className="items-baseline justify-between">
         <Row className="items-baseline gap-8">
           <Col>
-            <div className="text-ink-500 text-sm">Oracle price</div>
+            <div className="text-ink-500 text-sm">
+              {contract.isResolved ? 'Final oracle price' : 'Oracle price'}
+            </div>
             <div
               className={clsx(
                 'text-3xl font-semibold tabular-nums transition-colors duration-700',
@@ -157,12 +175,20 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
               {formatPrice(price, priceDecimals)}
             </div>
           </Col>
-          <FundingRateColumn
-            rate={liveFundingRate}
-            lastFundingTime={contract.lastFundingTime}
-            fundingStartTime={contract.createdTime}
-            fundingPeriodMs={getFundingPeriodMs(contract)}
-          />
+          {contract.isResolved ? (
+            <Col>
+              <div className="text-ink-500 text-sm">Status</div>
+              <div className="text-ink-900 text-3xl font-semibold">Settled</div>
+              <div className="text-ink-500 text-xs">Trading has ended</div>
+            </Col>
+          ) : (
+            <FundingRateColumn
+              rate={liveFundingRate}
+              lastFundingTime={contract.lastFundingTime}
+              fundingStartTime={contract.createdTime}
+              fundingPeriodMs={getFundingPeriodMs(contract)}
+            />
+          )}
         </Row>
         <Row className="border-ink-200 overflow-hidden rounded-md border">
           <button
@@ -202,11 +228,22 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         asOfTime={contract.oraclePriceTime}
       />
 
-      <PerpBetPanel
-        contract={contract}
-        onTrade={refresh}
-        positions={positions}
-      />
+      {contract.isResolved ? (
+        <div className="border-primary-200 bg-primary-50 text-ink-700 dark:bg-primary-900/20 rounded-lg border px-4 py-3 text-sm">
+          <div className="text-ink-900 font-semibold">Market settled</div>
+          All open positions were closed at the final oracle price of{' '}
+          <span className="font-semibold tabular-nums">
+            {formatPrice(price, priceDecimals)}
+          </span>
+          . Funding and trading have stopped.
+        </div>
+      ) : (
+        <PerpBetPanel
+          contract={contract}
+          onTrade={refresh}
+          positions={positions}
+        />
+      )}
       <PerpPositionPanel
         contract={contract}
         onAction={refresh}

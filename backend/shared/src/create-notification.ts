@@ -1,7 +1,7 @@
 import { Answer } from 'common/answer'
 import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { Contract, MarketContract, PollContract } from 'common/contract'
+import { Contract, PollContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { LeagueChangeNotificationData } from 'common/leagues'
 import {
@@ -847,7 +847,7 @@ export const createNewBettorNotification = async (
 }
 
 export const createContractResolvedNotifications = async (
-  contract: MarketContract,
+  contract: Contract,
   resolver: User,
   creator: User,
   outcome: string,
@@ -856,7 +856,7 @@ export const createContractResolvedNotifications = async (
   answerId: string | undefined,
   resolutionData: {
     userIdToContractMetric: {
-      [userId: string]: Omit<ContractMetric, 'id'>
+      [userId: string]: Pick<ContractMetric, 'invested' | 'profit'>
     }
     userPayouts: { [userId: string]: number }
     creatorPayout: number

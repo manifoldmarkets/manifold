@@ -1407,6 +1407,7 @@ export const resolvePerp = async (
       userId: string
       direction: PerpDirection
       payout: number
+      originalCostBasis: number
     }[]
     residualPayout: number
     finalPrice: number
@@ -1465,10 +1466,12 @@ export const resolvePerp = async (
       userId: string
       direction: PerpDirection
       payout: number
+      originalCostBasis: number
     }[] = applied.adlSettled.map(({ position, payout }) => ({
       userId: position.userId,
       direction: position.direction,
       payout,
+      originalCostBasis: position.originalCostBasis,
     }))
 
     let runningState = applied.finalState
@@ -1483,6 +1486,7 @@ export const resolvePerp = async (
         userId: p.userId,
         direction: p.direction,
         payout: res.payout,
+        originalCostBasis: p.originalCostBasis,
       })
       events.push(
         asEvent(contract, {

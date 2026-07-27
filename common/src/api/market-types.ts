@@ -63,6 +63,7 @@ export type LiteMarket = {
   resolution?: string
   resolutionTime?: number
   resolutionProbability?: number
+  resolverId?: string
 
   uniqueBettorCount: number
   lastUpdatedTime?: number
@@ -78,7 +79,9 @@ export type LiteMarket = {
   poolLong?: number
   poolShort?: number
   fundingRate?: number
+  lastFundingTime?: number
   maxLeverage?: number
+  resolvedOraclePrice?: number
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -217,7 +220,9 @@ export function toLiteMarket(
           poolLong: contract.poolLong,
           poolShort: contract.poolShort,
           fundingRate: contract.fundingRate,
+          lastFundingTime: contract.lastFundingTime,
           maxLeverage: contract.maxLeverage,
+          resolvedOraclePrice: contract.resolvedOraclePrice,
         }
       : {}),
 

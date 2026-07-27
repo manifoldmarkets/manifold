@@ -112,7 +112,7 @@ export const PerpPositionPanel = (props: {
       cancelled = true
       cancelBurst?.()
     }
-  }, [contract.id, user?.id, refresh, refreshKey])
+  }, [contract.id, contract.resolutionTime, user?.id, refresh, refreshKey])
 
   if (!user) return null
   if (!positions.length && !pastEvents.length) return null

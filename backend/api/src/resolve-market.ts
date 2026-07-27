@@ -1,12 +1,13 @@
-import { sumBy } from 'lodash'
+import { groupBy, mapValues, sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { Contract, MarketContract, MultiContract } from 'common/contract'
 import {
-  Contract,
-  MarketContract,
-  MultiContract,
-  PerpContract,
-} from 'common/contract'
-import { getContract, getUser, isProd, log } from 'shared/utils'
+  getContract,
+  getUser,
+  isProd,
+  log,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
@@ -22,6 +23,14 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
 import { SWEEPSTAKES_MOD_IDS } from 'common/envs/constants'
 import { notifyPerpAdlResult } from 'shared/notifications/perps'
+import { trackPublicEvent } from 'shared/analytics'
+import { recordContractEdit } from 'shared/record-contract-edit'
+import { createContractResolvedNotifications } from 'shared/create-notification'
+import { getContractMetricsForContract } from 'shared/helpers/user-contract-metrics'
+import {
+  broadcastUpdatedContract,
+  broadcastUpdatedMetrics,
+} from 'shared/websockets/helpers'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> =
   onlyUsersWhoCanPerformAction(
@@ -54,6 +63,9 @@ export const resolveMarketMain: APIHandler<
     throw new APIError(403, 'Your account has been deleted')
   if (creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
 
+  const creator = caller.id === creatorId ? caller : await getUser(creatorId)
+  if (!creator) throw new APIError(500, 'Creator not found')
+
   // Perps have a dedicated resolution path: close all positions at oracle
   // price, refund residual pool to the creator, and mark the contract
   // resolved. Bypass the CPMM/multi resolution helper entirely.
@@ -65,12 +77,88 @@ export const resolveMarketMain: APIHandler<
     return {
       result: { message: 'success' },
       continue: async () => {
-        await notifyPerpAdlResult(
+        const resolvedContract = await getContract(db, contractId)
+        if (!resolvedContract || resolvedContract.outcomeType !== 'PERP') {
+          log.error(
+            `Could not load resolved PERP contract ${contractId} for post-resolution updates`
+          )
+          return
+        }
+
+        const contractMetrics = await getContractMetricsForContract(
           db,
-          contract as PerpContract,
-          result.finalPrice,
-          result
+          contractId,
+          null
         )
+        broadcastUpdatedContract(resolvedContract.visibility, resolvedContract)
+        broadcastUpdatedMetrics(contractMetrics)
+
+        const positionsByUser = groupBy(result.closedPositions, 'userId')
+        const userPayouts = mapValues(positionsByUser, (positions) =>
+          sumBy(positions, ({ payout }) =>
+            Number.isFinite(payout) ? Math.max(payout, 0) : 0
+          )
+        )
+        // Describe only the position settled in this resolution. Pairing
+        // lifetime invested volume with the final settlement payout would
+        // overstate losses for a trader who previously closed and reopened.
+        const userIdToContractMetric = mapValues(
+          positionsByUser,
+          (positions) => {
+            const invested = sumBy(positions, ({ originalCostBasis }) =>
+              Number.isFinite(originalCostBasis)
+                ? Math.max(originalCostBasis, 0)
+                : 0
+            )
+            const payout = sumBy(positions, ({ payout }) =>
+              Number.isFinite(payout) ? Math.max(payout, 0) : 0
+            )
+            return { invested, profit: payout - invested }
+          }
+        )
+
+        const results = await Promise.allSettled([
+          notifyPerpAdlResult(db, resolvedContract, result.finalPrice, result),
+          trackPublicEvent(auth.uid, 'resolve market', {
+            resolution: 'MKT',
+            contractId,
+          }),
+          recordContractEdit(contract, auth.uid, [
+            'poolLong',
+            'poolShort',
+            'oraclePrice',
+            'oraclePriceTime',
+            'isResolved',
+            'resolutionTime',
+            'resolverId',
+            'resolution',
+            'resolvedOraclePrice',
+            'lastUpdatedTime',
+          ]),
+          revalidateContractStaticProps(resolvedContract),
+          createContractResolvedNotifications(
+            resolvedContract,
+            caller,
+            creator,
+            'MKT',
+            undefined,
+            undefined,
+            undefined,
+            {
+              userIdToContractMetric,
+              userPayouts,
+              creatorPayout: 0,
+            }
+          ),
+        ])
+        results.forEach((postResolutionResult) => {
+          if (postResolutionResult.status === 'rejected') {
+            log.error(
+              `PERP ${contractId} post-resolution update failed`,
+              postResolutionResult.reason
+            )
+          }
+        })
       },
     }
   }
@@ -88,9 +176,6 @@ export const resolveMarketMain: APIHandler<
   }
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
-
-  const creator = caller.id === creatorId ? caller : await getUser(creatorId)
-  if (!creator) throw new APIError(500, 'Creator not found')
 
   const resolutionParams = getResolutionParams(contract, props)
 

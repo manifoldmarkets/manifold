@@ -15,6 +15,7 @@ import {
   SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
@@ -167,6 +168,14 @@ export const toDisplayResolution = (
   }
   if (contract.outcomeType === 'STONK') {
     return formatNumericProbability(getProbability(contract), contract)
+  }
+  if (contract.outcomeType === 'PERP') {
+    const finalPrice =
+      typeof contract.resolvedOraclePrice === 'number' &&
+      Number.isFinite(contract.resolvedOraclePrice)
+        ? contract.resolvedOraclePrice
+        : contract.oraclePrice
+    return formatPrice(finalPrice, inferPriceDecimals([finalPrice]))
   }
 
   if (contract.outcomeType === 'NUMBER') {

@@ -26,6 +26,10 @@ explicit (see "Integration points" below).
     Called by the hourly scheduler.
   - `resolvePerp(contractId, resolverId)` — settles every open position at the
     current oracle price and returns remaining pool balances to the creator.
+    The API continuation then broadcasts the resolved contract and metrics,
+    refreshes both the market and embed pages, records the edit/analytics event,
+    and sends ordinary resolution notifications using each final position's
+    margin and payout (not lifetime market turnover).
 
   Every mutating call acquires a `pg_advisory_xact_lock` keyed on the contract id
   so per-contract state transitions are serialized.
