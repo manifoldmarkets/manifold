@@ -1,7 +1,7 @@
 import { formatTimeWithTimezone } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
-import { Contract, contractPool } from 'common/contract'
+import { Contract, PerpContract, contractPool } from 'common/contract'
 import {
   ENV_CONFIG,
   isAdminId,
@@ -9,6 +9,9 @@ import {
   supabaseConsoleContractPath,
   TRADED_TERM,
 } from 'common/envs/constants'
+import { computeFundingRate, getPerpBackingPool } from 'common/perps/amm'
+import { fundingPeriodNoun, getFundingPeriodMs } from 'common/perps/funding'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
 import { formatWithCommas } from 'common/util/format'
@@ -59,6 +62,8 @@ export const Stats = (props: {
   const isCreator = user?.id === creatorId
   const isPublic = contract.visibility === 'public'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const perpContract =
+    contract.mechanism === 'perp' ? (contract as PerpContract) : null
   const addAnswersPossible =
     isMulti && (shouldAnswersSumToOne ? addAnswersMode !== 'DISABLED' : true)
   const creatorOnly = isMulti && addAnswersMode === 'ONLY_CREATOR'
@@ -81,6 +86,8 @@ export const Stats = (props: {
   const typeDisplay =
     outcomeType === 'BINARY'
       ? 'YES / NO'
+      : outcomeType === 'PERP'
+      ? 'Perpetual'
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
       : outcomeType === 'BOUNTIED_QUESTION'
@@ -107,6 +114,11 @@ export const Stats = (props: {
             label: 'Independent',
             desc: `Each answer is a separate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
           }
+      : mechanism === 'perp'
+      ? {
+          label: 'Oracle-priced',
+          desc: 'Leveraged long and short positions track an external oracle price until they are closed or the market is resolved',
+        }
       : mechanism == 'none'
       ? undefined
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
@@ -149,6 +161,8 @@ export const Stats = (props: {
           <td>Question created</td>
           <td>{formatTimeWithTimezone(createdTime)}</td>
         </tr>
+
+        {perpContract && <PerpStatsRows contract={perpContract} />}
 
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <>
@@ -255,41 +269,44 @@ export const Stats = (props: {
             </tr>
           </>
         )}
-        {!hideAdvanced && !contract.resolution && isBettingContract && (
-          <tr>
-            <td>
-              <Row>
-                <span className="mr-1">Elasticity</span>
-                <InfoTooltip
-                  text={
-                    mechanism === 'cpmm-1' ? (
-                      <>
-                        Log-odds change between a{' '}
-                        <MoneyDisplay
-                          amount={ELASTICITY_BET_AMOUNT}
-                          isCashContract={isCashContract}
-                        />{' '}
-                        {TRADED_TERM} on YES and NO
-                      </>
-                    ) : (
-                      <>
-                        Log-odds change from a{' '}
-                        <MoneyDisplay
-                          amount={ELASTICITY_BET_AMOUNT}
-                          isCashContract={isCashContract}
-                        />{' '}
-                        {TRADED_TERM}
-                      </>
-                    )
-                  }
-                />
-              </Row>
-            </td>
-            <td>{elasticity.toFixed(2)}</td>
-          </tr>
-        )}
+        {!hideAdvanced &&
+          !contract.resolution &&
+          isBettingContract &&
+          !perpContract && (
+            <tr>
+              <td>
+                <Row>
+                  <span className="mr-1">Elasticity</span>
+                  <InfoTooltip
+                    text={
+                      mechanism === 'cpmm-1' ? (
+                        <>
+                          Log-odds change between a{' '}
+                          <MoneyDisplay
+                            amount={ELASTICITY_BET_AMOUNT}
+                            isCashContract={isCashContract}
+                          />{' '}
+                          {TRADED_TERM} on YES and NO
+                        </>
+                      ) : (
+                        <>
+                          Log-odds change from a{' '}
+                          <MoneyDisplay
+                            amount={ELASTICITY_BET_AMOUNT}
+                            isCashContract={isCashContract}
+                          />{' '}
+                          {TRADED_TERM}
+                        </>
+                      )
+                    }
+                  />
+                </Row>
+              </td>
+              <td>{elasticity.toFixed(2)}</td>
+            </tr>
+          )}
 
-        {isBettingContract && (
+        {isBettingContract && !perpContract && (
           <>
             <tr>
               <td>Liquidity subsidies</td>
@@ -325,7 +342,7 @@ export const Stats = (props: {
           </tr>
         ) : null}
 
-        {!hideAdvanced && isBettingContract && (
+        {!hideAdvanced && isBettingContract && !perpContract && (
           <tr>
             <td>Pool</td>
             <td>
@@ -559,6 +576,77 @@ export const Stats = (props: {
         )}
       </tbody>
     </Table>
+  )
+}
+
+function PerpStatsRows(props: { contract: PerpContract }) {
+  const { contract } = props
+  const price =
+    contract.resolution === 'MKT'
+      ? Number(contract.resolvedOraclePrice ?? contract.oraclePrice)
+      : Number(contract.oraclePrice)
+  const fundingRate = computeFundingRate(
+    contract.poolLong,
+    contract.poolShort,
+    contract.fundingSensitivity,
+    contract.maxFundingRate
+  )
+  const fundingPeriodMs = getFundingPeriodMs(contract)
+  const fundingDirection =
+    fundingRate > 0
+      ? 'longs pay shorts'
+      : fundingRate < 0
+      ? 'shorts pay longs'
+      : 'balanced'
+  const fundingDisplay = Number.isFinite(fundingRate)
+    ? `${fundingRate > 0 ? '+' : ''}${(fundingRate * 100).toFixed(
+        3
+      )}% / ${fundingPeriodNoun(fundingPeriodMs)}`
+    : '—'
+
+  return (
+    <>
+      <tr>
+        <td>Oracle feed</td>
+        <td className="font-mono text-xs">{contract.oracleFeedId}</td>
+      </tr>
+      <tr>
+        <td>
+          {contract.resolution === 'MKT' ? 'Settlement price' : 'Oracle price'}
+        </td>
+        <td>{formatPrice(price, inferPriceDecimals([price]))}</td>
+      </tr>
+      <tr>
+        <td>
+          Backing pool{' '}
+          <InfoTooltip text="Current mana held across both sides to back position payouts" />
+        </td>
+        <td>
+          <MoneyDisplay
+            amount={getPerpBackingPool(contract.poolLong, contract.poolShort)}
+            isCashContract={contract.token === 'CASH'}
+          />
+        </td>
+      </tr>
+      <tr>
+        <td>Maximum leverage</td>
+        <td>
+          {Number.isFinite(contract.maxLeverage)
+            ? `${formatWithCommas(contract.maxLeverage)}×`
+            : '—'}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Current funding{' '}
+          <InfoTooltip text="The crowded side pays this fraction of margin to the other side each funding period" />
+        </td>
+        <td>
+          {fundingDisplay}{' '}
+          <span className="text-ink-500 text-xs">({fundingDirection})</span>
+        </td>
+      </tr>
+    </>
   )
 }
 
