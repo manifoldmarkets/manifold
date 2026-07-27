@@ -505,6 +505,93 @@ export const closePosition = (
 // -------- solvency --------
 
 /**
+ * Launch guardrail beyond the ManiPerp paper: aggregate exposure on either
+ * side may not exceed this multiple of unreserved opposing-pool cover.
+ *
+ * This still permits high leverage for small positions, while preventing a
+ * freshly opened position (which has no unrealized profit yet) from creating
+ * effectively unlimited future claims against a finite pool.
+ */
+export const PERP_OPEN_INTEREST_COVER_MULTIPLE = 10
+
+export type PerpOpenInterestCapacity = {
+  openInterest: number
+  availableCover: number
+  limit: number
+  headroom: number
+  isWithinLimit: boolean
+}
+
+export const isPerpOpenInterestWithinLimit = (
+  openInterest: number,
+  limit: number
+) => {
+  assertFiniteNumber('open interest', openInterest)
+  assertFiniteNumber('open interest limit', limit)
+  if (openInterest < 0 || limit < 0)
+    throw new Error('open interest and limit must be non-negative')
+
+  // Accommodate only arithmetic dust at the exact boundary. The absolute cap
+  // keeps a very large market from gaining meaningful capacity via tolerance.
+  const tolerance = Math.min(
+    0.001,
+    128 * Number.EPSILON * Math.max(1, Math.abs(openInterest), Math.abs(limit))
+  )
+  return openInterest <= limit + tolerance
+}
+
+const calculateAvailableCover = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number
+) => {
+  const opposingPool = side === 'long' ? state.pool.S : state.pool.L
+  const oppositeDirection = side === 'long' ? 'short' : 'long'
+  const reservedOpposingValue = state.positions
+    .filter((p) => p.direction === oppositeDirection && p.size > 0)
+    .reduce(
+      (sum, p) => sum + Math.min(p.costBasis, getPositionValue(p, price)),
+      0
+    )
+  return opposingPool - reservedOpposingValue
+}
+
+/**
+ * Aggregate side capacity at the current oracle price.
+ *
+ * `availableCover` deliberately deducts each opposite-side position's current
+ * refundable value, capped at its cost basis. This is the same reserve used by
+ * the ADL solvency calculation, so committed trader margin is not counted as
+ * free backing for new exposure.
+ */
+export const getPerpOpenInterestCapacity = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number
+): PerpOpenInterestCapacity => {
+  assertPerpStateNumbers(state, price)
+
+  const openInterest = state.positions
+    .filter((p) => p.direction === side && p.size > 0)
+    .reduce((sum, p) => sum + p.size, 0)
+  assertFiniteNumber(`${side} open interest`, openInterest)
+
+  const availableCover = calculateAvailableCover(side, state, price)
+  assertFiniteNumber(`${side} available cover`, availableCover)
+
+  const limit = Math.max(availableCover, 0) * PERP_OPEN_INTEREST_COVER_MULTIPLE
+  assertFiniteNumber(`${side} open interest limit`, limit)
+
+  return {
+    openInterest,
+    availableCover,
+    limit,
+    headroom: Math.max(limit - openInterest, 0),
+    isWithinLimit: isPerpOpenInterestWithinLimit(openInterest, limit),
+  }
+}
+
+/**
  * Solvency factor for a side (>= 1 means fully solvent). Used to refuse opens
  * that would immediately require ADL.
  */
@@ -513,19 +600,10 @@ export const solvencyFactor = (
   state: PerpState,
   price: number
 ) => {
-  const { L, S } = state.pool
-  const opposing = side === 'long' ? S : L
-  const oppositePositions = state.positions.filter(
-    (p) => p.direction === (side === 'long' ? 'short' : 'long') && p.size > 0
-  )
-  const C = oppositePositions.reduce(
-    (s, p) => s + Math.min(p.costBasis, getPositionValue(p, price)),
-    0
-  )
   const E = state.positions
     .filter((p) => p.direction === side && p.size > 0)
     .reduce((s, p) => s + Math.max(getUnrealizedEquity(p, price), 0), 0)
-  const availableCover = opposing - C
+  const availableCover = calculateAvailableCover(side, state, price)
   if (E <= 0) return availableCover >= 0 ? Infinity : -Infinity
   return availableCover / E
 }

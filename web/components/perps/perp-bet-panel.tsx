@@ -11,7 +11,10 @@ import { PerpContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
   computeFundingRate,
+  getPerpOpenInterestCapacity,
+  isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
+  PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
 import {
   fundingPeriodNoun,
@@ -113,6 +116,41 @@ export const PerpBetPanel = (props: {
   // auto-close it before opening the new one (engine does this atomically).
   const isFlip = !!openDirection && openDirection !== direction
   const maxLeverage = contract.maxLeverage
+  const capacity = useMemo(() => {
+    if (positions == null) return null
+    try {
+      return getPerpOpenInterestCapacity(
+        direction,
+        {
+          pool: { L: contract.poolLong, S: contract.poolShort },
+          positions: positions.map((position) => ({
+            ...position,
+            contractId: contract.id,
+          })),
+        },
+        price
+      )
+    } catch {
+      // The engine remains authoritative. Avoid turning corrupt or transiently
+      // inconsistent cached data into a render failure.
+      return null
+    }
+  }, [
+    contract.id,
+    contract.poolLong,
+    contract.poolShort,
+    direction,
+    positions,
+    price,
+  ])
+  const exceedsCapacity =
+    capacity != null &&
+    Number.isFinite(notional) &&
+    notional > 0 &&
+    !isPerpOpenInterestWithinLimit(
+      capacity.openInterest + notional,
+      capacity.limit
+    )
 
   const onSubmit = async () => {
     if (!user) {
@@ -125,6 +163,14 @@ export const PerpBetPanel = (props: {
     }
     if (leverage > maxLeverage) {
       toast.error(`Max leverage is ${maxLeverage}×`)
+      return
+    }
+    if (exceedsCapacity && capacity) {
+      toast.error(
+        `Only ${formatMoney(
+          capacity.headroom
+        )} of additional ${direction} notional is available`
+      )
       return
     }
     setSubmitting(true)
@@ -292,12 +338,41 @@ export const PerpBetPanel = (props: {
         fundingPeriodMs={getFundingPeriodMs(contract)}
       />
 
+      {capacity && (
+        <div
+          className={clsx(
+            'rounded-md px-3 py-2 text-xs',
+            exceedsCapacity
+              ? 'bg-scarlet-100 text-scarlet-700 dark:bg-scarlet-900/30 dark:text-scarlet-300'
+              : 'bg-canvas-100 text-ink-600'
+          )}
+        >
+          {exceedsCapacity ? (
+            <>
+              This side has only {formatMoney(capacity.headroom)} of additional
+              notional capacity. Lower margin or leverage.
+            </>
+          ) : (
+            <>
+              {formatMoney(capacity.headroom)} additional {direction} notional
+              capacity at the {PERP_OPEN_INTEREST_COVER_MULTIPLE}× backing
+              limit.
+            </>
+          )}
+        </div>
+      )}
+
       <Button
         color={submitColor}
         onClick={onSubmit}
         loading={submitting}
         disabled={
-          submitting || !user || !!amountError || !margin || margin <= 0
+          submitting ||
+          !user ||
+          !!amountError ||
+          !margin ||
+          margin <= 0 ||
+          exceedsCapacity
         }
         size="lg"
         className="w-full"

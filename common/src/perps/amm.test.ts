@@ -7,11 +7,13 @@ import {
   closePosition,
   computeFundingRate,
   getPerpBackingPool,
+  getPerpOpenInterestCapacity,
   getUnrealizedEquity,
   imbalance,
   isLiquidated,
   liquidationPrice,
   openPosition,
+  PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
   processLiquidations,
   solvencyFactor,
@@ -715,5 +717,94 @@ describe('solvencyFactor', () => {
     // (S - C) / E = (600 - 100) / 1000
     expect(solvencyFactor('long', state, 100)).toBeCloseTo(0.5, 10)
     expect(solvencyFactor('short', state, 100)).toBe(Infinity)
+  })
+})
+
+describe('open interest capacity', () => {
+  it('caps aggregate exposure at 10x unreserved opposing cover', () => {
+    const state: PerpState = {
+      pool: { L: 1000, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 9999,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    const capacity = getPerpOpenInterestCapacity('long', state, 100)
+    expect(PERP_OPEN_INTEREST_COVER_MULTIPLE).toBe(10)
+    expect(capacity).toEqual({
+      openInterest: 9999,
+      availableCover: 1000,
+      limit: 10_000,
+      headroom: 1,
+      isWithinLimit: true,
+    })
+
+    const overLimit = {
+      ...state,
+      positions: [{ ...state.positions[0], size: 10_000.01 }],
+    }
+    expect(
+      getPerpOpenInterestCapacity('long', overLimit, 100).isWithinLimit
+    ).toBe(false)
+  })
+
+  it('reserves refundable opposite-side value before granting capacity', () => {
+    const flatShort = makePosition({
+      direction: 'short',
+      size: 1000,
+      costBasis: 500,
+      entryPrice: 100,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 1500 },
+      positions: [flatShort],
+    }
+
+    const capacity = getPerpOpenInterestCapacity('long', state, 100)
+    expect(capacity.openInterest).toBe(0)
+    expect(capacity.availableCover).toBe(1000)
+    expect(capacity.limit).toBe(10_000)
+    expect(capacity.headroom).toBe(10_000)
+  })
+
+  it('releases an opposite-side unrealized loss into available cover', () => {
+    const losingShort = makePosition({
+      direction: 'short',
+      size: 1000,
+      costBasis: 500,
+      entryPrice: 100,
+    })
+    const state: PerpState = {
+      pool: { L: 1000, S: 1500 },
+      positions: [losingShort],
+    }
+
+    // At 140 the short has lost M$400, so only M$100 remains refundable.
+    const capacity = getPerpOpenInterestCapacity('long', state, 140)
+    expect(capacity.availableCover).toBeCloseTo(1400, 10)
+    expect(capacity.limit).toBeCloseTo(14_000, 10)
+  })
+
+  it('fails closed on non-finite aggregate exposure', () => {
+    const state: PerpState = {
+      pool: { L: 1000, S: 1000 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: Number.POSITIVE_INFINITY,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    }
+
+    expect(() => getPerpOpenInterestCapacity('long', state, 100)).toThrow(
+      'position 0 size must be finite'
+    )
   })
 })

@@ -21,9 +21,11 @@ import {
   closePosition as closePositionMath,
   computeFundingRate,
   getLeverage,
+  getPerpOpenInterestCapacity,
   getPositionValue,
   liquidationPrice as computeLiquidationPrice,
   openPosition as openPositionMath,
+  PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
   processLiquidations,
   solvencyFactor,
@@ -469,11 +471,6 @@ export const openOrAddPosition = async (
     )
     const isNewUniqueBettor = !priorEvent
 
-    // No notional cap vs. the opposite pool: this AMM is parimutuel, so
-    // the opposite pool is meant to be bootstrapped by imbalanced early
-    // flow. Solvency is still enforced below (post-trade solvency >= 1)
-    // and funding + ADL handle persistent imbalance over time.
-
     const price = contract.oraclePrice
 
     // Auto-close opposite side first, then open on top of the resulting state.
@@ -519,6 +516,24 @@ export const openOrAddPosition = async (
       existingSame,
       now
     )
+
+    // A fresh position has no unrealized profit, so the instantaneous solvency
+    // factor alone cannot bound its future claim. Cap aggregate side exposure
+    // against the same unreserved opposing-pool cover used by ADL. Existing
+    // over-cap positions can always close, but cannot add further exposure.
+    const capacity = getPerpOpenInterestCapacity(direction, open.state, price)
+    if (!capacity.isWithinLimit) {
+      throw new APIError(
+        400,
+        `${
+          direction === 'long' ? 'Long' : 'Short'
+        } open interest would be M$${capacity.openInterest.toFixed(
+          2
+        )}; this market currently supports at most M$${capacity.limit.toFixed(
+          2
+        )} (${PERP_OPEN_INTEREST_COVER_MULTIPLE}× unreserved opposing-pool cover). Try lower margin or leverage.`
+      )
+    }
 
     // Post-trade solvency must be >= 1.
     const solv = solvencyFactor(direction, open.state, price)

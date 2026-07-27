@@ -78,6 +78,23 @@ close, factor-zero ADL, funding, and resolution fail atomically if the ledger
 and pools diverge. This is required because the generic transaction primitive
 does not maintain a balance column for `CONTRACT` senders.
 
+## Exposure capacity
+
+Opening, adding, or flipping into a side is limited so aggregate open notional
+on that side cannot exceed 10× its unreserved opposing-pool cover. Unreserved
+cover is the opposing pool minus each opposite-side position's currently
+refundable value (capped at its cost basis), matching the reserve definition
+used by ADL solvency:
+
+`side open interest <= 10 × max(opposing pool - opposing reserves, 0)`
+
+This is a launch guardrail in addition to the ManiPerp paper. It preserves high
+leverage for small positions while preventing a new, initially flat position
+from creating unlimited future claims against finite backing. The cap applies
+only to exposure-increasing actions; users can always reduce or close existing
+positions. Funding, oracle movement, or legacy state can move a side above the
+limit, in which case further opens are blocked until capacity recovers.
+
 ## Oracle feeds
 
 `backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence
