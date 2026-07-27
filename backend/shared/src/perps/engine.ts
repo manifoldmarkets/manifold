@@ -30,6 +30,11 @@ import {
   PerpFundingEvent,
   PerpPosition,
 } from 'common/perps/position'
+import {
+  decideOracleTransition,
+  OraclePoint,
+  validateBasicOraclePoint,
+} from 'common/perps/oracle'
 import { removeUndefinedProps } from 'common/util/object'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
@@ -112,7 +117,7 @@ const loadStateForUpdate = async (
 }
 
 const getLatestOraclePrice = async (
-  pgTrans: SupabaseDirectClient,
+  pgTrans: Pick<SupabaseDirectClient, 'oneOrNone'>,
   feedId: string
 ): Promise<{ price: number; ts: number } | null> => {
   const row = await pgTrans.oneOrNone<{ ts: string; price: number | string }>(
@@ -760,7 +765,21 @@ export const runOracleUpdate = async (
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
 
-    if (newPrice <= 0) throw new APIError(400, 'invalid oracle price')
+    const incomingPoint = { price: newPrice, ts }
+    const currentPoint =
+      contract.oraclePriceTime == null
+        ? null
+        : {
+            price: contract.oraclePrice,
+            ts: contract.oraclePriceTime,
+          }
+    const decision = decideOracleTransition(currentPoint, incomingPoint)
+    if (decision.action === 'reject')
+      throw new APIError(400, `Invalid oracle transition: ${decision.reason}`)
+    // Delivery can race even though state writes cannot. Once the contract
+    // lock is held, an older point or exact retry must not touch price, pools,
+    // positions, metrics, or event history.
+    if (decision.action === 'ignore') return null
 
     const poolLongBefore = state.pool.L
     const poolShortBefore = state.pool.S
@@ -772,15 +791,11 @@ export const runOracleUpdate = async (
       applied.finalState.positions
     )
 
-    // Never rewind oraclePriceTime — an out-of-order write would otherwise
-    // make the staleness window artificially strict on future trades.
-    const nextOraclePriceTime = Math.max(contract.oraclePriceTime ?? 0, ts)
-
     const contractPatch = removeUndefinedProps({
       poolLong: applied.finalState.pool.L,
       poolShort: applied.finalState.pool.S,
       oraclePrice: newPrice,
-      oraclePriceTime: nextOraclePriceTime,
+      oraclePriceTime: ts,
       // Price polling is infrastructure activity, not user activity. Only a
       // liquidation/ADL transition should refresh discovery freshness.
       lastUpdatedTime: applied.events.length > 0 ? ts : undefined,
@@ -1059,34 +1074,51 @@ export const resolvePerp = async (
     finalPrice: number
   } & AdlNotificationResult
 > => {
-  // Pull latest oracle price (outside lock to minimize lock window).
-  const pg = createSupabaseDirectClient()
-  const contractRow = await pg.oneOrNone<{ data: PerpContract }>(
-    `select data from contracts where id = $1`,
-    [contractId]
-  )
-  if (!contractRow) throw new APIError(404, `Contract ${contractId} not found`)
-  const preContract = contractRow.data
-  if (preContract.mechanism !== 'perp')
-    throw new APIError(400, 'Not a perp contract')
-
-  const latest = await getLatestOraclePrice(pg, preContract.oracleFeedId)
-  const finalPrice = latest?.price ?? preContract.oraclePrice
-  const oracleTs = latest?.ts ?? Date.now()
-  // Every open position settles at this price; a corrupt feed row here would
-  // misprice the whole book. runOracleUpdate has the same guard on ticks.
-  if (!isFinite(finalPrice) || finalPrice <= 0)
-    throw new APIError(500, `Invalid final oracle price ${finalPrice}`)
-
   // Single-transaction resolution: apply liquidation + ADL + close-all +
   // residual-to-creator + mark-resolved in one atomic step, so traders can't
-  // sneak trades between the "final oracle update" and the settle.
+  // sneak trades between the final oracle selection and settlement.
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state: loaded } = await loadStateForUpdate(
       pgTrans,
       contractId
     )
 
+    // Select the immutable final feed point only after acquiring the same
+    // contract lock used by trades and oracle ticks. Fetching it before the
+    // lock can settle an older point after a newer tick has already changed
+    // positions and cached price.
+    const latest = await getLatestOraclePrice(pgTrans, contract.oracleFeedId)
+    if (!latest)
+      throw new APIError(
+        500,
+        `Cannot resolve ${contract.slug}: oracle feed ${contract.oracleFeedId} has no published price`
+      )
+
+    const cachedPoint: OraclePoint = {
+      price: contract.oraclePrice,
+      ts: contract.oraclePriceTime ?? 0,
+    }
+    const cachedRejection = validateBasicOraclePoint(cachedPoint)
+    if (cachedRejection)
+      throw new APIError(
+        500,
+        `Cannot resolve ${contract.slug}: cached oracle point is invalid (${cachedRejection})`
+      )
+
+    const decision = decideOracleTransition(cachedPoint, latest)
+    if (decision.action === 'reject')
+      throw new APIError(
+        500,
+        `Cannot resolve ${contract.slug}: oracle integrity check failed (${decision.reason})`
+      )
+    if (decision.action === 'ignore' && decision.reason === 'stale')
+      throw new APIError(
+        500,
+        `Cannot resolve ${contract.slug}: cached oracle timestamp ${cachedPoint.ts} is newer than feed history ${latest.ts}`
+      )
+
+    const finalPoint = decision.action === 'apply' ? latest : cachedPoint
+    const { price: finalPrice, ts: oracleTs } = finalPoint
     const applied = applyOracleUpdate(contract, loaded, finalPrice, oracleTs)
 
     const events: PerpEvent[] = [...applied.events]
@@ -1183,7 +1215,7 @@ export const resolvePerp = async (
       poolLong: 0,
       poolShort: 0,
       oraclePrice: finalPrice,
-      oraclePriceTime: Math.max(contract.oraclePriceTime ?? 0, oracleTs),
+      oraclePriceTime: oracleTs,
       isResolved: true,
       resolutionTime: now,
       resolverId,

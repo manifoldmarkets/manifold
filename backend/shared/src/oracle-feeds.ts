@@ -1,4 +1,5 @@
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { validateBasicOraclePoint } from 'common/perps/oracle'
 
 import { fetchBtcUsdSpot } from './btc-price'
 import {
@@ -151,22 +152,16 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
 export const getOracleFeed = (id: string) =>
   ORACLE_FEEDS.find((f) => f.id === id)
 
-const MAX_ORACLE_FUTURE_SKEW_MS = 5 * MINUTE_MS
-
 /** Returns a rejection reason, or null if the point is acceptable. */
 export const validateOraclePoint = (
   feed: OracleFeedDef,
   prev: { ts: number; price: number } | null,
   point: { ts: number; price: number }
 ): string | null => {
-  if (!Number.isFinite(point.ts) || point.ts <= 0)
-    return `invalid timestamp ${point.ts}`
-  if (point.ts > Date.now() + MAX_ORACLE_FUTURE_SKEW_MS)
-    return `timestamp ${point.ts} is more than ${MAX_ORACLE_FUTURE_SKEW_MS}ms in the future`
+  const basicRejection = validateBasicOraclePoint(point)
+  if (basicRejection) return basicRejection
   if (prev && point.ts <= prev.ts)
     return `timestamp ${point.ts} is not newer than ${prev.ts}`
-  if (!Number.isFinite(point.price) || point.price <= 0)
-    return `non-positive price ${point.price}`
   if (point.price < feed.minPrice || point.price > feed.maxPrice)
     return `price ${point.price} outside sanity bounds [${feed.minPrice}, ${feed.maxPrice}]`
   if (
