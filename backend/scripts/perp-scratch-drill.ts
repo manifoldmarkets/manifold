@@ -1427,10 +1427,9 @@ if (require.main === module)
       for (const target of metricTargets) {
         const row = await pg.oneOrNone<{
           data: MetricData
-          invested: number | string | null
           profit: number | string | null
         }>(
-          `select data, invested, profit
+          `select data, profit
            from user_contract_metrics
            where user_id = $1
              and contract_id = $2
