@@ -1,514 +1,461 @@
-# Perps launch — review handoff (2026-07-04)
+# PERP launch — senior engineering review handoff
 
-Branch: **`perps-launch`** (pushed). Everything below sits on top of Stephen's original
-`perps` branch (`5f8fcf137`, April 2026). Reviewer: this doc is self-contained; the two
-companion docs are `perps-launch-plan.md` (repo root, original implementation plan) and
-`backend/shared/src/perps/README.md` (architecture).
+Updated: 2026-07-28
+Branch: `perps-launch`
+Implementation snapshot: `55f6b8873`
+Review base: `61b3394e2` (`origin/main` at the branch merge base)
 
-> **Launch decision (2026-07-28):** ECI is excluded from the launch set because
-> its running frontier is monotone non-decreasing and produces a structurally
-> one-sided perp. Keep its feed/scheduler/history, but do not create or announce
-> an ECI market. This is enforced by `marketCreationEnabled: false` in the
-> registry, the `create-perp` guard, and the admin picker. OpenRouter open-weight
-> share is the AI launch market instead.
+This replaces the old rolling handoff journal. It is meant to orient a senior
+engineer reviewing the final branch, not to preserve every step taken during
+development.
 
-## TL;DR for the reviewer
+## Start here
 
-- 11 perps commits on top of Stephen's branch: 3 from the rebase/infra pass
-  (`e3d45c3b5`, `ce2e36e83`, `0e1263558`), 8 from today's live QA session (see table).
-- Today's QA on dev found and fixed **three launch-blocking bugs that all shipped
-  "green"** (build + typecheck + 171 unit tests passing): a transaction-rollback bug
-  that froze every fast-feed market, a market page with no update mechanism at all, and
-  a profile endpoint that stripped every perp field. The unit tests cover the pure math
-  only — **nothing catches integration bugs**. That is the meta-finding: please review
-  the engine's DB-composition paths line-by-line, not just the AMM math.
-- Three markets from the original prototype set exist on dev and are
-  live-ticking; the ECI prototype is not a launch market. Funding has **never
-  run** for them (see Untested). Two engineered liquidation/ADL scenarios are
-  armed on the dev BTC market and will fire on their own with price movement.
-- Known design tension (deliberate, needs a team decision, not a silent fix): the
-  solvency gate admits unlimited notional at open; ADL is the only backstop. A live
-  Ṁ28M short vs a ~Ṁ28k long pool on dev demonstrates it.
+Review the implementation with:
 
-## 1. What this branch is
-
-| Layer | Commits | Summary |
-|---|---|---|
-| Stephen's perps | (`origin/perps`, ~5.5k lines) | Parimutuel dual-pool perp AMM: pure math in `common/src/perps/amm.ts`, engine in `backend/shared/src/perps/engine.ts`, 4 DB tables, API endpoints, market page UI. Winners paid from the loser pool; ADL haircuts winners when it can't cover; hourly funding from crowded side to thin side. |
-| Merge + hygiene | `86b88590a`, `e3d45c3b5` | Merged main (gemini SDK migration etc.). Freshness flag flipped ON (`PERPS_SKIP_ORACLE_FRESHNESS=false`), input validation, funding double-run guard moved under the advisory lock, metrics fast path for sub-minute ticks, **19 AMM unit tests** (first tests for the money math). |
-| Oracle infra | `ce2e36e83` | Feed registry (`backend/shared/src/oracle-feeds.ts`) with bounds/jump-guard/staleness per feed; 15s scheduler job `update-oracle-feeds` (croner handles sub-minute; no separate worker needed); launch feeds include `btc-usd` (median Coinbase/Kraken/Bitstamp) and `uk-grid-carbon` (NESO 30-min actuals); `eci-frontier` remains runtime-only and cannot back a new market; backfill scripts; `create-perp` now honors `groupIds` + generates embeddings + validates `maxOraclePriceAgeMs` ≥ feed staleness. |
-| Today's QA session | 8 commits below | Live testing against dev with a human trading through the UI. Bug fixes + UX to a "high-frequency instrument" standard. |
-
-## 2. Today's commits (reasoning included)
-
-| Commit | What | Why |
-|---|---|---|
-| `38164675f` | Bet panel: collapsible profit-scenario ladder (+25/50/100% → price needed → mana profit), funding cost in Ṁ/hr, log-scale leverage slider | Traders should quick-math "if it hits X in N hours I make Y minus funding" in their head. Funding shown on **margin, not notional** — matches `applyFunding` (see risk #4). Linear slider bunched 1×/5×/10× marks unreadably on 375px phones; leverage is perceived logarithmically. |
-| `cb3bef07b` | Admin create-perp form: per-side subsidy, topic selector, live feed-health preview, "create unlisted" | The form is the system of record for market creation and couldn't express asymmetric launch configs; topics were API-only. Feed-health preview kills the #1 admin footgun (creating against a stale/mistyped feed). ECI is now excluded rather than compensated for with skewed subsidy. |
-| `e3b6146a8` | Form funding cap 100 → 8000 %/yr, show %/day | Launch config (0.001/hr ≈ 876%/yr ≈ 2.4%/day) literally couldn't be typed into the form. |
-| `e3bdef784` | **Engine fix: fast path used `.none()` on a `returning *` query** | pg-promise throws `QueryResultError(notEmpty)` when rows come back → **whole tick transaction rolled back** → every fast-feed perp froze at its creation price. Found live on dev: `oracle_prices` 15s-fresh while the contract never moved. One char fix (`.one()`), but see review focus #1. |
-| `e518e6cc8` | Market page: 15s poll of oracle price | The page had **no update mechanism** — no websocket topic, no poll. The engine runs in the scheduler process, so it can't reach the API's websocket server; polling is the pragmatic fix. |
-| `7353bf572` | Funding chart axis fix (read ±876,000%); green/red tick flash on price | Flat funding series was padded ±1 in raw per-hour units → annualized to ±876,000% on the y-axis. Flash = exchange-style "the number is live" cue. |
-| `fb10cf796` | Whole page live: `LiteMarket` carries perp fields; `market/:id` polled every 15s; **instant refresh after any trade/close** | Trading updated only the bet panel's local state; the position panel didn't learn about a new position until full page reload → user double-opened a short without seeing the first ("tricks users"). Now: one shared live overlay (price/pools/funding) + refresh() propagated to both panels on any action. |
-| `b55d5d141` | Profile trades tab: real prices instead of "0.0000"; perp-native row expansion | `get-user-contract-metrics-with-contracts` `pick()`s a field allowlist that had no perp fields → label formatted `undefined` as "0.0000". Expansion now shows positions (notional/margin/entry/liq/live PnL) + last 10 engine events instead of an empty CPMM bets table. |
-
-Also: `backend/scripts/run-oracle-tick-loop.ts` — local stand-in for the deployed 15s
-scheduler job. Required for any dev testing while the deployed dev scheduler runs main
-(no perps jobs).
-
-## 3. Current dev environment state (as of handoff)
-
-- **Markets live on dev** (created via the admin UI by the shared `Dev Manifold Markets`
-  account): `bitcoin-usd-perpetual` (25k/25k subsidy, maxAge 5min),
-  `epoch-ai-capabilities-index-frontie` (10k long/30k short, CC-BY credit in
-  description), `uk-grid-carbon-intensity-gco2kwh-pe` (10k/10k). All 100× max leverage,
-  876%/yr funding cap, k=10. All have embeddings; **UK carbon is missing its topic tag**
-  (Science didn't attach — re-add via market page or API). The ECI contract is
-  a historical dev prototype only: exclude it from launch QA datasets,
-  creation batches, and announcements.
-- **Not created**: the new Trump market. The April `trump-approval-rating` perp still
-  exists with old params (k=1, 30h maxAge, live history incl. a 38× long). **Open
-  decision**: keep it (has history) vs resolve + recreate with launch params.
-- **Feeds**: all 4 backfilled and healthy. `btc-usd` ticking ~15s (347 rows in the last
-  hour), `uk-grid-carbon` on 30-min blocks, `trump-approval-rating` + `eci-frontier`
-  daily (refreshed through 2026-07-03; ECI frontier = 161.01, Claude Fable 5).
-- **Processes** (all local to Tod's machine — dev has NO deployed perps scheduler):
-  API on :8088, web on :3000, 15s tick loop (`run-oracle-tick-loop.ts`). **When these
-  stop, markets freeze on their maxAge timers** (BTC after 5 min) — freeze means chart
-  stops and opens AND closes are blocked. This is the freshness gate by design, not a bug.
-- **Armed live scenarios on the BTC market** (left intentionally, will fire on price
-  movement — audit the event rows + notifications when they do):
-  1. `Dev Manifold Markets` holds a **100× short, Ṁ28M notional, entry 61,988.81,
-     liquidation at 62,608.70** (+1%). BTC printed 62,221 during the session.
-  2. Any tick below ~61,988 makes that short profitable beyond what the ~Ṁ28k long pool
-     can pay → **ADL should haircut it** (adl event + notification, factors < 1).
-  3. `Devzy` holds a small 100× long (liquidates ~1% down).
-
-## 4. Highest-risk review areas (ranked)
-
-1. **Engine DB composition** (`backend/shared/src/perps/engine.ts`). The `.none()` bug
-   pattern may not be unique. Every `pgTrans.multi(...)` / `.none()` / `.one()` against
-   queries built in `queries.ts` (several end in `returning *`) deserves a look — a
-   result-shape mismatch **rolls back the whole transaction**, and the scheduler
-   swallows it into a log line. Nothing else fails loudly.
-2. **Solvency gate admits unlimited notional** (`solvencyFactor` in
-   `common/src/perps/amm.ts` + the deliberate "no notional cap" comment in
-   `openOrAddPosition`). It only counts *existing* unrealized profit (≈0 for any fresh
-   position), so the Ṁ28M-vs-Ṁ28k position on dev sailed through. Fat subsidies were the
-   planned mitigation; they demonstrably cannot mitigate gigaleverage × giga-margin.
-   **Proposed team decision: cap open notional at N× the opposing pool** (even N=10
-   kills the pathological case without touching normal flow). Deliberate design per the
-   original plan — do not silently change it, but do pressure-test it.
-3. **No integration tests.** The 19 AMM tests are pure-math only. The three bugs today
-   were all in integration paths. A jest suite that runs the engine against a real
-   (or test-container) Postgres — open→tick→liquidate→resolve — would have caught all
-   three. Biggest missing safety net for future changes.
-4. **Funding is charged on margin (costBasis), not notional.** `applyFunding` scales
-   `costBasis` by (1−f). Standard perp convention (incl. Kalshi) is funding on
-   notional/position value; on ours, a 100× and a 1× position with equal margin pay the
-   same funding despite 100× the exposure — so funding is nearly free for exactly the
-   positions that stress the pools most (compounds risk #2). An old UI comment claimed
-   "fraction of notional" (wrong, code wins; UI now shows the true Ṁ/hr). **Decide:
-   convention (notional) vs current (margin)** — changing it alters the economics.
-5. **Freshness gate blocks closes too** (`closePosition` in engine). Anti-cherry-picking
-   by design, but a feed outage locks leveraged holders in while the real price moves.
-   Needs a product decision (hard block vs close-only-with-warning) + the §alerts below.
-6. **Field-stripping pattern.** The profile bug came from a `pick()` allowlist. Grep for
-   other endpoints/components that slim contracts (`pick(`, custom column lists) and
-   check they either include perp fields or degrade gracefully. `ContractStatusLabel`
-   now dashes on missing price — other surfaces (feed cards, search rows, embeds,
-   `feed-perp-price-sparkline`) haven't been audited for perps at all.
-7. **Poll-based liveness.** Page polls `market/:id` every 15s per open viewer. Fine at
-   QA scale; at launch scale it's N viewers × 4/min hitting an uncached endpoint —
-   check the cache strategy on `market/:id`, and see the tick-rate plan below (the
-   endgame is websockets, which also fixes this).
-8. **Hot contract row.** Every BTC price change writes `contracts.data` (~4/min); the
-   row has FTS generated columns + triggers. One market is nothing; 50 fast markets
-   might not be. Soak numbers so far: 347 oracle rows/hr, no lock contention observed,
-   tick errors zero after the `.one()` fix.
-9. **CC-BY compliance** on the ECI market description (must credit Epoch AI with link —
-   done on dev; keep for prod). **G9**: perp volume counts notional (margin × leverage),
-   inflating volume stats vs CPMM — known/accepted; leagues/site-profit exclude perps.
-
-## 5. Untested — needs testing before prod (priority order)
-
-1. **Funding on the new markets — never ran.** The local loop only runs the 15s
-   oracle tick; the hourly `update-perps` job has not run in this session (0 rows in
-   `contract_perp_funding_events` for all 3 new markets). Must verify: funding fires
-   hourly, exactly once (double-run guard under the advisory lock), correct direction
-   (long-heavy BTC pool → longs pay), and per-user `funding` events land.
-2. **Forced liquidation + notification.** Plan is ready: seed a scratch feed
-   (`test-liquidation`), create a throwaway market via the admin form, open a 50× long,
-   write one adverse price via `internal-write-oracle-price` (admin), verify the next
-   tick liquidates, `perp_liquidation` notification arrives, margin stays in pool.
-   (Deliberately NOT run against real feeds — `oracle_prices` is append-only by policy.)
-   The two armed BTC scenarios (§3) may cover liquidation + ADL organically first.
-3. **ADL notification content** — `applyADL` scaling verified in unit tests, but the
-   end-to-end notification (only *scaled* users notified, correct factor) is untested.
-4. **Resolve + unresolve-block** — `resolvePerp` settles everyone at oracle price,
-   residual → creator, unresolve must 400. Test on the scratch market, then decide the
-   April Trump market's fate with the same flow.
-5. **Stale-feed drill** — stop the tick loop 6+ min: BTC opens AND closes must 400 with
-   the stale-feed error; `[oracle-feeds]`/`[update-perps]` log.error lines fire. Also
-   verify the market page communicates the freeze (it currently doesn't — UX gap).
-6. **Multi-user concurrency** — two accounts trading the same market simultaneously
-   (advisory lock serializes; nothing observed, but untested under real concurrency).
-7. **Flip path via UI** — engine flip (auto-close opposite side) is unit-tested;
-   clicking through it in the UI while the page live-polls is not.
-8. **GCP log-based alerts** (still to create): scheduler ERROR on `[oracle-feeds]` and
-   `[update-perps]`. This is the guard against the known failure mode — dev's oracle
-   silently froze for 19 days in June when a redeploy displaced the perps scheduler.
-9. **Mobile pass** on the new bet-panel/scenario UI (built to fit 375px; not re-checked
-   since the live-page changes).
-10. **Prod rollout** (§6) — nothing prod-related has been touched.
-
-## 6. Prod rollout protocol (agreed, not started)
-
-1. Merge to main is the ship mechanism — **never branch-deploy to prod** (a later main
-   deploy would silently displace the perps scheduler jobs: exactly the June dev
-   incident).
-2. Run the perps migration on prod; backfill all feeds; verify tick + funding cadence.
-3. Create markets **unlisted** from the official @ManifoldMarkets account (creator
-   identity is public; creator economics — residuals, bonuses — should accrue to the
-   house, not a personal admin).
-4. Self-trade a sanity pass on each; flip public; tag topics; announce.
-
-## 7. Soft plan: raising the Bitcoin tick rate (the "initial test set" candidate)
-
-Current: 15s REST polling (median of 3 exchange REST APIs), engine tick 15s, page poll
-15s. Product feedback from QA: on a play-money platform, *perceived* liveness is the
-feature; cosmetics matter as much as reliability.
-
-Decided direction (not yet built):
-- **Do NOT tighten REST polling below ~15s** — Kraken public REST allows ~1 req/s and
-  we'd trade reliability (rate-limit bans = frozen market = worst cosmetics) for little.
-- **Step 1 (cheap cosmetic)**: animate price transitions client-side (~1s count-up when
-  a real tick lands). No fabricated prices — displayed price must remain the fill price.
-- **Step 2 (the real upgrade)**: exchange **websocket feeds** (Coinbase/Kraken push
-  sub-second, free, no polling limits) → this is the first genuine justification for a
-  persistent ingestion worker (croner is fine at 15s; websockets need a long-lived
-  process). Write ticks at 1–5s granularity, engine tick to match on that feed.
-- **Step 3 (pairs with 2)**: server push to browsers (websocket topic or SSE) instead
-  of per-viewer polling; requires bridging engine-process events to the API's socket
-  server (Redis pub/sub now exists on main for cross-instance websocket messages —
-  reuse that).
-- Funding stays hourly regardless (Kalshi uses 8h windows; cadence of funding ≠ cadence
-  of price).
-
-## 8. How to run this locally (gotchas that cost us time)
-
+```sh
+git diff 61b3394e2...55f6b8873
 ```
-git fetch && git checkout perps-launch
-yarn install
-yarn build:ci          # REQUIRED before typecheck (TS6305 otherwise)
-yarn typecheck && yarn --cwd common test
-# env safety: firebase-tools' activeProjects is keyed by cwd STRING - on Windows a
-#   drive-letter-case mismatch can silently resolve PROD. Verify before launching:
-firebase use dev       # then check Node resolves DEV (see memory/gotchas)
-# API:       cd backend/api && PORT=8088 NEXT_PUBLIC_FIREBASE_ENV=DEV node lib/serve.js
-# Web:       NEXT_PUBLIC_API_URL=localhost:8088 NEXT_PUBLIC_FIREBASE_ENV=DEV yarn --cwd web serve
-# Fast tick: cd backend/scripts && npx ts-node run-oracle-tick-loop.ts
-# Hourly funding is NOT covered by the tick loop - run update-perps manually to test.
+
+Do **not** use `origin/perps` as the base. That is the April prototype ancestor
+and would hide the original PERP implementation from the review.
+
+The range is large: 171 commits, 236 files, approximately 30,116 additions and
+648 deletions. About 7,100 added lines are operational scripts and another
+1,600 are root documentation. There are also merges, reverted UI experiments,
+and historical one-shot fixes. Review the final diff by subsystem rather than
+reading every commit in order.
+
+The other useful documents have narrower jobs:
+
+- `backend/shared/src/perps/README.md`: current architecture and engine
+  behavior.
+- `perps-launch-audit.md`: detailed integration findings and DEV evidence.
+- `perps-launch-runbook.md`: operational source of truth for PROD rollout and
+  rollback.
+- `perps-launch-plan.md`: historical planning context only; it is not current
+  launch state.
+
+## Bottom line
+
+The branch is a credible release candidate, but it is not a small UI feature.
+It introduces a new financial mechanism, oracle infrastructure, four database
+tables, seven migrations, schedulers, accounting paths, discovery behavior,
+and a dedicated web trading interface.
+
+DEV is in a clean launch state:
+
+- all seven effective migrations are installed (the April base migration plus
+  six July follow-ups);
+- exactly four clean launch markets exist unlisted with zero positions;
+- BTC, UK grid carbon, Trump approval, and OpenRouter open-weight share are the
+  intended launch feeds;
+- ECI is deliberately excluded because its running frontier only rises and is
+  bad two-sided market design;
+- feed and unlisted preflights pass with zero failures;
+- the destructive DEV drill passed 148/148 checks and cleaned up after itself;
+- legacy/prototype markets were retired; and
+- the deployed DEV web, API, and scheduler have been exercised in a signed-in
+  browser.
+
+No PROD launch work should be inferred from that. Human code review, PROD
+migrations and deploys, hidden-market smoke testing, the exact announcement
+preview, and staged publication are still required.
+
+I would not ask the reviewer to rubber-stamp everything. The financial core is
+the obvious risk, but there are also several explicit product/operations
+decisions and a batch of already-used DEV scripts that can be removed or split
+out before merge.
+
+## System shape
+
+```text
+External oracle providers
+        |
+        v
+feed adapters + validation registry
+        |
+        v
+scheduler -> immutable oracle_prices -> liquidation / ADL / funding
+                                             |
+User -> API -> SERIALIZABLE engine transaction|
+              |                               |
+              +-> balances / pools / positions / append-only events
+                                      |
+                                      +-> current + period metrics
+                                      +-> web, embeds, feeds, profile, portfolio
 ```
-Windows: eslint enforces CRLF on disk; husky pre-commit lints whole staged files, so
-pre-existing jsx-a11y errors in touched files must be fixed (we fixed several); use
-`git commit -F <file>` for multi-line messages.
 
-## 9. Addendum — 2026-07-21 session (funding verified; chart overlays; main merged)
+The important package boundary remains intact: pure shared types and financial
+math live in `common/`; database behavior lives in `backend/shared/`; API and
+scheduler consume shared code independently; web and native consume common
+types and API schemas, not backend implementation.
 
-### Funding — VERIFIED on dev (§5 item 1 is done)
+## What changed, by risk
 
-Ran `update-perps` manually twice (new script `backend/scripts/run-update-perps-once.ts`,
-after freshening feeds via the tick loop + new `refresh-daily-oracles-once.ts`):
+| Area                      | Main files                                                                  | Reviewer focus                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Financial math            | `common/src/perps/amm.ts`, `funding.ts`, `pnl.ts`, `escrow.ts` and tests    | Entry/exit math, funding, liquidation, ADL, exposure capacity, finite-number handling          |
+| Transaction engine        | `backend/shared/src/perps/engine.ts`, `queries.ts`, `escrow.ts`             | Locking, retries, atomic flips, authorization, balance/pool invariant, idempotency, settlement |
+| Database                  | `backend/supabase/migrations/*perp*`, generated schema                      | Immutability, indexes, public read policy, correction procedure, migration order               |
+| Oracle/scheduler          | `backend/shared/src/oracle-feeds.ts`, feed adapters, scheduler jobs         | Source quality, cadence, staleness, ordering, fail-closed behavior, alerting                   |
+| Accounting                | PERP metric files plus generic metric jobs                                  | Current/lifetime vs day/week/month P&L, funding inclusion, race safety, league exclusion       |
+| Existing-site integration | discovery, search, related markets, stats, notifications, loans, resolution | Regressions to non-PERP markets and assumptions around `close_time = null`                     |
+| Product/UI                | `web/components/perps/`, market cards, embeds, editor, profile, TV/OG       | Correct semantics, stale/error states, polling load, mobile/dark mode                          |
+| Operations                | launch manifest, preflight, backfills, deploy scripts                       | Permanent policy vs launch-only policy, environment safety, rollback usability                 |
 
-- **Exactly one funding event per live market** with a fresh feed (BTC, UK carbon, ECI,
-  Trump). Second run immediately after: **zero new events** — the double-run guard holds.
-- **Direction correct everywhere.** Short-heavy pools (BTC 23.6k/305k → rate −0.000544;
-  UK; ECI) transferred pool mana short→long and scaled short positions down / longs up.
-  Long-heavy Trump (+0.0000283) had its two longs pay. Note the handoff's earlier
-  "long-heavy BTC → longs pay" is stale — the Ṁ28M short's forfeited margin flipped BTC
-  short-heavy.
-- Per-user `funding` events landed with per-position deltas matching `applyFunding`.
-- `manifold-daus` (feed stale 41 days) was skipped with the `[update-perps] ... is stale`
-  log.error — the alert path works.
-- **New finding:** the 15s tick and `update-perps` collide under SERIALIZABLE — several
-  SSI 40001 aborts ("canceled on identification as a pivot") during the run.
-  `runTransactionWithRetries` absorbed them and the DB shows exactly-once effects, but
-  each abort dumps a huge `pgPromise background error` object (full pg client state)
-  into the logs. Worth a log-hygiene fix before prod, and the GCP alert (§5 item 8)
-  should not page on 40001 noise.
+## Economic and lifecycle rules that need explicit approval
 
-### Armed BTC scenarios (§3) — both fired organically
+These are deliberate design choices, not implementation trivia:
 
-- The Ṁ28M 100× short **liquidated 2026-07-03 20:35 UTC** at 62,613.1 (liq level
-  62,608.70). Margin Ṁ280k forfeited to the short pool — that's why `poolShort` ≈ 305k.
-- Devzy's 100× long liquidated 2026-07-06 at 61,332. ADL never fired (no profitable
-  winners against a drained side at the time). **Notification delivery for both is still
-  unverified** — check the notification rows/UI for those two events (§5 items 2–3 remain).
+1. **Funding is charged on margin/pool value, not notional.** The crowded pool
+   transfers value to the thin pool and crowded positions have size and cost
+   basis scaled proportionally. High leverage therefore pays less funding
+   relative to notional than on a conventional exchange. The UI consistently
+   describes this as a percentage of margin.
+2. **Open interest is capped at 10× unreserved opposing-pool cover.** This is a
+   hard-coded launch solvency guard. It blocks exposure increases when capacity
+   is exhausted but never blocks an ordinary reduction or close.
+3. **Oracle staleness blocks both opens and closes.** This prevents selective
+   settlement against a stale quote, but users cannot exit during a feed
+   outage.
+4. **Trades do not move the quoted price.** They settle against a cached public
+   oracle with no trading fee or spread. Latency pickoff is an acknowledged
+   launch risk, not a solved problem.
+5. **ADL can haircut winning exposure.** Liquidation losses first consume
+   available backing; automatic deleveraging is the final solvency mechanism.
+6. **Resolution settles all remaining positions and returns residual pools to
+   the creator.** Launch feeds are therefore restricted to the official
+   Manifold creator account.
+7. **V1 has full close only.** There are no partial closes. Web is the
+   authoritative trading client; native renders PERPs read-only.
+8. **Trader PERP P&L is excluded from leagues for launch.** Period P&L still
+   exists for truthful profile/portfolio reporting. The current league filters
+   exclude PERP trading gains and losses; creator unique-bettor bonuses can
+   still count, which deserves a policy check.
 
-### Suspicious: closes at a 4.6-day-stale price (freshness gate?)
+## Risk-ranked review path
 
-On 2026-07-21 00:50–00:55 UTC, six BTC positions were closed at exactly 64,480.715 —
-the July-16 cached price (feed had been dead 4.6 days; BTC maxAge is 5 min). The
-freshness gate should 400 closes on a stale feed. Most likely the deployed dev API
-predates the `PERPS_SKIP_ORACLE_FRESHNESS=false` flip (or a local API ran with the
-skip flag). Either way: **redeploy the dev API from this branch** before further QA —
-it also needs the perp txn-category commits.
+### 1. Schema and history
 
-### Branch + chart work
+Read the seven migrations before the engine. Confirm:
 
-- **Merged `origin/main`** (13 commits, clean, no conflicts) so a dev deploy of either
-  container carries main's KYC dedupe fix, Gemini migration, and sell-shares guard.
-- **Chart overlay family** shipped in `web/components/perps/perp-chart.tsx`: dashed
-  carry-neutral (funding break-even) line, ±1σ realized-vol cone, crowd liquidation
-  bands, and your-position lines (entry / liq / personal break-even), behind persistent
-  legend toggles. Projection math is pure and unit-tested in
-  `common/src/perps/chart-projections.ts` (15 tests, incl. invariants that the personal
-  break-even path reproduces `applyFunding` exactly). Not yet browser-QA'd.
+- numeric and timestamp meanings;
+- append-only trigger behavior and how corrections would be made;
+- public-readable position/event/oracle data is intended;
+- the lack of foreign keys and the reliance on engine-level integrity are
+  acceptable; and
+- `2026072802` will be applied outside a wrapping transaction because it uses
+  `create index concurrently`.
 
-### Later 2026-07-21: scheduler deployed; chart iteration QA'd live
+### 2. Pure financial logic
 
-- Tod deployed the dev scheduler — perps jobs now run autonomously (15s ticks
-  confirmed; local loop retired). Second funding cycle observed on schedule.
-- BTC feed's 4.6-day hole backfilled (90d of hourly Coinbase closes) after the
-  chart rendered it as one giant bridge line. Chart hardened so outages can't
-  do that again: line breaks across gaps, vol excludes outage returns, live
-  ticks append client-side, x/y axes labeled, timeframe selector (client-side
-  v1 — server `since` + bucketing needs the API redeploy), responsive width.
-- Full logged-in trade lifecycle QA'd in-browser: open → You-chip + entry/BE
-  lines appear (liq far below correctly clipped, domain not crushed) → close →
-  tombstone + overlays clear. Balance deltas exact.
+Review `common/src/perps/` as one unit. The most important tests are the AMM,
+funding, escrow, P&L, oracle, and metric-period suites. Check boundary behavior
+for zero pools, extreme leverage, factor-zero ADL, floating-point dust, and
+non-finite values.
 
-### Scheduler deploy to dev — prepared, not executed
+### 3. Cash-moving engine
 
-`backend/scheduler/deploy-scheduler-windows.sh dev` is the path (build → local Docker
-image → Artifact Registry → `update-container` on the `scheduler` VM in
-`dev-mantic-markets`). Docker + gcloud auth verified working on this box. Not run in
-this session (needs interactive approval). Once deployed, dev runs perps jobs
-autonomously — remember the standing caveat: any later main-branch scheduler deploy
-silently displaces the perps jobs again (June's 19-day freeze).
+Review `backend/shared/src/perps/engine.ts` line by line. In particular:
 
-## 9b. Addendum — 2026-07-26 session (scheduler was dead 5 days; drill green; burst fix)
+- every mutation runs in a serializable transaction with a per-contract
+  advisory lock;
+- authorization, current balance, and oracle freshness are rechecked inside
+  the transaction;
+- a flip closes the old side before opening the new side atomically;
+- request idempotency cannot double-apply balance mutations;
+- before and after every cash-moving transition,
+  `net M$ txns into contract = poolLong + poolShort` within bounded dust;
+- liquidation, ADL, funding, and resolution preserve that invariant; and
+- retries do not hide unexpected errors or emit duplicate notifications.
 
-### INCIDENT: dev scheduler crash-looped since ~2026-07-21 — fixed, needs redeploy
+The money-integrity commits are best understood together:
+`726b404e6`, `fe88f7e15`, `957fd1963`, `f223b8fbd`, `a6cafbf79`,
+`2d9c2d9e0`, `44c7d32e7`, and `9d3c6f2a4`.
 
-- Symptom found via DB: funding ran once ever (07-21 07:03 UTC) then never; ECI + Trump
-  daily feeds frozen at 07-21; yet BTC ticked healthily every ~30s the whole time.
-- Root cause (GCP logs): `Error: Cannot find module 'fflate'` at boot via
-  `shared/lib/eci.js` ← `jobs/update-eci.js` — container crash-looped every ~60s.
-  fflate was only in `backend/shared/package.json`; **each service image installs its
-  own manifest**, so shared deps must be duplicated into `backend/api/package.json` +
-  `backend/scheduler/package.json` (the `@google/genai` pattern). Fixed in `b5e90dfe2`.
-- The healthy-looking BTC ticks came from a `run-oracle-tick-loop.ts` still running on
-  another machine — kill it once the scheduler is redeployed.
-- **Action: redeploy the dev scheduler from this branch** (API redeploy alone fixes
-  nothing here). And the planned GCP alerting must include **absence alerts** (no
-  funding event in >2h, no daily oracle point in >26h) — a crash-looping process never
-  emits the log.error lines a presence-alert would page on.
+### 4. Oracle ingestion and risk jobs
 
-### Scratch drill — §5 items 2–6 now VERIFIED (22/22 checks)
+Review the registry and each of the four launch adapters. The registry owns
+bounds, jump guards, cadence, staleness, and whether a feed may create markets.
+Confirm:
 
-New `backend/scripts/perp-scratch-drill.ts` (repeatable; unregistered scratch feeds, so
-live tickers can't interfere; creates unlisted throwaway markets and resolves them):
-forced liquidation fires + notification content correct; engineered ADL scales only the
-profitable winner, cost basis untouched, only scaled users notified; resolve settles at
-oracle, residual to creator, double-resolve and trade-after-resolve blocked; freshness
-gate blocks opens AND closes; concurrency (below). Run with
-`NEXT_PUBLIC_FIREBASE_ENV=DEV` or admin checks resolve against prod ids.
+- provider timestamps, Manifold publication timestamps, and engine application
+  timestamps are not conflated;
+- delayed/out-of-order provider data cannot rewrite history;
+- fast and daily feeds receive the intended scheduler cadence;
+- daily feed freshness is a job-health signal rather than a false claim of
+  intraday price discovery;
+- risk processing continues in reduce-only/halted modes; and
+- the alert lifecycle is acceptable. Alert policies are manually configured
+  GCP state, not infrastructure-as-code in this branch.
 
-### Concurrency finding + fix
+One policy worth noticing: after more than seven days stale, repeated feed
+errors are demoted to warnings to avoid an alert flood. Confirm that ownership
+and market retirement procedures make that safe.
 
-6 parallel ops on one contract chain-aborted (40001: each advisory-lock waiter's
-SERIALIZABLE snapshot predates the winner's commit) and the default 3 retries exhausted
-— 2 of 6 ops failed back to the user. Pools stayed exactly consistent (failed attempts
-write nothing): an availability bug, not an integrity bug. Fixes: engine transactions
-now retry 8× (`runPerpTransaction`), backoff gained jitter, and the pgPromise handler
-logs 40001 as a one-line warn instead of dumping full client state at ERROR (so GCP
-alerts won't page on expected contention). Drill burst needed 5 attempts to settle.
-Real fix candidates for post-launch: in-process per-contract trade queue (CPMM-style)
-or dropping to read-committed under the advisory lock.
+### 5. Accounting and leagues
 
-### ADL grind observation (risk #2, third demonstration)
+The engine is authoritative for current/lifetime metrics. A separate
+repeatable-read job reconstructs day/week/month values from immutable events,
+positions, and oracle marks.
 
-Genzy's Ṁ1M-margin 100× BTC long (Ṁ100M notional) was ADL-shaved on **55 consecutive
-ticks** on 07-21 as price hovered above entry — position ground from 100M to 26.5M
-notional while the pool couldn't cover its profit. Consequences addressed: the user got
-55 notifications (now throttled to one per user/contract/hour); the per-tick aggregate
-`adl` event rows defeat the engine's no-change fast path while active (acceptable — ADL
-IS a position change — but note the event log has NO per-user row for the scaling, so a
-position's size history can't be reconstructed from events alone; candidate fix: emit
-per-user adl events with sizeDelta). The deeper issue remains the open-notional gate
-(§4 risk 2) — this is now the third giga-position to sail through it.
+Review `common/src/perps/metric-periods.ts`,
+`backend/shared/src/perps/user-contract-metric-periods.ts`,
+`user-contract-metrics.ts`, and the generic metric jobs together. Confirm that
+adds, funding, flips, close, liquidation, ADL, and settlement reconcile, and
+that the job cannot overwrite a concurrent trade.
 
-### 2026-07-27 follow-ups (commit `4c41b908a`)
+Period P&L is reporting, not league eligibility. The league job excludes PERP
+contracts in SQL and again at runtime. Keep those concerns separate.
 
-- Scheduler redeployed with the fflate fix; funding verified autonomous (exactly one
-  event per market at 15:00:01 UTC, guard held against the live tick). GCP alerting live
-  on dev: error-presence policy + funding-heartbeat 2h absence policy (email channel to
-  Tod). Daily-job dead-man switch = daily feeds' staleAfterMs 3d→26h (GCP absence
-  conditions cap at 23h30m, so the hourly job's staleness ERROR lines carry it).
-- Two QA finds fixed: (1) perp_liquidation/perp_adl notifications rendered as BLANK rows
-  — NotificationItem's legacy contract/updated suppressor (`return null`) ate them
-  before any fallback; new PerpEngineNotification branch renders the backend sourceText.
-  (2) Chart showed ~2 days on every timeframe — the 5000-point response cap vs ~5k
-  writes/day on a 15s feed; get-oracle-price-series now takes `bucketSeconds`
-  (last-point-per-bucket, real ts, gaps preserved) and the chart fetches per-frame
-  windows (1M verified: 1.35d → 29.99d). **DEPLOY ORDER: API before/with web** — the
-  schema is .strict(), so an old API 400s the new bucketSeconds param, and the Vercel
-  branch preview auto-deploys web on push.
+Known reporting limitation: a historical boundary uses the newest oracle point
+published by the cutoff, not a persisted record of the exact price each
+contract had applied. A failed fan-out can therefore create a temporary
+difference between the reporting mark and historically executable contract
+state.
 
-### Still open after this session
+### 6. Existing-market regressions
 
-- Scheduler redeploy (above) + GCP alerts (presence + absence).
-- Flip path via UI; mobile pass (need a browser/human).
-- Trump market decision (April market: keep vs recreate).
-- The six stale-price closes from 07-21 — re-verify closes 400 once the redeployed API
-  is confirmed on this branch (the engine-level gate passed the drill; the deployed
-  binary was the suspect).
-- Prod rollout protocol (§6).
+This is where many small-looking changes came from. Existing queries often
+treated `close_time > now()` as synonymous with “open”; PERPs have no close
+time. Review changes to:
 
-### 2026-07-27 dev QA loop (commits `4c59dfda7`, `846752c7d`)
+- Browse, Explore, unified feed, search, related markets, reposts, topic
+  interests, and cache revalidation;
+- importance and daily-mover scores;
+- global/topic DAU and creator metrics;
+- loans, generic bet helpers, resolve/unresolve, movement notifications, and
+  market update rules; and
+- balance-change and transaction categories.
 
-Full logged-in trade-lifecycle QA against the redeployed dev API/scheduler, three
-rounds across all four markets.
+Discovery ranking is not pinned. It uses committed 24-hour margin volume,
+distinct recent human traders, social activity, and absolute 24-hour oracle
+movement where relevant. It deliberately avoids leveraged notional and
+automated funding. Relative calibration against ordinary markets still needs
+observation under real traffic.
 
-**Fixed and pushed (bug fixes only, per Tod's ground rule):**
+### 7. Product surfaces
 
-1. `4c59dfda7` chart frame gating: frameCounts read the loaded (bucketed) series, so
-   the All view's 2h buckets disabled 1H/6H on a 15s feed; and the fetch keyed on the
-   raw selection while display fell back to All, stranding slow markets on near-empty
-   windows when a frame persisted from a fast one. Now an 8-point raw probe measures
-   the feed's true cadence (median dt) and a frame is offered when window/cadence ≥ 4;
-   the fallback (activeFrame) drives fetch AND display. maxOraclePriceAgeMs was
-   rejected as proxy (UK 3h vs 30-min cadence, ECI 72h). Rebased onto the 1D-landing
-   commit; kept its starved-fetch All fallback as an outage guard. Verified per-market:
-   BTC all frames, UK −1H, ECI/Trump −1H/6H/1D.
-2. `846752c7d` hourly funding silently skipped ~alternate hours: caught live — 17:00
-   run wrote NO funding for any market (16:00 ran at :01.098, elapsed 3,600,075ms →
-   fired; 17:00 ran at :00.822, elapsed 3,599,780ms → skipped). The scheduler's
-   prefilter compared against full FUNDING_PERIOD_MS while the engine gate tolerates
-   period−1min precisely for this jitter; each firing stamps a later event ts, so
-   full-period comparison ratchets into recurring skips. One line: prefilter now uses
-   the engine's tolerance. **Needs scheduler redeploy.** Note: a single skip's gap is
-   1h59m59.8s — just under the 2h funding-heartbeat absence alert, so it never paged;
-   consider tightening to ~90m post-redeploy. Cadence watched live through the
-   session confirms the alternating pattern on the deployed binary: 15:00 ✓ 16:00 ✓
-   17:00 ✗ 18:00 ✓ 19:00 ✗.
+Verify the dedicated market page first, then compact cards and embeds. The
+branch covers:
 
-**Verified end-to-end this session:**
+- Perpetual badge and on-page explainer;
+- live price, source attribution, backing pools, funding, leverage, positions,
+  trades, holders, stale state, resolution state, and notifications;
+- Browse/Explore/search/related cards;
+- profile, portfolio, balance log, dashboard, TV, OG/SEO, and read-only native;
+- `%[market]`, Add Question, Add Embed, pasted market links, and external iframe
+  embeds; and
+- future chart endpoint date labels, mixed-cadence history, and labeled embed
+  axes (`$`, `%`, or numeric).
 
-- Post-trade UI latency on the no-cache API: open 0.9–1.6s, add 0.9s, flip 0.95–1.6s,
-  close 0.35–0.65s optimistic / 1.2s confirmed — the old ~3.4s CF ceiling is gone.
-- Lifecycle on all four markets (open/add/flip/close); flip via UI (was still-open).
-- Balance log renders perp txn categories ("Opened 100× long — Ṁ10 margin at 66",
-  "Flipped out of long — PnL +Ṁ0", running balances); sidebar balance decrements live.
-- Position card: danger banner appears at 1.0%-away and clears at 15.1%-away;
-  +Ṁ166/+1666.67% PnL renders; paying AND earning funding sentences correct, receiver
-  rate pool-ratio-scaled; "next in Xm" countdowns consistent with diamonds.
-- Trades/Holders tabs live-merge (fresh trades <1min); diamond hover tooltip intact
-  post-merge; Show all/fewer; profit scenarios (return-on-margin semantics check out);
-  mobile 390px pass on the market page (layout holds, axes readable).
-- Cross-market frame persistence: 1H from BTC → ECI falls back to All, highlighted
-  AND fetched directly (single request).
-- Funding cadence live-watched: 15:00 ✓, 16:00 ✓, 17:00 ✗ (root-caused above);
-  18:00 expected to fire even pre-redeploy (post-skip elapsed ≈ 2h).
-- UK carbon feed now publishes HOURLY (was 30-min) and can arrive late (17:00 reading
-  landed ~17:10); the cadence probe adapts without code changes.
-- **Liquidation + notification verified live end-to-end** (was the last untested
-  money path): armed a real 100× short @ 77 on UK carbon (after the first trap, a
-  100× long, banked +Ṁ166 on the 66→77 jump instead of liquidating); the 19:00
-  reading spiked 71→79 through the 77.770 liq price. Engine wrote the liquidation
-  (full notional, margin forfeited), the perp_liquidation notification composed
-  correctly ("Liquidated: your 100× short ... lost its Ṁ10 margin. The price hit
-  79.000, past your liquidation price of 77.770.") and RENDERS in /notifications
-  (bolt icon, top of list) — the 4c41b908a blank-row fix holds. Position card
-  removed; history shows the "💥 Liquidated short −Ṁ10 margin at 79" tombstone.
-  Correctly NO balance-log row (margin left the balance at open). Note: UK carbon's
-  late publication (~10 min past the hour) means the liq executed ~19:10 against the
-  19:00-stamped price — inherent to the feed, fine.
-- Funding charge verified against my own open positions at 18:00: BTC long charged
-  exactly the displayed −Ṁ0.0019, UK short −Ṁ0.0006 (crowded side), Devzy −Ṁ193.75.
-  Position-level Ṁ/hr in the card is rate × position value (margin+uPnL) — coherent
-  with the %/day-of-margin copy.
-- Bet-panel input edge cases: margin 0 → submit disabled; negative input sanitizes
-  to positive; margin > balance → submit disabled but SILENTLY (polish: add an
-  "insufficient balance" hint). Portfolio Trades tab renders open perps (value,
-  position, % incl. realized); closed ones drop off the Open filter correctly.
-- All test positions closed at session end; Marketing net +Ṁ157 (the +166 win, −10
-  liquidated margin, dust elsewhere) — balances reconcile at every step.
+Embeds and several cards poll/fetch their own PERP data. Four markets are
+reasonable, but a large future PERP catalogue will create N+1 fetches and many
+15-second polling loops. This is scale debt, not a day-one blocker.
 
-### 2026-07-27 morning: Tod's design-item verdicts + follow-up commits
+### 8. Operations and release tooling
 
-Scheduler redeploy (Tod, ~03:30 UTC) **verified over four consecutive live
-hours**: funding fired 04:00/05:00/06:00/07:00 on every market. Overnight
-forensics of the pre-deploy hours show the ratchet exactly as modeled — 21:00
-and 02:00 full skips, plus PARTIAL skips at 23:00/00:00 where per-market stamp
-drift split the four markets into two fire groups. Item closed.
+Review the launch manifest, preflight, backfills, and deploy behavior after the
+runtime code. The manifest is not merely documentation: creation/update paths
+permanently enforce official creator, exact title, and required topics for
+these feed IDs. Confirm that those should remain canonical rules after launch,
+not just pre-launch checks.
 
-Commits (one per item, per Tod's revert-friendly ground rule):
+The create endpoint defaults to `visibility = 'public'`; the admin UI and
+runbook explicitly request unlisted. A direct admin API call can therefore
+publish immediately. Decide whether the endpoint itself should default to
+unlisted before launch.
 
-- `5e2d86c1c` trades-tab rows drop the dangling "on" when the event has no
-  direction (aggregate ADL rows: "was auto-deleveraged @ 66,902.17").
-- `d8915010d` position-history caption hidden when every row already fits
-  (no more "last 1"); expanded view says "all N".
-- `3795cbe20` **UK carbon feed root cause + fix**: NESO began settling
-  actuals late and in batches on 2026-07-25 — a batch can finalize a block
-  AFTER its successor, and the latest-only sampler permanently dropped the
-  interleaved ones (feed degraded 48→24 rows/day while the source stayed
-  complete). New `fetchRecent` on the feed registry: the tick upserts every
-  finalized block in a trailing 6h window (idempotent), engine still applies
-  only the newest. History healed via backfill rerun (Jul 25 back to 48/day).
-  **Takes effect on the next scheduler deploy** — until then the live feed
-  keeps sampling latest-only (holes self-heal on deploy via the 6h window +
-  the backfill can be rerun anytime). The feed source itself is fine — no
-  need to switch providers.
+`broadcastNewContract` is currently invoked inside the creation transaction,
+before commit. Review the small pre-commit visibility/race window and the
+failure semantics of doing external work from inside the transaction.
 
-Resolved with NO change (Tod's calls): zero-holder funding copy stays "longs
-pay shorts"; money display already uses sitewide `formatMoney` (its floor
-behavior IS the site convention — `getMoneyNumber`); insufficient-balance UI
-already shows "not enough funds" + red highlight (earlier QA note was wrong);
-Trump market will be recreated on prod anyway.
+Topic attachment and embedding generation happen after market creation. A
+failure can leave a valid but undiscoverable market, which is why the preflight
+and discovery-repair script exist.
 
-Pending Tod one-liner (classifier blocked the gcloud write): tighten the
-funding-heartbeat absence alert 2h→90m — prepared policy JSON exists; command
-in the session notes. Rationale: with hourly cadence now guaranteed, any 90m
-silence is a real failure, and 2h sat just above a single skip's gap.
+## Why the weird small changes exist
 
-**Perp wind-down protocol (proposed, for §6):** perps have no resolution
-cliff — resolve settles every position at the current oracle price, identical
-to what a close would pay (drill-verified; residual → creator; double-resolve
-and trade-after-resolve blocked; UI hides resolve for perps so it goes via
-API). Protocol: (1) announce the wind-down date in the description + a pinned
-comment ≥72h out, (2) stop promoting, (3) at the date, resolve via API as the
-creator. No close-only mode needed — holders lose nothing by being settled vs
-closing. For ECI, prefer a short window (revision risk).
+| Change                                           | Reason                                                                                                                                                                                                       | Recommendation                                                                                                                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API deploy shell/PowerShell files                | `PERP_TRADING_MODE` must reach every API container. DEV defaults enabled; PROD deploys require an explicit `enabled`, `reduce-only`, or `halted` so a routine deploy cannot silently clear an incident mode. | Keep, but explicitly approve the new deployment contract. It affects every future PROD API deploy and changing mode still requires an instance roll. Alternate deploy paths can bypass the script guard. |
+| No scheduler deploy change                       | Trading mode governs user API actions. Oracle, liquidation, ADL, funding, and resolution must continue during incidents.                                                                                     | Correct; keep.                                                                                                                                                                                           |
+| `.gitattributes` CRLF exception                  | Suppresses a line-ending warning for the legacy Windows shell script. No runtime behavior.                                                                                                                   | Optional. Prefer normalizing the file or drop this line if it is only review noise.                                                                                                                      |
+| `fflate` in shared, API, and scheduler manifests | Shared ECI code imports it, while each service image installs its own dependency manifest. Missing duplication previously crash-looped DEV scheduler.                                                        | Necessary only while the retained ECI job exists. Decide on ECI first.                                                                                                                                   |
+| Generic API client `cache` option                | Post-trade refetches need `no-store`; otherwise a successful trade can be followed by cached pre-trade market/position state.                                                                                | Keep.                                                                                                                                                                                                    |
+| URL/HTML/TipTap/embed helpers                    | Preserve localhost/DEV/preview origins, safely recognize Manifold links, and render the right market in mentions/iframes.                                                                                    | Keep; broad but directly supports the launch announcement and DEV QA.                                                                                                                                    |
+| `getLinkTarget` / native hook cleanup            | A normal helper was calling a React hook; embed/native work exposed the Rules-of-Hooks problem.                                                                                                              | Valid fix, but reasonable to split as a small standalone refactor.                                                                                                                                       |
+| Loan endpoint checks                             | Existing loan math assumes share-based markets; PERPs already provide leverage.                                                                                                                              | Keep the explicit exclusion.                                                                                                                                                                             |
+| Generic bet and unresolve checks                 | Prevent routing PERPs through CPMM betting and prevent reversal after PERP settlement has drained positions/pools.                                                                                           | Keep.                                                                                                                                                                                                    |
+| Search/related SQL and cache changes             | No-expiry markets have `close_time = null`; old eligibility logic made them invisible or left stale results after unlist/resolve/delete.                                                                     | Keep, but review carefully for ordinary-market regressions.                                                                                                                                              |
+| Movement-notification exclusion                  | Oracle movement is not an ordinary user bet; PERPs have dedicated notifications.                                                                                                                             | Keep.                                                                                                                                                                                                    |
+| Balance/transaction categories                   | PERP margin, payout, residuals, and liquidation need intelligible accounting rows instead of generic transfers.                                                                                              | Keep.                                                                                                                                                                                                    |
+| Exact clean-title rule                           | “Perpetual” is rendered as a badge/explainer rather than duplicated in launch titles.                                                                                                                        | Product choice; the permanent manifest enforcement deserves review.                                                                                                                                      |
 
-**Design items for Tod (deliberately unchanged):**
+## Scope that can be reduced
 
-1. Carry-line proportional horizon (`max(h, prop)` in projectionHorizonWithFunding):
-   All = ~31-day +15% dashed climb; ECI 1W = ~2-day climb on a flat staircase. Options:
-   funding-event horizon whenever events fit, or cap prop on frames beyond 1D.
-2. Funding tab: line interpolates straight across the 5-day scheduler-dead gap and
-   y-axis is annualized % — both fold into the agreed bar-chart rework.
-3. Header "longs pay shorts" with ZERO short holders: transfer accrues to the short
-   pool (backs future shorts — Devzy pays Ṁ194/hr into an empty side on BTC).
-   Coherent mechanically; copy could say "pays the short pool".
-4. Trades tab aggregate ADL rows: "anon was auto-deleveraged on @ 66,902.17" —
-   dangling "on" (aggregate events carry no direction); per-user adl rows still absent.
-5. Balance-log polish: payout Ṁ9.9975 renders "+Ṁ9" (truncated, not rounded);
-   add-to renders as "Opened 2× long" (Trades tab does distinguish "added to").
-6. Position history caption shows "last 1" when every row already fits (hide ≤ 5).
-7. Pre-existing, not perps: /notifications fires markallnotifications 3× before the
-   auth token is ready → 401s + dev-overlay noise; self-heals with a later 200.
+The clearest unnecessary weight is not the engine or API deploy propagation. It
+is historical tooling that has already done its job.
 
-## 10. Key files
+### Strong remove-or-split candidates
 
-| Area | Files |
-|---|---|
-| Pure math + tests | `common/src/perps/amm.ts`, `amm.test.ts`, `pnl.ts`, `position.ts` |
-| Engine (review focus) | `backend/shared/src/perps/engine.ts`, `queries.ts`, `user-contract-metrics.ts` |
-| Oracle infra | `backend/shared/src/oracle-feeds.ts`, `oracle.ts`, `btc-price.ts`, `uk-grid-carbon.ts`, `eci.ts`, `trump-approval.ts` |
-| Scheduler | `backend/scheduler/src/jobs/update-oracle-feeds.ts` (15s), `update-perps.ts` (hourly), daily feed jobs |
-| API | `backend/api/src/create-perp.ts`, `place-perp-trade.ts`, `close-perp-position.ts`, `get-perp-*.ts`, `get-user-contract-metrics-with-contracts.ts` |
-| Web | `web/components/perps/*` (overview/chart/bet-panel/position-panel), `web/pages/admin/create-perp.tsx`, `web/components/bet/user-bets-table.tsx`, `web/components/contract/contracts-table.tsx` |
-| Local ops | `backend/scripts/run-oracle-tick-loop.ts`, `backfill-*-oracle.ts` |
+- `backend/scripts/rebuild-btc-perp-dev.ts`
+- `backend/scripts/rebuild-perp-launch-dev.ts`
+- `backend/scripts/cleanup-retired-perps-dev.ts`
+- `backend/scripts/verify-perps-dev-state.ts`
+- old resolve/recreate, inspect, and purge one-shots for prototype markets
+
+Together, the new scripts directory accounts for over 7,000 added lines. The
+launch preflight, the four launch-feed backfills, and the discovery repair
+script have durable release value. The rebuild/cleanup scripts mostly preserve
+DEV history that is already captured in the audit.
+
+`perp-scratch-drill.ts` is different: it is a valuable manual end-to-end
+financial harness and produced the 148-check evidence, but it is almost 2,000
+lines and is not a CI test. Keeping it in a separate tooling PR would reduce
+the production review without losing it.
+
+### Fix or remove before merge
+
+`run-oracle-tick-loop.ts`, `run-update-perps-once.ts`, and
+`refresh-daily-oracles-once.ts` say DEV in comments but trust the active
+Firebase project and can write to PROD without a hard environment guard.
+Several older one-shots have the same problem. They should not quietly ship as
+safe-looking DEV utilities: add a strict DEV guard and confirmation, redesign
+them as documented operator tools, or remove them.
+
+### Explicit retain-or-remove decision
+
+ECI cannot create a market, but its adapter, daily scheduler job, history
+backfill/purge code, CSV parser, and `fflate` dependencies remain active. This
+is not dead code: the scheduler still fetches and stores ECI history. Either
+retain that research/history service deliberately or remove the whole stack.
+Do not keep it merely because it already exists.
+
+The retired Manifold-DAU prototype also has maintenance scripts. Confirm that
+the feed has a post-launch owner or remove those scripts.
+
+### Optional product scope
+
+- The carry path, volatility cone, crowd liquidation bands, and personal
+  entry/liquidation/break-even chart overlays add roughly 1,000 lines. They are
+  tested and useful, but not required for trading correctness.
+- Global DAU, new-user activation, topic DAU, and creator metrics now count PERP
+  participation. Semantically sensible, but broader than discoverability and
+  worth reviewing as an analytics-definition change.
+- Immutable period accounting is substantial. It should stay if PERPs appear
+  in day/week/month profile and portfolio views; it could only be deferred by
+  explicitly omitting PERPs from those views.
+- Native read-only support, dashboard/TV/OG/SEO, and visual polish are
+  completeness work rather than financial core. They are reasonable to keep,
+  but can be reviewed later in the pass.
+
+## Migrations
+
+Apply only migrations not already present, in this order:
+
+| Order | Migration                                                   | Purpose                                                                                      | Priority                                        |
+| ----: | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+|     1 | `2026042201_add_perps.sql`                                  | Oracle, position, event, and funding-event tables; indexes and read policies                 | Required                                        |
+|     2 | `2026072801_include_perps_in_related_market_embeddings.sql` | Allows active no-expiry PERPs in related-market embedding SQL                                | Product correctness                             |
+|     3 | `2026072802_perp_participation_events_ts_idx.sql`           | Partial time-leading participation index                                                     | Performance; run outside a wrapping transaction |
+|     4 | `2026072803_make_oracle_prices_append_only.sql`             | Rejects historical oracle mutation                                                           | Money/audit critical                            |
+|     5 | `2026072804_perp_trade_idempotency.sql`                     | Unique retry keys for exposure and close mutations                                           | Money critical                                  |
+|     6 | `2026072805_add_oracle_source_time.sql`                     | Separates provider source time from publication time                                         | Oracle/accounting correctness                   |
+|     7 | `2026072806_perp_accounting_history.sql`                    | Adds event application and oracle publication time, indexes, and append-only deletion guards | Reporting/audit critical                        |
+
+DEV already has all seven effective migrations. Migration `2806` enables
+reliable period reconstruction; it does **not** opt PERP profits into leagues.
+PROD should follow the schema-first order in the runbook before API or scheduler
+code that expects these columns/triggers.
+
+## Current verification evidence
+
+At implementation snapshot `55f6b8873`:
+
+- `common`: 27/27 suites, 385/385 tests;
+- common and shared builds pass;
+- API, scheduler, and web no-emit typechecks pass;
+- targeted ESLint and Prettier checks pass;
+- the production-style web build passes;
+- changed native files pass their filtered strict check (the package has
+  unrelated existing failures);
+- DEV `feeds` and `unlisted` preflights pass with zero failures;
+- the single allowed warning is that database state cannot prove an alert was
+  delivered to the staffed external inbox;
+- four exact unlisted launch markets have clean backing, topics, embeddings,
+  fresh feeds, and zero positions;
+- the destructive drill passed 148/148 checks across trade, retry,
+  funding, liquidation, ADL, settlement, period P&L, notifications, stale-feed
+  recovery, league exclusion, and cleanup;
+- a clean scheduler cycle processed all four markets;
+- signed-in browser QA covered market pages, Browse/Explore/search, comments,
+  `%` mentions, pasted links, external embeds, 1W history, endpoint labels,
+  axis units, mobile layout, and horizontal overflow; and
+- the branch DEV Vercel deployment serves the reviewed embed/card behavior.
+
+Important gap: there is no database-backed automated integration suite in CI.
+The destructive drill is strong DEV evidence, but it is manual, stateful, and
+not a substitute for repeatable backend integration tests.
+
+## PROD sequence
+
+The detailed commands and fail-closed warning rules are in
+`perps-launch-runbook.md`. The intended order is:
+
+1. Complete this human review and decide the cleanup/policy items above.
+2. Apply the PROD migrations in order; run the concurrent index separately.
+3. Deploy the API with an explicitly reviewed trading mode, deploy the
+   scheduler, and verify both deployed revisions.
+4. Verify real PROD alert policies and receipt at the staffed on-call inbox.
+5. Backfill the four launch feeds and run the `feeds` preflight.
+6. Create exactly four markets as unlisted with the official account and
+   manifest settings; run discovery repair and the `unlisted` preflight.
+7. Deploy the final reviewed web branch.
+8. Perform conservative hidden-market trades: open, add, flip, close,
+   idempotent retry, liquidation/ADL, settlement, notifications, metrics, and
+   league exclusion.
+9. Preview the exact launch announcement, including embedded markets.
+10. Publish one market at a time, beginning with BTC, and observe real
+    Browse/Explore ranking before exposing the next.
+11. Move to the final public preflight only after all four are public.
+
+For an incident, roll API instances with `reduce-only` to block exposure
+increases while preserving closes, or `halted` if even closes against a
+known-corrupt fresh point must stop. Unlisting alone does not block direct API
+calls. Keep scheduler risk processing running.
+
+## Sign-off checklist
+
+- [ ] Financial formulas and economic rules approved
+- [ ] Engine locking, idempotency, and cash invariant approved
+- [ ] Oracle source/cadence/staleness and correction policy approved
+- [ ] Migration order, triggers, RLS, and concurrent index approved
+- [ ] Period accounting reconciles and league exclusion matches policy
+- [ ] Generic discovery/metrics changes do not regress existing markets
+- [ ] Create visibility default and permanent manifest rules decided
+- [ ] Runtime trading-mode deployment workflow accepted
+- [ ] PROD alert policies and staffed-inbox delivery verified
+- [ ] ECI and retired-DAU retained-code decision made
+- [ ] Unsafe or spent one-shot scripts removed, guarded, or split
+- [ ] Hidden PROD smoke pass and exact announcement preview completed
+- [ ] Staged public ranking/latency risk explicitly accepted
+
+## Useful commit anchors
+
+The final diff remains the source of truth, but these groups help explain why
+areas changed:
+
+- Financial integrity: `726b404e6`, `fe88f7e15`, `f223b8fbd`,
+  `a6cafbf79`, `2d9c2d9e0`
+- Period accounting and league exclusion: `44c7d32e7`, `10b733c2a`,
+  `7b8f1e06d`, `2481b55dd`
+- Oracle and scheduler: `ce2e36e83`, `45921f328`, `846752c7d`,
+  `3a109617c`, `22ee622cd`, `d60bec60e`
+- Discovery and analytics: `d7e9932af`, `d8fe33e9a`, `69ffc416c`,
+  `b46824590`, `a3d9b5f3a`, `dfd3fdb7f`, `034ebc7ba`
+- Embeds and identity: `02ab90a34`, `6d88a34da`, `b515efc29`,
+  `eecf7600f`, `706d40ffe`, `55f6b8873`
+- Launch operations: `f55291a1b`, `ef1993a8b`, `b9bb94caf`,
+  `ae269f069`, `8dd11898b`
