@@ -50,6 +50,13 @@ export const updatePerps = async () => {
 const updateOnePerp = async (contract: PerpContract) => {
   const pg = createSupabaseDirectClient()
   try {
+    const feedDef = getOracleFeed(contract.oracleFeedId)
+    if (!feedDef) {
+      log.error(
+        `[update-perps] ${contract.slug}: feed ${contract.oracleFeedId} is not registered; refusing to mutate the market`
+      )
+      return
+    }
     const latest = await getLatestOraclePriceForFeed(contract.oracleFeedId)
     const now = Date.now()
     if (!latest) {
@@ -64,10 +71,9 @@ const updateOnePerp = async (contract: PerpContract) => {
     // week is no longer an incident, it's a lifecycle decision being
     // ignored (the manifold-daus zombie emailed hourly for weeks): drop to
     // WARN with a nag so the alert channel stays meaningful.
-    const feedDef = getOracleFeed(contract.oracleFeedId)
     const alertThreshold = Math.min(
       contract.maxOraclePriceAgeMs,
-      feedDef?.staleAfterMs ?? Infinity
+      feedDef.staleAfterMs
     )
     const staleAge = now - latest.ts
     if (staleAge > alertThreshold) {
