@@ -166,22 +166,32 @@ const getLatestOraclePrice = async (
 
 const asEvent = (
   contract: PerpContract,
-  partial: Omit<PerpEvent, 'contractId' | 'ts' | 'oraclePrice'> & {
+  partial: Omit<
+    PerpEvent,
+    'contractId' | 'appliedTime' | 'ts' | 'oraclePrice'
+  > & {
+    appliedTime?: number
     ts?: number
     oraclePrice?: number
   }
-): PerpEvent => ({
-  contractId: contract.id,
-  ts: partial.ts ?? Date.now(),
-  oraclePrice: partial.oraclePrice ?? contract.oraclePrice,
-  ...partial,
-})
+): PerpEvent => {
+  const now = Date.now()
+  const { appliedTime, ts, oraclePrice, ...event } = partial
+  return {
+    contractId: contract.id,
+    ...event,
+    appliedTime: appliedTime ?? now,
+    ts: ts ?? now,
+    oraclePrice: oraclePrice ?? contract.oraclePrice,
+  }
+}
 
 type StoredPerpEventRow = {
   id: number | string
   contract_id: string
   user_id: string | null
   event_type: string
+  applied_ts: string
   ts: string
   oracle_price: number | string | null
   size_delta: number | string
@@ -253,13 +263,15 @@ const rowToStoredEvent = (row: StoredPerpEventRow): PerpEvent => {
   const direction =
     row.direction === 'long' || row.direction === 'short' ? row.direction : null
   const ts = new Date(row.ts).getTime()
-  if (!Number.isFinite(ts))
+  const appliedTime = new Date(row.applied_ts).getTime()
+  if (!Number.isFinite(ts) || !Number.isFinite(appliedTime))
     throw new APIError(500, 'Invalid timestamp in PERP idempotency record')
   return {
     id: finiteNumber(row.id, 'event id'),
     contractId: row.contract_id,
     userId: row.user_id,
     eventType: row.event_type,
+    appliedTime,
     ts,
     oraclePrice: finiteNumber(row.oracle_price, 'event oracle price'),
     sizeDelta: finiteNumber(row.size_delta, 'event size delta'),
@@ -288,7 +300,7 @@ const getIdempotentEvent = async (
   eventTypes: ('open' | 'add' | 'close')[]
 ) =>
   pgTrans.oneOrNone<StoredPerpEventRow>(
-    `select id, contract_id, user_id, event_type, ts, oracle_price,
+    `select id, contract_id, user_id, event_type, applied_ts, ts, oracle_price,
             size_delta, cost_basis_delta, original_cost_basis_delta,
             direction, leverage, data
      from contract_perp_events
@@ -523,6 +535,7 @@ export const openOrAddPosition = async (
           originalCostBasis: existingOpposite.originalCostBasis,
           reason: 'flip',
         },
+        appliedTime: now,
         ts: now,
         oraclePrice: price,
       })
@@ -592,6 +605,7 @@ export const openOrAddPosition = async (
             }
           : {}),
       },
+      appliedTime: now,
       ts: now,
       oraclePrice: price,
     })
@@ -817,6 +831,7 @@ export const closePosition = async (
             }
           : {}),
       },
+      appliedTime: now,
       ts: now,
       oraclePrice: price,
     })
@@ -937,6 +952,7 @@ const buildAdlEvents = (
   settled: AdlSettledPosition[],
   adlFactorLong: number,
   adlFactorShort: number,
+  appliedTime: number,
   ts: number,
   oraclePrice: number
 ) => {
@@ -956,6 +972,7 @@ const buildAdlEvents = (
             sizeBefore: before.size,
             sizeAfter: after.size,
           },
+          appliedTime,
           ts,
           oraclePrice,
         })
@@ -975,9 +992,11 @@ const buildAdlEvents = (
           sizeAfter: 0,
           payout,
           pnl: getUserFacingPnlFromPayout(payout, position.originalCostBasis),
+          entryPrice: position.entryPrice,
           originalCostBasis: position.originalCostBasis,
           reason: 'factor-zero-settlement',
         },
+        appliedTime,
         ts,
         oraclePrice,
       })
@@ -1005,6 +1024,7 @@ const buildAdlEvents = (
         ],
         settledUserIds: settled.map((s) => s.position.userId),
       },
+      appliedTime,
       ts,
       oraclePrice,
     }),
@@ -1052,7 +1072,8 @@ const applyOracleUpdate = (
   contract: PerpContract,
   state: PerpState,
   newPrice: number,
-  ts: number
+  ts: number,
+  appliedTime: number
 ) => {
   const liqRes = processLiquidations(state, newPrice)
   const adlRes = applyADL(liqRes.state, newPrice)
@@ -1077,6 +1098,7 @@ const applyOracleUpdate = (
           originalCostBasis: liq.originalCostBasis,
           payout: 0, // margin forfeited to pool
         },
+        appliedTime,
         ts,
         oraclePrice: newPrice,
       })
@@ -1095,6 +1117,7 @@ const applyOracleUpdate = (
     adlRes.settled,
     adlRes.adlFactorLong,
     adlRes.adlFactorShort,
+    appliedTime,
     ts,
     newPrice
   )
@@ -1140,7 +1163,14 @@ export const runOracleUpdate = async (
     const poolLongBefore = state.pool.L
     const poolShortBefore = state.pool.S
 
-    const applied = applyOracleUpdate(contract, state, newPrice, ts)
+    const appliedTime = Date.now()
+    const applied = applyOracleUpdate(
+      contract,
+      state,
+      newPrice,
+      ts,
+      appliedTime
+    )
 
     const { upserts, deletes } = diffForWrite(
       state.positions,
@@ -1258,6 +1288,7 @@ export const runFunding = async (
 ): Promise<FundingUpdateResult | null> => {
   return runPerpTransaction(async (pgTrans) => {
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+    const appliedTime = Date.now()
 
     // Cadence gate lives INSIDE the advisory lock: the scheduler's own check
     // runs unlocked, so two overlapping ticks (fine hourly, likely at fast
@@ -1330,6 +1361,7 @@ export const runFunding = async (
       fundingResult.settled,
       fundingResult.adlFactorLong,
       fundingResult.adlFactorShort,
+      appliedTime,
       ts,
       contract.oraclePrice
     )
@@ -1377,17 +1409,21 @@ export const runFunding = async (
           (q) => q.userId === p.userId && q.direction === p.direction
         )
         if (!before) return null
+        const sizeDelta = p.size - before.size
+        const costBasisDelta = p.costBasis - before.costBasis
+        if (sizeDelta === 0 && costBasisDelta === 0) return null
         return asEvent(contract, {
           userId: p.userId,
           eventType: 'funding',
           direction: p.direction,
           leverage: p.leverage,
-          sizeDelta: p.size - before.size,
-          costBasisDelta: p.costBasis - before.costBasis,
+          sizeDelta,
+          costBasisDelta,
           originalCostBasisDelta: 0,
           data: {
             fundingRate,
           },
+          appliedTime,
           ts,
           oraclePrice: contract.oraclePrice,
         })
@@ -1499,7 +1535,14 @@ export const resolvePerp = async (
       ts: oracleTs,
       sourceTs: oracleSourceTime,
     } = finalPoint
-    const applied = applyOracleUpdate(contract, loaded, finalPrice, oracleTs)
+    const now = Date.now()
+    const applied = applyOracleUpdate(
+      contract,
+      loaded,
+      finalPrice,
+      oracleTs,
+      now
+    )
 
     const events: PerpEvent[] = [...applied.events]
     const closedPositions: {
@@ -1515,7 +1558,6 @@ export const resolvePerp = async (
     }))
 
     let runningState = applied.finalState
-    const now = Date.now()
     await payAdlSettlements(pgTrans, contractId, finalPrice, applied.adlSettled)
     for (const p of applied.finalState.positions) {
       if (p.size <= 0) continue
@@ -1545,10 +1587,12 @@ export const resolvePerp = async (
             payout: res.payout,
             pnl: userPnl,
             pricePnl: res.pnl,
+            entryPrice: p.entryPrice,
             originalCostBasis: p.originalCostBasis,
             resolvedAt: finalPrice,
             reason: 'resolve-market',
           },
+          appliedTime: now,
           ts: now,
           oraclePrice: finalPrice,
         })

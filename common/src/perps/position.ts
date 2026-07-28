@@ -37,6 +37,11 @@ export type PerpEvent = {
   contractId: string
   userId: string | null // null for pool-level events (funding summary)
   eventType: PerpEventType
+  /** Accounting application time. Persisted events source this from the
+   * database's `applied_ts`; new in-memory events use the transaction wall
+   * clock until insertion. `ts` may be an older oracle observation time. */
+  appliedTime: number
+  /** Effective/oracle observation time shown in market history. */
   ts: number
   oraclePrice: number
   sizeDelta: number

@@ -109,6 +109,10 @@ if (require.main === module)
         'public.contract_perp_funding_events',
       ],
       ['index oracle history', 'public.oracle_prices_feed_ts_desc'],
+      [
+        'index oracle publication history',
+        'public.oracle_prices_feed_published',
+      ],
       ['index one-way positions', 'public.contract_perp_positions_one_way'],
       [
         'index participation events',
@@ -121,6 +125,18 @@ if (require.main === module)
       [
         'index close idempotency',
         'public.contract_perp_events_close_idempotency',
+      ],
+      [
+        'index PERP accounting history',
+        'public.contract_perp_events_user_contract_applied',
+      ],
+      [
+        'index recent PERP accounting activity',
+        'public.contract_perp_events_recent_applied',
+      ],
+      [
+        'index PERP lifetime accounting',
+        'public.contract_perp_events_user_contract_lifetime',
       ],
     ] as const
     await inspect('database schema', async () => {
@@ -151,21 +167,72 @@ if (require.main === module)
           ? 'public.oracle_prices.source_ts is installed'
           : 'oracle source timestamp migration is missing'
       )
+      const accountingColumns = await pg.one<{
+        applied_ts: boolean
+        published_at: boolean
+      }>(
+        `select
+           exists (
+             select 1 from information_schema.columns
+             where table_schema = 'public'
+               and table_name = 'contract_perp_events'
+               and column_name = 'applied_ts'
+           ) as applied_ts,
+           exists (
+             select 1 from information_schema.columns
+             where table_schema = 'public'
+               and table_name = 'oracle_prices'
+               and column_name = 'published_at'
+           ) as published_at`
+      )
+      report(
+        accountingColumns.applied_ts ? 'PASS' : 'FAIL',
+        'PERP event application timestamp',
+        accountingColumns.applied_ts
+          ? 'public.contract_perp_events.applied_ts is installed'
+          : 'PERP accounting history migration is missing'
+      )
+      report(
+        accountingColumns.published_at ? 'PASS' : 'FAIL',
+        'oracle publication timestamp',
+        accountingColumns.published_at
+          ? 'public.oracle_prices.published_at is installed'
+          : 'PERP accounting history migration is missing'
+      )
       const trigger = await pg.one<{ present: boolean }>(
         `select exists (
            select 1
-           from pg_trigger
-           where tgname = 'oracle_prices_no_update'
-             and not tgisinternal
-             and pg_get_functiondef(tgfoid) like '%source_ts%'
+           from pg_trigger t
+           where t.tgname = 'oracle_prices_no_update'
+             and not t.tgisinternal
+             and pg_get_functiondef(t.tgfoid) like '%source_ts%'
+             and pg_get_functiondef(t.tgfoid) like '%published_at%'
+             and pg_get_triggerdef(t.oid) like '%DELETE%'
          ) as present`
       )
       report(
         trigger.present ? 'PASS' : 'FAIL',
         'immutable oracle trigger',
         trigger.present
-          ? 'oracle_prices_no_update protects price and source metadata'
-          : 'append-only source metadata migration is missing'
+          ? 'oracle_prices_no_update protects price, source, and publication metadata'
+          : 'append-only oracle accounting migration is missing'
+      )
+      const eventTrigger = await pg.one<{ present: boolean }>(
+        `select exists (
+           select 1
+           from pg_trigger t
+           where t.tgname = 'contract_perp_events_immutable'
+             and not t.tgisinternal
+             and pg_get_triggerdef(t.oid) like '%UPDATE%'
+             and pg_get_triggerdef(t.oid) like '%DELETE%'
+         ) as present`
+      )
+      report(
+        eventTrigger.present ? 'PASS' : 'FAIL',
+        'immutable PERP event trigger',
+        eventTrigger.present
+          ? 'contract_perp_events rejects updates and deletes'
+          : 'append-only PERP accounting migration is missing'
       )
       const relatedPerps = await pg.one<{ present: boolean }>(
         `select coalesce(

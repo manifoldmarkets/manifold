@@ -594,6 +594,7 @@ export type Database = {
       }
       contract_perp_events: {
         Row: {
+          applied_ts: string
           contract_id: string
           cost_basis_delta: number
           data: Json | null
@@ -608,6 +609,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          applied_ts?: string
           contract_id: string
           cost_basis_delta?: number
           data?: Json | null
@@ -622,6 +624,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          applied_ts?: string
           contract_id?: string
           cost_basis_delta?: number
           data?: Json | null
@@ -725,16 +728,22 @@ export type Database = {
         Row: {
           feed_id: string
           price: number
+          published_at: string
+          source_ts: string | null
           ts: string
         }
         Insert: {
           feed_id: string
           price: number
+          published_at?: string
+          source_ts?: string | null
           ts: string
         }
         Update: {
           feed_id?: string
           price?: number
+          published_at?: string
+          source_ts?: string | null
           ts?: string
         }
         Relationships: []
