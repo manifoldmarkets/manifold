@@ -1790,7 +1790,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    cache: 'no-store',
     returns: {} as {
       groupContracts: Contract[]
     },

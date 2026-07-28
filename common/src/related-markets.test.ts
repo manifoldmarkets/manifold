@@ -1,4 +1,7 @@
-import { isEligibleRelatedMarket } from './related-markets'
+import {
+  isEligibleRelatedMarket,
+  materializeEligibleRelatedMarkets,
+} from './related-markets'
 
 const NOW = 1_000
 
@@ -37,5 +40,46 @@ describe('isEligibleRelatedMarket', () => {
     expect(
       isEligibleRelatedMarket(candidate({ closeTime: undefined }), NOW)
     ).toBe(false)
+  })
+})
+
+describe('materializeEligibleRelatedMarkets', () => {
+  const identifiedCandidate = (
+    id: string,
+    overrides: Partial<Parameters<typeof isEligibleRelatedMarket>[0]> = {}
+  ) => ({
+    id,
+    ...candidate(overrides),
+  })
+
+  it('preserves cached rank while dropping missing and newly ineligible IDs', () => {
+    const marketIds = [
+      'missing',
+      'eligible-second',
+      'deleted',
+      'eligible-first',
+      'resolved',
+      'unlisted',
+      'closed',
+      'no-close-non-perp',
+    ]
+    const currentContracts = [
+      identifiedCandidate('eligible-first'),
+      identifiedCandidate('unlisted', { visibility: 'unlisted' }),
+      identifiedCandidate('deleted', { deleted: true }),
+      identifiedCandidate('eligible-second', {
+        closeTime: undefined,
+        mechanism: 'perp',
+      }),
+      identifiedCandidate('resolved', { isResolved: true }),
+      identifiedCandidate('closed', { closeTime: NOW }),
+      identifiedCandidate('no-close-non-perp', { closeTime: undefined }),
+    ]
+
+    expect(
+      materializeEligibleRelatedMarkets(marketIds, currentContracts, NOW).map(
+        (contract) => contract.id
+      )
+    ).toEqual(['eligible-second', 'eligible-first'])
   })
 })
