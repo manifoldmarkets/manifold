@@ -25,9 +25,9 @@ a **conditional no-go** until the release gates below are closed.
 | Core math, accounting, lifecycle | Pass in code/tests       | Backing, solvency, funding, liquidation/ADL, settlement, and idempotency have explicit guards and tests.                                                           |
 | Web integration                  | Pass locally             | Market page, cards, browse, explore, search, related markets, embeds, mentions, dashboards, profile, TV, SEO/OG, and notifications understand PERPs.               |
 | Native safety                    | Pass, read-only          | Current native clients no longer treat PERPs as binary or crash; they show a safe summary and link through. Native trading is not implemented.                     |
-| Automated verification           | Pass                     | 23 common suites / 336 tests, common/shared builds, API/web/scheduler typechecks, targeted ESLint/Prettier, and diff checks pass at the audited working tree.      |
+| Automated verification           | Pass                     | 23 common suites / 340 tests, common/shared builds, API/web/scheduler typechecks, targeted ESLint/Prettier, and diff checks pass at the audited working tree.      |
 | DEV schema                       | **Pass**                 | All six July PERP migrations are installed; required tables, columns, indexes, append-only triggers, and related-market SQL all pass preflight.                    |
-| DEV release preflight            | **Fail: legacy dataset** | The 2026-07-28 05:55 UTC feed run found 9 failures and 16 warnings. None is a missing migration; the causes are listed under “Latest DEV evidence.”                |
+| DEV release preflight            | **Fail: legacy dataset** | Clean BTC now passes every unlisted-market gate. The 2026-07-28 07:58 UTC run remains red on the three other legacy launch markets plus excluded ECI.              |
 | Oracle-latency exposure          | Accepted launch risk     | Exact, zero-fee execution at a cached public oracle is pick-offable. Launch accepts bot competition under the manifest caps and monitors pool transfer.            |
 | Signed-in visual smoke           | Pass locally             | Desktop/mobile pages, Browse, Explore, `%` selection, pasted-link mentions, external embeds, chart endpoint labels, tabs, and accessibility labels were exercised. |
 | Period-specific PERP P&L         | Pass in code/tests       | Day/week/month values reverse the append-only position history from one consistent database snapshot, including funding, flips, liquidation, ADL, and settlement.  |
@@ -377,8 +377,9 @@ backfill application/publication time approximately.
 
 ## Latest DEV evidence
 
-Read-only `--phase=feeds` verification at **2026-07-28 05:55 UTC** found
-**9 failures and 16 warnings**.
+Read-only `--phase=unlisted` verification at **2026-07-28 07:58 UTC** found
+**17 failures and 8 warnings**. The higher failure count reflects the stricter
+unlisted phase's title, visibility, discovery, and frozen-economics gates.
 
 All migration-dependent checks passed:
 
@@ -395,15 +396,47 @@ All migration-dependent checks passed:
 - scheduler heartbeats, cash backing, solvency, funding double-run protection,
   and resolved-position cleanup.
 
+Bitcoin is no longer one of those failures. The guarded DEV replacement:
+
+- created `bitcoin-price-usd` unlisted from the manifest at 5× leverage,
+  `1 / 8760` maximum hourly funding, sensitivity 1, two-minute oracle
+  tolerance, and M25,000 initial backing per side;
+- attached Crypto and installed a related-market embedding (reusing the
+  semantically equivalent legacy BTC vector when DEV embedding generation
+  returned a quota 429);
+- resolved the empty legacy `bitcoin-usd-perpetual` under an atomic
+  no-open-position guard and returned its M1,324,305.07 residual to the
+  official DEV creator;
+- inherited the complete feed-scoped BTC price history; and
+- passed launch title, creator, token, topic, embedding, funding-period,
+  oracle, cash-backing, solvency, position-cleanup, and unlisted-visibility
+  checks.
+
+The deployed DEV API had also been rejecting every PERP trade with
+`Trading with undefined is currently disabled`: the locked engine query read
+JSON `data` but omitted the native `token` column. Commit `4f47fe78c` now
+hydrates and validates MANA fail-closed. The DEV API was rolled to commit
+`cda2a8771`, then the signed-in localhost UI opened an M10 2× BTC long and
+closed it successfully. The post-smoke preflight found zero BTC positions and
+exact ledger/pool backing of M50,000.000918875725.
+
+OpenRouter's previously blank 1W history was a rendering bug, not missing
+data. Its daily backfill transitions to hourly live points; a global hourly
+median misclassified the daily intervals as outages. The shared
+timestamp-only local-cadence classifier now keeps that transition connected
+while still breaking a genuine 4.6-day fast-feed outage. The fixed 1W path was
+visually verified on localhost.
+
 The remaining failures are operational/data gates, not another migration:
 
 1. The unresolved ECI prototype is excluded, lacks the frozen funding period,
    and contains legacy events closer than its correct daily cadence.
-2. The legacy BTC prototype lacks `fundingPeriodMs`.
-3. The legacy UK-carbon prototype lacks `fundingPeriodMs` and its Science
+2. The legacy UK-carbon prototype lacks `fundingPeriodMs` and its Science
    topic.
-4. The Trump prototype lacks its Politics topic and embedding.
-5. The OpenRouter prototype lacks its embedding.
+3. The Trump prototype lacks its Politics topic and embedding.
+4. The OpenRouter prototype lacks its embedding.
+5. UK carbon, Trump, and OpenRouter still have legacy titles/economics,
+   unauditable per-side initial backing, public visibility, and open positions.
 
 The discovery backfill dry-run found exactly two missing topic states (UK
 Science and Trump Politics, absent from both the join and cached slug) and two
@@ -413,35 +446,36 @@ and recreated, mutating their topics first only changes ranking timestamps and
 does work that will be discarded.
 
 Warnings are all expected prototype/risk review items: legacy 100× leverage,
-aggressive funding caps and sensitivity, BTC's loose oracle tolerance,
-OpenRouter backing below the manifest recommendation, legacy rows that cannot
-prove their original per-side backing, oversized ECI short interest, and the
-fact that database checks cannot prove external alert delivery.
+aggressive funding caps and sensitivity, OpenRouter backing below the manifest
+recommendation, legacy rows that cannot prove their original per-side backing,
+oversized ECI short interest, and the fact that database checks cannot prove
+external alert delivery.
 
-The existing DEV prototypes contain open positions (except BTC), so settling
-or retiring them is balance-changing and is not part of this read-only audit.
-The clean path is to review those balances, settle/retire the legacy set, then
-create exactly four new unlisted markets from the manifest. No additional SQL
+The remaining DEV prototypes contain open positions, so settling or retiring
+them is balance-changing. The clean path is to review those balances,
+settle/retire ECI plus the three remaining legacy launch markets, then create
+the remaining clean unlisted markets from the manifest. No additional SQL
 migration is currently required on DEV.
 
 ## Required release sequence
 
 1. On DEV, do not rerun the six installed migrations. Schema, feed history,
    scheduler health, and OpenRouter provider attribution now pass.
-2. Review and settle/retire the five legacy prototypes, including ECI, before
-   treating DEV as the launch dataset. This step changes user/creator balances
-   and therefore needs an explicit human review of the settlement plan.
-3. Deploy API, scheduler, and web from the same audited commit. API deployment
-   is required for the Explore activity/privacy/cache changes and cleaned ADL
-   history; web deployment is required before previewing announcement embeds.
+2. BTC is complete. Review and settle/retire ECI, UK carbon, Trump approval,
+   and OpenRouter before treating DEV as the launch dataset. These remaining
+   markets have open positions, so record the settlement plan and balance
+   effects.
+3. The DEV API is deployed at `cda2a8771`; scheduler was already redeployed.
+   Deploy web from the final audited commit before previewing announcement
+   embeds on the deployed host.
 4. Provision required feed secrets and run the four oracle-history backfills
    if the clean replacement markets need them. Never include ECI.
-5. Create exactly the four manifest markets through the admin form as
-   unlisted. Apply the displayed launch recommendation; this fills the clean
-   manifest title as well as the risk settings, and the API automatically
-   attaches the required environment-specific topic. The API rejects a launch
-   title that differs from the manifest because the `Perpetual` type is
-   rendered separately.
+5. BTC already exists clean and unlisted. Create the remaining three manifest
+   markets through the admin form as unlisted. Apply the displayed launch
+   recommendation; this fills the clean manifest title as well as the risk
+   settings, and the API automatically attaches the required
+   environment-specific topic. The API rejects a launch title that differs
+   from the manifest because the `Perpetual` type is rendered separately.
 6. Run `backfill-perp-launch-discovery.ts` without `--apply`; it must report
    zero missing topics and embeddings for clean markets. Use `--apply` only to
    repair a market that will be retained.
@@ -479,24 +513,26 @@ point to clear a warning.
 
 ## Verification performed at the audited HEAD
 
-- `common`: 23/23 test suites, 336/336 tests.
+- `common`: 23/23 test suites, 340/340 tests.
 - TypeScript builds: `common` and `backend/shared`; no-emit typechecks:
   `backend/api`, `backend/scheduler`, and `web`.
 - Targeted API/shared/scripts/common/web ESLint and scoped Prettier checks.
 - Changed `mani` files pass their filtered strict TypeScript check; the full
   native package still has unrelated pre-existing type failures.
-- Live DEV read-only state verification and feed-phase preflight.
+- Live DEV state verification and unlisted-phase preflight; every BTC-specific
+  gate passes, while the remaining legacy dataset correctly keeps the global
+  gate red.
 - Signed-in local Chrome smoke for full and embedded PERP routes, desktop and
   mobile layouts, Browse/Explore/search, `%` autocomplete, pasted-link mention
-  conversion, tabs, chart endpoint/funding-mark accessibility, and horizontal
-  overflow.
+  conversion, tabs, chart endpoint/funding-mark accessibility, the repaired
+  OpenRouter 1W path, and horizontal overflow.
+- Signed-in open/full-close smoke through the deployed DEV API on the clean
+  BTC market, followed by zero-position and exact-backing verification.
 - Formatting and `git diff --check` on each implementation commit.
 
-Not performed: balance-changing open/add/flip/close/settlement drills on the
-legacy public prototypes, or a final announcement preview against the newly
-deployed DEV web host. The browser pass used `localhost:3000` with the current
-deployed DEV API; an API redeploy is therefore still needed before visually
-confirming the new Explore activity rows and aggregate-ADL filtering.
+Not performed: add/flip, stale-feed, capacity, liquidation, or ADL drills on
+the clean launch set; settlement of the remaining legacy prototypes; or a
+final announcement preview against a newly deployed DEV web host.
 
 ## What was added during this review
 
@@ -549,8 +585,8 @@ For this branch:
    noisy. Do not create several independent branches that redesign the same
    engine concurrently.
 
-The best next session is operational: review retirement of the legacy DEV
-prototypes, deploy the final branch, create the clean unlisted four-market set,
-and drive the preflight to zero. Treat endogenous price discovery as a
-separately specified v2 mechanism only if launch telemetry shows the accepted
-oracle-latency subsidy is unacceptable.
+The best next session is operational: review retirement of ECI, UK carbon,
+Trump approval, and OpenRouter; create the three remaining clean unlisted
+launch markets; deploy the final web branch; and drive the preflight to zero.
+Treat endogenous price discovery as a separately specified v2 mechanism only
+if launch telemetry shows the accepted oracle-latency subsidy is unacceptable.
