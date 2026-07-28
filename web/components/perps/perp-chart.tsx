@@ -8,7 +8,7 @@ import { computeFundingRate } from 'common/perps/amm'
 import {
   carryNeutralPath,
   clusterLiquidationBands,
-  gapThresholdMs,
+  getDataGapFlags,
   LiquidationBand,
   nextFundingTimes,
   personalBreakEvenPath,
@@ -424,9 +424,7 @@ export const PerpChart = (props: {
     // window — a 1H frame shouldn't produce a jumpier cone than All —
     // with outage gaps excluded so a multi-day hole can't swamp the
     // elapsed-time denominator.
-    const sigma = overlays.cone
-      ? realizedVolPerSqrtMs(priceSeries, gapThresholdMs(priceSeries))
-      : null
+    const sigma = overlays.cone ? realizedVolPerSqrtMs(priceSeries) : null
     const cone = sigma != null ? volConePaths(price, sigma, now, horizon) : null
 
     const ys = windowedSeries.map((p) => p.value)
@@ -528,12 +526,13 @@ export const PerpChart = (props: {
     // bridge over dead time (a stopped scheduler once left a 4.6-day gap
     // that rendered as one diagonal line swallowing the whole chart). Both
     // modes: the funding series interpolated a confident diagonal across
-    // the same 5-day outage. 12×median spacing keeps the pre-fix era's
-    // legitimate 2h skip-gaps connected while any half-day death breaks.
-    const gapMs = gapThresholdMs(points)
+    // the same 5-day outage. The per-interval classifier also understands
+    // cadence transitions such as daily backfill followed by hourly live
+    // points, which a single global median misclassified as repeated gaps.
+    const gapFlags = getDataGapFlags(points)
     const renderPoints: (Point & { gap?: boolean })[] = []
     for (let i = 0; i < points.length; i++) {
-      if (i > 0 && points[i].ts - points[i - 1].ts > gapMs) {
+      if (gapFlags[i]) {
         renderPoints.push({
           ts: (points[i - 1].ts + points[i].ts) / 2,
           value: NaN,
@@ -662,14 +661,15 @@ export const PerpChart = (props: {
 
   // Funding events stranded between two gap-breaks (or at the series edge
   // next to one) draw no line segment at all — dev's single pre-outage
-  // event was invisible. Mirror the scale memo's gap threshold.
-  const fundingGapMs = mode === 'funding' ? gapThresholdMs(points) : 0
+  // event was invisible. Mirror the scale memo's gap classification.
+  const fundingGapFlags =
+    mode === 'funding' ? getDataGapFlags(points) : undefined
   const isolatedFundingPoints =
     mode === 'funding'
       ? points.filter(
-          (p, i) =>
-            (i === 0 || p.ts - points[i - 1].ts > fundingGapMs) &&
-            (i === points.length - 1 || points[i + 1].ts - p.ts > fundingGapMs)
+          (_p, i) =>
+            (i === 0 || fundingGapFlags?.[i]) &&
+            (i === points.length - 1 || fundingGapFlags?.[i + 1])
         )
       : []
 

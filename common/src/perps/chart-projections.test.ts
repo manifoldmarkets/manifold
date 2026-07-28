@@ -4,6 +4,7 @@ import {
   clusterLiquidationBands,
   FUNDING_PERIOD_MS,
   gapThresholdMs,
+  getDataGapFlags,
   nextFundingTimes,
   personalBreakEvenPath,
   projectionHorizonMs,
@@ -212,7 +213,8 @@ describe('realizedVolPerSqrtMs', () => {
       value: 100,
     }))
     points.push({ ts: 20_000 + 4 * 24 * 3600 * 1000, value: 150 })
-    expect(realizedVolPerSqrtMs(points)).toBeGreaterThan(0)
+    expect(realizedVolPerSqrtMs(points, Infinity)).toBeGreaterThan(0)
+    expect(realizedVolPerSqrtMs(points)).toBe(0)
     expect(realizedVolPerSqrtMs(points, 60_000)).toBe(0)
   })
 
@@ -250,6 +252,63 @@ describe('gapThresholdMs', () => {
   it('returns Infinity when there are no intervals', () => {
     expect(gapThresholdMs([{ ts: 0 }])).toBe(Infinity)
     expect(gapThresholdMs([])).toBe(Infinity)
+  })
+
+  it('keeps a daily-backfill to hourly-live cadence transition connected', () => {
+    const hour = 3600 * 1000
+    const mixed = series([
+      ...Array.from({ length: 6 }, () => 24 * hour),
+      13.8 * hour,
+      ...Array.from({ length: 17 }, () => hour),
+    ])
+    expect(getDataGapFlags(mixed).filter(Boolean)).toHaveLength(0)
+
+    const valued = mixed.map((point, index) => ({
+      ...point,
+      value: 70 + index / 10,
+    }))
+    expect(realizedVolPerSqrtMs(valued)).toBeCloseTo(
+      realizedVolPerSqrtMs(valued, Infinity) as number,
+      12
+    )
+  })
+
+  it('still breaks a real multi-day outage inside fast data', () => {
+    const hour = 3600 * 1000
+    const points = series([
+      ...Array.from({ length: 8 }, () => hour),
+      4.6 * 24 * hour,
+      ...Array.from({ length: 8 }, () => hour),
+    ])
+    const gapFlags = getDataGapFlags(points)
+    expect(gapFlags.filter(Boolean)).toHaveLength(1)
+    expect(gapFlags[9]).toBe(true)
+  })
+
+  it('does not let old daily cadence hide a later hourly outage', () => {
+    const hour = 3600 * 1000
+    const points = series([
+      ...Array.from({ length: 6 }, () => 24 * hour),
+      13.8 * hour,
+      ...Array.from({ length: 17 }, () => hour),
+      4.6 * 24 * hour,
+      ...Array.from({ length: 17 }, () => hour),
+    ])
+    const gapFlags = getDataGapFlags(points)
+    expect(gapFlags.filter(Boolean)).toHaveLength(1)
+    expect(gapFlags[25]).toBe(true)
+  })
+
+  it('keeps pure daily cadence but breaks a 13-day hole within it', () => {
+    const day = 24 * 3600 * 1000
+    const daily = series([
+      ...Array.from({ length: 6 }, () => day),
+      13 * day,
+      ...Array.from({ length: 6 }, () => day),
+    ])
+    const gapFlags = getDataGapFlags(daily)
+    expect(gapFlags.filter(Boolean)).toHaveLength(1)
+    expect(gapFlags[7]).toBe(true)
   })
 })
 

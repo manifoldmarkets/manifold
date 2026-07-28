@@ -12,23 +12,84 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from '../util/time'
 import { FUNDING_PERIOD_MS } from './funding'
 import { PerpDirection } from './position'
 
-/**
- * Interval above which a sampling gap is a data outage rather than natural
- * cadence: 12× the median interval, floored at 3 hours. The floor keeps
- * mixed-density series (15s live ticks + hourly backfill) connected, while
- * multi-day outages — the case that renders as a fake straight bridge across
- * dead time — still break. Daily feeds get 12 days, so weekend-ish gaps in
- * slow feeds don't fragment the line.
- */
-export const gapThresholdMs = (points: { ts: number }[]): number => {
+const samplingIntervalsMs = (points: { ts: number }[]) => {
   const dts: number[] = []
   for (let i = 1; i < points.length; i++) {
     const dt = points[i].ts - points[i - 1].ts
     if (dt > 0) dts.push(dt)
   }
+  return dts
+}
+
+const medianIntervalMs = (dts: number[]) => {
   if (!dts.length) return Infinity
-  const median = sortBy(dts)[Math.floor(dts.length / 2)]
+  return sortBy(dts)[Math.floor(dts.length / 2)]
+}
+
+const lowerMedianIntervalMs = (dts: number[]) => {
+  if (!dts.length) return Infinity
+  return sortBy(dts)[Math.floor((dts.length - 1) / 2)]
+}
+
+/**
+ * Interval above which a sampling gap is a data outage rather than natural
+ * cadence: 12× the median interval, floored at 3 hours. Daily feeds get
+ * 12 days, so weekend-ish gaps in slow feeds don't fragment the line.
+ *
+ * Mixed-cadence series need `getDataGapFlags` below: a single global median
+ * cannot represent daily backfill followed by hourly live points.
+ */
+export const gapThresholdMs = (points: { ts: number }[]): number => {
+  const median = medianIntervalMs(samplingIntervalsMs(points))
+  if (!Number.isFinite(median)) return Infinity
   return Math.max(12 * median, 3 * HOUR_MS)
+}
+
+/**
+ * Marks the interval ending at each point when it is a real data outage.
+ *
+ * Cadence is inferred independently from up to five intervals on either
+ * side. An interval is a gap only when it is abnormal relative to every side
+ * that has context. This is deliberately transition-aware: at a daily→hourly
+ * handoff, the final daily interval is normal relative to the daily side and
+ * stays connected. A multi-day hole inside hourly/fast data is abnormal on
+ * both sides and still breaks.
+ */
+export const getDataGapFlags = (points: { ts: number }[]): boolean[] => {
+  if (points.length === 0) return []
+  const intervals = points
+    .slice(1)
+    .map((point, index) => point.ts - points[index].ts)
+  const flags = Array.from({ length: points.length }, () => false)
+  const globalThreshold = gapThresholdMs(points)
+  const localSampleSize = 5
+
+  for (
+    let intervalIndex = 0;
+    intervalIndex < intervals.length;
+    intervalIndex++
+  ) {
+    const dt = intervals[intervalIndex]
+    if (!(dt > 0)) continue
+
+    const before = intervals
+      .slice(Math.max(0, intervalIndex - localSampleSize), intervalIndex)
+      .filter((interval) => interval > 0)
+    const after = intervals
+      .slice(intervalIndex + 1, intervalIndex + 1 + localSampleSize)
+      .filter((interval) => interval > 0)
+    const localThresholds = [before, after]
+      .filter((sample) => sample.length > 0)
+      .map((sample) =>
+        Math.max(12 * lowerMedianIntervalMs(sample), 3 * HOUR_MS)
+      )
+
+    flags[intervalIndex + 1] =
+      localThresholds.length > 0
+        ? localThresholds.every((threshold) => dt > threshold)
+        : dt > globalThreshold
+  }
+  return flags
 }
 
 export type ProjectionPoint = { ts: number; value: number }
@@ -168,15 +229,17 @@ export const carryNeutralPath = (
  * Realized volatility of the feed as σ per √ms: the square root of total
  * squared log-return per unit of elapsed time. Irregular sampling is fine —
  * each return contributes its own interval to the denominator. Returns
- * spanning more than `maxGapMs` (data outages) are excluded: a single
- * multi-day gap would otherwise dominate the elapsed-time denominator with
- * one noisy sample. Returns null when there aren't enough clean samples to
- * be meaningful.
+ * spanning inferred data outages are excluded by default: a single multi-day
+ * gap would otherwise dominate the elapsed-time denominator with one noisy
+ * sample. Passing `maxGapMs` replaces inference with that explicit threshold.
+ * Returns null when there aren't enough clean samples to be meaningful.
  */
 export const realizedVolPerSqrtMs = (
   points: ProjectionPoint[],
-  maxGapMs = Infinity
+  maxGapMs?: number
 ): number | null => {
+  const inferredGaps =
+    maxGapMs === undefined ? getDataGapFlags(points) : undefined
   let sumSq = 0
   let sumDt = 0
   let n = 0
@@ -184,7 +247,9 @@ export const realizedVolPerSqrtMs = (
     const prev = points[i - 1]
     const curr = points[i]
     const dt = curr.ts - prev.ts
-    if (!(dt > 0) || dt > maxGapMs) continue
+    const isGap =
+      maxGapMs === undefined ? inferredGaps?.[i] === true : dt > maxGapMs
+    if (!(dt > 0) || isGap) continue
     if (!(prev.value > 0) || !(curr.value > 0)) continue
     const r = Math.log(curr.value / prev.value)
     if (!Number.isFinite(r)) continue
