@@ -42,7 +42,12 @@ explicit (see "Integration points" below).
 
 - `user-contract-metrics.ts` — rebuilds `user_contract_metrics` rows for a perp
   contract from its events + positions. The engine is the authoritative writer
-  for perp metrics; we do not let `calculate-metrics.ts` touch them.
+  for current/lifetime fields; engine upserts preserve the period-history block.
+- `user-contract-metric-periods.ts` — reads one repeatable database snapshot and
+  derives day/week/month `ContractMetric.from` values by reversing recent
+  append-only events from authoritative current positions. The period job
+  patches only `from`, so it cannot overwrite a concurrent trade or funding
+  update.
 
 ## Pure math
 
@@ -166,6 +171,39 @@ Trading and closes share `getOracleFreshness` from
 freshness limit pauses both paths until a valid update arrives; the market page
 uses the same predicate to show the pause and disable open/close actions.
 
+Oracle rows distinguish the feed-effective `ts`, optional provider
+`source_ts`, and immutable Manifold `published_at`. PERP events similarly
+distinguish their effective/oracle `ts` from `applied_ts`, the time Manifold
+applied the accounting transition. Period metrics use publication/application
+time to avoid assigning delayed source data to an earlier reporting period.
+
+## Period metrics
+
+`common/src/perps/metric-periods.ts` is the pure accounting implementation.
+For each day/week/month boundary it reverses at most 30 days of events and
+calculates:
+
+`period P&L = current value + realized payouts - boundary value - new margin`
+
+The replay covers adds at weighted entry prices, funding, flips, liquidation,
+partial and terminal ADL, and settlement. It fails closed on missing prices or
+inconsistent history. `profitPercent` divides by boundary value plus new
+margin; it is a sorting/reporting return, not a time-weighted return across
+capital recycling.
+
+The database event and oracle histories are immutable because changing either
+would rewrite reported returns. Legacy rows receive the only defensible
+timestamp backfill (`ts`); launch markets must be recreated after the migration
+for reliable application/publication timestamps from inception.
+
+Boundary value uses the newest feed-effective oracle point that Manifold had
+published by the cutoff; current value uses the contract's cached oracle mark.
+The boundary rule is deterministic, but it is not a claim that every contract
+had already applied that point: feed publication and per-contract fan-out are
+separate transactions and one contract can briefly lag or fail. If reporting
+ever needs the historically executable contract price instead, persist
+per-contract oracle-application history and value from that record.
+
 ## Integration points (grep for these to find everything)
 
 - `outcomeType === 'PERP'` — UI switch branches.
@@ -182,6 +220,8 @@ The touched files outside this folder are:
 - `backend/api/src/{get-market-loan-max,get-free-loan-available,claim-free-loan,request-loan,get-next-loan-amount}.ts`
   — exclude perps from loans.
 - `backend/shared/src/update-user-portfolio-histories-core.ts` — perp PnL branch.
+- `backend/shared/src/update-user-metric-periods.ts` — event-based PERP day/week/month
+  replay and race-safe `from` updates.
 - `backend/shared/src/send-market-movement-notifications.ts` — exclude perps.
 - `backend/shared/src/importance-score.ts` — perp scoring branch.
 - `backend/scheduler/src/jobs/{index,update-league,update-perps}.ts` — schedule

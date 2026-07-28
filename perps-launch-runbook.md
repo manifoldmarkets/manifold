@@ -26,15 +26,16 @@ The phases mean:
 - `public`: exactly one unresolved public market must exist for every launch
   feed. Any unresolved ECI or out-of-manifest PERP fails the gate.
 
-The public gate intentionally fails on oracle-latency arbitrage. Only a
-deliberate product decision may downgrade those failures to warnings:
+The public gate intentionally requires an explicit acknowledgment of
+oracle-latency arbitrage:
 
 ```powershell
 npx.cmd ts-node perp-launch-preflight.ts --phase=public --acknowledge-latency-risk
 ```
 
-That flag is an acknowledgment, not a mitigation. Record who accepted it and
-which leverage/backing limits were chosen.
+That flag is an acknowledgment, not a mitigation. The day-one product decision
+is to allow bot competition under the launch manifest's conservative caps.
+Record the owner, chosen leverage/backing limits, and observed pool transfers.
 
 ## Why oracle latency is still a launch decision
 
@@ -54,18 +55,29 @@ protect the pools when the trader is flat at the funding timestamp.
 Do not treat more frequent identical timestamps, larger pools, or a higher
 funding cap as fixes. Durable options are trade-time source refresh, a
 spread/fee that prices oracle latency, or a different execution mechanism.
-Until one exists, use the manifest's low leverage recommendations and
-unlisted-first rollout if the risk is consciously accepted.
+
+An endogenous AMM/order-book quote with later oracle settlement is a coherent
+future mechanism and would reward early information by moving the price. It is
+not a local fix: it requires basis/convergence rules, mark-versus-index
+liquidations, manipulation controls, and an explicit liquidity provider. Bots
+would arbitrage that quote toward the expected oracle rather than disappear.
+Keep that redesign separate from the capped day-one launch.
 
 ## Before creating markets
 
-1. Deploy API and scheduler from the same commit.
-2. Apply every PERP migration, including append-only oracle history,
-   participation/idempotency indexes, and related-market embeddings.
-3. Provision `OPENROUTER_API_KEY` in the target environment.
-4. Run all four backfills. Never run ECI as part of the launch batch.
-5. Run `--phase=feeds`; zero failures are required.
-6. Verify GCP alert policies and deliver a test incident:
+1. Keep PERPs disabled and pause their scheduler jobs during the schema change.
+2. Apply every PERP migration, including immutable event/oracle accounting
+   history, participation/idempotency indexes, and related-market embeddings.
+   Applying a migration means executing each committed SQL file against the
+   target Supabase/Postgres database. Deploying API/scheduler code alone does
+   not add the required tables, columns, indexes, or triggers.
+3. Deploy API and scheduler from the same audited commit, then resume the
+   scheduler. The old writers tolerate the added columns; the new writers
+   require them, so schema-first avoids a rolling-deploy failure window.
+4. Provision `OPENROUTER_API_KEY` in the target environment.
+5. Run all four backfills. Never run ECI as part of the launch batch.
+6. Run `--phase=feeds`; zero failures are required.
+7. Verify GCP alert policies and deliver a test incident:
    - ERROR presence for `[oracle-feeds]`, `[update-perps]`, `[openrouter]`,
      `[trump-approval]`, and scheduler `Error during job execution`.
    - Absence/dead-man alerts for `update-oracle-feeds` within two minutes and
@@ -77,18 +89,23 @@ unlisted-first rollout if the risk is consciously accepted.
 Create only the four manifest feeds, with topic tags, as unlisted. Then:
 
 1. Run `--phase=unlisted`.
-2. Open long, add, flip, partial/complete close, and retry the same request
-   idempotency key on every market.
+2. Open long, add, flip, fully close, and retry the same request idempotency key
+   on every market. Partial close is not implemented in the v1 endpoint/UI.
 3. Force one liquidation and one ADL on dev; verify event, balance, pool,
    user metric, and notification rows.
 4. Resolve a disposable market; verify holder notifications, final price,
    remaining-pool payout, cache refresh, and that no position row remains.
-5. Confirm search, topic pages, browse, explore, related markets, `%[market]`
+5. Run the period-metric job after an add, funding event, flip, liquidation,
+   ADL, and resolution; reconcile `from.day`/`from.week` with the event cash
+   flows and confirm automated transitions did not change `lastBetTime`.
+6. Confirm search, topic pages, browse, explore, related markets, `%[market]`
    mentions, and `/embed/...` all render the PERP price/type/backing correctly.
-6. Leave the fast tick and hourly funding job running for at least one hour,
+   Use the built-in Browser plugin or install/enable the Chrome plugin and
+   extension in the ChatGPT desktop app before assigning this pass to Codex.
+7. Leave the fast tick and hourly funding job running for at least one hour,
    then rerun the preflight and inspect scheduler CPU, lock contention, and
    contract write volume.
-7. Stop a dev feed and verify both opens and closes pause at the same freshness
+8. Stop a dev feed and verify both opens and closes pause at the same freshness
    boundary, the page explains why, and an alert arrives.
 
 ## Public rollout and rollback
