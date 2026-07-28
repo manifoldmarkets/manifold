@@ -289,18 +289,33 @@ if (require.main === module)
     if (!discovery.has_embedding) {
       try {
         await generateContractEmbeddings(replacement, pg)
-      } catch (error) {
-        const concurrent = await pg.one<{ has_embedding: boolean }>(
-          `select exists(
-             select 1
-             from contract_embeddings
-             where contract_id = $1
-           ) as has_embedding`,
-          [replacementId]
-        )
-        if (!concurrent.has_embedding) throw error
+      } catch {
+        // A concurrent insert is harmless and is checked below. Provider
+        // failures also fall through to the deterministic legacy-vector
+        // fallback: both titles describe the same BTC/USD underlying.
       }
-      log('generated replacement discovery embedding')
+      const generated = await pg.one<{ has_embedding: boolean }>(
+        `select exists(
+           select 1
+           from contract_embeddings
+           where contract_id = $1
+         ) as has_embedding`,
+        [replacementId]
+      )
+      if (generated.has_embedding) {
+        log('generated replacement discovery embedding')
+      } else {
+        const copied = await pg.oneOrNone<{ copied: number }>(
+          `insert into contract_embeddings (contract_id, embedding)
+           select $1, embedding
+           from contract_embeddings
+           where contract_id = $2
+           on conflict (contract_id) do nothing
+           returning 1 as copied`,
+          [replacementId, OLD_CONTRACT_ID]
+        )
+        if (copied) log('reused the legacy BTC discovery embedding')
+      }
     }
 
     // Refresh denormalized topic state after any repair before final checks.
