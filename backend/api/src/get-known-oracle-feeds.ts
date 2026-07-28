@@ -40,6 +40,7 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
       launchLatencyRisk: launch?.latencyArbitrageRisk ?? null,
       launchRecommendation: launch
         ? {
+            question: launch.question,
             maxLeverage: launch.recommended.maxLeverage,
             annualMaxFundingRate: launch.recommended.annualMaxFundingRate,
             fundingSensitivity: launch.recommended.fundingSensitivity,

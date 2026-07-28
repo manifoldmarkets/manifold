@@ -1,4 +1,5 @@
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
@@ -232,6 +233,18 @@ export const getPerpLaunchManifestErrors = () => {
 
   for (const market of PERP_LAUNCH_MARKETS) {
     const feed = getOracleFeed(market.feedId)
+    if (!market.question.trim())
+      errors.push(`${market.feedId} has no launch question`)
+    if (market.question !== market.question.trim())
+      errors.push(`${market.feedId} launch question has surrounding whitespace`)
+    if (market.question.length > MAX_QUESTION_LENGTH)
+      errors.push(
+        `${market.feedId} launch question exceeds ${MAX_QUESTION_LENGTH} characters`
+      )
+    if (/\bperpetual\b/i.test(market.question))
+      errors.push(
+        `${market.feedId} repeats "perpetual" in its title; the market type is rendered separately`
+      )
     if (!feed) {
       errors.push(`${market.feedId} is absent from the oracle registry`)
       continue

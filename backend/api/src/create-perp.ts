@@ -84,6 +84,11 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       403,
       'Launch PERPs must be created by the official Manifold account because residual backing returns to the creator.'
     )
+  if (launchDefinition && question !== launchDefinition.question)
+    throw new APIError(
+      400,
+      `The launch title for ${oracleFeedId} must be "${launchDefinition.question}". The Perpetual type label is shown separately.`
+    )
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')

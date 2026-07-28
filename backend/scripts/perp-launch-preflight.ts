@@ -483,6 +483,13 @@ if (require.main === module)
         if (definition) {
           const expectedCreatorId = getPerpLaunchCreatorId(environment)
           report(
+            contract.question === definition.question ? 'PASS' : 'FAIL',
+            `market ${contract.slug} launch title`,
+            contract.question === definition.question
+              ? definition.question
+              : `stored="${contract.question}", expected="${definition.question}"; the Perpetual type is rendered separately`
+          )
+          report(
             contract.creatorId === expectedCreatorId ? 'PASS' : 'FAIL',
             `market ${contract.slug} launch creator`,
             contract.creatorId === expectedCreatorId

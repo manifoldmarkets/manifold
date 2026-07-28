@@ -1,6 +1,7 @@
 import { createPerp } from 'api/create-perp'
 import { DAY_MS } from 'common/util/time'
 import { resolvePerp } from 'shared/perps/engine'
+import { PERP_LAUNCH_MARKETS } from 'shared/perps/launch-manifest'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
@@ -20,6 +21,11 @@ import { runScript } from './run-script'
 const DEV_MANIFOLD = 'MxyCh2xvsFMFywwjg3Az0w4xP5B3'
 const OLD_CONTRACT_ID = 'dnyI0n9zCAzz'
 const FEED_ID = 'trump-approval-rating'
+const LAUNCH_DEFINITION = PERP_LAUNCH_MARKETS.find(
+  (market) => market.feedId === FEED_ID
+)
+if (!LAUNCH_DEFINITION)
+  throw new Error(`${FEED_ID} is missing from the PERP launch manifest`)
 
 // f_max is per PERIOD (§ common/contract.ts). The old market's hourly f_max
 // (0.000114 = 100%/yr / 8760) targeted 100%/yr of margin; at one funding
@@ -62,7 +68,7 @@ if (require.main === module)
 
     const created = await createPerp(
       {
-        question: 'Trump Approval Rating',
+        question: LAUNCH_DEFINITION.question,
         description: 'According to VoteHub poll aggregator',
         visibility: 'public',
         groupIds: [politicsGroupId],

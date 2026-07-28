@@ -46,6 +46,7 @@ export default function AdminCreatePerpPage() {
       description: string | null
       launchLatencyRisk: string | null
       launchRecommendation: {
+        question: string
         maxLeverage: number
         annualMaxFundingRate: number
         fundingSensitivity: number
@@ -123,6 +124,7 @@ export default function AdminCreatePerpPage() {
   // oracle age, and backing.
   const hasCompleteLaunchRecommendation =
     launchRecommendation != null &&
+    typeof launchRecommendation.question === 'string' &&
     Number.isFinite(launchRecommendation.annualMaxFundingRate) &&
     Number.isFinite(launchRecommendation.fundingSensitivity) &&
     Array.isArray(launchRecommendation.requiredTopicNames) &&
@@ -154,6 +156,7 @@ export default function AdminCreatePerpPage() {
     if (!launchRecommendation || !hasCompleteLaunchRecommendation) return
     setForm((current) => ({
       ...current,
+      question: launchRecommendation.question,
       maxLeverage: launchRecommendation.maxLeverage,
       maxFundingRateAnnualPct: launchRecommendation.annualMaxFundingRate * 100,
       fundingSensitivity: launchRecommendation.fundingSensitivity,
@@ -168,6 +171,7 @@ export default function AdminCreatePerpPage() {
   const isUsingLaunchRecommendation =
     hasCompleteLaunchRecommendation &&
     launchRecommendation != null &&
+    form.question === launchRecommendation.question &&
     form.maxLeverage === launchRecommendation.maxLeverage &&
     form.maxFundingRateAnnualPct ===
       launchRecommendation.annualMaxFundingRate * 100 &&

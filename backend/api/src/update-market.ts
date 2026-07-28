@@ -9,6 +9,7 @@ import { isEmpty } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { trackAuditEvent } from 'shared/audit-events'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
+import { PERP_LAUNCH_MARKETS } from 'shared/perps/launch-manifest'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import {
   updateContract,
@@ -49,6 +50,22 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
     const contract = await getContract(pg, contractId)
     if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
     if (contract.creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
+
+    const launchDefinition =
+      contract.outcomeType === 'PERP'
+        ? PERP_LAUNCH_MARKETS.find(
+            (market) => market.feedId === contract.oracleFeedId
+          )
+        : undefined
+    if (
+      launchDefinition &&
+      question !== undefined &&
+      question !== launchDefinition.question
+    )
+      throw new APIError(
+        400,
+        `The launch title for ${launchDefinition.feedId} must be "${launchDefinition.question}". The Perpetual type label is shown separately.`
+      )
 
     const isUpdatingHomePageScoreAdjustment =
       homePageScoreAdjustment !== undefined ||

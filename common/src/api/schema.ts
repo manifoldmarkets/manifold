@@ -1121,6 +1121,7 @@ export const API = (_apiTypeCheck = {
       description: string | null
       launchLatencyRisk: string | null
       launchRecommendation: {
+        question: string
         maxLeverage: number
         annualMaxFundingRate: number
         fundingSensitivity: number
