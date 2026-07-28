@@ -40,6 +40,7 @@ import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 import { ClickFrame } from '../widgets/click-frame'
 
 type MarketMeta = {
@@ -284,14 +285,18 @@ export function DashboardMarketCard({
             {status}
           </span>
         )}
-        <span
-          className={clsx(
-            'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium',
-            meta.badgeClass
-          )}
-        >
-          {meta.label}
-        </span>
+        {perpContract ? (
+          <PerpMarketBadge label="Perpetual" />
+        ) : (
+          <span
+            className={clsx(
+              'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium',
+              meta.badgeClass
+            )}
+          >
+            {meta.label}
+          </span>
+        )}
       </Row>
 
       {/* Question title */}
