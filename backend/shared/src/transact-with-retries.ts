@@ -25,15 +25,26 @@ async function transactWithRetries<T>(
       attempt++
       log(`Attempt ${attempt} of ${maxAttempts}`)
       return await pg.tx({ mode: SERIAL_MODE }, fn)
-    } catch (error: any) {
-      log.error(`Attempt ${attempt} of ${maxAttempts} failed: ${error.message}`)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      const code =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        typeof error.code === 'string'
+          ? error.code
+          : undefined
       const isRetryable =
-        error.code === '40001' || // serialization_failure
-        error.code === '40P01' // deadlock_detected
+        code === '40001' || // serialization_failure
+        code === '40P01' // deadlock_detected
 
       if (!isRetryable || attempt >= maxAttempts) {
+        log.error(`Attempt ${attempt} of ${maxAttempts} failed: ${message}`)
         throw error
       }
+      log.warn(
+        `Attempt ${attempt} of ${maxAttempts} hit retryable PostgreSQL ${code}: ${message}`
+      )
 
       // Exponential backoff with jitter: without jitter, transactions that
       // aborted together retry together and re-collide in lockstep.
