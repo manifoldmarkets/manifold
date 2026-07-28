@@ -14,15 +14,16 @@ import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { insertOraclePrices } from 'shared/oracle'
 import { ORACLE_FEEDS } from 'shared/oracle-feeds'
 import {
-  closePosition,
-  openOrAddPosition,
-  resolvePerp,
-  runFunding,
-  runOracleUpdate,
+  closePosition as closePositionUnsafe,
+  openOrAddPosition as openOrAddPositionUnsafe,
+  resolvePerp as resolvePerpUnsafe,
+  runFunding as runFundingUnsafe,
+  runOracleUpdate as runOracleUpdateUnsafe,
 } from 'shared/perps/engine'
 import { calculatePerpPeriodMetricUpdates } from 'shared/perps/user-contract-metric-periods'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { getEffectiveCurrentSeason } from 'shared/supabase/leagues'
+import { SERIAL_MODE } from 'shared/supabase/init'
 import { getPrivateUser, log } from 'shared/utils'
 
 import { runScript } from './run-script'
@@ -58,6 +59,7 @@ const QUESTION_PREFIX = `PERP DEV DRILL ${STAMP}`
 type DrillMarket = {
   id: string
   feedId: string
+  question: string
   lastOracleTime: number
 }
 
@@ -204,21 +206,27 @@ if (require.main === module)
       slug: string
       question: string
       feed_id: string
+      resolution_time: string | null
     }>(
-      `select id, slug, question, data->>'oracleFeedId' as feed_id
+      `select id, slug, question, data->>'oracleFeedId' as feed_id,
+              resolution_time
        from contracts
        where mechanism = 'perp'
-         and resolution_time is null
+         and deleted = false
          and question like 'PERP DEV DRILL %'
        order by created_time`
     )
     if (orphaned.length > 0) {
       for (const orphan of orphaned)
         log.error(
-          `unresolved prior drill market: ${orphan.id} ${orphan.slug} (${orphan.feed_id})`
+          `${
+            orphan.resolution_time === null
+              ? 'unresolved'
+              : 'resolved but unretired'
+          } prior drill market: ${orphan.id} ${orphan.slug} (${orphan.feed_id})`
         )
       throw new Error(
-        'Resolve the prior drill markets above before starting another run.'
+        'Resolve and retire the prior drill markets above before starting another run.'
       )
     }
 
@@ -314,17 +322,57 @@ if (require.main === module)
         )} minutes before the next tick. Apply only from :05 through :39 UTC.`
       )
     const mutationDeadline = nextHourlyTick - 10 * MINUTE_MS
+    const cleanupDeadline = nextHourlyTick - 2 * MINUTE_MS
     const assertSchedulerIsolationWindow = (operation: string) => {
       if (Date.now() >= mutationDeadline)
         throw new Error(
           `Aborting before ${operation}: the hourly scheduler safety deadline was reached`
         )
     }
+    const assertCleanupIsolationWindow = (operation: string) => {
+      if (Date.now() >= cleanupDeadline)
+        throw new Error(
+          `Aborting before ${operation}: the cleanup safety deadline was reached`
+        )
+    }
+    const guardEngineMutation = <Args extends unknown[], Result>(
+      operation: string,
+      mutation: (...args: Args) => Result
+    ) => {
+      return (...args: Args): Result => {
+        assertSchedulerIsolationWindow(operation)
+        return mutation(...args)
+      }
+    }
+    const closePosition = guardEngineMutation(
+      'closing a PERP position',
+      closePositionUnsafe
+    )
+    const openOrAddPosition = guardEngineMutation(
+      'opening or adding a PERP position',
+      openOrAddPositionUnsafe
+    )
+    const resolvePerpForCleanup = (
+      ...args: Parameters<typeof resolvePerpUnsafe>
+    ) => {
+      assertCleanupIsolationWindow('resolving a PERP during cleanup')
+      return resolvePerpUnsafe(...args)
+    }
+    const runFunding = guardEngineMutation(
+      'applying PERP funding',
+      runFundingUnsafe
+    )
+    const runOracleUpdate = guardEngineMutation(
+      'applying a PERP oracle update',
+      runOracleUpdateUnsafe
+    )
     log(
       `hourly scheduler isolation window: ${minutesUntilNextHour.toFixed(
         1
       )} minutes until the next tick; mutations must finish by ${new Date(
         mutationDeadline
+      ).toISOString()} and cleanup by ${new Date(
+        cleanupDeadline
       ).toISOString()}`
     )
 
@@ -334,12 +382,16 @@ if (require.main === module)
     const [
       { updateUserMetricPeriods },
       { updateLeague },
-      { resolveMarketMain },
+      { resolveMarketMain: resolveMarketMainUnsafe },
     ] = await Promise.all([
       import('shared/update-user-metric-periods'),
       import('scheduler/jobs/update-league'),
       import('api/resolve-market'),
     ])
+    const resolveMarketMain = guardEngineMutation(
+      'resolving a PERP through the API',
+      resolveMarketMainUnsafe
+    )
 
     const createdMarkets: DrillMarket[] = []
     const metricTargets: { userId: string; contractId: string }[] = []
@@ -439,6 +491,246 @@ if (require.main === module)
       )
     }
 
+    const retireResolvedDrillMarket = async (market: DrillMarket) =>
+      pg.tx({ mode: SERIAL_MODE }, async (tx) => {
+        assertCleanupIsolationWindow(`retiring drill market ${market.id}`)
+        const row = await tx.one<{
+          data: PerpContract
+          token: string | null
+          resolution_time: string | null
+        }>(
+          `select data, token, resolution_time
+             from contracts
+            where id = $1
+            for update`,
+          [market.id]
+        )
+        const contract = { ...row.data, token: row.token } as PerpContract
+        if (
+          row.token !== 'MANA' ||
+          contract.mechanism !== 'perp' ||
+          contract.outcomeType !== 'PERP' ||
+          contract.creatorId !== DEV_MANIFOLD ||
+          contract.visibility !== 'unlisted' ||
+          contract.oracleFeedId !== market.feedId ||
+          contract.question !== market.question ||
+          contract.siblingContractId !== undefined
+        )
+          throw new Error(
+            `Refusing to retire drill market ${market.id}: identity drifted`
+          )
+        if (
+          row.resolution_time === null ||
+          !contract.isResolved ||
+          contract.resolution !== 'MKT'
+        )
+          throw new Error(
+            `Refusing to retire drill market ${market.id}: it is not MKT-resolved`
+          )
+
+        const state = await tx.one<{
+          position_count: number | string
+          answer_metric_count: number | string
+          ledger_balance: number | string
+          event_count: number | string
+          event_max_id: string | null
+          funding_count: number | string
+          funding_max_ts: string | null
+          txn_count: number | string
+          txn_amount: number | string
+        }>(
+          `select
+             (select count(*) from contract_perp_positions
+               where contract_id = $1)::int as position_count,
+             (select count(*) from user_contract_metrics
+               where contract_id = $1
+                 and answer_id is not null)::int as answer_metric_count,
+             (select coalesce(sum(
+                case
+                  when to_type = 'CONTRACT' and to_id = $1 then amount
+                  when from_type = 'CONTRACT' and from_id = $1 then -amount
+                  else 0
+                end
+              ), 0)
+              from txns
+              where token = 'M$'
+                and (
+                  (to_type = 'CONTRACT' and to_id = $1)
+                  or (from_type = 'CONTRACT' and from_id = $1)
+                )) as ledger_balance,
+             (select count(*) from contract_perp_events
+               where contract_id = $1)::int as event_count,
+             (select max(id)::text from contract_perp_events
+               where contract_id = $1) as event_max_id,
+             (select count(*) from contract_perp_funding_events
+               where contract_id = $1)::int as funding_count,
+             (select max(ts)::text from contract_perp_funding_events
+               where contract_id = $1) as funding_max_ts,
+             (select count(*) from txns
+               where (from_type = 'CONTRACT' and from_id = $1)
+                  or (to_type = 'CONTRACT' and to_id = $1))::int as txn_count,
+             (select coalesce(sum(amount), 0) from txns
+               where (from_type = 'CONTRACT' and from_id = $1)
+                  or (to_type = 'CONTRACT' and to_id = $1)) as txn_amount`,
+          [market.id]
+        )
+        const poolLong = Number(contract.poolLong)
+        const poolShort = Number(contract.poolShort)
+        const ledgerBalance = Number(state.ledger_balance)
+        if (
+          Number(state.position_count) !== 0 ||
+          Number(state.answer_metric_count) !== 0 ||
+          poolLong !== 0 ||
+          poolShort !== 0 ||
+          !isPerpEscrowBalanced({
+            ledgerBalance,
+            poolLong,
+            poolShort,
+          })
+        )
+          throw new Error(
+            `Refusing to retire drill market ${market.id}: unsettled state ` +
+              `positions=${state.position_count}, answerMetrics=${
+                state.answer_metric_count
+              }, ledger=${ledgerBalance}, pools=${poolLong + poolShort}`
+          )
+
+        const balancesBefore = await tx.manyOrNone<{
+          id: string
+          balance: number | string
+        }>(
+          `select id, balance
+             from users
+            where id in (
+              select creator_id from contracts where id = $1
+              union
+              select user_id
+                from contract_perp_events
+               where contract_id = $1
+                 and user_id is not null
+            )
+            order by id`,
+          [market.id]
+        )
+        const historyBefore = JSON.stringify({
+          eventCount: String(state.event_count),
+          eventMaxId: state.event_max_id,
+          fundingCount: String(state.funding_count),
+          fundingMaxTs: state.funding_max_ts,
+          txnCount: String(state.txn_count),
+          txnAmount: String(state.txn_amount),
+        })
+        const balanceBefore = JSON.stringify(
+          balancesBefore.map((balance) => ({
+            id: balance.id,
+            balance: String(balance.balance),
+          }))
+        )
+
+        const updated = await tx.result(
+          `update contracts
+              set deleted = true,
+                  data = data || jsonb_build_object(
+                'deleted', true,
+                'visibility', 'unlisted',
+                'isRanked', false
+              )
+            where id = $1
+              and mechanism = 'perp'
+              and outcome_type = 'PERP'
+              and resolution = 'MKT'
+              and resolution_time is not null
+              and data->>'oracleFeedId' = $2
+              and data->>'question' = $3
+              and data->>'siblingContractId' is null`,
+          [market.id, market.feedId, market.question]
+        )
+        if (updated.rowCount !== 1)
+          throw new Error(
+            `Retired ${updated.rowCount} drill contracts for ${market.id}, expected 1`
+          )
+        const deletedMetrics = await tx.result(
+          `delete from user_contract_metrics
+            where contract_id = $1`,
+          [market.id]
+        )
+
+        const after = await tx.one<{
+          data: PerpContract
+          deleted: boolean
+          visibility: string
+          metric_count: number | string
+          event_count: number | string
+          event_max_id: string | null
+          funding_count: number | string
+          funding_max_ts: string | null
+          txn_count: number | string
+          txn_amount: number | string
+        }>(
+          `select c.data, c.deleted, c.visibility,
+                  (select count(*) from user_contract_metrics
+                    where contract_id = c.id)::int as metric_count,
+                  (select count(*) from contract_perp_events
+                    where contract_id = c.id)::int as event_count,
+                  (select max(id)::text from contract_perp_events
+                    where contract_id = c.id) as event_max_id,
+                  (select count(*) from contract_perp_funding_events
+                    where contract_id = c.id)::int as funding_count,
+                  (select max(ts)::text from contract_perp_funding_events
+                    where contract_id = c.id) as funding_max_ts,
+                  (select count(*) from txns
+                    where (from_type = 'CONTRACT' and from_id = c.id)
+                       or (to_type = 'CONTRACT' and to_id = c.id))::int
+                    as txn_count,
+                  (select coalesce(sum(amount), 0) from txns
+                    where (from_type = 'CONTRACT' and from_id = c.id)
+                       or (to_type = 'CONTRACT' and to_id = c.id))
+                    as txn_amount
+             from contracts c
+            where c.id = $1`,
+          [market.id]
+        )
+        if (
+          !after.deleted ||
+          after.visibility !== 'unlisted' ||
+          after.data.deleted !== true ||
+          after.data.visibility !== 'unlisted' ||
+          after.data.isRanked !== false ||
+          Number(after.metric_count) !== 0
+        )
+          throw new Error(`Drill retirement did not converge for ${market.id}`)
+        const historyAfter = JSON.stringify({
+          eventCount: String(after.event_count),
+          eventMaxId: after.event_max_id,
+          fundingCount: String(after.funding_count),
+          fundingMaxTs: after.funding_max_ts,
+          txnCount: String(after.txn_count),
+          txnAmount: String(after.txn_amount),
+        })
+        if (historyAfter !== historyBefore)
+          throw new Error(`Drill retirement changed history for ${market.id}`)
+        const balancesAfter = await tx.manyOrNone<{
+          id: string
+          balance: number | string
+        }>(
+          `select id, balance
+             from users
+            where id = any($1::text[])
+            order by id`,
+          [balancesBefore.map((balance) => balance.id)]
+        )
+        const balanceAfter = JSON.stringify(
+          balancesAfter.map((balance) => ({
+            id: balance.id,
+            balance: String(balance.balance),
+          }))
+        )
+        if (balanceAfter !== balanceBefore)
+          throw new Error(`Drill retirement changed a balance for ${market.id}`)
+
+        return deletedMetrics.rowCount
+      })
+
     const makeMarket = async (
       tag: string,
       options: {
@@ -470,9 +762,10 @@ if (require.main === module)
       await insertOraclePrices(pg, feedId, [
         { ts: initialOracleTime, price: 100 },
       ])
+      const question = `${QUESTION_PREFIX}: ${tag} (scratch; ignore)`
       const created = await createPerp(
         {
-          question: `${QUESTION_PREFIX}: ${tag} (scratch; ignore)`,
+          question,
           description:
             'Automated launch verification market. Unlisted and resolved by the same guarded DEV-only script.',
           visibility: 'unlisted',
@@ -493,6 +786,7 @@ if (require.main === module)
       const market = {
         id: created.result.id,
         feedId,
+        question,
         lastOracleTime: initialOracleTime,
       }
       createdMarkets.push(market)
@@ -565,6 +859,7 @@ if (require.main === module)
       }
 
       log('=== 0. establish league baseline ===')
+      assertSchedulerIsolationWindow('establishing the league baseline')
       await updateLeague(season)
       leagueBefore = await snapshotLeague()
       check(
@@ -1423,6 +1718,7 @@ if (require.main === module)
         `calculated=${calculatedByTarget.size}, expected=${metricTargets.length}`
       )
 
+      assertSchedulerIsolationWindow('updating drill metric periods')
       await updateUserMetricPeriods(DRILL_USERS)
       for (const target of metricTargets) {
         const row = await pg.oneOrNone<{
@@ -1505,6 +1801,7 @@ if (require.main === module)
       }
 
       log('=== F. league exclusion ===')
+      assertSchedulerIsolationWindow('verifying league exclusion')
       await updateLeague(season)
       const leagueAfter = await snapshotLeague()
       for (const [userId, before] of Object.entries(leagueBefore)) {
@@ -1530,7 +1827,10 @@ if (require.main === module)
           try {
             const loaded = await loadContract(market.id)
             if (loaded.resolutionTime === null && !loaded.contract.isResolved) {
-              const result = await resolvePerp(market.id, DEV_MANIFOLD)
+              const result = await resolvePerpForCleanup(
+                market.id,
+                DEV_MANIFOLD
+              )
               log(
                 `resolved ${market.id} at ${
                   result.finalPrice
@@ -1540,6 +1840,10 @@ if (require.main === module)
               log(`${market.id} was already resolved`)
             }
             await assertEscrow(market.id, `cleanup: ${market.id} escrow`)
+            const deletedMetrics = await retireResolvedDrillMarket(market)
+            log(
+              `soft-deleted ${market.id} and removed ${deletedMetrics} derived metric row(s); immutable history retained`
+            )
             cleaned = true
             break
           } catch (error) {
