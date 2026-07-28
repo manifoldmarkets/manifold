@@ -23,6 +23,7 @@ import { PerpPosition } from 'common/perps/position'
 import { Row } from 'common/supabase/utils'
 import { HOUR_MS, YEAR_MS } from 'common/util/time'
 import {
+  BTC_USD_FEED_ID,
   ECI_FRONTIER_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
@@ -47,7 +48,7 @@ import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
-// DEV-only, idempotent replacement of the three remaining launch prototypes
+// DEV-only, idempotent replacement of pinned non-pristine launch prototypes
 // plus retirement of the excluded ECI prototype.
 //
 // The default invocation is read-only. It prints the exact contract ids,
@@ -81,6 +82,7 @@ const DEV_MANIFOLD = getPerpLaunchCreatorId('DEV')
 
 type RebuildPlan = {
   feedId:
+    | typeof BTC_USD_FEED_ID
     | typeof UK_GRID_CARBON_FEED_ID
     | typeof TRUMP_APPROVAL_FEED_ID
     | typeof OPENROUTER_OPEN_WEIGHT_FEED_ID
@@ -100,6 +102,14 @@ type RetirePlan = {
 }
 
 const REBUILD_PLANS: readonly RebuildPlan[] = [
+  {
+    feedId: BTC_USD_FEED_ID,
+    legacyContractId: 'ZucCZdUg6cZR',
+    legacySlug: 'bitcoin-price-usd',
+    description:
+      'Tracks BTC/USD spot using the median price across Coinbase, Kraken, and Bitstamp.',
+    embeddingFallbackSlugs: ['bitcoin-price-usd', 'bitcoin-usd-perpetual'],
+  },
   {
     feedId: UK_GRID_CARBON_FEED_ID,
     legacyContractId: 'SSyOOz9ldQu5',
