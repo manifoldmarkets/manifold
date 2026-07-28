@@ -30,7 +30,7 @@ import { runScript } from './run-script'
 
 // Destructive DEV-only launch drill. The default invocation is read-only.
 //
-// Apply mode creates four unlisted disposable markets on process-local
+// Apply mode creates five unlisted disposable markets on process-local
 // synthetic feed definitions, exercises the authoritative engine, then
 // resolves every market it created. The definitions are intentionally never
 // added to the deployed registry. The current deployed hourly fallback job
