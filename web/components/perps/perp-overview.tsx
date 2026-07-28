@@ -198,8 +198,8 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
 
   return (
     <Col className="gap-4">
-      <Row className="items-baseline justify-between">
-        <Row className="items-baseline gap-8">
+      <Row className="flex-wrap items-baseline justify-between gap-2">
+        <Row className="min-w-0 items-baseline gap-4 sm:gap-8">
           <Col>
             <div className="text-ink-500 text-sm">
               {contract.isResolved ? 'Final oracle price' : 'Oracle price'}
@@ -229,7 +229,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
             />
           )}
         </Row>
-        <Row className="border-ink-200 overflow-hidden rounded-md border">
+        <Row className="border-ink-200 ml-auto overflow-hidden rounded-md border">
           <button
             className={`px-3 py-1 text-sm ${
               chartMode === 'price'
