@@ -8,16 +8,18 @@ import { NewQuestionParams } from 'web/components/new-contract/contract-types'
 import { getLinkTarget } from 'web/components/widgets/linkify'
 import { getPrecision } from 'common/src/number'
 import { randomString } from 'common/util/random'
+import { useNativeInfo } from 'web/components/native-message-provider'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
   const href = duplicateContractHref(contract)
+  const { isNative } = useNativeInfo()
   return (
     <Link
       className={clsx(buttonClass('sm', 'indigo-outline'))}
       href={href}
       onClick={trackCallback('duplicate market')}
-      target={getLinkTarget(href, true)}
+      target={getLinkTarget(href, true, isNative)}
     >
       Duplicate
     </Link>
