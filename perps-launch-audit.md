@@ -45,15 +45,16 @@ to be rerun; they will still be schema-first rollout steps on PROD.
 
 Implemented.
 
-- The external `/embed/[username]/[contractSlug]` route identifies the market
-  as a perpetual, displays the oracle price rather than a probability, renders
-  a PERP sparkline, and preserves oracle-source attribution.
+- The external `/embed/[username]/[contractSlug]` route prefixes the title
+  with a visible `Perpetual` type pill, displays the oracle price rather than a
+  probability, renders a PERP sparkline, and preserves oracle-source
+  attribution.
 - The rich-text `%` market picker receives `oraclePrice` in the lite market
-  payload, labels PERPs in its suggestions, and shows the formatted oracle
-  price.
+  payload, prefixes PERP suggestion titles with the same full type pill, and
+  shows the formatted oracle price.
 - A persisted `%[market]` mention renders through the PERP-aware
-  `ContractMention` component, so the launch announcement can reference these
-  markets inline.
+  `ContractMention` component with the type pill before its title, so the
+  launch announcement can reference these markets inline.
 - Related-market cards, compact rows, activity cards, and link previews also
   identify the type and do not present a fake binary probability.
 
@@ -126,7 +127,8 @@ ordinary market distribution; tune shared score weights only from that data.
 
 Implemented.
 
-- Cards and tables carry a visible `Perp`/`Perpetual` badge.
+- Cards, tables, dashboards, related markets, mentions, TV, and embeds prefix
+  the title with a visible `Perpetual` type pill.
 - The main value is the formatted oracle price, not `0%` or a binary chance.
 - Feed cards can show a price sparkline.
 - The backing row uses `poolLong + poolShort` as market backing.
@@ -141,6 +143,12 @@ Implemented.
 "Backing" is the correct label. The two pools are cash backing for the
 parimutuel liabilities; calling that ordinary CPMM liquidity would imply the
 wrong mechanism.
+
+On the full market page, the pill is a real button immediately before the
+title. It opens an accessible on-page explainer covering the oracle, long and
+short exposure, leverage, liquidation and ADL, funding, no expiry, stale-feed
+pauses, and the initial league-scoring exclusion. In cards and links the pill
+remains a non-interactive label so it never creates a nested button.
 
 ### Future date at the graph extension
 
@@ -429,8 +437,11 @@ migration is currently required on DEV.
 4. Provision required feed secrets and run the four oracle-history backfills
    if the clean replacement markets need them. Never include ECI.
 5. Create exactly the four manifest markets through the admin form as
-   unlisted. Apply the displayed launch recommendation; the API automatically
-   attaches the required environment-specific topic.
+   unlisted. Apply the displayed launch recommendation; this fills the clean
+   manifest title as well as the risk settings, and the API automatically
+   attaches the required environment-specific topic. The API rejects a launch
+   title that differs from the manifest because the `Perpetual` type is
+   rendered separately.
 6. Run `backfill-perp-launch-discovery.ts` without `--apply`; it must report
    zero missing topics and embeddings for clean markets. Use `--apply` only to
    repair a market that will be retained.
@@ -505,8 +516,9 @@ includes:
   backfill, embed accessibility hardening, and safer unlisted admin defaults;
 - reconciled day/week/month PERP accounting with immutable
   application/publication history and race-safe metric ownership; and
-- the executable four-market launch manifest, preflight, and operational
-  runbook.
+- the executable four-market launch manifest, preflight, operational runbook,
+  clean title enforcement, full `Perpetual` title prefixes, and the on-page
+  product explainer.
 
 The commit history on `perps-launch` is the authoritative itemized record.
 
