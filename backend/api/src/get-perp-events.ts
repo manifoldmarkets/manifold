@@ -2,9 +2,11 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
 
 // Fetches the event log for a perp contract with user info joined, paginated
-// by id (DESC). Excludes pool-level 'funding' events (they're surfaced via
-// the dedicated funding chart; here they'd spam the trades feed and have no
-// user to attribute them to). Used by the Trades tab on perp contract pages.
+// by id (DESC). Excludes pool-level funding and aggregate ADL audit events:
+// neither is a user trade, and showing their null user as "anon" spams and
+// misrepresents the public Trades tab. Funding is surfaced by its chart, while
+// each affected ADL position already has its own user-attributed event.
+// Used by the Trades tab and user position history.
 export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
   const { contractId, userId, beforeId, limit = 50 } = body
   const pg = createSupabaseDirectClient()
@@ -33,6 +35,7 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
        left join users u on u.id = e.user_id
       where e.contract_id = $1
         and e.event_type <> 'funding'
+        and e.user_id is not null
         and ($2::text is null or e.user_id = $2::text)
         and ($3::bigint is null or e.id < $3::bigint)
       order by e.id desc
