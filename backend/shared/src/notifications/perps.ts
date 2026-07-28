@@ -23,7 +23,7 @@ export const notifyPerpOracleResult = async (
   pg: SupabaseDirectClient,
   contract: PerpContract,
   oraclePrice: number,
-  result: OracleUpdateResult
+  result: AdlNotificationResult & Pick<OracleUpdateResult, 'liquidated'>
 ) => {
   for (const liq of result.liquidated) {
     await createPerpLiquidationNotification(pg, contract, liq.userId, {

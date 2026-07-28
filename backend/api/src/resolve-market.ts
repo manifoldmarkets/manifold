@@ -22,7 +22,7 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
 import { SWEEPSTAKES_MOD_IDS } from 'common/envs/constants'
-import { notifyPerpAdlResult } from 'shared/notifications/perps'
+import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createContractResolvedNotifications } from 'shared/create-notification'
@@ -118,7 +118,12 @@ export const resolveMarketMain: APIHandler<
         )
 
         const results = await Promise.allSettled([
-          notifyPerpAdlResult(db, resolvedContract, result.finalPrice, result),
+          notifyPerpOracleResult(
+            db,
+            resolvedContract,
+            result.finalPrice,
+            result
+          ),
           trackPublicEvent(auth.uid, 'resolve market', {
             resolution: 'MKT',
             contractId,

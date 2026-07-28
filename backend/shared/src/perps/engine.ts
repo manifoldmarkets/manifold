@@ -1500,6 +1500,7 @@ export const resolvePerp = async (
     }[]
     residualPayout: number
     finalPrice: number
+    liquidated: PerpPosition[]
   } & AdlNotificationResult
 > => {
   // Single-transaction resolution: apply liquidation + ADL + close-all +
@@ -1576,12 +1577,20 @@ export const resolvePerp = async (
       direction: PerpDirection
       payout: number
       originalCostBasis: number
-    }[] = applied.adlSettled.map(({ position, payout }) => ({
-      userId: position.userId,
-      direction: position.direction,
-      payout,
-      originalCostBasis: position.originalCostBasis,
-    }))
+    }[] = [
+      ...applied.liquidated.map((position) => ({
+        userId: position.userId,
+        direction: position.direction,
+        payout: 0,
+        originalCostBasis: position.originalCostBasis,
+      })),
+      ...applied.adlSettled.map(({ position, payout }) => ({
+        userId: position.userId,
+        direction: position.direction,
+        payout,
+        originalCostBasis: position.originalCostBasis,
+      })),
+    ]
 
     let runningState = applied.finalState
     await payAdlSettlements(pgTrans, contractId, finalPrice, applied.adlSettled)
@@ -1714,6 +1723,7 @@ export const resolvePerp = async (
       closedPositions,
       residualPayout,
       finalPrice,
+      liquidated: applied.liquidated,
       adlAdjusted: applied.adlAdjusted,
       adlSettled: applied.adlSettled,
     }
