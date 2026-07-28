@@ -445,17 +445,31 @@ if (require.main === module)
     })
 
     await inspect('active PERP contracts', async () => {
-      const rows = await pg.manyOrNone<{ data: PerpContract }>(
-        `select data from contracts
+      const rows = await pg.manyOrNone<{
+        data: PerpContract
+        token: string | null
+      }>(
+        `select data, token from contracts
          where mechanism = 'perp' and resolution_time is null`
       )
       const contracts = rows.map((row) => row.data)
+      const tokenByContractId = new Map(
+        rows.map((row) => [row.data.id, row.token])
+      )
       const launchIds = new Set(
         PERP_LAUNCH_MARKETS.map((market) => market.feedId)
       )
       const excludedIds = new Set<string>(PERP_LAUNCH_EXCLUDED_FEED_IDS)
 
       for (const contract of contracts) {
+        const nativeToken = tokenByContractId.get(contract.id)
+        report(
+          nativeToken === 'MANA' ? 'PASS' : 'FAIL',
+          `market ${contract.slug} trading token`,
+          nativeToken === 'MANA'
+            ? 'native token is MANA'
+            : `native token is ${nativeToken ?? 'missing'}; PERPs must use MANA`
+        )
         const feed = getOracleFeed(contract.oracleFeedId)
         const definition = PERP_LAUNCH_MARKETS.find(
           (market) => market.feedId === contract.oracleFeedId

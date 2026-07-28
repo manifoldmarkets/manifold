@@ -127,11 +127,28 @@ const loadStateForUpdate = async (
   // .none() would throw "No return data was expected". .one() is correct.
   await pgTrans.one(advisoryLockQuery(contractId))
 
-  const contractRow = await pgTrans.oneOrNone<{ data: PerpContract }>(
-    selectContractForUpdateQuery(contractId)
-  )
+  const contractRow = await pgTrans.oneOrNone<{
+    data: PerpContract
+    token: string | null
+  }>(selectContractForUpdateQuery(contractId))
   if (!contractRow) throw new APIError(404, `Contract ${contractId} not found`)
-  const contract = contractRow.data
+  // `token` is a native contract column and is absent from `data` on newly
+  // created markets. Merge it from the same locked read before system-status
+  // and ledger checks. Never default it: corrupt rows must fail closed.
+  // PERP escrow and margin transactions are M$-denominated. Accepting a CASH
+  // row here would pass the CASH system-status gate while still mutating the
+  // MANA ledger, so only the product's supported native token is valid.
+  if (contractRow.token !== 'MANA')
+    throw new APIError(
+      500,
+      `Contract ${contractId} has invalid PERP token ${
+        contractRow.token ?? 'null'
+      }; expected MANA`
+    )
+  const contract: PerpContract = {
+    ...contractRow.data,
+    token: contractRow.token,
+  }
   if (contract.mechanism !== 'perp')
     throw new APIError(400, `Contract ${contractId} is not a perp`)
   if (contract.isResolved)
@@ -1471,7 +1488,8 @@ export const runFunding = async (
 
 export const resolvePerp = async (
   contractId: string,
-  resolverId: string
+  resolverId: string,
+  options?: { requireNoOpenPositions?: boolean }
 ): Promise<
   {
     closedPositions: {
@@ -1492,6 +1510,14 @@ export const resolvePerp = async (
       pgTrans,
       contractId
     )
+    // Operational prototype replacement can require an empty market. This
+    // check runs after acquiring the same contract lock as trades, closing
+    // the race between a script's read-only precheck and final resolution.
+    if (options?.requireNoOpenPositions && loaded.positions.length > 0)
+      throw new APIError(
+        409,
+        `Cannot resolve ${contract.slug}: expected no open positions, found ${loaded.positions.length}`
+      )
     await assertPerpEscrowBalance(pgTrans, contractId, loaded.pool)
 
     // Select the immutable final feed point only after acquiring the same

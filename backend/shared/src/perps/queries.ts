@@ -25,7 +25,7 @@ export const selectLatestOraclePriceQuery = (feedId: string) =>
   )
 
 export const selectContractForUpdateQuery = (contractId: string) =>
-  pgp.as.format(`select data from contracts where id = $1 for update`, [
+  pgp.as.format(`select data, token from contracts where id = $1 for update`, [
     contractId,
   ])
 
