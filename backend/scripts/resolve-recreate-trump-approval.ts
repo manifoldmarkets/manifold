@@ -30,6 +30,11 @@ const MAX_FUNDING_RATE_DAILY = 1 / 365
 
 if (require.main === module)
   runScript(async ({ pg }) => {
+    const politicsGroupId = await pg.one(
+      `select id from groups where slug = 'politics-default'`,
+      [],
+      (row: { id: string }) => row.id
+    )
     const old = await pg.one(
       `select slug, resolution_time from contracts where id = $1`,
       [OLD_CONTRACT_ID]
@@ -44,7 +49,12 @@ if (require.main === module)
         `resolved ${OLD_CONTRACT_ID} at ${res.finalPrice}: ` +
           `${res.closedPositions.length} positions closed ` +
           `(${res.closedPositions
-            .map((p) => `${p.userId.slice(0, 8)} ${p.direction} → ${p.payout.toFixed(2)}`)
+            .map(
+              (p) =>
+                `${p.userId.slice(0, 8)} ${p.direction} → ${p.payout.toFixed(
+                  2
+                )}`
+            )
             .join(', ')}), ` +
           `residual ${res.residualPayout.toFixed(0)} to creator`
       )
@@ -55,6 +65,7 @@ if (require.main === module)
         question: 'Trump Approval Rating',
         description: 'According to VoteHub poll aggregator',
         visibility: 'public',
+        groupIds: [politicsGroupId],
         oracleFeedId: FEED_ID,
         maxLeverage: 100,
         maxFundingRate: MAX_FUNDING_RATE_DAILY,
@@ -82,5 +93,7 @@ if (require.main === module)
       throw new Error(
         `fundingPeriodMs is ${check.period}, expected ${DAY_MS} — create path did not derive the daily period`
       )
-    log(`verified: fundingPeriodMs=${check.period}, maxFundingRate=${check.fmax}`)
+    log(
+      `verified: fundingPeriodMs=${check.period}, maxFundingRate=${check.fmax}`
+    )
   })

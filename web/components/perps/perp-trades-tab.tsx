@@ -25,6 +25,7 @@ type Event = {
   leverage: number | null
   payout: number | null
   pnl: number | null
+  adlFactor: number | null
   userName: string | null
   username: string | null
   avatarUrl: string | null
@@ -138,7 +139,7 @@ const EventRow = (props: { event: Event; priceDecimals: number }) => {
     event.direction === 'long'
       ? 'text-teal-600'
       : event.direction === 'short'
-      ? 'text-red-600'
+      ? 'text-scarlet-600'
       : 'text-ink-600'
 
   // For open/add we show deposited margin (originalCostBasisDelta).
@@ -147,16 +148,30 @@ const EventRow = (props: { event: Event; priceDecimals: number }) => {
     event.eventType === 'close' ||
     event.eventType === 'liquidation' ||
     event.eventType === 'adl'
+  const isLiquidation = event.eventType === 'liquidation'
 
-  const marginOrPayout = isExit
+  const marginOrPayout = isLiquidation
+    ? null
+    : isExit
     ? event.payout
     : event.originalCostBasisDelta > 0
     ? event.originalCostBasisDelta
     : null
+  const liquidationMarginLost =
+    isLiquidation && Number.isFinite(event.originalCostBasisDelta)
+      ? Math.abs(event.originalCostBasisDelta)
+      : null
+  const partialAdlReduction =
+    event.eventType === 'adl' &&
+    event.payout == null &&
+    event.adlFactor != null &&
+    Number.isFinite(event.adlFactor)
+      ? Math.max(0, Math.min(1, 1 - event.adlFactor))
+      : null
 
   return (
-    <Row className="bg-canvas-0 border-ink-200 items-center gap-3 rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3">
-      <div className="shrink-0">
+    <Row className="bg-canvas-0 border-ink-200 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5 sm:flex-nowrap sm:px-4 sm:py-3">
+      <div className="min-w-0 flex-1 sm:flex-none">
         <UserAvatarAndBadge
           user={{
             id: event.userId ?? '',
@@ -167,7 +182,7 @@ const EventRow = (props: { event: Event; priceDecimals: number }) => {
           short
         />
       </div>
-      <Col className="min-w-0 flex-1">
+      <Col className="order-last min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-auto">
         <Row className="flex-wrap items-center gap-1 text-sm">
           {/* Aggregate rows (per-tick ADL) carry no direction; drop the
               trailing "on" so the label doesn't dangle before the price. */}
@@ -194,12 +209,24 @@ const EventRow = (props: { event: Event; priceDecimals: number }) => {
           />
         </Row>
       </Col>
-      <Col className="shrink-0 items-end text-sm">
-        {marginOrPayout != null && (
+      <Col className="ml-auto shrink-0 items-end text-sm">
+        {isLiquidation ? (
+          <span className="text-scarlet-600 font-medium">
+            {liquidationMarginLost == null
+              ? 'Margin lost'
+              : `${formatMoney(liquidationMarginLost)} margin lost`}
+          </span>
+        ) : partialAdlReduction != null ? (
+          <span className="font-medium text-amber-600">
+            {(partialAdlReduction * 100).toFixed(1)}% position reduced
+          </span>
+        ) : marginOrPayout != null ? (
           <span className="text-ink-900">{formatMoney(marginOrPayout)}</span>
-        )}
+        ) : null}
         {isExit && event.pnl != null && (
-          <span className={event.pnl >= 0 ? 'text-teal-600' : 'text-red-600'}>
+          <span
+            className={event.pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'}
+          >
             {event.pnl >= 0 ? '+' : ''}
             {formatMoney(event.pnl)}
           </span>

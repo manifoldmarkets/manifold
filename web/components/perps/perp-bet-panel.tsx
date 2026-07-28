@@ -411,8 +411,8 @@ const DirectionToggle = (props: {
       <ToggleButton
         active={direction === 'short'}
         onClick={() => onChange('short')}
-        activeClass="bg-red-600 text-white shadow-sm"
-        inactiveClass="text-red-700 dark:text-red-400 hover:bg-canvas-50"
+        activeClass="bg-scarlet-600 text-white shadow-sm"
+        inactiveClass="text-scarlet-700 hover:bg-canvas-50"
       >
         Short
       </ToggleButton>
@@ -565,14 +565,14 @@ const StatsGrid = (props: {
       <StatRow
         label="Liquidation"
         value={formatPrice(liqPrice, priceDecimals)}
-        valueClass="text-red-600"
+        valueClass="text-scarlet-600"
       />
       <StatRow
         label="Funding"
         value={fundingValue}
         valueClass={
           paysFunding
-            ? 'text-red-600'
+            ? 'text-scarlet-600'
             : earnsFunding
             ? 'text-teal-600'
             : undefined

@@ -753,6 +753,12 @@ export const PerpChart = (props: {
           width="100%"
           height={height}
           viewBox={`0 0 ${width} ${height}`}
+          role="group"
+          aria-label={
+            mode === 'price'
+              ? `Oracle price history and projected holding costs for ${contract.question}`
+              : `Funding rate history for ${contract.question}`
+          }
           onMouseMove={onMouseMove}
           onMouseLeave={() => setHoverIdx(null)}
         >
@@ -894,8 +900,21 @@ export const PerpChart = (props: {
                     <g
                       key={m.ts}
                       className="cursor-help"
+                      role="img"
+                      tabIndex={0}
+                      aria-label={`Funding mark, ${formatHoverDate(m.ts)}. ${
+                        liveFundingRate > 0
+                          ? 'Longs pay shorts'
+                          : liveFundingRate < 0
+                          ? 'Shorts pay longs'
+                          : 'No funding transfer'
+                      }, ${(Math.abs(liveFundingRate) * 100).toFixed(
+                        3
+                      )}% of margin.`}
                       onMouseEnter={() => setHoveredMark(m)}
                       onMouseLeave={() => setHoveredMark(null)}
+                      onFocus={() => setHoveredMark(m)}
+                      onBlur={() => setHoveredMark(null)}
                     >
                       {/* Oversized invisible hit area — a 6px diamond is
                           not a hover target. */}

@@ -1,3 +1,4 @@
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
@@ -13,6 +14,10 @@ import { getOracleFeed } from '../oracle-feeds'
 export type PerpLaunchMarketDefinition = {
   feedId: string
   question: string
+  requiredTopics: readonly {
+    name: string
+    slugByEnvironment: Readonly<Record<'DEV' | 'PROD', string>>
+  }[]
   oracleBehavior: 'continuous-public' | 'batched-public' | 'scheduled-step'
   /** Whether the provider's terms require its dataset-level as-of timestamp. */
   requiresSourceAsOf: boolean
@@ -45,6 +50,15 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   {
     feedId: BTC_USD_FEED_ID,
     question: 'Bitcoin price (USD)',
+    requiredTopics: [
+      {
+        name: 'Crypto',
+        slugByEnvironment: {
+          DEV: 'crypto-default',
+          PROD: 'crypto-speculation',
+        },
+      },
+    ],
     oracleBehavior: 'continuous-public',
     requiresSourceAsOf: false,
     gameDesign:
@@ -64,6 +78,18 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   {
     feedId: UK_GRID_CARBON_FEED_ID,
     question: 'UK grid carbon intensity (gCO₂/kWh)',
+    requiredTopics: [
+      {
+        // Science exists under one stable slug in both environments. PROD can
+        // additionally attach Climate, but launch readiness must be testable
+        // in DEV without inventing an environment-only topic.
+        name: 'Science',
+        slugByEnvironment: {
+          DEV: 'science-default',
+          PROD: 'science-default',
+        },
+      },
+    ],
     oracleBehavior: 'batched-public',
     requiresSourceAsOf: false,
     gameDesign:
@@ -83,6 +109,15 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   {
     feedId: TRUMP_APPROVAL_FEED_ID,
     question: 'Trump approval rating',
+    requiredTopics: [
+      {
+        name: 'Politics',
+        slugByEnvironment: {
+          DEV: 'politics-default',
+          PROD: 'politics-default',
+        },
+      },
+    ],
     oracleBehavior: 'scheduled-step',
     requiresSourceAsOf: false,
     gameDesign:
@@ -102,6 +137,15 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   {
     feedId: OPENROUTER_OPEN_WEIGHT_FEED_ID,
     question: 'Open-weight AI token share on OpenRouter (%)',
+    requiredTopics: [
+      {
+        name: 'AI',
+        slugByEnvironment: {
+          DEV: 'ai',
+          PROD: 'ai',
+        },
+      },
+    ],
     oracleBehavior: 'scheduled-step',
     requiresSourceAsOf: true,
     gameDesign:
@@ -121,6 +165,22 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
 ]
 
 export const PERP_LAUNCH_EXCLUDED_FEED_IDS = [ECI_FRONTIER_FEED_ID] as const
+
+// Residual pool value returns to the market creator at settlement. Restrict
+// the launch set to the environment's official Manifold account so a personal
+// admin account cannot accidentally own those economics.
+export const PERP_LAUNCH_CREATOR_IDS = {
+  DEV: 'MxyCh2xvsFMFywwjg3Az0w4xP5B3',
+  PROD: HOUSE_LIQUIDITY_PROVIDER_ID,
+} as const
+
+export const getPerpLaunchCreatorId = (environment: 'DEV' | 'PROD') =>
+  PERP_LAUNCH_CREATOR_IDS[environment]
+
+export const getPerpLaunchTopicSlug = (
+  topic: PerpLaunchMarketDefinition['requiredTopics'][number],
+  environment: 'DEV' | 'PROD'
+) => topic.slugByEnvironment[environment]
 
 export const PERP_LAUNCH_SCHEDULER_EXPECTATIONS = [
   {
@@ -165,6 +225,10 @@ export const getPerpLaunchManifestErrors = () => {
   const feedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
   if (new Set(feedIds).size !== feedIds.length)
     errors.push('launch manifest has duplicate feed ids')
+  for (const environment of ['DEV', 'PROD'] as const) {
+    if (!getPerpLaunchCreatorId(environment))
+      errors.push(`${environment} has no official launch creator`)
+  }
 
   for (const market of PERP_LAUNCH_MARKETS) {
     const feed = getOracleFeed(market.feedId)
@@ -187,6 +251,39 @@ export const getPerpLaunchManifestErrors = () => {
       market.recommended.maxLeverage > 100
     )
       errors.push(`${market.feedId} has an invalid recommended leverage`)
+    if (
+      !Number.isFinite(market.recommended.annualMaxFundingRate) ||
+      market.recommended.annualMaxFundingRate <= 0 ||
+      !Number.isFinite(market.recommended.fundingSensitivity) ||
+      market.recommended.fundingSensitivity <= 0
+    )
+      errors.push(`${market.feedId} has an invalid funding recommendation`)
+    if (
+      !Number.isFinite(market.recommended.subsidyLong) ||
+      market.recommended.subsidyLong <= 0 ||
+      !Number.isFinite(market.recommended.subsidyShort) ||
+      market.recommended.subsidyShort <= 0
+    )
+      errors.push(`${market.feedId} has an invalid backing recommendation`)
+    if (market.requiredTopics.length === 0)
+      errors.push(`${market.feedId} has no required discovery topic`)
+    for (const environment of ['DEV', 'PROD'] as const) {
+      const requiredTopicSlugs = market.requiredTopics.map((topic) =>
+        getPerpLaunchTopicSlug(topic, environment)
+      )
+      if (new Set(requiredTopicSlugs).size !== requiredTopicSlugs.length)
+        errors.push(
+          `${market.feedId} has duplicate ${environment} discovery topics`
+        )
+    }
+    for (const topic of market.requiredTopics) {
+      if (
+        !topic.name ||
+        !getPerpLaunchTopicSlug(topic, 'DEV') ||
+        !getPerpLaunchTopicSlug(topic, 'PROD')
+      )
+        errors.push(`${market.feedId} has an invalid required discovery topic`)
+    }
     if (
       market.recommended.maxOraclePriceAgeMs < feed.staleAfterMs ||
       !Number.isFinite(market.recommended.maxOraclePriceAgeMs)

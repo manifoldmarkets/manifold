@@ -316,6 +316,11 @@ export type PerpMechanism = {
   poolLong: number // L
   poolShort: number // S
   initialSubsidy: number
+  // Frozen creation-time allocation. Legacy prototypes only stored the total,
+  // which cannot prove that launch backing was not structurally one-sided
+  // after the live pools have moved.
+  initialPoolLong?: number
+  initialPoolShort?: number
   oracleFeedId: string // free-text; matches oracle_prices.feed_id
   oraclePrice: number // last applied P
   oraclePriceTime?: number // ts of last applied P

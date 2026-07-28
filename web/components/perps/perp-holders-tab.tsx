@@ -57,8 +57,8 @@ export const PerpHoldersTab = (props: {
     orderBy(hs, (h) => getUserFacingPnlForHolder(h, price, contract.id), 'desc')
 
   return (
-    <Row className="gap-1">
-      <Col className="w-1/2">
+    <Row className="flex-col gap-3 sm:flex-row sm:gap-1">
+      <Col className="w-full sm:w-1/2">
         <Row className="p-2 font-semibold text-teal-600">
           Longs ({longs.length})
         </Row>
@@ -72,8 +72,8 @@ export const PerpHoldersTab = (props: {
           />
         ))}
       </Col>
-      <Col className="w-1/2">
-        <Row className="p-2 font-semibold text-red-600">
+      <Col className="w-full sm:w-1/2">
+        <Row className="text-scarlet-600 p-2 font-semibold">
           Shorts ({shorts.length})
         </Row>
         {orderByPnl(shorts).map((h) => (
@@ -134,7 +134,7 @@ const HolderRow = (props: {
           />
         </div>
         <Col className="items-end">
-          <span className={pnl >= 0 ? 'text-teal-600' : 'text-red-600'}>
+          <span className={pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'}>
             {formatMoney(pnl)}
           </span>
           <span className="text-ink-500 text-xs">

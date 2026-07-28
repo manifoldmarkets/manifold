@@ -17,6 +17,7 @@ import {
   PollContract,
 } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
+import type { PerpTradeActivity } from 'common/perps/activity'
 import { PrivateUser, User } from 'common/user'
 import { shortFormatNumber } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
@@ -50,13 +51,20 @@ import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-spa
 import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
 import { LiquidityTooltip } from 'web/components/tiers/liquidity-tooltip'
 
-export type ActivityItem = {
-  type: 'bet' | 'comment' | 'market'
+type ActivityItemBase = {
   id: string
   contractId: string
   createdTime: number
-  data: Bet | CommentWithTotalReplies | Contract
 }
+
+export type ActivityItem =
+  | (ActivityItemBase & { type: 'bet'; data: Bet })
+  | (ActivityItemBase & {
+      type: 'comment'
+      data: CommentWithTotalReplies
+    })
+  | (ActivityItemBase & { type: 'market'; data: Contract })
+  | (ActivityItemBase & { type: 'perp'; data: PerpTradeActivity })
 
 export type ActivityGroup = {
   contractId: string
@@ -77,10 +85,11 @@ export const ActivityCard = memo(function ActivityCard(props: {
   const path = contractPath(contract)
 
   // Separate comments and group replies
-  const commentItems = items.filter((item) => item.type === 'comment')
-  const comments = commentItems.map(
-    (item) => item.data as CommentWithTotalReplies
+  const commentItems = items.filter(
+    (item): item is Extract<ActivityItem, { type: 'comment' }> =>
+      item.type === 'comment'
   )
+  const comments = commentItems.map((item) => item.data)
   const replies = comments.filter((c) => !!c.replyToCommentId)
   const repliesByParentId = groupBy(
     orderBy(replies, 'createdTime', 'asc'),
@@ -91,7 +100,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
   const displayItems = orderBy(
     items.filter((item) => {
       if (item.type === 'comment') {
-        const comment = item.data as CommentWithTotalReplies
+        const comment = item.data
         return !comment.replyToCommentId
       }
       return true
@@ -306,18 +315,20 @@ export const ActivityCard = memo(function ActivityCard(props: {
                 <BetLog
                   key={`${item.id}-bet`}
                   contract={contract}
-                  bet={item.data as Bet}
+                  bet={item.data}
                 />
               )
+            } else if (item.type === 'perp') {
+              return <PerpTradeLog key={`${item.id}-perp`} trade={item.data} />
             } else if (item.type === 'market') {
               return (
                 <MarketCreatedLog
                   key={`${item.id}-market`}
-                  contract={item.data as Contract}
+                  contract={item.data}
                 />
               )
             } else if (item.type === 'comment') {
-              const comment = item.data as CommentWithTotalReplies
+              const comment = item.data
               const childReplies = repliesByParentId[comment.id] ?? []
               const hiddenRepliesCount =
                 (comment.totalReplies ?? 0) - childReplies.length
@@ -438,6 +449,73 @@ const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
           )}
           <RelativeTimestamp
             time={createdTime}
+            shortened
+            className="text-ink-400"
+          />
+        </Row>
+      </Col>
+    </Row>
+  )
+})
+
+const PerpTradeLog = memo(function PerpTradeLog(props: {
+  trade: PerpTradeActivity
+}) {
+  const { trade } = props
+  const trader = useDisplayUserById(trade.userId)
+  const verb =
+    trade.eventType === 'open'
+      ? 'opened'
+      : trade.eventType === 'add'
+      ? 'added'
+      : 'closed'
+  const leverage =
+    trade.eventType !== 'close' &&
+    trade.leverage !== null &&
+    Number.isFinite(trade.leverage) &&
+    trade.leverage > 0
+      ? trade.leverage
+      : null
+
+  return (
+    <Row className="items-start gap-2 py-1">
+      <UserHovercard userId={trade.userId}>
+        <Avatar
+          avatarUrl={trader?.avatarUrl}
+          username={trader?.username}
+          size="xs"
+          entitlements={trader?.entitlements}
+          className="mt-0.5 shrink-0"
+        />
+      </UserHovercard>
+      <Col className="min-w-0 gap-0.5">
+        <Row className="flex-wrap items-baseline gap-x-1.5 text-sm">
+          <span className="text-ink-900 font-semibold">
+            {trader?.name ?? 'Someone'}
+          </span>
+          <span className="text-ink-500">{verb}</span>
+          <span className="text-ink-700 font-semibold">
+            <MoneyDisplay amount={trade.margin} isCashContract={false} />
+          </span>
+          {trade.eventType === 'add' && (
+            <span className="text-ink-500">to</span>
+          )}
+          <span
+            className={
+              trade.direction === 'long' ? 'text-teal-500' : 'text-scarlet-500'
+            }
+          >
+            {trade.direction.toUpperCase()}
+          </span>
+        </Row>
+        <Row className="flex-wrap items-center gap-x-2 text-xs">
+          {leverage !== null && (
+            <span className="text-ink-600">
+              {shortFormatNumber(leverage)}× leverage
+            </span>
+          )}
+          <RelativeTimestamp
+            time={trade.createdTime}
             shortened
             className="text-ink-400"
           />

@@ -50,6 +50,9 @@ export default Node.create<IframeOptions>({
       src: {
         default: null,
       },
+      title: {
+        default: 'Embedded content',
+      },
       frameBorder: {
         default: 0,
       },
@@ -73,6 +76,7 @@ export default Node.create<IframeOptions>({
       'class',
       'width',
       'height',
+      'title',
       'sandbox',
       'style',
       'allowfullscreen',

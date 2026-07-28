@@ -15,9 +15,12 @@ import {
   PERP_LAUNCH_MARKETS,
   PERP_LAUNCH_SCHEDULER_EXPECTATIONS,
   getNominalAnnualFundingRate,
+  getPerpLaunchCreatorId,
   getPerpLaunchManifestErrors,
+  getPerpLaunchTopicSlug,
 } from 'shared/perps/launch-manifest'
 import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
+import { getLocalEnv } from 'shared/init-admin'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
@@ -64,6 +67,7 @@ const acknowledgesLatencyRisk = process.argv.includes(
 
 if (require.main === module)
   runScript(async ({ pg }) => {
+    const environment = getLocalEnv()
     let failures = 0
     let warnings = 0
     const report = (level: Level, name: string, detail: string) => {
@@ -90,7 +94,7 @@ if (require.main === module)
       }
     }
 
-    log(`PERP launch preflight: phase=${phase}`)
+    log(`PERP launch preflight: environment=${environment}, phase=${phase}`)
 
     const manifestErrors = getPerpLaunchManifestErrors()
     if (manifestErrors.length === 0)
@@ -251,6 +255,31 @@ if (require.main === module)
           ? 'active PERPs are eligible'
           : 'close_contract_embeddings PERP migration is missing'
       )
+    })
+
+    await inspect('launch discovery topics', async () => {
+      for (const market of PERP_LAUNCH_MARKETS) {
+        for (const topic of market.requiredTopics) {
+          const requiredSlug = getPerpLaunchTopicSlug(topic, environment)
+          const storedTopic = await pg.oneOrNone<{
+            id: string
+            name: string
+            slug: string
+          }>(
+            `select id, name, slug
+             from groups
+             where slug = $1`,
+            [requiredSlug]
+          )
+          report(
+            storedTopic ? 'PASS' : 'FAIL',
+            `topic ${topic.name}`,
+            storedTopic
+              ? `${storedTopic.slug} (${storedTopic.id})`
+              : `${requiredSlug} is missing from groups`
+          )
+        }
+      }
     })
 
     const feedSnapshots = new Map<string, FeedSnapshot>()
@@ -448,6 +477,76 @@ if (require.main === module)
             phase === 'public' ? 'FAIL' : 'WARN',
             `market ${contract.slug}`,
             `feed ${contract.oracleFeedId} is outside the launch manifest`
+          )
+        }
+
+        if (definition) {
+          const expectedCreatorId = getPerpLaunchCreatorId(environment)
+          report(
+            contract.creatorId === expectedCreatorId ? 'PASS' : 'FAIL',
+            `market ${contract.slug} launch creator`,
+            contract.creatorId === expectedCreatorId
+              ? `official ${environment} Manifold account`
+              : `creator ${contract.creatorId} is not the required official account ${expectedCreatorId}; residual backing returns to the creator`
+          )
+          const discovery = await pg.one<{
+            group_slugs: string[]
+            has_embedding: boolean
+          }>(
+            `select
+               array(
+                 select g.slug
+                 from group_contracts gc
+                 join groups g on g.id = gc.group_id
+                 where gc.contract_id = $1
+               ) as group_slugs,
+               exists(
+                 select 1
+                 from contract_embeddings
+                 where contract_id = $1
+               ) as has_embedding`,
+            [contract.id]
+          )
+          const requiredTopics = definition.requiredTopics.map((topic) => ({
+            ...topic,
+            slug: getPerpLaunchTopicSlug(topic, environment),
+          }))
+          const missingTopicJoins = requiredTopics.filter(
+            (topic) => !discovery.group_slugs.includes(topic.slug)
+          )
+          const cachedGroupSlugs = contract.groupSlugs ?? []
+          const missingCachedTopicSlugs = requiredTopics.filter(
+            (topic) => !cachedGroupSlugs.includes(topic.slug)
+          )
+          const topicStateErrors = [
+            ...(missingTopicJoins.length > 0
+              ? [
+                  `group_contracts missing ${missingTopicJoins
+                    .map((topic) => topic.name)
+                    .join(', ')}`,
+                ]
+              : []),
+            ...(missingCachedTopicSlugs.length > 0
+              ? [
+                  `contract groupSlugs missing ${missingCachedTopicSlugs
+                    .map((topic) => topic.name)
+                    .join(', ')}`,
+                ]
+              : []),
+          ]
+          report(
+            topicStateErrors.length === 0 ? 'PASS' : 'FAIL',
+            `market ${contract.slug} discovery topics`,
+            topicStateErrors.length === 0
+              ? definition.requiredTopics.map((topic) => topic.name).join(', ')
+              : topicStateErrors.join('; ')
+          )
+          report(
+            discovery.has_embedding ? 'PASS' : 'FAIL',
+            `market ${contract.slug} related-market embedding`,
+            discovery.has_embedding
+              ? 'contract_embeddings row is present'
+              : 'contract_embeddings row is missing; rerun embedding generation before launch'
           )
         }
 
@@ -661,6 +760,17 @@ if (require.main === module)
               ).toFixed(1)}%`
             )
           if (
+            Math.abs(
+              contract.fundingSensitivity -
+                definition.recommended.fundingSensitivity
+            ) > Number.EPSILON
+          )
+            report(
+              'WARN',
+              `market ${contract.slug} funding sensitivity`,
+              `${contract.fundingSensitivity} differs from day-one recommendation ${definition.recommended.fundingSensitivity}`
+            )
+          if (
             contract.maxOraclePriceAgeMs >
             definition.recommended.maxOraclePriceAgeMs
           )
@@ -682,6 +792,40 @@ if (require.main === module)
                 definition.recommended.subsidyShort
               }`
             )
+          const hasPerSideInitialBacking =
+            contract.initialPoolLong != null &&
+            Number.isFinite(contract.initialPoolLong) &&
+            contract.initialPoolShort != null &&
+            Number.isFinite(contract.initialPoolShort)
+          if (!hasPerSideInitialBacking) {
+            report(
+              phase === 'feeds' ? 'WARN' : 'FAIL',
+              `market ${contract.slug} per-side initial backing`,
+              'missing initialPoolLong/initialPoolShort; recreate through the current API so launch skew is auditable'
+            )
+          } else {
+            const initialPoolLong = contract.initialPoolLong as number
+            const initialPoolShort = contract.initialPoolShort as number
+            if (
+              Math.abs(
+                initialPoolLong + initialPoolShort - contract.initialSubsidy
+              ) > 0.000001
+            )
+              report(
+                'FAIL',
+                `market ${contract.slug} initial backing consistency`,
+                `L=${initialPoolLong} + S=${initialPoolShort} does not equal initialSubsidy=${contract.initialSubsidy}`
+              )
+            if (
+              initialPoolLong < definition.recommended.subsidyLong ||
+              initialPoolShort < definition.recommended.subsidyShort
+            )
+              report(
+                'WARN',
+                `market ${contract.slug} per-side initial backing`,
+                `L=M$${initialPoolLong}, S=M$${initialPoolShort}; recommendation L=M$${definition.recommended.subsidyLong}, S=M$${definition.recommended.subsidyShort}`
+              )
+          }
         }
 
         const fundingRows = await pg.manyOrNone<{ ts: string }>(

@@ -370,9 +370,9 @@ const PositionCard = (props: {
   const pnlPct = p.originalCostBasis > 0 ? (pnl / p.originalCostBasis) * 100 : 0
 
   const isLong = p.direction === 'long'
-  const accentBar = isLong ? 'bg-teal-500' : 'bg-red-500'
-  const accentText = isLong ? 'text-teal-600' : 'text-red-600'
-  const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-red-600'
+  const accentBar = isLong ? 'bg-teal-500' : 'bg-scarlet-500'
+  const accentText = isLong ? 'text-teal-600' : 'text-scarlet-600'
+  const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
 
   // What the next funding transfer does to this position, in mana
   // (+ = you receive). Uses the live pool-derived rate, and the exact
@@ -419,7 +419,7 @@ const PositionCard = (props: {
     : (p.liquidationPrice - markPrice) / markPrice
   const liqDangerClass =
     distToLiq < 0.05
-      ? 'text-red-600'
+      ? 'text-scarlet-600'
       : distToLiq < 0.15
       ? 'text-amber-600'
       : 'text-ink-900'
@@ -493,7 +493,7 @@ const PositionCard = (props: {
             <span
               className={clsx(
                 'tabular-nums',
-                fundingMana > 0 ? 'text-teal-600' : 'text-red-600'
+                fundingMana > 0 ? 'text-teal-600' : 'text-scarlet-600'
               )}
             >
               {fundingMana > 0 ? 'Earning ' : 'Paying '}

@@ -22,7 +22,7 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
     cost_basis_delta: number | string
     original_cost_basis_delta: number | string
     leverage: number | string | null
-    data: Record<string, any> | null
+    data: Record<string, unknown> | null
     user_name: string | null
     username: string | null
     avatar_url: string | null
@@ -45,8 +45,12 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
 
   return rows.map((r) => {
     const data = r.data ?? {}
-    const payoutRaw = (data as any).payout
-    const pnlRaw = (data as any).pnl
+    const payoutRaw = data.payout
+    const pnlRaw = data.pnl
+    const adlFactorRaw = data.adlFactor
+    const payout = payoutRaw == null ? null : Number(payoutRaw)
+    const pnl = pnlRaw == null ? null : Number(pnlRaw)
+    const adlFactor = adlFactorRaw == null ? null : Number(adlFactorRaw)
     return {
       id: Number(r.id),
       ts: new Date(r.ts).getTime(),
@@ -64,8 +68,15 @@ export const getPerpEvents: APIHandler<'get-perp-events'> = async (body) => {
       costBasisDelta: Number(r.cost_basis_delta),
       originalCostBasisDelta: Number(r.original_cost_basis_delta),
       leverage: r.leverage != null ? Number(r.leverage) : null,
-      payout: payoutRaw != null ? Number(payoutRaw) : null,
-      pnl: pnlRaw != null ? Number(pnlRaw) : null,
+      payout: payout != null && Number.isFinite(payout) ? payout : null,
+      pnl: pnl != null && Number.isFinite(pnl) ? pnl : null,
+      adlFactor:
+        adlFactor != null &&
+        Number.isFinite(adlFactor) &&
+        adlFactor >= 0 &&
+        adlFactor <= 1
+          ? adlFactor
+          : null,
       userName: r.user_name,
       username: r.username,
       avatarUrl: r.avatar_url,

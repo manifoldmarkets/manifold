@@ -34,6 +34,7 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
+import type { PerpTradeActivity } from 'common/perps/activity'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
@@ -1121,9 +1122,13 @@ export const API = (_apiTypeCheck = {
       launchLatencyRisk: string | null
       launchRecommendation: {
         maxLeverage: number
+        annualMaxFundingRate: number
+        fundingSensitivity: number
         maxOraclePriceAgeMs: number
         subsidyLong: number
         subsidyShort: number
+        requiredTopicNames: string[]
+        creatorAuthorized: boolean
       } | null
     }[],
     props: z.object({}).strict(),
@@ -1198,6 +1203,7 @@ export const API = (_apiTypeCheck = {
       leverage: number | null
       payout: number | null
       pnl: number | null
+      adlFactor: number | null
       userName: string | null
       username: string | null
       avatarUrl: string | null
@@ -1765,7 +1771,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    cache: 'public, max-age=300, stale-while-revalidate=30',
     props: z
       .object({
         contractId: z.string(),
@@ -2880,6 +2886,7 @@ export const API = (_apiTypeCheck = {
       boostedContracts: Contract[]
       // Activity data
       activityBets: Bet[]
+      activityPerpTrades: PerpTradeActivity[]
       activityComments: CommentWithTotalReplies[]
       activityNewContracts: Contract[]
       activityRelatedContracts: Contract[]

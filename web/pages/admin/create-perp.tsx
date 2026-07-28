@@ -35,7 +35,7 @@ export default function AdminCreatePerpPage() {
     subsidyShort: 500,
     // Prod rollout protocol: create unlisted, self-trade a sanity pass, then
     // flip public (see backend/shared/src/perps/README.md).
-    unlisted: false,
+    unlisted: true,
   })
   const [topics, setTopics] = useState<Group[]>([])
   const [knownFeeds, setKnownFeeds] = useState<
@@ -47,9 +47,13 @@ export default function AdminCreatePerpPage() {
       launchLatencyRisk: string | null
       launchRecommendation: {
         maxLeverage: number
+        annualMaxFundingRate: number
+        fundingSensitivity: number
         maxOraclePriceAgeMs: number
         subsidyLong: number
         subsidyShort: number
+        requiredTopicNames: string[]
+        creatorAuthorized: boolean
       } | null
     }[]
   >([])
@@ -58,13 +62,23 @@ export default function AdminCreatePerpPage() {
     price: number
     ts: number
   } | null>(null)
+  const [feedRegistryStatus, setFeedRegistryStatus] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!isAdmin) return
+    setFeedRegistryStatus('loading')
     api('get-known-oracle-feeds', {})
-      .then((feeds) => setKnownFeeds(feeds))
-      .catch(() => {})
+      .then((feeds) => {
+        setKnownFeeds(feeds)
+        setFeedRegistryStatus('ready')
+      })
+      .catch(() => {
+        setKnownFeeds([])
+        setFeedRegistryStatus('error')
+      })
   }, [isAdmin])
 
   // Live feed-health preview: show the chosen feed's latest point and its age
@@ -103,6 +117,21 @@ export default function AdminCreatePerpPage() {
   // hours-per-year on a daily feed would understate the cap 24x (the engine
   // fires once a day, not hourly).
   const selectedFeed = knownFeeds.find((f) => f.id === form.oracleFeedId.trim())
+  const launchRecommendation = selectedFeed?.launchRecommendation
+  // Keep localhost usable while the web is briefly pointed at an older DEV
+  // API during a rolling deploy. The old response contains only leverage,
+  // oracle age, and backing.
+  const hasCompleteLaunchRecommendation =
+    launchRecommendation != null &&
+    Number.isFinite(launchRecommendation.annualMaxFundingRate) &&
+    Number.isFinite(launchRecommendation.fundingSensitivity) &&
+    Array.isArray(launchRecommendation.requiredTopicNames) &&
+    typeof launchRecommendation.creatorAuthorized === 'boolean'
+  const launchApiOutOfDate =
+    launchRecommendation != null && !hasCompleteLaunchRecommendation
+  const launchCreatorUnauthorized =
+    hasCompleteLaunchRecommendation &&
+    launchRecommendation?.creatorAuthorized === false
   const feedCreationDisabled = selectedFeed?.marketCreationEnabled === false
   const unregisteredFeed =
     feedCreationDisabled && selectedFeed?.updatePeriodMs == null
@@ -121,6 +150,34 @@ export default function AdminCreatePerpPage() {
     feedLatest !== null &&
     Date.now() - feedLatest.ts > form.maxOraclePriceAgeHours * HOUR_MS
 
+  const applyLaunchRecommendation = () => {
+    if (!launchRecommendation || !hasCompleteLaunchRecommendation) return
+    setForm((current) => ({
+      ...current,
+      maxLeverage: launchRecommendation.maxLeverage,
+      maxFundingRateAnnualPct: launchRecommendation.annualMaxFundingRate * 100,
+      fundingSensitivity: launchRecommendation.fundingSensitivity,
+      maxOraclePriceAgeHours:
+        launchRecommendation.maxOraclePriceAgeMs / HOUR_MS,
+      subsidyLong: launchRecommendation.subsidyLong,
+      subsidyShort: launchRecommendation.subsidyShort,
+      unlisted: true,
+    }))
+  }
+
+  const isUsingLaunchRecommendation =
+    hasCompleteLaunchRecommendation &&
+    launchRecommendation != null &&
+    form.maxLeverage === launchRecommendation.maxLeverage &&
+    form.maxFundingRateAnnualPct ===
+      launchRecommendation.annualMaxFundingRate * 100 &&
+    form.fundingSensitivity === launchRecommendation.fundingSensitivity &&
+    form.maxOraclePriceAgeHours ===
+      launchRecommendation.maxOraclePriceAgeMs / HOUR_MS &&
+    form.subsidyLong === launchRecommendation.subsidyLong &&
+    form.subsidyShort === launchRecommendation.subsidyShort &&
+    form.unlisted
+
   const addTopic = (group: Group) =>
     setTopics((ts) => (ts.some((t) => t.id === group.id) ? ts : [...ts, group]))
   const removeTopic = (id: string) =>
@@ -128,11 +185,27 @@ export default function AdminCreatePerpPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (feedRegistryStatus !== 'ready') {
+      toast.error(
+        'The oracle feed registry is unavailable. Reload after the API is healthy.'
+      )
+      return
+    }
     if (feedCreationDisabled) {
       toast.error(
         unregisteredFeed
           ? 'This feed is not registered for perp market creation.'
           : 'This feed is disabled for new perp markets.'
+      )
+      return
+    }
+    if (launchApiOutOfDate) {
+      toast.error('Redeploy the current API before creating this launch feed.')
+      return
+    }
+    if (launchCreatorUnauthorized) {
+      toast.error(
+        'Sign in as the official Manifold account to create a launch PERP.'
       )
       return
     }
@@ -204,11 +277,17 @@ export default function AdminCreatePerpPage() {
                   <option key={f.id} value={f.id} />
                 ))}
             </datalist>
+            {feedRegistryStatus === 'error' && (
+              <p className="text-scarlet-700 mt-1 text-xs">
+                Could not load the feed registry. Creation is disabled; reload
+                after the API is healthy.
+              </p>
+            )}
             {feedLatest ? (
               <p
                 className={
                   feedOlderThanMaxAge || feedCreationDisabled
-                    ? 'mt-1 text-xs text-red-600'
+                    ? 'text-scarlet-700 mt-1 text-xs'
                     : 'text-ink-500 mt-1 text-xs'
                 }
               >
@@ -227,7 +306,7 @@ export default function AdminCreatePerpPage() {
               </p>
             )}
             {feedCreationDisabled && !unregisteredFeed && (
-              <p className="mt-1 text-xs text-red-600">
+              <p className="text-scarlet-700 mt-1 text-xs">
                 This feed is retained for runtime/history but is disabled for
                 new perp markets.
               </p>
@@ -242,13 +321,81 @@ export default function AdminCreatePerpPage() {
                   <p className="mt-1">
                     Day-one recommendation: at most{' '}
                     {selectedFeed.launchRecommendation.maxLeverage}× leverage,
+                    {hasCompleteLaunchRecommendation ? (
+                      <>
+                        annual funding cap{' '}
+                        {selectedFeed.launchRecommendation
+                          .annualMaxFundingRate * 100}
+                        %, sensitivity{' '}
+                        {selectedFeed.launchRecommendation.fundingSensitivity},
+                      </>
+                    ) : null}{' '}
                     max oracle age{' '}
-                    {selectedFeed.launchRecommendation.maxOraclePriceAgeMs /
-                      HOUR_MS}
-                    h, backing M$
+                    {selectedFeed.launchRecommendation.maxOraclePriceAgeMs >=
+                    HOUR_MS
+                      ? `${
+                          selectedFeed.launchRecommendation
+                            .maxOraclePriceAgeMs / HOUR_MS
+                        }h`
+                      : `${
+                          selectedFeed.launchRecommendation
+                            .maxOraclePriceAgeMs / MINUTE_MS
+                        }m`}
+                    , backing M$
                     {selectedFeed.launchRecommendation.subsidyLong} long / M$
-                    {selectedFeed.launchRecommendation.subsidyShort} short.
+                    {selectedFeed.launchRecommendation.subsidyShort} short.{' '}
+                    {hasCompleteLaunchRecommendation ? (
+                      <>
+                        Required topic
+                        {selectedFeed.launchRecommendation.requiredTopicNames
+                          .length === 1
+                          ? ''
+                          : 's'}
+                        :{' '}
+                        {selectedFeed.launchRecommendation.requiredTopicNames.join(
+                          ', '
+                        )}{' '}
+                        (attached automatically).
+                      </>
+                    ) : (
+                      <>
+                        Redeploy the current API before using this form's launch
+                        defaults.
+                      </>
+                    )}
                   </p>
+                )}
+                {launchRecommendation && hasCompleteLaunchRecommendation && (
+                  <>
+                    <Row className="mt-2 items-center gap-2">
+                      <Button
+                        type="button"
+                        size="xs"
+                        color="indigo-outline"
+                        onClick={applyLaunchRecommendation}
+                      >
+                        Apply launch recommendation
+                      </Button>
+                      <span
+                        className={
+                          isUsingLaunchRecommendation
+                            ? 'text-teal-700'
+                            : 'text-scarlet-700'
+                        }
+                      >
+                        {isUsingLaunchRecommendation
+                          ? 'Current form matches.'
+                          : 'Current form differs.'}
+                      </span>
+                    </Row>
+                    {launchCreatorUnauthorized && (
+                      <p className="text-scarlet-700 mt-2 font-semibold">
+                        Sign in as the official Manifold account. Residual
+                        backing returns to the market creator, so another admin
+                        cannot create this launch feed.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -366,7 +513,13 @@ export default function AdminCreatePerpPage() {
             <Button
               type="submit"
               loading={submitting}
-              disabled={submitting || feedCreationDisabled}
+              disabled={
+                submitting ||
+                feedRegistryStatus !== 'ready' ||
+                feedCreationDisabled ||
+                launchApiOutOfDate ||
+                launchCreatorUnauthorized
+              }
             >
               Create perp
             </Button>

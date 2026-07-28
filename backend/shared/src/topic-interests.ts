@@ -163,6 +163,7 @@ export const minimumContractsQualityBarWhereClauses = () =>
     where(`contracts.outcome_type != 'STONK'`),
     where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
     where(`contracts.visibility = 'public'`),
+    where(`contracts.deleted = false`),
     where(`contracts.unique_bettor_count > 1`)
   )
 

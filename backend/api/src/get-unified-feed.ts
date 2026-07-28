@@ -2,6 +2,7 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertContract } from 'common/supabase/contracts'
 import { convertBet } from 'common/supabase/bets'
+import type { PerpTradeActivity } from 'common/perps/activity'
 import { PrivateUser } from 'common/user'
 import { keyBy, mapValues, orderBy, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
@@ -99,6 +100,7 @@ export const getUnifiedFeed: APIHandler<'get-unified-feed'> = async (props) => {
     ...feedResult,
     boostedContracts,
     activityBets: activityResult.bets,
+    activityPerpTrades: activityResult.perpTrades,
     activityComments: activityResult.comments,
     activityNewContracts: activityResult.newContracts,
     activityRelatedContracts: activityResult.relatedContracts,
@@ -131,6 +133,7 @@ async function fetchPersonalizedFeed(
        where (close_time is null or close_time > now())
          and resolution_time is null
          and visibility = 'public'
+         and deleted = false
          and outcome_type != 'STONK'
          and outcome_type != 'BOUNTIED_QUESTION'
        order by importance_score desc
@@ -229,48 +232,52 @@ async function fetchPersonalizedFeed(
     )
   )
 
-  const [combinedContracts, followedContracts, followedRepostData, topicRepostData] =
-    await Promise.all([
-      pg.map(
-        combinedQuery,
-        [],
-        (r) =>
-          ({
-            contract: convertContract(r),
-            topicConversionScore: r.topic_conversion_score as number,
-          } as FeedContract)
-      ),
-      pg.map(
-        followedQuery,
-        [],
-        (r) =>
-          ({
-            contract: convertContract(r),
-            topicConversionScore: r.topic_conversion_score as number,
-          } as FeedContract)
-      ),
-      getFollowedReposts(
-        userId,
-        limit,
-        offset,
-        userIdsToAverageTopicConversionScores[userId],
-        privateUser
-          ? renderSql(privateUserBlocksSql(privateUser)).replace('where', 'and')
-          : '',
-        pg
-      ),
-      getTopicReposts(
-        userId,
-        limit,
-        offset,
-        userInterestTopicIds,
-        userInterestTopicWeights,
-        privateUser
-          ? renderSql(privateUserBlocksSql(privateUser)).replace('where', 'and')
-          : '',
-        pg
-      ),
-    ])
+  const [
+    combinedContracts,
+    followedContracts,
+    followedRepostData,
+    topicRepostData,
+  ] = await Promise.all([
+    pg.map(
+      combinedQuery,
+      [],
+      (r) =>
+        ({
+          contract: convertContract(r),
+          topicConversionScore: r.topic_conversion_score as number,
+        } as FeedContract)
+    ),
+    pg.map(
+      followedQuery,
+      [],
+      (r) =>
+        ({
+          contract: convertContract(r),
+          topicConversionScore: r.topic_conversion_score as number,
+        } as FeedContract)
+    ),
+    getFollowedReposts(
+      userId,
+      limit,
+      offset,
+      userIdsToAverageTopicConversionScores[userId],
+      privateUser
+        ? renderSql(privateUserBlocksSql(privateUser)).replace('where', 'and')
+        : '',
+      pg
+    ),
+    getTopicReposts(
+      userId,
+      limit,
+      offset,
+      userInterestTopicIds,
+      userInterestTopicWeights,
+      privateUser
+        ? renderSql(privateUserBlocksSql(privateUser)).replace('where', 'and')
+        : '',
+      pg
+    ),
+  ])
 
   const allReposts = followedRepostData.concat(topicRepostData)
 
@@ -315,6 +322,7 @@ async function fetchTrendingFeed(
      where (close_time is null or close_time > now())
        and resolution_time is null
        and visibility = 'public'
+       and deleted = false
        and outcome_type != 'STONK'
        and outcome_type != 'BOUNTIED_QUESTION'
      order by importance_score desc
@@ -342,6 +350,10 @@ async function fetchSiteActivity(
   blockedContractIds: string[],
   minBetAmount: number
 ) {
+  const normalizedMinBetAmount = Number.isFinite(minBetAmount)
+    ? Math.max(0, minBetAmount)
+    : 100
+
   let blockedTopicIds: string[] = []
   if (blockedGroupSlugs.length > 0) {
     const blockedTopics = await pg.manyOrNone(
@@ -351,7 +363,7 @@ async function fetchSiteActivity(
     blockedTopicIds = blockedTopics.map((t) => t.id)
   }
 
-  // Single combined query for bets, comments, and new contracts
+  // Single combined query for bets, comments, new contracts, and PERP trades.
   const multiQuery = `
     -- Recent bets
     SELECT distinct on (cb.created_time) cb.*
@@ -384,16 +396,58 @@ async function fetchSiteActivity(
     WHERE c.creator_id != ALL($2)
       AND c.id != ALL($3)
       AND is_valid_contract(c)
-      ${blockedTopicIds.length > 0 ? `AND NOT EXISTS (
+      AND c.deleted = false
+      ${
+        blockedTopicIds.length > 0
+          ? `AND NOT EXISTS (
         SELECT 1 FROM group_contracts gc2
         WHERE gc2.contract_id = c.id AND gc2.group_id = ANY($6)
-      )` : ''}
+      )`
+          : ''
+      }
     ORDER BY c.created_time DESC
     LIMIT $4 OFFSET $5;
+
+    -- Recent user-initiated PERP trades
+    select
+      pe.id,
+      pe.contract_id,
+      pe.user_id,
+      pe.event_type,
+      pe.applied_ts,
+      pe.original_cost_basis_delta,
+      pe.direction,
+      pe.leverage
+    from contract_perp_events pe
+    join contracts c on c.id = pe.contract_id
+    where pe.user_id is not null
+      and pe.event_type in ('open', 'add', 'close')
+      and pe.data->>'reason' is distinct from 'flip'
+      and pe.data->>'reason' is distinct from 'resolve-market'
+      and abs(pe.original_cost_basis_delta) >= $1
+      and pe.user_id != all($2)
+      and pe.contract_id != all($3)
+      and c.mechanism = 'perp'
+      and c.creator_id != all($2)
+      and c.visibility = 'public'
+      and c.deleted = false
+      and is_valid_contract(c)
+      and (c.resolution is null or c.resolution != 'CANCEL')
+      and (c.close_time is null or c.close_time > now() - interval '1 hour')
+      ${
+        blockedTopicIds.length > 0
+          ? `and not exists (
+        select 1 from group_contracts gc2
+        where gc2.contract_id = c.id and gc2.group_id = any($6)
+      )`
+          : ''
+      }
+    order by pe.applied_ts desc, pe.id desc
+    limit $4 offset $5;
   `
 
   const results = await pg.multi(multiQuery, [
-    minBetAmount,
+    normalizedMinBetAmount,
     blockedUserIds,
     blockedContractIds,
     limit,
@@ -409,6 +463,16 @@ async function fetchSiteActivity(
     reply_to_data?: CommentWithTotalReplies
   }[]
   const newContracts = results[2] || []
+  const recentPerpTradeRecords = (results[3] || []) as PerpActivityRow[]
+  const perpTrades = filterDefined(
+    recentPerpTradeRecords.map(convertPerpActivityRow)
+  )
+  if (perpTrades.length !== recentPerpTradeRecords.length) {
+    log(
+      'Dropped malformed PERP activity rows:',
+      recentPerpTradeRecords.length - perpTrades.length
+    )
+  }
 
   // Filter and process comments
   const baseCommentData = recentCommentRecords
@@ -433,6 +497,7 @@ async function fetchSiteActivity(
     ...recentBets.map((b) => b.contract_id),
     ...initialUniqueComments.map((c) => c.contractId),
     ...newContracts.map((c) => c.id),
+    ...perpTrades.map((trade) => trade.contractId),
   ])
 
   // Parallel fetch for reply counts and contracts
@@ -451,6 +516,7 @@ async function fetchSiteActivity(
           `select ${contractColumnsToSelect} from contracts where id in ($1:list)
            and (resolution is null or resolution != 'CANCEL')
            and visibility = 'public'
+           and deleted = false
            and (close_time is null or close_time > now() - interval '1 hour')`,
           [contractIds],
           convertContract
@@ -474,12 +540,79 @@ async function fetchSiteActivity(
     bets: recentBets
       .map(convertBet)
       .filter((b) => contractsResult.some((c) => c.id === b.contractId)),
+    perpTrades: perpTrades.filter((trade) =>
+      contractsResult.some((c) => c.id === trade.contractId)
+    ),
     comments: commentsWithReplyCounts.filter((c) =>
       contractsResult.some((con) => con.id === c.contractId)
     ),
     newContracts: filterDefined(newContracts.map(convertContract)),
     relatedContracts: filterDefined(contractsResult),
   }
+}
+
+type PerpActivityRow = {
+  id: number | string
+  contract_id: string
+  user_id: string | null
+  event_type: string
+  applied_ts: string
+  original_cost_basis_delta: number | string
+  direction: string | null
+  leverage: number | string | null
+}
+
+const convertPerpActivityRow = (
+  row: PerpActivityRow
+): PerpTradeActivity | undefined => {
+  if (
+    row.event_type !== 'open' &&
+    row.event_type !== 'add' &&
+    row.event_type !== 'close'
+  ) {
+    return undefined
+  }
+  if (
+    !/^[1-9]\d*$/.test(String(row.id)) ||
+    !row.contract_id ||
+    !row.user_id ||
+    (row.direction !== 'long' && row.direction !== 'short')
+  ) {
+    return undefined
+  }
+
+  const createdTime = new Date(row.applied_ts).getTime()
+  const originalMargin = toFiniteNumber(row.original_cost_basis_delta)
+  if (!Number.isFinite(createdTime) || originalMargin === null) {
+    return undefined
+  }
+  if (
+    (row.event_type !== 'close' && originalMargin <= 0) ||
+    (row.event_type === 'close' && originalMargin >= 0)
+  ) {
+    return undefined
+  }
+
+  const parsedLeverage = toFiniteNumber(row.leverage)
+  const leverage =
+    parsedLeverage !== null && parsedLeverage >= 0 ? parsedLeverage : null
+
+  return {
+    id: String(row.id),
+    contractId: row.contract_id,
+    userId: row.user_id,
+    eventType: row.event_type,
+    createdTime,
+    direction: row.direction,
+    margin: Math.abs(originalMargin),
+    leverage,
+  }
+}
+
+const toFiniteNumber = (value: number | string | null): number | null => {
+  if (value === null) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function hasContentWithText(
@@ -503,6 +636,7 @@ async function fetchBoostedContracts(
      where c.boosted = true
        and c.visibility = 'public'
        and is_valid_contract(c)
+       and c.deleted = false
        ${blockedContractIds.length > 0 ? 'and c.id != ALL($1)' : ''}
        ${blockedUserIds.length > 0 ? 'and c.creator_id != ALL($2)' : ''}
      order by c.importance_score desc

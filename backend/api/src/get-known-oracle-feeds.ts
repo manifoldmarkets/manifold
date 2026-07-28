@@ -1,8 +1,12 @@
 import { sortBy, uniq } from 'lodash'
 
+import { ENV } from 'common/envs/constants'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getOracleFeed, ORACLE_FEEDS } from 'shared/oracle-feeds'
-import { PERP_LAUNCH_MARKETS } from 'shared/perps/launch-manifest'
+import {
+  PERP_LAUNCH_MARKETS,
+  getPerpLaunchCreatorId,
+} from 'shared/perps/launch-manifest'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
 
@@ -37,9 +41,15 @@ export const getKnownOracleFeeds: APIHandler<'get-known-oracle-feeds'> = async (
       launchRecommendation: launch
         ? {
             maxLeverage: launch.recommended.maxLeverage,
+            annualMaxFundingRate: launch.recommended.annualMaxFundingRate,
+            fundingSensitivity: launch.recommended.fundingSensitivity,
             maxOraclePriceAgeMs: launch.recommended.maxOraclePriceAgeMs,
             subsidyLong: launch.recommended.subsidyLong,
             subsidyShort: launch.recommended.subsidyShort,
+            requiredTopicNames: launch.requiredTopics.map(
+              (topic) => topic.name
+            ),
+            creatorAuthorized: auth.uid === getPerpLaunchCreatorId(ENV),
           }
         : null,
     }

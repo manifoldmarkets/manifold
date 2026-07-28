@@ -1,5 +1,5 @@
 import { toLiteMarket } from 'common/api/market-types'
-import { PERPS_ENABLED } from 'common/envs/constants'
+import { ENV, PERPS_ENABLED } from 'common/envs/constants'
 import {
   Contract,
   Perp,
@@ -13,11 +13,16 @@ import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { HOUR_MS } from 'common/util/time'
 import { slugify } from 'common/util/slugify'
-import { camelCase, first } from 'lodash'
+import { camelCase, first, uniqBy } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import { assertPerpEscrowBalance } from 'shared/perps/escrow'
+import {
+  PERP_LAUNCH_MARKETS,
+  getPerpLaunchCreatorId,
+  getPerpLaunchTopicSlug,
+} from 'shared/perps/launch-manifest'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
@@ -71,6 +76,14 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   // them before database work so a runtime-only feed is rejected even when it
   // has no price rows in the current environment.
   const feedDef = requireOracleFeedForPerpCreation(oracleFeedId)
+  const launchDefinition = PERP_LAUNCH_MARKETS.find(
+    (market) => market.feedId === oracleFeedId
+  )
+  if (launchDefinition && auth.uid !== getPerpLaunchCreatorId(ENV))
+    throw new APIError(
+      403,
+      'Launch PERPs must be created by the official Manifold account because residual backing returns to the creator.'
+    )
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
@@ -137,7 +150,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
 
   // Resolve topic tags up front so a bad group id fails before any writes.
   // Admin-only endpoint, so no per-group permission checks needed.
-  const groups = groupIds
+  const requestedGroups = groupIds
     ? await Promise.all(
         groupIds.map(async (groupId) => {
           const group = await pg.oneOrNone<{ id: string; slug: string }>(
@@ -148,7 +161,31 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
           return group
         })
       )
-    : null
+    : []
+  const requiredLaunchGroups = launchDefinition
+    ? await Promise.all(
+        launchDefinition.requiredTopics.map(async (topic) => {
+          const slug = getPerpLaunchTopicSlug(topic, ENV)
+          const group = await pg.oneOrNone<{ id: string; slug: string }>(
+            `select id, slug from groups where slug = $1`,
+            [slug]
+          )
+          if (!group)
+            throw new APIError(
+              500,
+              `Required launch topic "${topic.name}" (${slug}) is missing.`
+            )
+          return group
+        })
+      )
+    : []
+  // Launch topics are product configuration, not an operator memory test.
+  // Always attach them while preserving any additional topics selected in the
+  // form. The preflight still verifies both the join and denormalized slug.
+  const groups = uniqBy(
+    [...requestedGroups, ...requiredLaunchGroups],
+    (group) => group.id
+  )
 
   const proposedSlug = slugify(question)
 
@@ -173,6 +210,8 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       poolLong: subsidyLong,
       poolShort: subsidyShort,
       initialSubsidy: totalSubsidy,
+      initialPoolLong: subsidyLong,
+      initialPoolShort: subsidyShort,
       oracleFeedId,
       oraclePrice: oraclePoint.price,
       oraclePriceTime: oraclePoint.ts,
@@ -267,11 +306,22 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   })
 
   // Topic tags + embeddings make the perp discoverable (topic pages, feed,
-  // search). Both are non-fatal: the market exists either way.
-  if (groups) {
-    await Promise.allSettled(
-      groups.map((g) => addGroupToContract(pg, contract, g, auth.uid))
+  // search). A failed follow-up cannot roll back the already-funded contract,
+  // so creation reports the market and the launch preflight/backfill gates
+  // publication on both prerequisites.
+  if (groups.length > 0) {
+    const topicResults = await Promise.allSettled(
+      groups.map((g) =>
+        pg.tx((tx) => addGroupToContract(tx, contract, g, auth.uid))
+      )
     )
+    topicResults.forEach((result, index) => {
+      if (result.status === 'rejected')
+        log.error(
+          `Failed to attach topic ${groups[index].slug} to perp ${contract.id}`,
+          result.reason
+        )
+    })
   }
 
   return {
