@@ -150,6 +150,9 @@ const SidebarRelatedContractCard = memo(function (props: {
           twoLines ? 'line-clamp-2' : 'line-clamp-3'
         )}
       >
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {question}
       </div>
       <Row className="w-full items-end justify-between">
@@ -175,7 +178,6 @@ const SidebarRelatedContractCard = memo(function (props: {
         </UserHovercard>
 
         <Row className="items-center gap-1">
-          {contract.outcomeType === 'PERP' && <PerpMarketBadge />}
           <ContractStatusLabel
             contract={contract}
             chanceLabel
@@ -227,6 +229,9 @@ const RelatedContractCard = memo(function (props: {
           twoLines ? 'line-clamp-2' : 'line-clamp-3'
         )}
       >
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {question}
       </div>
       <Row className="w-full items-end justify-between">
@@ -263,7 +268,6 @@ const RelatedContractCard = memo(function (props: {
               {Math.round(probChange * 100)}% 1d
             </span>
           )}
-          {contract.outcomeType === 'PERP' && <PerpMarketBadge />}
           <ContractStatusLabel
             contract={contract}
             className="font-semibold"

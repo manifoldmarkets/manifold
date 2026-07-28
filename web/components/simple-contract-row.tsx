@@ -36,6 +36,9 @@ export function SimpleContractRow(props: {
           'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto'
         )}
       >
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {contract.question}
       </div>
       <Row className="gap-3">
@@ -48,7 +51,6 @@ export function SimpleContractRow(props: {
           />
         </UserHovercard>
         <div className="flex min-w-[2rem] items-center justify-end gap-1 text-right font-semibold">
-          {contract.outcomeType === 'PERP' && <PerpMarketBadge />}
           <ContractStatusLabel contract={contract} />
         </div>
       </Row>

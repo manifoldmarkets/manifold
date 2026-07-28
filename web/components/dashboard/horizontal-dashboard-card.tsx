@@ -123,14 +123,17 @@ export function HorizontalDashboardCard(props: {
           href={path}
           onClick={trackClick}
         >
-          <VisibilityIcon contract={contract} /> {contract.question}
+          <VisibilityIcon contract={contract} />{' '}
+          {contract.outcomeType === 'PERP' && (
+            <PerpMarketBadge className="mr-1 align-middle" />
+          )}
+          {contract.question}
         </Link>
       </Col>
       <Col>
         <Row className="w-full items-center justify-end gap-3 whitespace-nowrap">
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
             <Row className="items-center gap-1.5">
-              {contract.outcomeType === 'PERP' && <PerpMarketBadge />}
               <ContractStatusLabel
                 className="text-lg font-bold"
                 contract={contract}

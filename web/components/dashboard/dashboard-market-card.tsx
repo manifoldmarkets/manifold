@@ -253,9 +253,13 @@ export function DashboardMarketCard({
       className="bg-canvas-50 border-ink-200 hover:border-primary-300 flex h-[340px] cursor-pointer flex-col rounded-xl border transition-colors"
       onClick={() => Router.push(contractUrl)}
       role="link"
-      ariaLabel={contract.question}
+      ariaLabel={
+        perpContract
+          ? `Perpetual market: ${contract.question}`
+          : contract.question
+      }
     >
-      {/* Creator row + type badge */}
+      {/* Creator row + status */}
       <Row className="items-center gap-2 px-5 pt-5">
         <UserHovercard userId={contract.creatorId} className="min-w-0 flex-1">
           <Row className="stop-prop text-ink-500 items-center gap-1.5">
@@ -285,9 +289,7 @@ export function DashboardMarketCard({
             {status}
           </span>
         )}
-        {perpContract ? (
-          <PerpMarketBadge label="Perpetual" />
-        ) : (
+        {!perpContract && (
           <span
             className={clsx(
               'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium',
@@ -302,6 +304,7 @@ export function DashboardMarketCard({
       {/* Question title */}
       <div className="px-5 pt-3">
         <p className="text-ink-900 line-clamp-2 text-lg font-semibold leading-snug">
+          {perpContract && <PerpMarketBadge className="mr-1 align-middle" />}
           {contract.question}
         </p>
       </div>

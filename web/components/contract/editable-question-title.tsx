@@ -1,6 +1,6 @@
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { Contract, MAX_QUESTION_LENGTH } from 'common/contract'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { updateMarket } from 'web/lib/api/api'
 import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
@@ -8,8 +8,9 @@ import { ExpandingInput } from '../widgets/expanding-input'
 export const EditableQuestionTitle = (props: {
   contract: Contract
   canEdit?: boolean
+  prefix?: ReactNode
 }) => {
-  const { contract, canEdit } = props
+  const { contract, canEdit, prefix } = props
 
   const [isEditing, setEditing] = useState(false)
   const [text, setText] = useState(props.contract.question)
@@ -26,12 +27,14 @@ export const EditableQuestionTitle = (props: {
 
   return isEditing ? (
     <div className="flex items-center gap-2">
+      {prefix}
       <ExpandingInput
         className="grow"
         rows={1}
         maxLength={MAX_QUESTION_LENGTH}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
         onFocus={(e) =>
           // Focus starts at end of text.
@@ -60,6 +63,9 @@ export const EditableQuestionTitle = (props: {
     </div>
   ) : (
     <div className="group text-xl font-medium sm:text-2xl">
+      {prefix && (
+        <span className="mr-2 inline-flex align-middle">{prefix}</span>
+      )}
       {contract.question}
       {canEdit && (
         <button

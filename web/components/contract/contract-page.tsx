@@ -53,6 +53,8 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
+import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { PerpMarketExplainer } from 'web/components/perps/perp-market-explainer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
@@ -193,11 +195,7 @@ export function ContractPageContent(props: ContractParams) {
     if (router.isReady && router.query.graph) setHideGraph(false)
   }, [router.isReady, router.query.graph])
 
-  const {
-    graphUser,
-    setGraphUser,
-    ready: graphUserReady,
-  } = useGraphUserFromUrl()
+  const { graphUser, setGraphUser } = useGraphUserFromUrl()
 
   useEffect(() => {
     if (replyTo) {
@@ -320,6 +318,9 @@ export function ContractPageContent(props: ContractParams) {
                       </Tooltip>
                     )}
                     <VisibilityIcon contract={props.contract} />{' '}
+                    {isPerp && (
+                      <PerpMarketBadge className="mr-1 align-middle" />
+                    )}
                     {props.contract.question}
                   </span>
                 )}
@@ -367,6 +368,7 @@ export function ContractPageContent(props: ContractParams) {
                   <EditableQuestionTitle
                     contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
+                    prefix={isPerp ? <PerpMarketExplainer /> : undefined}
                   />
                 </div>
               </Col>

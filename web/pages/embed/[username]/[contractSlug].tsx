@@ -314,9 +314,7 @@ function ContractSmolView(props: {
           className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl lg:mb-4 lg:text-2xl"
           rel="noreferrer"
         >
-          {isPerp && (
-            <PerpMarketBadge className="mr-2 align-middle" label="Perpetual" />
-          )}
+          {isPerp && <PerpMarketBadge className="mr-2 align-middle" />}
           {question}
         </a>
         {isBinary && (

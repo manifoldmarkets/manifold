@@ -49,6 +49,7 @@ export function ContractMention(props: {
         aria-hidden
         className="mr-1 inline h-[1em] w-[1em] stroke-indigo-700 align-text-bottom dark:stroke-white"
       />
+      {isPerp && <PerpMarketBadge className="mr-1 align-bottom" />}
       <span
         className={clsx(
           'break-anywhere group-hover/mention:text-primary-500 group-focus/mention:text-primary-500 text-primary-800  mr-0.5 whitespace-normal font-medium transition-colors',
@@ -70,7 +71,6 @@ export function ContractMention(props: {
       )}
       {isPerp && (
         <span className="inline-flex items-center gap-1 align-bottom">
-          <PerpMarketBadge />
           {perpPrice !== undefined && Number.isFinite(perpPrice) && (
             <span
               className={clsx(

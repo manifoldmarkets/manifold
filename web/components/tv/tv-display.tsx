@@ -106,6 +106,7 @@ export function TVDisplay(props: {
           <Col className="mb-2 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
               <Row className="items-center gap-2 text-xl font-medium sm:text-2xl">
+                {perpContract && <PerpMarketBadge />}
                 <Link
                   href={`/${contract.creatorUsername}/${contract.slug}`}
                   target="_blank"
@@ -113,7 +114,6 @@ export function TVDisplay(props: {
                 >
                   {contract.question}
                 </Link>
-                {perpContract && <PerpMarketBadge label="Perpetual" />}
               </Row>
               {isBinary && (
                 <BinaryResolutionOrChance isCol contract={contract} />

@@ -46,7 +46,7 @@ const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
   }))
 
   return (
-    <div className="w-42 bg-canvas-0 ring-ink-1000 absolute z-10 overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none">
+    <div className="bg-canvas-0 ring-ink-1000 absolute z-10 w-80 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none">
       {!contracts.length ? (
         <span className="m-1 whitespace-nowrap">No results found yet</span>
       ) : (
@@ -66,12 +66,12 @@ const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
               key={contract.id}
             >
               <Avatar avatarUrl={contract.creatorAvatarUrl} size="xs" />
+              {isPerp && <PerpMarketBadge />}
               <span className="min-w-0 flex-1 truncate text-left">
                 {contract.question}
               </span>
               {isPerp && (
                 <span className="inline-flex shrink-0 items-center gap-1">
-                  <PerpMarketBadge />
                   {perpPrice !== undefined && Number.isFinite(perpPrice) && (
                     <span className="text-xs font-medium tabular-nums">
                       {formatPerpPrice(
