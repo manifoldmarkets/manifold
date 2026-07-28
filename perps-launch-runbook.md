@@ -98,14 +98,16 @@ Create only the four manifest feeds, with topic tags, as unlisted. Then:
 5. Run the period-metric job after an add, funding event, flip, liquidation,
    ADL, and resolution; reconcile `from.day`/`from.week` with the event cash
    flows and confirm automated transitions did not change `lastBetTime`.
-6. Confirm search, topic pages, browse, explore, related markets, `%[market]`
+6. Run the league updater and confirm PERP gains/losses do not change
+   `leagues.mana_earned` and do not create a `perp_profit` breakdown entry.
+7. Confirm search, topic pages, browse, explore, related markets, `%[market]`
    mentions, and `/embed/...` all render the PERP price/type/backing correctly.
    Use the built-in Browser plugin or install/enable the Chrome plugin and
    extension in the ChatGPT desktop app before assigning this pass to Codex.
-7. Leave the fast tick and hourly funding job running for at least one hour,
+8. Leave the fast tick and hourly funding job running for at least one hour,
    then rerun the preflight and inspect scheduler CPU, lock contention, and
    contract write volume.
-8. Stop a dev feed and verify both opens and closes pause at the same freshness
+9. Stop a dev feed and verify both opens and closes pause at the same freshness
    boundary, the page explains why, and an alert arrives.
 
 ## Public rollout and rollback

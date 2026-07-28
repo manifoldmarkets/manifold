@@ -224,8 +224,9 @@ The touched files outside this folder are:
   replay and race-safe `from` updates.
 - `backend/shared/src/send-market-movement-notifications.ts` — exclude perps.
 - `backend/shared/src/importance-score.ts` — perp scoring branch.
-- `backend/scheduler/src/jobs/{index,update-league,update-perps}.ts` — schedule
-  wiring + league profit branch.
+- `backend/scheduler/src/jobs/index.ts`, `update-perps.ts` — schedule wiring.
+- `backend/scheduler/src/jobs/update-league.ts` — intentionally excludes PERP
+  position P&L from league scoring for launch.
 - `web/components/contract/{contract-overview,contracts-table,feed-contract-card}.tsx`,
   `web/components/perps/*`, `web/components/search.tsx`,
   `web/pages/admin/create-perp.tsx` — frontend surface.

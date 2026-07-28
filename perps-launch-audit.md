@@ -169,6 +169,7 @@ the public launch dataset.
 | Daily/weekly per-contract P&L   | Pass in code/tests        | Reconciled event replay includes funding, new margin, flips, exits, liquidation, ADL, and settlement; see the dedicated section below.    |
 | Notifications and balance log   | Pass                      | Liquidation, ADL, trade, funding, and settlement rows are type-safe and readable.                                                         |
 | Email market values             | Pass                      | PERPs format oracle/settlement price, and weekly mover selection reads the replayed weekly P&L.                                           |
+| League scoring                  | Excluded by launch policy | User-facing PERP P&L remains visible, but position gains and losses do not change `leagues.mana_earned`.                                  |
 | TV                              | Pass                      | Read-only display now carries a Perpetual badge and oracle/settlement price.                                                              |
 | Public API and MCP              | Pass                      | Lite/full shapes expose PERP price/backing without fake liquidity. Generic binary bet APIs reject the mechanism.                          |
 | Active native app (`mani`)      | Safe read-only            | Dedicated summary/page and safe feed/profile/notification/ledger rendering. It does not expose a misleading binary bet panel.             |
@@ -326,6 +327,11 @@ preserve the latest `from`; this avoids a trade/funding race overwriting either
 side. Automated funding, ADL, liquidation, and resolution no longer update
 `lastBetTime`, so passive holders do not become fake weekly traders.
 
+These rolling metrics are for user reporting and portfolio surfaces. They are
+not league inputs. Launch policy excludes PERP position gains and losses from
+`leagues.mana_earned`; enabling them later requires an explicit season-boundary
+decision and a separate league-accounting review.
+
 Malformed or incomplete history fails closed and leaves the prior period block
 unchanged rather than publishing a fabricated zero. The launch migrations and
 clean market recreation are required because legacy DEV rows can only
@@ -405,14 +411,16 @@ legacy prototypes into the production dataset.
     position cleanup, notifications, and cache refresh.
 12. Run the period job and reconcile day/week/month P&L across funding, adds,
     flips, liquidation, ADL, and settlement.
-13. In a connected signed-in browser, verify desktop/mobile market pages,
+13. Run the league updater and confirm `mana_earned_breakdown` has no
+    `perp_profit` entry and is unchanged by PERP price moves or settlements.
+14. In a connected signed-in browser, verify desktop/mobile market pages,
     Browse, Explore, topic/related results, `%[market]`, external embeds,
     dashboard/profile, dark mode, keyboard/tap behavior, and stale UI.
-14. Leave feed and funding schedulers running for at least one hour, rerun
+15. Leave feed and funding schedulers running for at least one hour, rerun
     preflight, and inspect locks, write volume, and CPU.
-15. Record the owner and exact caps for the accepted oracle-latency risk, and
+16. Record the owner and exact caps for the accepted oracle-latency risk, and
     use the acknowledgment flag.
-16. Publish one market at a time, starting with BTC. Rerun public preflight and
+17. Publish one market at a time, starting with BTC. Rerun public preflight and
     inspect rank/impressions/traders before publishing the next.
 
 Rollback is operationally simple: set `PERPS_ENABLED = false`, deploy, and
