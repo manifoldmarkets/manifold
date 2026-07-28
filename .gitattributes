@@ -1,2 +1,3 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+backend/api/deploy-api-windows.sh whitespace=cr-at-eol

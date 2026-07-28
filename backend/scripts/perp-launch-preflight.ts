@@ -24,7 +24,7 @@ import { getLocalEnv } from 'shared/init-admin'
 import { log } from 'shared/utils'
 import { runScript } from './run-script'
 
-type Phase = 'feeds' | 'unlisted' | 'public'
+type Phase = 'feeds' | 'unlisted' | 'rollout' | 'public'
 type Level = 'PASS' | 'WARN' | 'FAIL'
 
 type FeedSnapshot = {
@@ -55,28 +55,84 @@ const phaseValue = phaseArg?.slice('--phase='.length) ?? 'feeds'
 if (
   phaseValue !== 'feeds' &&
   phaseValue !== 'unlisted' &&
+  phaseValue !== 'rollout' &&
   phaseValue !== 'public'
 )
   throw new Error(
-    `Invalid --phase=${phaseValue}; expected feeds, unlisted, or public`
+    `Invalid --phase=${phaseValue}; expected feeds, unlisted, rollout, or public`
   )
 const phase: Phase = phaseValue
 const acknowledgesLatencyRisk = process.argv.includes(
   '--acknowledge-latency-risk'
 )
+const expectedPublicFeedIds = process.argv
+  .filter((arg) => arg.startsWith('--public-feed='))
+  .map((arg) => arg.slice('--public-feed='.length))
+const allowedWarningKeys = process.argv
+  .filter((arg) => arg.startsWith('--allow-warning='))
+  .map((arg) => arg.slice('--allow-warning='.length))
+
+const toWarningKey = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+const manifestFeedIds = PERP_LAUNCH_MARKETS.map((market) => market.feedId)
+const unknownPublicFeedIds = expectedPublicFeedIds.filter(
+  (feedId) => !manifestFeedIds.includes(feedId)
+)
+if (phase !== 'rollout' && expectedPublicFeedIds.length > 0)
+  throw new Error('--public-feed is only valid with --phase=rollout')
+if (phase === 'rollout') {
+  if (expectedPublicFeedIds.length === 0)
+    throw new Error(
+      '--phase=rollout requires at least one --public-feed=<manifest feed id>'
+    )
+  if (new Set(expectedPublicFeedIds).size !== expectedPublicFeedIds.length)
+    throw new Error('--phase=rollout received a duplicate --public-feed')
+  if (unknownPublicFeedIds.length > 0)
+    throw new Error(
+      `Unknown --public-feed value(s): ${unknownPublicFeedIds.join(', ')}`
+    )
+  if (expectedPublicFeedIds.length === manifestFeedIds.length)
+    throw new Error(
+      'All launch feeds are public; use --phase=public for the final gate'
+    )
+}
+if (acknowledgesLatencyRisk && phase !== 'rollout' && phase !== 'public')
+  throw new Error(
+    '--acknowledge-latency-risk is only valid with rollout or public phases'
+  )
+if (
+  allowedWarningKeys.some(
+    (key) => key.length === 0 || key !== toWarningKey(key)
+  )
+)
+  throw new Error(
+    '--allow-warning values must already be lowercase kebab-case warning keys'
+  )
+if (new Set(allowedWarningKeys).size !== allowedWarningKeys.length)
+  throw new Error('Duplicate --allow-warning value')
 
 if (require.main === module)
   runScript(async ({ pg }) => {
     const environment = getLocalEnv()
     let failures = 0
     let warnings = 0
+    const emittedWarningKeys: string[] = []
     const report = (level: Level, name: string, detail: string) => {
-      const message = `[${level}] ${name}: ${detail}`
+      const warningKey = level === 'WARN' ? toWarningKey(name) : undefined
+      const message = `[${level}] ${name}${
+        warningKey ? ` [warning-key=${warningKey}]` : ''
+      }: ${detail}`
       if (level === 'FAIL') {
         failures++
         log.error(message)
       } else if (level === 'WARN') {
         warnings++
+        emittedWarningKeys.push(warningKey as string)
         log.warn(message)
       } else {
         log(message)
@@ -94,7 +150,13 @@ if (require.main === module)
       }
     }
 
-    log(`PERP launch preflight: environment=${environment}, phase=${phase}`)
+    log(
+      `PERP launch preflight: environment=${environment}, phase=${phase}${
+        phase === 'rollout'
+          ? `, expectedPublicFeeds=${expectedPublicFeedIds.join(',')}`
+          : ''
+      }`
+    )
 
     const manifestErrors = getPerpLaunchManifestErrors()
     if (manifestErrors.length === 0)
@@ -488,7 +550,7 @@ if (require.main === module)
           )
         } else if (!launchIds.has(contract.oracleFeedId)) {
           report(
-            phase === 'public' ? 'FAIL' : 'WARN',
+            phase === 'public' || phase === 'rollout' ? 'FAIL' : 'WARN',
             `market ${contract.slug}`,
             `feed ${contract.oracleFeedId} is outside the launch manifest`
           )
@@ -931,7 +993,13 @@ if (require.main === module)
           )
           continue
         }
-        const expectedVisibility = phase === 'unlisted' ? 'unlisted' : 'public'
+        const expectedVisibility =
+          phase === 'unlisted'
+            ? 'unlisted'
+            : phase === 'rollout' &&
+              !expectedPublicFeedIds.includes(definition.feedId)
+            ? 'unlisted'
+            : 'public'
         report(
           matches[0].visibility === expectedVisibility ? 'PASS' : 'FAIL',
           `launch market ${definition.feedId} visibility`,
@@ -959,8 +1027,14 @@ if (require.main === module)
       )
     })
 
-    if (phase === 'public') {
-      for (const definition of PERP_LAUNCH_MARKETS) {
+    if (phase === 'public' || phase === 'rollout') {
+      const exposedDefinitions =
+        phase === 'public'
+          ? PERP_LAUNCH_MARKETS
+          : PERP_LAUNCH_MARKETS.filter((definition) =>
+              expectedPublicFeedIds.includes(definition.feedId)
+            )
+      for (const definition of exposedDefinitions) {
         report(
           acknowledgesLatencyRisk ? 'WARN' : 'FAIL',
           `oracle latency risk ${definition.feedId}`,
@@ -978,6 +1052,37 @@ if (require.main === module)
       'external alert policies',
       'database checks cannot verify GCP log/presence policies; complete the runbook alert drill manually'
     )
+    if (phase !== 'feeds') {
+      const acknowledgedLatencyWarningKeys = acknowledgesLatencyRisk
+        ? emittedWarningKeys.filter((key) =>
+            key.startsWith('oracle-latency-risk-')
+          )
+        : []
+      const acceptedWarningKeys = new Set([
+        ...allowedWarningKeys,
+        ...acknowledgedLatencyWarningKeys,
+      ])
+      const unexpectedWarningKeys = Array.from(
+        new Set(
+          emittedWarningKeys.filter((key) => !acceptedWarningKeys.has(key))
+        )
+      )
+      const unusedAllowedWarningKeys = allowedWarningKeys.filter(
+        (key) => !emittedWarningKeys.includes(key)
+      )
+      for (const key of unexpectedWarningKeys)
+        report(
+          'FAIL',
+          `unexpected warning ${key}`,
+          `review the warning and rerun with --allow-warning=${key} only after deliberate approval`
+        )
+      for (const key of unusedAllowedWarningKeys)
+        report(
+          'FAIL',
+          `unused warning allowance ${key}`,
+          'remove stale warning allowances so a changed warning set cannot pass unnoticed'
+        )
+    }
     log(
       `PERP preflight complete: ${failures} failure(s), ${warnings} warning(s)`
     )

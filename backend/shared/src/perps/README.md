@@ -1,7 +1,9 @@
 # ManiPerp Perpetual Futures
 
-This folder contains the backend engine for the ManiPerp perpetual futures market
-type. Perps are gated behind the `PERPS_ENABLED` flag in `common/src/envs/constants.ts`.
+This folder contains the backend engine for the ManiPerp perpetual futures
+market type. The compiled default is gated by `PERPS_ENABLED` in
+`common/src/envs/constants.ts`; API incidents use `PERP_TRADING_MODE` as
+described below.
 
 The code is intentionally self-contained so the feature is easy to remove if we
 decide to sunset perps. Nothing under `backend/shared/src/perps/` is imported by
@@ -177,6 +179,21 @@ Trading and closes share `getOracleFreshness` from
 freshness limit pauses both paths until a valid update arrives; the market page
 uses the same predicate to show the pause and disable open/close actions.
 
+The API reads `PERP_TRADING_MODE` on each request:
+
+- `enabled` permits creation, opens, adds, flips, and closes;
+- `reduce-only` blocks creation and exposure increases while preserving closes;
+- `halted` blocks all user-initiated PERP trading, including closes.
+
+An absent value is `enabled` only when the compiled `PERPS_ENABLED` switch is
+true. A false compiled switch cannot be overridden at runtime and remains at
+least `reduce-only`; `halted` can tighten it further. An invalid value fails
+closed as `halted`. Changing a deployed service's environment requires rolling
+its instances. Liquidation, funding, and resolution deliberately remain active
+in both incident modes. Use `reduce-only` for ordinary incidents and stale
+feeds; use `halted` before investigating a known-corrupt but still-fresh cached
+point, because unlisting alone does not block direct API calls.
+
 Oracle rows distinguish the feed-effective `ts`, optional provider
 `source_ts`, and immutable Manifold `published_at`. PERP events similarly
 distinguish their effective/oracle `ts` from `applied_ts`, the time Manifold
@@ -214,7 +231,8 @@ per-contract oracle-application history and value from that record.
 
 - `outcomeType === 'PERP'` — UI switch branches.
 - `contract.mechanism === 'perp'` — backend branches.
-- `PERPS_ENABLED` — feature flag used in API handlers and scheduler.
+- `PERPS_ENABLED` / `PERP_TRADING_MODE` — compiled default and API incident
+  control.
 
 The touched files outside this folder are:
 
@@ -245,7 +263,8 @@ one-sided market does not remain artificially elevated.
 
 ## Removal checklist
 
-1. Set `PERPS_ENABLED = false` to hide the admin page and reject new trades.
+1. Set `PERP_TRADING_MODE=reduce-only` and roll API instances to reject new
+   trades; use `halted` if closes must also stop.
 2. Resolve all remaining perp contracts (creator / mod flow settles at oracle).
 3. Delete this folder, `common/src/perps/`, `web/components/perps/`,
    `web/pages/admin/create-perp.tsx`.

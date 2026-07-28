@@ -1,5 +1,5 @@
 import { canReceiveBonuses } from 'common/user'
-import { PARTNER_USER_IDS, PERPS_ENABLED } from 'common/envs/constants'
+import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { getUniqueBettorBonusAmount } from 'common/economy'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { PerpContract } from 'common/contract'
@@ -7,12 +7,13 @@ import { openOrAddPosition } from 'shared/perps/engine'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { getUser, log } from 'shared/utils'
-import { APIError, APIHandler } from './helpers/endpoint'
+import { APIHandler } from './helpers/endpoint'
+import { assertPerpExposureIncreaseEnabled } from './helpers/perp-trading-mode'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
 export const placePerpTrade: APIHandler<'place-perp-trade'> =
   onlyUsersWhoCanPerformAction('trade', async (body, auth) => {
-    if (!PERPS_ENABLED) throw new APIError(403, 'Perps are disabled')
+    assertPerpExposureIncreaseEnabled()
     const { contractId, direction, mana, leverage, idempotencyKey } = body
     const result = await openOrAddPosition(
       contractId,

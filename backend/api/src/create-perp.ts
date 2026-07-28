@@ -1,5 +1,5 @@
 import { toLiteMarket } from 'common/api/market-types'
-import { ENV, PERPS_ENABLED } from 'common/envs/constants'
+import { ENV } from 'common/envs/constants'
 import {
   Contract,
   Perp,
@@ -31,6 +31,7 @@ import { broadcastNewContract } from 'shared/websockets/helpers'
 import { convertUser } from 'common/supabase/users'
 import { getUser, htmlToRichText, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
+import { assertPerpExposureIncreaseEnabled } from './helpers/perp-trading-mode'
 
 export const requireOracleFeedForPerpCreation = (oracleFeedId: string) => {
   const feedDef = getOracleFeed(oracleFeedId)
@@ -48,7 +49,7 @@ export const requireOracleFeedForPerpCreation = (oracleFeedId: string) => {
 }
 
 export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
-  if (!PERPS_ENABLED) throw new APIError(403, 'Perps are disabled')
+  assertPerpExposureIncreaseEnabled()
   throwErrorIfNotAdmin(auth.uid)
 
   const {

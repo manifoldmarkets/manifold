@@ -34,9 +34,10 @@ export const TRADED_TERM = 'bet'
 export const TRADING_TERM = 'betting'
 export const TRADER_TERM = 'trader'
 
-// Open-risk switch for perpetual futures (ManiPerp). When false, creation and
-// new/add trades are rejected, while closes and the oracle/liquidation/funding
-// risk engine deliberately keep running so existing traders are not trapped.
+// Compiled default for perpetual futures (ManiPerp). The API's runtime
+// PERP_TRADING_MODE can select enabled, reduce-only, or halted without a source
+// edit; this flag remains the default when that environment setting is absent.
+// The oracle/liquidation/funding risk engine deliberately keeps running.
 // See backend/shared/src/perps/README.md for incident controls.
 export const PERPS_ENABLED = true
 

@@ -22,15 +22,21 @@ SERVICE_GROUP="${SERVICE_NAME}-group-east"
 REGION="us-east4" # Ashburn, Virginia
 ZONE="us-east4-a"
 ENV=${1:-dev}
+PERP_TRADING_MODE=${PERP_TRADING_MODE:-}
 
 case $ENV in
     dev)
+        PERP_TRADING_MODE=${PERP_TRADING_MODE:-enabled}
         NEXT_PUBLIC_FIREBASE_ENV=DEV
         REDIS_URL=
         DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=e2-small ;;
     prod)
+        if [ -z "${PERP_TRADING_MODE}" ]; then
+            echo "PROD deploy requires explicit PERP_TRADING_MODE=enabled, reduce-only, or halted."
+            exit 1
+        fi
         NEXT_PUBLIC_FIREBASE_ENV=PROD
         # Private Memorystore instance. Passed at the container level so both
         # the main API process and PM2 read replicas inherit it.
@@ -44,6 +50,13 @@ case $ENV in
     *)
         echo "Invalid environment; must be dev or prod."
         exit 1
+esac
+
+case $PERP_TRADING_MODE in
+    enabled|reduce-only|halted) ;;
+    *)
+        echo "Invalid PERP_TRADING_MODE; expected enabled, reduce-only, or halted."
+        exit 1 ;;
 esac
 
 echo "Deploy start time: $(date "+%Y-%m-%d %I:%M:%S %p")"
@@ -109,7 +122,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --boot-disk-size=100GB \
-       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},REDIS_URL=${REDIS_URL},DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE} \
+       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},REDIS_URL=${REDIS_URL},DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE},PERP_TRADING_MODE=${PERP_TRADING_MODE} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
        --tags lb-health-check
