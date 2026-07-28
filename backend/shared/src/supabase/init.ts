@@ -209,3 +209,9 @@ export const SERIAL_MODE = new pgp.txMode.TransactionMode({
   readOnly: false,
   deferrable: false,
 })
+
+export const READ_ONLY_REPEATABLE_MODE = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.repeatableRead,
+  readOnly: true,
+  deferrable: false,
+})

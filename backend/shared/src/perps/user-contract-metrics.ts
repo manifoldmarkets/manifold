@@ -28,12 +28,14 @@ type EventAgg = {
   userId: string
   totalInvested: number
   totalSold: number
+  lastBetTime: number
 }
 
 const emptyAgg = (userId: string): EventAgg => ({
   userId,
   totalInvested: 0,
   totalSold: 0,
+  lastBetTime: 0,
 })
 
 const isSoldEventType = (t: string) =>
@@ -43,12 +45,21 @@ const applyEventToAgg = (
   agg: EventAgg,
   eventType: string,
   originalCostBasisDelta: number,
-  payout: number
+  payout: number,
+  appliedTime: number,
+  reason: unknown
 ) => {
   if (eventType === 'open' || eventType === 'add') {
     if (originalCostBasisDelta > 0) agg.totalInvested += originalCostBasisDelta
   } else if (isSoldEventType(eventType)) {
     agg.totalSold += payout
+  }
+  if (
+    eventType === 'open' ||
+    eventType === 'add' ||
+    (eventType === 'close' && reason !== 'resolve-market')
+  ) {
+    agg.lastBetTime = Math.max(agg.lastBetTime, appliedTime)
   }
 }
 
@@ -74,42 +85,64 @@ export const buildPerpUserContractMetrics = async (
     userIds.map((uid) => [uid, emptyAgg(uid)])
   )
 
-  // Historical invested (from open/add events already in DB).
-  const investedRows = await pgTrans.any<{
+  // Aggregate the append-only history in SQL. Returning one row per user
+  // avoids shipping every hourly funding event back to Node on each rebuild.
+  const historicalRows = await pgTrans.any<{
     user_id: string
-    original_cost_basis_delta: number | string
+    total_invested: number | string
+    total_sold: number | string
+    last_bet_time: string | null
   }>(
-    `select user_id, original_cost_basis_delta
+    `select
+       user_id,
+       coalesce(sum(
+         case
+           when event_type in ('open', 'add')
+             and original_cost_basis_delta > 0
+           then original_cost_basis_delta
+           else 0
+         end
+       ), 0) as total_invested,
+       coalesce(sum(
+         case
+           when event_type in ('close', 'liquidation', 'adl')
+           then coalesce((data->>'payout')::numeric, 0)
+           else 0
+         end
+       ), 0) as total_sold,
+       max(applied_ts) filter (
+         where event_type in ('open', 'add')
+           or (
+             event_type = 'close'
+             and data->>'reason' is distinct from 'resolve-market'
+           )
+       ) as last_bet_time
      from contract_perp_events
      where contract_id = $1
        and user_id = any($2)
-       and event_type in ('open','add')`,
+       and event_type in ('open', 'add', 'close', 'liquidation', 'adl')
+     group by user_id`,
     [contract.id, userIds]
   )
-  for (const row of investedRows) {
+  for (const row of historicalRows) {
     const agg = aggByUser[row.user_id]
     if (!agg) continue
-    const d = Number(row.original_cost_basis_delta)
-    if (d > 0) agg.totalInvested += d
-  }
-
-  // Historical sold (from close/liquidation/adl events already in DB).
-  const soldRows = await pgTrans.any<{
-    user_id: string
-    data: { payout?: number } | null
-    event_type: string
-  }>(
-    `select user_id, data, event_type
-     from contract_perp_events
-     where contract_id = $1
-       and user_id = any($2)
-       and event_type in ('close','liquidation','adl')`,
-    [contract.id, userIds]
-  )
-  for (const row of soldRows) {
-    const agg = aggByUser[row.user_id]
-    if (!agg) continue
-    agg.totalSold += Number(row.data?.payout ?? 0)
+    const invested = Number(row.total_invested)
+    const sold = Number(row.total_sold)
+    const lastBetTime =
+      row.last_bet_time === null ? 0 : new Date(row.last_bet_time).getTime()
+    if (
+      !Number.isFinite(invested) ||
+      invested < 0 ||
+      !Number.isFinite(sold) ||
+      sold < 0 ||
+      !Number.isFinite(lastBetTime)
+    ) {
+      throw new Error(`Invalid PERP event history for ${contract.id}`)
+    }
+    agg.totalInvested = invested
+    agg.totalSold = sold
+    agg.lastBetTime = lastBetTime
   }
 
   // Apply this transaction's new events on top so the metrics reflect
@@ -119,7 +152,21 @@ export const buildPerpUserContractMetrics = async (
     const agg = aggByUser[ev.userId]
     if (!agg) continue
     const payout = Number((ev.data as { payout?: number } | null)?.payout ?? 0)
-    applyEventToAgg(agg, ev.eventType, ev.originalCostBasisDelta ?? 0, payout)
+    if (
+      !Number.isFinite(payout) ||
+      payout < 0 ||
+      !Number.isFinite(ev.appliedTime)
+    ) {
+      throw new Error(`Invalid new PERP event for ${contract.id}`)
+    }
+    applyEventToAgg(
+      agg,
+      ev.eventType,
+      ev.originalCostBasisDelta ?? 0,
+      payout,
+      ev.appliedTime,
+      ev.data?.reason
+    )
   }
 
   const positionsByUser: Record<string, PerpPosition[]> = {}
@@ -129,7 +176,6 @@ export const buildPerpUserContractMetrics = async (
     positionsByUser[p.userId].push(p)
   }
 
-  const now = Date.now()
   return userIds.map((uid) => {
     const agg = aggByUser[uid] ?? emptyAgg(uid)
     const positions = positionsByUser[uid] ?? []
@@ -150,7 +196,9 @@ export const buildPerpUserContractMetrics = async (
       userId: uid,
       contractId: contract.id,
       answerId: null,
-      lastBetTime: now,
+      // Funding, liquidation, ADL, and settlement are system activity. Using
+      // rebuild time here made passive holders look like weekly traders.
+      lastBetTime: agg.lastBetTime,
       lastProb: null,
       hasShares: longSize > 0 || shortSize > 0,
       hasYesShares: false,
@@ -178,5 +226,5 @@ export const buildPerpUserContractMetricsQuery = async (
 ) => {
   const metrics = await buildPerpUserContractMetrics(pgTrans, args)
   if (!metrics.length) return 'select 1 where false'
-  return bulkUpdateContractMetricsQuery(metrics)
+  return bulkUpdateContractMetricsQuery(metrics, { preserveFrom: true })
 }
