@@ -20,21 +20,24 @@ only where its retained feed or legacy DEV market affects launch safety.
 The application integration is substantially complete. Public launch is still
 a **conditional no-go** until the release gates below are closed.
 
-| Area                             | Status                | Meaning                                                                                                                                                           |
-| -------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Core math, accounting, lifecycle | Pass in code/tests    | Backing, solvency, funding, liquidation/ADL, settlement, and idempotency have explicit guards and tests.                                                          |
-| Web integration                  | Pass in code/SSR      | Market page, cards, browse, explore, search, related markets, embeds, mentions, dashboards, profile, TV, SEO/OG, and notifications understand PERPs.              |
-| Native safety                    | Pass, read-only       | Current native clients no longer treat PERPs as binary or crash; they show a safe summary and link through. Native trading is not implemented.                    |
-| Automated verification           | Pass                  | 21 common test suites / 328 tests and TypeScript builds for common, backend shared, API, scheduler, and web pass at the audited HEAD.                             |
-| DEV release preflight            | **Fail**              | The 2026-07-27 18:34 UTC run found 13 failures and 12 warnings, primarily unapplied migrations and legacy DEV market configuration.                               |
-| Oracle-latency exposure          | Accepted launch risk  | Exact, zero-fee execution at a cached public oracle is pick-offable. Launch accepts bot competition under the manifest caps and monitors pool transfer.           |
-| Signed-in visual smoke           | **Open release gate** | Live SSR/API routes passed, but no browser runtime was available for the final responsive and `%[market]` interaction pass.                                       |
-| Period-specific PERP P&L         | Pass in code/tests    | Day/week/month values reverse the append-only position history from one consistent database snapshot, including funding, flips, liquidation, ADL, and settlement. |
+| Area                             | Status                   | Meaning                                                                                                                                                            |
+| -------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Core math, accounting, lifecycle | Pass in code/tests       | Backing, solvency, funding, liquidation/ADL, settlement, and idempotency have explicit guards and tests.                                                           |
+| Web integration                  | Pass locally             | Market page, cards, browse, explore, search, related markets, embeds, mentions, dashboards, profile, TV, SEO/OG, and notifications understand PERPs.               |
+| Native safety                    | Pass, read-only          | Current native clients no longer treat PERPs as binary or crash; they show a safe summary and link through. Native trading is not implemented.                     |
+| Automated verification           | Pass                     | 23 common suites / 336 tests, common/shared builds, API/web/scheduler typechecks, targeted ESLint/Prettier, and diff checks pass at the audited working tree.      |
+| DEV schema                       | **Pass**                 | All six July PERP migrations are installed; required tables, columns, indexes, append-only triggers, and related-market SQL all pass preflight.                    |
+| DEV release preflight            | **Fail: legacy dataset** | The 2026-07-28 05:55 UTC feed run found 9 failures and 16 warnings. None is a missing migration; the causes are listed under “Latest DEV evidence.”                |
+| Oracle-latency exposure          | Accepted launch risk     | Exact, zero-fee execution at a cached public oracle is pick-offable. Launch accepts bot competition under the manifest caps and monitors pool transfer.            |
+| Signed-in visual smoke           | Pass locally             | Desktop/mobile pages, Browse, Explore, `%` selection, pasted-link mentions, external embeds, chart endpoint labels, tabs, and accessibility labels were exercised. |
+| Period-specific PERP P&L         | Pass in code/tests       | Day/week/month values reverse the append-only position history from one consistent database snapshot, including funding, flips, liquidation, ADL, and settlement.  |
 
 Do not turn the four markets public merely because the branch builds. First
-apply the migrations, obtain a zero-failure preflight, run the unlisted smoke
-pass, and invoke the public preflight with the explicit cached-oracle risk
-acknowledgment and recorded day-one caps.
+create a clean unlisted launch dataset, deploy the final API/web code, obtain a
+zero-failure preflight, run the balance-changing smoke cases, and invoke the
+public preflight with the explicit cached-oracle risk acknowledgment and
+recorded day-one caps. The six migrations already installed on DEV do not need
+to be rerun; they will still be schema-first rollout steps on PROD.
 
 ## Direct answers to the launch questions
 
@@ -54,10 +57,14 @@ Implemented.
 - Related-market cards, compact rows, activity cards, and link previews also
   identify the type and do not present a fake binary probability.
 
-Live DEV SSR returned HTTP 200 for both the full and embedded BTC and
-OpenRouter market routes, including the PERP label, current price, and source
-metadata. A final signed-in editor interaction remains in the unlisted smoke
-check because the browser runtime was unavailable during this audit.
+The signed-in local browser pass selected BTC through both `%Bitcoin` and
+`%[bitcoin]` autocomplete flows, converted a pasted market URL into the same
+structured mention, and rendered the direct `/embed/...` route with the
+Perpetual label, oracle price, source, chart, and trade link. The iframe
+generator now escapes the question in its `title`, and persisted TipTap
+iframes preserve an accessible title. The launch announcement must still be
+previewed after the final web deploy because its generated iframe URL targets
+the deployed DEV host, not `localhost`.
 
 ### Discoverability, rankings, and Explore
 
@@ -95,10 +102,19 @@ Consequences:
 - a paid boost behaves like a boost on another market, not like backing.
 
 The Explore/unified feed excludes STONKs and bountied questions, not PERPs.
-Public PERPs are therefore eligible. Topic tags and creation-time embeddings
-make them eligible for topic and related-market discovery after the related
-embedding migration is applied. Unlisted markets are intentionally absent
-from public Browse/Explore until the public rollout.
+Public PERPs are therefore eligible. User `open`, `add`, and manual `close`
+events now also produce typed Explore activity rows, using absolute committed
+margin for the ordinary minimum-trade threshold. Funding, liquidation, ADL,
+settlement, and the automatic close half of a flip are excluded. These rows
+are not fabricated binary bets.
+
+Launch creation automatically attaches each environment's required topic and
+generates a related-market embedding. The preflight verifies both, and the
+idempotent discovery backfill repairs older prototypes. Related-market API
+results re-check public/unresolved/not-deleted eligibility and use short-lived
+membership caches, so an unlisted, resolved, or deleted market does not remain
+visible for six hours. Unlisted markets are intentionally absent from public
+Browse/Explore until rollout.
 
 This design is sane, but relative calibration cannot be proven from four DEV
 markets. The runbook therefore exposes one market at a time and requires an
@@ -116,8 +132,11 @@ Implemented.
 - The backing row uses `poolLong + poolShort` as market backing.
 - API/MCP lite market payloads expose `oraclePrice` and `backingPool`
   explicitly rather than inventing an AMM liquidity tier.
-- Browse liquidity/elasticity ordering no longer treats a missing CPMM
-  liquidity field as a meaningful zero.
+- The `Subsidy` sort can compare PERP backing with other creator subsidy.
+- The CPMM `Liquidity`/elasticity sort deliberately leaves PERPs last because
+  backing is not an equivalent elasticity measure. A future cross-mechanism
+  ranking would need a shared slippage/capacity definition rather than
+  relabeling backing as CPMM liquidity.
 
 "Backing" is the correct label. The two pools are cash backing for the
 parimutuel liabilities; calling that ordinary CPMM liquidity would imply the
@@ -156,12 +175,12 @@ the public launch dataset.
 | Surface                         | Result                    | Notes                                                                                                                                     |
 | ------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Full web market page            | Pass                      | Dedicated overview, live price, funding, positions, trade controls, stale-feed explanation, source attribution, and price/funding charts. |
-| Browse/search tables            | Pass                      | Badge, oracle price, backing-aware display/sorts, no fake probability.                                                                    |
-| Home/Explore feed               | Pass                      | Eligible as an ordinary public market; PERP trades feed importance and participation.                                                     |
-| Activity/feed cards             | Pass                      | Badge, price, sparkline, backing, safe action rows.                                                                                       |
-| Topic and related markets       | Pass after migration      | Creation honors `groupIds` and generates embeddings; the migration includes active no-close PERPs in related results.                     |
-| `%` rich-text mentions          | Pass in code              | Picker and rendered mention are PERP-aware; final signed-in interaction is a release smoke item.                                          |
-| External embed                  | Pass in code and live SSR | Badge, price, sparkline, attribution.                                                                                                     |
+| Browse/search tables            | Pass                      | Badge, oracle price, backing display and subsidy sort; CPMM elasticity sort leaves incomparable PERPs last; no fake probability.          |
+| Home/Explore feed               | Pass                      | Eligible as an ordinary public market; PERP trades feed importance, participation, and typed user activity.                               |
+| Activity/feed cards             | Pass                      | Badge, price, sparkline, backing, and user open/add/close rows without automated accounting noise.                                        |
+| Topic and related markets       | Pass in code/DEV schema   | Creation auto-attaches manifest topics and generates embeddings; preflight/backfill gate old rows; results re-check current visibility.   |
+| `%` rich-text mentions          | Pass locally              | Picker, `%[...]`, pasted-link conversion, and rendered mention are PERP-aware.                                                            |
+| External embed                  | Pass locally              | Badge, price, sparkline, attribution, accessible iframe title, and trade link.                                                            |
 | SEO/Open Graph                  | Pass                      | PERP title/price semantics; no binary probability claim.                                                                                  |
 | Dashboard cards                 | Pass                      | Shows direction, current position value, and lifetime profit.                                                                             |
 | Profile/portfolio current state | Pass                      | Synthetic contract metrics include position value, funding-inclusive realized payouts, direction, and lifetime P&L.                       |
@@ -180,7 +199,18 @@ the public launch dataset.
 
 - PERP creation is admin-only and registry-gated.
 - The endpoint validates feed price bounds, oracle-age configuration, finite
-  numeric inputs, topic IDs, and initial backing.
+  numeric inputs, topic IDs, and initial backing. Manifest launch feeds
+  automatically receive their required environment-specific topic in an
+  atomic attachment.
+- Manifest feeds can be created only by the environment's official Manifold
+  account because residual backing returns to the creator at settlement.
+- The admin form defaults to unlisted and exposes a one-click application of
+  the manifest leverage, annual funding cap, sensitivity, oracle-age, and
+  per-side backing recommendation. It visibly reports when the current form
+  differs, fails closed if registry/recommendation loading fails, and blocks
+  the wrong creator account.
+- New contracts freeze `initialPoolLong` and `initialPoolShort`, allowing
+  preflight to audit launch skew after live trading changes the current pools.
 - Trading bans and endpoint authorization apply to opens/increases.
 - Generic bet, add-liquidity, remove-liquidity, loan, rebalance, unresolve, and
   binary-only workflows either reject PERPs or exclude them explicitly.
@@ -339,70 +369,75 @@ backfill application/publication time approximately.
 
 ## Latest DEV evidence
 
-Read-only verification at **2026-07-27 18:34 UTC** found:
+Read-only `--phase=feeds` verification at **2026-07-28 05:55 UTC** found
+**9 failures and 16 warnings**.
 
-- BTC: price about 64,779; pools about M$1,019,458 long /
-  M$304,847 short; feed current with 227 rows in the prior hour.
-- UK carbon: price 143; pools about M$60,144 / M$98,598; latest finalized
-  point about 34 minutes old.
-- Trump approval replacement: price about 38.944; pools about M$5,010 /
-  M$5,000; daily source about 11.6 hours old.
-- OpenRouter share: price about 74.036; pools about M$7,499 / M$5,001;
-  latest ingest about 44 minutes old.
-- Funding double-run check passed: no contract had more than one event in an
-  hour.
-- Real liquidation and ADL rows and their notification rows exist, including
-  a recent UK carbon liquidation and disposable scratch-drill cases.
-- No resolved market retained an open position.
+All migration-dependent checks passed:
 
-The same DEV `--phase=feeds` preflight reported **13 failures and 12 warnings**.
-That run predates the new accounting-history checks, which will also fail until
-the latest migration is installed. The recorded failures are expected
-blockers, not ignorable test noise:
+- all four PERP/oracle tables;
+- oracle, one-way-position, participation, idempotency, and accounting-history
+  indexes;
+- `source_ts`, `published_at`, and `applied_ts`;
+- append-only oracle and PERP-event triggers;
+- the active-PERP related-market function;
+- all four DEV discovery-topic slugs;
+- feed freshness and chart-history requirements;
+- OpenRouter provider `source_ts` and its contract cache after the 05:50
+  scheduler write;
+- scheduler heartbeats, cash backing, solvency, funding double-run protection,
+  and resolved-position cleanup.
 
-1. missing participation index;
-2. missing open idempotency index;
-3. missing close idempotency index;
-4. missing oracle `source_ts` column;
-5. missing immutable-oracle trigger;
-6. missing PERP related-market embedding function;
-7. feed inspection consequently failing on absent `source_ts`;
-8. unresolved excluded ECI market;
-9. missing funding period on the legacy ECI market;
-10. invalid legacy ECI funding cadence;
-11. OpenRouter contract attribution trailing because source metadata is not
-    deployed;
-12. missing funding period on legacy UK carbon; and
-13. missing funding period on legacy BTC.
+The remaining failures are operational/data gates, not another migration:
 
-Warnings include 100x legacy leverage, aggressive funding caps, insufficient
-OpenRouter initial backing, BTC oracle tolerance, oversized legacy open
-interest, and the fact that database checks cannot prove external GCP alert
-delivery.
+1. The unresolved ECI prototype is excluded, lacks the frozen funding period,
+   and contains legacy events closer than its correct daily cadence.
+2. The legacy BTC prototype lacks `fundingPeriodMs`.
+3. The legacy UK-carbon prototype lacks `fundingPeriodMs` and its Science
+   topic.
+4. The Trump prototype lacks its Politics topic and embedding.
+5. The OpenRouter prototype lacks its embedding.
 
-This is useful DEV history, but it is not a launch pass. Apply migrations and
-create clean unlisted markets from the manifest rather than normalizing the
-legacy prototypes into the production dataset.
+The discovery backfill dry-run found exactly two missing topic states (UK
+Science and Trump Politics, absent from both the join and cached slug) and two
+missing embeddings (Trump and OpenRouter).
+It is deliberately dry-run-only for now: if these prototypes will be settled
+and recreated, mutating their topics first only changes ranking timestamps and
+does work that will be discarded.
+
+Warnings are all expected prototype/risk review items: legacy 100× leverage,
+aggressive funding caps and sensitivity, BTC's loose oracle tolerance,
+OpenRouter backing below the manifest recommendation, legacy rows that cannot
+prove their original per-side backing, oversized ECI short interest, and the
+fact that database checks cannot prove external alert delivery.
+
+The existing DEV prototypes contain open positions (except BTC), so settling
+or retiring them is balance-changing and is not part of this read-only audit.
+The clean path is to review those balances, settle/retire the legacy set, then
+create exactly four new unlisted markets from the manifest. No additional SQL
+migration is currently required on DEV.
 
 ## Required release sequence
 
-1. Keep PERPs disabled and pause the PERP scheduler jobs during the schema
-   change.
-2. Apply every PERP migration, including participation/idempotency indexes,
-   immutable accounting/publication timestamps, and related-market
-   embeddings. "Apply" means execute the committed SQL files against the
-   target Supabase/Postgres database; merging or deploying application code
-   does not alter an existing database schema.
-3. Deploy API and scheduler from the same audited commit, then resume the
-   scheduler. The new code requires the added columns, while the old code
-   tolerates them, so the migration must land first.
-4. Provision the required feed secrets and run the four launch backfills.
-5. Run `perp-launch-preflight.ts --phase=feeds`; require zero failures.
-6. Verify presence and absence alert policies and deliver a real test incident
+1. On DEV, do not rerun the six installed migrations. Schema, feed history,
+   scheduler health, and OpenRouter provider attribution now pass.
+2. Review and settle/retire the five legacy prototypes, including ECI, before
+   treating DEV as the launch dataset. This step changes user/creator balances
+   and therefore needs an explicit human review of the settlement plan.
+3. Deploy API, scheduler, and web from the same audited commit. API deployment
+   is required for the Explore activity/privacy/cache changes and cleaned ADL
+   history; web deployment is required before previewing announcement embeds.
+4. Provision required feed secrets and run the four oracle-history backfills
+   if the clean replacement markets need them. Never include ECI.
+5. Create exactly the four manifest markets through the admin form as
+   unlisted. Apply the displayed launch recommendation; the API automatically
+   attaches the required environment-specific topic.
+6. Run `backfill-perp-launch-discovery.ts` without `--apply`; it must report
+   zero missing topics and embeddings for clean markets. Use `--apply` only to
+   repair a market that will be retained.
+7. Run `perp-launch-preflight.ts --phase=feeds`, then `--phase=unlisted`;
+   require zero failures.
+8. Verify presence and absence alert policies and deliver a real test incident
    to the on-call channel.
-7. Create exactly the four manifest markets as unlisted with conservative
-   settings and topic tags. Do not create ECI.
-8. Run `--phase=unlisted`.
 9. On every market, test open, add, flip, full close, duplicate
    idempotency key, stale-feed behavior, and insufficient capacity.
 10. Force one liquidation and one ADL on a disposable DEV market and reconcile
@@ -413,15 +448,18 @@ legacy prototypes into the production dataset.
     flips, liquidation, ADL, and settlement.
 13. Run the league updater and confirm `mana_earned_breakdown` has no
     `perp_profit` entry and is unchanged by PERP price moves or settlements.
-14. In a connected signed-in browser, verify desktop/mobile market pages,
-    Browse, Explore, topic/related results, `%[market]`, external embeds,
-    dashboard/profile, dark mode, keyboard/tap behavior, and stale UI.
+14. Repeat the signed-in browser pass against the clean unlisted markets and
+    deployed DEV API/web, including the final announcement draft.
 15. Leave feed and funding schedulers running for at least one hour, rerun
     preflight, and inspect locks, write volume, and CPU.
 16. Record the owner and exact caps for the accepted oracle-latency risk, and
     use the acknowledgment flag.
 17. Publish one market at a time, starting with BTC. Rerun public preflight and
     inspect rank/impressions/traders before publishing the next.
+
+For PROD, schema-first still applies: install the complete migration set before
+deploying writers, then follow the same feeds → unlisted → public phases. A
+code deploy alone never installs database objects.
 
 Rollback is operationally simple: set `PERPS_ENABLED = false`, deploy, and
 unlist affected markets. This blocks new/increasing exposure while preserving
@@ -430,21 +468,24 @@ point to clear a warning.
 
 ## Verification performed at the audited HEAD
 
-- `common`: 21/21 test suites, 328/328 tests.
-- TypeScript project builds: `common`, `backend/shared`, `backend/api`,
-  `backend/scheduler`, and `web`.
+- `common`: 23/23 test suites, 336/336 tests.
+- TypeScript builds: `common` and `backend/shared`; no-emit typechecks:
+  `backend/api`, `backend/scheduler`, and `web`.
+- Targeted API/shared/scripts/common/web ESLint and scoped Prettier checks.
 - Changed `mani` files pass their filtered strict TypeScript check; the full
   native package still has unrelated pre-existing type failures.
 - Live DEV read-only state verification and feed-phase preflight.
-- Live local SSR smoke for full and external-embed BTC and OpenRouter routes.
+- Signed-in local Chrome smoke for full and embedded PERP routes, desktop and
+  mobile layouts, Browse/Explore/search, `%` autocomplete, pasted-link mention
+  conversion, tabs, chart endpoint/funding-mark accessibility, and horizontal
+  overflow.
 - Formatting and `git diff --check` on each implementation commit.
 
-Not performed: a connected, signed-in interactive browser pass. The browser
-tools are supported by Codex, but this Windows installation exposed neither a
-usable built-in browser nor the Chrome extension/native host bridge. Install
-and enable the Chrome plugin/extension (or open the built-in Browser plugin) in
-the ChatGPT desktop app, start a fresh Codex chat, and then run the responsive
-and editor-interaction pass. This audit does not claim that visual approval.
+Not performed: balance-changing open/add/flip/close/settlement drills on the
+legacy public prototypes, or a final announcement preview against the newly
+deployed DEV web host. The browser pass used `localhost:3000` with the current
+deployed DEV API; an API redeploy is therefore still needed before visually
+confirming the new Explore activity rows and aggregate-ADL filtering.
 
 ## What was added during this review
 
@@ -459,6 +500,9 @@ includes:
   propagation, and funding-inclusive realized P&L;
 - participation analytics, notification/ADL clarity, source attribution,
   launch feed validation, ECI creation exclusion, and native-client safety;
+- typed user PERP activity in Explore, current-state privacy filtering for
+  feeds/related markets, automatic launch topics, an idempotent discovery
+  backfill, embed accessibility hardening, and safer unlisted admin defaults;
 - reconciled day/week/month PERP accounting with immutable
   application/publication history and race-safe metric ownership; and
 - the executable four-market launch manifest, preflight, and operational
@@ -493,8 +537,8 @@ For this branch:
    noisy. Do not create several independent branches that redesign the same
    engine concurrently.
 
-The best next session is operational: apply migrations in a disposable
-environment and drive the preflight to zero. After that, use a short connected
-browser-QA session for the unlisted-to-public gate. Treat endogenous
-price-discovery as a separately specified v2 mechanism only if launch
-telemetry shows the accepted oracle-latency subsidy is unacceptable.
+The best next session is operational: review retirement of the legacy DEV
+prototypes, deploy the final branch, create the clean unlisted four-market set,
+and drive the preflight to zero. Treat endogenous price discovery as a
+separately specified v2 mechanism only if launch telemetry shows the accepted
+oracle-latency subsidy is unacceptable.

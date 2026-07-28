@@ -60,7 +60,13 @@ from the ManiPerp paper; see `PerpContract.data` for parameter knobs.
 Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
 `common/src/api/schema.ts`:
 
-- `POST /create-perp` (admin) — creates a new perp market.
+- `POST /create-perp` (admin) — creates a new perp market. Launch-manifest
+  feeds automatically receive their environment-specific required topic; the
+  admin form defaults to unlisted and can apply the full reviewed launch
+  recommendation in one click. Launch feeds require the environment's official
+  Manifold creator account because residual backing returns to the creator.
+  New markets preserve their per-side initial backing for later preflight
+  auditing.
 - `POST /place-perp-trade` — opens or adds to a position.
 - `POST /close-perp-position` — closes a position.
 - `GET /get-perp-positions` — reads open positions for a contract (optionally
