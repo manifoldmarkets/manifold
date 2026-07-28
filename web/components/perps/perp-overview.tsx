@@ -21,101 +21,18 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { api } from 'web/lib/api/api'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
 import { PerpOracleAttribution } from './perp-oracle-attribution'
 import { PerpPositionPanel } from './perp-position-panel'
-import { scheduleFreshBurst, usePerpPositions } from './use-perp-positions'
+import { useLivePerpContract } from './use-live-perp-contract'
+import { usePerpPositions } from './use-perp-positions'
 
 // Poll cadence for live market data. Matches the scheduler's fast tick;
 // there are no websocket broadcasts for oracle updates (the engine runs in
 // the scheduler process, not the API's socket server), so the page polls.
 const POLL_MS = 15_000
 const MAX_TIMEOUT_MS = 2_147_483_647
-
-// Overlay live perp fields (oracle price, pools, funding, volume) onto the
-// SSR contract so every number on the page tracks the feed without a reload.
-// Returns a refresh() that re-polls immediately and bumps refreshKey — call
-// it after any trade/close so the user's own action is reflected instantly.
-// The post-trade poll bypasses the browser cache: market/:id is served with
-// max-age + stale-while-revalidate, so a cached response can legally carry
-// the pre-trade pools for several seconds. Never rewind the price: a cached
-// response must not beat a newer snapshot.
-// Exported for the perp tabs (holders/trades), which mount outside this
-// component but want the same liveness.
-export const useLivePerpContract = (ssrContract: PerpContract) => {
-  const [live, setLive] = useState<Partial<PerpContract> | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
-    const poll = (fresh: boolean) =>
-      api(
-        'market/:id',
-        { id: ssrContract.id, lite: true },
-        fresh ? { cache: 'no-store' } : undefined
-      )
-        .then((m) => {
-          if (cancelled || m.outcomeType !== 'PERP' || m.oraclePrice == null)
-            return
-          const resolution =
-            m.resolution === 'MKT' || m.resolution === 'CANCEL'
-              ? m.resolution
-              : undefined
-          setLive((prev) =>
-            ((ssrContract.isResolved || prev?.isResolved) && !m.isResolved) ||
-            (m.oraclePriceTime ?? 0) < (prev?.oraclePriceTime ?? 0)
-              ? prev
-              : {
-                  oraclePrice: m.oraclePrice,
-                  oraclePriceTime: m.oraclePriceTime,
-                  oracleSourceTime: m.oracleSourceTime,
-                  poolLong: m.poolLong,
-                  poolShort: m.poolShort,
-                  fundingRate: m.fundingRate,
-                  volume: m.volume,
-                  uniqueBettorCount: m.uniqueBettorCount,
-                  isResolved: m.isResolved,
-                  resolution,
-                  resolutionTime: m.resolutionTime,
-                  resolverId: m.resolverId,
-                  resolvedOraclePrice: m.resolvedOraclePrice,
-                  lastUpdatedTime: m.lastUpdatedTime,
-                  // Keeps the next-funding countdown honest after an
-                  // on-page funding event. Missing on older API builds.
-                  ...(m.lastFundingTime != null
-                    ? { lastFundingTime: m.lastFundingTime }
-                    : {}),
-                }
-          )
-        })
-        .catch(() => {})
-    // Post-trade: burst past the edge cache's stale window (see
-    // scheduleFreshBurst) so pools/funding reflect the trade promptly. The
-    // never-rewind guard above drops any stale copy that arrives late.
-    const cancelBurst =
-      refreshKey > 0
-        ? scheduleFreshBurst(() => poll(true))
-        : (poll(false), undefined)
-    const id = setInterval(() => poll(false), POLL_MS)
-    return () => {
-      cancelled = true
-      cancelBurst?.()
-      clearInterval(id)
-    }
-    // refreshKey in deps: refresh() restarts the interval with an immediate
-    // cache-bypassing poll.
-  }, [ssrContract.id, refreshKey])
-
-  const refresh = () => setRefreshKey((k) => k + 1)
-
-  const contract =
-    live && (live.oraclePriceTime ?? 0) >= (ssrContract.oraclePriceTime ?? 0)
-      ? { ...ssrContract, ...live }
-      : ssrContract
-  return { contract, refresh, refreshKey }
-}
 
 // Exchange-style tick flash: returns 'up' | 'down' for ~700ms after the
 // value changes, so the price header can pulse green/red like a real book.

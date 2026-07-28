@@ -12,7 +12,8 @@ import clsx from 'clsx'
 export function embedContractCode(contract: Contract) {
   const title = escapeHtmlAttribute(contract.question)
   const src = `https://${DOMAIN}/embed${contractPath(contract)}`
-  return `<iframe src="${src}" title="${title}" frameborder="0" style="position: relative; left:50%; transform: translateX(-50%); width:90%; height:18rem; max-width: 35rem;"></iframe>`
+  const height = contract.outcomeType === 'PERP' ? '20rem' : '18rem'
+  return `<iframe src="${src}" title="${title}" frameborder="0" style="position: relative; left:50%; transform: translateX(-50%); width:90%; height:${height}; max-width: 35rem;"></iframe>`
 }
 
 export function ShareEmbedButton(props: {

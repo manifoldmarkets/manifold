@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 // Source credit for the oracle feed, rendered as a chart footnote.
@@ -11,8 +12,9 @@ export const PerpOracleAttribution = (props: {
   feedId: string | undefined
   /** Provider-declared source timestamp, not Manifold's observation time. */
   asOfTime?: number | null
+  className?: string
 }) => {
-  const { feedId, asOfTime } = props
+  const { feedId, asOfTime, className } = props
   const attribution = getOracleAttribution(feedId)
   // An unregistered or brand-new feed renders nothing rather than "Source:
   // undefined".
@@ -25,7 +27,7 @@ export const PerpOracleAttribution = (props: {
       : null
 
   return (
-    <div className="text-ink-400 text-xs">
+    <div className={clsx('text-ink-400 text-xs', className)}>
       Source:{' '}
       {url ? (
         <a

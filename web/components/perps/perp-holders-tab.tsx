@@ -12,7 +12,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
-import { useLivePerpContract } from './perp-overview'
+import { useLivePerpContract } from './use-live-perp-contract'
 import { PerpPositionRow, usePerpPositions } from './use-perp-positions'
 
 type Holder = PerpPositionRow
