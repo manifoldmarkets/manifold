@@ -4,6 +4,7 @@
   "workspaces": [
     "common",
     "backend/api",
+    "backend/data-license",
     "backend/discord-bot",
     "backend/scheduler",
     "backend/scripts",
