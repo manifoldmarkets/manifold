@@ -367,23 +367,41 @@ export const updateActivityStats = async (
   // semantics). Idempotent insert so the rolling bufferDays window can
   // safely re-emit old days.
   log('upsert manifold-dau oracle points')
-  await insertOraclePrices(
-    pg,
-    MANIFOLD_DAU_FEED_ID,
-    dailyViewers.map((viewers) => ({
-      ts: dayjs.tz(viewers.day, 'America/Los_Angeles').startOf('day').valueOf(),
-      price: viewers.viewer_count,
-    }))
-  )
-  const latestDau = dailyViewers[dailyViewers.length - 1]
-  if (latestDau) {
-    await applyOraclePointToLivePerps(pg, MANIFOLD_DAU_FEED_ID, {
-      ts: dayjs
-        .tz(latestDau.day, 'America/Los_Angeles')
-        .startOf('day')
-        .valueOf(),
-      price: latestDau.viewer_count,
-    })
+  // Best-effort: this mirror is an internal metric series, not part of the
+  // stats pipeline's contract. oracle_prices is append-only and the insert
+  // is on-conflict-do-nothing, so a re-run that recomputes a different
+  // viewer count for an already-stored day makes applyOraclePointToLivePerps
+  // throw on the mismatch — deterministically, for the rest of the day.
+  // Unwrapped, that aborted the run before every remaining daily_stats write
+  // (bets, DAU/WAU/MAU, retention, new-user), none of which have anything to
+  // do with perps.
+  try {
+    await insertOraclePrices(
+      pg,
+      MANIFOLD_DAU_FEED_ID,
+      dailyViewers.map((viewers) => ({
+        ts: dayjs
+          .tz(viewers.day, 'America/Los_Angeles')
+          .startOf('day')
+          .valueOf(),
+        price: viewers.viewer_count,
+      }))
+    )
+    const latestDau = dailyViewers[dailyViewers.length - 1]
+    if (latestDau) {
+      await applyOraclePointToLivePerps(pg, MANIFOLD_DAU_FEED_ID, {
+        ts: dayjs
+          .tz(latestDau.day, 'America/Los_Angeles')
+          .startOf('day')
+          .valueOf(),
+        price: latestDau.viewer_count,
+      })
+    }
+  } catch (error) {
+    log.error(
+      '[update-stats] manifold-dau oracle mirror failed; continuing with daily stats',
+      { error }
+    )
   }
 
   log('upsert bets counts and totals')

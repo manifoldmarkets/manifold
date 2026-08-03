@@ -200,11 +200,17 @@ export const projectionHorizonWithFunding = (
 
 /**
  * Carry-neutral path: where the price must be at time t for a 1× long opened
- * now to break even on funding alone — P·(1 + f·periods), f signed (+ve =
- * longs pay, so the hurdle rises). Above the line, longs net-win after carry;
- * below it, shorts do. Funding is charged on margin, so a leveraged position's
- * personal hurdle is shallower (see personalBreakEvenPath) — this is the
- * crowd-level hurdle / sentiment line, not a price forecast.
+ * now to break even on funding alone. Above the line, longs net-win after
+ * carry; below it, shorts do. Funding is charged on margin, so a leveraged
+ * position's personal hurdle is shallower (see personalBreakEvenPath) — this
+ * is the crowd-level hurdle / sentiment line, not a price forecast.
+ *
+ * Compounds: applyFunding multiplies the payer's size and cost basis by
+ * (1 − f) every period, so the hurdle is P·(1 − f)^-n, not the first-order
+ * P·(1 + f·n). The two agree only while f·n << 1 — at the 60-day horizon cap
+ * with hourly funding the linear form understated the real hurdle by ~40%,
+ * and it disagreed with personalBreakEvenPath, which is drawn on the same
+ * chart from the same rate and already compounds.
  */
 export const carryNeutralPath = (
   price: number,
@@ -216,9 +222,14 @@ export const carryNeutralPath = (
   if (!Number.isFinite(price) || price <= 0) return []
   if (!Number.isFinite(fundingRatePerPeriod)) return []
   if (!Number.isFinite(horizonMs) || horizonMs <= 0) return []
+  if (!Number.isFinite(fundingPeriodMs) || fundingPeriodMs <= 0) return []
+  // A rate at or beyond 100% per period would make the compounded hurdle
+  // infinite (or flip sign); the registry caps maxFundingRate below 1, so
+  // this is a guard against corrupt config rather than an expected path.
+  if (fundingRatePerPeriod >= 1 || fundingRatePerPeriod <= -1) return []
   const periods = horizonMs / fundingPeriodMs
-  const end = price * (1 + fundingRatePerPeriod * periods)
-  if (!Number.isFinite(end)) return []
+  const end = price * Math.pow(1 - fundingRatePerPeriod, -periods)
+  if (!Number.isFinite(end) || end <= 0) return []
   return [
     { ts: now, value: price },
     { ts: now + horizonMs, value: end },

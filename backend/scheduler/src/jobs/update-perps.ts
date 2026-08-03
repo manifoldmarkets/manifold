@@ -108,7 +108,20 @@ const updateOnePerp = async (contract: PerpContract) => {
       latest.sourceTs
     )
     if (oracleResult) {
-      await notifyPerpOracleResult(pg, contract, latest.price, oracleResult)
+      // Best-effort, like apply-oracle-point does. This only touches the DB
+      // when liquidations or ADL occurred, i.e. exactly the runs whose
+      // funding we least want to skip: a throw here used to fall through to
+      // the per-contract catch below, and because funding is charged per
+      // event rather than accrued, the imbalanced side then kept a whole
+      // period of carry it owed.
+      try {
+        await notifyPerpOracleResult(pg, contract, latest.price, oracleResult)
+      } catch (error) {
+        log.error(
+          `[update-perps] failed to notify oracle result for ${contract.id}; continuing to funding`,
+          { error }
+        )
+      }
     }
 
     // Cheap prefilter; the authoritative gate is inside runFunding. Both

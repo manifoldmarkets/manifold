@@ -157,9 +157,32 @@ describe('carryNeutralPath', () => {
     const horizon = 10 * FUNDING_PERIOD_MS
     const up = carryNeutralPath(100, 0.001, NOW, horizon)
     expect(up).toHaveLength(2)
-    expect(up[1].value).toBeCloseTo(100 * (1 + 0.001 * 10))
+    expect(up[1].value).toBeCloseTo(100 * Math.pow(1 - 0.001, -10), 8)
+    expect(up[1].value).toBeGreaterThan(100)
     const down = carryNeutralPath(100, -0.001, NOW, horizon)
-    expect(down[1].value).toBeCloseTo(100 * (1 - 0.001 * 10))
+    expect(down[1].value).toBeCloseTo(100 * Math.pow(1 + 0.001, -10), 8)
+    expect(down[1].value).toBeLessThan(100)
+  })
+
+  it('compounds, matching repeated funding application', () => {
+    // applyFunding scales the payer by (1 - f) each period, so the hurdle is
+    // the price that undoes n such scalings. The old linear form P(1 + f·n)
+    // drifted far below this over long horizons and disagreed with
+    // personalBreakEvenPath, which is drawn on the same chart and compounds.
+    const f = 0.01
+    const n = 200
+    let compounded = 100
+    for (let i = 0; i < n; i++) compounded /= 1 - f
+
+    const path = carryNeutralPath(100, f, NOW, n * FUNDING_PERIOD_MS)
+    expect(path[1].value).toBeCloseTo(compounded, 6)
+    // And is materially above the first-order approximation it replaced.
+    expect(path[1].value).toBeGreaterThan(100 * (1 + f * n))
+  })
+
+  it('returns empty on a funding rate at or beyond 100% per period', () => {
+    expect(carryNeutralPath(100, 1, NOW, FUNDING_PERIOD_MS)).toEqual([])
+    expect(carryNeutralPath(100, -1, NOW, FUNDING_PERIOD_MS)).toEqual([])
   })
 
   it('is flat at zero funding and empty on invalid input', () => {
@@ -176,7 +199,7 @@ describe('carryNeutralPath', () => {
     const horizon = 10 * DAY
     const daily = carryNeutralPath(100, 0.001, NOW, horizon, DAY)
     // Ten days at one 0.1% event per day = ten periods, not 240.
-    expect(daily[1].value).toBeCloseTo(100 * (1 + 0.001 * 10))
+    expect(daily[1].value).toBeCloseTo(100 * Math.pow(1 - 0.001, -10), 8)
   })
 })
 

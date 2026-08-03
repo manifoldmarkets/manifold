@@ -207,14 +207,29 @@ if (require.main === module)
     ] as const
     await inspect('database schema', async () => {
       for (const [label, relation] of schemaChecks) {
-        const row = await pg.one<{ present: boolean }>(
-          `select to_regclass($1) is not null as present`,
+        // to_regclass resolves any pg_class entry, including an index left
+        // INVALID by a cancelled CREATE INDEX CONCURRENTLY. Because
+        // 2026072802 uses `concurrently if not exists`, re-running the
+        // migration after a failure is a silent no-op, so existence alone
+        // would report PASS while the access path sequential-scans.
+        const row = await pg.one<{ present: boolean; usable: boolean }>(
+          `select to_regclass($1) is not null as present,
+                  coalesce(
+                    (select i.indisvalid and i.indisready
+                     from pg_index i
+                     where i.indexrelid = to_regclass($1)),
+                    true
+                  ) as usable`,
           [relation]
         )
         report(
-          row.present ? 'PASS' : 'FAIL',
+          row.present && row.usable ? 'PASS' : 'FAIL',
           label,
-          row.present ? relation : `${relation} is missing`
+          !row.present
+            ? `${relation} is missing`
+            : !row.usable
+            ? `${relation} exists but is INVALID — drop it and rebuild the concurrent index`
+            : relation
         )
       }
       const sourceTimestampColumn = await pg.one<{ present: boolean }>(
@@ -265,14 +280,22 @@ if (require.main === module)
           ? 'public.oracle_prices.published_at is installed'
           : 'PERP accounting history migration is missing'
       )
+      // tgenabled <> 'D' matters: disabling the trigger is the only way to
+      // repair a botched append-only backfill, and a disabled trigger stays
+      // in pg_trigger. Without this the gate reports PASS while price
+      // history is silently mutable — precisely the disable-and-forget state
+      // it exists to catch. UPDATE coverage is asserted explicitly too, so a
+      // drifted delete-only trigger cannot pass either.
       const trigger = await pg.one<{ present: boolean }>(
         `select exists (
            select 1
            from pg_trigger t
            where t.tgname = 'oracle_prices_no_update'
              and not t.tgisinternal
+             and t.tgenabled <> 'D'
              and pg_get_functiondef(t.tgfoid) like '%source_ts%'
              and pg_get_functiondef(t.tgfoid) like '%published_at%'
+             and pg_get_triggerdef(t.oid) like '%UPDATE%'
              and pg_get_triggerdef(t.oid) like '%DELETE%'
          ) as present`
       )
@@ -280,8 +303,8 @@ if (require.main === module)
         trigger.present ? 'PASS' : 'FAIL',
         'immutable oracle trigger',
         trigger.present
-          ? 'oracle_prices_no_update protects price, source, and publication metadata'
-          : 'append-only oracle accounting migration is missing'
+          ? 'oracle_prices_no_update is enabled and protects price, source, and publication metadata'
+          : 'append-only oracle trigger is missing, disabled, or does not cover both UPDATE and DELETE'
       )
       const eventTrigger = await pg.one<{ present: boolean }>(
         `select exists (
@@ -289,6 +312,7 @@ if (require.main === module)
            from pg_trigger t
            where t.tgname = 'contract_perp_events_immutable'
              and not t.tgisinternal
+             and t.tgenabled <> 'D'
              and pg_get_triggerdef(t.oid) like '%UPDATE%'
              and pg_get_triggerdef(t.oid) like '%DELETE%'
          ) as present`
@@ -297,8 +321,8 @@ if (require.main === module)
         eventTrigger.present ? 'PASS' : 'FAIL',
         'immutable PERP event trigger',
         eventTrigger.present
-          ? 'contract_perp_events rejects updates and deletes'
-          : 'append-only PERP accounting migration is missing'
+          ? 'contract_perp_events is enabled and rejects updates and deletes'
+          : 'append-only PERP event trigger is missing, disabled, or does not cover both UPDATE and DELETE'
       )
       const relatedPerps = await pg.one<{ present: boolean }>(
         `select coalesce(
