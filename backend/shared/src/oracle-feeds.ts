@@ -99,6 +99,14 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'daily',
     minPrice: 10,
     maxPrice: 90,
+    // A 14-day rolling mean of many polls moves 1-3% relative day over day,
+    // so 10% is far above anything legitimate while still catching a single
+    // corrupt poll dragging the unweighted average. The [10,90] bounds alone
+    // are too coarse: one bad row can shift the mean ~20 points and stay
+    // inside them, and the resulting step is applied to live positions as a
+    // real price (liquidations and ADL are irreversible). Unlike BTC, this
+    // feed has no cross-source consensus check to fall back on.
+    maxJumpFrac: 0.1,
     staleAfterMs: 26 * HOUR_MS,
     updatePeriodMs: DAY_MS,
   },

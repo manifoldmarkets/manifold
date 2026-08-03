@@ -51,6 +51,12 @@ export const fetchTrumpApprovalPolls = async (
       // is polite.
       'user-agent': 'Manifold/1.0 (+https://manifold.markets)',
     },
+    // Without this a slow-trickling response never times out (undici's body
+    // timeout resets per chunk), the daily job never finishes, and croner's
+    // `protect` then silently skips subsequent firings with only a warning —
+    // below the ERROR severity that alerting pages on. Every sibling adapter
+    // sets a timeout; this one did not.
+    signal: AbortSignal.timeout(30_000),
   })
   if (!response.ok) {
     throw new Error(
@@ -72,6 +78,18 @@ const getApprovePct = (poll: VoteHubPoll): number | null => {
     (a) => a.choice.toLowerCase() === 'approve'
   )
   if (!approve || typeof approve.pct !== 'number') return null
+  // The response is cast, not schema-validated, so a provider data-entry
+  // error arrives as a plain number. Drop implausible percentages rather
+  // than letting one bad row drag the unweighted mean: a single pct of 460
+  // against ~20 polls near 45 moves the average by ~20 points, which lands
+  // inside the feed's [10,90] sanity bounds and would be applied to live
+  // positions as a real price.
+  if (!Number.isFinite(approve.pct) || approve.pct < 0 || approve.pct > 100) {
+    log.error(
+      `[trump-approval] dropping poll ${poll.id} with out-of-range approve pct ${approve.pct}`
+    )
+    return null
+  }
   return approve.pct
 }
 

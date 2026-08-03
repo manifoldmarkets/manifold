@@ -630,7 +630,10 @@ export const createPerpSchema = z.object({
   descriptionHtml: z.string().optional(),
   descriptionMarkdown: z.string().optional(),
   descriptionJson: z.string().optional(),
-  visibility: z.enum(VISIBILITIES).default('public').optional(),
+  // No .default() here: `.optional()` short-circuits undefined before a
+  // default is applied, so a default on this chain never runs and only
+  // misleads. The handler owns the default, and it is 'unlisted'.
+  visibility: z.enum(VISIBILITIES).optional(),
   groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   oracleFeedId: z.string().min(1).max(200),
   maxLeverage: z.number().gt(1).lte(100),

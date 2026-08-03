@@ -480,8 +480,8 @@ export const openOrAddPosition = async (
         'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
       )
     }
-    if (!Number.isFinite(trader.balance) || trader.balance < mana)
-      throw new APIError(403, `Insufficient balance: needed ${mana}`)
+    if (!Number.isFinite(trader.balance))
+      throw new APIError(500, 'Trader balance is not a finite number')
 
     if (leverage > contract.maxLeverage)
       throw new APIError(
@@ -557,6 +557,23 @@ export const openOrAddPosition = async (
         oraclePrice: price,
       })
     }
+
+    // Affordability is checked HERE, not before the flip close, because a
+    // flip's own close payout funds the new margin: the credit is applied
+    // ahead of the debit further down for exactly that reason. Checking
+    // against the raw balance up front made that ordering unreachable and
+    // rejected the one-call flip for the users it was designed for (a
+    // trader whose mana is all in the position they are flipping out of).
+    // The user row is locked FOR UPDATE above, so the balance cannot move
+    // between here and the debit.
+    const spendableBalance = trader.balance + closePayout
+    if (spendableBalance < mana)
+      throw new APIError(
+        403,
+        `Insufficient balance: needed ${mana}, have ${spendableBalance.toFixed(
+          2
+        )}${closePayout > 0 ? ' (including the flipped position)' : ''}`
+      )
 
     const open = openPositionMath(
       workingState,
@@ -796,6 +813,55 @@ export const closePosition = async (
     }
 
     const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+    // A close moves M$ out of contract escrow, so it is gated exactly like
+    // an ordinary share SELL (see fetchContractBetDataAndValidate). In
+    // particular the DB-level halt applies: toggle-system-status is the
+    // instant incident switch, whereas PERP_TRADING_MODE=halted needs every
+    // API instance rolled. Without this, a halt stopped opens and flips
+    // (which route through openOrAddPosition) but left plain closes able to
+    // drain escrow at a cached — possibly poisoned — oracle price.
+    //
+    // Scheduler-driven exits are deliberately NOT gated here: liquidation,
+    // ADL and resolution call the internal paths directly, so risk
+    // processing continues during a halt and positions still settle.
+    const systemStatus = await pgTrans.oneOrNone<{ status: boolean }>(
+      `select status from system_trading_status where token = $1`,
+      [contract.token]
+    )
+    if (!systemStatus?.status) {
+      throw new APIError(
+        403,
+        `Trading with ${contract.token} is currently disabled.`
+      )
+    }
+
+    const closer = await pgTrans.oneOrNone<{
+      id: string
+      data: { userDeleted?: boolean } | null
+    }>(`select id, data from users where id = $1`, [userId])
+    if (!closer) throw new APIError(404, `User ${userId} not found`)
+    if (closer.data?.userDeleted || BANNED_TRADING_USER_IDS.includes(closer.id))
+      throw new APIError(403, 'You are banned or deleted.')
+
+    const closerBans = await pgTrans.manyOrNone<UserBan>(
+      `select *
+       from user_bans
+       where user_id = $1
+         and ended_at is null
+         and (end_time is null or end_time > now())`,
+      [userId]
+    )
+    if (isUserBanned(closerBans, 'trading')) {
+      const message = getUserBanMessage(closerBans, 'trading')
+      throw new APIError(
+        403,
+        message
+          ? `You are banned from trading. Reason: ${message}`
+          : 'You are banned from trading'
+      )
+    }
+
     const position = state.positions.find(
       (p) => p.userId === userId && p.direction === direction && p.size > 0
     )

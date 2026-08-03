@@ -58,7 +58,14 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     descriptionHtml,
     descriptionMarkdown,
     descriptionJson,
-    visibility = 'public',
+    // Unlisted by default, deliberately the opposite of create-market. Every
+    // PERP rollout step is unlisted-first (the preflight's `unlisted` phase
+    // requires it, and the runbook creates all four that way), and a public
+    // contract is broadcast on `global/new-contract` at creation — which
+    // cannot be recalled by unlisting afterwards. Making `public` the
+    // explicit choice means a scripted creation that omits the field fails
+    // safe instead of announcing the market site-wide.
+    visibility = 'unlisted',
     groupIds,
     oracleFeedId,
     maxLeverage,

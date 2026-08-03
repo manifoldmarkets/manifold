@@ -14,6 +14,7 @@ import {
   getPerpOpenInterestCapacity,
   isPerpOpenInterestWithinLimit,
   liquidationPrice as computeLiquidationPrice,
+  mergedEntryPrice,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
 } from 'common/perps/amm'
 import {
@@ -71,10 +72,11 @@ export const PerpBetPanel = (props: {
     idempotencyKey: string
   } | null>(null)
 
-  const openDirection = useMemo(() => {
+  const myPosition = useMemo(() => {
     if (!user || !positions) return null
-    return positions.find((p) => p.userId === user.id)?.direction ?? null
+    return positions.find((p) => p.userId === user.id) ?? null
   }, [positions, user?.id])
+  const openDirection = myPosition?.direction ?? null
 
   // Preselect the held side, so "add to position" is the default action when
   // one exists (one-way mode: opening the opposite side is a flip).
@@ -90,10 +92,46 @@ export const PerpBetPanel = (props: {
 
   const marginAmount = margin ?? 0
   const notional = marginAmount * leverage
-  const liqPrice = useMemo(
-    () => computeLiquidationPrice(direction, price, leverage),
-    [direction, price, leverage]
-  )
+
+  // When adding to a held position the engine merges the tranches, so entry
+  // price, leverage and liquidation price all change. Preview the RESULTING
+  // position, not a hypothetical standalone one — the standalone figures can
+  // put the liquidation price much further away than it really ends up, and
+  // the user is confirming against exactly that number.
+  const isAddPreview =
+    !!myPosition && myPosition.direction === direction && myPosition.size > 0
+  const preview = useMemo(() => {
+    if (!isAddPreview || !myPosition || notional <= 0)
+      return {
+        entryPrice: price,
+        leverage,
+        liqPrice: computeLiquidationPrice(direction, price, leverage),
+      }
+    const mergedSize = myPosition.size + notional
+    const mergedCostBasis = myPosition.costBasis + marginAmount
+    const mergedEntry = mergedEntryPrice(
+      myPosition.size,
+      myPosition.entryPrice,
+      notional,
+      price
+    )
+    const mergedLeverage =
+      mergedCostBasis > 0 ? mergedSize / mergedCostBasis : leverage
+    return {
+      entryPrice: mergedEntry,
+      leverage: mergedLeverage,
+      liqPrice: computeLiquidationPrice(direction, mergedEntry, mergedLeverage),
+    }
+  }, [
+    isAddPreview,
+    myPosition,
+    notional,
+    marginAmount,
+    price,
+    direction,
+    leverage,
+  ])
+  const liqPrice = preview.liqPrice
   const fundingRate = computeFundingRate(
     contract.poolLong,
     contract.poolShort,
@@ -336,13 +374,14 @@ export const PerpBetPanel = (props: {
         direction={direction}
         notional={notional}
         margin={marginAmount}
-        leverage={leverage}
-        entryPrice={price}
+        leverage={preview.leverage}
+        entryPrice={preview.entryPrice}
         liqPrice={liqPrice}
         priceDecimals={priceDecimals}
         marketFundingRate={fundingRate}
         fundingManaPerPeriod={fundingManaPerPeriod}
         fundingPeriodMs={getFundingPeriodMs(contract)}
+        isAddPreview={isAddPreview}
       />
 
       {capacity && (
@@ -514,6 +553,9 @@ const StatsGrid = (props: {
   // The contract's frozen funding period — labels are per-hour on fast
   // feeds, per-day on daily ones.
   fundingPeriodMs: number
+  // True when adding to a held position: entryPrice/leverage/liqPrice
+  // describe the merged result, so the labels say so.
+  isAddPreview?: boolean
 }) => {
   const {
     direction,
@@ -526,6 +568,7 @@ const StatsGrid = (props: {
     marketFundingRate,
     fundingManaPerPeriod,
     fundingPeriodMs,
+    isAddPreview,
   } = props
 
   const [scenariosOpen, setScenariosOpen] = useState(false)
@@ -559,11 +602,11 @@ const StatsGrid = (props: {
     <Col className="bg-canvas-50 border-ink-200 gap-2 rounded-md border p-3 text-sm">
       <StatRow label="Notional" value={formatMoney(notional)} bold />
       <StatRow
-        label="Entry price"
+        label={isAddPreview ? 'New avg. entry' : 'Entry price'}
         value={formatPrice(entryPrice, priceDecimals)}
       />
       <StatRow
-        label="Liquidation"
+        label={isAddPreview ? 'New liquidation' : 'Liquidation'}
         value={formatPrice(liqPrice, priceDecimals)}
         valueClass="text-scarlet-600"
       />

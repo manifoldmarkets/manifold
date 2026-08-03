@@ -231,12 +231,23 @@ const calculateSnapshot = async (
   tx: SupabaseTransaction,
   targets: { userId: string; contractId: string }[]
 ) => {
+  // statement_timestamp(), NOT transaction_timestamp(). This is the first
+  // statement in the REPEATABLE READ transaction, so it is what acquires the
+  // snapshot, and its statement timestamp is the instant that snapshot was
+  // taken. transaction_timestamp() returns when BEGIN ran — a full round trip
+  // earlier — and events are filtered by `applied_ts < asOf` while positions
+  // are not. An engine transaction committing inside that gap was therefore
+  // visible as a POSITION while its EVENTS were excluded, so a seconds-old
+  // position was reconstructed as if held for the whole period (and a close
+  // landing in the window zeroed the day's realized P&L). Both healed on the
+  // next run, but get-daily-changed-metrics-and-contracts serves this on
+  // demand right after a trade.
   const asOfRow = await tx.one<{ as_of: string }>(
-    'select transaction_timestamp() as as_of'
+    'select statement_timestamp() as as_of'
   )
   const asOf = new Date(asOfRow.as_of).getTime()
   if (!Number.isFinite(asOf)) {
-    throw new Error('Invalid PERP metric transaction timestamp')
+    throw new Error('Invalid PERP metric snapshot timestamp')
   }
 
   const userIds = targets.map((target) => target.userId)
@@ -269,7 +280,9 @@ const calculateSnapshot = async (
     relevantMetrics.map((metric) => {
       const contract = contractsById[metric.contractId]
       const key = metricKey(metric.userId, metric.contractId)
+      const failures: string[] = []
       const calculation = calculatePerpMetricPeriods({
+        failures,
         currentPositions: positionsByMetric[key] ?? [],
         events: eventsByMetric[key] ?? [],
         currentPrice: contract.oraclePrice,
@@ -289,8 +302,16 @@ const calculateSnapshot = async (
         },
       })
       if (!calculation) {
+        // Day/week/month are written together or not at all, so one bad
+        // period suppresses all three and leaves the previous `from` block
+        // in place. Name the period and the reason, otherwise this is an
+        // unactionable nightly error line.
         log.error(
-          `Could not calculate PERP periods for user ${metric.userId}, contract ${metric.contractId}`
+          `Could not calculate PERP periods for user ${
+            metric.userId
+          }, contract ${metric.contractId}${
+            failures.length ? ` — ${failures.join('; ')}` : ''
+          }`
         )
         return undefined
       }

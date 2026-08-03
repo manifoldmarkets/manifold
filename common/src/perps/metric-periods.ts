@@ -349,7 +349,12 @@ export const calculatePerpMetricPeriods = (args: {
   events: PerpEvent[]
   currentPrice: number | undefined
   periods: PerpMetricPeriodCutoffs
+  /** Optional sink for why a period could not be reconstructed. All three
+   * periods are written together or not at all, so without this the caller
+   * can only log that *something* failed for a user/contract pair. */
+  failures?: string[]
 }): PerpMetricPeriodCalculation | undefined => {
+  const recordFailure = (reason: string) => args.failures?.push(reason)
   const firstPosition = args.currentPositions[0]
   const firstEvent = args.events[0]
   const userId = firstPosition?.userId ?? firstEvent?.userId
@@ -377,9 +382,17 @@ export const calculatePerpMetricPeriods = (args: {
   const fromEntries = PERP_METRIC_PERIODS.map((period) => {
     const { cutoff, price } = args.periods[period]
     const previous = reverseToCutoff(args.currentPositions, events, cutoff)
-    if (!previous) return undefined
+    if (!previous) {
+      recordFailure(`${period}: could not replay events back to the cutoff`)
+      return undefined
+    }
     const previousValue = valuePositions(previous.positions, price)
-    if (previousValue === undefined) return undefined
+    if (previousValue === undefined) {
+      recordFailure(
+        `${period}: no usable boundary price (got ${price}) for a position open at the cutoff`
+      )
+      return undefined
+    }
 
     const profit =
       currentValue + previous.payouts - previousValue - previous.marginDeposited
@@ -390,6 +403,9 @@ export const calculatePerpMetricPeriods = (args: {
       !Number.isFinite(invested) ||
       !Number.isFinite(profitPercent)
     ) {
+      recordFailure(
+        `${period}: non-finite result (profit=${profit}, invested=${invested})`
+      )
       return undefined
     }
 
