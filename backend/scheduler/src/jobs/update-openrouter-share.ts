@@ -65,8 +65,8 @@ export const updateOpenRouterShare = async () => {
     sourceTs: Date.parse(rankings.asOf),
   }
   const feed = getOracleFeed(OPENROUTER_OPEN_WEIGHT_FEED_ID)
-  // Fetch the previous point so the registry's jump guard is actually armed —
-  // a sudden multi-point move here means a classification change, not news.
+  // Fetch the previous point so validateOraclePoint can enforce strictly
+  // increasing timestamps against what is already stored.
   const prev = await pg.oneOrNone<{ ts: string; price: number | string }>(
     `select ts, price from oracle_prices where feed_id = $1
      order by ts desc limit 1`,

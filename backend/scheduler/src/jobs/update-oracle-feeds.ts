@@ -15,8 +15,8 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 
 // The fast oracle tick (every 15s, modeled on sports-live). For each `fast`
 // feed in the registry:
-//   1. Fetch the latest point, validate against sanity bounds / jump guard,
-//      and upsert into oracle_prices.
+//   1. Fetch the latest point, validate against sanity bounds and timestamp
+//      ordering, and upsert into oracle_prices.
 //   2. Apply the price to every live perp on the feed via runOracleUpdate
 //      (liquidation + ADL run atomically with the price write — do NOT add a
 //      cheaper price-only path; closes settle against the cached price).

@@ -98,11 +98,12 @@ type NamedPrice = {
 /**
  * Return a price only when at least two independent exchanges agree.
  *
- * This source-level check replaces a temporal jump guard. A temporal guard
- * permanently wedges after a legitimate >10% move because every future tick
- * is compared with the same rejected stale point. Agreement between a pair
- * of exchanges validates the current level without assuming that BTC moves
- * slowly.
+ * This is the source-level validation the registry relies on instead of a
+ * temporal move cap. A temporal cap permanently wedges after a legitimate
+ * large move, because every future tick is compared with the same rejected
+ * stale point — and a stale price is worse than a fast one, since the market
+ * still executes against it. Agreement between a pair of exchanges validates
+ * the current level without assuming that BTC moves slowly.
  */
 export const getBtcConsensusPrice = (
   quotes: readonly NamedPrice[],

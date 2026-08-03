@@ -32,12 +32,24 @@ export type OracleFeedDef = {
   /** 'fast' feeds are fetched by the 15s tick; 'daily' feeds are written by
    * their own scheduler job and only health-checked. */
   cadence: 'fast' | 'daily'
-  /** Hard plausibility bounds; points outside are dropped and alerted. */
+  /** Hard plausibility bounds; points outside are dropped and alerted.
+   *
+   * These reject CORRUPT data, not fast data. There is deliberately no
+   * temporal jump guard anywhere in this registry: an oracle exists to
+   * report the real number, and refusing a point because it moved a lot
+   * does not make the price right — it leaves the market executing against
+   * a stale price we already know is wrong, which is the exact latency
+   * surface the launch runbook is trying to shrink. A temporal guard also
+   * cannot self-heal: the rejected point stays the comparison basis, so one
+   * legitimate large move freezes the feed until a human intervenes.
+   *
+   * Where a feed needs more than bounds, the check belongs at the SOURCE,
+   * where it can distinguish "corrupt" from "moved fast" — see
+   * getBtcConsensusPrice (cross-exchange agreement),
+   * validateOpenWeightPublication (unclassified models, incomplete window),
+   * and the per-poll range check in trump-approval.ts. */
   minPrice: number
   maxPrice: number
-  /** Reject a point that jumps more than this fraction vs the last stored
-   * point. Omit for feeds with legitimate step changes. */
-  maxJumpFrac?: number
   /** Feed is considered unhealthy when its latest point is older than this.
    * Doubles as the floor for a market's maxOraclePriceAgeMs at create time. */
   staleAfterMs: number
@@ -52,9 +64,7 @@ export type OracleFeedDef = {
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
    * settling) permanently lose interleaved points under a latest-only
-   * sampler, so the tick upserts the whole window (idempotent on ts).
-   * Points are bounds-checked only — the jump guard needs a well-ordered
-   * prev and doesn't apply to a batch. */
+   * sampler, so the tick upserts the whole window (idempotent on ts). */
   fetchRecent?: () => Promise<{ ts: number; price: number }[]>
 }
 
@@ -66,9 +76,9 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'fast',
     minPrice: 1_000,
     maxPrice: 10_000_000,
-    // No temporal jump guard: the adapter requires live agreement between
-    // independent exchanges, so legitimate discontinuous moves recover
-    // immediately after downtime instead of wedging against a stale point.
+    // Corruption is caught at the source: the adapter requires live
+    // agreement between independent exchanges, which validates the current
+    // level without assuming BTC moves slowly.
     staleAfterMs: 2 * MINUTE_MS,
     updatePeriodMs: 15_000,
     fetchLatest: fetchBtcUsdSpot,
@@ -99,14 +109,11 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'daily',
     minPrice: 10,
     maxPrice: 90,
-    // A 14-day rolling mean of many polls moves 1-3% relative day over day,
-    // so 10% is far above anything legitimate while still catching a single
-    // corrupt poll dragging the unweighted average. The [10,90] bounds alone
-    // are too coarse: one bad row can shift the mean ~20 points and stay
-    // inside them, and the resulting step is applied to live positions as a
-    // real price (liquidations and ADL are irreversible). Unlike BTC, this
-    // feed has no cross-source consensus check to fall back on.
-    maxJumpFrac: 0.1,
+    // Corruption is caught at the source: getApprovePct drops any poll
+    // reporting a percentage outside [0,100], which is what would otherwise
+    // drag the unweighted mean far enough to matter while still landing
+    // inside these bounds. A genuine multi-point shift in the average is
+    // news, and the market should trade on it.
     staleAfterMs: 26 * HOUR_MS,
     updatePeriodMs: DAY_MS,
   },
@@ -120,19 +127,11 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'daily',
     minPrice: 5,
     maxPrice: 95,
-    // Sized against 362 real day-transitions of backfilled history, not a
-    // guess. Legitimate daily steps peaked at 8.1% relative (2.7 points) —
-    // the fraction is largest when the index is LOW, since the absolute move
-    // is roughly level-independent. 0.05 would have rejected 18 of those 362
-    // legitimate rollovers, and a rejection is not self-healing: the next
-    // hour re-compares against the same stale point, so one bad rollover
-    // freezes the feed (stale alert at 3h, market frozen at 6h).
-    //
-    // This is a backstop, not the classification tripwire. An unclassified
-    // model already emits its own log.error from the job, on exactly the
-    // condition this would be proxying for, so the guard can afford to sit
-    // above the observed legitimate range instead of inside it.
-    maxJumpFrac: 0.1,
+    // Corruption is caught at the source: validateOpenWeightPublication
+    // fails closed on malformed token rows, unclassified models, and an
+    // incomplete window — the actual conditions a movement cap here was
+    // only ever proxying for, and it catches them whether or not the
+    // resulting share happens to move much.
     staleAfterMs: 3 * HOUR_MS,
     // HOUR_MS, not DAY_MS. This drives the contract's frozen funding period
     // (max(1h, updatePeriodMs)), and hourly is what keeps holding a position
@@ -160,13 +159,8 @@ export const validateOraclePoint = (
     return `timestamp ${point.ts} is not newer than ${prev.ts}`
   if (point.price < feed.minPrice || point.price > feed.maxPrice)
     return `price ${point.price} outside sanity bounds [${feed.minPrice}, ${feed.maxPrice}]`
-  if (
-    feed.maxJumpFrac != null &&
-    prev &&
-    Math.abs(point.price - prev.price) / prev.price > feed.maxJumpFrac
-  )
-    return `jump from ${prev.price} to ${point.price} exceeds ${
-      feed.maxJumpFrac * 100
-    }% guard`
+  // Deliberately no move-size check. See the note on minPrice/maxPrice: the
+  // oracle reports the real number, and per-feed source validation is what
+  // separates corrupt data from a large genuine move.
   return null
 }

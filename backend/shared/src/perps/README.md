@@ -117,11 +117,22 @@ limit, in which case further opens are blocked until capacity recovers.
 ## Oracle feeds
 
 `backend/shared/src/oracle-feeds.ts` is the registry of known feeds: cadence
-(`fast` | `daily`), sanity bounds, jump guard, staleness threshold, and the
-required `marketCreationEnabled` capability. Setting that capability to `false`
-keeps ingestion, scheduler health checks, and existing-contract updates running
-while both `create-perp` and the admin picker block new markets. Feed adapters
-live next to it:
+(`fast` | `daily`), sanity bounds, staleness threshold, and the required
+`marketCreationEnabled` capability. Setting that capability to `false` keeps
+ingestion, scheduler health checks, and existing-contract updates running
+while both `create-perp` and the admin picker block new markets.
+
+**The registry has no move-size cap, deliberately.** Bounds reject corrupt
+data; they do not cap how fast a real value may move. Refusing a point
+because it jumped does not make the price correct — the market keeps
+executing against the last stored price, which is now knowably wrong — and a
+temporal cap cannot self-heal, because the rejected point remains the
+comparison basis. Validation that has to tell "corrupt" apart from "moved
+fast" belongs in the adapter, where the source is visible: cross-exchange
+agreement in `btc-price.ts`, `validateOpenWeightPublication` in
+`open-weight-models.ts`, and the per-poll range check in `trump-approval.ts`.
+
+Feed adapters live next to it:
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
   US-accessible; Binance geo-blocks US IPs).
