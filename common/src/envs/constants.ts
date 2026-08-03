@@ -227,6 +227,8 @@ export const MOD_IDS = [
   'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
   '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'sCOvPc5J2sOacn0DYjwL7OAMzcV2', // bens
+  '9pduED6AAYSDeHBRRvMNxONVzMJ2', // Quroe
+  'G6VshilGdXb9s1Mx0sxwhho6Jvc2', // realTomBayes
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
