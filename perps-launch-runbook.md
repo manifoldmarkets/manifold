@@ -1,11 +1,8 @@
 # PERP launch runbook
 
 This is the operational source of truth for the first public PERP rollout.
-`perps-launch-audit.md` is the companion integration review and current
-go/no-go status.
 `backend/shared/src/perps/launch-manifest.ts` is the executable source of truth
-for the four intended feeds and their conservative day-one settings. ECI is
-explicitly excluded in both places.
+for the four intended feeds and their conservative day-one settings.
 
 Current DEV state (2026-07-28): all six July PERP follow-up migrations are
 installed and their schema/immutability checks pass; do not rerun them. Exactly
@@ -43,7 +40,7 @@ The phases mean:
   public and every other launch market must remain unlisted. Repeat
   `--public-feed` for the cumulative set already exposed.
 - `public`: exactly one unresolved public market must exist for every launch
-  feed. Any unresolved ECI or out-of-manifest PERP fails the gate.
+  feed. Any unresolved out-of-manifest PERP fails the gate.
 
 Every `unlisted`, `rollout`, and `public` warning is fail-closed unless its
 printed warning key is explicitly passed with `--allow-warning`. A stale
@@ -75,8 +72,7 @@ protect the pools when the trader is flat at the funding timestamp.
 | BTC/USD                      | Best fit: continuous and genuinely two-sided | Exchange prices can lead the 15-second poll                                                  |
 | UK grid carbon               | Two-sided and mean-reverting                 | Finalized batches and forecasts can lead ingestion                                           |
 | Trump approval               | Coherent politics theses, but slow           | Public daily step plus known scheduler timing                                                |
-| OpenRouter open-weight share | Two-sided index; preferable to ECI           | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
-| ECI frontier                 | Not a market                                 | Monotone running maximum creates a dominant long strategy                                    |
+| OpenRouter open-weight share | Two-sided index with coherent adoption theses | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
 
 Do not treat more frequent identical timestamps, larger pools, or a higher
 funding cap as fixes. Durable options are trade-time source refresh, a
@@ -112,7 +108,7 @@ Keep that redesign separate from the capped day-one launch.
    verify OpenRouter writes a point with provider `source_ts`.
 3. Provision `OPENROUTER_API_KEY` in the target environment.
 4. Run the BTC, UK carbon, Trump, and OpenRouter oracle backfills if history is
-   absent. Never run ECI as part of the launch batch.
+   absent.
 5. Review and settle/retire out-of-manifest or legacy prototypes. This changes
    balances; record the intended final oracle point and affected positions
    before executing it.
