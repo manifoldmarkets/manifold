@@ -60,7 +60,6 @@ import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { updatePerps } from './update-perps'
 import { updateOracleFeeds } from './update-oracle-feeds'
-import { updateEci } from './update-eci'
 import { updateOpenRouterShare } from './update-openrouter-share'
 import { updateTrumpApproval } from './update-trump-approval'
 import { resolveSportsMarkets } from './sports-resolve'
@@ -313,11 +312,6 @@ export function createJobs() {
       'update-trump-approval',
       '0 30 5 * * *', // 5:30am daily
       updateTrumpApproval
-    ),
-    createJob(
-      'update-eci',
-      '0 45 5 * * *', // 5:45am daily
-      updateEci
     ),
     createJob(
       'onboarding-notification',

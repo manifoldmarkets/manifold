@@ -160,7 +160,7 @@ if (require.main === module)
 
     const manifestErrors = getPerpLaunchManifestErrors()
     if (manifestErrors.length === 0)
-      report('PASS', 'launch manifest', 'registry and ECI exclusion agree')
+      report('PASS', 'launch manifest', 'registry and exclusion policy agree')
     else
       manifestErrors.forEach((error) =>
         report('FAIL', 'launch manifest', error)

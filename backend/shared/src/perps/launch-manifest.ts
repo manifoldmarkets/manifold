@@ -5,7 +5,6 @@ import { getOracleAttribution } from 'common/perps/oracle-attribution'
 
 import {
   BTC_USD_FEED_ID,
-  ECI_FRONTIER_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
   UK_GRID_CARBON_FEED_ID,
@@ -150,7 +149,7 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     oracleBehavior: 'scheduled-step',
     requiresSourceAsOf: true,
     gameDesign:
-      'The trailing share can rise or fall and has coherent AI-adoption theses, unlike the monotone ECI frontier.',
+      'The trailing share can rise or fall and has coherent AI-adoption theses in both directions.',
     latencyArbitrageRisk:
       'OpenRouter currently exposes complete UTC days, so hourly Manifold points usually repeat one daily value. Re-stamping a flat value does not remove the predictable next-step arbitrage window.',
     recommended: {
@@ -165,7 +164,12 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   },
 ]
 
-export const PERP_LAUNCH_EXCLUDED_FEED_IDS = [ECI_FRONTIER_FEED_ID] as const
+// Feeds that exist in the oracle registry but must never have a launch
+// market. Currently empty: the one prior member (the monotone ECI frontier)
+// was removed from the codebase entirely rather than retained as a
+// non-market feed. The mechanism stays because the preflight enforces it,
+// and any future ingest-only feed must be listed here explicitly.
+export const PERP_LAUNCH_EXCLUDED_FEED_IDS: readonly string[] = []
 
 // Residual pool value returns to the market creator at settlement. Restrict
 // the launch set to the environment's official Manifold account so a personal

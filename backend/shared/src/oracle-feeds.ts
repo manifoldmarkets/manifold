@@ -4,7 +4,6 @@ import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { fetchBtcUsdSpot } from './btc-price'
 import {
   BTC_USD_FEED_ID,
-  ECI_FRONTIER_FEED_ID,
   OPENROUTER_OPEN_WEIGHT_FEED_ID,
   TRUMP_APPROVAL_FEED_ID,
   UK_GRID_CARBON_FEED_ID,
@@ -104,19 +103,6 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     updatePeriodMs: DAY_MS,
   },
   {
-    id: ECI_FRONTIER_FEED_ID,
-    description: 'Epoch Capabilities Index frontier (max ECI, released models)',
-    // The frontier is monotone non-decreasing by construction. As a perp it
-    // has a dominant long side, pins funding, and gives shorts no genuine
-    // directional thesis. Keep the feed for history/runtime use only.
-    marketCreationEnabled: false,
-    cadence: 'daily',
-    minPrice: 100,
-    maxPrice: 250,
-    staleAfterMs: 26 * HOUR_MS,
-    updatePeriodMs: DAY_MS,
-  },
-  {
     id: OPENROUTER_OPEN_WEIGHT_FEED_ID,
     description: 'Open-weight share of top-50 model tokens on OpenRouter (%)',
     marketCreationEnabled: true,
@@ -146,7 +132,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     // oracle-anchor gate that protects slow periods keys on a new POINT, not
     // a new VALUE, and we write a point every hour — so a 24h period would
     // free-run to an arbitrary time and let anyone flat at that instant pay
-    // nothing. See the §4 discussion in perps-openrouter-feed-handoff.md.
+    // nothing.
     updatePeriodMs: HOUR_MS,
   },
 ]

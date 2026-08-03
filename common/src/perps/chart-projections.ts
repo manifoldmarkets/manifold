@@ -107,8 +107,8 @@ export { FUNDING_PERIOD_MS } from './funding'
  * windows, never longer than the visible history itself (a 1-hour
  * timeframe should not be two-thirds empty future), and capped at 60 days:
  * projecting today's funding rate a year out compounds a rate that will
- * certainly have changed into a dramatic slope — on ECI's multi-year
- * staircase it drew a "crash" a monotone index cannot have.
+ * certainly have changed into a dramatic slope — on a slow multi-year
+ * staircase feed it once drew a "crash" a monotone index cannot have.
  */
 export const projectionHorizonMs = (
   historySpanMs: number,

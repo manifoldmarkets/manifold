@@ -15,8 +15,6 @@
 // haven't read is its own problem:
 //   - OpenRouter — their dataset terms specify the exact credit line,
 //     including the data's as-of time. Hence `showAsOf`.
-//   - Epoch — CC BY, asserted in `backend/shared/src/eci.ts` and the perps
-//     README.
 //   - NESO / VoteHub — both publish under an open licence requiring
 //     attribution, but the exact current licence text was NOT read directly.
 //     So they get a credit and a link, and no licence label we can't back up.
@@ -43,11 +41,6 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     source: 'OpenRouter (openrouter.ai/rankings)',
     url: 'https://openrouter.ai/rankings',
     showAsOf: true,
-  },
-  'eci-frontier': {
-    source: 'Epoch AI',
-    url: 'https://epoch.ai/data',
-    licence: 'CC BY',
   },
   'uk-grid-carbon': {
     source: 'NESO Carbon Intensity API',

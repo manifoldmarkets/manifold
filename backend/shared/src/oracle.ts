@@ -6,7 +6,6 @@ import { bulkInsertQuery } from './supabase/utils'
 
 export const MANIFOLD_DAU_FEED_ID = 'manifold-dau'
 export const TRUMP_APPROVAL_FEED_ID = 'trump-approval-rating'
-export const ECI_FRONTIER_FEED_ID = 'eci-frontier'
 export const BTC_USD_FEED_ID = 'btc-usd'
 export const UK_GRID_CARBON_FEED_ID = 'uk-grid-carbon'
 export const OPENROUTER_OPEN_WEIGHT_FEED_ID = 'openrouter-open-weight-share'

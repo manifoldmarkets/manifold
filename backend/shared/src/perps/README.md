@@ -127,22 +127,20 @@ live next to it:
   US-accessible; Binance geo-blocks US IPs).
 - `uk-grid-carbon.ts` — GB grid carbon intensity (gCO2/kWh), NESO 30-min
   actuals.
-- `eci.ts` — Epoch Capabilities Index frontier (max ECI over released
-  models), parsed from Epoch's benchmark data zip (CC-BY — credit Epoch in
-  market descriptions).
 - `trump-approval.ts` — 14-day rolling approval average (VoteHub).
 - `openrouter-tokens.ts` — trailing seven-day open-weight share of classified
   top-50 OpenRouter model traffic.
 
-**ECI launch exclusion:** ECI remains a runtime/history feed, but its registry
-entry has `marketCreationEnabled: false`. The frontier is monotone
-non-decreasing, so it produces a structurally one-sided perp with pinned
-funding and no sound short thesis. Do not launch an ECI market.
+**Monotone feeds make bad perps:** a monotone non-decreasing index (the Epoch
+Capabilities Index frontier was prototyped and then removed for this reason)
+produces a structurally one-sided market with pinned funding and no sound
+short thesis. If an ingest-only feed is ever added again, list it in
+`PERP_LAUNCH_EXCLUDED_FEED_IDS` in the launch manifest; the preflight
+enforces that exclusion.
 
 Backfill scripts
 (`backend/scripts/backfill-{btc,uk-carbon,trump-approval,openrouter}-oracle.ts`)
-seed chart history before market creation. ECI's separate retained-history
-backfill is not part of the launch batch.
+seed chart history before market creation.
 
 The executable launch set, conservative initial parameters, feed-specific game
 design notes, and oracle-latency risks live in
@@ -169,7 +167,6 @@ sequence and rollback are in `perps-launch-runbook.md`.
   complete UTC days, so most hourly observations repeat the same underlying
   value; a fresh timestamp proves job liveness but does not create intraday
   price discovery.
-- `update-eci.ts` remains scheduled for retained history/runtime use only.
 
 Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
 `[update-perps]` — wire GCP log-based alerting to those.
