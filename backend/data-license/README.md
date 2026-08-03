@@ -80,6 +80,7 @@ unset. See `.env.example`.
 | `PSEUDONYM_PREFIX` / `PSEUDONYM_HEX_LEN` | Pseudonym format (default `User_`, 20 hex). |
 | `DELETED_ACCOUNT_MODE` | `redact` (default) or `remove` for deleted-account comments. |
 | `SEGMENTS` | Which segments to include, e.g. `A,B,C` (default all). |
+| `ONLY_TABLES` | **Supplemental run**: rebuild only these tables (comma list) and *merge* the result into the delivery's existing manifest instead of replacing it — for repairing or adding one table without re-running a multi-hour export. See below. |
 | `SUBSET_LIMIT` | Cap contracts pulled (for dry runs). Empty = full. |
 | `CHUNK_ROWS` | Rows per Parquet part (default 250000). |
 | `CHUNK_BYTES` | Staged NDJSON bytes per part (default 512MB); a part is cut on whichever of rows/bytes trips first. Rows alone are a bad proxy for wide-blob tables — 250k contracts is >700MB of JSON. |
@@ -93,6 +94,33 @@ unset. See `.env.example`.
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | R2 S3 credentials (read+write) for the job. |
 | `SUPABASE_HOST` **or** `SUPABASE_INSTANCE_ID`, `SUPABASE_PASSWORD` | Source DB. Point at a PITR clone for real runs. |
 | `LOAD_SECRETS`, `EXPORT_ENV`, `GOOGLE_APPLICATION_CREDENTIALS_{DEV,PROD}` | Local-only convenience to pull secrets via a service-account key (§3). |
+
+### Supplemental runs (`ONLY_TABLES`)
+
+Rebuild one table into an existing delivery, e.g. after fixing a bug that made a
+table come out wrong or empty:
+
+```bash
+set -a; . ./.env; set +a
+DELIVERY_DATE=2026-07-29 ONLY_TABLES=bot_accounts yarn dev   # pin the ORIGINAL date
+```
+
+The rebuilt table is uploaded, then the delivery's `manifest.json` is fetched
+(the uploaded copy wins over the local one), the new table's entry is merged in,
+and `README.md` + `manifest.json` are re-uploaded. Every other table's entry —
+including its per-part sha256 list — is carried over untouched, and the
+top-level `snapshotTime`, `scrubStats`, and `checks` keep describing the
+ORIGINAL full run. The rebuilt table is stamped with its own `snapshotTime`, and
+each supplemental run appends to a `supplementalRuns[]` array, so the manifest
+never misrepresents what was read when.
+
+This is safe across snapshots because pseudonyms are HMACs of a fixed per-client
+salt: a table exported hours later still joins against the delivered ones.
+That property is also the failure mode, so it is checked **before** any export
+work happens — the run aborts if the existing manifest's `saltFingerprint`,
+`deliveryDate`, or `schemaVersion` doesn't match, or if no manifest is there to
+merge into (which is what stops a blank `DELIVERY_DATE` from silently opening a
+fresh, half-empty delivery prefix at UTC midnight).
 
 ---
 

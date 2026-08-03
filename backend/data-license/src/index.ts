@@ -13,7 +13,7 @@
 // ---------------------------------------------------------------------------
 
 import { createHash } from 'crypto'
-import { rmSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
 import { Writable } from 'stream'
 import QueryStream from 'pg-query-stream'
@@ -40,7 +40,7 @@ import {
   ScanCounts,
 } from './validate'
 import { makeUploader } from './r2'
-import { buildManifest, writeManifest, FileMeta } from './manifest'
+import { buildManifest, mergeManifest, writeManifest, FileMeta, Manifest } from './manifest'
 import { buildDeliveryReadme } from './delivery-readme'
 import { fileSha256 } from './checksum'
 import { ALL_TABLES, COLUMN_TYPES, TableName } from './scope'
@@ -62,6 +62,50 @@ async function main() {
   const ps = new Pseudonymizer(cfg.salt, cfg.pseudonymPrefix, cfg.pseudonymHexLen)
   const stats = newStats()
   const uploader = makeUploader(cfg)
+
+  // A supplemental run (ONLY_TABLES) rebuilds just these tables and merges the
+  // result into the delivery's existing manifest; everything else is untouched.
+  const tablesToRun = ALL_TABLES.filter(
+    (s) =>
+      cfg.segments.includes(s.segment) && (!cfg.onlyTables || cfg.onlyTables.includes(s.name))
+  )
+  if (!tablesToRun.length) throw new Error('no tables selected: check SEGMENTS / ONLY_TABLES')
+
+  const saltFingerprint = createHash('sha256').update(cfg.salt).digest('hex').slice(0, 16)
+
+  // Pre-flight for a supplemental run: fetch the manifest we will merge into and
+  // check it BEFORE exporting anything. Doing this at merge time (i.e. at the
+  // end) would mean a wrong salt is only caught after the new parts have already
+  // been uploaded — replacing a good table with unjoinable pseudonyms.
+  let baseManifestRaw: string | undefined
+  if (cfg.onlyTables) {
+    const remote = uploader.enabled
+      ? await uploader.getText(`${keyPrefix}/manifest.json`)
+      : undefined
+    const localManifest = join(outDir, 'manifest.json')
+    baseManifestRaw =
+      remote ?? (existsSync(localManifest) ? readFileSync(localManifest, 'utf8') : undefined)
+    if (!baseManifestRaw) {
+      throw new Error(
+        `ONLY_TABLES is set but no existing manifest was found at ` +
+          `${uploader.enabled ? `${keyPrefix}/manifest.json or ` : ''}${localManifest} — ` +
+          `refusing to write a partial manifest over a delivery.`
+      )
+    }
+    const base: Manifest = JSON.parse(baseManifestRaw)
+    if (base.saltFingerprint !== saltFingerprint) {
+      throw new Error(
+        `refusing to run: salt fingerprint differs (delivery ${base.saltFingerprint}, ` +
+          `this run ${saltFingerprint}). The rebuilt table's pseudonyms would not ` +
+          `join against the delivered ones.`
+      )
+    }
+    console.log(
+      `SUPPLEMENTAL RUN — rebuilding only: ${tablesToRun.map((s) => s.name).join(', ')}\n` +
+        `  merging into existing manifest (${remote ? 'delivered copy' : 'local file'}), ` +
+        `salt fingerprint ${saltFingerprint} matches`
+    )
+  }
 
   const db = connect()
   let snapshotTime = ''
@@ -85,7 +129,12 @@ async function main() {
       // LEAK_SCAN_FULL now only controls whether the VALIDATOR checks against it.
       const allUserIds = await loadAllUserIds(t)
       const deliveredContractIds = await loadDeliveredContractIds(t)
-      probe.markets = await pickProbeContracts(t, PROBE_MARKETS)
+      // The reconstruction check reads points captured from contract_bets rows;
+      // without that table there is nothing to reconstruct, so don't probe (and
+      // don't let an empty series look like a failure).
+      if (tablesToRun.some((s) => s.name === 'contract_bets')) {
+        probe.markets = await pickProbeContracts(t, PROBE_MARKETS)
+      }
       for (const m of probe.markets) probePoints.set(m.id, [])
       console.log(
         `deleted accounts: ${deletedUserIds.size}; leak-scan user ids: ${allUserIds.size}` +
@@ -119,8 +168,7 @@ async function main() {
         }
       }
 
-      for (const spec of ALL_TABLES) {
-        if (!cfg.segments.includes(spec.segment)) continue
+      for (const spec of tablesToRun) {
         const table = spec.name
         const redactor = REDACTORS[table]
         const running = emptyCounts()
@@ -228,8 +276,7 @@ async function main() {
     process.exit(1)
   }
 
-  const saltFingerprint = createHash('sha256').update(cfg.salt).digest('hex').slice(0, 16)
-  const manifest = buildManifest({
+  let manifest: Manifest = buildManifest({
     clientId: cfg.clientId,
     deliveryDate: cfg.deliveryDate,
     snapshotTime,
@@ -239,6 +286,11 @@ async function main() {
     scrubStats: stats,
     recon,
   })
+  if (baseManifestRaw) {
+    manifest = mergeManifest(JSON.parse(baseManifestRaw), manifest)
+    console.log(`merged manifest; tables now: ${Object.keys(manifest.tables).join(', ')}`)
+  }
+
   const manifestPath = writeManifest(outDir, manifest)
   const readmePath = join(outDir, 'README.md')
   writeFileSync(readmePath, buildDeliveryReadme(manifest))

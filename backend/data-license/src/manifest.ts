@@ -25,6 +25,17 @@ export interface FileMeta {
   sha256: string
 }
 
+export interface TableMeta {
+  segment: string
+  rowCount: number
+  bytes: number
+  parts: number
+  files: FileMeta[]
+  // Set only when this table came from a later supplemental run and so was read
+  // at a different snapshot than the delivery's top-level snapshotTime.
+  snapshotTime?: string
+}
+
 export interface Manifest {
   clientId: string
   deliveryDate: string
@@ -36,12 +47,77 @@ export interface Manifest {
   delivery: { bucket: string; prefix: string }
   filter: typeof CONTRACT_FILTER_DEF
   segments: Record<string, { label: string; tables: string[] }>
-  tables: Record<
-    string,
-    { segment: string; rowCount: number; bytes: number; parts: number; files: FileMeta[] }
-  >
+  tables: Record<string, TableMeta>
   scrubStats: RedactStats
   checks: { probabilityReconstruction: ReconResult }
+  // Appended by each supplemental (ONLY_TABLES) run. The top-level scrubStats
+  // and checks always describe the ORIGINAL full run; a supplemental run's own
+  // stats are recorded here rather than summed into them, so the original
+  // attestation stays exactly what it was.
+  supplementalRuns?: {
+    snapshotTime: string
+    tables: string[]
+    scrubStats: RedactStats
+  }[]
+}
+
+/**
+ * Merge a supplemental run's manifest into the delivery's existing one: the
+ * new run's tables win, every other table is preserved untouched.
+ *
+ * Pseudonyms are HMACs of a per-client salt, so a merge is only sound if both
+ * runs used the SAME salt — otherwise the new table's ids would not join
+ * against the delivered ones, which is exactly the silent corruption this
+ * whole file exists to prevent. Hence the hard guards.
+ */
+export function mergeManifest(base: Manifest, next: Manifest): Manifest {
+  if (base.saltFingerprint !== next.saltFingerprint) {
+    throw new Error(
+      `refusing to merge: salt fingerprint differs (delivery ${base.saltFingerprint}, ` +
+        `this run ${next.saltFingerprint}). Pseudonyms would not join.`
+    )
+  }
+  if (base.deliveryDate !== next.deliveryDate) {
+    throw new Error(
+      `refusing to merge: deliveryDate differs (${base.deliveryDate} vs ${next.deliveryDate})`
+    )
+  }
+  if (base.schemaVersion !== next.schemaVersion) {
+    throw new Error(
+      `refusing to merge: schemaVersion differs (${base.schemaVersion} vs ${next.schemaVersion})`
+    )
+  }
+
+  const tables: Record<string, TableMeta> = { ...base.tables }
+  for (const [name, entry] of Object.entries(next.tables)) {
+    tables[name] =
+      next.snapshotTime === base.snapshotTime
+        ? entry
+        : { ...entry, snapshotTime: next.snapshotTime }
+  }
+
+  const segments: Manifest['segments'] = {}
+  for (const [seg, info] of Object.entries({ ...base.segments, ...next.segments })) {
+    const names = new Set([
+      ...(base.segments[seg]?.tables ?? []),
+      ...(next.segments[seg]?.tables ?? []),
+    ])
+    segments[seg] = { label: info.label, tables: [...names] }
+  }
+
+  return {
+    ...base, // top-level scrubStats + checks stay the ORIGINAL run's
+    tables,
+    segments,
+    supplementalRuns: [
+      ...(base.supplementalRuns ?? []),
+      {
+        snapshotTime: next.snapshotTime,
+        tables: Object.keys(next.tables),
+        scrubStats: next.scrubStats,
+      },
+    ],
+  }
 }
 
 export function buildManifest(args: {

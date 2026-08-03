@@ -5,7 +5,7 @@
 // multipart Upload so ~1GB parts stream reliably. Region is 'auto' for R2.
 // ---------------------------------------------------------------------------
 
-import { S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { createReadStream } from 'fs'
 import { Config } from './config'
@@ -13,12 +13,15 @@ import { Config } from './config'
 export interface Uploader {
   enabled: boolean
   upload(localPath: string, key: string): Promise<void>
+  /** Read a small delivery file back (the manifest, for supplemental merges).
+   *  Returns undefined if the key does not exist. */
+  getText(key: string): Promise<string | undefined>
 }
 
 export function makeUploader(cfg: Config): Uploader {
   const { endpoint, accessKeyId, secretAccessKey, bucket } = cfg.r2
   if (!endpoint || !accessKeyId || !secretAccessKey || !bucket) {
-    return { enabled: false, async upload() {} }
+    return { enabled: false, async upload() {}, async getText() { return undefined } }
   }
   // Normalize the endpoint to the account origin only. R2's S3 API endpoint is
   // https://<accountid>.r2.cloudflarestorage.com; the bucket is addressed via
@@ -42,6 +45,15 @@ export function makeUploader(cfg: Config): Uploader {
         params: { Bucket: bucket, Key: key, Body: createReadStream(localPath) },
       })
       await up.done()
+    },
+    async getText(key: string): Promise<string | undefined> {
+      try {
+        const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+        return await res.Body?.transformToString()
+      } catch (e: any) {
+        if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return undefined
+        throw e
+      }
     },
   }
 }

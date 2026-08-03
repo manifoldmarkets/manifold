@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
-import { Segment } from './scope'
+import { Segment, TABLES, TableName } from './scope'
 
 export interface Config {
   clientId: string
@@ -26,6 +26,10 @@ export interface Config {
   leakScanFull: boolean
   keepLocalParts: boolean
   segments: Segment[]
+  // Restrict the run to these tables (a "supplemental" run that repairs or adds
+  // one table to an existing delivery). When set, the manifest is MERGED into
+  // the delivery's existing manifest instead of replacing it — see index.ts.
+  onlyTables: TableName[] | undefined
   forbiddenStrings: string[]
   r2: {
     bucket: string
@@ -108,6 +112,22 @@ export async function loadConfig(): Promise<Config> {
     throw new Error(`DELETED_ACCOUNT_MODE must be remove|redact, got ${mode}`)
   }
 
+  // Unknown names must fail fast: a typo would otherwise run ZERO tables and
+  // then "merge" an empty result over a good delivery manifest.
+  const onlyTables = (() => {
+    const raw = opt('ONLY_TABLES')
+    if (!raw) return undefined
+    const names = raw.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
+    const bad = names.filter((n) => !(n in TABLES))
+    if (bad.length) {
+      throw new Error(
+        `ONLY_TABLES has unknown table(s): ${bad.join(', ')}. Valid: ${Object.keys(TABLES).join(', ')}`
+      )
+    }
+    if (!names.length) throw new Error('ONLY_TABLES is set but empty')
+    return names as TableName[]
+  })()
+
   return {
     clientId: req('CLIENT_ID'),
     deliveryDate: opt('DELIVERY_DATE') ?? today(),
@@ -127,6 +147,7 @@ export async function loadConfig(): Promise<Config> {
     // keep parts on local disk after upload (default false: delete to bound disk).
     keepLocalParts: (opt('KEEP_LOCAL_PARTS') ?? 'false') === 'true',
     segments,
+    onlyTables,
     forbiddenStrings: await resolveForbiddenStrings(),
     r2: {
       bucket: opt('R2_BUCKET') ?? '', // per-client bucket; required when R2 is enabled
