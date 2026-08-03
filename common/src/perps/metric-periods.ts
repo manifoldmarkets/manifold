@@ -1,6 +1,6 @@
 import { ContractMetric } from '../contract-metric'
 import { DAY_MS } from '../util/time'
-import { getPositionValue } from './amm'
+import { getPositionValue, unmergeEntryPrice } from './amm'
 import { PerpDirection, PerpEvent, PerpPosition } from './position'
 
 export const PERP_METRIC_PERIODS = ['day', 'week', 'month'] as const
@@ -239,8 +239,16 @@ const reverseEvent = (
     if (eventPrice === undefined || eventPrice <= 0 || after === undefined) {
       return undefined
     }
-    entryPrice =
-      (after.entryPrice * after.size - eventPrice * sizeDelta) / beforeSize
+    // Exact inverse of the harmonic merge in openPosition. These two must
+    // always change together: inverting a different formula than the engine
+    // applied reports historical P&L that never happened.
+    entryPrice = unmergeEntryPrice(
+      beforeSize,
+      after.size,
+      after.entryPrice,
+      sizeDelta,
+      eventPrice
+    )
   } else if (after !== undefined) {
     entryPrice = after.entryPrice
   } else {

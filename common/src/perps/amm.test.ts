@@ -12,11 +12,13 @@ import {
   imbalance,
   isLiquidated,
   liquidationPrice,
+  mergedEntryPrice,
   openPosition,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
   processLiquidations,
   solvencyFactor,
+  unmergeEntryPrice,
 } from './amm'
 import { PerpDirection, PerpPosition } from './position'
 
@@ -589,7 +591,7 @@ describe('open / close accounting', () => {
     expect(position.liquidationPrice).toBe(37.5)
   })
 
-  it('add computes a size-weighted entry price', () => {
+  it('add computes a units-weighted entry price that conserves equity', () => {
     const existing = makePosition({
       direction: 'long',
       size: 100,
@@ -609,11 +611,159 @@ describe('open / close accounting', () => {
       123
     )
     expect(position.size).toBe(400)
-    // (100·100 + 200·300) / 400 = 175
-    expect(position.entryPrice).toBeCloseTo(175, 10)
+    // Units add: 100/100 + 300/200 = 2.5, so Pe = 400/2.5 = 160.
+    // NOT the arithmetic mean 175 — that would delete M$42.86 of the
+    // trader's already-earned profit at the instant of the add.
+    expect(position.entryPrice).toBeCloseTo(160, 10)
     expect(position.costBasis).toBe(200)
     expect(position.leverage).toBeCloseTo(2, 10)
     expect(position.originalCostBasis).toBe(200)
+
+    // The added tranche is opened at the current price, so it carries zero
+    // P&L: merged equity must equal the original tranche's equity.
+    expect(getUnrealizedEquity(position, 200)).toBeCloseTo(
+      getUnrealizedEquity(existing, 200),
+      10
+    )
+  })
+
+  describe('adds conserve value', () => {
+    // The property that the arithmetic-mean merge violated: collapsing two
+    // tranches into one row must not change what the trader can withdraw.
+    const cases: {
+      direction: PerpDirection
+      entry: number
+      addPrice: number
+      markPrice: number
+    }[] = [
+      { direction: 'short', entry: 100, addPrice: 50, markPrice: 50 },
+      { direction: 'short', entry: 100, addPrice: 50, markPrice: 30 },
+      { direction: 'short', entry: 100, addPrice: 150, markPrice: 120 },
+      { direction: 'long', entry: 100, addPrice: 200, markPrice: 200 },
+      { direction: 'long', entry: 100, addPrice: 200, markPrice: 350 },
+      { direction: 'long', entry: 100, addPrice: 40, markPrice: 60 },
+      { direction: 'long', entry: 1, addPrice: 1000, markPrice: 500 },
+    ]
+
+    it.each(cases)(
+      'merged equity equals separate tranches ($direction, $entry -> $addPrice, mark $markPrice)',
+      ({ direction, entry, addPrice, markPrice }) => {
+        const existing = makePosition({
+          direction,
+          size: 1000,
+          costBasis: 100,
+          entryPrice: entry,
+        })
+        const state: PerpState = {
+          pool: { L: 100_000, S: 100_000 },
+          positions: [existing],
+        }
+        const { position } = openPosition(
+          state,
+          'u1',
+          'c1',
+          direction,
+          100,
+          10,
+          addPrice,
+          existing,
+          123
+        )
+
+        // What the two tranches would be worth if kept separate, per the
+        // paper's model.
+        const separate = makePosition({
+          direction,
+          size: 1000,
+          costBasis: 100,
+          entryPrice: addPrice,
+        })
+        const separateEquity =
+          getUnrealizedEquity(existing, markPrice) +
+          getUnrealizedEquity(separate, markPrice)
+
+        expect(getUnrealizedEquity(position, markPrice)).toBeCloseTo(
+          separateEquity,
+          8
+        )
+      }
+    )
+
+    it('laddering into a falling market cannot mint equity', () => {
+      // The extraction loop: short, then top up at each lower price. Under
+      // the arithmetic merge this produced steadily more equity than the
+      // tranches were worth.
+      let position = makePosition({
+        direction: 'short',
+        size: 1000,
+        costBasis: 100,
+        entryPrice: 100,
+      })
+      const tranches = [position]
+      for (const price of [90, 80, 70, 60, 50]) {
+        const state: PerpState = {
+          pool: { L: 500_000, S: 500_000 },
+          positions: [position],
+        }
+        position = openPosition(
+          state,
+          'u1',
+          'c1',
+          'short',
+          100,
+          10,
+          price,
+          position,
+          123
+        ).position
+        tranches.push(
+          makePosition({
+            direction: 'short',
+            size: 1000,
+            costBasis: 100,
+            entryPrice: price,
+          })
+        )
+      }
+
+      const mark = 50
+      const separateEquity = tranches.reduce(
+        (sum, t) => sum + getUnrealizedEquity(t, mark),
+        0
+      )
+      expect(getUnrealizedEquity(position, mark)).toBeCloseTo(separateEquity, 8)
+      // Deposited M$600 across six tranches; withdrawable must be the honest
+      // figure, not the M$2600 the arithmetic merge produced.
+      expect(position.costBasis + getUnrealizedEquity(position, mark)).toBeCloseTo(
+        600 + separateEquity,
+        8
+      )
+    })
+
+    it('merged entry price always lies between the two entry prices', () => {
+      for (const [q1, p1, q2, p2] of [
+        [1000, 100, 1000, 50],
+        [1, 1e-6, 1e6, 1e6],
+        [123.456, 7.89, 0.001, 1000],
+      ]) {
+        const merged = mergedEntryPrice(q1, p1, q2, p2)
+        expect(merged).toBeGreaterThanOrEqual(Math.min(p1, p2) - 1e-9)
+        expect(merged).toBeLessThanOrEqual(Math.max(p1, p2) + 1e-9)
+      }
+    })
+
+    it('unmergeEntryPrice inverts mergedEntryPrice', () => {
+      for (const [q1, p1, q2, p2] of [
+        [1000, 100, 1000, 50],
+        [2001450, 161.01, 10000000, 162.08],
+        [100, 10, 10000, 1000],
+      ]) {
+        const merged = mergedEntryPrice(q1, p1, q2, p2)
+        const recovered = unmergeEntryPrice(q1, q1 + q2, merged, q2, p2)
+        expect(recovered).toBeDefined()
+        expect(recovered as number).toBeCloseTo(p1, 6)
+      }
+    })
   })
 
   it('close at a profit draws π from the opposing pool (eq. 14)', () => {

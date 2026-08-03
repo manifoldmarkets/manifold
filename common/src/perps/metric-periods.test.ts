@@ -1,4 +1,5 @@
 import { DAY_MS } from '../util/time'
+import { mergedEntryPrice } from './amm'
 import {
   calculatePerpMetricPeriods,
   PerpMetricPeriodCutoffs,
@@ -125,14 +126,30 @@ describe('calculatePerpMetricPeriods', () => {
     expect(result?.from.week.invested).toBeCloseTo(150)
   })
 
-  it('reconstructs the prior weighted entry price after an add', () => {
+  it('reconstructs the prior entry price after an add', () => {
+    // Derive the merged entry price from the engine's own forward formula
+    // rather than hard-coding it, so this test round-trips openPosition's
+    // merge instead of pinning whatever number the merge happens to produce.
+    // The previous version hard-coded the arithmetic mean and therefore
+    // certified a reconstruction that no longer matched the engine.
+    const priorSize = 1000
+    const priorEntry = 100
+    const addedSize = 500
+    const addPrice = 120
+    const mergedEntry = mergedEntryPrice(
+      priorSize,
+      priorEntry,
+      addedSize,
+      addPrice
+    )
+
     const result = calculatePerpMetricPeriods({
       currentPositions: [
         position({
-          size: 1500,
+          size: priorSize + addedSize,
           costBasis: 150,
           originalCostBasis: 150,
-          entryPrice: 160 / 1.5,
+          entryPrice: mergedEntry,
         }),
       ],
       events: [
@@ -140,20 +157,24 @@ describe('calculatePerpMetricPeriods', () => {
           id: 2,
           eventType: 'add',
           appliedTime: NOW - DAY_MS / 2,
-          oraclePrice: 120,
-          sizeDelta: 500,
+          oraclePrice: addPrice,
+          sizeDelta: addedSize,
           costBasisDelta: 50,
           originalCostBasisDelta: 50,
-          data: { entryPrice: 160 / 1.5 },
+          data: { entryPrice: mergedEntry },
         }),
       ],
-      currentPrice: 120,
-      periods: periods(100),
+      currentPrice: addPrice,
+      periods: periods(priorEntry),
     })
 
+    // Recovered prior position: 1000 @ 100, marked at the boundary price of
+    // 100, so worth exactly its cost basis.
     expect(result?.from.day.prevValue).toBeCloseTo(100)
     expect(result?.from.day.invested).toBeCloseTo(150)
-    expect(result?.from.day.profit).toBeCloseTo(187.5)
+    // The add carried no P&L of its own, so all profit comes from the prior
+    // tranche moving 100 -> 120 on size 1000: (120-100)/100 * 1000 = 200.
+    expect(result?.from.day.profit).toBeCloseTo(200)
   })
 
   it('handles a close-and-flip in canonical id order', () => {

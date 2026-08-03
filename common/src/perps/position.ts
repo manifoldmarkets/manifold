@@ -14,7 +14,8 @@ export type PerpPosition = {
   costBasis: number
   /** original margin the user put in (never scaled). Used for user-facing PnL. */
   originalCostBasis: number
-  /** P_e — entry price; size-weighted avg on add. */
+  /** P_e — entry price; units-weighted (harmonic) mean on add, so that
+   * merging tranches conserves equity. See `mergedEntryPrice`. */
   entryPrice: number
   /** ℓ = q/c (recomputed after any mutation). */
   leverage: number

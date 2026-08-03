@@ -89,6 +89,46 @@ export const getUnrealizedEquity = (position: PerpPosition, price: number) => {
 export const getPositionValue = (position: PerpPosition, price: number) =>
   Math.max(position.costBasis + getUnrealizedEquity(position, price), 0)
 
+/**
+ * Entry price of two tranches collapsed into one position, such that the
+ * merged position's equity equals the sum of the tranches' equities at every
+ * price (see the note on `openPosition`).
+ *
+ * Because π is linear in the unit count q/Pe, that means adding units:
+ *   (q₁ + q₂) / Pe = q₁/Pe₁ + q₂/Pe₂
+ * i.e. the units-weighted harmonic mean. Always lies between Pe₁ and Pe₂.
+ */
+export const mergedEntryPrice = (
+  size1: number,
+  entryPrice1: number,
+  size2: number,
+  entryPrice2: number
+) => {
+  const units = size1 / entryPrice1 + size2 / entryPrice2
+  return (size1 + size2) / units
+}
+
+/**
+ * Inverse of `mergedEntryPrice`: given the merged position and the tranche
+ * that was just added, recover the entry price the position had before.
+ * Used by period-metric reconstruction to replay `add` events backwards.
+ *
+ * Returns undefined when the inputs cannot describe a real merge (the unit
+ * count of the prior tranche must be strictly positive).
+ */
+export const unmergeEntryPrice = (
+  sizeBefore: number,
+  sizeAfter: number,
+  entryPriceAfter: number,
+  sizeAdded: number,
+  addedPrice: number
+) => {
+  const unitsBefore = sizeAfter / entryPriceAfter - sizeAdded / addedPrice
+  if (!(unitsBefore > 0)) return undefined
+  const entryPrice = sizeBefore / unitsBefore
+  return Number.isFinite(entryPrice) && entryPrice > 0 ? entryPrice : undefined
+}
+
 // -------- funding --------
 
 /**
@@ -369,7 +409,25 @@ export type OpenResult = {
 
 /**
  * Open or add to a position (paper §2.2, eq. 3).
- * If `existing` is provided, we size-weighted-average the entry price.
+ *
+ * The paper keeps every tranche separate (`P' = P ∪ [(d, m·ℓ, m, P)]`). We
+ * collapse them into one row per (user, direction), so the merged entry
+ * price has to be chosen such that the collapsed position has exactly the
+ * same equity as the two tranches would have had.
+ *
+ * Equity (eq. 13) is π = ±(P − Pe)/Pe · q, where q is mana-NOTIONAL, so the
+ * underlying unit count is q/Pe. Merging conserves value only if the units
+ * add up: q/Pe = q₁/Pe₁ + q₂/Pe₂, i.e. the merged entry price is the
+ * units-weighted HARMONIC mean, not the arithmetic one.
+ *
+ * Using the arithmetic mean here silently mints equity for shorts and burns
+ * it for longs on every add — by q₁·q₂·(1−r)²/(q₁ + r·q₂) with
+ * r = P_add/Pe₁, paid out of the opposing pool. See the value-conservation
+ * tests in amm.test.ts.
+ *
+ * `metric-periods.ts` reverses this exact formula to reconstruct historical
+ * positions. The two must change together.
+ *
  * Caller must enforce one-way mode before calling this.
  */
 export const openPosition = (
@@ -391,8 +449,12 @@ export const openPosition = (
   let nextPosition: PerpPosition
   if (existing && existing.size > 0) {
     const totalSize = existing.size + newSize
-    const entryPrice =
-      (existing.entryPrice * existing.size + oraclePrice * newSize) / totalSize
+    const entryPrice = mergedEntryPrice(
+      existing.size,
+      existing.entryPrice,
+      newSize,
+      oraclePrice
+    )
     const costBasis = existing.costBasis + newCostBasis
     const lev = getLeverage(totalSize, costBasis)
     nextPosition = {
