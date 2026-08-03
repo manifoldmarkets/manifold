@@ -79,6 +79,17 @@ const getBaseName = (path: string) => {
   return base
 }
 
+// Postgres error codes for transactions that were aborted and rolled back under
+// contention. Both are already treated as retryable inside runTransactionWithRetries;
+// these are the ones that escape after its retry budget is exhausted.
+const RETRYABLE_PG_ERROR_CODES = new Set([
+  '40001', // serialization_failure
+  '40P01', // deadlock_detected
+])
+
+const isRetryablePgError = (error: any) =>
+  typeof error?.code === 'string' && RETRYABLE_PG_ERROR_CODES.has(error.code)
+
 export const apiErrorHandler: ErrorRequestHandler = (
   error,
   _req,
@@ -93,6 +104,16 @@ export const apiErrorHandler: ErrorRequestHandler = (
         output.details = error.details
       }
       res.status(error.code).json(output)
+    }
+  } else if (isRetryablePgError(error)) {
+    // The transaction was aborted and rolled back — nothing was committed, and a
+    // retry is expected to succeed. That is a 503, not a 500, and it must not leak
+    // a stack trace to the client.
+    log.info(`Transaction conflict (${error.code}); returning 503.`)
+    if (!res.headersSent) {
+      res
+        .status(503)
+        .json({ message: 'Transaction conflict. Please try again.' })
     }
   } else {
     log.error(error)
