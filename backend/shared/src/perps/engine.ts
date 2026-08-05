@@ -412,6 +412,9 @@ export const openOrAddPosition = async (
           position: parseStoredPosition(response?.position),
           event: rowToStoredEvent(stored),
           isNewUniqueBettor: false,
+          // Callers must not re-run trade side effects (bonuses, streaks)
+          // for a replay — no trade happened on this request.
+          replayed: true,
         }
       }
     }
@@ -741,7 +744,7 @@ export const openOrAddPosition = async (
       ].join(';\n')
     )
 
-    return { position: open.position, event, isNewUniqueBettor }
+    return { position: open.position, event, isNewUniqueBettor, replayed: false }
   })
 }
 
@@ -808,6 +811,9 @@ export const closePosition = async (
             originalCostBasis === undefined
               ? finiteNumber(response?.pnl, 'close PnL')
               : getUserFacingPnlFromPayout(payout, originalCostBasis),
+          // Callers must not re-run trade side effects (streaks) for a
+          // replay — no trade happened on this request.
+          replayed: true,
         }
       }
     }
@@ -971,7 +977,7 @@ export const closePosition = async (
       ].join(';\n')
     )
 
-    return { payout: result.payout, pnl: userPnl }
+    return { payout: result.payout, pnl: userPnl, replayed: false }
   })
 }
 

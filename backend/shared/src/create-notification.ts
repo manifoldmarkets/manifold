@@ -481,7 +481,8 @@ export const createCharityChampionEligibleNotification = async (
 export const createBettingStreakBonusNotification = async (
   user: User,
   txnId: string,
-  bet: Bet,
+  /** Link target — `/username/slug/bets/betId` for bets, the market page for perps. */
+  sourceSlug: string,
   contract: Contract,
   amount: number,
   streak: number,
@@ -508,7 +509,7 @@ export const createBettingStreakBonusNotification = async (
     sourceUserUsername: user.username,
     sourceUserAvatarUrl: user.avatarUrl,
     sourceText: amount.toString(),
-    sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
+    sourceSlug,
     sourceTitle: 'Betting Streak Bonus',
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,

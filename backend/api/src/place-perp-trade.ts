@@ -8,6 +8,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { getUser, log } from 'shared/utils'
 import { APIHandler } from './helpers/endpoint'
+import { advancePerpBettingStreak } from './helpers/perp-streak'
 import { assertPerpExposureIncreaseEnabled } from './helpers/perp-trading-mode'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
@@ -24,25 +25,41 @@ export const placePerpTrade: APIHandler<'place-perp-trade'> =
       idempotencyKey
     )
 
-    if (result.isNewUniqueBettor) {
-      try {
-        await payUniqueBettorBonus(contractId, auth.uid)
-      } catch (err) {
-        log('perp unique bettor bonus failed (non-fatal):', err)
-      }
-    }
-
     const { position } = result
     return {
-      position: {
-        userId: position.userId,
-        direction: position.direction,
-        size: position.size,
-        costBasis: position.costBasis,
-        originalCostBasis: position.originalCostBasis,
-        entryPrice: position.entryPrice,
-        leverage: position.leverage,
-        liquidationPrice: position.liquidationPrice,
+      result: {
+        position: {
+          userId: position.userId,
+          direction: position.direction,
+          size: position.size,
+          costBasis: position.costBasis,
+          originalCostBasis: position.originalCostBasis,
+          entryPrice: position.entryPrice,
+          leverage: position.leverage,
+          liquidationPrice: position.liquidationPrice,
+        },
+      },
+      continue: async () => {
+        // An idempotent replay is not a trade — re-running side effects
+        // would advance the streak (and pay its bonus) daily off a single
+        // stored request.
+        if (result.replayed) return
+        try {
+          await advancePerpBettingStreak(
+            auth.uid,
+            contractId,
+            auth.creds.kind === 'key'
+          )
+        } catch (err) {
+          log('perp streak update failed (non-fatal):', err)
+        }
+        if (result.isNewUniqueBettor) {
+          try {
+            await payUniqueBettorBonus(contractId, auth.uid)
+          } catch (err) {
+            log('perp unique bettor bonus failed (non-fatal):', err)
+          }
+        }
       },
     }
   })
