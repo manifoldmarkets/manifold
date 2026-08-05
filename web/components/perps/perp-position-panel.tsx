@@ -144,7 +144,7 @@ export const PerpPositionPanel = (props: {
       toast.success(
         `Closed ${direction} — payout ${formatMoney(
           res.payout
-        )} (PnL ${formatMoney(res.pnl)})`
+        )} (profit ${formatMoney(res.pnl)})`
       )
       track('sell shares', {
         outcomeType: contract.outcomeType,
@@ -277,7 +277,7 @@ const PositionHistory = (props: { events: PerpHistoryEvent[] }) => {
                   pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
                 )}
               >
-                PnL {pnl >= 0 ? '+' : ''}
+                Profit {pnl >= 0 ? '+' : ''}
                 {formatMoney(pnl)}
               </span>
               <span className="text-ink-500 tabular-nums">
@@ -451,7 +451,7 @@ const PositionCard = (props: {
             </div>
           </Col>
           <Col className="items-end">
-            <div className="text-ink-400 text-xs">Unrealized PnL</div>
+            <div className="text-ink-400 text-xs">Unrealized profit</div>
             <div className={clsx('text-xl font-bold tabular-nums', pnlColor)}>
               {pnl >= 0 ? '+' : ''}
               {formatMoney(pnl)}

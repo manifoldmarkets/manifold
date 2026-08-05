@@ -245,7 +245,13 @@ export const ActivityCard = memo(function ActivityCard(props: {
               />
               <span className="text-ink-400 text-xs">oracle price</span>
             </Row>
-            <FeedPerpPriceSparkline contract={contract} />
+            <FeedPerpPriceSparkline
+              contract={contract}
+              height={104}
+              className="mt-1"
+              showSummary
+              showYAxis
+            />
           </>
         )}
       </Col>

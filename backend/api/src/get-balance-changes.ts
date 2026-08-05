@@ -81,7 +81,7 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
     if (d.reason === 'adl') {
       return `Auto-deleveraged ${d.direction} at ${px(
         d.closePrice
-      )} — ${formatMoney(txn.amount)} margin returned, PnL ${pnlText}`
+      )} — ${formatMoney(txn.amount)} margin returned, profit ${pnlText}`
     }
     const verb =
       d.reason === 'flip'
@@ -89,7 +89,7 @@ const perpTxnDescription = (txn: Txn): string | undefined => {
         : d.reason === 'resolve'
         ? 'Settled'
         : 'Closed'
-    return `${verb} ${d.direction} at ${px(d.closePrice)} — PnL ${pnlText}`
+    return `${verb} ${d.direction} at ${px(d.closePrice)} — profit ${pnlText}`
   }
   if (txn.category === 'PERP_RESOLVE_RESIDUAL') {
     return `Residual pools returned to creator (settled at ${px(d.finalPrice)})`

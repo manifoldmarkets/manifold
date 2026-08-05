@@ -32,17 +32,26 @@ import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Slider, sliderColors } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { PerpPositionRow } from './use-perp-positions'
 
-// Tick labels rendered under the leverage slider. Kept sparse so the first
-// few marks don't pile on top of each other at narrow widths — the slider
-// itself is still continuous (step=0.1), these are just visual anchors.
-const LEVERAGE_MARKS = [1, 5, 10, 25, 50, 100]
+// Tick labels rendered under the leverage slider. Density scales with the
+// cap — every integer up to 5×, a few anchors up to 10×, then a sparse set so
+// marks don't pile on top of each other at narrow widths — the slider itself
+// is still continuous (step=0.1), these are just visual anchors.
+const MEDIUM_LEVERAGE_MARKS = [1, 2, 3, 5, 10]
+const SPARSE_LEVERAGE_MARKS = [1, 5, 10, 25, 50, 100]
 
 const getLeverageMarks = (maxLeverage: number) => {
-  const marks = LEVERAGE_MARKS.filter((m) => m <= maxLeverage)
+  const base =
+    maxLeverage <= 5
+      ? Array.from({ length: Math.floor(maxLeverage) }, (_, i) => i + 1)
+      : maxLeverage <= 10
+      ? MEDIUM_LEVERAGE_MARKS
+      : SPARSE_LEVERAGE_MARKS
+  const marks = base.filter((m) => m <= maxLeverage)
   if (marks[marks.length - 1] !== maxLeverage) marks.push(maxLeverage)
   return marks
 }
@@ -64,7 +73,20 @@ export const PerpBetPanel = (props: {
   const [direction, setDirection] = useState<'long' | 'short'>('long')
   const [expanded, setExpanded] = useState(false)
   const [margin, setMargin] = useState<number | undefined>(10)
-  const [leverage, setLeverage] = useState<number>(2)
+  const [leverage, setLeverage] = usePersistentLocalState<number>(
+    2,
+    'perp-leverage'
+  )
+  const maxLeverage = contract.maxLeverage
+  // The persisted leverage is shared across markets and may exceed this
+  // market's cap (or be hand-edited garbage). Clamp at USE rather than
+  // writing back: merely viewing a low-cap market must not overwrite the
+  // saved preference. Moving the slider persists a value the slider already
+  // clamps to [1, maxLeverage].
+  const effectiveLeverage =
+    Number.isFinite(leverage) && leverage >= 1
+      ? Math.min(leverage, maxLeverage)
+      : 2
   const [submitting, setSubmitting] = useState(false)
   const [amountError, setAmountError] = useState<string | undefined>(undefined)
   const pendingTrade = useRef<{
@@ -87,11 +109,11 @@ export const PerpBetPanel = (props: {
   const price = Number(contract.oraclePrice)
   const priceDecimals = inferPriceDecimals([
     price,
-    computeLiquidationPrice(direction, price, leverage),
+    computeLiquidationPrice(direction, price, effectiveLeverage),
   ])
 
   const marginAmount = margin ?? 0
-  const notional = marginAmount * leverage
+  const notional = marginAmount * effectiveLeverage
 
   // When adding to a held position the engine merges the tranches, so entry
   // price, leverage and liquidation price all change. Preview the RESULTING
@@ -104,8 +126,8 @@ export const PerpBetPanel = (props: {
     if (!isAddPreview || !myPosition || notional <= 0)
       return {
         entryPrice: price,
-        leverage,
-        liqPrice: computeLiquidationPrice(direction, price, leverage),
+        leverage: effectiveLeverage,
+        liqPrice: computeLiquidationPrice(direction, price, effectiveLeverage),
       }
     const mergedSize = myPosition.size + notional
     const mergedCostBasis = myPosition.costBasis + marginAmount
@@ -116,7 +138,7 @@ export const PerpBetPanel = (props: {
       price
     )
     const mergedLeverage =
-      mergedCostBasis > 0 ? mergedSize / mergedCostBasis : leverage
+      mergedCostBasis > 0 ? mergedSize / mergedCostBasis : effectiveLeverage
     return {
       entryPrice: mergedEntry,
       leverage: mergedLeverage,
@@ -129,7 +151,7 @@ export const PerpBetPanel = (props: {
     marginAmount,
     price,
     direction,
-    leverage,
+    effectiveLeverage,
   ])
   const liqPrice = preview.liqPrice
   const fundingRate = computeFundingRate(
@@ -154,7 +176,6 @@ export const PerpBetPanel = (props: {
   // Flipping: user holds a position in the opposite direction, and we'll
   // auto-close it before opening the new one (engine does this atomically).
   const isFlip = !!openDirection && openDirection !== direction
-  const maxLeverage = contract.maxLeverage
   const capacity = useMemo(() => {
     if (positions == null) return null
     try {
@@ -200,11 +221,11 @@ export const PerpBetPanel = (props: {
       toast.error('Sign in to trade')
       return
     }
-    if (!margin || margin <= 0 || leverage <= 0) {
+    if (!margin || margin <= 0 || effectiveLeverage <= 0) {
       toast.error('Enter a positive margin and leverage')
       return
     }
-    if (leverage > maxLeverage) {
+    if (effectiveLeverage > maxLeverage) {
       toast.error(`Max leverage is ${maxLeverage}×`)
       return
     }
@@ -218,7 +239,12 @@ export const PerpBetPanel = (props: {
     }
     setSubmitting(true)
     try {
-      const fingerprint = [contract.id, direction, margin, leverage].join(':')
+      const fingerprint = [
+        contract.id,
+        direction,
+        margin,
+        effectiveLeverage,
+      ].join(':')
       const request =
         pendingTrade.current?.fingerprint === fingerprint
           ? pendingTrade.current
@@ -228,7 +254,7 @@ export const PerpBetPanel = (props: {
         contractId: contract.id,
         direction,
         mana: margin,
-        leverage,
+        leverage: effectiveLeverage,
         idempotencyKey: request.idempotencyKey,
       })
       const verb = isAdd ? 'Added to' : isFlip ? 'Flipped to' : 'Opened'
@@ -248,7 +274,7 @@ export const PerpBetPanel = (props: {
         outcome: direction,
         isLimitOrder: false,
         boosted: contract.boosted,
-        leverage,
+        leverage: effectiveLeverage,
         notional,
         perpAction: isAdd ? 'add' : isFlip ? 'flip' : 'open',
       })
@@ -348,6 +374,7 @@ export const PerpBetPanel = (props: {
           setError={setAmountError}
           disabled={submitting}
           showSlider
+          showSliderMarks
           token="M$"
           sliderColor={submitColor as 'green' | 'red'}
           fieldLabel="Margin"
@@ -359,11 +386,11 @@ export const PerpBetPanel = (props: {
           {/* Visual heading; the slider carries ariaLabel="Leverage". */}
           <span className="text-ink-600 text-sm font-medium">Leverage</span>
           <span className="text-ink-900 font-mono text-lg font-semibold tabular-nums">
-            {leverage.toFixed(leverage < 10 ? 1 : 0)}×
+            {effectiveLeverage.toFixed(effectiveLeverage < 10 ? 1 : 0)}×
           </span>
         </Row>
         <LeverageSlider
-          value={leverage}
+          value={effectiveLeverage}
           onChange={setLeverage}
           maxLeverage={maxLeverage}
           color={submitColor as 'green' | 'red'}

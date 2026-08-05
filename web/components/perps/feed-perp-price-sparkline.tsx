@@ -123,7 +123,7 @@ export const FeedPerpPriceSparkline = (props: {
       width="100%"
       height={chart.chartHeight}
       viewBox={`0 0 ${width} ${chart.chartHeight}`}
-      preserveAspectRatio={showYAxis ? 'none' : undefined}
+      preserveAspectRatio="none"
       className={clsx(
         showYAxis && 'min-w-0 flex-1',
         !showSummary && 'my-4',
@@ -160,7 +160,7 @@ export const FeedPerpPriceSparkline = (props: {
         fill="none"
         stroke="currentColor"
         strokeWidth={1.5}
-        vectorEffect={showYAxis ? 'non-scaling-stroke' : undefined}
+        vectorEffect="non-scaling-stroke"
         className="text-primary-500"
       />
     </svg>

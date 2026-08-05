@@ -9,6 +9,7 @@ import {
   InformationCircleIcon,
   LightBulbIcon,
   RefreshIcon,
+  TrendingDownIcon,
   TrendingUpIcon,
   UserIcon,
 } from '@heroicons/react/outline'
@@ -171,6 +172,10 @@ const otherBalances: NotificationSectionData = {
     'personalized_mana_offer',
   ],
 }
+const perps: NotificationSectionData = {
+  label: 'Perps',
+  subscriptionTypes: ['perp_liquidation', 'perp_adl'],
+}
 const userInteractions: NotificationSectionData = {
   label: 'Users',
   subscriptionTypes: [
@@ -254,6 +259,10 @@ export function NotificationSettings(props: {
         <NotificationSection
           icon={<CashIcon className={'h-6 w-6'} />}
           data={otherBalances}
+        />
+        <NotificationSection
+          icon={<TrendingDownIcon className={'h-6 w-6'} />}
+          data={perps}
         />
         <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>General</span>

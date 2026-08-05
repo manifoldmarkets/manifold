@@ -417,7 +417,13 @@ export function DashboardMarketCard({
               />
               <span className="text-ink-400 text-xs">oracle price</span>
             </Row>
-            <FeedPerpPriceSparkline contract={perpContract} />
+            <FeedPerpPriceSparkline
+              contract={perpContract}
+              height={120}
+              className="mt-auto"
+              showSummary
+              showYAxis
+            />
           </Col>
         )}
       </div>

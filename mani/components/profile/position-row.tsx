@@ -151,7 +151,7 @@ function PerpPositionRow({
         </Col>
         <Col style={{ alignItems: 'flex-end' }}>
           <ThemedText color={color.textTertiary} size="xs">
-            Lifetime P&L
+            Lifetime profit
           </ThemedText>
           <TokenNumber
             amount={profit}

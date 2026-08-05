@@ -86,11 +86,6 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   | AnyTxnCategory,
   string
 > = {
-  // Perp types
-  perp_liquidation: 'Position liquidated',
-  PERP_OPEN_MARGIN: 'Opened position',
-  PERP_CLOSE_PAYOUT: 'Closed position',
-  PERP_RESOLVE_RESIDUAL: 'Perp resolved (residual pools)',
   // Bet types
   create_bet: 'Buy shares',
   sell_shares: 'Sell shares',
@@ -118,6 +113,11 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   UNIQUE_BETTOR_BONUS: 'Unique trader bonus',
   MANA_PAYMENT: 'User payment',
   QUEST_REWARD: 'Quest reward',
+  // Perp types
+  perp_liquidation: 'Perp position liquidated',
+  PERP_OPEN_MARGIN: 'Opened perp position',
+  PERP_CLOSE_PAYOUT: 'Closed perp position',
+  PERP_RESOLVE_RESIDUAL: 'Perp resolved (residual pools)',
   // Less-common txn types
   AD_CREATE: 'Ad created',
   AD_REDEEM: 'Ad reward redeemed',

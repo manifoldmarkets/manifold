@@ -9,6 +9,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { api } from 'web/lib/api/api'
 import { POSITIONS_POLL_MS as POLL_MS } from './use-perp-positions'
 
@@ -42,6 +43,8 @@ export const PerpTradesTab = (props: {
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const initializedRef = useRef(false)
+  // Hoisted out of EventRow: one resize listener for the tab, not one per row.
+  const isMobile = useIsMobile(800)
 
   // Poll the first page so new trades stream in while the tab is open (this
   // used to fetch exactly once — the tab froze until a full page reload).
@@ -117,7 +120,12 @@ export const PerpTradesTab = (props: {
   return (
     <Col className="gap-2">
       {events.map((e) => (
-        <EventRow key={e.id} event={e} priceDecimals={priceDecimals} />
+        <EventRow
+          key={e.id}
+          event={e}
+          priceDecimals={priceDecimals}
+          short={isMobile}
+        />
       ))}
       {hasMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
     </Col>
@@ -133,8 +141,12 @@ const EVENT_LABELS: Record<Event['eventType'], string> = {
   funding: 'funding',
 }
 
-const EventRow = (props: { event: Event; priceDecimals: number }) => {
-  const { event, priceDecimals } = props
+const EventRow = (props: {
+  event: Event
+  priceDecimals: number
+  short: boolean
+}) => {
+  const { event, priceDecimals, short } = props
   const dirColor =
     event.direction === 'long'
       ? 'text-teal-600'
@@ -179,7 +191,7 @@ const EventRow = (props: { event: Event; priceDecimals: number }) => {
             username: event.username ?? 'anon',
             avatarUrl: event.avatarUrl ?? '',
           }}
-          short
+          short={short}
         />
       </div>
       <Col className="order-last min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-auto">

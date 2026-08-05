@@ -321,7 +321,15 @@ export function FeedContractCard(props: {
           />
         )}
 
-        {isPerp && <FeedPerpPriceSparkline contract={contract} />}
+        {isPerp && (
+          <FeedPerpPriceSparkline
+            contract={contract}
+            height={120}
+            className="my-4"
+            showSummary
+            showYAxis
+          />
+        )}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter

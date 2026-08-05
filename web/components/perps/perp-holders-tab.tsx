@@ -32,6 +32,9 @@ export const PerpHoldersTab = (props: {
     if (holders) setTotalHolders?.(holders.length)
   }, [holders, setTotalHolders])
 
+  // Hoisted out of HolderRow: one resize listener for the tab, not one per row.
+  const isMobile = useIsMobile(800)
+
   if (!holders) return <LoadingIndicator />
   if (holders.length === 0)
     return (
@@ -59,8 +62,11 @@ export const PerpHoldersTab = (props: {
   return (
     <Row className="flex-col gap-3 sm:flex-row sm:gap-1">
       <Col className="w-full sm:w-1/2">
-        <Row className="p-2 font-semibold text-teal-600">
-          Longs ({longs.length})
+        <Row className="justify-between p-2">
+          <span className="font-semibold text-teal-600">
+            Longs ({longs.length})
+          </span>
+          <span className="text-ink-600">Profit</span>
         </Row>
         {orderByPnl(longs).map((h) => (
           <HolderRow
@@ -69,12 +75,16 @@ export const PerpHoldersTab = (props: {
             oraclePrice={price}
             contractId={contract.id}
             priceDecimals={priceDecimals}
+            short={isMobile}
           />
         ))}
       </Col>
       <Col className="w-full sm:w-1/2">
-        <Row className="text-scarlet-600 p-2 font-semibold">
-          Shorts ({shorts.length})
+        <Row className="justify-between p-2">
+          <span className="text-scarlet-600 font-semibold">
+            Shorts ({shorts.length})
+          </span>
+          <span className="text-ink-600">Profit</span>
         </Row>
         {orderByPnl(shorts).map((h) => (
           <HolderRow
@@ -83,6 +93,7 @@ export const PerpHoldersTab = (props: {
             oraclePrice={price}
             contractId={contract.id}
             priceDecimals={priceDecimals}
+            short={isMobile}
           />
         ))}
       </Col>
@@ -108,9 +119,9 @@ const HolderRow = (props: {
   oraclePrice: number
   contractId: string
   priceDecimals: number
+  short: boolean
 }) => {
-  const { holder, oraclePrice, contractId, priceDecimals } = props
-  const isMobile = useIsMobile(800)
+  const { holder, oraclePrice, contractId, priceDecimals, short } = props
   const currentUser = useUser()
   const pnl = getUserFacingPnlForHolder(holder, oraclePrice, contractId)
 
@@ -130,7 +141,7 @@ const HolderRow = (props: {
               username: holder.username ?? 'anon',
               avatarUrl: holder.avatarUrl ?? '',
             }}
-            short={isMobile}
+            short={short}
           />
         </div>
         <Col className="items-end">
@@ -138,6 +149,7 @@ const HolderRow = (props: {
             {formatMoney(pnl)}
           </span>
           <span className="text-ink-500 text-xs">
+            {formatMoney(holder.originalCostBasis)} margin ·{' '}
             {holder.leverage.toFixed(2)}× · liq{' '}
             {formatPrice(holder.liquidationPrice, priceDecimals)}
           </span>

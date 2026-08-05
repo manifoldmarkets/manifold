@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { Answer } from 'common/answer'
 import { DisplayUser } from 'common/api/user-types'
@@ -57,12 +57,21 @@ export function ContractTabs(props: {
   const [totalComments, setTotalComments] = useState(props.totalComments)
 
   const isPerp = liveContract.mechanism === 'perp'
-  // Perps don't live in `contract_bets`, so server-side totalBets is always 0
-  // for them. The perp tabs fetch their own data and report counts via
-  // setTotalPerpTrades / setTotalPerpHolders; we keep separate counters so the
-  // CPMM totals stay untouched when the page is a binary market.
-  const [totalPerpTrades, setTotalPerpTrades] = useState(0)
-  const [totalPerpHolders, setTotalPerpHolders] = useState(0)
+  // Perps don't live in `contract_bets`; getContractParams counts their
+  // trades/positions from the perp tables instead, so totalBets and
+  // totalPositions are real for them too. Seed from those, then let the tabs
+  // refresh the counts after mount — separate counters keep the CPMM totals
+  // untouched when the page is a binary market.
+  const [totalPerpTrades, setTotalPerpTrades] = useState(isPerp ? totalBets : 0)
+  const [totalPerpHolders, setTotalPerpHolders] = useState(
+    isPerp ? props.totalPositions : 0
+  )
+  // The trades tab reports loaded-rows-so-far — a lower bound while its
+  // pagination is in progress — so never let it shrink the seeded count.
+  const reportPerpTrades = useCallback(
+    (n: number) => setTotalPerpTrades((prev) => Math.max(prev, n)),
+    []
+  )
 
   const commentsTitle =
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
@@ -169,7 +178,7 @@ export function ContractTabs(props: {
             <PerpTradesTab
               key={liveContract.id}
               contract={liveContract as PerpContract}
-              setTotalTrades={setTotalPerpTrades}
+              setTotalTrades={reportPerpTrades}
             />
           ),
         }
