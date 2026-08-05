@@ -166,6 +166,9 @@ import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
 import { setJobInterest } from './set-job-interest'
 import { getJobInterest } from './get-job-interest'
+import { getJobSeekers } from './get-job-seekers'
+import { getJobSeekerTopics } from './get-job-seeker-topics'
+import { getJobSeekerTopicRank } from './get-job-seeker-topic-rank'
 
 import { createCategory } from './create-category'
 import { createTask } from './create-task'
@@ -398,6 +401,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-notif-settings': updateNotifSettings,
   'set-job-interest': setJobInterest,
   'get-job-interest': getJobInterest,
+  'get-job-seekers': getJobSeekers,
+  'get-job-seeker-topics': getJobSeekerTopics,
+  'get-job-seeker-topic-rank': getJobSeekerTopicRank,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   post: post,
