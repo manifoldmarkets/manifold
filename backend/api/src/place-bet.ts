@@ -8,6 +8,11 @@ import {
   updateMakers,
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
+import {
+  canParallelizeAnswer,
+  getPoolDepToken,
+} from 'api/helpers/answer-bet-parallelism'
+import { bufferContractAggregate } from 'api/helpers/contract-aggregate-buffer'
 import { Answer } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
@@ -48,6 +53,8 @@ import {
 } from 'shared/supabase/bets'
 import {
   createSupabaseDirectClient,
+  READ_COMMITTED_MODE,
+  SERIAL_MODE,
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import {
@@ -74,8 +81,14 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
     return queueDependenciesThenBet(props, auth, isApi)
   }
 
-  // Worst thing that could happen from wrong deps is contention
-  const fullDeps = [auth.uid, contractId, ...(deps ?? [])]
+  // These queue keys are the correctness mechanism for the READ COMMITTED
+  // parallel-answer path (see placeBetMain): the bettor uid + pool token are what
+  // keep same-user / same-pool bets from running concurrently — which READ
+  // COMMITTED will not catch. Keep them, and assume a single write process; a
+  // second writer or weaker keys could allow lost updates / double-spends.
+  // (Client-supplied `deps` are only hints; wrong ones merely cost contention.)
+  const poolToken = getPoolDepToken(contractId, props.answerId)
+  const fullDeps = [auth.uid, poolToken, ...(deps ?? [])]
   return await betsQueue.enqueueFn(() => {
     return placeBetMain(props, auth.uid, isApi)
   }, fullDeps)
@@ -87,7 +100,10 @@ const queueDependenciesThenBet = async (
   isApi: boolean
 ) => {
   const { dryRun, contractId } = props
-  const minimalDeps = [auth.uid, contractId]
+  // Correctness-critical under READ COMMITTED (see placeBet): the uid + pool token
+  // here, plus the matched maker ids appended below, are what serialize bets that
+  // touch the same balance / pool / maker.
+  const minimalDeps = [auth.uid, getPoolDepToken(contractId, props.answerId)]
   return await ordersQueue.enqueueFn(async () => {
     const { contract, answers, unfilledBets, balanceByUserId } =
       await fetchContractBetDataAndValidate(
@@ -219,7 +235,11 @@ export const placeBetMain = async (
       false,
       isApi ? undefined : silent
     )
-  })
+    // For independent answers (which run in parallel) the per-pool queue already
+    // serializes same-pool and same-user bets, so SERIALIZABLE's predicate locks
+    // are redundant and only cause 40001 storms — use READ COMMITTED there.
+    // Binary / sum-to-one bets are unaffected and stay SERIALIZABLE.
+  }, canParallelizeAnswer(contractId, answerId) ? READ_COMMITTED_MODE : SERIAL_MODE)
 
   const { newBet, betId, betGroupId } = result
 
@@ -609,7 +629,19 @@ export const executeNewBetResult = async (
   })
   const metricsQuery = bulkUpdateContractMetricsQuery(newMetrics)
   const streakIncrementedQuery = incrementStreakQuery(user, newBet.createdTime)
-  const contractUpdateQuery = updateDataQuery('contracts', 'id', contractUpdate)
+  // For independent (non-sum-to-one) multi answers, keep the shared contract row
+  // OUT of this transaction so concurrent answers touch only disjoint rows. This is
+  // load-bearing: that path runs at READ COMMITTED, so a read-modify-write of any
+  // row shared across answers or bettors (like contracts) would race here with no
+  // SSI to catch it. New writes added to this transaction must stay per-answer /
+  // per-user, or be atomic increments. The contract's eventually-consistent
+  // aggregates are applied via the deferred buffer below. Gated on !isMultiBet so
+  // the multi-answer-at-once path is never affected.
+  const deferContractAgg =
+    !isMultiBet && canParallelizeAnswer(contract.id, newBet.answerId)
+  const contractUpdateQuery = deferContractAgg
+    ? 'select 1 where false'
+    : updateDataQuery('contracts', 'id', contractUpdate)
   const answerUpdateQuery = bulkUpdateQuery(
     'answers',
     ['id'],
@@ -632,6 +664,15 @@ export const executeNewBetResult = async (
      `
   )
   log(`placeBet bulk insert/update took ${Date.now() - startTime}ms`)
+  if (deferContractAgg) {
+    // Apply the contract-row aggregates out of band (atomic, recomputable).
+    bufferContractAggregate(contract.id, {
+      volume: sumBy(betsToInsert, (b) => Math.abs(b.amount)),
+      uniqueBettors: isUniqueBettor ? 1 : 0,
+      lastBetTime,
+      answersChanged: answerUpdates.length > 0,
+    })
+  }
   const userUpdates = results[0] as UserUpdate[]
   if (userUpdates.length) {
     // if negative balances, make sure the balance is higher than when they started

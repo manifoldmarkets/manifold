@@ -200,3 +200,11 @@ export const SERIAL_MODE = new pgp.txMode.TransactionMode({
   readOnly: false,
   deferrable: false,
 })
+
+// READ COMMITTED isolation. Use where mutual exclusion between transactions is
+// already guaranteed elsewhere, so SERIALIZABLE's predicate-lock serialization
+// failures would be pure overhead.
+export const READ_COMMITTED_MODE = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.readCommitted,
+  readOnly: false,
+})

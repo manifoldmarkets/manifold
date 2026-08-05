@@ -7,6 +7,7 @@ import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { convertBet } from 'common/supabase/bets'
 import * as crypto from 'crypto'
 import { groupBy, keyBy, mapValues, sumBy } from 'lodash'
+import { getPoolDepToken } from 'api/helpers/answer-bet-parallelism'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 import {
@@ -19,10 +20,15 @@ import { getContract, getUser, log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
-  return await betsQueue.enqueueFn(
-    () => multiSellMain(props, auth, req),
-    [props.contractId, auth.uid]
-  )
+  // Pool tokens mutually exclude this sell from bets on any answer it touches
+  // (bets on independent answers run at READ COMMITTED, so exclusion must come
+  // from the queue — see getPoolDepToken). The coarse contractId token keeps
+  // multi-answer ops serialized among themselves.
+  return await betsQueue.enqueueFn(() => multiSellMain(props, auth, req), [
+    auth.uid,
+    props.contractId,
+    ...props.answerIds.map((id) => getPoolDepToken(props.contractId, id)),
+  ])
 }
 
 const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {

@@ -7,23 +7,25 @@ import {
 import { log } from 'shared/monitoring/log'
 
 export const runTransactionWithRetries = async <T>(
-  callback: (trans: SupabaseTransaction) => Promise<T>
+  callback: (trans: SupabaseTransaction) => Promise<T>,
+  mode: typeof SERIAL_MODE = SERIAL_MODE
 ) => {
   const pg = createSupabaseDirectClient()
-  return transactWithRetries(pg, 3, callback)
+  return transactWithRetries(pg, 3, callback, mode)
 }
 
 async function transactWithRetries<T>(
   pg: SupabaseDirectClient,
   maxAttempts = 5,
-  fn: (t: SupabaseTransaction) => Promise<T>
+  fn: (t: SupabaseTransaction) => Promise<T>,
+  mode: typeof SERIAL_MODE = SERIAL_MODE
 ): Promise<T> {
   let attempt = 0
   while (true) {
     try {
       attempt++
       log(`Attempt ${attempt} of ${maxAttempts}`)
-      return await pg.tx({ mode: SERIAL_MODE }, fn)
+      return await pg.tx({ mode }, fn)
     } catch (error: any) {
       log.error(`Attempt ${attempt} of ${maxAttempts} failed: ${error.message}`)
       const isRetryable =

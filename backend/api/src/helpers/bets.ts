@@ -1,4 +1,5 @@
 import { NewBetResult } from 'api/place-bet'
+import { cacheContractMeta } from 'api/helpers/answer-bet-parallelism'
 import { redeemShares } from 'api/redeem-shares'
 import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
@@ -273,6 +274,10 @@ export const fetchContractBetDataAndValidate = async (
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
   log(`Fetch bet data took ${Date.now() - startTime}ms`)
+
+  // Warm the immutable-metadata cache so the bets queue can pick a per-answer
+  // key on the next bet for this contract (see answer-bet-parallelism).
+  cacheContractMeta(contract)
 
   return {
     user,
