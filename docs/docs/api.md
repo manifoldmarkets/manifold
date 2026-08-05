@@ -1679,6 +1679,225 @@ Example request:
 curl "https://api.manifold.markets/v0/get-boost-history?limit=50&includePending=true"
 ```
 
+## Perpetual futures (beta)
+
+Perps are pool-based perpetual futures priced by an external oracle feed. They
+trade with mana only, positions carry leverage and can be liquidated, and the
+API surface below is in beta — endpoints and shapes may change while the
+feature is new. Market creation is admin-only.
+
+Note the paths: while in beta these endpoints are served WITHOUT the `/v0`
+prefix — e.g. `https://api.manifold.markets/place-perp-trade`, not
+`/v0/place-perp-trade`. They will move under `/v0` if and when they graduate
+to the stable API.
+
+### `POST /place-perp-trade`
+
+Open a new position, or add to an existing position in the same direction, on
+a perp market. Adding merges into your position at the units-weighted
+(harmonic mean) entry price.
+
+Requires auth.
+
+Parameters:
+
+- `contractId`: Required. The perp market to trade on.
+- `direction`: Required. `long` or `short`.
+- `mana`: Required. Margin to commit, in mana. Must be positive.
+- `leverage`: Required. Position leverage. Must be positive and at most the
+  market's `maxLeverage`.
+- `idempotencyKey`: Required. A random 10-character alphanumeric string.
+  Retrying a request with the same key returns the original result instead of
+  opening a second position.
+
+Response type:
+
+```tsx
+type PlacePerpTradeResponse = {
+  position: {
+    userId: string
+    direction: 'long' | 'short'
+    size: number // mana notional (margin × leverage)
+    costBasis: number
+    originalCostBasis: number
+    entryPrice: number
+    leverage: number
+    liquidationPrice: number
+  }
+}
+```
+
+### `POST /close-perp-position`
+
+Close your entire position in one direction on a perp market. Partial closes
+are not supported.
+
+Requires auth.
+
+Parameters:
+
+- `contractId`: Required.
+- `direction`: Required. `long` or `short` — which of your positions to close.
+- `idempotencyKey`: Required. A random 10-character alphanumeric string, same
+  semantics as `place-perp-trade`.
+- `expectedOpenedTime`: Required. The `openedTime` of the position you intend
+  to close. If the position at the server no longer matches (for example it
+  was liquidated and a new one opened), the close is rejected instead of
+  closing the wrong position.
+
+Response type:
+
+```tsx
+type ClosePerpPositionResponse = {
+  payout: number // mana returned to your balance
+  pnl: number // profit relative to original cost basis
+}
+```
+
+### `GET /get-perp-positions`
+
+List open positions on a perp market.
+
+Requires no auth.
+
+Parameters:
+
+- `contractId`: Required.
+- `userId`: Optional. Only return this user's positions.
+
+Response is an array of:
+
+```tsx
+type PerpPosition = {
+  userId: string
+  direction: 'long' | 'short'
+  size: number
+  costBasis: number
+  originalCostBasis: number
+  entryPrice: number
+  leverage: number
+  liquidationPrice: number
+  openedTime: number
+  updatedTime: number
+  userName: string | null
+  username: string | null
+  avatarUrl: string | null
+}
+```
+
+### `GET /get-perp-events`
+
+Paginated trade history for a perp market: opens, adds, closes, liquidations,
+and ADL (auto-deleverage) events. Funding events are excluded — use
+`get-perp-funding-events` for those.
+
+Requires no auth.
+
+Parameters:
+
+- `contractId`: Required.
+- `userId`: Optional. Only return this user's events.
+- `beforeId`: Optional. Return events with `id` lower than this — pass the
+  smallest `id` from the previous page to paginate backward.
+- `limit`: Optional. Default `50`, max `200`.
+
+Response is an array of:
+
+```tsx
+type PerpEvent = {
+  id: number
+  ts: number
+  userId: string | null
+  direction: 'long' | 'short' | null
+  eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+  oraclePrice: number
+  sizeDelta: number
+  costBasisDelta: number
+  originalCostBasisDelta: number
+  leverage: number | null
+  payout: number | null
+  pnl: number | null
+  adlFactor: number | null
+  userName: string | null
+  username: string | null
+  avatarUrl: string | null
+}
+```
+
+### `GET /get-perp-funding-events`
+
+Per-period funding history for a perp market.
+
+Requires no auth.
+
+Parameters:
+
+- `contractId`: Required.
+- `since`: Optional. Only return events at or after this timestamp (ms).
+- `limit`: Optional. Max `5000`.
+
+Response is an array of:
+
+```tsx
+type PerpFundingEvent = {
+  ts: number
+  fundingRate: number
+  oraclePrice: number
+  numLiquidations: number
+  adlFactorLong: number
+  adlFactorShort: number
+}
+```
+
+### `GET /get-oracle-price`
+
+Latest price point for an oracle feed.
+
+Requires no auth.
+
+Parameters:
+
+- `feedId`: Required. The feed id, e.g. `btc-usd`.
+
+Response type:
+
+```tsx
+type OraclePriceResponse = {
+  latest: {
+    feedId: string
+    price: number
+    ts: number
+    sourceTs?: number
+  } | null
+}
+```
+
+### `GET /get-oracle-price-series`
+
+Historical price series for an oracle feed.
+
+Requires no auth.
+
+Parameters:
+
+- `feedId`: Required.
+- `since`: Optional. Only return points at or after this timestamp (ms).
+- `limit`: Optional. Max `5000`.
+- `bucketSeconds`: Optional, max `86400`. Server-side downsampling: return
+  the last point of each bucket instead of raw rows. Fast feeds emit a point
+  every ~15 seconds, so request week-plus windows bucketed or the `limit` cap
+  will truncate the window.
+
+Response is an array of `{ ts: number, price: number }`.
+
+### `POST /create-perp`
+
+Create a perp market. Admin-only; documented for completeness. Takes the
+market question and description, an `oracleFeedId` from the registered feeds,
+and the risk parameters `maxLeverage`, `maxFundingRate`,
+`fundingSensitivity`, `maxOraclePriceAgeMs`, `subsidyLong`, and
+`subsidyShort`. Returns the created market as a `LiteMarket`.
+
 ## Websockets
 
 Manifold provides a real-time websocket server that allows you to subscribe to updates about markets, bets, and other events. The websocket endpoint is available at `wss://api.manifold.markets/ws` and `wss://api.dev.manifold.markets/ws`.
@@ -1823,6 +2042,7 @@ Parameters:
 
 ## Changelog
 
+- 2026-08-05: Add perpetual futures (beta) endpoint documentation
 - 2026-03-09: Add `/get-boost-history` documentation
 - 2024-10-30: Remove undefined parameter from `/v0/market/[marketId]/sell` and remove `sell-shares-dpm` endpoint
 - 2023-12-19: Formatting & copy improvements. Updated parameters and return types.
