@@ -15,6 +15,10 @@ import {
   getTopContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
+import {
+  getPerpPositionCount,
+  getPerpTradeCount,
+} from 'common/supabase/perps'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
@@ -73,6 +77,7 @@ export async function getContractParams(
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
   const isNumber = contract.outcomeType === 'NUMBER'
+  const isPerp = contract.mechanism === 'perp'
   const numberContractBetCount = async () =>
     retryUnAuthedApi(contractSlug, 'unique-bet-group-count', async () =>
       unauthedApi('unique-bet-group-count', {
@@ -98,6 +103,10 @@ export async function getContractParams(
     hasMechanism
       ? isNumber
         ? numberContractBetCount()
+        : isPerp
+        ? // Perp trades live in contract_perp_events, not contract_bets, so
+          // the regular count is always 0 for them.
+          getPerpTradeCount(contract.id, db)
         : getTotalBetCount(contract.id)
       : 0,
     hasMechanism
@@ -122,7 +131,11 @@ export async function getContractParams(
     getPinnedComments(db, contract.id),
     getNumContractComments(contract.id),
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
-    isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
+    isCpmm1 || isMulti
+      ? getContractMetricsCount(contract.id, db)
+      : isPerp
+      ? getPerpPositionCount(contract.id, db)
+      : 0,
     retryUnAuthedApi(
       contractSlug,
       'get-related-markets',
