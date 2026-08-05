@@ -894,6 +894,13 @@ export const API = (_apiTypeCheck = {
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ slug: z.string(), lite: coerceBoolean.optional() }),
   },
+  'create-instance': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { status: 'success'; subdomain: string; instanceId: string },
+    props: z.object({ name: z.string().min(1).max(60) }).strict(),
+  },
   market: {
     method: 'POST',
     visibility: 'public',

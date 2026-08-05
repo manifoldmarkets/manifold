@@ -1,3 +1,4 @@
+import { createInstance } from 'api/create-instance'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
 import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
@@ -326,6 +327,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'edit-comment': editComment,
   'leave-review': leaveReview,
   'pin-comment': pinComment,
+  'create-instance': createInstance,
   comments: getComments,
   market: createMarket,
   'market/:contractId/group': addOrRemoveTopicFromContract,
