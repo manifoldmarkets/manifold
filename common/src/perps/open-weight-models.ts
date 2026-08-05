@@ -50,7 +50,7 @@ import { DAY_MS } from '../util/time'
 // change silently when a third party edits a metadata field.
 
 /** Bump when the map changes. */
-export const OPEN_WEIGHT_LIST_VERSION = '2026-07-27'
+export const OPEN_WEIGHT_LIST_VERSION = '2026-08-05'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
@@ -75,6 +75,19 @@ export type ModelClassification = {
  * variant suffixes (`...:free`), which are the same model for index purposes.
  */
 export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
+  // Added 2026-08-05: these four entered the top 50 during the week of
+  // 2026-07-29 and froze the feed (fail-closed on unclassified models, as
+  // designed — see the header comment).
+  'deepseek/deepseek-v4-flash-20260731': {
+    open: true,
+    weights: 'deepseek-ai/DeepSeek-V4-Flash-0731',
+  }, // DeepSeek: DeepSeek V4 Flash 0731 (production re-release, MIT)
+  'openai/gpt-5.6-luna-pro-20260709': { open: false }, // OpenAI: GPT-5.6 Luna Pro
+  'qwen/qwen3.7-flash-20260727': { open: false }, // Qwen: Qwen3.7 Flash (API-only, no weights)
+  // Alibaba ANNOUNCED weights for the week of 2026-08-10, but nothing is on
+  // HuggingFace as of the version date. Classify by published weight files,
+  // never announcements; reclassify + bump the version if/when they land.
+  'qwen/qwen3.8-max-20260803': { open: false }, // Qwen: Qwen3.8 Max
   'deepseek/deepseek-v4-flash-20260423': {
     open: true,
     weights: 'deepseek-ai/DeepSeek-V4-Flash',

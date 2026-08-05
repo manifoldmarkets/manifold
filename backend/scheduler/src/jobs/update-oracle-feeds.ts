@@ -28,7 +28,46 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 export async function updateOracleFeeds() {
   const pg = createSupabaseDirectClient()
   const fastFeeds = ORACLE_FEEDS.filter((f) => f.cadence === 'fast')
-  await Promise.all(fastFeeds.map((feed) => tickOneFeed(pg, feed)))
+  const dailyFeeds = ORACLE_FEEDS.filter((f) => f.cadence === 'daily')
+  await Promise.all([
+    ...fastFeeds.map((feed) => tickOneFeed(pg, feed)),
+    ...dailyFeeds.map((feed) => probeDailyFeedStaleness(pg, feed)),
+  ])
+}
+
+// Dead-man switch for daily feeds. Their points are written by their own
+// jobs, and the only other staleness check (update-perps) runs per LIVE
+// contract — a daily feed with no unresolved market on it can die silently.
+// This probe is read-only (no fetch, no apply) and throttled so a stale feed
+// alerts about once per hour instead of every 15s tick. Throttle state is
+// in-memory; a scheduler restart re-alerts immediately, which is fine.
+const STALE_ALERT_INTERVAL_MS = 60 * 60 * 1000
+const lastStaleAlert: Record<string, number> = {}
+
+const probeDailyFeedStaleness = async (
+  pg: SupabaseDirectClient,
+  feed: OracleFeedDef
+) => {
+  try {
+    const row = await pg.oneOrNone<{ ts: string }>(
+      `select ts from oracle_prices
+       where feed_id = $1 order by ts desc limit 1`,
+      [feed.id]
+    )
+    const latestTs = row ? new Date(row.ts).getTime() : null
+    const stale = latestTs == null || Date.now() - latestTs > feed.staleAfterMs
+    if (!stale) return
+    const last = lastStaleAlert[feed.id] ?? 0
+    if (Date.now() - last < STALE_ALERT_INTERVAL_MS) return
+    lastStaleAlert[feed.id] = Date.now()
+    log.error(
+      `[oracle-feeds] daily feed ${feed.id} is stale: latest point ${
+        latestTs ? new Date(latestTs).toISOString() : 'none'
+      } exceeds staleAfterMs=${feed.staleAfterMs}`
+    )
+  } catch (err) {
+    log.error(`[oracle-feeds] ${feed.id}: staleness probe failed — ${err}`)
+  }
 }
 
 const tickOneFeed = async (pg: SupabaseDirectClient, feed: OracleFeedDef) => {

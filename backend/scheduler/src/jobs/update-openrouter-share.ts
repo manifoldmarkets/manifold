@@ -39,6 +39,17 @@ import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 // We do not manufacture intraday movement to paper over this; a synthesised
 // price on a market people trade would be worse than a visible step.
 export const updateOpenRouterShare = async () => {
+  try {
+    await updateOpenRouterShareInternal()
+  } catch (err) {
+    // Thrown fetch/parse errors otherwise surface only through croner's
+    // generic catch, without the [openrouter] tag — which is how a feed
+    // outage stays invisible to feed-specific log searches.
+    log.error(`[openrouter] tick failed — ${err}`)
+  }
+}
+
+const updateOpenRouterShareInternal = async () => {
   const pg = createSupabaseDirectClient()
 
   const now = Date.now()
