@@ -17,6 +17,7 @@ import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { randomString } from 'common/util/random'
 import { followContractInternal } from 'api/follow-contract'
+import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 
 export const onCreateMarket = async (
   contract: Contract,
@@ -44,6 +45,11 @@ export const onCreateMarket = async (
     eventId,
     richTextToString(desc),
     mentioned
+  )
+  // Mirrors on-create-bet: creating a market is league activity too, so a
+  // creator who was dropped at rollover can rejoin mid-season without betting.
+  await addToLeagueIfNotInOne(pg, creatorId).catch((e) =>
+    log.error(`Failed to add creator ${creatorId} to league`, e)
   )
   // Try again if first embedding failed
   if (!embedding) await generateContractEmbeddings(contract, pg)
