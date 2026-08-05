@@ -28,6 +28,65 @@ const BETS_ONLY_FOR_SCORE = [
   UNRANKED_GROUP_ID,
   ...IGNORE_GROUP_IDS,
 ]
+// How far back to look for days we never scored. Anything older than this is
+// written off — the raw view/interaction rows are still there, but a gap that
+// old isn't worth the query time to close.
+const CATCH_UP_LOOKBACK_DAYS = 14
+// Days to process in a single run, including today's. One day takes ~25min in
+// prod, so this bounds the job at roughly 75 minutes; a longer gap heals over
+// consecutive nights rather than in one very long run.
+const MAX_DAYS_PER_RUN = 3
+
+const dayKey = (d: Date | string) =>
+  (typeof d === 'string' ? d : d.toISOString()).slice(0, 10)
+
+/**
+ * Scores yesterday, plus any recent day we never scored.
+ *
+ * calculateUserTopicInterests only ever looks at a single 24h window, and
+ * get_user_topic_interests_2 reads only a user's latest row, whose hit/miss
+ * counts accumulate from the rows before it. So a run that never happens is
+ * not "caught up next time" — that day's views and bets are dropped from the
+ * running counts permanently. In prod only 11 of the 30 days to 2026-07-25 had
+ * been scored, so roughly 60% of the signal behind every personalized surface
+ * was being discarded.
+ *
+ * Modelled on updateStatsCore(7), which recomputes a trailing window for the
+ * same reason and is why daily_stats has no gaps over the same period.
+ */
+export async function calculateUserTopicInterestsWithCatchUp() {
+  const pg = createSupabaseDirectClient()
+  const scoredDays = new Set(
+    await pg.map(
+      `select distinct created_time::date as day from user_topic_interests
+       where created_time > now() - ($1 || ' days')::interval`,
+      [CATCH_UP_LOOKBACK_DAYS + 1],
+      (r) => dayKey(r.day)
+    )
+  )
+
+  // Oldest first: each day's Bayesian prior is built from the days before it,
+  // so processing out of order would score a day against a future prior.
+  const now = Date.now()
+  const missing: number[] = []
+  for (let daysAgo = CATCH_UP_LOOKBACK_DAYS; daysAgo >= 1; daysAgo--) {
+    const startTime = now - DAY_MS * daysAgo
+    if (!scoredDays.has(dayKey(new Date(startTime)))) missing.push(startTime)
+  }
+
+  const toProcess = missing.slice(-MAX_DAYS_PER_RUN)
+  const deferred = missing.length - toProcess.length
+  log(
+    `Topic interests: ${missing.length} unscored day(s) in the last ` +
+      `${CATCH_UP_LOOKBACK_DAYS}; processing ${toProcess.length}` +
+      (deferred > 0 ? `, deferring ${deferred} to later runs` : '')
+  )
+
+  for (const startTime of toProcess) {
+    await calculateUserTopicInterests(startTime)
+  }
+}
+
 export async function calculateUserTopicInterests(
   startTime?: number,
   readOnly?: boolean,
@@ -200,6 +259,15 @@ const getPreviousStats = async (
   userIds: string[],
   createdTimesOnly?: string[]
 ) => {
+  // Module-level, so it survives between calls in a long-lived process. It
+  // sums into whatever is already there, so a second call in the same process
+  // would double-count every prior hit/miss — which now happens on any
+  // catch-up run, and already happens in backfillUserTopicInterests. Reset
+  // before the early return so a skipped load can't leave the last call's
+  // numbers behind either.
+  for (const userId of Object.keys(userIdToGroupStats)) {
+    delete userIdToGroupStats[userId]
+  }
   if (createdTimesOnly && createdTimesOnly.length === 0) return
   const previousStats = await pg.map(
     `

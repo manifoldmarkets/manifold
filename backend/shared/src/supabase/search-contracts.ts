@@ -1,6 +1,6 @@
 import { Contract, isSportsContract } from 'common/contract'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
-import { GROUP_SCORE_PRIOR } from 'common/feed'
+import { GROUP_SCORE_PRIOR, nicheBlendTopicScoreSql } from 'common/feed'
 import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 import { PrivateUser } from 'common/user'
@@ -31,6 +31,58 @@ const DEFAULT_THRESHOLD = 1000
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
+
+// --- Stale-seen suppression (For You only) ------------------------------
+// Nothing is hidden for longer than this. Past it a market is fair game
+// again even if it has been completely quiet, so the shelf can never
+// permanently empty out.
+const SEEN_MEMORY_WINDOW = '7 days'
+// Views younger than this don't count yet. This is what makes going back
+// safe: scroll browse, open the 4th market, hit back — every card you
+// scrolled past is still inside the grace period, so the page you return
+// to looks like the page you left. It also keeps "load more" honest, since
+// paging with a shifting offset over a set that's shrinking underneath you
+// silently skips rows.
+const SEEN_GRACE_PERIOD = '1 hour'
+// Matches PROB_CHANGE_THRESHOLD in feed-market-movement-display.ts: the same
+// move that earns a card its movement badge also earns it another look.
+const SEEN_PROB_MOVE_THRESHOLD = 0.05
+
+/**
+ * Drops markets the user has already looked at and that have gone quiet since.
+ *
+ * Browse ranks on score alone, so the same top markets greet you every visit.
+ * But "seen" is a weak signal and over-trusting it is worse than repetition,
+ * so this only fires in the narrow band where repetition is genuinely stale:
+ * seen, long enough ago to be a separate visit, recently enough to still
+ * remember, and nothing has happened since.
+ *
+ * A view here means the card was ≥90% in the viewport (useIsVisible in
+ * feed-contract-card.tsx) or the market page was opened — not merely that the
+ * card was somewhere on a page that loaded. Promoted impressions are excluded
+ * deliberately: an ad scrolling past is not the user choosing to look at
+ * something.
+ *
+ * Resurfacing is driven by new comments and by significant price movement,
+ * not by last_bet_time — on an active market bets land continuously, so
+ * keying on them would make this a no-op exactly where repetition is worst.
+ */
+const staleSeenMarketsSql = (userId: string) =>
+  where(
+    `not exists (
+      select 1 from user_contract_views ucv
+      where ucv.user_id = $1
+        and ucv.contract_id = contracts.id
+        and greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+            between now() - interval '${SEEN_MEMORY_WINDOW}'
+                and now() - interval '${SEEN_GRACE_PERIOD}'
+        and coalesce(contracts.last_comment_time, contracts.created_time)
+            <= greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+        and abs(coalesce((contracts.data->'probChanges'->>'day')::numeric, 0))
+            <= ${SEEN_PROB_MOVE_THRESHOLD}
+    )`,
+    [userId]
+  )
 
 type SharedSearchArgs = {
   filter: string
@@ -116,6 +168,7 @@ export async function getForYouSQL(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
       ),
+      staleSeenMarketsSql(userId),
       privateUserBlocksSql(privateUser),
       withClause(
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
@@ -141,7 +194,9 @@ export async function getForYouSQL(
       orderBy(`case
       when bool_or(contracts.boosted) then avg(contracts.${sortByScore})
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})
+      then power(${nicheBlendTopicScoreSql(
+        `coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR})`
+      )}, ${GROUP_SCORE_POWER}) * avg(contracts.${sortByScore})
       else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
@@ -183,6 +238,86 @@ export type SearchTypes =
   | 'description'
   | 'prefix'
   | 'answer'
+
+// Full-text search finds nothing unless the user guesses a word that is
+// literally in the question, so a near miss lands on "only nothingness"
+// while a well-matched market sits one synonym away. Every open market
+// already has an embedding (contract_embeddings, kept current on create and
+// used by the related-markets rail), so the miss can be answered instead of
+// rendered as a dead end.
+//
+// Deliberately lower than TOPIC_SIMILARITY_THRESHOLD (0.5), which compares
+// two full questions. A search term is much shorter than the questions it is
+// being compared against, which drags cosine similarity down for matches that
+// are perfectly good. NOT yet validated against real query embeddings — check
+// this against live searches in dev before trusting the number.
+export const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.35
+// Over-fetch from the index, then let the normal filters cut it down, the
+// same way close_contract_embeddings does with match_count + 500.
+const SEMANTIC_SEARCH_OVERFETCH = 200
+
+// Shared by the lexical and semantic paths so a topic-scoped search can't
+// come back with out-of-topic results from one of them.
+const groupsFilterSql = (args: {
+  groupId?: string
+  groupIds?: string[]
+  token: TokenInputType
+}) => {
+  const { groupId, groupIds, token } = args
+  return (
+    (groupIds?.length || groupId) &&
+    where(
+      `
+    exists (
+      select 1 from group_contracts gc
+      where ${
+        token === 'CASH'
+          ? "gc.contract_id = contracts.data->>'siblingContractId'"
+          : 'gc.contract_id = contracts.id'
+      }
+      and gc.group_id = any($1)
+    )`,
+      [filterDefined([groupId, ...(groupIds ?? [])])]
+    )
+  )
+}
+
+/**
+ * Nearest markets to an already-computed query embedding, run through the
+ * same filters as a normal search so status/type/token/blocks still hold.
+ */
+export function getSemanticSearchContractSQL(
+  args: SharedSearchArgs & {
+    embedding: number[]
+    groupId?: string
+    groupIds?: string[]
+    privateUser?: PrivateUser
+    excludeContractIds?: string[]
+  }
+) {
+  const { embedding, limit, privateUser, excludeContractIds } = args
+  return renderSql(
+    select(contractColumnsToSelectWithPrefix('contracts')),
+    from(
+      `search_contract_embeddings($1::vector, $2, $3) as se`,
+      [
+        // pgvector parses its literal from a JSON-shaped array string.
+        JSON.stringify(embedding),
+        SEMANTIC_SEARCH_SIMILARITY_THRESHOLD,
+        SEMANTIC_SEARCH_OVERFETCH,
+      ]
+    ),
+    join('contracts on contracts.id = se.contract_id'),
+    groupsFilterSql(args),
+    getSearchContractWhereSQL({ ...args, hideStonks: true }),
+    privateUser && privateUserBlocksSql(privateUser),
+    // Already-returned lexical hits, so the tail can't repeat the head.
+    (excludeContractIds?.length ?? 0) > 0 &&
+      where(`contracts.id <> all(array[$1])`, [excludeContractIds]),
+    orderBy('se.similarity desc'),
+    lim(limit)
+  )
+}
 
 export function getSearchContractSQL(
   args: SharedSearchArgs & {
@@ -229,21 +364,7 @@ export function getSearchContractSQL(
     where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
-  const groupsFilter =
-    (groupIds?.length || groupId) &&
-    where(
-      `
-    exists (
-      select 1 from group_contracts gc
-      where ${
-        token === 'CASH'
-          ? "gc.contract_id = contracts.data->>'siblingContractId'"
-          : 'gc.contract_id = contracts.id'
-      }
-      and gc.group_id = any($1)
-    )`,
-      [filterDefined([groupId, ...(groupIds ?? [])])]
-    )
+  const groupsFilter = groupsFilterSql({ groupId, groupIds, token })
 
   // Recent movements filter
   const newsFilter =
