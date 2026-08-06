@@ -1686,12 +1686,7 @@ trade with mana only, positions carry leverage and can be liquidated, and the
 API surface below is in beta — endpoints and shapes may change while the
 feature is new. Market creation is admin-only.
 
-Note the paths: while in beta these endpoints are served WITHOUT the `/v0`
-prefix — e.g. `https://api.manifold.markets/place-perp-trade`, not
-`/v0/place-perp-trade`. They will move under `/v0` if and when they graduate
-to the stable API.
-
-### `POST /place-perp-trade`
+### `POST /v0/place-perp-trade`
 
 Open a new position, or add to an existing position in the same direction, on
 a perp market. Adding merges into your position at the units-weighted
@@ -1727,7 +1722,7 @@ type PlacePerpTradeResponse = {
 }
 ```
 
-### `POST /close-perp-position`
+### `POST /v0/close-perp-position`
 
 Close your entire position in one direction on a perp market. Partial closes
 are not supported.
@@ -1754,7 +1749,7 @@ type ClosePerpPositionResponse = {
 }
 ```
 
-### `GET /get-perp-positions`
+### `GET /v0/get-perp-positions`
 
 List open positions on a perp market.
 
@@ -1785,7 +1780,7 @@ type PerpPosition = {
 }
 ```
 
-### `GET /get-perp-events`
+### `GET /v0/get-perp-events`
 
 Paginated trade history for a perp market: opens, adds, closes, liquidations,
 and ADL (auto-deleverage) events. Funding events are excluded — use
@@ -1824,7 +1819,7 @@ type PerpEvent = {
 }
 ```
 
-### `GET /get-perp-funding-events`
+### `GET /v0/get-perp-funding-events`
 
 Per-period funding history for a perp market.
 
@@ -1849,7 +1844,7 @@ type PerpFundingEvent = {
 }
 ```
 
-### `GET /get-oracle-price`
+### `GET /v0/get-oracle-price`
 
 Latest price point for an oracle feed.
 
@@ -1872,7 +1867,7 @@ type OraclePriceResponse = {
 }
 ```
 
-### `GET /get-oracle-price-series`
+### `GET /v0/get-oracle-price-series`
 
 Historical price series for an oracle feed.
 
@@ -1890,7 +1885,7 @@ Parameters:
 
 Response is an array of `{ ts: number, price: number }`.
 
-### `POST /create-perp`
+### `POST /v0/create-perp`
 
 Create a perp market. Admin-only; documented for completeness. Takes the
 market question and description, an `oracleFeedId` from the registered feeds,

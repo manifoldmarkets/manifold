@@ -1039,14 +1039,14 @@ export const API = (_apiTypeCheck = {
   },
   'create-perp': {
     method: 'POST',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: true,
     returns: {} as LiteMarket,
     props: createPerpSchema,
   },
   'place-perp-trade': {
     method: 'POST',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: true,
     returns: {} as {
       position: {
@@ -1064,14 +1064,14 @@ export const API = (_apiTypeCheck = {
   },
   'close-perp-position': {
     method: 'POST',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: true,
     returns: {} as { payout: number; pnl: number },
     props: closePerpPositionSchema,
   },
   'get-oracle-price': {
     method: 'GET',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as {
@@ -1086,7 +1086,7 @@ export const API = (_apiTypeCheck = {
   },
   'get-oracle-price-series': {
     method: 'GET',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as { ts: number; price: number }[],
@@ -1154,7 +1154,7 @@ export const API = (_apiTypeCheck = {
   },
   'get-perp-positions': {
     method: 'GET',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: false,
     // NOT the default 5s+swr cache: the API sits behind an edge cache that
     // serves stale-while-revalidate regardless of client no-cache, so a
@@ -1185,7 +1185,7 @@ export const API = (_apiTypeCheck = {
   },
   'get-perp-events': {
     method: 'GET',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: false,
     // See get-perp-positions: edge-cache staleness makes fresh closes /
     // liquidations lag their tombstones. Funding events and oracle series
@@ -1220,7 +1220,7 @@ export const API = (_apiTypeCheck = {
   },
   'get-perp-funding-events': {
     method: 'GET',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as {
