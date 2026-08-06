@@ -1069,6 +1069,21 @@ export const API = (_apiTypeCheck = {
     returns: {} as { payout: number; pnl: number },
     props: closePerpPositionSchema,
   },
+  // Admin-only live risk tuning; undocumented deliberately — internal
+  // operator tooling, not part of the public perp API surface.
+  'update-perp-config': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true; maxLeverage: number },
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        // Same bound as createPerpSchema.
+        maxLeverage: z.number().gt(1).lte(100),
+      })
+      .strict(),
+  },
   'get-oracle-price': {
     method: 'GET',
     visibility: 'public',
