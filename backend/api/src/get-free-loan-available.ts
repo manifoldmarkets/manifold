@@ -7,6 +7,7 @@ import {
   calculateMarketLoanMax,
   calculatePositionFreeLoan,
   canClaimDailyFreeLoan,
+  filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
 } from 'common/loans'
@@ -65,10 +66,11 @@ export const getFreeLoanAvailable: APIHandler<
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
 
-  // Calculate portfolio value (net of loans)
+  // Calculate portfolio value (net of loans).
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
 

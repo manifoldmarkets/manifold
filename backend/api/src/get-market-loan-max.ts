@@ -5,6 +5,7 @@ import {
   calculateMarketLoanMax,
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
+  filterLoanEquityMetrics,
   MAX_MARKET_LOAN_NET_WORTH_PERCENT,
   MS_PER_DAY,
   isMarketEligibleForLoan,
@@ -73,9 +74,10 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
 

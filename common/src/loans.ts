@@ -1,6 +1,7 @@
 import { sumBy } from 'lodash'
 import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
+import { Contract } from './contract'
 
 export type LoanTrackingRow = {
   id?: number
@@ -152,6 +153,22 @@ export const calculateEquity = (
   loanTotal: number
 ): number => {
   return Math.max(0, portfolioValue - loanTotal)
+}
+
+/**
+ * Metrics that count as collateral for loan limits. Perp positions are
+ * excluded: they are internally leveraged, can be liquidated to zero before
+ * any loan is recovered, and never carry loans themselves — so counting their
+ * oracle-marked value in equity would let users re-leverage perp exposure
+ * into borrowing capacity against unrelated positions.
+ */
+export const filterLoanEquityMetrics = <M extends { contractId: string }>(
+  metrics: M[],
+  contractsById: Record<string, Pick<Contract, 'mechanism'> | undefined>
+): M[] => {
+  return metrics.filter(
+    (m) => contractsById[m.contractId]?.mechanism !== 'perp'
+  )
 }
 
 export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {

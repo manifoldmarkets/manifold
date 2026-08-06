@@ -5,6 +5,7 @@ import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
   distributeLoanProportionally,
+  filterLoanEquityMetrics,
   isUserEligibleForGeneralLoan,
   isMarketEligibleForLoan,
   getMidnightPacific,
@@ -105,9 +106,10 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { contracts, metrics } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
   const contractsById = keyBy(contracts, 'id')
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
 
