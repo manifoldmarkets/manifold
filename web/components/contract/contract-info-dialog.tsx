@@ -36,6 +36,7 @@ import { InfoBox } from '../widgets/info-box'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { linkClass } from '../widgets/site-link'
+import { PerpAdminPanel } from '../perps/perp-admin-panel'
 import { Table } from '../widgets/table'
 import { ContractHistoryButton } from './contract-edit-history-button'
 
@@ -581,6 +582,7 @@ export const Stats = (props: {
 
 function PerpStatsRows(props: { contract: PerpContract }) {
   const { contract } = props
+  const isAdmin = useAdmin()
   const price =
     contract.resolution === 'MKT'
       ? Number(contract.resolvedOraclePrice ?? contract.oraclePrice)
@@ -628,14 +630,24 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           />
         </td>
       </tr>
-      <tr>
-        <td>Maximum leverage</td>
-        <td>
-          {Number.isFinite(contract.maxLeverage)
-            ? `${formatWithCommas(contract.maxLeverage)}×`
-            : '—'}
-        </td>
-      </tr>
+      {isAdmin && !contract.isResolved ? (
+        // Admins get the live max-leverage editor in place of the read-only
+        // row, alongside the dialog's other purple admin controls.
+        <tr className="bg-purple-500/30">
+          <td colSpan={2} className="whitespace-normal">
+            <PerpAdminPanel contract={contract} />
+          </td>
+        </tr>
+      ) : (
+        <tr>
+          <td>Maximum leverage</td>
+          <td>
+            {Number.isFinite(contract.maxLeverage)
+              ? `${formatWithCommas(contract.maxLeverage)}×`
+              : '—'}
+          </td>
+        </tr>
+      )}
       <tr>
         <td>
           Current funding{' '}

@@ -1,6 +1,5 @@
 import { MenuSeparator } from '@headlessui/react'
 import {
-  AdjustmentsIcon,
   EyeIcon,
   EyeOffIcon,
   InformationCircleIcon,
@@ -20,7 +19,6 @@ import { TiVolumeMute } from 'react-icons/ti'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { RepostButton, RepostModal } from 'web/components/comments/repost-modal'
 import { useNativeInfo } from 'web/components/native-message-provider'
-import { useAdmin } from 'web/hooks/use-admin'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
@@ -34,10 +32,7 @@ import {
   unfollowMarket,
 } from '../buttons/follow-market-button'
 import { ReportModal } from '../buttons/report-button'
-import { Col } from '../layout/col'
-import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
-import { PerpAdminPanel } from '../perps/perp-admin-panel'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { getLinkTarget } from '../widgets/linkify'
 import { ChangeBannerButton } from './change-banner-button'
@@ -56,11 +51,8 @@ export function HeaderActions(props: {
   const privateUser = usePrivateUser()
   const { isNative } = useNativeInfo()
   const isCreator = user?.id === contract.creatorId
-  const isAdmin = useAdmin()
-  const perpContract = contract.mechanism === 'perp' ? contract : null
 
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [perpConfigOpen, setPerpConfigOpen] = useState(false)
   const [repostOpen, setRepostOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [liquidityOpen, setLiquidityOpen] = useState(false)
@@ -196,15 +188,6 @@ export function HeaderActions(props: {
       onClick: () => setDetailsOpen(true),
       icon: <InformationCircleIcon className="h-5 w-5" />,
     },
-    ...(perpContract && isAdmin && !perpContract.isResolved
-      ? [
-          {
-            name: 'Max leverage',
-            onClick: () => setPerpConfigOpen(true),
-            icon: <AdjustmentsIcon className="h-5 w-5" />,
-          },
-        ]
-      : []),
     ...((user || privateUser) && !isCreator
       ? [
           {
@@ -284,13 +267,6 @@ export function HeaderActions(props: {
         open={detailsOpen}
         setOpen={setDetailsOpen}
       />
-      {perpContract && isAdmin && !perpContract.isResolved && (
-        <Modal open={perpConfigOpen} setOpen={setPerpConfigOpen}>
-          <Col className={MODAL_CLASS}>
-            <PerpAdminPanel contract={perpContract} />
-          </Col>
-        </Modal>
-      )}
       {repostOpen && (
         <RepostModal
           playContract={contract}
