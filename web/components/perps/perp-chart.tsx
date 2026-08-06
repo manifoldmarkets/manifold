@@ -378,9 +378,17 @@ export const PerpChart = (props: {
     const price = Number(contract.oraclePrice)
     if (!Number.isFinite(price) || price <= 0) return null
     const showYou = overlays.you && userPositions.length > 0
-    if (!overlays.carry && !overlays.cone && !overlays.liqs && !showYou) {
+    // The toggle can be on from another market this session while THIS
+    // market has nothing to draw (the chip is even hidden then) — an
+    // ungated check here would manufacture an empty future zone.
+    const showLiqs = overlays.liqs && allPositions.length > 0
+    if (!overlays.carry && !overlays.cone && !showLiqs && !showYou) {
       return null
     }
+    // Liquidation bands are horizontal levels — only these three actually
+    // draw into the future. With none of them on, horizon stays 0 and the
+    // chart does not extend past its data.
+    const projectsFuture = overlays.carry || overlays.cone || showYou
 
     const xs = windowedSeries.map((p) => p.ts)
     const maxTs = Math.max(...xs)
@@ -398,11 +406,9 @@ export const PerpChart = (props: {
       fundingPeriodMs,
       contract.createdTime
     )
-    const horizon = projectionHorizonWithFunding(
-      maxTs - Math.min(...xs),
-      now,
-      fundingTimes
-    )
+    const horizon = projectsFuture
+      ? projectionHorizonWithFunding(maxTs - Math.min(...xs), now, fundingTimes)
+      : 0
 
     const carry = overlays.carry
       ? carryNeutralPath(price, liveFundingRate, now, horizon, fundingPeriodMs)
@@ -429,7 +435,7 @@ export const PerpChart = (props: {
 
     const ys = windowedSeries.map((p) => p.value)
     const histRange = Math.max(...ys) - Math.min(...ys) || price * 0.02 || 1
-    const liqBands = overlays.liqs
+    const liqBands = showLiqs
       ? clusterLiquidationBands(allPositions, histRange * 0.02)
       : []
     const yours = showYou
@@ -470,9 +476,10 @@ export const PerpChart = (props: {
     if (!points.length) return { xScale: null, yScale: null, path: '' }
     const xs = points.map((p) => p.ts)
     const ys = points.map((p) => p.value)
-    const xMax = overlayGeom
-      ? overlayGeom.now + overlayGeom.horizon
-      : Math.max(...xs)
+    const xMax =
+      overlayGeom && overlayGeom.horizon > 0
+        ? overlayGeom.now + overlayGeom.horizon
+        : Math.max(...xs)
     const x = scaleTime()
       .domain([Math.min(...xs), Math.max(xMax, Math.max(...xs))])
       .range([40, width - 10])
@@ -583,9 +590,10 @@ export const PerpChart = (props: {
       : priceDecimals
   const [domainStart, domainEnd] = xScale.domain()
   const domainSpanMs = domainEnd.getTime() - domainStart.getTime()
-  const projectionEnd = overlayGeom
-    ? new Date(overlayGeom.now + overlayGeom.horizon)
-    : null
+  const projectionEnd =
+    overlayGeom && overlayGeom.horizon > 0
+      ? new Date(overlayGeom.now + overlayGeom.horizon)
+      : null
   const projectionEndX = projectionEnd ? xScale(projectionEnd) : null
   // Keep centered labels clear of the y-axis gutter and the right edge. When
   // the price chart extends into the future, reserve the far-right label for
@@ -613,7 +621,11 @@ export const PerpChart = (props: {
     // The projection zone has no data to inspect — hovering there would
     // just pin the crosshair to the last real point, which reads as the
     // projection being "worth" that value. Hide it instead.
-    if (overlayGeom && vbX > xScale(overlayGeom.now) + 8) {
+    if (
+      overlayGeom &&
+      overlayGeom.horizon > 0 &&
+      vbX > xScale(overlayGeom.now) + 8
+    ) {
       setHoverIdx(null)
       return
     }
@@ -826,25 +838,29 @@ export const PerpChart = (props: {
                   <rect x={40} y={10} width={width - 50} height={height - 30} />
                 </clipPath>
               </defs>
-              {/* Future zone: everything right of "now" is projection. */}
-              <g className="text-ink-500">
-                <rect
-                  x={nowX}
-                  y={10}
-                  width={Math.max(0, width - 10 - nowX)}
-                  height={height - 30}
-                  fill="currentColor"
-                  fillOpacity={0.03}
-                />
-                <line
-                  x1={nowX}
-                  x2={nowX}
-                  y1={10}
-                  y2={height - 20}
-                  stroke="currentColor"
-                  strokeOpacity={0.15}
-                />
-              </g>
+              {/* Future zone: everything right of "now" is projection. Only
+                  drawn when something actually projects — level-only
+                  overlays (liq bands) span the data instead. */}
+              {overlayGeom.horizon > 0 && (
+                <g className="text-ink-500">
+                  <rect
+                    x={nowX}
+                    y={10}
+                    width={Math.max(0, width - 10 - nowX)}
+                    height={height - 30}
+                    fill="currentColor"
+                    fillOpacity={0.03}
+                  />
+                  <line
+                    x1={nowX}
+                    x2={nowX}
+                    y1={10}
+                    y2={height - 20}
+                    stroke="currentColor"
+                    strokeOpacity={0.15}
+                  />
+                </g>
+              )}
               <g clipPath={`url(#${clipId})`}>
                 {overlayGeom.cone && (
                   <g className="text-ink-500">
@@ -872,7 +888,10 @@ export const PerpChart = (props: {
                 {overlayGeom.liqBands.map((b, i) => (
                   <line
                     key={i}
-                    x1={nowX}
+                    // With a projection zone the bands live in that gutter,
+                    // clear of the price path; without one they span the
+                    // data like ordinary level lines.
+                    x1={overlayGeom.horizon > 0 ? nowX : 40}
                     x2={width - 10}
                     y1={yScale(b.price)}
                     y2={yScale(b.price)}
