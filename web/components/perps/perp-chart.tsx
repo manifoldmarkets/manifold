@@ -57,18 +57,16 @@ type OpenPosition = {
 // Forward-projection overlays on the price chart. The price is an external
 // oracle, so none of these are forecasts: carry is the funding break-even
 // hurdle, the cone is the feed's own realized volatility, and the rest are
-// position levels. Toggles persist across markets for the session.
-// Calm by default: hold-cost line (with funding-event markers) and your own
-// levels. The vol cone and crowd liquidation bands are analyst tools —
-// opt-in, so a first-time visitor sees price, funding mechanics, and
-// nothing else.
+// position levels. Toggles persist across markets for the session but reset
+// on a fresh page load: every overlay is opt-in, so the chart always opens
+// as just the price and a visitor adds analyst tools deliberately.
 type OverlayKey = 'carry' | 'cone' | 'liqs' | 'you'
 type OverlayToggles = { [k in OverlayKey]: boolean }
 const DEFAULT_OVERLAYS: OverlayToggles = {
-  carry: true,
+  carry: false,
   cone: false,
   liqs: false,
-  you: true,
+  you: false,
 }
 
 // Each frame fetches its own window server-side. Short frames take raw
