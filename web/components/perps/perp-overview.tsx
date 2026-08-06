@@ -21,6 +21,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { PerpAdminPanel } from './perp-admin-panel'
 import { PerpChart } from './perp-chart'
 import { PerpBetPanel } from './perp-bet-panel'
 import { PerpOracleAttribution } from './perp-oracle-attribution'
@@ -228,6 +229,7 @@ export const PerpOverview = (props: { contract: PerpContract }) => {
         positions={positions}
         oracleTradingPaused={oracleTradingPaused}
       />
+      <PerpAdminPanel contract={contract} />
     </Col>
   )
 }

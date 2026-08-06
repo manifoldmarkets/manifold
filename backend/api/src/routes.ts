@@ -73,6 +73,7 @@ import { createMarket } from './create-market'
 import { createPerp } from './create-perp'
 import { placePerpTrade } from './place-perp-trade'
 import { closePerpPosition } from './close-perp-position'
+import { updatePerpConfig } from './update-perp-config'
 import {
   getOraclePrice,
   getOraclePriceSeries,
@@ -442,6 +443,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-perp': createPerp,
   'place-perp-trade': placePerpTrade,
   'close-perp-position': closePerpPosition,
+  'update-perp-config': updatePerpConfig,
   'get-oracle-price': getOraclePrice,
   'get-oracle-price-series': getOraclePriceSeries,
   'get-known-oracle-feeds': getKnownOracleFeeds,

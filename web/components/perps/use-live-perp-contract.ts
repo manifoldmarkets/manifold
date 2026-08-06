@@ -61,6 +61,12 @@ export const useLivePerpContract = (ssrContract: PerpContract) => {
                   ...(market.lastFundingTime != null
                     ? { lastFundingTime: market.lastFundingTime }
                     : {}),
+                  // Admins can retune the leverage cap live
+                  // (update-perp-config); the bet panel's clamp and slider
+                  // marks key off it, so every open page must converge.
+                  ...(market.maxLeverage != null
+                    ? { maxLeverage: market.maxLeverage }
+                    : {}),
                 }
           )
         })
