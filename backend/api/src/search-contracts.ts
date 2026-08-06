@@ -1,4 +1,7 @@
-import { searchProps } from 'common/api/market-search-types'
+import {
+  getMarketSearchRoute,
+  searchProps,
+} from 'common/api/market-search-types'
 import { toLiteMarket } from 'common/api/market-types'
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
@@ -93,21 +96,24 @@ const search = async (
   if (isFollowed && userId && groupIds.length === 0) {
     return []
   }
-  if (
-    filter !== 'news' &&
-    !term &&
-    !topicSlugForGroupIdLookup &&
-    !groupIds &&
-    (sort === 'score' || sort === 'freshness-score') &&
-    (token === 'MANA' || token === 'ALL') &&
-    !isRecent
-  ) {
+  const searchRoute = getMarketSearchRoute({
+    filter,
+    term,
+    topicSlug: topicSlugForGroupIdLookup,
+    groupIds,
+    sort,
+    token,
+    isRecent,
+    isForYou,
+    userId,
+  })
+  if (searchRoute === 'basic' || searchRoute === 'for-you') {
     // Enforce blocked users/contracts/topics in the query itself — the
     // client-side filter only patches holes in already-fetched pages.
     const privateUser = userId
       ? (await getPrivateUser(userId, pg)) ?? undefined
       : undefined
-    if (!isForYou || !userId) {
+    if (searchRoute === 'basic' || !userId) {
       return await pg.map(
         basicSearchSQL({
           ...props,
@@ -128,7 +134,7 @@ const search = async (
       })
       return await pg.map(forYouSql, [term], (r) => convertContract(r))
     }
-  } else if (isRecent && !term && userId) {
+  } else if (searchRoute === 'recent' && userId) {
     return await pg.map(
       'select data from get_your_recent_contracts($1, $2, $3)',
       [userId, limit, offset],

@@ -153,6 +153,14 @@ export function getNewContract(
         shouldAnswersSumToOne ?? true,
         timezone ?? ''
       ),
+    // Perp markets are created through a dedicated /create-perp endpoint with
+    // its own required fields (oracleFeedId, maxLeverage, funding params, etc.)
+    // so they do not flow through the generic createContract factory.
+    PERP: (): never => {
+      throw new Error(
+        'Perp markets must be created via the /create-perp endpoint'
+      )
+    },
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -536,5 +544,5 @@ const getPollProps = (
 
 export const DEFAULT_CONVERSION_SCORE_NUMERATOR = 2
 export const DEFAULT_CONVERSION_SCORE_DENOMINATOR = 15
-const DEFAULT_CONVERSION_SCORE =
+export const DEFAULT_CONVERSION_SCORE =
   DEFAULT_CONVERSION_SCORE_NUMERATOR / DEFAULT_CONVERSION_SCORE_DENOMINATOR

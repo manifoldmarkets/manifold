@@ -34,6 +34,20 @@ export const TRADED_TERM = 'bet'
 export const TRADING_TERM = 'betting'
 export const TRADER_TERM = 'trader'
 
+// Compiled default for perpetual futures (ManiPerp). The API's runtime
+// PERP_TRADING_MODE can select enabled, reduce-only, or halted without a source
+// edit; this flag remains the default when that environment setting is absent.
+// The oracle/liquidation/funding risk engine deliberately keeps running.
+// See backend/shared/src/perps/README.md for incident controls.
+export const PERPS_ENABLED = true
+
+// Testing-only escape hatch: bypass the "oracle price too old" check in the
+// perp engine's open/close paths. MUST be false in prod — a stale feed lets
+// traders cherry-pick a favorable cached price. For local dev without the
+// scheduler running, create test markets with a very large
+// maxOraclePriceAgeMs instead of flipping this.
+export const PERPS_SKIP_ORACLE_FRESHNESS = false
+
 export const ENV_CONFIG = CONFIGS[ENV]
 
 export function isAdminId(id: string) {

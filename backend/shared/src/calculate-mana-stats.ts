@@ -39,7 +39,11 @@ export const updateTxnStats = async (
         from txns
          where created_time >= $1
          and created_time < $2
-         and (to_type = 'BANK' OR from_type = 'BANK' OR category = 'ADD_SUBSIDY')
+         and (to_type = 'BANK' OR from_type = 'BANK'
+              -- USER<->CONTRACT flows tracked as daily summaries: AMM
+              -- subsidies and perp margin/payout flows (mana held in pools).
+              OR category in ('ADD_SUBSIDY', 'PERP_OPEN_MARGIN',
+                              'PERP_CLOSE_PAYOUT', 'PERP_RESOLVE_RESIDUAL'))
          and category not in ('CONSUME_SPICE', 'CONSUME_SPICE_DONE')
         group by from_type,
           to_type,

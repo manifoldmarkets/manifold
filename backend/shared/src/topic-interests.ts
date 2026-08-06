@@ -158,10 +158,12 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
 
 export const minimumContractsQualityBarWhereClauses = () =>
   buildArray(
-    where(`contracts.close_time > now()`),
+    where(`(contracts.close_time is null or contracts.close_time > now())`),
+    where(`contracts.resolution_time is null`),
     where(`contracts.outcome_type != 'STONK'`),
     where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
     where(`contracts.visibility = 'public'`),
+    where(`contracts.deleted = false`),
     where(`contracts.unique_bettor_count > 1`)
   )
 

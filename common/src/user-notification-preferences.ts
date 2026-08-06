@@ -57,6 +57,10 @@ export type notification_preferences = {
   // Leagues
   league_changed: notification_destination_types[]
 
+  // Perps
+  perp_liquidation: notification_destination_types[]
+  perp_adl: notification_destination_types[]
+
   // Manifold.love
   new_match: notification_destination_types[]
   new_endorsement: notification_destination_types[]
@@ -161,6 +165,10 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 
     // Leagues
     league_changed: constructPref(true, false, false),
+
+    // Perps
+    perp_liquidation: constructPref(true, true, true),
+    perp_adl: constructPref(true, false, false),
 
     // Manifold.love
     new_match: constructPref(true, true, true),

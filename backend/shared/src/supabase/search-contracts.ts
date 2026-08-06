@@ -1,6 +1,7 @@
 import { Contract, isSportsContract } from 'common/contract'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
+import { getPerpBackingPool } from 'common/perps/amm'
 import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 import { PrivateUser } from 'common/user'
@@ -398,6 +399,8 @@ function getSearchContractWhereSQL(args: {
     CASE
         WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
         THEN (coalesce((contracts.data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(contracts.data->'answers'))
+        WHEN mechanism = 'perp'
+        THEN (coalesce((contracts.data->>'poolLong')::numeric, 0) + coalesce((contracts.data->>'poolShort')::numeric, 0))
         ELSE coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
     END
   ) >= case when mechanism = 'cpmm-multi-1' then ${answerLiquidity} else ${liquidity} end`
@@ -439,7 +442,7 @@ type SortFields = Record<
   {
     sql: string
     sortCallback: (c: Contract) => number
-    order: 'ASC' | 'DESC' | 'DESC NULLS LAST'
+    order: 'ASC' | 'ASC NULLS LAST' | 'DESC' | 'DESC NULLS LAST'
   }
 >
 export const sortFields: SortFields = {
@@ -465,14 +468,25 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   liquidity: {
-    sql: "(contracts.data->>'elasticity')::numeric",
-    sortCallback: (c: Contract) => c.elasticity,
-    order: 'ASC',
+    sql: `case
+      when contracts.mechanism = 'perp' then null
+      else (contracts.data->>'elasticity')::numeric
+    end`,
+    sortCallback: (c: Contract) =>
+      c.mechanism === 'perp' ? Number.POSITIVE_INFINITY : c.elasticity,
+    order: 'ASC NULLS LAST',
   },
   subsidy: {
-    sql: "COALESCE((contracts.data->>'totalLiquidity')::numeric, 0)",
+    sql: `case
+      when contracts.mechanism = 'perp'
+      then coalesce((contracts.data->>'poolLong')::numeric, 0)
+        + coalesce((contracts.data->>'poolShort')::numeric, 0)
+      else coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
+    end`,
     sortCallback: (c: Contract) =>
-      c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
+      c.mechanism === 'perp'
+        ? getPerpBackingPool(c.poolLong, c.poolShort)
+        : c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
         ? c.totalLiquidity
         : 0,
     order: 'DESC',

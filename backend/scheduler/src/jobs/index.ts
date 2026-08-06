@@ -58,6 +58,10 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { updatePerps } from './update-perps'
+import { updateOracleFeeds } from './update-oracle-feeds'
+import { updateOpenRouterShare } from './update-openrouter-share'
+import { updateTrumpApproval } from './update-trump-approval'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
@@ -174,6 +178,25 @@ export function createJobs() {
       '0 */5 * * * *', // every 5 minutes
       applyPendingClarifications
     ),
+    createJob(
+      'update-perps',
+      '0 0 * * * *', // every hour on the hour
+      updatePerps
+    ),
+    createJob(
+      'update-oracle-feeds',
+      '*/15 * * * * *', // every 15 seconds (fast perp oracle tick)
+      updateOracleFeeds
+    ),
+    createJob(
+      'update-openrouter-share',
+      // Hourly, not daily: each run appends a fresh-timestamped point for the
+      // trailing 7-day window (see the file header). At :50 so update-perps
+      // on the hour funds against a price minutes old rather than an hour.
+      // 24 calls/day against OpenRouter's 500/day account limit.
+      '0 50 * * * *',
+      updateOpenRouterShare
+    ),
     // Daily jobs:
     createJob(
       'process-membership-renewals',
@@ -284,6 +307,11 @@ export function createJobs() {
       'update-stats',
       '0 20 4 * * *', // daily at 4:20 AM LA
       () => updateStatsCore(7)
+    ),
+    createJob(
+      'update-trump-approval',
+      '0 30 5 * * *', // 5:30am daily
+      updateTrumpApproval
     ),
     createJob(
       'onboarding-notification',

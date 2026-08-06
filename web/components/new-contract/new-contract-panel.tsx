@@ -323,7 +323,13 @@ export function NewContractPanel(props: {
       try {
         const contracts = await searchContracts({
           term: question,
-          contractType: formState.outcomeType || undefined,
+          // searchContracts doesn't accept 'PERP' as a filterable type (perps
+          // are admin-only and don't use this creation flow), so fall back to
+          // 'ALL' to avoid a TS error.
+          contractType:
+            formState.outcomeType && formState.outcomeType !== 'PERP'
+              ? formState.outcomeType
+              : undefined,
           filter: 'open',
           limit: 10,
           sort: 'most-popular',

@@ -32,7 +32,7 @@ export async function getLikedContracts(userId: string) {
   const contracts = await run(
     db
       .from('contracts')
-      .select('id, question, slug')
+      .select('id, question, slug, outcome_type')
       .in(
         'id',
         reacts.data.map((r) => r.content_id)

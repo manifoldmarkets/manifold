@@ -153,6 +153,7 @@ export function BuyAmountInput(props: {
   parentClassName?: string
   binaryOutcome?: 'YES' | 'NO'
   showSlider?: boolean
+  showSliderMarks?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -173,6 +174,7 @@ export function BuyAmountInput(props: {
     binaryOutcome,
     showBalance,
     showSlider,
+    showSliderMarks,
     parentClassName,
     className,
     inputClassName,
@@ -315,6 +317,7 @@ export function BuyAmountInput(props: {
             token={token}
             sliderColor={sliderColor}
             ariaLabel={fieldLabel}
+            showMarks={showSliderMarks}
           />
         )}
         {error ? (

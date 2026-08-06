@@ -17,7 +17,9 @@ import {
   BALANCE_CHANGE_TYPE_LABELS,
   BetBalanceChange,
   isBetChange,
+  isPerpChange,
   isTxnChange,
+  PerpBalanceChange,
   TxnBalanceChange,
 } from 'common/balance-change'
 import Link from 'next/link'
@@ -385,6 +387,14 @@ function RenderBalanceChanges(props: {
               token={change.contract.token}
             />
           )
+        } else if (isPerpChange(change)) {
+          return (
+            <PerpBalanceChangeRow
+              key={change.key}
+              change={change}
+              avatarSize={avatarSize}
+            />
+          )
         } else if (isTxnChange(change)) {
           return (
             <TxnBalanceChangeRow
@@ -548,6 +558,58 @@ const BetBalanceChangeRow = (props: {
   )
 }
 
+// Ledger annotation for a perp liquidation: amount is always 0 (the margin
+// left the balance at open), so no running-balance figure is shown — the row
+// records that the deposited margin became a permanent loss at this moment.
+const PerpBalanceChangeRow = (props: {
+  change: PerpBalanceChange
+  avatarSize: 'sm' | 'md'
+}) => {
+  const { change, avatarSize } = props
+  const { contract, description } = change
+  return (
+    <Row className={'gap-2'}>
+      <Col className={'mt-0.5'}>
+        <ChangeIcon
+          avatarSize={avatarSize}
+          slug={
+            contract.slug
+              ? contractPathWithoutContract(
+                  contract.creatorUsername,
+                  contract.slug
+                )
+              : undefined
+          }
+          symbol={'💥'}
+          className={'bg-scarlet-400'}
+        />
+      </Col>
+      <Col className={'w-full'}>
+        <Row className={'justify-between'}>
+          {contract.slug ? (
+            <Link
+              href={contractPathWithoutContract(
+                contract.creatorUsername,
+                contract.slug
+              )}
+              className={clsx('line-clamp-2', linkClass)}
+            >
+              {contract.question}
+            </Link>
+          ) : (
+            <div className={'line-clamp-2'}>{contract.question}</div>
+          )}
+        </Row>
+        <Row className={'text-ink-600 justify-between text-sm'}>
+          <div className={'text-scarlet-600 line-clamp-2'}>
+            {BALANCE_CHANGE_TYPE_LABELS.perp_liquidation}: {description}
+          </div>
+        </Row>
+      </Col>
+    </Row>
+  )
+}
+
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
   balance: { mana: number; cash: number; spice: number }
@@ -587,6 +649,9 @@ const TxnBalanceChangeRow = (props: {
     CASH_OUT: 'bg-amber-500',
     CONTRACT_BOOST_PURCHASE: 'bg-scarlet-400',
     ADD_SUBSIDY: 'bg-red-100',
+    PERP_OPEN_MARGIN: 'bg-indigo-400',
+    PERP_CLOSE_PAYOUT: 'bg-teal-400',
+    PERP_RESOLVE_RESIDUAL: 'bg-yellow-200',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     PUSH_NOTIFICATION_BONUS: 'bg-pink-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
@@ -625,6 +690,12 @@ const TxnBalanceChangeRow = (props: {
               '🚀'
             ) : type === 'ADD_SUBSIDY' ? (
               '💧'
+            ) : type === 'PERP_OPEN_MARGIN' ? (
+              '📈'
+            ) : type === 'PERP_CLOSE_PAYOUT' ? (
+              '💰'
+            ) : type === 'PERP_RESOLVE_RESIDUAL' ? (
+              '🏦'
             ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ||
               type === 'PRODUCE_SPICE' ? (
               '🎉'

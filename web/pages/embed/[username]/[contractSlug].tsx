@@ -9,12 +9,20 @@ import {
 import {
   CPMMMultiContract,
   Contract,
+  PerpContract,
   contractPath,
   getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
-import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
+import {
+  DOMAIN,
+  PERPS_SKIP_ORACLE_FRESHNESS,
+  TRADE_TERM,
+} from 'common/envs/constants'
+import { getPerpEmbedSummary } from 'common/perps/embed'
+import { fundingPeriodUnit } from 'common/perps/funding'
+import { formatPrice, inferPriceDecimals } from 'common/perps/format'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import { pointsToBase64 } from 'common/util/og'
@@ -46,6 +54,10 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-sparkline'
+import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { PerpOracleAttribution } from 'web/components/perps/perp-oracle-attribution'
+import { useLivePerpContract } from 'web/components/perps/use-live-perp-contract'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -124,18 +136,41 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function ContractEmbedPage(props: {
+type ContractEmbedPageProps = {
   contract: Contract
   points: Points | null
   multiPoints?: MultiBase64Points | null
-}) {
+}
+
+export default function ContractEmbedPage(props: ContractEmbedPageProps) {
+  const subscribedContract = useLiveContract(props.contract)
+
+  if (!subscribedContract) return <Custom404 />
+
+  return subscribedContract.outcomeType === 'PERP' ? (
+    <LivePerpContractEmbedPage {...props} contract={subscribedContract} />
+  ) : (
+    <ContractEmbedView {...props} contract={subscribedContract} />
+  )
+}
+
+function LivePerpContractEmbedPage(
+  props: Omit<ContractEmbedPageProps, 'contract'> & {
+    contract: PerpContract
+  }
+) {
+  const { contract } = useLivePerpContract(props.contract)
+  return <ContractEmbedView {...props} contract={contract} />
+}
+
+function ContractEmbedView(props: ContractEmbedPageProps) {
   const [showQRCode, setShowQRCode] = useState(false)
   const { points } = props
   const multiPoints = props.multiPoints
     ? unserializeBase64Multi(props.multiPoints)
     : null
 
-  const contract = useLiveContract(props.contract)
+  const { contract } = props
 
   const router = useRouter()
 
@@ -156,10 +191,6 @@ export default function ContractEmbedPage(props: {
         hostname: window.location.hostname,
       })
   }, [contract?.creatorId, contract?.id, contract?.slug])
-
-  if (!contract) {
-    return <Custom404 />
-  }
 
   return (
     <>
@@ -289,6 +320,17 @@ function ContractSmolView(props: {
   const shareUrl = getShareUrl(contract, user?.username)
 
   const showMultiChart = isMulti && !!props.multiPoints
+
+  if (contract.outcomeType === 'PERP') {
+    return (
+      <PerpContractSmolView
+        contract={contract}
+        href={href}
+        shareUrl={shareUrl}
+        showQRCode={showQRCode}
+      />
+    )
+  }
 
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
@@ -436,6 +478,182 @@ function ContractSmolView(props: {
           financeContract={contract}
           editable={false}
           isCashContract={isCashContract}
+        />
+      </Row>
+    </Col>
+  )
+}
+
+function PerpContractSmolView(props: {
+  contract: PerpContract
+  href: string
+  shareUrl: string
+  showQRCode: boolean
+}) {
+  const { contract, href, shareUrl, showQRCode } = props
+  const [now, setNow] = useState<number | null>(null)
+
+  useEffect(() => {
+    const update = () => setNow(Date.now())
+    update()
+    const interval = setInterval(update, 15_000)
+    return () => clearInterval(interval)
+  }, [contract.maxOraclePriceAgeMs, contract.oraclePriceTime])
+
+  const summary = getPerpEmbedSummary(
+    contract,
+    now ?? Number.NaN,
+    PERPS_SKIP_ORACLE_FRESHNESS
+  )
+  const priceDecimals = inferPriceDecimals([summary.displayPrice])
+  const isCheckingOracle =
+    now == null && summary.status === 'unavailable' && !contract.isResolved
+  const statusLabel = isCheckingOracle
+    ? 'Checking oracle'
+    : summary.status === 'live'
+    ? 'Live · trading open'
+    : summary.status === 'stale'
+    ? 'Oracle delayed · trading paused'
+    : summary.status === 'unavailable'
+    ? 'Oracle unavailable · trading paused'
+    : summary.status === 'cancelled'
+    ? 'Cancelled'
+    : 'Settled'
+  const ctaLabel =
+    summary.status === 'settled'
+      ? 'View settled market'
+      : summary.status === 'cancelled'
+      ? 'View cancelled market'
+      : summary.canTrade
+      ? 'Trade long or short'
+      : 'View market'
+  const funding = summary.funding
+  const fundingPercent = funding ? funding.rate * 100 : null
+  const fundingDirection =
+    funding?.payer == null ? 'balanced' : `${funding.payer} pay`
+
+  return (
+    <Col className="bg-canvas-0 relative h-[100vh] w-full overflow-hidden px-4 py-3">
+      {showQRCode && <FloatingQRCode shareUrl={shareUrl} />}
+      <Row className="text-ink-500 min-h-5 items-center justify-between gap-2 text-xs">
+        <Row className="min-w-0 items-center gap-1">
+          <Avatar
+            size="2xs"
+            avatarUrl={contract.creatorAvatarUrl}
+            username={contract.creatorUsername}
+            noLink
+          />
+          <span className="truncate">{contract.creatorName}</span>
+        </Row>
+        <span
+          className={clsx(
+            'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
+            summary.status === 'live'
+              ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300'
+              : summary.status === 'stale' || summary.status === 'unavailable'
+              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
+              : 'bg-canvas-100 text-ink-600'
+          )}
+        >
+          {statusLabel}
+        </span>
+      </Row>
+
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="hover:text-primary-700 mt-1 flex min-w-0 items-start gap-2 text-lg font-semibold leading-tight transition-colors"
+      >
+        <PerpMarketBadge className="mt-0.5" />
+        <span className="line-clamp-2">{contract.question}</span>
+      </a>
+
+      <Row className="mt-1 flex-wrap items-end justify-between gap-x-4 gap-y-1">
+        <Col className="gap-0">
+          <span className="text-ink-500 text-[11px]">{summary.priceLabel}</span>
+          <span className="text-ink-1000 text-2xl font-semibold tabular-nums">
+            {formatPrice(summary.displayPrice, priceDecimals)}
+          </span>
+        </Col>
+        <Col className="text-ink-500 items-end gap-0 text-right text-[11px]">
+          {summary.status === 'settled' ? (
+            <>
+              <span>All positions closed at the final oracle price</span>
+              <span>Trading and funding have ended</span>
+            </>
+          ) : summary.status === 'cancelled' ? (
+            <span>Trading has ended</span>
+          ) : (
+            <>
+              <span>
+                Long if it rises · Short if it falls
+                {summary.maxLeverage != null
+                  ? ` · up to ${summary.maxLeverage}×`
+                  : ''}
+              </span>
+              <span>
+                {formatMoney(summary.backingPool)} backing
+                {funding && fundingPercent != null
+                  ? ` · Funding ${
+                      fundingPercent > 0 ? '+' : ''
+                    }${fundingPercent.toFixed(3)}%/${fundingPeriodUnit(
+                      funding.periodMs
+                    )} · ${fundingDirection}`
+                  : ''}
+              </span>
+            </>
+          )}
+        </Col>
+      </Row>
+
+      <FeedPerpPriceSparkline
+        contract={contract}
+        height={104}
+        className="mt-1 min-h-0 w-full flex-1 justify-center"
+        showSummary
+        showYAxis
+        loadingState={
+          <div className="text-ink-400 flex min-h-[64px] flex-1 items-center justify-center text-center text-xs">
+            Loading 7D oracle history…
+          </div>
+        }
+        emptyState={
+          <div className="text-ink-400 flex min-h-[64px] flex-1 items-center justify-center text-center text-xs">
+            Price history will appear as the oracle feed updates.
+          </div>
+        }
+      />
+
+      <Row className="mt-1 w-full items-end justify-between gap-3">
+        <PerpOracleAttribution
+          feedId={contract.oracleFeedId}
+          asOfTime={contract.oracleSourceTime}
+          className="line-clamp-2 min-w-0 flex-1 leading-tight"
+        />
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className={clsx(
+            'shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+            summary.canTrade
+              ? 'bg-primary-600 hover:bg-primary-700 text-white'
+              : 'border-ink-300 text-ink-700 hover:bg-canvas-100 border'
+          )}
+        >
+          {ctaLabel} →
+        </a>
+      </Row>
+
+      <Row className="text-ink-500 mt-auto w-full justify-end text-xs">
+        <ContractSummaryStats
+          contractId={contract.id}
+          creatorId={contract.creatorId}
+          question={contract.question}
+          financeContract={contract}
+          editable={false}
+          isCashContract={false}
         />
       </Row>
     </Col>

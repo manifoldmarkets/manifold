@@ -2,28 +2,7 @@ import { Editor } from '@tiptap/react'
 import { contractPath } from 'common/contract'
 import { api } from 'web/lib/api/api'
 
-const isManifoldHost = (hostname: string) =>
-  hostname === 'manifold.markets' ||
-  hostname === 'manifold.love' ||
-  hostname === 'localhost' ||
-  hostname.endsWith('.manifold.markets') ||
-  hostname.endsWith('.manifold.love')
-
-const SLUG_REGEX = /^[a-z0-9-]+$/i
-
-export const matchManifoldMarketUrl = (url: string) => {
-  try {
-    const u = new URL(url.trim())
-    if (!isManifoldHost(u.hostname)) return null
-    const parts = u.pathname.split('/').filter(Boolean)
-    if (parts.length < 2) return null
-    const slug = parts[1]
-    if (!SLUG_REGEX.test(slug)) return null
-    return { username: parts[0], slug }
-  } catch {
-    return null
-  }
-}
+export { matchManifoldMarketUrl } from 'common/util/manifold-url'
 
 // Find the [from, to] document range of `target` text inside the editor.
 // Matches whether or not the text is wrapped in a link mark (TipTap auto-
@@ -107,7 +86,7 @@ export const replaceManifoldUrlWithMention = async (
         { type: 'text', text: ' ' },
       ])
       .run()
-  } catch (e) {
+  } catch {
     // Slug not found, network error, etc. — leave URL as-is.
   }
 }

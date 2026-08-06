@@ -47,6 +47,7 @@ type AnyContractType =
   | CPMMNumber
   | MultiNumeric
   | MultiDate
+  | (PerpMechanism & Perp)
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -179,6 +180,7 @@ export type NonBet = {
 export const NON_BETTING_OUTCOMES: OutcomeType[] = ['BOUNTIED_QUESTION', 'POLL']
 export const NO_CLOSE_TIME_TYPES: OutcomeType[] = NON_BETTING_OUTCOMES.concat([
   'STONK',
+  'PERP',
 ])
 
 /**
@@ -293,6 +295,42 @@ export type Stonk = {
   initialProbability: number
 }
 
+// Perpetual futures (ManiPerp AMM). Dual liquidity pools, oracle-pegged.
+// See backend/shared/src/perps/README.md and common/src/perps/ for details.
+export type Perp = {
+  outcomeType: 'PERP'
+  maxLeverage: number // ℓ_max
+  maxFundingRate: number // f_max per period
+  fundingSensitivity: number // k
+  maxOraclePriceAgeMs: number // block trades if feed stale
+  // ms between funding events: max(1h, feed updatePeriodMs), derived at
+  // create time and frozen so later feed-registry changes can't rewrite the
+  // economics of open positions. Missing on pre-period contracts = hourly.
+  // Read via getFundingPeriodMs (common/perps/funding), never directly.
+  fundingPeriodMs?: number
+  resolution?: 'MKT' | 'CANCEL'
+}
+
+export type PerpMechanism = {
+  mechanism: 'perp'
+  poolLong: number // L
+  poolShort: number // S
+  initialSubsidy: number
+  // Frozen creation-time allocation. Legacy prototypes only stored the total,
+  // which cannot prove that launch backing was not structurally one-sided
+  // after the live pools have moved.
+  initialPoolLong?: number
+  initialPoolShort?: number
+  oracleFeedId: string // free-text; matches oracle_prices.feed_id
+  oraclePrice: number // last applied P
+  oraclePriceTime?: number // ts of last applied P
+  oracleSourceTime?: number | null // provider-declared source data as-of
+  lastFundingTime?: number
+  fundingRate?: number // last applied rate; +ve = longs pay
+  resolvedOraclePrice?: number
+}
+export type PerpContract = Contract & Perp & PerpMechanism
+
 export type BountiedQuestion = {
   outcomeType: 'BOUNTIED_QUESTION'
   totalBounty: number
@@ -339,6 +377,7 @@ type AnyOutcomeType =
   | PseudoNumeric
   | MultiNumeric
   | MultiDate
+  | Perp
 
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
@@ -353,6 +392,7 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'NUMBER',
   'MULTI_NUMERIC',
   'DATE',
+  'PERP',
 ] as const
 
 export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [

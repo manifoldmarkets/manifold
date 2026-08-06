@@ -20,9 +20,10 @@ export async function call(
 }
 export async function api<P extends APIPath>(
   path: P,
-  params: APIParams<P> = {}
+  params: APIParams<P> = {},
+  options?: { cache?: RequestCache }
 ) {
-  return apiWithAuth(path, auth, params)
+  return apiWithAuth(path, auth, params, options)
 }
 
 // helper function for the old apis so we don't have to migrate them

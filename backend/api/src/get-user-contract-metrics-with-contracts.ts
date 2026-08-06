@@ -87,6 +87,13 @@ export const getUserContractMetricsWithContracts: APIHandler<
       'max',
       'isLogScale',
       'unit',
+      // Perp fields ('perp' mechanism): the profile table shows the oracle
+      // price where CPMM rows show prob, and marks position PnL against it.
+      'oraclePrice',
+      'oraclePriceTime',
+      'poolLong',
+      'poolShort',
+      'maxLeverage',
     ])
   )
 

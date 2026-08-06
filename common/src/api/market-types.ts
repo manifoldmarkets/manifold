@@ -63,6 +63,7 @@ export type LiteMarket = {
   resolution?: string
   resolutionTime?: number
   resolutionProbability?: number
+  resolverId?: string
 
   uniqueBettorCount: number
   lastUpdatedTime?: number
@@ -70,6 +71,18 @@ export type LiteMarket = {
   sportsStartTimestamp?: string
   sportsEventId?: string
   sportsLeague?: string
+
+  // Perp markets only (mechanism 'perp'). Exposed so clients (and the perp
+  // market page's live poll) can track price/pools without bespoke endpoints.
+  oraclePrice?: number
+  oraclePriceTime?: number
+  oracleSourceTime?: number | null
+  poolLong?: number
+  poolShort?: number
+  fundingRate?: number
+  lastFundingTime?: number
+  maxLeverage?: number
+  resolvedOraclePrice?: number
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -200,6 +213,21 @@ export function toLiteMarket(
     sportsEventId,
     sportsLeague,
 
+    // Perp props (only present on perp markets).
+    ...(contract.mechanism === 'perp'
+      ? {
+          oraclePrice: contract.oraclePrice,
+          oraclePriceTime: contract.oraclePriceTime,
+          oracleSourceTime: contract.oracleSourceTime,
+          poolLong: contract.poolLong,
+          poolShort: contract.poolShort,
+          fundingRate: contract.fundingRate,
+          lastFundingTime: contract.lastFundingTime,
+          maxLeverage: contract.maxLeverage,
+          resolvedOraclePrice: contract.resolvedOraclePrice,
+        }
+      : {}),
+
     // Manifold love props.
     loverUserId1,
     loverUserId2,
@@ -277,6 +305,10 @@ export type UltraLiteMarket = {
 
   probability?: number
   liquidityTier?: string
+  // Perp markets only. Omitted when the source value is not finite.
+  oraclePrice?: number
+  // Current perp backing capital (poolLong + poolShort).
+  backingPool?: number
   answers?: {
     id: string
     text: string
@@ -314,9 +346,14 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     url,
     createdTime,
   } = liteMarket
-  const tier = totalLiquidity
-    ? getTierIndexFromLiquidityAndAnswers(totalLiquidity, answers?.length ?? 0)
-    : undefined
+  const isPerp = outcomeType === 'PERP'
+  const tier =
+    !isPerp && totalLiquidity
+      ? getTierIndexFromLiquidityAndAnswers(
+          totalLiquidity,
+          answers?.length ?? 0
+        )
+      : undefined
   let liquidityTier = 'n/a'
   if (tier !== undefined) {
     if (tier === 0) {
@@ -329,6 +366,20 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
       liquidityTier = 'very high'
     }
   }
+  const oraclePrice =
+    isPerp && isFiniteNumber(liteMarket.oraclePrice)
+      ? liteMarket.oraclePrice
+      : undefined
+  const rawBackingPool =
+    isPerp &&
+    isFiniteNonNegativeNumber(liteMarket.poolLong) &&
+    isFiniteNonNegativeNumber(liteMarket.poolShort)
+      ? liteMarket.poolLong + liteMarket.poolShort
+      : undefined
+  const backingPool = isFiniteNumber(rawBackingPool)
+    ? rawBackingPool
+    : undefined
+
   return {
     id,
     url,
@@ -338,7 +389,12 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     answers,
     question,
     probability,
-    liquidityTier,
+    ...(isPerp
+      ? {
+          ...(oraclePrice === undefined ? {} : { oraclePrice }),
+          ...(backingPool === undefined ? {} : { backingPool }),
+        }
+      : { liquidityTier }),
     outcomeType,
     volume: Math.round(volume),
     volume24Hours: Math.round(volume24Hours),
@@ -351,6 +407,12 @@ export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
     uniqueBettorCount,
   }
 }
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
+const isFiniteNonNegativeNumber = (value: unknown): value is number =>
+  isFiniteNumber(value) && value >= 0
 
 function augmentAnswerWithProbability(
   contract: MultiContract,
@@ -559,3 +621,40 @@ export const resolveMarketProps = z
       resolvePseudoNumericSchema,
     ])
   )
+
+// ---- Perpetual futures (ManiPerp) ----
+
+export const createPerpSchema = z.object({
+  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+  description: contentSchema.or(z.string()).optional(),
+  descriptionHtml: z.string().optional(),
+  descriptionMarkdown: z.string().optional(),
+  descriptionJson: z.string().optional(),
+  // No .default() here: `.optional()` short-circuits undefined before a
+  // default is applied, so a default on this chain never runs and only
+  // misleads. The handler owns the default, and it is 'unlisted'.
+  visibility: z.enum(VISIBILITIES).optional(),
+  groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
+  oracleFeedId: z.string().min(1).max(200),
+  maxLeverage: z.number().gt(1).lte(100),
+  maxFundingRate: z.number().gt(0).lt(1),
+  fundingSensitivity: z.number().gt(0).lte(100),
+  maxOraclePriceAgeMs: z.number().int().positive(),
+  subsidyLong: z.number().gt(0),
+  subsidyShort: z.number().gt(0),
+})
+
+export const placePerpTradeSchema = z.object({
+  contractId: z.string().min(1),
+  direction: z.enum(['long', 'short']),
+  mana: z.number().gt(0),
+  leverage: z.number().gt(0),
+  idempotencyKey: z.string().regex(randomStringRegex).length(10),
+})
+
+export const closePerpPositionSchema = z.object({
+  contractId: z.string().min(1),
+  direction: z.enum(['long', 'short']),
+  idempotencyKey: z.string().regex(randomStringRegex).length(10),
+  expectedOpenedTime: z.number().int().nonnegative(),
+})

@@ -9,10 +9,9 @@ import { User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
-import { TbDroplet, TbMoneybag } from 'react-icons/tb'
+import { TbMoneybag } from 'react-icons/tb'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
-import { Button } from 'web/components/buttons/button'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import {
   ContractStatusLabel,
@@ -20,7 +19,6 @@ import {
 } from 'web/components/contract/contracts-table'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { Avatar } from 'web/components/widgets/avatar'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLiveContract } from 'web/hooks/use-contract'
@@ -37,6 +35,8 @@ import { RepostButton } from '../comments/repost-modal'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
+import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -99,6 +99,7 @@ export function FeedContractCard(props: {
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isStonk = outcomeType === 'STONK'
   const isNumber = outcomeType === 'NUMBER'
+  const isPerp = outcomeType === 'PERP'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
@@ -249,6 +250,7 @@ export function FeedContractCard(props: {
             style={{ fontWeight: 500 }}
           >
             <VisibilityIcon contract={contract} />{' '}
+            {isPerp && <PerpMarketBadge className="mr-1 align-middle" />}
             {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
@@ -319,6 +321,16 @@ export function FeedContractCard(props: {
           />
         )}
 
+        {isPerp && (
+          <FeedPerpPriceSparkline
+            contract={contract}
+            height={120}
+            className="my-4"
+            showSummary
+            showYAxis
+          />
+        )}
+
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter
             metrics={metrics}
@@ -371,7 +383,6 @@ const BottomActionRow = (props: {
 }) => {
   const { contract, feedReason, user, underline } = props
   const { question } = contract
-  const isCashContract = contract.token == 'CASH'
 
   return (
     <Row
@@ -396,30 +407,15 @@ const BottomActionRow = (props: {
         </BottomRowButtonWrapper>
       )}
 
-      {/* cpmm markets */}
-      {'totalLiquidity' in contract && (
+      {/* Market backing */}
+      {('totalLiquidity' in contract || contract.mechanism === 'perp') && (
         <BottomRowButtonWrapper>
-          <Button
-            disabled={true}
-            size={'2xs'}
-            color={'gray-white'}
-            className={'disabled:cursor-pointer'}
-          >
-            <Tooltip text={`Total liquidity`} placement="top" noTap>
-              <Row
-                className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
-              >
-                <TbDroplet className="h-6 w-6 stroke-2" />
-                <div className="text-ink-600">
-                  {formatWithToken({
-                    amount: contract.totalLiquidity,
-                    token: isCashContract ? 'CASH' : 'M$',
-                    short: true,
-                  })}
-                </div>
-              </Row>
-            </Tooltip>
-          </Button>
+          <LiquidityTooltip
+            contract={contract}
+            placement="top"
+            className="text-ink-600 h-full text-sm"
+            iconClassName="text-ink-500 h-5 w-5"
+          />
         </BottomRowButtonWrapper>
       )}
 

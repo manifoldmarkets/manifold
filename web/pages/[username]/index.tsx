@@ -85,17 +85,24 @@ export const getStaticProps = async (props: {
 
   const user = await getUserForStaticProps(db, username)
 
-  const [contracts, posts] = user
+  const [contracts, posts, perpEvents] = user
     ? await Promise.all([
         db.from('contracts').select('id').eq('creator_id', user.id).limit(1),
         db.from('old_posts').select('id').eq('creator_id', user.id).limit(1),
+        db
+          .from('contract_perp_events')
+          .select('id')
+          .eq('user_id', user.id)
+          .in('event_type', ['open', 'add', 'close'])
+          .limit(1),
       ])
     : []
   const hasCreatedQuestion = contracts?.data?.length || posts?.data?.length
+  const hasPerpTrade = !!perpEvents?.data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
   const shouldIgnoreUser = user
-    ? await shouldIgnoreUserPage(user, !!hasCreatedQuestion)
+    ? await shouldIgnoreUserPage(user, !!hasCreatedQuestion, hasPerpTrade)
     : false
 
   return {
@@ -142,16 +149,18 @@ export default function UserPage(props: {
 
 const shouldIgnoreUserPage = async (
   user: User,
-  hasCreatedQuestion: boolean
+  hasCreatedQuestion: boolean,
+  hasPerpTrade: boolean
 ) => {
-  // lastBetTime isn't always reliable, so use the contract_bets table to be sure
+  // lastBetTime isn't always reliable, so use both trade logs to be sure.
   let hasBet = false
   try {
     const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
     hasBet = bet.length > 0
   } catch {}
   return (
-    user.userDeleted || isUserLikelySpammer(user, hasBet, hasCreatedQuestion)
+    user.userDeleted ||
+    isUserLikelySpammer(user, hasBet || hasPerpTrade, hasCreatedQuestion)
   )
 }
 

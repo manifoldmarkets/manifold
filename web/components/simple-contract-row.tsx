@@ -5,6 +5,7 @@ import { Row } from 'web/components/layout/row'
 import { Contract, contractPath } from 'common/contract'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
 import { UserHovercard } from './user/user-hovercard'
 
 export function SimpleContractRow(props: {
@@ -35,6 +36,9 @@ export function SimpleContractRow(props: {
           'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto'
         )}
       >
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {contract.question}
       </div>
       <Row className="gap-3">
@@ -46,7 +50,7 @@ export function SimpleContractRow(props: {
             size="xs"
           />
         </UserHovercard>
-        <div className="min-w-[2rem] text-right font-semibold">
+        <div className="flex min-w-[2rem] items-center justify-end gap-1 text-right font-semibold">
           <ContractStatusLabel contract={contract} />
         </div>
       </Row>

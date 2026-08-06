@@ -1,5 +1,9 @@
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
-import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
+import {
+  BaseApiCallOptions,
+  baseApiCall,
+  formatApiUrlWithParams,
+} from 'common/util/api'
 import { sleep } from 'common/util/time'
 import { Auth } from 'firebase/auth'
 export { APIError } from 'common/api/utils'
@@ -8,9 +12,10 @@ export async function callWithAuth(
   url: string,
   method: 'POST' | 'PUT' | 'GET',
   auth: Auth,
-  params?: any
+  params?: any,
+  options?: BaseApiCallOptions
 ) {
-  return baseApiCall(url, method, params, auth.currentUser)
+  return baseApiCall(url, method, params, auth.currentUser, options)
 }
 
 export type apiWithoutAuth<P extends APIPath> = (
@@ -22,7 +27,8 @@ export type apiWithoutAuth<P extends APIPath> = (
 export async function apiWithAuth<P extends APIPath>(
   path: P,
   auth: Auth,
-  params: APIParams<P> = {}
+  params: APIParams<P> = {},
+  options?: BaseApiCallOptions
 ) {
   const pathProps = API[path]
   const preferAuth = 'preferAuth' in pathProps && pathProps.preferAuth
@@ -45,6 +51,7 @@ export async function apiWithAuth<P extends APIPath>(
     formatApiUrlWithParams(path, params),
     pathProps.method,
     auth,
-    params
+    params,
+    options
   )) as Promise<APIResponse<P>>
 }

@@ -34,6 +34,7 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
+import type { PerpTradeActivity } from 'common/perps/activity'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
@@ -49,7 +50,10 @@ import { PrivateUser, User, UserBan } from '../user'
 import { searchProps } from './market-search-types'
 import {
   FullMarket,
+  closePerpPositionSchema,
   createMarketProps,
+  createPerpSchema,
+  placePerpTradeSchema,
   resolveMarketProps,
   updateMarketProps,
   type LiteMarket,
@@ -1033,6 +1037,208 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'create-perp': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as LiteMarket,
+    props: createPerpSchema,
+  },
+  'place-perp-trade': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      position: {
+        userId: string
+        direction: 'long' | 'short'
+        size: number
+        costBasis: number
+        originalCostBasis: number
+        entryPrice: number
+        leverage: number
+        liquidationPrice: number
+      }
+    },
+    props: placePerpTradeSchema,
+  },
+  'close-perp-position': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { payout: number; pnl: number },
+    props: closePerpPositionSchema,
+  },
+  'get-oracle-price': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as {
+      latest: {
+        feedId: string
+        price: number
+        ts: number
+        sourceTs?: number
+      } | null
+    },
+    props: z.object({ feedId: z.string().min(1) }).strict(),
+  },
+  'get-oracle-price-series': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as { ts: number; price: number }[],
+    props: z
+      .object({
+        feedId: z.string().min(1),
+        since: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
+        // Server-side downsampling: return the last point of each
+        // `bucketSeconds` bucket instead of raw rows. A 15s feed emits ~5k
+        // points/day, so week+ windows must bucket or the `limit` cap turns
+        // every timeframe into "the last two days".
+        bucketSeconds: z.coerce.number().int().positive().max(86400).optional(),
+      })
+      .strict(),
+  },
+  'get-known-oracle-feeds': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    // Registry metadata lets the admin page omit runtime-only feeds from its
+    // picker. null updatePeriodMs means the feed has price rows but no
+    // OracleFeedDef; false marketCreationEnabled means either unregistered or
+    // deliberately runtime-only (create-perp rejects both).
+    // The admin create page needs it to convert an annual max funding rate
+    // into the per-PERIOD fraction the engine stores — assuming hourly on a
+    // daily feed would understate the cap 24x.
+    returns: [] as {
+      id: string
+      updatePeriodMs: number | null
+      marketCreationEnabled: boolean
+      description: string | null
+      launchLatencyRisk: string | null
+      launchRecommendation: {
+        question: string
+        maxLeverage: number
+        annualMaxFundingRate: number
+        fundingSensitivity: number
+        maxOraclePriceAgeMs: number
+        subsidyLong: number
+        subsidyShort: number
+        requiredTopicNames: string[]
+        creatorAuthorized: boolean
+      } | null
+    }[],
+    props: z.object({}).strict(),
+  },
+  'internal-write-oracle-price': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        feedId: z.string().min(1).max(200),
+        ts: z.number().int().positive(),
+        // Provider-declared source data timestamp. Required by the writer for
+        // feeds whose attribution terms include an as-of time.
+        sourceTs: z.number().int().positive().optional(),
+        // The engine divides by entry prices and treats <= 0 as invalid;
+        // reject junk at the door rather than poisoning the feed.
+        price: z.number().finite().positive(),
+      })
+      .strict(),
+  },
+  'get-perp-positions': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // NOT the default 5s+swr cache: the API sits behind an edge cache that
+    // serves stale-while-revalidate regardless of client no-cache, so a
+    // trader's own just-placed position can vanish from refetches for ~15s.
+    // Positions are correctness-critical right after a trade.
+    cache: 'no-cache',
+    returns: [] as {
+      userId: string
+      direction: 'long' | 'short'
+      size: number
+      costBasis: number
+      originalCostBasis: number
+      entryPrice: number
+      leverage: number
+      liquidationPrice: number
+      openedTime: number
+      updatedTime: number
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        userId: z.string().min(1).optional(),
+      })
+      .strict(),
+  },
+  'get-perp-events': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // See get-perp-positions: edge-cache staleness makes fresh closes /
+    // liquidations lag their tombstones. Funding events and oracle series
+    // keep the default cache — append-only data where 5-15s is harmless.
+    cache: 'no-cache',
+    returns: [] as {
+      id: number
+      ts: number
+      userId: string | null
+      direction: 'long' | 'short' | null
+      eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+      oraclePrice: number
+      sizeDelta: number
+      costBasisDelta: number
+      originalCostBasisDelta: number
+      leverage: number | null
+      payout: number | null
+      pnl: number | null
+      adlFactor: number | null
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        userId: z.string().min(1).optional(),
+        beforeId: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(200).optional(),
+      })
+      .strict(),
+  },
+  'get-perp-funding-events': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      ts: number
+      fundingRate: number
+      oraclePrice: number
+      numLiquidations: number
+      adlFactorLong: number
+      adlFactorShort: number
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        since: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
+      })
+      .strict(),
+  },
   leagues: {
     method: 'GET',
     visibility: 'public',
@@ -1566,7 +1772,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    cache: 'public, max-age=300, stale-while-revalidate=30',
     props: z
       .object({
         contractId: z.string(),
@@ -1584,7 +1790,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    cache: 'no-store',
     returns: {} as {
       groupContracts: Contract[]
     },
@@ -2681,6 +2887,7 @@ export const API = (_apiTypeCheck = {
       boostedContracts: Contract[]
       // Activity data
       activityBets: Bet[]
+      activityPerpTrades: PerpTradeActivity[]
       activityComments: CommentWithTotalReplies[]
       activityNewContracts: Contract[]
       activityRelatedContracts: Contract[]

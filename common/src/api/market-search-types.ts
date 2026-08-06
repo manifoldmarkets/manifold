@@ -56,6 +56,7 @@ export const searchProps = z
         z.literal('NUMBER'),
         z.literal('MULTI_NUMERIC'),
         z.literal('DATE'),
+        z.literal('PERP'),
       ])
       .default('ALL'),
     offset: z.coerce.number().gte(0).default(0),
@@ -93,3 +94,43 @@ export const searchProps = z
     includeLiteAnswers: coerceBoolean.optional(),
   })
   .strict()
+
+type SearchProps = z.infer<typeof searchProps>
+
+export type MarketSearchRoute = 'basic' | 'for-you' | 'recent' | 'filtered'
+
+export const getMarketSearchRoute = ({
+  filter,
+  term,
+  topicSlug,
+  groupIds,
+  sort,
+  token,
+  isRecent,
+  isForYou,
+  userId,
+}: Pick<SearchProps, 'filter' | 'sort' | 'token'> & {
+  term: string
+  topicSlug?: string
+  groupIds: readonly string[]
+  isRecent: boolean
+  isForYou: boolean
+  userId?: string
+}): MarketSearchRoute => {
+  const isDefaultSearch =
+    filter !== 'news' &&
+    !term &&
+    !topicSlug &&
+    groupIds.length === 0 &&
+    (sort === 'score' || sort === 'freshness-score') &&
+    (token === 'MANA' || token === 'ALL') &&
+    !isRecent
+
+  if (isDefaultSearch) {
+    return isForYou && userId ? 'for-you' : 'basic'
+  }
+  if (isRecent && !term && userId) {
+    return 'recent'
+  }
+  return 'filtered'
+}

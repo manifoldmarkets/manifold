@@ -91,6 +91,7 @@ export default function AdminPage() {
           href="https://app.supabase.com/project/pxidrgkatumlvfqaxcll/logs/postgres-logs"
         />
         <LabCard title="⚽ sports markets" href="/admin/sports" />
+        <LabCard title="📈 create perp market" href="/admin/create-perp" />
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="👕 merch management" href="/admin/merch" />
         <LabCard title="🎨 design system" href="/styles" />

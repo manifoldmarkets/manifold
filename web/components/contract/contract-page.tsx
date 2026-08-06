@@ -53,6 +53,8 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
+import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { PerpMarketExplainer } from 'web/components/perps/perp-market-explainer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
@@ -166,6 +168,7 @@ export function ContractPageContent(props: ContractParams) {
   }, [winNudgeEligible, tryOfferReview])
 
   const description = liveContract.description
+  const isPerp = liveContract.mechanism === 'perp'
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -192,11 +195,7 @@ export function ContractPageContent(props: ContractParams) {
     if (router.isReady && router.query.graph) setHideGraph(false)
   }, [router.isReady, router.query.graph])
 
-  const {
-    graphUser,
-    setGraphUser,
-    ready: graphUserReady,
-  } = useGraphUserFromUrl()
+  const { graphUser, setGraphUser } = useGraphUserFromUrl()
 
   useEffect(() => {
     if (replyTo) {
@@ -300,10 +299,18 @@ export function ContractPageContent(props: ContractParams) {
                 )}
                 {headerStuck && (
                   <span
+                    role="button"
+                    tabIndex={0}
                     className="text-ink-1000 line-clamp-2 cursor-pointer select-none first:ml-4"
                     onClick={() =>
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }
+                    }}
                   >
                     {isSpiceMarket && (
                       <Tooltip text={SPICE_MARKET_TOOLTIP}>
@@ -311,6 +318,9 @@ export function ContractPageContent(props: ContractParams) {
                       </Tooltip>
                     )}
                     <VisibilityIcon contract={props.contract} />{' '}
+                    {isPerp && (
+                      <PerpMarketBadge className="mr-1 align-middle" />
+                    )}
                     {props.contract.question}
                   </span>
                 )}
@@ -358,6 +368,7 @@ export function ContractPageContent(props: ContractParams) {
                   <EditableQuestionTitle
                     contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
+                    prefix={isPerp ? <PerpMarketExplainer /> : undefined}
                   />
                 </div>
               </Col>
@@ -406,21 +417,23 @@ export function ContractPageContent(props: ContractParams) {
                   setGraphUser={setGraphUser}
                 />
 
-                <UserBetsSummary
-                  className="border-ink-200 mb-2 "
-                  contract={liveContract}
-                  includeSellButton={
-                    tradingAllowed(liveContract) &&
-                    (outcomeType === 'NUMBER' ||
-                      outcomeType === 'MULTIPLE_CHOICE' ||
-                      isBinaryMulti(liveContract) ||
-                      outcomeType === 'BINARY' ||
-                      outcomeType === 'PSEUDO_NUMERIC' ||
-                      outcomeType === 'STONK')
-                      ? user
-                      : undefined
-                  }
-                />
+                {liveContract.mechanism !== 'perp' && (
+                  <UserBetsSummary
+                    className="border-ink-200 mb-2 "
+                    contract={liveContract}
+                    includeSellButton={
+                      tradingAllowed(liveContract) &&
+                      (outcomeType === 'NUMBER' ||
+                        outcomeType === 'MULTIPLE_CHOICE' ||
+                        isBinaryMulti(liveContract) ||
+                        outcomeType === 'BINARY' ||
+                        outcomeType === 'PSEUDO_NUMERIC' ||
+                        outcomeType === 'STONK')
+                        ? user
+                        : undefined
+                    }
+                  />
+                )}
 
                 <YourTrades
                   contract={liveContract}
@@ -487,6 +500,20 @@ export function ContractPageContent(props: ContractParams) {
               userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
+            {isPerp && (
+              // Perps render the description directly above the boost/share
+              // panel so the oracle context (e.g. "30-day trailing average
+              // Trump approval rating") is visible near the top of the page
+              // flow, not buried below MarketContext.
+              <ContractDescription
+                contractId={props.contract.id}
+                creatorId={props.contract.creatorId}
+                isSweeps={isCashContract}
+                description={description}
+                creatorBannedFromBetting={liveContract.creatorBannedFromBetting}
+                contract={liveContract}
+              />
+            )}
             {!isResolved && !isClosed && isCreator && (
               <>
                 {showResolver && <Spacer h={4} />}
@@ -504,7 +531,7 @@ export function ContractPageContent(props: ContractParams) {
                   {liveContract.question}
                 </Link>
               </span>
-            ) : (
+            ) : isPerp ? null : ( // perps render description above the boost panel instead
               <ContractDescription
                 contractId={props.contract.id}
                 creatorId={props.contract.creatorId}

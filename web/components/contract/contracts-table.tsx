@@ -15,6 +15,10 @@ import {
 } from 'common/envs/constants'
 import { getFormattedExpectedDate } from 'common/multi-date'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
+import {
+  formatPrice as formatPerpPrice,
+  inferPriceDecimals as inferPerpPriceDecimals,
+} from 'common/perps/format'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Answer } from 'common/src/answer'
 import { getFormattedNumberExpectedValue } from 'common/src/number'
@@ -32,6 +36,7 @@ import { ContractMinibar } from '../charts/minibar'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 import { UserHovercard } from '../user/user-hovercard'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
@@ -497,6 +502,19 @@ export function ContractStatusLabel(props: {
     case 'POLL': {
       return <span className="text-fuchsia-500/70">POLL</span>
     }
+    case 'PERP': {
+      const price = Number(contract.oraclePrice)
+      // Endpoints that slim contracts may omit oraclePrice; show a dash
+      // rather than a fake "0.0000".
+      if (!Number.isFinite(price)) {
+        return <span className={clsx('text-ink-400', className)}>—</span>
+      }
+      return (
+        <span className={clsx(probTextColor, className)}>
+          {formatPerpPrice(price, inferPerpPriceDecimals([price]))}
+        </span>
+      )
+    }
     default:
       return <span>-</span>
   }
@@ -546,6 +564,9 @@ function ContractQuestion(props: {
           </span>
         )}
         <VisibilityIcon className="mr-1" contract={contract} />
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {removeEmojis(contract.question)}
       </span>
     </Row>

@@ -141,13 +141,27 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         [userId]
       ),
 
-      // Query 4: Get total volume
+      // Query 4: Get total volume. Perp trades live in contract_perp_events,
+      // not contract_bets; their volume is the margin the user moved
+      // (original cost basis), matching the engine's contract.volume
+      // convention — user opens/adds/closes count (a flip is two legs),
+      // forced settlement (liquidation/ADL/resolution) does not.
       pg.oneOrNone<{ total_volume: number }>(
         `
-      SELECT COALESCE(SUM(ABS(amount)), 0) as total_volume
-      FROM contract_bets
-      WHERE user_id = $1
-        AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
+      SELECT
+        COALESCE((
+          SELECT SUM(ABS(amount))
+          FROM contract_bets
+          WHERE user_id = $1
+            AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
+        ), 0) + COALESCE((
+          SELECT SUM(ABS(original_cost_basis_delta))
+          FROM contract_perp_events
+          WHERE user_id = $1
+            AND (event_type IN ('open', 'add')
+              OR (event_type = 'close'
+                AND data->>'reason' IS DISTINCT FROM 'resolve-market'))
+        ), 0) as total_volume
       `,
         [userId]
       ),
@@ -199,15 +213,29 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
           )
         : Promise.resolve([]),
 
-      // Get volume per contract for topic stats
+      // Get volume per contract for topic stats. Same perp treatment as the
+      // total-volume query: without it, a topic row can show perp profit
+      // (user_contract_metrics includes perps) against zero volume.
       contractIds.length > 0
         ? pg.manyOrNone<{ contract_id: string; volume: number }>(
             `
-            SELECT contract_id, SUM(ABS(amount)) as volume
-            FROM contract_bets
-            WHERE user_id = $1 
-              AND contract_id = ANY($2)
-              AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
+            SELECT contract_id, SUM(volume) as volume FROM (
+              SELECT contract_id, SUM(ABS(amount)) as volume
+              FROM contract_bets
+              WHERE user_id = $1
+                AND contract_id = ANY($2)
+                AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
+              GROUP BY contract_id
+              UNION ALL
+              SELECT contract_id, SUM(ABS(original_cost_basis_delta)) as volume
+              FROM contract_perp_events
+              WHERE user_id = $1
+                AND contract_id = ANY($2)
+                AND (event_type IN ('open', 'add')
+                  OR (event_type = 'close'
+                    AND data->>'reason' IS DISTINCT FROM 'resolve-market'))
+              GROUP BY contract_id
+            ) combined
             GROUP BY contract_id
             `,
             [userId, contractIds]

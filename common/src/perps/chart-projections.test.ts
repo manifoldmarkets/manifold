@@ -1,0 +1,519 @@
+import { applyFunding, computeFundingRate, getPositionValue } from './amm'
+import {
+  carryNeutralPath,
+  clusterLiquidationBands,
+  FUNDING_PERIOD_MS,
+  gapThresholdMs,
+  getDataGapFlags,
+  nextFundingTimes,
+  personalBreakEvenPath,
+  projectionHorizonMs,
+  projectionHorizonWithFunding,
+  realizedVolPerSqrtMs,
+  volConePaths,
+} from './chart-projections'
+import { PerpPosition } from './position'
+
+const NOW = 1_700_000_000_000
+
+describe('projectionHorizonMs', () => {
+  it('scales with history span, floored at 30 minutes', () => {
+    const tenDays = 10 * 24 * FUNDING_PERIOD_MS
+    expect(projectionHorizonMs(tenDays)).toBeCloseTo(tenDays * 0.28)
+    // 0.28 × 90min ≈ 25min — below the floor, and the 90min span allows it.
+    expect(projectionHorizonMs(90 * 60 * 1000)).toBe(30 * 60 * 1000)
+  })
+
+  it('never projects further ahead than the visible history', () => {
+    expect(projectionHorizonMs(FUNDING_PERIOD_MS)).toBe(30 * 60 * 1000)
+    expect(projectionHorizonMs(10 * 60 * 1000)).toBe(10 * 60 * 1000)
+  })
+
+  it('caps at 60 days and survives garbage input', () => {
+    const tenYears = 3650 * 24 * FUNDING_PERIOD_MS
+    expect(projectionHorizonMs(tenYears)).toBe(60 * 24 * FUNDING_PERIOD_MS)
+    expect(projectionHorizonMs(NaN)).toBe(2 * FUNDING_PERIOD_MS)
+    expect(projectionHorizonMs(-5)).toBe(2 * FUNDING_PERIOD_MS)
+  })
+})
+
+describe('nextFundingTimes', () => {
+  const HOUR = 60 * 60 * 1000
+  // An exact hour boundary for readable arithmetic.
+  const H0 = Math.floor(NOW / HOUR) * HOUR
+
+  it('lands on hour boundaries after a normal event', () => {
+    // Event fired seconds after the H0 cron run; the H0+1h boundary has
+    // ~59m57s elapsed, which passes the gate (period minus 1min slack).
+    const last = H0 + 3_000
+    expect(nextFundingTimes(last, H0 + 30_000, 2)).toEqual([
+      H0 + HOUR,
+      H0 + 2 * HOUR,
+    ])
+  })
+
+  it('skips a boundary that lands too soon after an off-schedule event', () => {
+    // Manual mid-hour run at H0+30m: the H0+1h boundary is only 30m later,
+    // below the gate, so the first real event is H0+2h.
+    const last = H0 + 30 * 60 * 1000
+    expect(nextFundingTimes(last, last + 5 * 60 * 1000, 2)).toEqual([
+      H0 + 2 * HOUR,
+      H0 + 3 * HOUR,
+    ])
+  })
+
+  it('self-corrects when lastFundingTime is stale or missing', () => {
+    const now = H0 + 10 * 60 * 1000
+    // Scheduler was down for a day: every future boundary qualifies.
+    expect(nextFundingTimes(H0 - 24 * HOUR, now, 1)).toEqual([H0 + HOUR])
+    expect(nextFundingTimes(undefined, now, 1)).toEqual([H0 + HOUR])
+  })
+
+  it('projects the first event only after a complete period from creation', () => {
+    const created = H0 + 30_000
+    const now = H0 + 5 * 60 * 1000
+    expect(nextFundingTimes(undefined, now, 1, HOUR, created)).toEqual([
+      H0 + 2 * HOUR,
+    ])
+  })
+
+  it('24h period: events land on hour boundaries a day apart, not consecutive hours', () => {
+    const DAY = 24 * HOUR
+    // Event fired seconds after the H0 run yesterday; the next lands on the
+    // H0+24h boundary, and the one after that a further day out — the gate
+    // must anchor on the previous predicted event, or every hourly boundary
+    // past the first would qualify against the day-old real event.
+    const last = H0 - DAY + 3_000
+    expect(nextFundingTimes(last, H0 - DAY + 30_000, 2, DAY)).toEqual([
+      H0,
+      H0 + DAY,
+    ])
+  })
+
+  it('24h period: a stale anchor catches up on the next boundary, then resumes daily', () => {
+    const DAY = 24 * HOUR
+    const now = H0 + 10 * 60 * 1000
+    expect(nextFundingTimes(H0 - 3 * DAY, now, 2, DAY)).toEqual([
+      H0 + HOUR,
+      H0 + HOUR + DAY,
+    ])
+  })
+})
+
+describe('projectionHorizonWithFunding', () => {
+  const HOUR = 60 * 60 * 1000
+  const PAD = 6 * 60 * 1000
+  const H0 = Math.floor(NOW / HOUR) * HOUR
+  const now = H0 + 20 * 60 * 1000 // :20 past the hour
+  const events = [H0 + HOUR, H0 + 2 * HOUR] // in 40min and 1h40m
+
+  it('extends past two funding events when the window allows', () => {
+    const sixHours = 6 * HOUR
+    expect(projectionHorizonWithFunding(sixHours, now, events)).toBe(
+      events[1] - now + PAD
+    )
+  })
+
+  it('falls back to one event when two do not fit the window', () => {
+    const oneHour = HOUR
+    expect(projectionHorizonWithFunding(oneHour, now, events)).toBe(
+      events[0] - now + PAD
+    )
+  })
+
+  it('lets the next event run up to 25% past the window (half-hour-offset timezones)', () => {
+    // Event 58min out on a 1h window: 64min horizon ≤ 75min allowance.
+    const lateEvent = [now + 58 * 60 * 1000, now + 118 * 60 * 1000]
+    expect(projectionHorizonWithFunding(HOUR, now, lateEvent)).toBe(
+      58 * 60 * 1000 + PAD
+    )
+  })
+
+  it('never shows two events on a 1-hour window, even near the boundary', () => {
+    // Next event 5min out: the old rule would fit BOTH events (71min ≤
+    // 75min) and eat the chart with future. Two events need half-span
+    // headroom, so this falls through to one event, floored by the
+    // proportional horizon.
+    const nearBoundary = [now + 5 * 60 * 1000, now + 65 * 60 * 1000]
+    expect(projectionHorizonWithFunding(HOUR, now, nearBoundary)).toBe(
+      projectionHorizonMs(HOUR)
+    )
+  })
+
+  it('keeps the proportional horizon on long windows and empty inputs', () => {
+    const fiveDays = 5 * 24 * HOUR
+    // Proportional (0.28 × span) exceeds the two-event horizon.
+    expect(projectionHorizonWithFunding(fiveDays, now, events)).toBe(
+      projectionHorizonMs(fiveDays)
+    )
+    expect(projectionHorizonWithFunding(6 * HOUR, now, [])).toBe(
+      projectionHorizonMs(6 * HOUR)
+    )
+  })
+})
+
+describe('carryNeutralPath', () => {
+  it('slopes up when longs pay and down when shorts pay', () => {
+    const horizon = 10 * FUNDING_PERIOD_MS
+    const up = carryNeutralPath(100, 0.001, NOW, horizon)
+    expect(up).toHaveLength(2)
+    expect(up[1].value).toBeCloseTo(100 * Math.pow(1 - 0.001, -10), 8)
+    expect(up[1].value).toBeGreaterThan(100)
+    const down = carryNeutralPath(100, -0.001, NOW, horizon)
+    expect(down[1].value).toBeCloseTo(100 * Math.pow(1 + 0.001, -10), 8)
+    expect(down[1].value).toBeLessThan(100)
+  })
+
+  it('compounds, matching repeated funding application', () => {
+    // applyFunding scales the payer by (1 - f) each period, so the hurdle is
+    // the price that undoes n such scalings. The old linear form P(1 + f·n)
+    // drifted far below this over long horizons and disagreed with
+    // personalBreakEvenPath, which is drawn on the same chart and compounds.
+    const f = 0.01
+    const n = 200
+    let compounded = 100
+    for (let i = 0; i < n; i++) compounded /= 1 - f
+
+    const path = carryNeutralPath(100, f, NOW, n * FUNDING_PERIOD_MS)
+    expect(path[1].value).toBeCloseTo(compounded, 6)
+    // And is materially above the first-order approximation it replaced.
+    expect(path[1].value).toBeGreaterThan(100 * (1 + f * n))
+  })
+
+  it('returns empty on a funding rate at or beyond 100% per period', () => {
+    expect(carryNeutralPath(100, 1, NOW, FUNDING_PERIOD_MS)).toEqual([])
+    expect(carryNeutralPath(100, -1, NOW, FUNDING_PERIOD_MS)).toEqual([])
+  })
+
+  it('is flat at zero funding and empty on invalid input', () => {
+    const flat = carryNeutralPath(100, 0, NOW, FUNDING_PERIOD_MS)
+    expect(flat[0].value).toBe(flat[1].value)
+    expect(carryNeutralPath(0, 0.001, NOW, FUNDING_PERIOD_MS)).toEqual([])
+    expect(carryNeutralPath(NaN, 0.001, NOW, FUNDING_PERIOD_MS)).toEqual([])
+    expect(carryNeutralPath(100, NaN, NOW, FUNDING_PERIOD_MS)).toEqual([])
+    expect(carryNeutralPath(100, 0.001, NOW, 0)).toEqual([])
+  })
+
+  it('a 24h period accrues 1/24 the periods over the same horizon', () => {
+    const DAY = 24 * FUNDING_PERIOD_MS
+    const horizon = 10 * DAY
+    const daily = carryNeutralPath(100, 0.001, NOW, horizon, DAY)
+    // Ten days at one 0.1% event per day = ten periods, not 240.
+    expect(daily[1].value).toBeCloseTo(100 * Math.pow(1 - 0.001, -10), 8)
+  })
+})
+
+describe('realizedVolPerSqrtMs', () => {
+  it('returns 0 for a constant series and null for thin data', () => {
+    const flat = Array.from({ length: 20 }, (_, i) => ({
+      ts: NOW + i * 1000,
+      value: 50,
+    }))
+    expect(realizedVolPerSqrtMs(flat)).toBe(0)
+    expect(realizedVolPerSqrtMs(flat.slice(0, 5))).toBeNull()
+  })
+
+  it('recovers a known per-ms volatility from regular log returns', () => {
+    // Alternating ±r log returns at 1s spacing: variance per ms = r² / 1000.
+    const r = 0.01
+    const points = [{ ts: 0, value: 100 }]
+    for (let i = 1; i <= 40; i++) {
+      const prev = points[i - 1]
+      points.push({
+        ts: i * 1000,
+        value: prev.value * Math.exp(i % 2 === 0 ? -r : r),
+      })
+    }
+    const sigma = realizedVolPerSqrtMs(points)
+    expect(sigma).not.toBeNull()
+    expect(sigma!).toBeCloseTo(Math.sqrt((r * r) / 1000), 10)
+  })
+
+  it('excludes returns spanning longer than maxGapMs', () => {
+    // 20 flat points at 1s cadence, then a 4-day outage, then a big jump.
+    const points = Array.from({ length: 20 }, (_, i) => ({
+      ts: i * 1000,
+      value: 100,
+    }))
+    points.push({ ts: 20_000 + 4 * 24 * 3600 * 1000, value: 150 })
+    expect(realizedVolPerSqrtMs(points, Infinity)).toBeGreaterThan(0)
+    expect(realizedVolPerSqrtMs(points)).toBe(0)
+    expect(realizedVolPerSqrtMs(points, 60_000)).toBe(0)
+  })
+
+  it('skips zero/negative prices and non-positive intervals', () => {
+    const points = [
+      { ts: 0, value: 100 },
+      { ts: 1000, value: 0 }, // bad price — skipped both sides
+      { ts: 1000, value: 101 }, // dt = 0 — skipped
+      ...Array.from({ length: 12 }, (_, i) => ({
+        ts: 2000 + i * 1000,
+        value: 101,
+      })),
+    ]
+    expect(realizedVolPerSqrtMs(points)).toBe(0)
+  })
+})
+
+describe('gapThresholdMs', () => {
+  const series = (dts: number[]) => {
+    const pts = [{ ts: 0 }]
+    for (const dt of dts) pts.push({ ts: pts[pts.length - 1].ts + dt })
+    return pts
+  }
+
+  it('floors at 3 hours so mixed 15s/hourly density stays connected', () => {
+    const fifteenSec = series(Array.from({ length: 50 }, () => 15_000))
+    expect(gapThresholdMs(fifteenSec)).toBe(3 * 3600 * 1000)
+  })
+
+  it('scales to 12x median for slow feeds', () => {
+    const daily = series(Array.from({ length: 10 }, () => 24 * 3600 * 1000))
+    expect(gapThresholdMs(daily)).toBe(12 * 24 * 3600 * 1000)
+  })
+
+  it('returns Infinity when there are no intervals', () => {
+    expect(gapThresholdMs([{ ts: 0 }])).toBe(Infinity)
+    expect(gapThresholdMs([])).toBe(Infinity)
+  })
+
+  it('keeps a daily-backfill to hourly-live cadence transition connected', () => {
+    const hour = 3600 * 1000
+    const mixed = series([
+      ...Array.from({ length: 6 }, () => 24 * hour),
+      13.8 * hour,
+      ...Array.from({ length: 17 }, () => hour),
+    ])
+    expect(getDataGapFlags(mixed).filter(Boolean)).toHaveLength(0)
+
+    const valued = mixed.map((point, index) => ({
+      ...point,
+      value: 70 + index / 10,
+    }))
+    expect(realizedVolPerSqrtMs(valued)).toBeCloseTo(
+      realizedVolPerSqrtMs(valued, Infinity) as number,
+      12
+    )
+  })
+
+  it('still breaks a real multi-day outage inside fast data', () => {
+    const hour = 3600 * 1000
+    const points = series([
+      ...Array.from({ length: 8 }, () => hour),
+      4.6 * 24 * hour,
+      ...Array.from({ length: 8 }, () => hour),
+    ])
+    const gapFlags = getDataGapFlags(points)
+    expect(gapFlags.filter(Boolean)).toHaveLength(1)
+    expect(gapFlags[9]).toBe(true)
+  })
+
+  it('does not let old daily cadence hide a later hourly outage', () => {
+    const hour = 3600 * 1000
+    const points = series([
+      ...Array.from({ length: 6 }, () => 24 * hour),
+      13.8 * hour,
+      ...Array.from({ length: 17 }, () => hour),
+      4.6 * 24 * hour,
+      ...Array.from({ length: 17 }, () => hour),
+    ])
+    const gapFlags = getDataGapFlags(points)
+    expect(gapFlags.filter(Boolean)).toHaveLength(1)
+    expect(gapFlags[25]).toBe(true)
+  })
+
+  it('keeps pure daily cadence but breaks a 13-day hole within it', () => {
+    const day = 24 * 3600 * 1000
+    const daily = series([
+      ...Array.from({ length: 6 }, () => day),
+      13 * day,
+      ...Array.from({ length: 6 }, () => day),
+    ])
+    const gapFlags = getDataGapFlags(daily)
+    expect(gapFlags.filter(Boolean)).toHaveLength(1)
+    expect(gapFlags[7]).toBe(true)
+  })
+})
+
+describe('volConePaths', () => {
+  it('is multiplicatively symmetric and widens as sqrt of time', () => {
+    const sigma = 1e-4
+    const horizon = 4 * FUNDING_PERIOD_MS
+    const cone = volConePaths(100, sigma, NOW, horizon, 4)
+    expect(cone).not.toBeNull()
+    const { upper, lower } = cone!
+    expect(upper[0].value).toBe(100)
+    expect(lower[0].value).toBe(100)
+    for (let i = 0; i < upper.length; i++) {
+      expect(upper[i].value * lower[i].value).toBeCloseTo(100 * 100, 6)
+    }
+    // log-width at 4H should be exactly 2× the log-width at H (√4 = 2).
+    const w1 = Math.log(upper[1].value / 100)
+    const w4 = Math.log(upper[4].value / 100)
+    expect(w4).toBeCloseTo(2 * w1, 10)
+  })
+
+  it('rejects invalid inputs', () => {
+    expect(volConePaths(0, 1e-4, NOW, FUNDING_PERIOD_MS)).toBeNull()
+    expect(volConePaths(100, -1, NOW, FUNDING_PERIOD_MS)).toBeNull()
+    expect(volConePaths(100, NaN, NOW, FUNDING_PERIOD_MS)).toBeNull()
+    expect(volConePaths(100, 1e-4, NOW, 0)).toBeNull()
+  })
+})
+
+describe('clusterLiquidationBands', () => {
+  it('merges nearby liq prices, weighted by notional', () => {
+    const bands = clusterLiquidationBands(
+      [
+        { size: 3000, liquidationPrice: 99 },
+        { size: 1000, liquidationPrice: 100 },
+        { size: 500, liquidationPrice: 120 },
+        { size: 0, liquidationPrice: 50 }, // closed — ignored
+      ],
+      2
+    )
+    expect(bands).toHaveLength(2)
+    // Weighted center of the merged band: (99·3000 + 100·1000) / 4000.
+    expect(bands[0].price).toBeCloseTo(99.25)
+    expect(bands[0].notional).toBe(4000)
+    expect(bands[0].weight).toBeCloseTo(4000 / 4500)
+    expect(bands[1].price).toBe(120)
+    expect(bands.reduce((s, b) => s + b.weight, 0)).toBeCloseTo(1)
+  })
+
+  it('returns empty for no open positions or invalid liq prices', () => {
+    expect(clusterLiquidationBands([], 1)).toEqual([])
+    expect(
+      clusterLiquidationBands([{ size: 100, liquidationPrice: NaN }], 1)
+    ).toEqual([])
+    expect(
+      clusterLiquidationBands([{ size: 100, liquidationPrice: 0 }], 1)
+    ).toEqual([])
+  })
+})
+
+describe('personalBreakEvenPath', () => {
+  const makePosition = (
+    direction: 'long' | 'short',
+    overrides: Partial<PerpPosition> = {}
+  ): PerpPosition => ({
+    userId: 'u',
+    contractId: 'c',
+    direction,
+    size: 1000,
+    costBasis: 100,
+    originalCostBasis: 100,
+    entryPrice: 50,
+    leverage: 10,
+    liquidationPrice: direction === 'long' ? 45 : 55,
+    openedTime: 0,
+    updatedTime: 0,
+    ...overrides,
+  })
+
+  it('matches applyFunding exactly after one period (paying long)', () => {
+    // L > S → longs pay. Walk the position through one real funding event and
+    // check its value at the projected break-even price is the original margin.
+    const position = makePosition('long')
+    const [L, S, k, fMax] = [200, 100, 1, 0.001]
+    const f = computeFundingRate(L, S, k, fMax)
+    expect(f).toBeGreaterThan(0)
+
+    const path = personalBreakEvenPath(
+      position,
+      f,
+      L,
+      S,
+      NOW,
+      FUNDING_PERIOD_MS,
+      1
+    )
+    expect(path).toHaveLength(2)
+
+    const after = applyFunding({ pool: { L, S }, positions: [position] }, f)
+      .positions[0]
+    expect(getPositionValue(after, path[1].value)).toBeCloseTo(
+      position.originalCostBasis,
+      8
+    )
+    // Paying side's hurdle rises.
+    expect(path[1].value).toBeGreaterThan(path[0].value)
+  })
+
+  it('matches applyFunding exactly after one period (receiving short)', () => {
+    const position = makePosition('short')
+    const [L, S, k, fMax] = [200, 100, 1, 0.001]
+    const f = computeFundingRate(L, S, k, fMax)
+
+    const path = personalBreakEvenPath(
+      position,
+      f,
+      L,
+      S,
+      NOW,
+      FUNDING_PERIOD_MS,
+      1
+    )
+    expect(path).toHaveLength(2)
+
+    const after = applyFunding({ pool: { L, S }, positions: [position] }, f)
+      .positions[0]
+    expect(getPositionValue(after, path[1].value)).toBeCloseTo(
+      position.originalCostBasis,
+      8
+    )
+    // A receiving short's break-even drifts up — more room above entry.
+    expect(path[1].value).toBeGreaterThan(path[0].value)
+  })
+
+  it('24h period: one applyFunding event equals one day of path, not one hour', () => {
+    const DAY = 24 * FUNDING_PERIOD_MS
+    const position = makePosition('long')
+    const [L, S, k, fMax] = [200, 100, 1, 0.001]
+    const f = computeFundingRate(L, S, k, fMax)
+
+    const path = personalBreakEvenPath(position, f, L, S, NOW, DAY, 1, DAY)
+    expect(path).toHaveLength(2)
+
+    const after = applyFunding({ pool: { L, S }, positions: [position] }, f)
+      .positions[0]
+    expect(getPositionValue(after, path[1].value)).toBeCloseTo(
+      position.originalCostBasis,
+      8
+    )
+  })
+
+  it('starts at entry price when no funding has accrued', () => {
+    const path = personalBreakEvenPath(
+      makePosition('long'),
+      0.0005,
+      200,
+      100,
+      NOW,
+      FUNDING_PERIOD_MS
+    )
+    expect(path[0].value).toBeCloseTo(50)
+  })
+
+  it('is flat when funding is zero and empty for closed positions', () => {
+    const flat = personalBreakEvenPath(
+      makePosition('long'),
+      0,
+      100,
+      100,
+      NOW,
+      FUNDING_PERIOD_MS
+    )
+    expect(flat[0].value).toBeCloseTo(flat[flat.length - 1].value)
+    expect(
+      personalBreakEvenPath(
+        makePosition('long', { size: 0 }),
+        0.001,
+        100,
+        100,
+        NOW,
+        FUNDING_PERIOD_MS
+      )
+    ).toEqual([])
+  })
+})

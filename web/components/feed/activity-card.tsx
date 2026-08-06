@@ -4,7 +4,7 @@ import Router from 'next/router'
 import { useRouter } from 'next/router'
 import { memo } from 'react'
 import { groupBy, orderBy } from 'lodash'
-import { TbDroplet, TbMoneybag } from 'react-icons/tb'
+import { TbMoneybag } from 'react-icons/tb'
 
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
@@ -17,8 +17,9 @@ import {
   PollContract,
 } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
+import type { PerpTradeActivity } from 'common/perps/activity'
 import { PrivateUser, User } from 'common/user'
-import { formatWithToken, shortFormatNumber } from 'common/util/format'
+import { shortFormatNumber } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -32,9 +33,7 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { MoneyDisplay } from 'web/components/bet/money-display'
-import { Button } from 'web/components/buttons/button'
 import { Content } from 'web/components/widgets/editor'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 import { LikeAndDislikeComment } from 'web/components/comments/comment-actions'
@@ -48,14 +47,24 @@ import { PollPanel } from 'web/components/poll/poll-panel'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { ReactButton } from 'web/components/contract/react-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
+import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-sparkline'
+import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { LiquidityTooltip } from 'web/components/tiers/liquidity-tooltip'
 
-export type ActivityItem = {
-  type: 'bet' | 'comment' | 'market'
+type ActivityItemBase = {
   id: string
   contractId: string
   createdTime: number
-  data: Bet | CommentWithTotalReplies | Contract
 }
+
+export type ActivityItem =
+  | (ActivityItemBase & { type: 'bet'; data: Bet })
+  | (ActivityItemBase & {
+      type: 'comment'
+      data: CommentWithTotalReplies
+    })
+  | (ActivityItemBase & { type: 'market'; data: Contract })
+  | (ActivityItemBase & { type: 'perp'; data: PerpTradeActivity })
 
 export type ActivityGroup = {
   contractId: string
@@ -76,10 +85,11 @@ export const ActivityCard = memo(function ActivityCard(props: {
   const path = contractPath(contract)
 
   // Separate comments and group replies
-  const commentItems = items.filter((item) => item.type === 'comment')
-  const comments = commentItems.map(
-    (item) => item.data as CommentWithTotalReplies
+  const commentItems = items.filter(
+    (item): item is Extract<ActivityItem, { type: 'comment' }> =>
+      item.type === 'comment'
   )
+  const comments = commentItems.map((item) => item.data)
   const replies = comments.filter((c) => !!c.replyToCommentId)
   const repliesByParentId = groupBy(
     orderBy(replies, 'createdTime', 'asc'),
@@ -90,7 +100,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
   const displayItems = orderBy(
     items.filter((item) => {
       if (item.type === 'comment') {
-        const comment = item.data as CommentWithTotalReplies
+        const comment = item.data
         return !comment.replyToCommentId
       }
       return true
@@ -160,6 +170,9 @@ export const ActivityCard = memo(function ActivityCard(props: {
           }}
         >
           <VisibilityIcon contract={contract} />{' '}
+          {contract.outcomeType === 'PERP' && (
+            <PerpMarketBadge className="mr-1 align-middle" />
+          )}
           {removeEmojis(contract.question)}
         </Link>
 
@@ -174,7 +187,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
             {!contract.isResolved &&
               contract.closeTime &&
               contract.closeTime > Date.now() && (
-                <div onClick={(e) => e.stopPropagation()}>
+                <div className="stop-prop">
                   <BetButton
                     contract={contract as BinaryContract}
                     user={user}
@@ -188,7 +201,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
         {/* Answer bars for multiple choice markets */}
         {contract.outcomeType === 'MULTIPLE_CHOICE' &&
           contract.mechanism === 'cpmm-multi-1' && (
-            <div onClick={(e) => e.stopPropagation()} className="mt-2">
+            <div className="stop-prop mt-2">
               <SimpleAnswerBars
                 contract={contract as CPMMMultiContract}
                 maxAnswers={5}
@@ -198,7 +211,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
 
         {/* Poll options */}
         {contract.outcomeType === 'POLL' && (
-          <div onClick={(e) => e.stopPropagation()} className="mt-2">
+          <div className="stop-prop mt-2">
             <PollPanel contract={contract as PollContract} maxOptions={5} />
           </div>
         )}
@@ -213,7 +226,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
             {!contract.isResolved &&
               contract.closeTime &&
               contract.closeTime > Date.now() && (
-                <div onClick={(e) => e.stopPropagation()}>
+                <div className="stop-prop">
                   <NumericBetButton
                     contract={contract as CPMMNumericContract}
                     user={user}
@@ -221,6 +234,25 @@ export const ActivityCard = memo(function ActivityCard(props: {
                 </div>
               )}
           </Row>
+        )}
+
+        {contract.outcomeType === 'PERP' && (
+          <>
+            <Row className="items-baseline gap-1.5">
+              <ContractStatusLabel
+                className="text-lg font-bold"
+                contract={contract}
+              />
+              <span className="text-ink-400 text-xs">oracle price</span>
+            </Row>
+            <FeedPerpPriceSparkline
+              contract={contract}
+              height={104}
+              className="mt-1"
+              showSummary
+              showYAxis
+            />
+          </>
         )}
       </Col>
 
@@ -245,29 +277,14 @@ export const ActivityCard = memo(function ActivityCard(props: {
           </BottomRowButtonWrapper>
         )}
 
-        {'totalLiquidity' in contract && (
+        {('totalLiquidity' in contract || contract.mechanism === 'perp') && (
           <BottomRowButtonWrapper>
-            <Button
-              disabled={true}
-              size={'2xs'}
-              color={'gray-white'}
-              className={'disabled:cursor-pointer'}
-            >
-              <Tooltip text={`Total liquidity`} placement="top" noTap>
-                <Row
-                  className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
-                >
-                  <TbDroplet className="h-6 w-6 stroke-2" />
-                  <div className="text-ink-600">
-                    {formatWithToken({
-                      amount: contract.totalLiquidity,
-                      token: contract.token === 'CASH' ? 'CASH' : 'M$',
-                      short: true,
-                    })}
-                  </div>
-                </Row>
-              </Tooltip>
-            </Button>
+            <LiquidityTooltip
+              contract={contract}
+              placement="top"
+              className="text-ink-600 h-full text-sm"
+              iconClassName="text-ink-500 h-5 w-5"
+            />
           </BottomRowButtonWrapper>
         )}
 
@@ -304,18 +321,20 @@ export const ActivityCard = memo(function ActivityCard(props: {
                 <BetLog
                   key={`${item.id}-bet`}
                   contract={contract}
-                  bet={item.data as Bet}
+                  bet={item.data}
                 />
               )
+            } else if (item.type === 'perp') {
+              return <PerpTradeLog key={`${item.id}-perp`} trade={item.data} />
             } else if (item.type === 'market') {
               return (
                 <MarketCreatedLog
                   key={`${item.id}-market`}
-                  contract={item.data as Contract}
+                  contract={item.data}
                 />
               )
             } else if (item.type === 'comment') {
-              const comment = item.data as CommentWithTotalReplies
+              const comment = item.data
               const childReplies = repliesByParentId[comment.id] ?? []
               const hiddenRepliesCount =
                 (comment.totalReplies ?? 0) - childReplies.length
@@ -445,6 +464,73 @@ const BetLog = memo(function BetLog(props: { bet: Bet; contract: Contract }) {
   )
 })
 
+const PerpTradeLog = memo(function PerpTradeLog(props: {
+  trade: PerpTradeActivity
+}) {
+  const { trade } = props
+  const trader = useDisplayUserById(trade.userId)
+  const verb =
+    trade.eventType === 'open'
+      ? 'opened'
+      : trade.eventType === 'add'
+      ? 'added'
+      : 'closed'
+  const leverage =
+    trade.eventType !== 'close' &&
+    trade.leverage !== null &&
+    Number.isFinite(trade.leverage) &&
+    trade.leverage > 0
+      ? trade.leverage
+      : null
+
+  return (
+    <Row className="items-start gap-2 py-1">
+      <UserHovercard userId={trade.userId}>
+        <Avatar
+          avatarUrl={trader?.avatarUrl}
+          username={trader?.username}
+          size="xs"
+          entitlements={trader?.entitlements}
+          className="mt-0.5 shrink-0"
+        />
+      </UserHovercard>
+      <Col className="min-w-0 gap-0.5">
+        <Row className="flex-wrap items-baseline gap-x-1.5 text-sm">
+          <span className="text-ink-900 font-semibold">
+            {trader?.name ?? 'Someone'}
+          </span>
+          <span className="text-ink-500">{verb}</span>
+          <span className="text-ink-700 font-semibold">
+            <MoneyDisplay amount={trade.margin} isCashContract={false} />
+          </span>
+          {trade.eventType === 'add' && (
+            <span className="text-ink-500">to</span>
+          )}
+          <span
+            className={
+              trade.direction === 'long' ? 'text-teal-500' : 'text-scarlet-500'
+            }
+          >
+            {trade.direction.toUpperCase()}
+          </span>
+        </Row>
+        <Row className="flex-wrap items-center gap-x-2 text-xs">
+          {leverage !== null && (
+            <span className="text-ink-600">
+              {shortFormatNumber(leverage)}× leverage
+            </span>
+          )}
+          <RelativeTimestamp
+            time={trade.createdTime}
+            shortened
+            className="text-ink-400"
+          />
+        </Row>
+      </Col>
+    </Row>
+  )
+})
+
 const MarketCreatedLog = memo(function MarketCreatedLog(props: {
   contract: Contract
 }) {
@@ -494,9 +580,11 @@ const CommentLog = memo(function CommentLog(props: {
   }
 
   return (
-    <div
+    <ClickFrame
       className="hover:bg-canvas-50 cursor-pointer rounded-md py-1 transition-colors"
       onClick={navigateToComment}
+      role="link"
+      ariaLabel={`View ${commenter?.name ?? userName}'s comment`}
     >
       <Row className="items-start gap-2">
         <UserHovercard userId={userId}>
@@ -538,7 +626,7 @@ const CommentLog = memo(function CommentLog(props: {
           </Row>
         </Col>
       </Row>
-    </div>
+    </ClickFrame>
   )
 })
 

@@ -15,6 +15,7 @@ import { track } from 'web/lib/service/analytics'
 import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { UserHovercard } from '../user/user-hovercard'
+import { PerpMarketBadge } from '../perps/perp-market-badge'
 
 export const SidebarRelatedContractsList = memo(function (props: {
   contracts: Contract[]
@@ -149,6 +150,9 @@ const SidebarRelatedContractCard = memo(function (props: {
           twoLines ? 'line-clamp-2' : 'line-clamp-3'
         )}
       >
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {question}
       </div>
       <Row className="w-full items-end justify-between">
@@ -173,11 +177,13 @@ const SidebarRelatedContractCard = memo(function (props: {
           </Row>
         </UserHovercard>
 
-        <ContractStatusLabel
-          contract={contract}
-          chanceLabel
-          className="font-semibold"
-        />
+        <Row className="items-center gap-1">
+          <ContractStatusLabel
+            contract={contract}
+            chanceLabel
+            className="font-semibold"
+          />
+        </Row>
       </Row>
     </Link>
   )
@@ -223,6 +229,9 @@ const RelatedContractCard = memo(function (props: {
           twoLines ? 'line-clamp-2' : 'line-clamp-3'
         )}
       >
+        {contract.outcomeType === 'PERP' && (
+          <PerpMarketBadge className="mr-1 align-middle" />
+        )}
         {question}
       </div>
       <Row className="w-full items-end justify-between">

@@ -13,6 +13,15 @@ export { type SupabaseClient } from 'common/supabase/utils'
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
     // Read more: https://node-postgres.com/apis/pool#error
+    // Serialization failures (40001) are expected contention under the perp
+    // engine's advisory-lock + SERIALIZABLE pattern and are retried by
+    // transactWithRetries. Log one line instead of the full client/event
+    // dump (the entire pg client state), and keep them below the ERROR
+    // severity that GCP log-based alerts page on.
+    if (err?.code === '40001') {
+      log.warn(`pg serialization failure (retried): ${err.message}`)
+      return
+    }
     log.error('pgPromise background error', {
       error: err,
       event: e,
@@ -198,5 +207,11 @@ export function createSupabaseDirectClient(opts?: {
 export const SERIAL_MODE = new pgp.txMode.TransactionMode({
   tiLevel: pgp.txMode.isolationLevel.serializable,
   readOnly: false,
+  deferrable: false,
+})
+
+export const READ_ONLY_REPEATABLE_MODE = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.repeatableRead,
+  readOnly: true,
   deferrable: false,
 })
