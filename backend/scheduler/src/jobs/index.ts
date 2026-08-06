@@ -1,3 +1,5 @@
+import { compact } from 'lodash'
+
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
 import { calculateConversionScore } from 'shared/conversion-score'
@@ -27,7 +29,7 @@ import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
-import { createJob } from './helpers'
+import { createJob as createCronJob, JobContext } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
@@ -66,11 +68,49 @@ import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
 
-export function createJobs() {
+// Which subset of jobs this process runs. The 15s oracle tick (and the other
+// PERP jobs that apply funding and liquidations) must not share an event loop
+// with batch jobs like update-user-portfolio-histories, which block it for
+// minutes at prod scale and freeze the feed mid-liquidation. Prod deploys the
+// scheduler as a 'main' + 'perps' instance pair; 'all' is the single-instance
+// mode used on dev.
+export type SchedulerJobSet = 'all' | 'main' | 'perps'
+
+const PERP_JOB_NAMES = new Set([
+  'update-perps',
+  'update-oracle-feeds',
+  'update-openrouter-share',
+  'update-trump-approval',
+])
+
+export function getSchedulerJobSet(): SchedulerJobSet {
+  const raw = process.env.SCHEDULER_JOBS ?? 'all'
+  if (raw === 'all' || raw === 'main' || raw === 'perps') return raw
+  // An unrecognized value must fail the process, not fall back to 'all': two
+  // instances both running the PERP jobs would double-apply funding transfers
+  // and liquidations.
+  throw new Error(
+    `Invalid SCHEDULER_JOBS '${raw}'; expected 'all', 'main', or 'perps'.`
+  )
+}
+
+export function createJobs(jobSet: SchedulerJobSet) {
   // Schedules are 6-field croner expressions (seconds first) evaluated in
   // America/Los_Angeles (DEFAULT_OPTS in ./helpers.ts) — NOT UTC. A run that
   // is still going when its next firing comes due is skipped ("protect").
-  return [
+  //
+  // A job excluded from this set must never be constructed: a Cron starts
+  // ticking the moment `new Cron` runs, so filtering the returned array
+  // would leave excluded jobs live.
+  const createJob = (
+    name: string,
+    schedule: string | null,
+    fn: (ctx: JobContext) => Promise<void>
+  ) =>
+    jobSet === 'all' || PERP_JOB_NAMES.has(name) === (jobSet === 'perps')
+      ? createCronJob(name, schedule, fn)
+      : null
+  const jobs = compact([
     createJob(
       'auto-leagues-cycle',
       '0 */10 * * * *', // every 10 minutes
@@ -385,5 +425,10 @@ export function createJobs() {
       '*/10 * * * * *', // every 10 seconds
       pollSportsLiveScores
     ),
-  ]
+  ])
+  if (jobSet === 'perps' && jobs.length !== PERP_JOB_NAMES.size)
+    throw new Error(
+      `PERP job set mismatch: expected ${PERP_JOB_NAMES.size} jobs but created ${jobs.length} — PERP_JOB_NAMES is out of sync with the job list.`
+    )
+  return jobs
 }

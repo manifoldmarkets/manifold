@@ -5,7 +5,7 @@ import * as express from 'express'
 import * as basicAuth from 'express-basic-auth'
 import { sortBy } from 'lodash'
 import { LOCAL_ONLY, isProd, log } from 'shared/utils'
-import { createJobs } from './jobs'
+import { createJobs, getSchedulerJobSet } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
 import { initFirebase, initSecrets } from './utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
@@ -46,9 +46,12 @@ async function start() {
     })
   )
 
-  const jobs = createJobs()
+  const jobSet = getSchedulerJobSet()
+  const jobs = createJobs(jobSet)
   const jobsByName = Object.fromEntries(jobs.map((j) => [j.name, j]))
-  log.info(`Loaded ${jobs.length} job(s).`, { names: Object.keys(jobsByName) })
+  log.info(`Loaded ${jobs.length} job(s) for job set '${jobSet}'.`, {
+    names: Object.keys(jobsByName),
+  })
 
   app.get('/', (_req: express.Request, res: express.Response) => {
     const now = Date.now()
