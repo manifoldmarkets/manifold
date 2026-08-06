@@ -24,6 +24,33 @@ ZONE="us-east4-a"
 ENV=${1:-dev}
 PERP_TRADING_MODE=${PERP_TRADING_MODE:-}
 
+# The trading mode the live deployment is currently running. Deploys replace
+# the container env wholesale, and the runtime treats a missing var as
+# 'enabled' (common/perps/trading-mode.ts), so a deploy that omitted
+# PERP_TRADING_MODE used to be able to silently reset an incident stance
+# (reduce-only / halted) back to enabled. Instead of making the operator
+# retype the mode on every prod deploy, read it off the live template and
+# carry it forward: a deploy never changes the kill switch unless told to.
+get_deployed_perp_trading_mode() {
+    local template
+    template=$(gcloud compute instance-groups managed describe ${SERVICE_GROUP} \
+        --project ${GCLOUD_PROJECT} --zone ${ZONE} \
+        --format="value(instanceTemplate)" 2>/dev/null) || return 1
+    template=${template##*/}
+    [ -n "${template}" ] || return 1
+    # The container declaration arrives with escaped newlines on some
+    # platforms (observed \\n on Windows gcloud); normalize before parsing.
+    gcloud compute instance-templates describe "${template}" \
+        --project ${GCLOUD_PROJECT} \
+        --format="value(properties.metadata.items.filter(\"key='gce-container-declaration'\").extract(value))" \
+        2>/dev/null \
+      | sed 's/\\\\n/\n/g; s/\\n/\n/g' \
+      | grep -A1 'name: PERP_TRADING_MODE' \
+      | grep 'value:' | head -1 \
+      | sed 's/.*value: *//' \
+      | tr -d "[:space:]'\""
+}
+
 case $ENV in
     dev)
         PERP_TRADING_MODE=${PERP_TRADING_MODE:-enabled}
@@ -33,10 +60,6 @@ case $ENV in
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=e2-small ;;
     prod)
-        if [ -z "${PERP_TRADING_MODE}" ]; then
-            echo "PROD deploy requires explicit PERP_TRADING_MODE=enabled, reduce-only, or halted."
-            exit 1
-        fi
         NEXT_PUBLIC_FIREBASE_ENV=PROD
         # Private Memorystore instance. Passed at the container level so both
         # the main API process and PM2 read replicas inherit it.
@@ -51,6 +74,26 @@ case $ENV in
         echo "Invalid environment; must be dev or prod."
         exit 1
 esac
+
+# Prod inherits the live mode when not explicitly overridden, so a routine
+# deploy can never flip the kill switch by accident.
+if [ "$ENV" = "prod" ] && [ -z "${PERP_TRADING_MODE}" ]; then
+    echo "PERP_TRADING_MODE not set; reading the live prod mode so this deploy keeps it..."
+    DEPLOYED_MODE=$(get_deployed_perp_trading_mode || true)
+    case $DEPLOYED_MODE in
+        enabled)
+            PERP_TRADING_MODE=enabled
+            echo "Prod is currently 'enabled'; keeping it." ;;
+        reduce-only|halted)
+            PERP_TRADING_MODE=${DEPLOYED_MODE}
+            echo "NOTE: prod is currently '${DEPLOYED_MODE}' (incident stance). This deploy KEEPS it."
+            echo "Pass PERP_TRADING_MODE=enabled explicitly when the incident is over." ;;
+        *)
+            echo "Could not read the live PERP_TRADING_MODE from ${SERVICE_GROUP} (got '${DEPLOYED_MODE:-nothing}')."
+            echo "Refusing to guess on prod: pass PERP_TRADING_MODE=enabled, reduce-only, or halted explicitly."
+            exit 1 ;;
+    esac
+fi
 
 case $PERP_TRADING_MODE in
     enabled|reduce-only|halted) ;;

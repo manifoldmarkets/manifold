@@ -581,6 +581,8 @@ export const Stats = (props: {
 
 function PerpStatsRows(props: { contract: PerpContract }) {
   const { contract } = props
+  const isAdmin = useAdmin()
+  const canEditLeverage = isAdmin && !contract.isResolved
   const price =
     contract.resolution === 'MKT'
       ? Number(contract.resolvedOraclePrice ?? contract.oraclePrice)
@@ -628,12 +630,16 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           />
         </td>
       </tr>
-      <tr>
+      <tr className={clsx(canEditLeverage && 'bg-purple-500/30')}>
         <td>Maximum leverage</td>
         <td>
-          {Number.isFinite(contract.maxLeverage)
-            ? `${formatWithCommas(contract.maxLeverage)}×`
-            : '—'}
+          {canEditLeverage ? (
+            <MaxLeverageInput contract={contract} />
+          ) : Number.isFinite(contract.maxLeverage) ? (
+            `${formatWithCommas(contract.maxLeverage)}×`
+          ) : (
+            '—'
+          )}
         </td>
       </tr>
       <tr>
@@ -647,6 +653,76 @@ function PerpStatsRows(props: { contract: PerpContract }) {
         </td>
       </tr>
     </>
+  )
+}
+
+// Inline admin editor for update-perp-config. The change applies to the next
+// trade immediately (the engine re-reads the contract per trade); lowering
+// the cap only constrains new opens — existing positions are grandfathered.
+function MaxLeverageInput(props: { contract: PerpContract }) {
+  const { contract } = props
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  // Bridge the gap between a save and the next contract poll so the row
+  // never flashes the pre-save cap.
+  const [justSaved, setJustSaved] = useState<number | null>(null)
+  const current =
+    justSaved != null && justSaved !== contract.maxLeverage
+      ? justSaved
+      : contract.maxLeverage
+  const parsed = Number(input)
+  const valid =
+    input !== '' && Number.isFinite(parsed) && parsed > 1 && parsed <= 100
+
+  const submit = async () => {
+    if (!valid || saving || parsed === current) return
+    setSaving(true)
+    try {
+      const res = await api('update-perp-config', {
+        contractId: contract.id,
+        maxLeverage: parsed,
+      })
+      setJustSaved(res.maxLeverage)
+      setInput('')
+      toast.success(`Max leverage is now ${res.maxLeverage}×`)
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update max leverage'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Row className="items-center gap-2">
+      <span className="tabular-nums">
+        {Number.isFinite(current) ? `${formatWithCommas(current)}×` : '—'}
+      </span>
+      <input
+        type="number"
+        min={1}
+        max={100}
+        step={0.5}
+        value={input}
+        disabled={saving}
+        placeholder="New cap"
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+        }}
+        className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
+      />
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        disabled={!valid || saving || parsed === current}
+        loading={saving}
+        onClick={submit}
+      >
+        Set
+      </Button>
+    </Row>
   )
 }
 
