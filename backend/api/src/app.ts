@@ -116,9 +116,15 @@ export const apiErrorHandler: ErrorRequestHandler = (
         .json({ message: 'Transaction conflict. Please try again.' })
     }
   } else {
+    // The full error (with stack) goes to the server log only. Returning the
+    // stack in the response body leaked internal file paths and gave users an
+    // indecipherable wall of text in place of an error message.
     log.error(error)
     if (!res.headersSent) {
-      res.status(500).json({ message: error.stack, error })
+      res.status(500).json({
+        message:
+          'An unexpected error occurred. Please try again, and report it if it persists.',
+      })
     }
   }
 }
