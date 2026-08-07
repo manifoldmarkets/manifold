@@ -6,11 +6,13 @@ import { Row } from 'web/components/layout/row'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 import {
-  currentSenate2026,
+  TOTAL_SENATE_SEATS,
+  seatsNotUpIn2026,
   senate2026,
 } from 'web/public/data/senate-state-data'
 import { probToColor, sortByDemocraticDiff } from './state-election-map'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
+import { DEFAULT_STATE_FILL } from './usa-state'
 
 export function SenateBar(props: {
   mapContractsDictionary: MapContractsDictionary
@@ -28,22 +30,30 @@ export function SenateBar(props: {
     props
 
   const isMobile = useIsMobile()
-  const [republicans, democrats] = partition(
-    currentSenate2026,
-    ({ party1 }) => party1 === 'Republican'
+  // One square per SEAT, not per state: states have two senators, and in a
+  // state with a 2026 race the other seat is still held by whoever holds it.
+  // 34 Democratic-caucusing + 35 races + 31 Republican = the whole chamber.
+  const [republicanSeats, democraticSeats] = partition(
+    seatsNotUpIn2026,
+    ({ caucus }) => caucus === 'Republican'
   )
+  const seatWidth = `${(1 / TOTAL_SENATE_SEATS) * 100}%`
 
   return (
     <Col className="mt-2 w-full text-xs sm:text-base">
+      {/* Every seat is the same width and the safe Democratic seats sit on the
+          left, so the 50th seat — the majority — falls exactly halfway across
+          a 100-seat bar. (Uniform gaps shift both halves equally, so they
+          cancel out at the midpoint.) */}
       <Col className="text-ink-700 mx-auto items-center">
         <div className="-mb-1 ">50 to win</div>
         <ChevronDownIcon className="h-5 w-5" />
       </Col>
-      <Row className="overflow-none relative gap-[1px] rounded sm:gap-0.5">
-        {democrats.map(({ state }) => {
+      <Row className="overflow-none relative gap-px rounded">
+        {democraticSeats.map(({ state, name }) => {
           return (
             <StateBar
-              key={state}
+              key={`${state}-${name}`}
               handleClick={handleClick}
               onMouseEnter={onMouseEnter}
               onMouseLeave={onMouseLeave}
@@ -51,17 +61,21 @@ export function SenateBar(props: {
               hoveredState={hoveredState}
               state={state}
               backgroundImage={`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%234a5fa8'/%3E%3Cline x1='0' y1='0' x2='8' y2='8' stroke='%23262c45' stroke-width='2'/%3E%3Cline x1='8' y1='0' x2='0' y2='8' stroke='%23262c45' stroke-width='2'/%3E%3C/svg%3E")`}
-              width={`${(1 / 50) * 100}%`}
+              width={seatWidth}
               isMobile={isMobile}
             />
           )
         })}
         {Object.entries(sortedContractsDictionary).map(
           ([stateKey, contract]) => {
-            const fill = probToColor(
-              contract,
-              senate2026.filter((s) => s.state === stateKey)[0]
-            )
+            // Races we can't read a D-vs-R price out of still take up a seat;
+            // they get the map's neutral gray rather than vanishing from the
+            // bar and throwing off the count.
+            const fill =
+              probToColor(
+                contract,
+                senate2026.filter((s) => s.state === stateKey)[0]
+              ) ?? DEFAULT_STATE_FILL
 
             return (
               <StateBar
@@ -73,16 +87,16 @@ export function SenateBar(props: {
                 hoveredState={hoveredState}
                 state={stateKey}
                 fill={fill}
-                width={`${(1 / 50) * 100}%`}
+                width={seatWidth}
                 isMobile={isMobile}
               />
             )
           }
         )}
-        {republicans.map(({ state }) => {
+        {republicanSeats.map(({ state, name }) => {
           return (
             <StateBar
-              key={state}
+              key={`${state}-${name}`}
               handleClick={handleClick}
               onMouseEnter={onMouseEnter}
               onMouseLeave={onMouseLeave}
@@ -90,7 +104,7 @@ export function SenateBar(props: {
               hoveredState={hoveredState}
               state={state}
               backgroundImage={`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%239d3336'/%3E%3Cline x1='0' y1='0' x2='8' y2='8' stroke='%233e1316' stroke-width='2'/%3E%3Cline x1='8' y1='0' x2='0' y2='8' stroke='%233e1316' stroke-width='2'/%3E%3C/svg%3E")`}
-              width={`${(1 / 50) * 100}%`}
+              width={seatWidth}
               isMobile={isMobile}
             />
           )

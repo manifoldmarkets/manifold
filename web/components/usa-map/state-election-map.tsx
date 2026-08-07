@@ -194,13 +194,18 @@ export function sortByDemocraticDiff(
 ): MapContractsDictionary {
   return Object.entries(unsortedContractsDictionary)
     .map(([state, contract]) => {
-      // Sort by Democratic strength, reusing the shared party-prob helper so
-      // the varied community answer labels are handled consistently.
+      // Sort by Democratic margin, reusing the shared party-prob helper so the
+      // varied community answer labels are handled consistently. It has to be
+      // the margin and not the raw Democratic price: in a race with a strong
+      // independent (Nebraska's Dan Osborn) both parties price low, and
+      // ranking on `dem` alone buries such a state past the safe-red seats as
+      // if it were the Republicans' surest win. A race we can't read at all
+      // sorts as a tossup, in the middle.
       const probs = getPartyProbs(
         contract,
         data?.find((d) => d.state === state)
       )
-      return { state, contract, diff: probs?.dem ?? 0 }
+      return { state, contract, diff: probs ? probs.dem - probs.rep : 0 }
     })
     .sort((a, b) => b.diff - a.diff)
     .reduce((sortedData, data) => {

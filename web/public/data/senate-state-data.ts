@@ -199,6 +199,8 @@ export const senateCandidates2026: StateElectionMarket[] = [
   { state: 'MT', slug: 'who-will-the-2026-montana-senate-el' },
 ]
 
+export type SenateParty = 'Democrat' | 'Republican' | 'Independent'
+
 export interface CurrentSenateState {
   state: string
   name1: string
@@ -451,7 +453,7 @@ export const currentSenate2026: CurrentSenateState[] = [
 // Senate after the 2024 election.
 export const senateHeldSeats2026: Record<
   string,
-  { name: string; party: 'Democrat' | 'Republican' | 'Independent' }
+  { name: string; party: SenateParty }
 > = {
   AL: { name: 'Katie Britt', party: 'Republican' },
   AK: { name: 'Lisa Murkowski', party: 'Republican' },
@@ -489,3 +491,39 @@ export const senateHeldSeats2026: Record<
   WV: { name: 'Jim Justice', party: 'Republican' },
   WY: { name: 'John Barrasso', party: 'Republican' },
 }
+
+export interface SenateSeat {
+  state: string
+  name: string
+  // The side this seat counts toward when tallying control of the chamber.
+  caucus: 'Democrat' | 'Republican'
+}
+
+// Independents don't hold seats of their own for majority purposes — they
+// caucus with a party, and both independents in this Senate (Angus King and
+// Bernie Sanders) caucus with the Democrats.
+const caucusOf = (party: SenateParty): SenateSeat['caucus'] =>
+  party === 'Republican' ? 'Republican' : 'Democrat'
+
+// Every Senate seat that is NOT on the 2026 ballot, one entry per SEAT rather
+// than per state: both seats of the states with no race at all, plus the seat
+// each racing state is holding over. 65 seats — 34 Democratic-caucusing and 31
+// Republican — which together with the 35 races in `senate2026` account for
+// every seat in the chamber. Keep it that way: the projection bar sizes its
+// squares against the full 100 and reads the "50 to win" line off them, so
+// dropping the held-over seats or collapsing a state's two senators into one
+// entry silently moves the majority marker.
+export const seatsNotUpIn2026: SenateSeat[] = [
+  ...currentSenate2026.flatMap(({ state, name1, party1, name2, party2 }) => [
+    { state, name: name1, caucus: caucusOf(party1) },
+    { state, name: name2, caucus: caucusOf(party2) },
+  ]),
+  ...Object.entries(senateHeldSeats2026).map(([state, { name, party }]) => ({
+    state,
+    name,
+    caucus: caucusOf(party),
+  })),
+].sort((a, b) => a.state.localeCompare(b.state))
+
+// The whole chamber, so the bar can size each seat as a fixed fraction of it.
+export const TOTAL_SENATE_SEATS = seatsNotUpIn2026.length + senate2026.length
