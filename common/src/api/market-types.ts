@@ -12,6 +12,7 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
 import {
   getTierIndexFromLiquidityAndAnswers,
@@ -82,6 +83,7 @@ export type LiteMarket = {
   fundingRate?: number
   lastFundingTime?: number
   maxLeverage?: number
+  takerFeeBps?: number
   resolvedOraclePrice?: number
 }
 export type ApiAnswer = Omit<
@@ -224,6 +226,7 @@ export function toLiteMarket(
           fundingRate: contract.fundingRate,
           lastFundingTime: contract.lastFundingTime,
           maxLeverage: contract.maxLeverage,
+          takerFeeBps: getPerpTakerFeeBps(contract),
           resolvedOraclePrice: contract.resolvedOraclePrice,
         }
       : {}),

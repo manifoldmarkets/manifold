@@ -1,7 +1,9 @@
 import { PerpContract } from 'common/contract'
+import { PERP_TAKER_FEE_BPS_DEFAULT } from 'common/perps/fees'
 import {
   createPerpSchema,
   LiteMarket,
+  toFullMarket,
   toLiteMarket,
   toUltraLiteMarket,
 } from './market-types'
@@ -147,7 +149,9 @@ describe('toLiteMarket', () => {
       fundingRate: 0.001,
       lastFundingTime: 1_700_000_080_000,
       maxLeverage: 10,
+      takerFeeBps: 12,
       resolvedOraclePrice: 42,
+      description: '',
     } as unknown as PerpContract
 
     expect(toLiteMarket(contract)).toEqual(
@@ -163,9 +167,43 @@ describe('toLiteMarket', () => {
         poolShort: 0,
         fundingRate: 0.001,
         lastFundingTime: 1_700_000_080_000,
+        takerFeeBps: 12,
         resolvedOraclePrice: 42,
       })
     )
+    expect(toFullMarket(contract).takerFeeBps).toBe(12)
+  })
+
+  it('projects the effective legacy default while preserving explicit zero', () => {
+    const legacyContract = {
+      id: 'legacy-perp-id',
+      creatorId: 'creator-id',
+      creatorUsername: 'test',
+      creatorName: 'Test Creator',
+      createdTime: 1_700_000_000_000,
+      question: 'Legacy perpetual',
+      slug: 'legacy-perpetual',
+      outcomeType: 'PERP',
+      mechanism: 'perp',
+      volume: 0,
+      volume24Hours: 0,
+      isResolved: false,
+      uniqueBettorCount: 0,
+      oraclePrice: 42,
+      poolLong: 100,
+      poolShort: 100,
+      description: '',
+    } as unknown as PerpContract
+
+    expect(toLiteMarket(legacyContract).takerFeeBps).toBe(
+      PERP_TAKER_FEE_BPS_DEFAULT
+    )
+    expect(toFullMarket(legacyContract).takerFeeBps).toBe(
+      PERP_TAKER_FEE_BPS_DEFAULT
+    )
+    expect(
+      toLiteMarket({ ...legacyContract, takerFeeBps: 0 }).takerFeeBps
+    ).toBe(0)
   })
 })
 
