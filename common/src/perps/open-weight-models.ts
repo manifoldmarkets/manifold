@@ -50,7 +50,7 @@ import { DAY_MS } from '../util/time'
 // change silently when a third party edits a metadata field.
 
 /** Bump when the map changes. */
-export const OPEN_WEIGHT_LIST_VERSION = '2026-08-05'
+export const OPEN_WEIGHT_LIST_VERSION = '2026-08-07'
 
 /** Trailing window, in whole UTC days, that the index averages over. */
 export const OPEN_WEIGHT_WINDOW_DAYS = 7
@@ -75,6 +75,15 @@ export type ModelClassification = {
  * variant suffixes (`...:free`), which are the same model for index purposes.
  */
 export const OPEN_WEIGHT_MODELS: Record<string, ModelClassification> = {
+  // Added 2026-08-07: entered the top 50 and froze the feed (fail-closed).
+  // Muse Spark is Meta's first CLOSED-weights family — API-only via
+  // api.meta.ai, no repo in meta-llama/facebook HF orgs, widely reported as
+  // Meta's break from open-weights (verified 2026-08-07). Muse Spark 1.2
+  // (OpenRouter-listed 2026-08-05) and Muse Code are closed on the same
+  // evidence; add their exact permaslugs when the fail-closed alert names
+  // them. If Meta later opens the weights, new entries count from that
+  // release forward only — never reclassify retroactively.
+  'meta/muse-spark-1.1-20260709': { open: false }, // Meta: Muse Spark 1.1
   // Added 2026-08-05: these four entered the top 50 during the week of
   // 2026-07-29 and froze the feed (fail-closed on unclassified models, as
   // designed — see the header comment).
