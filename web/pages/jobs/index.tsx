@@ -49,34 +49,6 @@ const JOBS: Job[] = [
     contactEmail: 'dev@mnx.fi',
   },
   {
-    title: 'Head of Growth',
-    location: 'SF / remote',
-    comp: 'Base + equity',
-    stage: 'Pre-launch',
-    blurb:
-      'Own the MNX narrative end to end — a 0→1 brand and growth seat reporting directly to the founders.',
-    intro:
-      'Early stage growth is storytelling. You own the MNX narrative end to end. ' +
-      "You'll speak fluently to AI enthusiasts, crypto-natives, and institutional " +
-      'trading desks alike, build the community around our markets. This is a 0→1 ' +
-      'brand and growth seat reporting directly to the founders.',
-    whatYoullDo: [
-      'Own messaging, brand voice, and the public narrative across X, long-form writing, podcasts, and press',
-      'Manage contractors to produce high quality content',
-      'Coordinate ecosystem partnerships',
-      'Design the acquisition and activation funnel: who we reach, how they land, and what gets them placing real size',
-      "Set up the analytics to know what's actually working, and kill what isn't",
-    ],
-    whatWereLookingFor: [
-      'A high agency generalist with excellent communication skills',
-      "Experience building an audience, whether that's for a company, event, or personal brand",
-      'Fluency in some subset of finance, AI, and crypto',
-      'Comfort with ambiguity and operating in a fast-pace startup environment',
-      'Bonus: existing audience or relationships across crypto-trading and AI communities',
-    ],
-    contactEmail: 'growth@mnx.fi',
-  },
-  {
     title: 'Quantitative Trader',
     location: 'SF / remote',
     comp: 'Base + equity + carry',
