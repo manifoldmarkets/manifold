@@ -27,9 +27,9 @@ import { getUser } from 'shared/utils'
 //   contract_perp_events. The live path deliberately withholds the bonus for
 //   API trades, so an API-only trader in this list would receive a bonus the
 //   live path would not have paid. Review the dry-run output before paying.
-// - Safe to re-run: a pair is skipped when a BETTING_STREAK_BONUS txn already
-//   records the streak value assigned to that day (streaks strictly increase,
-//   so the value uniquely identifies the increment).
+// - Safe to re-run: backfilled txns are stamped with data.owedForDay, and a
+//   (user, day) pair is skipped when a txn already carries that stamp (or a
+//   bonus was normally paid on that day).
 //
 // Usage:
 //   ts-node backfill-perp-streak-bonuses.ts        # dry run, prints the plan
@@ -146,17 +146,22 @@ runScript(async ({ pg }) => {
         continue
       }
 
-      // Idempotency: a bonus txn recording this streak value means this
-      // increment was already paid (possibly by a prior run of this script).
+      // Idempotency across re-runs: backfilled txns are stamped with the
+      // Pacific day they were owed for. Streak values can't be the key — a
+      // user who restarts streaks has many txns recording e.g. streak 1.
+      // (A normally-paid bonus ON that day is already excluded by the outer
+      // query; the created_time leg is belt and braces.)
       const already = await pg.oneOrNone(
         `select 1 from txns
         where to_id = $1 and category = 'BETTING_STREAK_BONUS'
-          and (data->'data'->>'currentBettingStreak')::int = $2`,
-        [userId, dayStreak]
+          and (data->'data'->>'owedForDay' = $2
+            or (created_time at time zone 'America/Los_Angeles')::date = $2::date)
+        limit 1`,
+        [userId, row.pt_day]
       )
       if (already) {
         console.log(
-          `SKIP ${user.username} ${row.pt_day}: streak ${dayStreak} already paid`
+          `SKIP ${user.username} ${row.pt_day}: already paid for this day`
         )
         continue
       }
