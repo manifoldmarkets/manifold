@@ -693,6 +693,7 @@ export type Database = {
           opened_time: string
           original_cost_basis: number
           size: number
+          taker_fee_cost_basis: number
           updated_time: string
           user_id: string
         }
@@ -706,6 +707,7 @@ export type Database = {
           opened_time?: string
           original_cost_basis: number
           size: number
+          taker_fee_cost_basis?: number
           updated_time?: string
           user_id: string
         }
@@ -719,6 +721,7 @@ export type Database = {
           opened_time?: string
           original_cost_basis?: number
           size?: number
+          taker_fee_cost_basis?: number
           updated_time?: string
           user_id?: string
         }

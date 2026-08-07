@@ -43,6 +43,7 @@ type StoredPositionRow = {
   size: number | string
   cost_basis: number | string
   original_cost_basis: number | string
+  taker_fee_cost_basis: number | string
   entry_price: number | string
   leverage: number | string
   liquidation_price: number | string
@@ -1126,6 +1127,7 @@ const toPosition = (row: StoredPositionRow): PerpPosition => {
     size: Number(row.size),
     costBasis: Number(row.cost_basis),
     originalCostBasis: Number(row.original_cost_basis),
+    takerFeeCostBasis: Number(row.taker_fee_cost_basis),
     entryPrice: Number(row.entry_price),
     leverage: Number(row.leverage),
     liquidationPrice: Number(row.liquidation_price),

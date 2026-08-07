@@ -10,6 +10,7 @@ import {
   TRADED_TERM,
 } from 'common/envs/constants'
 import { computeFundingRate, getPerpBackingPool } from 'common/perps/amm'
+import { getPerpTakerFeeBps } from 'common/perps/fees'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
@@ -663,6 +664,21 @@ function PerpStatsRows(props: { contract: PerpContract }) {
           )}
         </td>
       </tr>
+      <tr className={clsx(canEdit && 'bg-purple-500/30')}>
+        <td>
+          Taker fee{' '}
+          <InfoTooltip text="Fee on notional charged when opening a position (closing is free), paid into this market's backing pool. Prices out oracle-tick sniping." />
+        </td>
+        <td>
+          {canEdit ? (
+            <TakerFeeBpsInput contract={contract} />
+          ) : (
+            <span className="tabular-nums">
+              {(getPerpTakerFeeBps(contract) / 100).toFixed(2)}% to open
+            </span>
+          )}
+        </td>
+      </tr>
       <tr>
         <td>
           Current funding{' '}
@@ -762,6 +778,76 @@ function MaxLeverageInput(props: { contract: PerpContract }) {
           if (e.key === 'Enter') submit()
         }}
         className="bg-canvas-0 border-ink-300 h-7 w-24 rounded-md border px-2 text-sm"
+      />
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        disabled={!valid || saving || parsed === current}
+        loading={saving}
+        onClick={submit}
+      >
+        Set
+      </Button>
+    </Row>
+  )
+}
+
+// Inline admin editor for a perp's open-side taker fee. Input is in BASIS
+// POINTS of notional (10 = 0.10% to open; closing is free); 0 disables the
+// fee. Applies to the next open or add immediately.
+function TakerFeeBpsInput(props: { contract: PerpContract }) {
+  const { contract } = props
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [justSaved, setJustSaved] = useState<number | null>(null)
+  const stored = getPerpTakerFeeBps(contract)
+  const current = justSaved != null && justSaved !== stored ? justSaved : stored
+  const parsed = Number(input)
+  const valid =
+    input !== '' && Number.isFinite(parsed) && parsed >= 0 && parsed <= 100
+
+  const submit = async () => {
+    if (!valid || saving || parsed === current) return
+    setSaving(true)
+    try {
+      const res = await api('update-perp-config', {
+        contractId: contract.id,
+        takerFeeBps: parsed,
+      })
+      setJustSaved(res.takerFeeBps)
+      setInput('')
+      toast.success(
+        `Taker fee is now ${res.takerFeeBps} bps (${(
+          res.takerFeeBps / 100
+        ).toFixed(2)}%) to open`
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update taker fee'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Row className="flex-wrap items-center gap-1.5">
+      <span className="tabular-nums">
+        {current} bps ({(current / 100).toFixed(2)}%)
+      </span>
+      <input
+        type="number"
+        min={0}
+        max={100}
+        step={1}
+        value={input}
+        disabled={saving}
+        placeholder="New bps"
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+        }}
+        className="bg-canvas-0 border-ink-300 h-7 w-20 rounded-md border px-2 text-sm"
       />
       <Button
         size="2xs"

@@ -35,7 +35,7 @@ type ReplayedPosition = Pick<
 
 type ReverseState = {
   positions: Partial<Record<PerpDirection, ReplayedPosition>>
-  marginDeposited: number
+  cashDeposited: number
   payouts: number
 }
 
@@ -218,18 +218,24 @@ const reverseEvent = (
   )
   if (payout === undefined) return undefined
 
-  const marginDeposited =
-    (event.eventType === 'open' || event.eventType === 'add') &&
-    originalCostBasisDelta > 0
-      ? originalCostBasisDelta
+  const isEntry = event.eventType === 'open' || event.eventType === 'add'
+  const openingFee =
+    isEntry && hasEventDataKey(event, 'fee')
+      ? getEventDataNumber(event, 'fee')
       : 0
+  if (openingFee === undefined || openingFee < 0) return undefined
+  const cashDeposited =
+    isEntry && originalCostBasisDelta > 0
+      ? originalCostBasisDelta + openingFee
+      : 0
+  if (!Number.isFinite(cashDeposited)) return undefined
 
   if (beforeSize === 0) {
     if (!nearZero(beforeCostBasis) || !nearZero(beforeOriginalCostBasis)) {
       return undefined
     }
     delete positions[event.direction]
-    return { marginDeposited, payout }
+    return { cashDeposited, payout }
   }
   if (beforeCostBasis <= 0 || beforeOriginalCostBasis <= 0) return undefined
 
@@ -269,7 +275,7 @@ const reverseEvent = (
     originalCostBasis: beforeOriginalCostBasis,
     entryPrice,
   }
-  return { marginDeposited, payout }
+  return { cashDeposited, payout }
 }
 
 const reverseToCutoff = (
@@ -283,18 +289,18 @@ const reverseToCutoff = (
 
   const state: ReverseState = {
     positions,
-    marginDeposited: 0,
+    cashDeposited: 0,
     payouts: 0,
   }
   for (const event of events) {
     if (event.appliedTime < cutoff) continue
     const reversed = reverseEvent(state.positions, event)
     if (!reversed) return undefined
-    state.marginDeposited += reversed.marginDeposited
+    state.cashDeposited += reversed.cashDeposited
     state.payouts += reversed.payout
   }
   if (
-    !Number.isFinite(state.marginDeposited) ||
+    !Number.isFinite(state.cashDeposited) ||
     !Number.isFinite(state.payouts)
   ) {
     return undefined
@@ -395,8 +401,8 @@ export const calculatePerpMetricPeriods = (args: {
     }
 
     const profit =
-      currentValue + previous.payouts - previousValue - previous.marginDeposited
-    const invested = previousValue + previous.marginDeposited
+      currentValue + previous.payouts - previousValue - previous.cashDeposited
+    const invested = previousValue + previous.cashDeposited
     const profitPercent = invested > 0 ? (profit / invested) * 100 : 0
     if (
       !Number.isFinite(profit) ||

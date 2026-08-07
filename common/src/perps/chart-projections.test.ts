@@ -495,6 +495,18 @@ describe('personalBreakEvenPath', () => {
     expect(path[0].value).toBeCloseTo(50)
   })
 
+  it('starts at the fee-adjusted break-even price', () => {
+    const path = personalBreakEvenPath(
+      makePosition('long', { takerFeeCostBasis: 0.5 }),
+      0,
+      200,
+      100,
+      NOW,
+      FUNDING_PERIOD_MS
+    )
+    expect(path[0].value).toBeCloseTo(50.025)
+  })
+
   it('is flat when funding is zero and empty for closed positions', () => {
     const flat = personalBreakEvenPath(
       makePosition('long'),

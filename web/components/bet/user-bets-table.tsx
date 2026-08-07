@@ -1300,7 +1300,7 @@ const ExpandedPerpRow = (props: {
           <span className="font-semibold">{formatMoney(m.payout)}</span>
         </Col>
         <Col>
-          <span className="text-ink-500 text-xs">Margin deposited</span>
+          <span className="text-ink-500 text-xs">Amount invested</span>
           <span className="font-semibold">
             {formatMoney(m.totalAmountInvested)}
           </span>

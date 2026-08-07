@@ -1,5 +1,11 @@
 import { applyFunding, computeFundingRate, getPositionValue } from './amm'
-import { fundingPerPeriod, getUserFacingPnlFromPayout } from './pnl'
+import {
+  fundingPerPeriod,
+  getPerpPositionTotalCost,
+  getUserFacingPnl,
+  getUserFacingPnlFromPayout,
+  getUserFacingPnlPercent,
+} from './pnl'
 import { PerpPosition } from './position'
 
 const makePosition = (
@@ -33,10 +39,8 @@ describe('fundingPerPeriod', () => {
     ] as const) {
       const position = makePosition(direction)
       const before = getPositionValue(position, price)
-      const after = applyFunding(
-        { pool: { L, S }, positions: [position] },
-        f
-      ).positions[0]
+      const after = applyFunding({ pool: { L, S }, positions: [position] }, f)
+        .positions[0]
       expect(fundingPerPeriod(position, price, f, L, S)).toBeCloseTo(
         getPositionValue(after, price) - before,
         10
@@ -73,10 +77,30 @@ describe('getUserFacingPnlFromPayout', () => {
     expect(getUserFacingPnlFromPayout(100, 100)).toBe(0)
   })
 
+  it('includes opening taker fees in unrealized and realized PnL', () => {
+    const position = makePosition('long', { takerFeeCostBasis: 0.5 })
+    expect(getPerpPositionTotalCost(position)).toBe(100.5)
+    expect(getUserFacingPnl(position, 50)).toBe(-0.5)
+    // Gross close value is 100; a 0.5 close fee leaves a 99.5 payout.
+    expect(getUserFacingPnlFromPayout(99.5, 100, 0.5)).toBe(-1)
+    expect(getUserFacingPnlFromPayout(0, 100, 0.5)).toBe(-100.5)
+  })
+
   it('returns zero instead of propagating invalid financial values', () => {
     expect(getUserFacingPnlFromPayout(Number.NaN, 100)).toBe(0)
     expect(getUserFacingPnlFromPayout(100, Number.POSITIVE_INFINITY)).toBe(0)
     expect(getUserFacingPnlFromPayout(-1, 100)).toBe(0)
     expect(getUserFacingPnlFromPayout(100, -1)).toBe(0)
+    expect(getUserFacingPnlFromPayout(100, 100, Number.NaN)).toBe(0)
+    expect(getUserFacingPnlFromPayout(100, 100, -1)).toBe(0)
+  })
+
+  it('fails closed on an invalid live-position cost basis', () => {
+    const position = makePosition('long', {
+      takerFeeCostBasis: Number.NaN,
+    })
+    expect(getPerpPositionTotalCost(position)).toBe(0)
+    expect(getUserFacingPnl(position, 60)).toBe(0)
+    expect(getUserFacingPnlPercent(position, 60)).toBe(0)
   })
 })

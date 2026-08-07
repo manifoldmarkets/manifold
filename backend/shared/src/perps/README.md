@@ -97,6 +97,30 @@ close, factor-zero ADL, funding, and resolution fail atomically if the ledger
 and pools diverge. This is required because the generic transaction primitive
 does not maintain a balance column for `CONTRACT` senders.
 
+## Taker fee
+
+`common/src/perps/fees.ts`. Trades execute at the cached oracle price, and
+with zero fees that price is a free option for latency bots (2026-08-07: two
+bots extracted ~M$70k from the BTC perp pools by sniping the 15s tick at a
+measured edge of ~1.5 bps of notional per round trip — faster ticks make
+this WORSE, since harvestable total variation grows as 1/√period). The fee
+is `takerFeeBps` (default 10) of NOTIONAL, charged when a position is opened
+or added to — closing is free, so this is the whole round-trip cost, visible
+up front. Every snipe needs an entry, so an open-only fee taxes each round
+trip exactly once; at 10 bps only oracle moves > 10 bps per tick clear one
+(7 occurrences in the BTC feed's first 31h). Never charged on liquidation,
+ADL, funding, or resolution. The fee is credited to the trader's side
+backing pool, so it recapitalizes the market rather than accruing to the
+platform (tracked in `collectedFees.liquidityFee`), and moves real mana
+(`PERP_TAKER_FEE` txn user → contract) alongside the margin debit, so the
+cash-backing invariant above is preserved. The position tracks its
+cumulative opening fees in `takerFeeCostBasis` (kept separate from margin so
+leverage/liquidation math is untouched), and every user-facing PnL number —
+the position card, close receipts, portfolio metrics, period metrics —
+subtracts it: a fresh position starts at PnL = −fee. Admins tune the rate
+live per market via `update-perp-config` (0 disables); contracts created
+before the field default to 10 bps at trade time.
+
 ## Exposure capacity
 
 Opening, adding, or flipping into a side is limited so aggregate open notional

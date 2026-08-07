@@ -1059,6 +1059,9 @@ export const API = (_apiTypeCheck = {
         leverage: number
         liquidationPrice: number
       }
+      // Open-side taker fee charged on this call, in mana. Closing is free;
+      // a flip pays the fee on its newly opened leg only.
+      fee: number
     },
     props: placePerpTradeSchema,
   },
@@ -1079,6 +1082,7 @@ export const API = (_apiTypeCheck = {
       success: true
       maxLeverage: number
       maxFundingRate: number
+      takerFeeBps: number
     },
     props: z
       .object({
@@ -1088,10 +1092,18 @@ export const API = (_apiTypeCheck = {
         // funding tick fail-closes and the market stops funding entirely.
         maxLeverage: z.number().gt(1).lte(100).optional(),
         maxFundingRate: z.number().gt(0).lt(1).optional(),
+        // Open-side taker fee in bps of notional (closing is free, so this
+        // is the round-trip cost); 0 disables. Bounds match
+        // assertPerpTakerFeeConfig — outside them the engine fail-closes
+        // every trade.
+        takerFeeBps: z.number().min(0).max(100).optional(),
       })
       .strict()
       .refine(
-        (p) => p.maxLeverage !== undefined || p.maxFundingRate !== undefined,
+        (p) =>
+          p.maxLeverage !== undefined ||
+          p.maxFundingRate !== undefined ||
+          p.takerFeeBps !== undefined,
         { message: 'Provide at least one field to update' }
       ),
   },
@@ -1211,6 +1223,7 @@ export const API = (_apiTypeCheck = {
       size: number
       costBasis: number
       originalCostBasis: number
+      takerFeeCostBasis: number
       entryPrice: number
       leverage: number
       liquidationPrice: number

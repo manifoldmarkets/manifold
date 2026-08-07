@@ -5,7 +5,11 @@ import { PerpContract } from 'common/contract'
 import { computeFundingRate } from 'common/perps/amm'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import { fundingPeriodUnit, getFundingPeriodMs } from 'common/perps/funding'
-import { fundingPerPeriod, getUserFacingPnl } from 'common/perps/pnl'
+import {
+  fundingPerPeriod,
+  getUserFacingPnl,
+  getUserFacingPnlPercent,
+} from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -30,6 +34,7 @@ type Position = {
   size: number
   costBasis: number
   originalCostBasis: number
+  takerFeeCostBasis: number
   entryPrice: number
   leverage: number
   liquidationPrice: number
@@ -358,16 +363,14 @@ const PositionCard = (props: {
     p.liquidationPrice,
   ])
 
-  const pnl = getUserFacingPnl(
-    {
-      ...p,
-      openedTime: 0,
-      updatedTime: 0,
-      contractId: contract.id,
-    } as PerpPosition,
-    markPrice
-  )
-  const pnlPct = p.originalCostBasis > 0 ? (pnl / p.originalCostBasis) * 100 : 0
+  const position = {
+    ...p,
+    openedTime: 0,
+    updatedTime: 0,
+    contractId: contract.id,
+  } as PerpPosition
+  const pnl = getUserFacingPnl(position, markPrice)
+  const pnlPct = getUserFacingPnlPercent(position, markPrice) * 100
 
   const isLong = p.direction === 'long'
   const accentBar = isLong ? 'bg-teal-500' : 'bg-scarlet-500'
