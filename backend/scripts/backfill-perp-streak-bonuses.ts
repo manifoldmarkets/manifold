@@ -194,15 +194,26 @@ runScript(async ({ pg }) => {
         contract.id
       )
       paidCount++
-      const paidAmount = await pg.oneOrNone<{ amount: number }>(
-        `select amount from txns
+      const paidTxn = await pg.oneOrNone<{ id: string; amount: number }>(
+        `select id, amount from txns
         where to_id = $1 and category = 'BETTING_STREAK_BONUS'
           and (data->'data'->>'currentBettingStreak')::int = $2
         order by created_time desc limit 1`,
         [userId, dayStreak]
       )
-      if (paidAmount && Number.isFinite(paidAmount.amount)) {
-        totalPaid += Number(paidAmount.amount)
+      if (paidTxn) {
+        // The UI renders this like any streak bonus; the stamp is for audit
+        // and support queries — which Pacific day the payment was owed for.
+        await pg.none(
+          `update txns set data = jsonb_set(
+            jsonb_set(data, '{data,backfilled}', 'true'::jsonb),
+            '{data,owedForDay}', to_jsonb($2::text))
+          where id = $1`,
+          [paidTxn.id, row.pt_day]
+        )
+        if (Number.isFinite(paidTxn.amount)) {
+          totalPaid += Number(paidTxn.amount)
+        }
       }
     }
   }
