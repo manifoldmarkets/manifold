@@ -1,3 +1,4 @@
+import { removeUndefinedProps } from 'common/util/object'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { updateContract } from 'shared/supabase/contracts'
@@ -6,44 +7,61 @@ import { getContract, log, revalidateContractStaticProps } from 'shared/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 
-// Admin-only live tuning of a perp's risk config. Takes effect on the NEXT
-// trade with no deploy or restart: the engine re-reads the contract inside
-// every trade transaction (engine.ts checks leverage > contract.maxLeverage
-// under the advisory lock). Lowering the cap only constrains new opens and
-// adds — leverage is checked at trade time, never retroactively — so
-// existing positions above a lowered cap are grandfathered and a cut can
-// never force-close or liquidate anyone by itself.
+// Admin-only live tuning of a perp's risk config. Takes effect with no
+// deploy or restart: the engine re-reads the contract inside every trade and
+// funding transaction under the advisory lock.
+// - maxLeverage: lowering the cap only constrains new opens and adds —
+//   leverage is checked at trade time, never retroactively — so existing
+//   positions above a lowered cap are grandfathered and a cut can never
+//   force-close or liquidate anyone by itself.
+// - maxFundingRate: applies from the NEXT funding event. It is the
+//   per-PERIOD cap on the imbalance haircut, so on an hourly market 0.02
+//   means up to 2% of the crowded side's positions per hour at full
+//   imbalance. The schema keeps it inside assertPerpFundingConfig's (0, 1)
+//   domain; a value at or above 1 would make every funding tick fail closed.
 export const updatePerpConfig: APIHandler<'update-perp-config'> = async (
   body,
   auth
 ) => {
   throwErrorIfNotAdmin(auth.uid)
-  const { contractId, maxLeverage } = body
+  const { contractId, maxLeverage, maxFundingRate } = body
 
   const pg = createSupabaseDirectClient()
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.mechanism !== 'perp')
-    throw new APIError(400, 'Only perp markets have a max leverage')
+    throw new APIError(400, 'Only perp markets have a perp risk config')
   if (contract.isResolved)
     throw new APIError(403, 'Cannot update a resolved market')
 
-  const prev = contract.maxLeverage
   const lastUpdatedTime = Date.now()
-  await updateContract(pg, contractId, { maxLeverage, lastUpdatedTime })
-  log(
-    `admin ${auth.uid} set maxLeverage on ${contract.slug}: ${prev} -> ${maxLeverage}`
-  )
-  broadcastUpdatedContract(contract.visibility, {
-    id: contractId,
+  const patch = removeUndefinedProps({
     maxLeverage,
+    maxFundingRate,
     lastUpdatedTime,
   })
+  await updateContract(pg, contractId, patch)
+  if (maxLeverage !== undefined)
+    log(
+      `admin ${auth.uid} set maxLeverage on ${contract.slug}: ${contract.maxLeverage} -> ${maxLeverage}`
+    )
+  if (maxFundingRate !== undefined)
+    log(
+      `admin ${auth.uid} set maxFundingRate on ${contract.slug}: ${contract.maxFundingRate} -> ${maxFundingRate}`
+    )
+  broadcastUpdatedContract(contract.visibility, { id: contractId, ...patch })
 
+  const editedFields = Object.keys(
+    removeUndefinedProps({ maxLeverage, maxFundingRate })
+  )
   return {
-    result: { success: true as const, maxLeverage },
+    result: {
+      success: true as const,
+      maxLeverage: maxLeverage ?? contract.maxLeverage,
+      maxFundingRate: maxFundingRate ?? contract.maxFundingRate,
+    },
     continue: async () => {
-      await recordContractEdit(contract, auth.uid, ['maxLeverage'])
+      await recordContractEdit(contract, auth.uid, editedFields)
       await revalidateContractStaticProps(contract)
     },
   }

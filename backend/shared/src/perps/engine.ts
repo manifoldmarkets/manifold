@@ -982,6 +982,83 @@ export const closePosition = async (
 }
 
 // -----------------------------------------------------------------------
+// pool subsidy (admin top-up)
+// -----------------------------------------------------------------------
+
+/**
+ * Add mana to one side's backing pool of a live perp, paid from the funder's
+ * balance.
+ *
+ * Ops tool for restoring a side's margin cover: a side's pool can fall below
+ * that side's aggregate cost basis when realized profits were paid against
+ * opposing unrealized losses that later recovered (UK carbon, 2026-08-07) —
+ * a state ADL cannot repair because it never touches cost bases, so every
+ * oracle apply fail-closes and the market freezes at a stale price.
+ *
+ * Runs under the same advisory lock + serializable transaction as every
+ * other pool mutation, so it cannot race the oracle tick, funding, or
+ * trades. The funder pays with a real ADD_SUBSIDY transaction so
+ * assertPerpEscrowBalance remains a checkable invariant.
+ */
+export const addPerpPoolSubsidy = async (
+  contractId: string,
+  funderId: string,
+  side: PerpDirection,
+  amount: number
+) => {
+  if (!Number.isFinite(amount) || amount <= 0)
+    throw new APIError(400, 'amount must be a finite positive number')
+
+  return runPerpTransaction(async (pgTrans) => {
+    // Rejects resolved markets and non-MANA tokens, and serializes against
+    // every other engine writer on this contract.
+    const { contract, state } = await loadStateForUpdate(pgTrans, contractId)
+
+    const funder = await pgTrans.oneOrNone<{ id: string; balance: number }>(
+      `select id, balance from users where id = $1 for update`,
+      [funderId]
+    )
+    if (!funder) throw new APIError(404, `User ${funderId} not found`)
+    if (!Number.isFinite(funder.balance) || funder.balance < amount)
+      throw new APIError(
+        403,
+        `Insufficient balance: needed ${amount}, have ${funder.balance}`
+      )
+
+    await assertPerpEscrowBalance(pgTrans, contractId, state.pool)
+
+    await runTxnOutsideBetQueue(pgTrans, {
+      category: 'ADD_SUBSIDY',
+      fromId: funderId,
+      fromType: 'USER',
+      toId: contractId,
+      toType: 'CONTRACT',
+      amount,
+      token: 'M$',
+      data: { side, reason: 'perp-pool-subsidy' },
+    })
+
+    const pool = {
+      L: state.pool.L + (side === 'long' ? amount : 0),
+      S: state.pool.S + (side === 'short' ? amount : 0),
+    }
+    await assertPerpEscrowBalance(pgTrans, contractId, pool)
+
+    // mergeContractDataQuery ends in `returning *` — .one(), not .none()
+    // (see the fast path in runOracleUpdate for the failure mode).
+    await pgTrans.one(
+      mergeContractDataQuery(contractId, {
+        poolLong: pool.L,
+        poolShort: pool.S,
+        lastUpdatedTime: Date.now(),
+      })
+    )
+
+    return { contract, poolLong: pool.L, poolShort: pool.S }
+  })
+}
+
+// -----------------------------------------------------------------------
 // oracle update: liquidation + ADL
 // -----------------------------------------------------------------------
 
