@@ -37,6 +37,7 @@ import {
   PerpPosition,
 } from 'common/perps/position'
 import {
+  accruePerpPositionTakerFee,
   assertPerpTakerFeeConfig,
   calcPerpTakerFee,
   creditPerpPoolFee,
@@ -255,6 +256,18 @@ const parseStoredPosition = (value: unknown): PerpPosition => {
   ) {
     throw new APIError(500, 'Invalid position in PERP idempotency record')
   }
+  const takerFeeCostBasis =
+    position.takerFeeCostBasis === undefined
+      ? 0
+      : finiteNumber(
+          position.takerFeeCostBasis,
+          'position taker fee cost basis'
+        )
+  if (takerFeeCostBasis < 0)
+    throw new APIError(
+      500,
+      'Invalid position taker fee cost basis in PERP idempotency record'
+    )
   return {
     userId: position.userId,
     contractId: position.contractId,
@@ -265,6 +278,7 @@ const parseStoredPosition = (value: unknown): PerpPosition => {
       position.originalCostBasis,
       'position original cost basis'
     ),
+    takerFeeCostBasis,
     entryPrice: finiteNumber(position.entryPrice, 'position entry price'),
     leverage: finiteNumber(position.leverage, 'position leverage'),
     liquidationPrice: finiteNumber(
@@ -364,7 +378,12 @@ const diffForWrite = (
         deletes.push({ userId: p.userId, direction: p.direction })
       continue
     }
-    if (!prev || prev.size !== p.size || prev.costBasis !== p.costBasis)
+    if (
+      !prev ||
+      prev.size !== p.size ||
+      prev.costBasis !== p.costBasis ||
+      (prev.takerFeeCostBasis ?? 0) !== (p.takerFeeCostBasis ?? 0)
+    )
       upserts.push(p)
   }
   for (const [k, p] of beforeByKey) {
@@ -567,7 +586,8 @@ export const openOrAddPosition = async (
       assertPerpStateSolvent(workingState, price)
       closePnl = getUserFacingPnlFromPayout(
         closePayout,
-        existingOpposite.originalCostBasis
+        existingOpposite.originalCostBasis,
+        existingOpposite.takerFeeCostBasis
       )
       closePricePnl = closeRes.pnl
       closeEvent = asEvent(contract, {
@@ -587,6 +607,7 @@ export const openOrAddPosition = async (
           entryPrice: existingOpposite.entryPrice,
           closePrice: price,
           originalCostBasis: existingOpposite.originalCostBasis,
+          takerFeeCostBasis: existingOpposite.takerFeeCostBasis ?? 0,
           reason: 'flip',
         },
         appliedTime: now,
@@ -630,9 +651,15 @@ export const openOrAddPosition = async (
     // openPositionMath always computes deltaSize = mana * leverage, so the
     // fee credited here is exactly bps × deltaSize. Checks below run on the
     // fee-credited state — the one that gets persisted.
+    const feeAccrued = accruePerpPositionTakerFee(
+      openRes.state,
+      openRes.position,
+      openFee
+    )
     const open = {
       ...openRes,
-      state: creditPerpPoolFee(openRes.state, direction, openFee),
+      ...feeAccrued,
+      state: creditPerpPoolFee(feeAccrued.state, direction, openFee),
     }
 
     // A fresh position has no unrealized profit, so the instantaneous solvency
@@ -894,12 +921,25 @@ export const closePosition = async (
           data.originalCostBasis >= 0
             ? data.originalCostBasis
             : undefined
+        const takerFeeCostBasis =
+          data?.takerFeeCostBasis === undefined
+            ? 0
+            : finiteNumber(data.takerFeeCostBasis, 'close taker fee cost basis')
+        if (takerFeeCostBasis < 0)
+          throw new APIError(
+            500,
+            'Invalid close taker fee cost basis in PERP idempotency record'
+          )
         return {
           payout,
           pnl:
             originalCostBasis === undefined
               ? finiteNumber(response?.pnl, 'close PnL')
-              : getUserFacingPnlFromPayout(payout, originalCostBasis),
+              : getUserFacingPnlFromPayout(
+                  payout,
+                  originalCostBasis,
+                  takerFeeCostBasis
+                ),
           // Events stored before the taker fee existed have no fee field.
           fee:
             typeof response?.fee === 'number' && Number.isFinite(response.fee)
@@ -1002,7 +1042,8 @@ export const closePosition = async (
     assertPerpStateSolvent(result.state, price)
     const userPnl = getUserFacingPnlFromPayout(
       payout,
-      position.originalCostBasis
+      position.originalCostBasis,
+      position.takerFeeCostBasis
     )
 
     const event: PerpEvent = asEvent(contract, {
@@ -1022,6 +1063,7 @@ export const closePosition = async (
         entryPrice: position.entryPrice,
         closePrice: price,
         originalCostBasis: position.originalCostBasis,
+        takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
         ...(idempotencyKey
           ? {
               idempotencyKey,
@@ -1274,9 +1316,14 @@ const buildAdlEvents = (
           sizeBefore: position.size,
           sizeAfter: 0,
           payout,
-          pnl: getUserFacingPnlFromPayout(payout, position.originalCostBasis),
+          pnl: getUserFacingPnlFromPayout(
+            payout,
+            position.originalCostBasis,
+            position.takerFeeCostBasis
+          ),
           entryPrice: position.entryPrice,
           originalCostBasis: position.originalCostBasis,
+          takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
           reason: 'factor-zero-settlement',
         },
         appliedTime,
@@ -1334,7 +1381,11 @@ const payAdlSettlements = async (
         token: 'M$',
         data: {
           direction: position.direction,
-          pnl: getUserFacingPnlFromPayout(payout, position.originalCostBasis),
+          pnl: getUserFacingPnlFromPayout(
+            payout,
+            position.originalCostBasis,
+            position.takerFeeCostBasis
+          ),
           entryPrice: position.entryPrice,
           closePrice: oraclePrice,
           reason: 'adl',
@@ -1376,9 +1427,15 @@ const applyOracleUpdate = (
         costBasisDelta: -liq.costBasis,
         originalCostBasisDelta: -liq.originalCostBasis,
         data: {
+          pnl: getUserFacingPnlFromPayout(
+            0,
+            liq.originalCostBasis,
+            liq.takerFeeCostBasis
+          ),
           entryPrice: liq.entryPrice,
           liquidationPrice: liq.liquidationPrice,
           originalCostBasis: liq.originalCostBasis,
+          takerFeeCostBasis: liq.takerFeeCostBasis ?? 0,
           payout: 0, // margin forfeited to pool
         },
         appliedTime,
@@ -1763,6 +1820,7 @@ export const resolvePerp = async (
       direction: PerpDirection
       payout: number
       originalCostBasis: number
+      takerFeeCostBasis: number
     }[]
     residualPayout: number
     finalPrice: number
@@ -1843,18 +1901,21 @@ export const resolvePerp = async (
       direction: PerpDirection
       payout: number
       originalCostBasis: number
+      takerFeeCostBasis: number
     }[] = [
       ...applied.liquidated.map((position) => ({
         userId: position.userId,
         direction: position.direction,
         payout: 0,
         originalCostBasis: position.originalCostBasis,
+        takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
       })),
       ...applied.adlSettled.map(({ position, payout }) => ({
         userId: position.userId,
         direction: position.direction,
         payout,
         originalCostBasis: position.originalCostBasis,
+        takerFeeCostBasis: position.takerFeeCostBasis ?? 0,
       })),
     ]
 
@@ -1867,13 +1928,15 @@ export const resolvePerp = async (
       assertPerpStateSolvent(runningState, finalPrice)
       const userPnl = getUserFacingPnlFromPayout(
         res.payout,
-        p.originalCostBasis
+        p.originalCostBasis,
+        p.takerFeeCostBasis
       )
       closedPositions.push({
         userId: p.userId,
         direction: p.direction,
         payout: res.payout,
         originalCostBasis: p.originalCostBasis,
+        takerFeeCostBasis: p.takerFeeCostBasis ?? 0,
       })
       events.push(
         asEvent(contract, {
@@ -1890,6 +1953,7 @@ export const resolvePerp = async (
             pricePnl: res.pnl,
             entryPrice: p.entryPrice,
             originalCostBasis: p.originalCostBasis,
+            takerFeeCostBasis: p.takerFeeCostBasis ?? 0,
             resolvedAt: finalPrice,
             reason: 'resolve-market',
           },

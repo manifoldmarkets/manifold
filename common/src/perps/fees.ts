@@ -11,7 +11,7 @@
 // and at the default 5 bps per side only oracle moves > 10 bps per tick
 // clear a round trip — 7 occurrences in the first 31h of the BTC feed.
 
-import { PerpDirection } from './position'
+import { PerpDirection, PerpPosition } from './position'
 import { PerpState } from './amm'
 
 /** Per-side default, in basis points of notional. Applies to contracts
@@ -80,5 +80,45 @@ export const creditPerpPoolFee = (
       L: state.pool.L + (side === 'long' ? fee : 0),
       S: state.pool.S + (side === 'short' ? fee : 0),
     },
+  }
+}
+
+/**
+ * Add an opening/add fee to the live position's user-facing cost basis without
+ * changing AMM margin, leverage, or liquidation math. Returns a new state and
+ * position; the input objects are never mutated.
+ */
+export const accruePerpPositionTakerFee = (
+  state: PerpState,
+  position: PerpPosition,
+  fee: number
+): { state: PerpState; position: PerpPosition } => {
+  const existingFeeBasis = position.takerFeeCostBasis ?? 0
+  if (!Number.isFinite(existingFeeBasis) || existingFeeBasis < 0)
+    throw new Error(
+      'position taker fee cost basis must be finite and non-negative'
+    )
+  if (!Number.isFinite(fee) || fee <= 0) return { state, position }
+
+  const takerFeeCostBasis = existingFeeBasis + fee
+  if (!Number.isFinite(takerFeeCostBasis))
+    throw new Error('position taker fee cost basis overflowed')
+
+  const nextPosition = { ...position, takerFeeCostBasis }
+  const positionIndex = state.positions.findIndex(
+    (candidate) =>
+      candidate.userId === position.userId &&
+      candidate.direction === position.direction
+  )
+  if (positionIndex < 0)
+    throw new Error('position taker fee target is missing from state')
+  return {
+    state: {
+      ...state,
+      positions: state.positions.map((candidate, index) =>
+        index === positionIndex ? nextPosition : candidate
+      ),
+    },
+    position: nextPosition,
   }
 }

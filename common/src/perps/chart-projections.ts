@@ -352,7 +352,7 @@ export const clusterLiquidationBands = (
 
 /**
  * Your funding break-even: the price path along which a position's
- * user-facing PnL (value − originalCostBasis) stays exactly zero as funding
+ * user-facing PnL (value − margin − opening fees) stays exactly zero as funding
  * compounds. Matches applyFunding's per-period scaling exactly: the paying
  * side's size and costBasis scale by (1−f) each period; the receiving side
  * scales by (1+g), g = transfer re-based onto the receiving pool. Slope is
@@ -365,6 +365,7 @@ export const personalBreakEvenPath = (
     size: number
     costBasis: number
     originalCostBasis: number
+    takerFeeCostBasis?: number
     entryPrice: number
   },
   fundingRatePerPeriod: number,
@@ -375,8 +376,23 @@ export const personalBreakEvenPath = (
   steps = 24,
   fundingPeriodMs = FUNDING_PERIOD_MS
 ): ProjectionPoint[] => {
-  const { direction, size, costBasis, originalCostBasis, entryPrice } = position
-  if (!(size > 0) || !(entryPrice > 0) || !(originalCostBasis >= 0)) return []
+  const {
+    direction,
+    size,
+    costBasis,
+    originalCostBasis,
+    takerFeeCostBasis = 0,
+    entryPrice,
+  } = position
+  const totalCost = originalCostBasis + takerFeeCostBasis
+  if (
+    !(size > 0) ||
+    !(entryPrice > 0) ||
+    !(originalCostBasis >= 0) ||
+    !(takerFeeCostBasis >= 0) ||
+    !Number.isFinite(totalCost)
+  )
+    return []
   if (!Number.isFinite(fundingRatePerPeriod)) return []
   if (!Number.isFinite(horizonMs) || horizonMs <= 0) return []
 
@@ -399,7 +415,7 @@ export const personalBreakEvenPath = (
     // A paying side asymptotically loses its whole position to funding;
     // past ~98% gone the break-even blows up — stop the line there.
     if (!(factor > 0.02) || !Number.isFinite(factor)) break
-    const x = (originalCostBasis - costBasis * factor) / (size * factor)
+    const x = (totalCost - costBasis * factor) / (size * factor)
     const value =
       direction === 'long' ? entryPrice * (1 + x) : entryPrice * (1 - x)
     if (!Number.isFinite(value) || value <= 0) break

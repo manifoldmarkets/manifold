@@ -1221,6 +1221,7 @@ export const API = (_apiTypeCheck = {
       size: number
       costBasis: number
       originalCostBasis: number
+      takerFeeCostBasis: number
       entryPrice: number
       leverage: number
       liquidationPrice: number

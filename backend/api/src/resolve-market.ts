@@ -1,6 +1,7 @@
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { Contract, MarketContract, MultiContract } from 'common/contract'
+import { getPerpPositionTotalCost } from 'common/perps/pnl'
 import {
   getContract,
   getUser,
@@ -105,11 +106,7 @@ export const resolveMarketMain: APIHandler<
         const userIdToContractMetric = mapValues(
           positionsByUser,
           (positions) => {
-            const invested = sumBy(positions, ({ originalCostBasis }) =>
-              Number.isFinite(originalCostBasis)
-                ? Math.max(originalCostBasis, 0)
-                : 0
-            )
+            const invested = sumBy(positions, getPerpPositionTotalCost)
             const payout = sumBy(positions, ({ payout }) =>
               Number.isFinite(payout) ? Math.max(payout, 0) : 0
             )

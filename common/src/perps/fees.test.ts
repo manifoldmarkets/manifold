@@ -1,5 +1,6 @@
 import {
   assertPerpTakerFeeConfig,
+  accruePerpPositionTakerFee,
   calcPerpTakerFee,
   creditPerpPoolFee,
   getPerpTakerFeeBps,
@@ -7,6 +8,7 @@ import {
   PERP_TAKER_FEE_BPS_MAX,
 } from './fees'
 import { PerpState } from './amm'
+import { PerpPosition } from './position'
 
 describe('getPerpTakerFeeBps', () => {
   it('defaults when the field is missing (pre-fee contracts)', () => {
@@ -22,7 +24,13 @@ describe('getPerpTakerFeeBps', () => {
   })
 
   it('falls back to the default on corrupt values (display path is total)', () => {
-    for (const bad of [NaN, Infinity, -Infinity, -1, PERP_TAKER_FEE_BPS_MAX + 1])
+    for (const bad of [
+      NaN,
+      Infinity,
+      -Infinity,
+      -1,
+      PERP_TAKER_FEE_BPS_MAX + 1,
+    ])
       expect(getPerpTakerFeeBps({ takerFeeBps: bad })).toBe(
         PERP_TAKER_FEE_BPS_DEFAULT
       )
@@ -94,5 +102,53 @@ describe('creditPerpPoolFee', () => {
   it('does not mutate the input state', () => {
     creditPerpPoolFee(state, 'long', 5)
     expect(state.pool).toEqual({ L: 100, S: 50 })
+  })
+})
+
+describe('accruePerpPositionTakerFee', () => {
+  const position: PerpPosition = {
+    userId: 'u1',
+    contractId: 'c1',
+    direction: 'long',
+    size: 1_000,
+    costBasis: 100,
+    originalCostBasis: 100,
+    takerFeeCostBasis: 0.5,
+    entryPrice: 100,
+    leverage: 10,
+    liquidationPrice: 90,
+    openedTime: 1,
+    updatedTime: 1,
+  }
+  const other = { ...position, userId: 'u2' }
+  const state: PerpState = {
+    pool: { L: 100, S: 50 },
+    positions: [position, other],
+  }
+
+  it('tracks cumulative fees without changing margin or other positions', () => {
+    const next = accruePerpPositionTakerFee(state, position, 0.25)
+    expect(next.position).toEqual({ ...position, takerFeeCostBasis: 0.75 })
+    expect(next.state.positions).toEqual([next.position, other])
+    expect(next.position.costBasis).toBe(position.costBasis)
+    expect(next.position.originalCostBasis).toBe(position.originalCostBasis)
+    expect(state.positions[0]).toBe(position)
+  })
+
+  it('is an identity for zero or invalid new fees', () => {
+    for (const fee of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const next = accruePerpPositionTakerFee(state, position, fee)
+      expect(next).toEqual({ state, position })
+    }
+  })
+
+  it('fails closed on corrupt stored fee basis', () => {
+    expect(() =>
+      accruePerpPositionTakerFee(
+        state,
+        { ...position, takerFeeCostBasis: Number.NaN },
+        1
+      )
+    ).toThrow()
   })
 })

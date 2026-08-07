@@ -2,8 +2,8 @@
 // authoritative write path for perp ContractMetric — no per-trade mirror path.
 //
 // Behavior:
-//   invested   = sum of positive originalCostBasis deltas across the user's
-//                open + closed positions (gross margin deposited).
+//   invested   = sum of positive originalCostBasis deltas plus opening/add
+//                taker fees across the user's open + closed positions.
 //   payout     = current position value (c + π) at the oracle price (0 if no
 //                open position).
 //   profit     = payout + totalAmountSold - totalAmountInvested
@@ -41,16 +41,28 @@ const emptyAgg = (userId: string): EventAgg => ({
 const isSoldEventType = (t: string) =>
   t === 'close' || t === 'liquidation' || t === 'adl'
 
+const getOpeningFee = (event: PerpEvent) => {
+  if (event.eventType !== 'open' && event.eventType !== 'add') return 0
+  const rawFee = event.data?.fee
+  if (rawFee === undefined) return 0
+  const fee = Number(rawFee)
+  if (!Number.isFinite(fee) || fee < 0)
+    throw new Error(`Invalid opening fee for PERP event ${event.id ?? 'new'}`)
+  return fee
+}
+
 const applyEventToAgg = (
   agg: EventAgg,
   eventType: string,
   originalCostBasisDelta: number,
+  openingFee: number,
   payout: number,
   appliedTime: number,
   reason: unknown
 ) => {
   if (eventType === 'open' || eventType === 'add') {
-    if (originalCostBasisDelta > 0) agg.totalInvested += originalCostBasisDelta
+    if (originalCostBasisDelta > 0)
+      agg.totalInvested += originalCostBasisDelta + openingFee
   } else if (isSoldEventType(eventType)) {
     agg.totalSold += payout
   }
@@ -99,7 +111,12 @@ export const buildPerpUserContractMetrics = async (
          case
            when event_type in ('open', 'add')
              and original_cost_basis_delta > 0
-           then original_cost_basis_delta
+           then original_cost_basis_delta +
+             case
+               when jsonb_typeof(data->'fee') = 'number'
+               then greatest((data->>'fee')::numeric, 0)
+               else 0
+             end
            else 0
          end
        ), 0) as total_invested,
@@ -163,6 +180,7 @@ export const buildPerpUserContractMetrics = async (
       agg,
       ev.eventType,
       ev.originalCostBasisDelta ?? 0,
+      getOpeningFee(ev),
       payout,
       ev.appliedTime,
       ev.data?.reason

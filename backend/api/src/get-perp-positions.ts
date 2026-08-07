@@ -15,6 +15,7 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
     size: number | string
     cost_basis: number | string
     original_cost_basis: number | string
+    taker_fee_cost_basis: number | string
     entry_price: number | string
     leverage: number | string
     liquidation_price: number | string
@@ -26,7 +27,8 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
   }>(
     userId
       ? `select p.user_id, p.direction, p.size, p.cost_basis,
-                p.original_cost_basis, p.entry_price, p.leverage,
+                p.original_cost_basis, p.taker_fee_cost_basis,
+                p.entry_price, p.leverage,
                 p.liquidation_price, p.opened_time, p.updated_time,
                 u.name as user_name, u.username, u.data->>'avatarUrl' as avatar_url
            from contract_perp_positions p
@@ -34,7 +36,8 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
           where p.contract_id = $1 and p.user_id = $2
           order by p.opened_time desc`
       : `select p.user_id, p.direction, p.size, p.cost_basis,
-                p.original_cost_basis, p.entry_price, p.leverage,
+                p.original_cost_basis, p.taker_fee_cost_basis,
+                p.entry_price, p.leverage,
                 p.liquidation_price, p.opened_time, p.updated_time,
                 u.name as user_name, u.username, u.data->>'avatarUrl' as avatar_url
            from contract_perp_positions p
@@ -49,6 +52,7 @@ export const getPerpPositions: APIHandler<'get-perp-positions'> = async (
     size: Number(r.size),
     costBasis: Number(r.cost_basis),
     originalCostBasis: Number(r.original_cost_basis),
+    takerFeeCostBasis: Number(r.taker_fee_cost_basis),
     entryPrice: Number(r.entry_price),
     leverage: Number(r.leverage),
     liquidationPrice: Number(r.liquidation_price),
