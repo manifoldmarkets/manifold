@@ -26,6 +26,7 @@ import {
   liquidationPrice as computeLiquidationPrice,
   openPosition as openPositionMath,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
+  PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
   processLiquidations,
   solvencyFactor,
@@ -608,12 +609,17 @@ export const openOrAddPosition = async (
       )
     }
 
-    // Post-trade solvency must be >= 1.
+    // Post-trade solvency must be >= 1, within the same relative tolerance
+    // the engine's own assert uses. ADL deliberately scales winners so the
+    // factor lands at EXACTLY 1, so after any ADL event the book sits on the
+    // boundary within float dust — a strict `< 1` then rejects every open on
+    // the winning side with "solvency 1.000 < 1" (a new position has zero
+    // unrealized PnL and cannot move the factor at all).
     const solv = solvencyFactor(direction, open.state, price)
-    if (solv < 1)
+    if (solv < 1 - PERP_SOLVENCY_FACTOR_TOLERANCE)
       throw new APIError(
         400,
-        `Post-trade solvency ${solv.toFixed(3)} < 1; try lower leverage or size`
+        `Post-trade solvency ${solv.toFixed(6)} < 1; try lower leverage or size`
       )
 
     const { upserts, deletes } = diffForWrite(
