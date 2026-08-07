@@ -24,6 +24,7 @@ import {
   getPerpOpenInterestCapacity,
   getPositionValue,
   liquidationPrice as computeLiquidationPrice,
+  MIN_PERP_LEVERAGE,
   openPosition as openPositionMath,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
   PerpState,
@@ -382,8 +383,11 @@ export const openOrAddPosition = async (
   assertIdempotencyKey(idempotencyKey)
   if (!Number.isFinite(mana) || mana <= 0)
     throw new APIError(400, 'mana must be a finite positive number')
-  if (!Number.isFinite(leverage) || leverage <= 0)
-    throw new APIError(400, 'leverage must be a finite positive number')
+  if (!Number.isFinite(leverage) || leverage < MIN_PERP_LEVERAGE)
+    throw new APIError(
+      400,
+      `leverage must be a finite number of at least ${MIN_PERP_LEVERAGE}`
+    )
 
   return runPerpTransaction(async (pgTrans) => {
     if (idempotencyKey) {
@@ -596,15 +600,21 @@ export const openOrAddPosition = async (
     // over-cap positions can always close, but cannot add further exposure.
     const capacity = getPerpOpenInterestCapacity(direction, open.state, price)
     if (!capacity.isWithinLimit) {
+      // The limit depends only on the opposing pool, which an open never
+      // touches, so pre-trade headroom is exact — tell the user the largest
+      // trade that fits instead of making them reverse-engineer the cap.
+      const headroom = Math.max(
+        capacity.limit - (capacity.openInterest - open.deltaSize),
+        0
+      )
+      const opposite = direction === 'long' ? 'short' : 'long'
       throw new APIError(
         400,
-        `${
-          direction === 'long' ? 'Long' : 'Short'
-        } open interest would be M$${capacity.openInterest.toFixed(
+        `This market can take on at most M$${headroom.toFixed(
           2
-        )}; this market currently supports at most M$${capacity.limit.toFixed(
+        )} more ${direction} exposure right now, but this trade adds M$${open.deltaSize.toFixed(
           2
-        )} (${PERP_OPEN_INTEREST_COVER_MULTIPLE}× unreserved opposing-pool cover). Try lower margin or leverage.`
+        )} (margin × leverage). Reduce your margin or leverage so their product fits, or wait for more ${opposite} interest to raise the cap (${direction} exposure is limited to ${PERP_OPEN_INTEREST_COVER_MULTIPLE}× the unreserved ${opposite}-side pool).`
       )
     }
 

@@ -57,6 +57,15 @@ export const getLeverage = (size: number, costBasis: number) =>
   costBasis > 0 ? size / costBasis : 0
 
 /**
+ * Floor for the leverage a trade request may ask for. The UI never offers
+ * sub-1× leverage, and as ℓ → 0 the 1/ℓ term in the liquidation-price
+ * formula overflows float64 to ±Infinity, which the state validators
+ * (correctly) refuse. Existing positions can still drift below 1× through
+ * ADL haircuts — this floor applies to requested leverage only.
+ */
+export const MIN_PERP_LEVERAGE = 1
+
+/**
  * Liquidation price (paper eq. 1):
  *   long:  P_liq = (1 - 1/ℓ) · P_e
  *   short: P_liq = (1 + 1/ℓ) · P_e
